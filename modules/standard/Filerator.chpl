@@ -9,16 +9,18 @@ use Sort;
 //
 
 //
-//  iter listdir(path: string, dotfiles=false, dirs=true, files=false): string
+// iter listdir(path: string, dotfiles=false, dirs=true, files=true, listlinks=true): string
 //
 //  listdir() lists the contents of a directory, similar to 'ls'
-//    * path: the directory to list
-//    * dotfiles: should dotfiles be included?
+//    * path: the directory whose contents should be listed
+//    * dotfiles: should files/directories that start with '.' be listed?
 //    * dirs: should dirs be listed?
 //    * files: should files be listed?
+//    * listlinks: should symbolic links be listed?
 //
-// By default it lists all directories in the current directory as
-// long as they don't start with '.'
+// By default this routine lists all files and directories in the
+// current directory, including symbolic links, as long as they don't
+// start with '.'
 //
 iter listdir(path: string, dotfiles=false, dirs=true, files=true, listlinks=true): string {
   extern type DIRptr;
@@ -76,6 +78,10 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true, listlinks=true
 //   * followlinks: indicates whether to follow symbolic links or not
 //   * sort: indicates whether to consider subdirectories in sorted order or not
 //
+// by default, walkdirs() will start in the current directory, process directories
+// in preorder; recursively traverse subdirectories; and neither follow dotfile
+// directories nor symbolic links.  It will not sort the directories by default.
+//
 iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, 
               followlinks=false, sort = false): string {
   //  writeln("topdown = ", topdown);
@@ -105,6 +111,8 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false,
 // wordexp() gives a glob-like capability, implemented with C's wordexp()
 // * pattern: the pattern to match against
 //
+// By default, it will list all files/directories in the directory
+//
 iter wordexp(pattern="*") {
   extern type wordexp_t;
   //  extern proc chpl_wordexp(pattern:c_string, flags:c_int, ref ret_glob:wordexp_t):c_int;
@@ -127,6 +135,8 @@ iter wordexp(pattern="*") {
 //
 // glob() gives glob() capabilities and is implemented using C's glob()
 // * pattern: the pattern to match against
+// 
+// By default, it will list all files/directories in the directory
 //
 iter glob(pattern="*") {
   extern type glob_t;
