@@ -2,94 +2,7 @@ config const debug = false;
 
 use Sort;
 
-module FileratorHelp {
-  extern type DIRptr;
-  extern type direntptr;
-  extern proc opendir(name: c_string): DIRptr;
-  extern proc readdir(dirp: DIRptr): direntptr;
-  extern proc closedir(dirp: DIRptr): c_int;
-  extern proc chpl_rt_isDir(pathname: c_string): c_int;
-
-  proc direntptr.d_name(): c_string {
-    extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
-
-    return chpl_rt_direntptr_getname(this);
-  }
-
-  /* Not portable (for example to Debian)
-  proc direntptr.isDir() {
-    extern proc chpl_rt_direntptr_isDir(d: direntptr): bool;
-
-    return chpl_rt_direntptr_isDir(this);
-  }
-  */
-}
-
-iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
-  // This does not work:
-  //  use FileratorHelp;
-
-  //
-  // So inline its contents directly instead:
-  //
-  extern type DIRptr;
-  extern type direntptr;
-  extern proc opendir(name: c_string): DIRptr;
-  extern proc readdir(dirp: DIRptr): direntptr;
-  extern proc closedir(dirp: DIRptr): c_int;
-  extern proc chpl_rt_isDir(pathname: c_string): c_int;
-
-  proc direntptr.d_name(): c_string {
-    extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
-
-    return chpl_rt_direntptr_getname(this);
-  }
-  // End inlining
-
-  var dir: DIRptr;
-  var ent: direntptr;
-  //  writeln("***Trying ", path);
-  dir = opendir(path:c_string);
-  if (!is_c_nil(dir)) {
-    ent = readdir(dir);
-    while (!is_c_nil(ent)) {
-      const filename = ent.d_name();
-      if (dotfiles || filename.substring(1) != '.') {
-        if (!nosvn || filename != '.svn') {
-          const fullpath = path + "/" + filename;
-          if (!chpl_rt_isDir(fullpath:c_string)) {
-            yield fullpath;
-          } else {
-            //        writeln("^^^ it's a directory!");
-            if recur && filename != "." && filename != ".." {
-              //
-              // feature request: This is a nice place for a yieldall concept
-              //
-              for filename in listdir(fullpath, recur, dotfiles) do
-                yield filename;
-            }
-          }
-        }
-      }
-      ent = readdir(dir);
-    }
-    closedir(dir);
-  } else {
-    extern proc perror(s: c_string);
-    perror("error in listdir(): ");
-  }
-}
-
-
-iter listdir2(path: string, dotfiles=false, dirs=true, files=false): string {
-  // This does not work:
-  //  use FileratorHelp;
-
-  //  writeln("listdir2() called with ", path);
-
-  //
-  // So inline its contents directly instead:
-  //
+iter listdir(path: string, dotfiles=false, dirs=true, files=false): string {
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
@@ -129,7 +42,7 @@ iter listdir2(path: string, dotfiles=false, dirs=true, files=false): string {
     closedir(dir);
   } else {
     extern proc perror(s: c_string);
-    perror("error in listdir2(): ");
+    perror("error in listdir(): ");
   }
 }
 
@@ -142,7 +55,7 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
     yield path;
 
   if (depth) {
-    var subdirs = listdir2(path, dotfiles=dotfiles, dirs=true);
+    var subdirs = listdir(path, dotfiles=dotfiles, dirs=true);
     if (sort) then
       QuickSort(subdirs);
     for subdir in subdirs {
@@ -161,9 +74,9 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
 iter findfiles(startdir = ".", recur=false, dotfiles=false) {
   if (recur) then
     for subdir in walkdirs(startdir, dotfiles=dotfiles) do
-      for file in listdir2(subdir, dotfiles=dotfiles, dirs=false, files=true) do
+      for file in listdir(subdir, dotfiles=dotfiles, dirs=false, files=true) do
         yield subdir+"/"+file;
   else
-    for file in listdir2(startdir, dotfiles=dotfiles, dirs=false, files=true) do
+    for file in listdir(startdir, dotfiles=dotfiles, dirs=false, files=true) do
       yield startdir+"/"+file;
 }
