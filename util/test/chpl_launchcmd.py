@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Run Chapel test (execution only) inside pbs batch job using qsub.
+"""Run Chapel test (execution only) inside pbs or slurm batch job.
 
 The job name is set from the environment variable CHPL_LAUNCHCMD_NAME_PREFIX
 (defaulting to Chpl) and the name of the program being executing. For example,
@@ -8,17 +8,19 @@ running `chpl_launchcmd.py ./hello` would use the name Chpl-hello.
 
 The high level overview of what this does:
 
- * Detect flavor of qsub: either PBSPro or moab.
-   * If neither, raises error.
+ * Detect slurm or flavor of qsub (either PBSPro or moab).
+   * If none, raises error.
  * Parses number locales and wall time from the test command args so they can
-   be sent to qsub.
+   be sent to qsub/slurm.
  * Rebuilds the test command.
  * Launches the job by passing the test command on stdin to qsub (batch
-   mode). Stdout/stderr are directed to a temporary file designated by the
-   script.
- * Polls qstat with the given qsub job id every second until the status is C
-   (aka complete).
- * Prints the contents of the temp file with stdout/stderr from the job to stdout.
+   mode). Slurm jobs just run the chapel executable, setting
+   CHPL_LAUNCHER_USE_SBATCH=true. Stdout/stderr are directed to a temporary
+   file designated by the script.
+ * Polls qstat/squeue with the given job id every second until the status is
+   complete.
+ * Prints the contents of the temp file with stdout/stderr from the job to
+   stdout.
  * Cleans up the temp file and exits.
 
 """
