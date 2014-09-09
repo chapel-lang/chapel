@@ -1591,9 +1591,11 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high+1;
       const newDom = {lo..hi};
-      on this._value do this._value.dsiReallocate(newDom);
-      this.domain.setIndices(newDom.getIndices());
-      on this._value do this._value.dsiPostReallocate();
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
       this[hi] = val;
     }
 
@@ -1605,9 +1607,11 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high-1;
       const newDom = {lo..hi};
-      on this._value do this._value.dsiReallocate(newDom);
-      this.domain.setIndices(newDom.getIndices());
-      on this._value do this._value.dsiPostReallocate();
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
     }
 
     /* Add element 'val' to the front of the array, extending the array's
@@ -1619,9 +1623,11 @@ module ChapelArray {
       const lo = this.domain.low-1,
             hi = this.domain.high;
       const newDom = {lo..hi};
-      on this._value do this._value.dsiReallocate(newDom);
-      this.domain.setIndices(newDom.getIndices());
-      on this._value do this._value.dsiPostReallocate();
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
       this[lo] = val;
     }
 
@@ -1633,9 +1639,11 @@ module ChapelArray {
       const lo = this.domain.low+1,
             hi = this.domain.high;
       const newDom = {lo..hi};
-      on this._value do this._value.dsiReallocate(newDom);
-      this.domain.setIndices(newDom.getIndices());
-      on this._value do this._value.dsiPostReallocate();
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
     }
 
     /* Insert element 'val' into the array at index 'pos'. Shift the array
@@ -1649,9 +1657,11 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high+1;
       const newDom = {lo..hi};
-      on this._value do this._value.dsiReallocate(newDom);
-      this.domain.setIndices(newDom.getIndices());
-      on this._value do this._value.dsiPostReallocate();
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
       for i in pos..hi-1 by -1 do this[i+1] = this[i];
       this[pos] = val;
     }
@@ -1669,9 +1679,11 @@ module ChapelArray {
       for i in pos..hi {
         this[i] = this[i+1];
       }
-      on this._value do this._value.dsiReallocate(newDom);
-      this.domain.setIndices(newDom.getIndices());
-      on this._value do this._value.dsiPostReallocate();
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
     }
 
     /* Remove 'count' elements from the array starting at index 'pos' and
@@ -1689,9 +1701,11 @@ module ChapelArray {
       for i in pos..hi {
         this[i] = this[i+count];
       }
-      on this._value do this._value.dsiReallocate(newDom);
-      this.domain.setIndices(newDom.getIndices());
-      on this._value do this._value.dsiPostReallocate();
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
     }
 
     /* Remove the elements at the indices in the 'pos' range and shift the
@@ -1725,9 +1739,11 @@ module ChapelArray {
             hi = this.domain.low-1;
       assert(hi < lo, "overflow occured subtracting 1 from low bound in clear");
       const newDom = {lo..hi};
-      on this._value do this._value.dsiReallocate(newDom);
-      this.domain.setIndices(newDom.getIndices());
-      on this._value do this._value.dsiPostReallocate();
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
     }
 
     /* Return a tuple containing true and the index of the first instance of
