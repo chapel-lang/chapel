@@ -232,7 +232,6 @@ class LocStencilArr {
 
 proc makeZero(param rank : int) {
   var ret : rank*int;
-  for i in ret do i = 0;
   return ret;
 }
 

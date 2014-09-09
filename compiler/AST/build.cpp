@@ -738,6 +738,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, iteratorSym,
                                 new CallExpr("_getIterator", iteratorExpr->copy())));
   VarSymbol* index = newTemp("_indexOfInterest");
+  index->addFlag(FLAG_INDEX_OF_INTEREST);
   isArrayTypeFn->insertAtTail(new DefExpr(index));
   isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, index,
                                 new CallExpr("iteratorIndex", iteratorSym)));
@@ -1024,6 +1025,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   }
 
   VarSymbol* index = newTemp("_indexOfInterest");
+  index->addFlag(FLAG_INDEX_OF_INTEREST);
   stmts->insertAtTail(new DefExpr(index));
   stmts->insertAtTail(new BlockStmt(
     new CallExpr(PRIM_MOVE, index,
@@ -1105,11 +1107,9 @@ buildForallLoopStmt(Expr* indices,
   VarSymbol* followIdx = newTemp("chpl__followIdx");
   VarSymbol* followIter = newTemp("chpl__followIter");
   iter->addFlag(FLAG_EXPR_TEMP);
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-  Symbol* T1 = newTemp(); T1->addFlag(FLAG_EXPR_TEMP); T1->addFlag(FLAG_MAYBE_PARAM);
-  Symbol* T2 = newTemp(); T2->addFlag(FLAG_EXPR_TEMP); T2->addFlag(FLAG_MAYBE_PARAM);
 
   BlockStmt* leadBlock = buildChapelStmt();
   leadBlock->insertAtTail(new DefExpr(iter));
@@ -1137,6 +1137,9 @@ buildForallLoopStmt(Expr* indices,
   BlockStmt* followBlock = buildFollowLoop(iter, leadIdxCopy, followIter,
           followIdx, indices, loopBody->copy(), false, zippered);
   if (!fNoFastFollowers) {
+    Symbol* T1 = newTemp(); T1->addFlag(FLAG_EXPR_TEMP); T1->addFlag(FLAG_MAYBE_PARAM);
+    Symbol* T2 = newTemp(); T2->addFlag(FLAG_EXPR_TEMP); T2->addFlag(FLAG_MAYBE_PARAM);
+
     leadBody->insertAtTail(new DefExpr(T1));
     leadBody->insertAtTail(new DefExpr(T2));
 

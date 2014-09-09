@@ -920,6 +920,11 @@ fix_def_expr(VarSymbol* var) {
   // handle ref variables
   //
   if (var->hasFlag(FLAG_REF_VAR)) {
+
+    if (!init) {
+      USR_FATAL_CONT(var, "References must be initialized when they are defined.");
+    }
+
     Expr* varLocation = NULL;
 
     // If this is a const reference to an immediate, we need to insert a temp
@@ -938,6 +943,12 @@ fix_def_expr(VarSymbol* var) {
 
     if (!varLocation) {
       varLocation = init->remove();
+    }
+
+    if (SymExpr* sym = toSymExpr(varLocation)) {
+      if (!var->hasFlag(FLAG_CONST) && sym->var->isConstant()) {
+        USR_FATAL_CONT(sym, "Cannot set a non-const reference to a const variable.");
+      }
     }
 
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_ADDR_OF, varLocation)));
