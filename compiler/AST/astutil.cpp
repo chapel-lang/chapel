@@ -357,7 +357,7 @@ bool isOpEqualPrim(CallExpr* call) {
       call->isPrimitive(PRIM_AND_ASSIGN)      ||
       call->isPrimitive(PRIM_OR_ASSIGN)       ||
       call->isPrimitive(PRIM_XOR_ASSIGN)) {
-  return true;
+    return true;
   }
   //otherwise false
   return false;
