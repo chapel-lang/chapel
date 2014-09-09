@@ -1,7 +1,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "direnthelp.h"
+#include "chpldirent.h"
+#include "chplrt.h"
 
 int chpl_rt_isDir(const char* pathname) {
   struct stat fileinfo;
