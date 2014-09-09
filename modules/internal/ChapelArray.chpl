@@ -1567,6 +1567,20 @@ module ChapelArray {
              " on an array defined over a domain with multiple arrays");
     }
 
+    /* The following methods are intended to provide a list or vector style
+       interface to 1D unstridable rectangular arrays.  They are only intended
+       for use on arrays that have a 1:1 correspondence with their domains.
+       All methods here that modify the array's domain assert that this 1:1
+       property holds.
+
+       These are currently not parallel safe, and cannot safely be called by
+       multiple tasks simultaneously on the same array.
+
+       The current implementation reallocates the array every time the domain
+       is modified.  This could be improved with a size doubling/halving
+       strategy.
+     */
+
     /* Return true if the array has no elements */
     proc isEmpty(): bool {
       return this.numElements == 0;
