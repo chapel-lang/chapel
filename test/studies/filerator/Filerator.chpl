@@ -1,5 +1,7 @@
 config const debug = false;
 
+use Sort;
+
 module FileratorHelp {
   extern type DIRptr;
   extern type direntptr;
@@ -79,7 +81,7 @@ iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
 }
 
 
-iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, followlinks=false): string {
+iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, followlinks=false, sort = false): string {
   // This does not work:
   //  use FileratorHelp;
 
@@ -123,8 +125,11 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
               //
               // feature request: This is a nice place for a yieldall concept
               //
-              for dirname in walkdirs(fullpath, topdown, depth-1, dotfiles, followlinks) do
-                yield dirname;
+              var subdirs = walkdirs(fullpath, topdown, depth-1, dotfiles, followlinks);
+              if (sort) then
+                QuickSort(subdirs);
+              for subdir in subdirs do
+                yield subdir;
             }
           }
         }
