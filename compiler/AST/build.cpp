@@ -225,6 +225,10 @@ Expr* buildIntLiteral(const char* pch) {
   uint64_t ull;
   if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2))
     ull = binStr2uint64(pch);
+  else if (!strncmp("0o", pch, 2) || !strncmp("0O", pch, 2))
+    // The second case is difficult to read, but is zero followed by a capital
+    // letter 'o'
+    ull = octStr2uint64(pch);
   else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2))
     ull = hexStr2uint64(pch);
   else
