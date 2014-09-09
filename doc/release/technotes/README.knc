@@ -106,7 +106,7 @@ For Cray XC:
   CHPL_TASKS: fifo
   CHPL_LAUNCHER: aprun
   CHPL_TIMERS: generic
-  CHPL_MEM: default
+  CHPL_MEM: cstdlib
   CHPL_MAKE: gmake
   CHPL_ATOMICS: intrinsics
     CHPL_NETWORK_ATOMICS: none

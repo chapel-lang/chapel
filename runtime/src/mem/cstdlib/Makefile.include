@@ -15,9 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MEM_SRCS = mem-default.c
+MEM_SUBDIR = src/mem/cstdlib
 
-SVN_SRCS = $(MEM_SRCS)
-SRCS = $(SVN_SRCS)
+ALL_SRCS += $(CURDIR)/$(MEM_SUBDIR)/*.c
 
-MEM_COMMON_OBJS = $(MEM_SRCS:%.c=$(MEM_OBJDIR)/%.o)
+MEM_OBJDIR = $(RUNTIME_ROOT)/$(MEM_SUBDIR)/$(RUNTIME_OBJDIR)
+
+include $(RUNTIME_ROOT)/$(MEM_SUBDIR)/Makefile.share
