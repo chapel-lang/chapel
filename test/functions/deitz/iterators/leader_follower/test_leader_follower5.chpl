@@ -2,7 +2,7 @@ class C {
   var n: int;
   var A: [1..n] int;
 
-  iter these() var {
+  iter these() ref {
     for e in A do
       yield e;
   }
@@ -15,7 +15,7 @@ class C {
     }
   }
 
-  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+  iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     for i in followThis do
       yield A(i);
   }

@@ -80,7 +80,7 @@ class MultiArray
   
 
 
-  iter these () var 
+  iter these () ref
   {
     for wrapper in array_wrappers do 
       yield wrapper.array;

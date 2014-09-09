@@ -1324,24 +1324,24 @@ module ChapelArray {
     proc _dom return _getDomain(_value.dom);
     proc rank param return this.domain.rank;
   
-    inline proc this(i: rank*_value.dom.idxType) var {
+    inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
       else
         return _value.dsiAccess(i(1));
     }
   
-    inline proc this(i: _value.dom.idxType ...rank) var
+    inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
   
-    inline proc localAccess(i: rank*_value.dom.idxType) var {
+    inline proc localAccess(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
       else
         return _value.dsiLocalAccess(i(1));
     }
   
-    inline proc localAccess(i: _value.dom.idxType ...rank) var
+    inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
     //
     // requires dense domain implementation that returns a tuple of
@@ -1436,7 +1436,7 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
   
-    inline proc these() var {
+    inline proc these() ref {
       return _value.these();
     }
   
@@ -1501,7 +1501,7 @@ module ChapelArray {
   
     // sparse array interface
   
-    proc IRV var {
+    proc IRV ref {
       return _value.IRV;
     }
   

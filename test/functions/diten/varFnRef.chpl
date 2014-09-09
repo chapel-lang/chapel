@@ -1,4 +1,4 @@
-proc accessArg(ref a: int) var {
+proc accessArg(ref a: int) ref {
   return a;
 }
 

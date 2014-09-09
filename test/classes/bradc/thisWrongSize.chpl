@@ -9,7 +9,7 @@ class C {
       data(i) = new D(idxtype);
   }
 
-  proc this(i: idxtype) var {
+  proc this(i: idxtype) ref {
     /* This gets the first i into the right size
     var i32 = i: int(32);
     return data(i32)(i);
@@ -23,7 +23,7 @@ class D {
   type idxtype;
   var x: real;
 
-  proc this(i: idxtype) var {
+  proc this(i: idxtype) ref {
     return x;
   }    
 }

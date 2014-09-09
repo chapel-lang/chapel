@@ -1,7 +1,7 @@
 proc main() {
   var x, y, z: int;
 
-  proc foo() var {
+  proc foo() ref {
     return z;
   }
 

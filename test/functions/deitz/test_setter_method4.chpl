@@ -1,6 +1,6 @@
 class C {
   var x: [1..3] int;
-  proc foo() var {
+  proc foo() ref {
     writeln(setter);
     return x;
   }

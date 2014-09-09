@@ -470,14 +470,14 @@ class Cyclic1DArr {
   //
   // the global accessor for the array
   //
-  proc this(i: glbIdxType) var {
+  proc this(i: glbIdxType) ref {
     return locArr(dom.dist.idxToLocaleInd(i))(i);
   }
 
   //
   // the iterator over the array's elements, currently sequential
   //
-  iter these() var {
+  iter these() ref {
     for loc in dom.dist.targetLocDom {
       // TODO: May want to do something like:     
       // on this do
@@ -499,7 +499,7 @@ class Cyclic1DArr {
       yield blk;
   }
 
-  iter newThese(param iterator: IteratorType, followThis) var
+  iter newThese(param iterator: IteratorType, followThis) ref
         where iterator == IteratorType.follower {
     for i in followThis {
       if debugCyclic1D then
@@ -568,14 +568,14 @@ class LocCyclic1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  proc this(i: glbIdxType) var {
+  proc this(i: glbIdxType) ref {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  iter these() var {
+  iter these() ref {
     for elem in myElems {
       yield elem;
     }

@@ -571,7 +571,7 @@ module DefaultRectangular {
       _ddata_free(data);
     }
   
-    inline proc theData var {
+    inline proc theData ref {
       if earlyShiftData && !stridable then
         return shiftedData;
       else
@@ -580,7 +580,7 @@ module DefaultRectangular {
 
     iter these(tasksPerLocale:int = dataParTasksPerLocale,
                ignoreRunning:bool = dataParIgnoreRunningTasks,
-               minIndicesPerTask:int = dataParMinGranularity) var {
+               minIndicesPerTask:int = dataParMinGranularity) ref {
       type strType = chpl__signedType(idxType);
       if rank == 1 {
         // This is specialized to avoid overheads of calling dsiAccess()
@@ -641,7 +641,7 @@ module DefaultRectangular {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
-      var where tag == iterKind.follower {
+      ref where tag == iterKind.follower {
       if debugDefaultDist then
         writeln("*** In array follower code:"); // [\n", this, "]");
       for i in dom.these(tag=iterKind.follower, followThis,
@@ -730,10 +730,10 @@ module DefaultRectangular {
     }
   
     // only need second version because wrapper record can pass a 1-tuple
-    inline proc dsiAccess(ind: idxType ...1) var where rank == 1
+    inline proc dsiAccess(ind: idxType ...1) ref where rank == 1
       return dsiAccess(ind);
   
-    inline proc dsiAccess(ind : rank*idxType) var {
+    inline proc dsiAccess(ind : rank*idxType) ref {
       if boundsChecking then
         if !dom.dsiMember(ind) then
           halt("array index out of bounds: ", ind);
@@ -744,7 +744,7 @@ module DefaultRectangular {
       return theData(dataInd);
     }
   
-    inline proc dsiLocalAccess(i) var {
+    inline proc dsiLocalAccess(i) ref {
       return dsiAccess(i);
     }
   

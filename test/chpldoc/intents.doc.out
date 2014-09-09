@@ -23,7 +23,7 @@ Module: intents
    proc six(in val: int(64))
        This function has an argument with an intent and a type 
 
-   proc seven() var
+   proc seven() ref
        This function has a return intent of var 
 
    proc eight()
@@ -69,7 +69,7 @@ Module: intents
       proc six(in val: int(64))
           This function has an argument with an intent and a type 
 
-      proc seven() var
+      proc seven() ref
           This function has a return intent of var 
 
       proc eight()
