@@ -18,15 +18,15 @@ iter genA2() {
 
 writeln("A is: ", A);
 
-for a in sorter(A) do
+for a in sorted(A) do
   write(a, " ");
 writeln();
 
-for a in sorter(genA()) do
+for a in sorted(genA()) do
   write(a, " ");
 writeln();
 
-for a in sorter(genA2()) do
+for a in sorted(genA2()) do
   write(a, " ");
 writeln();
 

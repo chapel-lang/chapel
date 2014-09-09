@@ -220,16 +220,18 @@ inline proc VerifySort(Data: [?Dom] ?elType, str: string, param reverse=false) {
 
 
 //
-// This is my first draft "sorterator" which is designed to take some
-// other iterator/iterable and yield its elements, sorted.  The main
-// improvement I have in mind for this is that it should put some sort
-// of constraint on 'x'; and there should be some way to say "y is an
-// array" without saying how big it is or what element type it is (or
-// else a way to query that information from 'x' in a generic way).
-// As a result, the current status of the sorterator is that it works
-// when it works and probably goes off the rails when it doesn't.
+// This is a first draft "sorterator" which is designed to take some
+// other iterator/iterable and yield its elements, in sorted order.
 //
-iter sorter(x) {
+// The main limitations in the current code are (1) it should put some
+// sort of constraint on 'x' to limit it to types for which this makes
+// sense; and (2) there should be some generic way to say "y is an
+// array of x's element type" (or to infer its element type) without
+// saying a priori how big it is.  Without these mods, the result is
+// that the sorterator works when it does and probably is confusing
+// when it doesn't.
+//
+iter sorted(x) {
   var y = x;
   QuickSort(y);
   for i in y do
