@@ -117,3 +117,30 @@ iter findfiles(startdir = ".", recur=false, dotfiles=false) {
     for file in listdir(startdir, dotfiles=dotfiles, dirs=false, files=true) do
       yield startdir+"/"+file;
 }
+
+/* An incomplete start at putting together the routine in the proposal
+ *
+iter findfiles(pattern="*",
+               startdir=".",
+               depth=max(int),
+               files=true,
+               dirs=false,
+               dotfiles=false,
+               sorted=false,
+               expand=false) {
+  if (expand) then
+    halt("not yet implemented: findfiles(..., expand=true)");
+  if (pattern.substring(1) == "/") then
+    for file in glob(pattern) do
+      yield file;
+  else
+    for subdir in walkdirs(startdir, true, depth, dotfiles, false, sorted) {
+      const subdirslash = subdir + "/";
+      if (dirs) then
+        yield subdirslash;
+      for file in glob(subdirslash + pattern) do
+        yield file;
+    }
+}
+*/
+               
