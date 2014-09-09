@@ -8,4 +8,10 @@ before_script:
 script:
   - ./util/buildRelease/smokeTest
 env:
+  # Test with and without CHPL_DEVELOPER=true. This will ensure we get testing
+  # both with lots of compiler warnings that developers like, and with the
+  # settings a normal user would encounter. Unfortunately, CHPL_DEVELOPER is
+  # checked for definition and not value, which is why OPTIMIZE=1 must be used
+  # instead of something like CHPL_DEVELOPER=false.
   - CHPL_DEVELOPER=true
+  - OPTIMIZE=1
