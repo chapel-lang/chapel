@@ -1,3 +1,3 @@
 #!/bin/bash
 permissionsInOctal=`printf "0%d" $(stat -c %a useAMode)`
-printf $(($permissionsInOctal & 0777)) > $2
+printf "%o\n" $(($permissionsInOctal & 0777)) > $2
