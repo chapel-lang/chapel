@@ -1,6 +1,6 @@
 use Filerator;
 
-config const startdir = "subdir";
+config const startdir = ".";
 config const topdown = true;
 config const depth = max(int);
 config const dotfiles = false;
