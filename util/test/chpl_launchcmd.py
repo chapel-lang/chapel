@@ -623,6 +623,64 @@ class PbsProJob(AbstractJob):
                 pattern.pattern, header_line))
 
 
+class SlurmJob(AbstractJob):
+    """SLURM implementation of abstract job runner."""
+
+    submit_bin = None
+    status_bin = 'squeue'
+    hostlist_resource = ''  # FIXME!
+    num_nodes_resource = ''  # FIXME!
+    num_cpus_resource = ''  # FIXME!
+
+    @classmethod
+    def status(cls, job_id):
+        """Query job status using squeue.
+
+        :type job_id: str
+        :arg job_id: pbs job id
+
+        :rtype: str
+        :returns: qsub job status
+        """
+        squeue_command = [
+            'squeue',
+            '--noheader',
+            '--format', '"%A %T"',  # "<job_id> <status>"
+            '--states', 'all',
+            '--job', job_id,
+        ]
+        logging.debug('squeue command to run: {0}'.format(squeue_command))
+
+        logging.debug('Opening squeue subprocess.')
+        squeue_proc = subprocess.Popen(
+            squeue_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=os.environ.copy()
+        )
+
+        logging.debug('Communicating with squeue subprocess.')
+        stdout, stderr = squeue_proc.communicate()
+        logging.debug('squeue process returned with status {0}, stdout: {1}, stderr: {2}'.format(
+            squeue_proc.returncode, stdout, stderr))
+
+        if squeue_proc.returncode != 0:
+            raise ValueError('Non-zero exit code {0} from squeue: "{1}"'.format(
+                squeue_proc.returncode, stdout))
+
+        status_parts = stdout.split(' ')
+        if len(status_parts) == 2:
+            status = status_parts[1]
+            logging.info('Status for job {0} is: {1}'.format(job_id, status))
+
+            if status == 'COMPLETED':
+                return 'C'
+            else:
+                return 'R'  # running
+        else:
+            raise ValueError('Could not parse output from squeue: {0}'.format(stdout))
+
+
 @contextlib.contextmanager
 def _temp_dir(dir_prefix='chapel-test-tmp'):
     """Context manager that creates a temporary directory in the current working
