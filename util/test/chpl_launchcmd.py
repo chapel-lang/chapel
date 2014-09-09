@@ -743,6 +743,64 @@ class SlurmJob(AbstractJob):
         else:
             raise ValueError('Could not parse output from squeue: {0}'.format(stdout))
 
+    def submit_job(self, testing_dir, output_file):
+        """Launch job using executable. Set CHPL_LAUNCHER_USE_SBATCH=true in
+        environment to avoid using expect script. The executable will create a
+        sbatch script and submit it. Parse and return the job id after job is
+        submitted.
+
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        env = os.environ.copy()
+        env['CHPL_LAUNCHER_USE_SBATCH'] = 'true'
+        env['CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME'] = output_file
+
+        if self.hostlist is not None:
+            env['SLURM_JOB_NODELIST'] = self.hostlist
+
+        # Add --walltime back into the command line.
+        cmd = self.test_command[:]
+        if self.walltime is not None:
+            cmd.append('--walltime')
+            cmd.append(self.walltime)
+
+        logging.debug('Command to submit job: {0}'.format(cmd))
+
+        logging.debug('Opening job subprocess')
+        submit_proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=testing_dir,
+            env=env
+        )
+
+        logging.debug('Communicating with job subprocess')
+        stdout, stderr = submit_proc.communicate()
+        logging.debug('Job process returned with status {0}, stdout: {1}, stderr: {2}'.format(
+            submit_proc.returncode, stdout, stderr))
+
+        if submit_proc.returncode != 0:
+            msg = 'Job submission ({0}) failed with exit code {1} and output: {2}'.format(
+                cmd, submit_proc.returncode, stdout)
+            logging.error(msg)
+            raise ValueError(msg)
+
+        # Output is: Submitted batch job 106001
+        id_parts = stdout.split(' ')
+        if len(id_parts) < 4:
+            raise ValueError('Could not parse output from sbatch submission: {0}'.format(stdout))
+        else:
+            job_id = id_parts[3].strip()
+            return job_id
+
 
 @contextlib.contextmanager
 def _temp_dir(dir_prefix='chapel-test-tmp'):
