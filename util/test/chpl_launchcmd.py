@@ -164,63 +164,12 @@ class AbstractJob(object):
 
         :rtype: str
         :returns: stdout/stderr from job
-
         """
         with _temp_dir() as working_dir:
             output_file = os.path.join(working_dir, 'test_output.log')
             testing_dir = os.getcwd()
 
-            logging.info(
-                'Starting {0} job "{1}" on {2} nodes with walltime {3} '
-                'and output file: {4}'.format(
-                    self.submit_bin, self.job_name, self.num_locales,
-                    self.walltime, output_file))
-
-            # TODO: create self._qsub_command property. (thomasvandoren, 2014-07-23)
-            submit_command = [self.submit_bin, '-V', '-N', self.job_name, '-j', 'oe',
-                            '-o', output_file]
-            if self.num_locales >= 0:
-                submit_command.append('-l')
-                submit_command.append('{0}={1}'.format(
-                    self.num_nodes_resource, self.num_locales))
-            if self.walltime is not None:
-                submit_command.append('-l')
-                submit_command.append('walltime={0}'.format(self.walltime))
-            if self.hostlist is not None:
-                submit_command.append('-l')
-                submit_command.append('{0}={1}'.format(
-                    self.hostlist_resource, self.hostlist))
-            if self.num_cpus_resource is not None:
-                submit_command.append('-l')
-                submit_command.append('{0}={1}'.format(
-                    self.num_cpus_resource, self.num_cpus))
-
-            logging.debug('submit command to run: {0}'.format(submit_command))
-
-            logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
-            submit_proc = subprocess.Popen(
-                submit_command,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                cwd=testing_dir,
-                env=os.environ.copy()
-            )
-
-            test_command_str = ' '.join(self.full_test_command)
-            logging.debug('Communicating with {0} subprocess. Sending test command on stdin: {1}'.format(
-                self.submit_bin, test_command_str))
-            stdout, stderr = submit_proc.communicate(input=test_command_str)
-            logging.debug('{0} process returned with status {1}, stdout: {2} stderr: {3}'.format(
-                self.submit_bin, submit_proc.returncode, stdout, stderr))
-
-            if submit_proc.returncode != 0:
-                msg = '{0} failed with exit code {1} and output: {2}'.format(
-                    self.submit_bin, submit_proc.returncode, stdout)
-                logging.error(msg)
-                raise ValueError(msg)
-
-            job_id = stdout.strip()
+            job_id = self.submit_job(testing_dir, output_file)
             logging.info('Test has been queued (job id: {0}). Waiting for output...'.format(job_id))
 
             # TODO: The while condition here should look for jobs that become held,
@@ -282,6 +231,23 @@ class AbstractJob(object):
 
         return output
 
+    def submit_job(self, testing_dir, output_file):
+        """Submit a new job using ``testing_dir`` as the working dir and
+        ``output_file`` as the location for the output. Returns the job id on
+        success. AbstractJob does not implement this method. It is the
+        responsibility of the sub class.
+
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        raise NotImplementedError('submit_job class method is implemented by sub classes.')
+
     @classmethod
     def _detect_qsub_flavor(cls):
         """Returns appropriate class based on the detected version of pbs in
@@ -314,6 +280,75 @@ class AbstractJob(object):
             return MoabJob
         else:
             return PbsProJob
+
+    def _launch_qsub(self, testing_dir, output_file):
+        """Launch job using qsub and return job id. Raises RuntimeError if
+        self.submit_bin is anything but qsub.
+
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        if self.submit_bin != 'qsub':
+            raise RuntimeError('_launch_qsub called for non-pbs job type!')
+
+        logging.info(
+            'Starting {0} job "{1}" on {2} nodes with walltime {3} '
+            'and output file: {4}'.format(
+                self.submit_bin, self.job_name, self.num_locales,
+                self.walltime, output_file))
+
+        # TODO: create self._qsub_command property. (thomasvandoren, 2014-07-23)
+        submit_command = [self.submit_bin, '-V', '-N', self.job_name, '-j', 'oe',
+                          '-o', output_file]
+        if self.num_locales >= 0:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_nodes_resource, self.num_locales))
+        if self.walltime is not None:
+            submit_command.append('-l')
+            submit_command.append('walltime={0}'.format(self.walltime))
+        if self.hostlist is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.hostlist_resource, self.hostlist))
+        if self.num_cpus_resource is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_cpus_resource, self.num_cpus))
+
+        logging.debug('submit command to run: {0}'.format(submit_command))
+
+        logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
+        submit_proc = subprocess.Popen(
+            submit_command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=testing_dir,
+            env=os.environ.copy()
+        )
+
+        test_command_str = ' '.join(self.full_test_command)
+        logging.debug('Communicating with {0} subprocess. Sending test command on stdin: {1}'.format(
+            self.submit_bin, test_command_str))
+        stdout, stderr = submit_proc.communicate(input=test_command_str)
+        logging.debug('{0} process returned with status {1}, stdout: {2} stderr: {3}'.format(
+            self.submit_bin, submit_proc.returncode, stdout, stderr))
+
+        if submit_proc.returncode != 0:
+            msg = '{0} failed with exit code {1} and output: {2}'.format(
+                self.submit_bin, submit_proc.returncode, stdout)
+            logging.error(msg)
+            raise ValueError(msg)
+
+        job_id = stdout.strip()
+        return job_id
 
     @classmethod
     def init_from_environment(cls):
@@ -397,8 +432,8 @@ class AbstractJob(object):
 
     @classmethod
     def _get_test_command(cls, args, unparsed_args):
-        """Returns test command by folding walltime and numLocales args into unparsed
-        command line args.
+        """Returns test command by folding numLocales args into unparsed command line
+        args.
 
         :type args: argparse.Namespace
         :arg args: Namespace from parsing original args
@@ -553,6 +588,20 @@ class MoabJob(AbstractJob):
             logging.error('XML output: {0}'.format(output))
             raise
 
+    def submit_job(self, testing_dir, output_file):
+        """Launch job using qsub and return job id.
+
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        return self._launch_qsub(testing_dir, output_file)
+
 
 class PbsProJob(AbstractJob):
     """PBSPro implementation of pbs job runner."""
@@ -621,6 +670,20 @@ class PbsProJob(AbstractJob):
             logging.error('Could not find S column in header line of qstat output.')
             raise ValueError('Could not find {0} pattern in header line: {1}'.format(
                 pattern.pattern, header_line))
+
+    def submit_job(self, testing_dir, output_file):
+        """Launch job using qsub and return job id.
+
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        return self._launch_qsub(testing_dir, output_file)
 
 
 class SlurmJob(AbstractJob):
