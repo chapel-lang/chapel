@@ -6,8 +6,8 @@ config const dotfiles = false;
 config param sort = true;
 
 if sort then
-  for filename in sorted(listdir(startdir, recur, dotfiles, nosvn=true)) do
+  for filename in sorted(findfiles(startdir, recur, dotfiles)) do
     writeln(filename);
 else
-  for filename in listdir(startdir, recur, dotfiles, nosvn=true) do
+  for filename in findfiles(startdir, recur, dotfiles) do
     writeln(filename);

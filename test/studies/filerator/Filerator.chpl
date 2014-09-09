@@ -158,3 +158,12 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
     yield path;
 }
 
+iter findfiles(startdir = ".", recur=false, dotfiles=false) {
+  if (recur) then
+    for subdir in walkdirs(startdir, dotfiles=dotfiles) do
+      for file in listdir2(subdir, dotfiles=dotfiles, dirs=false, files=true) do
+        yield subdir+"/"+file;
+  else
+    for file in listdir2(startdir, dotfiles=dotfiles, dirs=false, files=true) do
+      yield startdir+"/"+file;
+}
