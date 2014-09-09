@@ -81,9 +81,11 @@ iter listdir(path: string, recur = false, dotfiles=false, nosvn=true): string {
 }
 
 
-iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, followlinks=false, sort = false): string {
+iter listdir2(path: string, dotfiles=false, dirs=true, files=false): string {
   // This does not work:
   //  use FileratorHelp;
+
+  //  writeln("listdir2() called with ", path);
 
   //
   // So inline its contents directly instead:
@@ -102,44 +104,54 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, fo
   }
   // End inlining
 
+  var dir: DIRptr;
+  var ent: direntptr;
+  //  writeln("***Trying ", path);
+  dir = opendir(path:c_string);
+  if (!is_c_nil(dir)) {
+    ent = readdir(dir);
+    while (!is_c_nil(ent)) {
+      const filename = ent.d_name();
+      if (dotfiles || filename.substring(1) != '.') {
+        if (filename != "." && filename != "..") {
+          const fullpath = path + "/" + filename;
+          if (chpl_rt_isDir(fullpath:c_string)) {
+            if (dirs) then
+              yield filename;
+          } else {
+            if (files) then
+              yield filename;
+          }
+        }
+      }
+      ent = readdir(dir);
+    }
+    closedir(dir);
+  } else {
+    extern proc perror(s: c_string);
+    perror("error in listdir2(): ");
+  }
+}
+
+
+iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, followlinks=false, sort = false): string {
+  //  writeln("topdown = ", topdown);
+  //  writeln("walkdirs() called with ", path, " depth=",depth);
+
   if (topdown) then
     yield path;
 
   if (depth) {
-    var dir: DIRptr;
-    var ent: direntptr;
-    if debug then
-      writeln("***Trying ", path);
-    dir = opendir(path:c_string);
-    if (!is_c_nil(dir)) {
-      ent = readdir(dir);
-      while (!is_c_nil(ent)) {
-        const filename = ent.d_name();
-        if (filename != "." && filename != "..") {
-          const fullpath = path + "/" + filename;
-          
-          if (chpl_rt_isDir(fullpath:c_string)!=0) {
-            if debug then
-              writeln("***It's a dir!");
-            if (dotfiles || filename.substring(1) != '.') {
-              //
-              // feature request: This is a nice place for a yieldall concept
-              //
-              var subdirs = walkdirs(fullpath, topdown, depth-1, dotfiles, followlinks);
-              if (sort) then
-                QuickSort(subdirs);
-              for subdir in subdirs do
-                yield subdir;
-            }
-          }
-        }
-        ent = readdir(dir);
-      }
-    } else {
-      extern proc perror(s: c_string);
-      perror("error in walkdirs(): ");
+    var subdirs = listdir2(path, dotfiles=dotfiles, dirs=true);
+    if (sort) then
+      QuickSort(subdirs);
+    for subdir in subdirs {
+      const fullpath = path + "/" + subdir;
+      //      yield fullpath;
+      //      writeln("Calling walkdirs with ", fullpath);
+      for subdir in walkdirs(fullpath, topdown, depth-1, dotfiles, followlinks) do
+        yield subdir;
     }
-    closedir(dir);
   }
 
   if (!topdown) then
