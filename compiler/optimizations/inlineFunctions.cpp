@@ -107,8 +107,11 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
   collectCallExprsSTL(fn, callExprs);
 
   for_vector(CallExpr, call, callExprs) {
-    if (!call->primitive)
+    if (!call->primitive) {
       return false;
+    } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+      return false;
+    }
   }
 
   return true;
