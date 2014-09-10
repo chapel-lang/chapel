@@ -663,7 +663,7 @@ proc ReplicatedArr.dsiTargetLocales() {
 
 proc ReplicatedArr.dsiOneLocalSubdomain() param  return true;
 
-proc ReplicatedArr.dsiGetLocalSubdomain() {
+proc ReplicatedArr.dsiLocalSubdomain() {
   return localArrs[here.id].myDom.domLocalRep;
 }
 

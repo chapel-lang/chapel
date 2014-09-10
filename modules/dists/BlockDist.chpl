@@ -1397,7 +1397,7 @@ proc BlockArr.dsiOneLocalSubdomain() param return true;
 
 // returns the current locale's subdomain
 
-proc BlockArr.dsiGetLocalSubdomain() {
+proc BlockArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
 }
 

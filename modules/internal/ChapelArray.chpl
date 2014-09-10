@@ -1534,20 +1534,20 @@ module ChapelArray {
     //
     // Also note that localSlice(dom) produces a slice of a domain/array 
     // that's assumed to be local
-    proc getLocalSubdomain() {
+    proc localSubdomain() {
       if !_value.dsiOneLocalSubdomain() then
         compilerError("Array's local domain is not a single domain");
-      return _value.dsiGetLocalSubdomain();
+      return _value.dsiLocalSubdomain();
     }
     
     // if the subdomain cannot be represented as a single domain, 
     // the multiple domains are yielded by an iterator.
     // yield a domain so the user can use procs like expand/exterior/etc.
-    iter getLocalSubdomains() {
+    iter localSubdomains() {
       if _value.dsiOneLocalSubdomain() then 
-        yield _value.dsiGetLocalSubdomain();
+        yield _value.dsiLocalSubdomain();
       else 
-        for d in _value.dsiGetLocalSubdomains() do yield d;
+        for d in _value.dsiLocalSubdomains() do yield d;
     }
 
     proc chpl__isDense1DArray() param {

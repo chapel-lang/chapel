@@ -597,7 +597,7 @@ module DefaultAssociative {
 
     proc dsiOneLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   }

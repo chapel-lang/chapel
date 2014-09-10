@@ -1166,6 +1166,6 @@ proc CyclicArr.dsiTargetLocales() {
 
 proc CyclicArr.dsiOneLocalSubdomain() param return true;
 
-proc CyclicArr.dsiGetLocalSubdomain() {
+proc CyclicArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
 }

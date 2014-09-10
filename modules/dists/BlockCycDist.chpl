@@ -804,7 +804,7 @@ proc BlockCyclicArr.dsiOneLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
-iter BlockCyclicArr.dsiGetLocalSubdomains() {
+iter BlockCyclicArr.dsiLocalSubdomains() {
   for i in myLocArr.indexDom.myStarts {
     var temp : rank*range(idxType);
     const blockSizes = myLocArr.indexDom.globDom.dist.blocksize;
