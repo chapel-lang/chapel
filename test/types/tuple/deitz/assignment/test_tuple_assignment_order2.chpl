@@ -1,21 +1,21 @@
 var x = 1, y = 2;
 
-proc L1() var {
+proc L1() ref {
   writeln("L1");
   return x;
 }
 
-proc L2() var {
+proc L2() ref {
   writeln("L2");
   return y;
 }
 
-proc R1() var {
+proc R1() ref {
   writeln("R1");
   return y;
 }
 
-proc R2() var {
+proc R2() ref {
   writeln("R2");
   return x;
 }

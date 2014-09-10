@@ -836,7 +836,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 
 //== dsiAccess
 
-proc DimensionalArr.dsiAccess(indexx: dom.indexT) var: eltType {
+proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
   _traceddc(traceDimensionalDist || traceDimensionalDistDsiAccess,
             this, ".dsiAccess", indexx);
 
@@ -1173,7 +1173,7 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
 //== serial iterator - array
 
 // note: no 'on' clauses - they not allowed by the compiler
-iter DimensionalArr.these() var {
+iter DimensionalArr.these() ref {
   _traceddd(this, ".serial iterator",
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
@@ -1228,7 +1228,7 @@ iter DimensionalArr.these(param tag: iterKind) where tag == iterKind.leader {
 
 //== follower iterator - array   (somewhat similar to the serial iterator)
 
-iter DimensionalArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   _traceddd(this, ".follower on ", here.id, "  got ", followThis,
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
@@ -1248,7 +1248,7 @@ iter DimensionalArr.these(param tag: iterKind, followThis) var where tag == iter
 }
 
 // factor our some common code
-iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) var {
+iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // single-element cache of localAdescs[l1,l2]
   var lastl1 = invalidLocID, lastl2 = invalidLocID;
   var lastLocAdesc: this.localAdescs.eltType;

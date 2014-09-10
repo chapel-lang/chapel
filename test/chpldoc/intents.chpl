@@ -40,7 +40,7 @@ module Inner {
   }
 
   /* This function has a return intent of var */
-  proc seven () var {
+  proc seven () ref {
     return "I suppose if I must have a return type here . . . ";
   }
 
@@ -115,7 +115,7 @@ proc six (in val: int) {
 }
 
 /* This function has a return intent of var */
-proc seven () var {
+proc seven () ref {
   return "I suppose if I must have a return type here . . . ";
 }
 

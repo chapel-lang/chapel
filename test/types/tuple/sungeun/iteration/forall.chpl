@@ -17,7 +17,6 @@ config param s = 33;
 var t1: s*x.type;
 var sum: atomic x.type;
 
-forall e in t1 do e = sum.fetchAdd(1);
+forall e in t1 do sum.fetchAdd(1);
 
 if sum.read() != s:x.type then halt("Sum should be ", s, "!");
-forall e in t1 do if e!=0.0 then halt("Element should be zero!");

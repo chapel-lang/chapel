@@ -51,7 +51,7 @@ class FTree {
         middle of the tree you will short circuit a whole subtree!
         
      */
-    proc this(lvl: int, idx: int) var {
+    proc this(lvl: int, idx: int) ref {
         if !indices.member((lvl, idx)) {
             if setter {
               indices += ((lvl, idx));
@@ -72,7 +72,7 @@ class FTree {
     /** Access an element in the FTree.  If it doesn't exist, 
         return None.
      */  
-    proc peek(lvl: int, idx: int) var {
+    proc peek(lvl: int, idx: int) ref {
         if has_coeffs(lvl, idx) then
             return this(lvl, idx);
         else

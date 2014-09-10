@@ -21,7 +21,7 @@ iter rtValIter(param tag: iterKind) : [P]int where tag == iterKind.leader {
   }
 }
 
-iter rtRefIter(param tag: iterKind) var : [P]int where tag == iterKind.leader {
+iter rtRefIter(param tag: iterKind) ref : [P]int where tag == iterKind.leader {
   var p: [P]int;
   p[1] = 111;
   cobegin {
@@ -47,7 +47,7 @@ iter ntValIter(param tag: iterKind) where tag == iterKind.leader {
   }
 }
 
-iter ntRefIter(param tag: iterKind) var where tag == iterKind.leader {
+iter ntRefIter(param tag: iterKind) ref where tag == iterKind.leader {
   var p: [P]int;
   p[1] = 111;
   cobegin {

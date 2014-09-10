@@ -4,7 +4,7 @@ class D: C { }
 var c = new C();
 var d = new D();
 
-proc f(a: bool) var {
+proc f(a: bool) ref {
   if a then
     return c;
   else

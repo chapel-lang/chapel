@@ -1,6 +1,6 @@
 var A: [1..3] int;
 
-iter foo() var {
+iter foo() ref {
   for i in 1..3 do
     yield A(i);
 }

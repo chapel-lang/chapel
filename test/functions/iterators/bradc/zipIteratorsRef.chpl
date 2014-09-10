@@ -1,7 +1,7 @@
 class C {
   var x: real = 1.2;
 
-  iter these() var {
+  iter these() ref {
     yield x;
   }
 }

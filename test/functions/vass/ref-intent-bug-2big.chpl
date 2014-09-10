@@ -137,7 +137,7 @@ const WA = new GlobalData("WA"),
 
 // Reuse the name for an indexing operation.
 // This does not access neighbor caches.
-proc GlobalData.dsiAccess(ix,iy) var {
+proc GlobalData.dsiAccess(ix,iy) ref {
   if chk then assert(1 <= ix && ix <= ldx * gx && 1 <= iy && iy <= ldy * gy);
   const gridx = (ix-1) / gx + 1, gridy = (iy-1) / gy + 1;
   return datas[gridx, gridy].ldata[ix,iy];

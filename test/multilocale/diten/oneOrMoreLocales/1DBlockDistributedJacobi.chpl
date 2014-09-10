@@ -41,7 +41,7 @@ class DistribArray {
     return localArrays;
   }
 
-  proc element(indexNum: int) var {
+  proc element(indexNum: int) ref {
     const localeNum = min(indexNum / localSize, numLocales-1);
     const localIndex = indexNum - (localeNum * localSize);
     return internalArr(localeNum).arr(localIndex);

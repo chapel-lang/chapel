@@ -185,7 +185,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
 //    fprintf(slurmFile, "#SBATCH -joe\n");  
     if (outputfn!=NULL) 
-      fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", outputfn);
+      fprintf(slurmFile, "#SBATCH -o %s\n", outputfn);
     else
       fprintf(slurmFile, "#SBATCH -o %s.%%j.out\n", argv[0]);
 //    fprintf(slurmFile, "cd $SBATCH_O_WORKDIR\n");

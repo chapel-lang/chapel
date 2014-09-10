@@ -81,7 +81,7 @@ delete c;
 //
 class ArrayLike {
   var a, b, c, d: int;
-  proc this(i:int) var {
+  proc this(i:int) ref {
     select i {
       when 1 do return a;
       when 2 do return b;
@@ -91,7 +91,7 @@ class ArrayLike {
     }
   }
 
-  iter these() var {
+  iter these() ref {
     yield a;
     yield b;
     yield c;

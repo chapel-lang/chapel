@@ -482,7 +482,7 @@ module DefaultAssociative {
       dsiAccess(idx, haveLock) = initval;
     }
 
-    proc dsiAccess(idx : idxType, haveLock = false) var {
+    proc dsiAccess(idx : idxType, haveLock = false) ref {
       const shouldLock = dom.parSafe && !haveLock;
       if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
@@ -505,7 +505,7 @@ module DefaultAssociative {
       }
     }
   
-    iter these() var {
+    iter these() ref {
       for slot in dom {
         yield dsiAccess(slot);
       }
@@ -516,7 +516,7 @@ module DefaultAssociative {
         yield followThis;
     }
   
-    iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
       if followThisDom != dom {
         // check to see if domains match
@@ -587,17 +587,13 @@ module DefaultAssociative {
       data(newslot) = tmpTable[oldslot];
     }
 
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsupported by associative domains");
-    }
-
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsupported by associative domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   }
