@@ -190,17 +190,17 @@ iter glob(pattern="*") {
 }
 
 
-/* iter findfiles(startdir = ".", recur=false, dotfiles=false)
+/* iter findfiles(startdir = ".", recursive=false, dotfiles=false)
 
    findfiles() is a simple find-like utility implemented using the
    above routines
      * startdir: where to start when looking for files
-     * recur: tells whether or not to descend recurisvely
+     * recursive: tells whether or not to descend recurisvely
      * dotfiles: tells whether or not to yield dotfiles
 */
 
-iter findfiles(startdir = ".", recur=false, dotfiles=false) {
-  if (recur) then
+iter findfiles(startdir = ".", recursive=false, dotfiles=false) {
+  if (recursive) then
     for subdir in walkdirs(startdir, dotfiles=dotfiles) do
       for file in listdir(subdir, dotfiles=dotfiles, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
