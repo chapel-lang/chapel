@@ -283,6 +283,7 @@ extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
 extern proc qio_chdir(name: c_string):syserr;
+extern proc qio_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 extern proc qio_cwd(ref working_dir:c_string):syserr;
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 extern proc qio_file_remove(name: c_string):syserr;
@@ -618,6 +619,33 @@ proc chdir(name: string) {
   var err: syserr = ENOERR;
   chdir(err, name);
   if err then ioerror(err, "in chdir", name);
+}
+
+/* Changes one or both of the owner and group id of the named file to the
+   specified values.  If uid or gid are -1, the value in question will remain
+   unchanged.
+   err: a syserr used to indicate if an error occurred
+   name: the name of the file to be changed.
+   uid: user id to use as new owner, or -1 if it should remain the same.
+   gid: group id to use as the new group owner, or -1 if it should remain the
+        same.
+*/
+proc chown(out err: syserr, name: string, uid: int, gid: int) {
+  err = qio_chown(name.c_str(), uid:c_int, gid:c_int);
+}
+
+/* Changes one or both of the owner and group id of the named file to the
+   specified values.  If uid or gid are -1, the value in question will remain
+   unchanged. Generates an error if one occurred.
+   name: the name of the file to be changed.
+   uid: user id to use as new owner, or -1 if it should remain the same.
+   gid: group id to use as the new group owner, or -1 if it should remain the
+        same.
+*/
+proc chown(name: string, uid: int, gid: int) {
+  var err: syserr = ENOERR;
+  chown(err, name, uid, gid);
+  if err then ioerror(err, "in chown", name);
 }
 
 /* Returns the current working directory.
