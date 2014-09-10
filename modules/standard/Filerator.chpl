@@ -91,9 +91,11 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
 
 
 /* iter walkdirs(path: string=".", topdown=true, depth=max(int), 
-                 dotfiles=false, followlinks=false, sort = false): string
+                 dotfiles=false, followlinks=false, sort=false): string
   
-   walkdirs() recursively walks a directory structure, yielding directory names
+   walkdirs() recursively walks a directory structure, yielding
+   directory names.  The strings that are generated will be rooted
+   from 'path'.
      * path: the directory to start from
      * topdown: indicates whether to yield the directories using a
        preorder (vs. postorder) traversal
@@ -110,7 +112,7 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
 */
 
 iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, 
-              followlinks=false, sort = false): string {
+              followlinks=false, sort=false): string {
 
   if (topdown) then
     yield path;
