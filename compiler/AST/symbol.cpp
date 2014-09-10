@@ -1908,7 +1908,13 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
     if( developer ) {
-      if(llvm::verifyFunction(*func, llvm::PrintMessageAction)){
+      bool problems;
+#if HAVE_LLVM_VER >= 35
+      problems = llvm::verifyFunction(*func, &llvm::errs());
+#else
+      problems = llvm::verifyFunction(*func, llvm::PrintMessageAction);
+#endif
+      if( problems ) {
         INT_FATAL("LLVM function verification failed");
       }
     }

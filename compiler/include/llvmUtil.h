@@ -26,14 +26,19 @@
 
 #include "llvm/Config/llvm-config.h"
 
-#if LLVM_VERSION_MAJOR > 3 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 1 )
-#if LLVM_VERSION_MAJOR > 3 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 2 )
-
-#if LLVM_VERSION_MAJOR > 3 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 3 )
+#if   LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=5 )
+#define HAVE_LLVM_VER 35
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=4 )
 #define HAVE_LLVM_VER 34
-#else
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=3 )
 #define HAVE_LLVM_VER 33
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=2 )
+#define HAVE_LLVM_VER 32
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=1 )
+#define HAVE_LLVM_VER 31
 #endif
+
+#if HAVE_LLVM_VER >= 33
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
@@ -48,8 +53,9 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
 {
   return f->getAttributes().hasAttribute(idx, v);
 }
-#else
-#define HAVE_LLVM_VER 32
+
+#elif HAVE_LLVM_VER >= 32
+
 #include "llvm/Module.h"
 #include "llvm/Value.h"
 #include "llvm/IRBuilder.h"
@@ -64,10 +70,9 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
   //return f->getAttributes().getParamAttributes(idx).hasAttribute(v);
   return f->getParamAttributes(idx).hasAttribute(v);
 }
-#endif
 
-#else
-#define HAVE_LLVM_VER 31
+#elif HAVE_LLVM_VER >= 31
+
 #include "llvm/Module.h"
 #include "llvm/Value.h"
 #include "llvm/Support/IRBuilder.h"

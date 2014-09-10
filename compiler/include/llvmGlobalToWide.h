@@ -27,8 +27,12 @@
 #include "llvm/PassManager.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallPtrSet.h"
-#include "llvm/Support/ValueHandle.h"
 
+#if HAVE_LLVM_VER >= 35
+#include "llvm/IR/ValueHandle.h"
+#else
+#include "llvm/Support/ValueHandle.h"
+#endif
 
 /* The LLVM Global to Wide transformation allows the Chapel code generator
  * to emit multi-locale global pointer code that can be optimized by existing

@@ -719,7 +719,13 @@ void finishCodegenLLVM() {
 
   // Verify the LLVM module.
   if( developer ) {
-    if(verifyModule(*info->module,PrintMessageAction)){
+    bool problems;
+#if HAVE_LLVM_VER >= 35
+    problems = verifyModule(*info->module, &errs());
+#else
+    problems = verifyModule(*info->module, PrintMessageAction);
+#endif
+    if(problems) {
       INT_FATAL("LLVM module verification failed");
     }
   }
@@ -736,7 +742,11 @@ void prepareCodegenLLVM()
   // Set up the optimizer pipeline.
   // Start with registering info about how the
   // target lays out data structures.
+#if HAVE_LLVM_VER >= 35
+  fpm->add(new DataLayoutPass(info->module));
+#else
   fpm->add(new DataLayout(info->module));
+#endif
 
   if( fFastFlag ) {
     PMBuilder.OptLevel = 2;
@@ -1438,7 +1448,9 @@ void setupForGlobalToWide(void) {
   }
   ginfo->builder->CreateRet(ret);
 
-  llvm::verifyFunction(*fn);
+#if HAVE_LLVM_VERS >= 35
+  llvm::verifyFunction(*fn, &errs());
+#endif
 
   info->preservingFn = fn;
 }
@@ -1453,20 +1465,18 @@ void makeBinaryLLVM(void) {
   if( saveCDir[0] != '\0' ) {
     // Save the generated LLVM before optimization.
     std::string errorInfo;
-    OwningPtr<tool_output_file> output (
-        new tool_output_file(preOptFilename.c_str(),
+    tool_output_file output (preOptFilename.c_str(),
                              errorInfo,
-                             sys::fs::F_None));
-    WriteBitcodeToFile(info->module, output->os());
-    output->keep();
-    output->os().flush();
+                             sys::fs::F_None);
+    WriteBitcodeToFile(info->module, output.os());
+    output.keep();
+    output.os().flush();
   }
 
   std::string errorInfo;
-  OwningPtr<tool_output_file> output (
-      new tool_output_file(moduleFilename.c_str(),
+  tool_output_file output (moduleFilename.c_str(),
                            errorInfo,
-                           sys::fs::F_None));
+                           sys::fs::F_None);
  
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -1479,9 +1489,12 @@ void makeBinaryLLVM(void) {
 
   EmitBackendOutput(*info->Diags, info->codegenOptions,
                     info->clangTargetOptions, info->clangLangOptions,
-                    info->module, Backend_EmitBC, &output->os());
-  output->keep();
-  output->os().flush();
+#if HAVE_LLVM_VER >= 35
+                    info->Ctx->getTargetInfo().getTargetDescription(),
+#endif
+                    info->module, Backend_EmitBC, &output.os());
+  output.keep();
+  output.os().flush();
 
 
   std::string options = "";

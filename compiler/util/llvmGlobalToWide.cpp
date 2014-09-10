@@ -45,9 +45,18 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
+
+#if HAVE_LLVM_VER >= 35
+#include "llvm/IR/InstIterator.h"
+#include "llvm/IR/CallSite.h"
+#include "llvm/IR/Verifier.h"
+#else
 #include "llvm/Support/InstIterator.h"
 #include "llvm/Support/CallSite.h"
 #include "llvm/Analysis/Verifier.h"
+#endif
+
+
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
 #include <cstdio>
@@ -1234,7 +1243,7 @@ namespace {
 
         for(Function::use_iterator UI = F->use_begin(), UE = F->use_end();
                 UI!=UE; ) {
-          User *Old = *UI;
+          User *Old = UI->getUser();
           ++UI;
           CallSite CS(Old);
           if (CS.getInstruction()) {
@@ -1366,7 +1375,11 @@ namespace {
             NF->dump();
           }
           if( extraChecks ) {
+#if HAVE_LLVM_VER >= 35
+            assert(!verifyFunction(*NF, &errs()));
+#else
             verifyFunction(*NF);
+#endif
           }
         }
 
@@ -1415,7 +1428,11 @@ namespace {
                 AI != AE; ++AI) {
           GlobalAlias *ga = &*AI;
 
+#if HAVE_LLVM_VER >= 35
+          GlobalValue *gv = dyn_cast<GlobalValue>(ga->getAliasee());
+#else
           GlobalValue *gv = const_cast<GlobalValue*>(ga->getAliasedGlobal());
+#endif
           Type *old_type = ga->getType();
           Type *new_type = convertTypeGlobalToWide(&M, info, ga->getType());
           if (new_type == old_type) {
@@ -1423,8 +1440,16 @@ namespace {
           }
 
           Constant *init = ConstantExpr::getPointerCast(gv, new_type);
-          GlobalAlias *new_alias = new GlobalAlias(new_type, ga->getLinkage(),
+#if HAVE_LLVM_VER >= 35
+          GlobalAlias *new_alias = GlobalAlias::create(new_type,
+              0, // address space
+              ga->getLinkage(),
               "", init, &M);
+#else
+          GlobalAlias *new_alias = new GlobalAlias(new_type,
+              ga->getLinkage(),
+              "", init, &M);
+#endif
 
           Constant *cast_ptr = ConstantExpr::getPointerCast(new_alias, ga->getType());
 
@@ -1515,7 +1540,11 @@ namespace {
         }
 
         if( extraChecks ) {
-          verifyFunction(*F);
+#if HAVE_LLVM_VER >= 35
+            assert(!verifyFunction(*F, &errs()));
+#else
+            verifyFunction(*F);
+#endif
         }
 
         if( debugPassTwo ) {
@@ -1605,7 +1634,11 @@ namespace {
         }
 
         if( extraChecks ) {
+#if HAVE_LLVM_VER >= 35
+          assert(!verifyFunction(*F, &errs()));
+#else
           verifyFunction(*F);
+#endif
         }
       }
 
@@ -1663,7 +1696,8 @@ static
 bool containsGlobalPointers(unsigned gSpace, SmallSet<Type*, 10> & set, Type* t)
 {
   // All primitive types do not need to change.
-  if(t->isPrimitiveType() || t->isIntegerTy()) return false;
+  if(t->isFloatingPointTy() || t->isX86_MMXTy() || t->isLabelTy() ||
+     t->isMetadataTy() || t->isVoidTy() || t->isIntegerTy()) return false;
   assert(!t->isVoidTy());
 
   // Pointer types return true if they are in our address space.

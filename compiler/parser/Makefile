@@ -61,19 +61,19 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
 # no-error required here for bison 1.875 (not 1.875d)
 $(OBJ_SUBDIR)/chapel.tab.o: chapel.tab.cpp $(OBJ_SUBDIR_MADE) $(LEXYACC_INCLUDES)
-	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
+	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
 
 
 # no-error required here for flex 2.5.33
 $(OBJ_SUBDIR)/lex.yy.o: lex.yy.cpp $(OBJ_SUBDIR_MADE) chapel.tab.h $(LEXYACC_INCLUDES)
-	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
+	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
 
 #
 # need to handle these ones specially as well on intel because it
 # #includes chapel.tab.h
 #
 $(OBJ_SUBDIR)/parser.o: parser.cpp $(OBJ_SUBDIR_MADE) chapel.tab.h
-	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
+	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
 
 $(OBJ_SUBDIR)/processTokens.o: processTokens.cpp $(OBJ_SUBDIR_MADE) chapel.tab.h
-	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
+	$(CXX) -c $(COMP_CXXFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
