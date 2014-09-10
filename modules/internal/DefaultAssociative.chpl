@@ -692,8 +692,8 @@ module DefaultAssociative {
       isIntType(idxType)      ||
       isUintType(idxType)    ||
       isRealType(idxType)        ||
-      isComplexType(idxType)     ||
       isImagType(idxType)        ||
+      isComplexType(idxType)     ||
       idxType == chpl_taskID_t    ||
       idxType == string           ||
       idxType == c_string         ||

@@ -1209,7 +1209,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 
 }
 
 proc _isSimpleIoType(type t) param return
-  isBool(t) | isIntegral(t) | isFloat(t) || isComplex(t) || isEnum(t);
+  isBoolType(t) || isNumericType(t) || isEnumType(t);
 
 proc _isIoPrimitiveType(type t) param return
   _isSimpleIoType(t) || (t == c_string) || (t == string);

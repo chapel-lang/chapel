@@ -62,7 +62,7 @@ proc isBoolType(type t) param return
 
 pragma "no instantiation limit"
 proc isNumericType(type t) param return
-isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t);
+  isIntegralType(t) || isFloatType(t) || isComplexType(t);
 
 pragma "no instantiation limit"
 proc isIntegralType(type t) param return
@@ -89,8 +89,7 @@ proc isComplexType(type t) param return
 
 pragma "no instantiation limit"
 proc isFloatType(type t) param return
-  (t == real(32)) | (t == real(64)) |
-  (t == imag(32)) | (t == imag(64));
+  isRealType(t) || isImagType(t);
 
 pragma "no instantiation limit"
 proc isRealType(type t) param return
@@ -135,34 +134,37 @@ proc chpl__maxIntTypeSameSign(type t) type {
 
 //
 // isXxxValue() - trivial implementations
-// sorted by name; int < integral
 // no isVoid() or isVoidValue() - it might not work
+// Let these be for internal consumption for now,
+// due to lack of consensus for the name.
 //
 
-// isArrayValue
-proc isAtomicValue(e)    param  return isAtomicType(e.type);
 proc isBoolValue(e)      param  return isBoolType(e.type);
-proc isClassValue(e)     param  return isClassType(e.type);
-proc isComplexValue(e)   param  return isComplexType(e.type);
-// isDmapValue
-// isDomainValue
-proc isEnumValue(e)      param  return isEnumType(e.type);
-proc isFloatValue(e)     param  return isFloatType(e.type);
-// isHomogeneousTupleValue
-proc isImagValue(e)      param  return isImagType(e.type);
 proc isIntValue(e)       param  return isIntType(e.type);
+proc isUintValue(e)      param  return isUintType(e.type);
+proc isRealValue(e)      param  return isRealType(e.type);
+proc isImagValue(e)      param  return isImagType(e.type);
+proc isComplexValue(e)   param  return isComplexType(e.type);
+proc isStringValue(e)    param  return isStringType(e.type);
 proc isIntegralValue(e)  param  return isIntegralType(e.type);
+proc isFloatValue(e)     param  return isFloatType(e.type);
 proc isNumericValue(e)   param  return isNumericType(e.type);
 proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
-// isRangeValue
-proc isRealValue(e)      param  return isRealType(e.type);
-proc isRecordValue(e)    param  return isRecordType(e.type);
-// isSingleValue
-proc isStringValue(e)    param  return isStringType(e.type);
-// isSyncValue
+proc isEnumValue(e)      param  return isEnumType(e.type);
+//Defined elsewhere:
 // isTupleValue
+// isHomogeneousTupleValue
+proc isClassValue(e)     param  return isClassType(e.type);
+proc isRecordValue(e)    param  return isRecordType(e.type);
 proc isUnionValue(e)     param  return isUnionType(e.type);
-proc isUintValue(e)      param  return isUintType(e.type);
+//Defined elsewhere:
+// isRangeValue
+// isDmapValue
+// isDomainValue
+// isArrayValue
+// isSyncValue
+// isSingleValue
+proc isAtomicValue(e)    param  return isAtomicType(e.type);
 
 
 //
@@ -170,58 +172,58 @@ proc isUintValue(e)      param  return isUintType(e.type);
 //
 
 // Set 1 - types.
-proc isArray(type t)     param  return isArrayType(t);
-proc isAtomic(type t)    param  return isAtomicType(t);
 proc isBool(type t)      param  return isBoolType(t);
-proc isClass(type t)     param  return isClassType(t);
-proc isComplex(type t)   param  return isComplexType(t);
-proc isDmap(type t)      param  return isDmapType(t);
-proc isDomain(type t)    param  return isDomainType(t);
-proc isEnum(type t)      param  return isEnumType(t);
-proc isFloat(type t)     param  return isFloatType(t);
-proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
-proc isImag(type t)      param  return isImagType(t);
 proc isInt(type t)       param  return isIntType(t);
+proc isUint(type t)      param  return isUintType(t);
+proc isReal(type t)      param  return isRealType(t);
+proc isImag(type t)      param  return isImagType(t);
+proc isComplex(type t)   param  return isComplexType(t);
+proc isString(type t)    param  return isStringType(t);
 proc isIntegral(type t)  param  return isIntegralType(t);
+proc isFloat(type t)     param  return isFloatType(t);
 proc isNumeric(type t)   param  return isNumericType(t);
 proc isPrimitive(type t) param  return isPrimitiveType(t);
-proc isRange(type t)     param  return isRangeType(t);
-proc isReal(type t)      param  return isRealType(t);
-proc isRecord(type t)    param  return isRecordType(t);
-proc isSingle(type t)    param  return isSingleType(t);
-proc isString(type t)    param  return isStringType(t);
-proc isSync(type t)      param  return isSyncType(t);
+proc isEnum(type t)      param  return isEnumType(t);
 proc isTuple(type t)     param  return isTupleType(t);
+proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
+proc isClass(type t)     param  return isClassType(t);
+proc isRecord(type t)    param  return isRecordType(t);
 proc isUnion(type t)     param  return isUnionType(t);
-proc isUint(type t)      param  return isUintType(t);
+proc isRange(type t)     param  return isRangeType(t);
+proc isDmap(type t)      param  return isDmapType(t);
+proc isDomain(type t)    param  return isDomainType(t);
+proc isArray(type t)     param  return isArrayType(t);
+proc isSync(type t)      param  return isSyncType(t);
+proc isSingle(type t)    param  return isSingleType(t);
+proc isAtomic(type t)    param  return isAtomicType(t);
 
 // Set 2 - values.
-proc isArray(e)     param  return isArrayValue(e);
-proc isAtomic(e)    param  return isAtomicValue(e);
 proc isBool(e)      param  return isBoolValue(e);
-proc isClass(e)     param  return isClassValue(e);
-proc isComplex(e)   param  return isComplexValue(e);
-proc isDmap(e)      param  return isDmapValue(e);
-proc isDomain(e)    param  return isDomainValue(e);
-proc isEnum(e)      param  return isEnumValue(e);
-proc isFloat(e)     param  return isFloatValue(e);
-proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
-proc isImag(e)      param  return isImagValue(e);
 proc isInt(e)       param  return isIntValue(e);
+proc isUint(e)      param  return isUintValue(e);
+proc isReal(e)      param  return isRealValue(e);
+proc isImag(e)      param  return isImagValue(e);
+proc isComplex(e)   param  return isComplexValue(e);
+proc isString(e)    param  return isStringValue(e);
 proc isIntegral(e)  param  return isIntegralValue(e);
+proc isFloat(e)     param  return isFloatValue(e);
 proc isNumeric(e)   param  return isNumericValue(e);
 proc isPrimitive(e) param  return isPrimitiveValue(e);
-proc isRange(e)     param  return isRangeValue(e);
-proc isReal(e)      param  return isRealValue(e);
+proc isEnum(e)      param  return isEnumValue(e);
+proc isTuple(e)     param  return isTupleValue(e);
+proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
+proc isClass(e)     param  return isClassValue(e);
 proc isRecord(e)    param  return isRecordValue(e);
-proc isSingle(e: single) param  return true; // workaround: not isSingleValue
-proc isSingle(e)         param  return false;
-proc isString(e)    param  return isStringValue(e);
+proc isUnion(e)     param  return isUnionValue(e);
+proc isRange(e)     param  return isRangeValue(e);
+proc isDmap(e)      param  return isDmapValue(e);
+proc isDomain(e)    param  return isDomainValue(e);
+proc isArray(e)     param  return isArrayValue(e);
 proc isSync(e: sync)     param  return true; // workaround: not isSyncValue
 proc isSync(e)           param  return false;
-proc isTuple(e)     param  return isTupleValue(e);
-proc isUnion(e)     param  return isUnionValue(e);
-proc isUint(e)      param  return isUintValue(e);
+proc isSingle(e: single) param  return true; // workaround: not isSingleValue
+proc isSingle(e)         param  return false;
+proc isAtomic(e)    param  return isAtomicValue(e);
 
 
 // Is 'sub' a subtype (or equal to) 'super'?
