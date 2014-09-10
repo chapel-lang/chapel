@@ -295,12 +295,14 @@ class AbstractJob(object):
         except OSError:
             pass
 
-        if qsub_callable and os.environ.has_key('MOABHOMEDIR'):
+        # Favor slurm, since Cray version of slurm comes with qsub command
+        # that is wrapper around slurm apis.
+        if srun_callable:
+            return SlurmJob
+        elif qsub_callable and os.environ.has_key('MOABHOMEDIR'):
             return MoabJob
         elif qsub_callable:
             return PbsProJob
-        elif srun_callable:
-            return SlurmJob
         else:  # not (qsub_callable or srun_callable)
             raise RuntimeError('Could not find PBS or SLURM on system.')
 
