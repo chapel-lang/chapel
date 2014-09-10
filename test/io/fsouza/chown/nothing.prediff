@@ -6,5 +6,5 @@ set current_user = `id -un`
 set current_group = `id -gn`
 
 if ($file_user == $current_user && $file_group == $current_group) then
-  echo "ok" > $2
+  echo "no change" >> $2
 endif
