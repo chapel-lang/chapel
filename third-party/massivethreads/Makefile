@@ -32,7 +32,7 @@ massivethreads-config: FORCE
 	cd $(MASSIVETHREADS_BUILD_DIR) && $(MASSIVETHREADS_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(MASSIVETHREADS_INSTALL_DIR) --enable-malloc-wrapper=no --enable-eco-mode=no --enable-bind-workers=no
 
 massivethreads-build: FORCE
-	cd $(MASSIVETHREADS_BUILD_DIR) && $(MAKE)
+	cd $(MASSIVETHREADS_BUILD_DIR) && $(MAKE) -j$(CHPL_MAKE_NPROCS)
 	cd $(MASSIVETHREADS_BUILD_DIR) && $(MAKE) install
 
 massivethreads: massivethreads-config massivethreads-build
