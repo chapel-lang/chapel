@@ -1,4 +1,4 @@
-const n = 20;
+config const n = 20;
 
 var ad, bd, cd : domain(int);
 var a : [ad] int;
@@ -23,10 +23,10 @@ for i in 1..n {
 
 // a and b are disjoint, so r == a
 var r = a - b;
-assert(r == a);
+assert(r.domain == a.domain);
 
 var s = a ^ b;
-assert(s == q);
+assert(s.domain == q.domain);
 
 // all indices should be less than n/2
 var t = a & c;
