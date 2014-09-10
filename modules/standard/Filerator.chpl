@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-config const debug = false;
-
 use Sort;
 
 //
@@ -56,11 +54,9 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
 
     return chpl_rt_direntptr_getname(this);
   }
-  // End inlining
 
   var dir: DIRptr;
   var ent: direntptr;
-  //  writeln("***Trying ", path);
   dir = opendir(path:c_string);
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
@@ -109,8 +105,6 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
 
 iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, 
               followlinks=false, sort = false): string {
-  //  writeln("topdown = ", topdown);
-  //  writeln("walkdirs() called with ", path, " depth=",depth);
 
   if (topdown) then
     yield path;
@@ -121,8 +115,6 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false,
       QuickSort(subdirs);
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
-      //      yield fullpath;
-      //      writeln("Calling walkdirs with ", fullpath);
       for subdir in walkdirs(fullpath, topdown, depth-1, dotfiles, followlinks) do
         yield subdir;
     }
@@ -136,16 +128,15 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false,
 /* iter wordexp(pattern="*")
 
    wordexp() gives a glob-like capability, implemented with C's wordexp()
-
-   * pattern: the pattern to match against
+     * pattern: the pattern to match against
   
    By default, it will list all files/directories in the directory
 */
 
 iter wordexp(pattern="*") {
   extern type wordexp_t;
-  //  extern proc chpl_wordexp(pattern:c_string, flags:c_int, ref ret_glob:wordexp_t):c_int;
-  extern proc wordexp(pattern:c_string, ref ret_glob: wordexp_t, flags_c_int): c_int;
+  extern proc wordexp(pattern:c_string, ref ret_glob: wordexp_t, 
+                      flags_c_int): c_int;
   extern proc chpl_wordexp_num(x:wordexp_t): size_t;
   extern proc chpl_wordexp_index(x:wordexp_t, idx:size_t): c_string;
   extern proc wordfree(ref glb:wordexp_t);
@@ -165,16 +156,15 @@ iter wordexp(pattern="*") {
 /* iter glob(pattern="*")
 
    glob() gives glob() capabilities and is implemented using C's glob()
-
-   * pattern: the pattern to match against
+     * pattern: the pattern to match against
 
    By default, it will list all files/directories in the directory
 */
 
 iter glob(pattern="*") {
   extern type glob_t;
-  //  extern proc chpl_glob(pattern:c_string, flags:c_int, ref ret_glob:glob_t):c_int;
-  extern proc glob(pattern:c_string, flags: c_int, errfunc:c_void_ptr, ref ret_glob:glob_t):c_int;
+  extern proc glob(pattern:c_string, flags: c_int, errfunc:c_void_ptr, 
+                   ref ret_glob:glob_t):c_int;
   extern proc chpl_glob_num(x:glob_t): size_t;
   extern proc chpl_glob_index(x:glob_t, idx:size_t): c_string;
   extern proc globfree(ref glb:glob_t);
@@ -189,12 +179,16 @@ iter glob(pattern="*") {
   globfree(glb);
 }
 
-//
-// findfiles() is a simple find-like utility implemented using the above routines
-// * startdir: where to start when looking for files
-// * recur: tells whether or not to descend recurisvely
-// * dotfiles: tells whether or not to yield dotfiles
-//
+
+/* iter findfiles(startdir = ".", recur=false, dotfiles=false)
+
+   findfiles() is a simple find-like utility implemented using the
+   above routines
+     * startdir: where to start when looking for files
+     * recur: tells whether or not to descend recurisvely
+     * dotfiles: tells whether or not to yield dotfiles
+*/
+
 iter findfiles(startdir = ".", recur=false, dotfiles=false) {
   if (recur) then
     for subdir in walkdirs(startdir, dotfiles=dotfiles) do
