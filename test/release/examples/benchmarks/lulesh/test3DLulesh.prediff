@@ -8,5 +8,5 @@
 # be intentional because the .good files have the halt error messages in them.
 
 outfile=$2
-cat $outfile | grep -v 'srun: error: ' > $outfile.tmp
+cat $outfile | grep -v -E 'srun: error: .* Exited with exit code 1' > $outfile.tmp
 mv $outfile.tmp $outfile
