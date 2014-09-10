@@ -996,6 +996,23 @@ proc remove(name: string) {
   if err then ioerror(err, "in remove", name);
 }
 
+/* Split name into a tuple that is equivalent to (dirname(), basename()).
+   The second part of the tuple will never contain a slash.
+   name: path to be split.
+*/
+proc split(name: string): (string, string) {
+  if name == "/" then return ("/", "");
+  var c_name = name.c_str();
+  var len = c_name.length;
+  while (len > 0) {
+    if (c_name.substring(len) == "/") {
+      break;
+    }
+    len -= 1;
+  }
+  return (c_name.substring(..len-1), c_name.substring(len+1..c_name.length));
+}
+
 /* in the future, this will be an interface.
    */
 pragma "ignore noinit"
