@@ -733,7 +733,7 @@ class SlurmJob(AbstractJob):
         squeue_command = [
             'squeue',
             '--noheader',
-            '--format', '"%A %T"',  # "<job_id> <status>"
+            '--format', '%A %T',  # "<job_id> <status>"
             '--states', 'all',
             '--job', job_id,
         ]
@@ -761,7 +761,7 @@ class SlurmJob(AbstractJob):
 
         status_parts = stdout.split(' ')
         if len(status_parts) == 2:
-            status = status_parts[1]
+            status = status_parts[1].strip()
             logging.info('Status for job {0} is: {1}'.format(job_id, status))
 
             if status == 'COMPLETED':
