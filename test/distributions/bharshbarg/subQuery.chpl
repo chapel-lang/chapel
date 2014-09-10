@@ -23,11 +23,11 @@ proc test(Dist) {
 
   for L in Locales {
     on L {
-      if Data.oneLocalSubdomain() {
-        for d in Data[Data.getLocalSubdomain()] do
+      if Data.hasSingleLocalSubdomain() {
+        for d in Data[Data.localSubdomain()] do
           assert(d == here.id);
       } else {
-        for sub in Data.getLocalSubdomains() do
+        for sub in Data.localSubdomains() do
           for d in Data[sub] do
             assert(d == here.id);
       }
