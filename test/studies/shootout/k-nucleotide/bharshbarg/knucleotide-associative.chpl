@@ -79,7 +79,7 @@ proc write_count(data : [] uint(8), str : string) {
   writeln(freqs[d], "\t", decode(d, str.length));
 }
 
-proc string.toBytes() var {
+proc string.toBytes() ref {
    var b : [1..this.length] uint(8);
    memcpy(b, this, this.length);
    return b;

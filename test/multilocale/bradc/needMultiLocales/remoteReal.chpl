@@ -6,7 +6,7 @@ extern proc printf(x...);
 
 proc main() {
   s1 = 1.0;
-  on Locales(1) do begin ref(s1) {
+  on Locales(1) do begin with (ref s1) {
     const tmp = flag1;
     printf("%s\n", "s1 is: " + s1);
     done = true;
@@ -19,7 +19,7 @@ proc main() {
   var flag2: sync bool;
 
   s2 = 1.0;
-  on Locales(1) do begin ref(s2) {
+  on Locales(1) do begin with (ref s2) {
     const tmp = flag2;
     printf("%s\n", "s2 is: " + s2);
   }

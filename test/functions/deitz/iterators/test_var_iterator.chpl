@@ -1,6 +1,6 @@
 var x: 5*int;
 
-iter xs var {
+iter xs ref {
   for param i in 1..5 do
     yield x(i);
 }

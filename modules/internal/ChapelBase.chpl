@@ -628,8 +628,8 @@ module ChapelBase {
   //
   //  bug?  in setters, parameterize real argument over complex bit width
   //
-  inline proc ref chpl_anycomplex.re var return __primitive("complex_get_real", this);
-  inline proc ref chpl_anycomplex.im var return __primitive("complex_get_imag", this);
+  inline proc ref chpl_anycomplex.re ref return __primitive("complex_get_real", this);
+  inline proc ref chpl_anycomplex.im ref return __primitive("complex_get_imag", this);
   
   //
   // helper functions
@@ -692,7 +692,7 @@ module ChapelBase {
       __primitive("array_alloc", this, eltType, size);
       init_elts(this, size, eltType);
     }*/
-    inline proc this(i: integral) var {
+    inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
   }
@@ -1045,7 +1045,7 @@ module ChapelBase {
   pragma "ref" 
   pragma "donor fn"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(r: _ref) var return r;
+  inline proc chpl__autoCopy(r: _ref) ref return r;
   
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;

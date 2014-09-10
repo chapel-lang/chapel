@@ -282,11 +282,19 @@ uint32_t chpl_task_getNumIdleThreads(void);
 int32_t chpl_task_getenvNumThreadsPerLocale(void);
 
 //
-// This returns the minimum task call stack size, whether specified in
-// the environment or the default.  It is common to all of the tasking
-// implementations and so is implemented in runtime/src/chpl-tasks.c.
+// This returns any task call stack size specified in the environment.
+// If the environment doesn't specify a call stack size, it returns 0.
+// It is common to all tasking implementations and so is implemented
+// in runtime/src/chpl-tasks.c.
 //
-size_t chpl_task_getMinCallStackSize(void);
+size_t chpl_task_getEnvCallStackSize(void);
+
+//
+// This returns the default task call stack size.
+// It is common to all tasking implementations and so is implemented
+// in runtime/src/chpl-tasks.c.
+//
+size_t chpl_task_getDefaultCallStackSize(void);
 
 //
 // These are service functions provided to the runtime by the module

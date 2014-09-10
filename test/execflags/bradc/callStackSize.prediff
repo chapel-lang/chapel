@@ -4,8 +4,9 @@
 # stack size.  Some tasking layers actually use a higher value.  We
 # adjust for that here.
 #
-icss=$( sed 's/^CHPL_RT_CALL_STACK_SIZE=\([0-9]*\).*$/\1/' $1.execenv )
+icss=$( sed -n 's/^CHPL_RT_CALL_STACK_SIZE=\([0-9]*\).*$/\1/p' $1.execenv )
 
+logfile=$2
 case $( $CHPL_HOME/util/chplenv/chpl_tasks.py ) in
 fifo)
   # fifo rounds the call stack size to the next system page boundary
@@ -14,18 +15,19 @@ fifo)
 qthreads)
   # qthreads rounds the call stack size to the next system page boundary
   # iff it's using guard pages
-  # Note: This code won't work if guard pages are disabled at qthreads
-  #       config time and you run without setting QT[HREAD]_GUARD_PAGES,
-  #       because we assume here that the default is to have guard pages.
-  # Note: The QT_* and QTHREAD_* order in the concatenation is important;
-  #       it has to match the qthreads precedence for these or we do the
-  #       wrong thing in the unlikely event that both env vars are set,
-  #       but to conflicting values.
-  if [[ ,$QT_GUARD_PAGES$QTHREAD_GUARD_PAGES =~ ,[0nNfF] ]] ; then
-    ocss=$icss
-  else
+  # Note: There are a multitude of ways that guard pages can be enabled or
+  #       disabled. They can be disabled at qthreads build time, by compopts,
+  #       and by both qthread and chapel level env vars. Instead of checking
+  #       all of them and making sure we check precedence levels we just print
+  #       QT_INFO and look for "QTHREADS: Guard Pages Enabled" That text only
+  #       appears if qthreads was built with guard pages, and they are on at
+  #       execution time, no matter how they were set.
+  guardPages=`grep "QTHREADS: Guard Pages Enabled" $logfile`
+  if [ -n "$guardPages" ] ; then
     pagesize=$( getconf PAGESIZE )
     ocss=$(( ($icss + $pagesize - 1) & ~($pagesize - 1) ))
+  else
+    ocss=$icss
   fi;;
 *)
   ocss=$icss;;
@@ -36,5 +38,9 @@ if [[ $( $CHPL_HOME/util/chplenv/chpl_comm.py ) == none ]] ; then
 else
   good_in=$1.good.in
 fi
+
+# remove the QT_INFO output
+grep -v "QTHREADS:" $logfile > $logfile.tmp
+mv $logfile.tmp $logfile
 
 sed "s/$icss/$ocss/" < $good_in > $1.good

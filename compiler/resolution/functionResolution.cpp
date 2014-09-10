@@ -302,7 +302,6 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  Vec<FnSymbol*>& visibleFns,
                  CallInfo& info);
 
-static void resolveCall(CallExpr* call);
 static void resolveNormalCall(CallExpr* call);
 static void lvalueCheck(CallExpr* call);
 static void resolveTupleAndExpand(CallExpr* call);
@@ -343,7 +342,6 @@ replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret);
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
 static void buildValueFunction(FnSymbol* fn);
-static void resolveFns(FnSymbol* fn);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
 static bool signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -718,7 +716,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->irecord = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
   rts->addFlag(FLAG_ITERATOR_RECORD);
-  if (fn->retTag == RET_VAR)
+  if (fn->retTag == RET_REF)
     rts->addFlag(FLAG_REF_ITERATOR_CLASS);
   fn->defPoint->insertBefore(new DefExpr(rts));
 
@@ -851,7 +849,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
   resolveBlock(fn->retExprType);
   fn->retType = fn->retExprType->body.tail->typeInfo();
   if (fn->retType != dtUnknown) {
-    if (fn->retTag == RET_VAR) {
+    if (fn->retTag == RET_REF) {
       makeRefType(fn->retType);
       fn->retType = fn->retType->refType;
     }
@@ -2993,7 +2991,7 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
 }
 
 
-static void
+void
 resolveCall(CallExpr* call)
 {
   if (call->primitive)
@@ -3018,7 +3016,7 @@ resolveCall(CallExpr* call)
 }
 
 
-static void resolveNormalCall(CallExpr* call) {
+void resolveNormalCall(CallExpr* call) {
     
   resolveDefaultGenericType(call);
     
@@ -3129,7 +3127,7 @@ static void resolveNormalCall(CallExpr* call) {
   } else {
     best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
     reorderActuals(best->fn, &best->alignedFormals, &info);
-    best->fn = coercionWrap(best->fn, &info);
+    coerceActuals(best->fn, &info);
     best->fn = promotionWrap(best->fn, &info);
   }
 
@@ -3465,6 +3463,21 @@ static void resolveMove(CallExpr* call) {
       }
       USR_FATAL(userCall(call), 
                 "illegal use of function that does not return a value");
+    }
+  }
+
+  // If this assigns into a loop index variable from a non-var iterator,
+  // mark the variable constant.
+  if (SymExpr* rhsSE = toSymExpr(rhs)) {
+    if (rhsSE->var->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+      // If RHS is this special variable...
+      INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
+      if (!isReferenceType(rhsSE->var->type)) {
+        // ... and not of a reference type, mark LHS constant.
+        // todo: differentiate based on ref-ness, not _ref type
+        // todo: not all const if it is zippered and one of iterators is var
+        lhs->addFlag(FLAG_CONST);
+      }
     }
   }
 
@@ -3951,6 +3964,7 @@ static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *
   parent_super->addFlag(FLAG_SUPER_CLASS);
   parent->fields.insertAtHead(new DefExpr(parent_super));
   build_constructors(parent);
+  buildDefaultDestructor(parent);
 
   return parent;
 }
@@ -4172,6 +4186,7 @@ createFunctionAsValue(CallExpr *call) {
   ct->fields.insertAtHead(new DefExpr(super));
 
   build_constructors(ct);
+  buildDefaultDestructor(ct);
 
   FnSymbol *thisMethod = new FnSymbol("this");
   thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
@@ -4440,6 +4455,80 @@ static void flattenAndResolveArgs(CallExpr* call)
 
 
 // Returns NULL if no substitution was made.  Otherwise, returns the expression
+// that replaced 'call'.
+static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar)
+{
+  if (call->numActuals() != 3)
+    USR_FATAL(call, "illegal tuple indexing expression");
+  Type* indexType = call->get(3)->getValType();
+  if (!is_int_type(indexType) && !is_uint_type(indexType))
+    USR_FATAL(call, "tuple indexing expression is not of integral type");
+
+  AggregateType* baseType = toAggregateType(baseVar->getValType());
+  int64_t index;
+  uint64_t uindex;
+  char field[8];
+
+  if (get_int(call->get(3), &index)) {
+    sprintf(field, "x%" PRId64, index);
+    if (index <= 0 || index >= baseType->fields.length)
+      USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
+  } else if (get_uint(call->get(3), &uindex)) {
+    sprintf(field, "x%" PRIu64, uindex);
+    if (uindex <= 0 || uindex >= (unsigned long)baseType->fields.length)
+      USR_FATAL(call, "tuple index out-of-bounds error (%lu)", uindex);
+  } else {
+    return NULL; // not a tuple indexing expression
+  }
+
+  Type* fieldType = baseType->getField(field)->type;
+
+  // Decomposing into a loop index variable from a non-var iterator?
+  // In some cases, extract the value and mark constant.
+  // See e.g. test/statements/vass/index-variable-const-errors.chpl
+  bool intoIndexVarByVal = false;
+
+  // If decomposing this special variable
+  // or another tuple that we just decomposed.
+  if (baseVar->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+    // Find the destination.
+    CallExpr* move = toCallExpr(call->parentExpr);
+    INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+    SymExpr* destSE = toSymExpr(move->get(1));
+    INT_ASSERT(destSE);
+
+    if (!isReferenceType(baseVar->type) &&
+        !isReferenceType(fieldType)) {
+      if (destSE->var->hasFlag(FLAG_INDEX_VAR)) {
+        // The destination is constant only if both the tuple
+        // and the current component are non-references.
+        destSE->var->addFlag(FLAG_CONST);
+      } else {
+        INT_ASSERT(destSE->var->hasFlag(FLAG_TEMP));
+        // We are detupling into another tuple,
+        // which will be detupled later.
+        destSE->var->addFlag(FLAG_INDEX_OF_INTEREST);
+      }
+    }
+
+    if (!isReferenceType(baseVar->type))
+      // If either a non-var iterator or zippered,
+      // extract with PRIM_GET_MEMBER_VALUE.
+      intoIndexVarByVal = true;
+  }
+
+  Expr* result;
+  if (isReferenceType(fieldType) || intoIndexVarByVal)
+    result = new CallExpr(PRIM_GET_MEMBER_VALUE, baseVar, new_StringSymbol(field));
+  else
+    result = new CallExpr(PRIM_GET_MEMBER, baseVar, new_StringSymbol(field));
+
+  call->replace(result);
+  return result;
+}
+
+
+// Returns NULL if no substitution was made.  Otherwise, returns the expression
 // that replaced the PRIM_INIT (or PRIM_NO_INIT) expression.
 // Here, "replaced" means that the PRIM_INIT (or PRIM_NO_INIT) primitive is no
 // longer in the tree.
@@ -4697,36 +4786,9 @@ preFold(Expr* expr) {
         // resolve tuple indexing by an integral parameter
         //
         Type* t = base->var->getValType();
-        if (t->symbol->hasFlag(FLAG_TUPLE)) {
-          if (call->numActuals() != 3)
-            USR_FATAL(call, "illegal tuple indexing expression");
-          Type* indexType = call->get(3)->getValType();
-          if (!is_int_type(indexType) && !is_uint_type(indexType))
-            USR_FATAL(call, "tuple indexing expression is not of integral type");
-          int64_t index;
-          uint64_t uindex;
-          if (get_int(call->get(3), &index)) {
-            char field[8];
-            sprintf(field, "x%" PRId64, index);
-            if (index <= 0 || index >= toAggregateType(t)->fields.length)
-              USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
-            if (toAggregateType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
-              result = new CallExpr(PRIM_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));
-            else
-              result = new CallExpr(PRIM_GET_MEMBER, base->var, new_StringSymbol(field));
-            call->replace(result);
-          } else if (get_uint(call->get(3), &uindex)) {
-            char field[8];
-            sprintf(field, "x%" PRIu64, uindex);
-            if (uindex <= 0 || uindex >= (unsigned long)toAggregateType(t)->fields.length)
-              USR_FATAL(call, "tuple index out-of-bounds error (%lu)", uindex);
-            if (toAggregateType(t)->getField(field)->type->symbol->hasFlag(FLAG_REF))
-              result = new CallExpr(PRIM_GET_MEMBER_VALUE, base->var, new_StringSymbol(field));
-            else
-              result = new CallExpr(PRIM_GET_MEMBER, base->var, new_StringSymbol(field));
-            call->replace(result);
-          }
-        }
+        if (t->symbol->hasFlag(FLAG_TUPLE))
+          if (Expr* expr = resolveTupleIndexing(call, base->var))
+            result = expr;  // call was replaced by expr
       }
     }
     else if (call->isPrimitive(PRIM_INIT))
@@ -4987,9 +5049,10 @@ preFold(Expr* expr) {
               if (rhs->var->hasFlag(FLAG_EXPR_TEMP) || rhs->var->isConstant() || rhs->var->isParameter()) {
                 if (lhs && lhs->var->hasFlag(FLAG_REF_VAR)) {
                   if (rhs->var->isImmediate()) {
-                    USR_FATAL_CONT(call, "Can not set a non-const reference to a literal value.");
+                    USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
                   } else {
-                    USR_FATAL_CONT(call, "Can not set a non-const reference to a const variable.");
+                    // We should not fall into this case... should be handled in normalize
+                    INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
                   }
                 } else {
                   // This probably indicates that an invalid 'addr of' primitive
@@ -6167,7 +6230,7 @@ static void resolveReturnType(FnSymbol* fn)
 }
 
 
-static void
+void
 resolveFns(FnSymbol* fn) {
   if (fn->isResolved())
     return;
@@ -6183,7 +6246,7 @@ resolveFns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
     return;
 
-  if (fn->retTag == RET_VAR) {
+  if (fn->retTag == RET_REF) {
     buildValueFunction(fn);
   }
 
@@ -6271,12 +6334,20 @@ resolveFns(FnSymbol* fn) {
           !ct->symbol->hasFlag(FLAG_REF)) {
         VarSymbol* tmp = newTemp(ct);
         CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
-        fn->insertAtHead(new CallExpr(call));
+        fn->insertAtHead(call);
         fn->insertAtHead(new DefExpr(tmp));
         resolveCall(call);
         
         resolveFns(call->isResolved());
         ct->destructor = call->isResolved();
+        // Ensure that resolveFns() above did not insert anything
+        // prior to 'call' and 'tmp->defPoint'. If it did, we'd need
+        // to remove those things too. For that, we could march+remove
+        // from fn->body->body.head until call->next, exclusively,
+        // or put 'call' and 'tmp->defPoint' in their own BlockStmt
+        // and remove that one here.
+        INT_ASSERT(call->prev == tmp->defPoint);
+        INT_ASSERT(tmp->defPoint == fn->body->body.head);
         call->remove();
         tmp->defPoint->remove();
       }
@@ -6918,10 +6989,15 @@ static void insertRuntimeTypeTemps() {
 
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if ((isRecord(ts->type) ||
-         getSyncFlags(ts).any()) &&
-        !ts->hasFlag(FLAG_GENERIC) &&
-        !ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+    if (!ts->defPoint->parentSymbol)
+      continue; // Type is not in tree
+    if (ts->hasFlag(FLAG_GENERIC))
+      continue; // Consider only concrete types.
+    if (ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+      continue; // Skip the "dmapped" pseudo-type.
+
+    if (isRecord(ts->type) || getSyncFlags(ts).any())
+    {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }
@@ -7509,6 +7585,10 @@ static void removeParamArgs()
         // Remove the argument from the call site.
         forv_Vec(CallExpr, call, *fn->calledBy)
         {
+          // Don't bother with calls that are not in the tree.
+          if (! call->parentSymbol)
+            continue;
+
           // Performance note: AList::get(int) also performs a linear search.
           for_formals_actuals(cf, ca, call)
           {

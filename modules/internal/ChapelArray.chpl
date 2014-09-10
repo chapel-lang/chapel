@@ -874,6 +874,46 @@ module ChapelArray {
       return member(i);
     }
 
+    /*
+       Returns true if this domain is a subset of 'super'
+    */
+    proc isSubset(super : domain) {
+      if !isAssociativeDom(this) {
+        if isRectangularDom(this) then
+          compilerError("isSubset not supported on rectangular domains");
+        else if isOpaqueDom(this) then
+          compilerError("isSubset not supported on opaque domains");
+        else if isSparseDom(this) then
+          compilerError("isSubset not supported on sparse domains");
+        else
+          compilerError("isSubset not supported on this domain type");
+      }
+      if super.type != this.type then
+        compilerError("isSuper called with different associative domain types");
+
+      return && reduce forall i in this do super.member(i);
+    }
+
+    /*
+       Returns true if this domain is a superset of 'sub'
+    */
+    proc isSuper(sub : domain) {
+      if !isAssociativeDom(this) {
+        if isRectangularDom(this) then
+          compilerError("isSuper not supported on rectangular domains");
+        else if isOpaqueDom(this) then
+          compilerError("isSuper not supported on opaque domains");
+        else if isSparseDom(this) then
+          compilerError("isSuper not supported on sparse domains");
+        else
+          compilerError("isSuper not supported on the domain type ", this.type);
+      }
+      if sub.type != this.type then
+        compilerError("isSuper called with different associative domain types");
+
+      return && reduce forall i in sub do this.member(i);
+    }
+
     // 1/5/10: do we want to support order() and position()?
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
   
@@ -1152,7 +1192,7 @@ module ChapelArray {
   
   proc -(d1: domain, d2: domain) where
                                    (d1.type == d2.type) &&
-                                   (isIrregularDom(d1) && isIrregularDom(d2)) {
+                                   (isSparseDom(d1) || isOpaqueDom(d1)) {
     var d3: d1.type;
     // These should eventually become forall loops
     for e in d1 do d3.add(e);
@@ -1280,27 +1320,28 @@ module ChapelArray {
     }
   
     proc eltType type return _value.eltType;
+    proc idxType type return _value.idxType;
     proc _dom return _getDomain(_value.dom);
     proc rank param return this.domain.rank;
   
-    inline proc this(i: rank*_value.dom.idxType) var {
+    inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
       else
         return _value.dsiAccess(i(1));
     }
   
-    inline proc this(i: _value.dom.idxType ...rank) var
+    inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
   
-    inline proc localAccess(i: rank*_value.dom.idxType) var {
+    inline proc localAccess(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
       else
         return _value.dsiLocalAccess(i(1));
     }
   
-    inline proc localAccess(i: _value.dom.idxType ...rank) var
+    inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
     //
     // requires dense domain implementation that returns a tuple of
@@ -1360,7 +1401,7 @@ module ChapelArray {
         if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
-  
+
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
     proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
@@ -1395,7 +1436,7 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
   
-    inline proc these() var {
+    inline proc these() ref {
       return _value.these();
     }
   
@@ -1460,7 +1501,7 @@ module ChapelArray {
   
     // sparse array interface
   
-    proc IRV var {
+    proc IRV ref {
       return _value.IRV;
     }
   
@@ -1509,6 +1550,231 @@ module ChapelArray {
         for d in _value.dsiGetLocalSubdomains() do yield d;
     }
 
+    proc chpl__isDense1DArray() param {
+      return isRectangularArr(this) &&
+             this.rank == 1 &&
+             !this._value.stridable;
+    }
+
+    inline proc chpl__assertSingleArrayDomain(fnName: string) {
+      if this.domain._value._arrs.length != 1 then
+        halt("cannot call " + fnName +
+             " on an array defined over a domain with multiple arrays");
+    }
+
+    /* The following methods are intended to provide a list or vector style
+       interface to 1D unstridable rectangular arrays.  They are only intended
+       for use on arrays that have a 1:1 correspondence with their domains.
+       All methods here that modify the array's domain assert that this 1:1
+       property holds.
+
+       These are currently not parallel safe, and cannot safely be called by
+       multiple tasks simultaneously on the same array.
+
+       The current implementation reallocates the array every time the domain
+       is modified.  This could be improved with a size doubling/halving
+       strategy.
+     */
+
+    /* Return true if the array has no elements */
+    proc isEmpty(): bool {
+      return this.numElements == 0;
+    }
+
+    /* Return the first value in the array */
+    proc head(): this._value.eltType {
+      return this[this.domain.low];
+    }
+
+    /* Return the last value in the array */
+    proc tail(): this._value.eltType {
+      return this[this.domain.high];
+    }
+
+    /* Add element 'val' to the back of the array, extending the array's
+       domain by one. If the domain was {1..5} it will become {1..6}.
+       val: the value to add to the back of the array
+     */
+    proc push_back(val: this.eltType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("push_back");
+      const lo = this.domain.low,
+            hi = this.domain.high+1;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+      this[hi] = val;
+    }
+
+    /* Remove the last element from the array, reducing the size of the
+       domain by one. If the domain was {1..5} it will become {1..4}
+     */
+    proc pop_back() where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("pop_back");
+      const lo = this.domain.low,
+            hi = this.domain.high-1;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Add element 'val' to the front of the array, extending the array's
+       domain by one. If the domain was {1..5} it will become {0..5}.
+       val: the value to add to the front of the array
+     */
+    proc push_front(val: this.eltType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("push_front");
+      const lo = this.domain.low-1,
+            hi = this.domain.high;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+      this[lo] = val;
+    }
+
+    /* Remove the first element of the array reducing the size of the
+       domain by one.  If the domain was {1..5} it will become {2..5}.
+     */
+    proc pop_front() where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("pop_front");
+      const lo = this.domain.low+1,
+            hi = this.domain.high;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Insert element 'val' into the array at index 'pos'. Shift the array
+       elements above 'pos' up one index. If the domain was {1..5} it will
+       become {1..6}.
+       val: the value to add to the array
+       pos: the index at which the value should be added
+     */
+    proc insert(pos: this.idxType, val: this.eltType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("insert");
+      const lo = this.domain.low,
+            hi = this.domain.high+1;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+      for i in pos..hi-1 by -1 do this[i+1] = this[i];
+      this[pos] = val;
+    }
+
+    /* Remove the element at index 'pos' from the array and shift the array
+       elements above 'pos' down one index. If the domain was {1..5} it will
+       become {1..4}.
+       pos: the index at which the value should be removed
+     */
+    proc remove(pos: this.idxType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("remove");
+      const lo = this.domain.low,
+            hi = this.domain.high-1;
+      const newDom = {lo..hi};
+      for i in pos..hi {
+        this[i] = this[i+1];
+      }
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Remove 'count' elements from the array starting at index 'pos' and
+       shift elements above 'pos+count' down by 'count' indices.
+       pos: The index to start removing from
+       count: The number of array elements to remove
+     */
+    proc remove(pos: this.idxType, count: this.idxType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("remove count");
+      const lo = this.domain.low,
+            hi = this.domain.high-count;
+      if pos > hi then
+        halt("index ", pos+count, " is outside the supported range");
+      const newDom = {lo..hi};
+      for i in pos..hi {
+        this[i] = this[i+count];
+      }
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Remove the elements at the indices in the 'pos' range and shift the
+       array elements down by 'pos.size' elements. If the domain was {1..5}
+       and this is called with 2..3 as an argument, the new domain would be
+       {1..3} and the array would contain the elements formerly at positions
+       1, 4, 5.
+       pos: a dense range of indices to remove
+     */
+    proc remove(pos: range(this.idxType, stridable=false)) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("remove range");
+      remove(pos.low, pos.size);
+    }
+
+    /* Reverse the order of the values in the array. */
+    proc reverse() where chpl__isDense1DArray() {
+      const lo = this.domain.low,
+            mid = this.domain.size / 2,
+            hi = this.domain.high;
+      for i in 0..#mid {
+        this[lo + i] <=> this[hi - i];
+      }
+    }
+
+    /* Remove all elements from the array leaving the domain empty. If the
+       domain was {5..10} it will become {5..4}.
+     */
+    proc clear() where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("clear");
+      const lo = this.domain.low,
+            hi = this.domain.low-1;
+      assert(hi < lo, "overflow occured subtracting 1 from low bound in clear");
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Return a tuple containing true and the index of the first instance of
+       'val' in the array, or if 'val' is not found, a tuple containing false
+       and an unspecified value is returned.
+       val: the value to locate
+     */
+    proc find(val: this.eltType): (bool, this.idxType) {
+      for i in this.domain {
+        if this[i] == val then return (true, i);
+      }
+      return (false, 0);
+    }
+
+    /* Return the number of times 'val' occurs in the array.
+       val: the value to count
+     */
+    proc count(val: this.eltType): int {
+      var total: int = 0;
+      for i in this do if i == val then total += 1;
+      return total;
+    }
   }  // record _array
 
 
@@ -1544,6 +1810,162 @@ module ChapelArray {
   proc isArrayValue(e)     param  return false;
 
   
+  /*
+     The following functions define set operations on associative arrays.
+
+     The supported functions (and their op= variations) are:
+       + or |    Union
+       &         Intersection
+       -         Difference
+       ^         Symmetric Difference
+
+     Consider the following code where 'a' and 'b' are associative arrays:
+
+     var c = a op b;
+
+     The result 'c' is a new associative array backed by a new associative
+     domain. The domains of 'a' and 'b' are not modified by 'op'.
+
+     Consider the following code where 'a' and 'b' are associative arrays:
+
+     a op= b;
+
+     'a' must not share its domain with another array, otherwise the program
+     will halt with an error message.
+     
+     For the += and |= operators, the value from 'b' will overwrite the
+     existing value when indices overlap.
+  */
+
+  // promototion for associative array addition doesn't really make sense. instead,
+  // we really just want a union
+  proc +(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    return a | b;
+  }
+
+  proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.chpl__assertSingleArrayDomain("+=");
+    a |= b;
+  }
+
+  proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a.eltType;
+    serial !newDom._value.parSafe {
+      forall (k,v) in zip(a.domain, a) do ret[k] = v;
+      ret |= b;
+    }
+    return ret;
+  }
+
+  proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.chpl__assertSingleArrayDomain("|=");
+    serial !a.domain._value.parSafe do forall (k,v) in zip(b.domain, b) do a[k] = v;
+  }
+
+  proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a.eltType;
+
+    serial !newDom._value.parSafe do
+      forall k in a.domain do
+        if b.domain.member(k) then ret[k] = a[k];
+    return ret;
+  }
+
+  proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.chpl__assertSingleArrayDomain("&=");
+    serial !a.domain._value.parSafe do
+      forall k in a.domain do
+        if !b.domain.member(k) then a.domain.remove(k);
+  }
+
+  proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a.eltType;
+
+    serial !newDom._value.parSafe do
+      forall k in a.domain do
+        if !b.domain.member(k) then ret[k] = a[k];
+
+    return ret;
+  }
+
+  proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.chpl__assertSingleArrayDomain("-=");
+    serial !a.domain._value.parSafe do
+      forall k in a.domain do
+        if b.domain.member(k) then a.domain.remove(k);
+  }
+
+
+  proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    var newDom : a.domain.type;
+    var ret : [newDom] a.eltType;
+
+    serial !newDom._value.parSafe {
+      forall k in a.domain do
+        if !b.domain.member(k) then ret[k] = a[k];
+      forall k in b.domain do
+        if !a.domain.member(k) then ret[k] = b[k];
+    }
+
+    return ret;
+  }
+
+  proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
+    a.chpl__assertSingleArrayDomain("^=");
+    serial !a.domain._value.parSafe do
+      forall k in b.domain do
+        if a.domain.member(k) then a.domain.remove(k);
+        else a[k] = b[k];
+  }
+
+  /*
+     The following functions define set operations on associative domains.
+
+     The supported functions are:
+       + or |    Union
+       &         Intersection
+       -         Difference
+       ^         Symmetric Difference
+
+     For each operator, a new domain is returned.
+  */
+
+  proc -(a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var newDom : a.type;
+    serial !newDom._value.parSafe do
+      forall e in a do
+        if !b.member(e) then newDom.add(e);
+    return newDom;
+  }
+  
+  proc |(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    return a + b;
+  }
+
+  proc &(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var newDom : a.type;
+
+    serial !newDom._value.parSafe do 
+      forall k in a do
+        if b.member(k) then newDom += k;
+    return newDom;
+  }
+
+  proc ^(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    var newDom : a.type;
+
+    serial !newDom._value.parSafe {
+      forall k in a do
+        if !b.member(k) then newDom.add(k);
+      forall k in b do
+        if !a.member(k) then newDom.add(k);
+    }
+
+    return newDom;
+  }
   //
   // Helper functions
   //
@@ -1687,7 +2109,7 @@ module ChapelArray {
   proc =(ref d: domain, r: range(?)) {
     d = {r};
   }
-  
+
   //
   // Return true if t is a tuple of ranges that is legal to assign to
   // rectangular domain d

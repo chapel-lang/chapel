@@ -256,6 +256,8 @@ def get_module_lcd_arch(platform_val, arch):
     else:
         return 'none'
 
+# get_lcd has no affect on non cray systems and is intended to be used to get
+# the correct runtime and gen directory.
 @memoize
 def get(location, map_to_compiler=False, get_lcd=False):
 
@@ -298,11 +300,6 @@ def get(location, map_to_compiler=False, get_lcd=False):
         return 'none'
     elif 'ibm' in compiler_val:
         return 'none'
-
-    if get_lcd:
-        stderr.write("Warning: Getting the lowest common denominator "
-                     "architecture is only supported for the Chapel module on "
-                     "Cray platforms.\n")
 
     # Only try to do any auto-detection or verification when:
     # comm == none  -- The inverse means that we are probably cross-compiling.

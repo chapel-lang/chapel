@@ -16,7 +16,11 @@ HWLOC_DIR = $(HWLOC_ABS_DIR)
 CHPL_HWLOC_CFG_OPTIONS += --enable-static --disable-shared --disable-libxml2 --disable-pci
 
 ifneq ($(CHPL_MAKE_PLATFORM), darwin)
+ifeq ($(CHPL_MAKE_TARGET_COMPILER), pgi)
+  CHPL_HWLOC_CFG_OPTIONS += LDFLAGS=-Bstatic
+else
   CHPL_HWLOC_CFG_OPTIONS += LDFLAGS=-static
+endif
 endif
 
 CHPL_HWLOC_CFG_OPTIONS += $(CHPL_HWLOC_MORE_CFG_OPTIONS)

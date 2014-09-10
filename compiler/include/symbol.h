@@ -43,7 +43,7 @@ class SymExpr;
 
 enum RetTag {
   RET_VALUE,
-  RET_VAR,
+  RET_REF,
   RET_PARAM,
   RET_TYPE
 };

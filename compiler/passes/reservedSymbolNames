@@ -44,6 +44,8 @@
   acos
   asin
   atan
+  chdir
+  cwd
   floor
   sqrt
   conjg
@@ -55,9 +57,12 @@
   fread
   fsync
   main
+  mkdir
   open
   pow
   printf
+  remove
+  rename
   scanf
   sync
   quad

@@ -328,7 +328,7 @@ module SSCA2_kernels
 
         const barrier = tpv.barrier;
 
-        coforall loc in Locales ref(remaining) do on loc {
+        coforall loc in Locales with (ref remaining) do on loc {
           Active_Level[here.id].Members.clear();
           Active_Level[here.id].next.Members.clear();
           if vertex_domain.dist.idxToLocale(s) == here {

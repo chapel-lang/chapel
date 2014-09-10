@@ -6,7 +6,7 @@ The reason this happens is because a function
 
 is rewritten by the compiler into
 
-  proc a() param :T { var _ret: T; ...; _ret = r; goto _last; ...;
+  proc a() param :T { ref _ret: T; ...; _ret = r; goto _last; ...;
                       last: return _ret; }
 
 'var _ret: T;' initializes _ret to the default value of T, as it should.

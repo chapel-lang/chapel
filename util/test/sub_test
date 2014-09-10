@@ -231,6 +231,17 @@ def DiffFiles(f1, f2):
         sys.stdout.write(myoutput)
     return p.returncode
 
+# diff output vs. .bad file, filtering line numbers out of error messages that arise
+# in module files.
+def DiffBadFiles(f1, f2):
+    sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
+    p = subprocess.Popen([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
+    if p.returncode != 0:
+        sys.stdout.write(myoutput)
+    return p.returncode
+
 # kill process
 def KillProc(p, timeout):
     k = subprocess.Popen(['kill',str(p.pid)])
@@ -500,6 +511,13 @@ if os.getenv('CHPL_TEST_VGRND_COMP')=='on':
     globalTimeout=1000
 else:
     globalTimeout=300
+
+# get a threshold for which to report long running tests
+if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
+    execTimeWarnLimit = int(os.getenv('CHPL_TEST_EXEC_TIME_WARN_LIMIT', '0'))
+else:
+    execTimeWarnLimit = 0
+
 # directory level timeout
 if os.access('./TIMEOUT',os.R_OK):
     directoryTimeout = ReadIntegerValue('./TIMEOUT', localdir)
@@ -1148,7 +1166,7 @@ for testname in testsrc:
             if (result != 0 and futuretest != ''):
                 badfile=execname+'.bad'
                 if os.access(badfile, os.R_OK):
-                    badresult = DiffFiles(badfile, complog)
+                    badresult = DiffBadFiles(badfile, complog)
                     if badresult==0:
                         os.unlink(complog);
                         sys.stdout.write('[Clean match against .bad file ')
@@ -1368,6 +1386,7 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
                 sys.stdout.flush()
 
+                execstart = time.time()
                 if useLauncherTimeout:
                     if redirectin == None:
                         my_stdin = None
@@ -1444,6 +1463,11 @@ for testname in testsrc:
                         KillProc(p, killtimeout)
 
                     status = p.returncode
+
+                execend = time.time()
+                if execTimeWarnLimit and execend - execstart > execTimeWarnLimit:
+                    sys.stdout.write('[Warning: %s/%s took over %.0f seconds to '
+                        'execute]\n' %(localdir, execname, execTimeWarnLimit))
 
                 if catfiles:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%

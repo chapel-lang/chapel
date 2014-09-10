@@ -67,6 +67,13 @@ if ($batch) {
     open MODFILE, ">$modfile" or die "could not open the modified test output file $modfile: $!";
     open BATCHOUTFILE, $batchOutfile or die "could not open the test output file $batchOutfile: $!";
 
+    # Copy any preexisting contents (catfiles, compiler output, etc) of
+    # OUTFILE to MODFILE.
+    while (<OUTFILE>) {
+	my $line = $_;
+	print MODFILE $line;
+    }
+
     # copy the output to the modified file for each line that doesn't start with
     # slurm unless the job failed then print the slurm errors 
     while (<BATCHOUTFILE>) {

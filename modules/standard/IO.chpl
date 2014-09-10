@@ -95,6 +95,7 @@ enum iostringstyle {
   len4b_data = -4,
   len8b_data = -8,
   lenVb_data = -10,
+  data_toeof = -0xff00,
   data_null = -0x0100,
 }
 proc stringStyleTerminated(terminator:uint(8)) {
@@ -193,6 +194,7 @@ extern const QIO_STRING_FORMAT_BASIC:uint(8);
 extern const QIO_STRING_FORMAT_CHPL:uint(8);
 extern const QIO_STRING_FORMAT_JSON:uint(8);
 extern const QIO_STRING_FORMAT_TOEND:uint(8);
+extern const QIO_STRING_FORMAT_TOEOF:uint(8);
 
 extern record iostyle { // aka qio_style_t
   var binary:uint(8) = 0;
@@ -280,8 +282,11 @@ extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
+extern proc qio_chdir(name: c_string):syserr;
+extern proc qio_cwd(ref working_dir:c_string):syserr;
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 extern proc qio_file_remove(name: c_string):syserr;
+extern proc qio_mkdir(name: c_string, mode: int, parents: bool):syserr;
 
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
@@ -596,6 +601,45 @@ proc file._style:iostyle {
   return ret;
 }
 
+/* Change the current working directory to the specified name. Returns any
+   errors that occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred
+   name: a string indicating a new directory
+*/
+proc chdir(out err: syserr, name: string) {
+  err = qio_chdir(name.c_str());
+}
+
+/* Change the current working directory to the specified name. Generates an
+   error if one occurred.
+   name: a string indicating a new directory
+*/
+proc chdir(name: string) {
+  var err: syserr = ENOERR;
+  chdir(err, name);
+  if err then ioerror(err, "in chdir", name);
+}
+
+/* Returns the current working directory.
+   err: a syserr used to indicate if an error occurred
+*/
+proc cwd(out err: syserr): string {
+  var tmp:c_string, ret:string;
+  err = qio_cwd(tmp);
+  if err then return "";
+  ret = toString(tmp);
+  chpl_free_c_string(tmp);
+  return ret;
+}
+
+/* Returns the current working directory. Generates an error if one occurred. */
+proc cwd(): string {
+  var err: syserr = ENOERR;
+  var ret = cwd(err);
+  if err then ioerror(err, "in cwd");
+  return ret;
+}
+
 /* Close a file.
    Alternately, file will be closed when it is no longer referred to */
 proc file.close(out error:syserr) {
@@ -672,6 +716,66 @@ proc file.length():int(64) {
   }
   if err then ioerror(err, "in file.length()");
   return len;
+}
+
+/* These are constant values of the form S_I[R | W | X][USR | GRP | OTH],
+   S_IRWX[U | G | O], S_ISUID, S_ISGID, or S_ISVTX, where R corresponds to
+   readable, W corresponds to writable, X corresponds to executable, USR and
+   U correspond to user, GRP and G correspond to group, OTH and O correspond
+   to other, directly tied to the C idea of these constants.  They are intended
+   for use with functions that alter the permissions of files or directories.
+*/
+extern var S_IRUSR: int;
+extern var S_IWUSR: int;
+extern var S_IXUSR: int;
+extern var S_IRWXU: int;
+
+extern var S_IRGRP: int;
+extern var S_IWGRP: int;
+extern var S_IXGRP: int;
+extern var S_IRWXG: int;
+
+extern var S_IROTH: int;
+extern var S_IWOTH: int;
+extern var S_IXOTH: int;
+extern var S_IRWXO: int;
+
+extern var S_ISUID: int;
+extern var S_ISGID: int;
+extern var S_ISVTX: int;
+
+/* Attempt to create a directory with the given path.  If parents is true,
+   will attempt to create any directory in the path that did not previously
+   exist.  Returns any errors that occurred via an out parameter
+   err: a syserr used to indicate if an error occurred
+   name: the name of the directory to be created, fully specified.
+   mode: an integer representing the permissions desired for the file
+         in question.  See description of the provided constants for potential
+         values.
+   parents: a boolean indicating if parent directories should be created.
+            If set to false, any nonexistent parent will cause an error to
+            occur.
+*/
+proc mkdir(out err: syserr, name: string, mode: int = 511,
+           parents: bool=false) {
+  err = qio_mkdir(name.c_str(), mode, parents);
+}
+
+/* Attempt to create a directory with the given path.  If parents is true,
+   will attempt to create any directory in the path that did not previously
+   exist.  Generates an error if one occurred.
+   name: the name of the directory to be created, fully specified.
+   mode: an integer representing the permissions desired for the file
+         in question.  See description of the provided constants for potential
+         values.
+   parents: a boolean indicating if parent directories should be created.
+            If set to false, any nonexistent parent will cause an error to
+            occur.
+*/
+proc mkdir(name: string, mode: int = 511, parents: bool=false) {
+  var err: syserr = ENOERR;
+  mkdir(err, name, mode, parents);
+  if err then ioerror(err, "in mkdir", name);
 }
 
 // these strings are here (vs in _modestring)
@@ -833,7 +937,7 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
    error: a syserr used to indicate if an error occurred during renaming.
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
-proc renameFile(out error: syserr, oldname, newname: string) {
+proc rename(out error: syserr, oldname, newname: string) {
   error = qio_file_rename(oldname.c_str(), newname.c_str());
 }
 
@@ -841,9 +945,9 @@ proc renameFile(out error: syserr, oldname, newname: string) {
    if one occurred.  The file is not opened during this operation.
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
-proc renameFile(oldname, newname: string) {
+proc rename(oldname, newname: string) {
   var err:syserr = ENOERR;
-  renameFile(err, oldname, newname);
+  rename(err, oldname, newname);
   if err then ioerror(err, "in rename", oldname);
 }
 
@@ -851,16 +955,16 @@ proc renameFile(oldname, newname: string) {
    if one occurred via an out parameter.
    err: a syserr used to indicate if an error occurred during removal
    name: the name of the file/directory to remove */
-proc removeFile(out err: syserr, name: string) {
+proc remove(out err: syserr, name: string) {
   err = qio_file_remove(name.c_str());
 }
 
 /* Removes the file or directory specified by name, generating an error
    if one occurred.
    name: the name of the file/directory to remove */
-proc removeFile(name: string) {
+proc remove(name: string) {
   var err:syserr = ENOERR;
-  removeFile(err, name);
+  remove(err, name);
   if err then ioerror(err, "in remove", name);
 }
 
@@ -1693,60 +1797,69 @@ proc channel.readline(ref arg:string):bool {
 
 // channel.readstring: read a given amount of bytes from a channel
 // arg: str_out  -> The string to be read into
-// arg: len      -> The number of bytes to read from this channel. If nothing is
-//                  given, we read the entire channel starting at the current offset
-//                  in the channel.
+// arg: len      -> Read up to len bytes from the channel, up until EOF
+//                  (or some kind of I/O error). If the default value of -1
+//                  is provided, read until EOF starting from the channel's
+//                  current offset.
+// arg: out error-> On completion, the error code (possibly EOF)
 // return: true  -> We have not encountered EOF
-//         false -> We have encountered EOF
-proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
-  var err:syserr = ENOERR;
-
+//         false -> We have encountered EOF or another error
+proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):bool {
+  error = ENOERR;
   on this.home {
     var ret:c_string;
     var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
     var actlen:int(64);
+    var uselen:ssize_t;
+
+    if len == -1 then uselen = max(ssize_t);
+    else {
+      uselen = len:ssize_t;
+      if ssize_t != int(64) then assert( len == uselen );
+    }
 
     this.lock();
-    actlen = qio_channel_end_offset_unlocked(this._channel_internal) - qio_channel_offset_unlocked(this._channel_internal);
+
+    var binary:uint(8) = qio_channel_binary(_channel_internal);
+    var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
+
+    if binary { 
+      error = qio_channel_read_string(false, byteorder,
+                                      iostringstyle.data_toeof,
+                                      this._channel_internal, tx,
+                                      lenread, uselen);
+    } else {
+      var save_style = this._style();
+      var style = this._style();
+      style.string_format = QIO_STRING_FORMAT_TOEOF;
+      this._set_style(style);
+
+      error = qio_channel_scan_string(false,
+                                      this._channel_internal, tx,
+                                      lenread, uselen);
+      this._set_style(save_style);
+    }
+
     this.unlock();
 
-    // read the entire file
-    if (len == -1) then
-      lentmp = actlen;
-    else // else, make a smart choice about how much we have to read
-      lentmp = min(actlen, len);
-
-    while (lentmp > max(int(32))) {
-      err = qio_channel_read_string(false, this._style().byteorder, max(int(32)),
-          this._channel_internal, tx, lenread, -1);
-
-      ret += tx;
-      chpl_free_c_string(tx);
-
-      if (err == EEOF) then break; // done reading 
-
-      if err then ioerror(err, "in channel.readstring(ref str_out:string, len:int(64)"); // else, we actually do have an error.
-      lentmp = lentmp - max(int(32));
-    }
-
-    // len <= max(int(32))
-    if (!err) {
-      err = qio_channel_read_string(false, this._style().byteorder, lentmp,
-          this._channel_internal, tx, lenread, -1);
-
-      ret += tx;
-      chpl_free_c_string(tx);
-    }
-    // FIX ME: could use a toString() that doesn't allocate space
-    str_out = toString(ret);
-    chpl_free_c_string(ret);
+    str_out = toString(tx);
+    chpl_free_c_string(tx);
   }
 
-  if (err == EEOF) then return false; // done reading
-  if err then ioerror(err, "in channel.readstring(ref str_out:string, len:int(64)"); // else, we actually do have an error.
-  return true;
+  return !error;
+}
+
+proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
+  var e:syserr = ENOERR;
+  this.readstring(str_out, len, error=e);
+  if !e then return true;
+  else if e == EEOF then return false;
+  else {
+    this._ch_ioerror(e, "in channel.readstring(ref str_out:string, len:int(64))");
+    return false;
+  }
 }
 
 inline proc channel.readbits(out v:uint(64), nbits:int(8), out error:syserr):bool {

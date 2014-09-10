@@ -4,14 +4,12 @@ while processing the following Chapel call chain:
   print-callstack-on-warning-1.chpl:16: test3(z)
   print-callstack-on-warning-1.chpl:12: test2(y)
   print-callstack-on-warning-1.chpl:8: test1(x)
-  print-callstack-on-warning-1.chpl:7: test1(x: c_string) [compiler-generated]
   print-callstack-on-warning-1.chpl:3: top-level module statements for print-callstack-on-warning-1
 print-callstack-on-warning-1.chpl:17: warning: warning from test3, default depth
 while processing the following Chapel call chain:
   print-callstack-on-warning-1.chpl:17: test3(z)
   print-callstack-on-warning-1.chpl:12: test2(y)
   print-callstack-on-warning-1.chpl:8: test1(x)
-  print-callstack-on-warning-1.chpl:7: test1(x: c_string) [compiler-generated]
   print-callstack-on-warning-1.chpl:3: top-level module statements for print-callstack-on-warning-1
 print-callstack-on-warning-1.chpl:33: In function 'ptest3':
 print-callstack-on-warning-1.chpl:34: warning: warning from ptest3, depth=0, z=6

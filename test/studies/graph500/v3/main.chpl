@@ -173,6 +173,7 @@ module Graph500_main
     on loc do
       writeln("Locale ID: ", loc.id, " of ", numLocales);
       writeln("Locale ID: ", loc.id, " Number of cores " , loc.numCores);
+      writeln("Locale ID: ", loc.id, " Max task parallelism " , loc.maxTaskPar);
     }
   }
 

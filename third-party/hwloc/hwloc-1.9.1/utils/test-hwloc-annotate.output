@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE topology SYSTEM "hwloc.dtd">
+<topology>
+  <object type="Machine" os_index="0" cpuset="0x0000000f" complete_cpuset="0x0000000f" online_cpuset="0x0000000f" allowed_cpuset="0x0000000f" local_memory="4014030848">
+    <page_type size="4096" count="979988"/>
+    <page_type size="2097152" count="0"/>
+    <info name="DMIProductName" value="Latitude E6410"/>
+    <info name="DMIProductVersion" value="0001"/>
+    <info name="DMIBoardVendor" value="Dell Inc."/>
+    <info name="DMIBoardName" value=" "/>
+    <info name="DMIBoardVersion" value=" "/>
+    <info name="DMIBoardAssetTag" value=" "/>
+    <info name="DMIChassisVendor" value="Dell Inc."/>
+    <info name="DMIChassisType" value="9"/>
+    <info name="DMIChassisVersion" value=" "/>
+    <info name="DMIChassisAssetTag" value=""/>
+    <info name="DMIBIOSVendor" value="Dell Inc."/>
+    <info name="DMIBIOSVersion" value="A12"/>
+    <info name="DMIBIOSDate" value="05/09/2012"/>
+    <info name="DMISysVendor" value="Dell Inc."/>
+    <info name="Backend" value="Linux"/>
+    <info name="OSName" value="Linux"/>
+    <info name="OSRelease" value="3.2.0-3-amd64"/>
+    <info name="OSVersion" value="#1 SMP Thu Jun 28 09:07:26 UTC 2012"/>
+    <info name="HostName" value="rhododendron"/>
+    <info name="Architecture" value="x86_64"/>
+    <info name="Foo" value="Bar"/>
+    <object type="Socket" os_index="0" cpuset="0x0000000f" complete_cpuset="0x0000000f" online_cpuset="0x0000000f" allowed_cpuset="0x0000000f">
+      <info name="CPUModel" value="Intel(R) Core(TM) i7 CPU       M 620  @ 2.67GHz"/>
+      <info name="CPUType" value="x86_64"/>
+      <info name="Foo2" value="Bar3"/>
+      <object type="Cache" cpuset="0x0000000f" complete_cpuset="0x0000000f" online_cpuset="0x0000000f" allowed_cpuset="0x0000000f" cache_size="4194304" depth="3" cache_linesize="64" cache_associativity="16" cache_type="0">
+        <info name="Foo" value="Bar"/>
+        <object type="Cache" cpuset="0x00000005" complete_cpuset="0x00000005" online_cpuset="0x00000005" allowed_cpuset="0x00000005" cache_size="262144" depth="2" cache_linesize="64" cache_associativity="8" cache_type="0">
+          <object type="Cache" cpuset="0x00000005" complete_cpuset="0x00000005" online_cpuset="0x00000005" allowed_cpuset="0x00000005" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="1">
+            <info name="Foo" value="Bar"/>
+            <object type="Core" os_index="0" cpuset="0x00000005" complete_cpuset="0x00000005" online_cpuset="0x00000005" allowed_cpuset="0x00000005">
+              <info name="Foo2" value="Bar2"/>
+              <object type="PU" os_index="0" cpuset="0x00000001" complete_cpuset="0x00000001" online_cpuset="0x00000001" allowed_cpuset="0x00000001">
+                <info name="Foo" value="Bar"/>
+              </object>
+              <object type="PU" os_index="2" cpuset="0x00000004" complete_cpuset="0x00000004" online_cpuset="0x00000004" allowed_cpuset="0x00000004">
+                <info name="Foo" value="Bar"/>
+              </object>
+            </object>
+          </object>
+        </object>
+        <object type="Cache" cpuset="0x0000000a" complete_cpuset="0x0000000a" online_cpuset="0x0000000a" allowed_cpuset="0x0000000a" cache_size="262144" depth="2" cache_linesize="64" cache_associativity="8" cache_type="0">
+          <info name="Foo" value="Bar"/>
+          <object type="Cache" cpuset="0x0000000a" complete_cpuset="0x0000000a" online_cpuset="0x0000000a" allowed_cpuset="0x0000000a" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="1">
+            <info name="Foo" value="Bar"/>
+            <object type="Core" os_index="2" cpuset="0x0000000a" complete_cpuset="0x0000000a" online_cpuset="0x0000000a" allowed_cpuset="0x0000000a">
+              <info name="Foo2" value="Bar2"/>
+              <object type="PU" os_index="1" cpuset="0x00000002" complete_cpuset="0x00000002" online_cpuset="0x00000002" allowed_cpuset="0x00000002">
+                <info name="Foo" value="Bar"/>
+              </object>
+              <object type="PU" os_index="3" cpuset="0x00000008" complete_cpuset="0x00000008" online_cpuset="0x00000008" allowed_cpuset="0x00000008">
+                <info name="Foo" value="Bar"/>
+              </object>
+            </object>
+          </object>
+        </object>
+      </object>
+    </object>
+  </object>
+</topology>

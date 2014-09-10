@@ -90,6 +90,9 @@ void checkReturnTypesHaveRefTypes();
 // utility functions in pass-containing code files
 //
 
+// buildDefaultFunctions.cpp
+void buildDefaultDestructor(AggregateType* ct);
+
 // parallel.cpp
 bool isRefWideString(Type* t);
 bool isWideString(Type* t);

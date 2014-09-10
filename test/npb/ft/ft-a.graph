@@ -1,0 +1,4 @@
+perfkeys:  Time in seconds =
+files: ft.A.dat
+graphkeys: runtime - A
+graphtitle: NAS Parallel Benchmarks: FT timings - size A

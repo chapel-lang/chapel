@@ -5,7 +5,7 @@ class MyClass {
   proc myBegin() {
     if case == 1 {
      sync {
-      begin ref(myField) {
+      begin with (ref myField) {
         myField = 222;
       }
      }
@@ -13,7 +13,7 @@ class MyClass {
   }
   proc myCobegin() {
     if case == 2 {
-      cobegin ref(myField) {
+      cobegin with (ref myField) {
         myField = 333;
         var i = 444;
       }
@@ -21,7 +21,7 @@ class MyClass {
   }
   proc myCoforall() {
     if case == 3 {
-      coforall 1..1 ref(myField) {
+      coforall 1..1 with (ref myField) {
         myField = 555;
       }
     }
@@ -29,7 +29,7 @@ class MyClass {
   proc myForall() {
     if case == 4 {
       // todo: uncomment the 'ref' clause when implemented
-      coforall 1..1 /*ref(myField)*/ {
+      coforall 1..1 /*with (ref myField)*/ {
         myField = 666;
       }
     }
@@ -52,7 +52,7 @@ record MyRecord {
   proc myBegin() {
     if case == 5 {
      sync {
-      begin ref(myField) {
+      begin with (ref myField) {
         myField = 222;
       }
      }
@@ -60,7 +60,7 @@ record MyRecord {
   }
   proc myCobegin() {
     if case == 6 {
-      cobegin ref(myField) {
+      cobegin with (ref myField) {
         myField = 333;
         var i = 444;
       }
@@ -68,7 +68,7 @@ record MyRecord {
   }
   proc myCoforall() {
     if case == 7 {
-      coforall 1..1 ref(myField) {
+      coforall 1..1 with (ref myField) {
         myField = 555;
       }
     }
@@ -76,7 +76,7 @@ record MyRecord {
   proc myForall() {
     if case == 8 {
       // todo: uncomment the 'ref' clause when implemented
-      coforall 1..1 /*ref(myField)*/ {
+      coforall 1..1 /*with (ref myField)*/ {
         myField = 666;
       }
     }

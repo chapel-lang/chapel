@@ -56,6 +56,7 @@ symbolFlag( FLAG_BEGIN_BLOCK , npr, "begin block" , ncm )
 symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tuple functions")
 symbolFlag( FLAG_COBEGIN_OR_COFORALL , npr, "cobegin or coforall" , ncm )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL_BLOCK , npr, "cobegin or coforall block" , ncm )
+symbolFlag( FLAG_COERCE_TEMP , npr, "coerce temp" , "a temporary that was stores the result of a coercion" )
 symbolFlag( FLAG_CODEGENNED , npr, "codegenned" , "code has been generated for this type" )
 symbolFlag( FLAG_COFORALL_INDEX_VAR , npr, "coforall index var" , ncm )
 symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
@@ -106,6 +107,11 @@ symbolFlag( FLAG_HAS_USER_INIT_COPY_FN , npr, "has user init copy fn" , "applied
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
 symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
+
+// This can also mark a temp that serves as an intermediate step of
+// destructuring a tuple-typed FLAG_INDEX_OF_INTEREST variable
+// into loop index variables.
+symbolFlag( FLAG_INDEX_OF_INTEREST , npr, "an _indexOfInterest or chpl__followIdx variable" , ncm )
 symbolFlag( FLAG_INIT_COPY_FN,  ypr, "init copy fn" , "init copy function" )
 symbolFlag( FLAG_INLINE , npr, "inline" , ncm )
 symbolFlag( FLAG_INLINE_ITERATOR , npr, "inline iterator" , "iterators that are always inlined, e.g., leaders" )
@@ -218,6 +224,7 @@ symbolFlag( FLAG_SUPER_CLASS , npr, "super class" , ncm )
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
+symbolFlag( FLAG_REF_TEMP , npr, "ref temp" , "compiler-inserted reference temporary" )
 symbolFlag( FLAG_TRIVIAL_ASSIGNMENT, ypr, "trivial assignment", "an assignment which may be replaced by a bulk copy without changing its semantics")
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )

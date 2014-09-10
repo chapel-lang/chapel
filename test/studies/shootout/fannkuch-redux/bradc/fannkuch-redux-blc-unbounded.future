@@ -1,7 +1,34 @@
-feature request: ability to iterate over unbounded ranges
+feature request: operator precedence to permit iteration over unbounded ranges
 
-I believe we should be able to iterate over unbounded ranges like this
-(with the behavior undefined by the language in the event that it falls
-off the top).  The fact that we can't suggests that the parser may
-special-case for loops more than it ought to -- i.e., if we allow 1..
-in general expression contexts, why not here?
+Original message: I believe we should be able to iterate over
+unbounded ranges like this (with the behavior undefined by the
+language in the event that it falls off the top).  The fact that we
+can't suggests that the parser may special-case for loops more than it
+ought to -- i.e., if we allow 1..  in general expression contexts, why
+not here?
+
+Follow-up information: It turns out that the parser does support this,
+but that due to operator precedence, the open curly bracket is being
+interpreted as the start of a domain literal.  I.e., it thinks that
+maybe we're typing something like 'for i in 1..{1..n}' (if that made
+any sense), then hits the 'var' keyword and says "syntax error" since
+that's not part of a legal domain literal.  
+
+Since it seems that using domain literals in this context is unlikely
+or perhaps completely nonsensical, it makes me wonder whether the
+precedence table could be set up in such a way that it favored
+treating the curly brace as the beginning of a compound statement
+rather than as a domain literal expression...
+
+In the meantime, having diagnosed this, I've realized that one can
+break the ambiguity using either:
+
+      for i in 1.. do {
+        ...
+      }
+
+or:
+
+      for i in (1..) {
+        ...
+      }

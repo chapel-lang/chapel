@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:
+files: foo.dat, foo-c.dat
+graphkeys: Chapel version, C version
+ylabel: Time (seconds)
+graphtitle: Sample Performance Test (Bogus)

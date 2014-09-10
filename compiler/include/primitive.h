@@ -175,7 +175,9 @@ enum PrimitiveTag {
   PRIM_BLOCK_WHILEDO_LOOP,      // BlockStmt::blockInfo - while do loop (cond)
   PRIM_BLOCK_DOWHILE_LOOP,      // BlockStmt::blockInfo - do while loop (cond)
   PRIM_BLOCK_FOR_LOOP,          // BlockStmt::blockInfo - for loop (index, iterator)
-  PRIM_BLOCK_C_FOR_LOOP,        // BlockStmt::blockInfo - c for loop (i, lo, hi, strd)
+  PRIM_BLOCK_C_FOR_LOOP,        // BlockStmt::blockInfo -
+                                //   C for loop (initExpr, testExpr, incrExpr)
+
   PRIM_BLOCK_BEGIN,             // BlockStmt::blockInfo - begin block
   PRIM_BLOCK_COBEGIN,           // BlockStmt::blockInfo - cobegin block
   PRIM_BLOCK_COFORALL,          // BlockStmt::blockInfo - coforall block

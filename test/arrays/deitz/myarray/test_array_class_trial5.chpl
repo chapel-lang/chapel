@@ -3,7 +3,7 @@ class array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  proc indexedby(i : int) var {
+  proc indexedby(i : int) ref {
     var result : t;
     select i {
       when 1 do return x1;
@@ -25,7 +25,7 @@ writeln(a.indexedby(1), a.indexedby(2), a.indexedby(3));
 class array2d {
   type t;
   var data : array1d(t) = new array1d(t);
-  proc indexedby(i : int, j : int) var : t {
+  proc indexedby(i : int, j : int) ref : t {
     return data.indexedby((i - 1) * 2 + j);
   }
 }

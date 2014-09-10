@@ -180,10 +180,12 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
   // either the main process or a pthread.
   //
   {
-    size_t        css = chpl_task_getMinCallStackSize();
+    size_t        css;
     size_t        pagesize = (size_t) sysconf(_SC_PAGESIZE);
     struct rlimit rlim;
 
+    if ((css = chpl_task_getEnvCallStackSize()) == 0)
+      css = chpl_task_getDefaultCallStackSize();
     assert(css > 0);
 
     css = (css + pagesize - 1) & ~(pagesize - 1);

@@ -64,7 +64,7 @@ config const verify = true;
 //
 config const coreConcurrencyFactor = 4;
 config const verifyBlockSize = m / (numLocales
-                                    * here.numCores
+                                    * here.maxTaskPar
                                     * coreConcurrencyFactor):indexType;
 
 //
