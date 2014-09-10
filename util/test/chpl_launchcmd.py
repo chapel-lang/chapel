@@ -716,9 +716,9 @@ class SlurmJob(AbstractJob):
 
     submit_bin = None
     status_bin = 'squeue'
-    hostlist_resource = ''  # FIXME!
-    num_nodes_resource = ''  # FIXME!
-    num_cpus_resource = ''  # FIXME!
+    hostlist_resource = None
+    num_nodes_resource = None
+    num_cpus_resource = None
 
     @classmethod
     def status(cls, job_id):
