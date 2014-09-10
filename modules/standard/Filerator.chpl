@@ -123,7 +123,8 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false,
       QuickSort(subdirs);
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
-      for subdir in walkdirs(fullpath, topdown, depth-1, dotfiles, followlinks) do
+      for subdir in walkdirs(fullpath, topdown, depth-1, dotfiles, 
+                             followlinks, sort) do
         yield subdir;
     }
   }
@@ -136,9 +137,10 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false,
 /* iter wordexp(pattern="*")
 
    wordexp() gives a glob-like capability, implemented with C's wordexp()
-     * pattern: the pattern to match against
+   (which is, itself a routine that provides a glob-like capability :)
+     * pattern: the glob pattern to match against
   
-   By default, it will list all files/directories in the directory
+   By default, it will list all files/directories in the current directory
 */
 
 iter wordexp(pattern="*") {
@@ -164,9 +166,9 @@ iter wordexp(pattern="*") {
 /* iter glob(pattern="*")
 
    glob() gives glob() capabilities and is implemented using C's glob()
-     * pattern: the pattern to match against
+     * pattern: the glob pattern to match against
 
-   By default, it will list all files/directories in the directory
+   By default, it will list all files/directories in the current directory
 */
 
 iter glob(pattern="*") {
@@ -181,7 +183,7 @@ iter glob(pattern="*") {
 
   const err = glob(pattern:c_string, 0, c_nil, glb);
 
-  for i in 0..chpl_glob_num(glb) - 1 do
+  for i in 0..chpl_glob_num(glb)-1 do
     yield chpl_glob_index(glb, i): string;
 
   globfree(glb);
