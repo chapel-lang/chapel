@@ -1153,10 +1153,6 @@ proc CyclicArr.doiBulkTransferFromDR(Barg)
       }
     }
 }
-    
-proc CyclicArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc CyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;

@@ -1515,11 +1515,6 @@ module ChapelArray {
   
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
-    // the locale grid domain
-    proc targetLocDom() {
-      return _value.dsiTargetLocDom();
-    }
-
     // the locale grid
     proc targetLocales() {
       return _value.dsiTargetLocales();

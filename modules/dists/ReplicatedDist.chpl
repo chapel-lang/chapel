@@ -652,10 +652,6 @@ proc ReplicatedArr.dsiRankChange(sliceDef: ReplicatedDom,
 
   return result;
 }
-    
-proc ReplicatedArr.dsiTargetLocDom() {
-  return dom.dist.targetLocales.domain;
-}
 
 proc ReplicatedArr.dsiTargetLocales() {
   return dom.dist.targetLocales;

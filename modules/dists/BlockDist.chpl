@@ -1382,10 +1382,6 @@ proc BlockArr.doiBulkTransfer(B) {
   }
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
 }
-    
-proc BlockArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc BlockArr.dsiTargetLocales() {
   return dom.dist.targetLocales;

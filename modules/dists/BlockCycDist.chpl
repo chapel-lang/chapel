@@ -791,10 +791,6 @@ proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
 proc BlockCyclicArr.dsiReindex(dom) {
   compilerError("reindexing not yet implemented for Block-Cyclic");
 }
-    
-proc BlockCyclicArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc BlockCyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
