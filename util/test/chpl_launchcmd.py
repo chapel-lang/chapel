@@ -765,9 +765,10 @@ class SlurmJob(AbstractJob):
             logging.info('Status for job {0} is: {1}'.format(job_id, status))
 
             if status == 'COMPLETED':
+                logging.info('Job finished with status: {0}'.format(status))
                 return 'C'
             elif status in failure_statuses:
-                print('[Error: Job finished with status: {0}]'.format(status))
+                logging.info('Job finished with status: {0}'.format(status))
                 return 'C'
             else:
                 return 'R'  # running
