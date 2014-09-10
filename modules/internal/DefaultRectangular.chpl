@@ -885,7 +885,7 @@ module DefaultRectangular {
       compilerError("targetLocales is unsupported by default domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
       return _newDomain(dom);

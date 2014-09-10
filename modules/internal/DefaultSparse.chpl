@@ -321,7 +321,7 @@ module DefaultSparse {
       compilerError("targetLocales is unsuppported by sparse domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
       return _newDomain(dom);

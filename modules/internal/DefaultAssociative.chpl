@@ -595,7 +595,7 @@ module DefaultAssociative {
       compilerError("targetLocales is unsupported by associative domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
       return _newDomain(dom);

@@ -124,7 +124,7 @@ module DefaultOpaque {
       compilerError("targetLocales is unsupported by opaque domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
     proc dsiLocalSubdomain() {
       return _newDomain(dom);

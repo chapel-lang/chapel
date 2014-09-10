@@ -1393,7 +1393,7 @@ proc BlockArr.dsiTargetLocales() {
 
 // Block subdomains are continuous
 
-proc BlockArr.dsiOneLocalSubdomain() param return true;
+proc BlockArr.dsiHasSingleLocalSubdomain() param return true;
 
 // returns the current locale's subdomain
 

@@ -800,7 +800,7 @@ proc BlockCyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
-proc BlockCyclicArr.dsiOneLocalSubdomain() param return false;
+proc BlockCyclicArr.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices

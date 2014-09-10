@@ -1526,8 +1526,8 @@ module ChapelArray {
     }
 
     // can the subdomain be represented as a single domain?
-    proc oneLocalSubdomain() param {
-      return _value.dsiOneLocalSubdomain();
+    proc hasSingleLocalSubdomain() param {
+      return _value.dsiHasSingleLocalSubdomain();
     }
 
     // fetches the subdomain for the current locale
@@ -1535,7 +1535,7 @@ module ChapelArray {
     // Also note that localSlice(dom) produces a slice of a domain/array 
     // that's assumed to be local
     proc localSubdomain() {
-      if !_value.dsiOneLocalSubdomain() then
+      if !_value.dsiHasSingleLocalSubdomain() then
         compilerError("Array's local domain is not a single domain");
       return _value.dsiLocalSubdomain();
     }
@@ -1544,7 +1544,7 @@ module ChapelArray {
     // the multiple domains are yielded by an iterator.
     // yield a domain so the user can use procs like expand/exterior/etc.
     iter localSubdomains() {
-      if _value.dsiOneLocalSubdomain() then 
+      if _value.dsiHasSingleLocalSubdomain() then 
         yield _value.dsiLocalSubdomain();
       else 
         for d in _value.dsiLocalSubdomains() do yield d;
