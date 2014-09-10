@@ -65,6 +65,12 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
       if (dotfiles || filename.substring(1) != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
+          //
+          // chpl_rt_isDir() returns 'true' if 'fullpath' is a
+          // directory.  If we are listing symbolic links
+          // (listlinks==true), it will also return symbolic links to
+          // directories.
+          //
           if (chpl_rt_isDir(fullpath:c_string, listlinks)) {
             if (dirs) then
               yield filename;
