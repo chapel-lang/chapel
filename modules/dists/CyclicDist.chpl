@@ -67,7 +67,7 @@ class Cyclic: BaseDist {
              dataParMinGranularity=getDataParMinGranularity(),
              param rank: int = _determineRankFromStartIdx(startIdx),
              type idxType = _determineIdxTypeFromStartIdx(startIdx)) 
-    where isTuple(startIdx) || _isIntegralType(startIdx.type) {
+    where isTuple(startIdx) || isIntegralType(startIdx.type) {
     var tupleStartIdx: rank*idxType;
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;

@@ -1313,7 +1313,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 
 }
 
 proc _isSimpleIoType(type t) param return
-  _isSimpleScalarType(t) || _isComplexType(t) || _isEnumeratedType(t);
+  isBoolType(t) || isNumericType(t) || isEnumType(t);
 
 proc _isIoPrimitiveType(type t) param return
   _isSimpleIoType(t) || (t == c_string) || (t == string);
@@ -1327,7 +1327,7 @@ const _i = "i";
 
 // Read routines for all primitive types.
 proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr where _isIoPrimitiveType(t) {
-  if _isBooleanType(t) {
+  if isBoolType(t) {
     var num = _trues.size;
     var err:syserr = ENOERR;
     var got:bool;
@@ -1353,13 +1353,13 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
 
     if !err then x = got;
     return err;
-  } else if _isIntegralType(t) {
+  } else if isIntegralType(t) {
     // handles int types
-    return qio_channel_scan_int(false, _channel_internal, x, numBytes(t), _isSignedType(t));
-  } else if _isRealType(t) {
+    return qio_channel_scan_int(false, _channel_internal, x, numBytes(t), isIntType(t));
+  } else if isRealType(t) {
     // handles real
     return qio_channel_scan_float(false, _channel_internal, x, numBytes(t));
-  } else if _isImagType(t) {
+  } else if isImagType(t) {
     return qio_channel_scan_imag(false, _channel_internal, x, numBytes(t));
     /*
     var err = qio_channel_mark(false, _channel_internal);
@@ -1376,7 +1376,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     }
     return err;
     */
-  } else if _isComplexType(t)  {
+  } else if isComplexType(t)  {
     // handle complex types
     var re:x.re.type;
     var im:x.im.type;
@@ -1396,7 +1396,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
       chpl_free_c_string(tx);
     }
     return ret;
-  } else if _isEnumeratedType(t) {
+  } else if isEnumType(t) {
     var err:syserr = ENOERR;
     for i in chpl_enumerate(t) {
       var str = i:c_string;
@@ -1416,20 +1416,20 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
 }
 
 proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
-  if _isBooleanType(t) {
+  if isBoolType(t) {
     if x {
       return qio_channel_print_literal(false, _channel_internal, _trues(1), _trues(1).length:ssize_t);
     } else {
       return qio_channel_print_literal(false, _channel_internal, _falses(1), _falses(1).length:ssize_t);
     }
-  } else if _isIntegralType(t) {
+  } else if isIntegralType(t) {
     // handles int types
-    return qio_channel_print_int(false, _channel_internal, x, numBytes(t), _isSignedType(t));
+    return qio_channel_print_int(false, _channel_internal, x, numBytes(t), isIntType(t));
 
-  } else if _isRealType(t) {
+  } else if isRealType(t) {
     // handles real
     return qio_channel_print_float(false, _channel_internal, x, numBytes(t));
-  } else if _isImagType(t) {
+  } else if isImagType(t) {
     return qio_channel_print_imag(false, _channel_internal, x, numBytes(t));
     /*var err = qio_channel_mark(false, _channel_internal);
     if err then return err;
@@ -1444,7 +1444,7 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
       qio_channel_revert_unlocked(_channel_internal);
     }
     return err;*/
-  } else if _isComplexType(t)  {
+  } else if isComplexType(t)  {
     // handle complex types
     var re = x.re;
     var im = x.im;
@@ -1455,7 +1455,7 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
   } else if t == string {
     // handle string
     return qio_channel_print_string(false, _channel_internal, x.c_str(), x.length:ssize_t);
-  } else if _isEnumeratedType(t) {
+  } else if isEnumType(t) {
     var s = x:c_string;
     return qio_channel_print_literal(false, _channel_internal, s, s.length:ssize_t);
   } else {
@@ -1465,7 +1465,7 @@ proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr wher
 }
 
 inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, out x:?t):syserr where _isIoPrimitiveType(t) {
-  if _isBooleanType(t) {
+  if isBoolType(t) {
     var got:int(32);
     got = qio_channel_read_byte(false, _channel_internal);
     if got >= 0 {
@@ -1474,7 +1474,7 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
     } else {
       return (-got):syserr;
     }
-  } else if _isIntegralType(t) {
+  } else if isIntegralType(t) {
     if numBytes(t) == 1 {
       var got:int(32);
       got = qio_channel_read_byte(false, _channel_internal);
@@ -1486,12 +1486,12 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
       }
     } else {
       // handles int types
-      return qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(t), _isSignedType(t));
+      return qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(t), isIntType(t));
     }
-  } else if _isFloatType(t) {
+  } else if isFloatType(t) {
     // handles real, imag
     return qio_channel_read_float(false, byteorder, _channel_internal, x, numBytes(t));
-  } else if _isComplexType(t)  {
+  } else if isComplexType(t)  {
     // handle complex types
     var re:x.re.type;
     var im:x.im.type;
@@ -1511,10 +1511,10 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
       chpl_free_c_string(tx);
     }
     return ret;
-  } else if _isEnumeratedType(t) {
+  } else if isEnumType(t) {
     var i:enum_mintype(t);
     var err:syserr = ENOERR;
-    err = qio_channel_read_int(false, byteorder, _channel_internal, i, numBytes(i.type), _isSignedType(i.type));
+    err = qio_channel_read_int(false, byteorder, _channel_internal, i, numBytes(i.type), isIntType(i.type));
     x = i:t;
     return err;
   } else {
@@ -1524,20 +1524,20 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
 }
 
 inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):syserr where _isIoPrimitiveType(t) {
-  if _isBooleanType(t) {
+  if isBoolType(t) {
     var zero_one:uint(8) = if x then 1:uint(8) else 0:uint(8);
     return qio_channel_write_byte(false, _channel_internal, zero_one);
-  } else if _isIntegralType(t) {
+  } else if isIntegralType(t) {
     if numBytes(t) == 1 {
       return qio_channel_write_byte(false, _channel_internal, x:uint(8));
     } else {
       // handles int types
-      return qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(t), _isSignedType(t));
+      return qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(t), isIntType(t));
     }
-  } else if _isFloatType(t) {
+  } else if isFloatType(t) {
     // handles real, imag
     return qio_channel_write_float(false, byteorder, _channel_internal, x, numBytes(t));
-  } else if _isComplexType(t)  {
+  } else if isComplexType(t)  {
     // handle complex types
     var re = x.re;
     var im = x.im;
@@ -1546,9 +1546,9 @@ inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param by
     return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x, x.length: ssize_t);
   } else if t == string {
     return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, x.c_str(), x.length: ssize_t);
-  } else if _isEnumeratedType(t) {
+  } else if isEnumType(t) {
     var i:enum_mintype(t) = x:enum_mintype(t);
-    return qio_channel_write_int(false, byteorder, _channel_internal, i, numBytes(i.type), _isSignedType(i.type));
+    return qio_channel_write_int(false, byteorder, _channel_internal, i, numBytes(i.type), isIntType(i.type));
   } else {
     compilerError("Unknown primitive type in write_binary_internal ", typeToString(t));
   }
@@ -2303,12 +2303,12 @@ proc unicodeSupported():bool {
 }
 
 inline
-proc _toIntegral(x:?t) where _isIntegralType(t)
+proc _toIntegral(x:?t) where isIntegralType(t)
 {
   return (x, true);
 }
 inline
-proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !_isIntegralType(t)
+proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   return (x:int, true);
 }
@@ -2319,7 +2319,7 @@ proc _toIntegral(x:?t) where !_isIoPrimitiveType(t)
 }
 
 inline
-proc _toSigned(x:?t) where _isSignedType(t)
+proc _toSigned(x:?t) where isIntType(t)
 {
   return (x, true);
 }
@@ -2345,7 +2345,7 @@ proc _toSigned(x:uint(64))
 }
 
 inline
-proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !_isIntegralType(t)
+proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   return (x:int, true);
 }
@@ -2356,7 +2356,7 @@ proc _toSigned(x:?t) where !_isIoPrimitiveType(t)
 }
 
 inline
-proc _toUnsigned(x:?t) where _isUnsignedType(t)
+proc _toUnsigned(x:?t) where isUintType(t)
 {
   return (x, true);
 }
@@ -2383,7 +2383,7 @@ proc _toUnsigned(x:int(64))
 
 
 inline
-proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !_isIntegralType(t)
+proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   return (x:uint, true);
 }
@@ -2395,12 +2395,12 @@ proc _toUnsigned(x:?t) where !_isIoPrimitiveType(t)
 
 
 inline
-proc _toReal(x:?t) where _isRealType(t)
+proc _toReal(x:?t) where isRealType(t)
 {
   return (x, true);
 }
 inline
-proc _toReal(x:?t) where _isIoPrimitiveType(t) && !_isRealType(t)
+proc _toReal(x:?t) where _isIoPrimitiveType(t) && !isRealType(t)
 {
   return (x:real, true);
 }
@@ -2411,12 +2411,12 @@ proc _toReal(x:?t) where !_isIoPrimitiveType(t)
 }
 
 inline
-proc _toImag(x:?t) where _isImagType(t)
+proc _toImag(x:?t) where isImagType(t)
 {
   return (x, true);
 }
 inline
-proc _toImag(x:?t) where _isIoPrimitiveType(t) && !_isImagType(t)
+proc _toImag(x:?t) where _isIoPrimitiveType(t) && !isImagType(t)
 {
   return (x:imag, true);
 }
@@ -2428,12 +2428,12 @@ proc _toImag(x:?t) where !_isIoPrimitiveType(t)
 
 
 inline
-proc _toComplex(x:?t) where _isComplexType(t)
+proc _toComplex(x:?t) where isComplexType(t)
 {
   return (x, true);
 }
 inline
-proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !_isComplexType(t)
+proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t)
 {
   return (x:complex, true);
 }
@@ -2444,17 +2444,17 @@ proc _toComplex(x:?t) where !_isIoPrimitiveType(t)
 }
 
 inline
-proc _toRealOrComplex(x:?t) where _isComplexType(t)
+proc _toRealOrComplex(x:?t) where isComplexType(t)
 {
   return (x, true);
 }
 inline
-proc _toRealOrComplex(x:?t) where _isFloatType(t)
+proc _toRealOrComplex(x:?t) where isFloatType(t)
 {
   return (x, true);
 }
 inline
-proc _toRealOrComplex(x:?t) where _isIoPrimitiveType(t) && !_isComplexType(t) && !_isFloatType(t)
+proc _toRealOrComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t) && !isFloatType(t)
 {
   return (x:real, true);
 }
@@ -2464,16 +2464,13 @@ proc _toRealOrComplex(x:?t) where !_isIoPrimitiveType(t)
   return (0.0, false);
 }
 
-proc _isNumericType(type t) param return
-_isIntegralType(t) || _isRealType(t) || _isImagType(t) || _isComplexType(t);
-
 inline
-proc _toNumeric(x:?t) where _isNumericType(t)
+proc _toNumeric(x:?t) where isNumericType(t)
 {
   return (x, true);
 }
 inline
-proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !_isNumericType(t)
+proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !isNumericType(t)
 {
   // enums, bools get cast to int.
   return (x:int, true);
@@ -2498,7 +2495,7 @@ proc _toString(x:?t) where !_isIoPrimitiveType(t)
 }
 
 inline
-proc _toChar(x:?t) where _isIntegralType(t)
+proc _toChar(x:?t) where isIntegralType(t)
 {
   return (x:int(32), true);
 }
@@ -2511,7 +2508,7 @@ proc _toChar(x:?t) where t == string
   return (chr, true);
 }
 inline
-proc _toChar(x:?t) where !(t==string || _isIntegralType(t))
+proc _toChar(x:?t) where !(t==string || isIntegralType(t))
 {
   return (0:int(32), false);
 }
@@ -2550,12 +2547,12 @@ proc _setIfChar(ref lhs:?t, rhs:int(32)) where t == string
   lhs = new ioChar(rhs):string;
 }
 inline
-proc _setIfChar(ref lhs:?t, rhs:int(32)) where _isIntegralType(t)
+proc _setIfChar(ref lhs:?t, rhs:int(32)) where isIntegralType(t)
 {
   lhs = rhs:t;
 }
 inline
-proc _setIfChar(ref lhs:?t, rhs:int(32)) where !(t==string||_isIntegralType(t))
+proc _setIfChar(ref lhs:?t, rhs:int(32)) where !(t==string||isIntegralType(t))
 {
   // do nothing
 }
@@ -2932,16 +2929,16 @@ proc channel._write_signed(width:uint(32), t:int, i:int)
   select width {
     when 1 {
       var x = t:int(8);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
     } when 2 {
       var x = t:int(16);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
     } when 4 {
       var x = t:int(32);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
     } when 8 {
       var x = t:int(64);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
     } otherwise error = qio_format_error_arg_mismatch(i);
   }
   return error;
@@ -2954,19 +2951,19 @@ proc channel._read_signed(width:uint(32), out t:int, i:int)
   select width {
     when 1 {
       var x:int(8);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
       t = x;
     } when 2 {
       var x:int(16);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
       t = x;
     } when 4 {
       var x:int(32);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
       t = x;
     } when 8 {
       var x:int(64);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
       t = x;
     } otherwise error = qio_format_error_arg_mismatch(i);
   }
@@ -2980,16 +2977,16 @@ proc channel._write_unsigned(width:uint(32), t:uint, i:int)
   select width {
     when 1 {
       var x = t:uint(8);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
     } when 2 {
       var x = t:uint(16);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
     } when 4 {
       var x = t:uint(32);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
     } when 8 {
       var x = t:uint(64);
-      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_write_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
     } otherwise error = qio_format_error_arg_mismatch(i);
   }
   return error;
@@ -3001,19 +2998,19 @@ proc channel._read_unsigned(width:uint(32), out t:uint, i:int)
   select width {
     when 1 {
       var x:uint(8);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
       t = x;
     } when 2 {
       var x:uint(16);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
       t = x;
     } when 4 {
       var x:uint(32);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
       t = x;
     } when 8 {
       var x:uint(64);
-      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), _isSignedType(x.type));
+      error = qio_channel_read_int(false, byteorder, _channel_internal, x, numBytes(x.type), isIntType(x.type));
       t = x;
     } otherwise error = qio_format_error_arg_mismatch(i);
   }

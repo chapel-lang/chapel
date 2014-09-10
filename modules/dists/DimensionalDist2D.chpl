@@ -70,7 +70,7 @@ type locIdT = int;
 
 param invalidLocID =
   // encode 'max(locIdT)' as a compile-time expression
-  2 ** (numBits(locIdT) - 1 - _isSignedType(locIdT):int);
+  2 ** (numBits(locIdT) - 1 - isIntType(locIdT):int);
 
 
 /// class declarations //////////////////////////////////////////////////////

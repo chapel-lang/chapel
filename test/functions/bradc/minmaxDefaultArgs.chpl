@@ -1,7 +1,7 @@
 proc foo(x: [], 
         y: x.eltType = min(x.eltType), 
         z: x.eltType = max(x.eltType))
-    where _isIntegralType(x.eltType) {
+    where isIntegralType(x.eltType) {
   x(1) = y;
   x(2) = z;
   writeln("x is: ", x);
