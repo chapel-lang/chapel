@@ -754,12 +754,18 @@ class SlurmJob(AbstractJob):
             raise ValueError('Non-zero exit code {0} from squeue: "{1}"'.format(
                 squeue_proc.returncode, stdout))
 
+        failure_statuses = ['CANCELLED', 'FAILED', 'TIMEOUT',
+                            'BOOT_FAIL', 'NODE_FAIL', 'PREEMPTED']
+
         status_parts = stdout.split(' ')
         if len(status_parts) == 2:
             status = status_parts[1]
             logging.info('Status for job {0} is: {1}'.format(job_id, status))
 
             if status == 'COMPLETED':
+                return 'C'
+            elif status in failure_statuses:
+                print('[Error: Job finished with status: {0}]'.format(status))
                 return 'C'
             else:
                 return 'R'  # running
