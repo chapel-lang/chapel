@@ -977,16 +977,17 @@ module ChapelRange {
     return r;
   }
 
-
   // This function checks if a bounded iterator will overflow. This is basic
   // signed/unsigned overflow checking for the last index + stride. Either
   // returns whether overflow will occur or not, or halts with an error
-  // message. It would be nice to use the safeAdd function in ChapelUtil but
-  // unsigned ranges still have a signed stride, and safeAdd doesn't handle
-  // that case.
+  // message.
   proc range.checkIfIterWillOverflow(shouldHalt=true) {
-    var willOverFlow = false;
+    // iterator won't execute at all so it can't overflow
+    if (this.low > this.high) {
+      return false;
+    }
 
+    var willOverFlow = false;
     if (isIntType(idxType)) {
       if (this.last > 0 && stride > 0) {
         if (stride > (max(idxType) - this.last)) {
@@ -1015,8 +1016,7 @@ module ChapelRange {
     }
 
     if (willOverFlow && shouldHalt) {
-      halt("Overflow detected for iteration over a bounded range. See ",
-           "note in $CHPL_HOME/STATUS.)");
+      halt("Overflow detected for iteration over a bounded range.");
     }
     return willOverFlow;
   }
@@ -1143,8 +1143,14 @@ module ChapelRange {
   // iterating over ranges like max(int)-10..max(int). This iterator is
   // designed to be able to iterate over any range, though it will be much
   // slower. It will be slower because it breaks the singleLoopIterator
-  // optimization. In this form it can still be inlined, but that only helps
-  // for non-zippered iterators.
+  // optimization and because it has additional control flow in it. In this
+  // form it can still be inlined, but that only helps for non-zippered
+  // iterators. An alternate method would be to calculate the number of
+  // iterations that will occur (possibly using length()) and have the number
+  // of iterations drive the loop and use a separate variable to track the
+  // value to yield. This would mean you couldn't express maximal ranges for
+  // int(64) and uint(64) but it's hard to see a case where those could ever be
+  // desired.
   iter range.generalIterator() {
     if this.isAmbiguous() then
       __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
