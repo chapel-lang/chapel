@@ -1000,11 +1000,11 @@ module ChapelRange {
     }
     else if (isUintType(idxType)) {
       if (stride > 0) {
-          if ((this.last + stride:idxType) < this.last) {
+          if (this.last + stride:idxType < this.last) {
             willOverFlow = true;
           }
         } else if (stride < 0) {
-          if ((this.last + stride):idxType > this.last) {
+          if (this.last + stride:idxType > this.last) {
             willOverFlow = true;
           }
         }
@@ -1020,8 +1020,6 @@ module ChapelRange {
     }
     return willOverFlow;
   }
-
-
 
   //################################################################################
   //# Serial Iterators
