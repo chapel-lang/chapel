@@ -24,7 +24,7 @@ Module: intents
        This function has an argument with an intent and a type 
 
    proc seven() ref
-       This function has a return intent of var 
+       This function has a return intent of ref 
 
    proc eight()
        This function has a return intent of const 
@@ -42,7 +42,7 @@ Module: intents
        This function has both an argument intent and a return intent 
 
    proc fourteen()
-       This function has a return intent (other than var) and a body 
+       This function has a return intent (other than ref) and a body 
 
    Module: intents.Inner
       proc one(in val)
@@ -70,7 +70,7 @@ Module: intents
           This function has an argument with an intent and a type 
 
       proc seven() ref
-          This function has a return intent of var 
+          This function has a return intent of ref 
 
       proc eight()
           This function has a return intent of const 
@@ -88,5 +88,5 @@ Module: intents
           This function has both an argument intent and a return intent 
 
       proc fourteen()
-          This function has a return intent (other than var) and a body 
+          This function has a return intent (other than ref) and a body 
 
