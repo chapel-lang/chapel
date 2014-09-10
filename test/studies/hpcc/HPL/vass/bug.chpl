@@ -200,7 +200,7 @@ proc initABref() {
   else if useRandomSeed then
     writeln("initABref is using a random seed");
 
-  if _isIntegralType(elemType) {
+  if isIntegralType(elemType) {
 
     var Abtemp: [MatVectSpace] real;
     fillRandom(Abtemp, seed);

@@ -1,0 +1,4 @@
+                              # findfiles.good
+--recur=true                  # findfiles-recur.good
+--dotfiles=true               # findfiles-dotfiles.good
+--recur=true --dotfiles=true  # findfiles-recur-dotfiles.good

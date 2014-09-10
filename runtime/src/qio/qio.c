@@ -1107,6 +1107,14 @@ qioerr qio_chdir(const char* name) {
   return err;
 }
 
+qioerr qio_chown(const char* name, int uid, int gid) {
+  qioerr err = 0;
+  int exitStatus = chown(name, uid, gid);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+}
+
 qioerr qio_cwd(const char** working_dir) {
   qioerr err = 0;
   size_t bufsize = MAXPATHLEN*sizeof(char);

@@ -79,8 +79,8 @@ writeln(myFoo, ' ', myrefFoo);
 myrefFoo.doubleMe();
 writeln(myFoo, ' ', myrefFoo);
 
-// Var Functions ////////////////////////
-proc testRefReturn(ref x: int) var {
+// Ref Functions ////////////////////////
+proc testRefReturn(ref x: int) ref {
   refvar y = x;
   return y;
 }

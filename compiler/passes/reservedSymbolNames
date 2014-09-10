@@ -45,6 +45,7 @@
   asin
   atan
   chdir
+  chown
   cwd
   floor
   sqrt

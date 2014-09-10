@@ -80,7 +80,7 @@ module ChapelUtil {
   //  overflow/underflow would occur for a + b
   //
   proc safeAdd(a: ?t, b: t) {
-    if !_isIntegralType(t) then
+    if !isIntegralType(t) then
       compilerError("Values must be of integral type.");
     if a < 0 {
       if b >= 0 {
@@ -110,7 +110,7 @@ module ChapelUtil {
   //  underflow/overflow would occur for a - b
   //
   proc safeSub(a: ?t, b: t) {
-    if !_isIntegralType(t) then
+    if !isIntegralType(t) then
       compilerError("Values must be of integral type.");
     if a < 0 {
       if b <= 0 {
@@ -135,7 +135,7 @@ module ChapelUtil {
       }
     } else {
       if b >= 0 {
-        if _isUnsignedType(t) then
+        if isUintType(t) then
           if b>a then return false;
         return true;
       } else {
