@@ -1,2 +1,3 @@
+generic-sync-1.chpl:6: In function 'test':
 generic-sync-1.chpl:6: warning: sync int(64)
 got lock

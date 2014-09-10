@@ -161,6 +161,26 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
     PROFILE_INCR(profile_sync_lock, 1);
 
     l = qthread_incr(&s->lockers_in, 1);
+
+    // Yield if somebody else has the lock. If the current task can't get the
+    // lock then it can't make progress until the lock is released, so let
+    // somebody else do some work. It might be better to yield only after X
+    // number of failures to acquire the lock for cases where the lock would be
+    // released "soon", but we didn't see any performance impacts of doing it
+    // every time.
+    //
+    // A core issue is that it's possible that a task scheduled on the same
+    // worker could be the one responsible for unlocking the sync var. For
+    // instance if a task locked the sync var, then does a chpl_task_yield, it
+    // could now be scheduled to run after the current task so this task must
+    // yield in order to prevent deadlock. However, if the task that will
+    // unlock is on another worker, then a spinloop would result in lower
+    // latency. That tension between deadlock avoidance and latency
+    // minimization is what pushes us to even consider spinning in addition to
+    // yielding, and to worry about how much of it we should do.
+    //
+    // If real qthreads sync vars were used, it's possible this wouldn't be
+    // needed.
     while (l != s->lockers_out) qthread_yield();
 }
 
@@ -168,19 +188,43 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_unlock, 1);
 
-
-    // TODO I need to document the reason/rational better
-    // TODO see if this is a good number after some performance results get in
-    //
-    // Give other tasks that are waiting on a sync variable a chance to run.
+    // Give other tasks that might be waiting on a sync var a chance to run.
     // Currently this is every 1024 unlocks. [x % 2n == x & (2n - 1)] This
-    // number was chosen with a little trial and error.
+    // number was chosen with trial and error and is a good balance of
+    // not hurting performance and allowing progress. Determined by modifying
+    // the value over several days and examining performance and correctness
+    // testing.
+    //
+    // It's possible that two tasks can deadlock if they are both on the same
+    // worker and the running task relies on the work the second task is
+    // supposed to do to make progress. The first task will never yield
+    // automatically, so this forces a yield on sync var unlock every so often
+    // to allow progress.
+    //
+    // Consider this example:
+    //
+    // var alreadySet: [1..10] bool;
+    // while (syncVar.readXX() != 10) {
+    //   for i in 1..10 {
+    //     if alreadySet[i] == false then
+    //       begin syncVar += 1;
+    //     alreadySet[i] = true;
+    //   }
+    // }
+    //
+    // Some of the incrementing tasks might get placed on the same worker as
+    // the task waiting for the syncVar to be 10. That task will never yield,
+    // so the value would never get set to 10 and we'd be stuck in the loop
     //
     // qthread_yield is used over chpl_task_yield. chpl_task_yield just adds
     // calling a sched yield if there are no shepherds. If we don't have any
     // shepherds we are either setting up or tearing down in which case the
     // pthread unlock will guarantee progress. When qthread_yield() is called
     // from a non-qthread it's just a no-op.
+    //
+    // I believe this is still necessary even if we used real qthread sync
+    // vars. As the second task would never get a chance to try and acquire the
+    // lock, so other tasks wouldn't know a task is waiting on the sync var.
     if ((qthread_incr(&s->lockers_out, 1) & 0x3FF) == 0x3FF) {
         qthread_yield();
     }
@@ -347,10 +391,10 @@ static void chpl_qt_setenv(char* var, char* val, int32_t override) {
     chpl_bool eitherSet = false;
 
     strncpy(qt_env, "QT_", sizeof(qt_env));
-    strncat(qt_env, var, sizeof(qt_env));
+    strncat(qt_env, var, sizeof(qt_env) - 1);
 
     strncpy(qthread_env, "QTHREAD_", sizeof(qthread_env));
-    strncat(qthread_env, var, sizeof(qthread_env));
+    strncat(qthread_env, var, sizeof(qthread_env) - 1);
 
     qt_val = getenv(qt_env);
     qthread_val = getenv(qthread_env);
@@ -405,7 +449,11 @@ static int32_t chpl_qt_getenv_num_workers() {
     return 0;
 }
 
-static void setupAvailableParallelism(int32_t maxThreads) {
+
+// Sets up and returns the amount of hardware parallelism to use, limited to
+// maxThreads. Returns -1 if we did not setup parallelism because a user
+// explicitly requested a specific layout from qthreads.
+static int32_t setupAvailableParallelism(int32_t maxThreads) {
     int32_t   numThreadsPerLocale;
     int32_t   qtEnvThreads;
     int32_t   hwpar;
@@ -478,9 +526,10 @@ static void setupAvailableParallelism(int32_t maxThreads) {
             chpl_qt_setenv("HWPAR", newenv_workers, 1);
         }
     }
+    return hwpar;
 }
 
-static void setupCallStacks(void) {
+static void setupCallStacks(int32_t hwpar) {
     size_t callStackSize;
 
     // If the user compiled with no stack checks (either explicitly or
@@ -500,19 +549,48 @@ static void setupCallStacks(void) {
         char newenv_stack[QT_ENV_S];
         snprintf(newenv_stack, sizeof(newenv_stack), "%zu", callStackSize);
         chpl_qt_setenv("STACK_SIZE", newenv_stack, 1);
+
+        // Qthreads sets up memory pools expecting the item_size to be small.
+        // Stacks are allocated in this manner too, but our default stack size
+        // is quite large, so we limit the max memory allocated for a pool. We
+        // default to a multiple of callStackSize and hwpar, with the thought
+        // that available memory is generally proportional to the amount of
+        // parallelism. For some architectures, this isn't true so we set a max
+        // upper bound. And if the callStackSize is small, we don't want to
+        // limit all qthreads pool allocations to a small value, so we have a
+        // lower bound as well. Note that qthread stacks are slightly larger
+        // than specified to store a book keeping structure and possibly guard
+        // pages, so we thrown an extra MB.
+        if (hwpar > 0) {
+            const size_t oneMB = 1024 * 1024;
+            const size_t allocSizeLowerBound =  33 * oneMB;
+            const size_t allocSizeUpperBound = 513 * oneMB;
+            size_t maxPoolAllocSize;
+            char newenv_alloc[QT_ENV_S];
+
+            maxPoolAllocSize = 2 * hwpar * callStackSize + oneMB;
+            if (maxPoolAllocSize < allocSizeLowerBound) {
+                maxPoolAllocSize = allocSizeLowerBound;
+            } else if (maxPoolAllocSize > allocSizeUpperBound) {
+                maxPoolAllocSize = allocSizeUpperBound;
+            }
+            snprintf(newenv_alloc, sizeof(newenv_alloc), "%zu", maxPoolAllocSize);
+            chpl_qt_setenv("MAX_POOL_ALLOC_SIZE", newenv_alloc, 0);
+        }
     }
 }
 
 void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
+    int32_t   hwpar;
     pthread_t initer;
 
     commMaxThreads = chpl_comm_getMaxThreads();
 
     // Setup hardware parallelism, the stack size, and stack guards
-    setupAvailableParallelism(commMaxThreads);
-    setupCallStacks();
+    hwpar = setupAvailableParallelism(commMaxThreads);
+    setupCallStacks(hwpar);
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 

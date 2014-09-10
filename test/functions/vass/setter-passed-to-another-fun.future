@@ -1,0 +1,39 @@
+bug: 'setter' in 'var' functions is printed incorrectly in some cases
+
+The value of the 'setter' implicit formal argument of 'var' functions
+is incorrect in certain scenarios, as shown in the source/.bad files
+
+For a given Chapel call to an accessor function, the compiler starts
+out binding it to the 'setter=true' version, and later changes it
+to the 'setter=false' version (the latter being ->valueFunction
+of the former) if it finds it possible, in cullOverReferences().
+
+This analysis looks, among others, at the result of the accessor
+function and how it is passed as an actual to other functions.
+In particular, it examines the corresponding formals' intents.
+
+The challenge in implementing this analysis correctly,
+as the compiler stands currently, is that the intents in the AST,
+at cullOverReferences/past resolution, deviate from Chapel
+intents. Also the blank intent can be interpreted/converted
+differently than its Chapel semantics.
+
+This is particularly noticeable with array wrapper records.
+We tend to think of the corresponding arguments as records,
+rather than Chapel arrays, and adjust intents correspondingly.
+E.g. we may convert the blank intent to const in.
+
+Wrappers exacerbate the issue because wrapper formals' intents
+are loosely related to the original functions' intents.
+
+
+Another challenge is that setter-ness of a var function cannot be
+determined during our AST post-order traversal during resolution,
+e.g. when the result of an accessor is passed by blank intent to a
+generic function.
+
+Given all the above, we might specify that our implementation may
+invoke the setter=true accessor variety where setter=false is
+expected. However, whichever version gets invoked, the value
+of 'setter' reported within that version will be correct,
+i.e. no bug in this respect.

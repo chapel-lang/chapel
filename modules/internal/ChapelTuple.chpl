@@ -79,17 +79,20 @@ module ChapelTuple {
   //
   // isTuple, isTupleType and isHomogeneousTuple param functions
   //
-  proc isTuple(x: _tuple) param
+  proc isTupleValue(x: _tuple) param
     return true;
   
-  proc isTuple(x) param
+  proc isTupleValue(x) param
     return false;
 
-  proc isHomogeneousTuple(x: _tuple) param
+  proc isHomogeneousTupleValue(x: _tuple) param
     return __primitive("is star tuple type", x);
   
   proc isTupleType(type t) param
     return __primitive("is tuple type", t);
+  
+  proc isHomogeneousTupleType(type t) param
+    return __primitive("is star tuple type", t);
   
   //
   // tuple assignment
@@ -103,7 +106,7 @@ module ChapelTuple {
   //
   // homogeneous tuple accessor
   //
-  proc _tuple.this(i : integral) var {
+  proc _tuple.this(i : integral) ref {
     if !isHomogeneousTuple(this) then
       compilerError("invalid access of non-homogeneous tuple by runtime value");
     if boundsChecking then
@@ -133,7 +136,7 @@ module ChapelTuple {
       where tag == iterKind.leader 
   {
 
-    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+    const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
                      else dataParTasksPerLocale;
     const ignoreRunning = dataParIgnoreRunningTasks;
     const minIndicesPerTask = dataParMinGranularity;

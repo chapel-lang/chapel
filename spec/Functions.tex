@@ -733,7 +733,7 @@ variables:
 \begin{chapel}
 var x, y = 0;
 
-proc A(i: int) var {
+proc A(i: int) ref {
   if i < 0 || i > 1 then
     halt("array access out of bounds");
   if i == 0 then
@@ -761,7 +761,7 @@ example, that the second element in the pseudo-array is only assigned
 a value if the first argument is positive.  To do this, add the
 following:
 \begin{chapelnoprint}
-proc A2(i: int) var { // } to fool latex
+proc A2(i: int) ref { // } to fool latex
   if i < 0 || i > 1 then
     halt("array access out of bounds");
 \end{chapelnoprint}

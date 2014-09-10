@@ -3,10 +3,10 @@ record mytuple {
   type t2;
   var f1 : t1;
   var f2 : t2;
-  proc this(param i : int) var where i == 1 {
+  proc this(param i : int) ref where i == 1 {
     return f1;
   }
-  proc this(param i : int) var where i == 2 {
+  proc this(param i : int) ref where i == 2 {
     return f2;
   }
 }

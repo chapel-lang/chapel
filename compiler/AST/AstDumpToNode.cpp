@@ -355,9 +355,9 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
     case RET_VALUE:
       break;
 
-    case RET_VAR:
+    case RET_REF:
       newline();
-      write("RetTag:   var");
+      write("RetTag:   ref");
       break;
 
     case RET_PARAM:

@@ -113,7 +113,7 @@ module DefaultOpaque {
   
     proc dsiGetBaseDom() return dom;
   
-    proc dsiAccess(ind : idxType) var : eltType
+    proc dsiAccess(ind : idxType) ref : eltType
       return anarray.dsiAccess(ind);
     
     proc dsiTargetLocDom() {
@@ -130,7 +130,7 @@ module DefaultOpaque {
       return _newDomain(dom);
     }
   
-    iter these() var {
+    iter these() ref {
       for e in anarray do
         yield e;
     }
@@ -140,7 +140,7 @@ module DefaultOpaque {
         yield block;
     }
   
-    iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       for i in dom.these(tag=iterKind.follower, followThis) do
         yield dsiAccess(i);
     }

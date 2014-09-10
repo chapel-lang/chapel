@@ -78,7 +78,7 @@ module analyze_RMAT_graph_associative_array {
 
       proc   Neighbors  ( v : index (vertices) ) {return Row (v).Row_Neighbors;}
 
-      iter   edge_weight (v : index (vertices) ) var {
+      iter   edge_weight (v : index (vertices) ) ref {
         for w in Row (v).Weight do
           yield w;}  // var iterator to avoid a copy
 

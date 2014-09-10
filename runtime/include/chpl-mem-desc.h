@@ -90,8 +90,12 @@
           "glom strings data"),                                         \
         m(STRING_COPY_DATA,                                             \
           "string copy data"),                                          \
+        m(STRING_COPY_REMOTE,                                           \
+          "remote string copy"),                                        \
         m(STRING_CONCAT_DATA,                                           \
           "string concat data"),                                        \
+        m(STRING_MOVE_DATA,                                             \
+          "string move data"),                                          \
         m(STRING_SELECT_DATA,                                           \
           "string select data"),                                        \
         m(CONFIG_ARG_COPY_DATA,                                         \

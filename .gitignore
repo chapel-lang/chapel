@@ -105,6 +105,8 @@ gen
 /test/Logs
 /test/**/perfdat
 
+/test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
+
 /test/chpldoc/**/docs
 /test/chpldoc/**/*.good
 
@@ -174,6 +176,8 @@ gen
 /test/io/ferguson/asserteof.test.nums
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
+/test/io/fsouza/chdir/destination
+/test/io/fsouza/chown/file.txt
 
 /test/localeModels/gbt/maxTaskPar.good
 

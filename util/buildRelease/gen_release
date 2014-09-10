@@ -87,6 +87,7 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
     "util/chplenv",
     "util/config",
     "util/docs",
+    "util/quickstart",
     "util/test"
 );
 

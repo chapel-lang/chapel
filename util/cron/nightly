@@ -489,6 +489,11 @@ print "Making DEBUG=0 OPTIMIZE=1 compiler\n";
 $makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 compiler\n";
+    # Since the rest of the compiler is being built unoptimized, disable
+    # compiler performance testing so we don't get unexplained hiccups in
+    # the perf graphs.
+    print "compiler performance testing will be disabled\n";
+    $compperformance = 0;
     mysystem("cd $chplhomedir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
 
@@ -509,8 +514,11 @@ if ($buildruntime == 0) {
     exit 0;
 }
 
+# if this is a performance test run then failing to build the runtime with
+# optimizations is a fatal error.  Otherwise we could get hiccups in the
+# performance graphs that are difficult to track.
 print "Making DEBUG=0 OPTIMIZE=1 $qthreadopts runtime\n";
-$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", $performance, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 $qthreadopts runtime\n";
     mysystem("cd $chplhomedir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
@@ -932,6 +940,9 @@ sub mysystem {
 	    close(MAIL);
 	}
 
+        if ($fatal != 0) {
+            exit 1;
+        }
     }
     $status;
 }

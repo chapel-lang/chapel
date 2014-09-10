@@ -8,7 +8,7 @@ proc foo() {
   }
   writeln(y);
 
-  iter bar() var {
+  iter bar() ref {
     yield x;
   }
 }

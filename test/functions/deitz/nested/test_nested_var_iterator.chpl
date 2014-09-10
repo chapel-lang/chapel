@@ -1,6 +1,6 @@
 proc foo() {
   var x, y, z: int;
-  iter bar() var {
+  iter bar() ref {
     yield x;
     yield y;
     yield z;

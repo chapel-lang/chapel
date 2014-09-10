@@ -5,7 +5,7 @@ proc main() {
   var s: string = "a string";
   var b: int;
   writeln(s);
-  cobegin ref(b,s) {
+  cobegin with (ref b, ref s) {
     on Locales(1) {
       while (s != "done") { b += 1; atomic_fence(); }
       s = "another string";

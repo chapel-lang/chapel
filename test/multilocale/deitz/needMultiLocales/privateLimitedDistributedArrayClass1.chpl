@@ -10,7 +10,7 @@ class DistributedArray {
   var others: [0..numLocales-1] DistributedArray;
 }
 
-proc DistributedArray.this(i: int) var {
+proc DistributedArray.this(i: int) ref {
   if ndata.member(i) {
     return data[i];
   } else {

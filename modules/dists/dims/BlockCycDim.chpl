@@ -154,7 +154,7 @@ proc BlockCyclicDim.toString()
 // Assert that the value of 'src' is preserved when casting it to 'destT'.
 // Note: customized error message for the use in dsiNewRectangularDom1d().
 inline proc _checkFitsWithin(src: integral, type destT)
-  where _isIntegralType(destT)
+  where isIntegralType(destT)
 {
   inline proc ensure(arg:bool) {
     if !arg then halt("When creating a domain mapped using DimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", typeToString(destT));
@@ -162,18 +162,18 @@ inline proc _checkFitsWithin(src: integral, type destT)
   type maxuT = uint(64); // the largest unsigned type
   type srcT = src.type;
   proc numMantBits(type T) param
-    return numBits(T) - if _isSignedType(T) then 1 else 0;
+    return numBits(T) - if isIntType(T) then 1 else 0;
 
-  if _isUnsignedType(destT) {
+  if isUintType(destT) {
     ensure(isNonnegative(src));
     if numMantBits(srcT) > numMantBits(destT) then
       ensure(src:maxuT <= max(destT):maxuT);
 
   } else {
     // destT is signed
-    if _isUnsignedType(srcT) && numMantBits(srcT) > numMantBits(destT) then
+    if isUintType(srcT) && numMantBits(srcT) > numMantBits(destT) then
       ensure(src:maxuT <= max(destT):maxuT);
-    if _isSignedType(srcT) && numBits(destT) < numBits(srcT) {
+    if isIntType(srcT) && numBits(destT) < numBits(srcT) {
       ensure(src <= max(destT):srcT);
       ensure(src >= min(destT):srcT);
     }
@@ -204,9 +204,9 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
       else                         cycleSizePos - offset;
   }
 
-  // Do we need to care about _isSignedType(stoIndexT) ?
+  // Do we need to care about isIntType(stoIndexT) ?
   const adjLowIdx =
-    if _isSignedType(idxType)
+    if isIntType(idxType)
     then
       -lowIdxDom
     else
@@ -443,7 +443,7 @@ inline proc modP2(m: integral, n: bcdPosInt) {
   // eliminate some run-time tests if input(s) is(are) unsigned
   return
     if true then //if isNonnegative(n) then
-      if _isUnsignedType(m.type)
+      if isUintType(m.type)
       then temp
       else ( if temp >= 0 then temp else temp + n )
     else
@@ -598,7 +598,7 @@ proc BlockCyclic1dom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
 proc _bcddb(args...) { /* writeln((...args)); */ }
 
 iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
-  param zbased = _isUnsignedType(idxType);
+  param zbased = isUintType(idxType);
 // todo: for the special case handled in dsiMyDensifiedRangeForTaskID1d,
 // maybe handling it here will be beneficial, too?
   const locNo = this.locId;

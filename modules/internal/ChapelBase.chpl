@@ -186,7 +186,7 @@ module ChapelBase {
   proc compilerAssert(param test: bool, param arg1:integral)
   { if !test then compilerError("assert failed", arg1:int); }
   
-  proc compilerAssert(param test: bool, param arg1) where !_isIntegralType(arg1.type)
+  proc compilerAssert(param test: bool, param arg1) where !isIntegralType(arg1.type)
   { if !test then compilerError("assert failed - ", arg1); }
   
   proc compilerAssert(param test: bool, param arg1, param arg2)
@@ -628,8 +628,8 @@ module ChapelBase {
   //
   //  bug?  in setters, parameterize real argument over complex bit width
   //
-  inline proc ref chpl_anycomplex.re var return __primitive("complex_get_real", this);
-  inline proc ref chpl_anycomplex.im var return __primitive("complex_get_imag", this);
+  inline proc ref chpl_anycomplex.re ref return __primitive("complex_get_real", this);
+  inline proc ref chpl_anycomplex.im ref return __primitive("complex_get_imag", this);
   
   //
   // helper functions
@@ -692,7 +692,7 @@ module ChapelBase {
       __primitive("array_alloc", this, eltType, size);
       init_elts(this, size, eltType);
     }*/
-    inline proc this(i: integral) var {
+    inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
   }
@@ -866,9 +866,9 @@ module ChapelBase {
   // down in the file) to save complexity in the compiler.
   //
   inline proc chpl_typeSupportsPrimitiveCast(type t) param
-    return _isBooleanType(t) || 
-           _isIntegralType(t) || 
-           _isRealType(t) || 
+    return isBoolType(t) || 
+           isIntegralType(t) || 
+           isRealType(t) || 
            t == c_string;
   
   inline proc _cast(type t, x: bool) where chpl_typeSupportsPrimitiveCast(t)
@@ -904,49 +904,49 @@ module ChapelBase {
   //
   // casts to complex
   //
-  inline proc _cast(type t, x: bool) where _isComplexType(t)
+  inline proc _cast(type t, x: bool) where isComplexType(t)
     return (x, 0):t;
   
-  inline proc _cast(type t, x: int(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: int(?w)) where isComplexType(t)
     return (x, 0):t;
   
-  inline proc _cast(type t, x: uint(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: uint(?w)) where isComplexType(t)
     return (x, 0):t;
   
-  inline proc _cast(type t, x: real(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: real(?w)) where isComplexType(t)
     return (x, 0):t;
   
-  inline proc _cast(type t, x: imag(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: imag(?w)) where isComplexType(t)
     return (0, _i2r(x)):t;
   
-  inline proc _cast(type t, x: complex(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: complex(?w)) where isComplexType(t)
     return (x.re, x.im):t;
   
   //
   // casts to imag
   //
-  inline proc _cast(type t, x: bool) where _isImagType(t)
+  inline proc _cast(type t, x: bool) where isImagType(t)
     return if x then 1i:t else 0i:t;
   
-  inline proc _cast(type t, x: int(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: int(?w)) where isImagType(t)
     return 0i:t;
   
-  inline proc _cast(type t, x: uint(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: uint(?w)) where isImagType(t)
     return 0i:t;
   
-  inline proc _cast(type t, x: real(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: real(?w)) where isImagType(t)
     return 0i:t;
   
-  inline proc _cast(type t, x: imag(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: imag(?w)) where isImagType(t)
     return __primitive("cast", t, x);
   
-  inline proc _cast(type t, x: complex(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: complex(?w)) where isImagType(t)
     return let xim = x.im in __primitive("cast", t, xim);
   
   //
   // casts from complex
   //
-  inline proc _cast(type t, x: complex(?w)) where _isRealType(t) || _isIntegralType(t) {
+  inline proc _cast(type t, x: complex(?w)) where isRealType(t) || isIntegralType(t) {
     var y: t;
     y = x.re:t;
     return y;
@@ -955,10 +955,10 @@ module ChapelBase {
   //
   // casts from imag
   //
-  inline proc _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t)
+  inline proc _cast(type t, x: imag(?w)) where isRealType(t) || isIntegralType(t)
     return 0:t;
   
-  inline proc _cast(type t, x: imag(?w)) where _isBooleanType(t)
+  inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
   
   inline proc chpl__typeAliasInit(type t) type return t;
@@ -1045,7 +1045,7 @@ module ChapelBase {
   pragma "ref" 
   pragma "donor fn"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(r: _ref) var return r;
+  inline proc chpl__autoCopy(r: _ref) ref return r;
   
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;

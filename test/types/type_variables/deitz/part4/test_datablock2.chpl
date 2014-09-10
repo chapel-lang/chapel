@@ -3,7 +3,7 @@ class DataBlock {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  proc this(i : int) var : t {
+  proc this(i : int) ref : t {
     if i == 1 then
       return x1;
     else if i == 2 then
