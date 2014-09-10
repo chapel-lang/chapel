@@ -1,0 +1,1 @@
+bug: Const ref args to functions should be allowed to have default values.

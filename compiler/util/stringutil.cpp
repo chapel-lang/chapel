@@ -164,14 +164,27 @@ uint64_t binStr2uint64(const char* str) {
   return val;
 }
 
+uint64_t octStr2uint64(const char* str) {
+  if (!str) {
+    INT_FATAL("NULL string passed to octStrToUint64()");
+  }
+  int len = strlen(str);
+  if (len < 3 || str[0] != '0' || (str[1] != 'o' && str[1] != 'O')) {
+    INT_FATAL("Illegal string passed to octStrToUint64()");
+  }
+  uint64_t val = strtoul(str+2, NULL, 8);
+  // strtoul() converts the string to a number with base provided, in this
+  // case 8
+  return val;
+}
 
 uint64_t hexStr2uint64(const char* str) {
   if (!str) {
-    INT_FATAL("NULL string passed to binStrToUint64()");
+    INT_FATAL("NULL string passed to hexStrToUint64()");
   }
   int len = strlen(str);
   if (len < 3 || str[0] != '0' || (str[1] != 'x' && str[1] != 'X')) {
-    INT_FATAL("Illegal string passed to binStrToUint64()");
+    INT_FATAL("Illegal string passed to hexStrToUint64()");
   }
   uint64_t val;
   int numitems = sscanf(str+2, "%"SCNx64, &val);

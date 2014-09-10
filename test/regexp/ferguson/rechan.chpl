@@ -191,7 +191,8 @@ writeln("+matches: All words capturing first letter");
 {
   var r = f.reader();
   var re = compile("(\\w)\\w*");
-  for (m,a) in r.matches(re, 1) {
+  for (m,aFor) in r.matches(re, 1) {
+    var a = aFor; // so we can pass 'a' to extractMatch()
     writeln("offset ", r.offset());
     writeln("match ", m);
     var s:string;

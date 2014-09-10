@@ -167,7 +167,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
-  chpl '("align" "atomic" "begin" "by" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "noinit" "on" "out" "reduce" "ref" "scan" "serial" "single" "sparse" "sync" "where" "while" "zip"))
+  chpl '("align" "atomic" "begin" "by" "cobegin" "coforall" "dmapped" "for" "forall" "if" "in" "inout" "local" "noinit" "on" "out" "reduce" "ref" "scan" "serial" "single" "sparse" "sync" "where" "while" "with" "zip"))
 
 ;;; Chpl.
 
