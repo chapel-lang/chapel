@@ -1,11 +1,11 @@
 var x: int;
 
-proc foo() var {
+proc foo() ref {
   writeln(setter);
   return x;
 }
 
-proc bar() var {
+proc bar() ref {
   writeln(setter);
   return foo();
 }

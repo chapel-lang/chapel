@@ -66,7 +66,7 @@ class C {
     }
   }
 
-  iter these(followThis) var {
+  iter these(followThis) ref {
     for i in followThis do
       if (i <= n) then
         yield A(i);
@@ -74,7 +74,7 @@ class C {
         yield B(i-n);
   }
 
-  proc this(i) var {
+  proc this(i) ref {
     if (i <= n) then
       return A(i);
     else

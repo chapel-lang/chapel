@@ -13,7 +13,7 @@ iter rtValIter() : [P]int {
   writeln("rtval-3 ", p[1]);
 }
 
-iter rtRefIter() var : [P]int {
+iter rtRefIter() ref : [P]int {
   var p: [P]int;
   p[1] = 111;
   writeln("rtref-1 ", p[1]);
@@ -33,7 +33,7 @@ iter ntValIter() {
   writeln("ntval-3 ", p[1]);
 }
 
-iter ntRefIter() var {
+iter ntRefIter() ref {
   var p: [P]int;
   p[1] = 111;
   writeln("ntref-1 ", p[1]);

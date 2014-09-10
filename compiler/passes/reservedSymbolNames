@@ -57,6 +57,7 @@
   fread
   fsync
   main
+  mkdir
   open
   pow
   printf

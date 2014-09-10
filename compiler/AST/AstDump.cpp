@@ -367,7 +367,7 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
 
   switch (fn->retTag) {
     case RET_VALUE:                 break;
-    case RET_VAR:   write("var");   break;
+    case RET_REF:   write("ref");   break;
     case RET_PARAM: write("param"); break;
     case RET_TYPE:  write("type");  break;
   }

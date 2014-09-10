@@ -91,12 +91,14 @@
 
 digit            [0-9]
 bit              [0-1]
+octDigit         [0-7]
 hexDigit         [0-9a-fA-F]
 letter           [_a-zA-Z]
 ident            {letter}({letter}|{digit}|"$")*
 binaryLiteral    0[bB]{bit}+
+octalLiteral     0[oO]{octDigit}+
 hexLiteral       0[xX]{hexDigit}+
-intLiteral       {digit}+|{binaryLiteral}|{hexLiteral}
+intLiteral       {digit}+|{binaryLiteral}|{octalLiteral}|{hexLiteral}
 exponent         [Ee][\+\-]?{digit}+
 floatLiteral1    {digit}*"."{digit}+({exponent})?
 floatLiteral2    {digit}+"."{exponent}

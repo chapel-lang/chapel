@@ -2,7 +2,7 @@ var A: [1..4] int;
 
 writeln(A);
 
-proc f() var return A;
+proc f() ref return A;
 
 f() = 1;
 

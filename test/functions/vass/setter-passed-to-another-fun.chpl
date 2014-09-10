@@ -11,13 +11,13 @@ proc f_const_in(const in arg) {}
 proc f_const_ref(const ref arg) {}
 
 var globalInt: int;
-proc accessorInt() var {
+proc accessorInt() ref {
   writeln(setter);
   return globalInt;
 }
 
 var globalArr: [1..2] int;
-proc accessorArr() var {
+proc accessorArr() ref {
   writeln(setter);
   return globalArr;
 }

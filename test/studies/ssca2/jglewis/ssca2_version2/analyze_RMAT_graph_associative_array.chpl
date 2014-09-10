@@ -81,7 +81,7 @@ module analyze_RMAT_graph_associative_array {
       // NEED PARALLEL ITERATOR FOR EDGE_WEIGHT BELOW.  
       // Not implemented yet in compiler. 
 
-      iter   edge_weight (v : index (vertices) ) var {
+      iter   edge_weight (v : index (vertices) ) ref {
 	for w in Row (v).Weight do
 	  yield w;}  // var iterator to avoid a copy
 

@@ -716,7 +716,7 @@ protoIteratorClass(FnSymbol* fn) {
   ii->irecord = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
   rts->addFlag(FLAG_ITERATOR_RECORD);
-  if (fn->retTag == RET_VAR)
+  if (fn->retTag == RET_REF)
     rts->addFlag(FLAG_REF_ITERATOR_CLASS);
   fn->defPoint->insertBefore(new DefExpr(rts));
 
@@ -849,7 +849,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
   resolveBlock(fn->retExprType);
   fn->retType = fn->retExprType->body.tail->typeInfo();
   if (fn->retType != dtUnknown) {
-    if (fn->retTag == RET_VAR) {
+    if (fn->retTag == RET_REF) {
       makeRefType(fn->retType);
       fn->retType = fn->retType->refType;
     }
@@ -6246,7 +6246,7 @@ resolveFns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
     return;
 
-  if (fn->retTag == RET_VAR) {
+  if (fn->retTag == RET_REF) {
     buildValueFunction(fn);
   }
 

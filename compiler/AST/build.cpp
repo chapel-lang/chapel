@@ -225,6 +225,10 @@ Expr* buildIntLiteral(const char* pch) {
   uint64_t ull;
   if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2))
     ull = binStr2uint64(pch);
+  else if (!strncmp("0o", pch, 2) || !strncmp("0O", pch, 2))
+    // The second case is difficult to read, but is zero followed by a capital
+    // letter 'o'
+    ull = octStr2uint64(pch);
   else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2))
     ull = hexStr2uint64(pch);
   else
@@ -526,30 +530,13 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
 static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
   BlockStmt* loop = new BlockStmt();
 
-  // C for loops currently have the form:
-  //   __primitive("C for loop", i, start, end, stride)
+  // C for loops have the form:
+  //   __primitive("C for loop", initExpr, testExpr, incrExpr)
   //
-  // The following code creates the init, test, and incr expr from that and
-  // wraps them in block stmts creating something like:
-  //   __primitive("C for loop", {i = start}, {i <= end}, {i = i + stride})
-  //
-  // Note: This currently forces the test condition to be <= and the stride
-  // operator to be +. At least the condition will need to be user specifiable
-  // in the near future.  Two current ideas are to add the condition's
-  // primitive string value to the "C for loop" and parse that. Another (and
-  // the one I prefer) would be to allow primitives to take other primitives as
-  // arguments and use that to build the init, test, and incr exprs and just
-  // wrap them with block stmts here.
-  //
-  // TODO PRIM_MOVE and i = i + stride are used over PRIM_ASSIGN and i +=
-  // stride because of the ref temps that are currently introduced with
-  // PRIM_ASSIGN and op= operations. Once those are gone this should be fixed
-
-  Expr* index = call->get(1)->copy();
-  call->get(1)->replace(new BlockStmt(new CallExpr(PRIM_MOVE, index->copy(), call->get(2)->copy())));
-  call->get(2)->replace(new BlockStmt(new CallExpr(PRIM_LESSOREQUAL, index->copy(), call->get(3)->copy())));
-  call->get(3)->replace(new BlockStmt(new CallExpr(PRIM_MOVE, index->copy(), new CallExpr(PRIM_ADD, index->copy(),call->get(4)->copy()))));
-  call->get(4)->remove();
+  // This simply wraps the init, test, and incr expr with block stmts
+  call->get(1)->replace(new BlockStmt(call->get(1)->copy()));
+  call->get(2)->replace(new BlockStmt(call->get(2)->copy()));
+  call->get(3)->replace(new BlockStmt(call->get(3)->copy()));
 
   // Regular loop setup
   loop->blockInfo = call;
@@ -572,6 +559,9 @@ static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
 
 
 BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
+  // C for loops are invoked with 'while __primitive("C for loop" ...)'
+  // This checks if we had such a case and if we did builds the c for loop
+  // instead of the while loop and returns it.
   if (CallExpr* call = toCallExpr(cond)) {
     if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
       BlockStmt* loop = buildCForLoopStmt(call, body);
@@ -1832,7 +1822,7 @@ buildFunctionDecl(FnSymbol*  fn,
 {
   fn->retTag = optRetTag;
 
-  if (optRetTag == RET_VAR)
+  if (optRetTag == RET_REF)
   {
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot be setters.");
