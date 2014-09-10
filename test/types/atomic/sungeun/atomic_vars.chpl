@@ -86,7 +86,7 @@ proc doit(type myType) {
     }
   b.waitFor(true);
 
-  if _isIntegralType(myType) {
+  if isIntegralType(myType) {
     ax.write(max(int(8)):myType, mo);
     b.clear();
     begin {

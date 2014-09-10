@@ -68,10 +68,10 @@ pragma "no default functions"
 pragma "no wide class"
 class c_ptr {
   type eltType;
-  inline proc this(i: integral) var {
+  inline proc this(i: integral) ref {
     return __primitive("array_get", this, i);
   }
-  inline proc deref() var {
+  inline proc deref() ref {
     return __primitive("array_get", this, 0);
   }
 }

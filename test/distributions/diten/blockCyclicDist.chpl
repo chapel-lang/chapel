@@ -116,7 +116,7 @@ class BlockCyclicArr {
       }
     }
   }
-  proc this(ind:idxType...nDims) var {
+  proc this(ind:idxType...nDims) ref {
     return locArrs(dom.dist.idxToLocaleInd((...ind))).arr(dom.dist.getLocalPosition((...ind)));
   }
 }

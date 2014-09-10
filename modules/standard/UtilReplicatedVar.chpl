@@ -113,11 +113,11 @@ proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
       col = replicatedVar[rcDomainIx];
 }
 
-proc rcLocal(replicatedVar: [?D] ?MYTYPE) var: MYTYPE {
+proc rcLocal(replicatedVar: [?D] ?MYTYPE) ref: MYTYPE {
   return replicatedVar[rcDomainIx];
 }
 
-proc rcRemote(replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) var: MYTYPE {
+proc rcRemote(replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) ref: MYTYPE {
   var result: MYTYPE;
   on remoteLoc do
     result = replicatedVar[rcDomainIx];

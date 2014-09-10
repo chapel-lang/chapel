@@ -81,7 +81,7 @@ class LocTree {
         middle of the tree you will short circuit a whole subtree!
 
      */
-    proc this(node: Node) var {
+    proc this(node: Node) ref {
         oneAtATime$;
         if !nodes.member(node) {
             if setter {
@@ -104,7 +104,7 @@ class LocTree {
     /** Access an element in the associative domain.  If it doesn't exist,
         return None.
      */
-    proc peek(node: Node) var {
+    proc peek(node: Node) ref {
         if has_coeffs(node) then
             return this(node);
         else
@@ -192,7 +192,7 @@ class FTree {
         return Locales(loc);
     }
 
-    proc this(node: Node) var {
+    proc this(node: Node) ref {
         const t = tree[node2loc(node).id];
         return t[node];
     }
@@ -226,7 +226,7 @@ class FTree {
                 yield coeffs;
     }
     
-    proc peek(node: Node) var {
+    proc peek(node: Node) ref {
         const t = tree[node2loc(node).id];
         return t.peek(node);
     }

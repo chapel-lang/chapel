@@ -234,7 +234,7 @@ module ChapelArray {
   config param CHPL_WARN_DOMAIN_LITERAL = "unset";
   proc chpl__buildArrayExpr( elems:?t ...?k ) {
 
-    if CHPL_WARN_DOMAIN_LITERAL == "true" && chpl__isRange(elems(1)) {
+    if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(1)) {
       compilerWarning("Encountered an array literal with range element(s).",
                       " Did you mean a domain literal here?",
                       " If so, use {...} instead of [...]."); 
@@ -515,7 +515,7 @@ module ChapelArray {
   proc isAssociativeArr(a: []) param return isAssociativeDom(a.domain);
   
   proc isEnumDom(d: domain) param {
-    return isAssociativeDom(d) && _isEnumeratedType(d._value.idxType);
+    return isAssociativeDom(d) && isEnumType(d._value.idxType);
   }
   
   proc isEnumArr(a: []) param return isEnumDom(a.domain);
@@ -616,7 +616,7 @@ module ChapelArray {
     }
   
     proc newAssociativeDom(type idxType, param parSafe: bool=true)
-    where _isEnumeratedType(idxType) {
+    where isEnumType(idxType) {
       var x = _value.dsiNewAssociativeDom(idxType, parSafe);
       if x.linksDistribution() {
         _value.add_dom(x);
@@ -1320,27 +1320,28 @@ module ChapelArray {
     }
   
     proc eltType type return _value.eltType;
+    proc idxType type return _value.idxType;
     proc _dom return _getDomain(_value.dom);
     proc rank param return this.domain.rank;
   
-    inline proc this(i: rank*_value.dom.idxType) var {
+    inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
       else
         return _value.dsiAccess(i(1));
     }
   
-    inline proc this(i: _value.dom.idxType ...rank) var
+    inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
   
-    inline proc localAccess(i: rank*_value.dom.idxType) var {
+    inline proc localAccess(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
       else
         return _value.dsiLocalAccess(i(1));
     }
   
-    inline proc localAccess(i: _value.dom.idxType ...rank) var
+    inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
     //
     // requires dense domain implementation that returns a tuple of
@@ -1401,11 +1402,6 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
 
-    inline proc assertSingleArrayDomain(fnName : string) {
-      if this.domain._value._arrs.length != 1 then
-        halt("Cannot call ", fnName, " on an array defined over a domain with multiple arrays");
-    }
-  
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
     proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
@@ -1440,7 +1436,7 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
   
-    inline proc these() var {
+    inline proc these() ref {
       return _value.these();
     }
   
@@ -1505,7 +1501,7 @@ module ChapelArray {
   
     // sparse array interface
   
-    proc IRV var {
+    proc IRV ref {
       return _value.IRV;
     }
   
@@ -1554,7 +1550,265 @@ module ChapelArray {
         for d in _value.dsiGetLocalSubdomains() do yield d;
     }
 
+    proc chpl__isDense1DArray() param {
+      return isRectangularArr(this) &&
+             this.rank == 1 &&
+             !this._value.stridable;
+    }
+
+    inline proc chpl__assertSingleArrayDomain(fnName: string) {
+      if this.domain._value._arrs.length != 1 then
+        halt("cannot call " + fnName +
+             " on an array defined over a domain with multiple arrays");
+    }
+
+    /* The following methods are intended to provide a list or vector style
+       interface to 1D unstridable rectangular arrays.  They are only intended
+       for use on arrays that have a 1:1 correspondence with their domains.
+       All methods here that modify the array's domain assert that this 1:1
+       property holds.
+
+       These are currently not parallel safe, and cannot safely be called by
+       multiple tasks simultaneously on the same array.
+
+       The current implementation reallocates the array every time the domain
+       is modified.  This could be improved with a size doubling/halving
+       strategy.
+     */
+
+    /* Return true if the array has no elements */
+    proc isEmpty(): bool {
+      return this.numElements == 0;
+    }
+
+    /* Return the first value in the array */
+    proc head(): this._value.eltType {
+      return this[this.domain.low];
+    }
+
+    /* Return the last value in the array */
+    proc tail(): this._value.eltType {
+      return this[this.domain.high];
+    }
+
+    /* Add element 'val' to the back of the array, extending the array's
+       domain by one. If the domain was {1..5} it will become {1..6}.
+       val: the value to add to the back of the array
+     */
+    proc push_back(val: this.eltType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("push_back");
+      const lo = this.domain.low,
+            hi = this.domain.high+1;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+      this[hi] = val;
+    }
+
+    /* Remove the last element from the array, reducing the size of the
+       domain by one. If the domain was {1..5} it will become {1..4}
+     */
+    proc pop_back() where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("pop_back");
+      const lo = this.domain.low,
+            hi = this.domain.high-1;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Add element 'val' to the front of the array, extending the array's
+       domain by one. If the domain was {1..5} it will become {0..5}.
+       val: the value to add to the front of the array
+     */
+    proc push_front(val: this.eltType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("push_front");
+      const lo = this.domain.low-1,
+            hi = this.domain.high;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+      this[lo] = val;
+    }
+
+    /* Remove the first element of the array reducing the size of the
+       domain by one.  If the domain was {1..5} it will become {2..5}.
+     */
+    proc pop_front() where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("pop_front");
+      const lo = this.domain.low+1,
+            hi = this.domain.high;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Insert element 'val' into the array at index 'pos'. Shift the array
+       elements above 'pos' up one index. If the domain was {1..5} it will
+       become {1..6}.
+       val: the value to add to the array
+       pos: the index at which the value should be added
+     */
+    proc insert(pos: this.idxType, val: this.eltType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("insert");
+      const lo = this.domain.low,
+            hi = this.domain.high+1;
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+      for i in pos..hi-1 by -1 do this[i+1] = this[i];
+      this[pos] = val;
+    }
+
+    /* Remove the element at index 'pos' from the array and shift the array
+       elements above 'pos' down one index. If the domain was {1..5} it will
+       become {1..4}.
+       pos: the index at which the value should be removed
+     */
+    proc remove(pos: this.idxType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("remove");
+      const lo = this.domain.low,
+            hi = this.domain.high-1;
+      const newDom = {lo..hi};
+      for i in pos..hi {
+        this[i] = this[i+1];
+      }
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Remove 'count' elements from the array starting at index 'pos' and
+       shift elements above 'pos+count' down by 'count' indices.
+       pos: The index to start removing from
+       count: The number of array elements to remove
+     */
+    proc remove(pos: this.idxType, count: this.idxType) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("remove count");
+      const lo = this.domain.low,
+            hi = this.domain.high-count;
+      if pos > hi then
+        halt("index ", pos+count, " is outside the supported range");
+      const newDom = {lo..hi};
+      for i in pos..hi {
+        this[i] = this[i+count];
+      }
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Remove the elements at the indices in the 'pos' range and shift the
+       array elements down by 'pos.size' elements. If the domain was {1..5}
+       and this is called with 2..3 as an argument, the new domain would be
+       {1..3} and the array would contain the elements formerly at positions
+       1, 4, 5.
+       pos: a dense range of indices to remove
+     */
+    proc remove(pos: range(this.idxType, stridable=false)) where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("remove range");
+      remove(pos.low, pos.size);
+    }
+
+    /* Reverse the order of the values in the array. */
+    proc reverse() where chpl__isDense1DArray() {
+      const lo = this.domain.low,
+            mid = this.domain.size / 2,
+            hi = this.domain.high;
+      for i in 0..#mid {
+        this[lo + i] <=> this[hi - i];
+      }
+    }
+
+    /* Remove all elements from the array leaving the domain empty. If the
+       domain was {5..10} it will become {5..4}.
+     */
+    proc clear() where chpl__isDense1DArray() {
+      chpl__assertSingleArrayDomain("clear");
+      const lo = this.domain.low,
+            hi = this.domain.low-1;
+      assert(hi < lo, "overflow occured subtracting 1 from low bound in clear");
+      const newDom = {lo..hi};
+      on this._value {
+        this._value.dsiReallocate(newDom);
+        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiPostReallocate();
+      }
+    }
+
+    /* Return a tuple containing true and the index of the first instance of
+       'val' in the array, or if 'val' is not found, a tuple containing false
+       and an unspecified value is returned.
+       val: the value to locate
+     */
+    proc find(val: this.eltType): (bool, this.idxType) {
+      for i in this.domain {
+        if this[i] == val then return (true, i);
+      }
+      return (false, 0);
+    }
+
+    /* Return the number of times 'val' occurs in the array.
+       val: the value to count
+     */
+    proc count(val: this.eltType): int {
+      var total: int = 0;
+      for i in this do if i == val then total += 1;
+      return total;
+    }
   }  // record _array
+
+
+  //
+  // isXxxType, isXxxValue
+  //
+
+  proc isDmapType(type t) param {
+    proc isDmapHelp(type t: _distribution) param  return true;
+    proc isDmapHelp(type t)                param  return false;
+    return isDmapHelp(t);
+  }
+
+  proc isDmapValue(e: _distribution) param  return true;
+  proc isDmapValue(e)                param  return false;
+
+  proc isDomainType(type t) param {
+    proc isDomainHelp(type t: _domain) param  return true;
+    proc isDomainHelp(type t)          param  return false;
+    return isDomainHelp(t);
+  }
+  
+  proc isDomainValue(e: domain) param  return true;
+  proc isDomainValue(e)         param  return false;
+
+  proc isArrayType(type t) param {
+    proc isArrayHelp(type t: _array) param  return true;
+    proc isArrayHelp(type t)         param  return false;
+    return isArrayHelp(t);
+  }
+
+  proc isArrayValue(e: []) param  return true;
+  proc isArrayValue(e)     param  return false;
+
   
   /*
      The following functions define set operations on associative arrays.
@@ -1590,7 +1844,7 @@ module ChapelArray {
   }
 
   proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("+=");
+    a.chpl__assertSingleArrayDomain("+=");
     a |= b;
   }
 
@@ -1605,7 +1859,7 @@ module ChapelArray {
   }
 
   proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("|=");
+    a.chpl__assertSingleArrayDomain("|=");
     serial !a.domain._value.parSafe do forall (k,v) in zip(b.domain, b) do a[k] = v;
   }
 
@@ -1620,7 +1874,7 @@ module ChapelArray {
   }
 
   proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("&=");
+    a.chpl__assertSingleArrayDomain("&=");
     serial !a.domain._value.parSafe do
       forall k in a.domain do
         if !b.domain.member(k) then a.domain.remove(k);
@@ -1638,7 +1892,7 @@ module ChapelArray {
   }
 
   proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("-=");
+    a.chpl__assertSingleArrayDomain("-=");
     serial !a.domain._value.parSafe do
       forall k in a.domain do
         if b.domain.member(k) then a.domain.remove(k);
@@ -1660,7 +1914,7 @@ module ChapelArray {
   }
 
   proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    a.assertSingleArrayDomain("^=");
+    a.chpl__assertSingleArrayDomain("^=");
     serial !a.domain._value.parSafe do
       forall k in b.domain do
         if a.domain.member(k) then a.domain.remove(k);
@@ -1748,9 +2002,6 @@ module ChapelArray {
     return help(1);
   }
   
-  proc chpl__isRange(r: range(?)) param return true;
-  proc chpl__isRange(r) param return false;
-  
   proc _getRankChangeRanges(args) {
     proc _tupleize(x) {
       var y: 1*x.type;
@@ -1760,7 +2011,7 @@ module ChapelArray {
     proc collectRanges(param dim: int) {
       if dim > args.size then
         compilerError("domain slice requires a range in at least one dimension");
-      if chpl__isRange(args(dim)) then
+      if isRange(args(dim)) then
         return collectRanges(dim+1, _tupleize(args(dim)));
       else
         return collectRanges(dim+1);
@@ -1769,12 +2020,12 @@ module ChapelArray {
       if dim > args.size {
         return x;
       } else if dim < args.size {
-        if chpl__isRange(args(dim)) then
+        if isRange(args(dim)) then
           return collectRanges(dim+1, ((...x), args(dim)));
         else
           return collectRanges(dim+1, x);
       } else {
-        if chpl__isRange(args(dim)) then
+        if isRange(args(dim)) then
           return ((...x), args(dim));
         else
           return x;
@@ -1782,18 +2033,6 @@ module ChapelArray {
     }
     return collectRanges(1);
   }
-  
-  //
-  // Support for += and -= over domains
-  //
-  proc chpl__isDomain(x: domain) param return true;
-  proc chpl__isDomain(x) param return false;
-  
-  proc chpl__isArray(x: []) param return true;
-  proc chpl__isArray(x) param return false;
-  
-  proc chpl__isDmap(x: _distribution) param return true;
-  proc chpl__isDmap(x) param return false;
   
   //
   // Assignment of domains and arrays
@@ -1870,15 +2109,13 @@ module ChapelArray {
   proc =(ref d: domain, r: range(?)) {
     d = {r};
   }
-  
+
   //
   // Return true if t is a tuple of ranges that is legal to assign to
   // rectangular domain d
   //
   proc chpl__isLegalRectTupDomAssign(d, t) param {
     proc isRangeTuple(a) param {
-      proc isRange(r: range(?e,?b,?s)) param return true;
-      proc isRange(r) param return false;
       proc peelArgs(first, rest...) param {
         return if rest.size > 1 then
                  isRange(first) && peelArgs((...rest))
@@ -1911,7 +2148,7 @@ module ChapelArray {
   }
   
   proc chpl__serializeAssignment(a: [], b) param {
-    if a.rank != 1 && chpl__isRange(b) then
+    if a.rank != 1 && isRange(b) then
       return true;
   
     // Sparse and Opaque arrays do not yet support parallel iteration.  We
@@ -1919,7 +2156,7 @@ module ChapelArray {
     // single assignment statement which feels like overkill
     //
     if ((!isRectangularArr(a) && !isAssociativeArr(a) && !isSparseArr(a)) ||
-        (chpl__isArray(b) &&
+        (isArray(b) &&
          !isRectangularArr(b) && !isAssociativeArr(b) && !isSparseArr(b))) then
       return true;
     return false;
@@ -1954,8 +2191,9 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where _isComplexType(t) return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where t: value return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isComplexType(t) return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
   
@@ -2310,7 +2548,7 @@ module ChapelArray {
   //
   proc chpl__staticFastFollowCheck(x) param {
     pragma "no copy" const lead = x;
-    if chpl__isDomain(lead) || chpl__isArray(lead) then
+    if isDomain(lead) || isArray(lead) then
       return chpl__staticFastFollowCheck(x, lead);
     else
       return false;
@@ -2326,7 +2564,7 @@ module ChapelArray {
   
   proc chpl__staticFastFollowCheckZip(x: _tuple) param {
     pragma "no copy" const lead = x(1);
-    if chpl__isDomain(lead) || chpl__isArray(lead) then
+    if isDomain(lead) || isArray(lead) then
       return chpl__staticFastFollowCheckZip(x, lead);
     else
       return false;

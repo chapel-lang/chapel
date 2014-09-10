@@ -136,7 +136,7 @@ module DefaultAssociative {
     }
   
     iter these() {
-      if !_isEnumeratedType(idxType) {
+      if !isEnumType(idxType) {
         for slot in _fullSlots() {
           yield table[slot].idx;
         }
@@ -482,7 +482,7 @@ module DefaultAssociative {
       dsiAccess(idx, haveLock) = initval;
     }
 
-    proc dsiAccess(idx : idxType, haveLock = false) var {
+    proc dsiAccess(idx : idxType, haveLock = false) ref {
       const shouldLock = dom.parSafe && !haveLock;
       if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
@@ -505,7 +505,7 @@ module DefaultAssociative {
       }
     }
   
-    iter these() var {
+    iter these() ref {
       for slot in dom {
         yield dsiAccess(slot);
       }
@@ -516,7 +516,7 @@ module DefaultAssociative {
         yield followThis;
     }
   
-    iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
       if followThisDom != dom {
         // check to see if domains match
@@ -688,18 +688,18 @@ module DefaultAssociative {
   
   proc chpl__validDefaultAssocDomIdxType(type idxType) param where
       // one check per an implementation of chpl__defaultHash() above
-      _isBooleanType(idxType)     ||
-      _isSignedType(idxType)      ||
-      _isUnsignedType(idxType)    ||
-      _isRealType(idxType)        ||
-      _isComplexType(idxType)     ||
-      _isImagType(idxType)        ||
+      isBoolType(idxType)     ||
+      isIntType(idxType)      ||
+      isUintType(idxType)    ||
+      isRealType(idxType)        ||
+      isImagType(idxType)        ||
+      isComplexType(idxType)     ||
       idxType == chpl_taskID_t    ||
       idxType == string           ||
       idxType == c_string         ||
       isClassType(idxType)        ||
       // these are handled differently
-      _isEnumeratedType(idxType)  ||
+      isEnumType(idxType)  ||
       isTupleType(idxType)        ||
       isRecordType(idxType)
   {

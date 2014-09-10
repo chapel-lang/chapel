@@ -140,7 +140,7 @@ const WA = new GlobalData("WA"),
 
 // Reuse the name for an indexing operation.
 // This does not access neighbor caches.
-proc GlobalData.dsiAccess(ix,iy) var {
+proc GlobalData.dsiAccess(ix,iy) ref {
   if chk {
     if 1 <= ix && ix <= ldx * gx && 1 <= iy && iy <= ldy * gy
       then {/*OK*/}

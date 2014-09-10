@@ -570,7 +570,7 @@ class UserMapAssocArr: BaseArr {
   //
   // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
-  proc dsiAccess(i: idxType) var {
+  proc dsiAccess(i: idxType) ref {
     const myLocArr = locArrs(here.id);
     local {
       if myLocArr.locDom.myInds.member(i) then
@@ -582,7 +582,7 @@ class UserMapAssocArr: BaseArr {
   //
   // the iterator over the array's elements, currently sequential
   //
-  iter these() var {
+  iter these() ref {
     for loc in dom.dist.targetLocDom {
       // TODO: May want to do something like:     
       // on this do
@@ -611,7 +611,7 @@ class UserMapAssocArr: BaseArr {
 
   proc supportsAlignedFollower() param return true;
 
-  iter these(param tag: iterKind, followThis, param aligned: bool = false) var where tag == iterKind.follower {
+  iter these(param tag: iterKind, followThis, param aligned: bool = false) ref where tag == iterKind.follower {
     //
     // TODO: Would like to write this as followThis += dom.low;
     //
@@ -635,7 +635,7 @@ class UserMapAssocArr: BaseArr {
       //
       // TODO: could do something smarter to only bring the non-local
       // elements over.
-      proc accessHelper(i) var {
+      proc accessHelper(i) ref {
         local {
           if myLocArr.locDom.myInds.member(i) then
             return myLocArr.this(i);
@@ -752,14 +752,14 @@ class LocUserMapAssocArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  proc this(i: idxType) var {
+  proc this(i: idxType) ref {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  iter these() var {
+  iter these() ref {
     for elem in myElems {
       yield elem;
     }
@@ -774,7 +774,7 @@ class LocUserMapAssocArr {
     yield {1..100};
   }
 
-  iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+  iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     yield myElems(0);
   }
 

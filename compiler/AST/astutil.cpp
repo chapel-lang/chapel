@@ -343,24 +343,42 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 
 //
 // Checks if a callExpr is one of the op= primitives
-// Note, this does not check if a callExpr is an 
+// Note, this does not check if a callExpr is an
 // op= function call (such as before inlining)
 //
 bool isOpEqualPrim(CallExpr* call) {
-  if (call->isPrimitive(PRIM_ADD_ASSIGN) ||
+  if (call->isPrimitive(PRIM_ADD_ASSIGN)      ||
       call->isPrimitive(PRIM_SUBTRACT_ASSIGN) ||
-      call->isPrimitive(PRIM_MULT_ASSIGN) ||
-      call->isPrimitive(PRIM_DIV_ASSIGN) ||
-      call->isPrimitive(PRIM_MOD_ASSIGN) ||
-      call->isPrimitive(PRIM_LSH_ASSIGN) ||
-      call->isPrimitive(PRIM_RSH_ASSIGN) ||
-      call->isPrimitive(PRIM_AND_ASSIGN) ||
-      call->isPrimitive(PRIM_OR_ASSIGN) ||
+      call->isPrimitive(PRIM_MULT_ASSIGN)     ||
+      call->isPrimitive(PRIM_DIV_ASSIGN)      ||
+      call->isPrimitive(PRIM_MOD_ASSIGN)      ||
+      call->isPrimitive(PRIM_LSH_ASSIGN)      ||
+      call->isPrimitive(PRIM_RSH_ASSIGN)      ||
+      call->isPrimitive(PRIM_AND_ASSIGN)      ||
+      call->isPrimitive(PRIM_OR_ASSIGN)       ||
       call->isPrimitive(PRIM_XOR_ASSIGN)) {
-    return true;      
-    }
-    //otherwise false
-    return false;
+    return true;
+  }
+  //otherwise false
+  return false;
+}
+
+
+//
+// Check if a callExpr is a relational operator primitive (==, !=, <=, >=, <, >)
+//
+bool isRelationalOperator(CallExpr* call) {
+  if (call->isPrimitive(PRIM_EQUAL)          ||
+      call->isPrimitive(PRIM_NOTEQUAL)       ||
+      call->isPrimitive(PRIM_LESSOREQUAL)    ||
+      call->isPrimitive(PRIM_GREATEROREQUAL) ||
+      call->isPrimitive(PRIM_LESS)           ||
+      call->isPrimitive(PRIM_GREATER)) {
+    return true;
+  }
+  //otherwise false
+  return false;
+
 }
 
 

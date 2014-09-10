@@ -1,7 +1,7 @@
 
 class A {
   var a : real;
-  proc this(i) var {
+  proc this(i) ref {
     return a;
   }
 }
@@ -12,7 +12,7 @@ class C {
   proc f() {
     a(1) *= 2.0;
   }
-  proc b(i) var {
+  proc b(i) ref {
     return bb; 
   }
 }

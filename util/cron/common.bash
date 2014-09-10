@@ -8,7 +8,7 @@ source $CWD/functions.bash
 
 # For our internal testing, this is necessary to get the latest version of gcc
 # on the system.
-if [ -z "${CHPL_SOURCED_BASHRC}" ] ; then
+if [ -z "${CHPL_SOURCED_BASHRC}" -a -f ~/.bashrc ] ; then
     source ~/.bashrc
     export CHPL_SOURCED_BASHRC=true
 fi
@@ -81,10 +81,11 @@ export CHPL_DEVELOPER=true
 export CHPL_TARGET_ARCH=none
 
 # Enable GMP testing
-case "${CHPL_HOST_PLATFORM}" in
- (darwin)         log_info "Not setting CHPL_GMP for ${CHPL_HOST_PLATFORM}, to avoid build issues.";;
- (*)              export CHPL_GMP=gmp;;
-esac
+export CHPL_GMP=gmp
+if [ "${CHPL_HOST_PLATFORM}" = "darwin" -a "$(uname -r)" = "9.8.0" ] ; then
+    log_info "Not setting CHPL_GMP for ${CHPL_HOST_PLATFORM}, to avoid build issues."
+    unset CHPL_GMP
+fi
 
 # Enable RE2 testing
 case "${CHPL_HOST_PLATFORM}" in

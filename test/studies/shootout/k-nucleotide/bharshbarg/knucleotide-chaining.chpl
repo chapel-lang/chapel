@@ -28,7 +28,7 @@ class Table {
   var table : [0..tableSize-1] Node;
   var size : int;
 
-  proc this(d : uint) var {
+  proc this(d : uint) ref {
     const slot :int = (d & (tableSize-1)):int;
     refvar head = table[slot];
     var n = head;
@@ -119,7 +119,7 @@ proc write_count(data : [] uint(8), str : string) {
   writeln(freqs[d], "\t", decode(d, str.length));
 }
 
-proc string.toBytes() var {
+proc string.toBytes() ref {
    var b : [1..this.length] uint(8);
    memcpy(b, this, this.length);
    return b;
