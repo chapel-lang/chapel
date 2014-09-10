@@ -930,6 +930,10 @@ problem size didn't match
 -------------------------
 [Error matching program output for studies/hpcc/common/testProbSize (compopts: 1)]
 
+non-deterministic timeout
+-------------------------
+[Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase] (since 07/20/14)
+
 numerical roundoff issues
 -------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)]
@@ -941,7 +945,7 @@ numerical roundoff issues
 
 error matching
 --------------
-[Error matching widecols.chpl]
+[Error matching program output for io/ferguson/utf8/widecols.chpl]
 
 
 ================================
