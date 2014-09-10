@@ -249,37 +249,60 @@ class AbstractJob(object):
         raise NotImplementedError('submit_job class method is implemented by sub classes.')
 
     @classmethod
-    def _detect_qsub_flavor(cls):
-        """Returns appropriate class based on the detected version of pbs in
+    def _detect_job_flavor(cls):
+        """Returns appropriate class based on the detected version of pbs or slurm in
         the environment.
 
-        If qsub is not callable, raise RuntimeError.
+        If neither srun or qsub is not callable, raise RuntimeError.
 
         If MOABHOMEDIR is set in the environment, assume moab and return
         MoabJob type.
 
-        Otherwise, assume PBSPro (qsub is callable), and return PbsProJob type.
+        Otherwise, if qsub is callable assume PBSPro, and return PbsProJob
+        type.
+
+        If srun is callable, assume slurm, and return SlurmJob.
 
         :rtype: type
-        :returns: MoabJob or PbsProJob depending on environment
+        :returns: SlurmJob, MoabJob, or PbsProJob depending on environment
         """
-        try:
-            logging.debug('Starting qsub process to check availability.')
-            qsub_proc = subprocess.Popen(
-                ['qsub', '--version'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT)
+        qsub_callable = False
+        qsub_version = ''
+        srun_callable = False
+        srun_version = ''
 
-            logging.debug('Communicating with qsub process.')
-            stdout, stderr = qsub_proc.communicate()
-        except OSError as ex:
-            raise RuntimeError(ex)
-        if qsub_proc.returncode != 0:
-            raise RuntimeError('Non-zero exit code when running qsub --version.')
-        elif os.environ.has_key('MOABHOMEDIR'):
+        def get_output(cmd):
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
+            logging.debug('Communicating with job process.')
+            stdout, stderr = proc.communicate()
+            return stdout
+
+        # Detect if qsub is callable, and capture version output.
+        try:
+            qsub_version = get_output(['qsub', '--version'])
+            qsub_callable = True
+        except OSError:
+            pass
+
+        # Detect if srun is callable, and capture version output.
+        try:
+            srun_version = get_output(['srun', '--version'])
+            srun_callable = True
+        except OSError:
+            pass
+
+        if qsub_callable and os.environ.has_key('MOABHOMEDIR'):
             return MoabJob
-        else:
+        elif qsub_callable:
             return PbsProJob
+        elif srun_callable:
+            return SlurmJob
+        else:  # not (qsub_callable or srun_callable)
+            raise RuntimeError('Could not find PBS or SLURM on system.')
 
     def _launch_qsub(self, testing_dir, output_file):
         """Launch job using qsub and return job id. Raises RuntimeError if
@@ -370,9 +393,9 @@ class AbstractJob(object):
             logging.error('No test command provided.')
             raise ValueError('No test command found.')
 
-        qsub_flavor = cls._detect_qsub_flavor()
-        logging.info('Detected pbs flavor: {0}'.format(qsub_flavor))
-        return qsub_flavor(test_command, args)
+        job_flavor = cls._detect_job_flavor()
+        logging.info('Detected job flavor: {0}'.format(job_flavor.__name__))
+        return job_flavor(test_command, args)
 
     @classmethod
     def status(cls, job_id):
