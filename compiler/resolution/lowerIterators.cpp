@@ -1078,8 +1078,9 @@ expandRecursiveIteratorInline(CallExpr* call)
 typedef Map<FnSymbol*,FnSymbol*> TaskFnCopyMap;
 
 static void
-expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Vec<BaseAST*>& asts, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies);
+expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies);
 
+/// \param call a for loop block primitive.
 static void
 expandIteratorInline(CallExpr* call) {
   Symbol* ic = toSymExpr(call->get(2))->var;
@@ -1109,27 +1110,30 @@ expandIteratorInline(CallExpr* call) {
   if (!preserveInlinedLineNumbers)
     reset_ast_loc(ibody, call);
 
-  // Body is the expression containing the iterator call.
+  // Body is the entire for loop block.
   BlockStmt* body = toBlockStmt(call->parentExpr);
 
-  // The iterator call is removed
+  // The for loop primitive is removed
   call->remove();
-  // and the expression enclosing the call is replaced by the iterator body.
+  // and the entire for loop block is replaced by the iterator body.
   body->replace(ibody);
 
-  Vec<BaseAST*> asts;
+  // Now replace yield statements in the inlined iterator body with copies of the
+  // body of the for loop that invoked the iterator, substituting the yielded
+  // index for the iterator formal.
   TaskFnCopyMap taskFnCopies;
-  expandBodyForIteratorInline(body, ibody, asts, index, true, taskFnCopies);
+  expandBodyForIteratorInline(body, ibody, index, true, taskFnCopies);
 
+  // TODO: Can this be pushed inside expandBody...() ?
+  Vec<BaseAST*> asts;
+  collect_asts(ibody, asts);
   replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
 }
 
 static void
-expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Vec<BaseAST*>& asts, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies)
+expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies)
 {
-  // Now replace yield statements in the inlined body with copies of the
-  // expression that called the iterator, substituting the yielded index for the
-  // iterator formal.
+  Vec<BaseAST*> asts;
   collect_asts(ibody, asts);
 
   forv_Vec(BaseAST, ast, asts) {
@@ -1199,8 +1203,7 @@ expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Vec<BaseAST*>& as
           taskFnCopies.put(cfn, fcopy);
 
           // Repeat, recursively.
-          Vec<BaseAST*> recAsts;
-          expandBodyForIteratorInline(body, fcopy->body, recAsts, index, false, taskFnCopies);
+          expandBodyForIteratorInline(body, fcopy->body, index, false, taskFnCopies);
 
         } else {
           // Indeed, 'cfn' is encountered only once per 'body',
@@ -1934,6 +1937,41 @@ static void cleanupTemporaryVectors() {
 }
 
 
+// This is a kludge to get past the verification failure that says this pass
+// will convert all yields into returns or inlined instances of a function
+// body.  It would be better to ensure that this case could not happen through
+// proper structuring of this translation step.
+// The problem arises because expandIteratorInline is applied without regard to
+// whether the function containing the iterator is also an iterator.  If the
+// inlining of its body takes place before that iterator itself has been
+// converted into a iterator function or inlined, then yields may remain in the
+// code.
+// However, for the current case, it appears the coforall functions in which
+// the iterator is being expanded are never actually called.  This explains why
+// yields in the expanded body are never replaced, so why they remain in the
+// tree.  Under the assumption that this is the only problem case, we can
+// simply identify all functions containing yields at this point and remove
+// them from the tree.
+static void removeUncalledIterators()
+{
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    // We only care about calls that are still in the tree.
+    if (! call->parentSymbol)
+      continue;
+    // We only care about yields.
+    if (! call->isPrimitive(PRIM_YIELD))
+      continue;
+
+    // Just yank any function containing a yield.
+    FnSymbol* fn = toFnSymbol(call->parentSymbol);
+    if (!fn->defPoint->parentSymbol)
+      continue;
+    fn->defPoint->remove();
+  }
+}
+
+
 void lowerIterators() {
   nonLeaderParCheck();
 
@@ -1986,4 +2024,8 @@ void lowerIterators() {
   reconstructIRautoCopyAutoDestroy();
 
   cleanupTemporaryVectors();
+
+  removeUncalledIterators();
 }
+
+
