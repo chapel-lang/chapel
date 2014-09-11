@@ -1155,7 +1155,7 @@ proc CyclicArr.doiBulkTransferFromDR(Barg)
 }
 
 proc CyclicArr.dsiTargetLocales() {
-  return dom.dist.targetLocales;
+  return dom.dist.targetLocs;
 }
 
 // Cyclic subdomains are represented as a single domain
