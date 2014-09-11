@@ -380,7 +380,8 @@ def parse_args():
     parser.set_defaults(**{
         # Default to CHPL_HOME from environ or current chapel source tree.
         'chpl_home': (os.environ.get('CHPL_HOME') or
-                      os.path.abspath(os.path.join(os.getcwd(), '../..'))),
+                      os.path.abspath(
+                          os.path.join(os.path.dirname(__file__), '../..'))),
     })
 
 
