@@ -889,6 +889,7 @@ GenRet codegenGetLocaleID(void)
     // the right type (since clang likes to fold int32/int32 into int32).
     GenRet expectType = LOCALE_ID_TYPE;
     ret.val = convertValueToType(ret.val, expectType.type);
+    assert(ret.val);
   }
 #endif
   return ret;
@@ -1016,6 +1017,7 @@ static GenRet codegenWideThingField(GenRet ws, int field)
       ret.isLVPtr = GEN_VAL;
       ret.val = info->builder->CreateExtractValue(ws.val, field);
     }
+    assert(ret.val);
 #endif
   }
 
@@ -1106,12 +1108,12 @@ static GenRet codegenRlocale(GenRet wide)
       // Packed wide pointers
       ret = codegenCallExpr("chpl_wide_ptr_get_localeID",
                             codegenCastWideToVoid(wide));
-      if( ret.val ) {
 #ifdef HAVE_LLVM
-        GenRet expectType = LOCALE_ID_TYPE;
-        ret.val = convertValueToType(ret.val, expectType.type);
+      assert(ret.val);
+      GenRet expectType = LOCALE_ID_TYPE;
+      ret.val = convertValueToType(ret.val, expectType.type);
+      assert(ret.val);
 #endif
-      }
     }
   }
   ret.chplType = type;
@@ -3170,7 +3172,9 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       } else {
 #ifdef HAVE_LLVM
         // LLVM codegen assignment (non-wide, non-tuple)
+        assert(from.val);
         GenRet value = codegenValue(from);
+        assert(value.val);
        
         codegenStoreLLVM(value, to_ptr, type);
 #endif
