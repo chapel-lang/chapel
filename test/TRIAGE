@@ -465,7 +465,7 @@ numerical discrepancies - same cause as for --no-local above?
 
 numerical discrepancies with --fast - same cause as for --no-local above?
 -------------------------------------------------------------
-studies/jacobi/waynew/example2 (06/13, 7/10/14)
+studies/jacobi/waynew/example2 (06/13, 7/10/14, 09/11/14)
 
 
 intermittent valgrind error
