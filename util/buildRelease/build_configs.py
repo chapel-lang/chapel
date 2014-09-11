@@ -35,6 +35,7 @@ import chpl_comm
 import chpl_gmp
 import chpl_launcher
 import chpl_llvm
+import chpl_mem
 import chpl_regexp
 import chpl_tasks
 
@@ -106,6 +107,12 @@ Dimensions = [
         values=['fifo', 'qthreads'],
         default=chpl_tasks.get(),
         help_text='Tasks ({var_name}) values to build.',
+    ),
+    Dimension(
+        'mem', 'CHPL_MEM',
+        values=['default', 'tcmalloc', 'dlmalloc'],
+        default=chpl_mem.get('target'),
+        help_text='Memory allocator ({var_name}) values to build.',
     ),
     Dimension(
         'launcher', 'CHPL_LAUNCHER',
