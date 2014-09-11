@@ -35,6 +35,7 @@ import chpl_comm
 import chpl_gmp
 import chpl_launcher
 import chpl_llvm
+import chpl_locale_model
 import chpl_mem
 import chpl_regexp
 import chpl_tasks
@@ -130,7 +131,13 @@ Dimensions = [
         'regexp', 'CHPL_REGEXP',
         values=['none', 're2'],
         default=chpl_regexp.get(),
-        help_text='Regular expression ({var_name}) values to buid.',
+        help_text='Regular expression ({var_name}) values to build.',
+    ),
+    Dimension(
+        'localeModel', 'CHPL_LOCALE_MODEL',
+        values=['flat', 'numa'],
+        default=chpl_locale_model.get(),
+        help_text='Locale model ({var_name}) values to build.',
     ),
     Dimension(
         'llvm', 'CHPL_LLVM',
