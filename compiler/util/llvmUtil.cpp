@@ -66,26 +66,45 @@ llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
 }
 
 static
-bool isTypeEquivalent(LLVM_TARGET_DATA * targetData, llvm::Type* a, llvm::Type* b)
+bool isTypeEquivalent(LLVM_TARGET_DATA * targetData, llvm::Type* a, llvm::Type* b, bool force)
 {
   int64_t aN = arrayVecN(a);
   int64_t bN = arrayVecN(a);
+  int alignA, alignB;
+  int64_t sizeA, sizeB;
+
   if( a == b ) {
     return true;
   } else if( a->isStructTy() && b->isStructTy() ) {
     llvm::StructType *aTy = llvm::dyn_cast<llvm::StructType>(a);
     llvm::StructType *bTy = llvm::dyn_cast<llvm::StructType>(b);
     if( aTy->isLayoutIdentical(bTy) ) return true;
+    // handle case like
+    // {float, float, float, float} <=> { <2xfloat>, <2xfloat> }
+    // fall through...
   } else if( aN >= 0 && aN == bN &&
              arrayVecEltType(a) && arrayVecEltType(a) == arrayVecEltType(b) ) {
     return true;
-  } else {
-    // Are they the same size?
-    if( targetData->getTypeSizeInBits(a) ==
-        targetData->getTypeSizeInBits(b) ) {
-      return true;
-    }
   }
+
+  if( !force ) return false;
+
+  alignA = targetData->getPrefTypeAlignment(a);
+  alignB = targetData->getPrefTypeAlignment(b);
+  sizeA = targetData->getTypeStoreSize(a);
+  sizeB = targetData->getTypeStoreSize(b);
+
+  // Are they the same size, within alignment?
+  if( sizeA == sizeB ) return true;
+  if( sizeA < sizeB ) {
+    // Try making size A bigger...
+    if( sizeA + alignA > sizeB ) return true;
+  } else {
+    // A >= B
+    // Try making size B bigger...
+    if( sizeB + alignB > sizeA ) return true;
+  }
+
   return false;
 }
 
@@ -146,7 +165,8 @@ llvm::Value *convertValueToType(
     LLVM_TARGET_DATA * targetData,
     llvm::Value *value,
     llvm::Type *newType,
-    bool isSigned) {
+    bool isSigned,
+    bool force) {
 
   llvm::Type *curType = value->getType();
   
@@ -213,14 +233,24 @@ llvm::Value *convertValueToType(
   // This is important in order to handle clang structure expansion
   // (e.g. calling a function that returns {int64,int64})
   if( isArrayVecOrStruct(curType) || isArrayVecOrStruct(newType) ) {
-    if( isTypeEquivalent(targetData, curType, newType) ) {
+    if( isTypeEquivalent(targetData, curType, newType, force) ) {
       // We turn it into a store/load to convert the type
       // since LLVM does not allow bit casts on structure types.
-      llvm::Value* tmp = createTempVarLLVM(builder, newType, "");
-      llvm::Type* fromType = curType->getPointerTo();
-      llvm::Value* tmp2 = builder->CreatePointerCast(tmp, fromType);
-      builder->CreateStore(value, tmp2);
-      return builder->CreateLoad(tmp);
+      llvm::Value* tmp_alloc;
+      if( targetData->getTypeStoreSize(newType) >=
+          targetData->getTypeStoreSize(curType) )
+        tmp_alloc = createTempVarLLVM(builder, newType, "");
+      else {
+        tmp_alloc = createTempVarLLVM(builder, curType, "");
+      }
+      // Now cast the allocation to both fromType and toType.
+      llvm::Type* curPtrType = curType->getPointerTo();
+      llvm::Type* newPtrType = newType->getPointerTo();
+      // Now get cast pointers 
+      llvm::Value* tmp_cur = builder->CreatePointerCast(tmp_alloc, curPtrType);
+      llvm::Value* tmp_new = builder->CreatePointerCast(tmp_alloc, newPtrType);
+      builder->CreateStore(value, tmp_cur);
+      return builder->CreateLoad(tmp_new);
     }
   }
 
@@ -416,15 +446,104 @@ PromotedPair convertValuesToLarger(
   return PromotedPair(NULL, NULL, false);
 }
 
+int64_t getTypeSizeInBytes(LLVM_TARGET_DATA * layout, llvm::Type* ty)
+{
+  if( ! ty->isSized() ) return -1; // who knows how big it is!
+
+  int64_t sz = layout->getTypeSizeInBits(ty);
+  sz = (sz + 7)/8; // now in bytes.
+  return sz;
+}
+
 bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes)
 {
   if( ! ty->isSized() ) return false; // who knows how big it is!
 
-  uint64_t sz = layout->getTypeSizeInBits(ty);
-  sz = (sz + 7)/8; // now in bytes.
+  uint64_t sz = getTypeSizeInBytes(layout, ty);
 
   if( sz < max_size_bytes ) return true;
   return false;
+}
+
+
+static
+uint64_t doGetTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t offset, uint64_t parent_this_offset, uint64_t parent_next_offset)
+{
+  llvm::SequentialType* stype = NULL;
+  llvm::StructType* struct_type = NULL;
+  const llvm::StructLayout* struct_layout = NULL;
+  llvm::Type* eltType = NULL;
+  unsigned i, n;
+  uint64_t local_offset, next_offset_here, offset_here;
+
+  //ty->dump();
+  //printf("offset %i parent %i,%i\n", (int) offset, (int) parent_this_offset, (int) parent_next_offset);
+
+  assert(parent_this_offset <= offset && offset <= parent_next_offset);
+
+  if( ! isArrayVecOrStruct(ty) ) {
+    return parent_next_offset;
+  }
+
+  local_offset = offset - parent_this_offset;
+
+  if( ty->isArrayTy() || ty->isVectorTy() ) {
+    stype = llvm::cast<llvm::SequentialType>(ty);
+    eltType = stype->getElementType();
+    uint64_t sz = layout->getTypeSizeInBits(eltType);
+    sz = (sz + 7)/8; // now in bytes.
+    uint64_t this_offset = local_offset / sz;
+    this_offset = parent_this_offset + this_offset*sz;
+ 
+    // All types the same.. so we can pretend we're working with the first one.
+    return doGetTypeFieldNext(layout, eltType,
+                              offset, this_offset, this_offset+sz);
+  }
+
+  // structure type.
+  struct_type = llvm::cast<llvm::StructType>(ty);
+  n = struct_type->getNumElements();
+  struct_layout = layout->getStructLayout(struct_type);
+
+  // Scroll forward in the structure until we find the last element
+  // starting at offset.
+  for( i=0; i<n; i++ ) {
+    next_offset_here = struct_layout->getElementOffset(i);
+    //printf("struct offset(%i) is %i\n", (int) i, (int) next_offset_here);
+    if( next_offset_here > local_offset ) break;
+  }
+
+  if( i != n ) {
+    // it's before the last element, so we can use the next element
+    // as the next start position.
+    parent_next_offset = parent_this_offset + next_offset_here;
+  }
+
+  i--;
+  // now i is the element n-1 or
+  // the last element with element offset <= offset
+
+  offset_here = struct_layout->getElementOffset(i);
+
+  parent_this_offset = parent_this_offset + offset_here;
+  //printf("offset_here is %i\n", (int) offset_here);
+
+  eltType = struct_type->getElementType(i);
+
+  return doGetTypeFieldNext(layout, eltType, offset, parent_this_offset, parent_next_offset);
+}
+
+
+uint64_t getTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t offset)
+{
+  uint64_t sz;
+
+  assert(ty->isSized());
+  sz = layout->getTypeSizeInBits(ty);
+  sz = (sz + 7)/8; // now in bytes.
+
+
+  return doGetTypeFieldNext(layout, ty, offset, 0, sz);
 }
 
 #endif

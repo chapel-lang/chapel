@@ -593,10 +593,10 @@ llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name)
 }
 
 static
-llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool isSigned = false)
+llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool isSigned = false, bool force = false)
 {
   GenInfo* info = gGenInfo;
-  return convertValueToType(info->builder, info->targetData, value, newType, isSigned);
+  return convertValueToType(info->builder, info->targetData, value, newType, isSigned, force);
 }
 
 static
@@ -1640,7 +1640,11 @@ GenRet codegenValue(GenRet r)
   } else {
 #ifdef HAVE_LLVM
     if (r.isLVPtr) {
-      ret.val = codegenLoadLLVM(r); // TODO - is r pointer to const?
+      // But don't dereference star tuples (since C views these as arrays)
+      if( r.chplType && r.chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
+        ret.val = r.val;
+        ret.isLVPtr = r.isLVPtr;
+      } else ret.val = codegenLoadLLVM(r); // TODO - is r pointer to const?
     } else {
       ret.val = r.val;
     }
@@ -2264,9 +2268,9 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
     }
   }
 
-  llvm::Value* out;
-  if( targetType ) out = convertValueToType(v, targetType, isSigned);
-  else out = v; // no target type means we just emit it.
+  llvm::Value* out = NULL;
+  if( !targetType ) out = v; // no target type means we just emit it.
+  else out = convertValueToType(v, targetType, isSigned, false);
 
   if( out ) {
     // OK, we were able to emit it...
@@ -2275,34 +2279,67 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
     // OK, just don't emit an argument at all.
   } else if( t->isStructTy() || t->isArrayTy() || t->isVectorTy() ) {
     // We might need to put the arguments in one-at-a-time,
-    // in order to put up with structure expansion done by clang.
+    // in order to put up with structure expansion done by clang
+    // (see canExpandIndirectArgument)
     // TODO - this should actually depend on the clang ABI,
     // or else we should find a way to disable the optimization in clang.
     //   It should be possible to get the necessariy information from clang
     //   with cgModule->getTypes()->arrangeFunctionDeclaration(FunctionDecl)
 
-    if( t->isStructTy() || t->isArrayTy() ) {
-      unsigned n;
-      if( t->isStructTy() ) n = t->getStructNumElements();
-      else n = t->getArrayNumElements();
-      for( unsigned i = 0; i < n; i++ ) {
-        unsigned indexes[1] = { i };
-        GenRet r;
-        r.val = info->builder->CreateExtractValue(v, indexes);
-        convertArgumentForCall(fnType, r, outArgs);
+
+    // Work with a prefix of the structure/vector argument.
+    llvm::Type* int8_type;
+    llvm::Type* int8_ptr_type;
+    llvm::Type* dst_ptr_type;
+    
+    llvm::Value* arg_ptr;
+    llvm::Value* arg_i8_ptr;
+    llvm::Value* cur_ptr;
+    llvm::Value* casted_ptr;
+    llvm::Value* cur;
+    int64_t offset = 0;
+    int64_t cur_size = 0;
+    int64_t arg_size = 0;
+
+    int8_type = llvm::Type::getInt8Ty(info->llvmContext);
+    int8_ptr_type = int8_type->getPointerTo();
+
+    arg_size = getTypeSizeInBytes(info->targetData, t);
+    assert(arg_size >= 0);
+
+    // Allocate space on the stack...
+    arg_ptr = createTempVarLLVM(info->builder, t, "");
+    arg_i8_ptr = info->builder->CreatePointerCast(arg_ptr, int8_ptr_type, "");
+
+    // Copy the value to the stack...
+    info->builder->CreateStore(v, arg_ptr);
+
+    while(offset < arg_size) {
+      if( outArgs.size() >= fnType->getNumParams() ) {
+        INT_FATAL("Could not convert arguments for call");
       }
-    } else {
-      // vector types.
-      unsigned n = t->getVectorNumElements();
-      for( unsigned i = 0; i < n; i++ ) {
-        GenRet r;
-        r.val =
-          info->builder->CreateExtractElement(
-              v,
-              llvm::ConstantInt::get(
-                llvm::IntegerType::getInt64Ty(info->llvmContext), i));
-        convertArgumentForCall(fnType, r, outArgs);
+      targetType = fnType->getParamType(outArgs.size());
+      dst_ptr_type = targetType->getPointerTo();
+      cur_size = getTypeSizeInBytes(info->targetData, targetType);
+
+      assert(cur_size > 0);
+
+      if( offset + cur_size > arg_size ) {
+        INT_FATAL("Could not convert arguments for call");
       }
+
+      // Now load cur_size bytes from pointer into the argument.
+      cur_ptr = info->builder->CreateConstInBoundsGEP1_64(arg_i8_ptr,
+                                                          offset);
+      casted_ptr = info->builder->CreatePointerCast(cur_ptr, dst_ptr_type);
+
+      cur = info->builder->CreateLoad(casted_ptr);
+      
+      outArgs.push_back(cur);
+
+      //printf("offset was %i\n", (int) offset);
+      offset = getTypeFieldNext(info->targetData, t, offset + cur_size - 1);
+      //printf("offset now %i\n", (int) offset);
     }
   } else {
     INT_FATAL("Could not convert arguments for call");
@@ -2887,8 +2924,11 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       llvm::Type* ptrTy = src.val->getType();
       llvm::Type* eltTy = ptrTy->getPointerElementType();
 
-      if( isTypeSizeSmallerThan(info->targetData, eltTy, 
-                                256 /* max bytes to load/store */ ) )  {
+      if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
+        // Always use memcpy for star tuples.
+        useMemcpy = true;
+      } else if( isTypeSizeSmallerThan(info->targetData, eltTy, 
+                                       256 /* max bytes to load/store */)) {
         // OK
       } else {
         useMemcpy = true;
@@ -5526,9 +5566,11 @@ GenRet CallExpr::codegen() {
     if( this->typeInfo() != dtVoid ) {
       GenRet ty = this->typeInfo();
       INT_ASSERT(ty.type); 
-      llvm::Value* converted = convertValueToType(ret.val, ty.type);
-      INT_ASSERT(converted);
-      ret.val = converted;
+      if( ty.type != ret.val->getType() ) {
+        llvm::Value* converted = convertValueToType(ret.val, ty.type, false, true);
+        INT_ASSERT(converted);
+        ret.val = converted;
+      }
     }
 #endif
   }
