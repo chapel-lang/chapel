@@ -118,37 +118,37 @@ Dimensions = [
     Dimension(
         'comm', 'CHPL_COMM',
         values=['none', 'gasnet'],
-        default='none',
+        default=chpl_comm.get(),
         help_text='Chapel communcation ({var_name}) value to build.',
     ),
     Dimension(
         'task', 'CHPL_TASKS',
         values=['fifo', 'qthreads'],
-        default='fifo',
+        default=chpl_tasks.get(),
         help_text='Tasks ({var_name}) values to build.',
     ),
     Dimension(
         'launcher', 'CHPL_LAUNCHER',
         values=['none', 'pbs-aprun', 'aprun', 'slurm-srun'],
-        default='none',
+        default=chpl_launcher.get(),
         help_text='Launcher ({var_name}) to build.',
     ),
     Dimension(
         'gmp', 'CHPL_GMP',
         values=['none', 'gmp', 'system'],
-        default='none',
+        default=chpl_gmp.get(),
         help_text='GMP ({var_name}) values to build.',
     ),
     Dimension(
         'regexp', 'CHPL_REGEXP',
         values=['none', 're2'],
-        default='none',
+        default=chpl_regexp.get(),
         help_text='Regular expression ({var_name}) values to buid.',
     ),
     Dimension(
         'llvm', 'CHPL_LLVM',
         values=['none', 'llvm'],
-        default='none',
+        default=chpl_llvm.get(),
         help_text='LLVM ({var_name}) values to build.',
     ),
 ]
