@@ -42,9 +42,12 @@
 #include "chpl-atomics.h"
 #include "chpl-bitops.h"
 #include "chpl-comm.h"
+#include "chpldirent.h"
 #include "chplexit.h"
 #include <chplfp.h>
+#include "chplglob.h"
 #include "chplio.h"
+#include "chplisdir.h"
 #include "chplmath.h"
 #include "chpl-main.h"
 #include "chpl-mem.h"

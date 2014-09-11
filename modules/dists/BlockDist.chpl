@@ -1382,10 +1382,6 @@ proc BlockArr.doiBulkTransfer(B) {
   }
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
 }
-    
-proc BlockArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc BlockArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
@@ -1393,11 +1389,11 @@ proc BlockArr.dsiTargetLocales() {
 
 // Block subdomains are continuous
 
-proc BlockArr.dsiOneLocalSubdomain() param return true;
+proc BlockArr.dsiHasSingleLocalSubdomain() param return true;
 
 // returns the current locale's subdomain
 
-proc BlockArr.dsiGetLocalSubdomain() {
+proc BlockArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
 }
 

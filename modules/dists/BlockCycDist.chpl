@@ -82,8 +82,8 @@ class BlockCyclic : BaseDist {
     // argument sanity checks, with friendly error messages
     if isTuple(startIdx) != isTuple(blocksize) then compilerError("when invoking BlockCyclic constructor, startIdx and blocksize must be either both tuples or both integers");
     if isTuple(startIdx) && startIdx.size != blocksize.size then compilerError("when invoking BlockCyclic constructor and startIdx and blocksize are tuples, their sizes must match");
-    if !_isIntegralType(idxType) then compilerError("when invoking BlockCyclic constructor, startIdx must be an integer or a tuple of integers");
-    if !_isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic constructor, blocksize must be an integer or a tuple of integers");
+    if !isIntegralType(idxType) then compilerError("when invoking BlockCyclic constructor, startIdx must be an integer or a tuple of integers");
+    if !isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic constructor, blocksize must be an integer or a tuple of integers");
 
     this.lowIdx = _ensureTuple(startIdx);
     this.blocksize = _ensureTuple(blocksize);
@@ -791,20 +791,16 @@ proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
 proc BlockCyclicArr.dsiReindex(dom) {
   compilerError("reindexing not yet implemented for Block-Cyclic");
 }
-    
-proc BlockCyclicArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc BlockCyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
-proc BlockCyclicArr.dsiOneLocalSubdomain() param return false;
+proc BlockCyclicArr.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
-iter BlockCyclicArr.dsiGetLocalSubdomains() {
+iter BlockCyclicArr.dsiLocalSubdomains() {
   for i in myLocArr.indexDom.myStarts {
     var temp : rank*range(idxType);
     const blockSizes = myLocArr.indexDom.globDom.dist.blocksize;

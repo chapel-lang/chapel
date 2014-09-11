@@ -174,7 +174,8 @@ uint64_t octStr2uint64(const char* str) {
   }
   uint64_t val = strtoul(str+2, NULL, 8);
   // strtoul() converts the string to a number with base provided, in this
-  // case 8
+  // case 8.  It returns a long; we are assuming here that an implicit
+  // conversion to a uint64_t is safe.
   return val;
 }
 

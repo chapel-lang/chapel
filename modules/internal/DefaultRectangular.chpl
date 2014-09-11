@@ -659,7 +659,7 @@ module DefaultRectangular {
     inline proc initShiftedData() {
       if earlyShiftData && !stridable {
         if dom.dsiNumIndices > 0 {
-          if _isSignedType(idxType) then
+          if isIntType(idxType) then
             shiftedData = _ddata_shift(eltType, data, origin-factoredOffs);
           else
             // Not bothering to check for over/underflow
@@ -817,7 +817,7 @@ module DefaultRectangular {
       var i = 1;
       alias.origin = origin;
       for param j in 1..args.size {
-        if chpl__isRange(args(j)) {
+        if isRange(args(j)) {
           alias.off(i) = d.dsiDim(i).low;
           alias.origin += blk(j) * (d.dsiDim(i).low - off(j)) / str(j);
           alias.blk(i) = blk(j);
@@ -876,18 +876,14 @@ module DefaultRectangular {
         if dom.dsiNumIndices > 0 then rad.shiftedData = shiftedData;
       return rad;
     }
-    
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsupported by default domains");
-    }
 
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsupported by default domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   }

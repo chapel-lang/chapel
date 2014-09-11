@@ -9,12 +9,32 @@ set -e
 
 CWD=$(cd $(dirname $0) ; pwd)
 
+# Ensure CC is respected, since it is typically ignored by chplenv/.
+if [ -n "${CC}" ] ; then
+    case $CC in
+        gcc)
+            # Deal with a frequent chapel stumbling block...
+            echo "Setting CHPL_HOST_COMPILER and CHPL_TARGET_COMPILER to: gnu"
+            export CHPL_HOST_COMPILER=gnu
+            export CHPL_TARGET_COMPILER=gnu
+            ;;
+        *)
+            echo "Setting CHPL_HOST_COMPILER and CHPL_TARGET_COMPILER to: ${CC}"
+            export CHPL_HOST_COMPILER=$CC
+            export CHPL_TARGET_COMPILER=$CC
+            ;;
+    esac
+fi
+
 # Ensure environment is correctly configured to run chpl.
 export CHPL_HOME=$(cd "$CWD/../.." ; pwd)
 source $CHPL_HOME/util/setchplenv.bash
 
 # Add some space between env setup output and test output.
 echo ""
+
+# Show me the environment!
+$CHPL_HOME/util/printchplenv
 
 # Check for tabs.
 num_tabs=$($CHPL_HOME/util/devel/lookForTabs | wc -l)

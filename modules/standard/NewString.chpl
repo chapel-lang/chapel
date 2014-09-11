@@ -458,7 +458,7 @@ module NewString {
   inline proc concatHelp(s: string_rec, x:?t) where t != string_rec {
     const cs = x:baseType;
     const ret = s + cs;
-    if !_isBooleanType(x.type) && !_isEnumeratedType(x.type) then
+    if !isBoolType(x.type) && !isEnumType(x.type) then
       free_baseType(cs);
     return ret;
   }
@@ -466,7 +466,7 @@ module NewString {
   inline proc concatHelp(x:?t, s: string_rec) where t != string_rec  {
     const cs = x:baseType;
     const ret = cs + s;
-    if !_isBooleanType(x.type) && !_isEnumeratedType(x.type) then
+    if !isBoolType(x.type) && !isEnumType(x.type) then
       free_baseType(cs);
     return ret;
   }
@@ -571,7 +571,7 @@ module NewString {
     var ret: string_rec;
     ret.len = cs.length;
     assert(ret.len != 0);
-    if _isBooleanType(x.type) || _isEnumeratedType(x.type) then
+    if isBoolType(x.type) || isEnumType(x.type) then
       // These are returned as string literals so copy the string
       ret.base = stringMove(_defaultOf(baseType), cs, ret.len);
     else

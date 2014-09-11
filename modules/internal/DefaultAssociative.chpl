@@ -136,7 +136,7 @@ module DefaultAssociative {
     }
   
     iter these() {
-      if !_isEnumeratedType(idxType) {
+      if !isEnumType(idxType) {
         for slot in _fullSlots() {
           yield table[slot].idx;
         }
@@ -587,17 +587,13 @@ module DefaultAssociative {
       data(newslot) = tmpTable[oldslot];
     }
 
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsupported by associative domains");
-    }
-
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsupported by associative domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   }
@@ -688,18 +684,18 @@ module DefaultAssociative {
   
   proc chpl__validDefaultAssocDomIdxType(type idxType) param where
       // one check per an implementation of chpl__defaultHash() above
-      _isBooleanType(idxType)     ||
-      _isSignedType(idxType)      ||
-      _isUnsignedType(idxType)    ||
-      _isRealType(idxType)        ||
-      _isComplexType(idxType)     ||
-      _isImagType(idxType)        ||
+      isBoolType(idxType)     ||
+      isIntType(idxType)      ||
+      isUintType(idxType)    ||
+      isRealType(idxType)        ||
+      isImagType(idxType)        ||
+      isComplexType(idxType)     ||
       idxType == chpl_taskID_t    ||
       idxType == string           ||
       idxType == c_string         ||
       isClassType(idxType)        ||
       // these are handled differently
-      _isEnumeratedType(idxType)  ||
+      isEnumType(idxType)  ||
       isTupleType(idxType)        ||
       isRecordType(idxType)
   {
