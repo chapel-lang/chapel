@@ -1,7 +1,0 @@
-bug: indices not treated as const
-
-This test shows that const-ness checking is not done properly for
-iterators generating non-var/ref return values.  It was originally
-filed as though this was a language-level decision; since then, we've
-determined (wisely, I believe) that it should be a function of the
-iterator's return intent, not the language itself.
