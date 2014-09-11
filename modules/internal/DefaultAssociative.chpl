@@ -587,17 +587,13 @@ module DefaultAssociative {
       data(newslot) = tmpTable[oldslot];
     }
 
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsupported by associative domains");
-    }
-
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsupported by associative domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   }

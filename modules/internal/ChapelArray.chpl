@@ -1515,39 +1515,34 @@ module ChapelArray {
   
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
-    // the locale grid domain
-    proc targetLocDom() {
-      return _value.dsiTargetLocDom();
-    }
-
     // the locale grid
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
 
     // can the subdomain be represented as a single domain?
-    proc oneLocalSubdomain() param {
-      return _value.dsiOneLocalSubdomain();
+    proc hasSingleLocalSubdomain() param {
+      return _value.dsiHasSingleLocalSubdomain();
     }
 
     // fetches the subdomain for the current locale
     //
     // Also note that localSlice(dom) produces a slice of a domain/array 
     // that's assumed to be local
-    proc getLocalSubdomain() {
-      if !_value.dsiOneLocalSubdomain() then
+    proc localSubdomain() {
+      if !_value.dsiHasSingleLocalSubdomain() then
         compilerError("Array's local domain is not a single domain");
-      return _value.dsiGetLocalSubdomain();
+      return _value.dsiLocalSubdomain();
     }
     
     // if the subdomain cannot be represented as a single domain, 
     // the multiple domains are yielded by an iterator.
     // yield a domain so the user can use procs like expand/exterior/etc.
-    iter getLocalSubdomains() {
-      if _value.dsiOneLocalSubdomain() then 
-        yield _value.dsiGetLocalSubdomain();
+    iter localSubdomains() {
+      if _value.dsiHasSingleLocalSubdomain() then 
+        yield _value.dsiLocalSubdomain();
       else 
-        for d in _value.dsiGetLocalSubdomains() do yield d;
+        for d in _value.dsiLocalSubdomains() do yield d;
     }
 
     proc chpl__isDense1DArray() param {
