@@ -47,7 +47,7 @@ class Dimension(object):
         self.name = name
         self.var_name = var_name
         self.values = values
-        self._default = default
+        self.default = default
         self.help_text = self._get_help_text(help_text.format(**locals()))
 
         self.validate()
@@ -70,26 +70,6 @@ class Dimension(object):
         f = lambda x: '{0}={1!r}'.format(x, getattr(self, x, None))
         attr_list = ', '.join(map(f, attrs))
         return '{0}({1})'.format(cls_name, attr_list)
-
-    @property
-    def default(self):
-        """Returns the default value for this instance. If the variable is defined in
-        the environment, that will be used. Otherwise, the _default value will
-        be used.
-
-        NOTE: This does not behave in the same way as chplenv scripts
-        necessarily. For example, something like CHPL_REGEXP can default to re2
-        in the chplenv scripts if re2 has been previously built. This does not
-        know about previous builds and it does not inspect the gen dir(s).
-
-        TODO: When/If chplenv becomes a legitimate python package, import it
-              and then just call the function to get the real
-              default. (thomasvandoren, 2014-08-13)
-        """
-        if os.environ.has_key(self.var_name):
-            return os.environ.get(self.var_name)
-        else:
-            return self._default
 
     def validate(self):
         """Validate instance parameters. Raises ValueError if dimension values are not
