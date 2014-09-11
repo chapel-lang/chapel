@@ -1153,10 +1153,6 @@ proc CyclicArr.doiBulkTransferFromDR(Barg)
       }
     }
 }
-    
-proc CyclicArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc CyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
@@ -1164,8 +1160,8 @@ proc CyclicArr.dsiTargetLocales() {
 
 // Cyclic subdomains are represented as a single domain
 
-proc CyclicArr.dsiOneLocalSubdomain() param return true;
+proc CyclicArr.dsiHasSingleLocalSubdomain() param return true;
 
-proc CyclicArr.dsiGetLocalSubdomain() {
+proc CyclicArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
 }

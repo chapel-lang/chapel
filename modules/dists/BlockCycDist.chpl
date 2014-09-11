@@ -791,20 +791,16 @@ proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
 proc BlockCyclicArr.dsiReindex(dom) {
   compilerError("reindexing not yet implemented for Block-Cyclic");
 }
-    
-proc BlockCyclicArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc BlockCyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
-proc BlockCyclicArr.dsiOneLocalSubdomain() param return false;
+proc BlockCyclicArr.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
-iter BlockCyclicArr.dsiGetLocalSubdomains() {
+iter BlockCyclicArr.dsiLocalSubdomains() {
   for i in myLocArr.indexDom.myStarts {
     var temp : rank*range(idxType);
     const blockSizes = myLocArr.indexDom.globDom.dist.blocksize;

@@ -652,18 +652,14 @@ proc ReplicatedArr.dsiRankChange(sliceDef: ReplicatedDom,
 
   return result;
 }
-    
-proc ReplicatedArr.dsiTargetLocDom() {
-  return dom.dist.targetLocales.domain;
-}
 
 proc ReplicatedArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
-proc ReplicatedArr.dsiOneLocalSubdomain() param  return true;
+proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 
-proc ReplicatedArr.dsiGetLocalSubdomain() {
+proc ReplicatedArr.dsiLocalSubdomain() {
   return localArrs[here.id].myDom.domLocalRep;
 }
 
