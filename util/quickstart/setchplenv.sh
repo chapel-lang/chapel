@@ -44,9 +44,9 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
           echo " "
 
           echo "Setting CHPL_MEM to..."
-          CHPL_MEM=default
+          CHPL_MEM=cstdlib
           export CHPL_MEM
-          echo "                           ...default"
+          echo "                           ...cstdlib"
           echo " "
 
           echo "Setting CHPL_GMP to..."
