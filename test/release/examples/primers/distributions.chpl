@@ -104,6 +104,14 @@ writeln("Block Array Index Map");
 writeln(BA2);
 writeln();
 
+//
+// We can use the 'targetLocales' method available on an array to get the
+// locales array used as targets.
+//
+for (L, ML) in zip(BA2.targetLocales(), MyLocales) do
+  if L != ML then
+    halt("Error: BA2.targetLocales() should equal MyLocales");
+
 
 
 //
