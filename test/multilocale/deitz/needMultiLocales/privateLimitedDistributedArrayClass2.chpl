@@ -11,7 +11,7 @@ class DistributedArray {
   var otherBases: [0..numLocales-1] _ddata(int);
 }
 
-proc DistributedArray.this(i: int) var {
+proc DistributedArray.this(i: int) ref {
   if ndata.member(i) {
     return data[i];
   } else {

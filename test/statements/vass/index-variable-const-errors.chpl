@@ -2,17 +2,17 @@
 var GLOBAL: int;
 var TUPLE: (int,int);
 
-// 'var' iterator
-iter singleVar() var {
+// 'ref' iterator
+iter singleVar() ref {
   yield GLOBAL;
 }
 
-// non-'var' iterator
+// non-'ref' iterator
 iter singleVal() {
   yield GLOBAL;
 }
 
-iter tupleVar() var {
+iter tupleVar() ref {
   yield TUPLE;
 }
 

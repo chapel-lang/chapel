@@ -20,7 +20,7 @@ record Planet {
 	var mass : real;
 }
 
-iter TriangleIter(B: [] Planet) var {
+iter TriangleIter(B: [] Planet) ref {
 	for (b1,i) in (B,NBODIES) do {
 		for b2 in B[i+1..] do {
 			yield (b1,b2);

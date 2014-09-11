@@ -484,7 +484,7 @@ void AstDumpToHtml::writeFnSymbol(FnSymbol* fn) {
 
   switch (fn->retTag) {
     case RET_VALUE:                                break;
-    case RET_VAR:   fprintf(mFP, "<b>var</b> ");   break;
+    case RET_REF:   fprintf(mFP, "<b>ref</b> ");   break;
     case RET_PARAM: fprintf(mFP, "<b>param</b> "); break;
     case RET_TYPE:  fprintf(mFP, "<b>type</b> ");  break;
   }

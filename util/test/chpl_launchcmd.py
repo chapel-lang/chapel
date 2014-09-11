@@ -1,25 +1,26 @@
 #!/usr/bin/env python
 
-"""Run Chapel test (execution only) inside pbs batch job using qsub.
+"""Run Chapel test (execution only) inside pbs or slurm batch job.
 
-The job name is set from the environment variable CHPL_PBS_NAME_PREFIX
-(defaulting to Chpl) and the name of the program being executing. For
-example, running launchcmd-for-aprun-launcher ./hello would use the name
-Chpl-hello.
+The job name is set from the environment variable CHPL_LAUNCHCMD_NAME_PREFIX
+(defaulting to Chpl) and the name of the program being executing. For example,
+running `chpl_launchcmd.py ./hello` would use the name Chpl-hello.
 
 The high level overview of what this does:
 
- * Detect flavor of qsub: either PBSPro or moab.
-   * If neither, raises error.
+ * Detect slurm or flavor of qsub (either PBSPro or moab).
+   * If none, raises error.
  * Parses number locales and wall time from the test command args so they can
-   be sent to qsub.
+   be sent to qsub/slurm.
  * Rebuilds the test command.
  * Launches the job by passing the test command on stdin to qsub (batch
-   mode). Stdout/stderr are directed to a temporary file designated by the
-   script.
- * Polls qstat with the given qsub job id every second until the status is C
-   (aka complete).
- * Prints the contents of the temp file with stdout/stderr from the job to stdout.
+   mode). Slurm jobs just run the chapel executable, setting
+   CHPL_LAUNCHER_USE_SBATCH=true. Stdout/stderr are directed to a temporary
+   file designated by the script.
+ * Polls qstat/squeue with the given job id every second until the status is
+   complete.
+ * Prints the contents of the temp file with stdout/stderr from the job to
+   stdout.
  * Cleans up the temp file and exits.
 
 """
@@ -46,19 +47,32 @@ __all__ = ('main')
 
 def main():
     """Run the program!"""
-    job = AbstractPbsJob.init_from_environment()
-    print(job.launch_qsub(), end='')
+    job = AbstractJob.init_from_environment()
+    print(job.run(), end='')
 
 
-class AbstractPbsJob(object):
+class AbstractJob(object):
     """Abstract job runner implementation."""
 
-    # NOTE: These class attributes are intentionally left commented. They will
-    #       cause AttributeError if they are accessed from this class. They
-    #       *should only* be accessed from a sub class.
-    #hostlist_resource = None
-    #num_nodes_resource = None
-    #num_cpus_resource = None
+    # These class attributes should always be None on the AbstractJob
+    # class. They *should only* be defined on and accessed from a sub class.
+
+    # submit_bin is the program used to submit jobs (i.e. qsub).
+    submit_bin = None
+
+    # status_bin is the program used to query the status of jobs (i.e. qstat,
+    # squeue)
+    status_bin = None
+
+    # argument name to use when specifying specific nodes (i.e. hostlist,
+    # mppnodes)
+    hostlist_resource = None
+
+    # argument name for specifying number of nodes (i.e. nodes, mppwidth)
+    num_nodes_resource = None
+
+    # argument name for specifying number of cpus (i.e. mppdepth)
+    num_cpus_resource = None
 
     def __init__(self, test_command, reservation_args):
         """Initialize new job runner.
@@ -128,24 +142,25 @@ class AbstractPbsJob(object):
 
     @property
     def job_name(self):
-        """Returns job name string from test command and CHPL_PBS_NAME_PREFIX env var.
+        """Returns job name string from test command and CHPL_LAUNCHCMD_NAME_PREFIX
+        env var.
 
         :rtype: str
-        :returns: pbs job name
+        :returns: job name
         """
-        prefix = os.environ.get('CHPL_PBS_NAME_PREFIX', 'Chpl')
+        prefix = os.environ.get('CHPL_LAUNCHCMD_NAME_PREFIX', 'Chpl')
         logging.debug('Job name prefix is: {0}'.format(prefix))
 
         cmd_basename = os.path.basename(self.test_command[0])
         logging.debug('Test command basname: {0}'.format(cmd_basename))
 
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
-        logging.info('PBS job name is: {0}'.format(job_name))
+        logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
-    def launch_qsub(self):
-        """Run qsub batch job in subprocess and wait for job to complete. When
-        finished, returns output as string.
+    def run(self):
+        """Run batch job in subprocess and wait for job to complete. When finished,
+        returns output as string.
 
         :rtype: str
         :returns: stdout/stderr from job
@@ -154,56 +169,7 @@ class AbstractPbsJob(object):
             output_file = os.path.join(working_dir, 'test_output.log')
             testing_dir = os.getcwd()
 
-            logging.info(
-                'Starting qsub job "{0}" on {1} nodes with walltime {2} '
-                'and output file: {3}'.format(
-                    self.job_name, self.num_locales, self.walltime, output_file))
-
-            # TODO: create self._qsub_command property. (thomasvandoren, 2014-07-23)
-            qsub_command = ['qsub', '-V', '-N', self.job_name, '-j', 'oe',
-                            '-o', output_file]
-            if self.num_locales >= 0:
-                qsub_command.append('-l')
-                qsub_command.append('{0}={1}'.format(
-                    self.num_nodes_resource, self.num_locales))
-            if self.walltime is not None:
-                qsub_command.append('-l')
-                qsub_command.append('walltime={0}'.format(self.walltime))
-            if self.hostlist is not None:
-                qsub_command.append('-l')
-                qsub_command.append('{0}={1}'.format(
-                    self.hostlist_resource, self.hostlist))
-            if self.num_cpus_resource is not None:
-                qsub_command.append('-l')
-                qsub_command.append('{0}={1}'.format(
-                    self.num_cpus_resource, self.num_cpus))
-
-            logging.debug('qsub command to run: {0}'.format(qsub_command))
-
-            logging.debug('Opening qsub subprocess.')
-            qsub_proc = subprocess.Popen(
-                qsub_command,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                cwd=testing_dir,
-                env=os.environ.copy()
-            )
-
-            test_command_str = ' '.join(self.full_test_command)
-            logging.debug('Communicating with qsub subprocess. Sending test command on stdin: {0}'.format(
-                test_command_str))
-            stdout, stderr = qsub_proc.communicate(input=test_command_str)
-            logging.debug('qsub process returned with status {0}, stdout: {1} stderr: {2}'.format(
-                qsub_proc.returncode, stdout, stderr))
-
-            if qsub_proc.returncode != 0:
-                msg = 'qsub failed with exit code {0} and output: {1}'.format(
-                    qsub_proc.returncode, stdout)
-                logging.error(msg)
-                raise ValueError(msg)
-
-            job_id = stdout.strip()
+            job_id = self.submit_job(testing_dir, output_file)
             logging.info('Test has been queued (job id: {0}). Waiting for output...'.format(job_id))
 
             # TODO: The while condition here should look for jobs that become held,
@@ -228,15 +194,15 @@ class AbstractPbsJob(object):
             def is_done(job_id, output_file):
                 """Returns True when one of two events occur:
 
-                 1) _qstat(job_id) returns 'C' indicating the job is complete.
+                 1) status(job_id) returns 'C' indicating the job is complete.
 
-                 2) _qstat(job_id) raises a ValueError, which can indicate that the
+                 2) status(job_id) raises a ValueError, which can indicate that the
                     job has completed *and* been dequeued, AND the output file
                     exists. If the output file exists and the job has been
                     dequeued, it is safe to assume it completed.
                 """
                 try:
-                    job_status = self.qstat(job_id)
+                    job_status = self.status(job_id)
                     return job_status == 'C'
                 except ValueError as ex:
                     # ValueError may indicate that the job completed and was
@@ -249,12 +215,13 @@ class AbstractPbsJob(object):
 
             while not is_done(job_id, output_file):
                 time.sleep(1.0)
-            logging.debug('qstat reports job {0} as complete.'.format(job_id))
+            logging.debug('{0} reports job {1} as complete.'.format(
+                self.status_bin, job_id))
 
             if not os.path.exists(output_file):
-                logging.error('Output file from pbs job does not exist at: {0}'.format(
+                logging.error('Output file from job does not exist at: {0}'.format(
                     output_file))
-                raise ValueError('[Error: output file from pbs job (id: {0}) does not exist at: {1}]'.format(
+                raise ValueError('[Error: output file from job (id: {0}) does not exist at: {1}]'.format(
                     job_id, output_file))
 
             logging.debug('Reading output file.')
@@ -264,46 +231,157 @@ class AbstractPbsJob(object):
 
         return output
 
+    def submit_job(self, testing_dir, output_file):
+        """Submit a new job using ``testing_dir`` as the working dir and
+        ``output_file`` as the location for the output. Returns the job id on
+        success. AbstractJob does not implement this method. It is the
+        responsibility of the sub class.
+
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        raise NotImplementedError('submit_job class method is implemented by sub classes.')
+
     @classmethod
-    def _detect_qsub_flavor(cls):
-        """Returns appropriate class based on the detected version of pbs in
+    def _detect_job_flavor(cls):
+        """Returns appropriate class based on the detected version of pbs or slurm in
         the environment.
 
-        If qsub is not callable, raise RuntimeError.
+        If neither srun or qsub is not callable, raise RuntimeError.
 
         If MOABHOMEDIR is set in the environment, assume moab and return
         MoabJob type.
 
-        Otherwise, assume PBSPro (qsub is callable), and return PbsProJob type.
+        Otherwise, if qsub is callable assume PBSPro, and return PbsProJob
+        type.
+
+        If srun is callable, assume slurm, and return SlurmJob.
 
         :rtype: type
-        :returns: MoabJob or PbsProJob depending on environment
+        :returns: SlurmJob, MoabJob, or PbsProJob depending on environment
         """
-        try:
-            logging.debug('Starting qsub process to check availability.')
-            qsub_proc = subprocess.Popen(
-                ['qsub', '--version'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT)
+        qsub_callable = False
+        qsub_version = ''
+        srun_callable = False
+        srun_version = ''
 
-            logging.debug('Communicating with qsub process.')
-            stdout, stderr = qsub_proc.communicate()
-        except OSError as ex:
-            raise RuntimeError(ex)
-        if qsub_proc.returncode != 0:
-            raise RuntimeError('Non-zero exit code when running qsub --version.')
-        elif os.environ.has_key('MOABHOMEDIR'):
+        def get_output(cmd):
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
+            logging.debug('Communicating with job process.')
+            stdout, stderr = proc.communicate()
+            return stdout
+
+        # Detect if qsub is callable, and capture version output.
+        try:
+            qsub_version = get_output(['qsub', '--version'])
+            qsub_callable = True
+        except OSError:
+            pass
+
+        # Detect if srun is callable, and capture version output.
+        try:
+            srun_version = get_output(['srun', '--version'])
+            srun_callable = True
+        except OSError:
+            pass
+
+        # Favor slurm, since Cray version of slurm comes with qsub command
+        # that is wrapper around slurm apis.
+        if srun_callable:
+            return SlurmJob
+        elif qsub_callable and os.environ.has_key('MOABHOMEDIR'):
             return MoabJob
-        else:
+        elif qsub_callable:
             return PbsProJob
+        else:  # not (qsub_callable or srun_callable)
+            raise RuntimeError('Could not find PBS or SLURM on system.')
+
+    def _launch_qsub(self, testing_dir, output_file):
+        """Launch job using qsub and return job id. Raises RuntimeError if
+        self.submit_bin is anything but qsub.
+
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        if self.submit_bin != 'qsub':
+            raise RuntimeError('_launch_qsub called for non-pbs job type!')
+
+        logging.info(
+            'Starting {0} job "{1}" on {2} nodes with walltime {3} '
+            'and output file: {4}'.format(
+                self.submit_bin, self.job_name, self.num_locales,
+                self.walltime, output_file))
+
+        # TODO: create self._qsub_command property. (thomasvandoren, 2014-07-23)
+        submit_command = [self.submit_bin, '-V', '-N', self.job_name, '-j', 'oe',
+                          '-o', output_file]
+        if self.num_locales >= 0:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_nodes_resource, self.num_locales))
+        if self.walltime is not None:
+            submit_command.append('-l')
+            submit_command.append('walltime={0}'.format(self.walltime))
+        if self.hostlist is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.hostlist_resource, self.hostlist))
+        if self.num_cpus_resource is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_cpus_resource, self.num_cpus))
+
+        logging.debug('submit command to run: {0}'.format(submit_command))
+
+        logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
+        submit_proc = subprocess.Popen(
+            submit_command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=testing_dir,
+            env=os.environ.copy()
+        )
+
+        test_command_str = ' '.join(self.full_test_command)
+        logging.debug('Communicating with {0} subprocess. Sending test command on stdin: {1}'.format(
+            self.submit_bin, test_command_str))
+        stdout, stderr = submit_proc.communicate(input=test_command_str)
+        logging.debug('{0} process returned with status {1}, stdout: {2} stderr: {3}'.format(
+            self.submit_bin, submit_proc.returncode, stdout, stderr))
+
+        if submit_proc.returncode != 0:
+            msg = '{0} failed with exit code {1} and output: {2}'.format(
+                self.submit_bin, submit_proc.returncode, stdout)
+            logging.error(msg)
+            raise ValueError(msg)
+
+        job_id = stdout.strip()
+        return job_id
 
     @classmethod
     def init_from_environment(cls):
         """Factory to initialize new job runner instance based on version of
         pbs available and command line arguments.
 
-        :rtype: AbstractPbsJob
-        :returns: subclass of AbstractPbsJob based on environment
+        :rtype: AbstractJob
+        :returns: subclass of AbstractJob based on environment
         """
         args, unparsed_args = cls._parse_args()
         cls._setup_logging(args.verbose)
@@ -317,13 +395,13 @@ class AbstractPbsJob(object):
             logging.error('No test command provided.')
             raise ValueError('No test command found.')
 
-        qsub_flavor = cls._detect_qsub_flavor()
-        logging.info('Detected pbs flavor: {0}'.format(qsub_flavor))
-        return qsub_flavor(test_command, args)
+        job_flavor = cls._detect_job_flavor()
+        logging.info('Detected job flavor: {0}'.format(job_flavor.__name__))
+        return job_flavor(test_command, args)
 
     @classmethod
-    def qstat(cls, job_id):
-        """Query job stat using qstat. AbstractJob does not implement this
+    def status(cls, job_id):
+        """Query job stat using ``status_bin``. AbstractJob does not implement this
         method. It is the responsibility of the sub class.
 
         :type job_id: str
@@ -332,7 +410,7 @@ class AbstractPbsJob(object):
         :rtype: str
         :returns: qsub job status
         """
-        raise NotImplementedError('qstat class method is implemented by sub classes.')
+        raise NotImplementedError('status class method is implemented by sub classes.')
 
     @classmethod
     def _cli_walltime(cls, walltime_str):
@@ -379,8 +457,8 @@ class AbstractPbsJob(object):
 
     @classmethod
     def _get_test_command(cls, args, unparsed_args):
-        """Returns test command by folding walltime and numLocales args into unparsed
-        command line args.
+        """Returns test command by folding numLocales args into unparsed command line
+        args.
 
         :type args: argparse.Namespace
         :arg args: Namespace from parsing original args
@@ -390,7 +468,6 @@ class AbstractPbsJob(object):
 
         :rtype: list
         :returns: command to be tested in qsub
-
         """
         logging.debug('Rebuilding test command from parsed args: {0} and '
                       'unparsed args: {1}'.format(args, unparsed_args))
@@ -420,13 +497,14 @@ class AbstractPbsJob(object):
                             help='Timeout as walltime for qsub.')
         parser.add_argument('--hostlist',
                             help=('Optional hostlist specification for reserving '
-                                  'specific nodes. Can also be set with env var CHPL_PBS_HOSTLIST'))
+                                  'specific nodes. Can also be set with env var '
+                                  'CHPL_LAUNCHCMD_HOSTLIST'))
 
         args, unparsed_args = parser.parse_known_args()
 
-        # Allow hostlist to be set in environment variable CHPL_PBS_HOSTLIST.
+        # Allow hostlist to be set in environment variable CHPL_LAUNCHCMD_HOSTLIST.
         if args.hostlist is None:
-            args.hostlist = os.environ.get('CHPL_PBS_HOSTLIST')
+            args.hostlist = os.environ.get('CHPL_LAUNCHCMD_HOSTLIST')
 
         # It is bad form to use a two character argument with only a single
         # dash. Unfortunately, we support it. And unfortunately, python argparse
@@ -503,15 +581,17 @@ class AbstractPbsJob(object):
         logging.debug('Verbose logging enabled.')
 
 
-class MoabJob(AbstractPbsJob):
+class MoabJob(AbstractJob):
     """Moab implementation of pbs job runner."""
 
+    submit_bin = 'qsub'
+    status_bin = 'qstat'
     hostlist_resource = 'hostlist'
     num_nodes_resource = 'nodes'
     num_cpus_resource = None
 
     @classmethod
-    def qstat(cls, job_id):
+    def status(cls, job_id):
         """Query job status using qstat.
 
         :type job_id: str
@@ -533,10 +613,26 @@ class MoabJob(AbstractPbsJob):
             logging.error('XML output: {0}'.format(output))
             raise
 
+    def submit_job(self, testing_dir, output_file):
+        """Launch job using qsub and return job id.
 
-class PbsProJob(AbstractPbsJob):
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        return self._launch_qsub(testing_dir, output_file)
+
+
+class PbsProJob(AbstractJob):
     """PBSPro implementation of pbs job runner."""
 
+    submit_bin = 'qsub'
+    status_bin = 'qstat'
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
 
@@ -561,7 +657,7 @@ class PbsProJob(AbstractPbsJob):
         return job_name
 
     @classmethod
-    def qstat(cls, job_id):
+    def status(cls, job_id):
         """Query job status using qstat.
 
         Assumes ``qstat <job_id>`` output is of the form:
@@ -599,6 +695,143 @@ class PbsProJob(AbstractPbsJob):
             logging.error('Could not find S column in header line of qstat output.')
             raise ValueError('Could not find {0} pattern in header line: {1}'.format(
                 pattern.pattern, header_line))
+
+    def submit_job(self, testing_dir, output_file):
+        """Launch job using qsub and return job id.
+
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        return self._launch_qsub(testing_dir, output_file)
+
+
+class SlurmJob(AbstractJob):
+    """SLURM implementation of abstract job runner."""
+
+    submit_bin = None
+    status_bin = 'squeue'
+    hostlist_resource = None
+    num_nodes_resource = None
+    num_cpus_resource = None
+
+    @classmethod
+    def status(cls, job_id):
+        """Query job status using squeue.
+
+        :type job_id: str
+        :arg job_id: pbs job id
+
+        :rtype: str
+        :returns: qsub job status
+        """
+        squeue_command = [
+            'squeue',
+            '--noheader',
+            '--format', '%A %T',  # "<job_id> <status>"
+            '--states', 'all',
+            '--job', job_id,
+        ]
+        logging.debug('squeue command to run: {0}'.format(squeue_command))
+
+        logging.debug('Opening squeue subprocess.')
+        squeue_proc = subprocess.Popen(
+            squeue_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=os.environ.copy()
+        )
+
+        logging.debug('Communicating with squeue subprocess.')
+        stdout, stderr = squeue_proc.communicate()
+        logging.debug('squeue process returned with status {0}, stdout: {1}, stderr: {2}'.format(
+            squeue_proc.returncode, stdout, stderr))
+
+        if squeue_proc.returncode != 0:
+            raise ValueError('Non-zero exit code {0} from squeue: "{1}"'.format(
+                squeue_proc.returncode, stdout))
+
+        failure_statuses = ['CANCELLED', 'FAILED', 'TIMEOUT',
+                            'BOOT_FAIL', 'NODE_FAIL', 'PREEMPTED']
+
+        status_parts = stdout.split(' ')
+        if len(status_parts) == 2:
+            status = status_parts[1].strip()
+            logging.info('Status for job {0} is: {1}'.format(job_id, status))
+
+            if status == 'COMPLETED':
+                logging.info('Job finished with status: {0}'.format(status))
+                return 'C'
+            elif status in failure_statuses:
+                logging.info('Job finished with status: {0}'.format(status))
+                return 'C'
+            else:
+                return 'R'  # running
+        else:
+            raise ValueError('Could not parse output from squeue: {0}'.format(stdout))
+
+    def submit_job(self, testing_dir, output_file):
+        """Launch job using executable. Set CHPL_LAUNCHER_USE_SBATCH=true in
+        environment to avoid using expect script. The executable will create a
+        sbatch script and submit it. Parse and return the job id after job is
+        submitted.
+
+        :type testing_dir: str
+        :arg testing_dir: working directory for running test
+
+        :type output_file: str
+        :arg output_file: output log filename
+
+        :rtype: str
+        :returns: job id
+        """
+        env = os.environ.copy()
+        env['CHPL_LAUNCHER_USE_SBATCH'] = 'true'
+        env['CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME'] = output_file
+
+        if self.hostlist is not None:
+            env['SLURM_JOB_NODELIST'] = self.hostlist
+
+        # Add --walltime back into the command line.
+        cmd = self.test_command[:]
+        if self.walltime is not None:
+            cmd.append('--walltime')
+            cmd.append(self.walltime)
+
+        logging.debug('Command to submit job: {0}'.format(cmd))
+
+        logging.debug('Opening job subprocess')
+        submit_proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=testing_dir,
+            env=env
+        )
+
+        logging.debug('Communicating with job subprocess')
+        stdout, stderr = submit_proc.communicate()
+        logging.debug('Job process returned with status {0}, stdout: {1}, stderr: {2}'.format(
+            submit_proc.returncode, stdout, stderr))
+
+        if submit_proc.returncode != 0:
+            msg = 'Job submission ({0}) failed with exit code {1} and output: {2}'.format(
+                cmd, submit_proc.returncode, stdout)
+            logging.error(msg)
+            raise ValueError(msg)
+
+        # Output is: Submitted batch job 106001
+        id_parts = stdout.split(' ')
+        if len(id_parts) < 4:
+            raise ValueError('Could not parse output from sbatch submission: {0}'.format(stdout))
+        else:
+            job_id = id_parts[3].strip()
+            return job_id
 
 
 @contextlib.contextmanager

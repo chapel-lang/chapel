@@ -176,6 +176,8 @@ gen
 /test/io/ferguson/asserteof.test.nums
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
+/test/io/fsouza/chdir/destination
+/test/io/fsouza/chown/file.txt
 
 /test/localeModels/gbt/maxTaskPar.good
 

@@ -574,6 +574,8 @@ qioerr qio_file_sync(qio_file_t* f);
 
 qioerr qio_chdir(const char* name);
 
+qioerr qio_chown(const char* name, int uid, int gid);
+
 qioerr qio_cwd(const char** working_dir);
 
 // Creates a directory with the given name and settings if possible,

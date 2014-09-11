@@ -2,7 +2,7 @@ record foo {
   var a : int;
 }
 
-proc bar(x : foo) var {
+proc bar(x : foo) ref {
   return x;
 }
 

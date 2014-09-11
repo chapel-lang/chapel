@@ -102,7 +102,7 @@ proc PrivateArr.dsiPrivatize(privatizeData) {
   return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
 }
 
-proc PrivateArr.dsiAccess(i: idxType) var {
+proc PrivateArr.dsiAccess(i: idxType) ref {
   if _local then
     return data;
   else if i == here.id then
@@ -119,10 +119,10 @@ proc PrivateArr.dsiAccess(i: idxType) var {
   }
 }
 
-proc PrivateArr.dsiAccess(i: 1*idxType) var
+proc PrivateArr.dsiAccess(i: 1*idxType) ref
   return dsiAccess(i(1));
 
-iter PrivateArr.these() var {
+iter PrivateArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
 }
@@ -135,7 +135,7 @@ iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
   }
 }
 
-iter PrivateArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   for i in followThis(1) do
     yield dsiAccess(i);
 }

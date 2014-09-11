@@ -1036,9 +1036,6 @@ for testname in testsrc:
         # Build the test program
         #
         args=['-o']+[execname]+globalCompopts+shlex.split(compopts)+[testname]
-        if lastcompopts:
-            args += lastcompopts
-        # sys.stdout.write("args=%s\n"%(args))
 
         if is_c_test:
             # we need to drop envCompopts for C tests as those are options
@@ -1051,6 +1048,9 @@ for testname in testsrc:
                 args = valgrindcompopts+[compiler]+args
             else:
                 cmd = compiler
+
+        if lastcompopts:
+            args += lastcompopts
 
         #
         # Compile (with timeout)
@@ -1355,7 +1355,8 @@ for testname in testsrc:
 
             args+=globalExecopts
             args+=shlex.split(execopts)
-            if envExecopts != None:
+            # envExecopts are meant for chpl programs, dont add them to C tests
+            if not is_c_test and envExecopts != None:
                 args+=shlex.split(envExecopts)
             if lastexecopts:
                 args += lastexecopts

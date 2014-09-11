@@ -234,7 +234,7 @@ module DefaultSparse {
   
     proc dsiGetBaseDom() return dom;
   
-    proc dsiAccess(ind: idxType) var where rank == 1 {
+    proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.member(ind)) then
@@ -250,7 +250,7 @@ module DefaultSparse {
         return irv;
     }
   
-    proc dsiAccess(ind: rank*idxType) var {
+    proc dsiAccess(ind: rank*idxType) ref {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.member(ind)) then
@@ -266,7 +266,7 @@ module DefaultSparse {
         return irv;
     }
   
-    iter these() var {
+    iter these() ref {
       for e in data[1..dom.nnz] do yield e;
     }
   
@@ -277,7 +277,7 @@ module DefaultSparse {
     }
   
     // same as DefaultSparseDom's follower, except here we index into 'data'
-    iter these(param tag: iterKind, followThis:(?,?,?)) var where tag == iterKind.follower {
+    iter these(param tag: iterKind, followThis:(?,?,?)) ref where tag == iterKind.follower {
       var (followThisDom, startIx, endIx) = followThis;
   
       if (followThisDom != this.dom) then
@@ -293,7 +293,7 @@ module DefaultSparse {
       yield 0;  // dummy
     }
   
-    proc IRV var {
+    proc IRV ref {
       return irv;
     }
   
@@ -312,18 +312,14 @@ module DefaultSparse {
         data(i) = data(i+1);
       }
     }
-    
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsuppported by sparse domains");
-    }
 
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsuppported by sparse domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   }

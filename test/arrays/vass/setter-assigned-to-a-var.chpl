@@ -2,7 +2,7 @@
 // Currently it works if accessorFun is either non-'var'
 // (which does not change the semantics) or returns a global array.
 
-proc accessorFun() var {
+proc accessorFun() ref {
   var anArray: [1..2] int;
   return anArray;
 }
