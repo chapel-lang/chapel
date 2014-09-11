@@ -30,6 +30,11 @@
 New problems
 ============
 
+knucleotide-chaining non-det seg faults
+---------------------------------------
+linux64.gnu.none.qthreads.numa.tcmalloc-std (09/09/2014)
+linux64.gnu.none.qthreads.flat.tcmalloc-fst (09/07/2014)
+
 [Error: Timed out executing program studies/shootout/binary-trees/binary-trees_iter (execopts: 2)]
 --------------------------------------------------------------------------------------------------
 (2014/09/08)
