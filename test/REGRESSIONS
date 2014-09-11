@@ -295,10 +295,6 @@ no-local regressions
 [Error matching program output for types/scalar/bradc/bools]
   Large number of differences in output
 
-Memory use increased by 8 bytes on 7/11/14 (r23794 -- mppf)
------------------------------------------------------------
-[Error matching program output for memory/shannon/printFinalMemStat]
-
 Consistent timeout since associative domains/arrays were made safer (~6/20/2014)
 --------------------------------------------------------------------------------
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
@@ -960,9 +956,6 @@ qthreads.numa regressions
 (Reviewed for accuracy 07/15/14)
 =======================================
 
-Memory use increased by 8 bytes on 7/11/14
-------------------------------------------
-[Error matching program output for memory/shannon/printFinalMemStat]
 
 
 ========================================================
