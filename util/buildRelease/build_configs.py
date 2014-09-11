@@ -345,7 +345,7 @@ def check_output(command, chpl_home, env, stdin=None, verbose=False):
         env=env
     )
     out, err = p.communicate(input=stdin)
-    retcode = p.poll()
+    retcode = p.returncode
 
     return retcode, out, err
 
