@@ -39,8 +39,8 @@ New problems
 > timedexec: target program died with signal 11, without coredump
 [Error matching program output for parallel/begin/deitz/test_string_cat] (unassigned)
 ------------------------------------------------------------------------
-linux64.gnu.none.qthreads.flat.tcmalloc-npt (baseline) (2014/09/08)
-  [not investigated]
+linux64.gnu.none.qthreads.flat.tcmalloc-npt (baseline) (2014/09/08, 09/10)
+linux64.gnu.none.qthreads.flat.tcmalloc-nlc (no-local) (2014/09/09)
 
 failures retrieving and storing perf data, started 7/19/14
 ----------------------------------------------------------
