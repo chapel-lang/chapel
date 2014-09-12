@@ -296,6 +296,11 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+parallel/cobegin/deitz/test_big_recursive_cobegin
+-------------------------------------------------
+fifo testing - Elliot had altered the call stack size for this test, but it
+was too small for fifo.  He pushed a fix 09/12/2014
+
 [Error matching program output for execflags/gbt/getenv]
 --------------------------------------------------------
 gasnet
