@@ -4,7 +4,7 @@
 # compiler on linux64.
 
 CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common-gasnet.bash
+source $CWD/common.bash
 
 export CHPL_LLVM=llvm
 
