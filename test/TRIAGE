@@ -296,10 +296,16 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+whitebox cray-xc failures (bradc)
+---------------------------------
+This is due to the globerator.
+
+
 parallel/cobegin/deitz/test_big_recursive_cobegin
 -------------------------------------------------
 fifo testing - Elliot had altered the call stack size for this test, but it
 was too small for fifo.  He pushed a fix 09/12/2014
+
 
 [Error matching program output for execflags/gbt/getenv]
 --------------------------------------------------------
@@ -309,6 +315,7 @@ locales other than locale 0.  Tom thinks that the strings-as-records
 implementation will allow forward progress on solving the bug itself.  The
 test itself has been resolved by Greg's fix on 09/09/2014
 
+
 [Error matching program output for trivial/deitz/test_max_range_iteration]
 [Error matching program output for types/range/hilde/maximalRange (compopts: 1)]
 --------------------------------------------------------------------------------
@@ -316,11 +323,13 @@ Due to Elliot's C for loop initial commit.  He pushed a commit which alterred
 the code and most likely resolved these errors.  Initial test results indicate
 it is fixed, but it should be observed for a couple more days (09/12/2014)
 
+
 non-deterministic failure of associative/bharshbarg/arrays/arraySetOps
 ----------------------------------------------------------------------
 various configs
 Ben looked into this error, and pushed a commit which seems to have fixed it.
 Leaving this note here to make sure it has gone away. (09/12/2014)
+
 
 [Error matching program output for associative/bharshbarg/domains/opEquals]
 ---------------------------------------------------------------------------
