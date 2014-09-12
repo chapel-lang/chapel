@@ -3,4 +3,7 @@
 ./MRA.chpl:433: In function 'norm2':
 ./MRA.chpl:436: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
 ./FTree.chpl:32: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-internal error: MIS0384 chpl Version 1.10.0.ca1cfb1
+
+
+
+internal error: compiler generated error

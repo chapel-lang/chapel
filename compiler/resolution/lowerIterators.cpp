@@ -822,6 +822,8 @@ yieldArraysByRef() {
 }
 
 
+// processIteratorYields is a separate pass, called before flattenFunctions.
+// TODO: Move this and supporting functions into their own source file.
 void processIteratorYields() {
   yieldArraysByRef();
   localizeIteratorReturnSymbols();
@@ -1003,18 +1005,22 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
 }
 
 
+/// \param call A for loop block primitive.
 static void
 expandRecursiveIteratorInline(CallExpr* call)
 {
   SET_LINENO(call);
+
+  BlockStmt* forLoopBlock = toBlockStmt(call->parentExpr);
+  FnSymbol* parent = toFnSymbol(call->parentSymbol);
 
   //
   // create a nested function for the loop body (call->parentExpr),
   // and then transform the iterator into a function that takes this
   // nested function as an argument
   //
-  FnSymbol* loopBodyFn = new FnSymbol(astr("_rec_iter_loop_", call->parentSymbol->name));
-  call->parentExpr->insertBefore(new DefExpr(loopBodyFn));
+  FnSymbol* loopBodyFn = new FnSymbol(astr("_rec_iter_loop_", parent->name));
+  forLoopBlock->insertBefore(new DefExpr(loopBodyFn));
 
   // The index is passed to the loop body function as its first argument.
   Symbol* index = toSymExpr(call->get(1))->var;
@@ -1022,14 +1028,14 @@ expandRecursiveIteratorInline(CallExpr* call)
   loopBodyFn->insertFormalAtTail(indexArg);
 
   // The recursive iterator loop wrapper is ... .
-  FnSymbol* loopBodyFnWrapper = new FnSymbol(astr("_rec_iter_loop_wrapper_", call->parentSymbol->name));
-  call->parentSymbol->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
+  FnSymbol* loopBodyFnWrapper = new FnSymbol(astr("_rec_iter_loop_wrapper_", parent->name));
+  parent->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
   ftableVec.add(loopBodyFnWrapper);
   ftableMap.put(loopBodyFnWrapper, ftableVec.n-1);
 
   //
   // insert a call to the iterator function (using iterator as a
-  // placeholder); build a call to loopBodyFnCall which will be
+  // placeholder); build a call to loopBodyFn which will be
   // removed later and its arguments passed to the iteratorFn (we
   // build this to capture the actual arguments that should be
   // passed to it when this function is flattened)
@@ -1041,11 +1047,15 @@ expandRecursiveIteratorInline(CallExpr* call)
 
   CallExpr* loopBodyFnCall = new CallExpr(loopBodyFn, gVoid);
   // use and remove loopBodyFnCall later
-  call->parentExpr->insertBefore(loopBodyFnCall);
-  call->parentExpr->insertBefore(iteratorFnCall);
-  // Move the expression containing the call to the end of the (new) loop body function.
-  loopBodyFn->insertAtTail(call->parentExpr->remove());
-  call->remove();    // The call was replaced by a call to the (new) loop body function.
+  // We expect this call to cause the loop body function to be converted like a
+  // "normal" iterator function body.
+  forLoopBlock->insertBefore(loopBodyFnCall);
+  forLoopBlock->insertBefore(iteratorFnCall);
+  // The forLoopBlock becomes the body of the (new) loop body function.
+  loopBodyFn->insertAtTail(forLoopBlock->remove());
+  // The PRIM_BLOCK_FOR_LOOP is removed, to convert that block statement into a
+  // "plain-old" block.
+  call->remove();
 
   // Now populate the loop body function.
   // Load the index arg.
@@ -1055,6 +1065,7 @@ expandRecursiveIteratorInline(CallExpr* call)
   loopBodyFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   loopBodyFn->retType = dtVoid;
 
+  // Move the loop body function out to the module level.
   Vec<FnSymbol*> nestedFunctions;
   nestedFunctions.add(loopBodyFn);
   flattenNestedFunctions(nestedFunctions);
@@ -1080,7 +1091,7 @@ typedef Map<FnSymbol*,FnSymbol*> TaskFnCopyMap;
 static void
 expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Symbol* index, bool removeReturn, TaskFnCopyMap& taskFnCopies);
 
-/// \param call a for loop block primitive.
+/// \param call A for loop block primitive.
 static void
 expandIteratorInline(CallExpr* call) {
   Symbol* ic = toSymExpr(call->get(2))->var;
@@ -1937,23 +1948,22 @@ static void cleanupTemporaryVectors() {
 }
 
 
-// This is a kludge to get past the verification failure that says this pass
-// will convert all yields into returns or inlined instances of a function
-// body.  It would be better to ensure that this case could not happen through
-// proper structuring of this translation step.
-// The problem arises because expandIteratorInline is applied without regard to
-// whether the function containing the iterator is also an iterator.  If the
-// inlining of its body takes place before that iterator itself has been
-// converted into a iterator function or inlined, then yields may remain in the
-// code.
-// However, for the current case, it appears the coforall functions in which
-// the iterator is being expanded are never actually called.  This explains why
-// yields in the expanded body are never replaced, so why they remain in the
-// tree.  Under the assumption that this is the only problem case, we can
-// simply identify all functions containing yields at this point and remove
-// them from the tree.
+// WORKAROUND:
+// When the body of a for loop is moved into the loop body function, yield
+// primitives remain in it (if the for loop itself appears in an iterator
+// function.
+// When the containing iterator is expanded in a for loop, yields in the loop
+// body will be replaced appropriately (through the recursive call to
+// expandBodyForIteratorInline() that occurs when a call to a task function is
+// encountered).
+// Any yields remaining in the tree at this point are apparently dead code.
+// Thus the functions containing them can be removed from the tree and calls to
+// them stubbed out.  As a assertion that these calls are never reached, they
+// are replaced by internal error primitives.
 static void removeUncalledIterators()
 {
+  compute_call_sites();
+
   forv_Vec(CallExpr, call, gCallExprs)
   {
     // We only care about calls that are still in the tree.
@@ -1963,10 +1973,26 @@ static void removeUncalledIterators()
     if (! call->isPrimitive(PRIM_YIELD))
       continue;
 
-    // Just yank any function containing a yield.
+    // If this function contains a yield, it was never expanded, so the static
+    // analysis used in lowerIterators says it was never invoked through a for
+    // loop.
     FnSymbol* fn = toFnSymbol(call->parentSymbol);
     if (!fn->defPoint->parentSymbol)
+      // Only bother with functions that are still in the tree.
       continue;
+
+    // Replace invocations of this function with a runtime error.
+    if (fn->calledBy)
+      forv_Vec(CallExpr, invcn, *fn->calledBy)
+      {
+        if (!invcn->parentSymbol)
+          continue;
+
+        SET_LINENO(invcn);
+        invcn->replace(new CallExpr(PRIM_INT_ERROR));
+      }
+
+    // and yank the function itself.
     fn->defPoint->remove();
   }
 }
@@ -2013,6 +2039,8 @@ void lowerIterators() {
     }
   }
 
+  removeUncalledIterators();
+
   addCrossedFreeIteratorCalls();
 
   fixNumericalGetMemberPrims();
@@ -2024,8 +2052,5 @@ void lowerIterators() {
   reconstructIRautoCopyAutoDestroy();
 
   cleanupTemporaryVectors();
-
-  removeUncalledIterators();
 }
-
 
