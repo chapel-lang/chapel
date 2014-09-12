@@ -15,21 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/mem/default
+MEM_SRCS = mem-cstdlib.c
 
-ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
-endif
+SVN_SRCS = $(MEM_SRCS)
+SRCS = $(SVN_SRCS)
 
-include $(RUNTIME_ROOT)/make/Makefile.runtime.head
- 
-MEM_OBJDIR = $(RUNTIME_OBJDIR)
-
-include Makefile.share
-
-TARGETS = $(MEM_COMMON_OBJS)
-
-include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
-
-include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
+MEM_COMMON_OBJS = $(MEM_SRCS:%.c=$(MEM_OBJDIR)/%.o)

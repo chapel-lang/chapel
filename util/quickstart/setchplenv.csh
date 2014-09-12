@@ -36,8 +36,8 @@ echo "to include $CHPL_HOME/man"
 echo "Setting CHPL_TASKS to fifo"
 setenv CHPL_TASKS fifo
 
-echo "Setting CHPL_MEM to default"
-setenv CHPL_MEM default
+echo "Setting CHPL_MEM to cstdlib"
+setenv CHPL_MEM cstdlib
 
 echo "Setting CHPL_GMP to none"
 setenv CHPL_GMP none
