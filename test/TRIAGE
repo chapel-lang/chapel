@@ -296,6 +296,11 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+classes/bradc/arrayInClass/genericArrayInClass-otharrs-inline-iterators.chpl
+----------------------------------------------------------------------------
+Tom is fixing the line number error that is wrong with this future.
+
+
 [Error matching program output for studies/filerator/walk (execopts: 2 and 9)
 -----------------------------------------------------------------------------
 Brad is looking into these failures as he created the test
