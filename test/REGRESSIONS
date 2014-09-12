@@ -24,9 +24,6 @@ Futures
 ===============
 Passing Futures
 ===============
-Future (bug: "no auto destroy" flag not propagated through temporaries.) [Success matching program output for performance/hilde/userSync]
-  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
-
 Future (bug: (feature request?): it would be nice if int-to-uint coercion worked for parameters.) [Success matching program output for param/nelson/coercion]
   (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
   (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
@@ -48,9 +45,6 @@ Future (bug: promoting a function over an array from a var function fails) [Succ
   (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
   (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
   (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
-Future (performance: Pass arguments to on functions in a coforall by const ref by default.) [Success matching program output for performance/hilde/coforallOnByRef]
-  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
-  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
 Future (semantic: Can user type names overload fundamental type names?) [Success matching program output for types/records/sungeun/chapelTypes/record_range]
   (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
   (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
