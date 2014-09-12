@@ -296,6 +296,11 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+[Error matching compiler output for functions/deitz/iterators/test_var_iterator5_error]
+---------------------------------------------------------------------------------------
+This is a line number difference.  Elliot has fixed it
+
+
 [Error matching program output for execflags/gbt/getenv]
 --------------------------------------------------------
 gasnet
