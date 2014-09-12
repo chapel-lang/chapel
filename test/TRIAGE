@@ -399,6 +399,11 @@ issue.
 These things regularly cause noise in testing:
 ==============================================
 
+[Error matching program output for types/string/StringImpl/memLeaks/promotion]
+------------------------------------------------------------------------------
+in baseline and valgrind testing.  Sung is aware of the issue but it is
+considered low priority.
+
 
 pthread mutex lock assertion failed (after 22303, unassigned)
 -----------------------------------
