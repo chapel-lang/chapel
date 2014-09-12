@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Interactive CLI for building one or more Chapel configurations.
+"""Interactive CLI for building one or more Chapel configurations."""
 
-TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
-TODO: Add additional configuration flags.
-TODO: Split up compile process into stages (compile, runtime, then third-party, etc).
-TODO: Parallelize build stages that are amenable (e.g. runtime, third-party, etc).
-TODO: Add --all-configs (?) flag that will build all configurations.
-TODO: Figure out how to support compiler configs. It is a bit challenging because the default should almost certainly come from chplenv (otherwise that logic will be duplicated here).
-TODO: Figure out how to best support complex configs, like comm with substrate and segment values.
-TODO: Add interactive mode where user is asked what configs they want.
-"""
+# TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
+# TODO: Add additional configuration flags.
+# TODO: Split up compile process into stages (compile, runtime, then third-party, etc).
+# TODO: Parallelize build stages that are amenable (e.g. runtime, third-party, etc).
+# TODO: Add --all-configs (?) flag that will build all configurations.
+# TODO: Figure out how to support compiler configs. It is a bit challenging because the default should almost certainly come from chplenv (otherwise that logic will be duplicated here).
+# TODO: Figure out how to best support complex configs, like comm with substrate and segment values.
+# TODO: Add interactive mode where user is asked what configs they want.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
