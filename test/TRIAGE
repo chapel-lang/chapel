@@ -296,6 +296,11 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+[Error matching compiler output for functions/diten/refArgIter]
+---------------------------------------------------------------
+baseline testing
+assigned to Kyle, this was due to ref temp removal in a certain corner case.
+
 [Error matching program output for execflags/gbt/getenv]
 --------------------------------------------------------
 gasnet
