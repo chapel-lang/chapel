@@ -9,13 +9,23 @@
 badfile=$1
 tmpfile=$2
 
+# In .bad file (and comparand), squash line numbers from lines containing
+#  "CHPL_HOME/modules".
 badtmp=`mktemp`
 tmptmp=`mktemp`
-
 sed -e "\|CHPL_HOME/modules|s/:[0-9]\+:/:nnnn:/" $badfile > $badtmp
 sed -e "\|CHPL_HOME/modules|s/:[0-9]\+:/:nnnn:/" $tmpfile > $tmptmp
 
-diff $badtmp $tmptmp
+# In .bad file (and comparand), squash line numbers from lines containing
+#  "obj/".  
+# For this to work, you need to toss "--savec obj" as a compiler option.
+badtmp2=`mktemp`
+tmptmp2=`mktemp`
+
+sed -e "\|obj/|s/:[0-9]\+:/:nnnn:/" $badtmp > $badtmp2
+sed -e "\|obj/|s/:[0-9]\+:/:nnnn:/" $tmptmp > $tmptmp2
+
+diff $badtmp2 $tmptmp2
 result=$?
-rm $badtmp $tmptmp
+rm $badtmp $tmptmp $badtmp2 $tmptmp2
 exit $result
