@@ -296,6 +296,11 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+[Error matching program output for studies/filerator/walk (execopts: 2 and 9)
+-----------------------------------------------------------------------------
+Brad is looking into these failures as he created the test
+
+
 whitebox cray-xc failures (bradc)
 ---------------------------------
 This is due to the globerator.
