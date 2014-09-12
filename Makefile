@@ -29,6 +29,7 @@ all: comprt
 
 comprt: FORCE
 	@$(MAKE) compiler
+	-@$(MAKE) third-party-optional-pkgs
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -43,6 +44,9 @@ runtime: FORCE
 
 third-party: FORCE
 	cd third-party && $(MAKE)
+
+third-party-optional-pkgs: FORCE
+	-cd third-party && $(MAKE) optional-pkgs
 
 clean: FORCE
 	cd compiler && $(MAKE) clean

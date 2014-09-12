@@ -15,6 +15,10 @@ default: all
 
 all: creoleparser dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
 
+optional-pkgs:
+#	-$(MAKE) gmp
+	-$(MAKE) re2
+
 clean: FORCE
 	cd creoleparser && $(MAKE) clean
 	cd dlmalloc && $(MAKE) clean
