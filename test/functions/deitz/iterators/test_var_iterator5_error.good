@@ -1,3 +1,1 @@
 test_var_iterator5_error.chpl:8: error: illegal lvalue in assignment
-$CHPL_HOME/modules/internal/ChapelArray.chpl:2471: In function '=':
-$CHPL_HOME/modules/internal/ChapelArray.chpl:2473: error: illegal lvalue in assignment
