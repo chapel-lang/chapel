@@ -410,9 +410,25 @@ def parse_config_value_callback(option, opt, value, parser, choices, **kwargs):
 
 def parse_args():
     """Parse and return command line arguments."""
+    usage_description = __doc__ + """
+
+To select multiple values for a particular setting, use a comma separated list
+or pass the argument multiple time. For example, to build with comm=none and
+comm=gasnet either of these will work:
+
+  %prog --comm=none,gasnet
+  %prog --comm=none --comm=gasnet"""
+
+    class NoWrapHelpFormatter(optparse.IndentedHelpFormatter):
+        """Help formatter that does not wrap the description text."""
+
+        def _format_text(self, text):
+            return text
+
     parser = optparse.OptionParser(
         usage='usage: %prog [options] args',
-        description=__doc__
+        description=usage_description,
+        formatter=NoWrapHelpFormatter()
     )
 
     parser.set_defaults(**{
