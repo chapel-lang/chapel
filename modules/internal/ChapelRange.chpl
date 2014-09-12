@@ -1107,37 +1107,8 @@ module ChapelRange {
   }
 
   //################################################################################
-  //# Speical Case Serial Iterators
+  //# General, Unoptimized Serial Iterator
   //#
-
-  // A bounded and positively strided range iterator. This should only be
-  // called when the stride is guaranteed to be positive. This is not designed
-  // to be called by users but is a stepping stone for other module code to
-  // call an optimized iterator until there is a better way to assert the sign
-  // of the stride at compile time.
-  iter range.posStrideIter() {
-    if (useOptimizedRangeIterators) {
-      if boundsChecking then checkIfIterWillOverflow();
-
-      if this.isAmbiguous() then
-        __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
-
-      // can use alignedLow/alignedHigh instead of first/last since stride is pos
-      var i :idxType;
-      const start = this.alignedLow;
-      const end = this.alignedHigh;
-      while __primitive("C for loop",
-                        __primitive( "=", i, start),
-                        __primitive("<=", i, end),
-                        __primitive("+=", i, stride: idxType)) {
-        yield i;
-      }
-    } else {
-      for i in this.generalIterator() {
-        yield i;
-      }
-    }
-  }
 
   // The bounded iterators are all optimized versions that can't handle
   // iterating over ranges like max(int)-10..max(int). This iterator is
