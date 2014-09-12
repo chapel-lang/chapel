@@ -296,6 +296,13 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+[Error matching program output for associative/bharshbarg/domains/opEquals]
+---------------------------------------------------------------------------
+Fails under qthreads+numa, no-local, gasnet+fifo, gasnet-fast,
+gasnet-everything, cygwin - This is due to Vass's const-ness checking commit
+on 09/08/2014
+
+
 XT/XC PrgEnv-cray non-deterministic compiler internal errors
 (seg fault) this shows up on
 cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
