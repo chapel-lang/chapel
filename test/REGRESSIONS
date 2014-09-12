@@ -107,13 +107,6 @@ However it will probably reverts to an execution timeout error instead.
 [Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
   Line number for the error message has changed.  Fixed for Aug 26 nightlies.
 
--- MDN New on Tue Aug 19, 2014.  Expected by Elliot due to C-for Loop work
-[Error matching program output for trivial/deitz/test_max_range_iteration]
-  test_max_range_iteration.chpl:8: error: halt reached - expected number of iterations exceeded
-
--- MDN New on Tue Aug 19, 2014.  Expected by Elliot due to C-for Loop work
-[Error matching program output for types/range/hilde/maximalRange (compopts: 1)]
-  Should produce a compilation error.  Instead it tries to run.
 
 -- MDN Tests fail intermittently on several configs.  The first instance I can easily see it Aug 13.
 [Error matching program output for domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 1)]
@@ -298,10 +291,6 @@ Consistent timeout since associative domains/arrays were made safer (~6/20/2014)
 gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 07/14/14)
 ====================================================
-
--- MDN New on Tue Aug 26, 2014
-[Error matching program output for execflags/gbt/getenv]
-  > *** Caught a fatal signal: SIGSEGV(11) on node 0/2
 
 -- MDN New on Tue Aug 26, 2014
 [Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
