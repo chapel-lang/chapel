@@ -302,10 +302,6 @@ Fails under qthreads+numa, no-local, gasnet+fifo, gasnet-fast,
 gasnet-everything, cygwin - This is due to Vass's const-ness checking commit
 on 09/08/2014
 
-[Error matching compiler output for types/tuple/sungeun/iteration/forall]
--------------------------------------------------------------------------
-Also due to const-ness checking
-
 
 XT/XC PrgEnv-cray non-deterministic compiler internal errors
 (seg fault) this shows up on
