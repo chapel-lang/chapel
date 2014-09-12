@@ -507,6 +507,16 @@ timeout
 -------
 [Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
 
+============================
+LLVM specific regressions
+(started testing 09/11/2014)
+============================
+
+55 failures - Michael has a pull request with fixes that I don't think anyone
+has looked at yet
+release/examples/hello*
+extern/ferguson/*
+
 
 
 ===================================
