@@ -192,6 +192,5 @@ bool isTypeExpr(Expr* expr);
 
 // move to resolve when scope resolution is put in resolution directory
 BlockStmt* getVisibilityBlock(Expr* expr);
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 #endif
