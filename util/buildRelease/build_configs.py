@@ -413,7 +413,7 @@ def parse_args():
     usage_description = __doc__ + """
 
 To select multiple values for a particular setting, use a comma separated list
-or pass the argument multiple time. For example, to build with comm=none and
+or pass the argument multiple times. For example, to build with comm=none and
 comm=gasnet either of these will work:
 
   %prog --comm=none,gasnet
