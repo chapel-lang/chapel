@@ -590,7 +590,10 @@ module DefaultRectangular {
           // results in a strided iterator which isn't as optimized. It also
           // introduces another range creation which in tight loops is
           // unfortunately expensive. Ideally we don't want to be using C for
-          // loops outside of ChapelRange.
+          // loops outside of ChapelRange. However, since most other array data
+          // types are implemented in terms of DefaultRectangular, we think
+          // that this will serve as a second base case rather than the
+          // beginning of every iterator invoking a primitive C for loop
           var i: idxType;
           const first = getDataIndex(dom.dsiLow);
           const second = getDataIndex(dom.dsiLow+1);
