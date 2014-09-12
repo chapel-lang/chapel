@@ -49,7 +49,7 @@
 #define _POSIX_C_SOURCE 200112L
 #endif
 #ifndef _FILE_OFFSET_BITS
-#define _FILE_OFFSET_BITS 64
+//#define _FILE_OFFSET_BITS 64
 #endif
 
 #ifdef __GNUC__
