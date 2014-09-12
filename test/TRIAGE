@@ -296,6 +296,12 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+non-deterministic failure of associative/bharshbarg/arrays/arraySetOps
+----------------------------------------------------------------------
+various configs
+Ben looked into this error, and pushed a commit which seems to have fixed it.
+Leaving this note here to make sure it has gone away.
+
 [Error matching program output for associative/bharshbarg/domains/opEquals]
 ---------------------------------------------------------------------------
 Fails under qthreads+numa, no-local, gasnet+fifo, gasnet-fast,
