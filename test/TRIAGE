@@ -296,6 +296,14 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+[Error matching program output for execflags/gbt/getenv]
+--------------------------------------------------------
+gasnet
+This is a result of multi-locale calls to writeln with c_string arguments on
+locales other than locale 0.  Tom thinks that the strings-as-records
+implementation will allow forward progress on solving the bug itself.  The
+test itself has been resolved by Greg's fix on 09/09/2014
+
 [Error matching program output for trivial/deitz/test_max_range_iteration]
 [Error matching program output for types/range/hilde/maximalRange (compopts: 1)]
 --------------------------------------------------------------------------------
