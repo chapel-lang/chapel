@@ -57,6 +57,7 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
        "etc/README",
        "man/man1/chpl.1",
        "util/README",
+       "util/build_configs.py",
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
