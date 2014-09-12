@@ -1091,9 +1091,8 @@ qioerr qio_mkdir(const char* name, int mode, int parents) {
         tmp[index+1] = '\0';
         exitStatus = stat(tmp, &statRes);
         if (exitStatus == -1 && errno == ENOENT) {
-          // This error means we should stop checking each successive
-          // directory is there and start creating them, beginning with this
-          // one
+          // This error means we could not find the parent directory, so need
+          // to create it.
           exitStatus = mkdir(tmp, mode);
         }
         if (exitStatus) {
