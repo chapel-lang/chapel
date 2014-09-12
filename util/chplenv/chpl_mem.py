@@ -17,10 +17,10 @@ def get(flag='host'):
             tcmallocCompat = ["gnu", "clang", "intel"]
 
             # true if tcmalloc is compatible with the target compiler
-            if (not (platform_val == 'cray-xc' and arch_val == 'knc') and
-                    (platform_val != "cygwin") and
-                    any(sub in chpl_compiler.get('target') for sub in tcmallocCompat)):
-                return 'tcmalloc'
+            #if (not (platform_val == 'cray-xc' and arch_val == 'knc') and
+            #        (platform_val != "cygwin") and
+            #        any(sub in chpl_compiler.get('target') for sub in tcmallocCompat)):
+            #    return 'tcmalloc'
             if comm_val == 'gasnet':
                 segment_val = chpl_comm_segment.get()
                 if segment_val == 'fast' or segment_val == 'large':

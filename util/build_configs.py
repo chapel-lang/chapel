@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Interactive CLI for building one or more Chapel configurations.
+"""Interactive CLI for building one or more Chapel configurations."""
 
-TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
-TODO: Add additional configuration flags.
-TODO: Split up compile process into stages (compile, runtime, then third-party, etc).
-TODO: Parallelize build stages that are ammenable (e.g. runtime, third-party, etc).
-TODO: Add --all-configs (?) flag that will build all configurations.
-TODO: Figure out how to support compiler configs. It is a bit challenging because the default should almost certainly come from chplenv (otherwise that logic will be duplicated here).
-TODO: Figure out how to best support complex configs, like comm with substrate and segment values.
-TODO: Add interactive mode where user is asked what configs they want.
-"""
+# TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
+# TODO: Add additional configuration flags.
+# TODO: Split up compile process into stages (compile, runtime, then third-party, etc).
+# TODO: Parallelize build stages that are amenable (e.g. runtime, third-party, etc).
+# TODO: Add --all-configs (?) flag that will build all configurations.
+# TODO: Figure out how to support compiler configs. It is a bit challenging because the default should almost certainly come from chplenv (otherwise that logic will be duplicated here).
+# TODO: Figure out how to best support complex configs, like comm with substrate and segment values.
+# TODO: Add interactive mode where user is asked what configs they want.
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -61,12 +60,12 @@ class Dimension(object):
         :arg help_text: original help text string (unformatted)
 
         :rtype: str
-        :returns: formatted heljp text
+        :returns: formatted help text
         """
         return '{0} (default: {1})'.format(help_text, self.default)
 
     def __repr__(self):
-        """Stringify this dimsion."""
+        """Stringify this dimension."""
         cls_name = self.__class__.__name__
         attrs = ['name', 'var_name', 'values', 'default', 'help_text']
         f = lambda x: '{0}={1!r}'.format(x, getattr(self, x, None))
@@ -94,7 +93,7 @@ class Dimension(object):
 
 
 """Dimensions this script knows about when compiling chapel. Order determines
-how they will show up in the usage and what order is used in iteractive mode.
+how they will show up in the usage and what order is used in interactive mode.
 """
 Dimensions = [
     Dimension(
@@ -247,7 +246,7 @@ def get_configs(opts):
     logging.debug('Compiling configs from: {0}'.format(opts))
 
     # Create a list of lists. The inner lists are the values to build for each
-    # dimension (i.e. communcation). The outer list encapsulates all the
+    # dimension (i.e. communication). The outer list encapsulates all the
     # dimensions.
     dimension_values = []
     for dim in Dimensions:
@@ -370,11 +369,66 @@ def print_configs():
         print()
 
 
+def parse_config_value_callback(option, opt, value, parser, choices, **kwargs):
+    """OptionParser callback function for parsing the configuration value passed by user.
+
+    It takes values that have commas (e.g. the user specified
+    --comm=none,gasnet), breaks them apart and adds the individual values to
+    list of values.
+
+    :type option: optparse.Option
+    :arg option: Option instance that's calling the callback
+
+    :type opt_str: str
+    :arg opt_str: option string seen on the command line that's triggering the
+        callback
+
+    :type value: str
+    :arg value: value for this option passed by user
+
+    :type parser: optparse.OptionParser
+    :arg parser: instance of option parser that is doing work
+
+    :type choices: list
+    :arg choices: list of valid choices for this option
+    """
+    # Get the existing values the parser knows about for this particular
+    # option.
+    value_list = getattr(parser.values, option.dest, None) or []
+
+    # Split the value provided. Validate each value parsed here.
+    parsed_vals = value.split(',')
+    for v in parsed_vals:
+        if v not in choices:
+          parser.error('option {0}: invalid choice: {1} (choose from {2})'.format(
+              opt, v, choices))
+
+    # Add the new vals to the existing list of values, and set them on option.
+    value_list += parsed_vals
+    setattr(parser.values, option.dest, value_list)
+
+
 def parse_args():
     """Parse and return command line arguments."""
+    usage_description = __doc__ + """
+
+To select multiple values for a particular setting, use a comma separated list
+or pass the argument multiple times. For example, to build with comm=none and
+comm=gasnet either of these will work:
+
+  %prog --comm=none,gasnet
+  %prog --comm=none --comm=gasnet"""
+
+    class NoWrapHelpFormatter(optparse.IndentedHelpFormatter):
+        """Help formatter that does not wrap the description text."""
+
+        def _format_text(self, text):
+            return text
+
     parser = optparse.OptionParser(
         usage='usage: %prog [options] args',
-        description=__doc__
+        description=usage_description,
+        formatter=NoWrapHelpFormatter()
     )
 
     parser.set_defaults(**{
@@ -407,7 +461,8 @@ def parse_args():
     for dim in Dimensions:
         config_group.add_option(
             '--{0}'.format(dim.name),
-            action='append', choices=dim.values,
+            action='callback', type="string",
+            callback=parse_config_value_callback, callback_args=(dim.values,),
             help=dim.help_text
         )
 

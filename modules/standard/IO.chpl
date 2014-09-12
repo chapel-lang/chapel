@@ -753,24 +753,24 @@ proc file.length():int(64) {
    to other, directly tied to the C idea of these constants.  They are intended
    for use with functions that alter the permissions of files or directories.
 */
-extern var S_IRUSR: int;
-extern var S_IWUSR: int;
-extern var S_IXUSR: int;
-extern var S_IRWXU: int;
+extern const S_IRUSR: int;
+extern const S_IWUSR: int;
+extern const S_IXUSR: int;
+extern const S_IRWXU: int;
 
-extern var S_IRGRP: int;
-extern var S_IWGRP: int;
-extern var S_IXGRP: int;
-extern var S_IRWXG: int;
+extern const S_IRGRP: int;
+extern const S_IWGRP: int;
+extern const S_IXGRP: int;
+extern const S_IRWXG: int;
 
-extern var S_IROTH: int;
-extern var S_IWOTH: int;
-extern var S_IXOTH: int;
-extern var S_IRWXO: int;
+extern const S_IROTH: int;
+extern const S_IWOTH: int;
+extern const S_IXOTH: int;
+extern const S_IRWXO: int;
 
-extern var S_ISUID: int;
-extern var S_ISGID: int;
-extern var S_ISVTX: int;
+extern const S_ISUID: int;
+extern const S_ISGID: int;
+extern const S_ISVTX: int;
 
 /* Attempt to create a directory with the given path.  If parents is true,
    will attempt to create any directory in the path that did not previously
