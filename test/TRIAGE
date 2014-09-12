@@ -295,9 +295,6 @@ vanilla pgi:
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
-[Warning: arrays/diten/timeVectorArray.graph missing from GRAPHFILES]
----------------------------------------------------------------------
-David added this performance test but didn't add the graph to GRAPHFILES
 
 [Error matching program output for execflags/gbt/getenv]
 --------------------------------------------------------
