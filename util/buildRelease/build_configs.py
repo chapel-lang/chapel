@@ -6,7 +6,7 @@
 TODO: Add flag to ignore env when picking defaults, maybe --ignore-environment.
 TODO: Add additional configuration flags.
 TODO: Split up compile process into stages (compile, runtime, then third-party, etc).
-TODO: Parallelize build stages that are ammenable (e.g. runtime, third-party, etc).
+TODO: Parallelize build stages that are amenable (e.g. runtime, third-party, etc).
 TODO: Add --all-configs (?) flag that will build all configurations.
 TODO: Figure out how to support compiler configs. It is a bit challenging because the default should almost certainly come from chplenv (otherwise that logic will be duplicated here).
 TODO: Figure out how to best support complex configs, like comm with substrate and segment values.
@@ -61,12 +61,12 @@ class Dimension(object):
         :arg help_text: original help text string (unformatted)
 
         :rtype: str
-        :returns: formatted heljp text
+        :returns: formatted help text
         """
         return '{0} (default: {1})'.format(help_text, self.default)
 
     def __repr__(self):
-        """Stringify this dimsion."""
+        """Stringify this dimension."""
         cls_name = self.__class__.__name__
         attrs = ['name', 'var_name', 'values', 'default', 'help_text']
         f = lambda x: '{0}={1!r}'.format(x, getattr(self, x, None))
@@ -94,7 +94,7 @@ class Dimension(object):
 
 
 """Dimensions this script knows about when compiling chapel. Order determines
-how they will show up in the usage and what order is used in iteractive mode.
+how they will show up in the usage and what order is used in interactive mode.
 """
 Dimensions = [
     Dimension(
@@ -247,7 +247,7 @@ def get_configs(opts):
     logging.debug('Compiling configs from: {0}'.format(opts))
 
     # Create a list of lists. The inner lists are the values to build for each
-    # dimension (i.e. communcation). The outer list encapsulates all the
+    # dimension (i.e. communication). The outer list encapsulates all the
     # dimensions.
     dimension_values = []
     for dim in Dimensions:
