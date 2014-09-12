@@ -352,9 +352,6 @@ if ($debug == 1) {
 } else {
     $subjectid = "Cron$subjectid";
     $recipient = "$failuremail $allmail";
-    if ($tasks eq "qthreads") {
-      $recipient = "$recipient qthreads-chapel\@googlegroups.com";
-    }
     $nochangerecipient = $allmail;
 }
 
