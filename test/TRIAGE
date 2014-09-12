@@ -296,11 +296,18 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+[Error matching program output for trivial/deitz/test_max_range_iteration]
+[Error matching program output for types/range/hilde/maximalRange (compopts: 1)]
+--------------------------------------------------------------------------------
+Due to Elliot's C for loop initial commit.  He pushed a commit which alterred
+the code and most likely resolved these errors.  Initial test results indicate
+it is fixed, but it should be observed for a couple more days (09/12/2014)
+
 non-deterministic failure of associative/bharshbarg/arrays/arraySetOps
 ----------------------------------------------------------------------
 various configs
 Ben looked into this error, and pushed a commit which seems to have fixed it.
-Leaving this note here to make sure it has gone away.
+Leaving this note here to make sure it has gone away. (09/12/2014)
 
 [Error matching program output for associative/bharshbarg/domains/opEquals]
 ---------------------------------------------------------------------------
