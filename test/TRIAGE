@@ -296,6 +296,11 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+io/ferguson/ctests/* under cray-prgenv-pgi, cray
+------------------------------------------------
+Some of these tests use -pthread in their compilation, which is not an accepted
+flag for pgi and cray compilers.
+
 [Error matching program output for execflags/gbt/getenv]
 --------------------------------------------------------
 gasnet
