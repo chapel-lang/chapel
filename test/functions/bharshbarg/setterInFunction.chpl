@@ -1,6 +1,6 @@
 var x : int;
 
-proc test(i : int) var {
+proc test(i : int) ref {
   if setter then return x;
   else return (x,42);
 }

@@ -1,0 +1,31 @@
+associative.chpl:72: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:145: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:203: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:306: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:307: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:309: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:314: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+associative.chpl:315: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+An empty associative domain: {}
+
+The initial size of the 'Names' domain is 0
+
+A populated associative domain of strings: {Dana, Alice, Frank, Clark, Bob, Ellen}
+
+Removed 'Bob' and 'Frank', added 'Robert': {Dana, Alice, Clark, Robert, Ellen}
+
+Our 'Scores' associative array: 0 0 0 0 0
+Our 'Scores' array, pretty-printed: [ Alice => 0, Clark => 0, Dana => 0, Ellen => 0, Robert => 0 ]
+
+Our 'Scores' array initialized with some values: [ Alice => 42, Clark => 100, Dana => 91, Ellen => 100, Robert => 33 ]
+
+The average score is 73
+
+Our updated 'Scores' array after adding some more names: [ Alice => 42, Clark => 100, Dana => 91, Ellen => 100, Gary => 10, John => 76, Robert => 33 ]
+
+Some primes in the Fibonacci sequence: {5, 13, 3, 2}
+Some primes not in the Fibonacci sequence: {7, 17, 11}
+
+Women = {Dana, Alice, Ellen}
+Men = {John, Gary, Clark, Robert, Mark}
+

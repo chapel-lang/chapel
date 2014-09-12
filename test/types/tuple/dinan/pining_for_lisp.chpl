@@ -10,11 +10,11 @@ proc isNil(x): bool {
     return false;
 }
 
-proc car(x: (?T1, ?T2)) var: T1 {
+proc car(x: (?T1, ?T2)) ref: T1 {
   return x(1);
 }
 
-proc cdr(x: (?T1, ?T2)) var: T2 {
+proc cdr(x: (?T1, ?T2)) ref: T2 {
   return x(2);
 }
 

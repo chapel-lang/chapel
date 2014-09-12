@@ -322,10 +322,10 @@ class CSRArr: BaseArr {
 
   proc dsiGetBaseDom() return dom;
 
-  //  proc this(ind: idxType ... 1) var where rank == 1
+  //  proc this(ind: idxType ... 1) ref where rank == 1
   //    return this(ind);
 
-  proc dsiAccess(ind: rank*idxType) var {
+  proc dsiAccess(ind: rank*idxType) ref {
     // make sure we're in the dense bounding box
     dom.boundsCheck(ind);
 
@@ -339,7 +339,7 @@ class CSRArr: BaseArr {
       return irv;
   }
 
-  iter these() var {
+  iter these() ref {
     for e in data[1..dom.nnz] do yield e;
   }
 
@@ -351,7 +351,7 @@ class CSRArr: BaseArr {
       yield followThis;
   }
 
-  iter these(param tag: iterKind, followThis: (?,?,?)) var where tag == iterKind.follower {
+  iter these(param tag: iterKind, followThis: (?,?,?)) ref where tag == iterKind.follower {
     // simpler than CSRDom's follower - no need to deal with rows (or columns)
     var (followThisDom, startIx, endIx) = followThis;
 
@@ -368,7 +368,7 @@ class CSRArr: BaseArr {
     yield 0;    // Dummy.
   }
 
-  proc IRV var {
+  proc IRV ref {
     return irv;
   }
 

@@ -220,13 +220,13 @@ class CMOArr:BaseArr {
     data = 0:eltType;
   }
 
-  iter these() var {
+  iter these() ref {
     for i in dom do {
       yield dsiAccess(i);
     }
   }
 
-  proc dsiAccess(ind : rank*idxType) var {
+  proc dsiAccess(ind : rank*idxType) ref {
     if boundsChecking then
       if !dom.dsiMember(ind) then
         halt("array index out of bounds: ", ind);

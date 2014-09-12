@@ -27,7 +27,7 @@ module Meteor {
     /**
      * returns the neighbor found at the specified side
      */
-    proc getNeighbor(side: int) var {
+    proc getNeighbor(side: int) ref {
       return neighbors[side];
     }
 

@@ -1,0 +1,2 @@
+--pattern="*.chpl" --useglob=true
+--pattern="*.chpl" --useglob=false

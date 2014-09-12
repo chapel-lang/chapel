@@ -35,7 +35,7 @@ class GridVariable {
   // Provides an alias directly into the 'value' array.
   //----------------------------------------------------
 
-  proc this(D: domain) var
+  proc this(D: domain) ref
   {
     var alias => value(D);
     return alias;

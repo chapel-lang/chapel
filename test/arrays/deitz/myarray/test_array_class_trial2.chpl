@@ -4,7 +4,7 @@ class array1d {
   var x2 : t;
   var x3 : t;
   var x4 : t;
-  proc this(i : int) var {
+  proc this(i : int) ref {
     select i {
       when 1 do return x1;
       when 2 do return x2;

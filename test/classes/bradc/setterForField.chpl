@@ -1,7 +1,7 @@
 class C {
   var x: int = 1;
 
-  proc x var {
+  proc x ref {
     if !setter && x < 0 then
       halt("x accessed when negative");
     return x;

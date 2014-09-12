@@ -1057,6 +1057,77 @@ void _qio_file_destroy(qio_file_t* f)
   qio_free(f);
 }
 
+/* Creates a directory with the given name and settings if possible,
+   returning a qioerr if not. If parents != 0, then the callee wishes
+   to create all interim directories necessary as well. */
+qioerr qio_mkdir(const char* name, int mode, int parents) {
+  qioerr err = 0;
+  int exitStatus;
+  if (!parents) {
+    // Simple, easy.  Callee didn't specify recursive creation, so
+    // if something fails, they get to deal with it.
+    exitStatus = mkdir(name, mode);
+  } else {
+    int len = strlen(name);
+    char tmp[len+1];
+    int index;
+    while (name[len-1] == '/') {
+      // In case the caller, in their infinite wisdom, decides to send
+      // a directory name of the form "foo///////".
+      len--;
+      // Note: not being able to mix declarations and code means that
+      // tmp must be created larger than might be necessary.
+    }
+    // Copy each step of the directory path into a temporary string,
+    // creating the parent directories as needed. In the case of name
+    // being "foo/bar/baz", this means that tmp will be "foo/" and then
+    // "foo/bar" for each inner call of mkdir.
+    for (index = 0; name[index] != '\0' && index < len; index++) {
+      tmp[index] = name[index];
+      if(tmp[index] == '/') {
+        tmp[index+1] = '\0';
+        mkdir(tmp, mode);
+      }
+    }
+    tmp[len] = '\0';
+    exitStatus = mkdir(tmp, mode);
+  }
+  if (exitStatus) {
+    err = qio_mkerror_errno();
+  }
+  return err;
+}
+
+
+qioerr qio_chdir(const char* name) {
+  qioerr err = 0;
+  int exitStatus = chdir(name);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+}
+
+qioerr qio_chown(const char* name, int uid, int gid) {
+  qioerr err = 0;
+  int exitStatus = chown(name, uid, gid);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+}
+
+qioerr qio_cwd(const char** working_dir) {
+  qioerr err = 0;
+  size_t bufsize = MAXPATHLEN*sizeof(char);
+  char* bufptr;
+  char* pathbuf = (char *)qio_malloc(bufsize);
+  bufptr = getcwd(pathbuf, bufsize);
+  if (bufptr == NULL)
+    err = qio_mkerror_errno();
+  else
+    *working_dir = pathbuf;
+  return err;
+}
+
 /* Renames the file from oldname to newname, returning a qioerr if one
    occurred. */
 qioerr qio_file_rename(const char* oldname, const char* newname) {

@@ -1,5 +1,5 @@
 var x, y = 0;
-proc A(i: int) var {
+proc A(i: int) ref {
   if i < 0 || i > 1 then
     halt("array access out of bounds");
   return if i == 0 then x else y;

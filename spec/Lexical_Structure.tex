@@ -234,6 +234,8 @@ integer-literal:
   digits
   `0x' hexadecimal-digits
   `0X' hexadecimal-digits
+  `0o' octal-digits
+  `0O' octal-digits
   `0b' binary-digits
   `0B' binary-digits
 
@@ -247,6 +249,13 @@ hexadecimal-digits:
 
 hexadecimal-digit: one of
   `0' `1' `2' `3' `4' `5' `6' `7' `8' `9' `A' `B' `C' `D' `E' `F' `a' `b' `c' `d' `e' `f'
+
+octal-digits:
+  octal-digit
+  octal-digit octal-digits
+
+octal-digit: one of
+  `0' `1' `2' `3' `4' `5' `6' `7'
 
 binary-digits:
   binary-digit

@@ -1,1 +1,0 @@
-bug: Compiler internal error when comparing a ref var to nil

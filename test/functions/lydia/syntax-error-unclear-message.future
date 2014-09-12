@@ -1,6 +1,6 @@
-bug: unclear error message
+bug: Internal error for function declaration with missing body
 
-This incorrect method declaration currently fails with an obscure error message.
+This incorrect function declaration currently fails with an obscure error message.
 The problem should probably be caught closer to parsing so a more reasonable
 message can be generated.
 

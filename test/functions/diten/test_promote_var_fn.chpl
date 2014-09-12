@@ -1,5 +1,5 @@
 var A: [1..4] int;
-proc varFn() var {
+proc varFn() ref {
   return A;
 }
 

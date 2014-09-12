@@ -4,7 +4,7 @@ class foo {
   var temp : elType;
   var data : int;
 
-  proc this(i : int) var where setter {
+  proc this(i : int) ref where setter {
     return data;
   }
 

@@ -634,7 +634,7 @@ class Block1DArr: BaseArray {
   //
   // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
-  proc this(i: idxType) var {
+  proc this(i: idxType) ref {
     const myLocArr = locArr(here.id);
     local {
       if myLocArr.locDom.myBlock.member(i) then
@@ -646,7 +646,7 @@ class Block1DArr: BaseArray {
   //
   // the iterator over the array's elements, currently sequential
   //
-  proc these() var {
+  proc these() ref {
     for loc in dom.dist.targetLocDom {
       // TODO: May want to do something like:     
       // on this do
@@ -674,7 +674,7 @@ class Block1DArr: BaseArray {
 
   proc supportsAlignedFollower() param return true;
 
-  proc these(param tag: iterKind, followThis, param aligned: bool = false) var where tag == iterKind.follower {
+  proc these(param tag: iterKind, followThis, param aligned: bool = false) ref where tag == iterKind.follower {
     //
     // TODO: Would like to write this as followThis += dom.low;
     //
@@ -698,7 +698,7 @@ class Block1DArr: BaseArray {
       //
       // TODO: could do something smarter to only bring the non-local
       // elements over.
-      proc accessHelper(i) var {
+      proc accessHelper(i) ref {
         local {
           if myLocArr.locDom.myBlock.member(i) then
             return myLocArr.this(i);
@@ -821,14 +821,14 @@ class LocBlock1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  proc this(i: idxType) var {
+  proc this(i: idxType) ref {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  proc these() var {
+  proc these() ref {
     for elem in myElems {
       yield elem;
     }
@@ -843,7 +843,7 @@ class LocBlock1DArr {
     yield {1..100};
   }
 
-  proc these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+  proc these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     yield myElems(0);
   }
 

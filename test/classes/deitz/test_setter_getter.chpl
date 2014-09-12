@@ -1,6 +1,6 @@
 class C {
   var x: int;
-  proc x var {
+  proc x ref {
     if setter then
       writeln("setter invoked");
     else
