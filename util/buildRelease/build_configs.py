@@ -370,6 +370,45 @@ def print_configs():
         print()
 
 
+def parse_config_value_callback(option, opt, value, parser, choices, **kwargs):
+    """OptionParser callback function for parsing the configuration value passed by user.
+
+    It takes values that have commas (e.g. the user specified
+    --comm=none,gasnet), breaks them apart and adds the individual values to
+    list of values.
+
+    :type option: optparse.Option
+    :arg option: Option instance that's calling the callback
+
+    :type opt_str: str
+    :arg opt_str: option string seen on the command line that's triggering the
+        callback
+
+    :type value: str
+    :arg value: value for this option passed by user
+
+    :type parser: optparse.OptionParser
+    :arg parser: instance of option parser that is doing work
+
+    :type choices: list
+    :arg choices: list of valid choices for this option
+    """
+    # Get the existing values the parser knows about for this particular
+    # option.
+    value_list = getattr(parser.values, option.dest, None) or []
+
+    # Split the value provided. Validate each value parsed here.
+    parsed_vals = value.split(',')
+    for v in parsed_vals:
+        if v not in choices:
+          parser.error('option {0}: invalid choice: {1} (choose from {2})'.format(
+              opt, v, choices))
+
+    # Add the new vals to the existing list of values, and set them on option.
+    value_list += parsed_vals
+    setattr(parser.values, option.dest, value_list)
+
+
 def parse_args():
     """Parse and return command line arguments."""
     parser = optparse.OptionParser(
@@ -407,7 +446,8 @@ def parse_args():
     for dim in Dimensions:
         config_group.add_option(
             '--{0}'.format(dim.name),
-            action='append', choices=dim.values,
+            action='callback', type="string",
+            callback=parse_config_value_callback, callback_args=(dim.values,),
             help=dim.help_text
         )
 
