@@ -31,13 +31,16 @@ $tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLE
 $origCwd = abs_path(cwd());
 $reldir = "chapel$version";
 $rootdir = "$tmpdir/$reldir";
-$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
-if ($svnroot eq "") {
-    $svnroot = "https://github.com/chapel-lang/chapel/trunk";
+$git_url = $ENV{'CHPL_HOME_REPOSITORY'};
+if ($git_url eq "") {
+    $git_url = "https://github.com/chapel-lang/chapel";
 }
-print "Checking out the sources...\n";
-system("cd $tmpdir && svn export -q $svnroot $reldir");
+print "Cloning the sources...\n";
+system("git clone $git_url $rootdir");
 
+print "Creating git archive...\n";
+$archive_dir = "$rootdir/chapel";
+system("cd $rootdir && git archive --format=tar HEAD | (mkdir -pv $archive_dir && cd $archive_dir && tar -xf -)");
 
 # explicit files to include
 @files = (
@@ -93,7 +96,7 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
 );
 
 
-chdir "$rootdir";
+chdir "$archive_dir";
 
 print "Generating the bison/flex files...\n";
 system("cd compiler/parser && make lex.yy.cpp > /dev/null");
@@ -129,7 +132,7 @@ system("cd third-party && rm -rf txt2man");
 print "Removing third-party directories that are not intended for release...\n";
 system("cd third-party && rm *.devel*");
 
-chdir "$tmpdir";
+chdir "$rootdir";
 
 print "Chmodding the hierarchy\n";
 system("chmod -R ugo+rX $reldir");
