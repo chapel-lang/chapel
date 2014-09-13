@@ -124,7 +124,7 @@ typedef qioerr (*qio_seek_fptr)(void*,  // plugin fp
                                 void*); // plugin filesystem pointer
 
 typedef qioerr (*qio_filelength_fptr)(void*,     // file information 
-                                      int64_t*,  // length on return
+                                      off_t*,  // length on return
                                       void*);    // plugin filesystem pointer
 
 typedef qioerr (*qio_getpath_fptr)(void*,        // file information
