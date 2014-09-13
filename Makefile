@@ -44,10 +44,14 @@ runtime: FORCE
 third-party: FORCE
 	cd third-party && $(MAKE)
 
-third-party-try-opt: try-third-party-re2
+third-party-try-opt: third-party-try-re2
 
 third-party-try-re2: FORCE
-	-cd third-party && $(MAKE) re2
+	@
+	-@if [[ -z "$$CHPL_REGEXP" ]]; then \
+	echo "Speculatively trying to build re2"; \
+	cd third-party && $(MAKE) re2; \
+	fi
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
