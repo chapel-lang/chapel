@@ -1,83 +1,10 @@
-# Copyright 2004-2014 Cray Inc.
-# Other additional copyright holders may be indicated within.
-# 
-# The entirety of this work is licensed under the Apache License,
-# Version 2.0 (the "License"); you may not use this file except
-# in compliance with the License.
-# 
-# You may obtain a copy of the License at
-# 
-#     http://www.apache.org/licenses/LICENSE-2.0
-# 
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+MAKEFLAGS = --no-print-directory
+CHPL_MAKE=$(MAKE) -f Makefile.help
 
-#
-# top-level Chapel Makefile
-#
+default:
+	@echo "Speculatively trying to build re2"
+	@if [[ -z "$$CHPL_REGEXP" ]]; then $(CHPL_MAKE) third-party-try-re2; fi
+	@$(CHPL_MAKE)
 
-export CHPL_MAKE_HOME=$(shell pwd)
-include ./make/Makefile.base
-
-default: all
-
-all: comprt
-	@test -r Makefile.devel && $(MAKE) develall || echo ""
-
-comprt: FORCE
-	@$(MAKE) compiler
-	-@$(MAKE) third-party-optional-pkgs
-	@$(MAKE) runtime
-	@$(MAKE) modules
-
-compiler: FORCE
-	cd compiler && $(MAKE)
-
-modules: FORCE
-	cd modules && $(MAKE)
-
-runtime: FORCE
-	cd runtime && $(MAKE)
-
-third-party: FORCE
-	cd third-party && $(MAKE)
-
-third-party-optional-pkgs: FORCE
-	-cd third-party && $(MAKE) optional-pkgs
-
-clean: FORCE
-	cd compiler && $(MAKE) clean
-	cd modules && $(MAKE) clean
-	cd runtime && $(MAKE) clean
-	cd third-party && $(MAKE) clean
-
-cleanall: FORCE
-	cd compiler && $(MAKE) cleanall
-	cd modules && $(MAKE) cleanall
-	cd runtime && $(MAKE) cleanall
-	cd third-party && $(MAKE) cleanall
-
-cleandeps: FORCE
-	cd compiler && $(MAKE) cleandeps
-	cd runtime && $(MAKE) cleandeps
-
-clobber: FORCE
-	cd compiler && $(MAKE) clobber
-	cd modules && $(MAKE) clobber
-	cd runtime && $(MAKE) clobber
-	cd third-party && $(MAKE) clobber
-	rm -rf bin
-	rm -rf lib
-
-depend:
-	@echo "make depend has been deprecated for the time being"
-
-check: all
-	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
-
--include Makefile.devel
-
-FORCE:
+%:
+	@$(CHPL_MAKE) $<
