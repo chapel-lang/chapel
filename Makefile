@@ -38,6 +38,12 @@
 # the current state of the world, not the
 # post-attempt-to-build-gmp/re2 world.
 #
+
+#
+# We set this to avoid extraneous printing of Makefile subdirectories
+# by default.  Having this un-set will break the Travis builds.
+# Normally, Makefile.base sets this for our other Makefiles.
+#
 MAKEFLAGS = --no-print-directory
 
 export CHPL_MAKE_HOME=$(shell pwd)
@@ -106,7 +112,7 @@ depend:
 	@echo "make depend has been deprecated for the time being"
 
 check: all
-	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall --debug
+	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
 
 -include Makefile.devel
 
