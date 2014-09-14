@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# This script generates this file:
+output=isX.module-writeln.chpl
+
+function doit() {
+
+  echo // DO NOT EDIT - THIS FILE IS GENERATED AUTOMATICALLY //
+  echo
+  cat isX.module-writeln.decls-chpl
+  isX.module-writeln.py
+}
+
+echo generating $output 1>&2
+doit > $output
