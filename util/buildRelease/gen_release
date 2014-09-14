@@ -50,7 +50,7 @@ if ($clone_status != 0) {
 }
 
 print "Creating git archive...\n";
-$archive_dir = "$rootdir/chapel";
+$archive_dir = "$rootdir/$reldir";
 system("cd $rootdir && git archive --format=tar HEAD | (mkdir -pv $archive_dir && cd $archive_dir && tar -xf -)");
 
 # explicit files to include
