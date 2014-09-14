@@ -30,6 +30,10 @@ module ChapelSyncvar {
   inline proc chpl__readXX(x: single) return x.readXX();
   inline proc chpl__readXX(x) return x;
 
+  inline proc chpl__readFFE(x: sync) return x.readFE();
+  inline proc chpl__readFFE(x: single) return x.readFF();
+  inline proc chpl__readFFE(x) return x;
+
   pragma "sync"
     pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
@@ -169,6 +173,10 @@ module ChapelSyncvar {
     return b;
   }
 
+  proc _syncvar.writeThis(x: Writer) {
+    x.write(readFE());
+  }
+
 
   // single variable support
     pragma "single"
@@ -260,6 +268,10 @@ module ChapelSyncvar {
       chpl_rmem_consist_acquire();
     }
     return b;
+  }
+
+  proc _singlevar.writeThis(x: Writer) {
+    x.write(readFF());
   }
 
   pragma "dont disable remote value forwarding"

@@ -9,10 +9,10 @@ class D {
 var d: D = new D();
 var i: int;
 
-begin writeln( "got ", d.s);
-begin writeln( "got ", d.s);
-begin writeln( "got ", d.s);
-begin writeln( "got ", d.s);
+begin writeln( "got ", d.s.readFF());
+begin writeln( "got ", d.s.readFF());
+begin writeln( "got ", d.s.readFF());
+begin writeln( "got ", d.s.readFF());
 
 i = 4;
 writeln( "1: going to sleep with ", i);
