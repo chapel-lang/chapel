@@ -150,8 +150,8 @@ module ChapelRange {
   //#
   
   proc isRangeType(type t) param {
-    proc isRangeHelp(type t: range) param  return true;
-    proc isRangeHelp(type t)        param  return false;
+    proc isRangeHelp(type t: range(?)) param  return true;
+    proc isRangeHelp(type t)           param  return false;
     return isRangeHelp(t);
   }
   
