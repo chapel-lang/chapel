@@ -850,7 +850,7 @@ error:
 qioerr qio_file_init_usr(qio_file_t** file_out, void* file_info, qio_hint_t iohints, int flags, const qio_style_t* style, void* fs_info, const qio_file_functions_t* fns)
 {
   off_t initial_pos = 0;
-  off_t initial_length = 0;
+  int64_t initial_length = 0;
   qioerr err = 0;
   err_t err_code;
   qio_file_t* file = NULL;
