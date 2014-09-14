@@ -20,7 +20,6 @@
 #
 
 export CHPL_MAKE_HOME=$(shell pwd)
-#include ./make/Makefile.base
 
 default: third-party-try-opt all
 
@@ -44,13 +43,18 @@ runtime: FORCE
 third-party: FORCE
 	cd third-party && $(MAKE)
 
-third-party-try-opt: third-party-try-re2
+third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
-	@
 	-@if [[ -z "$$CHPL_REGEXP" ]]; then \
 	echo "Speculatively trying to build re2"; \
 	cd third-party && $(MAKE) re2; \
+	fi
+
+third-party-try-gmp: FORCE
+	-@if [[ -z "$$CHPL_GMP" ]]; then \
+	echo "Speculatively trying to build gmp"; \
+	cd third-party && $(MAKE) gmp; \
 	fi
 
 clean: FORCE
