@@ -38,6 +38,7 @@
 # the current state of the world, not the
 # post-attempt-to-build-gmp/re2 world.
 #
+MAKEFLAGS = --no-print-directory
 
 export CHPL_MAKE_HOME=$(shell pwd)
 
