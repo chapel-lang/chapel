@@ -105,7 +105,7 @@ depend:
 	@echo "make depend has been deprecated for the time being"
 
 check: all
-	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
+	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall --debug
 
 -include Makefile.devel
 
