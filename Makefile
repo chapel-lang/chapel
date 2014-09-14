@@ -19,6 +19,26 @@
 # top-level Chapel Makefile
 #
 
+#
+# This is the one Makefile that does not/should not include
+# $CHPL_HOME/make/Makefile.base.  The reasons are:
+# 
+# (1) it does not need to include that file because it does not rely
+# on any of its settings; it only is responsible for cd-ing into
+# subdirectories and having them make things (where they should
+# include Makefile.base).
+#
+# (2) including it will actually break the build because there are
+# aspects of the CHPL_* environment that we don't know yet.
+# Specifically, the third-party-try-opt rule speculatively tries to
+# build GMP and RE2 if the user has not expressed a preference, and we
+# can't know whether CHPL_GMP/RE2 should be set to 'none' or the
+# package until those attempts to build complete.  If Makefile.base is
+# included here, it will set them for the make environment based on
+# the current state of the world, not the
+# post-attempt-to-build-gmp/re2 world.
+#
+
 export CHPL_MAKE_HOME=$(shell pwd)
 
 default: third-party-try-opt all
