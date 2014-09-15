@@ -468,13 +468,13 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
     hwpar = 0;
 
     // User set chapel level env var (CHPL_RT_NUM_THREADS_PER_LOCALE)
-    // This is limited to numPusPerLocale
+    // This is limited to the number of logical CPUs on the node.
     if (numThreadsPerLocale != 0) {
         int32_t numPUsPerLocale;
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_getNumPUsOnThisNode();
+        numPUsPerLocale = chpl_getNumLogCpusOnThisNode(true);
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             if (verbosity >= 2) {
                 printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
@@ -493,7 +493,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
     }
     // User did not set chapel or qthreads vars -- our default
     else {
-        hwpar = chpl_getNumCoresOnThisNode();
+        hwpar = chpl_getNumPhysCpusOnThisNode(true);
     }
 
     // hwpar will only be <= 0 if the user set QT_NUM_SHEPHERDS and/or
@@ -507,7 +507,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
 
         // If there is more parallelism requested than the number of cores, set the
         // worker unit to pu, otherwise core.
-        if (hwpar > chpl_getNumCoresOnThisNode()) {
+        if (hwpar > chpl_getNumPhysCpusOnThisNode(true)) {
           chpl_qt_setenv("WORKER_UNIT", "pu", 0);
         } else {
           chpl_qt_setenv("WORKER_UNIT", "core", 0);
