@@ -233,8 +233,8 @@ module LocaleModel {
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
-      extern proc chpl_getNumLogCpusOnThisNode(accessible_only: bool): c_int;
-      numCores = chpl_getNumLogCpusOnThisNode(true);
+      extern proc chpl_getNumLogicalCpus(accessible_only: bool): c_int;
+      numCores = chpl_getNumLogicalCpus(true);
 
       extern proc chpl_task_getNumSublocales(): int(32);
       numSublocales = chpl_task_getNumSublocales();

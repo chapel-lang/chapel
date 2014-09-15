@@ -169,7 +169,7 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
 #endif
 
 
-int chpl_getNumPhysCpusOnThisNode(chpl_bool accessible_only) {
+int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
   //
   // Support for the accessible_only flag here is spotty.  For non-Linux
   // systems we ignore it.  For Linux systems we obey it, but we may
@@ -194,7 +194,7 @@ int chpl_getNumPhysCpusOnThisNode(chpl_bool accessible_only) {
   //
   static int numCpus = 0;
   if (numCpus == 0)
-    numCpus = chpl_getNumLogCPUsOnThisNode();
+    numCpus = chpl_getNumLogicalCpus();
   return numCpus;
 #elif defined __linux__
   //
@@ -244,7 +244,7 @@ int chpl_getNumPhysCpusOnThisNode(chpl_bool accessible_only) {
 }
 
 
-int chpl_getNumLogCpusOnThisNode(chpl_bool accessible_only) {
+int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
   //
   // Support for the accessible_only flag here is spotty -- we only obey
   // it for Linux systems.

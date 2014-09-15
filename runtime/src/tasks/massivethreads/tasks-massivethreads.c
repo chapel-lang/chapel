@@ -507,7 +507,7 @@ uint32_t chpl_task_getMaxPar(void) {
   // lesser of the number of physical CPUs and the number of workers
   // we have.
   //
-  max = (uint32_t) chpl_getNumPhysCpusOnThisNode(true);
+  max = (uint32_t) chpl_getNumPhysicalCpus(true);
   if ((uint32_t) s_num_workers < max)
     max = (uint32_t) s_num_workers;
   return max;
