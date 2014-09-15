@@ -1935,9 +1935,24 @@ module ChapelArray {
         if !b.member(e) then newDom.add(e);
     return newDom;
   }
+
+  proc -=(ref a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in b do
+      if a.member(e) then
+        a.remove(e);
+  }
   
   proc |(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     return a + b;
+  }
+
+  proc |=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in b do
+      a.add(e);
+  }
+
+  proc +=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    a |= b;
   }
 
   proc &(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
@@ -1947,6 +1962,12 @@ module ChapelArray {
       forall k in a do
         if b.member(k) then newDom += k;
     return newDom;
+  }
+
+  proc &=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in a do
+      if !b.member(e) then
+        a.remove(e);
   }
 
   proc ^(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
@@ -1960,6 +1981,14 @@ module ChapelArray {
     }
 
     return newDom;
+  }
+
+  proc ^=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in a do
+      if b.member(e) then
+        a.remove(e);
+      else
+        a.add(e);
   }
   //
   // Helper functions
