@@ -1,10 +1,8 @@
-In file included from obj/_main.c:nnnn:
 obj/DefaultRectangular.c: In function 'dsiReallocate13':
 obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
-In file included from obj/_main.c:nnnn:
 obj/ChapelArray.c: In function 'coforall_fn11':
 obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
 obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
@@ -15,7 +13,6 @@ obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
 obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
 obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
 obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
-In file included from obj/_main.c:nnnn:
 obj/DefaultAssociative.c: In function '_backupArray8':
 obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
@@ -58,7 +55,6 @@ obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is req
 obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
-In file included from obj/_main.c:nnnn:
 obj/DefaultSparse.c: In function 'sparseShiftArray3':
 obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
