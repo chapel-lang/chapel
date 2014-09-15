@@ -1071,6 +1071,9 @@ qioerr qio_mkdir(const char* name, int mode, int parents) {
     int len = strlen(name);
     char tmp[len+1];
     int index;
+    struct stat statRes;
+    // We don't actually care about the full result of the stat calls, merely
+    // the existance and state of the directory being accessed.
     while (name[len-1] == '/') {
       // In case the caller, in their infinite wisdom, decides to send
       // a directory name of the form "foo///////".
@@ -1086,7 +1089,20 @@ qioerr qio_mkdir(const char* name, int mode, int parents) {
       tmp[index] = name[index];
       if(tmp[index] == '/') {
         tmp[index+1] = '\0';
-        mkdir(tmp, mode);
+        exitStatus = stat(tmp, &statRes);
+        if (exitStatus == -1 && errno == ENOENT) {
+          // This error means we could not find the parent directory, so need
+          // to create it.
+          exitStatus = mkdir(tmp, mode);
+        }
+        if (exitStatus) {
+          // We encountered an error making a parent directory or during the
+          // stat call to determine if we need to make a directory.  We will
+          // encounter errors for every step after this, so return this one
+          // as it will be more informative.
+          err = qio_mkerror_errno();
+          return err;
+        }
       }
     }
     tmp[len] = '\0';
