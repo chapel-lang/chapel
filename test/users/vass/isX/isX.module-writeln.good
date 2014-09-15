@@ -1,0 +1,53 @@
+=== at the module level ===
+bool (b0)  isBool  isBoolValue  isBoolType  .
+bool(8) (b8)  isBool  isBoolValue  isBoolType  .
+bool(16) (b16)  isBool  isBoolValue  isBoolType  .
+bool(32) (b32)  isBool  isBoolValue  isBoolType  .
+bool(64) (b64)  isBool  isBoolValue  isBoolType  .
+int(8) (i8)  isInt  isIntValue  isIntType  .
+int(16) (i16)  isInt  isIntValue  isIntType  .
+int(32) (i32)  isInt  isIntValue  isIntType  .
+int(64) (i64)  isInt  isIntValue  isIntType  .
+uint(8) (u8)  isUint  isUintValue  isUintType  .
+uint(16) (u16)  isUint  isUintValue  isUintType  .
+uint(32) (u32)  isUint  isUintValue  isUintType  .
+uint(64) (u64)  isUint  isUintValue  isUintType  .
+real(32) (r32)  isReal  isRealValue  isRealType  .
+real(64) (r64)  isReal  isRealValue  isRealType  .
+imag(32) (m32)  isImag  isImagValue  isImagType  .
+imag(64) (m64)  isImag  isImagValue  isImagType  .
+complex(64) (z64)  isComplex  isComplexValue  isComplexType  .
+complex(128) (z128)  isComplex  isComplexValue  isComplexType  .
+string (str)  isString  isStringValue  isStringType  .
+EnumType (enm)  isEnum  isEnumValue  isEnumType  .
+HomTupType (homtup)  isTuple  isTupleValue  isTupleType  isHomogeneousTuple  isHomogeneousTupleValue  isHomogeneousTupleType  .
+HetTupType (hettup)  isTuple  isTupleValue  isTupleType  .
+ClassType (cls)  isClass  isClassValue  isClassType  .
+RecordSmall (rec1)  isRecord  isRecordValue  isRecordType  .
+UnionType (unn)  isUnion  isUnionValue  isUnionType  .
+range (rng1)  isRange  isRangeValue  isRangeType  .
+range(uint(8), BoundedRangeType.boundedNone, true) (rng2)  isRange  isRangeValue  isRangeType  .
+new dmap(new DefaultDist()) (dmp)  isDmap  isDmapValue  isDmapType  .
+DomType1 (dom1)  isDomain  isDomainValue  isDomainType  .
+DomType2 (dom2)  isDomain  isDomainValue  isDomainType  .
+ArrType1 (arr1)  isArray  isArrayValue  isArrayType  .
+ArrType2 (arr2)  isArray  isArrayValue  isArrayType  .
+sync int (syInt)  isSync  isSyncValue  isSyncType  .
+sync real (syReal)  isSync  isSyncValue  isSyncType  .
+single int (siInt)  isSingle  isSingleValue  isSingleType  .
+single real (siReal)  isSingle  isSingleValue  isSingleType  .
+atomic int (aInt)  isAtomic  isAtomicValue  isAtomicType  .
+atomic real (aReal)  isAtomic  isAtomicValue  isAtomicType  .
+
+isIntegral:   i8  i16  i32  i64  u8  u16  u32  u64  .
+isIntegralValue:   i8  i16  i32  i64  u8  u16  u32  u64  .
+isIntegralType:   i8  i16  i32  i64  u8  u16  u32  u64  .
+isFloat:   r32  r64  m32  m64  .
+isFloatValue:   r32  r64  m32  m64  .
+isFloatType:   r32  r64  m32  m64  .
+isNumeric:   i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  .
+isNumericValue:   i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  .
+isNumericType:   i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  .
+isPrimitive:   b0  b8  b16  b32  b64  i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  str  .
+isPrimitiveValue:   b0  b8  b16  b32  b64  i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  str  .
+isPrimitiveType:   b0  b8  b16  b32  b64  i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  str  .

@@ -528,7 +528,6 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
 }
 
 static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
-  BlockStmt* loop = new BlockStmt();
 
   // C for loops have the form:
   //   __primitive("C for loop", initExpr, testExpr, incrExpr)
@@ -539,18 +538,17 @@ static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
   call->get(3)->replace(new BlockStmt(call->get(3)->copy()));
 
   // Regular loop setup
+  BlockStmt* loop = new BlockStmt(body);
   loop->blockInfo = call;
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_COMPILER_GENERATED);
   continueLabel->addFlag(FLAG_LABEL_CONTINUE);
-  body->blockTag = BLOCK_SCOPELESS;
-  loop->insertAtTail(body);
-  body->continueLabel = continueLabel;
+  loop->continueLabel = continueLabel;
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
   breakLabel->addFlag(FLAG_COMPILER_GENERATED);
   breakLabel->addFlag(FLAG_LABEL_BREAK);
-  body->breakLabel = breakLabel;
-  body->insertAtTail(new DefExpr(continueLabel));
+  loop->breakLabel = breakLabel;
+  loop->insertAtTail(new DefExpr(continueLabel));
   BlockStmt* stmts = buildChapelStmt();
   stmts->insertAtTail(loop);
   stmts->insertAtTail(new DefExpr(breakLabel));

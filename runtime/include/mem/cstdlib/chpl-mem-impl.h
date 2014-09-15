@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-/* default memory function implementation */
+/* cstdlib memory function implementation */
 
 // Uses the built-in malloc, calloc, realloc and free.
 

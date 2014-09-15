@@ -1,0 +1,4 @@
+bug: isXxx predicates mis-fire on sync/single variables
+
+Because of the implicit conversion of sync int to int,
+the current implementation of isInt et al. is flawed.
