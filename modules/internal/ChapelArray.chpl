@@ -2468,6 +2468,7 @@ module ChapelArray {
       e = x;
   }
   
+  pragma "suppress lvalue error"
   proc =(ref ic: _iteratorRecord, x: iteratorIndexType(ic)) {
     for e in ic do
       e = x;
