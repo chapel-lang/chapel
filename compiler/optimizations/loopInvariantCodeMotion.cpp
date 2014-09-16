@@ -28,7 +28,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "timer.h"
-#include "view.h"
 
 #include <stack>
 #include <set>

@@ -24,7 +24,6 @@
 #include "optimizations.h"
 #include "passes.h"
 #include "stmt.h"
-#include "view.h"
 
 #include <set>
 #include <queue>
