@@ -1,9 +1,9 @@
                               # walk.good
---startdir="subdir/subdir2";  #walk-startdir.good
---topdown=false               #walk-bottomup.good
---depth=0                     #walk-depth0.good
---depth=1                     #walk-depth1.good
---depth=2                     #walk-depth2.good
---dotfiles=true               #walk-dotfiles.good
---defaults=true               #walk.good
---followlinks=true            #walk-followlinks.good
+--startdir="subdir/subdir2"   # walk-startdir.good
+--topdown=false               # walk-bottomup.good
+--depth=0                     # walk-depth0.good
+--depth=1                     # walk-depth1.good
+--depth=2                     # walk-depth2.good
+--dotfiles=true               # walk-dotfiles.good
+--defaults=true               # walk.good
+--followlinks=true            # walk-followlinks.good
