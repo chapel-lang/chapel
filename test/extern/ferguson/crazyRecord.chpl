@@ -1,4 +1,12 @@
-
+/* This test checks that the compiler can correctly
+   work with C functions taking in or returning
+   structure arguments with different construction
+   and different amounts of padding. The reason that
+   is a bit complex is that clang, when generating
+   the code for extern C functions, will pass and
+   return structure arguments in registers of different
+   type as part of "expandIndirectArgument".
+   */
 extern record A_BCde {
 }
 extern proc return_A_BCde():A_BCde;
@@ -41,5 +49,4 @@ extern proc print_iaBCd(r:iaBCd);
 { var r:iABc; r = return_iABc(); print_iABc(r); }
 { var r:iaBC; r = return_iaBC(); print_iaBC(r); }
 { var r:iaBCd; r = return_iaBCd(); print_iaBCd(r); }
-
 

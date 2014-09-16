@@ -1,5 +1,14 @@
 #include <stdio.h>
 
+/* Here we include a variety of structure types
+   that would be promoted into registers in different
+   ways, including registers containing part of
+   a structure, or registers containing padding.
+
+   The naming convention is that uppercase fields
+   are structures (eg. iAbc means it contains 3
+   ints, but the first is in a nested structure).
+  */
 struct s_a {
   char a;
 };
@@ -208,5 +217,4 @@ void print_iaBCd(iaBCd r)
   printf("%i\n", r.sbc.c);
   printf("%i\n", r.d);
 }
-
 
