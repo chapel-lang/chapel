@@ -812,7 +812,7 @@ proc mkdir(out err: syserr, name: string, mode: int = 0o777,
    before attempting to create it, and it is possible for an attacker to create
    the directory in between the check and the intentional creation.  If this
    should occur, an error about creating a directory that already exists will
-   be stored in err.
+   be generated.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   var err: syserr = ENOERR;
