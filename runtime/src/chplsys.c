@@ -209,6 +209,13 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
+#ifdef __MIC__
+      //
+      // On Intel MIC, we seem (for now at least) not to have kernel
+      // scheduling affinity information.
+      //
+      numCpus = numPhysCpus;
+#else
       //
       // The accessibility information is with respect to logical
       // CPUs.  Assume we have accessibility to the physical CPUs in
@@ -227,6 +234,7 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
       if (numLogCpusAcc == 0)
         numLogCpusAcc = 1;
       numCpus = (numPhysCpus * numLogCpusAcc) / numLogCpus;
+#endif
     }
     return numCpus;
   }
@@ -285,6 +293,13 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
+#ifdef __MIC__
+      //
+      // On Intel MIC, we seem (for now at least) not to have kernel
+      // scheduling affinity information.
+      //
+      numCpus = numLogCpus;
+#else
       cpu_set_t m;
       int numLogCpusAcc;
 
@@ -294,6 +309,7 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
       if (numLogCpusAcc == 0)
         numLogCpusAcc = 1;
       numCpus = (numLogCpusAcc < numLogCpus) ? numLogCpusAcc : numLogCpus;
+#endif
     }
     return numCpus;
   }
