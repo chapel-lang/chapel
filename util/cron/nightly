@@ -759,7 +759,7 @@ if ($runtests == 0) {
 
         # sync the performance graphs over to sourceforge 
         $sfPath = $host;
-        if ($syncdestpath  != "") {
+        if ($syncdestpath ne "") {
             $sfPath = "$sfPath/$syncdestpath";
         }
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $sfPath --logFile $logdir/syncToSourceForge.errors";
