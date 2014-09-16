@@ -44,7 +44,7 @@ configure-tcmalloc: FORCE
 	cd $(TCMALLOC_BUILD_DIR) && $(TCMALLOC_SUBDIR)/configure CC='$(CC)' CXX='$(CXX)' $(CONFIG_FLAGS)
 
 build-tcmalloc: FORCE
-	cd $(TCMALLOC_BUILD_DIR) && CRAYPE_LINK_TYPE=dynamic $(MAKE)
+	cd $(TCMALLOC_BUILD_DIR) && CRAYPE_LINK_TYPE=dynamic $(MAKE) -j$(CHPL_MAKE_NPROCS)
 
 install-tcmalloc: FORCE
 	cd $(TCMALLOC_BUILD_DIR) && $(MAKE) install

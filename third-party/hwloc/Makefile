@@ -67,7 +67,7 @@ hwloc-config: FORCE
 	cd $(HWLOC_BUILD_DIR) && $(HWLOC_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CFLAGS)' --prefix=$(HWLOC_INSTALL_DIR) $(CHPL_HWLOC_CFG_OPTIONS)
 
 hwloc-build: FORCE
-	cd $(HWLOC_BUILD_DIR) && $(MAKE)
+	cd $(HWLOC_BUILD_DIR) && $(MAKE) -j$(CHPL_MAKE_NPROCS)
 	cd $(HWLOC_BUILD_DIR) && $(MAKE) install
 
 hwloc: hwloc-config hwloc-build

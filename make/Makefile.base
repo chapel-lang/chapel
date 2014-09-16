@@ -234,6 +234,13 @@ EXE_SUFFIX =
 
 
 #
+# For recursive calls to make, provide a convenient value for -j
+# argument. CHPL_MAKE_NPROCS is the number of available cpus on the system.
+#
+CHPL_MAKE_NPROCS := $(shell python -c 'import multiprocessing ; print multiprocessing.cpu_count()')
+
+
+#
 # include compiler- and platform-specific settings
 #
 -include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_COMPILER)
