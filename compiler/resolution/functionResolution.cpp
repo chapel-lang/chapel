@@ -2899,11 +2899,13 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
 // This is because currently we deallocate memory excessively in this case.
 static void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 {
-  if (!resolvedFn->hasFlag(FLAG_BUILD_TUPLE))
-    // nothing to do
-    return;
-  if (resolvedFn->hasFlag(FLAG_ALLOW_REF))
-    // sync/single tuples are used in chpl__autoCopy(x: _tuple), allow them
+  // Do not perform the checks if:
+      // not building a tuple
+  if (!resolvedFn->hasFlag(FLAG_BUILD_TUPLE) ||
+      // sync/single tuples are used in chpl__autoCopy(x: _tuple), allow them
+      resolvedFn->hasFlag(FLAG_ALLOW_REF)    ||
+      // sync/single tuple *types* and params seem OK
+      resolvedFn->retTag != RET_VALUE)
     return;
 
   for_formals_actuals(formal, actual, call)

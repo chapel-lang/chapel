@@ -1,5 +1,5 @@
 proc foo(s: sync int) {
-  writeln(s); // first read
+  writeln(s.readFE()); // first read
 }
 
 var s: sync int;

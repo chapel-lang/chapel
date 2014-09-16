@@ -245,6 +245,7 @@ proc tryQueenInNextRow(board: Board): void {
 // and print their count.
 //
 proc countSolutions(boardSize: int, showEachSoln: bool) {
+  solutionCount.reset();
   solutionCount = 0;
   showEachSolution = showEachSoln;
   if showEachSoln then
