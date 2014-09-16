@@ -1,1 +1,1 @@
-$CHPL_HOME/modules/standard/IO.chpl:1661: error: write() and writeThis() are currently not allowed on sync/single variables
+$CHPL_HOME/modules/standard/IO.chpl:1661: error: sync/single variables cannot currently be written - apply readFE/readFF() to those variables first

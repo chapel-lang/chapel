@@ -1,6 +1,6 @@
 // Test writing of sync/single vars.
-// Assumes write() does not interfer with full/empty
-// and assumes by-reference argument passing.
+// In the past, it assumed write() did not interfer with full/empty
+// sync/single args were passed by-reference argument.
 
 // Global vars.
 var g1: sync real;

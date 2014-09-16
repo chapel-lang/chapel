@@ -173,7 +173,7 @@ module ChapelSyncvar {
   // Do not interact with the full/empty bit.
   // The implementation follows readXX.
   proc _syncvar.writeThis(x: Writer) {
-    compilerError("write() and writeThis() are currently not allowed on sync/single variables");
+    compilerError("sync/single variables cannot currently be written - apply readFE/readFF() to those variables first");
   }
 
 
@@ -274,7 +274,7 @@ module ChapelSyncvar {
   // Do not interact with the full/empty bit.
   // The implementation follows readXX.
   proc _singlevar.writeThis(x: Writer) {
-    compilerError("write() and writeThis() are currently not allowed on single/sync variables");
+    compilerError("single/sync variables cannot currently be written - apply readFF/readFE() to those variables first");
   }
 
   pragma "dont disable remote value forwarding"
