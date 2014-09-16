@@ -194,7 +194,7 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
   //
   static int numCpus = 0;
   if (numCpus == 0)
-    numCpus = chpl_getNumLogicalCpus();
+    numCpus = chpl_getNumLogicalCpus(true);
   return numCpus;
 #elif defined __linux__
   //

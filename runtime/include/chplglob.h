@@ -26,8 +26,23 @@
 // from qio runtime
 #include "sys.h"
 
-#define chpl_glob_num(glb) glb.gl_pathc
-#define chpl_glob_index(glb,i) glb.gl_pathv[i]
+static inline
+size_t chpl_glob_num(const glob_t glb) {
+  return glb.gl_pathc;
+}
 
-#define chpl_wordexp_num(glb) glb.we_wordc
-#define chpl_wordexp_index(glb,i) glb.we_wordv[i]
+static inline
+const char* chpl_glob_index(const glob_t glb, size_t i) {
+  return glb.gl_pathv[i];
+}
+
+static inline
+size_t chpl_wordexp_num(const wordexp_t wexp) {
+  return wexp.we_wordc;
+}
+
+static inline
+const char* chpl_wordexp_index(const wordexp_t wexp, size_t i) {
+  return wexp.we_wordv[i];
+}
+

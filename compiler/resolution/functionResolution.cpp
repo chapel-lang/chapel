@@ -1065,7 +1065,9 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
         se->var->hasFlag(FLAG_REF_TO_CONST) ||
         (se->var->isConstant() && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->var->isParameter())
-      if (okToConvertFormalToRefType(formal->type))
+      if (okToConvertFormalToRefType(formal->type) ||
+          // If the user says 'const', it means 'const'.
+          (se->var->hasFlag(FLAG_CONST) && !se->var->hasFlag(FLAG_TEMP)))
         return false;
   // Perhaps more checks are needed.
   return true;
@@ -3472,15 +3474,17 @@ static void resolveMove(CallExpr* call) {
   // If this assigns into a loop index variable from a non-var iterator,
   // mark the variable constant.
   if (SymExpr* rhsSE = toSymExpr(rhs)) {
+    // If RHS is this special variable...
     if (rhsSE->var->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-      // If RHS is this special variable...
       INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
-      if (!isReferenceType(rhsSE->var->type)) {
-        // ... and not of a reference type, mark LHS constant.
-        // todo: differentiate based on ref-ness, not _ref type
-        // todo: not all const if it is zippered and one of iterators is var
+      // ... and not of a reference type
+      // todo: differentiate based on ref-ness, not _ref type
+      // todo: not all const if it is zippered and one of iterators is var
+      if (!isReferenceType(rhsSE->var->type))
+       // ... and not an array (arrays are always yielded by reference)
+       if (!rhsSE->var->type->symbol->hasFlag(FLAG_ARRAY))
+        // ... then mark LHS constant.
         lhs->addFlag(FLAG_CONST);
-      }
     }
   }
 
@@ -4505,7 +4509,11 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar)
       if (destSE->var->hasFlag(FLAG_INDEX_VAR)) {
         // The destination is constant only if both the tuple
         // and the current component are non-references.
-        destSE->var->addFlag(FLAG_CONST);
+        // And it's not an array (arrays are always yielded by reference)
+        // - see boundaries() in release/examples/benchmarks/miniMD/miniMD.
+        if (!fieldType->symbol->hasFlag(FLAG_ARRAY)) {
+          destSE->var->addFlag(FLAG_CONST);
+        }
       } else {
         INT_ASSERT(destSE->var->hasFlag(FLAG_TEMP));
         // We are detupling into another tuple,
@@ -5039,9 +5047,9 @@ preFold(Expr* expr) {
                     !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                     !ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   // Should this conditional include domains, distributions, sync and/or single?
-                  USR_FATAL(ret, "illegal return expression in var function");
+                  USR_FATAL(ret, "illegal expression to return by ref");
                 if (ret->var->isConstant() || ret->var->isParameter())
-                  USR_FATAL(ret, "var function returns constant value");
+                  USR_FATAL(ret, "function cannot return constant by ref");
               }
             }
           }
