@@ -1,2 +1,2 @@
 retLitFromVarFn.chpl:4: In function 'this':
-retLitFromVarFn.chpl:6: error: var function returns constant value
+retLitFromVarFn.chpl:6: error: function cannot return constant by ref
