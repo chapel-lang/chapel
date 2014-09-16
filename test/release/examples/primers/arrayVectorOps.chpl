@@ -9,6 +9,10 @@
 // array's domain, which would unexpectedly modify other arrays if they shared
 // domains.
 //
+// As currently implemented, every operation that results in a domain size
+// change results in an array reallocation and so is O(n).  This is expected
+// to improve in a future release.
+//
 
 //
 // Declare a 1D array and initialize it to the values 1..5. The anonymous
@@ -72,7 +76,8 @@ else
   writeln("Didn't find 7");
 
 //
-// Add a few more 5s to the array
+// A few other useful methods are available.
+// To demo them, add a few more 5s to the array
 //
 A.push_front(5);
 A.push_back(5);
@@ -128,4 +133,4 @@ writeln("The sum of elements in A is ", + reduce A);
 // bound was 'low' this sets the domain to {low..low-1}
 //
 A.clear();
-writeln("After clearing, A is: ", A);
+writeln("After clearing, A is: ", A, " - with ", A.size, " elements");
