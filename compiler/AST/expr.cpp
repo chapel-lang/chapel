@@ -2270,9 +2270,9 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
     }
   }
 
-  llvm::Value* out = NULL;
-  if( !targetType ) out = v; // no target type means we just emit it.
-  else out = convertValueToType(v, targetType, isSigned, false);
+  llvm::Value* out;
+  if( targetType ) out = convertValueToType(v, targetType, isSigned, false);
+  else out = v; // no target type means we just emit it.
 
   if( out ) {
     // OK, we were able to emit it...
