@@ -282,15 +282,12 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
         // unless sync is explicitly specified as the generic
         if (isSyncType(key->type))
           return value;
-        // or it is passed by blank or [const] ref
+
+        // ... or it is passed by blank or [const] ref
         if (ArgSymbol* keyArg = toArgSymbol(key))
           if (keyArg->intent == INTENT_BLANK ||
               (keyArg->intent & INTENT_FLAG_REF))
             return value;
-
-        // There was code for FLAG_NO_SYNC_DEMOTION case.
-        // Verify that FLAG_NO_SYNC_DEMOTION is never seen here.
-        INT_ASSERT(!fn->hasFlag(FLAG_NO_SYNC_DEMOTION));
 
         TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
         return getNewSubType(fn, key, nt);

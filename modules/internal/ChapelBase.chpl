@@ -570,7 +570,9 @@ module ChapelBase {
   // a sync to read it or a sync returned from a function but not
   // explicitly captured.
   //
-  inline proc _statementLevelSymbol(a) { return chpl__readFFE(a); }
+  inline proc _statementLevelSymbol(a) { return a; }
+  inline proc _statementLevelSymbol(a: sync)  { return a.readFE(); }
+  inline proc _statementLevelSymbol(a: single) { return a.readFF(); }
   inline proc _statementLevelSymbol(param a) param { return a; }
   inline proc _statementLevelSymbol(type a) type { return a; }
   
@@ -643,11 +645,11 @@ module ChapelBase {
   inline proc min(x, y) return if x < y then x else y;
   inline proc max(x, y) return if x > y then x else y;
   inline proc min(x, y)
-    where isSync(x) || isSingle(x) || isSync(y) || isSingle(y)
-      return min(chpl__readFFE(x), chpl__readFFE(y));
+    where isSyncSingleAtomic(x) || isSyncSingleAtomic(y)
+  { compilerError("min() is not supported on sync/single/atomic arguments"); }
   inline proc max(x, y)
-    where isSync(x) || isSingle(x) || isSync(y) || isSingle(y)
-      return max(chpl__readFFE(x), chpl__readFFE(y));
+    where isSyncSingleAtomic(x) || isSyncSingleAtomic(y)
+  { compilerError("max() is not supported on sync/single/atomic arguments"); }
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
   

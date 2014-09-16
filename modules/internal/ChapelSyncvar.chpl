@@ -30,10 +30,6 @@ module ChapelSyncvar {
   inline proc chpl__readXX(x: single) return x.readXX();
   inline proc chpl__readXX(x) return x;
 
-  inline proc chpl__readFFE(x: sync) return x.readFE();
-  inline proc chpl__readFFE(x: single) return x.readFF();
-  inline proc chpl__readFFE(x) return x;
-
   pragma "sync"
     pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
@@ -173,8 +169,23 @@ module ChapelSyncvar {
     return b;
   }
 
+  // Report what the variable is storing - either empty or the value.
+  // Do not interact with the full/empty bit.
+  // The implementation follows readXX.
   proc _syncvar.writeThis(x: Writer) {
-    x.write(readFE());
+    on this {
+      chpl_rmem_consist_release();
+      __primitive("sync_lock", this);
+      var base_value: base_type;
+      const full = __primitive("sync_is_full", this);
+      if full then base_value = value;
+      __primitive("sync_unlock", this);
+      chpl_rmem_consist_acquire();
+      // Do the writing on the same locale.
+      // Or should we do it back on the caller's locale?
+      if full then x.write(base_value);
+              else x.write("<>");
+    }
   }
 
 
@@ -270,8 +281,23 @@ module ChapelSyncvar {
     return b;
   }
 
+
+  // Report what the variable is storing - either empty or the value.
+  // Do not interact with the full/empty bit.
+  // The implementation follows readXX.
   proc _singlevar.writeThis(x: Writer) {
-    x.write(readFF());
+    on this {
+      chpl_rmem_consist_release();
+      var base_value: base_type;
+      const full = __primitive("single_is_full", this);
+      if full then base_value = value;
+      chpl_rmem_consist_acquire();
+      chpl_rmem_consist_acquire();
+      // Do the writing on the same locale.
+      // Or should we do it back on the caller's locale?
+      if full then x.write(base_value);
+              else x.write("<>");
+    }
   }
 
   pragma "dont disable remote value forwarding"

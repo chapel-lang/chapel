@@ -2894,6 +2894,29 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
   }
 }
 
+
+// Report an error when storing a sync or single variable into a tuple.
+// This is because currently we deallocate memory excessively in this case.
+static void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
+{
+  if (!resolvedFn->hasFlag(FLAG_BUILD_TUPLE))
+    // nothing to do
+    return;
+  if (resolvedFn->hasFlag(FLAG_ALLOW_REF))
+    // sync/single tuples are used in chpl__autoCopy(x: _tuple), allow them
+    return;
+
+  for_formals_actuals(formal, actual, call)
+    if (isSyncType(formal->type)) {
+      const char* name = "";
+      if (SymExpr* aSE = toSymExpr(actual))
+        if (!aSE->var->hasFlag(FLAG_TEMP))
+          name = aSE->var->name;
+      USR_FATAL_CONT(actual, "storing a sync or single variable %s in a tuple is not implemented - apply readFE() or readFF()", name);
+    }
+}
+
+
 // If 'fn' is the default assignment for a record type, return
 // the name of that record type; otherwise return NULL.
 static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
@@ -3162,6 +3185,7 @@ void resolveNormalCall(CallExpr* call) {
   }
 
   setFlagsForConstAccess(call, resolvedFn);
+  checkForStoringIntoTuple(call, resolvedFn);
 
   if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
     // Not allowed if it is not called directly from a constructor.

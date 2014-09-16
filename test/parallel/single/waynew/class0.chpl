@@ -9,8 +9,8 @@ var d: D = new D();
 var f: real;
 
 begin {
-  writeln( "2: got ", d.s.readFF());
-  writeln( "2: got ", d.s.readFF());
+  writeln( "2: got ", d.s.readFF()); // wait for it to be full
+  writeln( "2: got ", d.s);
   delete d;
 }
 f = 4.0;

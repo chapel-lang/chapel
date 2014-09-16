@@ -1,0 +1,6 @@
+global - empty: <> <>
+global - full: 1.0 2.0
+global - e/f: <> 2.0
+local - empty: <> <>
+local - full: 111 222
+local - e/f: <> 222
