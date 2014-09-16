@@ -219,7 +219,7 @@ cobegin {
 }
 \end{chapel}
 \begin{chapelpost}
-writeln("count is: ", count(*\texttt{\$}*));
+writeln("count is: ", count(*\texttt{\$}*).readFF());
 \end{chapelpost}
 \begin{chapeloutput}
 count is: 3
