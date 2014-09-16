@@ -5047,9 +5047,9 @@ preFold(Expr* expr) {
                     !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                     !ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   // Should this conditional include domains, distributions, sync and/or single?
-                  USR_FATAL(ret, "illegal return expression in var function");
+                  USR_FATAL(ret, "illegal expression to return by ref");
                 if (ret->var->isConstant() || ret->var->isParameter())
-                  USR_FATAL(ret, "var function returns constant value");
+                  USR_FATAL(ret, "function cannot return constant by ref");
               }
             }
           }
