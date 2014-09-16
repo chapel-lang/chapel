@@ -469,6 +469,13 @@ bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t m
 }
 
 
+/* This function gets the next byte offset to a structure in memory with
+   type ty that represents a different value field. Padding is skipped.
+   offset is the offset we are starting with
+   parent_this_offset is the start offset of ty according to the parent type
+   parent_next is the end offset of ty according to the parent type
+     (so that it includes padding)
+     */
 static
 uint64_t doGetTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t offset, uint64_t parent_this_offset, uint64_t parent_next_offset)
 {
@@ -493,6 +500,9 @@ uint64_t doGetTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t 
   if( ty->isArrayTy() || ty->isVectorTy() ) {
     stype = llvm::cast<llvm::SequentialType>(ty);
     eltType = stype->getElementType();
+    // Not using getTypeSizeInBytes so that:
+    // 1) we get an assertion error if the type is not sized
+    // 2) we use uint64s for the type instead of int64s
     uint64_t sz = layout->getTypeSizeInBits(eltType);
     sz = (sz + 7)/8; // now in bytes.
     uint64_t this_offset = local_offset / sz;
@@ -541,6 +551,9 @@ uint64_t getTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t of
 {
   uint64_t sz;
 
+  // Not using getTypeSizeInBytes so that:
+  // 1) we get an assertion error if the type is not sized
+  // 2) we use uint64s for the type instead of int64s
   assert(ty->isSized());
   sz = layout->getTypeSizeInBits(ty);
   sz = (sz + 7)/8; // now in bytes.
