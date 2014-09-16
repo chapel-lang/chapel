@@ -88,7 +88,7 @@ while (@ARGV) {
         $compperformance = 1;
         $compperformancedescription = shift @ARGV;
     } elsif ($flag eq "-sync-dest-path") {
-        $syncdestpath = shift@ARGV
+        $syncdestpath = shift@ARGV;
     } elsif ($flag eq "-numtrials") {
         $numtrials = shift @ARGV;
     } elsif ($flag eq "-compopts") {
