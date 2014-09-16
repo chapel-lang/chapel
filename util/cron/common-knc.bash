@@ -17,9 +17,3 @@ module unload $knc_conflicts
 # Setup environment to build knc.
 export CHPL_TARGET_COMPILER=intel
 export CHPL_TARGET_ARCH=knc
-
-# Explicitly disable features that do not work.
-export CHPL_REGEXP=none
-
-# Build bundled gmp. System gmp is not supported.
-export CHPL_GMP=gmp
