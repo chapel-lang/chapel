@@ -172,7 +172,7 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
-    print "\t-performance-description : run performance tests with additional description";
+    print "\t-performance-description : run performance tests with additional description\n";
     print "\t-compperformance <description>: run tests with compiler performance tracking\n";
     print "\t-sync-dest-path <path>: Additional path to sync performance graphs to\n";
     print "\t-numtrials <number> : number of trials to run\n";
