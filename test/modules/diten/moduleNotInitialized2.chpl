@@ -28,6 +28,6 @@ module M2 {
     c = a;
     lock2 = false;
     writeln(b.readFF());
-    writeln(c);
+    writeln(c.readFF());
   }
 }

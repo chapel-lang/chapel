@@ -1,6 +1,1 @@
-global - empty: <empty> <empty>
-global - full: 1.0 2.0
-global - e/f: <empty> 2.0
-local - empty: <empty> <empty>
-local - full: 111 222
-local - e/f: <empty> 222
+$CHPL_HOME/modules/standard/IO.chpl:1661: error: write() and writeThis() are currently not allowed on sync/single variables

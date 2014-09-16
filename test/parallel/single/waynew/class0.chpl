@@ -10,7 +10,7 @@ var f: real;
 
 begin {
   writeln( "2: got ", d.s.readFF()); // wait for it to be full
-  writeln( "2: got ", d.s);
+  writeln( "2: got ", d.s.readFF());
   delete d;
 }
 f = 4.0;

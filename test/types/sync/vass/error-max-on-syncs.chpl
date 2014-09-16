@@ -7,7 +7,7 @@ config param
 
 proc test(type T) {
   var a, b: T;
-  return min(a,b);
+  return max(a,b);
 }
 
 if doSync then writeln(test(sync int));

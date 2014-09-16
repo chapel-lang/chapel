@@ -1,2 +1,2 @@
-error-min-on-syncs.chpl:10: In function 'test':
-error-min-on-syncs.chpl:12: error: min() is not supported on sync/single/atomic arguments
+error-min-on-syncs.chpl:8: In function 'test':
+error-min-on-syncs.chpl:10: error: min() and max() are currently not allowed on sync/single/atomic arguments

@@ -21,6 +21,6 @@ writeln( "1: woke up. writing ", i);
 d.s = i;
 
 sleep( 1);
-begin writeln( "got ", d.s);
+begin writeln( "got ", d.s.readFF());
 sleep( 1);
-begin writeln( "got ", d.s);
+begin writeln( "got ", d.s.readFF());

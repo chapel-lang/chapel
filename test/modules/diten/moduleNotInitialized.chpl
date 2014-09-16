@@ -32,7 +32,7 @@ module M2 {
     lock2 = false;
 
     writeln(b.readFF());
-    writeln(c);
+    writeln(c.readFF());
     delete M1.a;
   }
 }

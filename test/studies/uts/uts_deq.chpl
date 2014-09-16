@@ -283,7 +283,8 @@ proc main() {
 
   writeln();
   if !testMode then writeln("Threads spawned: ", threads_spawned);
-  writeln("Tree size = ", global_count.readXX(), ", depth = ", global_maxDepth);
+  writeln("Tree size = ", global_count.readFF(),
+            ", depth = ", global_maxDepth.readFF());
   if !testMode then writeln("Time: t_create= ", t_create.elapsed(),
           " (", global_count.readXX()/t_create.elapsed(), " nodes/sec)");
 

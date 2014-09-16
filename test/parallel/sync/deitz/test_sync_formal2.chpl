@@ -9,4 +9,4 @@ var s: sync int;
 foo(s);
 writeln(s.readFE());
 foo(s);
-writeln(s);
+writeln(s.readFF());

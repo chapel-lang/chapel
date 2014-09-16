@@ -173,19 +173,7 @@ module ChapelSyncvar {
   // Do not interact with the full/empty bit.
   // The implementation follows readXX.
   proc _syncvar.writeThis(x: Writer) {
-    on this {
-      chpl_rmem_consist_release();
-      __primitive("sync_lock", this);
-      var base_value: base_type;
-      const full = __primitive("sync_is_full", this);
-      if full then base_value = value;
-      __primitive("sync_unlock", this);
-      chpl_rmem_consist_acquire();
-      // Do the writing on the same locale.
-      // Or should we do it back on the caller's locale?
-      if full then x.write(base_value);
-              else x.write("<empty>");
-    }
+    compilerError("write() and writeThis() are currently not allowed on sync/single variables");
   }
 
 
@@ -286,18 +274,7 @@ module ChapelSyncvar {
   // Do not interact with the full/empty bit.
   // The implementation follows readXX.
   proc _singlevar.writeThis(x: Writer) {
-    on this {
-      chpl_rmem_consist_release();
-      var base_value: base_type;
-      const full = __primitive("single_is_full", this);
-      if full then base_value = value;
-      chpl_rmem_consist_acquire();
-      chpl_rmem_consist_acquire();
-      // Do the writing on the same locale.
-      // Or should we do it back on the caller's locale?
-      if full then x.write(base_value);
-              else x.write("<empty>");
-    }
+    compilerError("write() and writeThis() are currently not allowed on single/sync variables");
   }
 
   pragma "dont disable remote value forwarding"

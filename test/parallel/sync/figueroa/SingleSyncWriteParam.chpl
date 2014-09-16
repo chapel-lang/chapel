@@ -10,4 +10,4 @@ writeln("z is ", z.readFE(),
 
 begin {sleep(6); y = 13;}
 z.writeEF(y);
-writeln("z is now ", z);
+writeln("z is now ", z.readFF());
