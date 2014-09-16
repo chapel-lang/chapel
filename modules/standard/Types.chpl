@@ -227,10 +227,10 @@ proc isAtomic(e)    param  return isAtomicValue(e);
 
 
 // for internal use until we have a better name
-proc isSyncSingleAtomic(e)         param  return false;
-proc isSyncSingleAtomic(e: sync)   param  return true;
-proc isSyncSingleAtomic(e: single) param  return true;
-proc isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
+proc chpl_isSyncSingleAtomic(e)         param  return false;
+proc chpl_isSyncSingleAtomic(e: sync)   param  return true;
+proc chpl_isSyncSingleAtomic(e: single) param  return true;
+proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
 
 // Is 'sub' a subtype (or equal to) 'super'?

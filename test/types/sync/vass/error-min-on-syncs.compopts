@@ -1,0 +1,6 @@
+-s doMin -s doSync
+-s doMin -s doSingle
+-s doMin -s doAtomic
+-s doMax -s doSync
+-s doMax -s doSingle
+-s doMax -s doAtomic

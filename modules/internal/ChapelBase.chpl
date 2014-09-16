@@ -645,10 +645,10 @@ module ChapelBase {
   inline proc min(x, y) return if x < y then x else y;
   inline proc max(x, y) return if x > y then x else y;
   inline proc min(x, y)
-    where isSyncSingleAtomic(x) || isSyncSingleAtomic(y)
+    where chpl_isSyncSingleAtomic(x) || chpl_isSyncSingleAtomic(y)
   { compilerError("min() is not supported on sync/single/atomic arguments"); }
   inline proc max(x, y)
-    where isSyncSingleAtomic(x) || isSyncSingleAtomic(y)
+    where chpl_isSyncSingleAtomic(x) || chpl_isSyncSingleAtomic(y)
   { compilerError("max() is not supported on sync/single/atomic arguments"); }
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));

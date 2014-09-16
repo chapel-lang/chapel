@@ -1,0 +1,6 @@
+#!/bin/bash
+
+output=$2
+
+cat $output | sed 's@ max()@ min()@' > $output.tmp
+mv $output.tmp $output

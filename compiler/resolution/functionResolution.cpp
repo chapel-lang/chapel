@@ -2914,7 +2914,7 @@ static void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
       if (SymExpr* aSE = toSymExpr(actual))
         if (!aSE->var->hasFlag(FLAG_TEMP))
           name = aSE->var->name;
-      USR_FATAL_CONT(actual, "storing a sync or single variable %s in a tuple is not implemented - apply readFE() or readFF()", name);
+      USR_FATAL_CONT(actual, "storing a sync or single variable %s in a tuple is not currently implemented - apply readFE() or readFF()", name);
     }
 }
 

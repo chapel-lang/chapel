@@ -184,7 +184,7 @@ module ChapelSyncvar {
       // Do the writing on the same locale.
       // Or should we do it back on the caller's locale?
       if full then x.write(base_value);
-              else x.write("<>");
+              else x.write("<empty>");
     }
   }
 
@@ -296,7 +296,7 @@ module ChapelSyncvar {
       // Do the writing on the same locale.
       // Or should we do it back on the caller's locale?
       if full then x.write(base_value);
-              else x.write("<>");
+              else x.write("<empty>");
     }
   }
 
