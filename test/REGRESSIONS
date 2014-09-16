@@ -23,8 +23,8 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 09/15/14)
 ===========================================================
 
-broken since committed (09/10/14 -- bradc)
-------------------------------------------
+symbolic link not maintained in jenkins workspaces (09/10/14 -- tvandoren)
+--------------------------------------------------------------------------
 [Error matching program output for studies/filerator/walk (execopts: 9)]
 
 fails with some regularity (09/14/14 -- sungeun, elliot)
