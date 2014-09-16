@@ -103,6 +103,8 @@ module String {
   inline proc string.length return this.c_str().length;
   inline proc string.size return this.length;
   inline proc string.substring(i: int) {
+    // DANGER: Does substring return an owned c_string?  If not, then the free
+    // below is illegal.
     const cs = this.c_str().substring(i);
     // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
@@ -110,6 +112,7 @@ module String {
     return ret;
   }
   inline proc string.substring(r: range(?)) {
+    // DANGER: See above.
     const cs = this.c_str().substring(r);
     // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
@@ -143,15 +146,14 @@ module String {
   // cast to and from Chapel strings use c_string
   pragma "compiler generated"
   inline proc _cast(type t, x) where t==string && x.type != c_string {
+    // Caution: The result of a cast to c_string does not own the string data
+    // it contains.  Therefore it must not be freed.
     const cs = _cast(c_string, x);
-    // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
-    if !isBoolType(x.type) && !isEnumType(x.type) then
-      // The string was allocated in new space
-      chpl_free_c_string(cs);
     return ret;
   }
 
+  // WARNING: The result of the cast is not owned by the returned c_string.
   pragma "compiler generated"
   inline proc _cast(type t, x: string) where t !=c_string
     return _cast(t, x.c_str());
@@ -229,6 +231,15 @@ module String {
 
 // C strings
 //extern type c_string; is a built-in primitive type
+//
+// In terms of how they are used, c_strings are a "close to the metal"
+// representation, being in essence the common NUL-terminated C string.
+//
+// Memory management caveat: In general, an object of type c_string does not
+// own its data (that is, some do, but not all).  Therefore it is only safe to
+// free a c_string object if you know its provenance, and can trace this back
+// to a string-allocating function such as string_concat(),
+// chpl_glom_strings() or string_copy().
 module CString {
 
   // The following method is called by the compiler to determine the default
@@ -242,6 +253,8 @@ module CString {
     return __primitive("string_from_c_string", cstr, 1, len);
   }
 
+  // WARNING: The bytes pointed to by the c_string return value are still owned
+  // by the "this" operand.  The returned c_string should not be freed!
   inline proc string.c_str():c_string {
     return __primitive("c_string_from_string", this);
   }
@@ -310,10 +323,14 @@ module CString {
     return (__primitive("string_compare", a, b) > 0);
   }
 
+  // DANGER! Memory is shared between c_strings assigned thus.  Neither can be
+  // safely freed.
   inline proc =(ref a: c_string, b: c_string) {
     __primitive("=", a, b);
   }
 
+  // DANGER! The c_string on the LHS does not own the string it contains after
+  // this assignment.
   inline proc =(ref a: c_string, b: string) {
     __primitive("=", a, b.c_str());
   }
@@ -326,6 +343,7 @@ module CString {
     return toString(x);
   }
 
+  // DANGER, the result of this cast is an unowned c_string.
   inline proc _cast(type t, x: string) where t == c_string {
     return x.c_str();
   }
