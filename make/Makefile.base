@@ -46,7 +46,7 @@ endif
 # CHPL_MAKE_THREADS="pthreads"
 # CHPL_MAKE_LAUNCHER="amudprun"
 # CHPL_MAKE_TIMERS="generic"
-# CHPL_MAKE_HOST_MEM="default"
+# CHPL_MAKE_HOST_MEM="cstdlib"
 # CHPL_MAKE_TARGET_MEM="dlmalloc"
 # CHPL_MAKE_MAKE="gmake"
 # CHPL_MAKE_ATOMICS="intrinsics"

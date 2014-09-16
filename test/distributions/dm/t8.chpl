@@ -169,7 +169,7 @@ proc testsuite(type T, initphase) {
   }
 
   const n5=-5, n9=-9; // so we can cast them to unsigned
-  combo(false, 1:T..1:T, 1:T..1:T,  0:T..9:T, "1..1", "0..0", "0..9");
+  combo(false, 1:T..1:T, 1:T..1:T,  3:T..9:T, "1..1", "0..0", "3..9");
   combo(true,  1:T..1:T, 1:T..1:T, n5:T..5:T, "1..1", "0..0", "-5..5");
   combo(true,  1:T..1:T, 1:T..1:T, n9:T..0:T, "1..1", "0..0", "-9..0");
 

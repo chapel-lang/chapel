@@ -585,21 +585,24 @@ module DefaultRectangular {
       if rank == 1 {
         // This is specialized to avoid overheads of calling dsiAccess()
         if !dom.stridable {
-          // This is specialized because the strided version disables the
-          // "single loop iterator" optimization
+          // Ideally we would like to be able to do something like
+          // "for i in first..last by step". However, right now that would
+          // results in a strided iterator which isn't as optimized. It also
+          // introduces another range creation which in tight loops is
+          // unfortunately expensive. Ideally we don't want to be using C for
+          // loops outside of ChapelRange. However, since most other array data
+          // types are implemented in terms of DefaultRectangular, we think
+          // that this will serve as a second base case rather than the
+          // beginning of every iterator invoking a primitive C for loop
+          var i: idxType;
           const first = getDataIndex(dom.dsiLow);
           const second = getDataIndex(dom.dsiLow+1);
           const step = (second-first);
           const last = first + (dom.dsiNumIndices-1) * step;
-
-          // Since we know the stride is positive, we want to avoid just using
-          // 'for i in first..last by step' since that results in a slower and
-          // more general case iterator. For now we call into a special
-          // iterator that is optimized for when you know the stride is
-          // positive. This is meant to be a temporary use of this iterator
-          // until there is a more robust and user friendly way to declare a
-          // range as positively strided.
-          for i in (first..last by step).posStrideIter() {
+          while __primitive("C for loop",
+                            __primitive( "=", i, first),
+                            __primitive("<=", i, last),
+                            __primitive("+=", i, step)) {
             yield theData(i);
           }
 
@@ -876,18 +879,14 @@ module DefaultRectangular {
         if dom.dsiNumIndices > 0 then rad.shiftedData = shiftedData;
       return rad;
     }
-    
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsupported by default domains");
-    }
 
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsupported by default domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   }

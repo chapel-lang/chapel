@@ -30,17 +30,44 @@
 New problems
 ============
 
+tcmalloc seems to be causing non-det segfaults.  This is especially visible in
+performance runs (probably due to longer times and more runs in general), but
+has also potentially occurred in other cases.  The performance cases are most
+likely tcmalloc, the others may merely be coincidental.
+
+performance failures:
+---------------------
+studies/parboil/BFS/bfs (09/08/2014) bradc-lnx
+studies/parboil/stencil/stencil3D (09/09-09/11) bradc-lnx
+release/examples/benchmarks/miniMD/miniMD (09/10/2014, 09/11/2014) bradc-lnx
+npb/ep/mcahir/ep all sizes (09/11/2014) chap04
+
+
+These three cases could be related
+
+knucleotide-chaining non-det seg faults
+---------------------------------------
+linux64.gnu.none.qthreads.numa.tcmalloc-std (09/09/2014)
+linux64.gnu.none.qthreads.flat.tcmalloc-fst (09/07/2014)
+
+parallel/begin/deitz/test_string_cat
+------------------------------------------------------------------------
+linux64.gnu.none.qthreads.flat.tcmalloc-npt (baseline) (2014/09/08, 09/10)
+linux64.gnu.none.qthreads.flat.tcmalloc-nlc (no-local) (2014/09/09)
+
+
+optimizations/cache-remote/ferguson/correctness/ (various tests)
+----------------------------------------------------------------
+on linux64.gnu.gasnet.fifo.flat.tcmalloc-std, at least one of these tests
+failed per day from 09/06/2014 through 09/11/2014, and none failed on 09/12/2014
+
+
+
 [Error: Timed out executing program studies/shootout/binary-trees/binary-trees_iter (execopts: 2)]
 --------------------------------------------------------------------------------------------------
 (2014/09/08)
   Appears to be a simple timeout.  The test ran successfully in the 19 runs immediately 
   preceding the timeout.  Increase the timeout time?
-
-> timedexec: target program died with signal 11, without coredump
-[Error matching program output for parallel/begin/deitz/test_string_cat] (unassigned)
-------------------------------------------------------------------------
-linux64.gnu.none.qthreads.flat.tcmalloc-npt (baseline) (2014/09/08)
-  [not investigated]
 
 failures retrieving and storing perf data, started 7/19/14
 ----------------------------------------------------------
@@ -269,6 +296,58 @@ vanilla pgi:
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
 
+classes/bradc/arrayInClass/genericArrayInClass-otharrs-inline-iterators.chpl
+----------------------------------------------------------------------------
+Tom is fixing the line number error that is wrong with this future.
+
+
+[Error matching program output for studies/filerator/walk (execopts: 2 and 9)
+-----------------------------------------------------------------------------
+Brad is looking into these failures as he created the test
+
+
+whitebox cray-xc failures (bradc)
+---------------------------------
+This is due to the globerator.
+
+
+parallel/cobegin/deitz/test_big_recursive_cobegin
+-------------------------------------------------
+fifo testing - Elliot had altered the call stack size for this test, but it
+was too small for fifo.  He pushed a fix 09/12/2014
+
+
+[Error matching program output for execflags/gbt/getenv]
+--------------------------------------------------------
+gasnet
+This is a result of multi-locale calls to writeln with c_string arguments on
+locales other than locale 0.  Tom thinks that the strings-as-records
+implementation will allow forward progress on solving the bug itself.  The
+test itself has been resolved by Greg's fix on 09/09/2014
+
+
+[Error matching program output for trivial/deitz/test_max_range_iteration]
+[Error matching program output for types/range/hilde/maximalRange (compopts: 1)]
+--------------------------------------------------------------------------------
+Due to Elliot's C for loop initial commit.  He pushed a commit which alterred
+the code and most likely resolved these errors.  Initial test results indicate
+it is fixed, but it should be observed for a couple more days (09/12/2014)
+
+
+non-deterministic failure of associative/bharshbarg/arrays/arraySetOps
+----------------------------------------------------------------------
+various configs
+Ben looked into this error, and pushed a commit which seems to have fixed it.
+Leaving this note here to make sure it has gone away. (09/12/2014)
+
+
+[Error matching program output for associative/bharshbarg/domains/opEquals]
+---------------------------------------------------------------------------
+Fails under qthreads+numa, no-local, gasnet+fifo, gasnet-fast,
+gasnet-everything, cygwin - This is due to Vass's const-ness checking commit
+on 09/08/2014
+
+
 XT/XC PrgEnv-cray non-deterministic compiler internal errors
 (seg fault) this shows up on
 cray-x?-cray-prgenv-cray.none.fifo.pthreads runs
@@ -319,6 +398,11 @@ issue.
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
+
+[Error matching program output for types/string/StringImpl/memLeaks/promotion]
+------------------------------------------------------------------------------
+in baseline and valgrind testing.  Sung is aware of the issue but it is
+considered low priority.
 
 
 pthread mutex lock assertion failed (after 22303, unassigned)
@@ -465,7 +549,7 @@ numerical discrepancies - same cause as for --no-local above?
 
 numerical discrepancies with --fast - same cause as for --no-local above?
 -------------------------------------------------------------
-studies/jacobi/waynew/example2 (06/13, 7/10/14)
+studies/jacobi/waynew/example2 (06/13, 7/10/14, 09/11/14)
 
 
 intermittent valgrind error

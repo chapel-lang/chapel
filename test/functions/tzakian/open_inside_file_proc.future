@@ -1,6 +1,0 @@
-bug: When calling open from a file method, we look for file.open as opposed to 'open'
-
-When we are inside a file method body and call a function that constructs the type of
-that method, we get an error in function resolution since we are looking for the
-wrong type of function. See the .bad file for specifics.
-

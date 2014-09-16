@@ -1515,39 +1515,34 @@ module ChapelArray {
   
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
-    // the locale grid domain
-    proc targetLocDom() {
-      return _value.dsiTargetLocDom();
-    }
-
     // the locale grid
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
 
     // can the subdomain be represented as a single domain?
-    proc oneLocalSubdomain() param {
-      return _value.dsiOneLocalSubdomain();
+    proc hasSingleLocalSubdomain() param {
+      return _value.dsiHasSingleLocalSubdomain();
     }
 
     // fetches the subdomain for the current locale
     //
     // Also note that localSlice(dom) produces a slice of a domain/array 
     // that's assumed to be local
-    proc getLocalSubdomain() {
-      if !_value.dsiOneLocalSubdomain() then
+    proc localSubdomain() {
+      if !_value.dsiHasSingleLocalSubdomain() then
         compilerError("Array's local domain is not a single domain");
-      return _value.dsiGetLocalSubdomain();
+      return _value.dsiLocalSubdomain();
     }
     
     // if the subdomain cannot be represented as a single domain, 
     // the multiple domains are yielded by an iterator.
     // yield a domain so the user can use procs like expand/exterior/etc.
-    iter getLocalSubdomains() {
-      if _value.dsiOneLocalSubdomain() then 
-        yield _value.dsiGetLocalSubdomain();
+    iter localSubdomains() {
+      if _value.dsiHasSingleLocalSubdomain() then 
+        yield _value.dsiLocalSubdomain();
       else 
-        for d in _value.dsiGetLocalSubdomains() do yield d;
+        for d in _value.dsiLocalSubdomains() do yield d;
     }
 
     proc chpl__isDense1DArray() param {
@@ -1940,11 +1935,36 @@ module ChapelArray {
         if !b.member(e) then newDom.add(e);
     return newDom;
   }
+
+  /*
+     We remove elements in the RHS domain from those in the LHS domain only if
+     they exist. If an element in the RHS is not present in the LHS, no error
+     occurs.
+  */
+  proc -=(ref a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in b do
+      if a.member(e) then
+        a.remove(e);
+  }
   
   proc |(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     return a + b;
   }
 
+  proc |=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in b do
+      a.add(e);
+  }
+
+  proc +=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    a |= b;
+  }
+
+  /*
+     We remove elements in the RHS domain from those in the LHS domain only if
+     they exist. If an element in the RHS is not present in the LHS, no error
+     occurs.
+  */
   proc &(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     var newDom : a.type;
 
@@ -1952,6 +1972,12 @@ module ChapelArray {
       forall k in a do
         if b.member(k) then newDom += k;
     return newDom;
+  }
+
+  proc &=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in a do
+      if !b.member(e) then
+        a.remove(e);
   }
 
   proc ^(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
@@ -1965,6 +1991,19 @@ module ChapelArray {
     }
 
     return newDom;
+  }
+
+  /*
+     We remove elements in the RHS domain from those in the LHS domain only if
+     they exist. If an element in the RHS is not present in the LHS, it is
+     added to the LHS.
+  */
+  proc ^=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in a do
+      if b.member(e) then
+        a.remove(e);
+      else
+        a.add(e);
   }
   //
   // Helper functions
@@ -2473,6 +2512,7 @@ module ChapelArray {
       e = x;
   }
   
+  pragma "suppress lvalue error"
   proc =(ref ic: _iteratorRecord, x: iteratorIndexType(ic)) {
     for e in ic do
       e = x;
