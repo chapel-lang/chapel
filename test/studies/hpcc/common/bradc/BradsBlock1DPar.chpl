@@ -538,14 +538,14 @@ class Block1DArr {
   //
   // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
-  proc this(i: idxType) var {
+  proc this(i: idxType) ref {
     return locArr(dom.dist.idxToLocaleInd(i))(i);
   }
 
   //
   // the iterator over the array's elements, currently sequential
   //
-  iter these() var {
+  iter these() ref {
     for loc in dom.dist.targetLocDom {
       // TODO: May want to do something like:     
       // on this do
@@ -566,7 +566,7 @@ class Block1DArr {
       yield blk;
   }
 
-  iter newThese(param iterator: IteratorType, followThis) var
+  iter newThese(param iterator: IteratorType, followThis) ref
         where iterator == IteratorType.follower {
     for i in followThis {
       yield this(i + dom.low);
@@ -643,14 +643,14 @@ class LocBlock1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  proc this(i: idxType) var {
+  proc this(i: idxType) ref {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  iter these() var {
+  iter these() ref {
     for elem in myElems {
       yield elem;
     }
@@ -664,7 +664,7 @@ class LocBlock1DArr {
         where iterator == IteratorType.leader {
   }
 
-  proc newThese(param iterator: IteratorType, followThis) // var
+  proc newThese(param iterator: IteratorType, followThis) // ref
         where iterator == IteratorType.follower {
   }
 

@@ -5,7 +5,7 @@ config param compilerRewrite = true;
 
 var A: [0..8] real;
 
-iter myIter() var {
+iter myIter() ref {
   for i in 0..8 {
     yield A(i);
   }
@@ -17,7 +17,7 @@ iter myIter(param tag: iterKind) where tag == iterKind.leader {
   yield 6..8;
 }
 
-iter myIter(param tag: iterKind, followThis) var where tag == iterKind.follower {
+iter myIter(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   for i in followThis {
     yield A(i);
   }

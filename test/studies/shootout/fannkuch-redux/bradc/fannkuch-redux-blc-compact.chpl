@@ -61,7 +61,7 @@ inline proc rotate(n) {
 proc flip() {
   t = s;
 
-  for i in 2..max(int) {  // TODO: Want to use 2.. here
+  for i in (2..) {
     var x = 0;
     var y = t[0];
     while x < y {

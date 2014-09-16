@@ -45,6 +45,7 @@
   asin
   atan
   chdir
+  chown
   cwd
   floor
   sqrt
@@ -57,6 +58,7 @@
   fread
   fsync
   main
+  mkdir
   open
   pow
   printf

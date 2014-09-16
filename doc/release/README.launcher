@@ -154,8 +154,7 @@ Settings:
   running it interactively as usual. In this mode, the output will be
   written by default to a file called <executableName>.<jobID>.out. The
   environment variable CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME can be used
-  to specify a different base filename than the executable's name, and
-  the jobID and '.out' will be appended to it.
+  to specify a different filename for the output.
 
 
 --------------------
