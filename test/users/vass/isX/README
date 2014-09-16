@@ -1,0 +1,23 @@
+The test
+
+  isX.module-writeln.chpl
+
+tests the various isXxx, isXxxType, isXxxValue predicates.
+It applies them to module-level variables
+and displays the result using writeln().
+
+Other variations on this test could be added, e.g.:
+- apply the predicates to local variables,
+  formals, directly to types, etc.
+- display the results using compilerWarning, e.g.
+    result = isXxx(yyy);
+    compilerWarning(result:string)
+    // or
+    if result then compilerWarning("yes");
+              else compilerWarning("no");
+
+The test was generated automatically using:
+
+  src/isX.module-writeln.gen
+
+It is added to version control for ease of use.

@@ -48,9 +48,17 @@
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
 #endif
-#ifndef _FILE_OFFSET_BITS
-#define _FILE_OFFSET_BITS 64
-#endif
+
+//
+// The following breaks #include of "glob.h" with the Cray CCE
+// compiler and also complicates things for the #inclusion of dirent.h
+// with most PrgEnv-* options on Crays, as seen in chpldirent.h.
+// As I understand it, Michael added this in order to permit the
+// support of files larger than 4GB.
+//
+//#ifndef _FILE_OFFSET_BITS
+//#define _FILE_OFFSET_BITS 64
+//#endif
 
 #ifdef __GNUC__
 #define ___always_inline inline __attribute__((__always_inline__))

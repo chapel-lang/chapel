@@ -3220,6 +3220,9 @@ static void lvalueCheck(CallExpr* call)
       call->parentSymbol->addFlag(FLAG_MODIFIES_CONST_FIELDS);
     }
     if (errorMsg) {
+      if (call->parentSymbol->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
+        // we are asked to ignore errors here
+        return;
       FnSymbol* calleeFn = call->isResolved();
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
       if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {

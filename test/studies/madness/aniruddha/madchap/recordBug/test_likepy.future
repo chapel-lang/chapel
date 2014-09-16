@@ -1,0 +1,12 @@
+bug: Recursive iterator inlining not implemented completely.
+
+After the body of a recursive iterator function is split off in
+expandRecursiveIteratorInline(), it appears that createIteratorFn is never
+called on it, or alternatively, convertYieldsAndReturns() is not called
+directly.  One way or the other, PRIM_YIELD primitives in the original recursive
+iterator are not replaced They show up in code generation, where they are
+flagged as an error.
+
+A newly added verification tests assumes that all PRIM_YIELD primitives have
+been replaced after the lowerIterators pass completes, so this future fails
+immediately in check_afterLowerIterators().
