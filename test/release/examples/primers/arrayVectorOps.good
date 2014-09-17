@@ -1,0 +1,16 @@
+A was initialized to: 1 2 3 4 5
+After adding to the front and back A is: 0 1 2 3 4 5 6
+The first and last elements in A are: (0, 6)
+After popping the two elements pushed previously A is: 1 2 3 4 5
+After inserting some new values, A is: 1 12 2 11 3 10 4 5
+Found 10 at index: 6
+Didn't find 7
+The value 5 is in A 3 times.
+Before calling reverse A is: 5 1 12 2 11 3 10 4 5 5
+After calling reverse A is: 5 5 4 10 3 11 2 12 1 5
+After first remove A is: 5 5 4 3 11 2 12 1 5
+After second remove A is: 5 5 4 3 1 5
+After third remove A is: 5 5 1 5
+After adding 1 to all elements A is: 6 6 2 6
+The sum of elements in A is 20
+After clearing, A is:  - with 0 elements
