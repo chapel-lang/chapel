@@ -1324,6 +1324,7 @@ module ChapelArray {
     proc _dom return _getDomain(_value.dom);
     proc rank param return this.domain.rank;
   
+    // When 'this' is 'const', so is the returned l-value.
     pragma "reference to const when const this"
     inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then

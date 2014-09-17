@@ -2894,7 +2894,7 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
     baseSym = baseExpr->var;
     // See if the variable being accessed is const.
     if (baseSym->isConstant() ||
-        // ??? baseSym->hasFlag(FLAG_REF_TO_CONST) ||
+        // somehow above the check is: baseSym->hasFlag(FLAG_REF_TO_CONST)
         baseSym->hasFlag(FLAG_CONST))
     {
       // Do not consider it const if it is an access to 'this'
