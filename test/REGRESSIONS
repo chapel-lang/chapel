@@ -23,26 +23,25 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 09/15/14)
 ===========================================================
 
-symbolic link not maintained in jenkins workspaces (09/10/14 -- tvandoren)
---------------------------------------------------------------------------
-[Error matching program output for studies/filerator/walk (execopts: 9)]
+broken due to sync/single-by-generic changes (09/17/14 -- vass)
+---------------------------------------------------------------
+[Error matching .bad file for expressions/lydia/noinit/usedWithSingle]
+[Error matching .bad file for expressions/lydia/noinit/usedWithSync]
+[Error matching .bad file for types/sync/vass/generic-sync-1]
+[Error matching .bad file for types/sync/vass/ref-sync-1]
+[Error matching compiler output for parallel/sync/figueroa/DeadLock]
 
-fails with some regularity (09/14/14 -- sungeun, elliot)
---------------------------------------------------------
+fails with some regularity (09/14/14 -- sungeun, elliot, ben)
+-------------------------------------------------------------
 [Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
 [Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)]
 [Error finding compiler performance keys for domains/sungeun/assoc/stress.]
 [Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
 
-have failed reasonably consistently since being committed (09/14/14 -- sungeun, elliot)
-------------------------------------------------------------------------------
+fail with some regularity since being committed (09/14/14 -- sungeun)
+---------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/promotion]
 [Error matching program output for types/string/StringImpl/memLeaks/coforall]
-
-broken due to redefinition of -= (09/16/14 -- ben)
---------------------------------------------------
-[Error matching program output for domains/sungeun/assoc/index_not_in_domain_1 (compopts: 1)]
-[Error matching program output for domains/sungeun/assoc/index_not_in_domain_1 (compopts: 2)]
 
 
 ==============================================
@@ -53,13 +52,13 @@ linux64 regressions (in addition to the above)
 
 ==========================================================
 linux32 (comm-none) regressions (in addition to the above)
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/17/14)
 ==========================================================
 
 
 ================================
 performance-specific regressions
-(Reviewed for accuracy 07/15/14)
+(Reviewed for accuracy 09/17/14)
 ================================
 
 consistent failures on bradc-lnx and chap03 due to insane memory usage
@@ -70,12 +69,8 @@ this should get better with better string memory management
 
 ================================
 --fast regressions
-(Reviewed for accuracy 07/15/14)
+(Reviewed for accuracy 09/17/14)
 ================================
-
-attempt to free a non-heap object (08/01/14 -- sungeun/hilde)
--------------------------------------------------------------
-[Error matching compiler output for io/ferguson/io_test]
 
 
 ================================
@@ -239,12 +234,41 @@ darwin (see below for compiler specific)
 (reviewed for accuracy 07/15/14)
 ========================================
 
-*** everything below here is not in examples/ and not tested nightly ***
+can't find RandomStream (due to Mac case insensitivity?) (09/17/14 -- lydia)
+----------------------------------------------------------------------------
+[Error matching compiler output for release/examples/primers/opaque]
+[Error matching compiler output for release/examples/primers/random]
+[Error matching compiler output for release/examples/primers/reductions]
 
 need machine specific .good file
 --------------------------------
 [Error cannot locate program output comparison file studies/hpcc/common/testProbSize.good]
 [Error matching program output for modules/standard/memory/countMemory/countMemory]
+
+domain type printed differently; assertion mismatch (09/17/14 -- vass)
+----------------------------------------------------------------------
+[Error matching .bad file for arrays/vass/initialization-mapped-1]
+
+chpldoc sorting differences
+---------------------------
+[Error matching .bad file for chpldoc/compflags/alphabetical/classFields]
+[Error matching program output for chpldoc/compflags/alphabetical/alphabetized]
+[Error matching compiler output for chpldoc/compflags/alphabetical/alphabetized]
+
+chpldoc printing difference
+---------------------------
+[Error matching .bad file for chpldoc/types/arguments/queried]
+
+can't clear a dense domain
+--------------------------
+[Error matching .bad file for classes/bradc/compilerErrorInMethod/testClear]
+
+type mismatch from c to nil
+---------------------------
+[Error matching .bad file for classes/deitz/test_infer_nil]
+
+
+
 
 Bad .bad file
 -------------
@@ -259,10 +283,6 @@ linker error (library not found for -lcrt0.o)
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)]
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)]
 
-chpldoc sorting differences
----------------------------
-[Error matching program output for chpldoc/compflags/alphabetical/alphabetized]
-[Error matching compiler output for chpldoc/compflags/alphabetical/alphabetized]
 
 gdb output differences?
 -----------------------
@@ -381,28 +401,31 @@ problem with static/dynamic linking?
 
 =========================================
 cray-prgenv-cray/cce-specific regressions
-(Reviewed for accuracy 07/16/14)
+(Reviewed for accuracy 09/17/14)
 =========================================
+
+zippered iterations have non-equal lengths (09/17/14 -- elliot)
+--------------------------------------------------------------
+[Error matching program output for statements/bradc/swaps/swapArrayDiffIndices]
+
+doesn't hit halt (09/17/14 -- elliot)
+-------------------------------------
+[Error matching program output for trivial/deitz/test_max_range_iteration (compopts: 1)]
+
+glob portability issue (09/17/14 -- bradc)
+------------------------------------------
+[Error matching program output for studies/filerator/globberator (execopts: 1)]
+[Error matching program output for studies/filerator/globberator (execopts: 2)]
 
 unexpected compiler output (listing the source files) (07/23/14)
 ----------------------------------------------------------------
 [Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
 gbt is working on getting rid of this
 
-portability failures due to QIO refactoring (mppf)
---------------------------------------------------
-[Error compiling C I/O tests]
-
 empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
 [Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
 [Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
-
-standard "missing empty directory" problems that should be fixed on next run (bradc)
-(please alert bradc if not resolved in runs after 7/16/14)
-------------------------------------------------------------------------------------
-[Error matching program output for io/bradc/testPath]
-[Error matching compiler output for compflags/bradc/readDirInsteadOfFile (compopts: 1)]
 
 infinite loop warning (since filed?)
 ------------------------------------
@@ -411,10 +434,6 @@ infinite loop warning (since filed?)
 value is outside of the int range in C compilation (03/??/12)
 -------------------------------------------------------------
 [Error matching compiler output for types/enum/ferguson/enum_mintype_test]
-
-change to test broke portability (lydia)
-----------------------------------------
-[Error matching compiler output for users/bugzilla/bug794131/bug794131 (compopts: 1)]
 
 wrong result due to reliance on wraparound in signed integers in test itself
 ----------------------------------------------------------------------------
@@ -435,13 +454,6 @@ filenames get printed by C compiler when multiple .c files are specified in one 
 [Error matching program output for modules/standard/BitOps/c-tests/popcount (compopts: 1)]
 [Error matching program output for modules/standard/BitOps/c-tests/popcount (compopts: 2)]
 
-portability issues with listerator (bradc)
-------------------------------------------
-[Error matching program output for studies/filerator/listdir (compopts: 1, execopts: 1)]
-[Error matching program output for studies/filerator/listdir (compopts: 1, execopts: 2)]
-[Error matching program output for studies/filerator/listdir (compopts: 1, execopts: 3)]
-[Error matching program output for studies/filerator/listdir (compopts: 1, execopts: 4)]
-
 error differs but within acceptable margin; should squash error printing
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
@@ -454,15 +466,6 @@ signal 11 (first seen 03/02/14)
 error message missing? (first noted 07/17/2014, but failure may have predated)
 ------------------------------------------------------------------------------
 [Error matching program output for types/file/freadComplex]
-
-compilation timeouts -- for fairly small tests (?!) (07/16/14)
---------------------------------------------------------------
-[Error: Timed out compilation for io/ferguson/readThis/readclass2]
-[Error: Timed out compilation for io/ferguson/readThis/readclass3]
-[Error: Timed out compilation for io/ferguson/readThis/readclass5]
-[Error: Timed out compilation for io/ferguson/readThis/readdom]
-[Error: Timed out compilation for io/ferguson/readThis/readrange]
-[Error: Timed out compilation for studies/ssca2/rachels/SSCA2_test (compopts: 5)]
 
 compilation timeouts (since at least 07/16/14)
 ----------------------------------------------
@@ -596,10 +599,8 @@ glibc: invalid next size (mppf)
 
 ================================
 LLVM specific regressions
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/17/14)
 ================================
-
-*** everything has been failing since this configuration was initiated ***
 
 
 ===================================
@@ -692,8 +693,12 @@ numerical roundoff issues
 
 ================================
 baseline-specific tests
-(Reviewed for accuracy 07/15/14)
+(Reviewed for accuracy 09/17/14)
 ================================
+
+initcopy for extern record with no fields doing the wrong thing (09/17/14 -- hilde)
+-----------------------------------------------------------------------------------
+[Error matching program output for extern/ferguson/crazyRecord (compopts: 1)]
 
 incorrect output -- expected? (04/03/10)
 ----------------------------------------
@@ -761,7 +766,7 @@ block distribution regressions
 (Reviewed for accuracy 07/15/14)
 ================================
 
-*** occasional timeouts due to oversubscription ***
+*** occasional timeouts due to qthreads oversubscription ***
 
 
 ================================
