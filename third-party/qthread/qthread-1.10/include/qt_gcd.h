@@ -38,6 +38,9 @@ static QINLINE size_t qt_gcd(size_t a, size_t b)
 static QINLINE size_t qt_lcm(size_t a, size_t b)
 {				       /*{{{ */
     size_t tmp = qt_gcd(a, b);
-
-    return (tmp != 0) ? (a * b / tmp) : 0;
+    /* on 32 bit platforms, it's pretty easy for a * b to overflow so we force
+     * 64 bit multiplication*/
+    uint64_t largeA = a;
+    uint64_t largeB = b;
+    return (tmp != 0) ? (largeA * largeB / tmp) : 0;
 }				       /*}}} */

@@ -1,5 +1,0 @@
-I would like to be able to assign to a record filed inside an iterator body.
-
-We are currently unable to assign to a record field inside of an iterator body.
-However, if we call a function that does this setting of the field for us, it works
-(see record_field_assignment_proc.chpl in this directory)

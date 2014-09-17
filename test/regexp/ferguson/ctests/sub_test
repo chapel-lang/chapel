@@ -7,13 +7,10 @@ CC=gcc
 CXX=g++
 DEFS=`$CHPL_HOME/util/config/compileline --includes-and-defines`
 RSRC="$CHPL_HOME/runtime/src/qio"
-RE2DIR="$CHPL_HOME/third-party/re2/"
-TARGPLAT=`$CHPL_HOME/util/chplenv/chpl_platform.py --target`
-TARGCOMP=`$CHPL_HOME/util/chplenv/chpl_compiler.py --target`
-#RE2INCLS="-I$RE2DIR/install/$TARGPLAT-$TARGCOMP/include -I$RE2DIR/re2"
-RE2INCLS="-I$RE2DIR/install/$TARGPLAT-$TARGCOMP/include"
-RE2_LIB_DIR="$RE2DIR/install/$TARGPLAT-$TARGCOMP/lib"
-RE2LIB="-L$RE2_LIB_DIR -Wl,-rpath -Wl,$RE2_LIB_DIR -lre2"
+RE2_INSTALL_DIR=$($CHPL_HOME/util/config/compileline --libraries | \
+                  sed 's#^.*\('"$CHPL_HOME"'/[^ ]*/re2/install/[^/]*\)/.*$#\1#')
+RE2INCLS=-I$RE2_INSTALL_DIR/include
+RE2LIB="-L$RE2_INSTALL_DIR/lib -Wl,-rpath,$RE2_INSTALL_DIR/lib -lre2"
 
 echo $DEFS | grep atomics/intrinsics
 if [ $? -eq 0 ]

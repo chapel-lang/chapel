@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <cstdlib>
 #include "astutil.h"
 #include "bb.h"
@@ -116,20 +135,41 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 
   if (BlockStmt* s = toBlockStmt(stmt))
   {
-    // If a loop statement.
-    if (s->blockInfo)
+    CallExpr* loop = toCallExpr(s->blockInfo);
+    if (loop)
     {
+      bool cForLoop = loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+      // for c for loops, add the init expr before the loop body
+      if (cForLoop) {
+        for_alist(stmt, toBlockStmt(loop->get(1))->body) { BBB(stmt); }
+      }
+
+      // mark the top of the loop
       BasicBlock* top = basicBlock;
       BB_RESTART();
-      // Assumes that blockInfo is never null.
-      BB_ADD(s->blockInfo);
+
+      // for c for loops, add the test expr at the loop top
+      if (cForLoop) {
+        for_alist(stmt, toBlockStmt(loop->get(2))->body) { BBB(stmt); }
+      }
+
+      // add the CallExpr that is the loop itself and then add the loops body
+      BB_ADD(loop);
       BasicBlock* loopTop = basicBlock;
       for_alist(stmt, s->body) {
         BBB(stmt);
       }
+
+      // for c for loops, add the incr expr after the loop body
+      if (cForLoop) {
+        for_alist(stmt, toBlockStmt(loop->get(3))->body) { BBB(stmt); }
+      }
+
       BasicBlock* loopBottom = basicBlock;
       BB_RESTART();
       BasicBlock* bottom = basicBlock;
+
+      // thread the basic blocks of the pre-loop, loop, and post-loop together
       BB_THREAD(top, loopTop);
       BB_THREAD(loopBottom, bottom);
       BB_THREAD(loopBottom, loopTop);

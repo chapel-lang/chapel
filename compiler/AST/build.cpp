@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "build.h"
 
 #include "astutil.h"
@@ -204,9 +223,13 @@ Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
 
 Expr* buildIntLiteral(const char* pch) {
   uint64_t ull;
-  if (!strncmp("0b", pch, 2))
+  if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2))
     ull = binStr2uint64(pch);
-  else if (!strncmp("0x", pch, 2))
+  else if (!strncmp("0o", pch, 2) || !strncmp("0O", pch, 2))
+    // The second case is difficult to read, but is zero followed by a capital
+    // letter 'o'
+    ull = octStr2uint64(pch);
+  else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2))
     ull = hexStr2uint64(pch);
   else
     ull = str2uint64(pch);
@@ -504,8 +527,45 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   return new CallExpr(new DefExpr(fn));
 }
 
+static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
+
+  // C for loops have the form:
+  //   __primitive("C for loop", initExpr, testExpr, incrExpr)
+  //
+  // This simply wraps the init, test, and incr expr with block stmts
+  call->get(1)->replace(new BlockStmt(call->get(1)->copy()));
+  call->get(2)->replace(new BlockStmt(call->get(2)->copy()));
+  call->get(3)->replace(new BlockStmt(call->get(3)->copy()));
+
+  // Regular loop setup
+  BlockStmt* loop = new BlockStmt(body);
+  loop->blockInfo = call;
+  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+  continueLabel->addFlag(FLAG_COMPILER_GENERATED);
+  continueLabel->addFlag(FLAG_LABEL_CONTINUE);
+  loop->continueLabel = continueLabel;
+  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
+  breakLabel->addFlag(FLAG_COMPILER_GENERATED);
+  breakLabel->addFlag(FLAG_LABEL_BREAK);
+  loop->breakLabel = breakLabel;
+  loop->insertAtTail(new DefExpr(continueLabel));
+  BlockStmt* stmts = buildChapelStmt();
+  stmts->insertAtTail(loop);
+  stmts->insertAtTail(new DefExpr(breakLabel));
+  return stmts;
+}
+
 
 BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
+  // C for loops are invoked with 'while __primitive("C for loop" ...)'
+  // This checks if we had such a case and if we did builds the c for loop
+  // instead of the while loop and returns it.
+  if (CallExpr* call = toCallExpr(cond)) {
+    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+      BlockStmt* loop = buildCForLoopStmt(call, body);
+      return loop;
+    }
+  }
   cond = new CallExpr("_cond_test", cond);
   VarSymbol* condVar = newTemp();
   body = new BlockStmt(body);
@@ -662,6 +722,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, iteratorSym,
                                 new CallExpr("_getIterator", iteratorExpr->copy())));
   VarSymbol* index = newTemp("_indexOfInterest");
+  index->addFlag(FLAG_INDEX_OF_INTEREST);
   isArrayTypeFn->insertAtTail(new DefExpr(index));
   isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, index,
                                 new CallExpr("iteratorIndex", iteratorSym)));
@@ -670,7 +731,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   indicesBlock->blockTag = BLOCK_SCOPELESS;
   isArrayTypeFn->insertAtTail(indicesBlock);
   isArrayTypeFn->insertAtTail(new CondStmt(
-                                new CallExpr("chpl__isType", expr->copy()),
+                                new CallExpr("isType", expr->copy()),
                                 new CallExpr(PRIM_MOVE, isArrayType, gTrue),
                                 new CallExpr(PRIM_MOVE, isArrayType, gFalse)));
   fn->insertAtTail(new DefExpr(isArrayTypeFn));
@@ -948,6 +1009,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   }
 
   VarSymbol* index = newTemp("_indexOfInterest");
+  index->addFlag(FLAG_INDEX_OF_INTEREST);
   stmts->insertAtTail(new DefExpr(index));
   stmts->insertAtTail(new BlockStmt(
     new CallExpr(PRIM_MOVE, index,
@@ -1029,11 +1091,9 @@ buildForallLoopStmt(Expr* indices,
   VarSymbol* followIdx = newTemp("chpl__followIdx");
   VarSymbol* followIter = newTemp("chpl__followIter");
   iter->addFlag(FLAG_EXPR_TEMP);
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-  Symbol* T1 = newTemp(); T1->addFlag(FLAG_EXPR_TEMP); T1->addFlag(FLAG_MAYBE_PARAM);
-  Symbol* T2 = newTemp(); T2->addFlag(FLAG_EXPR_TEMP); T2->addFlag(FLAG_MAYBE_PARAM);
 
   BlockStmt* leadBlock = buildChapelStmt();
   leadBlock->insertAtTail(new DefExpr(iter));
@@ -1061,6 +1121,9 @@ buildForallLoopStmt(Expr* indices,
   BlockStmt* followBlock = buildFollowLoop(iter, leadIdxCopy, followIter,
           followIdx, indices, loopBody->copy(), false, zippered);
   if (!fNoFastFollowers) {
+    Symbol* T1 = newTemp(); T1->addFlag(FLAG_EXPR_TEMP); T1->addFlag(FLAG_MAYBE_PARAM);
+    Symbol* T2 = newTemp(); T2->addFlag(FLAG_EXPR_TEMP); T2->addFlag(FLAG_MAYBE_PARAM);
+
     leadBody->insertAtTail(new DefExpr(T1));
     leadBody->insertAtTail(new DefExpr(T2));
 
@@ -1757,7 +1820,7 @@ buildFunctionDecl(FnSymbol*  fn,
 {
   fn->retTag = optRetTag;
 
-  if (optRetTag == RET_VAR)
+  if (optRetTag == RET_REF)
   {
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot be setters.");

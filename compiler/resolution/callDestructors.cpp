@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "passes.h"
 
 #include "astutil.h"
@@ -464,21 +483,18 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
   INT_ASSERT(call->parentExpr == move);
   INT_ASSERT(call->isResolved() == fn);
 
-  // In the suffix of the containing function, look for a use of the lhs of the
+  // In the suffix of the containing function, look for uses of the lhs of the
   // move containing the call to fn.
-  SymExpr* use = NULL;
+  Vec<SymExpr*> use;
   if (useMap.get(lhs) && useMap.get(lhs)->n == 1) {
-    use = useMap.get(lhs)->v[0];
+    use = *useMap.get(lhs);
   } else {
-    for (Expr* stmt = move->next; stmt && !use; stmt = stmt->next) {
-      if (!isCallExpr(stmt) && !isDefExpr(stmt) && !isSymExpr(stmt))
-        break;
+    for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
       Vec<SymExpr*> symExprs;
       collectSymExprs(stmt, symExprs);
       forv_Vec(SymExpr, se, symExprs) {
         if (se->var == lhs) {
-          use = se;
-          break;
+          use.add(se);
         }
       }
     }
@@ -498,13 +514,15 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
   // where a call to useFn replaces the return that used to be at the end of
   // newFn.  The use function is expected to be assignment, initCopy or
   // autoCopy.  All other cases are ignored.
-  if (use) {
-    if (CallExpr* useCall = toCallExpr(use->parentExpr)) {
+  if (use.n > 0) {
+    SymExpr* firstUse = use.v[0];
+    // If this isn't a call expression, we've got problems.
+    if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
       if (FnSymbol* useFn = useCall->isResolved()) {
-        if ((!strcmp(useFn->name, "=") && use == useCall->get(2)) ||
+        if ((!strcmp(useFn->name, "=") && firstUse == useCall->get(2)) ||
             useFn->hasFlag(FLAG_AUTO_COPY_FN) ||
             useFn->hasFlag(FLAG_INIT_COPY_FN)) {
-
+          Symbol* actual;
           FnSymbol* newFn = NULL;
 
           //
@@ -594,7 +612,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
             useMove->remove();
             call->insertAtTail(useLhs);
 
-            return;
+            actual = useLhs;
           }
           else
           {
@@ -608,20 +626,49 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
             // We expect that the used symbol is the second actual passed to
             // the "=".  That is, it is an assignment from the result of the
             // call to fn to useLhs.
-            INT_ASSERT(use == useCall->get(2));
+            INT_ASSERT(firstUse == useCall->get(2));
 
             Symbol* useLhs = toSymExpr(useCall->get(1))->var;
             move->replace(call->remove());
             call->insertAtTail(useLhs);
 
-            return;
+            actual = useLhs;
           }
+          if (actual) {
+            // for each remaining use "se"
+            //   replace se with deref of retArg, unless parent is accessing its
+            //   address
+            forv_Vec(SymExpr, se, use) {
+              // Because we've already handled the first use
+              if (se != firstUse) {
+                CallExpr* parent = toCallExpr(se->parentExpr);
+                if (parent) {
+                  SET_LINENO(parent);
+                  if (parent->isPrimitive(PRIM_ADDR_OF)) {
+                    parent->replace(new SymExpr(actual));
+                  } else {
+                    FnSymbol* parentFn = parent->isResolved();
+                    if (!(parentFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                          parentFn->hasFlag(FLAG_INIT_COPY_FN))) {
+                      // Leave the auto copies/inits in, we'll need them for
+                      // moving information back to us.
+
+                      // Copy the information we currently have into the temp
+                      se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->var, new CallExpr(PRIM_DEREF, actual)));
+                    }
+                  }
+                }
+              }
+            }
+          }
+          return;
         }
       }
     }
     // When this was USR_WARN, release/examples/hello.chpl generates 10 warnings
     // if this was uncommented.  Really, it should be an internal error, though.
     //INT_FATAL(move, "possible premature free");
+    
   } else {
     if (useMap.get(lhs) && useMap.get(lhs)->n > 0) {
       // When this was USR_WARN, release/examples/hello.chpl generates 10
@@ -889,9 +936,11 @@ static void insertReferenceTemps() {
         if (formal->type == actual->typeInfo()->refType) {
           SET_LINENO(call);
           VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
+          tmp->addFlag(FLAG_REF_TEMP);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           actual->replace(new SymExpr(tmp));
-          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+          call->getStmtExpr()->insertBefore(
+              new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
         }
       }
     }

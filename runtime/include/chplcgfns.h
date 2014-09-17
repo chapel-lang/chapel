@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // chplcgfns.h
 //
 // Declarations for variables and prototypes for functions which are
@@ -15,16 +34,35 @@
 
 /* This header file is for routines that are in the generated code */
 
-/* defined in chpl__header.h: */
-
+/* defined in chpl_compilation_config.c: */
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
+extern const char* CHPL_HOME;
 extern const char* CHPL_HOST_PLATFORM;
-extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
+extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_TARGET_COMPILER;
-extern const char* CHPL_THREADS;
+extern const char* CHPL_TARGET_ARCH;
+extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
+extern const char* CHPL_COMM_SUBSTRATE;
+extern const char* CHPL_GASNET_SEGMENT;
+extern const char* CHPL_TASKS;
+extern const char* CHPL_THREADS;
+extern const char* CHPL_LAUNCHER;
+extern const char* CHPL_TIMERS;
+extern const char* CHPL_MEM;
+extern const char* CHPL_MAKE;
+extern const char* CHPL_ATOMICS;
+extern const char* CHPL_NETWORK_ATOMICS;
+extern const char* CHPL_GMP;
+extern const char* CHPL_HWLOC;
+extern const char* CHPL_REGEXP;
+extern const char* CHPL_WIDE_POINTERS;
+extern const char* CHPL_LLVM;
+extern const char* CHPL_AUX_FILESYS;
+extern const int CHPL_STACK_CHECKS;
+extern const int CHPL_CACHE_REMOTE;
 
 /* defined in main.c */
 extern char* chpl_executionCommand;

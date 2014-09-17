@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // A 2D dimensional distribution.
 //
@@ -51,7 +70,7 @@ type locIdT = int;
 
 param invalidLocID =
   // encode 'max(locIdT)' as a compile-time expression
-  2 ** (numBits(locIdT) - 1 - _isSignedType(locIdT):int);
+  2 ** (numBits(locIdT) - 1 - isIntType(locIdT):int);
 
 
 /// class declarations //////////////////////////////////////////////////////
@@ -208,7 +227,8 @@ proc DimensionalDist2D.DimensionalDist2D(
   dataParMinGranularity: int      = getDataParMinGranularity()
 ) {
   this.name = name;
-  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+  this.dataParTasksPerLocale = if dataParTasksPerLocale==0
+                               then here.maxTaskPar
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
@@ -816,7 +836,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 
 //== dsiAccess
 
-proc DimensionalArr.dsiAccess(indexx: dom.indexT) var: eltType {
+proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
   _traceddc(traceDimensionalDist || traceDimensionalDistDsiAccess,
             this, ".dsiAccess", indexx);
 
@@ -1153,7 +1173,7 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
 //== serial iterator - array
 
 // note: no 'on' clauses - they not allowed by the compiler
-iter DimensionalArr.these() var {
+iter DimensionalArr.these() ref {
   _traceddd(this, ".serial iterator",
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
@@ -1208,7 +1228,7 @@ iter DimensionalArr.these(param tag: iterKind) where tag == iterKind.leader {
 
 //== follower iterator - array   (somewhat similar to the serial iterator)
 
-iter DimensionalArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   _traceddd(this, ".follower on ", here.id, "  got ", followThis,
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
@@ -1228,7 +1248,7 @@ iter DimensionalArr.these(param tag: iterKind, followThis) var where tag == iter
 }
 
 // factor our some common code
-iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) var {
+iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // single-element cache of localAdescs[l1,l2]
   var lastl1 = invalidLocID, lastl2 = invalidLocID;
   var lastLocAdesc: this.localAdescs.eltType;

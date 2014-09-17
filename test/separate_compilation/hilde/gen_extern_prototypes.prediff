@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# $1 = testname
-# $2 = outfile
-grep putchar obj/chpl__header.h > $2
-rm -rf obj

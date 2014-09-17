@@ -32,19 +32,19 @@ const copyExt:domain(2) = {0..numLocales-1, 0..numAtoms-1};
 const copyDist:domain(2) dmapped Block(copyExt,locGrid) = copyExt;
 
 
-const positionsLoc:[copyDist] 3*real;
-const needsUpdate:[copyDist] bool;
-const locks:[locDist] sync bool;
+var   positionsLoc:[copyDist] 3*real;
+var   needsUpdate:[copyDist] bool;
+var   locks:[locDist] sync bool;
 
-const positions:[atomsDist] 3*real;
+var   positions:[atomsDist] 3*real;
 
-const velocities:[atomsDist] 3*real;
-const forces:[atomsDist] 3*real;
+var   velocities:[atomsDist] 3*real;
+var   forces:[atomsDist] 3*real;
 
 const neighborExt:domain(2) = {0..numAtoms-1,0..maxSize-1};
 const neighborDist:domain(2) dmapped Block(neighborExt,locGrid)=neighborExt;
-const neighbors:[neighborDist] int;
-const membcounts:[atomsDist] int;
+var   neighbors:[neighborDist] int;
+var   membcounts:[atomsDist] int;
 
 const infile:string = 'ljcut.in';
 
@@ -227,9 +227,6 @@ proc updateNeighbors()
 
 proc loadParticles(filename:string, p:[?D], v:[D])
 {
-    //var fileIn= new file(filename, FileAccessMode.read);
-    //fileIn.open();
-
     var rawFile=open(filename, iomode.r, IOHINT_SEQUENTIAL);
     var fileIn=rawFile.reader(iokind.dynamic,true,0,max(int(64)), IOHINT_SEQUENTIAL);
 

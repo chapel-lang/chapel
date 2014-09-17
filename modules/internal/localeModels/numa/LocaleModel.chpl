@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // LocaleModel.chpl
 //
 // This provides a flat locale model architectural description.  The
@@ -214,21 +233,27 @@ module LocaleModel {
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
-      extern proc chpl_numCoresOnThisLocale(): int;
-      numCores = chpl_numCoresOnThisLocale();
+      extern proc chpl_getNumLogicalCpus(accessible_only: bool): c_int;
+      numCores = chpl_getNumLogicalCpus(true);
 
       extern proc chpl_task_getNumSublocales(): int(32);
       numSublocales = chpl_task_getNumSublocales();
 
+      extern proc chpl_task_getMaxPar(): uint(32);
+      maxTaskPar = if numSublocales==0 then chpl_task_getMaxPar()
+                                       else numSublocales;
+
       if numSublocales >= 1 {
         childSpace = {0..#numSublocales};
         const numCoresPerNumaDomain = numCores/numSublocales;
+        const maxTaskParPerNumaDomain = chpl_task_getMaxPar()/numSublocales;
         const origSubloc = chpl_task_getRequestedSubloc(); // this should be any
         for i in childSpace {
           // allocate the structure on the proper sublocale
           chpl_task_setSubloc(i:chpl_sublocID_t);
           childLocales[i] = new NumaDomain(i:chpl_sublocID_t, this);
           childLocales[i].numCores = numCoresPerNumaDomain;
+          childLocales[i].maxTaskPar = maxTaskParPerNumaDomain;
         }
         chpl_task_setSubloc(origSubloc);
       }
@@ -253,6 +278,7 @@ module LocaleModel {
     proc RootLocale() {
       parent = nil;
       numCores = 0;
+      maxTaskPar = 0;
     }
 
     // The init() function must use initOnLocales() to iterate (in
@@ -264,6 +290,7 @@ module LocaleModel {
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
         numCores += node.numCores;
+        maxTaskPar += node.maxTaskPar;
       }
 
       here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
@@ -321,7 +348,6 @@ module LocaleModel {
 
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
-  pragma "no sync demotion"
   pragma "locale model alloc"
   proc chpl_here_alloc(size:int, md:int(16)) {
     pragma "insert line file info"
@@ -330,7 +356,6 @@ module LocaleModel {
   }
 
   pragma "allocator"
-  pragma "no sync demotion"
   proc chpl_here_calloc(size:int, number:int, md:int(16)) {
     pragma "insert line file info"
       extern proc chpl_mem_calloc(number:int, size:int, md:int(16)) : opaque;
@@ -338,14 +363,12 @@ module LocaleModel {
   }
 
   pragma "allocator"
-  pragma "no sync demotion"
   proc chpl_here_realloc(ptr:opaque, size:int, md:int(16)) {
     pragma "insert line file info"
       extern proc chpl_mem_realloc(ptr:opaque, size:int, md:int(16)) : opaque;
     return chpl_mem_realloc(ptr, size, md + chpl_memhook_md_num());
   }
 
-  pragma "no sync demotion"
   pragma "locale model free"
   proc chpl_here_free(ptr:opaque) {
     pragma "insert line file info"

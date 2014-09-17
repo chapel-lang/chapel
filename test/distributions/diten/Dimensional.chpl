@@ -133,7 +133,7 @@ class DimensionalArray {
     }
   }
 
-  proc this(ind: nDims*idxType) var {
+  proc this(ind: nDims*idxType) ref {
     return locArrs(dom.dist.indexToLocIndex(ind)).locArr(ind);
   }
 
@@ -143,7 +143,7 @@ class DimensionalArray {
       yield blk;
   }
 
-  iter newThese(param iteratorType:IteratorType, followThis) var
+  iter newThese(param iteratorType:IteratorType, followThis) ref
     where iteratorType == IteratorType.follower {
     for i in followThis {
       yield this(i);

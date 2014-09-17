@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _STMT_H_
 #define _STMT_H_
 
@@ -23,9 +42,13 @@ public:
 ********************************* | ********************************/
 
 enum BlockTag {
-  BLOCK_NORMAL,
-  BLOCK_SCOPELESS, // does not introduce a new scope
-  BLOCK_TYPE       // deleted after type resolution
+// Bits:
+  BLOCK_NORMAL      = 0,
+  BLOCK_SCOPELESS   = 1<<0, ///< does not introduce a new scope
+  BLOCK_TYPE_ONLY   = 1<<1, ///< deleted after type resolution
+  BLOCK_EXTERN      = 1<<2, ///< init block for an extern var
+// Bit masks:
+  BLOCK_TYPE        = BLOCK_SCOPELESS | BLOCK_TYPE_ONLY,
 };
 
 class BlockStmt : public Stmt {

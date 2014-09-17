@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _SYS_H_
 #define _SYS_H_
 
@@ -17,6 +36,28 @@ extern "C" {
 #include <netdb.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#ifndef LUSTRE_SUPER_MAGIC
+// Magic value to be found in the statfs man page
+#define LUSTRE_SUPER_MAGIC     0x0BD00BD0
+#endif
+
+// TAKZ - In the case where we are unable to include statfs or fstatfs, we need to
+// have a struct defined. As well, the Mac and linux statfs structs differ on what
+// different field names represent, and this way we have a uniform struct across all
+// OSs. Besides this fact, on apple, depending upon whether or not
+// _DARWIN_FEATURE_64_BIT_INODE is defined, we get different types for the same
+// members of the statfs struct (!!).
+typedef struct sys_statfs_s {
+  uint64_t    f_type;     /* type of filesystem */
+  int64_t     f_bsize;    /* optimal transfer block size */
+  uint64_t    f_blocks;   /* total data blocks in file system */
+  uint64_t    f_bfree;    /* free blocks in fs */
+  uint64_t    f_bavail;   /* free blocks avail to non-superuser */
+  uint64_t    f_files;    /* total file nodes in file system */
+  uint64_t    f_ffree;    /* free file nodes in fs */
+  uint64_t    f_namelen;  /* maximum length of filenames */
+} sys_statfs_t;
 
 typedef int fd_t;
 
@@ -103,6 +144,11 @@ err_t sys_lseek(fd_t fd, off_t offset, int whence, off_t* offset_out);
 err_t sys_stat(const char* path, struct stat* buf);
 err_t sys_fstat(fd_t fd, struct stat* buf);
 err_t sys_lstat(const char* path, struct stat* buf);
+err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf);
+
+#ifdef SYS_HAS_LLAPI
+err_t sys_lustre_get_stripe_size(fd_t fd, int64_t* size_out);
+#endif
 
 err_t sys_mkstemp(char* template_, fd_t* fd_out);
 

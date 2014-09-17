@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
@@ -45,6 +64,21 @@ refNecessary(SymExpr* se,
         // If we are extracting a field from the wide pointer, we need to keep it as a pointer.
         // Dereferencing would be premature.
         return true;
+      } else if (call->isPrimitive(PRIM_DEREF) &&
+                 isRecordWrappedType(se->var->type->getValType())) {
+        // Heuristic: if we are dereferencing an array reference,
+        // that reference may still be needed.
+        Expr* callParent = call->parentExpr;
+        INT_ASSERT(callParent);
+        if (CallExpr* callParentCall = toCallExpr(callParent)) {
+          if (callParentCall->isPrimitive(PRIM_MOVE)) {
+            INT_ASSERT(call == callParentCall->get(2));
+            SymExpr* dest = toSymExpr(callParentCall->get(1));
+            INT_ASSERT(dest);
+            if (dest->var->hasFlag(FLAG_COERCE_TEMP))
+              return true;
+          }
+        }
       }
     }
   }

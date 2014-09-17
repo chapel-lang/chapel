@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -190,10 +209,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
     }
  
-    // set the output name to either the user specified.<jobID>.out 
+    // set the output name to either the user specified
     // or to the binaryName.<jobID>.out if none specified
     if (outputfn!=NULL) {
-      fprintf(slurmFile, "#SBATCH --output=%s.%%j.out\n", outputfn);
+      fprintf(slurmFile, "#SBATCH --output=%s\n", outputfn);
     }
     else {
       fprintf(slurmFile, "#SBATCH --output=%s.%%j.out\n", argv[0]);

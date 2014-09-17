@@ -9,12 +9,32 @@ set -e
 
 CWD=$(cd $(dirname $0) ; pwd)
 
+# Ensure CC is respected, since it is typically ignored by chplenv/.
+if [ -n "${CC}" ] ; then
+    case $CC in
+        gcc)
+            # Deal with a frequent chapel stumbling block...
+            echo "Setting CHPL_HOST_COMPILER and CHPL_TARGET_COMPILER to: gnu"
+            export CHPL_HOST_COMPILER=gnu
+            export CHPL_TARGET_COMPILER=gnu
+            ;;
+        *)
+            echo "Setting CHPL_HOST_COMPILER and CHPL_TARGET_COMPILER to: ${CC}"
+            export CHPL_HOST_COMPILER=$CC
+            export CHPL_TARGET_COMPILER=$CC
+            ;;
+    esac
+fi
+
 # Ensure environment is correctly configured to run chpl.
 export CHPL_HOME=$(cd "$CWD/../.." ; pwd)
 source $CHPL_HOME/util/setchplenv.bash
 
 # Add some space between env setup output and test output.
 echo ""
+
+# Show me the environment!
+$CHPL_HOME/util/printchplenv
 
 # Check for tabs.
 num_tabs=$($CHPL_HOME/util/devel/lookForTabs | wc -l)
@@ -30,15 +50,23 @@ perl -c $CHPL_HOME/util/cron/nightly
 perl -c $CHPL_HOME/util/cron/start_opt_test
 perl -c $CHPL_HOME/util/tokencount/tokctnightly
 
+# Check copyrights in source files.
+$CHPL_HOME/util/test/checkCopyrights.bash
+
 # Source common.bash, which sets up a bunch of environment variables like
 # CHPL_DEVELOPER, CHPL_GMP, etc. that are required for nightly testing.
 source $CHPL_HOME/util/cron/common.bash
 
 # Special case for older mac we use for testing. Warnings from arch.py and as
-# need to be filtered.
+# need to be filtered. Qthreads is not supported for mac os version < 10, so
+# use fifo instead.
 if [ "$(uname -s)" = "Darwin" -a "$(uname -r)" = "9.8.0" ] ; then
     export CHPL_START_TEST_ARGS="--syspreexec ${CHPL_HOME}/util/test/preexec-for-old-macs"
+    export CHPL_TASKS=fifo
 fi
+
+export CHPL_GMP=none
+export CHPL_REGEXP=none
 
 # Compile chapel and make sure the hello world examples run.
 make -C $CHPL_HOME check

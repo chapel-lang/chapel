@@ -1,0 +1,3 @@
+-suseOptimizedRangeIterators=true --no-bounds-checks  # optimizedRangeItersNoChecks.good
+-suseOptimizedRangeIterators=true --bounds-checks     # optimizedRangeItersChecks.good
+-suseOptimizedRangeIterators=false                    # unoptimizedRangeIters.good

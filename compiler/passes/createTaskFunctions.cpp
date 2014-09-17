@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "astutil.h"
 #include "passes.h"
 #include "stmt.h"
@@ -234,7 +253,7 @@ void createTaskFunctions(void) {
       if( module->hasFlag(FLAG_ATOMIC_MODULE) ) {
         // we could do this with for_alist ... as in getFunctions()
         // instead of creating a copy of the list of functions here.
-        Vec<FnSymbol*> moduleFunctions = module->getFunctions();
+        Vec<FnSymbol*> moduleFunctions = module->getTopLevelFunctions(false);
         forv_Vec(FnSymbol, fnSymbol, moduleFunctions) {
           ArgSymbol* order = NULL;
           // Does this function have an order= argument?
@@ -290,6 +309,7 @@ void createTaskFunctions(void) {
                info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
                info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
                info->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+               info->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
                info->isPrimitive(PRIM_BLOCK_LOCAL) ||
                info->isPrimitive(PRIM_BLOCK_UNLOCAL))
         ; // Not a parallel block construct, so do nothing special.

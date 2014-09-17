@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _ASTUTIL_H_
 #define _ASTUTIL_H_
 
@@ -66,10 +85,15 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
 
 //
 // Checks if a callExpr is one of the op= primitives
-// Note, this does not check if a callExpr is an 
+// Note, this does not check if a callExpr is an
 // op= function call (such as before inlining)
 //
 bool isOpEqualPrim(CallExpr* call);
+
+//
+// Checks if a callExpr is a relational operator (<, <=, >, >=, ==, !=)
+//
+bool isRelationalOperator(CallExpr* call);
 
 //
 // Return value & 1 is true if se is a def
@@ -168,6 +192,5 @@ bool isTypeExpr(Expr* expr);
 
 // move to resolve when scope resolution is put in resolution directory
 BlockStmt* getVisibilityBlock(Expr* expr);
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 #endif

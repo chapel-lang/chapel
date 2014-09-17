@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -61,7 +80,10 @@ using namespace llvm;
 #include "CGRecordLayout.h"
 #include "clang/CodeGen/BackendUtil.h"
 
-static void setupForGlobalToWide(void);
+static void setupForGlobalToWide();
+
+fileinfo    gAllExternCode;
+fileinfo    gChplCompilationConfig;
 
 static
 VarSymbol *minMaxConstant(int nbits, bool isSigned, bool isMin)
@@ -1464,6 +1486,22 @@ void makeBinaryLLVM(void) {
   }
 
   // Compile any C files.
+  {
+    // Start with configuration settings
+    const char* inputFilename = gChplCompilationConfig.pathname;
+    const char* objFilename = objectFileForCFile(inputFilename);
+
+    mysystem(astr(clangInstall.c_str(),
+                  "/bin/clang -c -o ",
+                  objFilename,
+                  " ",
+                  inputFilename,
+                  cargs.c_str()),
+               "Compile C File");
+
+    dotOFiles.push_back(objFilename);
+  }
+
   int filenum = 0;
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {

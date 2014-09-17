@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 
 #include "astutil.h"
 #include "bb.h"
@@ -20,6 +39,26 @@ static void deadBlockElimination(FnSymbol* fn);
 // Static variables.
 static unsigned deadBlockCount;
 static unsigned deadModuleCount;
+
+
+// Determines if an expr is used inside of the header for a c for loop. c for
+// loop header is of the form '"c for loop" {inits}, {test}, {incrs}'
+//
+// Only returns true for exprs in the init, test, incr blocks, not for the
+// blocks themselves.
+//
+// TODO should this be updated to only look for exprs in the test segment that
+// are conditional primitives?
+static bool isInCForLoopHeader(Expr* expr) {
+  if (expr->parentExpr && expr->parentExpr->parentExpr) {
+    if (CallExpr* call = toCallExpr(expr->parentExpr->parentExpr)) {
+      if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 //
 // Removes local variables that are only targets for moves, but are
@@ -87,6 +126,9 @@ void deadExpressionElimination(FnSymbol* fn) {
     if (expr && expr->parentExpr == NULL) // expression already removed
       continue;
     if (SymExpr* expr = toSymExpr(ast)) {
+      if (isInCForLoopHeader(expr)) {
+        continue;
+      }
       if (expr == expr->getStmtExpr())
         expr->remove();
     } else if (CallExpr* expr = toCallExpr(ast)) {
@@ -126,6 +168,9 @@ void deadCodeElimination(FnSymbol* fn)
       Vec<BaseAST*> asts;
       collect_asts(expr, asts);
       forv_Vec(BaseAST, ast, asts) {
+        if (isInCForLoopHeader(expr)) {
+          essential = true;
+        }
         if (CallExpr* call = toCallExpr(ast)) {
           // mark function calls and essential primitives as essential
           if (call->isResolved() ||

@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // Transformations for begin, cobegin, and on statements
 //
@@ -443,11 +462,11 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
   bool found = false;
   // Try to find the first definition of this variable in the
   //   module initialization function
-  while (stmt->next && !found) {
-    stmt = stmt->next;
-    Vec<SymExpr*> symExprs;
-    collectSymExprs(stmt, symExprs);
-    forv_Vec(SymExpr, se, symExprs) {
+  while (stmt && !found)
+  {
+    std::vector<SymExpr*> symExprs;
+    collectSymExprsSTL(stmt, symExprs);
+    for_vector(SymExpr, se, symExprs) {
       if (se->var == currDefSym) {
         INT_ASSERT(se->parentExpr);
         int result = isDefAndOrUse(se);
@@ -487,8 +506,16 @@ replicateGlobalRecordWrappedVars(DefExpr *def) {
         }
       }
     }
+    if (found)
+      break;
+
+    stmt = stmt->next;
   }
-  stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+  if (found)
+    stmt->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+  else
+    mod->initFn->insertBeforeReturn(new CallExpr
+                                    (PRIM_PRIVATE_BROADCAST, def->sym));
 }
 
 
@@ -709,7 +736,7 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         refSet.set_add(def->sym);
         refVec.add(def->sym);
       } else if (!isPrimitiveType(def->sym->type) ||
-                 toFnSymbol(def->parentSymbol)->retTag==RET_VAR) {
+                 toFnSymbol(def->parentSymbol)->retTag==RET_REF) {
         varSet.set_add(def->sym);
         varVec.add(def->sym);
       }

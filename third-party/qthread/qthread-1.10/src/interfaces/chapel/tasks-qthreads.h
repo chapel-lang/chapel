@@ -260,6 +260,10 @@ void threadlayer_exit(void);
 
 
 #ifndef QTHREAD_MULTINODE
+extern
+#ifdef __cplusplus
+"C"
+#endif
 volatile int chpl_qthread_done_initializing;
 #endif
 

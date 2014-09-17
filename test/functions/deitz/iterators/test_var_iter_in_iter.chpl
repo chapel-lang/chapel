@@ -1,6 +1,6 @@
 var global = 1;
 
-iter g_iter() var {
+iter g_iter() ref {
   yield global;
 }
 

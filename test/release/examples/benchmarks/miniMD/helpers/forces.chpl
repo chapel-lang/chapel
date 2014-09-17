@@ -107,9 +107,8 @@ class ForceEAM : Force  {
 
     var r, p, cof1, cof2, cof3, cof4 : real;
 
-    for (f,m) in zip(frho[2..], 2.. ) {
-      m -= 1; // get us to 0-based C arrays.
-      r = (m - 1) * deltaDensity;
+    for (f,m) in zip(frho[2..], 0.. ) {
+      r = m * deltaDensity;
       p = r / funcfl.deltaDensity + 1.0;
       k = p : int;
       k = min(k, funcfl.numDensity-2);
@@ -125,9 +124,8 @@ class ForceEAM : Force  {
     } // verified correct
 
     rSpace = {1..(numPotentials+1)};
-    for (f,m) in zip(rhor[2..], 2..) {
-      m -= 1;
-      r = (m - 1) * deltaPotential;
+    for (f,m) in zip(rhor[2..], 0..) {
+      r = m * deltaPotential;
       p = r / funcfl.deltaPotential + 1.0;
       k = p : int;
       k = min(k, funcfl.numPotentials - 2);
@@ -142,9 +140,8 @@ class ForceEAM : Force  {
       f = cof1 * funcfl.rhor[k-1] + cof2 * funcfl.rhor[k] + cof3 * funcfl.rhor[k+1] + cof4 * funcfl.rhor[k+2];
     }
 
-    for (f,m) in zip(z2r[2..], 2..) {
-      m -= 1;
-      r = (m - 1) * deltaPotential;
+    for (f,m) in zip(z2r[2..], 0..) {
+      r = m * deltaPotential;
       p = r / funcfl.deltaPotential + 1.0;
       k = p : int;
       k = min(k, funcfl.numPotentials - 2);

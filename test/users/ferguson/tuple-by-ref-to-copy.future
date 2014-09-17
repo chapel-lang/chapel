@@ -1,8 +1,0 @@
-bug: Problem with ref varargs
-
-I'm getting
-
-error: assertion error [expr.cpp:3004]
-
-and preliminary analysis indicates that we're trying to assign to
-the literal 0 in code generation.

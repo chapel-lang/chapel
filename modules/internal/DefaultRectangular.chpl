@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // DefaultRectangular.chpl
 //
 pragma "no use ChapelStandard"
@@ -138,7 +157,7 @@ module DefaultRectangular {
 
       if localeModelHasSublocales && numSublocs != 0 {
         
-        const dptpl = if tasksPerLocale==0 then here.numCores
+        const dptpl = if tasksPerLocale==0 then here.maxTaskPar
                       else tasksPerLocale;
         // Make sure we don't use more sublocales than the numbers of
         // tasksPerLocale requested
@@ -179,7 +198,7 @@ module DefaultRectangular {
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales
-              const numCoreTasks = dptpl/numChunks +
+              const numSublocTasks = dptpl/numChunks +
                 if chunk==numChunks-1 then dptpl%numChunks else 0;
               var locBlock: rank*range(idxType);
               for param i in 1..rank do
@@ -191,7 +210,7 @@ module DefaultRectangular {
                                             locBlock(parDim).low,
                                             locBlock(parDim).low);
               followMe(parDim) = lo..hi;
-              const (numChunks2, parDim2) = _computeChunkStuff(numCoreTasks,
+              const (numChunks2, parDim2) = _computeChunkStuff(numSublocTasks,
                                                                ignoreRunning,
                                                                minIndicesPerTask,
                                                                followMe);
@@ -219,7 +238,7 @@ module DefaultRectangular {
 
         if debugDefaultDist then
           writeln("*** In domain/array leader code:"); // this = ", this);
-        const numTasks = if tasksPerLocale==0 then here.numCores
+        const numTasks = if tasksPerLocale==0 then here.maxTaskPar
                          else tasksPerLocale;
   
         if debugDefaultDist then
@@ -552,7 +571,7 @@ module DefaultRectangular {
       _ddata_free(data);
     }
   
-    inline proc theData var {
+    inline proc theData ref {
       if earlyShiftData && !stridable then
         return shiftedData;
       else
@@ -561,31 +580,32 @@ module DefaultRectangular {
 
     iter these(tasksPerLocale:int = dataParTasksPerLocale,
                ignoreRunning:bool = dataParIgnoreRunningTasks,
-               minIndicesPerTask:int = dataParMinGranularity) var {
+               minIndicesPerTask:int = dataParMinGranularity) ref {
       type strType = chpl__signedType(idxType);
       if rank == 1 {
         // This is specialized to avoid overheads of calling dsiAccess()
         if !dom.stridable {
-          // This is specialized because the strided version disables the
-          // "single loop iterator" optimization
-          var first = getDataIndex(dom.dsiLow);
-          var second = getDataIndex(dom.dsiLow+1);
-          var step = (second-first);
-          var last = first + (dom.dsiNumIndices) * step;
-          //
-          // We could equivalently use: 'for i in first..last by step'
-          // here, but that results in a bunch of general cases for
-          // strided ranges that we don't need since we know the stride will
-          // be positive.  This begs the question of whether a range
-          // should be able to declare itself as known to be positively
-          // or negatively strided to get additional performance
-          // benefits.
-          //
-          var i = first;
-          while (i != last) {
+          // Ideally we would like to be able to do something like
+          // "for i in first..last by step". However, right now that would
+          // results in a strided iterator which isn't as optimized. It also
+          // introduces another range creation which in tight loops is
+          // unfortunately expensive. Ideally we don't want to be using C for
+          // loops outside of ChapelRange. However, since most other array data
+          // types are implemented in terms of DefaultRectangular, we think
+          // that this will serve as a second base case rather than the
+          // beginning of every iterator invoking a primitive C for loop
+          var i: idxType;
+          const first = getDataIndex(dom.dsiLow);
+          const second = getDataIndex(dom.dsiLow+1);
+          const step = (second-first);
+          const last = first + (dom.dsiNumIndices-1) * step;
+          while __primitive("C for loop",
+                            __primitive( "=", i, first),
+                            __primitive("<=", i, last),
+                            __primitive("+=", i, step)) {
             yield theData(i);
-            i += step;
           }
+
         } else {
           const stride = dom.ranges(1).stride: idxType,
                 start  = dom.ranges(1).first,
@@ -622,7 +642,7 @@ module DefaultRectangular {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
-      var where tag == iterKind.follower {
+      ref where tag == iterKind.follower {
       if debugDefaultDist then
         writeln("*** In array follower code:"); // [\n", this, "]");
       for i in dom.these(tag=iterKind.follower, followThis,
@@ -642,7 +662,7 @@ module DefaultRectangular {
     inline proc initShiftedData() {
       if earlyShiftData && !stridable {
         if dom.dsiNumIndices > 0 {
-          if _isSignedType(idxType) then
+          if isIntType(idxType) then
             shiftedData = _ddata_shift(eltType, data, origin-factoredOffs);
           else
             // Not bothering to check for over/underflow
@@ -711,10 +731,10 @@ module DefaultRectangular {
     }
   
     // only need second version because wrapper record can pass a 1-tuple
-    inline proc dsiAccess(ind: idxType ...1) var where rank == 1
+    inline proc dsiAccess(ind: idxType ...1) ref where rank == 1
       return dsiAccess(ind);
   
-    inline proc dsiAccess(ind : rank*idxType) var {
+    inline proc dsiAccess(ind : rank*idxType) ref {
       if boundsChecking then
         if !dom.dsiMember(ind) then
           halt("array index out of bounds: ", ind);
@@ -725,7 +745,7 @@ module DefaultRectangular {
       return theData(dataInd);
     }
   
-    inline proc dsiLocalAccess(i) var {
+    inline proc dsiLocalAccess(i) ref {
       return dsiAccess(i);
     }
   
@@ -800,7 +820,7 @@ module DefaultRectangular {
       var i = 1;
       alias.origin = origin;
       for param j in 1..args.size {
-        if chpl__isRange(args(j)) {
+        if isRange(args(j)) {
           alias.off(i) = d.dsiDim(i).low;
           alias.origin += blk(j) * (d.dsiDim(i).low - off(j)) / str(j);
           alias.blk(i) = blk(j);
@@ -859,18 +879,14 @@ module DefaultRectangular {
         if dom.dsiNumIndices > 0 then rad.shiftedData = shiftedData;
       return rad;
     }
-    
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsupported by default domains");
-    }
 
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsupported by default domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   }

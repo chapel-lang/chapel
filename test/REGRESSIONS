@@ -15,11 +15,114 @@
 # directory, a wildcard is more appropriate.
 # The date the entry is added is also useful.
 
+=======
+Futures
+=======
+(The status of failing future tests is detailed in ../STATUS.devel)
+
+
+===============
+Passing Futures
+===============
+Future (bug: (feature request?): it would be nice if int-to-uint coercion worked for parameters.) [Success matching program output for param/nelson/coercion]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+Future (bug: Compiler internal error for record autocopy functions that take a ref arg) [Success matching program output for types/records/sungeun/recordWithRefCopyFns]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+Future (bug: Recursive iterator gets confused by a container class.) [Success matching program output for functions/iterators/claridge/recursiveIterTypeBug]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+Future (bug: When calling open from inside an iterator, we look for file.open as opposed to 'open') [Success matching program output for functions/iterators/tzakian/open_inside_file_iter]
+  (still failing on 08/19)
+  (started passing on 08/20)
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+Future (bug: promoting a function over an array from a var function fails) [Success matching program output for functions/diten/test_promote_var_fn]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+Future (semantic: Can user type names overload fundamental type names?) [Success matching program output for types/records/sungeun/chapelTypes/record_range]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+
+
+========================
+Error matching .bad file
+========================
+[Error matching .bad file for functions/tzakian/open_inside_file_proc]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+[Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+[Error matching .bad file for users/vass/type-tests.todo]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log 2014/09/03)
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+[Error matching .bad file for distributions/deitz/test_distribution_syntax2]
+  (day2-Tue-linux64.gnu.gasnet-fast.qthreads.flat.dlmalloc-std.log 2014/09/02)
+  (day2-Tue-linux64.gnu.gasnet.fifo.flat-std.log)
+[Error matching .bad file for functions/tzakian/open_inside_file_iter]
+  (whitebox/cray-xe/day1-Mon-linux64.pgi.none.qthreads.flat-std.log)
+
 
 ===========================================================
 general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 07/15/14)
 ===========================================================
+
+
+
+-- MDN New on Tue Aug 26, 2014
+[Error cannot locate compiler output comparison file release/examples/benchmarks/shootout/threadring.good]
+
+This test has qualified .good files that are controlled by execopts.  However the compiler failed
+due to a qthread config issue and so the system expected to find the the standard .good file  This
+should be fixed on the Wed night build.
+
+However it will probably reverts to an execution timeout error instead.
+
+
+-- MDN New on Tue Aug 26, 2014
+[Error matching .bad file for parallel/begin/sungeun/autoCopyWithBegin (compopts: 1)]
+[Error matching .bad file for parallel/begin/sungeun/initCopyWithBegin]
+  Error message includes the Chapel version number. Fixed for Aug 26 nightlies
+
+-- MDN New on Fri Aug 22, 2014
+[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-otharrs]
+  Compiler  hangs: timedexec: target program died with signal 11, without coredump
+
+-- MDN New on Fri Aug 22, 2014
+[Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
+  > ./FTree.chpl:81: internal error: EXP5319 chpl Version 1.10.0.-999
+
+-- MDN New on Thu Aug 21, 2014.
+[Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
+  Line number for the error message has changed.  Fixed for Aug 26 nightlies.
+
+
+-- MDN Tests fail intermittently on several configs.  The first instance I can easily see it Aug 13.
+[Error matching program output for domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 1)]
+[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
+  Execution hangs: timedexec: target program died with signal 11, without coredump
+
+  chap01> more stress.numthr.compopts 
+  -sparSafe=true --no-stack-checks
+  -sparSafe=false --no-stack-checks
+
+  chap01> more stress.numthr.execopts 
+  --doSerial=false
+
+  Currently on Chap01 I am reliably seeing the correct program output followed by a pause and then a seg fault
+
+
 
 
 ==============================================
@@ -67,6 +170,7 @@ tests time out nondeterministically since testing started b/c VMs are slower (07
 [Error: Timed out executing program release/examples/benchmarks/shootout/threadring]
 [Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-coforall]
 [Error: Timed out executing program studies/shootout/thread-ring/lydia/thread-ring-for-begin]
+Maybe these should move into TRIAGE?  -- gbt
 
 
 ================================
@@ -74,6 +178,8 @@ tests time out nondeterministically since testing started b/c VMs are slower (07
 (Reviewed for accuracy 07/15/14)
 ================================
 
+-- Unsure when it started.  Unresolved         MDN.  Still present 2014/09/02
+[Error matching compiler output for io/ferguson/io_test]
 
 ================================
 memory leaks regressions
@@ -85,61 +191,41 @@ Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 [Error matching program output for compflags/bradc/minimalModules/minModDeclPrint]
 [Error matching program output for compflags/bradc/minimalModules/minModFnRefArg]
 
+Blows the stack under qthreads (09/02/14 hilde)
+-----------------------------------------------------------------------------
+[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
+[Error matching program output for parallel/taskPool/figueroa/ManyThreads (compopts: 1)]
+
 
 ================================
 verify regressions
 (Reviewed for accuracy 07/15/14)
 ================================
 
+internal error (hilde)
+--------------
+[Error matching compiler output for types/records/sungeun/recordWithRefCopyFns]
+  (2014/09/03 -- .future file removed 09/02)
+
+./FTree.chpl:81: internal error: EXP5319 (hilde)
+----------------------------------------
+[Error matching compiler output for studies/madness/aniruddha/madchap/recordBug/test_likepy]
+  (2014/09/03)
+
+Segmentation Fault
+------------------
+[Error matching program output for classes/bradc/arryInClass/genericArrayInClass-otharrs]
+  (2014/09/03)
+
 following a pointer to GC'd AST nodes (07/16/14 -- noakes)
 ----------------------------------------------------------
 [Error cannot locate compiler output comparison file studies/ssca2/test-rmatalt/reproduc.good]
-[Error matching compiler output for modules/diten/test_use_chain_resolution3]
-[Error matching compiler output for modules/diten/test_use_chain_resolution]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4)]
-[Error matching compiler output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5)]
-[Error matching compiler output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
-[Error matching compiler output for studies/graph500/v3/main (compopts: 1)]
-[Error matching compiler output for studies/ssca2/graphio/graphio (compopts: 1)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 1)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 2)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 3)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 4)]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 5)]
-[Error matching compiler output for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
 
 
 ================================
 valgrind-specific regressions
 (Reviewed for accuracy 07/14/14)
 ================================
-
-following a pointer to GC'd AST nodes (07/16/14 -- noakes)
-----------------------------------------------------------
-[Error matching program output for modules/diten/test_use_chain_resolution3]
-[Error matching program output for modules/diten/test_use_chain_resolution]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
-[Error matching program output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
-[Error matching program output for studies/graph500/v3/main (compopts: 1)]
-[Error matching program output for studies/ssca2/graphio/graphio (compopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 1, execopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 2, execopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 3, execopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 4, execopts: 1)]
-[Error matching program output for studies/ssca2/rachels/SSCA2_test (compopts: 5, execopts: 1)]
-[Error matching program output for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 1)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 2)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 3)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 4)]
-[Error matching program output for studies/ssca2/test-rmatalt/reproduc (compopts: 1, execopts: 5)]
 
 overlapping memcpy (root cause should be eliminated)
 ----------------------------------------------------
@@ -191,9 +277,10 @@ no-local regressions
 (Reviewed for accuracy 07/15/14)
 ================================
 
-Memory use increased by 8 bytes on 7/11/14 (r23794 -- mppf)
------------------------------------------------------------
-[Error matching program output for memory/shannon/printFinalMemStat]
+-- MDN New on Tue Aug 26, 2014
+[Error matching program output for types/scalar/bradc/bools2]
+[Error matching program output for types/scalar/bradc/bools]
+  Large number of differences in output
 
 Consistent timeout since associative domains/arrays were made safer (~6/20/2014)
 --------------------------------------------------------------------------------
@@ -204,6 +291,11 @@ Consistent timeout since associative domains/arrays were made safer (~6/20/2014)
 gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 07/14/14)
 ====================================================
+
+-- MDN New on Tue Aug 26, 2014
+[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
+  > This test generates a large number of Comm diagnostic counts. The number of get/put
+  increased by 7 for Kernel 2.
 
 error: cannot create C string from remote string
 ------------------------------------------------
@@ -260,6 +352,11 @@ other comm count mismatches
 replicated distribution regressions
 (Reviewed for accuracy 07/15/14)
 ===================================
+
+SIGSEGV at execution time (started 7/24/14)
+-------------------------------------------
+NightlyDists/day4-Thu-linux64.gnu.gasnet.fifo.flat-distreplicated.log:
+  [Error matching program output for distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
 
 See chapel_dev email thread starting 2/12/14 12:42:46 CST (David Iten) with
 subject "Re: FW: Cron Dist replicated (linux64.gnu.gasnet.fifo.flat) 60/0/60".
@@ -325,6 +422,8 @@ subject "Re: FW: Cron Dist replicated (linux64.gnu.gasnet.fifo.flat) 60/0/60".
 [Error matching program output for distributions/robust/arithmetic/trivial/test_tuple_to_array]
 [Error matching program output for distributions/robust/arithmetic/trivial/test_writeln]
 
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 
 ========================================
 darwin (see below for compiler specific)
@@ -408,6 +507,16 @@ timeout
 -------
 [Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
 
+============================
+LLVM specific regressions
+(started testing 09/11/2014)
+============================
+
+55 failures - Michael has a pull request with fixes that I don't think anyone
+has looked at yet
+release/examples/hello*
+extern/ferguson/*
+
 
 
 ===================================
@@ -457,11 +566,24 @@ chpbld01 (PrgEnv/XC whitebox) failures
 (Reviewed for accuracy 07/18/14)
 ======================================
 
+svn problem during the build
+----------------------------
+First reported 7/20/14; Thomas is looking
+svn: Server sent unexpected return value (500 Internal Server Error) in response to PROPFIND request
+There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
+An attempt to fix this on the svn side the night of 7/22/14 failed.
+It is being escalated to github support.
+7/24/14: Think we have a solution; expect good results for 7/25 testing.
+
 
 ======================================
 chpbld02 (PrgEnv/XE whitebox) failures
 (Reviewed for accuracy 07/18/14)
 ======================================
+
+svn problem during the build
+----------------------------
+see above, under "chpbld01"
 
 
 ==========================================================
@@ -478,6 +600,12 @@ problem with static/dynamic linking?
 cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 07/16/14)
 =========================================
+
+
+unexpected compiler output (listing the source files) (07/23/14)
+----------------------------------------------------------------
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+gbt is working on getting rid of this
 
 portability failures due to QIO refactoring (mppf)
 --------------------------------------------------
@@ -578,6 +706,13 @@ pgi-specific regressions (in addition to chpbld02 errors above)
 (Reviewed for accuracy 07/15/14)
 ===============================================================
 
+-- MDN New on Tue Aug 26, 2014 198 failures
+  View this job at:
+     http://chapel-ci.us.cray.com/job/correctness-test-whitebox-cray-xc-examples/COMPILER=pgi,COMP_TYPE=HOST-TARGET-no-PrgEnv,label_exp=chpbld01/54/
+
+  Elliot checked in a change that is expected to fix this.
+
+
 undefined reference to chpl_bitops_debruijn64 (07/14/14)
 --------------------------------------------------------
 [Error matching compiler output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
@@ -634,6 +769,8 @@ intel-specific regressions (in addition to chpbld02 errors above)
 
 standard "missing empty directory" problems that should be fixed on next run (bradc)
 (please alert bradc if not resolved in runs after 7/16/14)
+(fixed in intel testing, 7/23/14)
+(fixed in prgenv-intel testing, 7/23/14)
 ------------------------------------------------------------------------------------
 [Error matching compiler output for compflags/bradc/readDirInsteadOfFile (compopts: 1)]
 [Error matching program output for io/bradc/testPath]
@@ -782,6 +919,10 @@ problem size didn't match
 -------------------------
 [Error matching program output for studies/hpcc/common/testProbSize (compopts: 1)]
 
+non-deterministic timeout
+-------------------------
+[Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase] (since 07/20/14)
+
 numerical roundoff issues
 -------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)]
@@ -793,7 +934,7 @@ numerical roundoff issues
 
 error matching
 --------------
-[Error matching widecols.chpl]
+[Error matching program output for io/ferguson/utf8/widecols.chpl]
 
 
 ================================
@@ -808,9 +949,6 @@ qthreads.numa regressions
 (Reviewed for accuracy 07/15/14)
 =======================================
 
-Memory use increased by 8 bytes on 7/11/14
-------------------------------------------
-[Error matching program output for memory/shannon/printFinalMemStat]
 
 
 ========================================================

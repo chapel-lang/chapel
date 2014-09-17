@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // DefaultAssociative.chpl
 //
 pragma "no use ChapelStandard"
@@ -117,7 +136,7 @@ module DefaultAssociative {
     }
   
     iter these() {
-      if !_isEnumeratedType(idxType) {
+      if !isEnumType(idxType) {
         for slot in _fullSlots() {
           yield table[slot].idx;
         }
@@ -133,7 +152,7 @@ module DefaultAssociative {
     iter these(param tag: iterKind) where tag == iterKind.leader {
       if debugDefaultAssoc then
         writeln("*** In domain leader code:");
-      const numTasks = if dataParTasksPerLocale==0 then here.numCores
+      const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
                        else dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
@@ -217,27 +236,35 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx: idxType): index(tableDom) {
-      var slotNum: index(tableDom);
+    proc dsiAdd(idx: idxType, in slotNum : index(tableDom) = -1, haveLock = !parSafe): index(tableDom) {
+      const inSlot = slotNum;
       on this {
-        if parSafe then lockTable();
+        const shouldLock = !haveLock && parSafe;
+        if shouldLock then lockTable();
+        var findAgain = shouldLock;
         if ((numEntries.read()+1)*2 > tableSize) {
           _resize(grow=true);
+          findAgain = true;
         }
-        slotNum = _add(idx);
-        if parSafe then unlockTable();
+        if findAgain then
+          slotNum = _add(idx, -1);
+        else
+          _add(idx, inSlot);
+        if shouldLock then unlockTable();
       }
       return slotNum;
     }
-  
+
     // This routine adds new indices without checking the table size and
     //  is thus appropriate for use by routines like _resize().
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
-    proc _add(idx: idxType): index(tableDom) {
-      const (foundSlot, slotNum) = _findEmptySlot(idx);
-      if (foundSlot) {
+    proc _add(idx: idxType, in slotNum : index(tableDom) = -1): index(tableDom) {
+      var foundSlot : bool = (slotNum != -1);
+      if !foundSlot then
+        (foundSlot, slotNum) = _findEmptySlot(idx);
+      if foundSlot {
         table[slotNum].status = chpl__hash_status.full;
         table[slotNum].idx = idx;
         numEntries.add(1);
@@ -257,7 +284,7 @@ module DefaultAssociative {
         const (foundSlot, slotNum) = _findFilledSlot(idx, haveLock=parSafe);
         if (foundSlot) {
           for a in _arrs do
-            a.clearEntry(idx);
+            a.clearEntry(idx, true);
           table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
@@ -373,19 +400,29 @@ module DefaultAssociative {
       
       _removeArrayBackups();
     }
-  
+
+    // Searches for 'idx' in a filled slot.
+    //
+    // Returns true if found, along with the first open slot that may be
+    // re-used for faster addition to the domain
     proc _findFilledSlot(idx: idxType, param haveLock = false) : (bool, index(tableDom)) {
       if parSafe && !haveLock then lockTable();
+      var firstOpen = -1;
       for slotNum in _lookForSlots(idx, table.domain.high+1) {
         const slotStatus = table[slotNum].status;
+        // if we encounter a slot that's empty, our element could not
+        // be found past this point.
         if (slotStatus == chpl__hash_status.empty) {
+          if firstOpen == -1 then firstOpen = slotNum;
           if parSafe && !haveLock then unlockTable();
-          return (false, -1);
+          return (false, firstOpen);
         } else if (slotStatus == chpl__hash_status.full) {
           if (table[slotNum].idx == idx) {
             if parSafe && !haveLock then unlockTable();
             return (true, slotNum);
           }
+        } else { // this entry was removed, but is the first slot we could use
+          if firstOpen == -1 then firstOpen = slotNum;
         }
       }
       if parSafe && !haveLock then unlockTable();
@@ -426,7 +463,6 @@ module DefaultAssociative {
     }
   }
   
-  
   class DefaultAssociativeArr: BaseArr {
     type eltType;
     type idxType;
@@ -444,22 +480,35 @@ module DefaultAssociative {
   
     proc dsiGetBaseDom() return dom;
   
-    proc clearEntry(idx: idxType) {
+    proc clearEntry(idx: idxType, haveLock = false) {
       const initval: eltType;
-      dsiAccess(idx) = initval;
+      dsiAccess(idx, haveLock) = initval;
     }
-  
-    proc dsiAccess(idx : idxType) var : eltType {
-      const (found, slotNum) = dom._findFilledSlot(idx, haveLock=true /* never lock here */);
-      if (found) then
+
+    proc dsiAccess(idx : idxType, haveLock = false) ref {
+      const shouldLock = dom.parSafe && !haveLock;
+      if shouldLock then dom.lockTable();
+      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+      if found {
+        if shouldLock then dom.unlockTable();
         return data(slotNum);
-      else {
+      }
+      else if setter && slotNum != -1 { // do an insert using the slot we found
+        if dom._arrs.length != 1 {
+          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
+          return data(0);
+        } else {
+          const newSlot = dom.dsiAdd(idx, slotNum, haveLock=true);
+          if shouldLock then dom.unlockTable();
+          return data(newSlot);
+        }
+      } else {
         halt("array index out of bounds: ", idx);
         return data(0);
       }
     }
   
-    iter these() var {
+    iter these() ref {
       for slot in dom {
         yield dsiAccess(slot);
       }
@@ -470,7 +519,7 @@ module DefaultAssociative {
         yield followThis;
     }
   
-    iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
       if followThisDom != dom {
         // check to see if domains match
@@ -541,17 +590,13 @@ module DefaultAssociative {
       data(newslot) = tmpTable[oldslot];
     }
 
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsupported by associative domains");
-    }
-
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsupported by associative domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   }
@@ -642,18 +687,18 @@ module DefaultAssociative {
   
   proc chpl__validDefaultAssocDomIdxType(type idxType) param where
       // one check per an implementation of chpl__defaultHash() above
-      _isBooleanType(idxType)     ||
-      _isSignedType(idxType)      ||
-      _isUnsignedType(idxType)    ||
-      _isRealType(idxType)        ||
-      _isComplexType(idxType)     ||
-      _isImagType(idxType)        ||
+      isBoolType(idxType)     ||
+      isIntType(idxType)      ||
+      isUintType(idxType)    ||
+      isRealType(idxType)        ||
+      isImagType(idxType)        ||
+      isComplexType(idxType)     ||
       idxType == chpl_taskID_t    ||
       idxType == string           ||
       idxType == c_string         ||
       isClassType(idxType)        ||
       // these are handled differently
-      _isEnumeratedType(idxType)  ||
+      isEnumType(idxType)  ||
       isTupleType(idxType)        ||
       isRecordType(idxType)
   {

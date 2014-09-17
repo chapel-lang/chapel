@@ -1,0 +1,15 @@
+in updateVar(): myVar 111 -> 222
+showargs(222, 111)
+in updateVar(): myVar 222 -> 333
+showargs(222, 333)
+in updateVar(): myVar 333 -> 444
+showargs(333, 444)
+in updateVar(): myVar 444 -> 555
+showargs(555, 444)
+
+first arg 666
+second arg 777
+showargs(666, 777)
+arg2/first actual = 777
+arg1/second actual = 666
+showargs(666, 777)

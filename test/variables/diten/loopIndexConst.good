@@ -1,0 +1,2 @@
+loopIndexConst.chpl:6: error: illegal lvalue in assignment
+loopIndexConst.chpl:11: error: illegal lvalue in assignment

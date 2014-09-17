@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // ChapelSyncvar.chpl
 //
 // Sync and single variables.
@@ -29,11 +48,11 @@ module ChapelSyncvar {
       }
     }
 
-  proc _isSyncType(type t) param
+  proc isSyncType(type t) param
     return __primitive("is sync type", t);
 
-  proc _isSync(x: sync) param return true;
-  proc _isSync(x) param return false;
+  proc isSyncValue(x: sync) param  return true;
+  proc isSyncValue(x)       param  return false;
 
   // The operations are:
   //  readFE - wait for full, leave empty
@@ -150,6 +169,11 @@ module ChapelSyncvar {
     return b;
   }
 
+  // Do not allow implicit writes of sync/single vars.
+  proc _syncvar.writeThis(x: Writer) {
+    compilerError("sync/single variables cannot currently be written - apply readFE/readFF() to those variables first");
+  }
+
 
   // single variable support
     pragma "single"
@@ -170,11 +194,11 @@ module ChapelSyncvar {
       }
     }
 
-  proc _isSingleType(type t) param
+  proc isSingleType(type t) param
     return __primitive("is single type", t);
 
-  proc _isSingle(x: single) param return true;
-  proc _isSingle(x) param return false;
+  proc isSingleValue(x: single) param  return true;
+  proc isSingleValue(x)         param  return false;
 
   // Wait for full. Set and signal full.
   proc _singlevar.readFF() {
@@ -241,6 +265,12 @@ module ChapelSyncvar {
       chpl_rmem_consist_acquire();
     }
     return b;
+  }
+
+
+  // Do not allow implicit writes of sync/single vars.
+  proc _singlevar.writeThis(x: Writer) {
+    compilerError("single/sync variables cannot currently be written - apply readFF/readFE() to those variables first");
   }
 
   pragma "dont disable remote value forwarding"

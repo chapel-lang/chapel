@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _driver_H_
 #define _driver_H_
 
@@ -124,16 +143,16 @@ extern bool externC;
 extern char breakOnCodegenCname[256];
 
 enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
-extern int fLinkStyle;
 
-extern int debugParserLevel;
-extern int debugShortLoc;
+extern int  fLinkStyle;
+
+extern int  debugParserLevel;
+extern int  debugShortLoc;
 extern bool fLibraryCompile;
 extern bool no_codegen;
-extern bool genExternPrototypes;
 extern bool developer;
 extern bool fVerify;
-extern int num_constants_per_variable;
+extern int  num_constants_per_variable;
 extern bool printCppLineno;
 
 extern bool fDocs;
@@ -148,7 +167,7 @@ extern bool printModuleFiles;
 extern bool ignore_warnings;
 extern bool ignore_errors;
 extern bool ignore_errors_for_pass;
-extern int squelch_header_errors;
+extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 
 extern bool fReportOptimizedLoopIterators;

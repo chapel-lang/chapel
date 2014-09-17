@@ -1,0 +1,72 @@
+=== cast from int(8)
+17
+=== cast from int(16)
+17
+=== cast from int(32)
+17
+=== cast from int(64)
+17
+=== cast from uint(8)
+23
+=== cast from uint(16)
+23
+=== cast from uint(32)
+23
+=== cast from uint(64)
+23
+=== cast from real(32)
+3.14
+=== cast from real(64)
+3.14
+=== cast from imag(32)
+3.14i
+=== cast from imag(64)
+3.14i
+=== cast from complex(64)
+3.0 + 0.14i
+=== cast from complex(128)
+3.0 + 0.14i
+=== cast from enum E
+three
+=== cast from bool
+true
+=== cast from int(8)
+17
+=== cast from int(16)
+17
+=== cast from int(32)
+17
+=== cast from int(64)
+17
+=== cast from uint(8)
+23
+=== cast from uint(16)
+23
+=== cast from uint(32)
+23
+=== cast from uint(64)
+23
+=== cast from real(32)
+3.14
+=== cast from real(64)
+3.14
+=== cast from imag(32)
+3.14i
+=== cast from imag(64)
+3.14i
+=== cast from complex(64)
+3.0 + 0.14i
+=== cast from complex(128)
+3.0 + 0.14i
+=== cast from enum E
+three
+=== cast from bool
+true
+=== cast from c_string
+cs
+=== cast from c_string
+cs
+=== cast to c_string
+cs
+=== cast to c_string
+cs

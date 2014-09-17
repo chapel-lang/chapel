@@ -232,7 +232,6 @@ class LocStencilArr {
 
 proc makeZero(param rank : int) {
   var ret : rank*int;
-  for i in ret do i = 0;
   return ret;
 }
 
@@ -271,7 +270,7 @@ proc Stencil.Stencil(boundingBox: domain,
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
   // dataParMinGranularity<0
-  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.maxTaskPar
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
@@ -477,15 +476,15 @@ proc Stencil.dsiCreateReindexDist(newSpace, oldSpace) {
     var newHigh = newSpace(r).high;
     var valid: bool;
     if oldLow != newLow {
-      (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
+      (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
       if !valid then // try with high
-        (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
+        (myNewBbox(r)._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
       if !valid then
         halt("invalid reindex for Stencil: distribution bounding box (low) out of range in dimension ", r);
 
-      (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
+      (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
       if !valid then
-        (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
+        (myNewBbox(r)._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
       if !valid then // try with low
         halt("invalid reindex for Stencil: distribution bounding box (high) out of range in dimension ", r);
     }
@@ -910,7 +909,7 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
 }
 */
 
-inline proc StencilArr.dsiLocalAccess(i: rank*idxType) var {
+inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
   return myLocArr.this(i);
 }
 
@@ -933,7 +932,7 @@ proc StencilArr.dsiReadRemote(i: rank*idxType) {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-proc StencilArr.dsiAccess(i: rank*idxType) var {
+proc StencilArr.dsiAccess(i: rank*idxType) ref {
   local {
     if myLocArr != nil {
 
@@ -982,10 +981,10 @@ proc StencilArr.dsiAccess(i: rank*idxType) var {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-proc StencilArr.dsiAccess(i: idxType...rank) var
+proc StencilArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 
-iter StencilArr.these() var {
+iter StencilArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
 }
@@ -1009,7 +1008,7 @@ proc StencilArr.dsiDynamicFastFollowCheck(lead: [])
 proc StencilArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
-iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
+iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
@@ -1057,7 +1056,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     //
     // we don't necessarily own all the elements we're following
     //
-    proc accessHelper(i) var {
+    proc accessHelper(i) ref {
       if myLocArr then local {
         if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
@@ -1346,7 +1345,7 @@ proc StencilArr.setRADOpt(val=true) {
 //
 // the accessor for the local array -- assumes the index is local
 //
-proc LocStencilArr.this(i) var {
+proc LocStencilArr.this(i) ref {
   return myElems(i);
 }
 

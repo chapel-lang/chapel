@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // Block-cyclic dimension specifier - for use with DimensionalDist2D.
 //
@@ -135,7 +154,7 @@ proc BlockCyclicDim.toString()
 // Assert that the value of 'src' is preserved when casting it to 'destT'.
 // Note: customized error message for the use in dsiNewRectangularDom1d().
 inline proc _checkFitsWithin(src: integral, type destT)
-  where _isIntegralType(destT)
+  where isIntegralType(destT)
 {
   inline proc ensure(arg:bool) {
     if !arg then halt("When creating a domain mapped using DimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", typeToString(destT));
@@ -143,18 +162,18 @@ inline proc _checkFitsWithin(src: integral, type destT)
   type maxuT = uint(64); // the largest unsigned type
   type srcT = src.type;
   proc numMantBits(type T) param
-    return numBits(T) - if _isSignedType(T) then 1 else 0;
+    return numBits(T) - if isIntType(T) then 1 else 0;
 
-  if _isUnsignedType(destT) {
+  if isUintType(destT) {
     ensure(isNonnegative(src));
     if numMantBits(srcT) > numMantBits(destT) then
       ensure(src:maxuT <= max(destT):maxuT);
 
   } else {
     // destT is signed
-    if _isUnsignedType(srcT) && numMantBits(srcT) > numMantBits(destT) then
+    if isUintType(srcT) && numMantBits(srcT) > numMantBits(destT) then
       ensure(src:maxuT <= max(destT):maxuT);
-    if _isSignedType(srcT) && numBits(destT) < numBits(srcT) {
+    if isIntType(srcT) && numBits(destT) < numBits(srcT) {
       ensure(src <= max(destT):srcT);
       ensure(src >= min(destT):srcT);
     }
@@ -185,9 +204,9 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
       else                         cycleSizePos - offset;
   }
 
-  // Do we need to care about _isSignedType(stoIndexT) ?
+  // Do we need to care about isIntType(stoIndexT) ?
   const adjLowIdx =
-    if _isSignedType(idxType)
+    if isIntType(idxType)
     then
       -lowIdxDom
     else
@@ -424,7 +443,7 @@ inline proc modP2(m: integral, n: bcdPosInt) {
   // eliminate some run-time tests if input(s) is(are) unsigned
   return
     if true then //if isNonnegative(n) then
-      if _isUnsignedType(m.type)
+      if isUintType(m.type)
       then temp
       else ( if temp >= 0 then temp else temp + n )
     else
@@ -579,7 +598,7 @@ proc BlockCyclic1dom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
 proc _bcddb(args...) { /* writeln((...args)); */ }
 
 iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
-  param zbased = _isUnsignedType(idxType);
+  param zbased = isUintType(idxType);
 // todo: for the special case handled in dsiMyDensifiedRangeForTaskID1d,
 // maybe handling it here will be beneficial, too?
   const locNo = this.locId;
@@ -618,10 +637,10 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
     compilerAssert(r1.boundedType == r2.boundedType);
     if !r1.stridable && r2.stridable && r2._stride != 1 then
       halt("range with non-unit stride is cast to non-stridable range");
-    r1._base._low       = r2._base._low: r1.idxType;
-    r1._base._high      = r2._base._high: r1.idxType;
-    r1._base._stride    = r2._base._stride: r1.strType;
-    r1._base._alignment = r2._base._alignment: r1.idxType;
+    r1._low       = r2._low: r1.idxType;
+    r1._high      = r2._high: r1.idxType;
+    r1._stride    = r2._stride: r1.strType;
+    r1._alignment = r2._alignment: r1.idxType;
     r1._aligned = r2._aligned;
   }
 

@@ -34,6 +34,7 @@ $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
 $dist = "";
+$llvm = 0;
 $localeModelSuite = 0;
 $memleaks = "";
 $multilocale = 0;
@@ -119,6 +120,8 @@ while (@ARGV) {
         $svnrevopt = "-r " . shift @ARGV;
     } elsif ($flag eq "-cron-recipient") {
         $cronrecipient = shift @ARGV;
+    } elsif ($flag eq "-llvm") {
+        $llvm = 1;
     } else {
         $printusage = 1;
         last;
@@ -173,6 +176,7 @@ if ($printusage == 1) {
     print "\t-baseline    : run testins using --baseline\n";
     print "\t-dist <dist> : run distribution robustness tests\n";
     print "\t-fast        : run tests using --fast\n";
+    print "\t-llvm        : run tests using --llvm\n";
     print "\t-memleaks <log> : run memleaks tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
@@ -258,16 +262,6 @@ if ($debug == 1 && $logdir eq "") {
         print "Error: CHPL_NIGHTLY_LOGDIR ($logdir) not accessible\n";
     }
 }
-$statdir = $ENV{'CHPL_NIGHTLY_STATDIR'};
-if ($debug == 1 && $statdir eq "") {
-    $statdir = $logdir."/Stats";
-    if (! -e $statdir) {
-        mysystem("mkdir $statdir > /dev/null", "creating log dir", 1, 1);
-    } elsif (! (-r $statdir and -w $statdir and -d $statdir)) {
-        print "Error: CHPL_NIGHTLY_STATDIR ($statdir) not accessible\n";
-        exit 1;
-    }
-}
 
 
 $testbindirname = dirname($0);
@@ -292,7 +286,7 @@ if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
 }
 
 $fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$localeModel";
-if ($mem ne "default") {
+if ($mem ne "cstdlib") {
     $fullplatform = "$fullplatform.$mem";
 }
 if ($hostplatform ne $targetplatform) {
@@ -321,36 +315,6 @@ print "\$chplhomedir = $chplhomedir\n";
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 
-if ($debug == 1) {
-    if ($performance == 1) {
-        $statfile = "$statdir/nightly-perf.$fullplatform-debug.dat";
-    } elsif ($baseline == 1) {
-        $statfile = "$statdir/nightly-baseline.$fullplatform-debug.dat";
-    } elsif ($fast == 1) {
-        $statfile = "$statdir/nightly-fast.$fullplatform-debug.dat";
-    } elsif ($nolocal == 1) {
-        $statfile = "$statdir/nightly-nolocal.$fullplatform-debug.dat";
-    } elsif ($verify == 1) {
-        $statfile = "$statdir/nightly-verify.$fullplatform-debug.dat";
-    } else {
-        $statfile = "$statdir/nightly.$fullplatform-debug.dat";
-    }
-} else {
-    if ($performance == 1) {
-        $statfile = "$statdir/nightly-perf.$fullplatform-cron.dat";
-    } elsif ($baseline == 1) {
-        $statfile = "$statdir/nightly-baseline.$fullplatform-cron.dat";
-    } elsif ($fast == 1) {
-        $statfile = "$statdir/nightly-fast.$fullplatform-cron.dat";
-    } elsif ($nolocal == 1) {
-        $statfile = "$statdir/nightly-nolocal.$fullplatform-cron.dat";
-    } elsif ($verify == 1) {
-        $statfile = "$statdir/nightly-verify.$fullplatform-cron.dat";
-    } else {
-        $statfile = "$statdir/nightly.$fullplatform-cron.dat";
-    }
-}
-
 #Cron (linux64-gnu-none-none): 0 new failures (39/105 total failures/futures)
 
 if ($performance == 1) {
@@ -367,6 +331,8 @@ if ($performance == 1) {
     $subjectid = " No-local";
 } elsif ($verify == 1) {
     $subjectid = " Verify";
+} elsif ($llvm == 1) {
+    $subjectid = " LLVM";
 } elsif ($runtests == 0) {
     $subjectid = " Build-only";
 } elsif ($buildruntime == 0) {
@@ -386,9 +352,6 @@ if ($debug == 1) {
 } else {
     $subjectid = "Cron$subjectid";
     $recipient = "$failuremail $allmail";
-    if ($tasks eq "qthreads") {
-      $recipient = "$recipient qthreads-chapel\@googlegroups.com";
-    }
     $nochangerecipient = $allmail;
 }
 
@@ -449,6 +412,9 @@ if ($valgrind == 1) {
 } elsif ($verify == 1) {
     $threechars = "vfy";
     $morechars = "verify";
+} elsif ($llvm == 1) {
+    $threechars = "lvm";
+    $morechars = "llvm";
 } elsif ($examples == 1) {
     $threechars = "exm";
     if ($multilocale == 1) {
@@ -529,6 +495,11 @@ print "Making DEBUG=0 OPTIMIZE=1 compiler\n";
 $makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 compiler\n";
+    # Since the rest of the compiler is being built unoptimized, disable
+    # compiler performance testing so we don't get unexplained hiccups in
+    # the perf graphs.
+    print "compiler performance testing will be disabled\n";
+    $compperformance = 0;
     mysystem("cd $chplhomedir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
 
@@ -549,8 +520,11 @@ if ($buildruntime == 0) {
     exit 0;
 }
 
+# if this is a performance test run then failing to build the runtime with
+# optimizations is a fatal error.  Otherwise we could get hiccups in the
+# performance graphs that are difficult to track.
 print "Making DEBUG=0 OPTIMIZE=1 $qthreadopts runtime\n";
-$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", $performance, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 $qthreadopts runtime\n";
     mysystem("cd $chplhomedir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
@@ -664,6 +638,9 @@ if ($nolocal == 1) {
 if ($verify == 1) {
     $testflags = "$testflags -compopts --verify";
 }
+if ($llvm == 1) {
+    $testflags = "$testflags -compopts --llvm";
+}
 if (!($suppressions eq "")) {
     $testflags = "$testflags -suppress $suppressions";
 }
@@ -711,7 +688,7 @@ if ($runtests == 0) {
         # FIXME: Update this logic to work with git repo that manages perf
         #        data. (thomasvandoren, 2014-07-10)
 
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 0, 1);
     }
 
     $ENV{'CHPL_HOME'} = $chplhomedir;
@@ -772,9 +749,9 @@ if ($runtests == 0) {
 
 
     if ($performance == 1 or $compperformance == 1) {
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 0, 1);
         mysystem("cd $svnPerfDir && find . -name '*.dat' -print0 | xargs -0 svn add  --parents 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
-        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 0, 1);
 
         # sync the performance graphs over to sourceforge 
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $host --logFile $logdir/syncToSourceForge.errors";
@@ -785,7 +762,7 @@ if ($runtests == 0) {
   
     if ($releasePerformance == 1) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
-        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 1, 1);
+        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 0, 1);
 
         # check to make sure there is a release over release directory
         if (not -e "$svnReleasePerfDir") {
@@ -919,24 +896,6 @@ if ($runtests == 0) {
     
     
 #
-# write stats and build new graph for linux only
-#
-    if ($knownumtests == 1) {
-        $testcol = "$curnumtests";
-    } else {
-        $testcol = "-";
-    }
-    if ($valgrind == 0) {
-        $col = "$cursucc";
-        $vgrcol = "-";
-    } else {
-        $col = "-";
-        $vgrcol = "$cursucc";
-    }
-    `echo "$statdate\t-\t$testcol\t$col\t$vgrcol" >> $statfile`;
-    commitstats();
-
-#
 # analyze memory leaks tests
 #
     if (!($memleaks eq "")) {
@@ -990,31 +949,11 @@ sub mysystem {
 	    close(MAIL);
 	}
 
-	if ($fatal != 0) {
-            `echo "$statdate\t1" >> $statfile`;
-            commitstats();
-	    exit 1;
-	}
-    }
-    $status;
-}
-
-sub commitstats {
-  if ($performance == 0) {
-    if ($debug == 0) {
-        print "Checking in $statfile\n";
-        system("ci -l -m'automated nightly checkin' $statfile");
-    }
-    $makeplot = $statdir."/makeplot";
-    if (! -x $makeplot) {
-        print "skipping makeplot step\n";
-    } else {
-        if ($hostplatform eq "linux64") {
-            print "Running cd $statdir && ./makeplot\n";
-            system("cd $statdir && ./makeplot");
+        if ($fatal != 0) {
+            exit 1;
         }
     }
-  }
+    $status;
 }
 
 sub numsuccesses {

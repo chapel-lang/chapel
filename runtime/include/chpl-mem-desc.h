@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _chpl_mem_desc_H_
 #define _chpl_mem_desc_H_
 
@@ -23,8 +42,6 @@
 #define CHPL_MD_ALL_MEMDESCS(m)                                         \
         m(UNKNOWN = 0,                                                  \
           "unknown"),                                                   \
-        m(CHAPEL_CODE,                                                  \
-          "chapel runtime code data"),                                  \
         m(EXECUTION_COMMAND,                                            \
           "chapel execution command buffer"),                           \
         m(ARRAY_ELEMENTS,                                               \
@@ -69,16 +86,16 @@
           "comm layer private objects array"),                          \
         m(COMM_PRIVATE_BROADCAST_DATA,                                  \
           "comm layer private broadcast data"),                         \
-        m(GC_HEAP,                                                      \
-          "garbage collection heap"),                                   \
-        m(GC_SPACE_POINTER,                                             \
-          "garbage collection space pointer"),                          \
         m(GLOM_STRINGS_DATA,                                            \
           "glom strings data"),                                         \
         m(STRING_COPY_DATA,                                             \
           "string copy data"),                                          \
+        m(STRING_COPY_REMOTE,                                           \
+          "remote string copy"),                                        \
         m(STRING_CONCAT_DATA,                                           \
           "string concat data"),                                        \
+        m(STRING_MOVE_DATA,                                             \
+          "string move data"),                                          \
         m(STRING_SELECT_DATA,                                           \
           "string select data"),                                        \
         m(CONFIG_ARG_COPY_DATA,                                         \
@@ -87,8 +104,6 @@
           "config table data"),                                         \
         m(LOCALE_NAME_BUFFER,                                           \
           "locale name buffer"),                                        \
-        m(SERIAL_FLAG,                                                  \
-          "serial flag"),                                               \
         m(TASK_DESCRIPTOR,                                              \
           "task descriptor"),                                           \
         m(TASK_DESCRIPTOR_LINK,                                         \

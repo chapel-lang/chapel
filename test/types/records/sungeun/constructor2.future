@@ -1,0 +1,20 @@
+bug: Initialization is not assignment
+
+In the declaration
+  var r: myR = new myR();
+the expression to the right of the '=' is initially treated as an initializer
+expression and the '=' itself is treated as initialization, not assignment.
+That is the correct interpretation.
+
+Currently, however, the normalize pass converts the
+variable-declaration-with-initializer into an uninitialized variable declaration
+followed by an assignment.  The code that is produced is correct from the point
+of view of establishing class invariants and maintaining memory correctly.
+However, the duplicate "hi" lines in the .bad file show that the default
+constructor is getting called twice.
+
+If the above expression were representing declaration-with-initialization, then
+the default constructor would be called only once (in the evaluation of the "new
+myR()" expression).  Then the copy-constructor should be called to initialize
+the variable "r".  The assignment operator for type myR should not be called by
+this program at all.

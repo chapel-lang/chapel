@@ -231,6 +231,17 @@ def DiffFiles(f1, f2):
         sys.stdout.write(myoutput)
     return p.returncode
 
+# diff output vs. .bad file, filtering line numbers out of error messages that arise
+# in module files.
+def DiffBadFiles(f1, f2):
+    sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
+    p = subprocess.Popen([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
+    if p.returncode != 0:
+        sys.stdout.write(myoutput)
+    return p.returncode
+
 # kill process
 def KillProc(p, timeout):
     k = subprocess.Popen(['kill',str(p.pid)])
@@ -299,11 +310,11 @@ def Fatal(message):
     sys.exit(-1)
 
 # Attempts to find an appropriate timer to use. The timer must be in
-# utildir/timers/. Expects to be passed a file containing only the name of
+# util/test/timers/. Expects to be passed a file containing only the name of
 # the timer script. If the file is improperly formatted the default timer is
 # used, and if the timer is not executable or can't be found 'time -p' is used
 def GetTimer(f):
-    timersdir = os.path.join(utildir, 'timers')
+    timersdir = os.path.join(utildir, 'test', 'timers')
     defaultTimer = os.path.join(timersdir, 'defaultTimer')
 
     lines = ReadFileWithComments(f)
@@ -399,7 +410,7 @@ utildir = os.path.realpath(utildir)
 # sys.stdout.write('utildir='+utildir+'\n');
 
 # Find the c compiler
-p = subprocess.Popen([chpl_home+'/util/config/compileline', '--compile'],
+p = subprocess.Popen([utildir+'/config/compileline', '--compile'],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 c_compiler = p.communicate()[0].rstrip()
 if p.returncode != 0:
@@ -420,13 +431,13 @@ testdir = os.path.realpath(testdir)
 #  subprocess doesn't quite cut it for this kind of stuff
 useTimedExec=True
 if useTimedExec:
-    timedexec=utildir+'/timedexec'
+    timedexec=utildir+'/test/timedexec'
     if not os.access(timedexec,os.R_OK|os.X_OK):
         Fatal('Cannot execute timedexec script \''+timedexec+'\'')
 # sys.stdout.write('timedexec='+timedexec+'\n');
 
 # HW platform
-platform=subprocess.Popen([chpl_home+'/util/chplenv/chpl_platform.py', '--target'], stdout=subprocess.PIPE).communicate()[0]
+platform=subprocess.Popen([utildir+'/chplenv/chpl_platform.py', '--target'], stdout=subprocess.PIPE).communicate()[0]
 platform = platform.strip()
 # sys.stdout.write('platform='+platform+'\n')
 
@@ -500,6 +511,13 @@ if os.getenv('CHPL_TEST_VGRND_COMP')=='on':
     globalTimeout=1000
 else:
     globalTimeout=300
+
+# get a threshold for which to report long running tests
+if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
+    execTimeWarnLimit = int(os.getenv('CHPL_TEST_EXEC_TIME_WARN_LIMIT', '0'))
+else:
+    execTimeWarnLimit = 0
+
 # directory level timeout
 if os.access('./TIMEOUT',os.R_OK):
     directoryTimeout = ReadIntegerValue('./TIMEOUT', localdir)
@@ -833,7 +851,7 @@ for testname in testsrc:
 
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
-            skiptest=subprocess.Popen([utildir+'/testEnv', './'+f], stdout=subprocess.PIPE).communicate()[0]
+            skiptest=subprocess.Popen([utildir+'/test/testEnv', './'+f], stdout=subprocess.PIPE).communicate()[0]
             try:
                 skipme = int(skiptest)
                 if skipme:
@@ -1018,9 +1036,6 @@ for testname in testsrc:
         # Build the test program
         #
         args=['-o']+[execname]+globalCompopts+shlex.split(compopts)+[testname]
-        if lastcompopts:
-            args += lastcompopts
-        # sys.stdout.write("args=%s\n"%(args))
 
         if is_c_test:
             # we need to drop envCompopts for C tests as those are options
@@ -1033,6 +1048,9 @@ for testname in testsrc:
                 args = valgrindcompopts+[compiler]+args
             else:
                 cmd = compiler
+
+        if lastcompopts:
+            args += lastcompopts
 
         #
         # Compile (with timeout)
@@ -1148,7 +1166,7 @@ for testname in testsrc:
             if (result != 0 and futuretest != ''):
                 badfile=execname+'.bad'
                 if os.access(badfile, os.R_OK):
-                    badresult = DiffFiles(badfile, complog)
+                    badresult = DiffBadFiles(badfile, complog)
                     if badresult==0:
                         os.unlink(complog);
                         sys.stdout.write('[Clean match against .bad file ')
@@ -1235,7 +1253,7 @@ for testname in testsrc:
                 # computePerfStats for the current test
                 sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)))
                 sys.stdout.flush()
-                p = subprocess.Popen([utildir+'/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)], stdout=subprocess.PIPE)
+                p = subprocess.Popen([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)], stdout=subprocess.PIPE)
                 compkeysOutput = p.communicate()[0]
                 datFiles = [tempDatFilesDir+'/'+datFileName+'.dat',  tempDatFilesDir+'/'+datFileName+'.error']
                 status = p.returncode
@@ -1337,11 +1355,27 @@ for testname in testsrc:
 
             args+=globalExecopts
             args+=shlex.split(execopts)
-            if envExecopts != None:
+            # envExecopts are meant for chpl programs, dont add them to C tests
+            if not is_c_test and envExecopts != None:
                 args+=shlex.split(envExecopts)
             if lastexecopts:
                 args += lastexecopts
             # sys.stdout.write("args=%s\n"%(args))
+
+            if len(args) >= 2 and '<' in args:
+              redirIdx = args.index('<')
+              execOptRedirect = args[redirIdx + 1]
+              args.pop(redirIdx+1)
+              args.pop(redirIdx)
+              if redirectin == None or redirectin == "/dev/null":
+                if os.access(execOptRedirect, os.R_OK):
+                  redirectin = execOptRedirect
+                else:
+                  sys.stdout.write('[Error: redirection file %s does not exist]\n'%(execOptRedirect))
+                  break
+              else:
+                sys.stdout.write('[Error: a redirection file already exists: %s]\n'%(redirectin))
+                break
 
             #
             # Run program (with timeout)
@@ -1353,6 +1387,7 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
                 sys.stdout.flush()
 
+                execstart = time.time()
                 if useLauncherTimeout:
                     if redirectin == None:
                         my_stdin = None
@@ -1429,6 +1464,11 @@ for testname in testsrc:
                         KillProc(p, killtimeout)
 
                     status = p.returncode
+
+                execend = time.time()
+                if execTimeWarnLimit and execend - execstart > execTimeWarnLimit:
+                    sys.stdout.write('[Warning: %s/%s took over %.0f seconds to '
+                        'execute]\n' %(localdir, execname, execTimeWarnLimit))
 
                 if catfiles:
                     sys.stdout.write('[Concatenating extra files: %s]\n'%
@@ -1554,10 +1594,10 @@ for testname in testsrc:
                     if perfdate == None:
                         perfdate = datetime.date.today().strftime("%m/%d/%y")
 
-                    sys.stdout.write('[Executing %s/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
+                    sys.stdout.write('[Executing %s/test/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
                     sys.stdout.flush()
 
-                    p = subprocess.Popen([utildir+'/computePerfStats',
+                    p = subprocess.Popen([utildir+'/test/computePerfStats',
                                           perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
                                          stdout=subprocess.PIPE)
                     sys.stdout.write('%s'%(p.communicate()[0]))

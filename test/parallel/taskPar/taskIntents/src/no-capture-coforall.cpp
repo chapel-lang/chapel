@@ -9,11 +9,11 @@
 #include "var-decls.cpp"
 var kkkkkk: int;
 
-coforall jjjjj in 1..2 ref(
-#define lvar(name, type, init) name,
+coforall jjjjj in 1..2 with (
+#define lvar(name, type, init) ref name,
 #include "var-types.h"
 #undef lvar
-          kkkkkk)
+          ref kkkkkk)
 {
   if jjjjj == 1 {
     writeln("in coforall");

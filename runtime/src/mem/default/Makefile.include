@@ -1,7 +1,0 @@
-MEM_SUBDIR = src/mem/default
-
-ALL_SRCS += $(CURDIR)/$(MEM_SUBDIR)/*.c
-
-MEM_OBJDIR = $(RUNTIME_ROOT)/$(MEM_SUBDIR)/$(RUNTIME_OBJDIR)
-
-include $(RUNTIME_ROOT)/$(MEM_SUBDIR)/Makefile.share

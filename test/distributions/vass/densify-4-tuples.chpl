@@ -62,7 +62,7 @@ for /*param*/ i1 in 1..nt {
   }
 }
 
-proc check(a, b, msg) where chpl__isRange(a) && chpl__isRange(b) {
+proc check(a, b, msg) where isRange(a) && isRange(b) {
   if a != b then
     writeln("error: ", a, " vs ", b, "  context: ", msg);
 }

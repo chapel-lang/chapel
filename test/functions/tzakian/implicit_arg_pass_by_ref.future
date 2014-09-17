@@ -1,4 +1,4 @@
-If we call a function without passing the all ref arguments we get a compile error.
+error message: Default value for ref vars should not be allowed and using the default value results in a compiler error regarding use of a non-lvalue
 
 If we call a function that has an initialized (implicit) argument with ref intent, we
 get a compiler error with non-lvalue passed by ref.

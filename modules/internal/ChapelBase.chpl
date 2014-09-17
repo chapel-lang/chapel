@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // ChapelBase.chpl
 //
 
@@ -167,7 +186,7 @@ module ChapelBase {
   proc compilerAssert(param test: bool, param arg1:integral)
   { if !test then compilerError("assert failed", arg1:int); }
   
-  proc compilerAssert(param test: bool, param arg1) where !_isIntegralType(arg1.type)
+  proc compilerAssert(param test: bool, param arg1) where !isIntegralType(arg1.type)
   { if !test then compilerError("assert failed - ", arg1); }
   
   proc compilerAssert(param test: bool, param arg1, param arg2)
@@ -210,6 +229,8 @@ module ChapelBase {
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
   pragma "trivial assignment"
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
+  pragma "trivial assignment"
+  inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
   { __primitive("=", a, b); }
@@ -550,6 +571,8 @@ module ChapelBase {
   // explicitly captured.
   //
   inline proc _statementLevelSymbol(a) { return a; }
+  inline proc _statementLevelSymbol(a: sync)  { return a.readFE(); }
+  inline proc _statementLevelSymbol(a: single) { return a.readFF(); }
   inline proc _statementLevelSymbol(param a) param { return a; }
   inline proc _statementLevelSymbol(type a) type { return a; }
   
@@ -607,8 +630,8 @@ module ChapelBase {
   //
   //  bug?  in setters, parameterize real argument over complex bit width
   //
-  inline proc ref chpl_anycomplex.re var return __primitive("complex_get_real", this);
-  inline proc ref chpl_anycomplex.im var return __primitive("complex_get_imag", this);
+  inline proc ref chpl_anycomplex.re ref return __primitive("complex_get_real", this);
+  inline proc ref chpl_anycomplex.im ref return __primitive("complex_get_imag", this);
   
   //
   // helper functions
@@ -621,6 +644,12 @@ module ChapelBase {
   //
   inline proc min(x, y) return if x < y then x else y;
   inline proc max(x, y) return if x > y then x else y;
+  inline proc min(x, y)
+    where chpl_isSyncSingleAtomic(x) || chpl_isSyncSingleAtomic(y)
+  { compilerError("min() and max() are not allowed on sync/single/atomic arguments - apply readFE/readFF/read() to those arguments first"); }
+  inline proc max(x, y)
+    where chpl_isSyncSingleAtomic(x) || chpl_isSyncSingleAtomic(y)
+  { compilerError("max() and min() are not allowed on sync/single/atomic arguments - apply readFE/readFF/read() to those arguments first"); }
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
   
@@ -671,7 +700,7 @@ module ChapelBase {
       __primitive("array_alloc", this, eltType, size);
       init_elts(this, size, eltType);
     }*/
-    inline proc this(i: integral) var {
+    inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
   }
@@ -747,7 +776,7 @@ module ChapelBase {
   class _EndCount {
     var i: atomic int,
         taskCnt: taskCntType,
-        taskList: _task_list = _nullTaskList;
+        taskList: _task_list = _defaultOf(_task_list);
   }
   
   // This function is called once by the initiating task.  No on
@@ -845,9 +874,9 @@ module ChapelBase {
   // down in the file) to save complexity in the compiler.
   //
   inline proc chpl_typeSupportsPrimitiveCast(type t) param
-    return _isBooleanType(t) || 
-           _isIntegralType(t) || 
-           _isRealType(t) || 
+    return isBoolType(t) || 
+           isIntegralType(t) || 
+           isRealType(t) || 
            t == c_string;
   
   inline proc _cast(type t, x: bool) where chpl_typeSupportsPrimitiveCast(t)
@@ -883,49 +912,49 @@ module ChapelBase {
   //
   // casts to complex
   //
-  inline proc _cast(type t, x: bool) where _isComplexType(t)
+  inline proc _cast(type t, x: bool) where isComplexType(t)
     return (x, 0):t;
   
-  inline proc _cast(type t, x: int(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: int(?w)) where isComplexType(t)
     return (x, 0):t;
   
-  inline proc _cast(type t, x: uint(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: uint(?w)) where isComplexType(t)
     return (x, 0):t;
   
-  inline proc _cast(type t, x: real(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: real(?w)) where isComplexType(t)
     return (x, 0):t;
   
-  inline proc _cast(type t, x: imag(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: imag(?w)) where isComplexType(t)
     return (0, _i2r(x)):t;
   
-  inline proc _cast(type t, x: complex(?w)) where _isComplexType(t)
+  inline proc _cast(type t, x: complex(?w)) where isComplexType(t)
     return (x.re, x.im):t;
   
   //
   // casts to imag
   //
-  inline proc _cast(type t, x: bool) where _isImagType(t)
+  inline proc _cast(type t, x: bool) where isImagType(t)
     return if x then 1i:t else 0i:t;
   
-  inline proc _cast(type t, x: int(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: int(?w)) where isImagType(t)
     return 0i:t;
   
-  inline proc _cast(type t, x: uint(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: uint(?w)) where isImagType(t)
     return 0i:t;
   
-  inline proc _cast(type t, x: real(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: real(?w)) where isImagType(t)
     return 0i:t;
   
-  inline proc _cast(type t, x: imag(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: imag(?w)) where isImagType(t)
     return __primitive("cast", t, x);
   
-  inline proc _cast(type t, x: complex(?w)) where _isImagType(t)
+  inline proc _cast(type t, x: complex(?w)) where isImagType(t)
     return let xim = x.im in __primitive("cast", t, xim);
   
   //
   // casts from complex
   //
-  inline proc _cast(type t, x: complex(?w)) where _isRealType(t) || _isIntegralType(t) {
+  inline proc _cast(type t, x: complex(?w)) where isRealType(t) || isIntegralType(t) {
     var y: t;
     y = x.re:t;
     return y;
@@ -934,10 +963,10 @@ module ChapelBase {
   //
   // casts from imag
   //
-  inline proc _cast(type t, x: imag(?w)) where _isRealType(t) || _isIntegralType(t)
+  inline proc _cast(type t, x: imag(?w)) where isRealType(t) || isIntegralType(t)
     return 0:t;
   
-  inline proc _cast(type t, x: imag(?w)) where _isBooleanType(t)
+  inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
   
   inline proc chpl__typeAliasInit(type t) type return t;
@@ -1024,7 +1053,7 @@ module ChapelBase {
   pragma "ref" 
   pragma "donor fn"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(r: _ref) var return r;
+  inline proc chpl__autoCopy(r: _ref) ref return r;
   
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;

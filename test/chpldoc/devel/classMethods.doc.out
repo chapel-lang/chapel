@@ -1,6 +1,4 @@
 Module: classMethods
-   proc chpl__init_classMethods()
-
    proc method(_mt: _MT, this: named)
        This method has a comment 
 

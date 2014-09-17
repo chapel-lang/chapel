@@ -109,6 +109,8 @@ writeln();
 //   locale.name     : returns a string indicating the locale's name
 //   locale.numCores : returns the number of processor cores on the locale
 //   locale.physicalMemory() : returns the amount of memory on the locale
+//   locale.maxTaskPar : returns the likely maximum parallelism available
+//                       on the locale
 //
 
 config const printLocaleInfo = true;  // permit testing to turn this off
@@ -121,6 +123,7 @@ if printLocaleInfo then
       writeln("  ...has ", here.numCores, " processor cores");
       writeln("  ...has ", here.physicalMemory(unit=MemUnits.GB, retType=real), 
               " GB of memory");
+      writeln("  ...has ", here.maxTaskPar, " maximum parallelism");
     }
 writeln();
 

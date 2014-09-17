@@ -4,9 +4,11 @@ record R {
   var x = 13.7;
 }
 
+var glob: real;
+
 pragma "init copy fn"
 proc chpl__initCopy(r: R) {
-  begin ref(r) r.x = getCurrentTime();
+  begin with (ref glob) glob = getCurrentTime();
   return r;
 }
 

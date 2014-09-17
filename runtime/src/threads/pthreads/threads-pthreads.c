@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // Pthread implementation of Chapel threading interface
 //
@@ -161,10 +180,12 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
   // either the main process or a pthread.
   //
   {
-    size_t        css = chpl_task_getMinCallStackSize();
+    size_t        css;
     size_t        pagesize = (size_t) sysconf(_SC_PAGESIZE);
     struct rlimit rlim;
 
+    if ((css = chpl_task_getEnvCallStackSize()) == 0)
+      css = chpl_task_getDefaultCallStackSize();
     assert(css > 0);
 
     css = (css + pagesize - 1) & ~(pagesize - 1);

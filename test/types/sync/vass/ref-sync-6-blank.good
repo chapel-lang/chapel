@@ -1,0 +1,2 @@
+ref-sync-6-blank.chpl:5: error: unresolved call 'MYPROC(_singlevar(int(64)))'
+ref-sync-6-blank.chpl:7: note: candidates are: MYPROC(FORMAL: syncint)

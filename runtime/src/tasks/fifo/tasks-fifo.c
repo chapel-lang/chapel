@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // FIFO implementation of Chapel tasking interface
 //
@@ -176,9 +195,11 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
 
   chpl_thread_mutexLock(&s->lock);
 
-  // If true, we want to use conditionals, otherwise we want to spin
+  // If we're oversubscribing the hardware, we wait using conditionals
+  // in order to ensure fairness and thus progress.  If we're not, we
+  // can spin-wait.
   suspend_using_cond = (chpl_thread_getNumThreads() >=
-                        chpl_numCoresOnThisLocale());
+                        chpl_getNumLogicalCpus(true));
 
   while (s->is_full != want_full) {
     if (!suspend_using_cond) {
@@ -822,6 +843,24 @@ chpl_bool chpl_task_getSerial(void) {
 
 void chpl_task_setSerial(chpl_bool state) {
   get_current_ptask()->chpl_data.prvdata.serial_state = state;
+}
+
+uint32_t chpl_task_getMaxPar(void) {
+  uint32_t max;
+  uint32_t maxThreads;
+
+  //
+  // We expect that even if the physical CPUs have multiple hardware
+  // threads, cache and pipeline conflicts will typically prevent
+  // applications from gaining by using them.  So, we just return the
+  // lesser of the number of physical CPUs and whatever the threading
+  // layer says it can do.
+  //
+  max = (uint32_t) chpl_getNumPhysicalCpus(true);
+  maxThreads = chpl_thread_getMaxThreads();
+  if (maxThreads < max && maxThreads > 0)
+    max = maxThreads;
+  return max;
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void) {

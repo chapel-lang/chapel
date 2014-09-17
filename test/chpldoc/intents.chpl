@@ -39,8 +39,8 @@ module Inner {
 
   }
 
-  /* This function has a return intent of var */
-  proc seven () var {
+  /* This function has a return intent of ref */
+  proc seven () ref {
     return "I suppose if I must have a return type here . . . ";
   }
 
@@ -69,7 +69,7 @@ module Inner {
 
   }
 
-  /* This function has a return intent (other than var) and a body */
+  /* This function has a return intent (other than ref) and a body */
   proc fourteen () const {
     return true;
   }
@@ -114,8 +114,8 @@ proc six (in val: int) {
   
 }
 
-/* This function has a return intent of var */
-proc seven () var {
+/* This function has a return intent of ref */
+proc seven () ref {
   return "I suppose if I must have a return type here . . . ";
 }
 
@@ -144,7 +144,7 @@ proc thirteen (inout val) param {
 
 }
 
-/* This function has a return intent (other than var) and a body */
+/* This function has a return intent (other than ref) and a body */
 proc fourteen () const {
   return true;
 }

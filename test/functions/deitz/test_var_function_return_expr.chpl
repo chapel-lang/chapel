@@ -1,6 +1,6 @@
 var x, y: int;
 
-proc foo() var {
+proc foo() ref {
   return x + y;
 }
 

@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 pragma "no use ChapelStandard"
 
 // Chapel Strings
@@ -6,20 +25,36 @@ module String {
 
   pragma "default string value" extern var defaultStringValue: string = noinit;
 
+  // The following method is called by the compiler to determine the default
+  // value of a given type.  For strings, this should return the value
+  // defined above.
+  // strings will be records, so param is not possible for them
+  inline proc _defaultOf(type t) where t: string return defaultStringValue;
+
   // String concatenation
-  inline proc +(s: string, x: string)
-    // FIX ME: leak c_string
-    return toString(__primitive("string_concat", s.c_str(), x.c_str()));
+  inline proc +(s: string, x: string) {
+    const cs = __primitive("string_concat", s.c_str(), x.c_str());
+    // FIX ME: could use a toString() that doesn't allocate space
+    const ret = toString(cs);
+    chpl_free_c_string(cs);
+    return ret;
+  }
 
-  pragma "compiler generated"
-  inline proc +(s: c_string, x: string)
-    // FIX ME: leak c_string
-    return toString(__primitive("string_concat", s, x.c_str()));
+  inline proc +(s: c_string, x: string) {
+    const cs = __primitive("string_concat", s, x.c_str());
+    // FIX ME: could use a toString() that doesn't allocate space
+    const ret = toString(cs);
+    chpl_free_c_string(cs);
+    return ret;
+  }
 
-  pragma "compiler generated"
-  inline proc +(s: string, x: c_string)
-    // FIX ME: leak c_string
-    return toString(__primitive("string_concat", s.c_str(), x));
+  inline proc +(s: string, x: c_string) {
+    const cs = __primitive("string_concat", s.c_str(), x);
+    // FIX ME: could use a toString() that doesn't allocate space
+    const ret = toString(cs);
+    chpl_free_c_string(cs);
+    return ret;
+  }
 
   inline proc +(s: string, x: numeric)
     return s + x:string;
@@ -67,11 +102,35 @@ module String {
   inline proc ascii(a: string) return ascii(a.c_str());
   inline proc string.length return this.c_str().length;
   inline proc string.size return this.length;
-  inline proc string.substring(i: int)
-    // FIX ME: leak c_string
-    return toString(this.c_str().substring(i));
+  inline proc string.substring(i: int) {
+    const cs = this.c_str().substring(i);
+    // FIX ME: could use a toString() that doesn't allocate space
+    const ret = toString(cs);
+    if cs.length != 0 then chpl_free_c_string(cs);
+    return ret;
+  }
+  inline proc string.substring(r: range(?)) {
+    const cs = this.c_str().substring(r);
+    // FIX ME: could use a toString() that doesn't allocate space
+    const ret = toString(cs);
+    if cs.length != 0 then chpl_free_c_string(cs);
+    return ret;
+  }
+  
   inline proc _string_contains(a: string, b: string)
     return _string_contains(a.c_str(), b.c_str());
+
+  /* args: any number of strings
+     return: Returns true if this starts with one of the strings specified in args
+   */
+  inline proc string.startsWith(args ...?k):bool {
+    for param i in 1..k {
+      if (this.substring(0..args(i).length) == args(i))
+        then return true;
+    }
+    return false;
+  }
+
   
   /* Returns the index of the first occurrence of a substring within a string,
       or 0 if the substring is not in the string.
@@ -83,9 +142,18 @@ module String {
   
   // cast to and from Chapel strings use c_string
   pragma "compiler generated"
-  inline proc _cast(type t, x) where t==string && x.type != c_string
-    // FIX ME: leak c_string
-    return toString(_cast(c_string, x));
+  inline proc _cast(type t, x) where t==string && x.type != c_string {
+    // Caution: The result of a cast to c_string does not necessarily own the string data
+    // it contains.  Therefore it must not be freed.
+    // TODO: Rework the interface to _cast(c_string, x) so it guarantees one or
+    // the other.
+    const cs = _cast(c_string, x);
+    const ret = toString(cs);
+    // This free is not safe because ownership of the c_string returned by the
+    // _cast above is ambiguous.
+    //    chpl_free_c_string(cs);
+    return ret;
+  }
 
   pragma "compiler generated"
   inline proc _cast(type t, x: string) where t !=c_string
@@ -97,13 +165,13 @@ module String {
   //
   // casts to complex
   //
-  inline proc _cast(type t, x: c_string) where _isComplexType(t)
+  inline proc _cast(type t, x: c_string) where isComplexType(t)
     return __primitive("cast", t, x);
   
   //
   // casts to imag
   //
-  inline proc _cast(type t, x: c_string) where _isImagType(t)
+  inline proc _cast(type t, x: c_string) where isImagType(t)
     return __primitive("cast", t, x);
   
   //
@@ -124,7 +192,14 @@ module String {
       im = (x.im):c_string;
       op = " + ";
     }
-    return (re + op + im + "i").c_str();
+    const ts0 = re + op;
+    chpl_free_c_string(re);
+    const ts1 = ts0 + im;
+    chpl_free_c_string(ts0);
+    if im != "-0.0" then chpl_free_c_string(im);
+    const ret = ts1 + "i":c_string;
+    chpl_free_c_string(ts1);
+    return ret;
   }
   
   //
@@ -157,7 +232,20 @@ module String {
 
 // C strings
 //extern type c_string; is a built-in primitive type
+//
+// In terms of how they are used, c_strings are a "close to the metal"
+// representation, being in essence the common NUL-terminated C string.
+//
+// Memory management caveat: In general, an object of type c_string does not
+// own its data (that is, some do, but not all).  Therefore it is only safe to
+// free a c_string object if you know its provenance, and can trace this back
+// to a string-allocating function such as string_concat(),
+// chpl_glom_strings() or string_copy().
 module CString {
+
+  // The following method is called by the compiler to determine the default
+  // value of a given type.
+  inline proc _defaultOf(type t) param where t: c_string return "":c_string;
 
   inline proc toString(cstr:c_string):string {
     return __primitive("string_from_c_string", cstr, 0, 0);
@@ -166,6 +254,8 @@ module CString {
     return __primitive("string_from_c_string", cstr, 1, len);
   }
 
+  // WARNING: The bytes pointed to by the c_string return value are still owned
+  // by the "this" operand.  The returned c_string should not be freed!
   inline proc string.c_str():c_string {
     return __primitive("c_string_from_string", this);
   }
@@ -234,10 +324,14 @@ module CString {
     return (__primitive("string_compare", a, b) > 0);
   }
 
+  // DANGER! Memory is shared between c_strings assigned thus.  Only one (at
+  // most) can be safely freed.
   inline proc =(ref a: c_string, b: c_string) {
     __primitive("=", a, b);
   }
 
+  // DANGER! The c_string on the LHS does not own the string it contains after
+  // this assignment.
   inline proc =(ref a: c_string, b: string) {
     __primitive("=", a, b.c_str());
   }
@@ -250,6 +344,7 @@ module CString {
     return toString(x);
   }
 
+  // DANGER, the result of this cast is an unowned c_string.
   inline proc _cast(type t, x: string) where t == c_string {
     return x.c_str();
   }
@@ -293,6 +388,13 @@ module CString {
   inline proc c_string.size return this.length;
   inline proc c_string.substring(i: int)
     return __primitive("string_index", this, i);
+  inline proc c_string.substring(r: range(?)) {
+    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
+    if r2.isEmpty() then return "";
+    var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
+    return __primitive("string_select", this, lo, hi, r2.stride);
+  }
+
   inline proc _string_contains(a: string, b: string)
     return __primitive("string_contains", a, b);
 
@@ -307,6 +409,13 @@ module CString {
   inline proc c_string.indexOf(substring:c_string):int
     return string_index_of(this, substring);
   extern proc string_index_of(haystack:c_string, needle:c_string):int;
+
+  // Use with care.  Not for the weak.
+  inline proc chpl_free_c_string(cs: c_string) {
+    pragma "insert line file info"
+    extern proc chpl_rt_free_c_string(cs: c_string);
+    if cs.length > 0 then chpl_rt_free_c_string(cs);
+  }
 
 }
 

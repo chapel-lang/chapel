@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 %option noyywrap
 %option nounput
 
@@ -72,12 +91,14 @@
 
 digit            [0-9]
 bit              [0-1]
+octDigit         [0-7]
 hexDigit         [0-9a-fA-F]
 letter           [_a-zA-Z]
 ident            {letter}({letter}|{digit}|"$")*
 binaryLiteral    0[bB]{bit}+
+octalLiteral     0[oO]{octDigit}+
 hexLiteral       0[xX]{hexDigit}+
-intLiteral       {digit}+|{binaryLiteral}|{hexLiteral}
+intLiteral       {digit}+|{binaryLiteral}|{octalLiteral}|{hexLiteral}
 exponent         [Ee][\+\-]?{digit}+
 floatLiteral1    {digit}*"."{digit}+({exponent})?
 floatLiteral2    {digit}+"."{exponent}
@@ -151,6 +172,7 @@ var              processToken(TVAR);
 when             processToken(TWHEN);
 where            processToken(TWHERE);
 while            processToken(TWHILE);
+with             processToken(TWITH);
 yield            processToken(TYIELD);
 
 "_"              processToken(TUNDERSCORE);

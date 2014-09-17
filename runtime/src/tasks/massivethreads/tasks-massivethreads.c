@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #define _GNU_SOURCE
 
 #ifdef __OPTIMIZE__
@@ -11,6 +30,7 @@
 #include "chpl-comm.h"
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "error.h"
 #include <assert.h>
@@ -307,16 +327,17 @@ void chpl_task_init(void) {
     if ((lim = atoi(env)) > 0)
       numThreadsPerLocale = lim;
   }
-  // override by --numThreadsPerLocale
-  if ((lim=chpl_task_getenvNumThreadsPerLocale()) > 0)
-    numThreadsPerLocale = lim;
+  // override by CHPL_RT_NUM_THREADS_PER_LOCALE
+  if ((lim=chpl_task_getenvNumThreadsPerLocale())>0)
+    numThreadsPerLocale=lim;
   // limit by comm layer limit
-  if ((lim = chpl_comm_getMaxThreads()) > 0){
-    numThreadsPerLocale = (numThreadsPerLocale > lim)?lim:numThreadsPerLocale;
+  if ((lim=chpl_comm_getMaxThreads())>0){
+    numThreadsPerLocale=(numThreadsPerLocale > lim)?lim:numThreadsPerLocale;
   }
 
   s_num_workers = numThreadsPerLocale;
-  s_stack_size = chpl_task_getMinCallStackSize();
+  if ((s_stack_size=chpl_task_getEnvCallStackSize())==0)
+    s_stack_size=chpl_task_getDefaultCallStackSize();
   assert(s_stack_size > 0);
   assert(!is_worker_in_cs());
   s_tld = chpl_mem_allocMany(numThreadsPerLocale + numCommTasks,
@@ -474,6 +495,22 @@ chpl_bool chpl_task_getSerial(void)
 void chpl_task_setSerial(chpl_bool new_state) {
   //set dynamic serial state
   getTaskPrivateData()->prvdata.serial_state = new_state;
+}
+
+uint32_t chpl_task_getMaxPar(void) {
+  uint32_t max;
+
+  //
+  // We expect that even if the physical CPU have multiple hardware
+  // threads, cache and pipeline conflicts will typically prevent
+  // applications from gaining by using them.  So, we just return the
+  // lesser of the number of physical CPUs and the number of workers
+  // we have.
+  //
+  max = (uint32_t) chpl_getNumPhysicalCpus(true);
+  if ((uint32_t) s_num_workers < max)
+    max = (uint32_t) s_num_workers;
+  return max;
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void)

@@ -1,0 +1,9 @@
+error-storing-in-tuple.chpl:8: In function 'main':
+error-storing-in-tuple.chpl:9: error: storing a sync or single variable SSS in a tuple is not currently implemented - apply readFE() or readFF()
+error-storing-in-tuple.chpl:10: error: storing a sync or single variable QQQ in a tuple is not currently implemented - apply readFE() or readFF()
+error-storing-in-tuple.chpl:11: error: storing a sync or single variable SSS in a tuple is not currently implemented - apply readFE() or readFF()
+error-storing-in-tuple.chpl:11: error: storing a sync or single variable QQQ in a tuple is not currently implemented - apply readFE() or readFF()
+error-storing-in-tuple.chpl:18: error: storing a sync or single variable SSS in a tuple is not currently implemented - apply readFE() or readFF()
+error-storing-in-tuple.chpl:19: error: storing a sync or single variable QQQ in a tuple is not currently implemented - apply readFE() or readFF()
+error-storing-in-tuple.chpl:20: error: storing a sync or single variable SSS in a tuple is not currently implemented - apply readFE() or readFF()
+error-storing-in-tuple.chpl:20: error: storing a sync or single variable QQQ in a tuple is not currently implemented - apply readFE() or readFF()

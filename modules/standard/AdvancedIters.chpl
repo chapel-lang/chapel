@@ -1,4 +1,23 @@
 /*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
 For more information, see "User-Defined Parallel Zippered iterators
 in Chapel". Bradford L. Chamberlain, Sung-Eun Choi, Steven J. Deitz,
 Angeles Navarro. PGAS 2011: Fifth Conference on Partitioned Global
@@ -62,7 +81,7 @@ where tag == iterKind.leader
     var curIndex : atomic remain.low.type;
     curIndex.write(remain.low);
 
-    coforall tid in 0..#nTasks ref(remain, moreWork,curIndex) do {
+    coforall tid in 0..#nTasks with (ref remain, ref moreWork, ref curIndex) do {
       while moreWork do {
         // There is local work in remain
         const low = curIndex.fetchAdd(chunkSize);
@@ -135,7 +154,7 @@ where tag == iterKind.leader
     const factor=nTasks;
     var lock : vlock;
 
-    coforall tid in 0..#nTasks ref(remain,undone, lock) do {
+    coforall tid in 0..#nTasks with (ref remain, ref undone, ref lock) do {
       while undone do {
         // There is local work in remain(tid)
         const current:rType=adaptSplit(remain, factor, undone, lock); 
@@ -221,7 +240,7 @@ where tag == iterKind.leader
     var barrier : atomic int;
 
     // Start the parallel work
-    coforall tid in 0..#nTasks ref(localWork, moreLocalWork, moreWork, r) do { 
+    coforall tid in 0..#nTasks with (ref localWork, ref moreLocalWork, ref moreWork, ref r) do { 
 
       // Step 1: Initial range per Thread/Task
 
@@ -330,7 +349,7 @@ proc defaultNumTasks(nTasks:int)
 {
   var dnTasks=nTasks;
   if nTasks==0 then {
-    if dataParTasksPerLocale==0 then dnTasks=here.numCores; 
+    if dataParTasksPerLocale==0 then dnTasks=here.maxTaskPar;
       else dnTasks=dataParTasksPerLocale;
   } else if nTasks<0 then {
     halt("'numTasks' is negative");

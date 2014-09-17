@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // ChapelIO.chpl
 //
 pragma "no use ChapelStandard"
@@ -507,6 +526,7 @@ module ChapelIO {
     var tmpstring: c_string;
     tmpstring.write((...args));
     warning(tmpstring);
+    chpl_free_c_string(tmpstring);
   }
   
   proc _ddata.writeThis(f: Writer) {
@@ -526,7 +546,14 @@ module ChapelIO {
   
   class StringWriter: Writer {
     var s: c_string = "";
-    proc writePrimitive(x) { this.s += (x:c_string); }
+    proc writePrimitive(x) {
+      const orig = this.s;
+      this.s += (x:c_string);
+      if orig.length != 0 then chpl_free_c_string(orig);
+    }
+    proc ~StringWriter() {
+      if this.s.length != 0 then chpl_free_c_string(this.s);
+    }
   }
   
   // Convert 'x' to a string just the way it would be written out.
@@ -538,7 +565,7 @@ module ChapelIO {
     //if isNilObject(x) then "nil".writeThis(w);
     //else                   x.writeThis(w);
     w.write(x);
-    const result = w.s;
+    const result = __primitive("string_copy", w.s);
     delete w;
     return result;
   }
@@ -547,7 +574,8 @@ module ChapelIO {
   proc ref c_string.write(args ...?n) {
     var sc = new StringWriter(this);
     sc.write((...args));
-    this = sc.s;
+    // We need to copy this string because the destructor call below frees it
+    this = __primitive("string_copy", sc.s);
     delete sc;
   }
   
@@ -563,10 +591,10 @@ module ChapelIO {
   pragma "no prototype"
   extern proc chpl_format(fmt: c_string, x): c_string;
   
-  proc format(fmt: c_string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
+  proc format(fmt: c_string, x:?t) where isIntegralType(t) || isFloatType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
-      if _isImagType(t) then
+      if isImagType(t) then
         return (chpl_format(fmt2, _i2r(x))+"i");
       else
         return chpl_format(fmt2, x:real);
@@ -574,7 +602,7 @@ module ChapelIO {
         return chpl_format(fmt, x);
   }
   
-  proc format(fmt: c_string, x:?t) where _isComplexType(t) {
+  proc format(fmt: c_string, x:?t) where isComplexType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
       return (chpl_format(fmt2, x.re)+" + "+ chpl_format(fmt2, x.im)+"i");
@@ -595,10 +623,12 @@ module ChapelIO {
     var afterdot = false;
     var dplaces = 0;
     for i in 1..sn {
-      if ((s.substring(i) == '#') & afterdot) then dplaces += 1;
-      if (s.substring(i) == '.') then afterdot=true;
+      const ss = s.substring(i);
+      if ((ss == '#') & afterdot) then dplaces += 1;
+      if (ss == '.') then afterdot=true;
+      chpl_free_c_string(ss);
     }
-  
+    // FIX ME: leak c_string due to concatenation
     return("%" + sn + "." + dplaces + "f");
   }
   

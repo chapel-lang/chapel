@@ -31,13 +31,27 @@ $tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLE
 $origCwd = abs_path(cwd());
 $reldir = "chapel$version";
 $rootdir = "$tmpdir/$reldir";
-$svnroot = $ENV{'CHPL_HOME_REPOSITORY'};
-if ($svnroot eq "") {
-    $svnroot = "https://github.com/chapel-lang/chapel/trunk";
+$git_url = $ENV{'CHPL_HOME_REPOSITORY'};
+if ($git_url eq "") {
+    $git_url = "https://github.com/chapel-lang/chapel";
 }
-print "Checking out the sources...\n";
-system("cd $tmpdir && svn export -q $svnroot $reldir");
 
+$git_branch = "master";
+if (exists($ENV{'CHPL_GEN_RELEASE_BRANCH'})) {
+    $git_branch = $ENV{'CHPL_GEN_RELEASE_BRANCH'};
+}
+
+print "Cloning the sources (repo: $git_url branch: $git_branch)...\n";
+$clone_status = system("git clone --branch $git_branch $git_url $rootdir");
+
+if ($clone_status != 0) {
+    print "Failed to clone repo.\n";
+    exit 1;
+}
+
+print "Creating git archive...\n";
+$archive_dir = "$rootdir/$reldir";
+system("cd $rootdir && git archive --format=tar HEAD | (mkdir -pv $archive_dir && cd $archive_dir && tar -xf -)");
 
 # explicit files to include
 @files = (
@@ -57,13 +71,13 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
        "etc/README",
        "man/man1/chpl.1",
        "util/README",
+       "util/build_configs.py",
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
        "util/setchplenv.fish",
        "util/setchplenv.sh",
        "util/start_test",
-       "util/update-sources"
 );
 
 
@@ -87,14 +101,12 @@ system("cd $tmpdir && svn export -q $svnroot $reldir");
     "util/chplenv",
     "util/config",
     "util/docs",
+    "util/quickstart",
     "util/test"
 );
 
 
-chdir "$rootdir";
-
-print "Tagging the files with copyright messages...\n";
-system("make -f make/Makefile.release");
+chdir "$archive_dir";
 
 print "Generating the bison/flex files...\n";
 system("cd compiler/parser && make lex.yy.cpp > /dev/null");
@@ -130,7 +142,7 @@ system("cd third-party && rm -rf txt2man");
 print "Removing third-party directories that are not intended for release...\n";
 system("cd third-party && rm *.devel*");
 
-chdir "$tmpdir";
+chdir "$rootdir";
 
 print "Chmodding the hierarchy\n";
 system("chmod -R ugo+rX $reldir");

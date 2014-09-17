@@ -69,14 +69,7 @@ case $COMPILER in
         log_info "Unloading cray-libsci module."
         module unload cray-libsci
         ;;
-    intel|gnu)
-        export CHPL_REGEXP=re2
-        export CHPL_GMP=gmp
-
-        log_info "Loading module: ${module_name}"
-        module load ${module_name}
-        ;;
-    pgi)
+    intel|gnu|pgi)
         log_info "Loading module: ${module_name}"
         module load ${module_name}
         ;;
@@ -100,7 +93,6 @@ export CHPL_COMM=none
 
 # Set some vars that nightly cares about.
 export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly/whitebox/${platform}
-export CHPL_NIGHTLY_STATDIR=/data/sea/chapel/Nightly/Stats
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 # Ensure that one of the CPU modules is loaded.

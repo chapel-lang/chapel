@@ -30,13 +30,68 @@
 New problems
 ============
 
-expect this to be a nondeterministic timeout that will disappear tomorrow (07/18/14)
-------------------------------------------------------------------------------------
-[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
+tcmalloc seems to be causing non-det segfaults.  This is especially visible in
+performance runs (probably due to longer times and more runs in general), but
+has also potentially occurred in other cases.  The performance cases are most
+likely tcmalloc, the others may merely be coincidental.
+
+performance failures:
+---------------------
+studies/parboil/BFS/bfs (09/08/2014) bradc-lnx
+studies/parboil/stencil/stencil3D (09/09-09/11) bradc-lnx
+release/examples/benchmarks/miniMD/miniMD (09/10/2014, 09/11/2014) bradc-lnx
+npb/ep/mcahir/ep all sizes (09/11/2014) chap04
+
+
+These three cases could be related
+
+knucleotide-chaining non-det seg faults
+---------------------------------------
+linux64.gnu.none.qthreads.numa.tcmalloc-std (09/09/2014)
+linux64.gnu.none.qthreads.flat.tcmalloc-fst (09/07/2014)
+
+parallel/begin/deitz/test_string_cat
+------------------------------------------------------------------------
+linux64.gnu.none.qthreads.flat.tcmalloc-npt (baseline) (2014/09/08, 09/10)
+linux64.gnu.none.qthreads.flat.tcmalloc-nlc (no-local) (2014/09/09)
+
+
+optimizations/cache-remote/ferguson/correctness/ (various tests)
+----------------------------------------------------------------
+on linux64.gnu.gasnet.fifo.flat.tcmalloc-std, at least one of these tests
+failed per day from 09/06/2014 through 09/11/2014, and none failed on 09/12/2014
+
+
+
+[Error: Timed out executing program studies/shootout/binary-trees/binary-trees_iter (execopts: 2)]
+--------------------------------------------------------------------------------------------------
+(2014/09/08)
+  Appears to be a simple timeout.  The test ran successfully in the 19 runs immediately 
+  preceding the timeout.  Increase the timeout time?
+
+failures retrieving and storing perf data, started 7/19/14
+----------------------------------------------------------
+We are getting these messages, seemingly for all testing (not just perf):
+  ERROR svn-updating perf data before running tests.
+  ERROR svn-updating perf data after running tests.
+  ERROR svn-updating release over release perf data after running tests: 1
+  ERROR svn-committing perf data.
+First reported 7/20/14; Thomas is looking
+There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
+An attempt to fix this on the svn side the night of 7/22/14 failed.
+It is being escalated to github support.
+7/24/14: Think we have a solution; expect good results for 7/25 testing.
+Intermittent: got a lot of these early in the week of 7/20, fewer on 7/25,
+              but then more again on 7/26, only a few on 7/27, etc.
+
+CCE errors building runtime with 8.4 (The identifier "__func__" is undefined.)
+---------------------------------------------------------------------
+Bug http://bugzilla.us.cray.com/show_bug.cgi?id=815301
 
 *** Caught a fatal signal: SIGSEGV(11) on node 3/4: gasnet.qthreads.numa
 ------------------------------------------------------------------------
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
+[Error matching program output for release/examples/programs/quicksort]
 
 gasnet.qthreads.numa is getting a timeout mail per night, approximately
 -----------------------------------------------------------------------
@@ -44,6 +99,7 @@ gasnet.qthreads.numa is getting a timeout mail per night, approximately
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 [Error: Timed out executing program release/examples/programs/quicksort]
+  (still present: 2014/09/03)
 
 7/6: hpl
 7/7: jacobi
@@ -70,7 +126,8 @@ gasnet.qthreads.flat is getting an occasional timeout mail as well
 7/8: assoc/stress passed
 7/10: hpl, test_many_domains
 7/14: nestedForall3
-
+9/2: test_10k_coforall (this appears as an error, but is actually a timeout)
+9/3: hpl, ptrans, SSCA2_main*3
 
 
 cray-xe.cray-prgenv-cray.none.fifo.flat--linux64.gnu
@@ -158,6 +215,7 @@ numa+gasnet timeouts
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)] (6/17/14)
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (6/17/14)
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array] (6/19/14)
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (09/02/14)
 
 Non-deterministic 'glibc detected'
  "double free or corruption", "invalid pointer", others?
@@ -215,9 +273,80 @@ since 6/22/14, e.g.
   whitebox-cray-xe/cray-xe.cray-prgenv-pgi.none.fifo.flat--linux64.gnu
   whitebox-cray-xe/linux64.pgi.none.fifo.flat
 
+pgi on XC execution timeouts (2014-08-28)
+-----------------------------------------
+
+with PrgEnv-pgi as host and target compiler:
+
+[Error: Timed out executing program release/examples/primers/reductions]
+[Error: Timed out executing program release/examples/primers/syncsingle]
+
+with PrgEnv-pgi as target compiler and gcc as host compiler:
+
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
+[Error: Timed out executing program release/examples/spec/Task_Parallelism_and_Synchronization/singleVar]
+
+vanilla pgi:
+
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep]
+[Error: Timed out executing program release/examples/programs/quicksort] (2014/09/03)
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1,execopts: 4)] (2014/09/03)
+
 =========================================================
 Problems analyzed and assigned that should be fixed soon:
 =========================================================
+
+classes/bradc/arrayInClass/genericArrayInClass-otharrs-inline-iterators.chpl
+----------------------------------------------------------------------------
+Tom is fixing the line number error that is wrong with this future.
+
+
+[Error matching program output for studies/filerator/walk (execopts: 2 and 9)
+-----------------------------------------------------------------------------
+Brad is looking into these failures as he created the test
+
+
+whitebox cray-xc failures (bradc)
+---------------------------------
+This is due to the globerator.
+
+
+parallel/cobegin/deitz/test_big_recursive_cobegin
+-------------------------------------------------
+fifo testing - Elliot had altered the call stack size for this test, but it
+was too small for fifo.  He pushed a fix 09/12/2014
+
+
+[Error matching program output for execflags/gbt/getenv]
+--------------------------------------------------------
+gasnet
+This is a result of multi-locale calls to writeln with c_string arguments on
+locales other than locale 0.  Tom thinks that the strings-as-records
+implementation will allow forward progress on solving the bug itself.  The
+test itself has been resolved by Greg's fix on 09/09/2014
+
+
+[Error matching program output for trivial/deitz/test_max_range_iteration]
+[Error matching program output for types/range/hilde/maximalRange (compopts: 1)]
+--------------------------------------------------------------------------------
+Due to Elliot's C for loop initial commit.  He pushed a commit which alterred
+the code and most likely resolved these errors.  Initial test results indicate
+it is fixed, but it should be observed for a couple more days (09/12/2014)
+
+
+non-deterministic failure of associative/bharshbarg/arrays/arraySetOps
+----------------------------------------------------------------------
+various configs
+Ben looked into this error, and pushed a commit which seems to have fixed it.
+Leaving this note here to make sure it has gone away. (09/12/2014)
+
+
+[Error matching program output for associative/bharshbarg/domains/opEquals]
+---------------------------------------------------------------------------
+Fails under qthreads+numa, no-local, gasnet+fifo, gasnet-fast,
+gasnet-everything, cygwin - This is due to Vass's const-ness checking commit
+on 09/08/2014
+
 
 XT/XC PrgEnv-cray non-deterministic compiler internal errors
 (seg fault) this shows up on
@@ -238,6 +367,15 @@ cygwin timeout
 ==============
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)] (1/13/14, 1/16/14, 1/20/14)
 [Error: Timed out compilation for release/examples/primers/distributions] (1/19/14)
+
+This one "times out", but often times the timedexec script fails to actually
+kill it leaving the job hung until someone manually kills the process in
+windows land (which could take days if nobody notices). Added a skipif so the
+test will not run on cygwin until the issue can be investigated further.
+
+[Error: Timed out executing program parallel/taskPar/sungeun/private] (8/19/14)
+[Error: Timed out executing program parallel/cobegin/deitz/test_big_recursive_cobegin] (9/2/14)
+
 
 
 PrgEnv-gnu compilation timeout
@@ -260,6 +398,11 @@ issue.
 ==============================================
 These things regularly cause noise in testing:
 ==============================================
+
+[Error matching program output for types/string/StringImpl/memLeaks/promotion]
+------------------------------------------------------------------------------
+in baseline and valgrind testing.  Sung is aware of the issue but it is
+considered low priority.
 
 
 pthread mutex lock assertion failed (after 22303, unassigned)
@@ -364,7 +507,7 @@ nondet. timeout on gasnet-everything
 ------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest] (07/08/13)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (7/22/13, 09/02/13, 09/30/13, 12/13/13)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13, 01/08/14, 6/18/14)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (7/19/13, 10/9/13, 01/08/14, 6/18/14, 09/02/14)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (9/30/13, 11/8/13, 12/13/13)
 
 libmpich_intel.so failure for
@@ -406,7 +549,7 @@ numerical discrepancies - same cause as for --no-local above?
 
 numerical discrepancies with --fast - same cause as for --no-local above?
 -------------------------------------------------------------
-studies/jacobi/waynew/example2 (06/13, 7/10/14)
+studies/jacobi/waynew/example2 (06/13, 7/10/14, 09/11/14)
 
 
 intermittent valgrind error
@@ -433,8 +576,9 @@ The type of Bar.super is at least partially corrupt at that point.
 
 valgrind timeouts
 -----------------
-* Timed out on 2014-06-06
+* Timed out on 2014-07-22
 [Error: Timed out executing program release/examples/spec/Memory_Consistency/syncSpinWait]
+* Timed out on 2014-06-06
 [Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
 * Timed out on (2/3/14, 2/14/14) probably due to over-subscribing the test machine:
 [Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
@@ -561,6 +705,7 @@ examples of what times out:
  distributions/robust/arithmetic/stress/test_many_array (4/29/13, 6/16/14)
  distributions/dm/t2 (2012/08/15)
  test_array_slicing3 (07/24/13, 07/12/13, 06/08/12, 6/16, 3/29/13, 5/3/13, 11/8/13, 12/9/13, 05/26/14, 6/16/14, 7/16/14)
+ release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4) (07/18/14)
  release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4) (04/08/13)
  studies/cholesky/jglewis/version2/performance/test_cholesky_performance (10/10/13)
  multilocale/diten/needMultiLocales/coforallon_maxThreads (07/04/13, 10/10/13, 10/22/13, 1/21/14, ..., 4/7/14, ..., 6/17/14)
@@ -579,6 +724,12 @@ non-deterministic compilation timeouts with gasnet (UNASSIGNED)
 ---------------------------------------------------------------
 distributions/robust/arithmetic/kernels/hpl (cyclic, 6/12/13; block, 9/9/13)
 distributions/robust/arithmetic/performance/assignSlice (cyclic, 7/21/13)
+[Error: Timed out compilation for distributions/robust/arithmetic/collapsing/test_array_rank_change2] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/composite/test_composite1] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Norm] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/slicing/test_array_slicing2] (cyclic, 7/23/14)
+[Error: Timed out compilation for distributions/robust/arithmetic/trivial/test_dot_rank] (cyclic, 7/23/14)
 
 minus_equals nondeterminism (sungeun)
 ----------------------------------------

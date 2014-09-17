@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // DefaultOpaque.chpl
 //
 pragma "no use ChapelStandard"
@@ -94,24 +113,20 @@ module DefaultOpaque {
   
     proc dsiGetBaseDom() return dom;
   
-    proc dsiAccess(ind : idxType) var : eltType
+    proc dsiAccess(ind : idxType) ref : eltType
       return anarray.dsiAccess(ind);
-    
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsupported by opaque domains");
-    }
 
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsupported by opaque domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   
-    iter these() var {
+    iter these() ref {
       for e in anarray do
         yield e;
     }
@@ -121,7 +136,7 @@ module DefaultOpaque {
         yield block;
     }
   
-    iter these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+    iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       for i in dom.these(tag=iterKind.follower, followThis) do
         yield dsiAccess(i);
     }

@@ -9,11 +9,11 @@
 #include "var-decls.cpp"
 var kkkkkk: int;
 
-cobegin ref(
-#define lvar(name, type, init) name,
+cobegin with (
+#define lvar(name, type, init) ref name,
 #include "var-types.h"
 #undef lvar
-          kkkkkk)
+          ref kkkkkk)
 {
   var jjjjjj: int;
   {

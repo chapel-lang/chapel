@@ -6,7 +6,7 @@ record R {
 record RR {
   var DD = {1..3};
   var AA: [1..3] R;
-  proc this(i) var {
+  proc this(i) ref {
     return AA(i).A;
   }
 }

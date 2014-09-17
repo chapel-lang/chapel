@@ -1,5 +1,4 @@
 // DO NOT EDIT - THIS FILE IS GENERATED AUTOMATICALLY.
-
 // Test no value capturing in a cobegin with a ref clause.
 enum EnumType {
   eFirst,
@@ -10,34 +9,27 @@ record RecordSmall {
   var xxx: int;
 }
 const rSmall = new RecordSmall(xxx=600033);
-
 record RecordLarge {
   var yy01, yy02, yy03, yy04, yy05, yy06, yy07, yy08, yy09, yy10,
       yy11, yy12, yy13, yy14, yy15, yy16, yy17, yy18, yy19, yy20: int;
 }
 const rLarge = new RecordLarge(yy01=30001, yy07=30007, yy20=30020);
-
 class ClassType {
   var zzz: int;
 }
 const cInstance = new ClassType(44444444);
-
 union UnionType {
   var ufield111, ufield222: int;
 }
 var uInstanceVar: UnionType;
 uInstanceVar.ufield222 = 339933;
 const uInstance = uInstanceVar;
-
 type DomType1 = domain(1);
 const init1dom = {7770..7771};
-
 type DomType2 = domain(2);
 const init2dom = {110001..110002, 330004..330005};
-
 type ArrType1 = [init1dom] int;
 const init1arr: ArrType1 = 11011;
-
 type ArrType2 = [init2dom] int;
 const init2arr: ArrType2 = 33033;
 /////////////////////////////////////////////////////////////////////////////
@@ -78,38 +70,38 @@ var arr1: ArrType1;
 var arr2: ArrType2;
 str = "."; // patch up
 var kkkkkk: int;
-cobegin ref(
-b0,
-b8,
-b16,
-b32,
-b64,
-u8,
-u16,
-u32,
-u64,
-i8,
-i16,
-i32,
-i64,
-r32,
-r64,
-m32,
-m64,
-z64,
-z128,
-str,
-enm,
-rec1,
-rec2,
-cls,
-unn,
+cobegin with (
+ref b0,
+ref b8,
+ref b16,
+ref b32,
+ref b64,
+ref u8,
+ref u16,
+ref u32,
+ref u64,
+ref i8,
+ref i16,
+ref i32,
+ref i64,
+ref r32,
+ref r64,
+ref m32,
+ref m64,
+ref z64,
+ref z128,
+ref str,
+ref enm,
+ref rec1,
+ref rec2,
+ref cls,
+ref unn,
 /* no tuples for now */
-dom1,
-dom2,
-arr1,
-arr2,
-          kkkkkk)
+ref dom1,
+ref dom2,
+ref arr1,
+ref arr2,
+          ref kkkkkk)
 {
   var jjjjjj: int;
   {
@@ -251,38 +243,38 @@ var arr1: ArrType1;
 var arr2: ArrType2;
 str = "."; // patch up
 var kkkkkk: int;
-cobegin ref(
-b0,
-b8,
-b16,
-b32,
-b64,
-u8,
-u16,
-u32,
-u64,
-i8,
-i16,
-i32,
-i64,
-r32,
-r64,
-m32,
-m64,
-z64,
-z128,
-str,
-enm,
-rec1,
-rec2,
-cls,
-unn,
+cobegin with (
+ref b0,
+ref b8,
+ref b16,
+ref b32,
+ref b64,
+ref u8,
+ref u16,
+ref u32,
+ref u64,
+ref i8,
+ref i16,
+ref i32,
+ref i64,
+ref r32,
+ref r64,
+ref m32,
+ref m64,
+ref z64,
+ref z128,
+ref str,
+ref enm,
+ref rec1,
+ref rec2,
+ref cls,
+ref unn,
 /* no tuples for now */
-dom1,
-dom2,
-arr1,
-arr2,
-          kkkkkk)
+ref dom1,
+ref dom2,
+ref arr1,
+ref arr2,
+          ref kkkkkk)
 {
   var jjjjjj: int;
   {
@@ -427,38 +419,38 @@ var arr1: ArrType1;
 var arr2: ArrType2;
 str = "."; // patch up
 var kkkkkk: int;
-cobegin ref(
-b0,
-b8,
-b16,
-b32,
-b64,
-u8,
-u16,
-u32,
-u64,
-i8,
-i16,
-i32,
-i64,
-r32,
-r64,
-m32,
-m64,
-z64,
-z128,
-str,
-enm,
-rec1,
-rec2,
-cls,
-unn,
+cobegin with (
+ref b0,
+ref b8,
+ref b16,
+ref b32,
+ref b64,
+ref u8,
+ref u16,
+ref u32,
+ref u64,
+ref i8,
+ref i16,
+ref i32,
+ref i64,
+ref r32,
+ref r64,
+ref m32,
+ref m64,
+ref z64,
+ref z128,
+ref str,
+ref enm,
+ref rec1,
+ref rec2,
+ref cls,
+ref unn,
 /* no tuples for now */
-dom1,
-dom2,
-arr1,
-arr2,
-          kkkkkk)
+ref dom1,
+ref dom2,
+ref arr1,
+ref arr2,
+          ref kkkkkk)
 {
   var jjjjjj: int;
   {
@@ -605,38 +597,38 @@ var arr1: ArrType1;
 var arr2: ArrType2;
 str = "."; // patch up
 var kkkkkk: int;
-cobegin ref(
-b0,
-b8,
-b16,
-b32,
-b64,
-u8,
-u16,
-u32,
-u64,
-i8,
-i16,
-i32,
-i64,
-r32,
-r64,
-m32,
-m64,
-z64,
-z128,
-str,
-enm,
-rec1,
-rec2,
-cls,
-unn,
+cobegin with (
+ref b0,
+ref b8,
+ref b16,
+ref b32,
+ref b64,
+ref u8,
+ref u16,
+ref u32,
+ref u64,
+ref i8,
+ref i16,
+ref i32,
+ref i64,
+ref r32,
+ref r64,
+ref m32,
+ref m64,
+ref z64,
+ref z128,
+ref str,
+ref enm,
+ref rec1,
+ref rec2,
+ref cls,
+ref unn,
 /* no tuples for now */
-dom1,
-dom2,
-arr1,
-arr2,
-          kkkkkk)
+ref dom1,
+ref dom2,
+ref arr1,
+ref arr2,
+          ref kkkkkk)
 {
   var jjjjjj: int;
   {
@@ -781,38 +773,38 @@ var arr1: ArrType1;
 var arr2: ArrType2;
 str = "."; // patch up
 var kkkkkk: int;
-cobegin ref(
-b0,
-b8,
-b16,
-b32,
-b64,
-u8,
-u16,
-u32,
-u64,
-i8,
-i16,
-i32,
-i64,
-r32,
-r64,
-m32,
-m64,
-z64,
-z128,
-str,
-enm,
-rec1,
-rec2,
-cls,
-unn,
+cobegin with (
+ref b0,
+ref b8,
+ref b16,
+ref b32,
+ref b64,
+ref u8,
+ref u16,
+ref u32,
+ref u64,
+ref i8,
+ref i16,
+ref i32,
+ref i64,
+ref r32,
+ref r64,
+ref m32,
+ref m64,
+ref z64,
+ref z128,
+ref str,
+ref enm,
+ref rec1,
+ref rec2,
+ref cls,
+ref unn,
 /* no tuples for now */
-dom1,
-dom2,
-arr1,
-arr2,
-          kkkkkk)
+ref dom1,
+ref dom2,
+ref arr1,
+ref arr2,
+          ref kkkkkk)
 {
   var jjjjjj: int;
   {

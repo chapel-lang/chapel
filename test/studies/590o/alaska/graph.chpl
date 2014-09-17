@@ -158,12 +158,12 @@ class Graph {
   var edges : [EdgeDom] Edge;
 
   var inEdges : [NodeDom] list(Edge) = nil;
-  proc inEdges(n:Node) var { return inEdges[n.id]; }
-  proc inEdges(i:index(NodeDom)) var { return inEdges[i]; }
+  proc inEdges(n:Node) ref { return inEdges[n.id]; }
+  proc inEdges(i:index(NodeDom)) ref { return inEdges[i]; }
 
   var outEdges : [NodeDom] list(Edge) = nil;
-  proc outEdges(n:Node) var { return outEdges[n.id]; }
-  proc outEdges(i:index(NodeDom)) var { return outEdges[i]; }
+  proc outEdges(n:Node) ref { return outEdges[n.id]; }
+  proc outEdges(i:index(NodeDom)) ref { return outEdges[i]; }
 
 
 
@@ -171,24 +171,24 @@ class Graph {
   var undir_adjacent: [NodeDom] list(int) = nil;
 
   var __slack : [EdgeDom] int = -1;
-  proc slack(e:Edge) var { return slack[e.id]; }
-  proc slack(i:index(EdgeDom)) var { return __slack[i]; }
+  proc slack(e:Edge) ref { return slack[e.id]; }
+  proc slack(i:index(EdgeDom)) ref { return __slack[i]; }
 
   var __length: [EdgeDom] int = 1;
-  proc length(e:Edge) var { return length[e.id]; }
-  proc length(i:index(EdgeDom)) var { return __length[i]; }
+  proc length(e:Edge) ref { return length[e.id]; }
+  proc length(i:index(EdgeDom)) ref { return __length[i]; }
 
   var __treeEdges : [EdgeDom] int = 0;
-  proc treeEdges(e:Edge) var { return treeEdges[e.id]; }
-  proc treeEdges(i:index(EdgeDom)) var { return __treeEdges[i]; }
+  proc treeEdges(e:Edge) ref { return treeEdges[e.id]; }
+  proc treeEdges(i:index(EdgeDom)) ref { return __treeEdges[i]; }
 
   var __curRank : [NodeDom] int = -1;
-  proc curRank(n:Node) var { return curRank[n.id]; }
-  proc curRank(i:index(NodeDom)) var { return __curRank[i]; }
+  proc curRank(n:Node) ref { return curRank[n.id]; }
+  proc curRank(i:index(NodeDom)) ref { return __curRank[i]; }
 
   var __treeNodes : [NodeDom] int = 0;
-  proc treeNodes(n:Node) var { return treeNodes[n.id]; }
-  proc treeNodes(i:index(NodeDom)) var { return __treeNodes[i]; }
+  proc treeNodes(n:Node) ref { return treeNodes[n.id]; }
+  proc treeNodes(i:index(NodeDom)) ref { return __treeNodes[i]; }
 
 
   // Graph variables
@@ -504,7 +504,7 @@ proc DFS(G){
 // This function reads a new graph returns
 //
 proc readGraph(filename) {
-  // Create and open  an input file with the specified filename in read (FileAccessMode.read) mode
+  // Create and open  an input file with the specified filename in read (iomode.r) mode
   var infile = open(filename, iomode.r);
   var reader = infile.reader();
 
