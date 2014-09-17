@@ -7,6 +7,7 @@ demonstrate Chapel feature areas in detail.
 
      arrays.chpl            : Rectangular arrays/domains
      arrayVectorOps.chpl    : Vector-like operations on 1D arrays
+     associative.chpl       : Associative arrays/domains and set operations
      atomics.chpl           : Atomic variables
      chpldoc.chpl           : The chpldoc feature
      classes.chpl           : Defining and using classes
