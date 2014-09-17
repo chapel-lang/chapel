@@ -169,9 +169,7 @@ module ChapelSyncvar {
     return b;
   }
 
-  // Report what the variable is storing - either empty or the value.
-  // Do not interact with the full/empty bit.
-  // The implementation follows readXX.
+  // Do not allow implicit writes of sync/single vars.
   proc _syncvar.writeThis(x: Writer) {
     compilerError("sync/single variables cannot currently be written - apply readFE/readFF() to those variables first");
   }
@@ -270,9 +268,7 @@ module ChapelSyncvar {
   }
 
 
-  // Report what the variable is storing - either empty or the value.
-  // Do not interact with the full/empty bit.
-  // The implementation follows readXX.
+  // Do not allow implicit writes of sync/single vars.
   proc _singlevar.writeThis(x: Writer) {
     compilerError("single/sync variables cannot currently be written - apply readFF/readFE() to those variables first");
   }
