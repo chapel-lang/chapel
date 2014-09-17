@@ -13,4 +13,4 @@ After second remove A is: 5 5 4 3 1 5
 After third remove A is: 5 5 1 5
 After adding 1 to all elements A is: 6 6 2 6
 The sum of elements in A is 20
-After clearing, A is: 
+After clearing, A is:  - with 0 elements
