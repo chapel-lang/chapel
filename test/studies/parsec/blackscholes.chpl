@@ -158,5 +158,5 @@ proc main() {
 		writeln("Time elapsed : ", t.elapsed(), " seconds");
 	}
 	if ERR_CHK then
-		writeln("Num Errors: ", numError);
+		writeln("Num Errors: ", numError.readFF());
 }

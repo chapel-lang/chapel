@@ -282,13 +282,12 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
         // unless sync is explicitly specified as the generic
         if (isSyncType(key->type))
           return value;
-        if (fn->hasFlag(FLAG_NO_SYNC_DEMOTION))
-          // Special case for the chpl_here_alloc and free functions, wherein want to 
-          // allocate and free the _sync object and not the variable it wraps.
-          // Sync variables are handled specially, so they normally appear to have the
-          // type of the value they wrap, and moves involving them cause read?? and
-          // write?? calls to be inserted as needed.
-          return value;
+
+        // ... or it is passed by blank or [const] ref
+        if (ArgSymbol* keyArg = toArgSymbol(key))
+          if (keyArg->intent == INTENT_BLANK ||
+              (keyArg->intent & INTENT_FLAG_REF))
+            return value;
 
         TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
         return getNewSubType(fn, key, nt);

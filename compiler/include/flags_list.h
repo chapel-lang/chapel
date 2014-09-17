@@ -159,11 +159,6 @@ symbolFlag( FLAG_NO_INSTANTIATION_LIMIT , ypr, "no instantiation limit", "The in
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototype this symbol" )
-
-// When a sync type is instantiated as the argument type of a generic function, it is normally
-// unwrapped to reveal the underlying type.  This flag prevents that unwrapping, 
-// so the called routine gets to see the sync object as a whole.
-symbolFlag( FLAG_NO_SYNC_DEMOTION , ypr, "no sync demotion" , "prevents a sync type from being unwrapped" )
 symbolFlag( FLAG_NO_USE_CHAPELSTANDARD , ypr, "no use ChapelStandard" , "Do not implicitly use ChapelStandard" )
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)

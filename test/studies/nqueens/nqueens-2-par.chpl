@@ -42,7 +42,7 @@ proc countSolutions(boardSize: int, showEachSoln: bool) {
   sync {
     tryQueenInNextRow(createBoard(boardSize));  // forego dealloc of this board
   }
-  writeln("Found ", solutionCount$, " solutions for N=", boardSize);
+  writeln("Found ", solutionCount$.readFE(), " solutions for N=", boardSize);
 }
 
 /////////////////////////////////////////////////////////////////////////////

@@ -148,6 +148,7 @@ writeln(si3);
 sy$.writeFF(4*n);
 
 sy$.reset();
+
 // Sync and single arguments are passed by reference.  As a result,
 // the state of the variable does not change.
 //
@@ -157,6 +158,7 @@ writeln(si$.isFull);
 f_withSingleBoolFormal(si$);
 
 sy$ = 4*n;
+
 // When a sync or single variable is passed as an argument to a
 // function that expects the base type of the variable, the value is
 // read before being passed to the function.  Therefore, the task will
@@ -165,14 +167,23 @@ sy$ = 4*n;
 f_withIntFormal(sy$);
 f_withBoolFormal(si$);
 
-sy$ = 5*n;
-// Similarly, when a sync or single variable is passed as an argument
-// to a generic function such as writeln(), the value is read before
-// being passed to the function.  The generic formal argument is set
-// to be the base type of the actual.
+// When passing a sync or single variable to a generic formal,
+// whether with a ref intent or a blank intent, the variable
+// is passed by reference. The state of the variable does not
+// change and sync operations are available.
 //
-writeln(sy$);
-writeln(si$);
+f_withGenericBlankIntentFormal(sy$);
+f_withGenericBlankIntentFormal(si$);
+f_withGenericRefFormal(sy$);
+f_withGenericRefFormal(si$);
+
+sy$ = 5*n;
+
+// Currently, sync and single variables cannot be written out directly.
+// We need to extract the value, for example using readFE() or readFF().
+//
+writeln(sy$.readFE());
+writeln(si$.readFF());
 
 proc f_withSyncIntFormal(x: sync int) {
   writeln(x.isFull);
@@ -190,3 +201,10 @@ proc f_withBoolFormal(x: bool) {
   writeln(x);
 }
 
+proc f_withGenericBlankIntentFormal(x) {
+  writeln("the full bit is: ", x.isFull);
+}
+
+proc f_withGenericRefFormal(ref x) {
+  writeln("readXX returns: ", x.readXX());
+}
