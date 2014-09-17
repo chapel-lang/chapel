@@ -934,7 +934,9 @@ it was not found.
 
 The \chpl{Sort} module is designed to support standard sorting
 routines.  The current interface is minimal and should be expected to
-grow and evolve over time.
+grow and evolve over time. Each of the following functions accepts an
+optional boolean argument, \chpl{reverse}, which is \chpl{false} by
+default. If \chpl{true}, then the sort function will order in reverse.
 
 \begin{protohead}
 proc BubbleSort(Data: [?Dom]) where Dom.rank == 1
@@ -947,7 +949,7 @@ algorithm.
 \begin{protohead}
 proc HeapSort(Data: [?Dom]) where Dom.rank == 1
 \end{protohead}
-\begin{protbody}
+\begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential heap sort
 algorithm.
 \end{protobody}
