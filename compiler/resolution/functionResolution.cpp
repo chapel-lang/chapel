@@ -1062,10 +1062,12 @@ static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual))
     if (se->var->hasFlag(FLAG_EXPR_TEMP) ||
-        se->var->hasFlag(FLAG_REF_TO_CONST) ||
-        (se->var->isConstant() && !formal->hasFlag(FLAG_ARG_THIS)) ||
+        ((se->var->hasFlag(FLAG_REF_TO_CONST) ||
+          se->var->isConstant()) && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->var->isParameter())
-      if (okToConvertFormalToRefType(formal->type))
+      if (okToConvertFormalToRefType(formal->type) ||
+          // If the user says 'const', it means 'const'.
+          (se->var->hasFlag(FLAG_CONST) && !se->var->hasFlag(FLAG_TEMP)))
         return false;
   // Perhaps more checks are needed.
   return true;
@@ -2858,11 +2860,12 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
     // the symbol whose field is accessed
     baseSym = baseExpr->var;
 
-    // Do not consider it const if it is an access to 'this'
-    // in a constructor. Todo: will need to reconcile with UMM.
-    if (refConst && baseSym->hasFlag(FLAG_ARG_THIS) &&
-        isInConstructorLikeFunction(call)) {
-      refConst = false;
+    if (refConst) {
+      // Do not consider it const if it is an access to 'this'
+      // in a constructor. Todo: will need to reconcile with UMM.
+      if (baseSym->hasFlag(FLAG_ARG_THIS) &&
+          isInConstructorLikeFunction(call))
+        refConst = false;
     } else {
       // See if the variable being accessed is const.
       if (baseSym->isConstant() ||
@@ -2879,6 +2882,29 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
           INT_ASSERT(isClass(baseType));
       }
     }
+
+  } else if (!refConst &&
+             resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))
+  {
+    // todo - avoid code duplication w.r.t. the above
+    // 'resolvedFn' is either a 'var' function or returns an array or such
+    SymExpr* baseExpr = toSymExpr(call->get(2));
+    INT_ASSERT(baseExpr); // otherwise, cannot do the checking
+    // the symbol for 'this'
+    baseSym = baseExpr->var;
+    // See if the variable being accessed is const.
+    if (baseSym->isConstant() ||
+        // somehow above the check is: baseSym->hasFlag(FLAG_REF_TO_CONST)
+        baseSym->hasFlag(FLAG_CONST))
+    {
+      // Do not consider it const if it is an access to 'this'
+      // in a constructor. Todo: will need to reconcile with UMM.
+      if (baseSym->hasFlag(FLAG_ARG_THIS) &&
+          isInConstructorLikeFunction(call))
+        ; // nothing
+      else
+        refConst = true;
+    }
   }
 
   if (refConst) {
@@ -2888,11 +2914,37 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
         INT_ASSERT(dest); // what else can it be?
         dest->var->addFlag(FLAG_REF_TO_CONST);
         if (baseSym && baseSym->hasFlag(FLAG_ARG_THIS))
+          // 'call' can be a field accessor or an array element accessor or ?
           dest->var->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
       }
     }
   }
 }
+
+
+// Report an error when storing a sync or single variable into a tuple.
+// This is because currently we deallocate memory excessively in this case.
+static void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
+{
+  // Do not perform the checks if:
+      // not building a tuple
+  if (!resolvedFn->hasFlag(FLAG_BUILD_TUPLE) ||
+      // sync/single tuples are used in chpl__autoCopy(x: _tuple), allow them
+      resolvedFn->hasFlag(FLAG_ALLOW_REF)    ||
+      // sync/single tuple *types* and params seem OK
+      resolvedFn->retTag != RET_VALUE)
+    return;
+
+  for_formals_actuals(formal, actual, call)
+    if (isSyncType(formal->type)) {
+      const char* name = "";
+      if (SymExpr* aSE = toSymExpr(actual))
+        if (!aSE->var->hasFlag(FLAG_TEMP))
+          name = aSE->var->name;
+      USR_FATAL_CONT(actual, "storing a sync or single variable %s in a tuple is not currently implemented - apply readFE() or readFF()", name);
+    }
+}
+
 
 // If 'fn' is the default assignment for a record type, return
 // the name of that record type; otherwise return NULL.
@@ -3162,6 +3214,7 @@ void resolveNormalCall(CallExpr* call) {
   }
 
   setFlagsForConstAccess(call, resolvedFn);
+  checkForStoringIntoTuple(call, resolvedFn);
 
   if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
     // Not allowed if it is not called directly from a constructor.
@@ -3472,15 +3525,17 @@ static void resolveMove(CallExpr* call) {
   // If this assigns into a loop index variable from a non-var iterator,
   // mark the variable constant.
   if (SymExpr* rhsSE = toSymExpr(rhs)) {
+    // If RHS is this special variable...
     if (rhsSE->var->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-      // If RHS is this special variable...
       INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
-      if (!isReferenceType(rhsSE->var->type)) {
-        // ... and not of a reference type, mark LHS constant.
-        // todo: differentiate based on ref-ness, not _ref type
-        // todo: not all const if it is zippered and one of iterators is var
+      // ... and not of a reference type
+      // todo: differentiate based on ref-ness, not _ref type
+      // todo: not all const if it is zippered and one of iterators is var
+      if (!isReferenceType(rhsSE->var->type))
+       // ... and not an array (arrays are always yielded by reference)
+       if (!rhsSE->var->type->symbol->hasFlag(FLAG_ARRAY))
+        // ... then mark LHS constant.
         lhs->addFlag(FLAG_CONST);
-      }
     }
   }
 
@@ -4505,7 +4560,11 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar)
       if (destSE->var->hasFlag(FLAG_INDEX_VAR)) {
         // The destination is constant only if both the tuple
         // and the current component are non-references.
-        destSE->var->addFlag(FLAG_CONST);
+        // And it's not an array (arrays are always yielded by reference)
+        // - see boundaries() in release/examples/benchmarks/miniMD/miniMD.
+        if (!fieldType->symbol->hasFlag(FLAG_ARRAY)) {
+          destSE->var->addFlag(FLAG_CONST);
+        }
       } else {
         INT_ASSERT(destSE->var->hasFlag(FLAG_TEMP));
         // We are detupling into another tuple,
@@ -5039,9 +5098,9 @@ preFold(Expr* expr) {
                     !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                     !ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   // Should this conditional include domains, distributions, sync and/or single?
-                  USR_FATAL(ret, "illegal return expression in var function");
+                  USR_FATAL(ret, "illegal expression to return by ref");
                 if (ret->var->isConstant() || ret->var->isParameter())
-                  USR_FATAL(ret, "var function returns constant value");
+                  USR_FATAL(ret, "function cannot return constant by ref");
               }
             }
           }

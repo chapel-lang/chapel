@@ -169,6 +169,11 @@ module ChapelSyncvar {
     return b;
   }
 
+  // Do not allow implicit writes of sync/single vars.
+  proc _syncvar.writeThis(x: Writer) {
+    compilerError("sync/single variables cannot currently be written - apply readFE/readFF() to those variables first");
+  }
+
 
   // single variable support
     pragma "single"
@@ -260,6 +265,12 @@ module ChapelSyncvar {
       chpl_rmem_consist_acquire();
     }
     return b;
+  }
+
+
+  // Do not allow implicit writes of sync/single vars.
+  proc _singlevar.writeThis(x: Writer) {
+    compilerError("single/sync variables cannot currently be written - apply readFF/readFE() to those variables first");
   }
 
   pragma "dont disable remote value forwarding"

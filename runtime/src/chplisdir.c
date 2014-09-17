@@ -24,15 +24,22 @@
 #include <unistd.h>
 #include "chplisdir.h"
 #include "chplrt.h"
+#include "error.h"
 
 int chpl_rt_isDir(const char* pathname, chpl_bool followLinks) {
   struct stat fileinfo;
   if (followLinks) {
-    stat(pathname, &fileinfo);
+    int status = stat(pathname, &fileinfo);
+    if (status) {
+      chpl_internal_error("Fatal error in stat()");
+    }
     return S_ISDIR(fileinfo.st_mode);
     /*  return fileinfo.st_mode & S_IFDIR;*/
   } else {
-    lstat(pathname, &fileinfo);
+    int status = lstat(pathname, &fileinfo);
+    if (status) {
+      chpl_internal_error("Fatal error in lstat()");
+    }
     if (fileinfo.st_mode & S_IFLNK) {
       return false;
     } else {

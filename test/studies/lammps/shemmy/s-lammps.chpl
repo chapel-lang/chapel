@@ -20,12 +20,12 @@ const dts:3*real = (stepSize, 0.5*stepSize, 0.5*stepSize/mass);
 const bounds:3*real = (33.5919,33.5919,33.5919);
 
 const atomsExt:domain(1) = {0..numAtoms-1};
-const positions:[atomsExt] 3*real;
+var   positions:[atomsExt] 3*real;
 
-const velocities:[atomsExt] 3*real;
-const forces:[atomsExt] 3*real;
-const neighbors:[atomsExt] maxSize*int;
-const membcounts:[atomsExt] int;
+var   velocities:[atomsExt] 3*real;
+var   forces:[atomsExt] 3*real;
+var   neighbors:[atomsExt] maxSize*int;
+var   membcounts:[atomsExt] int;
 const infile:string = 'ljcut.in';
 
 loadParticles(infile, positions, velocities);

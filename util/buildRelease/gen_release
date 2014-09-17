@@ -78,7 +78,6 @@ system("cd $rootdir && git archive --format=tar HEAD | (mkdir -pv $archive_dir &
        "util/setchplenv.fish",
        "util/setchplenv.sh",
        "util/start_test",
-       "util/update-sources"
 );
 
 

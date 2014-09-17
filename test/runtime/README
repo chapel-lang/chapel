@@ -1,0 +1,9 @@
+This subdirectory contains more or less direct tests of runtime
+features, capabilities, performance, etc.  That is, it contains tests
+for things like whether chpl_task_getenvNumThreadsPerLocale() returns
+the expected value when CHPL_RT_NUM_THREADS_PER_LOCALE='MAX_PHYSICAL',
+rather than whether we get some expected number of tasks in a Chapel
+forall-stmt that we expect to run over all the physical CPUs.  Tests of
+the latter sort can be found elsewhere in the test hierarchy.  Here we
+have unit tests that can exonerate or convict the runtime when such
+Chapel tests behave in unexpected ways.

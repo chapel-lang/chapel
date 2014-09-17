@@ -65,5 +65,8 @@ if [ "$(uname -s)" = "Darwin" -a "$(uname -r)" = "9.8.0" ] ; then
     export CHPL_TASKS=fifo
 fi
 
+export CHPL_GMP=none
+export CHPL_REGEXP=none
+
 # Compile chapel and make sure the hello world examples run.
 make -C $CHPL_HOME check
