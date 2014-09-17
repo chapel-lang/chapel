@@ -22,7 +22,13 @@
 
 #ifdef __cplusplus
 extern "C" {
+
 #endif
+
+// This macro set to obtain the portable format macro PRIu64 for debug output.
+#define __STDC_FORMAT_MACROS 1
+// This macro set to obtain SIZE_MAX
+#define __STDC_LIMIT_MACROS 1
 
 #include "sys_basic.h"
 #include "qio_error.h"
@@ -31,9 +37,17 @@ extern "C" {
 #endif
 #include "chpl-atomics.h"
 
-// This macro set to obtain the portable format macro PRIu64 for debug output.
-#define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
+#include <stdint.h>
+
+// Last resort way to get SIZE_MAX. This should be correct,
+// but we'd rather use the system's definition... which should
+// theoretically be provided by the above (__STDC_LIMIT_MACROS+stdint.h)
+// but that isn't happening for me on GCC 4.7.2 when this file is included
+// by a C++ program.
+#ifndef SIZE_MAX
+#define SIZE_MAX (~((size_t)0))
+#endif
 
 #include <sys/uio.h>
 #include "deque.h"
@@ -480,11 +494,18 @@ typedef bool qio_bool;
 
 #define MAYBE_STACK_ALLOC(type, count, ptr, onstack) \
 { \
-  size_t size = count * sizeof(type); \
-  if( size <= sizeof(onstack) ) { \
-    ptr = onstack; \
+  /* check for integer overflow or negative count */ \
+  if( count >= 0 && \
+      (size_t) count <= (SIZE_MAX / sizeof(type)) ) { \
+    size_t size = count * sizeof(type); \
+    if( size <= sizeof(onstack) ) { \
+      ptr = onstack; \
+    } else { \
+      ptr = (type*) qio_malloc(size); \
+    } \
   } else { \
-    ptr = (type*) qio_malloc(size); \
+    /* handle integer overflow */ \
+    ptr = NULL; \
   } \
 }
 
