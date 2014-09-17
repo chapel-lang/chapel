@@ -945,6 +945,14 @@ algorithm.
 \end{protobody}
 
 \begin{protohead}
+proc HeapSort(Data: [?Dom]) where Dom.rank == 1
+\end{protohead}
+\begin{protbody}
+Sorts the 1D array \chpl{Data} in-place using a sequential heap sort
+algorithm.
+\end{protobody}
+
+\begin{protohead}
 proc InsertionSort(Data: [?Dom]) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
