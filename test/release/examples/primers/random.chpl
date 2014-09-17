@@ -49,13 +49,13 @@ fillRandom(rands);
 var randsSeeded: [1..10] real;
 var seed = 17;
 fillRandom(randsSeeded, seed);
-writeln("randsSeeded = ", randsSeeded);
+writeln("randsSeeded = ", randsSeeded); // Here the output is deterministic
 writeln();
 
 //
 // The second way to generate a sequence of random numbers is by creating
-// a RandomStream class instance.  The seed to use must be specified upon
-// creation of this instance.
+// a RandomStream class instance.  If one is desired, the seed must be
+// specified upon creation of this instance.
 //
 var randStream: RandomStream = new RandomStream();
 var randStreamSeeded: RandomStream = new RandomStream(seed);
@@ -103,7 +103,7 @@ writeln(fourthRand == randsSeeded[4]);
 
 
 //
-// The stream can be used to iterate over a specified set of indices.
+// The stream can be used to iterate over a specified set of positions.
 //
 for i in randStreamSeeded.iterate({5..10}, real) {
   writeln(i);
@@ -111,10 +111,10 @@ for i in randStreamSeeded.iterate({5..10}, real) {
 
 
 //
-// By default, access using the RandomStream instance will be task-safe.
-// This can be changed for the entire stream during class creation.  As
-// a result, two parallel accesses or updates to the position from which
-// reading is intended may conflict.
+// By default, access using the RandomStream instance will be safe in the
+// presence of parallelism. This can be changed for the entire stream during
+// class creation.  As a result, two parallel accesses or updates to the
+// position from which reading is intended may conflict.
 //
 var parallelUnsafe = new RandomStream(parSafe=false);
 var parallelSeededUnsafe = new RandomStream(seed, false);
@@ -126,12 +126,14 @@ var parallelSeededUnsafe = new RandomStream(seed, false);
 //
 // It can also be changed on a case by case basis.
 //
-begin {
+var unsafeNext: real;
+var unsafeNth: real;
+cobegin with (ref unsafeNext, ref unsafeNth) {
   // These operations can occur in part or in full in any order;
   // it is unpredictable what value unsafeNext will hold.
-  var unsafeNext = randStreamSeeded.getNext(false);
+  unsafeNext = randStreamSeeded.getNext(false);
   randStreamSeeded.skipToNth(8, false);
-  var unsafeNth = randStreamSeeded.getNth(1, false);
+  unsafeNth = randStreamSeeded.getNth(1, false);
 }
 // Commented out for deterministic testing output.
 //writeln(unsafeNext);
