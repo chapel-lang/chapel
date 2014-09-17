@@ -233,8 +233,8 @@ module LocaleModel {
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
-      extern proc chpl_getNumPUsOnThisNode(): c_int;
-      numCores = chpl_getNumPUsOnThisNode();
+      extern proc chpl_getNumLogicalCpus(accessible_only: bool): c_int;
+      numCores = chpl_getNumLogicalCpus(true);
 
       extern proc chpl_task_getNumSublocales(): int(32);
       numSublocales = chpl_task_getNumSublocales();
@@ -348,7 +348,6 @@ module LocaleModel {
 
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
-  pragma "no sync demotion"
   pragma "locale model alloc"
   proc chpl_here_alloc(size:int, md:int(16)) {
     pragma "insert line file info"
@@ -357,7 +356,6 @@ module LocaleModel {
   }
 
   pragma "allocator"
-  pragma "no sync demotion"
   proc chpl_here_calloc(size:int, number:int, md:int(16)) {
     pragma "insert line file info"
       extern proc chpl_mem_calloc(number:int, size:int, md:int(16)) : opaque;
@@ -365,14 +363,12 @@ module LocaleModel {
   }
 
   pragma "allocator"
-  pragma "no sync demotion"
   proc chpl_here_realloc(ptr:opaque, size:int, md:int(16)) {
     pragma "insert line file info"
       extern proc chpl_mem_realloc(ptr:opaque, size:int, md:int(16)) : opaque;
     return chpl_mem_realloc(ptr, size, md + chpl_memhook_md_num());
   }
 
-  pragma "no sync demotion"
   pragma "locale model free"
   proc chpl_here_free(ptr:opaque) {
     pragma "insert line file info"

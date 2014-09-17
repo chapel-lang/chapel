@@ -80,19 +80,6 @@ export CHPL_DEVELOPER=true
 # Disable processor specialization (overridden in some configurations)
 export CHPL_TARGET_ARCH=none
 
-# Enable GMP testing
-export CHPL_GMP=gmp
-if [ "${CHPL_HOST_PLATFORM}" = "darwin" -a "$(uname -r)" = "9.8.0" ] ; then
-    log_info "Not setting CHPL_GMP for ${CHPL_HOST_PLATFORM}, to avoid build issues."
-    unset CHPL_GMP
-fi
-
-# Enable RE2 testing
-case "${CHPL_HOST_PLATFORM}" in
- # enable here on all platforms
- (*)              export CHPL_REGEXP=re2;;
-esac
-
 # Setup some logdirs.
 
 # TODO: These are very rigid file locations. They should be a) part of the

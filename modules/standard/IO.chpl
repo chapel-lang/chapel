@@ -785,8 +785,15 @@ extern const S_ISVTX: int;
    parents: a boolean indicating if parent directories should be created.
             If set to false, any nonexistent parent will cause an error to
             occur.
+
+   Important note: In the case where parents is true, there is a potential
+   security vulnerability.  The existence of each parent directory is checked
+   before attempting to create it, and it is possible for an attacker to create
+   the directory in between the check and the intentional creation.  If this
+   should occur, an error about creating a directory that already exists will
+   be stored in err.
 */
-proc mkdir(out err: syserr, name: string, mode: int = 511,
+proc mkdir(out err: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
   err = qio_mkdir(name.c_str(), mode, parents);
 }
@@ -801,8 +808,15 @@ proc mkdir(out err: syserr, name: string, mode: int = 511,
    parents: a boolean indicating if parent directories should be created.
             If set to false, any nonexistent parent will cause an error to
             occur.
+
+   Important note: In the case where parents is true, there is a potential
+   security vulnerability.  The existence of each parent directory is checked
+   before attempting to create it, and it is possible for an attacker to create
+   the directory in between the check and the intentional creation.  If this
+   should occur, an error about creating a directory that already exists will
+   be generated.
 */
-proc mkdir(name: string, mode: int = 511, parents: bool=false) {
+proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   var err: syserr = ENOERR;
   mkdir(err, name, mode, parents);
   if err then ioerror(err, "in mkdir", name);

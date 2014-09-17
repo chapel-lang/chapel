@@ -8,5 +8,5 @@ proc main {
       a += 1;
     }
   }
-  writeln(a);
+  writeln(a.readFF());
 }

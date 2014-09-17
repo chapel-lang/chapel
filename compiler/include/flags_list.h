@@ -159,11 +159,6 @@ symbolFlag( FLAG_NO_INSTANTIATION_LIMIT , ypr, "no instantiation limit", "The in
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototype this symbol" )
-
-// When a sync type is instantiated as the argument type of a generic function, it is normally
-// unwrapped to reveal the underlying type.  This flag prevents that unwrapping, 
-// so the called routine gets to see the sync object as a whole.
-symbolFlag( FLAG_NO_SYNC_DEMOTION , ypr, "no sync demotion" , "prevents a sync type from being unwrapped" )
 symbolFlag( FLAG_NO_USE_CHAPELSTANDARD , ypr, "no use ChapelStandard" , "Do not implicitly use ChapelStandard" )
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
@@ -207,6 +202,7 @@ symbolFlag( FLAG_REF , ypr, "ref" , ncm )
 symbolFlag( FLAG_REF_FOR_CONST_FIELD_OF_THIS , npr, "reference to a const field of 'this'" , ncm )
 symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
 symbolFlag( FLAG_REF_TO_CONST , npr, "reference to a const" , "a temp or a function that returns a reference to a Chapel const, e.g. an accessor to a const field or its result" )
+symbolFlag( FLAG_REF_TO_CONST_WHEN_CONST_THIS , ypr, "reference to const when const this" , "a function that returns a reference to a Chapel const when 'this' is const" )
 symbolFlag( FLAG_REF_VAR , ypr, "ref var" , "reference variable" )
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
@@ -221,6 +217,7 @@ symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 symbolFlag( FLAG_SPECIFIED_RETURN_TYPE , npr, "specified return type" , ncm )
 symbolFlag( FLAG_STAR_TUPLE , npr, "star tuple" , "mark tuple types as star tuple types" )
 symbolFlag( FLAG_SUPER_CLASS , npr, "super class" , ncm )
+symbolFlag( FLAG_SUPPRESS_LVALUE_ERRORS , ypr, "suppress lvalue error" , "do not report an lvalue error if it occurs in a function with this flag" )
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )

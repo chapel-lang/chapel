@@ -49,7 +49,7 @@ char* chpl_glom_strings(int numstrings, ...) {
   va_start(ap, numstrings);
   len = 0;
   for (i=0; i<numstrings; i++)
-    len += strlen(va_arg(ap, char*));
+    len += strlen(va_arg(ap, const char*));
   va_end(ap);
 
   str = (char*)chpl_mem_allocMany(len+1, sizeof(char),

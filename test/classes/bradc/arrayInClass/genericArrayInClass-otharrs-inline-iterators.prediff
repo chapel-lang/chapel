@@ -8,4 +8,5 @@ tmptmp=`mktemp`
 # Squash line numbers out of C compiler error messages.
 sed -e "\|obj/|s/:[0-9:]\+/:nnnn:/" $tempfile > $tmptmp
 
-mv $tmptmp $tempfile
+# Squash lines containing "In file included from" emitted by some versions of GCC.
+sed -e "/In file included from/d" $tmptmp > $tempfile

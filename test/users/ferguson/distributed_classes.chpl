@@ -5,7 +5,7 @@ class MyClass {
 }
 
 const D = {1..10} dmapped Cyclic(startIdx=1);
-const A:[D] MyClass;
+var   A:[D] MyClass;
 
 for i in 1..10 {
   on A[i] do A[i] = new MyClass(i);
