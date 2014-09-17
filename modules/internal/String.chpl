@@ -103,8 +103,6 @@ module String {
   inline proc string.length return this.c_str().length;
   inline proc string.size return this.length;
   inline proc string.substring(i: int) {
-    // DANGER: Does substring return an owned c_string?  If not, then the free
-    // below is illegal.
     const cs = this.c_str().substring(i);
     // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
@@ -112,7 +110,6 @@ module String {
     return ret;
   }
   inline proc string.substring(r: range(?)) {
-    // DANGER: See above.
     const cs = this.c_str().substring(r);
     // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
@@ -146,14 +143,18 @@ module String {
   // cast to and from Chapel strings use c_string
   pragma "compiler generated"
   inline proc _cast(type t, x) where t==string && x.type != c_string {
-    // Caution: The result of a cast to c_string does not own the string data
+    // Caution: The result of a cast to c_string does not necessarily own the string data
     // it contains.  Therefore it must not be freed.
+    // TODO: Rework the interface to _cast(c_string, x) so it guarantees one or
+    // the other.
     const cs = _cast(c_string, x);
     const ret = toString(cs);
+    // This free is not safe because ownership of the c_string returned by the
+    // _cast above is ambiguous.
+    //    chpl_free_c_string(cs);
     return ret;
   }
 
-  // WARNING: The result of the cast is not owned by the returned c_string.
   pragma "compiler generated"
   inline proc _cast(type t, x: string) where t !=c_string
     return _cast(t, x.c_str());
@@ -323,8 +324,8 @@ module CString {
     return (__primitive("string_compare", a, b) > 0);
   }
 
-  // DANGER! Memory is shared between c_strings assigned thus.  Neither can be
-  // safely freed.
+  // DANGER! Memory is shared between c_strings assigned thus.  Only one (at
+  // most) can be safely freed.
   inline proc =(ref a: c_string, b: c_string) {
     __primitive("=", a, b);
   }
