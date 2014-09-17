@@ -164,7 +164,7 @@ void test_printscan_int(void)
   qio_channel_t* writing;
   qio_channel_t* reading;
 
-#define NSTYLES 10
+#define NSTYLES 12
   qio_style_t styles[NSTYLES];
 
   const char* zero[] = { // writing 0
@@ -177,7 +177,9 @@ void test_printscan_int(void)
                         "   0", // binary, min_width = 4
                         "0b0", // binary, showbase
                         " 0b0", // binary, showbase, showplus=pad
-                        "+0X0" // hex, showbase, showplus=+, uppercase
+                        "+0X0", // hex, showbase, showplus=+, uppercase
+                        "0", // octal
+                        "0o0" // octal, showbase
                        };
 
   const char* one[] = { // writing 1
@@ -190,7 +192,9 @@ void test_printscan_int(void)
                         "   1", // binary, min_width = 4
                         "0b1", // binary, showbase
                         " 0b1", // binary, showbase, showplus=pad
-                        "+0X1" // hex, showbase, showplus=+, uppercase
+                        "+0X1", // hex, showbase, showplus=+, uppercase
+                        "1", // octal
+                        "0o1" // octal, showbase
                        };
   const char* hundred[] = { // writing 100 = 0x64 = 0b1100100
                         "100", // default style
@@ -202,7 +206,9 @@ void test_printscan_int(void)
                         "1100100", // binary, min_width = 4
                         "0b1100100", // binary, showbase
                         " 0b1100100", // binary, showbase, showplus=pad
-                        "+0X64" // hex, showbase, showplus=+, uppercase
+                        "+0X64", // hex, showbase, showplus=+, uppercase
+                        "144", // octal
+                        "0o144" // octal, showbase
                           };
   const char* big[] = { // writing 2^63-1 = 9223372036854775807 = 0x7FFFFFFFFFFFFFFF = 0b111111111111111111111111111111111111111111111111111111111111111
                         "9223372036854775807", // default style
@@ -214,7 +220,9 @@ void test_printscan_int(void)
                         "111111111111111111111111111111111111111111111111111111111111111", // binary, min_width = 4
                         "0b111111111111111111111111111111111111111111111111111111111111111", // binary, showbase
                         " 0b111111111111111111111111111111111111111111111111111111111111111", // binary, showbase, showplus=pad
-                        "+0X7FFFFFFFFFFFFFFF" // hex, showbase, showplus=+, uppercase
+                        "+0X7FFFFFFFFFFFFFFF", // hex, showbase, showplus=+, uppercase
+                        "777777777777777777777", // octal
+                        "0o777777777777777777777" // octal, showbase
                           };
   const char* small[] = { // writing -2^63 = -9223372036854775808 = -0x8000000000000000 = -0b1000000000000000000000000000000000000000000000000000000000000000
                         "-9223372036854775808", // default style
@@ -226,7 +234,9 @@ void test_printscan_int(void)
                         "-1000000000000000000000000000000000000000000000000000000000000000", // binary, min_width = 4
                         "-0b1000000000000000000000000000000000000000000000000000000000000000", // binary, showbase
                         "-0b1000000000000000000000000000000000000000000000000000000000000000", // binary, showbase, showplus=pad
-                        "-0X8000000000000000" // hex, showbase, showplus=+, uppercase
+                        "-0X8000000000000000", // hex, showbase, showplus=+, uppercase
+                        "-1000000000000000000000", // octal
+                        "-0o1000000000000000000000" // octal, showbase
                           };
 
   int64_t nums[] = {0, 1, 100, INT64_MAX, INT64_MIN, 0};
@@ -284,6 +294,15 @@ void test_printscan_int(void)
   styles[9].prefix_base = 1;
   styles[9].showplus = 1;
   styles[9].uppercase = 1;
+
+  // 10 has defaults, octal
+  styles[10].base = 8;
+  styles[10].prefix_base = 0;
+
+  // 11 has defaults, octal, showbase
+  styles[11].base = 8;
+  styles[11].prefix_base = 1;
+
 
   // Open a temporary file.
   err = qio_file_open_tmp(&f, 0, NULL);
