@@ -61,6 +61,9 @@ case $COMPILER in
         log_info "Loading module: ${module_name}"
         module load ${module_name}
 
+        # Use cce version 8.3.0 for consistency.
+        module swap cce cce/8.3.0
+
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
         module swap craype-network-aries craype-target-local_host
