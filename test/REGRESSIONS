@@ -150,19 +150,18 @@ invalid read/write in dl_* routines
 
 ================================
 no-local regressions
-(Reviewed for accuracy 09/14/14)
+(Reviewed for accuracy 09/17/14)
 ================================
-
-frequently gets wrong answer (09/12/14)
----------------------------------------
-[Error matching program output for types/scalar/bradc/bools]
-[Error matching program output for types/scalar/bradc/bools2]
 
 
 ====================================================
 gasnet-everything regressions (other than the above)
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/17/14)
 ====================================================
+
+seg fault (09/17/14)
+--------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/mdblock/test_block2d_2]
 
 error: cannot create C string from remote string (due to r22900 -- sungeun)
 ---------------------------------------------------------------------------
@@ -172,10 +171,6 @@ error: cannot create C string from remote string (due to r22900 -- sungeun)
 [Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014/06/14)
 [Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)] (2014/06/14)
 [Error matching program output for optimizations/sungeun/RADOpt/access3d (compopts: 1)] (2014/06/14)
-
-comm count increases (08/26/14)
--------------------------------
-[Error matching program output for studies/ssca2/performance/SSCA2_commDiags (compopts: 1)]
 
 
 ==============================================
@@ -187,11 +182,11 @@ gasnet-fast regressions (other than the above)
 
 ============================================================
 linux32 (comm-gasnet) regressions (in addition to the above)
-(Reviewed for accuracy 07/15/14)
+(Reviewed for accuracy 09/15/14)
 ============================================================
 
-fairly consistent timeouts (09/15/14)
--------------------------------------
+fairly consistent timeouts due to qthreads oversubscription (09/15/14)
+----------------------------------------------------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/hpl]
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans]
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
@@ -231,7 +226,7 @@ fifo-specific regressions
 
 ================================
 darwin-specific regressions
-(reviewed for accuracy 07/15/14)
+(reviewed for accuracy 09/17/14)
 ================================
 
 can't find RandomStream (due to Mac case insensitivity?) (09/17/14 -- lydia -- should be fixed)
@@ -245,9 +240,8 @@ need machine specific .good file
 [Error cannot locate program output comparison file studies/hpcc/common/testProbSize.good]
 [Error matching program output for modules/standard/memory/countMemory/countMemory]
 
-A bunch of .bad file mismatches that are uncategorized because they don't
-report the diffs
--------------------------------------------------------------------------
+nonportable use of sed in new .bad prefilter script (hilde)
+-----------------------------------------------------------
 [Error matching .bad file for arrays/vass/initialization-mapped-1]
 [Error matching .bad file for chpldoc/compflags/alphabetical/classFields]
 [Error matching .bad file for chpldoc/types/arguments/queried]
@@ -449,19 +443,34 @@ surprising timeouts?
 
 ======================================
 chpbld01 (PrgEnv/XC whitebox) failures
-(Reviewed for accuracy 07/18/14)
+(Reviewed for accuracy 09/17/14)
 ======================================
 
 
 ======================================
 chpbld02 (PrgEnv/XE whitebox) failures
-(Reviewed for accuracy 07/18/14)
+(Reviewed for accuracy 09/17/14)
 ======================================
+
+The following tests fail nondeterministically on chpbld01/chpbld02 with one of
+the following failures (should valgrind these on whiteboxes to diagnose)
+* glibc: invalid next size
+* glibc: double free or corruption
+--------------------------------------------------------------------
+[Error matching program output for functions/iterators/tzakian/open_inside_file_iter]
+[Error matching program output for io/ferguson/asserteof]
+[Error matching program output for trivial/shannon/readWriteBool]
+[Error matching program output for types/file/freadComplex]
+[Error matching program output for types/file/freadIntFailed]
+[Error matching program output for types/file/freadNoInt]
+[Error matching program output for types/file/freadNoFloat]
+[Error matching program output for types/file/freadNotABoolean]
+[Error matching program output for types/file/fwriteIntFailed]
 
 
 ==========================================================
 cray-prgenv-*-specific failures (in addition to the above)
-(Reviewed for accuracy 07/18/14)
+(Reviewed for accuracy 09/17/14)
 ==========================================================
 
 problem with static/dynamic linking?
@@ -573,10 +582,6 @@ gdb prints paths differently
 ----------------------------
 [Error matching program output for execflags/bradc/gdbddash/declint2]
 
-glibc: invalid next size
-------------------------
-[Error matching program output for functions/iterators/tzakian/open_inside_file_iter]
-
 undefined reference to chpl_bitops_debruijn64 (07/14/14)
 --------------------------------------------------------
 [Error matching compiler output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
@@ -587,11 +592,6 @@ negative floating point 0.0 not supported
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral]
 [Error matching program output for types/file/bradc/scalar/floatcomplexexceptions]
 
-glibc: double free or corruption
---------------------------------
-[Error matching program output for types/file/freadIntFailed]
-[Error matching program output for types/file/fwriteIntFailed]
-
 alignment error in output
 -------------------------
 [Error matching program output for types/range/hilde/align]
@@ -601,20 +601,11 @@ pgi-specific regressions (in addition to above)
 (Reviewed for accuracy 09/15/14)
 ===============================================
 
-glibc: invalid next size
-------------------------
-[Error matching program output for types/file/freadNotABoolean]
-
 
 ==========================================================================
 cray-prgenv-intel-specific regressions (in addition to cray-prgenv* above)
 (Reviewed for accuracy 09/15/14)
 ==========================================================================
-
-glibc: invalid next size (mppf)
--------------------------------
-[Error matching program output for io/ferguson/asserteof]
-[Error matching program output for types/file/freadNoInt]
 
 alignment mismatch in output
 ----------------------------
@@ -656,15 +647,6 @@ cray-prgenv-gnu specific failures
 (Reviewed for accuracy 09/14/14)
 =================================
 
-glibc: double free or corruption (mppf)
----------------------------------------
-[Error matching program output for io/ferguson/asserteof]
-[Error matching program output for types/file/freadComplex]
-[Error matching program output for types/file/freadNoFloat]
-
-glibc: invalid next size (mppf)
--------------------------------
-[Error matching program output for trivial/shannon/readWriteBool]
 
 
 ================================
@@ -833,7 +815,7 @@ Tests suppressions that now succeed due to turning on inlining (12/7/12)
 
 ================================
 block distribution regressions
-(Reviewed for accuracy 07/15/14)
+(Reviewed for accuracy 09/15/14)
 ================================
 
 *** occasional timeouts due to qthreads oversubscription ***
@@ -866,7 +848,7 @@ regular timeouts due to oversubscription under qthreads (08/26/14)
 
 ===================================
 replicated distribution regressions
-(Reviewed for accuracy 07/15/14)
+(Reviewed for accuracy 09/15/14)
 ===================================
 
 SIGSEGV at execution time (started 7/24/14)
