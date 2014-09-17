@@ -1324,6 +1324,7 @@ module ChapelArray {
     proc _dom return _getDomain(_value.dom);
     proc rank param return this.domain.rank;
   
+    pragma "reference to const when const this"
     inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
@@ -1331,9 +1332,11 @@ module ChapelArray {
         return _value.dsiAccess(i(1));
     }
   
+    pragma "reference to const when const this"
     inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
   
+    pragma "reference to const when const this"
     inline proc localAccess(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
@@ -1341,17 +1344,19 @@ module ChapelArray {
         return _value.dsiLocalAccess(i(1));
     }
   
+    pragma "reference to const when const this"
     inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
+  
     //
     // requires dense domain implementation that returns a tuple of
     // ranges via the getIndices() method; domain indexing is difficult
     // in the domain case because it has to be implemented on a
     // domain-by-domain basis; this is not terribly difficult in the
     // dense case because we can represent a domain by a tuple of
-    // ranges, but in the sparse case, is there a general
-    // representation?
+    // ranges, but in the sparse case, is there a general representation?
     //
+    pragma "reference to const when const this"
     proc this(d: domain) {
       if d.rank == rank then
         return this((...d.getIndices()));
@@ -1365,6 +1370,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
   
+    pragma "reference to const when const this"
     proc this(ranges: range(?) ...rank) {
       if boundsChecking then
         checkSlice((... ranges));
@@ -1381,6 +1387,7 @@ module ChapelArray {
       return _newArray(a);
     }
   
+    pragma "reference to const when const this"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
         checkRankChange(args);
@@ -1401,9 +1408,10 @@ module ChapelArray {
         if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
-
+  
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
+    pragma "reference to const when const this"
     proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...r));
@@ -1411,6 +1419,7 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(dom);
     }
   
+    pragma "reference to const when const this"
     proc localSlice(d: domain) where _value.type: DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...d.getIndices()));
@@ -1426,12 +1435,14 @@ module ChapelArray {
       return A;
     }
   
+    pragma "reference to const when const this"
     proc localSlice(r: range(?)... rank) {
       if boundsChecking then
         checkSlice((...r));
       return _value.dsiLocalSlice(r);
     }
   
+    pragma "reference to const when const this"
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }

@@ -1062,8 +1062,8 @@ static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual))
     if (se->var->hasFlag(FLAG_EXPR_TEMP) ||
-        se->var->hasFlag(FLAG_REF_TO_CONST) ||
-        (se->var->isConstant() && !formal->hasFlag(FLAG_ARG_THIS)) ||
+        ((se->var->hasFlag(FLAG_REF_TO_CONST) ||
+          se->var->isConstant()) && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->var->isParameter())
       if (okToConvertFormalToRefType(formal->type) ||
           // If the user says 'const', it means 'const'.
@@ -2860,11 +2860,12 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
     // the symbol whose field is accessed
     baseSym = baseExpr->var;
 
-    // Do not consider it const if it is an access to 'this'
-    // in a constructor. Todo: will need to reconcile with UMM.
-    if (refConst && baseSym->hasFlag(FLAG_ARG_THIS) &&
-        isInConstructorLikeFunction(call)) {
-      refConst = false;
+    if (refConst) {
+      // Do not consider it const if it is an access to 'this'
+      // in a constructor. Todo: will need to reconcile with UMM.
+      if (baseSym->hasFlag(FLAG_ARG_THIS) &&
+          isInConstructorLikeFunction(call))
+        refConst = false;
     } else {
       // See if the variable being accessed is const.
       if (baseSym->isConstant() ||
@@ -2881,6 +2882,29 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
           INT_ASSERT(isClass(baseType));
       }
     }
+
+  } else if (!refConst &&
+             resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))
+  {
+    // todo - avoid code duplication w.r.t. the above
+    // 'resolvedFn' is either a 'var' function or returns an array or such
+    SymExpr* baseExpr = toSymExpr(call->get(2));
+    INT_ASSERT(baseExpr); // otherwise, cannot do the checking
+    // the symbol for 'this'
+    baseSym = baseExpr->var;
+    // See if the variable being accessed is const.
+    if (baseSym->isConstant() ||
+        // ??? baseSym->hasFlag(FLAG_REF_TO_CONST) ||
+        baseSym->hasFlag(FLAG_CONST))
+    {
+      // Do not consider it const if it is an access to 'this'
+      // in a constructor. Todo: will need to reconcile with UMM.
+      if (baseSym->hasFlag(FLAG_ARG_THIS) &&
+          isInConstructorLikeFunction(call))
+        ; // nothing
+      else
+        refConst = true;
+    }
   }
 
   if (refConst) {
@@ -2890,6 +2914,7 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
         INT_ASSERT(dest); // what else can it be?
         dest->var->addFlag(FLAG_REF_TO_CONST);
         if (baseSym && baseSym->hasFlag(FLAG_ARG_THIS))
+          // 'call' can be a field accessor or an array element accessor or ?
           dest->var->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
       }
     }
