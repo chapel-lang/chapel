@@ -2104,7 +2104,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   int tmp_len=0;
   int tmp_skip=0;
   char b=0;
-  int i,shift=0;
+  int i;
   int width;
   int ret_width;
 
