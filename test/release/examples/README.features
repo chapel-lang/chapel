@@ -45,6 +45,7 @@ benchmarks/
 primers/
   arrays         : rectangular domains/arrays; slicing; iteration; reallocation
   arrayVectorOps : vector-like operations on rectangular arrays
+  associative    : associative domains and arrays; set operations
   atomics        : atomic variables and operations on them
   chpldoc        : the comment-based documentation generation feature
   classes        : classes and objects; dynamic dispatch; 'this' and 'these'
