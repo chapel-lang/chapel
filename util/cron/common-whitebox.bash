@@ -67,10 +67,6 @@ case $COMPILER in
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
         module swap craype-network-aries craype-target-local_host
-
-        # TODO: Is this still needed? (thomasvandoren, 2014-07-02)
-        log_info "Unloading cray-libsci module."
-        module unload cray-libsci
         ;;
     intel|gnu|pgi)
         log_info "Loading module: ${module_name}"
@@ -81,6 +77,9 @@ case $COMPILER in
         exit 4
         ;;
 esac
+
+log_info "Unloading cray-libsci module."
+module unload cray-libsci
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 
