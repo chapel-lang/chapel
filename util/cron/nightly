@@ -503,6 +503,11 @@ if ($makestat != 0) {
     mysystem("cd $chplhomedir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
 
+# Speculatively build a couple third-party libraries. This command should not
+# fail, even if it fails to build the libraries.
+print "Making DEBUG=0 OPTIMIZE=1 third-party-try-opt\n";
+mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
+
 if ($buildruntime == 0) {
     $endtime = localtime;
     $shortstatus = "Passed";
