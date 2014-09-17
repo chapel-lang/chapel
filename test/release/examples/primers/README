@@ -19,6 +19,7 @@ demonstrate Chapel feature areas in detail.
      locales.chpl           : Chapel Locale types
      opaque.chpl            : Opaque arrays
      procedures.chpl        : Procedure examples
+     random.chpl            : Usage of the standard module Random
      ranges.chpl            : Range types and operations on ranges
      reductions.chpl        : Reduction examples
      slices.chpl            : Array slicing and reindexing examples

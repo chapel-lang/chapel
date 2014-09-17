@@ -57,6 +57,7 @@ primers/
   locales        : multiple locales, on clauses, multi-locale task parallelism
   opaque         : opaque domains and arrays; graph-based data structures
   procedures     : defining and calling procedures in Chapel
+  random         : use of the standard module Random
   ranges         : ranges; .., #, by operators; range iteration; range slicing
   reductions     : minloc, maxloc, + and && array reductions
   slices         : array slicing and reindexing; iterators
