@@ -229,12 +229,12 @@ fifo-specific regressions
 ================================
 
 
-========================================
-darwin (see below for compiler specific)
+================================
+darwin-specific regressions
 (reviewed for accuracy 07/15/14)
-========================================
+================================
 
-can't find RandomStream (due to Mac case insensitivity?) (09/17/14 -- lydia)
+can't find RandomStream (due to Mac case insensitivity?) (09/17/14 -- lydia -- should be fixed)
 ----------------------------------------------------------------------------
 [Error matching compiler output for release/examples/primers/opaque]
 [Error matching compiler output for release/examples/primers/random]
@@ -245,34 +245,137 @@ need machine specific .good file
 [Error cannot locate program output comparison file studies/hpcc/common/testProbSize.good]
 [Error matching program output for modules/standard/memory/countMemory/countMemory]
 
-domain type printed differently; assertion mismatch (09/17/14 -- vass)
-----------------------------------------------------------------------
+A bunch of .bad file mismatches that are uncategorized because they don't
+report the diffs
+-------------------------------------------------------------------------
 [Error matching .bad file for arrays/vass/initialization-mapped-1]
-
-chpldoc sorting differences
----------------------------
 [Error matching .bad file for chpldoc/compflags/alphabetical/classFields]
-[Error matching program output for chpldoc/compflags/alphabetical/alphabetized]
-[Error matching compiler output for chpldoc/compflags/alphabetical/alphabetized]
-
-chpldoc printing difference
----------------------------
 [Error matching .bad file for chpldoc/types/arguments/queried]
-
-can't clear a dense domain
---------------------------
 [Error matching .bad file for classes/bradc/compilerErrorInMethod/testClear]
-
-type mismatch from c to nil
----------------------------
 [Error matching .bad file for classes/deitz/test_infer_nil]
-
-
-
-
-Bad .bad file
--------------
+[Error matching .bad file for classes/diten/subclassMethodCall]
+[Error matching .bad file for classes/hilde/methodAssignment]
+[Error matching .bad file for classes/vass/ref-like-intents/inout-subclass]
+[Error matching .bad file for classes/vass/ref-like-intents/out-subclass]
+[Error matching .bad file for classes/vass/ref-like-intents/ref-subclass]
+[Error matching .bad file for compflags/tvandoren/runFlag (compopts: 1)]
+[Error matching .bad file for exits/sungeun/exitWithNoParensNoArgs]
+[Error matching .bad file for expressions/lydia/noinit/arg]
+[Error matching .bad file for expressions/vass/cast-to-non-type-1 (compopts:
+1)]
+[Error matching .bad file for expressions/vass/cast-to-non-type-2 (compopts:
+1)]
+[Error matching .bad file for expressions/vass/tuple-from-param-loop]
+[Error matching .bad file for extern/vass/c_sublocid_any.inner-extern]
+[Error matching .bad file for extern/vass/c_sublocid_any.mod-ne]
+[Error matching .bad file for functions/bharshbarg/setterInWhere]
+[Error matching .bad file for functions/bradc/resolution/lastResort/lastResort2]
+[Error matching .bad file for functions/bradc/resolution/lastResort/lastResort]
+[Error matching .bad file for functions/bradc/resolution/paramMismatch]
+[Error matching .bad file for functions/bradc/resolution/smallIntParamCoerce]
+[Error matching .bad file for functions/deitz/test_return1]
+[Error matching .bad file for functions/iterators/tvandoren/enumerate]
+[Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
+[Error matching .bad file for functions/iterators/vass/forall-without-leaderfollower]
+[Error matching .bad file for functions/sungeun/const_ref_arg_default_value]
+[Error matching .bad file for functions/sungeun/resolutionErrorMsg]
+[Error matching .bad file for functions/sungeun/setterFnInWhere]
+[Error matching .bad file for functions/sungeun/setterMtInWhere]
+[Error matching .bad file for functions/tzakian/implicit_arg_pass_by_ref]
+[Error matching .bad file for functions/vass/lvalue-error-messages]
+[Error matching .bad file for functions/vass/out-intent-desired]
+[Error matching .bad file for functions/vass/resolution/need-missing-return-error-2]
+[Error matching .bad file for parallel/begin/sungeun/autoCopyWithBegin (compopts: 1)]
+[Error matching .bad file for parallel/begin/sungeun/initCopyWithBegin]
+[Error matching .bad file for parallel/begin/vass/begin-in-module-init (compopts: 1)]
+[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause (compopts: 1)]
+[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
+(compopts: 2)]
+[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
+(compopts: 3)]
+[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
+(compopts: 4)]
+[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
+(compopts: 5)]
+[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
+(compopts: 6)]
+[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
+(compopts: 7)]
+[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
+(compopts: 8)]
 [Error matching .bad file for performance/bradc/refArgIsWide (compopts: 1)]
+[Error matching .bad file for reductions/sungeun/count]
+[Error matching .bad file for statements/vass/index-variable-var]
+[Error matching .bad file for statements/vass/while-const3]
+[Error matching .bad file for
+studies/shootout/fannkuch-redux/bradc/fannkuch-redux-blc-unbounded]
+[Error matching .bad file for trivial/preston/gcd]
+[Error matching .bad file for trivial/sungeun/bad_reduce_expr]
+[Error matching .bad file for trivial/sungeun/promoted_expr_error]
+[Error matching .bad file for trivial/sungeun/semicolon_typeo_error]
+[Error matching .bad file for types/enum/sungeun/cast_enum_weird_4]
+[Error matching .bad file for
+types/records/bharshbarger/nestedRecordInClass2]
+[Error matching .bad file for
+types/records/const-checking/scenario-1-array-of-record-with-const-fld]
+[Error matching .bad file for
+types/records/const-checking/scenario-2-init-array-of-rec-with-const-fld]
+[Error matching .bad file for
+types/records/const-checking/scenario-3-assoc-dom-of-record-with-const-fld]
+[Error matching .bad file for
+types/records/const-checking/todo-constructors-for-const-rec-fields]
+[Error matching .bad file for
+types/records/const-checking/todo-duplicate-cannotassign-error]
+[Error matching .bad file for
+types/records/const-checking/todo-initializing-typed-var]
+[Error matching .bad file for
+types/records/const-checking/todo-linenumber-in-array-assignment-error]
+[Error matching .bad file for
+types/records/const-checking/todo-multiple-asgn-errors]
+[Error matching .bad file for types/string/sungeun/c_string/intents]
+[Error matching .bad file for types/sync/vass/generic-sync-1]
+[Error matching .bad file for types/sync/vass/ref-sync-2]
+[Error matching .bad file for
+types/tuple/sungeun/iteration/heteroTupleOfArrays]
+[Error matching .bad file for
+types/tuple/sungeun/iteration/heteroTupleOfDomains]
+[Error matching .bad file for
+types/tuple/sungeun/iteration/heteroTupleOfRanges]
+[Error matching .bad file for types/tuple/sungeun/iteration/iteratable]
+[Error matching .bad file for
+types/typedefs/tzakian/classConstructorsFromTypes]
+[Error matching .bad file for users/ferguson/histogram/reductionex_class]
+[Error matching .bad file for users/ferguson/histogram/reductionex_record]
+[Error matching .bad file for users/ferguson/int32method]
+[Error matching .bad file for users/ferguson/module_new]
+[Error matching .bad file for users/ferguson/record_from_string]
+[Error matching .bad file for users/lucashimizu/inferRecursive]
+[Error matching .bad file for users/vass/crash1callDestructorsMain]
+[Error matching .bad file for users/vass/crash5insertAfter]
+[Error matching .bad file for users/vass/div-ceil-on-more-int-types]
+[Error matching .bad file for users/vass/tuple-crash-1]
+[Error matching .bad file for variables/kbrady/ref-member]
+
+wrong signature for C main (bradc -- should now be fixed)
+---------------------------------------------------------
+[Error matching compiler output for Samples/Performance/foo-c]
+
+gdb output differences?
+-----------------------
+[Error matching compiler output for compflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/declint2]
+[Error matching program output for execflags/bradc/gdbddash/declint]
+[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
+
+error: self-comparison always evaluates to true [-Werror,-Wtautological-compare])
+---------------------------------------------------------------------------------
+[Error matching compiler output for extern/ferguson/c_ptrs (compopts: 1)]
+
+warning about using a non-literal format string
+-----------------------------------------------
+[Error matching compiler output for extern/hilde/namedExtern]
+[Error matching compiler output for io/vass/time-write (compopts: 1)]
+[Error matching compiler output for studies/pidigits/bbp/nomem32]
 
 linker error (library not found for -lcrt0.o)
 ---------------------------------------------
@@ -283,98 +386,65 @@ linker error (library not found for -lcrt0.o)
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)]
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)]
 
-
-gdb output differences?
------------------------
-[Error matching compiler output for compflags/bradc/gdbddash/declint]
-[Error matching program output for execflags/bradc/gdbddash/declint2]
-[Error matching program output for execflags/bradc/gdbddash/declint]
-[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
-
-RLIMIT_NPROC portability issue (same as gnu)
---------------------------------------------
-[Error matching compiler output for parallel/taskPool/figueroa/TooManyThreads (compopts: 1)]
-
 various errors in the generated code
 ------------------------------------
 [Error matching compiler output for performance/compiler/bradc/compSampler-timecomp]
 [Error matching compiler output for trivial/shannon/compSampler]
 
-python multithreading modules does not agree with numcores
-----------------------------------------------------------
-[Error matching program output for modules/standard/machine/numCores]
-
-prediff doesn't work (bash differences?)
-----------------------------------------
-[Error matching program output for parallel/coforall/gbt/time-sync-incs]
-
-prediff doesn't work (csh differences?)
----------------------------------------
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
-
-'limit' command does not exist
-------------------------------
-[Error running sub_test in /tmp/chapel-cron-darwin.clang.none.fifo.pthreads.flat-chapelu/chapel/test/memory/shannon/outofmemory (1)]
-
-
-
-=====================================
-darwin-clang/mac-specific regressions
-(started 12/13/13)
-=====================================
-
-
-error: self-comparison always evaluates to true [-Werror,-Wtautological-compare])
----------------------------------------------------------------------------------
-[Error matching compiler output for extern/ferguson/c_ptrs (compopts: 1)]
-
 error: static declaration of 'wait3' follows non-static declaration
 -------------------------------------------------------------------
 [Error matching compiler output for parallel/sync/diten/userLevelEndCount]
 
-timeout
--------
-[Error matching program output for domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
+undefined error
+---------------
+[Error matching program output for io/sungeun/ioerror (execopts: 5)]
 
-===================================
-darwin-gnu/mac-specific regressions
-===================================
+nondeterministic output order issue?
+------------------------------------
+[Error matching program output for parallel/begin/deitz/test_begin_cobegin2]
+[Error matching program output for users/vass/domain_with_on-all]
 
-Bad .bad file
--------------
-[Error matching .bad file for functions/gbt/retRecordMultiDef]
+incorrect output
+----------------
+[Error matching program output for parallel/begin/vass/multi-yield-leader]
 
-gcc warning/error: iteration 2305843009213693951u invokes undefined behavior [-Werror=aggressive-loop-optimizations]
--------------------------------------
-[Error matching compiler output for optimizations/sungeun/RADOpt/access2d (compopts: 1)]
-[Error matching compiler output for studies/hpcc/PTRANS/jglewis/ptrans_2011-blkcyc]
-[Error matching compiler output for studies/hpcc/PTRANS/jglewis/ptrans_2011]
-[Error matching compiler output for studies/ssca2/rachels/SSCA2_test (compopts: 3)]
+timeout (printed by test?)
+--------------------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace]
 
-error in generated code: conflicting types for 'wait3'
-------------------------------------------------------
-[Error matching compiler output for parallel/sync/diten/userLevelEndCount]
+nonportable prediff?
+--------------------
+[Error matching program output for parallel/coforall/gbt/time-sync-incs]
+[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
 
-seg fault
----------
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-refine/test_refine (compopts: 1)]
+incorrect initial values?
+-------------------------
+[Error matching program output for parallel/sync/figueroa/ReadMethods]
 
-Python syntax error (maybe cloaking something else)
----------------------------------------------------
-[Error matching program output for studies/amr/advection/amr/AMR_AdvectionCTU_driver]
-[Error matching program output for studies/amr/advection/grid/Grid_AdvectionCTU_driver]
-[Error matching program output for studies/amr/advection/level/Level_AdvectionCTU_driver]
-[Error matching program output for studies/amr/diffusion/grid/Grid_DiffusionBE_driver]
-[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver]
+no referree output
+------------------
+[Error matching program output for parallel/taskPar/figueroa/taskParallel]
 
-gdb output differences
-----------------------
-[Error matching program output for execflags/bradc/gdbddash/declint]
-[Error matching program output for execflags/bradc/gdbddash/declint2]
-[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
-[Error matching program output for execflags/bradc/gdbddash/declint]
-[Error matching program output for execflags/bradc/gdbddash/declint2]
-[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
+unused value warning
+--------------------
+[Error matching program output for
+release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
+
+halt reached
+------------
+[Error matching program output for stress/deitz/test_10k_begins]
+
+surprising timeouts?
+--------------------
+[Error: Timed out executing program exercises/RandomNumber6]
+[Error: Timed out executing program memory/shannon/outofmemory/mallocOutOfMemory]
+[Error: Timed out executing program parallel/begin/deitz/test_begin2]
+[Error: Timed out executing program parallel/begin/deitz/test_begin]
+[Error: Timed out executing program parallel/begin/deitz/test_coforall_sugar3]
+[Error: Timed out executing program parallel/begin/deitz/test_global_for_begin]
+[Error: Timed out executing program parallel/sync/figueroa/WriteMethods]
 
 
 ======================================
