@@ -48,8 +48,8 @@ $(RE2_FILE):
 	if [ ! -d re2 ]; then ./unpack-re2.sh; fi
 	cd re2 && \
 	$(MAKE) clean && \
-	$(MAKE) CXX=$(CXX) NODEBUG= CXXFLAGS="$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)" && \
-	$(MAKE) CXX=$(CXX) NODEBUG= CXXFLAGS="$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)" prefix=$(RE2_INSTALL_DIR) install && \
+	$(MAKE) CXX=$(CXX) NODEBUG= CXXFLAGS="$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)" obj/libre2.a && \
+	$(MAKE) CXX=$(CXX) NODEBUG= CXXFLAGS="$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)" prefix=$(RE2_INSTALL_DIR) install-static && \
 	mkdir -p ../build/$(RE2_UNIQUE_SUBDIR) && \
 	rm -rf ../build/$(RE2_UNIQUE_SUBDIR) && \
 	mv obj ../build/$(RE2_UNIQUE_SUBDIR)
