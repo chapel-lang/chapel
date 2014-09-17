@@ -602,18 +602,24 @@ proc file._style:iostyle {
   return ret;
 }
 
-/* Change the current working directory to the specified name. Returns any
-   errors that occurred via an out parameter.
+/* Change the current working directory of the current locale to the specified
+   name. Returns any errors that occurred via an out parameter.
    err: a syserr used to indicate if an error occurred
    name: a string indicating a new directory
+
+   Note: this is not safe within a parallel context.  A chdir call in one task
+   will affect the current working directory of all tasks for that locale.
 */
 proc chdir(out err: syserr, name: string) {
   err = qio_chdir(name.c_str());
 }
 
-/* Change the current working directory to the specified name. Generates an
-   error if one occurred.
+/* Change the current working directory of the current locale to the specified
+   name. Generates an error if one occurred.
    name: a string indicating a new directory
+
+   Note: this is not safe within a parallel context.  A chdir call in one task
+   will affect the current working directory of all tasks for that locale.
 */
 proc chdir(name: string) {
   var err: syserr = ENOERR;
@@ -648,8 +654,12 @@ proc chown(name: string, uid: int, gid: int) {
   if err then ioerror(err, "in chown", name);
 }
 
-/* Returns the current working directory.
+/* Returns the current working directory for the current locale.
    err: a syserr used to indicate if an error occurred
+
+   Note: another task on this locale can change the current working
+   directory from underneath this task, so use caution when making use
+   of this function in a parallel environment.
 */
 proc cwd(out err: syserr): string {
   var tmp:c_string, ret:string;
@@ -660,7 +670,13 @@ proc cwd(out err: syserr): string {
   return ret;
 }
 
-/* Returns the current working directory. Generates an error if one occurred. */
+/* Returns the current working directory for the current locale. Generates an
+   error if one occurred.
+
+   Note: another task on this locale can change the current working
+   directory from underneath this task, so use caution when making use
+   of this function in a parallel environment.
+*/
 proc cwd(): string {
   var err: syserr = ENOERR;
   var ret = cwd(err);
