@@ -88,7 +88,8 @@ CHPL_TASKS=muxed and CHPL_COMM=ugni are not supported.
 
     % module load craype-intel-knc
 
-- Build Chapel as normal.  Running printchplenv should look like this.
+- Build Chapel as normal.  Running printchplenv should look something
+  like this:
 
   CHPL_HOST_PLATFORM: cray-xc
   CHPL_HOST_COMPILER: gnu
@@ -106,7 +107,7 @@ CHPL_TASKS=muxed and CHPL_COMM=ugni are not supported.
   CHPL_MAKE: gmake
   CHPL_ATOMICS: intrinsics
     CHPL_NETWORK_ATOMICS: none
-  CHPL_GMP: none
+  CHPL_GMP: gmp
   CHPL_HWLOC: none
   CHPL_REGEXP: none
   CHPL_WIDE_POINTERS: struct
@@ -129,7 +130,7 @@ CHPL_TASKS=muxed and CHPL_COMM=ugni are not supported.
 - Next, use qsub to request the nodes.  For example, to request nodes
   12-16 for interactive using PBSPro:
 
-  % qsub -I -l,mppnodes="12-16"
+  % qsub -I -lmppnodes="12-16"
 
 - Run your program as you would normally.
 
