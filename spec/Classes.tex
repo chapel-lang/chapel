@@ -655,10 +655,10 @@ reads the field \chpl{name} and assigns the value to the variable
 \index{getter method!class}
 \index{methods!class!getter}
 
-All field accesses are resolved via getters that are variable
-methods~(\rsec{Variable_Functions}) defined in the class with the same
-name as the field.  The default getter is defined to simply return the
-field if the user does not redefine it.
+All field accesses are resolved via getters that are methods with a \chpl{ref}
+return intent (\rsec{Ref_Return_Intent}) defined in the class with the same
+name as the field.  The default getter is defined to simply return the field if
+the user does not redefine it.
 
 \begin{chapelexample}{getterSetter.chpl}
 In the code
