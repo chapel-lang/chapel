@@ -27,7 +27,7 @@ endif
 # On Cray systems, building the shared libraries causes issues.
 # On Macs, not building the shared libraries causes warnings.
 #
-ifneq (, $(filter cray-%,$(CHPL_MAKE_TARGET_PLATFORM)))
+ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_CFG_OPTIONS += --enable-static --disable-shared
 endif
 
