@@ -526,6 +526,12 @@
 #    will be assumed to be
 #         <testname>.<compopts line no>-<execopts line no>.good
 #    A '0' will be used if there is no appropriate line number.
+#    In addition to execution options, a file can be specified to
+#    be piped in via stdin. The format for this feature is:
+#      <execution options> < foo.txt
+#    Where 'foo.txt' is the desired file to be piped into stdin. An
+#    error occurs if a .stdin file exists for the test, or if the
+#    desired file does not exist.
 #
 #  - also added support for a LASTCOMPOPTS file that contains
 #    compiler options to be added after the source file.  Thus:
