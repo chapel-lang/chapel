@@ -3,8 +3,8 @@ Initial support for set operations
 ==================================
 
 This README describes some initial support for set operations on associative
-arrays and domains. It is expected that the features described here will one
-day graduate to the language specification.
+arrays and domains. It is expected that the features described here will be
+included in a future version of the language specification.
 
 =================================
 Associative Domain Set Operations
@@ -12,7 +12,7 @@ Associative Domain Set Operations
 
 The following set functions/operations are supported by associative domains.
 In the following code examples, 'A', 'B', and 'C' are associative domains.
-For every operator, an op= variant exists. For these op= functions, LHS += RHS,
+For every operator, an op= variant exists. For these op= functions, LHS op= RHS,
 the LHS argument is modified in-place using the same rules as the normal
 operator function.
 
