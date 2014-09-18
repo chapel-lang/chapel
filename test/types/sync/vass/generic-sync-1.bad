@@ -1,3 +1,0 @@
-generic-sync-1.chpl:6: In function 'test':
-generic-sync-1.chpl:7: warning: int(64)
-generic-sync-1.chpl:8: error: illegal lvalue in assignment

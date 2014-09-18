@@ -1,7 +1,0 @@
-bug: a generic 'ref' formal whose actual is a sync int gets the type 'int' when instantiating
-
-This is a variation on generic-sync-1.future, giving the formal the
-'ref' intent.
-
-When a sync variable is passed to a generic formal, its sync-ness is
-stripped, which it shouldn't.
