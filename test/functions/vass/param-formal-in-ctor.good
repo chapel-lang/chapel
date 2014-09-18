@@ -1,0 +1,5 @@
+param-formal-in-ctor.chpl:5: warning: CLASS_PARAM(true)
+param-formal-in-ctor.chpl:6: warning: CLASS_PARAM(555)
+param-formal-in-ctor.chpl:18: warning: RECORD_PARAM(true)
+param-formal-in-ctor.chpl:19: warning: RECORD_PARAM(555)
+param-formal-in-ctor.chpl:30: error: done
