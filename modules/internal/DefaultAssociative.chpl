@@ -237,6 +237,7 @@ module DefaultAssociative {
     }
   
     proc dsiAdd(idx: idxType, in slotNum : index(tableDom) = -1, haveLock = !parSafe): index(tableDom) {
+      const inSlot = slotNum;
       on this {
         const shouldLock = !haveLock && parSafe;
         if shouldLock then lockTable();
@@ -245,8 +246,10 @@ module DefaultAssociative {
           _resize(grow=true);
           findAgain = true;
         }
-        if findAgain then slotNum = -1;
-        slotNum = _add(idx, slotNum);
+        if findAgain then
+          slotNum = _add(idx, -1);
+        else
+          _add(idx, inSlot);
         if shouldLock then unlockTable();
       }
       return slotNum;
