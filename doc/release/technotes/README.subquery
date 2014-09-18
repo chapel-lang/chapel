@@ -56,7 +56,7 @@ result of 'localSubdomain' is yielded.
 
 Currently, this is a serial iterator.
  
-To support this iterator on a custom distributed array type, write a iterator
+To support this iterator on a custom distributed array type, write an iterator
 named 'dsiLocalSubdomains'.
 
 =========================================
