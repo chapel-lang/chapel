@@ -86,7 +86,7 @@ void chpl_gmp_mpz_print(mpz_t x)
 }
 
 
-c_string chpl_gmp_mpz_get_str(int base, mpz_t x)
+c_string_copy chpl_gmp_mpz_get_str(int base, mpz_t x)
 {
   size_t len = mpz_sizeinbase(x, base);
 

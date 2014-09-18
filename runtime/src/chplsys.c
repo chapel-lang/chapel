@@ -327,7 +327,7 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
 }
 
 
-c_string chpl_nodeName(void) {
+c_string_copy chpl_nodeName(void) {
   static char* namespace = NULL;
   static int namelen = 0;
   struct utsname utsinfo;

@@ -32,6 +32,6 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only);
 //
 // returns the name of a locale via uname -n or the like
 //
-c_string chpl_nodeName(void);
+c_string_copy chpl_nodeName(void);
 
 #endif

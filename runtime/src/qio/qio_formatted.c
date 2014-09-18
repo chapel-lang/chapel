@@ -3331,7 +3331,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
   return err;
 }
 
-c_string qio_encode_to_string(int32_t chr)
+c_string_copy qio_encode_to_string(int32_t chr)
 {
   int nbytes;
   char* buf;

@@ -163,11 +163,18 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
  * responsibility to make sure that dest is large enough to hold src.
  * Return the moved string.
  */
+// Even if allocation is done here, the returned string is already owned
+// elsewhere.  So we return a c_string, not a c_string_copy.
 c_string stringMove(c_string dest, c_string src, int64_t len,
                     int32_t lineno, c_string filename) {
   char *ret;
   assert(src);
 
+  // TODO: Some versions of "" will be allocated while others will be exactly
+  // equal to the empty string literal, so this will leak memory.  Comparison
+  // should be pointer comparison with the (contents of the) singleton empty
+  // string literal.  Philosophical question: is it really worth the extra
+  // trouble to keep track of this special case?
   if (!strcmp(dest, "")) {
     ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
   } else {
@@ -186,7 +193,7 @@ c_string stringMove(c_string dest, c_string src, int64_t len,
  *     src_len: length
  *
  */
-c_string remoteStringCopy(c_nodeid_t src_locale,
+c_string_copy remoteStringCopy(c_nodeid_t src_locale,
                           c_string src_addr, int64_t src_len,
                           int32_t lineno, c_string filename) {
   char* ret;

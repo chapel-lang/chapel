@@ -115,9 +115,9 @@ void chpl_rt_free_c_string(c_string s, int32_t lineno, c_string filename)  {
 
 void chpl_mem_layerInit(void);
 void chpl_mem_layerExit(void);
-void* chpl_mem_layerAlloc(size_t, int32_t, c_string);
-void* chpl_mem_layerRealloc(void*, size_t, int32_t, c_string);
-void chpl_mem_layerFree(void*, int32_t, c_string);
+void* chpl_mem_layerAlloc(size_t, int32_t lineno, c_string filename);
+void* chpl_mem_layerRealloc(void*, size_t, int32_t lineno, c_string filename);
+void chpl_mem_layerFree(void*, int32_t lineno, c_string filename);
 
 #else // LAUNCHER
 

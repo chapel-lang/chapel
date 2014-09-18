@@ -349,7 +349,7 @@ _define_string_to_real_type(complex, 128)
  *  int and uint to string
  */
 #define integral_to_string(type, format)        \
-  c_string type##_to_c_string(type x) {   \
+  c_string_copy type##_to_c_string(type x) {    \
     char buffer[256];                           \
     sprintf(buffer, format, x);                 \
     return string_copy(buffer, 0, NULL);        \
@@ -386,7 +386,7 @@ static void ensureDecimal(char* buffer) {
 // the above strings are copied below so the return value of real_to_string
 // can be freed unconditionally
 #define real_to_string(type, format)           \
-  c_string type##_to_c_string(type x) {  \
+  c_string_copy type##_to_c_string(type x) {  \
     if (isnan(x)) {                            \
       return string_copy(NANSTRING, 0, NULL);  \
     } else if (isinf(x)) {                     \

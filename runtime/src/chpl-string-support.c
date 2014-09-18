@@ -65,7 +65,7 @@ char* chpl_glom_strings(int numstrings, ...) {
 }
 
 
-c_string chpl_format(c_string format, ...) {
+c_string_copy chpl_format(c_string format, ...) {
   va_list ap;
   char z[128];
 
@@ -93,7 +93,7 @@ chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
 }
 
 
-c_string
+c_string_copy
 string_copy(c_string x, int32_t lineno, c_string filename)
 {
   char *z;
@@ -108,7 +108,7 @@ string_copy(c_string x, int32_t lineno, c_string filename)
 }
 
 
-c_string
+c_string_copy
 string_concat(c_string x, c_string y, int32_t lineno, c_string filename) {
   char *z = (char*)chpltypes_malloc(strlen(x)+strlen(y)+1,
                                     CHPL_RT_MD_STRING_CONCAT_DATA,
@@ -126,9 +126,11 @@ int string_index_of(c_string haystack, c_string needle) {
   return substring ? (int) (substring-haystack)+1 : 0;
 }
 
+// Returns a newly-allocated string containing (a copy of) the bytes selected
+// from the original string.
 // It is up to the caller to make sure low and high are within the string
 // bounds and that stride is not 0.
-c_string
+c_string_copy
 string_select(c_string x, int low, int high, int stride, int32_t lineno, c_string filename) {
   char* result = NULL;
   char* dst = NULL;
@@ -163,14 +165,15 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, c_strin
 
 // Returns a string containing the character at the given index of the input
 // string, or an empty string if the index is out of bounds.
-c_string
+c_string_copy
 string_index(c_string x, int i, int32_t lineno, c_string filename) {
-  char* buffer;
-
-  if (i-1 < 0 || i-1 >= string_length(x))
-    return "";
-  buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
+  char* buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
                                   lineno, filename);
+  if (i-1 < 0 || i-1 >= string_length(x))
+  {
+    *buffer = '\0';
+    return buffer;
+  }
   sprintf(buffer, "%c", x[i-1]);
   return buffer;
 }
