@@ -33,8 +33,10 @@ This directory contains the following documentation:
 
   technotes/                : technical notes about our implementation:
     README.atomics          :  information about using 'atomic' variables
+    README.auxIO            :  information about Auxiliary I/O with Chapel
     README.chpldoc          :  notes on using the 'chpldoc' capability
     README.comm-diagnostics :  tracking communication events
+    README.curl             :  information about curl and Chapel
     README.dsi              :  requirements/guidelines on writing a domain map
     README.extern           :  calling external C routines
     README.firstClassFns    :  first-class functions
@@ -43,6 +45,7 @@ This directory contains the following documentation:
     README.gmp              :  a prototype GMP module
     README.hdfs             :  information about using the Hadoop Filesystem
     README.io               :  the new I/O system in Chapel
+    README.knc              :  using Chapel with Intel Phi
     README.libraries        :  information about creating libraries in Chapel
     README.llvm             :  information about using the LLVM back-end
     README.local            :  the 'local' statement
