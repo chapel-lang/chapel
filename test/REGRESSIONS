@@ -23,13 +23,9 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 09/15/14)
 ===========================================================
 
-broken due to sync/single-by-generic changes (09/17/14 -- vass)
----------------------------------------------------------------
-[Error matching .bad file for expressions/lydia/noinit/usedWithSingle]
-[Error matching .bad file for expressions/lydia/noinit/usedWithSync]
-[Error matching .bad file for types/sync/vass/generic-sync-1]
-[Error matching .bad file for types/sync/vass/ref-sync-1]
-[Error matching compiler output for parallel/sync/figueroa/DeadLock]
+fail with compiler error (09/18/14 -- sungeun)
+----------------------------------------------
+[Error matching compiler output for types/string/StringImpl/memLeaks/promotion (compopts: 1)]
 
 fails with some regularity (09/14/14 -- sungeun, elliot, ben)
 -------------------------------------------------------------
@@ -37,11 +33,6 @@ fails with some regularity (09/14/14 -- sungeun, elliot, ben)
 [Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)]
 [Error finding compiler performance keys for domains/sungeun/assoc/stress.]
 [Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
-
-fail with some regularity since being committed (09/14/14 -- sungeun)
----------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/promotion]
-[Error matching program output for types/string/StringImpl/memLeaks/coforall]
 
 
 ==============================================
@@ -159,6 +150,10 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 09/17/14)
 ====================================================
 
+leaks reported after these had been tightened up (09/18/14)
+-----------------------------------------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/coforall]
+
 seg fault (09/17/14)
 --------------------
 [Error matching program output for multilocale/deitz/needMultiLocales/mdblock/test_block2d_2]
@@ -228,12 +223,6 @@ fifo-specific regressions
 darwin-specific regressions
 (reviewed for accuracy 09/17/14)
 ================================
-
-can't find RandomStream (due to Mac case insensitivity?) (09/17/14 -- lydia -- should be fixed)
-----------------------------------------------------------------------------
-[Error matching compiler output for release/examples/primers/opaque]
-[Error matching compiler output for release/examples/primers/random]
-[Error matching compiler output for release/examples/primers/reductions]
 
 need machine specific .good file
 --------------------------------
@@ -421,8 +410,6 @@ no referree output
 
 unused value warning
 --------------------
-[Error matching program output for
-release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
 [Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
 [Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
 
@@ -451,6 +438,13 @@ chpbld01 (PrgEnv/XC whitebox) failures
 chpbld02 (PrgEnv/XE whitebox) failures
 (Reviewed for accuracy 09/17/14)
 ======================================
+
+broken due to sync/single-by-generic changes (09/18/14 -- should be fixed)
+---------------------------------------------------------------
+[Error matching .bad file for expressions/lydia/noinit/usedWithSingle]
+[Error matching .bad file for expressions/lydia/noinit/usedWithSync]
+[Error matching .bad file for types/sync/vass/generic-sync-1]
+[Error matching .bad file for types/sync/vass/ref-sync-1]
 
 The following tests fail nondeterministically on chpbld01/chpbld02 with one of
 the following failures (should valgrind these on whiteboxes to diagnose)
@@ -654,20 +648,45 @@ LLVM specific regressions
 (Reviewed for accuracy 09/17/14)
 ================================
 
+could not find mpz_init_set_ui (09/18/14 -- first llvm+gmp test run?)
+---------------------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/shootout/pidigits]
+
 
 ===================================
 cygwin-specific failures
 (Reviewed for accuracy on 09/14/14)
 ===================================
 
+broken due to sync/single-by-generic changes (09/17/14 -- vass--should be fixed)
+--------------------------------------------------------------------------------
+[Error matching .bad file for expressions/lydia/noinit/usedWithSingle]
+[Error matching .bad file for expressions/lydia/noinit/usedWithSync]
+[Error matching .bad file for types/sync/vass/generic-sync-1]
+[Error matching .bad file for types/sync/vass/ref-sync-1]
+[Error matching compiler output for parallel/sync/figueroa/DeadLock]
+
+case insensitivity issue (09/18/14 -- lydia -- should be fixed)
+---------------------------------------------------------------
+[Error matching compiler output for release/examples/primers/opaque]
+[Error matching compiler output for release/examples/primers/random]
+[Error matching compiler output for release/examples/primers/reductions]
+
+cygwin "no /bin/sh" error (09/18/14 -- bradc, tvandoren)
+--------------------------------------------------------
+[Error matching program output for studies/filerator/walk (execopts: 1)]
+[Error matching program output for studies/filerator/walk (execopts: 2)]
+[Error matching program output for studies/filerator/walk (execopts: 3)]
+[Error matching program output for studies/filerator/walk (execopts: 4)]
+[Error matching program output for studies/filerator/walk (execopts: 5)]
+[Error matching program output for studies/filerator/walk (execopts: 6)]
+[Error matching program output for studies/filerator/walk (execopts: 7)]
+[Error matching program output for studies/filerator/walk (execopts: 8)]
+
 gcc warning about assuming strict overflow
 ------------------------------------------
 [Error matching .bad file for puzzles/hilde/overflow (compopts: 1)]
 [Error matching compiler output for studies/shootout/mandelbrot/bugs/mandelbrot-error]
-
-check_channel assertion failure
--------------------------------
-[Error matching C regexp test ./regexp_channel_test Regexp Channels Test]
 
 output mistmatch ('PE32+ executable (console)...')
 --------------------------------------------------
