@@ -78,8 +78,11 @@ case $COMPILER in
         ;;
 esac
 
-log_info "Unloading cray-libsci module."
-module unload cray-libsci
+libsci_module=$(module list -t 2>&1 | grep libsci)
+if [ -n "${libsci_module}" ] ; then
+    log_info "Unloading cray-libsci module: ${libsci_module}"
+    module unload $libsci_module
+fi
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 
