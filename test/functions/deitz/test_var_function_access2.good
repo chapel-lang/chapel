@@ -1,2 +1,2 @@
 test_var_function_access2.chpl:5: In function 'bar':
-test_var_function_access2.chpl:6: error: illegal return expression in var function
+test_var_function_access2.chpl:6: error: illegal expression to return by ref

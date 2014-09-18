@@ -1,1 +1,1 @@
-varFnRetClasses.chpl: 11: error: all return types must match exactly in var function
+varFnRetClasses.chpl: 11: error: all return types must match exactly to return by ref

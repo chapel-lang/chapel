@@ -92,7 +92,7 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
     // WANT (a partial reduction):
     //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
     // INSTEAD OF:
-    const Q: [VectDom] elemType;
+    var Q: [VectDom] elemType;
     [i in MatDom.dim(1)] Q(i) = + reduce [j in MatDom.dim(2)] (A(i,j) * P(j));
     //
 

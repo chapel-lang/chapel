@@ -11,4 +11,4 @@ coforall i in 1..n do
     foo(i+n);
   }
 
-writeln ("total is ", total);
+writeln ("total is ", total.readFF());
