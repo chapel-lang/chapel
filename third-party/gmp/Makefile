@@ -23,6 +23,9 @@ CHPL_GMP_CXXFLAGS=-mmic
 endif
 endif
 
+CHPL_GMP_CFG_OPTIONS += --enable-static --disable-shared
+
+
 default: all
 
 all: gmp
