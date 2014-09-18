@@ -10,7 +10,7 @@ def get():
     if not gmp_val:
         target_platform = chpl_platform.get('target')
         target_compiler = chpl_compiler.get('target')
-        target_arch = chpl_arch.get('target', get_lcd=True)
+        target_arch = chpl_arch.get('target', map_to_compiler=True, get_lcd=True)
 
         # Detect if gmp has been built for this configuration.
         chpl_home = utils.get_chpl_home()

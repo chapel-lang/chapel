@@ -249,7 +249,7 @@ proc create_tree(inout q: DeQueue(TreeNode)) {
 
   // Update search stats
   global_count += count;
-  global_maxDepth = max(global_maxDepth, maxDepth);
+  global_maxDepth = max(global_maxDepth.readFE(), maxDepth);
 
   // Update thread counts and detect termination
   var thread_cnt_l = thread_cnt;
@@ -283,7 +283,8 @@ proc main() {
 
   writeln();
   if !testMode then writeln("Threads spawned: ", threads_spawned);
-  writeln("Tree size = ", global_count.readXX(), ", depth = ", global_maxDepth.readXX());
+  writeln("Tree size = ", global_count.readFF(),
+            ", depth = ", global_maxDepth.readFF());
   if !testMode then writeln("Time: t_create= ", t_create.elapsed(),
           " (", global_count.readXX()/t_create.elapsed(), " nodes/sec)");
 

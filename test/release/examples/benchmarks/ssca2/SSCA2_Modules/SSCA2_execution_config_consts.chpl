@@ -39,7 +39,7 @@ module SSCA2_execution_config_consts
 
   const graph_type_domain : domain ( graph_type );
 
-  const testing_type : [graph_type_domain] bool = false;
+  var testing_type : [graph_type_domain] bool = false;
 
   config const TEST_RMAT_ASSOCIATIVE = true,
                TEST_TORUS_1D         = false,

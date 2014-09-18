@@ -13,10 +13,10 @@ proc foo(type t, u: t, v: t, name) {
   writeln("woke up. initial value is ", s.readXX(), " of type ", name);
   s.writeXF(v);
   sleep(1);
-  writeln("value is now ", s);
+  writeln("value is now ", s.readFE());
   writeln("value has changed to ", s.readFF());
   s.writeXF(u);
-  write  ("The final value is ", s);
+  write  ("The final value is ", s.readFE());
   s.reset();
   writeln(", but it was reset to ", s.readXX());
 }

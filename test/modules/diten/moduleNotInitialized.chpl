@@ -31,8 +31,8 @@ module M2 {
     c = a;
     lock2 = false;
 
-    writeln(b);
-    writeln(c);
+    writeln(b.readFF());
+    writeln(c.readFF());
     delete M1.a;
   }
 }

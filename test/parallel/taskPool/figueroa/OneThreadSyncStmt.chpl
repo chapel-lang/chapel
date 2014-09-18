@@ -10,4 +10,4 @@ sync {
     begin foo(i);
 }
 
-writeln ("total is ", total);
+writeln ("total is ", total.readFF());
