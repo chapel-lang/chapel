@@ -51,7 +51,7 @@ Miscellanea
     iomode.rw  "r+"
     iomode.cw  "w"
     iomode.cwr "w+"
-  However, file.open() in Chapel does not necessarily invoke fopen().
+  However, open() in Chapel does not necessarily invoke fopen().
 
   A channel's I/O style may be retrieved using the following method:
     proc channel._style():iostyle;
@@ -187,7 +187,7 @@ Locking
   channel with channel.lock(), call the methods you need, and then
   unlock the channel with channel.unlock(). Note that in the future,
   we may move to alternative ways of calling these functions that
-  guarantee that they are not called a channel without the appropriate
+  guarantee that they are not called on a channel without the appropriate
   locking.
 
 
