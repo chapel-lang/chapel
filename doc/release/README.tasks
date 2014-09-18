@@ -40,9 +40,9 @@ This release contains four distinct implementations of Chapel tasks.
 The user can select between these options by setting the CHPL_TASKS
 environment variable to one of the following options:
 
-fifo           : most portable/stable; usual default, but heavyweight
-qthreads       : based on Sandia's Qthreads user-level tasks; default
-                 when CHPL_LOCALE_MODEL=numa
+fifo           : most portable, but heavyweight; default for Intel KNC
+                 systems and Cygwin 
+qthreads       : best performance; default for most targets
 massivethreads : based on U Tokyo's MassiveThreads library
 muxed          : available only on Cray Inc. systems; not documented
                  here, see $CHPL_HOME/doc/platforms/README.cray instead
@@ -53,10 +53,12 @@ Each tasking layer is described in more detail below:
 CHPL_TASKS == fifo
 ------------------
 
-FIFO tasking over POSIX threads (or pthreads) is the default tasking
-implementation for all platforms.  It is attractive in its portability,
-though on most platforms it will tend to be heavier weight than Chapel
-strictly requires.
+FIFO tasking over POSIX threads (or pthreads) works on all platforms and
+is the default for Intel KNC and Cygwin targets.  It is attractive in
+its portability, though on most platforms it will tend to be heavier
+weight than Chapel strictly requires.  FIFO tasking is also used when
+Chapel is configured in 'Quick Start' mode (see $CHPL_HOME/README for
+details).
 
 In the FIFO tasking implementation, Chapel tasks are mapped to threads
 such that each task is executed by a single thread and is run to
@@ -95,11 +97,12 @@ basis we don't expect stack overflow detection to be expensive.
 CHPL_TASKS == qthreads
 ----------------------
 
-We have been working with the Qthreads team at Sandia National Labs to
-implement Chapel tasking over their user-level tasking layer
-('qthreads') in order to create a lighter-weight implementation of
-Chapel tasks and ultimately an optimized implementation of sync
-variables.  To try Qthreads tasking, please take the following steps:
+Chapel's default tasking layer implementation for most targets is based
+on the Qthreads user-level threading package from Sandia National Labs.
+This provides a lightweight implementation of Chapel tasking and will
+also ultimately provide an optimized implementation of sync variables.
+Qthreads tasking is the default for all targets except Intel KNC and
+Cygwin.
 
 1) Ensure that the environment variable CHPL_HOME points to the
    top-level Chapel directory, as always.
@@ -107,9 +110,11 @@ variables.  To try Qthreads tasking, please take the following steps:
 2) Set up your environment to use Qthreads:
 
       export CHPL_TASKS=qthreads
+        -- or --
+      make sure CHPL_TASKS is not set
 
-3) Follow the "Quick Start" instructions in $CHPL_HOME/README
-   to set up, compile and run your Chapel programs.
+3) Follow the instructions in $CHPL_HOME/doc/README.chplenv to set up,
+   compile and run your Chapel programs.
 
 Please report any apparent bugs in Qthreads tasking to the Chapel team.
 
@@ -158,11 +163,10 @@ means of the man(1) -m option, for example:
 
   man -M $CHPL_HOME/third-party/qthread/qthread-*/man qthread_init
 
-Note that the Chapel CHPL_RT_NUM_THREADS_PER_LOCALE environment variable
-overrides the Qthreads QT_HWPAR environment variable.  Whenever a Chapel
-variable overrides a Qthreads variable, you should use the Chapel one.
-At present just this one case exists, but others may be added (and will
-be documented) in the future.
+Note that in some cases there are Chapel environment variables that
+override Qthreads counterparts. CHPL_RT_NUM_THREADS_PER_LOCALE overrides
+QT_HWPAR, for example.  Whenever a Chapel variable overrides a Qthreads
+variable, you should use the Chapel one.
 
 
 * Worker affinity and number
@@ -171,13 +175,13 @@ Simplistically, there are two kinds of threads in Qthreads: shepherds
 that manage work distribution, and workers that host qthreads (Chapel
 tasks, for our purposes).  The execution-time environment variable
 QT_WORKER_UNIT controls how worker threads are distributed on hardware
-processors.  The default is "pu" to distribute workers across processing
-units, which are instances of the processor architecture, basically the
-lowest level of the processor hierarchy, a hardware thread if the cores
-have those.  We have observed that better performance often results from
-setting this variable to "core", to distribute workers across physical
-cores, and then using CHPL_RT_NUM_THREADS_PER_LOCALE to limit qthreads'
-level of hardware parallelism so that each core has just one worker.
+processors.  The default is "core" to distribute workers across CPU
+cores (physical processors).  An alternative is "pu", which distributes
+workers across processing units.  These are instances of the processor
+architecture, or hardware threads if the cores have those.  Note that
+"pu" will be automatically selected if CHPL_RT_NUM_THREADS_PER_LOCALE is
+set to anything larger than the number of cores, so it usually isn't
+necessary to set QT_WORKER_UNIT.
 
 
 * Overloading system nodes

@@ -224,8 +224,8 @@ Optional Settings
         qthreads       : run tasks using Sandia's Qthreads package
         massivethreads : run tasks using U Tokyo's MassiveThreads package
 
-   if unset, CHPL_TASKS defaults to "fifo" unless CHPL_LOCALE_MODEL is
-   set to "numa", in which case CHPL_TASKS defaults to "qthreads".
+   If CHPL_TASKS is not set it defaults to "qthreads" unless the target
+   platform is "knc" or "cygwin", in which case it defaults to "fifo".
 
    See README.tasks for more information about executing using the
    various CHPL_TASKS options.
