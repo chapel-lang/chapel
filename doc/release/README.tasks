@@ -243,11 +243,17 @@ $CHPL_HOME/third-party/README.
 Controlling the Number of Threads
 ---------------------------------
 
-The number of threads used to implement a Chapel program can be
-controlled by the environment variable CHPL_RT_NUM_THREADS_PER_LOCALE.
-The default value of CHPL_RT_NUM_THREADS_PER_LOCALE is zero, indicating
-that the choice of number of threads is left to the tasking layer.  See
-the case-by-case discussions below for more details.
+The number of threads per compute node used to implement a Chapel
+program can be controlled by the CHPL_RT_NUM_THREADS_PER_LOCALE
+environment variable.  This may be set to either an explicit number or
+one of the following symbolic strings:
+
+  'MAX_PHYSICAL'  : number of physical CPUs (cores) on the node
+  'MAX_LOGICAL'   : number of logical CPUs (hyperthreads) on the node
+
+If CHPL_RT_NUM_THREADS_PER_LOCALE is not set, the number of threads is
+left up to the tasking layer.  See the case-by-case discussions below
+for more details.
 
 The Chapel program will generate an error if the requested number of
 threads per locale is too large.  For example, when running multi-locale
@@ -269,12 +275,12 @@ CHPL_TASKS == fifo:
   The value of CHPL_RT_NUM_THREADS_PER_LOCALE can have a major impact on
   performance for fifo tasking.  For programs with few inter-task
   dependences and high computational intensity, setting it roughly equal
-  to the number of cores on each locale can lead to near-optimal
+  to the number of physical CPUs on each locale can lead to near-optimal
   performance.  However, for programs with lots of fine-grained
   synchronization in which tasks frequently block on sync or single
   variables, CHPL_RT_NUM_THREADS_PER_LOCALE can often exceed the number
-  of cores without an adverse effect on performance since blocked
-  threads will not consume the CPU's cycles.
+  of physical CPUs without an adverse effect on performance since
+  blocked threads will not consume the CPU's cycles.
 
   Note that setting CHPL_RT_NUM_THREADS_PER_LOCALE too low can result in
   program deadlock for fifo tasking.  For example, for programs written
@@ -286,15 +292,15 @@ CHPL_TASKS == fifo:
 
 CHPL_TASKS == qthreads:
   In the Qthreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
-  specifies the number of system threads, or shepherds, used to execute
-  tasks.  If the value is 0, the qthreads tasking layer will create a
-  number of threads equal to the number of processor cores on the locale.
+  specifies the number of system threads used to execute tasks.  The
+  default is to use a number of threads equal to the number of physical
+  CPUs on the locale.
 
 CHPL_TASKS == massivethreads:
   In the MassiveThreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
   specifies the number of system threads used to execute tasks.  If the
   value is 0, the massivethreads tasking layer will create a number of
-  threads equal to the number of processor cores on the locale.
+  threads equal to the number of logical CPUs on the locale.
 
 
 ----------------
