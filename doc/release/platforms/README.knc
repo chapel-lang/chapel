@@ -1,40 +1,32 @@
-=====================================================
-Initial support for Intel Phi (a.k.a Knight's Corner)
-=====================================================
+==================================
+Initial support for Intel Xeon Phi
+==================================
 
-*** This document will probably change rapidly, but will be useful for
-*** developers working on Phi support, so I've opted to commit
-*** something early on rather than waiting until release time as I
-*** normally would :)
-
-This README describes how to use Chapel for Intel Phi.
+This README describes how to build Chapel for Intel Xeon Phi, Knights
+Corner (KNC).
 
 The initial implementation runs in self-hosted mode only.  That is,
-the entire Chapel program runs on the co-processor.  For multilocale,
-GASNet must use the MPI conduit (segment everything) as all
-communication must bounce through the host processor.
+the entire Chapel program runs on the KNC co-processor.  For
+multilocale, GASNet must use the MPI conduit (segment everything) as
+all communication must bounce through the host processor.
 
---------------
-Current Status
---------------
+-------------------
+Current Limitations
+-------------------
 
-Currently, the Chapel KNC port supports:
+Currently, only the Intel compiler supports compilation for KNC
+(CHPL_TARGET_COMPILER=intel or cray-prgenv-intel).
 
-- CHPL_TARGET_PLATFORM=cray-xc with PrgEnv-intel
-  - CHPL_COMM=none
-  - CHPL_COMM=gasnet, CHPL_COMM_SUBSTRATE=mpi
-  - CHPL_GMP=gmp|none
+There are a number of Chapel configurations that are not supported for
+KNC builds:
 
-- CHPL_TARGET_COMPILER=intel and CHPL_TARGET_ARCH=knc
-  - CHPL_COMM=none
-  - CHPL_COMM=gasnet, CHPL_COMM_SUBSTRATE=udp (built but not tested)
-  - CHPL_GMP=gmp|none
+- CHPL_MEM=tcmalloc (lfence not supported)
+- CHPL_REGEXP=re2 (sfence not supported)
+- CHPL_HWLOC=hwloc (build issues)
+- CHPL_GMP=system (not supported)
+- GASNet builds can only use non-native substrates such as mpi or udp.
 
-For the above configurations:
-
-- CHPL_TASKS=fifo
-- CHPL_TASKS=qthreads, CHPL_HWLOC=none
-- CHPL_MEM=dlmalloc
+Most of these setting are set as the default for KNC builds.
 
 ---------------
 Getting started
@@ -45,11 +37,8 @@ For vanilla Intel compiler:
 
 - Set CHPL_TARGET_COMPILER=intel and CHPL_TARGET_ARCH=knc.
 
-- Set CHPL_REGEXP=none.
-
-- Set CHPL_GMP to 'none' or 'gmp'.
-
-- Build Chapel as normal.  Running printchplenv should look like this.
+- Build Chapel as normal.  Running printchplenv should look something
+  like this:
 
   CHPL_HOST_PLATFORM: linux64
   CHPL_HOST_COMPILER: gnu
@@ -78,23 +67,30 @@ For vanilla Intel compiler:
 For Cray XC:
 ------------
 
-- Log into a Cray XC with KNC nodes.  Set CHPL_TARGET_PLATFORM=cray-xc
-  and CHPL_HOME to the appropriate value.
+For Cray machines, only the aprun launcher is supported.  In addition,
+CHPL_TASKS=muxed and CHPL_COMM=ugni are not supported.
+
+- Log into a Cray XC with KNC nodes.  Set CHPL_HOST_PLATFORM=cray-xc.
 
 - Load the proper modules. The order in which you do these module
-  commands seems to matter:
+  commands matters.
 
-  % module swap PrgEnv-cray PrgEnv-intel
-  % module unload cray-libsci atp craype-sandybridge craype-ivybridge
-  % module load craype-intel-knc
+  - First, swap in the Intel PE module.  For example, if you have the
+    Cray PE module loaded:
 
-- Set CHPL_REGEXP=none.
+    % module swap PrgEnv-cray PrgEnv-intel
 
-- Set CHPL_GMP to 'none' or 'gmp'.
+  - Unload libsci (unsupported) and any craype processor type modules:
+
+    % module unload cray-libsci atp craype-sandybridge craype-ivybridge
+
+  - Load the KNC craype module:
+
+    % module load craype-intel-knc
 
 - Build Chapel as normal.  Running printchplenv should look like this.
 
-  CHPL_HOST_PLATFORM: linux64
+  CHPL_HOST_PLATFORM: cray-xc
   CHPL_HOST_COMPILER: gnu
   CHPL_TARGET_PLATFORM: cray-xc
   CHPL_TARGET_COMPILER: cray-prgenv-intel
@@ -124,33 +120,18 @@ For Cray XC:
 - Request some nodes with KNCs.  You can get the node numbers using
   cnselect:
 
-  % cnselect -e name.eq.XEON_PHI
+  % cnselect -e name.eq.Xeon_Phi
 
-  Then use qsub to request the nodes.  For example, to request nodes
-  12-16 for interactive use:
+    or
 
-  % qsub -I -l,nodes=2,hostlist='^[12-15]'
+  % cnselect -e name.eq.MIC
 
-- Run your program using aprun or srun directly.  For the above
-  example using aprun:
+- Next, use qsub to request the nodes.  For example, to request nodes
+  12-16 for interactive using PBSPro:
 
-  % aprun -k -n 2 ./a.out -nl 2
+  % qsub -I -l,mppnodes="12-16"
 
-----
-TODO
-----
+- Run your program as you would normally.
 
-- OpenMP 4.0 pragma annotated loops
-- Figure out GMP story for Cray machines
-  - Currently you must set CHPL_GMP to 'none' or 'gmp' when using the
-    PrgEnv for Cray machines.  I'm hoping that there will be support
-    soon, so I haven't changed the chplenv script to do this
-    automatically yet.
-- tcmalloc not supported (lfence not implemented)
-- hwloc not supported (build says not supported)
-- Fix regexp build to use other CHPL_TARGET_COMPILER
-- slurm/srun support
-- non-Cray platform support (launcher)
-  - ditto about CHPL_TARGET_ARCH
-- Possible WLM support
+  % ./a.out -nl 5
 
