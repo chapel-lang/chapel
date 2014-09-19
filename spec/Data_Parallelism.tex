@@ -565,7 +565,8 @@ arrays:
 \hline
 {\bf Config Const} & {\bf Type} & {\bf Default} \\
 \hline
-\chpl{dataParTasksPerLocale} & \chpl{int} & top level \chpl{.maxTaskPar}~(\rsec{Locale_Methods}) \\
+\chpl{dataParTasksPerLocale} & \chpl{int} &
+top level \chpl{.maxTaskPar}~(see~\rsec{Locale_Methods}) \\
 \chpl{dataParIgnoreRunningTasks} & \chpl{bool} & \chpl{true} \\
 \chpl{dataParMinGranularity} & \chpl{int} & \chpl{1} \\
 \hline
@@ -592,4 +593,5 @@ the specified value.
 For distributed domains and arrays that have these same configuration
 constants (\eg, Block and Cyclic distributions), these same
 global configuration constants are used to specify their default
-behavior within each locale (\rsec{Block_Dist},~\rsec{Cyclic_Dist}).
+behavior within each locale
+(see \rsec{Block_Dist} and \rsec{Cyclic_Dist}).
