@@ -87,11 +87,11 @@ memory. The existing LLVM optimization passes will operate normally on these
 address space 100 operations. The LLVM documentation describes these
 optimizations and which are normally run.
 
-Because sometimes it is necessary to build a global pointer or to gather
-information from it - for example constructing a global pointer from a node
-number and a local address, or extracting the node number or the address - the
-LLVM code generated with --llvm-wide-opt includes calls to nonexistent
-functions to mark these operations:
+Because it may be necessary to build a global pointer or to gather information
+from it - for example when constructing a global pointer from a node number and
+a local address, or extracting the node number or the address - the LLVM code
+generated with --llvm-wide-opt includes calls to nonexistent functions to mark
+these operations:
 * .gf.addr extracts an address from a global pointer
 * .gf.loc extracts a locale from a global pointer
 * .gf.node extracts a node number from a global pointer
