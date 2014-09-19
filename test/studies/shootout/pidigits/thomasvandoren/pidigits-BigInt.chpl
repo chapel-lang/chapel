@@ -20,9 +20,9 @@ proc main() {
 }
 
 iter genDigits(numDigits) {
-  var numer = new BigInt(),
-    accum = new BigInt(),
-    denom = new BigInt(),
+  var numer = new BigInt(1),
+    accum = new BigInt(0),
+    denom = new BigInt(1),
     tmp1 = new BigInt(),
     tmp2 = new BigInt();
 
