@@ -2,6 +2,8 @@
 #
 # Setup environment for vanilla knc builds/tests.
 
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+
 # Unload PrgEnv and load vanilla intel compiler.
 existing_prgenv=$(module list -t 2>&1 | grep PrgEnv- || :)
 if [ -n "${existing_prgenv}" ] ; then
@@ -17,3 +19,6 @@ module unload $knc_conflicts
 # Setup environment to build knc.
 export CHPL_TARGET_COMPILER=intel
 export CHPL_TARGET_ARCH=knc
+
+suppression_file=$CWD/../../test/Suppressions/knc.suppress
+nightly_args="-llvm -suppress ${suppression_file}"
