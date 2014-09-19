@@ -1,4 +1,4 @@
-/* Jacobi-2D (space x time), diamond-slab tiling
+/* Jacobi-2D (space x time), Diamond Slab Tiling Implementation
  * Ian J. Bertolacci - CSU
  * 9.18.2014
  */
