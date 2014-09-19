@@ -18,15 +18,15 @@ Chapel provides functions for the following utilities:
 
 chdir(name: string):
    Change the current working directory of the current locale to the specified
-   name. Generates an error if one occurred.
+   'name'. Generates an error message if one occurred.
 
    Note: this is not safe within a parallel context.  A chdir call in one task
    will affect the current working directory of all tasks for that locale.
 
 chown(name: string, uid: int, gid: int):
    Changes one or both of the owner and group id of the named file to the
-   specified values.  If uid or gid are -1, the value in question will remain
-   unchanged. Generates an error if one occurred.
+   specified values.  If 'uid' or 'gid' are -1, the value in question will
+   remain unchanged. Generates an error message if one occurred.
 
 cwd():
    Returns the current working directory for the current locale.
@@ -38,29 +38,50 @@ cwd():
 In support of mkdir and future file permission operations, Chapel has
 additionally provided support for octal integers, which start with the sequence
 0o or 0O (the number zero followed by either a capital or lowercase letter o).
-Also provided are constants of the form S_I[R | W | X][USR | GRP | OTH],
-S_IRWX[U | G | O], S_ISUID, S_ISGID, or S_ISVTX, where R corresponds to
-readable, W corresponds to writable, X corresponds to executable, USR and
-U correspond to user, GRP and G correspond to group, OTH and O correspond
-to other, directly tied to the C idea of these constants.  These constants can
-be combined and sent as arguments to mkdir.
+
+Also provided are the following constants, which are directly tied to the C
+definition.  They can be combined and sent as arguments to mkdir.
+
+Constant| Description                                           |
+-----------------------------------------------------------------
+S_IRUSR |                                                       |
+S_IWUSR |                                                       |
+S_IXUSR | User readable, writeable, or executable, respectively |
+-----------------------------------------------------------------
+S_IRGRP |                                                       |
+S_IWGRP |                                                       |
+S_IXGRP | Group readable, writeable, or executable, respectively|
+-----------------------------------------------------------------
+S_IROTH |                                                       |
+S_IWOTH |                                                       |
+S_IXOTH | Other readable, writeable, or executable, respectively|
+-----------------------------------------------------------------
+S_IRWXU |                                                       |
+S_IRWXG | Readable, writeable, and executable for user, group,  |
+S_IRWXO | and other, respectively                               |
+-----------------------------------------------------------------
+S_ISUID |                                                       |
+S_ISGID | Set user or group ID on execute of file, respectively |
+-----------------------------------------------------------------
+S_ISVTX | Sticky bit                                            |
+-----------------------------------------------------------------
 
 mkdir(name: string, mode: int = 0o777, parents: bool=false):
-   Attempt to create a directory with the given path.  If parents is true,
+   Attempt to create a directory with the given 'name'.  If 'parents' is true,
    will attempt to create any directory in the path that did not previously
-   exist.
+   exist.  Will generate an error message if one occurred.
 
-   Important note: In the case where parents is true, there is a potential
+   Important note: In the case where 'parents' is true, there is a potential
    security vulnerability.  The existence of each parent directory is checked
    before attempting to create it, and it is possible for an attacker to create
    the directory in between the check and the intentional creation.  If this
-   should occur, an error about creating a directory that already exists will
-   be generated.
+   should occur, an error message about creating a directory that already exists
+   will be generated.
 
 rename(oldname, newname: string):
-   Renames the file specified by oldname to newname, generating an error
-   if one occurred.  The file is not opened during this operation.
+   Renames the file specified by 'oldname' to 'newname', generating an error
+   message if one occurred.  The file is not opened during this operation.
 
 remove(name: string):
-   Removes the file or directory specified by name, generating an error
-   if one occurred.
+   Removes the file or directory specified by 'name', generating an error
+   message if one occurred.
