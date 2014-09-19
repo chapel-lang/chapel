@@ -230,7 +230,8 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
   if (strcmp(CHPL_TARGET_ARCH, "knc")==0) {
     largv[largc++] = _nbuf;
     largv[largc++] = (char *) getAprunArgStr(aprun_k);
-    
+    sprintf(_Nbuf, "%s%d", getLocalesPerNodeStr(), getLocalesPerNode());
+    largv[largc++] = _Nbuf;    
   } else {
     largv[largc++] = (char *) getAprunArgStr(aprun_cc);
     largv[largc++] = (char *) ccArg;

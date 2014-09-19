@@ -40,9 +40,9 @@ This release contains four distinct implementations of Chapel tasks.
 The user can select between these options by setting the CHPL_TASKS
 environment variable to one of the following options:
 
-fifo           : most portable/stable; usual default, but heavyweight
-qthreads       : based on Sandia's Qthreads user-level tasks; default
-                 when CHPL_LOCALE_MODEL=numa
+qthreads       : best performance; default for most targets
+fifo           : most portable, but heavyweight; default for Intel KNC
+                 systems and Cygwin 
 massivethreads : based on U Tokyo's MassiveThreads library
 muxed          : available only on Cray Inc. systems; not documented
                  here, see $CHPL_HOME/doc/platforms/README.cray instead
@@ -50,66 +50,27 @@ muxed          : available only on Cray Inc. systems; not documented
 Each tasking layer is described in more detail below:
 
 
-CHPL_TASKS == fifo
-------------------
-
-FIFO tasking over POSIX threads (or pthreads) is the default tasking
-implementation for all platforms.  It is attractive in its portability,
-though on most platforms it will tend to be heavier weight than Chapel
-strictly requires.
-
-In the FIFO tasking implementation, Chapel tasks are mapped to threads
-such that each task is executed by a single thread and is run to
-completion before giving up that thread.  As a result, a program can
-have no more tasks active (that is, created and started) at any given
-time than it has threads on which to run those tasks.  It can create
-more tasks than threads, but no more tasks will be run at any time
-than there are threads.  Excess tasks are placed in a pool where they
-will be picked up and started by threads as they complete their tasks.
-
-The threading implementation uses POSIX threads (pthreads) to run Chapel
-tasks.  Because pthreads are relatively expensive to create, it does not
-destroy them when there are no tasks for them to execute.  Instead they
-stay around and continue to check the task pool for tasks to execute.
-The number of pthreads used to execute tasks can be controlled by the
-environment variable CHPL_RT_NUM_THREADS_PER_LOCALE, described below.
-
-
-* Stack overflow detection
-
-The fifo tasking implementation can arrange to halt programs when any
-task overflows its call stack (see "Task Call Stacks", below).  It does
-this by placing a guard page, which cannot be referenced, at the end of
-each task stack.  When a task tries to extend its stack onto a guard
-page, it fails with a segfault.
-
-This feature is enabled in fifo tasking and cannot currently be turned
-off.  There is a performance cost for it, which we expect to be small in
-most cases.  We do not have a quantitative estimate for this cost, but
-it is a fixed overhead (a couple of system calls) added to the time
-needed to start each pthread.  Since the pthreads in fifo tasking are
-long-lived and can host many tasks over their lifespan, on a per-task
-basis we don't expect stack overflow detection to be expensive.
-
-
 CHPL_TASKS == qthreads
 ----------------------
 
-We have been working with the Qthreads team at Sandia National Labs to
-implement Chapel tasking over their user-level tasking layer
-('qthreads') in order to create a lighter-weight implementation of
-Chapel tasks and ultimately an optimized implementation of sync
-variables.  To try Qthreads tasking, please take the following steps:
+Chapel's default tasking layer implementation for most targets is based
+on the Qthreads user-level threading package from Sandia National Labs.
+This provides a lightweight implementation of Chapel tasking and will
+also ultimately provide an optimized implementation of sync variables.
+Qthreads tasking is the default for all targets except Intel KNC and
+Cygwin.  To use qthreads tasking, please take the following steps:
 
 1) Ensure that the environment variable CHPL_HOME points to the
    top-level Chapel directory, as always.
 
 2) Set up your environment to use Qthreads:
 
+      ensure CHPL_TASKS is not set
+        -- or --
       export CHPL_TASKS=qthreads
 
-3) Follow the "Quick Start" instructions in $CHPL_HOME/README
-   to set up, compile and run your Chapel programs.
+3) Follow the instructions in $CHPL_HOME/doc/README.chplenv to set up,
+   compile and run your Chapel programs.
 
 Please report any apparent bugs in Qthreads tasking to the Chapel team.
 
@@ -128,13 +89,17 @@ a quantitative estimate for this cost, but it is a fixed overhead (a
 couple of system calls) added to the time needed to run every task, so
 qualitatively speaking it will have a greater effect on programs which
 create more or shorter-lived tasks than on programs which create fewer
-or longer-lived ones.  Stack overflow detection can be turned off at
-execution time by setting the environment variable QT_GUARD_PAGES to any
-of the values "0", "no", or "false".  When this is done the execution
-overhead will be reduced to a negligible level (just a couple of scalar
-tests).  Developers wanting to remove even this remnant cost can disable
-guard pages by building qthreads with guard pages configured out, as
-follows:
+or longer-lived ones.
+
+As described below in "Task Call Stacks", the execution-time default for
+stack overflow checking can be set by using the "--[no-]stack-checks"
+compiler option.  But whatever the default is, at execution time stack
+overflow detection can be turned off by setting the environment variable
+QT_GUARD_PAGES to any of the values "0", "no", or "false", or on by
+setting it to any of "1", "no", or "true".  When it is off the execution
+overhead is negligible (just a couple of scalar tests).  Developers
+wanting to remove even this remnant cost can disable guard pages by
+building qthreads with guard pages entirely configured out, as follows:
 
   cd $CHPL_HOME/third-party/qthread
   make CHPL_QTHREAD_NO_GUARD_PAGES=yes ... clean all
@@ -158,11 +123,10 @@ means of the man(1) -m option, for example:
 
   man -M $CHPL_HOME/third-party/qthread/qthread-*/man qthread_init
 
-Note that the Chapel CHPL_RT_NUM_THREADS_PER_LOCALE environment variable
-overrides the Qthreads QT_HWPAR environment variable.  Whenever a Chapel
-variable overrides a Qthreads variable, you should use the Chapel one.
-At present just this one case exists, but others may be added (and will
-be documented) in the future.
+Note that in some cases there are Chapel environment variables that
+override Qthreads counterparts. CHPL_RT_NUM_THREADS_PER_LOCALE overrides
+QT_HWPAR, for example.  Whenever a Chapel variable overrides a Qthreads
+variable, you should use the Chapel one.
 
 
 * Worker affinity and number
@@ -171,13 +135,13 @@ Simplistically, there are two kinds of threads in Qthreads: shepherds
 that manage work distribution, and workers that host qthreads (Chapel
 tasks, for our purposes).  The execution-time environment variable
 QT_WORKER_UNIT controls how worker threads are distributed on hardware
-processors.  The default is "pu" to distribute workers across processing
-units, which are instances of the processor architecture, basically the
-lowest level of the processor hierarchy, a hardware thread if the cores
-have those.  We have observed that better performance often results from
-setting this variable to "core", to distribute workers across physical
-cores, and then using CHPL_RT_NUM_THREADS_PER_LOCALE to limit qthreads'
-level of hardware parallelism so that each core has just one worker.
+processors.  The default is "core" to distribute workers across CPU
+cores (physical processors).  An alternative is "pu", which distributes
+workers across processing units.  These are instances of the processor
+architecture, or hardware threads if the cores have those.  Note that
+"pu" will be automatically selected if CHPL_RT_NUM_THREADS_PER_LOCALE is
+set to anything larger than the number of cores, so it usually isn't
+necessary to set QT_WORKER_UNIT.
 
 
 * Overloading system nodes
@@ -216,6 +180,60 @@ when CHPL_LOCALE_MODEL=numa, and will become more so in the future.
 For more information on Qthreads, see $CHPL_HOME/third-party/README.
 
 
+CHPL_TASKS == fifo
+------------------
+
+FIFO tasking over POSIX threads (or pthreads) works on all platforms and
+is the default for Intel KNC and Cygwin targets.  It is attractive in
+its portability, though on most platforms it will tend to be heavier
+weight than Chapel strictly requires.  FIFO tasking is also used when
+Chapel is configured in 'Quick Start' mode (see $CHPL_HOME/README for
+details).  To use FIFO tasking, please take the following steps:
+
+1) Ensure that the environment variable CHPL_HOME points to the
+   top-level Chapel directory, as always.
+
+2) Set up your environment to use FIFO tasking:
+
+      export CHPL_TASKS=fifo
+
+3) Follow the instructions in $CHPL_HOME/doc/README.chplenv to set up,
+   compile and run your Chapel programs.
+
+In the FIFO tasking implementation, Chapel tasks are mapped to threads
+such that each task is executed by a single thread and is run to
+completion before giving up that thread.  As a result, a program can
+have no more tasks active (that is, created and started) at any given
+time than it has threads on which to run those tasks.  It can create
+more tasks than threads, but no more tasks will be run at any time
+than there are threads.  Excess tasks are placed in a pool where they
+will be picked up and started by threads as they complete their tasks.
+
+The threading implementation uses POSIX threads (pthreads) to run Chapel
+tasks.  Because pthreads are relatively expensive to create, it does not
+destroy them when there are no tasks for them to execute.  Instead they
+stay around and continue to check the task pool for tasks to execute.
+The number of pthreads used to execute tasks can be controlled by the
+environment variable CHPL_RT_NUM_THREADS_PER_LOCALE, described below.
+
+
+* Stack overflow detection
+
+The fifo tasking implementation can arrange to halt programs when any
+task overflows its call stack (see "Task Call Stacks", below).  It does
+this by placing a guard page, which cannot be referenced, at the end of
+each task stack.  When a task tries to extend its stack onto a guard
+page, it fails with a segfault.
+
+This feature is enabled in fifo tasking and cannot currently be turned
+off.  There is a performance cost for it, which we expect to be small in
+most cases.  We do not have a quantitative estimate for this cost, but
+it is a fixed overhead (a couple of system calls) added to the time
+needed to start each pthread.  Since the pthreads in fifo tasking are
+long-lived and can host many tasks over their lifespan, on a per-task
+basis we don't expect stack overflow detection to be expensive.
+
+
 CHPL_TASKS == massivethreads
 ----------------------------
 
@@ -243,11 +261,17 @@ $CHPL_HOME/third-party/README.
 Controlling the Number of Threads
 ---------------------------------
 
-The number of threads used to implement a Chapel program can be
-controlled by the environment variable CHPL_RT_NUM_THREADS_PER_LOCALE.
-The default value of CHPL_RT_NUM_THREADS_PER_LOCALE is zero, indicating
-that the choice of number of threads is left to the tasking layer.  See
-the case-by-case discussions below for more details.
+The number of threads per compute node used to implement a Chapel
+program can be controlled by the CHPL_RT_NUM_THREADS_PER_LOCALE
+environment variable.  This may be set to either an explicit number or
+one of the following symbolic strings:
+
+  'MAX_PHYSICAL'  : number of physical CPUs (cores) on the node
+  'MAX_LOGICAL'   : number of logical CPUs (hyperthreads) on the node
+
+If CHPL_RT_NUM_THREADS_PER_LOCALE is not set, the number of threads is
+left up to the tasking layer.  See the case-by-case discussions below
+for more details.
 
 The Chapel program will generate an error if the requested number of
 threads per locale is too large.  For example, when running multi-locale
@@ -269,12 +293,12 @@ CHPL_TASKS == fifo:
   The value of CHPL_RT_NUM_THREADS_PER_LOCALE can have a major impact on
   performance for fifo tasking.  For programs with few inter-task
   dependences and high computational intensity, setting it roughly equal
-  to the number of cores on each locale can lead to near-optimal
+  to the number of physical CPUs on each locale can lead to near-optimal
   performance.  However, for programs with lots of fine-grained
   synchronization in which tasks frequently block on sync or single
   variables, CHPL_RT_NUM_THREADS_PER_LOCALE can often exceed the number
-  of cores without an adverse effect on performance since blocked
-  threads will not consume the CPU's cycles.
+  of physical CPUs without an adverse effect on performance since
+  blocked threads will not consume the CPU's cycles.
 
   Note that setting CHPL_RT_NUM_THREADS_PER_LOCALE too low can result in
   program deadlock for fifo tasking.  For example, for programs written
@@ -286,15 +310,15 @@ CHPL_TASKS == fifo:
 
 CHPL_TASKS == qthreads:
   In the Qthreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
-  specifies the number of system threads, or shepherds, used to execute
-  tasks.  If the value is 0, the qthreads tasking layer will create a
-  number of threads equal to the number of processor cores on the locale.
+  specifies the number of system threads used to execute tasks.  The
+  default is to use a number of threads equal to the number of physical
+  CPUs on the locale.
 
 CHPL_TASKS == massivethreads:
   In the MassiveThreads tasking layer, CHPL_RT_NUM_THREADS_PER_LOCALE
   specifies the number of system threads used to execute tasks.  If the
   value is 0, the massivethreads tasking layer will create a number of
-  threads equal to the number of processor cores on the locale.
+  threads equal to the number of logical CPUs on the locale.
 
 
 ----------------
@@ -311,10 +335,13 @@ When a task's call chain becomes so deep that it needs more space than
 the size of its call stack, stack overflow occurs.  Whether or not a
 program checks for stack overflow checking at execution time can be
 specified when it is compiled, via the --[no-]stack-checks compilation
-option.  By default stack overflow checks are enabled.  However, Chapel
-does not yet have a consistent, implementation-independent way to deal
-with call stack overflow.  Each tasking layer implementation handles
-stacks and stack overflow in its own way, as described below.
+option.  The compile-time default is --stack-checks; --no-stack-checks
+can be given directly, and is also implied by --no-checks, which in turn
+is implied by --fast.  By default stack overflow checks are enabled.
+
+Chapel does not yet have a consistent, implementation-independent way to
+deal with call stack overflow.  Each tasking layer implementation
+handles stacks and stack overflow in its own way, as described below.
 
 CHPL_TASKS == fifo:
   In fifo tasking, Chapel tasks use their host pthreads' stacks when

@@ -13,7 +13,7 @@ Dependencies
 The HDFS functionality in Chapel is dependent upon both Hadoop and
 Java being installed.  Your HADOOP_INSTALL, JAVA_INSTALL and CLASSPATH
 environment variables must be set as described below in 'Setting up
-Hadoop.' Without this it will not compile with HDFS even if the flags
+Hadoop.' Without this it will not compile with HDFS, even if the flags
 are set. As well, the HDFS functionality is also dependent upon the
 CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS being set properly. For more 
 information on how to set these properly, see README.auxIO.
@@ -108,7 +108,7 @@ The general outline for these instructions is:
   (3) Set up Hadoop on (a) the local host or (b) a cluster of hosts
   (4) Start up HDFS
   (5) Stop HDFS when you're done
-  (6) Setting up Chapel to run in distributed mode
+  (6) Set up Chapel to run in distributed mode
 
 First reflect your directory structure and version numbers (etc) in
 the code at the bottom of this page and put it in your .bashrc (or
@@ -196,9 +196,9 @@ export HADOOP_INSTALL=<Place where you have Hadoop installed>
 export HADOOP_HOME=$HADOOP_INSTALL
 export HADOOP_VERSION=<Your Hadoop version number>
 #
-# Note that these might contain more paths than these if you have more
-# than one IO system enabled. These are all that you will need in order
-# to use HDFS (only)
+# Note that the following environment variables might contain more paths than
+# those listed below if you have more than one IO system enabled. These are all
+# that you will need in order to use HDFS (only)
 #
 export CHPL_AUXIO_INCLUDE="-I$JAVA_INSTALL/include -I$JAVA_INSTALL/include/linux  -I$HADOOP_INSTALL/src/c++/libhdfs"
 export CHPL_AUXIO_LIBS="-L$JAVA_INSTALL/jre/lib/amd64/server -L$HADOOP_INSTALL/c++/Linux-amd64-64/lib"

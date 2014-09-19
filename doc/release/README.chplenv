@@ -201,6 +201,17 @@ Optional Settings
         other             ->  gmake
 
 
+*  Optionally, set the CHPL_MODULE_PATH environment variable to provide a list
+   of directories to be added to the module search path.  The value of this
+   environment variable should be a colon-separated list of directory paths.
+
+   The module search path is used to satisfy 'use' statements in the Chapel
+   program.  The complete search path can be displayed using the compiler option
+   --print-search-dirs.  It will also include the compiler's standard module
+   search paths, those introduced by the -M flag on the command line and
+   directories containing the .chpl files named explicitly on the compiler
+   command line.
+
 *  Optionally, set the CHPL_LOCALE_MODEL environment variable to
    indicate the locale model you want to use.  Current options are:
 
@@ -220,12 +231,12 @@ Optional Settings
    options are:
 
    CHPL_TASKS:
-        fifo           : run tasks to completion, in FIFO order
         qthreads       : run tasks using Sandia's Qthreads package
+        fifo           : run tasks to completion, in FIFO order
         massivethreads : run tasks using U Tokyo's MassiveThreads package
 
-   if unset, CHPL_TASKS defaults to "fifo" unless CHPL_LOCALE_MODEL is
-   set to "numa", in which case CHPL_TASKS defaults to "qthreads".
+   If CHPL_TASKS is not set it defaults to "qthreads" unless the target
+   platform is "knc" or "cygwin".  For those two it defaults to "fifo".
 
    See README.tasks for more information about executing using the
    various CHPL_TASKS options.
@@ -320,10 +331,11 @@ Optional Settings
        hwloc  : use the hwloc distribution bundled with Chapel in
                 third-party
 
-   If unset, CHPL_HWLOC defaults to "hwloc" if you've already built the
-   third-party installation of hwloc for your installation, and "none"
-   otherwise.  Note that the bundled hwloc distribution may not build
-   on all platforms supported by Chapel.
+   If unset, CHPL_HWLOC defaults to "hwloc" if CHPL_TASKS is qthreads,
+   unless the target platform is knc.  In all other cases it defaults to
+   "none".  Note that the bundled hwloc distribution will not build on
+   some targets (Mac, for example), but the CHPL_HWLOC default does not
+   reflect that.
 
 
 *  Optionally, the CHPL_REGEXP environment variable can be used to
@@ -346,11 +358,14 @@ Optional Settings
 
        none : only support traditional Linux filesystems
        hdfs : also support HDFS filesystems
+       curl : also support CURL as a filesystem interface
 
    If unset, CHPL_AUX_FILESYS defaults to "none".
 
    See $CHPL_HOME/doc/technotes/README.hdfs for more information about
    HDFS support.
+   See $CHPL_HOME/doc/technotes/README.curl for more information about
+   CURL support.
 
 
 *  Optionally, the CHPL_LLVM environment variable can be used to
