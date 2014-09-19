@@ -317,10 +317,16 @@ Optional Settings
        none   : do not build GMP support into the Chapel runtime
        gmp    : use the GMP distribution bundled with Chapel in third-party
 
-   If unset, CHPL_GMP defaults to "system" if you are on a Cray system,
-   "gmp" if you've already built the third-party installation of GMP for
-   your installation, and "none" otherwise.  Note that the bundled GMP
-   distribution may not build on all platforms supported by Chapel.
+   If unset, Chapel will attempt to build GMP using CHPL_TARGET_COMPILER
+   (noting that the bundled version may not be supported by all compilers).
+   Based on the outcome, Chapel will default to:
+
+       gmp    : if the build was successful
+       system : if unsuccessful and CHPL_TARGET_PLATFORM is cray-x*
+       none   : otherwise
+
+   Note that the Chapel util/quickstart/chplenv.* source scripts set
+   CHPL_GMP to 'none' while the util/chplenv.* versions do not.
 
 
 *  Optionally, the CHPL_HWLOC environment variable can select between
@@ -346,10 +352,15 @@ Optional Settings
        re2  : use the re2 distribution in third-party
        none : do not support regular expression operations
 
-   If unset, CHPL_REGEXP defaults to "re2" if you've already installed 
-   regular expression support in third-party and "none" otherwise.
-   Note that the bundled re2 distribution may not build on all
-   platforms supported by Chapel.
+   If unset, Chapel will attempt to build RE2 using CHPL_TARGET_COMPILER
+   (noting that the bundled version may not be supported by all compilers).
+   Based on the outcome, Chapel will default to:
+
+       re2  : if the build was successful
+       none : otherwise
+
+   Note that the Chapel util/quickstart/chplenv.* source scripts set
+   CHPL_REGEXP to 'none' while the util/chplenv.* versions do not.
 
 
 *  Optionally, the CHPL_AUX_FILESYS environment variable can be used to
