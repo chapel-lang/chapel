@@ -62,7 +62,7 @@ For vanilla Intel compiler:
 
 - Build your Chapel program as normal.
 
-  % chpl hello.chpl
+  % /path/to/chpl hello.chpl
 
 For Cray XC:
 ------------
@@ -116,7 +116,7 @@ CHPL_TASKS=muxed and CHPL_COMM=ugni are not supported.
 
 - Build your Chapel program as normal.
 
-  % chpl hello.chpl
+  % /path/to/chpl hello.chpl
 
 - Request some nodes with KNCs.  You can get the node numbers using
   cnselect:
@@ -130,7 +130,11 @@ CHPL_TASKS=muxed and CHPL_COMM=ugni are not supported.
 - Next, use qsub to request the nodes.  For example, to request nodes
   12-16 for interactive using PBSPro:
 
-  % qsub -I -lmppnodes="12-16"
+  % qsub -I -lmppwidth=5,mppnppn=1,mppnodes=\"12-16\"
+
+- Change to your working directory:
+
+  % cd $PBS_O_WORKDIR
 
 - Run your program as you would normally.
 

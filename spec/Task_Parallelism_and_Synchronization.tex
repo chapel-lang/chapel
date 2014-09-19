@@ -809,20 +809,21 @@ of capturing the value of the variable at task creation time
 and referencing that value instead of the original variable
 within the lexical scope of the task construct.
 
-A formal can be given the \chpl{ref} intent explicitly by listing it
-in the optional \sntx{task-intent-clause}. For variables of most
-types, this enables the task construct to modify the original variable
-or to read the original variable's value after concurrent modifications.
+A formal can be given another intent explicitly by listing it
+with that intent in the optional \sntx{task-intent-clause}.
+For example, for variables of most types, the \chpl{ref} intent allows
+the task construct to modify the corresponding original variable
+or to read its updated value after concurrent modifications.
 
 The syntax of the task intent clause is:
 
 \begin{syntax}
 task-intent-clause:
-  `ref' ( var-list )
+  `with' ( task-intent-list )
 
-var-list:
-  identifier
-  identifier, var-list
+task-intent-list:
+  formal-intent identifier
+  formal-intent identifier, task-intent-list
 \end{syntax}
 
 The implicit treatment of outer scope variables as the task function's
@@ -898,12 +899,21 @@ what to do with extern functions, etc.
 
 
 \begin{future}
-We would like to make other intents available for use in a
-\sntx{task-intent-clause}.
 For a given intent, we would also like to provide a blanket clause,
 which would apply the intent to all variables.
-An example of syntax would be \chpl{ref(*)}.
+An example of syntax for a blanket \chpl{ref} intent would be \chpl{ref *}.
 \end{future}
+
+\begin{future}
+We may want to disallow some intents because they do not make sense
+in this context. For example, an \chpl{inout} or \chpl{out} intent
+will necessarily create a data race in a \chpl{cobegin} or \chpl{coforall}.
+Also, \chpl{type} and \chpl{param} intents do not seem useful.
+\end{future}
+
+\begin{craychapel}
+At present, only the \chpl{ref} task intent is implemented.
+\end{craychapel}
 
 
 \section{The Sync Statement}

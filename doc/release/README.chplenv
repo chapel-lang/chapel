@@ -9,12 +9,12 @@ overriding the default settings.  To check the values of the Chapel
 environment variables that are set or can be inferred, run the script:
 $CHPL_HOME/util/printchplenv
 
-The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
-commands that set the following variables for various shells and host
-platforms when they are sourced from the $CHPL_HOME directory.
-Frequent Chapel users may want to add the following settings to their
-shell's dotfile(s) but for getting started the setchplenv.* scripts 
-should suffice. 
+The setchplenv.* source scripts in the $CHPL_HOME/util/quickstart/ and
+$CHPL_HOME/util/ directories contain commands that set the following
+variables for various shells and host platforms when they are sourced
+from the $CHPL_HOME directory.  Frequent Chapel users may want to add
+such settings to their shell's dotfile(s); but for getting started the
+setchplenv.* scripts can be convenient.
 
 --------------------
 Recommended Settings
@@ -231,12 +231,17 @@ Optional Settings
    options are:
 
    CHPL_TASKS:
-        fifo           : run tasks to completion, in FIFO order
         qthreads       : run tasks using Sandia's Qthreads package
+        fifo           : run tasks to completion, in FIFO order
         massivethreads : run tasks using U Tokyo's MassiveThreads package
 
-   if unset, CHPL_TASKS defaults to "fifo" unless CHPL_LOCALE_MODEL is
-   set to "numa", in which case CHPL_TASKS defaults to "qthreads".
+   If CHPL_TASKS is not set it defaults to "qthreads" unless the target
+   platform is "knc" or "cygwin".  For those two it defaults to "fifo".
+
+   Note that the Chapel util/quickstart/setchplenv.* source scripts
+   set CHPL_TASKS to 'fifo' to reduce build-time and third-party
+   dependences, while the util/setchplenv.* versions leave it unset,
+   resulting in the behavior described just above.
 
    See README.tasks for more information about executing using the
    various CHPL_TASKS options.
@@ -317,10 +322,17 @@ Optional Settings
        none   : do not build GMP support into the Chapel runtime
        gmp    : use the GMP distribution bundled with Chapel in third-party
 
-   If unset, CHPL_GMP defaults to "system" if you are on a Cray system,
-   "gmp" if you've already built the third-party installation of GMP for
-   your installation, and "none" otherwise.  Note that the bundled GMP
-   distribution may not build on all platforms supported by Chapel.
+   If unset, Chapel will attempt to build GMP using CHPL_TARGET_COMPILER
+   (noting that the bundled version may not be supported by all compilers).
+   Based on the outcome, Chapel will default to:
+
+       gmp    : if the build was successful
+       system : if unsuccessful and CHPL_TARGET_PLATFORM is cray-x*
+       none   : otherwise
+
+   Note that the Chapel util/quickstart/setchplenv.* source scripts
+   set CHPL_GMP to 'none' while the util/setchplenv.* versions leave
+   it unset, resulting in the behavior described just above.
 
 
 *  Optionally, the CHPL_HWLOC environment variable can select between
@@ -331,10 +343,11 @@ Optional Settings
        hwloc  : use the hwloc distribution bundled with Chapel in
                 third-party
 
-   If unset, CHPL_HWLOC defaults to "hwloc" if you've already built the
-   third-party installation of hwloc for your installation, and "none"
-   otherwise.  Note that the bundled hwloc distribution may not build
-   on all platforms supported by Chapel.
+   If unset, CHPL_HWLOC defaults to "hwloc" if CHPL_TASKS is qthreads,
+   unless the target platform is knc.  In all other cases it defaults to
+   "none".  Note that the bundled hwloc distribution will not build on
+   some targets (Mac, for example), but the CHPL_HWLOC default does not
+   reflect that.
 
 
 *  Optionally, the CHPL_REGEXP environment variable can be used to
@@ -345,10 +358,16 @@ Optional Settings
        re2  : use the re2 distribution in third-party
        none : do not support regular expression operations
 
-   If unset, CHPL_REGEXP defaults to "re2" if you've already installed 
-   regular expression support in third-party and "none" otherwise.
-   Note that the bundled re2 distribution may not build on all
-   platforms supported by Chapel.
+   If unset, Chapel will attempt to build RE2 using CHPL_TARGET_COMPILER
+   (noting that the bundled version may not be supported by all compilers).
+   Based on the outcome, Chapel will default to:
+
+       re2  : if the build was successful
+       none : otherwise
+
+   Note that the Chapel util/quickstart/setchplenv.* source scripts
+   set CHPL_REGEXP to 'none' while the util/setchplenv.* versions
+   leave it unset, resulting in the behavior described just above.
 
 
 *  Optionally, the CHPL_AUX_FILESYS environment variable can be used to
