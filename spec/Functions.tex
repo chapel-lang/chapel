@@ -47,6 +47,9 @@ Functions are presented as follows:
 \item function calls \rsec{Function_Calls}
 \item various aspects of defining a procedure
       \rsec{Function_Definitions}--\rsec{Nested_Functions}
+\item calling external functions from Chapel
+      \rsec{Calling_External_Functions}
+\item calling Chapel functions from external functions\rsec{Calling_Chapel_Functions}
 \item determining the function to invoke for a given call site:
       function and operator overloading \rsec{Function_Overloading},
       function resolution \rsec{Function_Resolution}
@@ -115,8 +118,6 @@ procedure-declaration-statement:
 
 linkage-specifier:
   `inline'
-  `export' identifier[OPT]
-  `extern'
 
 function-name:
   identifier
@@ -138,6 +139,8 @@ formal:
   formal-intent[OPT] identifier formal-type[OPT] variable-argument-expression
   formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] default-expression[OPT]
   formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] variable-argument-expression
+
+
 
 formal-type:
   : type-specifier
@@ -224,15 +227,11 @@ discussed in~\rsec{Function_Overloading}.
 Operator overloading is supported on the operators listed
 above (see \sntx{operator-name}).
 
-Linkage specifiers are optional and mutually exclusive.  The linkage
-specifier \chpl{inline} indicates that the function body must be inlined at
+The linkage specifier \chpl{inline} indicates that the function body must be inlined at
 every call site.
-The linkage specifier \chpl{export} indicates that this
-function may be called from outside the current Chapel program.  The linkage
-specifier \chpl{extern} indicates that this function is defined outside the
-Chapel program.  See the chapter on interoperability (\rsec{Interoperability})
-for details on exported and imported functions.
 
+See the chapter on interoperability (\rsec{Interoperability})
+for details on exported and imported functions.
 
 \section{Functions without Parentheses}
 \label{Functions_without_Parentheses}
@@ -728,8 +727,8 @@ the behavior depending to the calling context.
 
 \begin{chapelexample}{variable-functions.chpl}
 The following code defines a procedure that can be interpreted as a
-simple two-element array where the elements are actually global
-variables:
+simple two-element array where the elements are actually module
+level variables:
 \begin{chapel}
 var x, y = 0;
 
