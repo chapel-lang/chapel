@@ -154,8 +154,8 @@ leaks reported after these had been tightened up (09/18/14)
 -----------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall]
 
-seg fault (09/17/14)
---------------------
+seg fault (09/17/14 -- fixed 09/19/14)
+--------------------------------------
 [Error matching program output for multilocale/deitz/needMultiLocales/mdblock/test_block2d_2]
 
 error: cannot create C string from remote string (due to r22900 -- sungeun)
