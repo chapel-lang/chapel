@@ -728,7 +728,7 @@ in a context requiring an lvalue, the actual argument for \chpl{setter} is
 implicitly \chpl{true}; otherwise it is \chpl{false}.  This argument is useful
 for adjusting the behavior depending to the calling context.
 
-\begin{chapelexample}{variable-functions.chpl}
+\begin{chapelexample}{ref-return-intent.chpl}
 The following code defines a procedure that can be interpreted as a
 simple two-element array where the elements are actually global
 variables:
@@ -783,7 +783,7 @@ A2(1) = 1;
 \end{chapelpost}
 \begin{chapeloutput}
 3
-variable-functions.chpl:18: error: halt reached - cannot assign value to A(1) if A(0) <= 0
+ref-return-intent.chpl:18: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 \end{chapeloutput}
 \end{chapelexample}
 
