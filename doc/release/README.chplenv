@@ -9,7 +9,7 @@ overriding the default settings.  To check the values of the Chapel
 environment variables that are set or can be inferred, run the script:
 $CHPL_HOME/util/printchplenv
 
-The setchplenv.* source scripts in the $CHPL_HOME/util/quickstart and
+The setchplenv.* source scripts in the $CHPL_HOME/util/quickstart/ and
 $CHPL_HOME/util/ directories contain commands that set the following
 variables for various shells and host platforms when they are sourced
 from the $CHPL_HOME directory.  Frequent Chapel users may want to add
