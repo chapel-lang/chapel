@@ -2,7 +2,7 @@
 Release Changes List
 ====================
 
-*** stopped at e3f159d682cb6f223564b51080c14f58881e2687 ***
+*** stopped at PR #502 ***
 
 ==============
 version 1.10.0
@@ -13,10 +13,15 @@ Thirteenth public release of Chapel, October 2, 2014
 Highlights (see entries in subsequent categories for details)
 -------------------------------------------------------------
 
-
 Packaging Changes
 -----------------
+* split the util/setchplenv.* scripts into quickstart and production versions
+  (see $CHPL_HOME/README and util/README for more information)
+* by default, we now attempt to enable re2 and GMP by default (non-quickstart)
 * changed Chapel's license/contributor agreement from BSD/Cray to Apache/Apache
+* added a script to help build multiple Chapel configurations
+  (see util/build_configs.py)
+* removed the util/update-sources script which had fallen out-of-date
 
 Environment Changes
 -------------------
@@ -27,10 +32,21 @@ Environment Changes
 * generalized CHPL_RT_CALL_STACK_SIZE to control Qthread stack sizes
 * added CHPL_AUX* environment variables for accessing HDFS, Lustre, and/or cURL
   (see doc/technotes/README.auxIO)
+* added symbolic values for CHPL_RT_NUM_THREADS_PER_LOCALE
+  (namely, MAX_PHYSICAL and MAX_LOGICAL -- see README.tasks for details)
 
 Syntactic/Naming Changes
 ------------------------
+* changed the syntax for task intents from 'ref(ident)' to 'with (ref ident)'
+* deprecated 'var functions' in favor of returning by 'ref' intent
+* renamed the 'default' setting for CHPL_MEM to 'cstdlib'
 
+Source Highlighting Changes (see etc/README)
+--------------------------------------------
+* updated vim, emacs, highlight, and source-highlight modes with new keywords
+* other general improvements to vim and emacs modes
+* added a pointer to the Chapel support for pygments
+  (see etc/pygments/README.rst)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -38,11 +54,15 @@ Semantic Changes / Changes to Chapel Language
 * make a more explicit distinction between the 'string' and 'c_string' types
 * added support for the logical negation of integral types
   (e.g., 'var x = 3;  if (!x) then ...' is now legal Chapel code)
-* added support for modifying an associative array's domain via writes to it
+* made range iterations that require overflow undefined
+* redefined op= on associative domains in terms of set operations
+* made passing syncs/singles to generic arguments pass them by ref
+  (previously, such calls would unwrap the sync/single, passing the value in)
 
 New Features
 ------------
-* added the ability to query arrays for the subdomain(s) that a locale owns
+* added the ability to ask arrays for the subdomain(s) that the locale owns
+  (see doc/technotes/README.subquery and examples/primers/distributions.chpl)
 * added the ability to call constructors through typdefs
   (e.g., 'class C { ... }  type t = C;  var myT = new t();' now works)
 * added support for 'noinit' on record and class variables
@@ -53,6 +73,18 @@ New Features
 * added support for Lustre and cURL file systems
   (see doc/technotes/README.auxIO and README.curl for details)
 * made the compiler call user-defined dfeault constructors when defined
+* added locale.maxTaskPar to query the # of parallel tasks a locale can support
+* added an experimental sorted() iterator for sorting arrays or other iterables
+* added draft support for vector methods to 1D arrays with a distinct domain
+  (see examples/primers/arrayVectorOps.chpl)
+* added support for standard set operations on associative domains and arrays
+  (see doc/technotes/README.sets and examples/primers/associative.chpl)
+* added support for modifying an associative array's domain via writes to it
+* added octal literals
+  (e.g., 0o777)
+* added draft support for walking directory trees and glob (feedback desired)
+  (see modules/standard/Filerator.chpl)
+* added support for numerous type-oriented queries for expressions
 
 Changes to the Implementation
 -----------------------------
@@ -78,6 +110,8 @@ Standard Modules
 * added the ability to have the Sort.chpl module routines sort in reverse
 * added a readstring() method to reader channels
 * added some initial file/directory utility routines (more planned for 1.11)
+  (e.g., remove(), rename(), cwd(), chdir(), mkdir(), chown())
+* implemented new 'string_rec' in module NewString (will be 'string' in 1.11)
 
 Documentation
 -------------
@@ -90,13 +124,21 @@ Documentation
 
 Example Codes
 -------------
+* added a new primer for associative domains and arrays
+  (see examples/primers/associative.chpl)
+* minor edits to the domains primer
+* added new shootout benchmarks: regex-dna, meteor-fast
+* updated the fannkuch-redux benchmark with a parallel version
 * updated chameneos benchmark to use conditionals instead of select statements
+* updated mandelbrot benchmark to use a dynamic iterator
 * fixed the portability of the pidigits benchmark to 32-bit systems
 * improved the locking strategy used in verification for the HPCC RA benchmark
 * updated the fileIO primer to utilize/demontrate whole-array I/O
 * removed the unnecessary locking and error tolerance from ra-atomics.chpl
 * changed HPCC RA benchmarks to print problem sizes before declaring arrays
 * removed some CHPL_RT knob-fiddling from the thread-ring benchmark
+* added a new primer for random number generation
+  (see examples/randomNumbers.chpl)
 
 Cray-specific Notes
 -------------------
@@ -146,6 +188,8 @@ Performance Improvements
 * reduced communication counts for several common code idioms
 * optimized task counters to make use of network atomics when available
 * improved the performance of the Qthreads tasking layer
+* improved loop invariant code motion for --no-local compilations
+* improved the performance of readstring()
 
 Locale Model Improvements
 -------------------------
@@ -161,6 +205,7 @@ Third-Party Software Changes
 * updated snapshot of tcmalloc to version 2.2 and patched to work with Chapel
 * made many improvements to our use of Qthreads in the 'qthreads' tasking layer
 * updated our snapshot of hwloc to version 1.9.1
+* reduced the llvm components we build to accelerate build time
 
 Bug Fixes / New Semantic Checks (for old semantics)
 ---------------------------------------------------
@@ -177,7 +222,15 @@ Bug Fixes / New Semantic Checks (for old semantics)
 * improved const-ness checking for 'const' fields
 * fixed a bug relating to nested records and default constructors
 * fixed an internal error due to record variables in param conditionals
-
+* fixed a bug in loop-invariant code motion
+* fixed some bugs in readstring()
+* fixed support for uppercase binary and hexidecimal literals
+  (e.g. 0B1101101 and 0Xbabe1055)
+* implemented const-ness checking for loop index variables
+* added semantic checks to prevent against overflow in range iteration
+* fixed a looooongstanding bug in which 1/100 compiles would segfault on Macs
+* added semantic checks to prevent assignment to const domains and arrays
+* fixed several bugs in the LLVM backend
 
 Runtime Library Changes
 -----------------------
@@ -227,6 +280,7 @@ Testing System
 * added the ability for an *execopts file to redirect stdin as its last args
 * fixed the support for annotating multiple graph series' at once
 * added a notion of a temporary test directory that is cleaned up after a run
+* added automatic squashing of internal module line numbers for .bad diffs
 
 Makefile Changes
 ----------------
@@ -294,6 +348,7 @@ Internal/Developer-oriented
 * merged internal ChapelRange and ChapelRangeBase modules/types together
 * eliminate creation of order and coercion wrappers within compiler
 * cleaned up deprecated file operations
+* began using Travis for pre-commit sanity checks
 
 =============
 version 1.9.0
