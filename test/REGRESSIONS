@@ -23,10 +23,6 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 09/15/14)
 ===========================================================
 
-fail with compiler error (09/18/14 -- sungeun)
-----------------------------------------------
-[Error matching compiler output for types/string/StringImpl/memLeaks/promotion (compopts: 1)]
-
 fails with some regularity (09/14/14 -- sungeun, elliot, ben)
 -------------------------------------------------------------
 [Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
@@ -645,11 +641,11 @@ cray-prgenv-gnu specific failures
 
 ================================
 LLVM specific regressions
-(Reviewed for accuracy 09/17/14)
+(Reviewed for accuracy 09/19/14)
 ================================
 
-could not find mpz_init_set_ui (09/18/14 -- first llvm+gmp test run?)
----------------------------------------------------------------------
+relies on macro in gmp.h -- not expected to work without effort (09/18/14)
+--------------------------------------------------------------------------
 [Error matching compiler output for release/examples/benchmarks/shootout/pidigits]
 
 
@@ -658,30 +654,13 @@ cygwin-specific failures
 (Reviewed for accuracy on 09/14/14)
 ===================================
 
-broken due to sync/single-by-generic changes (09/17/14 -- vass--should be fixed)
---------------------------------------------------------------------------------
-[Error matching .bad file for expressions/lydia/noinit/usedWithSingle]
-[Error matching .bad file for expressions/lydia/noinit/usedWithSync]
-[Error matching .bad file for types/sync/vass/generic-sync-1]
-[Error matching .bad file for types/sync/vass/ref-sync-1]
-[Error matching compiler output for parallel/sync/figueroa/DeadLock]
+fail with compiler error (09/18/14 -- sungeun)
+----------------------------------------------
+[Error matching compiler output for types/string/StringImpl/memLeaks/promotion (compopts: 1)]
 
-case insensitivity issue (09/18/14 -- lydia -- should be fixed)
----------------------------------------------------------------
-[Error matching compiler output for release/examples/primers/opaque]
-[Error matching compiler output for release/examples/primers/random]
-[Error matching compiler output for release/examples/primers/reductions]
-
-cygwin "no /bin/sh" error (09/18/14 -- bradc, tvandoren)
---------------------------------------------------------
-[Error matching program output for studies/filerator/walk (execopts: 1)]
-[Error matching program output for studies/filerator/walk (execopts: 2)]
-[Error matching program output for studies/filerator/walk (execopts: 3)]
-[Error matching program output for studies/filerator/walk (execopts: 4)]
-[Error matching program output for studies/filerator/walk (execopts: 5)]
-[Error matching program output for studies/filerator/walk (execopts: 6)]
-[Error matching program output for studies/filerator/walk (execopts: 7)]
-[Error matching program output for studies/filerator/walk (execopts: 8)]
+check_channel assertion failure
+-------------------------------
+[Error matching C regexp test ./regexp_channel_test Regexp Channels Test]
 
 gcc warning about assuming strict overflow
 ------------------------------------------
@@ -759,13 +738,23 @@ numerical roundoff issues
 [Error matching program output for studies/madness/common/test_likepy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy
+
+worrisomee timeouts
+-------------------
+[Error: Timed out executing program parallel/taskPar/sungeun/barrier/basic]
+[Error: Timed out executing program parallel/taskPar/sungeun/barrier/reuse]
+[Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase]
 
 
 ================================
 baseline-specific tests
 (Reviewed for accuracy 09/17/14)
 ================================
+
+still a failure (09/19/14)
+--------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/promotion]
 
 initcopy for extern record with no fields doing the wrong thing (09/17/14 -- hilde)
 -----------------------------------------------------------------------------------
