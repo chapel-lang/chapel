@@ -2,11 +2,135 @@
 Release Changes List
 ====================
 
+*** stopped at ed459e735f3f7bc90e45fc11775895e858a55d36 ***
+
 ==============
 version 1.10.0
 ==============
 
-TODO: Fill this in.
+Thirteenth public release of Chapel, October 2, 2014
+
+Highlights (see entries in subsequent categories for details)
+-------------------------------------------------------------
+
+
+Packaging Changes
+-----------------
+
+
+Environment Changes
+-------------------
+
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+
+New Features
+------------
+
+
+Changes to the Implementation
+-----------------------------
+
+
+New Interoperability Features
+-----------------------------
+
+
+Standard Modules
+----------------
+
+
+Documentation
+-------------
+* added information about GASNET_MAX_SEGSIZE to README.cray
+* updated a spec code example that failed to use task intents as required
+* minor cleanups to READMEs in general
+* various clarifications and improvements to the language specification
+
+Example Codes
+-------------
+* updated chameneos benchmark to use conditionals instead of select statements
+* fixed the portability of the pidigits benchmark to 32-bit systems
+* improved the locking strategy used in verification for the HPCC RA benchmark
+
+Cray-specific Notes
+-------------------
+
+Launcher-specific Notes
+-----------------------
+
+Portability of code base
+------------------------
+* improved the portability of the regexp/re2 code base and feature
+
+Compiler Flags (see 'man chpl' for details)
+-------------------------------------------
+
+Error Message Improvements
+--------------------------
+* improved handling of using the --llvm flag without enabling LLVM support
+* added checks for assignments to illegal l-values to the op= operators
+
+Performance Improvements
+------------------------
+* improved the performance of the serial 1D array iterator
+* reduced communication counts for several common code idioms
+
+Locale Model Improvements
+-------------------------
+
+Memory Improvements
+-------------------
+
+Third-Party Software Changes
+----------------------------
+* improved the portability of the re2 code base
+
+
+Bug Fixes / New Semantic Checks (for old semantics)
+---------------------------------------------------
+
+
+Runtime Library Changes
+-----------------------
+* made the communication task a pthread rather than a task in qthreads
+* added yields to the communication layer's barriers to avoid wasting resources
+
+
+Generated Code Cleanups
+-----------------------
+
+
+Compiler Performance
+--------------------
+
+
+Compiler Improvements
+---------------------
+
+
+Testing System
+--------------
+* we now log a list of top CPU consumers if a test times out
+* embedded the active graph list into the performance testing system's URLs
+* avoided sync-ing performance graphs to the web if errors are encountered
+* made the default compiler performance directory unique by machine name
+
+
+Makefile Changes
+----------------
+
+
+Internal/Developer-oriented
+---------------------------
+* added partial instantiation of generic functions to the resolution pass
+* converted more assignment overloads to use the new '=(ref x, y)' signature
+* extended network atomic interface to accept memory_order (currently ignored)
+* made the code more resilient to mixing C++/C compilers
+* various other code cleanups and refactorings
+
 
 =============
 version 1.9.0
