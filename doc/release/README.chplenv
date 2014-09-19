@@ -231,12 +231,12 @@ Optional Settings
    options are:
 
    CHPL_TASKS:
-        fifo           : run tasks to completion, in FIFO order
         qthreads       : run tasks using Sandia's Qthreads package
+        fifo           : run tasks to completion, in FIFO order
         massivethreads : run tasks using U Tokyo's MassiveThreads package
 
    If CHPL_TASKS is not set it defaults to "qthreads" unless the target
-   platform is "knc" or "cygwin", in which case it defaults to "fifo".
+   platform is "knc" or "cygwin".  For those two it defaults to "fifo".
 
    See README.tasks for more information about executing using the
    various CHPL_TASKS options.
@@ -331,10 +331,11 @@ Optional Settings
        hwloc  : use the hwloc distribution bundled with Chapel in
                 third-party
 
-   If unset, CHPL_HWLOC defaults to "hwloc" if you've already built the
-   third-party installation of hwloc for your installation, and "none"
-   otherwise.  Note that the bundled hwloc distribution may not build
-   on all platforms supported by Chapel.
+   If unset, CHPL_HWLOC defaults to "hwloc" if CHPL_TASKS is qthreads,
+   unless the target platform is knc.  In all other cases it defaults to
+   "none".  Note that the bundled hwloc distribution will not build on
+   some targets (Mac, for example), but the CHPL_HWLOC default does not
+   reflect that.
 
 
 *  Optionally, the CHPL_REGEXP environment variable can be used to
