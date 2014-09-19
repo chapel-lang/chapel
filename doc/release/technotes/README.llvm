@@ -25,8 +25,8 @@ Note:
   You can override this default by setting CHPL_LLVM=none.
 
 * the Makefile in third-party/llvm
-  will unpack a tarball of LLVM 3.3 and apply a patch fixing SROA
-  with multiple address spaces.
+  will unpack a tarball of LLVM 3.3 and apply a patch fixing SROA (scalar
+  replacement of aggregates) with multiple address spaces.
 
 * LLVM code generation has not been tested on all supported configurations,
   and some features (such as building a library instead of an executable)
@@ -70,7 +70,7 @@ Caveats:
 * --llvm-wide-opt may add communication to or from a task's stack, so it
   may not function correctly for combinations of tasking and communication
   layers in which some task has a stack outside of an acceptable region for
-  comminication (e.g. operations on the initial 'main' thread may fail with
+  communication (e.g. operations on the initial 'main' thread may fail with
   CHPL_COMM=gasnet, CHPL_GASNET_SEGMENT=fast).
 
 -------------------------
@@ -87,11 +87,11 @@ memory. The existing LLVM optimization passes will operate normally on these
 address space 100 operations. The LLVM documentation describes these
 optimizations and which are normally run.
 
-Because sometimes it is necessary to build a global pointer or to gather
-information from it - for example constructing a global pointer from a node
-number and a local address or extracting the node number or the address - the
-LLVM code generated with --llvm-wide-opt includes calls to nonexistent
-functions to mark these operations:
+Because it may be necessary to build a global pointer or to gather information
+from it - for example when constructing a global pointer from a node number and
+a local address, or extracting the node number or the address - the LLVM code
+generated with --llvm-wide-opt includes calls to nonexistent functions to mark
+these operations:
 * .gf.addr extracts an address from a global pointer
 * .gf.loc extracts a locale from a global pointer
 * .gf.node extracts a node number from a global pointer

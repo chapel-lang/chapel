@@ -71,6 +71,9 @@ class AbstractJob(object):
     # argument name for specifying number of nodes (i.e. nodes, mppwidth)
     num_nodes_resource = None
 
+    # arugment name for specifying number of processing elements per node (i.e. mppnppn)
+    processing_elems_per_node_resource = None
+
     # argument name for specifying number of cpus (i.e. mppdepth)
     num_cpus_resource = None
 
@@ -346,6 +349,10 @@ class AbstractJob(object):
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
                 self.num_cpus_resource, self.num_cpus))
+        if self.processing_elems_per_node_resource is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.processing_elems_per_node_resource, 1))
 
         logging.debug('submit command to run: {0}'.format(submit_command))
 
@@ -588,6 +595,7 @@ class MoabJob(AbstractJob):
     status_bin = 'qstat'
     hostlist_resource = 'hostlist'
     num_nodes_resource = 'nodes'
+    processing_elems_per_node_resource = None
     num_cpus_resource = None
 
     @classmethod
@@ -635,6 +643,7 @@ class PbsProJob(AbstractJob):
     status_bin = 'qstat'
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
+    processing_elems_per_node_resource = 'mppnppn'
 
     # If CHPL_PBSPRO_NO_MPPDEPTH is set in the environment, set class attribute
     # to None. Otherwise, default to mppdepth.
@@ -718,6 +727,7 @@ class SlurmJob(AbstractJob):
     status_bin = 'squeue'
     hostlist_resource = None
     num_nodes_resource = None
+    processing_elems_per_node_resource = None
     num_cpus_resource = None
 
     @classmethod
