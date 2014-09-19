@@ -88,6 +88,10 @@ CHPL_TASKS=muxed and CHPL_COMM=ugni are not supported.
 
     % module load craype-intel-knc
 
+  - Unload any craype-hugepages module you have loaded, for example:
+
+    % module unload craype-hugepages2M
+
 - Build Chapel as normal.  Running printchplenv should look something
   like this:
 
