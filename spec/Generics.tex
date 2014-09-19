@@ -796,11 +796,13 @@ program from which the function containing the call is called.
 Compilation halts if a \chpl{compilerError} is encountered whereas it
 will continue after encountering a \chpl{compilerWarning}.
 
+\begin{craychapel}
 Note that when a function with a \chpl{ref} return intent is called in a
 context where the implicit \chpl{setter} argument is true or false, both
 versions of the function are resolved by the compiler.  Consequently, the
 \chpl{setter} argument cannot be effectively used to guard a compiler
 diagnostic statements.
+\end{craychapel}
 
 \begin{chapelexample}{compilerDiagnostics.chpl}
 The following code shows an example of using user-defined compiler
