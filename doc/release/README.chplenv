@@ -10,11 +10,11 @@ environment variables that are set or can be inferred, run the script:
 $CHPL_HOME/util/printchplenv
 
 The setchplenv.* source scripts in the $CHPL_HOME/util/quickstart and
-$CHPL_HOME/util/ directory contain commands that set the following
+$CHPL_HOME/util/ directories contain commands that set the following
 variables for various shells and host platforms when they are sourced
 from the $CHPL_HOME directory.  Frequent Chapel users may want to add
-the following settings to their shell's dotfile(s) but for getting
-started the setchplenv.* scripts should suffice.
+such settings to their shell's dotfile(s); but for getting started the
+setchplenv.* scripts can be convenient.
 
 --------------------
 Recommended Settings
