@@ -8,8 +8,8 @@
 
 use GMP;
 
-// Compute n digits of Pi, 50 by default.
-config const n = 50;
+// Compute n digits of Pi, 10 000 by default to match benchmark expectation.
+config const n = 10000;
 
 proc main() {
   for (digit, i) in zip(genDigits(n), 1..) {
