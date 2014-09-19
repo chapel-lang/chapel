@@ -130,7 +130,7 @@ CHPL_TASKS=muxed and CHPL_COMM=ugni are not supported.
 - Next, use qsub to request the nodes.  For example, to request nodes
   12-16 for interactive using PBSPro:
 
-  % qsub -I -lmppnodes="12-16"
+  % qsub -I -lmppwidth=5,mppnppn=1,mppnodes=\"12-16\"
 
 - Run your program as you would normally.
 
