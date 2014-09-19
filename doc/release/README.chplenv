@@ -240,7 +240,8 @@ Optional Settings
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_TASKS to 'fifo' to reduce build-time and third-party
-   dependences, while the util/setchplenv.* versions leave it unset.
+   dependences, while the util/setchplenv.* versions leave it unset,
+   resulting in the behavior described just above.
 
    See README.tasks for more information about executing using the
    various CHPL_TASKS options.
@@ -331,7 +332,7 @@ Optional Settings
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_GMP to 'none' while the util/setchplenv.* versions leave
-   it unset.
+   it unset, resulting in the behavior described just above.
 
 
 *  Optionally, the CHPL_HWLOC environment variable can select between
@@ -366,7 +367,7 @@ Optional Settings
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_REGEXP to 'none' while the util/setchplenv.* versions
-   leave it unset.
+   leave it unset, resulting in the behavior described just above.
 
 
 *  Optionally, the CHPL_AUX_FILESYS environment variable can be used to
