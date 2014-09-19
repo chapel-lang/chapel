@@ -388,7 +388,7 @@ var x = A["a"];
 Here, the indices "a" and "b" are implicitly added the domain D. Reading from
 an index not in the array is still an out-of-bounds error.
 \begin{chapel}
-writeln(A["c"]); // halts if "c" is not in A's domain
+// writeln(A["c"]); // halts if "c" is not in A's domain
 \end{chapel}
 An important restriction for this method is that A may not share its domain
 with another array. This restriction exists because it may be surprising to
