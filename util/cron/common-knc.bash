@@ -21,4 +21,4 @@ export CHPL_TARGET_COMPILER=intel
 export CHPL_TARGET_ARCH=knc
 
 suppression_file=$CWD/../../test/Suppressions/knc.suppress
-nightly_args="-llvm -suppress ${suppression_file}"
+nightly_args="-suppress ${suppression_file}"
