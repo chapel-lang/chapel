@@ -2,7 +2,7 @@
 gperftools for Chapel release
 ===================================
 
-This copy of gperftools is being released with Chapel for convenience and uses
+This copy of gperftools is being released with Chapel for convenience, and uses
 a snapshot of gperftools obtained from Google at:
   http://code.google.com/p/gperftools/
 
