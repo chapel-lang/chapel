@@ -5,15 +5,16 @@ Chapel Utility Directory
 This directory contains utility scripts that are intended to be useful
 to end-users or the Chapel build/test itself.
 
-The following are designed for beginning users (see $CHPL_HOME/README for details):
+The following are designed for beginning users (see $CHPL_HOME/README
+for details):
 
    quickstart/      :
-     setchplenv.*   : quick-start commands for setting up a minimal Chapel environment
+     setchplenv.*   : quick-start source scripts for minimal Chapel environments
 
 The following are for more experienced users:
 
    ./
-     printchplenv   : a helper script that prints your set/inferred Chapel environment
+     printchplenv   : a script to print your set/inferred Chapel environment
      setchplenv.*   : commands for setting up a production Chapel environment
      start_test     : the script for invoking the Chapel testing system
 
