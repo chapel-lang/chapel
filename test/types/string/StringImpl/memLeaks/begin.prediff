@@ -29,6 +29,9 @@ for l in lines:
         elif l.find('string move data') != -1:
             # leak, so print it out
             newlines.append(l)
+        elif l.find('string_refcnt') != -1:
+            # leak, so print it out
+            newlines.append(l)
 
 f = open(outfile, 'w')
 for l in newlines:

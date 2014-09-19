@@ -6,9 +6,9 @@ proc foo(u, v) {
   var s: sync int = u;
 
   begin {
-    writeln("2: initial value is ", s);
+    writeln("2: initial value is ", s.readFE());
     done = true;
-    writeln("2: value is now ", s);
+    writeln("2: value is now ", s.readFE());
     done = true;
   }
   if done then writeln("1: writing ", v);
