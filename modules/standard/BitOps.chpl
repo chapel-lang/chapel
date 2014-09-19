@@ -22,6 +22,15 @@
  */
 module BitOps {
 
+  /*
+    count leading zeros
+
+    x: unsigned integer of size `bits`
+    bits: 8, 16, 32, 64
+
+    returns: the number of 0 bits before the most significant 1 bit in `x` as
+             `x.type`
+   */
   inline proc clz(x: uint(?bits)) {
     // the select will be folded out at compile time.
     select bits {
@@ -43,10 +52,28 @@ module BitOps {
     }
   }
 
+  /*
+    count leading zeros
+
+    x: integer of size `bits`
+    bits: 8, 16, 32, 64
+
+    returns: the number of 0 bits before the most significant 1 bit in `x` as
+             `x.type`
+   */
   inline proc clz(x: int(?bits)) {
     return clz(x:uint(bits)):int(bits);
   }
 
+  /*
+    count trailing zeros
+
+    x: unsigned integer of size `bits`
+    bits: 8, 16, 32, 64
+
+    returns: the number of 0 bits after the least significant 1 bit in `x` as
+             `x.type`
+   */
   inline proc ctz(x: uint(?bits)) {
     // the select will be folded out at compile time.
     select bits {
@@ -66,10 +93,27 @@ module BitOps {
     }
   }
 
+  /*
+    count trailing zeros
+
+    x: integer of size `bits`
+    bits: 8, 16, 32, 64
+
+    returns: the number of 0 bits after the least significant 1 bit in `x` as
+             `x.type`
+   */
   inline proc ctz(x: int(?bits)) {
     return ctz(x:uint(bits)):int(bits);
   }
 
+  /*
+    population count
+
+    x: unsigned integer of size `bits`
+    bits: 8, 16, 32, 64
+
+    returns: the number of 1 bits set in `x` as `x.type`
+   */
   inline proc popcount(x: uint(?bits)) {
     // the select will be folded out at compile time.
     select bits {
@@ -91,6 +135,14 @@ module BitOps {
     }
   }
 
+  /*
+    population count
+
+    x: integer of size `bits`
+    bits: 8, 16, 32, 64
+
+    returns: the number of 1 bits set in `x` as `x.type`
+   */
   inline proc popcount(x: int(?bits)) {
     return popcount(x:uint(bits)):int(bits);
   }
