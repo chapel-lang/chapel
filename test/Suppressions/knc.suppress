@@ -1,2 +1,2 @@
-# IO is not understood with KNC.
+# On Cray systems, it is unclear how file systems interact with KNCs.
 release/examples/primers/fileIO
