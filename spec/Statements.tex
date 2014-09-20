@@ -54,6 +54,8 @@ and additionally as follows:
 \item yield \rsec{The_Yield_Statement}
 \item module declaration \rsec{Modules}
 \item procedure declaration \rsec{Function_Definitions}
+\item external procedure declaration \rsec{Calling_External_Functions}
+\item exporting procedure declaration \rsec{Calling_Chapel_Functions}
 \item iterator declaration \rsec{Iterator_Function_Definitions}
 \item method declaration \rsec{Class_Methods}
 \item type declaration \rsec{Types}
@@ -426,6 +428,34 @@ Scope of do while loop:
 Scope of while loop:
 \end{chapelprintoutput}
 \end{chapelexample}
+
+Chapel do-while loops differ from those found in most other languages in
+one important regard.  If the body of a do-while statement is a block
+statement and new variables are defined within that block statement,
+then the scope of those variables extends to cover the loop's
+termination expression.
+\begin{chapelexample}{do-while.chpl}
+The following example demonstrates that the scope of the variable t 
+includes the loop termination expression.
+\begin{chapel}
+var i = 0;
+do {
+  var t = i;
+  i += 1;
+  writeln(t);
+} while (t != 5);
+\end{chapel}
+produces the output
+\begin{chapelprintoutput}{}
+0
+1
+2
+3
+4
+5
+\end{chapelprintoutput}
+\end{chapelexample}
+
 
 \section{The For Loop}
 \label{The_For_Loop}
