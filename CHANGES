@@ -31,7 +31,7 @@ Highlights
 * added the ability to pass contiguous Chapel arrays to extern procedures
   (see README.extern)
 * performance boosts due to Qthreads tasking, improved LICM, less communication
-  (see Performance Improvements below)
+  (see 'Performance Improvements' below)
 * several generated code cleanups including C for loops and reduced ref temps
   (see 'Generated Code Cleanups' below)
 * significantly improved const-ness checking for fields, indices, domains/arrays
@@ -138,7 +138,7 @@ New Features
 * added the ability to query arrays for the subdomain(s) that the locale owns
   (see doc/technotes/README.subquery and examples/primers/distributions.chpl)
 * made the compiler call user-defined default constructors when defined
-* added the ability to call constructors through typdefs
+* added the ability to call constructors through typedefs
   (e.g., 'class C { ... }  type t = C;  var myT = new t();' now works)
 * added support for numerous type-oriented queries for expressions
   (see doc/technotes/README.typeQueries)
@@ -170,7 +170,7 @@ Standard Modules
 * added a new standard module supporting some initial bitwise operations
   (see modules/standard/BitOps.chpl)
 * added a new standard module supporting a prefetch() operation
-  (see modules/standard/Prefeetch.chpl)
+  (see modules/standard/Prefetch.chpl)
 * added some initial file/directory utility routines (more planned for 1.11)
   (e.g., remove(), rename(), cwd(), chdir(), mkdir(), chown())
 * added draft support for glob() and walking directory trees
@@ -190,7 +190,7 @@ Standard Modules
 
 Documentation
 -------------
-* added doc/platforms/README.knc to describe using Chapel for 'knc'
+* added doc/platforms/README.knc to describe using Chapel for KNC
 * added doc/technotes/README.auxIO and .curl to describe new file system support
 * added doc/technotes/README.sets to describe new associative domain set ops
 * added doc/technotes/README.fileUtil to describe current file utility routines
@@ -238,7 +238,7 @@ Source Highlighting Changes (see etc/README)
 Launcher-specific Notes
 -----------------------
 * improved the 'slurm-srun' launcher
-* updated 'aprun' launcher to support knc
+* updated 'aprun' launcher to support KNC
 * added environment forwarding for the 'amudprun' launcher
 
 Compiler Flags (see 'man chpl' for details)
