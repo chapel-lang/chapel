@@ -321,7 +321,7 @@ Strings
   # types/string/sungeun/c_string/multilocale/remote_assign_c_string.future
   # types/string/sungeun/c_string/multilocale/remote_assign_global_c_string.future
 - Calling string.c_str() on a non-local string results in a runtime error.
- # types/string/sungeun/c_string/multilocale/c_str_on_remote_string.future
+  # types/string/sungeun/c_string/multilocale/c_str_on_remote_string.future
 - Changes to a string used in a begin statement are not visible from
   the begin body.
   # types/string/sungeun/stringInBegin.future
@@ -837,10 +837,13 @@ Developer
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaArrayWithInit.future
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaWithInit.future
 
+
 LLVM (experimental)
 -------------------
 - Extern C blocks do not properly handle C "void *" types.
   # extern/tzakian/void_ptr.future
+- The LLVM backend does not properly handle C macros (and for that
+  reason will not work with GMP)
 
 
 Multi-locale/GASNet executions
@@ -851,14 +854,22 @@ Multi-locale/GASNet executions
 Portability
 -----------
 
+cygwin:
+- cygwin builds may demonstrate portability issues.
+- The qthreads tasking layer is not supported.
+
 OS/X:
+- For older version (e.g., leopard), the qthreads tasking layer is not
+  supported.
 - Static linking not supported.
 
 PGI compilers:
+- Chapel generated identifier names may be too long.
 - Floating point literals of -0.0 may not work as intended.
 
 Intel compilers:
 - Floating point literals of -0.0 may not work as intended.
+- Static linking may not work.
 
 IEEE floating-point standard conformance:
   The --ieee-float flag is implemented by passing appropriate flags to
