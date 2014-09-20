@@ -827,7 +827,7 @@ task-intent-list:
 \end{syntax}
 
 The implicit treatment of outer scope variables as the task function's
-formal arguments applies to both global and local variables.
+formal arguments applies to both module level and local variables.
 It applies to variable references within the lexical scope
 of a task construct, but does not extend to its dynamic scope, i.e.,
 to the functions called from the task(s) but declared outside of
@@ -883,10 +883,11 @@ We decided to treat \chpl{cobegin} and \chpl{coforall} statements the
 same way as \chpl{begin}. This is for consistency and to make the
 race-avoidance benefit available to more code.
 
-We decided to apply task intents to global variables, in addition to local
-variables. Again, this is for consistency. One could view global
-variables differently than local variables (e.g. a global variable is
-``always available''), but we favored consistency over such an approach.
+We decided to apply task intents to module level variables, in addition
+to local variables. Again, this is for consistency. One could view module
+level variables differently than local variables (e.g. a module level 
+variable is ``always available''), but we favored consistency over such
+an approach.
 
 We decided not to apply task intents to ``closure'' variables, i.e.,
 the variables in the dynamic scope of a task construct. This is to
