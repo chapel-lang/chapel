@@ -457,7 +457,7 @@ Classes, Records, and Unions
   # arrays/deitz/part5/test_array_type_field_type.future 
   # classes/diten/type_order_problem.future
   # types/records/bharshbarger/nestedRecordInClass2.future
-- Cannot call 'new' on type aliases for classes and records
+- Cannot call 'new' on type variables for classes and records
   # types/typedefs/tzakian/classConstructorsFromTypes.future
 - Iterator methods may not obey dynamic dispatch.
   # trivial/jturner/iter_overload_simple.future
