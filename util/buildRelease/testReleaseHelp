@@ -57,10 +57,9 @@ if ($tmpstatus != 0) then
 endif
 
 # Calculate expected version string from version_num.h.
-set version_num_h=`cat compiler/main/version_num.h`
-set major=`echo "${version_num_h}" | grep MAJOR_VERSION | cut -f3 -d" " | sed "s/\"//g"`
-set minor=`echo "${version_num_h}" | grep MINOR_VERSION | cut -f3 -d" " | sed "s/\"//g"`
-set patch=`echo "${version_num_h}" | grep UPDATE_VERSION | cut -f3 -d" " | sed "s/\"//g"`
+set major=`cat compiler/main/version_num.h | grep MAJOR_VERSION | cut -f3 -d" " | sed "s/\"//g"`
+set minor=`cat compiler/main/version_num.h | grep MINOR_VERSION | cut -f3 -d" " | sed "s/\"//g"`
+set patch=`cat compiler/main/version_num.h | grep UPDATE_VERSION | cut -f3 -d" " | sed "s/\"//g"`
 set expected_version_string="${major}.${minor}.${patch}"
 
 # Test chpl --version for expected string version.
