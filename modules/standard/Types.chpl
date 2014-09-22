@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // Types.chpl
 //
 // Standard type routines.
@@ -6,67 +25,87 @@
 //
 // type predicates
 //
-proc chpl__isType(type t) param return true;
-proc chpl__isType(e) param return false;
+pragma "no instantiation limit"
+proc isType(type t) param return true;
+pragma "no instantiation limit"
+proc isType(e) param return false;
 
+pragma "no instantiation limit"
+proc isParam(type t)  param return false;
+pragma "no instantiation limit"
+proc isParam(param p) param return true;
+pragma "no instantiation limit"
+proc isParam(e)       param return false;
+
+// TODO eliminate this; beware of isPrimitive()
 pragma "no instantiation limit"
 proc _isPrimitiveType(type t) param return
-  _isBooleanType(t)  ||
-  _isIntegralType(t) ||
-  _isRealType(t)     ||
+  isBoolType(t)  ||
+  isIntegralType(t) ||
+  isRealType(t)     ||
 //To allow imag, need to define casts from primitive types into imag.
-//_isImagType(t)     ||
+//isImagType(t)     ||
   (t == c_string);
 
+// the set of primitive types, as defined by the spec
 pragma "no instantiation limit"
-proc _isSimpleScalarType(type t) param return
-  _isBooleanType(t) | _isIntegralType(t) | _isFloatType(t);
+proc isPrimitiveType(type t) param return
+  isVoidType(t) || isBoolType(t) || isIntType(t) || isUintType(t) ||
+  isRealType(t) || isImagType(t) || isComplexType(t) || isStringType(t);
 
 pragma "no instantiation limit"
-proc _isBooleanType(type t) param return
+proc isVoidType(type t) param return t == void;
+
+pragma "no instantiation limit"
+proc isBoolType(type t) param return
   (t == bool) | (t == bool(8)) | (t == bool(16)) | (t == bool(32)) | (t == bool(64));
 
 pragma "no instantiation limit"
-proc _isIntegralType(type t) param return
-  _isSignedType(t) || _isUnsignedType(t);
+proc isNumericType(type t) param return
+  isIntegralType(t) || isFloatType(t) || isComplexType(t);
 
 pragma "no instantiation limit"
-proc _isSignedType(type t) param return
+proc isIntegralType(type t) param return
+  isIntType(t) || isUintType(t);
+
+pragma "no instantiation limit"
+proc isIntType(type t) param return
   (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
 
-
 pragma "no instantiation limit"
-proc _isUnsignedType(type t) param return
+proc isUintType(type t) param return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
 pragma "no instantiation limit"
-proc _isEnumeratedType(type t) param {
-  proc isEnum(type t: enumerated) param return true;
-  proc isEnum(type t) param return false;
-  return isEnum(t);
+proc isEnumType(type t) param {
+  proc isEnumHelp(type t: enumerated) param return true;
+  proc isEnumHelp(type t) param return false;
+  return isEnumHelp(t);
 }
 
 pragma "no instantiation limit"
-proc _isComplexType(type t) param return
+proc isComplexType(type t) param return
   (t == complex(64)) | (t == complex(128));
 
 pragma "no instantiation limit"
-proc _isFloatType(type t) param return
-  (t == real(32)) | (t == real(64)) |
-  (t == imag(32)) | (t == imag(64));
+proc isFloatType(type t) param return
+  isRealType(t) || isImagType(t);
 
 pragma "no instantiation limit"
-proc _isRealType(type t) param return
+proc isRealType(type t) param return
   (t == real(32)) | (t == real(64));
 
 pragma "no instantiation limit"
-proc _isImagType(type t) param return
+proc isImagType(type t) param return
   (t == imag(32)) | (t == imag(64));
+
+pragma "no instantiation limit"
+proc isStringType(type t) param return t == string;
 
 // Returns the unsigned equivalent of the input type.
 proc chpl__unsignedType(type t) type 
 {
-  if ! _isIntegralType(t) then
+  if ! isIntegralType(t) then
     compilerError("range idxType is non-integral: ", typeToString(t));
 
   return uint(numBits(t));
@@ -76,17 +115,17 @@ proc chpl__unsignedType(type t) type
 // Returns the signed equivalent of the input type.
 proc chpl__signedType(type t) type 
 {
-  if ! _isIntegralType(t) then
+  if ! isIntegralType(t) then
     compilerError("range idxType is non-integral: ", typeToString(t));
 
   return int(numBits(t));
 }
 
 proc chpl__maxIntTypeSameSign(type t) type {
-  if ! _isIntegralType(t) then
+  if ! isIntegralType(t) then
     compilerError("type t is non-integral: ", typeToString(t));
 
-  if (_isSignedType(t)) then
+  if (isIntType(t)) then
     return int(64);
   else
     return uint(64);
@@ -94,19 +133,104 @@ proc chpl__maxIntTypeSameSign(type t) type {
 
 
 //
-// These procedures indicate whether or not a type t is a specific type
+// isXxxValue() - trivial implementations
+// no isVoid() or isVoidValue() - it might not work
+// Let these be for internal consumption for now,
+// due to lack of consensus for the name.
 //
-proc isRangeType(type t) param where   t: range  return true;
-proc isRangeType(type t) param where !(t: range) return false;
 
-proc isDmapType(type t) param where   t: _distribution  return true;
-proc isDmapType(type t) param where !(t: _distribution) return false;
+proc isBoolValue(e)      param  return isBoolType(e.type);
+proc isIntValue(e)       param  return isIntType(e.type);
+proc isUintValue(e)      param  return isUintType(e.type);
+proc isRealValue(e)      param  return isRealType(e.type);
+proc isImagValue(e)      param  return isImagType(e.type);
+proc isComplexValue(e)   param  return isComplexType(e.type);
+proc isStringValue(e)    param  return isStringType(e.type);
+proc isIntegralValue(e)  param  return isIntegralType(e.type);
+proc isFloatValue(e)     param  return isFloatType(e.type);
+proc isNumericValue(e)   param  return isNumericType(e.type);
+proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
+proc isEnumValue(e)      param  return isEnumType(e.type);
+//Defined elsewhere:
+// isTupleValue
+// isHomogeneousTupleValue
+proc isClassValue(e)     param  return isClassType(e.type);
+proc isRecordValue(e)    param  return isRecordType(e.type);
+proc isUnionValue(e)     param  return isUnionType(e.type);
+//Defined elsewhere:
+// isRangeValue
+// isDmapValue
+// isDomainValue
+// isArrayValue
+// isSyncValue
+// isSingleValue
+proc isAtomicValue(e)    param  return isAtomicType(e.type);
 
-proc isDomainType(type t) param where   t: _domain  return true;
-proc isDomainType(type t) param where !(t: _domain) return false;
-  
-proc isArrayType(type t) param where   t: _array  return true;
-proc isArrayType(type t) param where !(t: _array) return false;
+
+//
+// ixXxx() - the argument can be either a type or a value
+//
+
+// Set 1 - types.
+proc isBool(type t)      param  return isBoolType(t);
+proc isInt(type t)       param  return isIntType(t);
+proc isUint(type t)      param  return isUintType(t);
+proc isReal(type t)      param  return isRealType(t);
+proc isImag(type t)      param  return isImagType(t);
+proc isComplex(type t)   param  return isComplexType(t);
+proc isString(type t)    param  return isStringType(t);
+proc isIntegral(type t)  param  return isIntegralType(t);
+proc isFloat(type t)     param  return isFloatType(t);
+proc isNumeric(type t)   param  return isNumericType(t);
+proc isPrimitive(type t) param  return isPrimitiveType(t);
+proc isEnum(type t)      param  return isEnumType(t);
+proc isTuple(type t)     param  return isTupleType(t);
+proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
+proc isClass(type t)     param  return isClassType(t);
+proc isRecord(type t)    param  return isRecordType(t);
+proc isUnion(type t)     param  return isUnionType(t);
+proc isRange(type t)     param  return isRangeType(t);
+proc isDmap(type t)      param  return isDmapType(t);
+proc isDomain(type t)    param  return isDomainType(t);
+proc isArray(type t)     param  return isArrayType(t);
+proc isSync(type t)      param  return isSyncType(t);
+proc isSingle(type t)    param  return isSingleType(t);
+proc isAtomic(type t)    param  return isAtomicType(t);
+
+// Set 2 - values.
+proc isBool(e)      param  return isBoolValue(e);
+proc isInt(e)       param  return isIntValue(e);
+proc isUint(e)      param  return isUintValue(e);
+proc isReal(e)      param  return isRealValue(e);
+proc isImag(e)      param  return isImagValue(e);
+proc isComplex(e)   param  return isComplexValue(e);
+proc isString(e)    param  return isStringValue(e);
+proc isIntegral(e)  param  return isIntegralValue(e);
+proc isFloat(e)     param  return isFloatValue(e);
+proc isNumeric(e)   param  return isNumericValue(e);
+proc isPrimitive(e) param  return isPrimitiveValue(e);
+proc isEnum(e)      param  return isEnumValue(e);
+proc isTuple(e)     param  return isTupleValue(e);
+proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
+proc isClass(e)     param  return isClassValue(e);
+proc isRecord(e)    param  return isRecordValue(e);
+proc isUnion(e)     param  return isUnionValue(e);
+proc isRange(e)     param  return isRangeValue(e);
+proc isDmap(e)      param  return isDmapValue(e);
+proc isDomain(e)    param  return isDomainValue(e);
+proc isArray(e)     param  return isArrayValue(e);
+proc isSync(e: sync)     param  return true; // workaround: not isSyncValue
+proc isSync(e)           param  return false;
+proc isSingle(e: single) param  return true; // workaround: not isSingleValue
+proc isSingle(e)         param  return false;
+proc isAtomic(e)    param  return isAtomicValue(e);
+
+
+// for internal use until we have a better name
+proc chpl_isSyncSingleAtomic(e)         param  return false;
+proc chpl_isSyncSingleAtomic(e: sync)   param  return true;
+proc chpl_isSyncSingleAtomic(e: single) param  return true;
+proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
 
 // Is 'sub' a subtype (or equal to) 'super'?
@@ -122,20 +246,20 @@ proc isProperSubtype(type sub, type super) param
 
 // What follows are the type _defaultOf methods, used to initialize types
 // Booleans
-inline proc _defaultOf(type t) param where (_isBooleanType(t)) return false:t;
+inline proc _defaultOf(type t) param where (isBoolType(t)) return false:t;
 
 // ints, reals, imags, complexes
-inline proc _defaultOf(type t) param where (_isIntegralType(t)) return 0:t;
+inline proc _defaultOf(type t) param where (isIntegralType(t)) return 0:t;
 // TODO: In order to make _defaultOf param for reals and imags we had to split
 // the cases into their default size and a non-param case.  It is hoped that
 // in the future, floating point numbers may be castable whilst param.  In that
 // world, we can again shrink these calls into the size-ignorant case.
-inline proc _defaultOf(type t) param where t == real(64) return 0.0:t;
-inline proc _defaultOf(type t) where (_isRealType(t) && t != real(64)) return 0.0:t;
-inline proc _defaultOf(type t) param where t == imag(64) return 0.0i:t;
-inline proc _defaultOf(type t) where (_isImagType(t) && t != imag(64)) return 0.0i:t;
+inline proc _defaultOf(type t) param where t == real return 0.0;
+inline proc _defaultOf(type t) where (isRealType(t) && t != real) return 0.0:t;
+inline proc _defaultOf(type t) param where t == imag return 0.0i;
+inline proc _defaultOf(type t) where (isImagType(t) && t != imag) return 0.0i:t;
 // Also, complexes cannot yet be parametized
-inline proc _defaultOf(type t): t where (_isComplexType(t)) {
+inline proc _defaultOf(type t): t where (isComplexType(t)) {
   var ret:t = noinit;
   param floatwidth = numBits(t)/2;
   ret.re = 0.0:real(floatwidth);
@@ -144,7 +268,7 @@ inline proc _defaultOf(type t): t where (_isComplexType(t)) {
 }
 
 // Enums
-inline proc _defaultOf(type t) param where (_isEnumeratedType(t)) {
+inline proc _defaultOf(type t) param where (isEnumType(t)) {
   return chpl_enum_first(t);
 }
 
@@ -184,14 +308,14 @@ inline proc _defaultOf(type t) {
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 proc chpl__legalIntCoerce(type t1, type t2) param
 {
-  if (_isSignedType(t2)) {
-    if (_isSignedType(t1)) {
+  if (isIntType(t2)) {
+    if (isIntType(t1)) {
       return (numBits(t1) <= numBits(t2));
     } else {
       return (numBits(t1) < numBits(t2));
     }
   } else {
-    if (_isSignedType(t1)) {
+    if (isIntType(t1)) {
       return false;
     } else {
       return (numBits(t1) <= numBits(t2));
@@ -204,16 +328,16 @@ proc chpl__legalIntCoerce(type t1, type t2) param
 // That is, both s and t can be coerced to the returned type.
 proc chpl__commonType(type s, type t) type
 {
-  if ! _isIntegralType(s) then
+  if ! isIntegralType(s) then
     compilerError("Type ", typeToString(s) , " is non-integral: ");
-  if ! _isIntegralType(t) then
+  if ! isIntegralType(t) then
     compilerError("Type ", typeToString(t) , " is non-integral: ");
 
   if numBits(s) > numBits(t) then return s;
   if numBits(s) < numBits(t) then return t;
 
-  if _isSignedType(s) && ! _isSignedType(t) ||
-     _isSignedType(t) && ! _isSignedType(s) then
+  if isIntType(s) && ! isIntType(t) ||
+     isIntType(t) && ! isIntType(s) then
     compilerError("Types ", typeToString(s) , " and ", typeToString(t), " are incompatible.");
 
   return s;
@@ -260,10 +384,10 @@ proc numBytes(type t) param return numBits(t)/8;
 proc min(type t) where t == bool
   return false;
 
-proc min(type t) where _isIntegralType(t) || _isFloatType(t)
+proc min(type t) where isIntegralType(t) || isFloatType(t)
   return __primitive( "_min", t);
 
-proc min(type t) where _isComplexType(t) {
+proc min(type t) where isComplexType(t) {
   var x: t;
   x.re = min(x.re.type);
   x.im = min(x.im.type);
@@ -277,10 +401,10 @@ proc min(type t) where _isComplexType(t) {
 proc max(type t) where t == bool
   return true;
 
-proc max(type t) where _isIntegralType(t) || _isFloatType(t)
+proc max(type t) where isIntegralType(t) || isFloatType(t)
   return __primitive( "_max", t);
 
-proc max(type t) where _isComplexType(t) {
+proc max(type t) where isComplexType(t) {
   var x: t;
   x.re = max(x.re.type);
   x.im = max(x.im.type);

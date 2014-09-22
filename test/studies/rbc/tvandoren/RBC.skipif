@@ -1,2 +1,0 @@
-# Execution takes too long with valgrind, so skip it.
-CHPL_TEST_VGRND_COMP == on

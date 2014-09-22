@@ -9,4 +9,4 @@ coforall i in 1..3 {
   total += subtotal;
 }
 
-writeln ("Bye no. ", total, "!");
+writeln ("Bye no. ", total.readFF(), "!");

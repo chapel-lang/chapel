@@ -34,6 +34,7 @@ $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
 $dist = "";
+$llvm = 0;
 $localeModelSuite = 0;
 $memleaks = "";
 $multilocale = 0;
@@ -119,6 +120,8 @@ while (@ARGV) {
         $svnrevopt = "-r " . shift @ARGV;
     } elsif ($flag eq "-cron-recipient") {
         $cronrecipient = shift @ARGV;
+    } elsif ($flag eq "-llvm") {
+        $llvm = 1;
     } else {
         $printusage = 1;
         last;
@@ -173,6 +176,7 @@ if ($printusage == 1) {
     print "\t-baseline    : run testins using --baseline\n";
     print "\t-dist <dist> : run distribution robustness tests\n";
     print "\t-fast        : run tests using --fast\n";
+    print "\t-llvm        : run tests using --llvm\n";
     print "\t-memleaks <log> : run memleaks tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
@@ -282,7 +286,7 @@ if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
 }
 
 $fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$localeModel";
-if ($mem ne "default") {
+if ($mem ne "cstdlib") {
     $fullplatform = "$fullplatform.$mem";
 }
 if ($hostplatform ne $targetplatform) {
@@ -327,6 +331,8 @@ if ($performance == 1) {
     $subjectid = " No-local";
 } elsif ($verify == 1) {
     $subjectid = " Verify";
+} elsif ($llvm == 1) {
+    $subjectid = " LLVM";
 } elsif ($runtests == 0) {
     $subjectid = " Build-only";
 } elsif ($buildruntime == 0) {
@@ -345,9 +351,13 @@ if ($debug == 1) {
     $nochangerecipient = $debugmail;
 } else {
     $subjectid = "Cron$subjectid";
-    $recipient = "$failuremail $allmail";
-    if ($tasks eq "qthreads") {
-      $recipient = "$recipient qthreads-chapel\@googlegroups.com";
+
+    # "email", the mailer program used on cygwin platform, requires multiple
+    # recipient addresses to be comma delimited instead of space delimited.
+    if ($mailer eq "email") {
+        $recipient = "$failuremail,$allmail";
+    } else {
+        $recipient = "$failuremail $allmail";
     }
     $nochangerecipient = $allmail;
 }
@@ -409,6 +419,9 @@ if ($valgrind == 1) {
 } elsif ($verify == 1) {
     $threechars = "vfy";
     $morechars = "verify";
+} elsif ($llvm == 1) {
+    $threechars = "lvm";
+    $morechars = "llvm";
 } elsif ($examples == 1) {
     $threechars = "exm";
     if ($multilocale == 1) {
@@ -489,8 +502,18 @@ print "Making DEBUG=0 OPTIMIZE=1 compiler\n";
 $makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 compiler\n";
+    # Since the rest of the compiler is being built unoptimized, disable
+    # compiler performance testing so we don't get unexplained hiccups in
+    # the perf graphs.
+    print "compiler performance testing will be disabled\n";
+    $compperformance = 0;
     mysystem("cd $chplhomedir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
+
+# Speculatively build a couple third-party libraries. This command should not
+# fail, even if it fails to build the libraries.
+print "Making DEBUG=0 OPTIMIZE=1 third-party-try-opt\n";
+mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
 
 if ($buildruntime == 0) {
     $endtime = localtime;
@@ -509,8 +532,11 @@ if ($buildruntime == 0) {
     exit 0;
 }
 
+# if this is a performance test run then failing to build the runtime with
+# optimizations is a fatal error.  Otherwise we could get hiccups in the
+# performance graphs that are difficult to track.
 print "Making DEBUG=0 OPTIMIZE=1 $qthreadopts runtime\n";
-$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 $qthreadopts runtime", "making chapel runtime", $performance, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 $qthreadopts runtime\n";
     mysystem("cd $chplhomedir && $make DEBUG=0 $qthreadopts runtime", "making chapel runtime", 1, 1);
@@ -624,6 +650,9 @@ if ($nolocal == 1) {
 if ($verify == 1) {
     $testflags = "$testflags -compopts --verify";
 }
+if ($llvm == 1) {
+    $testflags = "$testflags -compopts --llvm";
+}
 if (!($suppressions eq "")) {
     $testflags = "$testflags -suppress $suppressions";
 }
@@ -671,7 +700,7 @@ if ($runtests == 0) {
         # FIXME: Update this logic to work with git repo that manages perf
         #        data. (thomasvandoren, 2014-07-10)
 
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 0, 1);
     }
 
     $ENV{'CHPL_HOME'} = $chplhomedir;
@@ -680,7 +709,7 @@ if ($runtests == 0) {
         print "Executing $testcommand\n";
         $status = mysystem($testcommand, "running standard tests", 0, 0);
         print "Moving the log and summary files\n";
-        mysystem("cd $testdir && mv -v $rawlog $permlog && mv -v $rawsummary $permsum", "moving the log files", 0, 0);
+        mysystem("cd $testdir && cp -v $rawlog $permlog && rm $rawlog && cp -v $rawsummary $permsum && rm $rawsummary", "moving the log files", 0, 0);
         $rawlog = $permlog;
         $rawsummary = $permsum;
     } else {
@@ -732,9 +761,9 @@ if ($runtests == 0) {
 
 
     if ($performance == 1 or $compperformance == 1) {
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 0, 1);
         mysystem("cd $svnPerfDir && find . -name '*.dat' -print0 | xargs -0 svn add  --parents 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
-        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 1, 1);
+        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 0, 1);
 
         # sync the performance graphs over to sourceforge 
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $host --logFile $logdir/syncToSourceForge.errors";
@@ -745,7 +774,7 @@ if ($runtests == 0) {
   
     if ($releasePerformance == 1) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
-        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 1, 1);
+        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 0, 1);
 
         # check to make sure there is a release over release directory
         if (not -e "$svnReleasePerfDir") {
@@ -932,6 +961,9 @@ sub mysystem {
 	    close(MAIL);
 	}
 
+        if ($fatal != 0) {
+            exit 1;
+        }
     }
     $status;
 }

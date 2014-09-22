@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 extern proc chpl_macro_INFINITY():real(64);
 extern proc chpl_macro_NAN():real(64);
 
@@ -288,7 +307,7 @@ proc mod(m: integral, n: integral) {
   // eliminate some run-time tests if input(s) is(are) unsigned
   return
     if isNonnegative(n) then
-      if _isUnsignedType(m.type)
+      if isUintType(m.type)
       then temp
       else ( if temp >= 0 then temp else temp + n )
     else
@@ -302,7 +321,7 @@ proc mod(param m: integral, param n: integral) param {
   // verbatim copy from the other 'mod', to simplify maintenance
   return
     if isNonnegative(n) then
-      if _isUnsignedType(m.type)
+      if isUintType(m.type)
       then temp
       else ( if temp >= 0 then temp else temp + n )
     else

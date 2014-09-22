@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -263,13 +282,12 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
         // unless sync is explicitly specified as the generic
         if (isSyncType(key->type))
           return value;
-        if (fn->hasFlag(FLAG_NO_SYNC_DEMOTION))
-          // Special case for the chpl_here_alloc and free functions, wherein want to 
-          // allocate and free the _sync object and not the variable it wraps.
-          // Sync variables are handled specially, so they normally appear to have the
-          // type of the value they wrap, and moves involving them cause read?? and
-          // write?? calls to be inserted as needed.
-          return value;
+
+        // ... or it is passed by blank or [const] ref
+        if (ArgSymbol* keyArg = toArgSymbol(key))
+          if (keyArg->intent == INTENT_BLANK ||
+              (keyArg->intent & INTENT_FLAG_REF))
+            return value;
 
         TypeSymbol* nt = toTypeSymbol(value->type->substitutions.v[0].value);
         return getNewSubType(fn, key, nt);

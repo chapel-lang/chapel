@@ -388,14 +388,14 @@ class Block1DArr {
   //
   // the global accessor for the array
   //
-  proc this(i: glbIdxType) var {
+  proc this(i: glbIdxType) ref {
     return locArr(dom.dist.idxToLocale(i))(i);
   }
 
   //
   // the iterator over the array's elements, currently sequential
   //
-  iter these() var {
+  iter these() ref {
     for loc in dom.dist.targetLocs {
       // May want to do something like:     
       // on this do
@@ -500,14 +500,14 @@ class LocBlock1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  proc this(i: lclIdxType) var {
+  proc this(i: lclIdxType) ref {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  iter these() var {
+  iter these() ref {
     for elem in myElems {
       yield elem;
     }
@@ -519,7 +519,7 @@ class LocBlock1DArr {
   // to avoid conflicting with the above which is currently targeted
   // by the compiler.
   //
-  iter newThese(param iterator: IteratorType, followThis) var {
+  iter newThese(param iterator: IteratorType, followThis) ref {
     select iterator {
     when IteratorType.solo {
       for i in these() do

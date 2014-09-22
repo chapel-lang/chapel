@@ -5,6 +5,7 @@ a.out_real
 output
 gen
 *.ntoks
+*.o
 *.pyc
 *.tmp
 
@@ -104,6 +105,8 @@ gen
 /test/Logs
 /test/**/perfdat
 
+/test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
+
 /test/chpldoc/**/docs
 /test/chpldoc/**/*.good
 
@@ -114,6 +117,8 @@ gen
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
 /test/compflags/bradc/gdbddash/.gdb_history
+/test/compflags/bradc/html/log
+/test/compflags/bradc/savecDir
 /test/compflags/bradc/license/declint.good
 /test/compflags/bradc/printstuff/copyright.good
 /test/compflags/bradc/printstuff/license.good
@@ -156,6 +161,7 @@ gen
 /test/execflags/bradc/callStackSize.good
 /test/execflags/bradc/gdbddash/.gdb_history
 /test/execflags/shannon/configs/help/*.good
+/test/execflags/sungeun/about.good
 
 /test/exercises/Mandelbrot/mandelbrot.ppm
 /test/exercises/Mandelbrot/solutions/mandelbrot.ppm
@@ -170,6 +176,10 @@ gen
 /test/io/ferguson/asserteof.test.nums
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
+/test/io/fsouza/chdir/destination
+/test/io/fsouza/chown/file.txt
+
+/test/localeModels/gbt/maxTaskPar.good
 
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log

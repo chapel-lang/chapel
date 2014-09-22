@@ -1,4 +1,4 @@
-scenario-3-assoc-dom-of-record-with-const-fld.chpl: error: cannot assign to a record of the type Node using the default assignment operator because it has 'const' field(s)
+$CHPL_HOME/modules/internal/DefaultAssociative.chpl: error: cannot assign to a record of the type Node using the default assignment operator because it has 'const' field(s)
 scenario-3-assoc-dom-of-record-with-const-fld.chpl: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 scenario-3-assoc-dom-of-record-with-const-fld.chpl: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 $CHPL_HOME/modules/internal/ChapelArray.chpl: In function 'chpl__buildAssociativeArrayExpr':

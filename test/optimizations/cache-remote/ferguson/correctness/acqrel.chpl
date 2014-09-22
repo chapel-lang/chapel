@@ -16,7 +16,7 @@ proc doit(a:locale, b:locale, c:locale)
     stopgo.write(0);
 
     sync {
-      begin ref(x) on b {
+      begin with (ref x) on b {
         for i in 0..max by 2 {
           stopgo.waitFor(i, memory_order_acquire);
           var myx = x;
@@ -27,7 +27,7 @@ proc doit(a:locale, b:locale, c:locale)
         }
       }
 
-      begin ref(x) on c {
+      begin with (ref x) on c {
         for i in 1..max by 2 {
           stopgo.waitFor(i, memory_order_acquire);
           var myx = x;

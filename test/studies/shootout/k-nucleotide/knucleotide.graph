@@ -1,0 +1,6 @@
+perfkeys: real, real
+files: knucleotide-associative.dat, knucleotide-chaining.dat
+graphkeys: associative, chaining
+graphtitle: K-nucleotide Shootout Benchmark
+ylabel: Time (seconds)
+graphname: knucleotide

@@ -630,6 +630,9 @@ This is implemented for all numeric types and fixed-width \chpl{bool} types.
 It is not implemented for default-width \chpl{bool}.
 \end{protobody}
 
+The \chpl{Types} module also provides a set of type queries.
+These are documented in the following README in the Chapel release:
+\chpl{doc/technotes/README.typeQueries} .
 
 
 \section{Optional Modules}
@@ -934,10 +937,12 @@ it was not found.
 
 The \chpl{Sort} module is designed to support standard sorting
 routines.  The current interface is minimal and should be expected to
-grow and evolve over time.
+grow and evolve over time. Each of the following functions accepts an
+optional boolean argument, \chpl{reverse}, which is \chpl{false} by
+default. If \chpl{true}, then the sort function will order in reverse.
 
 \begin{protohead}
-proc BubbleSort(Data: [?Dom]) where Dom.rank == 1
+proc BubbleSort(Data: [?Dom], reverse : bool = false) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential bubble sort
@@ -945,7 +950,15 @@ algorithm.
 \end{protobody}
 
 \begin{protohead}
-proc InsertionSort(Data: [?Dom]) where Dom.rank == 1
+proc HeapSort(Data: [?Dom], reverse : bool = false) where Dom.rank == 1
+\end{protohead}
+\begin{protobody}
+Sorts the 1D array \chpl{Data} in-place using a sequential heap sort
+algorithm.
+\end{protobody}
+
+\begin{protohead}
+proc InsertionSort(Data: [?Dom], reverse : bool = false) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential insertion
@@ -953,7 +966,7 @@ sort algorithm.
 \end{protobody}
 
 \begin{protohead}
-proc MergeSort(Data: [?Dom], minlen=16) where Dom.rank == 1
+proc MergeSort(Data: [?Dom], reverse : bool = false, minlen=16) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} using a parallel merge sort algorithm.
@@ -964,7 +977,7 @@ insertion sort algorithm will be used.
 \end{protobody}
 
 \begin{protohead}
-proc QuickSort(Data: [?Dom], minlen=16) where Dom.rank == 1
+proc QuickSort(Data: [?Dom], reverse : bool = false, minlen=16) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential
@@ -975,7 +988,7 @@ algorithm will be used.
 \end{protobody}
 
 \begin{protohead}
-proc SelectionSort(Data: [?Dom]) where Dom.rank == 1
+proc SelectionSort(Data: [?Dom], reverse : bool = false) where Dom.rank == 1
 \end{protohead}
 \begin{protobody}
 Sorts the 1D array \chpl{Data} in-place using a sequential selection

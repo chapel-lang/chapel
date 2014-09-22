@@ -19,13 +19,13 @@ proc verify(i, j, ceilres, floorres, modres) {
 }
 
 proc launch(type ta, type tb) {
-  const a1 = if _isSignedType(ta) then -11:ta else 0:ta;
+  const a1 = if isIntType(ta) then -11:ta else 0:ta;
   const a2 = 11:ta;
-  const b1 = if _isSignedType(tb) then -11:tb else 1:tb;
+  const b1 = if isIntType(tb) then -11:tb else 1:tb;
   const b2 = 11:tb;
   const tcv = vtestcount;
 
-  for b in b1..b2 do if !_isSignedType(tb) || b != 0 then
+  for b in b1..b2 do if !isIntType(tb) || b != 0 then
     for a in a1..a2 do {
       vtestcount += 1;
       verify(a:ta, b:tb,
@@ -40,9 +40,9 @@ proc launch(type ta, type tb) {
             typeToString(mod(a2,b2).type));
 
   // same as above, but test the 'param' versions
-  param e1 = if _isSignedType(ta) then -7:ta else 0:ta;
+  param e1 = if isIntType(ta) then -7:ta else 0:ta;
   param e2 = 7:ta;
-  param f1 = if _isSignedType(tb) then -7:tb else 1:tb;
+  param f1 = if isIntType(tb) then -7:tb else 1:tb;
   param f2 = 7:tb;
   const tcp = ptestcount;
 

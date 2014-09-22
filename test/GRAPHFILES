@@ -23,22 +23,48 @@ release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 studies/hpcc/STREAM.graph
-studies/hpcc/STREAM_promote.graph
+studies/hpcc/STREAM_fragmented.graph
+release/examples/benchmarks/hpcc/ra.graph
+release/examples/benchmarks/hpcc/hpl.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/nbody/nbody.graph
+studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/fasta/fasta.graph
 studies/shootout/mandelbrot/mandelbrot.graph
+studies/shootout/pidigits/pidigits.graph
 studies/shootout/meteor/kbrady/meteor.graph
-arrays/diten/time_iterate.graph
-performance/bradc/parOpEquals.graph
-performance/sungeun/dgemm.128.graph
-performance/sungeun/assign_across_locales.1024.graph
+studies/shootout/k-nucleotide/knucleotide.graph
+studies/shootout/regex-dna/regexdna.graph
+studies/shootout/reverse-complement/revcomp.graph
+npb/ep/ep-b.graph
+npb/ft/ft-a.graph
+npb/is/is.graph
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
 studies/parboil/SAD/sad.graph
 studies/parboil/stencil/stencil.graph
+arrays/diten/arrayPerformance-2d.graph
+arrays/diten/arrayPerformance-1d.graph
+arrays/diten/time_iterate.graph
+arrays/diten/time_array_vs_tuple.graph
+arrays/diten/time_array_vs_ddata.graph
+arrays/diten/timeVectorArray.graph
+arrays/lydia/time_access.graph
+performance/bradc/parOpEquals.graph
+performance/sungeun/assign.1024.graph
+performance/sungeun/dgemm.128.graph
+performance/sungeun/init.graph
+distributions/robust/associative/performance/array_iter.graph
+functions/iterators/angeles/dynamic.graph
+statements/lydia/forCompare.graph
+statements/lydia/whileCompare.graph
+statements/lydia/forVersusWhilePerf.graph
+performance/compiler/bradc/AllCompTime.graph
+memleaks.graph
+studies/jacobi/jacobi.graph
+performance/elliot/no-op.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_fragmented.graph
 studies/hpcc/STREAM.graph
@@ -67,6 +93,9 @@ studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/meteor/kbrady/meteor.graph
+studies/shootout/k-nucleotide/knucleotide.graph
+studies/shootout/regex-dna/regexdna.graph
+studies/shootout/reverse-complement/revcomp.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/chameneos-redux/hannah/chameneos-redux-all.graph
@@ -86,7 +115,9 @@ studies/parsec/blackscholes_promote.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
 npb/ep/ep.graph
+npb/ep/ep-b.graph
 npb/ft/ft.graph
+npb/ft/ft-a.graph
 npb/is/is.graph
 # suite: Array/Domain performance
 arrays/diten/arrayPerformance-2d.graph
@@ -150,3 +181,5 @@ reductions/diten/testSerialReductions.graph
 spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
+# suite: Samples (bogus)
+Samples/Performance/foo.graph

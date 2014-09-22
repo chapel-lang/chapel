@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "primitive.h"
 
 #include "expr.h"
@@ -556,7 +575,7 @@ initPrimitive() {
   prim_def(PRIM_STRING_FROM_C_STRING, "string_from_c_string", returnInfoString, false, true);
   prim_def(PRIM_C_STRING_FROM_STRING, "c_string_from_string", returnInfoStringC, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
-  prim_def("string_select", returnInfoString, true, true);
+  prim_def("string_select", returnInfoStringC, true, true);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoDefaultInt);
   prim_def("object2int", returnInfoDefaultInt);

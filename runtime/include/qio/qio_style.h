@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef _QIO_STYLE_H_
 #define _QIO_STYLE_H_
 
@@ -28,6 +47,7 @@ typedef uint8_t style_char_t;
 #define QIO_STRING_FORMAT_CHPL 2
 #define QIO_STRING_FORMAT_JSON 3
 #define QIO_STRING_FORMAT_TOEND 4
+#define QIO_STRING_FORMAT_TOEOF 5
 
 #define QIO_COMPLEX_FORMAT_READ_ANY 0
 #define QIO_COMPLEX_FORMAT_READ_STRICT 0x10
@@ -95,6 +115,8 @@ typedef struct qio_style_s {
        QIO_STRING_FORMAT_JSON  escape string_end " and \ with \,
                                and nonprinting characters c = \uABCD
        QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end;
+                               returned string includes string_end.
+       QIO_STRING_FORMAT_TOEOF string is as-is; reading reads until EOF;
                                returned string includes string_end.
      */
   uint8_t string_format;

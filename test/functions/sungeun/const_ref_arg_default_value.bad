@@ -1,0 +1,3 @@
+const_ref_arg_default_value.chpl:1: error: non-lvalue actual is passed to 'const ref' formal 't' of foo()
+const_ref_arg_default_value.chpl:1: In function 'foo':
+const_ref_arg_default_value.chpl:2: error: illegal lvalue in assignment

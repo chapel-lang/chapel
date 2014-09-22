@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "passes.h"
 
 #include "astutil.h"
@@ -320,11 +339,7 @@ rhsAlias(CallExpr* call) {
   for_alist(expr, call->argList) {
     if(SymExpr* symExpr = toSymExpr(expr)) {
       Type* symType = symExpr->var->type->symbol->type;
-      bool isWideClass = symExpr->var->type->symbol->hasFlag(FLAG_WIDE_CLASS);
-      bool isWideRef = symExpr->var->type->symbol->hasFlag(FLAG_WIDE);
-      bool isWideStr = isWideString(symExpr->var->type);
-      if(isReferenceType(symType) || isRecordWrappedType(symType) ||
-        isWideClass || isWideRef || isWideStr) {
+      if(isReferenceType(symType) || isRecordWrappedType(symType)) {
         hasRef = true;
       }
     }
@@ -613,14 +628,6 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
     return false;
   } else if(SymExpr* symExpr = toSymExpr(expr)) {
   
-    //do not hoist things that are wide 
-    bool isWideObj = symExpr->var->type->symbol->hasFlag(FLAG_WIDE_CLASS);
-    bool isWideRef = symExpr->var->type->symbol->hasFlag(FLAG_WIDE);
-    bool isWideStr = isWideString(symExpr->var->type);
-    if(isWideObj || isWideRef || isWideStr) {
-      return false;
-    }
-  
     //If the operand is invariant (0 defs in the loop, or constant)
     //it is invariant 
     if(loopInvariants.count(symExpr) == 1) {
@@ -870,18 +877,30 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     }
 
     bool mightHaveBeenDeffedElseWhere = false;
-    //assume that anything passed in by ref has been changed elsewhere 
+    // assume that anything passed in by ref has been changed elsewhere
+    // Note that not all things that are passed by ref will have the ref intent
+    // flag, and may just be ref variables. This is a known bug, see comments
+    // in addVarsToFormals(): flattenFunctions.cpp.
     if(ArgSymbol* argSymbol = toArgSymbol(symExpr->var)) {
-      if(argSymbol->intent == INTENT_REF) {
+      if(argSymbol->intent == INTENT_REF ||
+         argSymbol->intent == INTENT_CONST_REF ||
+         isReferenceType(argSymbol->type)) {
         mightHaveBeenDeffedElseWhere = true;
       }
     }
     for_set(Symbol, aliasSym, aliases[symExpr->var]) {
       if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
-        if(argSymbol->intent == INTENT_REF) {
+        if(argSymbol->intent == INTENT_REF ||
+           argSymbol->intent == INTENT_CONST_REF ||
+           isReferenceType(argSymbol->type)) {
           mightHaveBeenDeffedElseWhere = true;
         }
       }
+    }
+    // Where the variable is defined.
+    Symbol* defScope = symExpr->var->defPoint->parentSymbol;
+    if (isModuleSymbol(defScope)) {
+      mightHaveBeenDeffedElseWhere = true;
     }
     //if there were no defs of the symbol, it is invariant 
     if(actualDefs.count(symExpr) == 0 && !mightHaveBeenDeffedElseWhere) {
@@ -1048,10 +1067,12 @@ static bool containsSynchronizationVar(BaseAST* ast) {
     
     if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
       Type* symType = symExpr->var->type;
-      if (isSyncType(symType) || isAtomicType(symType)) {
+      Type* valType = symType->getValType();
+      if (isSyncType(symType) || isAtomicType(symType) ||
+          isSyncType(valType) || isAtomicType(valType)) {
         return true;
       }
-    }  
+    }
   }
   return false;
 }
@@ -1123,7 +1144,7 @@ void loopInvariantCodeMotion(void) {
     
   //TODO use stl routine here
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-     
+
     //build the basic blocks, where the first bb is the entry block 
     startTimer(buildBBTimer);
     buildBasicBlocks(fn);

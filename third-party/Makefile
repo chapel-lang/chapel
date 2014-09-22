@@ -66,6 +66,10 @@ gasnet: $(GASNET_INSTALL_DIR)
 $(GASNET_INSTALL_DIR):
 	cd gasnet && $(MAKE) && $(MAKE) post-install
 
+try-gmp: FORCE
+	@echo "Speculatively attempting to build gmp"
+	-@$(MAKE) gmp
+
 gmp: $(GMP_INSTALL_DIR)
 $(GMP_INSTALL_DIR):
 	cd gmp && $(MAKE)
@@ -94,7 +98,12 @@ $(TCMALLOC_INSTALL_DIR):
 llvm: FORCE
 	cd llvm && $(MAKE)
 
-re2: FORCE
+try-re2: FORCE
+	@echo "Speculatively attempting to build re2"
+	-@$(MAKE) re2
+
+re2: $(RE2_INSTALL_DIR)
+$(RE2_INSTALL_DIR):
 	cd re2 && $(MAKE)
 
 -include Makefile.devel

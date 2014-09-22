@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "astutil.h"
 #include "baseAST.h"
 #include "expr.h"
@@ -324,24 +343,42 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 
 //
 // Checks if a callExpr is one of the op= primitives
-// Note, this does not check if a callExpr is an 
+// Note, this does not check if a callExpr is an
 // op= function call (such as before inlining)
 //
 bool isOpEqualPrim(CallExpr* call) {
-  if (call->isPrimitive(PRIM_ADD_ASSIGN) ||
+  if (call->isPrimitive(PRIM_ADD_ASSIGN)      ||
       call->isPrimitive(PRIM_SUBTRACT_ASSIGN) ||
-      call->isPrimitive(PRIM_MULT_ASSIGN) ||
-      call->isPrimitive(PRIM_DIV_ASSIGN) ||
-      call->isPrimitive(PRIM_MOD_ASSIGN) ||
-      call->isPrimitive(PRIM_LSH_ASSIGN) ||
-      call->isPrimitive(PRIM_RSH_ASSIGN) ||
-      call->isPrimitive(PRIM_AND_ASSIGN) ||
-      call->isPrimitive(PRIM_OR_ASSIGN) ||
+      call->isPrimitive(PRIM_MULT_ASSIGN)     ||
+      call->isPrimitive(PRIM_DIV_ASSIGN)      ||
+      call->isPrimitive(PRIM_MOD_ASSIGN)      ||
+      call->isPrimitive(PRIM_LSH_ASSIGN)      ||
+      call->isPrimitive(PRIM_RSH_ASSIGN)      ||
+      call->isPrimitive(PRIM_AND_ASSIGN)      ||
+      call->isPrimitive(PRIM_OR_ASSIGN)       ||
       call->isPrimitive(PRIM_XOR_ASSIGN)) {
-    return true;      
-    }
-    //otherwise false
-    return false;
+    return true;
+  }
+  //otherwise false
+  return false;
+}
+
+
+//
+// Check if a callExpr is a relational operator primitive (==, !=, <=, >=, <, >)
+//
+bool isRelationalOperator(CallExpr* call) {
+  if (call->isPrimitive(PRIM_EQUAL)          ||
+      call->isPrimitive(PRIM_NOTEQUAL)       ||
+      call->isPrimitive(PRIM_LESSOREQUAL)    ||
+      call->isPrimitive(PRIM_GREATEROREQUAL) ||
+      call->isPrimitive(PRIM_LESS)           ||
+      call->isPrimitive(PRIM_GREATER)) {
+    return true;
+  }
+  //otherwise false
+  return false;
+
 }
 
 

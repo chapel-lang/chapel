@@ -1,7 +1,0 @@
-semantic: nest a record in a class
-I don't understand why I shouldn't be able to nest a record in a class,
-but at least if you can't, there should be a better error message than:
-
-classrecord3.chpl:4: In function 'chpl__initCopy':
-classrecord3.chpl:4: error: unresolved call 'R2(y=int, outer=R(int))'
-classrecord3.chpl:4: note: candidates are: R2(_mt: _MT, outer: R, y)

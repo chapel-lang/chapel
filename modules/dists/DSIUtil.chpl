@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // Useful functions for implementing distributions
 
 inline proc getDataParTasksPerLocale() {
@@ -99,7 +118,7 @@ proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems): int {
 proc _computeNumChunks(numElems): int {
   // copy some machinery from DefaultRectangularDom
   var numTasks = if dataParTasksPerLocale==0
-                 then here.numCores
+                 then here.maxTaskPar
                  else dataParTasksPerLocale;
   var ignoreRunning = dataParIgnoreRunningTasks;
   var minIndicesPerTask = dataParMinGranularity;
@@ -247,8 +266,8 @@ proc densify(subs, wholes, userErrors = true)
 {
   type argtypes = (subs, wholes).type;
   _densiCheck(wholes.size == subs.size, argtypes);
-  _densiCheck(chpl__isRange(subs(1)), argtypes);
-  _densiCheck(chpl__isRange(wholes(1)), argtypes);
+  _densiCheck(isRange(subs(1)), argtypes);
+  _densiCheck(isRange(wholes(1)), argtypes);
   _densiEnsureBounded(subs(1));
   _densiIdxCheck(subs(1).idxType, wholes(1).idxType, argtypes);
 
@@ -257,8 +276,8 @@ proc densify(subs, wholes, userErrors = true)
   var result: rank * range(IT, BoundedRangeType.bounded, true);
 
   for param d in 1..rank {
-    _densiCheck(chpl__isRange(subs(d)), argtypes);
-    _densiCheck(chpl__isRange(wholes(d)), argtypes);
+    _densiCheck(isRange(subs(d)), argtypes);
+    _densiCheck(isRange(wholes(d)), argtypes);
     _densiIdxCheck(wholes(d).idxType, IT, argtypes);
     _densiEnsureBounded(subs(d));
     _densiIdxCheck(subs(d).idxType, wholes(d).idxType, argtypes);
@@ -324,11 +343,11 @@ proc densify(sArg: range(?,?B,?S), w: range(?IT,?,false), userErrors=true) : ran
   ensure(s.isEmpty() ||
          // If idxType is unsigned, caller must ensure that s.low is big enough
          // so it can be subtracted from.
-         w.low <= if _isSignedType(IT) then s.alignedLow else s.low);
+         w.low <= if isIntType(IT) then s.alignedLow else s.low);
   ensure(s.isEmpty() || !w.hasHighBound() || s.alignedHigh <= w.high);
 
   // gotta have a special case, e.g.: s=1..0 w=5..6 IT=uint
-  if _isUnsignedType(IT) && s.isEmpty() then
+  if isUintType(IT) && s.isEmpty() then
     return 1:IT..0:IT;
     
   return (s - w.low): range(IT,B,S);
@@ -368,8 +387,8 @@ proc unDensify(denses, wholes, userErrors = true)
 {
   type argtypes = (denses, wholes).type;
   _undensCheck(wholes.size == denses.size, argtypes);
-  _undensCheck(chpl__isRange(denses(1)), argtypes);
-  _undensCheck(chpl__isRange(wholes(1)), argtypes);
+  _undensCheck(isRange(denses(1)), argtypes);
+  _undensCheck(isRange(wholes(1)), argtypes);
   _undensEnsureBounded(denses(1));
 
   param rank = wholes.size;
@@ -377,8 +396,8 @@ proc unDensify(denses, wholes, userErrors = true)
   var result: rank * range(IT, BoundedRangeType.bounded, true);
 
   for param d in 1..rank {
-    _undensCheck(chpl__isRange(denses(d)), argtypes);
-    _undensCheck(chpl__isRange(wholes(d)), argtypes);
+    _undensCheck(isRange(denses(d)), argtypes);
+    _undensCheck(isRange(wholes(d)), argtypes);
     _undensCheck(chpl__legalIntCoerce(wholes(d).idxType, IT), argtypes);
     _undensEnsureBounded(denses(d));
 

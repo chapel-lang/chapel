@@ -1,0 +1,6 @@
+#
+# We turn off guard pages for this test as it creates many little
+# tasks and hence ends up spending the majority of its time in an
+# mprotect() call
+#
+QT_GUARD_PAGES=false

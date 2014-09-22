@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
   if eq {
     if reverse then return a >= b;
@@ -198,3 +217,24 @@ inline proc VerifySort(Data: [?Dom] ?elType, str: string, param reverse=false) {
     if chpl_sort_cmp(Data(i+1), Data(i), reverse) then
       halt(str, " did not sort properly (", i, "): ", Data);
 }
+
+
+//
+// This is a first draft "sorterator" which is designed to take some
+// other iterator/iterable and yield its elements, in sorted order.
+//
+// The main limitations in the current code are (1) it should put some
+// sort of constraint on 'x' to limit it to types for which this makes
+// sense; and (2) there should be some generic way to say "y is an
+// array of x's element type" (or to infer its element type) without
+// saying a priori how big it is.  Without these mods, the result is
+// that the sorterator works when it does and probably is confusing
+// when it doesn't.
+//
+iter sorted(x) {
+  var y = x;
+  QuickSort(y);
+  for i in y do
+    yield i;
+}
+

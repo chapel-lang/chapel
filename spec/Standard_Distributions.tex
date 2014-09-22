@@ -69,12 +69,12 @@ j_k = \left\{
 The Block class constructor is defined as follows:
 \begin{chapel}
 proc Block(boundingBox: domain,
-          targetLocales: [] locale = Locales, 
-          dataParTasksPerLocale = $\mbox{{\it value in global config const of the same name}}$,
-          dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,
-          dataParMinGranularity = $\mbox{{\it value in global config const of the same name}}$,
-          param rank = boundingBox.rank,
-          type idxType = boundingBox.dim(1).eltType)
+          targetLocales: [] locale  = Locales, 
+          dataParTasksPerLocale     = $\mbox{{\it value of the config const of the same name}}$,
+          dataParIgnoreRunningTasks = $\mbox{{\it value of the config const of the same name}}$,
+          dataParMinGranularity     = $\mbox{{\it value of the config const of the same name}}$,
+          param rank                = boundingBox.rank,
+          type  idxType             = boundingBox.dim(1).eltType)
 \end{chapel}
 
 The argument \chpl{boundingBox} is a non-distributed domain defining a
@@ -94,7 +94,7 @@ The
 arguments \chpl{dataParTasksPerLocale}, \chpl{dataParIgnoreRunningTasks},
 and \chpl{dataParMinGranularity} set the knobs that are used to
 control intra-locale data parallelism for Block-distributed domains
-and arrays in the same way that the global configuration constants of
+and arrays in the same way that the config constants of
 these names control data parallelism for ranges and
 default-distributed domains and arrays~\rsec{data_parallel_knobs}.
 
@@ -162,9 +162,9 @@ The Cyclic class constructor is defined as follows:
 \begin{chapel}
 proc Cyclic(startIdx,
            targetLocales: [] locale = Locales,
-           dataParTasksPerLocale = $\mbox{{\it value in global config const of the same name}}$,
-           dataParIgnoreRunningTasks = $\mbox{{\it value in global config const of the same name}}$,
-           dataParMinGranularity = $\mbox{{\it value in global config const of the same name}}$,
+           dataParTasksPerLocale = $\mbox{{\it value in the module level config const of the same name}}$,
+           dataParIgnoreRunningTasks = $\mbox{{\it value in the module level config const of the same name}}$,
+           dataParMinGranularity = $\mbox{{\it value in module level config const of the same name}}$,
            param rank: int = $\mbox{{\it rank inferred from startIdx}}$,
            type idxType = $\mbox{{\it index type inferred from startIdx}}$)
 \end{chapel}
@@ -187,7 +187,7 @@ The
 arguments \chpl{dataParTasksPerLocale}, \chpl{dataParIgnoreRunningTasks},
 and \chpl{dataParMinGranularity} set the knobs that are used to
 control intra-locale data parallelism for Cyclic-distributed domains
-and arrays in the same way that the global configuration constants of
+and arrays in the same way that the module level configuration constants of
 these names control data parallelism for ranges and
 default-distributed domains and arrays ~\rsec{data_parallel_knobs}.
 
@@ -287,7 +287,7 @@ of indices.
 %arguments \chpl{dataParTasksPerLocale}, \chpl{dataParIgnoreRunningTasks},
 %and \chpl{dataParMinGranularity} set the knobs that are used to
 %control intra-locale data parallelism for Block-Cyclic-distributed domains
-%and arrays in the same way that the global configuration constants of
+%and arrays in the same way that the module level configuration constants of
 %these names control data parallelism for ranges and
 %default-distributed domains and arrays ~\rsec{data_parallel_knobs}.
 

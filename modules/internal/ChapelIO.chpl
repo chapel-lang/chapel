@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // ChapelIO.chpl
 //
 pragma "no use ChapelStandard"
@@ -572,10 +591,10 @@ module ChapelIO {
   pragma "no prototype"
   extern proc chpl_format(fmt: c_string, x): c_string;
   
-  proc format(fmt: c_string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
+  proc format(fmt: c_string, x:?t) where isIntegralType(t) || isFloatType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
-      if _isImagType(t) then
+      if isImagType(t) then
         return (chpl_format(fmt2, _i2r(x))+"i");
       else
         return chpl_format(fmt2, x:real);
@@ -583,7 +602,7 @@ module ChapelIO {
         return chpl_format(fmt, x);
   }
   
-  proc format(fmt: c_string, x:?t) where _isComplexType(t) {
+  proc format(fmt: c_string, x:?t) where isComplexType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
       return (chpl_format(fmt2, x.re)+" + "+ chpl_format(fmt2, x.im)+"i");

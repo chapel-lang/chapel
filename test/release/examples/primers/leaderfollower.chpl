@@ -85,11 +85,12 @@
 //
 // In this example, we'll use the following config const 'numTasks' to
 // indicate the degree of parallelism to use in the leader to
-// implement forall loops.  By default we've set it to the number of
-// cores on the current locale, but it can be overridden on the
-// executable command-line using the --numTasks=<n> option.
+// implement forall loops.  By default we've set it to the tasking layer
+// estimate of maximum parallelism on the current locale, but it can be
+// overridden on the executable command-line using the --numTasks=<n>
+// option.
 //
-config const numTasks = here.numCores;
+config const numTasks = here.maxTaskPar;
 
 
 //

@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // This file is used by both the aprun and pbs-aprun launcher code
 //
@@ -211,7 +230,8 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
   if (strcmp(CHPL_TARGET_ARCH, "knc")==0) {
     largv[largc++] = _nbuf;
     largv[largc++] = (char *) getAprunArgStr(aprun_k);
-    
+    sprintf(_Nbuf, "%s%d", getLocalesPerNodeStr(), getLocalesPerNode());
+    largv[largc++] = _Nbuf;    
   } else {
     largv[largc++] = (char *) getAprunArgStr(aprun_cc);
     largv[largc++] = (char *) ccArg;

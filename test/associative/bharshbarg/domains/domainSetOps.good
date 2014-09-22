@@ -1,0 +1,5 @@
+domainSetOps.chpl:11: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+domainSetOps.chpl:16: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+domainSetOps.chpl:20: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+domainSetOps.chpl:24: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+domainSetOps.chpl:28: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)

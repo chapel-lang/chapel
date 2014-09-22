@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -574,10 +593,10 @@ llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name)
 }
 
 static
-llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool isSigned = false)
+llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType, bool isSigned = false, bool force = false)
 {
   GenInfo* info = gGenInfo;
-  return convertValueToType(info->builder, info->targetData, value, newType, isSigned);
+  return convertValueToType(info->builder, info->targetData, value, newType, isSigned, force);
 }
 
 static
@@ -870,6 +889,7 @@ GenRet codegenGetLocaleID(void)
     // the right type (since clang likes to fold int32/int32 into int32).
     GenRet expectType = LOCALE_ID_TYPE;
     ret.val = convertValueToType(ret.val, expectType.type);
+    assert(ret.val);
   }
 #endif
   return ret;
@@ -997,6 +1017,7 @@ static GenRet codegenWideThingField(GenRet ws, int field)
       ret.isLVPtr = GEN_VAL;
       ret.val = info->builder->CreateExtractValue(ws.val, field);
     }
+    assert(ret.val);
 #endif
   }
 
@@ -1087,12 +1108,12 @@ static GenRet codegenRlocale(GenRet wide)
       // Packed wide pointers
       ret = codegenCallExpr("chpl_wide_ptr_get_localeID",
                             codegenCastWideToVoid(wide));
-      if( ret.val ) {
 #ifdef HAVE_LLVM
-        GenRet expectType = LOCALE_ID_TYPE;
-        ret.val = convertValueToType(ret.val, expectType.type);
+      assert(ret.val);
+      GenRet expectType = LOCALE_ID_TYPE;
+      ret.val = convertValueToType(ret.val, expectType.type);
+      assert(ret.val);
 #endif
-      }
     }
   }
   ret.chplType = type;
@@ -1621,7 +1642,11 @@ GenRet codegenValue(GenRet r)
   } else {
 #ifdef HAVE_LLVM
     if (r.isLVPtr) {
-      ret.val = codegenLoadLLVM(r); // TODO - is r pointer to const?
+      // But don't dereference star tuples (since C views these as arrays)
+      if( r.chplType && r.chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
+        ret.val = r.val;
+        ret.isLVPtr = r.isLVPtr;
+      } else ret.val = codegenLoadLLVM(r); // TODO - is r pointer to const?
     } else {
       ret.val = r.val;
     }
@@ -2246,7 +2271,7 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
   }
 
   llvm::Value* out;
-  if( targetType ) out = convertValueToType(v, targetType, isSigned);
+  if( targetType ) out = convertValueToType(v, targetType, isSigned, false);
   else out = v; // no target type means we just emit it.
 
   if( out ) {
@@ -2256,34 +2281,67 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
     // OK, just don't emit an argument at all.
   } else if( t->isStructTy() || t->isArrayTy() || t->isVectorTy() ) {
     // We might need to put the arguments in one-at-a-time,
-    // in order to put up with structure expansion done by clang.
+    // in order to put up with structure expansion done by clang
+    // (see canExpandIndirectArgument)
     // TODO - this should actually depend on the clang ABI,
     // or else we should find a way to disable the optimization in clang.
     //   It should be possible to get the necessariy information from clang
     //   with cgModule->getTypes()->arrangeFunctionDeclaration(FunctionDecl)
 
-    if( t->isStructTy() || t->isArrayTy() ) {
-      unsigned n;
-      if( t->isStructTy() ) n = t->getStructNumElements();
-      else n = t->getArrayNumElements();
-      for( unsigned i = 0; i < n; i++ ) {
-        unsigned indexes[1] = { i };
-        GenRet r;
-        r.val = info->builder->CreateExtractValue(v, indexes);
-        convertArgumentForCall(fnType, r, outArgs);
+
+    // Work with a prefix of the structure/vector argument.
+    llvm::Type* int8_type;
+    llvm::Type* int8_ptr_type;
+    llvm::Type* dst_ptr_type;
+    
+    llvm::Value* arg_ptr;
+    llvm::Value* arg_i8_ptr;
+    llvm::Value* cur_ptr;
+    llvm::Value* casted_ptr;
+    llvm::Value* cur;
+    int64_t offset = 0;
+    int64_t cur_size = 0;
+    int64_t arg_size = 0;
+
+    int8_type = llvm::Type::getInt8Ty(info->llvmContext);
+    int8_ptr_type = int8_type->getPointerTo();
+
+    arg_size = getTypeSizeInBytes(info->targetData, t);
+    assert(arg_size >= 0);
+
+    // Allocate space on the stack...
+    arg_ptr = createTempVarLLVM(info->builder, t, "");
+    arg_i8_ptr = info->builder->CreatePointerCast(arg_ptr, int8_ptr_type, "");
+
+    // Copy the value to the stack...
+    info->builder->CreateStore(v, arg_ptr);
+
+    while(offset < arg_size) {
+      if( outArgs.size() >= fnType->getNumParams() ) {
+        INT_FATAL("Could not convert arguments for call");
       }
-    } else {
-      // vector types.
-      unsigned n = t->getVectorNumElements();
-      for( unsigned i = 0; i < n; i++ ) {
-        GenRet r;
-        r.val =
-          info->builder->CreateExtractElement(
-              v,
-              llvm::ConstantInt::get(
-                llvm::IntegerType::getInt64Ty(info->llvmContext), i));
-        convertArgumentForCall(fnType, r, outArgs);
+      targetType = fnType->getParamType(outArgs.size());
+      dst_ptr_type = targetType->getPointerTo();
+      cur_size = getTypeSizeInBytes(info->targetData, targetType);
+
+      assert(cur_size > 0);
+
+      if( offset + cur_size > arg_size ) {
+        INT_FATAL("Could not convert arguments for call");
       }
+
+      // Now load cur_size bytes from pointer into the argument.
+      cur_ptr = info->builder->CreateConstInBoundsGEP1_64(arg_i8_ptr,
+                                                          offset);
+      casted_ptr = info->builder->CreatePointerCast(cur_ptr, dst_ptr_type);
+
+      cur = info->builder->CreateLoad(casted_ptr);
+      
+      outArgs.push_back(cur);
+
+      //printf("offset was %i\n", (int) offset);
+      offset = getTypeFieldNext(info->targetData, t, offset + cur_size - 1);
+      //printf("offset now %i\n", (int) offset);
     }
   } else {
     INT_FATAL("Could not convert arguments for call");
@@ -2868,8 +2926,11 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       llvm::Type* ptrTy = src.val->getType();
       llvm::Type* eltTy = ptrTy->getPointerElementType();
 
-      if( isTypeSizeSmallerThan(info->targetData, eltTy, 
-                                256 /* max bytes to load/store */ ) )  {
+      if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
+        // Always use memcpy for star tuples.
+        useMemcpy = true;
+      } else if( isTypeSizeSmallerThan(info->targetData, eltTy, 
+                                       256 /* max bytes to load/store */)) {
         // OK
       } else {
         useMemcpy = true;
@@ -3111,7 +3172,9 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       } else {
 #ifdef HAVE_LLVM
         // LLVM codegen assignment (non-wide, non-tuple)
+        assert(from.val);
         GenRet value = codegenValue(from);
+        assert(value.val);
        
         codegenStoreLLVM(value, to_ptr, type);
 #endif
@@ -3568,7 +3631,15 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
 {
   GenInfo* info = gGenInfo;
 
-  GenRet ap = codegenDeref(a);  // deref 'a' since it's a 'ref' argument
+  // deref 'a' if it is a 'ref' argument
+  GenRet ap;
+  if (a.chplType->symbol->hasFlag(FLAG_REF) ||
+      a.chplType->symbol->hasFlag(FLAG_WIDE) ||
+      a.chplType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+    ap = codegenDeref(a);
+  } else {
+    ap = a;
+  }
   GenRet bv = codegenValue(b);  // get the value of 'b'
 
   bool aIsRemote = ap.isLVPtr == GEN_WIDE_PTR;
@@ -4343,11 +4414,24 @@ GenRet CallExpr::codegen() {
       // optimizations depending on specifics of the RHS expression.)
 
       // PRIM_ASSIGN expects either a narrow or wide pointer as its LHS arg.
-      INT_ASSERT(get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-                 get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE));
-
-      // Handle general cases of PRIM_ASSIGN.
-      codegenAssign(codegenDeref(get(1)), get(2));
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        codegenAssign(get(1), get(2));
+      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+                 !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        // This case was taken from PRIM_MOVE unfortunately
+        if (get(2)->typeInfo() != dtString)
+          codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
+        else
+          codegenCall("chpl_string_widen", codegenAddrOf(get(1)), get(2),
+                      get(3), get(4));
+      } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        codegenAssign(codegenDeref(get(1)), get(2));
+      } else {
+        codegenAssign(get(1), get(2));
+      }
       break;
     case PRIM_ADD_ASSIGN:
       codegenOpAssign(get(1), get(2), " += ", codegenAdd);
@@ -5486,9 +5570,11 @@ GenRet CallExpr::codegen() {
     if( this->typeInfo() != dtVoid ) {
       GenRet ty = this->typeInfo();
       INT_ASSERT(ty.type); 
-      llvm::Value* converted = convertValueToType(ret.val, ty.type);
-      INT_ASSERT(converted);
-      ret.val = converted;
+      if( ty.type != ret.val->getType() ) {
+        llvm::Value* converted = convertValueToType(ret.val, ty.type, false, true);
+        INT_ASSERT(converted);
+        ret.val = converted;
+      }
     }
 #endif
   }

@@ -13,7 +13,7 @@ var   globalNonpriv: int = 777;
 pragma "private" var globalYespriv: int = 888;
 
 proc tester() {
-  coforall locIdx in 0..#numLocales ref(globalNonpriv,globalYespriv) {
+  coforall locIdx in 0..#numLocales with (ref globalNonpriv, ref globalYespriv) {
     extern var c_sublocid_any:chpl_sublocID_t;
     const locID = chpl_buildLocaleID(locIdx:chpl_nodeID_t, c_sublocid_any);
     on __primitive("chpl_on_locale_num", locID) {

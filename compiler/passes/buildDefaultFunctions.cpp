@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
@@ -32,8 +51,6 @@ static void build_enum_enumerate_function(EnumType* et);
 static void buildDefaultReadWriteFunctions(AggregateType* type);
 
 static void buildStringCastFunction(EnumType* type);
-
-static void buildDefaultDestructor(AggregateType* ct);
 
 static void buildFieldAccessorFunctions(AggregateType* at);
 
@@ -236,7 +253,7 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   else if (field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
   } else {
-    fn->retTag = RET_VAR;
+    fn->retTag = RET_REF;
     fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }
   if (isUnion(ct))
@@ -862,10 +879,22 @@ static void build_record_copy_function(AggregateType* ct) {
   arg->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg);
   CallExpr* call = new CallExpr(ct->defaultInitializer);
-  for_fields(tmp, ct) {
-    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
-      if (strcmp("_promotionType", tmp->name))
-        call->insertAtTail(new NamedExpr(tmp->name, new CallExpr(".", arg, new_StringSymbol(tmp->name))));
+  for_fields(tmp, ct)
+  {
+    // Weed out implicit alias and promotion type fields.
+    if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
+      continue;
+    // TODO: This needs to be done uniformly, using an ignore_field flag or...
+    if (!strcmp("_promotionType", tmp->name))
+      continue;
+
+    CallExpr* init = new CallExpr(".", arg, new_StringSymbol(tmp->name));
+    call->insertAtTail(new NamedExpr(tmp->name, init));
+
+    // Special handling for nested record types:
+    // We need to convert the constructor call into a method call.
+    if (!strcmp(tmp->name, "outer"))
+      call->insertAtHead(gMethodToken);
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
@@ -952,6 +981,15 @@ static void build_record_init_function(AggregateType* ct) {
     // Need to insert all required arguments into this call
     for_formals(formal, ct->defaultInitializer) {
       if (!formal->hasFlag(FLAG_IS_MEME)) {
+        // If the initializer function is a method, we must call it as a
+        // method.  So just pass the method token along.  (No need to create a
+        // formal temp, etc.)
+        if (formal->type == dtMethodToken)
+        {
+          call->insertAtTail(gMethodToken);
+          continue;
+        }
+
         VarSymbol* tmp = newTemp(formal->name);
         if (formal->isParameter()) {
           // Param and type fields are specific to the generic instantiation
@@ -973,7 +1011,8 @@ static void build_record_init_function(AggregateType* ct) {
             // There are no substitutions for var fields, so if a defaultExpr
             // has been provided, we don't need to worry about copying values
             // over.
-            if (formal->type && formal->type != dtAny) {
+            if (formal->type && formal->type != dtAny &&
+                strcmp(formal->name, "outer") != 0) {
               // We know the type already, make use of it
               fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, formal->type->symbol)));
             } else {
@@ -1124,7 +1163,7 @@ static void buildStringCastFunction(EnumType* et) {
 }
 
 
-static void buildDefaultDestructor(AggregateType* ct) {
+void buildDefaultDestructor(AggregateType* ct) {
   if (function_exists("~chpl_destroy", 2, dtMethodToken, ct))
     return;
 

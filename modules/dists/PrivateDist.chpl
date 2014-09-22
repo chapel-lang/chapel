@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //
 // Private Distribution, Domain, and Array
 //  Defines PrivateSpace, an instance of PrivateDom
@@ -83,7 +102,7 @@ proc PrivateArr.dsiPrivatize(privatizeData) {
   return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
 }
 
-proc PrivateArr.dsiAccess(i: idxType) var {
+proc PrivateArr.dsiAccess(i: idxType) ref {
   if _local then
     return data;
   else if i == here.id then
@@ -100,10 +119,10 @@ proc PrivateArr.dsiAccess(i: idxType) var {
   }
 }
 
-proc PrivateArr.dsiAccess(i: 1*idxType) var
+proc PrivateArr.dsiAccess(i: 1*idxType) ref
   return dsiAccess(i(1));
 
-iter PrivateArr.these() var {
+iter PrivateArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
 }
@@ -116,7 +135,7 @@ iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
   }
 }
 
-iter PrivateArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   for i in followThis(1) do
     yield dsiAccess(i);
 }

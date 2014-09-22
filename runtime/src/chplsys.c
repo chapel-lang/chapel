@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #if defined __APPLE__
 #include <sys/sysctl.h>
 #endif
@@ -13,6 +32,7 @@
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
+#include "chpltypes.h"
 #include "chpl-comm.h"
 #include "error.h"
 
@@ -91,9 +111,20 @@ size_t chpl_bytesAvailOnThisLocale(void) {
 
 
 #ifdef __linux__
-static int getPUsPerCore(void) {
+//
+// Return information about the processors on the system.
+//
+static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
+  //
+  // Currently this is pretty limited -- it only returns the number of
+  // physical and logical (hyperthread, e.g.) CPUs, only looks at
+  // /proc/cpuinfo, and only supports homogeneous compute nodes with
+  // the same number of cores and siblings on every physical CPU.  It
+  // will probably need to become more complicated in the future.
+  //
   FILE* f;
   char buf[100];
+  int procs = 0;
   int cpuCores = 0;
   int siblings = 0;
 
@@ -102,15 +133,14 @@ static int getPUsPerCore(void) {
 
   while (!feof(f) && fgets(buf, sizeof(buf), f) != NULL) {
     size_t buf_len = strlen(buf);
+    int procTmp;
     int cpuCoresTmp;
     int siblingsTmp;
 
-    //
-    // Currently this only supports homogeneous compute nodes, with
-    // the same number of cores and siblings on every physical CPU.
-    // It will probably need to become more complicated in the future.
-    //
-    if (sscanf(buf, "cpu cores : %i", &cpuCoresTmp) == 1) {
+    if (sscanf(buf, "processor : %i", &procTmp) == 1) {
+      procs++;
+    }
+    else if (sscanf(buf, "cpu cores : %i", &cpuCoresTmp) == 1) {
       if (cpuCores == 0)
         cpuCores = cpuCoresTmp;
       else if (cpuCoresTmp != cpuCores)
@@ -133,48 +163,88 @@ static int getPUsPerCore(void) {
     cpuCores = 1;
   if (siblings == 0)
     siblings = 1;
-  return siblings / cpuCores;
+  *p_numPhysCpus = procs / (siblings / cpuCores);
+  *p_numLogCpus = procs;
 }
 #endif
 
 
-int chpl_getNumPUsOnThisNode(void) {
+int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
+  //
+  // Support for the accessible_only flag here is spotty.  For non-Linux
+  // systems we ignore it.  For Linux systems we obey it, but we may
+  // return an inaccurate result (see the commentary there for details).
+  //
 #ifdef NO_CORES_PER_LOCALE
   return 1;
 #elif defined __APPLE__
   //
   // Apple
   //
-  static int32_t numPUs = 0;
-  if (numPUs == 0) {
-    size_t len = sizeof(numPUs);
-    if (sysctlbyname("hw.logicalcpu", &numPUs, &len, NULL, 0))
-      chpl_internal_error("query of number of PUs failed");
+  static int32_t numCpus = 0;
+  if (numCpus == 0) {
+    size_t len = sizeof(numCpus);
+    if (sysctlbyname("hw.physicalcpu", &numCpus, &len, NULL, 0))
+      chpl_internal_error("query of number of cores failed");
   }
-  return (int) numPUs;
+  return (int) numCpus;
 #elif defined __CYGWIN__
   //
   // Cygwin
   //
-  // WARNING: This has not yet been tested.
-  //
-  static int numPUs = 0;
-  if (numPUs == 0)
-    numPUs = sysconf(_SC_NPROCESSORS_ONLN);
-  return numPUs;
+  static int numCpus = 0;
+  if (numCpus == 0)
+    numCpus = chpl_getNumLogicalCpus(true);
+  return numCpus;
 #elif defined __linux__
   //
   // Linux
   //
-  static int numPUs = 0;
-  if (numPUs == 0) {
-    cpu_set_t m;
-    if (sched_getaffinity(0, sizeof(cpu_set_t), &m) != 0)
-      chpl_internal_error("sched_getaffinity() failed");
-    if ((numPUs = CPU_COUNT(&m)) == 0)
-      numPUs = 1;
+  static int numPhysCpus = 0;
+  static int numLogCpus = 0;
+  if (numPhysCpus == 0)
+    getCpuInfo(&numPhysCpus, &numLogCpus);
+
+  if (accessible_only) {
+    static int numCpus = 0;
+
+    if (numCpus == 0) {
+#ifdef __MIC__
+      //
+      // On Intel MIC, we seem (for now at least) not to have kernel
+      // scheduling affinity information.
+      //
+      numCpus = numPhysCpus;
+#else
+      //
+      // The accessibility information is with respect to logical
+      // CPUs.  Assume we have accessibility to the physical CPUs in
+      // the same ratio that we do to the logical ones.  This may not
+      // be true; if our accessibility is to one hyperthread of the
+      // two on each of several cores, for example, then the ratio of
+      // accessible hyperthreads is 0.5 but the ratio of accessible
+      // cores is 1.0.  For now we live with this.
+      //
+      cpu_set_t m;
+      int numLogCpusAcc;
+
+      if (sched_getaffinity(getpid(), sizeof(cpu_set_t), &m) != 0)
+        chpl_internal_error("sched_getaffinity() failed");
+      numLogCpusAcc = CPU_COUNT(&m);
+      if (numLogCpusAcc == 0)
+        numLogCpusAcc = 1;
+      numCpus = (numPhysCpus * numLogCpusAcc) / numLogCpus;
+#endif
+    }
+    return numCpus;
   }
-  return numPUs;
+  else {
+    static int numCpus = 0;
+
+    if (numCpus == 0)
+      numCpus = numPhysCpus;
+    return numCpus;
+  }
 #else
 #warning "Target architecture is not yet supported."
   return 1;
@@ -182,36 +252,74 @@ int chpl_getNumPUsOnThisNode(void) {
 }
 
 
-int chpl_getNumCoresOnThisNode(void) {
+int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
+  //
+  // Support for the accessible_only flag here is spotty -- we only obey
+  // it for Linux systems.
+  //
 #ifdef NO_CORES_PER_LOCALE
   return 1;
 #elif defined __APPLE__
   //
   // Apple
   //
-  static int32_t numCores = 0;
-  if (numCores == 0) {
-    size_t len = sizeof(numCores);
-    if (sysctlbyname("hw.physicalcpu", &numCores, &len, NULL, 0))
-      chpl_internal_error("query of number of cores failed");
+  static int32_t numCpus = 0;
+  if (numCpus == 0) {
+    size_t len = sizeof(numCpus);
+    if (sysctlbyname("hw.logicalcpu", &numCpus, &len, NULL, 0))
+      chpl_internal_error("query of number of PUs failed");
   }
-  return (int) numCores;
+  return (int) numCpus;
 #elif defined __CYGWIN__
   //
   // Cygwin
   //
-  static int numCores = 0;
-  if (numCores == 0)
-    numCores = chpl_getNumPUsOnThisNode();
-  return numCores;
+  // WARNING: This has not yet been tested.
+  //
+  static int numCpus = 0;
+  if (numCpus == 0)
+    numCpus = sysconf(_SC_NPROCESSORS_ONLN);
+  return numCpus;
 #elif defined __linux__
   //
   // Linux
   //
-  static int numCores = 0;
-  if (numCores == 0)
-    numCores = chpl_getNumPUsOnThisNode() / getPUsPerCore();
-  return numCores;
+  static int numPhysCpus = 0;
+  static int numLogCpus = 0;
+  if (numPhysCpus == 0)
+    getCpuInfo(&numPhysCpus, &numLogCpus);
+
+  if (accessible_only) {
+    static int numCpus = 0;
+
+    if (numCpus == 0) {
+#ifdef __MIC__
+      //
+      // On Intel MIC, we seem (for now at least) not to have kernel
+      // scheduling affinity information.
+      //
+      numCpus = numLogCpus;
+#else
+      cpu_set_t m;
+      int numLogCpusAcc;
+
+      if (sched_getaffinity(getpid(), sizeof(cpu_set_t), &m) != 0)
+        chpl_internal_error("sched_getaffinity() failed");
+      numLogCpusAcc = CPU_COUNT(&m);
+      if (numLogCpusAcc == 0)
+        numLogCpusAcc = 1;
+      numCpus = (numLogCpusAcc < numLogCpus) ? numLogCpusAcc : numLogCpus;
+#endif
+    }
+    return numCpus;
+  }
+  else {
+    static int numCpus = 0;
+
+    if (numCpus == 0)
+      numCpus = numLogCpus;
+    return numCpus;
+  }
 #else
 #warning "Target architecture is not yet supported."
   return 1;

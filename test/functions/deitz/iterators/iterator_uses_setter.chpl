@@ -1,6 +1,6 @@
 var (x, y, z) = (1, 2, 3);
 
-iter foo() var {
+iter foo() ref {
   if setter then
     writeln("setter version of foo() used");
   else

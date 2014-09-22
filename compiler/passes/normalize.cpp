@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /*** normalize
  ***
  *** This pass and function normalizes parsed and scope-resolved AST.
@@ -373,7 +392,7 @@ moveGlobalDeclarationsToModuleScope() {
             {
               // Mark this as a type block, so it is removed later.
               // Casts are because C++ is lame.
-              (uint&)(block->blockTag) |= (uint) BLOCK_TYPE_ONLY;
+              (unsigned&)(block->blockTag) |= (unsigned) BLOCK_TYPE_ONLY;
               // Set the flag, so we move it out to module scope.
               move = true;
             }
@@ -455,7 +474,7 @@ static bool is_void_return(CallExpr* call) {
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
   Expr* ret_expr = ret->get(1);
   ret_expr->remove();
-  if (fn->retTag == RET_VAR)
+  if (fn->retTag == RET_REF)
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
   {
@@ -571,7 +590,7 @@ static void normalize_returns(FnSymbol* fn) {
     // If the function has a specified return type (and is not a var function),
     // declare and initialize the return value up front,
     // and set the specified_return_type flag.
-    if (fn->retExprType && fn->retTag != RET_VAR) {
+    if (fn->retExprType && fn->retTag != RET_REF) {
       BlockStmt* retExprType = fn->retExprType->copy();
       if (isIterator)
         if (SymExpr* lastRTE = toSymExpr(retExprType->body.tail))
@@ -592,7 +611,7 @@ static void normalize_returns(FnSymbol* fn) {
       if (fn->hasFlag(FLAG_ITERATOR_FN) &&
           returnTypeIsArray(retExprType))
         // Treat iterators returning arrays as if they are always returned by ref.
-        fn->retTag = RET_VAR;
+        fn->retTag = RET_REF;
       else
       {
         CallExpr* initExpr;
@@ -901,6 +920,11 @@ fix_def_expr(VarSymbol* var) {
   // handle ref variables
   //
   if (var->hasFlag(FLAG_REF_VAR)) {
+
+    if (!init) {
+      USR_FATAL_CONT(var, "References must be initialized when they are defined.");
+    }
+
     Expr* varLocation = NULL;
 
     // If this is a const reference to an immediate, we need to insert a temp
@@ -919,6 +943,12 @@ fix_def_expr(VarSymbol* var) {
 
     if (!varLocation) {
       varLocation = init->remove();
+    }
+
+    if (SymExpr* sym = toSymExpr(varLocation)) {
+      if (!var->hasFlag(FLAG_CONST) && sym->var->isConstant()) {
+        USR_FATAL_CONT(sym, "Cannot set a non-const reference to a const variable.");
+      }
     }
 
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_ADDR_OF, varLocation)));
@@ -1006,7 +1036,7 @@ fix_def_expr(VarSymbol* var) {
         {
           block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
           if (constTemp->hasFlag(FLAG_EXTERN))
-            (uint&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
+            (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
         }
       }
 

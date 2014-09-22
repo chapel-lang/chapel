@@ -1,0 +1,27 @@
+These tests exercise the various isXxx, isXxxType, isXxxValue predicates.
+They differ in how the predicates are invoked.
+
+* isX.module-writeln.chpl
+
+applies the predicates to module-level variables
+and displays the result using writeln().
+
+* isX.byBlankArgs-compWarns.chpl
+
+applies the predicates to a blank-intent formal argument
+and displays using compilerWarning.
+
+
+Other variations on this test could be added, e.g.:
+- apply the predicates to local variables,
+  formals, directly to types, etc.
+- display the results using param if and compilerWarning, e.g.
+    result = isXxx(yyy);
+    if result then compilerWarning("yes");
+              else compilerWarning("no");
+
+These tests were generated automatically by running:
+
+  src/isX.gen
+
+and added to version control for ease of use.

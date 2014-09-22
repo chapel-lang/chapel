@@ -1,4 +1,23 @@
 /*
+ * Copyright 2004-2014 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
  * chpl-string-support.c
  *
  * This file provides utility functions for C strings (char *) and is
@@ -30,7 +49,7 @@ char* chpl_glom_strings(int numstrings, ...) {
   va_start(ap, numstrings);
   len = 0;
   for (i=0; i<numstrings; i++)
-    len += strlen(va_arg(ap, char*));
+    len += strlen(va_arg(ap, const char*));
   va_end(ap);
 
   str = (char*)chpl_mem_allocMany(len+1, sizeof(char),
@@ -109,8 +128,6 @@ int string_index_of(c_string haystack, c_string needle) {
 
 // It is up to the caller to make sure low and high are within the string
 // bounds and that stride is not 0.
-// FIXME: This can't return a statically allocated empty string once strings
-// are garbage collected.
 c_string
 string_select(c_string x, int low, int high, int stride, int32_t lineno, c_string filename) {
   char* result = NULL;
@@ -146,8 +163,6 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, c_strin
 
 // Returns a string containing the character at the given index of the input
 // string, or an empty string if the index is out of bounds.
-// FIXME: This can't return a statically allocated empty string once strings
-// are garbage collected.
 c_string
 string_index(c_string x, int i, int32_t lineno, c_string filename) {
   char* buffer;

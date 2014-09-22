@@ -16,14 +16,19 @@ record taskPrivateData {
   var tid$: sync chpl_taskID_t = chpl_nullTaskID;
   var x: int;
   var y: [0..#numLocales] real;
+
+  // need our version of writeThis so we can print the sync field
+  proc writeThis(x: Writer) {
+    x.write("(", tid$.readXX(), ": ", x, "  ", y, ")");
+  }
 };
 
 inline proc =(ref a: chpl_taskID_t, b: chpl_taskID_t) { __primitive("=", a, b); }
 inline proc !=(a: chpl_taskID_t, b: chpl_taskID_t) return __primitive("!=", a, b);
 class localePrivateData {
   type myStuff;
-  // assumes numCores is the same across all locales
-  const numTasks = if dataParTasksPerLocale==0 then here.numCores
+  // assumes maxTaskPar is the same across all locales
+  const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
     else dataParTasksPerLocale;
   var slot: sync bool;
   var r = {0..#numTasks};
@@ -68,7 +73,7 @@ forall d in D {
 
 if printTemps then writeln(localePrivate.temps);
 
-const numTasks = if dataParTasksPerLocale==0 then here.numCores
+const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
   else dataParTasksPerLocale;
 
 for l in 0..#numLocales {
@@ -91,7 +96,7 @@ for l in 0..#numLocales {
 
 module blah {
   class C {
-    const numTasks = if dataParTasksPerLocale==0 then here.numCores
+    const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
       else dataParTasksPerLocale;
     extern proc chpl_task_getId(): chpl_taskID_t;
     proc bar() {
