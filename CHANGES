@@ -41,10 +41,9 @@ Highlights
   (see doc/README.tasks for details)
 * added an --about flag to Chapel executables to print compilation information
 * new primer examples for associative domains/arrays, vector ops, random numbers
+  (see 'Example Codes' below)
 * two new shootout benchmarks and many improvements to the existing ones
   (see 'Example Codes' below)
-* numerous documentation improvements to READMEs and the language specification
-  (see 'Documentation' below)
 * split setchplenv.* source scripts into "quick start" and "production" modes
   (see $CHPL_HOME/README)
 * by default, attempt to build and enable RE2 and GMP when possible
