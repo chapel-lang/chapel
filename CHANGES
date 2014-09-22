@@ -2,8 +2,6 @@
 Release Changes List
 ====================
 
-*** stopped at PR #502 ***
-
 ==============
 version 1.10.0
 ==============
@@ -29,16 +27,14 @@ Highlights
 * added the ability to query arrays for the subdomain(s) that the locale owns
   (see doc/technotes/README.subquery and examples/primers/distributions.chpl)
 * added the ability to pass contiguous Chapel arrays to extern procedures
-  (see README.extern)
+  (see doc/technotes/README.extern)
 * performance boosts due to Qthreads tasking, improved LICM, less communication
   (see 'Performance Improvements' below)
-* several generated code cleanups including C for loops and reduced ref temps
+* several generated code cleanups including C for loops and fewer ref temps
   (see 'Generated Code Cleanups' below)
 * significantly improved const-ness checking for fields, indices, domains/arrays
 * fixed the semantics for passing sync/single variables to generic arguments
 * improved support for, and orthogonality of, constructor calls
-* several improvements to error messages
-  (see 'Error Messages' below)
 * added a compiler flag to support specializing for the target architecture
   (see descriptions of CHPL_TARGET_ARCH and --[no-]specialize below)
 * added symbolic CHPL_RT_NUM_THREADS_PER_LOCALE values to support common cases
@@ -131,14 +127,14 @@ New Features
   (see doc/technotes/README.auxIO and README.curl for details)
 * added support for standard set operations on associative domains and arrays
   (see doc/technotes/README.sets and examples/primers/associative.chpl)
-* added support for modifying an associative array's domain via writes to it
+* added support for extending an associative array's personal domain via stores
   (see examples/primers/associative.chpl)
 * added draft support for vector methods on 1D arrays with a personal domain
   (see examples/primers/arrayVectorOps.chpl)
 * added the ability to query arrays for the subdomain(s) that the locale owns
   (see doc/technotes/README.subquery and examples/primers/distributions.chpl)
 * made the compiler call user-defined default constructors when defined
-* added the ability to call constructors through typedefs
+* added the ability to call constructors through type aliases
   (e.g., 'class C { ... }  type t = C;  var myT = new t();' now works)
 * added support for numerous type-oriented queries for expressions
   (see doc/technotes/README.typeQueries)
@@ -157,6 +153,8 @@ Changes to the Implementation
 -----------------------------
 * improved the current support for HDFS file systems
   (see doc/technotes/README.auxIO and README.hdfs for more information)
+* made 'dataParTasksPerLocale' default to 'locale.maxTaskPar'
+  (see the 'Data Parallelism' chapter of the language specification)
 
 New Interoperability Features
 -----------------------------
@@ -175,7 +173,7 @@ Standard Modules
   (e.g., remove(), rename(), cwd(), chdir(), mkdir(), chown())
 * added draft support for glob() and walking directory trees
   (see modules/standard/Filerator.chpl -- feedback desired)
-* added a readstring() method that reads a fixed number of bytes from a channel
+* added readstring()/readline() methods that read bytes into strings/arrays
   (see modules/standard/IO.chpl)
 * added an experimental sorted() iterator for sorting arrays or other iterables
   (see modules/standard/Sort.chpl)
@@ -283,7 +281,7 @@ Third-Party Software Changes
 * updated snapshot of hwloc to version 1.9.1
 * updated snapshot of tcmalloc to version 2.2 and patched to work with Chapel
 * applied GASNet patches to fix pshm gemini/aries memory registration issues
-* improved the portability of the regexp/re2 code base and feature
+* improved the portability of the re2 code base and regexp feature
 * parallelized the build of the llvm and gmp packages to reduce build time
 * reduced the number of llvm components we build to reduce build time
 
@@ -436,7 +434,7 @@ Developer-oriented changes: Compiler refactorings
 * moved insertWideReferences into its own file
 * replaced Symbol class bool fields with flags
 * removed dead code relating to garbage collection and the early interpreter
-* removed dead FLAGs
+* removed dead FLAGs and memory descriptor types
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
