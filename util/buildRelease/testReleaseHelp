@@ -56,6 +56,17 @@ if ($tmpstatus != 0) then
     exit($tmpstatus)
 endif
 
+# TODO: Calculate expected version string from version_num.h...
+set version_string = `chpl --version | grep 'Version' | cut -d" " -f 3`
+set versionstatus = $status
+if ($versionstatus != 0) then
+    echo "ERROR: execution of chpl --version failed"
+    exit($versionstatus)
+endif
+if ($version_string != "1.10.0") then
+    echo "ERROR: unexpected version string: $version_string"
+    exit(1)
+endif
 
 #
 # run make in examples directory
