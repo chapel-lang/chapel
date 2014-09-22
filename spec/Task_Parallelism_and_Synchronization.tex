@@ -131,11 +131,12 @@ cannot proceed until the variable's state is empty.
 Chapel supports two types of synchronization variables: sync and
 single.  Both types behave similarly, except that a single variable
 may only be written once.  Consequently, when a sync variable is read,
-its state transitions to empty, where as when a single variable is
+its state transitions to empty, whereas when a single variable is
 read, its state does not change.  When either type of synchronization
 variable is written, its state transitions to full.
 
-Sync and single are type qualifiers and precede the variable's type in
+\chpl{sync} and \chpl{single} are type qualifiers and precede
+the type of the variable's value in
 the declaration.  Sync and single are supported for all Chapel
 primitive types (~\rsec{Primitive_Types}) except strings and complex.
 
@@ -144,7 +145,8 @@ not in the correct state, the task is suspended.  When the variable
 transitions to the correct state, the task is resumed.  If there are
 multiple tasks blocked waiting for the state transition, one is
 non-deterministically selected to proceed and the others continue to
-wait.
+wait if it is a sync variable; all tasks are selected to proceed
+if it is a single variable.
 
 A synchronization variable is specified with a sync or single type
 given by the following syntax:
@@ -271,17 +273,21 @@ full at which time all the other tasks can be unblocked and run.
 \end{chapelexample}
 
 \index{synchronization types!formal arguments}
-If a formal argument is a synchronization type, the actual is passed
-by reference and the argument itself is a valid lvalue.  The
-unqualified types \chpl{sync} or \chpl{single} can also be used to
-specify a generic formal argument.  In this case, the actual must be a
-sync or single variable and it is passed by reference.
+If a formal argument with a blank intent either has a synchronization
+type or the formal is generic (\rsec{Formal_Arguments_of_Generic_Type})
+and the actual has a synchronization type, the actual must be an
+lvalue and is passed by reference. In these cases the formal itself
+is an lvalue, too. The actual argument is not read or written during
+argument passing; its state is not changed or waited on. The qualifier
+\chpl{sync} or \chpl{single} without the value type can be used to
+specify a generic formal argument that requires a \chpl{sync}
+or \chpl{single} actual.
 
-For generic formal arguments with unspecified types
-(\rsec{Formal_Arguments_of_Generic_Type}), an actual that
-is \chpl{sync} or \chpl{single} is read before being passed to the
-function and the generic formal argument's type is set to the base
-type of the actual.
+\index{synchronization types!actual arguments}
+When the actual argument is a \chpl{sync} or \chpl{single} and the
+corresponding formal has the actual's base type or is implicitly
+converted from that type, a normal read of the actual is performed
+when the call is made, and the read value is passed to the formal.
 
 
 \subsection{Predefined Single and Sync Methods}
@@ -300,6 +306,7 @@ proc (sync t).readFE(): t
 Returns the value of the sync variable.  This method blocks until the
 sync variable is full.  The state of the sync variable is set to empty
 when this method completes.
+This method implements the normal read of a \chpl{sync} variable.
 \end{protobody}
 
 \index{readFF (sync var)@\chpl{readFF} (sync var)}
@@ -312,6 +319,7 @@ proc (single t).readFF(): t
 Returns the value of the sync or single variable.  This method blocks
 until the sync or single variable is full.  The state of the sync or
 single variable remains full when this method completes.
+This method implements the normal read of a \chpl{single} variable.
 \end{protobody}
 
 \index{readXX (sync var)@\chpl{readXX} (sync var)}
@@ -337,6 +345,8 @@ Assigns \chpl{v} to the value of the sync or single variable.  This
 method blocks until the sync or single variable is empty.  The state
 of the sync or single variable is set to full when this method
 completes.
+This method implements the normal write of a \chpl{sync} or \chpl{single}
+variable.
 \end{protobody}
 
 \index{writeFF (sync var)@\chpl{writeFF} (sync var)}
@@ -386,7 +396,7 @@ variable is unchanged when this method completes.
 
 Note that \chpl{writeEF} and \chpl{readFE}/\chpl{readFF} methods
 (for \chpl{sync} and \chpl{single} variables, respectively) are
-implicitly invoked for writes and reads of synchronization variables.
+implicitly invoked for normal writes and reads of synchronization variables.
 
 
 \begin{chapelexample}{syncMethods.chpl}
