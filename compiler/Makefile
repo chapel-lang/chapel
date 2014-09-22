@@ -101,7 +101,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 
 ifdef CHPL_DEVELOPER
 CheckForStandardCHeaders:
-	@if [ `$(CHPL_MAKE_HOME)/util/devel/grepstdchdrs | wc -l` -gt 0 ]; then \
+	@if [ -f $(CHPL_MAKE_HOME)/util/devel/grepstdchdrs -a `$(CHPL_MAKE_HOME)/util/devel/grepstdchdrs | wc -l` -gt 0 ]; then \
 	  echo; \
 	  echo Standard C headers found in the following file\(s\):; \
 	  echo `$(CHPL_MAKE_HOME)/util/devel/grepstdchdrs`; \
