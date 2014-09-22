@@ -203,7 +203,6 @@ checkResolved(void) {
 // given expression.
 static int
 isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
-  int debug = 0;
   if (!expr)
     return 0;
   if (isDefExpr(expr))
@@ -248,10 +247,12 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
           // Treat all (non-const) refs as definitions, until we know better.
           // TODO: This may not be needed after moving insertReferenceTemps()
           // after this pass.
-          if (debug)
-            for (RefSet::iterator i = refs.begin();
-                 i != refs.end(); ++i)
-              printf("%d\n", (*i)->id);
+
+          // Commenting out debugging output
+          //for (RefSet::iterator i = refs.begin();
+          //     i != refs.end(); ++i)
+          //  printf("%d\n", (*i)->id);
+
           if (refs.find(se->var) != refs.end() &&
               arg->intent == INTENT_REF)
             return 1;
