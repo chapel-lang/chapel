@@ -71,7 +71,7 @@ class LevelVariable {
   // the GridVariable's 'value' field.
   //---------------------------------------------------------------
   
-  proc this(grid: Grid) var {
+  proc this(grid: Grid) ref {
     return grid_variables(grid);
   }
 

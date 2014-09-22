@@ -21,7 +21,7 @@ class taskpool {
 /*-------------------------------------------------
 Code 6 Top-level driver for task pool - Chapel
 -------------------------------------------------*/
-config const numConsumers = max(1, (+ reduce Locales.numCores) - 1),
+config const numConsumers = max(1, (+ reduce Locales.maxTaskPar) - 1),
              poolSize = numConsumers;
 const t = new taskpool(poolSize);
 cobegin {

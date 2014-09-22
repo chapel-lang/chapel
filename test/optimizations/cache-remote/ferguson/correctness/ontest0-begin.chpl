@@ -21,7 +21,7 @@ proc doit(a:locale, b:locale, c:locale)
       }
       assert(myx == 24);
       sync {
-        begin ref(x) {
+        begin with (ref x) {
           assert(x==24);
           x = 99;
         }

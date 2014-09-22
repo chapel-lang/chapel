@@ -62,7 +62,7 @@ proc sum(n: node): int {
 
   if n.left != nil {
     var sumLeft, sumRight: int;
-    cobegin ref(sumLeft, sumRight) {
+    cobegin with (ref sumLeft, ref sumRight) {
       sumLeft = sum(n.left);
       sumRight = sum(n.right);
     }

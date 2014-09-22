@@ -15,10 +15,9 @@
 #
 # $CHPL_HOME/test/
 #   Logs/    -- logs of testing runs go here by default
-#   Samples/ -- sample tests go here; these are for illustration only
-#               and won't be run by default.  To try running the
-#               test system against these samples, use:
-#                      start_test ./Samples
+#   Samples/ -- sample tests go here; these are for illustration
+#               purposes and are intended to complement the
+#               TestSystem.txt best practices documentation.
 #   Share/   -- a place to put codes to share with other developers.
 #               These will not be run by default.
 #   */       -- all other directories will contain tests
@@ -527,6 +526,12 @@
 #    will be assumed to be
 #         <testname>.<compopts line no>-<execopts line no>.good
 #    A '0' will be used if there is no appropriate line number.
+#    In addition to execution options, a file can be specified to
+#    be piped in via stdin. The format for this feature is:
+#      <execution options> < foo.txt
+#    Where 'foo.txt' is the desired file to be piped into stdin. An
+#    error occurs if a .stdin file exists for the test, or if the
+#    desired file does not exist.
 #
 #  - also added support for a LASTCOMPOPTS file that contains
 #    compiler options to be added after the source file.  Thus:
@@ -1534,7 +1539,7 @@ foreach testType ($testTypes)
         # Recursively list all directories, ignoring some (should we really do
         # this?  Maybe add NOTEST files instead?)
         if ($recurse == 1) then
-            set dirs = `find . -name ".svn" -prune -o -name ".git" -prune -o -name Logs -prune -o -name Samples -prune -o -name Share -prune -o -name perfdat -prune -o -type d -print`
+            set dirs = `find . -name ".svn" -prune -o -name ".git" -prune -o -name Logs -prune -o -name Share -prune -o -name perfdat -prune -o -type d -print`
         else
             set dirs = (./)
         endif

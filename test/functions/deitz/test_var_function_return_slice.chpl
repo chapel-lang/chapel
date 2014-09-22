@@ -1,6 +1,6 @@
 var A: [1..5] int;
 
-proc foo() var {
+proc foo() ref {
   return A(2..4);
 }
 

@@ -30,6 +30,7 @@
 #include "chpl-comm.h"
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "error.h"
 #include <assert.h>
@@ -500,12 +501,13 @@ uint32_t chpl_task_getMaxPar(void) {
   uint32_t max;
 
   //
-  // We expect that even if the cores have multiple hardware threads,
-  // cache and pipeline conflicts will typically prevent applications
-  // from gaining by using them.  So, we just return the lesser of the
-  // number of cores, and the number of workers we have.
+  // We expect that even if the physical CPU have multiple hardware
+  // threads, cache and pipeline conflicts will typically prevent
+  // applications from gaining by using them.  So, we just return the
+  // lesser of the number of physical CPUs and the number of workers
+  // we have.
   //
-  max = (uint32_t) chpl_getNumCoresOnThisNode();
+  max = (uint32_t) chpl_getNumPhysicalCpus(true);
   if ((uint32_t) s_num_workers < max)
     max = (uint32_t) s_num_workers;
   return max;

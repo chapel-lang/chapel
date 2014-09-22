@@ -265,10 +265,9 @@ writeln(A);
 \end{chapeloutput}
 \end{chapelexample}
 
-If an array is indexed using an index that is not part of its domain's
-index set, the reference is considered out-of-bounds and a runtime
-error will occur, halting the program.
-
+Except for associative arrays, if an array is indexed using an index that
+is not part of its domain's index set, the reference is considered
+out-of-bounds and a runtime error will occur, halting the program.
 
 \subsection{Rectangular Array Indexing}
 \label{Rectangular_Array_Indexing}
@@ -338,6 +337,63 @@ variable-length argument list.  It then indexes into the array using
 the tuple that captures the actual arguments.  This function works
 even for one-dimensional arrays because one-dimensional arrays can be
 indexed into by 1-tuples.
+\end{chapelexample}
+
+\subsection{Associative Array Indexing}
+\label{Associative_Array_Indexing}
+\index{indexing!associative arrays}
+\index{associative arrays!indexing}
+
+Indices can be added to associative arrays in two different ways.
+
+The first way is through the array's domain.
+\begin{chapelexample}{assoc-add-index.chpl}
+Given:
+\begin{chapel}
+var D : domain(string);
+var A : [D] int;
+\end{chapel}
+
+the array A initially contains no elements. We can change that by adding
+indices to the domain D:
+\begin{chapel}
+D.add("a");
+D.add("b");
+\end{chapel}
+
+The array A can now be indexed with indices "a" and "b":
+
+\begin{chapel}
+A["a"] = 1;
+A["b"] = 2;
+var x = A["a"];
+\end{chapel}
+\end{chapelexample}
+
+The second way is more concise, and has the same effect as the first method:
+\begin{chapelexample}{assoc-add-index-2.chpl}
+\begin{chapel}
+var D : domain(string);
+var A : [D] int;
+\end{chapel}
+For other array types, assigning to an index not in the array's domain
+would incur an out-of-bounds error. For associative arrays such assignment will
+add the index to the array's domain, and the array can be indexed with the
+newly added indices:
+\begin{chapel}
+A["a"] = 1;
+A["b"] = 2;
+var x = A["a"];
+\end{chapel}
+Here, the indices "a" and "b" are implicitly added the domain D. Reading from
+an index not in the array is still an out-of-bounds error.
+\begin{chapel}
+// writeln(A["c"]); // halts if "c" is not in A's domain
+\end{chapel}
+An important restriction for this method is that A may not share its domain
+with another array. This restriction exists because it may be surprising to
+seemingly modify one array, and to then see a change in another array. This
+restriction is checked at runtime.
 \end{chapelexample}
 
 

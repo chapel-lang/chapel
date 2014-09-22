@@ -84,7 +84,7 @@ module ChapelTaskTable {
     // Doing this in parallel should be safe as long as this module is
     // initialized late (after DefaultRectangular and most other
     // internal modules are already initialized)
-    coforall loc in Locales ref(chpldev_taskTable) do on loc {
+    coforall loc in Locales with (ref chpldev_taskTable) do on loc {
       chpldev_taskTable = new chpldev_taskTable_t();
     }
   }

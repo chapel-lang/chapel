@@ -63,7 +63,7 @@ proc flip() {
   for i in D do           // TODO: Want to use t = s here
     t[i] = s[i];
 
-  for i in 2..max(int) {  // TODO: Want to use 2.. here
+  for i in (2..) {
     var x = 0;
     var y = t[0];
     while x < y {

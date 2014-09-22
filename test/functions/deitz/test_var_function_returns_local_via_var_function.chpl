@@ -1,4 +1,4 @@
-proc foo() var {
+proc foo() ref {
   var x: (int, int);
   return x(1);
 }

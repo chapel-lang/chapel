@@ -2,6 +2,8 @@
 #
 # Setup environment for vanilla knc builds/tests.
 
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+
 # Unload PrgEnv and load vanilla intel compiler.
 existing_prgenv=$(module list -t 2>&1 | grep PrgEnv- || :)
 if [ -n "${existing_prgenv}" ] ; then
@@ -18,8 +20,5 @@ module unload $knc_conflicts
 export CHPL_TARGET_COMPILER=intel
 export CHPL_TARGET_ARCH=knc
 
-# Explicitly disable features that do not work.
-export CHPL_REGEXP=none
-
-# Build bundled gmp. System gmp is not supported.
-export CHPL_GMP=gmp
+suppression_file=$CWD/../../test/Suppressions/knc.suppress
+nightly_args="-suppress ${suppression_file}"

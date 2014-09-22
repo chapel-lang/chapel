@@ -1,7 +1,7 @@
 const zero = 0;
 var data = 1;
 
-proc myVarFn() var {
+proc myVarFn() ref {
   if setter then
     return data;
   else

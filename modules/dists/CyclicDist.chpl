@@ -67,7 +67,7 @@ class Cyclic: BaseDist {
              dataParMinGranularity=getDataParMinGranularity(),
              param rank: int = _determineRankFromStartIdx(startIdx),
              type idxType = _determineIdxTypeFromStartIdx(startIdx)) 
-    where isTuple(startIdx) || _isIntegralType(startIdx.type) {
+    where isTuple(startIdx) || isIntegralType(startIdx.type) {
     var tupleStartIdx: rank*idxType;
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
@@ -102,7 +102,8 @@ class Cyclic: BaseDist {
     // NOTE: When these knobs stop using the global defaults, we will need
     // to add checks to make sure dataParTasksPerLocale<0 and
     // dataParMinGranularity<0
-    this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+    this.dataParTasksPerLocale = if dataParTasksPerLocale==0
+                                 then here.maxTaskPar
                                  else dataParTasksPerLocale;
     this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
     this.dataParMinGranularity = dataParMinGranularity;
@@ -769,7 +770,7 @@ inline proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType,
   return sum;
 }
 
-proc CyclicArr.dsiAccess(i:rank*idxType) var {
+proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
     if myLocArr != nil && myLocArr.locDom.member(i) then
       return myLocArr.this(i);
@@ -819,10 +820,10 @@ proc CyclicArr.dsiAccess(i:rank*idxType) var {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-proc CyclicArr.dsiAccess(i: idxType...rank) var
+proc CyclicArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 
-iter CyclicArr.these() var {
+iter CyclicArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
 }
@@ -841,7 +842,7 @@ proc CyclicArr.dsiDynamicFastFollowCheck(lead: [])
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
-iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) var where tag == iterKind.follower {
+iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
 
@@ -862,7 +863,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
         yield e;
     }
   } else {
-    proc accessHelper(i) var {
+    proc accessHelper(i) ref {
       if myLocArr then local {
         if myLocArr.locDom.member(i) then
           return myLocArr.this(i);
@@ -947,11 +948,11 @@ class LocCyclicArr {
   }
 }
 
-proc LocCyclicArr.this(i) var {
+proc LocCyclicArr.this(i) ref {
   return myElems(i);
 }
 
-iter LocCyclicArr.these() var {
+iter LocCyclicArr.these() ref {
   for elem in myElems {
     yield elem;
   }
@@ -1152,19 +1153,15 @@ proc CyclicArr.doiBulkTransferFromDR(Barg)
       }
     }
 }
-    
-proc CyclicArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc CyclicArr.dsiTargetLocales() {
-  return dom.dist.targetLocales;
+  return dom.dist.targetLocs;
 }
 
 // Cyclic subdomains are represented as a single domain
 
-proc CyclicArr.dsiOneLocalSubdomain() param return true;
+proc CyclicArr.dsiHasSingleLocalSubdomain() param return true;
 
-proc CyclicArr.dsiGetLocalSubdomain() {
+proc CyclicArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
 }

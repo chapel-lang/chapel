@@ -199,7 +199,7 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
   // in order to ensure fairness and thus progress.  If we're not, we
   // can spin-wait.
   suspend_using_cond = (chpl_thread_getNumThreads() >=
-                        chpl_getNumPUsOnThisNode());
+                        chpl_getNumLogicalCpus(true));
 
   while (s->is_full != want_full) {
     if (!suspend_using_cond) {
@@ -850,12 +850,13 @@ uint32_t chpl_task_getMaxPar(void) {
   uint32_t maxThreads;
 
   //
-  // We expect that even if the cores have multiple hardware threads,
-  // cache and pipeline conflicts will typically prevent applications
-  // from gaining by using them.  So, we just return the lesser of the
-  // number of cores, and whatever the threading layer says it can do.
+  // We expect that even if the physical CPUs have multiple hardware
+  // threads, cache and pipeline conflicts will typically prevent
+  // applications from gaining by using them.  So, we just return the
+  // lesser of the number of physical CPUs and whatever the threading
+  // layer says it can do.
   //
-  max = (uint32_t) chpl_getNumCoresOnThisNode();
+  max = (uint32_t) chpl_getNumPhysicalCpus(true);
   maxThreads = chpl_thread_getMaxThreads();
   if (maxThreads < max && maxThreads > 0)
     max = maxThreads;

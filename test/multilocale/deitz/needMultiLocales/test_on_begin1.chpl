@@ -10,7 +10,7 @@ proc foo() {
       i$ = 1;
     }
   }
-  writeln(i$);
+  writeln(i$.readFF()); // wait for it to become full
   writeln(here.id, " x=", x);
 }
 

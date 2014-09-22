@@ -3,7 +3,7 @@ class C {
   
   proc countNodes(): int {
     var lnodes, rnodes: int;
-    cobegin ref(lnodes, rnodes) {
+    cobegin with (ref lnodes, ref rnodes) {
             lnodes = if left == nil then 0 else left.countNodes();
             rnodes = if right == nil then 0 else right.countNodes();
     }

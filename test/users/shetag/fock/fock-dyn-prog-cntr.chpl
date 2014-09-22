@@ -21,7 +21,7 @@ proc buildjk() {
           lattop = if (kat==iat) then jat else kat;
           for lat in 1..lattop {
             if (L == myG) then
-              cobegin ref(myG) {
+              cobegin with (ref myG) {
                 buildjk_atom4(new blockIndices(iat, jat, kat, lat));
                 myG = readAndIncrementG();
               }

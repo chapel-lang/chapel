@@ -131,11 +131,12 @@ cannot proceed until the variable's state is empty.
 Chapel supports two types of synchronization variables: sync and
 single.  Both types behave similarly, except that a single variable
 may only be written once.  Consequently, when a sync variable is read,
-its state transitions to empty, where as when a single variable is
+its state transitions to empty, whereas when a single variable is
 read, its state does not change.  When either type of synchronization
 variable is written, its state transitions to full.
 
-Sync and single are type qualifiers and precede the variable's type in
+\chpl{sync} and \chpl{single} are type qualifiers and precede
+the type of the variable's value in
 the declaration.  Sync and single are supported for all Chapel
 primitive types (~\rsec{Primitive_Types}) except strings and complex.
 
@@ -144,7 +145,8 @@ not in the correct state, the task is suspended.  When the variable
 transitions to the correct state, the task is resumed.  If there are
 multiple tasks blocked waiting for the state transition, one is
 non-deterministically selected to proceed and the others continue to
-wait.
+wait if it is a sync variable; all tasks are selected to proceed
+if it is a single variable.
 
 A synchronization variable is specified with a sync or single type
 given by the following syntax:
@@ -219,7 +221,7 @@ cobegin {
 }
 \end{chapel}
 \begin{chapelpost}
-writeln("count is: ", count(*\texttt{\$}*));
+writeln("count is: ", count(*\texttt{\$}*).readFF());
 \end{chapelpost}
 \begin{chapeloutput}
 count is: 3
@@ -271,17 +273,21 @@ full at which time all the other tasks can be unblocked and run.
 \end{chapelexample}
 
 \index{synchronization types!formal arguments}
-If a formal argument is a synchronization type, the actual is passed
-by reference and the argument itself is a valid lvalue.  The
-unqualified types \chpl{sync} or \chpl{single} can also be used to
-specify a generic formal argument.  In this case, the actual must be a
-sync or single variable and it is passed by reference.
+If a formal argument with a blank intent either has a synchronization
+type or the formal is generic (\rsec{Formal_Arguments_of_Generic_Type})
+and the actual has a synchronization type, the actual must be an
+lvalue and is passed by reference. In these cases the formal itself
+is an lvalue, too. The actual argument is not read or written during
+argument passing; its state is not changed or waited on. The qualifier
+\chpl{sync} or \chpl{single} without the value type can be used to
+specify a generic formal argument that requires a \chpl{sync}
+or \chpl{single} actual.
 
-For generic formal arguments with unspecified types
-(\rsec{Formal_Arguments_of_Generic_Type}), an actual that
-is \chpl{sync} or \chpl{single} is read before being passed to the
-function and the generic formal argument's type is set to the base
-type of the actual.
+\index{synchronization types!actual arguments}
+When the actual argument is a \chpl{sync} or \chpl{single} and the
+corresponding formal has the actual's base type or is implicitly
+converted from that type, a normal read of the actual is performed
+when the call is made, and the read value is passed to the formal.
 
 
 \subsection{Predefined Single and Sync Methods}
@@ -300,6 +306,7 @@ proc (sync t).readFE(): t
 Returns the value of the sync variable.  This method blocks until the
 sync variable is full.  The state of the sync variable is set to empty
 when this method completes.
+This method implements the normal read of a \chpl{sync} variable.
 \end{protobody}
 
 \index{readFF (sync var)@\chpl{readFF} (sync var)}
@@ -312,6 +319,7 @@ proc (single t).readFF(): t
 Returns the value of the sync or single variable.  This method blocks
 until the sync or single variable is full.  The state of the sync or
 single variable remains full when this method completes.
+This method implements the normal read of a \chpl{single} variable.
 \end{protobody}
 
 \index{readXX (sync var)@\chpl{readXX} (sync var)}
@@ -337,6 +345,8 @@ Assigns \chpl{v} to the value of the sync or single variable.  This
 method blocks until the sync or single variable is empty.  The state
 of the sync or single variable is set to full when this method
 completes.
+This method implements the normal write of a \chpl{sync} or \chpl{single}
+variable.
 \end{protobody}
 
 \index{writeFF (sync var)@\chpl{writeFF} (sync var)}
@@ -386,13 +396,15 @@ variable is unchanged when this method completes.
 
 Note that \chpl{writeEF} and \chpl{readFE}/\chpl{readFF} methods
 (for \chpl{sync} and \chpl{single} variables, respectively) are
-implicitly invoked for writes and reads of synchronization variables.
+implicitly invoked for normal writes and reads of synchronization variables.
 
 
 \begin{chapelexample}{syncMethods.chpl}
 Given the following declarations
-\begin{chapel}
+\begin{chapelpre}
 { // }
+\end{chapelpre}
+\begin{chapel}
 var x(*\texttt{\$}*): sync int;
 var y(*\texttt{\$}*): single int;
 var z: int;
@@ -404,7 +416,7 @@ y(*\texttt{\$}*) = 6;
 z = x(*\texttt{\$}*) + y(*\texttt{\$}*);
 \end{chapel}
 \begin{chapelnoprint}
-writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*), z));
+writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*).readFF(), z));
 // {
 }
 { // }
@@ -419,7 +431,7 @@ y(*\texttt{\$}*).writeEF(6);
 z = x(*\texttt{\$}*).readFE() + y(*\texttt{\$}*).readFF();
 \end{chapel}
 \begin{chapelpost}
-writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*), z));
+writeln((x(*\texttt{\$}*).readXX(), y(*\texttt{\$}*).readFF(), z));
 // {
 }
 \end{chapelpost}
@@ -807,24 +819,25 @@ of capturing the value of the variable at task creation time
 and referencing that value instead of the original variable
 within the lexical scope of the task construct.
 
-A formal can be given the \chpl{ref} intent explicitly by listing it
-in the optional \sntx{task-intent-clause}. For variables of most
-types, this enables the task construct to modify the original variable
-or to read the original variable's value after concurrent modifications.
+A formal can be given another intent explicitly by listing it
+with that intent in the optional \sntx{task-intent-clause}.
+For example, for variables of most types, the \chpl{ref} intent allows
+the task construct to modify the corresponding original variable
+or to read its updated value after concurrent modifications.
 
 The syntax of the task intent clause is:
 
 \begin{syntax}
 task-intent-clause:
-  `ref' ( var-list )
+  `with' ( task-intent-list )
 
-var-list:
-  identifier
-  identifier, var-list
+task-intent-list:
+  formal-intent identifier
+  formal-intent identifier, task-intent-list
 \end{syntax}
 
 The implicit treatment of outer scope variables as the task function's
-formal arguments applies to both global and local variables.
+formal arguments applies to both module level and local variables.
 It applies to variable references within the lexical scope
 of a task construct, but does not extend to its dynamic scope, i.e.,
 to the functions called from the task(s) but declared outside of
@@ -880,10 +893,11 @@ We decided to treat \chpl{cobegin} and \chpl{coforall} statements the
 same way as \chpl{begin}. This is for consistency and to make the
 race-avoidance benefit available to more code.
 
-We decided to apply task intents to global variables, in addition to local
-variables. Again, this is for consistency. One could view global
-variables differently than local variables (e.g. a global variable is
-``always available''), but we favored consistency over such an approach.
+We decided to apply task intents to module level variables, in addition
+to local variables. Again, this is for consistency. One could view module
+level variables differently than local variables (e.g. a module level 
+variable is ``always available''), but we favored consistency over such
+an approach.
 
 We decided not to apply task intents to ``closure'' variables, i.e.,
 the variables in the dynamic scope of a task construct. This is to
@@ -896,12 +910,21 @@ what to do with extern functions, etc.
 
 
 \begin{future}
-We would like to make other intents available for use in a
-\sntx{task-intent-clause}.
 For a given intent, we would also like to provide a blanket clause,
 which would apply the intent to all variables.
-An example of syntax would be \chpl{ref(*)}.
+An example of syntax for a blanket \chpl{ref} intent would be \chpl{ref *}.
 \end{future}
+
+\begin{future}
+We may want to disallow some intents because they do not make sense
+in this context. For example, an \chpl{inout} or \chpl{out} intent
+will necessarily create a data race in a \chpl{cobegin} or \chpl{coforall}.
+Also, \chpl{type} and \chpl{param} intents do not seem useful.
+\end{future}
+
+\begin{craychapel}
+At present, only the \chpl{ref} task intent is implemented.
+\end{craychapel}
 
 
 \section{The Sync Statement}

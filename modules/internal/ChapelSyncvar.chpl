@@ -48,11 +48,11 @@ module ChapelSyncvar {
       }
     }
 
-  proc _isSyncType(type t) param
+  proc isSyncType(type t) param
     return __primitive("is sync type", t);
 
-  proc _isSync(x: sync) param return true;
-  proc _isSync(x) param return false;
+  proc isSyncValue(x: sync) param  return true;
+  proc isSyncValue(x)       param  return false;
 
   // The operations are:
   //  readFE - wait for full, leave empty
@@ -169,6 +169,11 @@ module ChapelSyncvar {
     return b;
   }
 
+  // Do not allow implicit writes of sync/single vars.
+  proc _syncvar.writeThis(x: Writer) {
+    compilerError("sync/single variables cannot currently be written - apply readFE/readFF() to those variables first");
+  }
+
 
   // single variable support
     pragma "single"
@@ -189,11 +194,11 @@ module ChapelSyncvar {
       }
     }
 
-  proc _isSingleType(type t) param
+  proc isSingleType(type t) param
     return __primitive("is single type", t);
 
-  proc _isSingle(x: single) param return true;
-  proc _isSingle(x) param return false;
+  proc isSingleValue(x: single) param  return true;
+  proc isSingleValue(x)         param  return false;
 
   // Wait for full. Set and signal full.
   proc _singlevar.readFF() {
@@ -260,6 +265,12 @@ module ChapelSyncvar {
       chpl_rmem_consist_acquire();
     }
     return b;
+  }
+
+
+  // Do not allow implicit writes of sync/single vars.
+  proc _singlevar.writeThis(x: Writer) {
+    compilerError("single/sync variables cannot currently be written - apply readFF/readFE() to those variables first");
   }
 
   pragma "dont disable remote value forwarding"

@@ -47,7 +47,7 @@ NPROCS := $(shell python -c 'import multiprocessing ; print multiprocessing.cpu_
 $(LLVM_FILE):
 	if [ ! -d llvm ]; then ./unpack-llvm.sh; fi
 	mkdir -p $(LLVM_BUILD_DIR)
-	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(LLVM_INSTALL_DIR) --enable-optimized $(CHPL_LLVM_DEBUG)
+	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(LLVM_INSTALL_DIR) --enable-optimized --disable-clang-arcmt --disable-clang-static-analyzer --disable-clang-rewriter --disable-docs --enable-targets=host,x86,x86_64 $(CHPL_LLVM_DEBUG)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) -j$(NPROCS)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) install
 	cd $(LLVM_BUILD_DIR) && cd test && make lit.site.cfg

@@ -591,10 +591,10 @@ module ChapelIO {
   pragma "no prototype"
   extern proc chpl_format(fmt: c_string, x): c_string;
   
-  proc format(fmt: c_string, x:?t) where _isIntegralType(t) || _isFloatType(t) {
+  proc format(fmt: c_string, x:?t) where isIntegralType(t) || isFloatType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
-      if _isImagType(t) then
+      if isImagType(t) then
         return (chpl_format(fmt2, _i2r(x))+"i");
       else
         return chpl_format(fmt2, x:real);
@@ -602,7 +602,7 @@ module ChapelIO {
         return chpl_format(fmt, x);
   }
   
-  proc format(fmt: c_string, x:?t) where _isComplexType(t) {
+  proc format(fmt: c_string, x:?t) where isComplexType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
       return (chpl_format(fmt2, x.re)+" + "+ chpl_format(fmt2, x.im)+"i");

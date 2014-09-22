@@ -1,1 +1,2 @@
---doSerial=false
+--doSerial=true
+--doSerial=false --numAdds=5000

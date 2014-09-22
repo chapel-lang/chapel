@@ -3,7 +3,7 @@ class array1d {
   var x1 : t;
   var x2 : t;
   var x3 : t;
-  proc indexedby(i : int) var : t {
+  proc indexedby(i : int) ref : t {
     select i {
       when 1 do return x1;
       when 2 do return x2;

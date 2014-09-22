@@ -5,6 +5,8 @@ CHPL = chpl
 
 TARGETS = \
 	arrays \
+        arrayVectorOps \
+	associative \
 	atomics \
 	chpldoc \
 	classes \
@@ -17,6 +19,7 @@ TARGETS = \
 	locales \
 	opaque \
 	procedures \
+        randomNumbers \
 	ranges \
 	reductions \
 	slices \

@@ -7,11 +7,11 @@ proc test1(ref bbb) {
 }
 
 proc test2(ref ccc: sync int) {
-  writeln(ccc); // -> empty
+  writeln(ccc.readFE()); // -> empty
 }
 
 proc test2(ref ddd: single int) {
-  writeln(ddd); // -> empty
+  writeln(ddd.readFF()); // -> full
 }
 
 test1(aaa); // -> full

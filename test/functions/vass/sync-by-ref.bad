@@ -1,2 +1,0 @@
-sync-by-ref.chpl:5: error: non-lvalue actual is passed to 'ref' formal 'bbb' of test1()
-sync-by-ref.chpl:5: error: non-lvalue actual is passed to 'ref' formal 'bbb' of test1()

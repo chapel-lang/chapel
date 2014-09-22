@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+#
+# This is not perfect, but there's no easy way to make sure all the
+# tasking data structures have been freed before we make the call to
+# memoryUsed(), so we just check if we leak data that's allocated by
+# the NewString module.  If there is, the we leave that in the output,
+# otherwise we remove the leaked memory report.
+
+import sys
+
+outfile = sys.argv[2]
+f = open(outfile)
+lines = f.readlines()
+f.close()
+
+newlines = list()
+foundTable = False
+for l in lines:
+    if not foundTable:
+        if l.find("DONE") == 0:
+            foundTable = True
+        else:
+            newlines.append(l)
+        continue
+    else:
+        if l.find('remote string copy') != -1:
+            # leak, so print it out
+            newlines.append(l)
+        elif l.find('string move data') != -1:
+            # leak, so print it out
+            newlines.append(l)
+        elif l.find('string_refcnt') != -1:
+            # leak, so print it out
+            newlines.append(l)
+
+f = open(outfile, 'w')
+for l in newlines:
+    f.write(l);
+f.close();

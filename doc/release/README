@@ -26,6 +26,7 @@ This directory contains the following documentation:
                           Cray CS(TM) series
     README.cygwin      :  Cygwin
     README.ibm         :  IBM
+    README.knc         :  Intel Xeon Phi (Knights Corner)
     README.macosx      :  Mac
     README.marenostrum :  MareNostrum (at BSC)
     README.sgi         :  SGI Altix
@@ -33,8 +34,10 @@ This directory contains the following documentation:
 
   technotes/                : technical notes about our implementation:
     README.atomics          :  information about using 'atomic' variables
+    README.auxIO            :  information about Auxiliary I/O with Chapel
     README.chpldoc          :  notes on using the 'chpldoc' capability
     README.comm-diagnostics :  tracking communication events
+    README.curl             :  information about curl and Chapel
     README.dsi              :  requirements/guidelines on writing a domain map
     README.extern           :  calling external C routines
     README.firstClassFns    :  first-class functions
@@ -50,6 +53,9 @@ This directory contains the following documentation:
     README.main             :  defining the 'main()' routine  TODO
     README.module_search    :  how modules are searched for to fulfill 'use's
     README.regexp           :  using regular expressions in Chapel
+    README.typeQueries      :  type query functions provided by Types module
+    README.sets             :  set operations on associative arrays and domains
+    README.subquery         :  querying the index set owned by a locale
 
 
 --------------------

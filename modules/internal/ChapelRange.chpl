@@ -26,7 +26,9 @@ module ChapelRange {
   
   // Turns on range iterator debugging.
   config param debugChapelRange = false;
-  
+
+  config param useOptimizedRangeIterators = true;
+
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
   
   //
@@ -147,6 +149,15 @@ module ChapelRange {
   //# Predicates
   //#
   
+  proc isRangeType(type t) param {
+    proc isRangeHelp(type t: range(?)) param  return true;
+    proc isRangeHelp(type t)           param  return false;
+    return isRangeHelp(t);
+  }
+  
+  proc isRangeValue(r: range(?)) param  return true;
+  proc isRangeValue(r)           param  return false;
+  
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
   
   proc isBoundedRange(r)           param
@@ -219,7 +230,7 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("length is not defined on unbounded ranges");
   
-    if _isUnsignedType(idxType)
+    if isUintType(idxType)
     {
       // assumes alignedHigh/alignLow always work, even for an empty range
       const ah = this.alignedHigh,
@@ -805,7 +816,7 @@ module ChapelRange {
   
     // If the result type is unsigned, don't let the low bound go negative.
     // This is a kludge.  We should really obey type coercion rules. (hilde)
-    if (_isUnsignedType(idxType)) { if (lo1 < 0) then lo1 = 0; }
+    if (isUintType(idxType)) { if (lo1 < 0) then lo1 = 0; }
   
     // We inherit the sign of the stride from this.stride.
     var newStride: strType = this.stride;
@@ -966,122 +977,180 @@ module ChapelRange {
     return r;
   }
 
-  // This function is intended to replace the previous isMaximal checks that
-  // existed before. Note that it is currently unused. It is intended to be
-  // used in the bounded range iterators. Ideally it would be used in the
-  // constructor, but currently the stride gets set after the constructor is
-  // called (by the "by" method.) This was also a problem with the previous
-  // isMaximal check, it just went unnoticed. The actual warnings messages
-  // aren't useful yet, but the logic for checking should be good.
-  proc range.withinBounds() {
-    if (_isSignedType(idxType)) {
-      if (stride >= 0) {
-        if (stride > (max(idxType) - _high)) {
-          warning("Signed overflow for range iterator detected\n");
-          return false;
-        }
-      } else {
-        if (_stride < min(idxType) - _low) {
-          warning("Signed underflow for range iterator detected\n");
-          return false;
-        }
-      }
-    } else if (_isUnsignedType(idxType)) {
-      if (stride > 0) {
-        if (_high + stride < _high) {
-          warning("Unsigned overflow for range iterator detected\n");
-          return false;
-        }
-      } else {
-        if (_low + stride > _low) {
-          warning("Unsigned underflow for range iterator detected\n");
-          return false;
-        }
-      }
-
-    } else {
-      warning("Unsupported Type\n");
+  // This function checks if a bounded iterator will overflow. This is basic
+  // signed/unsigned overflow checking for the last index + stride. Either
+  // returns whether overflow will occur or not, or halts with an error
+  // message.
+  proc range.checkIfIterWillOverflow(shouldHalt=true) {
+    // iterator won't execute at all so it can't overflow
+    if (this.low > this.high) {
       return false;
     }
-    return true;
+
+    var willOverFlow = false;
+    if (isIntType(idxType)) {
+      if (this.last > 0 && stride > 0) {
+        if (stride > (max(idxType) - this.last)) {
+          willOverFlow = true;
+        }
+      } else if (this.last < 0 && stride < 0) {
+        if (stride < (min(idxType) - this.last)) {
+          willOverFlow = true;
+        }
+      }
+    }
+    else if (isUintType(idxType)) {
+      if (stride > 0) {
+          if (this.last + stride:idxType < this.last) {
+            willOverFlow = true;
+          }
+        } else if (stride < 0) {
+          if (this.last + stride:idxType > this.last) {
+            willOverFlow = true;
+          }
+        }
+    }
+    else {
+      compilerError("Iterator overflow checking is only supported ",
+                    "for integral types");
+    }
+
+    if (willOverFlow && shouldHalt) {
+      halt("Overflow detected for iteration over a bounded range.");
+    }
+    return willOverFlow;
   }
 
   //################################################################################
-  //# Iterators
+  //# Serial Iterators
   //#
-  //# TODO The bounded and strided range iterator needs to use a c for loop. In
-  //# order to do that c for loops have to be able to take a user defined test
-  //# operator. Unbounded iterators should also use c for loops.
-  //# What are the isAmbiguous() calls really doing?
 
-  // An unbounded range iterator
+  // An unbounded range iterator (for all strides)
   iter range.these() where boundedType != BoundedRangeType.bounded {
 
     if boundedType == BoundedRangeType.boundedNone then
       compilerError("iteration over a range with no bounds");
 
-    // TODO: hilde
-    // Does this test nesting affect performance?
-    // Inline and remove the test if so.
+    if ! this.hasFirst() then
+      halt("iteration over range that has no first index");
+
     if this.isAmbiguous() then
       __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
 
-    if ! hasFirst() then
-      halt("iteration over range that has no first index");
-
-    var i = this.first;
-    while true {
+    // This iterator could be split into different cases depending on the
+    // stride like the bounded iterators. However, all that gets you is the
+    // ability to use low/alignedLow over first. The additional code isn't
+    // worth it just for that. In the other cases it allowed us to specialize
+    // the test relational operator, which is important
+    var i: idxType;
+    const start = this.first;
+    while __primitive("C for loop",
+                      __primitive( "=", i, start),
+                      true,
+                      __primitive("+=", i, stride: idxType)) {
       yield i;
-      i = i + stride:idxType;
     }
   }
 
   // A bounded and strided range iterator
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == true {
+    if (useOptimizedRangeIterators) {
+      if boundsChecking then checkIfIterWillOverflow();
 
-    // TODO: hilde
-    // Does this test nesting affect performance?
-    // Inline and remove the test if so.
-    if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      if this.isAmbiguous() then
+        __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
 
-    // This case is written so that the only control is the loop test.
-    // Zippered iterator inlining currently requires this.
-    var i = this.first;
-    var end : idxType = if _low > _high then i else this.last + stride:idxType;
-
-    while i != end
-    {
-      yield i;
-      i = i + stride:idxType;
+      // must use first/last since we have no knowledge of stride
+      // must check if low > high (something like 10..1) because of the !=
+      // relational operator. Such ranges are supposed to iterate 0 times
+      var i: idxType;
+      const start = this.first;
+      const end: idxType = if this.low > this.high then start else this.last + stride: idxType;
+      while __primitive("C for loop",
+                        __primitive( "=", i, start),
+                        __primitive("!=", i, end),
+                        __primitive("+=", i, stride: idxType)) {
+        yield i;
+      }
+    } else {
+      for i in this.generalIterator() {
+        yield i;
+      }
     }
   }
 
   // A bounded and non-strided (stride = 1) range iterator
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == false {
+    if (useOptimizedRangeIterators) {
+      if boundsChecking then checkIfIterWillOverflow();
 
-    // This case is written so that the only control is the loop test.
-    // Zippered iterator inlining currently requires this.
-    var i: idxType;
-    var start = low;
-    var end = high;
+      // don't need to check if isAmbigous since stride is one
 
-    while __primitive("C for loop", i, start, end, stride) {
-      yield i;
+      // can use low/high instead of first/last since stride is one
+      var i: idxType;
+      const start = this.low;
+      const end = this.high;
+
+      while __primitive("C for loop",
+                        __primitive( "=", i, start),
+                        __primitive("<=", i, end),
+                        __primitive("+=", i, stride: idxType)) {
+        yield i;
+      }
+    } else {
+      for i in this.generalIterator() {
+        yield i;
+      }
     }
   }
 
+  //################################################################################
+  //# General, Unoptimized Serial Iterator
+  //#
 
-  iter range.these(param tag: iterKind) where tag == iterKind.leader
-  {
+  // The bounded iterators are all optimized versions that can't handle
+  // iterating over ranges like max(int)-10..max(int). This iterator is
+  // designed to be able to iterate over any range, though it will be much
+  // slower. It will be slower because it breaks the singleLoopIterator
+  // optimization and because it has additional control flow in it. In this
+  // form it can still be inlined, but that only helps for non-zippered
+  // iterators. An alternate method would be to calculate the number of
+  // iterations that will occur (possibly using length()) and have the number
+  // of iterations drive the loop and use a separate variable to track the
+  // value to yield. This would mean you couldn't express maximal ranges for
+  // int(64) and uint(64) but it's hard to see a case where those could ever be
+  // desired.
+  iter range.generalIterator() {
     if this.isAmbiguous() then
       __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
 
+    var i: idxType;
+    const start = this.first;
+    const end = if this.low > this.high then start else this.last;
+
+    while __primitive("C for loop",
+                      __primitive( "=", i, start),
+                      __primitive(">=", high, low),  // execute at least once?
+                      __primitive("+=", i, stride: idxType)) {
+      yield i;
+      if i == end then break;
+    }
+  }
+
+  //################################################################################
+  //# Parallel Iterators
+  //#
+
+  iter range.these(param tag: iterKind) where tag == iterKind.leader
+  {
     if ! isBoundedRange(this) then
       compilerError("parallel iteration is not supported over unbounded ranges");
-  
+
+    if this.isAmbiguous() then
+      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+
     if debugChapelRange then
       writeln("*** In range leader:"); // ", this);
     const numSublocs = here.getChildCount();
@@ -1091,7 +1160,7 @@ module ChapelRange {
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
-      const dptpl = if tasksPerLocale==0 then here.numCores
+      const dptpl = if tasksPerLocale==0 then here.maxTaskPar
                     else tasksPerLocale;
 
       // Make sure we don't use more sublocales than the numbers of
@@ -1334,15 +1403,6 @@ module ChapelRange {
     }
   }
   
-  // Return a substring of a string with a range of indices.
-  inline proc string.substring(r: range(?)) {
-    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
-    if r2.isEmpty() then return "";
-    var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
-    return __primitive("string_select", this, lo, hi, r2.stride);
-  }
-  
-  
   //################################################################################
   //# Internal helper functions.
   //#
@@ -1352,7 +1412,7 @@ module ChapelRange {
   
   inline proc range.chpl__unTranslate(i)
   {
-    if _isSignedType(i.type) then
+    if isIntType(i.type) then
       return this - i;
     else
       return this + abs(i);
@@ -1386,7 +1446,7 @@ module ChapelRange {
     }
   
     var tmp = dividend % m;
-    if _isSignedType(dividend.type) then
+    if isIntType(dividend.type) then
       if tmp < 0 then tmp += m;
   
     return tmp;
@@ -1434,7 +1494,7 @@ module ChapelRange {
   // We might wish to add dialable run-time warning messages.
   proc chpl__add(a: ?t, b: t, type resultType)
   {
-    if !_isIntegralType(t) then
+    if !isIntegralType(t) then
       compilerError("Values must be of integral type.");
   
     if a > 0 && b > 0 && b > max(t) - a then return max(resultType);
@@ -1442,7 +1502,7 @@ module ChapelRange {
   
     // If the result is unsigned, check for a negative result and peg
     // the result to 0 if the sum is going to be negative.
-    if _isUnsignedType(resultType) {
+    if isUintType(resultType) {
       if ((a < 0 && b > 0 && (a == min(t) || abs(a) > abs(b))) ||
           (a > 0 && b < 0 && (b == min(t) || abs(b) > abs(a)))) then
         return 0:resultType;

@@ -82,8 +82,8 @@ class BlockCyclic : BaseDist {
     // argument sanity checks, with friendly error messages
     if isTuple(startIdx) != isTuple(blocksize) then compilerError("when invoking BlockCyclic constructor, startIdx and blocksize must be either both tuples or both integers");
     if isTuple(startIdx) && startIdx.size != blocksize.size then compilerError("when invoking BlockCyclic constructor and startIdx and blocksize are tuples, their sizes must match");
-    if !_isIntegralType(idxType) then compilerError("when invoking BlockCyclic constructor, startIdx must be an integer or a tuple of integers");
-    if !_isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic constructor, blocksize must be an integer or a tuple of integers");
+    if !isIntegralType(idxType) then compilerError("when invoking BlockCyclic constructor, startIdx must be an integer or a tuple of integers");
+    if !isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic constructor, blocksize must be an integer or a tuple of integers");
 
     this.lowIdx = _ensureTuple(startIdx);
     this.blocksize = _ensureTuple(blocksize);
@@ -127,7 +127,7 @@ class BlockCyclic : BaseDist {
         locDist(locid) = new LocBlockCyclic(rank, idxType, locid, this);
 
     if tasksPerLocale == 0 then
-      this.tasksPerLocale = 1;   // TODO: here.numCores;
+      this.tasksPerLocale = 1;   // TODO: here.maxTaskPar;
     else
       this.tasksPerLocale = tasksPerLocale;
 
@@ -675,7 +675,7 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
 //
 // TODO: Do we need a global bounds check here or in idxToLocaleind?
 //
-proc BlockCyclicArr.dsiAccess(i: idxType) var where rank == 1 {
+proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
   if myLocArr then /* TODO: reenable */ /* local */ {
     if myLocArr.indexDom.myStarts.member(i) then  // TODO: This could be beefed up; true for indices other than starts
       return myLocArr.this(i);
@@ -687,7 +687,7 @@ proc BlockCyclicArr.dsiAccess(i: idxType) var where rank == 1 {
   return locArr(dom.dist.idxToLocaleInd(i))(i);
 }
 
-proc BlockCyclicArr.dsiAccess(i: rank*idxType) var {
+proc BlockCyclicArr.dsiAccess(i: rank*idxType) ref {
 //   const myLocArr = locArr(here.id);
 //   local {
 //     if myLocArr.locDom.myStarts.member(i) then
@@ -701,7 +701,7 @@ proc BlockCyclicArr.dsiAccess(i: rank*idxType) var {
 }
 
 
-iter BlockCyclicArr.these() var {
+iter BlockCyclicArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
 }
@@ -711,7 +711,7 @@ iter BlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield yieldThis;
 }
 
-iter BlockCyclicArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable);
   var lowIdx: rank*idxType;
 
@@ -734,7 +734,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) var where tag == iter
   //
   // we don't own all the elements we're following
   //
-  proc accessHelper(i) var {
+  proc accessHelper(i) ref {
 //      if myLocArr.locale == here {
 //  local {
 //          if myLocArr.locDom.myStarts.member(i) then
@@ -791,20 +791,16 @@ proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
 proc BlockCyclicArr.dsiReindex(dom) {
   compilerError("reindexing not yet implemented for Block-Cyclic");
 }
-    
-proc BlockCyclicArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc BlockCyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
-proc BlockCyclicArr.dsiOneLocalSubdomain() param return false;
+proc BlockCyclicArr.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
-iter BlockCyclicArr.dsiGetLocalSubdomains() {
+iter BlockCyclicArr.dsiLocalSubdomains() {
   for i in myLocArr.indexDom.myStarts {
     var temp : rank*range(idxType);
     const blockSizes = myLocArr.indexDom.globDom.dist.blocksize;
@@ -925,7 +921,7 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
 //
 // the accessor for the local array -- assumes the index is local
 //
-proc LocBlockCyclicArr.this(i) var {
+proc LocBlockCyclicArr.this(i) ref {
   const flatInd = mdInd2FlatInd(i);
   //    writeln(i, "->", flatInd);
   return myElems(flatInd);

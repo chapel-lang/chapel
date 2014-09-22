@@ -392,7 +392,7 @@ class LocBlock1DDom {
   //
   iter newThese(param iterator: IteratorType)
         where iterator == IteratorType.leader {
-    const numChunks = here.numCores();
+    const numChunks = here.maxTaskPar();
     coforall (core, blk) in (numChunks, BlockSchedule(myBlock, numChunks)) do
       yield blk - wholeDom.whole.low;
   }
@@ -469,14 +469,14 @@ class Block1DArr {
   //
   // the global accessor for the array
   //
-  proc this(i: glbIdxType) var {
+  proc this(i: glbIdxType) ref {
     return locArr(dom.dist.idxToLocaleInd(i))(i);
   }
 
   //
   // the iterator over the array's elements, currently sequential
   //
-  iter these() var {
+  iter these() ref {
     for loc in dom.dist.targetLocDom {
       // TODO: May want to do something like:     
       // on this do
@@ -500,7 +500,7 @@ class Block1DArr {
           yield i;
   }
 
-  proc newThese(param iterator: IteratorType, followThis) var
+  proc newThese(param iterator: IteratorType, followThis) ref
         where iterator == IteratorType.follower {
 
     // TODO: Determine which locale we're running on, find the
@@ -567,14 +567,14 @@ class LocBlock1DArr {
   //
   // the accessor for the local array -- assumes the index is local
   //
-  proc this(i: lclIdxType) var {
+  proc this(i: lclIdxType) ref {
     return myElems(i);
   }
 
   //
   // iterator over the elements owned by this locale
   //
-  iter these() var {
+  iter these() ref {
     for elem in myElems {
       yield elem;
     }

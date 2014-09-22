@@ -307,7 +307,7 @@ proc mod(m: integral, n: integral) {
   // eliminate some run-time tests if input(s) is(are) unsigned
   return
     if isNonnegative(n) then
-      if _isUnsignedType(m.type)
+      if isUintType(m.type)
       then temp
       else ( if temp >= 0 then temp else temp + n )
     else
@@ -321,7 +321,7 @@ proc mod(param m: integral, param n: integral) param {
   // verbatim copy from the other 'mod', to simplify maintenance
   return
     if isNonnegative(n) then
-      if _isUnsignedType(m.type)
+      if isUintType(m.type)
       then temp
       else ( if temp >= 0 then temp else temp + n )
     else

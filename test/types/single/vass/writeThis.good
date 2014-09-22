@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/IO.chpl:: error: single/sync variables cannot currently be written - apply readFF/readFE() to those variables first

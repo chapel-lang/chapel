@@ -47,7 +47,7 @@ record LocTree {
         middle of the tree you will short circuit a whole subtree!
 
      */
-    proc this(lvl: int, idx: int) var {
+    proc this(lvl: int, idx: int) ref {
         if !locIndices.member((lvl, idx)) {
             if setter {
               locIndices += ((lvl, idx));
@@ -67,7 +67,7 @@ record LocTree {
     /** Access an element in the associative domain.  If it doesn't exist,
         return None.
      */
-    proc peek(lvl: int, idx: int) var {
+    proc peek(lvl: int, idx: int) ref {
         if has_coeffs(lvl, idx) then
             return this(lvl, idx);
         else
@@ -136,7 +136,7 @@ class FTree {
         return (lvl+idx)%numLocs; 
     }
     
-    proc this((lvl, idx)) var {
+    proc this((lvl, idx)) ref {
         return nodes[mapNodeToLoc(lvl, idx)][lvl,idx];
     }
 
@@ -169,7 +169,7 @@ class FTree {
                 yield data;
     }
     
-    proc peek((lvl, idx)) var {
+    proc peek((lvl, idx)) ref {
         return nodes[mapNodeToLoc(lvl, idx)].peek(lvl, idx);
     }
 
