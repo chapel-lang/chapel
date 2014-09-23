@@ -1,0 +1,1 @@
+isDir("unknown.txt");
