@@ -49,7 +49,7 @@ standard_c_headers=$($CHPL_HOME/util/devel/grepstdchdrs || :)
 if [ -n "${standard_c_headers}" ] ; then
     echo "Standard C headers found in the following file(s):"
     echo "${standard_c_headers}"
-	echo "The above list was generated with \$CHPL_HOME/util/devel/grepstdchdrs."
+    echo "The above list was generated with \$CHPL_HOME/util/devel/grepstdchdrs."
     exit 1
 fi
 
