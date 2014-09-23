@@ -120,7 +120,7 @@ UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
 $(BUILD_VERSION_FILE): CheckForStandardCHeaders
 	@({ test -x $(CHPL_MAKE_HOME)/.git || test -x $(CHPL_MAKE_HOME)/.svn ; } && \
-	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || (echo 0 > $@);
+	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || (echo '"0"' > $@);
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -f $(CHPL_CONFIG_CHECK_PREFIX)-*
