@@ -9,7 +9,7 @@ class Foo {
         elements[3] = third;
     }
 
-    iter these var : eltType {
+    iter these ref : eltType {
         for el in elements do
             yield el;
     }

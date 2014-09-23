@@ -1,6 +1,6 @@
 class C {
   var i : int;
-  proc foo() var {
+  proc foo() ref {
     return i;
   }
 }

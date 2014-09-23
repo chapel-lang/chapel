@@ -218,8 +218,8 @@ static std::string codegenCForLoopHeaderSegment(BlockStmt* block) {
     // will need to be updated to include all possible conditionals. (I'm
     // imagining we'll want a separate function that can check if a primitive
     // is a conditional as I think we'll need that info elsewhere.)
-    else if (call && (call->isResolved() || call->isPrimitive(PRIM_LESSOREQUAL)
-                                         || call->isPrimitive(PRIM_LESS))) {
+    else if (call && (call->isResolved() || isRelationalOperator(call))) {
+
       std::string callStr = codegenValue(call).c;
       if (callStr != "") {
         seg += callStr + ';';
@@ -788,10 +788,10 @@ void CondStmt::verify() {
     INT_FATAL(this, "CondStmt::elseStmt is a list");
   }
 
-  if (condExpr && condExpr->parentExpr != this)
+  if (condExpr->parentExpr != this)
     INT_FATAL(this, "Bad CondStmt::condExpr::parentExpr");
 
-  if (thenStmt && thenStmt->parentExpr != this)
+  if (thenStmt->parentExpr != this)
     INT_FATAL(this, "Bad CondStmt::thenStmt::parentExpr");
 
   if (elseStmt && elseStmt->parentExpr != this)

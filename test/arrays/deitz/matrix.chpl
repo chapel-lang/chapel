@@ -4,7 +4,7 @@ record Matrix {
   var D: domain(2) = {1..m, 1..n};
   var A: [D] elt_type;
 
-  proc this(i: int, j: int) var return A(i,j);
+  proc this(i: int, j: int) ref return A(i,j);
 }
 
 proc Matrix.writeThis(f: Writer) {

@@ -1,4 +1,0 @@
-                              # listdir.good
---recur=true                  # listdir-recur.good
---dotfiles=true               # listdir-dotfiles.good
---recur=true --dotfiles=true  # listdir-recur-dotfiles.good

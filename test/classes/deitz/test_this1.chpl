@@ -4,7 +4,7 @@ class D {
 
 class C {
   var d : D = new D();
-  proc this() var : D
+  proc this() ref : D
     return d;
 }
 

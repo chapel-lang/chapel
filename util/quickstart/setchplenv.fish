@@ -36,6 +36,9 @@ echo "to include $CHPL_HOME/man"
 echo "Setting CHPL_TASKS to fifo"
 set -x CHPL_TASKS fifo
 
+echo "Setting CHPL_MEM to cstdlib"
+set -x CHPL_MEM cstdlib
+
 echo "Setting CHPL_GMP to none"
 set -x CHPL_GMP none
 

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# diff-ignoring-module-line-numbers <test.comp.out.tmp> <test.bad>
+#
+# Compare the compilation output and .bad files, ignoring line numbers
+# in error/warning warning messages arising from module code.
+#
+
+badfile=$1
+tmpfile=$2
+
+badtmp=`mktemp "bad.XXXXXX"`
+tmptmp=`mktemp "tmp.XXXXXX"`
+
+sed -e "\|CHPL_HOME/modules|s/:[0-9]\+:/:nnnn:/" $badfile > $badtmp
+sed -e "\|CHPL_HOME/modules|s/:[0-9]\+:/:nnnn:/" $tmpfile > $tmptmp
+
+diff $badtmp $tmptmp
+result=$?
+rm $badtmp $tmptmp
+exit $result

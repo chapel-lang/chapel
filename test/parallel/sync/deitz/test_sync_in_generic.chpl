@@ -10,7 +10,7 @@ type t = sync int;
 var c = new C(t);
 
 begin {
-  writeln(c.x);
+  writeln(c.x.readFE());
   delete c;
 }
 

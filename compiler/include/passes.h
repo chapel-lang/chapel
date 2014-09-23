@@ -94,6 +94,9 @@ void checkReturnTypesHaveRefTypes();
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
 
+// flattenFunctions.cpp
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+
 // parallel.cpp
 bool isRefWideString(Type* t);
 bool isWideString(Type* t);

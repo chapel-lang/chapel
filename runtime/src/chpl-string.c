@@ -153,3 +153,47 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
   *ret = str->addr;
 }
 
+//
+// Support for the new string record implementation
+//
+// NOTE: strings of length 0 are assumed to be the literal ""
+
+/* This function copies src into dest.  If dest == "", allocate a new
+ * buffer for the string.  If dest is specified, it is the caller's
+ * responsibility to make sure that dest is large enough to hold src.
+ * Return the moved string.
+ */
+c_string stringMove(c_string dest, c_string src, int64_t len,
+                    int32_t lineno, c_string filename) {
+  char *ret;
+  assert(src);
+
+  if (!strcmp(dest, "")) {
+    ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
+  } else {
+    // reuse the buffer
+    ret = (char *) dest;
+  }
+
+  snprintf(ret, len+1, "%s", src);
+  return (c_string) ret;
+}
+
+/* This function returns a string from src_locale located at src_addr.
+ *
+ *     src_locale: node id
+ *     src_addr: string address on remote node
+ *     src_len: length
+ *
+ */
+c_string remoteStringCopy(c_nodeid_t src_locale,
+                          c_string src_addr, int64_t src_len,
+                          int32_t lineno, c_string filename) {
+  char* ret;
+  if (src_addr == NULL) return NULL;
+  ret = chpl_mem_alloc(src_len+1, CHPL_RT_MD_STRING_COPY_REMOTE,
+                       lineno, filename);
+  chpl_gen_comm_get((void*)ret, src_locale, (void*)src_addr, sizeof(char),
+                    CHPL_TYPE_uint8_t, src_len+1, lineno, filename);
+  return (c_string)ret;
+}

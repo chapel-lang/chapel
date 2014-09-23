@@ -1,5 +1,0 @@
-bug: c_string.substring() for ranges arguments results in a string not c_string as expected
-
-The current output contains line numbers in ChapelBase.chpl so I'm not
-bothering to add a .bad file.
-

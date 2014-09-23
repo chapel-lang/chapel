@@ -33,7 +33,7 @@ class WrappedArray {
         dom = {row..row+numRows-1, col..col+numCols-1};
     }
 
-    proc this(i,j : int) var { return data[i,j]; }
+    proc this(i,j : int) ref { return data[i,j]; }
 
     var dom : domain(2);
     var data : [dom] int;

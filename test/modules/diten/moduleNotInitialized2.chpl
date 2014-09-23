@@ -27,7 +27,7 @@ module M2 {
     M1.init();
     c = a;
     lock2 = false;
-    writeln(b);
-    writeln(c);
+    writeln(b.readFF());
+    writeln(c.readFF());
   }
 }

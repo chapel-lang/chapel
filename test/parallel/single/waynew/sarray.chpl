@@ -12,5 +12,5 @@ begin {
 }
 
 for i in 1..NUM do
-  write( i, ":", signal[i]);
+  write( i, ":", signal[i].readFE());
 writeln();

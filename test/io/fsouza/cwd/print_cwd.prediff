@@ -1,0 +1,6 @@
+#!/bin/bash
+
+if [ "`cat $2`" = "${PWD}" ]
+then
+	echo ok > $2
+fi

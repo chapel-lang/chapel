@@ -527,7 +527,7 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
 }
 
 // Return the array element corresponding to the index - on the current locale
-proc ReplicatedArr.dsiAccess(indexx) var: eltType {
+proc ReplicatedArr.dsiAccess(indexx) ref: eltType {
   return localArrs[here.id].arrLocalRep[indexx];
 }
 
@@ -547,7 +547,7 @@ proc ReplicatedArr.dsiSerialWrite(f: Writer): void {
 // iterators
 
 // completely serial
-iter ReplicatedArr.these() var: eltType {
+iter ReplicatedArr.these() ref: eltType {
   for locArr in localArrs do
 //  on locArr do // compiler does not allow; see r16137 and nestedForall*
       for a in locArr.arrLocalRep do
@@ -560,7 +560,7 @@ iter ReplicatedArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield follow;
 }
 
-iter ReplicatedArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
+iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   // redirect to DefaultRectangular
   for a in localArrs[here.id].arrLocalRep._value.these(tag, followThis) do
     yield a;
@@ -652,18 +652,14 @@ proc ReplicatedArr.dsiRankChange(sliceDef: ReplicatedDom,
 
   return result;
 }
-    
-proc ReplicatedArr.dsiTargetLocDom() {
-  return dom.dist.targetLocales.domain;
-}
 
 proc ReplicatedArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
-proc ReplicatedArr.dsiOneLocalSubdomain() param  return true;
+proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 
-proc ReplicatedArr.dsiGetLocalSubdomain() {
+proc ReplicatedArr.dsiLocalSubdomain() {
   return localArrs[here.id].myDom.domLocalRep;
 }
 

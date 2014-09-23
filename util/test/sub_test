@@ -231,6 +231,17 @@ def DiffFiles(f1, f2):
         sys.stdout.write(myoutput)
     return p.returncode
 
+# diff output vs. .bad file, filtering line numbers out of error messages that arise
+# in module files.
+def DiffBadFiles(f1, f2):
+    sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
+    p = subprocess.Popen([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
+    if p.returncode != 0:
+        sys.stdout.write(myoutput)
+    return p.returncode
+
 # kill process
 def KillProc(p, timeout):
     k = subprocess.Popen(['kill',str(p.pid)])
@@ -1025,9 +1036,6 @@ for testname in testsrc:
         # Build the test program
         #
         args=['-o']+[execname]+globalCompopts+shlex.split(compopts)+[testname]
-        if lastcompopts:
-            args += lastcompopts
-        # sys.stdout.write("args=%s\n"%(args))
 
         if is_c_test:
             # we need to drop envCompopts for C tests as those are options
@@ -1040,6 +1048,9 @@ for testname in testsrc:
                 args = valgrindcompopts+[compiler]+args
             else:
                 cmd = compiler
+
+        if lastcompopts:
+            args += lastcompopts
 
         #
         # Compile (with timeout)
@@ -1155,7 +1166,7 @@ for testname in testsrc:
             if (result != 0 and futuretest != ''):
                 badfile=execname+'.bad'
                 if os.access(badfile, os.R_OK):
-                    badresult = DiffFiles(badfile, complog)
+                    badresult = DiffBadFiles(badfile, complog)
                     if badresult==0:
                         os.unlink(complog);
                         sys.stdout.write('[Clean match against .bad file ')
@@ -1344,7 +1355,8 @@ for testname in testsrc:
 
             args+=globalExecopts
             args+=shlex.split(execopts)
-            if envExecopts != None:
+            # envExecopts are meant for chpl programs, dont add them to C tests
+            if not is_c_test and envExecopts != None:
                 args+=shlex.split(envExecopts)
             if lastexecopts:
                 args += lastexecopts

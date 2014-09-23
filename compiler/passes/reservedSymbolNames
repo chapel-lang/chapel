@@ -44,6 +44,9 @@
   acos
   asin
   atan
+  chdir
+  chown
+  cwd
   floor
   sqrt
   conjg
@@ -55,6 +58,7 @@
   fread
   fsync
   main
+  mkdir
   open
   pow
   printf

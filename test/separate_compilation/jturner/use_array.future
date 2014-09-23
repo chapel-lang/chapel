@@ -1,4 +1,4 @@
-unimplemented feature: Functions with array arguments.
+unimplemented feature: Separate compilation does not work for functions with array arguments.
 
 Array types can't be fully-specified by the user, which makes separately compiling a function that takes them as formal arguments impossible.
 

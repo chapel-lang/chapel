@@ -10,6 +10,10 @@
 // greater than 0.25 and the results of the computations are printed.
 //
 
+//
+// Note: example usage of the standard module Random can be found in
+// the primer randomNumbers.chpl, located in the current directory.
+//
 use Random; // For random number generation
 
 config const seed = 31415; // Random generation seed

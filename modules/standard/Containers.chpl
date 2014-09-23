@@ -69,11 +69,11 @@ class Vector {
         return val;
     }
 
-    proc top var {
+    proc top ref {
         return elements[lastIdx];
     }
 
-    proc this(idx) var {
+    proc this(idx) ref {
         const firstIdx = this.low;
         
         assert(firstIdx <= idx && idx <= lastIdx,
@@ -81,7 +81,7 @@ class Vector {
         return elements[idx];
     }
 
-    iter these() var {
+    iter these() ref {
         const firstIdx = this.low;
 
         for idx in firstIdx..lastIdx {

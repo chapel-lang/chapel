@@ -47,6 +47,7 @@ uint32_t    str2uint32(const char* str);
 uint64_t    str2uint64(const char* str);
 
 uint64_t    binStr2uint64(const char* str);
+uint64_t    octStr2uint64(const char* str);
 uint64_t    hexStr2uint64(const char* str);
 
 #endif

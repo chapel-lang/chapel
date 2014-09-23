@@ -1,9 +1,13 @@
 /*
  * Domains primer
  *
- * This primer showcases Chapel domains.  For other uses of domains
- * see the Arrays primer (arrays.chpl) and the Sparse arrays primer
- * (sparse.chpl).
+ * This primer showcases Chapel domains as abstract concepts, primarily
+ * within the context of rectangular domains.  For other uses of domains
+ * see the following primers: 
+ *  - Arrays primer (arrays.chpl)
+ *  - Sparse arrays primer (sparse.chpl)
+ *  - Opaque arrays primer (opaque.chpl)
+ *  - Associative arrays primer (associative.chpl)
  *
  */
 
@@ -14,8 +18,6 @@ config var n = 10;
 // such as slicing.
 //
 
-//
-// Chapel provides two base domain types: rectangular and associative.
 //
 // Rectangular domains are used to represent rectangular index sets.
 // Each dimesion of a rectangular domain is specified by a range and
@@ -73,31 +75,6 @@ var RDtrans_n = RD.translate((-1,-1,-1));
 writeln(RDtrans_n);
 
 //
-// Associative domains represent an arbitrary index set of any type.
-//
-// AD is an associative array indexed by strings.  Associative domains
-// start out empty.
-//
-var AD: domain(string);
-writeln(AD);
-
-//
-// The '+' operator is used to add indices to an associative domain.
-//
-AD += "John";
-AD += "Paul";
-AD += "Stuart";
-AD += "George";
-writeln(AD);
-
-//
-// The '-' operator is used to remove indices to an associative domain.
-//
-AD -= "Stuart";
-AD += "Ringo";
-writeln(AD);
-
-//
 // A subdomain is a domain that is declared in terms of a parent
 // domain, causing it to have the same type as their parent.  A
 // subdomain represents a subset of its parent domain's index set,
@@ -145,23 +122,6 @@ writeln("SSD:", SSD); // Now contains an unordered set of indices.
 
 // Note: Checks to ensure that sparse subdomain indices lie within the parent domain
 // have not been implemented.
-
-//
-// Create an associative subdomain.
-//
-
-var ASD : subdomain(AD);
-
-// The subdomain is initially empty.
-
-writeln("ASD:", ASD);
-
-ASD += "Stuart";
-
-writeln("ASD:", ASD);
-
-// Note: Checks to ensure that ASD is a subset of AD have not been implemented.
-
 
 /*
  * For more information on domains, see the Domains chapter of the

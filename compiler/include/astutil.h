@@ -85,10 +85,15 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
 
 //
 // Checks if a callExpr is one of the op= primitives
-// Note, this does not check if a callExpr is an 
+// Note, this does not check if a callExpr is an
 // op= function call (such as before inlining)
 //
 bool isOpEqualPrim(CallExpr* call);
+
+//
+// Checks if a callExpr is a relational operator (<, <=, >, >=, ==, !=)
+//
+bool isRelationalOperator(CallExpr* call);
 
 //
 // Return value & 1 is true if se is a def
@@ -187,6 +192,5 @@ bool isTypeExpr(Expr* expr);
 
 // move to resolve when scope resolution is put in resolution directory
 BlockStmt* getVisibilityBlock(Expr* expr);
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 #endif

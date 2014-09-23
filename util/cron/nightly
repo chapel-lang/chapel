@@ -34,6 +34,7 @@ $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
 $dist = "";
+$llvm = 0;
 $localeModelSuite = 0;
 $memleaks = "";
 $multilocale = 0;
@@ -119,6 +120,8 @@ while (@ARGV) {
         $svnrevopt = "-r " . shift @ARGV;
     } elsif ($flag eq "-cron-recipient") {
         $cronrecipient = shift @ARGV;
+    } elsif ($flag eq "-llvm") {
+        $llvm = 1;
     } else {
         $printusage = 1;
         last;
@@ -173,6 +176,7 @@ if ($printusage == 1) {
     print "\t-baseline    : run testins using --baseline\n";
     print "\t-dist <dist> : run distribution robustness tests\n";
     print "\t-fast        : run tests using --fast\n";
+    print "\t-llvm        : run tests using --llvm\n";
     print "\t-memleaks <log> : run memleaks tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
@@ -282,7 +286,7 @@ if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
 }
 
 $fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$localeModel";
-if ($mem ne "default") {
+if ($mem ne "cstdlib") {
     $fullplatform = "$fullplatform.$mem";
 }
 if ($hostplatform ne $targetplatform) {
@@ -327,6 +331,8 @@ if ($performance == 1) {
     $subjectid = " No-local";
 } elsif ($verify == 1) {
     $subjectid = " Verify";
+} elsif ($llvm == 1) {
+    $subjectid = " LLVM";
 } elsif ($runtests == 0) {
     $subjectid = " Build-only";
 } elsif ($buildruntime == 0) {
@@ -345,9 +351,13 @@ if ($debug == 1) {
     $nochangerecipient = $debugmail;
 } else {
     $subjectid = "Cron$subjectid";
-    $recipient = "$failuremail $allmail";
-    if ($tasks eq "qthreads") {
-      $recipient = "$recipient qthreads-chapel\@googlegroups.com";
+
+    # "email", the mailer program used on cygwin platform, requires multiple
+    # recipient addresses to be comma delimited instead of space delimited.
+    if ($mailer eq "email") {
+        $recipient = "$failuremail,$allmail";
+    } else {
+        $recipient = "$failuremail $allmail";
     }
     $nochangerecipient = $allmail;
 }
@@ -409,6 +419,9 @@ if ($valgrind == 1) {
 } elsif ($verify == 1) {
     $threechars = "vfy";
     $morechars = "verify";
+} elsif ($llvm == 1) {
+    $threechars = "lvm";
+    $morechars = "llvm";
 } elsif ($examples == 1) {
     $threechars = "exm";
     if ($multilocale == 1) {
@@ -496,6 +509,11 @@ if ($makestat != 0) {
     $compperformance = 0;
     mysystem("cd $chplhomedir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
+
+# Speculatively build a couple third-party libraries. This command should not
+# fail, even if it fails to build the libraries.
+print "Making DEBUG=0 OPTIMIZE=1 third-party-try-opt\n";
+mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
 
 if ($buildruntime == 0) {
     $endtime = localtime;
@@ -632,6 +650,9 @@ if ($nolocal == 1) {
 if ($verify == 1) {
     $testflags = "$testflags -compopts --verify";
 }
+if ($llvm == 1) {
+    $testflags = "$testflags -compopts --llvm";
+}
 if (!($suppressions eq "")) {
     $testflags = "$testflags -suppress $suppressions";
 }
@@ -688,7 +709,7 @@ if ($runtests == 0) {
         print "Executing $testcommand\n";
         $status = mysystem($testcommand, "running standard tests", 0, 0);
         print "Moving the log and summary files\n";
-        mysystem("cd $testdir && mv -v $rawlog $permlog && mv -v $rawsummary $permsum", "moving the log files", 0, 0);
+        mysystem("cd $testdir && cp -v $rawlog $permlog && rm $rawlog && cp -v $rawsummary $permsum && rm $rawsummary", "moving the log files", 0, 0);
         $rawlog = $permlog;
         $rawsummary = $permsum;
     } else {

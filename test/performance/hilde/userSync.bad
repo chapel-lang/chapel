@@ -1,6 +1,0 @@
-Called visitLocales().
-Called visitLocales().
-Called visitLocales().
-Called visitLocales().
-Called visitLocales().
-(get = 40, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 8, fork = 4, fork_fast = 0, fork_nb = 4) (get = 6, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 2, fork = 2, fork_fast = 0, fork_nb = 0) (get = 6, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 2, fork = 2, fork_fast = 0, fork_nb = 0) (get = 6, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 2, fork = 2, fork_fast = 0, fork_nb = 0) (get = 6, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 2, fork = 2, fork_fast = 0, fork_nb = 0)

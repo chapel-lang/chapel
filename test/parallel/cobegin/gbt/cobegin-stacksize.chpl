@@ -22,4 +22,4 @@ cobegin {
   sum1$ = recursive_sum(depth);
 }
 
-writeln("sums are ", sum1$, ", ", sum2$);
+writeln("sums are ", sum1$.readFF(), ", ", sum2$.readFF());
