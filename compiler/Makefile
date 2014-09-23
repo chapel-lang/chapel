@@ -104,7 +104,7 @@ CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_PREFIX)-$(CHPL_MAKE_COMPILER_SUBDIR)
 
 UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
-$(BUILD_VERSION_FILE):
+$(BUILD_VERSION_FILE): FORCE
 	@({ test -x $(CHPL_MAKE_HOME)/.git || test -x $(CHPL_MAKE_HOME)/.svn ; } && \
 	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || (echo '"0"' > $@);
 
