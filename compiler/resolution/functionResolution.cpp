@@ -961,7 +961,8 @@ static bool fits_in_int_helper(int width, int64_t val) {
     case 32:
       return (val >= INT32_MIN && val <= INT32_MAX);
     case 64:
-      return (val >= INT64_MIN && val <= INT64_MAX);
+      // As an int64_t will always fit within a 64 bit int.
+      return true;
   }
 }
 
@@ -1007,7 +1008,8 @@ static bool fits_in_uint_helper(int width, uint64_t val) {
   case 32:
     return (val <= UINT32_MAX);
   case 64:
-    return (val <= UINT64_MAX);
+    // As a uint64_t will always fit inside a 64 bit uint.
+    return true;
   }
 }
 

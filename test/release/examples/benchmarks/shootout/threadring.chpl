@@ -42,11 +42,12 @@ proc main() {
 proc passTokens(id) {
   while (true) {
     const t = token$[id];
-    if t <= n {
-      token$[id%nthreads+1] = t+1;
-    } else {
+    token$[id%nthreads+1] = t+1;
+    if t == n + 1 {
       writeln(id);
-      exit(0);
+      return;
+    } else if t > n {
+      return;
     }
   }
 }
