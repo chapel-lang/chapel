@@ -15,6 +15,6 @@ var a: (t, t, t);
 writeln("created it");
 a(1) = true;
 writeln("set sync tuple field");
-writeln("sync value is: ", a(1));
+writeln("sync value is: ", a(1).readFE());
 writeln("read it");
 finished = true;

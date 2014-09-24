@@ -48,13 +48,14 @@ MAKEFLAGS = --no-print-directory
 
 export CHPL_MAKE_HOME=$(shell pwd)
 
-default: third-party-try-opt all
+default: all
 
 all: comprt
 	@test -r Makefile.devel && $(MAKE) develall || echo ""
 
 comprt: FORCE
 	@$(MAKE) compiler
+	@$(MAKE) third-party-try-opt
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -74,14 +75,12 @@ third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
 	-@if [ -z "$$CHPL_REGEXP" ]; then \
-	echo "Speculatively attempting to build re2"; \
-	cd third-party && $(MAKE) re2; \
+	cd third-party && $(MAKE) try-re2; \
 	fi
 
 third-party-try-gmp: FORCE
 	-@if [ -z "$$CHPL_GMP" ]; then \
-	echo "Speculatively attempting to build gmp"; \
-	cd third-party && $(MAKE) gmp; \
+	cd third-party && $(MAKE) try-gmp; \
 	fi
 
 clean: FORCE

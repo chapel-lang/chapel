@@ -7,7 +7,7 @@ locModel=$($CHPL_HOME/util/chplenv/chpl_locale_model.py)
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 
 case $target in
-  linux*|cray-xc|cray-xe)
+  linux*|cray-xc|cray-xe|cygwin)
     case $locModel-$tasks in
       *-fifo|*-massivethreads|flat-qthreads)
         numPUs=$( grep -c '^processor[[:space:]]\+: ' /proc/cpuinfo )

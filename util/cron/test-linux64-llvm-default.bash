@@ -5,10 +5,6 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
+source $CWD/common-llvm.bash
 
-export CHPL_LLVM=llvm
-
-# Run hellos and test/extern/ferguson/.
-export CHPL_START_TEST_ARGS="release/examples/hello*.chpl extern/ferguson"
-
-$CWD/nightly -cron -llvm
+$CWD/nightly -cron ${nightly_args}

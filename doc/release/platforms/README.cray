@@ -323,10 +323,10 @@ Native Runtime Layers
 
 The README.multilocale and README.tasking files describe a variety of
 communication and tasking layers that can be used by Chapel programs.
-By default, Chapel programs on Cray systems use the GASNet
-communication layer and the FIFO tasking layer.  There are several
-other tasking layers available that can also be used with the GASNet
-communication layer.
+By default, Chapel programs on Cray systems use the GASNet communication
+layer and the qthreads tasking layer.  There are several other tasking
+layers available that can also be used with the GASNet communication
+layer.
 
 In addition to the standard runtime layers available in any Chapel
 release, the pre-built Chapel modules for Cray XC, XE, and XK series
@@ -416,7 +416,7 @@ runtime layers for Cray X* systems.  Here are those parameters and their
 default values:
 
     CHPL_RT_CALL_STACK_SIZE        : 8 MiB (see README.executing)
-    CHPL_RT_NUM_HARDWARE_THREADS   : number of cores per locale
+    CHPL_RT_NUM_HARDWARE_THREADS   : number of physical CPUs per locale
     CHPL_RT_NUM_THREADS_PER_LOCALE : 16 * CHPL_RT_NUM_HARDWARE_THREADS
     CHPL_RT_COMM_CONCURRENCY       : CHPL_RT_NUM_HARDWARE_THREADS
 

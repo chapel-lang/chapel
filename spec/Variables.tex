@@ -53,8 +53,8 @@ tuple-grouped-identifier-list:
 \end{syntax}
 A \sntx{variable-declaration-statement} is used to define one or more
 variables.  If the statement is a top-level module statement, the
-variables are global; otherwise they are local.  Global variables are
-discussed in~\rsec{Global_Variables}.  Local variables are discussed
+variables are module level; otherwise they are local.  Module level variables are
+discussed in~\rsec{Module_Level_Variables}.  Local variables are discussed
 in~\rsec{Local_Variables}.
 
 The optional keyword \chpl{config} specifies that the variables are
@@ -281,24 +281,23 @@ to avoid unintentional changes to their \emph{full}/\emph{empty}
 state.
 \end{rationale}
 
-\section{Global Variables}
-\label{Global_Variables}
-\index{variables!global}
+\section{Module Level Variables}
+\label{Module_Level_Variables}
+\index{variables!module level}
 
 Variables declared in statements that are in a module but not in a
-function or block within that module are global variables.  Global
-variables can be accessed anywhere within that module after the
-declaration of that variable.  They can also be accessed in other
-modules that use that module.
+function or block within that module are module level variables.
+Module level variables can be accessed anywhere within that module
+after the declaration of that variable.  They can also be accessed
+in other modules that use that module.
 
 \section{Local Variables}
 \label{Local_Variables}
 \index{variables!local}
 
-Local variables are variables that are not global.  Local variables
-are declared within block statements.  They can only be accessed
-within the scope of that block statement (including all inner nested
-block statements and functions).
+Local variables are declared within block statements.  They can only
+be accessed within the scope of that block statement (including all
+inner nested block statements and functions).
 
 A local variable only exists during the execution of code that lies
 within that block statement.  This time is called the lifetime of the
@@ -357,7 +356,7 @@ Parameter expressions are restricted to the following constructs:
  The conditional expression where the condition is a parameter and the
  then- and else-expressions are parameters.
 \item
- Call expressions of parameter functions.  See~\rsec{Parameter_Functions}.
+ Call expressions of parameter functions.  See~\rsec{Param_Return_Intent}.
 \end{itemize}
 
 \subsection{Runtime Constants}
@@ -386,7 +385,7 @@ If the keyword \chpl{config} precedes the
 keyword \chpl{var}, \chpl{const}, or \chpl{param}, the variable,
 constant, or parameter is called a configuration variable,
 configuration constant, or configuration parameter respectively.  Such
-variables, constants, and parameters must be global.
+variables, constants, and parameters must be at the module level.
 
 The initialization of these variables can be set via implementation
 dependent means, such as command-line switches or environment
