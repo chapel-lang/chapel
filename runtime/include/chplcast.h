@@ -62,24 +62,9 @@ _complex64 c_string_to_complex64(c_string str, int lineno, c_string filename);
 _complex128 c_string_to_complex128(c_string str, int lineno, c_string filename);
 
 
-#if 0
 /* every other primitive type to string */
-c_string_copy int8_t_to_c_string(int8_t x);
-c_string_copy int16_t_to_c_string(int16_t x);
-c_string_copy int32_t_to_c_string(int32_t x);
-c_string_copy int64_t_to_c_string(int64_t x);
-c_string_copy uint8_t_to_c_string(uint8_t x);
-c_string_copy uint16_t_to_c_string(uint16_t x);
-c_string_copy uint32_t_to_c_string(uint32_t x);
-c_string_copy uint64_t_to_c_string(uint64_t x);
-c_string_copy _real32_to_c_string(_real32 x);
-c_string_copy _real64_to_c_string(_real64 x);
-c_string_copy _imag32_to_c_string(_imag32 x);
-c_string_copy _imag64_to_c_string(_imag64 x);
-#else
 c_string_copy integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned);
 c_string_copy real_to_c_string_copy(_real64 x, chpl_bool isImag);
-#endif
 
 // Since Chapel's type system treats c_string and c_string_copy as distinct
 // types, we could rely on the Chapel compiler doing the right thing if these
@@ -90,6 +75,7 @@ c_string_copy real_to_c_string_copy(_real64 x, chpl_bool isImag);
 // respected, so we can free dynamically-allocated C strings and avoid freeing
 // statically-allocated ones.  The easiest approach is probably to call these
 // (and other type##_to_c_string functions) from module code.
+// TODO: Can we use the pattern above, to reduce the number of interfaces required?
 static ___always_inline
 c_string chpl_bool_to_c_string(chpl_bool x) {
   return x ? "true" : "false";
@@ -134,4 +120,4 @@ chpl_string c_string_to_chpl_string(c_string s, int lineno, c_string filename) {
   return ret; // leaky? No. (see above)
 }
 
-#endif
+#endif // _chplcast_h_

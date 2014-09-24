@@ -545,14 +545,17 @@ module ChapelIO {
   }
   
   class StringWriter: Writer {
-    var s: c_string = "";
+    var s: c_string_copy; // Should be initialized to NULL.
+    proc StringWriter(x:c_string) {
+      this.s = __primitive("string_copy", x);
+    }
     proc writePrimitive(x) {
       const orig = this.s;
-      this.s += (x:c_string);
-      if orig.length != 0 then chpl_free_c_string(orig);
+      this.s += (x:c_string_copy);
+      chpl_free_c_string(orig);
     }
     proc ~StringWriter() {
-      if this.s.length != 0 then chpl_free_c_string(this.s);
+      chpl_free_c_string(this.s);
     }
   }
   

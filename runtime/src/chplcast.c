@@ -345,27 +345,6 @@ _define_string_to_real_type(complex, 64)
 _define_string_to_real_type(complex, 128)
 
 
-#if 0
-/*
- *  int and uint to string
- */
-#define integral_to_string(type, format)        \
-  c_string_copy type##_to_c_string(type x) {    \
-    char buffer[256];                           \
-    sprintf(buffer, format, x);                 \
-    return string_copy(buffer, 0, NULL);        \
-  }
-
-integral_to_string(int8_t, "%" PRId8)
-integral_to_string(int16_t, "%" PRId16)
-integral_to_string(int32_t, "%" PRId32)
-integral_to_string(int64_t, "%" PRId64)
-integral_to_string(uint8_t, "%" PRIu8)
-integral_to_string(uint16_t, "%" PRIu16)
-integral_to_string(uint32_t, "%" PRIu32)
-integral_to_string(uint64_t, "%" PRIu64)
-
-#else
 c_string_copy
 integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
 {
@@ -386,7 +365,6 @@ integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
   sprintf(buffer, format, x);
   return string_copy(buffer, 0, NULL);
 }
-#endif
 
 /*
  *  real and imag to string
@@ -404,54 +382,27 @@ static char* ensureDecimal(char* buffer) {
 #define NEGINFSTRING "-inf"
 #define POSINFSTRING "inf"
 
-#if 0
-// the above strings are copied below so the return value of real_to_string
-// can be freed unconditionally
-#define real_to_string(type, format)           \
-  c_string_copy type##_to_c_string(type x) {  \
-    if (isnan(x)) {                            \
-      return string_copy(NANSTRING, 0, NULL);  \
-    } else if (isinf(x)) {                     \
-      if (x < 0) {                             \
-        return string_copy(NEGINFSTRING, 0, NULL);  \
-      } else {                                 \
-        return string_copy(POSINFSTRING, 0, NULL);  \
-      }                                        \
-    } else {                                   \
-      char buffer[256];                        \
-      sprintf(buffer, format, x);              \
-      ensureDecimal(buffer);                   \
-      return string_copy(buffer, 0, NULL);     \
-    }                                          \
-  }
-
-real_to_string(_real32, "%lg")
-real_to_string(_real64, "%lg")
-real_to_string(_imag32, "%lgi")
-real_to_string(_imag64, "%lgi")
-#else
 // Note: This function is thread-safe, since the stack-allocated buffer is
 // private to the thread, and each returned c_string_copy is a unique object.
 c_string_copy
 real_to_c_string_copy(_real64 x, chpl_bool isImag)
 {
   if (isnan(x)) {
-      return string_copy(NANSTRING, 0, NULL);
-    } else if (isinf(x)) {
-      if (x < 0) {
-        return string_copy(NEGINFSTRING, 0, NULL);
-      } else {
-        return string_copy(POSINFSTRING, 0, NULL);
-      }
+    return string_copy(NANSTRING, 0, NULL);
+  } else if (isinf(x)) {
+    if (x < 0) {
+      return string_copy(NEGINFSTRING, 0, NULL);
     } else {
-      char buffer[256];
-      char* last;
-
-      sprintf(buffer, "%lg", x);
-      last = ensureDecimal(buffer);
-      if (isImag)
-        strcat(last, "i");
-      return string_copy(buffer, 0, NULL);
+      return string_copy(POSINFSTRING, 0, NULL);
     }
- }
-#endif
+  } else {
+    char buffer[256];
+    char* last;
+
+    sprintf(buffer, "%lg", x);
+    last = ensureDecimal(buffer);
+    if (isImag)
+      strcat(last, "i");
+    return string_copy(buffer, 0, NULL);
+  }
+}

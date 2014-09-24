@@ -1090,8 +1090,13 @@ record ioNewline {
     f.write("\n");
   }
 }
+
 inline proc _cast(type t, x: ioNewline) where t == c_string {
   return "\n";
+}
+
+inline proc _cast(type t, x: ioNewline) where t == c_string_copy {
+  return __primitive("string_copy", "\n");
 }
 
 // Used to represent a constant string we want to read or write...
@@ -1105,8 +1110,11 @@ record ioLiteral {
 }
 
 inline proc _cast(type t, x: ioLiteral) where t == c_string {
-  // FIX ME: should this be copied?
   return x.val;
+}
+
+inline proc _cast(type t, x: ioLiteral) where t == c_string_copy {
+  return __primitive("string_copy", x.val);
 }
 
 // Used to represent some number of bits we want to read or write...

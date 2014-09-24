@@ -137,52 +137,75 @@ module String {
   
   // cast to and from Chapel strings use c_string
   pragma "compiler generated"
-  inline proc _cast(type t, x) where t == string && x.type != c_string {
-    // Caution: The result of a cast to c_string does not necessarily own the string data
-    // it contains.  Therefore it must not be freed.
-    // TODO: Rework the interface to _cast(c_string, x) so it guarantees one or
-    // the other.
+  inline proc _cast(type t, x) where t == string {
     const cs = _cast(c_string_copy, x);
     // Note, this uses a non-allocating toString(), and steals cs (no need to free).
     const ret = toString(cs);
     return ret;
   }
 
-  pragma "compiler generated"
-  inline proc _cast(type t, x: string) where t != c_string
+  // Using a != in a where clause is dangerous.
+  // Better to add the cases that are needed explicitly.
+  //  pragma "compiler generated"
+  //  inline proc _cast(type t, x: string) where t != c_string
+  //    return _cast(t, x.c_str());
+
+  inline proc _cast(type t, x: string)
+    where isBoolType(t) || isNumericType(t)
     return _cast(t, x.c_str());
-  
-  inline proc _cast(type t, x: c_string) where _isPrimitiveType(t) && t!=string
-    return __primitive("cast", t, x);
+
+  inline proc _cast(type t, x:c_string) where isBoolType(t)
+  {
+    extern proc c_string_to_chpl_bool(x:c_string, lineno:int, filename:c_string) : bool;
+    // TODO: Need compiler filename/lineno primitives.
+    return c_string_to_chpl_bool(x, 0, "") : t;
+  }
 
   //
-  // casts to complex
+  // casts from c_string to integer types
   //
-  inline proc _cast(type t, x: c_string) where isComplexType(t)
-    return __primitive("cast", t, x);
-  
-  //
-  // casts to imag
-  //
-  inline proc _cast(type t, x: c_string) where isImagType(t)
-    return __primitive("cast", t, x);
-  
+  extern proc c_string_to_int8_t  (x:c_string, line:int, file:c_string) : int(8); 
+  extern proc c_string_to_int16_t (x:c_string, line:int, file:c_string) : int(16);
+  extern proc c_string_to_int32_t (x:c_string, line:int, file:c_string) : int(32);
+  extern proc c_string_to_int64_t (x:c_string, line:int, file:c_string) : int(64);
+  extern proc c_string_to_uint8_t (x:c_string, line:int, file:c_string) : uint(8); 
+  extern proc c_string_to_uint16_t(x:c_string, line:int, file:c_string) : uint(16);
+  extern proc c_string_to_uint32_t(x:c_string, line:int, file:c_string) : uint(32);
+  extern proc c_string_to_uint64_t(x:c_string, line:int, file:c_string) : uint(64);
+  inline proc _cast(type t, x:c_string) where t == int(8)
+    return c_string_to_int8_t  (x, 0, "");
+  inline proc _cast(type t, x:c_string) where t == int(16)
+    return c_string_to_int16_t (x, 0, "");
+  inline proc _cast(type t, x:c_string) where t == int(32)
+    return c_string_to_int32_t (x, 0, "");
+  inline proc _cast(type t, x:c_string) where t == int(64)
+    return c_string_to_int64_t (x, 0, "");
+  inline proc _cast(type t, x:c_string) where t == uint(8)
+    return c_string_to_uint8_t (x, 0, "");
+  inline proc _cast(type t, x:c_string) where t == uint(16)
+    return c_string_to_uint16_t(x, 0, "");
+  inline proc _cast(type t, x:c_string) where t == uint(32)
+    return c_string_to_uint32_t(x, 0, "");
+  inline proc _cast(type t, x:c_string) where t == uint(64)
+    return c_string_to_uint64_t(x, 0, "");
+
   //
   // casts from complex
   //
-  inline proc _cast(type t, x: complex(?w)) where t == c_string {
+  inline proc _cast(type t, x: complex(?w)) where t == c_string_copy {
     if isnan(x.re) || isnan(x.im) then
-      return "nan";
-    var re = (x.re):c_string;
-    var im, op: c_string;
+      return __primitive("string_copy", "nan");
+    var re = (x.re):c_string_copy;
+    var im: c_string;
+    var op: c_string;
     if x.im < 0 {
-      im = (-x.im):c_string;
+      im = (-x.im):c_string_copy;
       op = " - ";
     } else if im == "-0.0" {
       im = "0.0";
       op = " - ";
     } else {
-      im = (x.im):c_string;
+      im = (x.im):c_string_copy;
       op = " + ";
     }
     const ts0 = re + op;
@@ -239,6 +262,7 @@ module CString {
   // The following method is called by the compiler to determine the default
   // value of a given type.
   inline proc _defaultOf(type t) param where t: c_string return "":c_string;
+  inline proc _defaultOf(type t) where t == c_string_copy return _nullString;
 
   inline proc toString(cstr:c_string):string {
     return __primitive("string_from_c_string", cstr, 0, 0);
@@ -340,6 +364,18 @@ module CString {
     __primitive("=", a, toString(b));
   }
 
+  // Create a fresh copy of the RHS string.
+  inline proc =(ref a: c_string_copy, b: c_string) {
+    chpl_free_c_string(a);
+    var c = __primitive("string_copy", b);
+    __primitive("=", a, c);
+  }
+  // Assume ownership of data brought by the RHS.
+  inline proc =(ref a: c_string_copy, b: c_string_copy) {
+    __primitive("=", a, b);
+    // Caution: the RHS should be treated as a c_string after this.
+  }
+
   inline proc _cast(type t, x: c_string) where t == string {
     return toString(x);
   }
@@ -348,14 +384,21 @@ module CString {
     return x.c_str();
   }
 
+  inline proc _cast(type t, x: string) where t == c_string_copy {
+    return __primitive("string_copy", x);
+  }
+
   // A c_string_copy can always be used as a c_string.
   inline proc _cast(type t, x: c_string_copy) where t == c_string {
     return x;
   }
 
+  extern proc chpl_bool_to_c_string(x:bool) : c_string;
   inline proc _cast(type t, x: bool(?w)) where t == c_string {
-    extern proc chpl_bool_to_c_string(x:bool) : c_string;
     return chpl_bool_to_c_string(x:bool);
+  }
+  inline proc _cast(type t, x: bool(?w)) where t == c_string_copy {
+    return __primitive("string_copy", chpl_bool_to_c_string(x:bool));
   }
 
   inline proc _cast(type t, x:integral) where t == c_string_copy {
@@ -363,7 +406,7 @@ module CString {
     return integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
   }
 
-  extern proc real_to_c_string_copy(x:real(64), isImag: bool);
+  extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy ;
   inline proc _cast(type t, x:real(?w)) where t == c_string_copy {
     return real_to_c_string_copy(x:real(64), false);
   }
