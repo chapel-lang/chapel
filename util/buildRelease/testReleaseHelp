@@ -69,8 +69,8 @@ if ($versionstatus != 0) then
     echo "ERROR: execution of chpl --version failed"
     exit($versionstatus)
 endif
-if ($version_string != "${expected_version_string}") then
-    echo "ERROR: unexpected version string, received \"${version_string}\" expected \"${expected_version_string}\""
+if ($version_string != "$expected_version_string") then
+    echo "ERROR: unexpected version string, received '$version_string' expected '$expected_version_string'"
     exit(1)
 endif
 
