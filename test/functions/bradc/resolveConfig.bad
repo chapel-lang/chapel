@@ -1,0 +1,1 @@
+resolveConfig.chpl:13: error: use of 'n' before encountering its definition, type unknown
