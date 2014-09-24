@@ -999,8 +999,6 @@ static bool fits_in_int(int width, Immediate* imm) {
 static bool fits_in_uint_helper(int width, uint64_t val) {
   switch (width) {
   default: INT_FATAL("bad width in fits_in_uint_helper");
-  case 1:
-    return (val <= 1);
   case 8:
     return (val <= UINT8_MAX);
   case 16:
