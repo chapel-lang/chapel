@@ -5237,6 +5237,11 @@ preFold(Expr* expr) {
           name = field->name;
         }
       }
+      if (!name) {
+        // In this case, we ran out of fields without finding the number
+        // specified.  This is the user's error.
+        USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
+      }
       result = new SymExpr(new_StringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
