@@ -165,8 +165,6 @@ narrowField(Symbol* field, WideInfo* wi) {
     return;
   }
 
-//  INT_ASSERT(defMap.get(field) == NULL);
-
   //
   // The following code is a work in progress to try to narrow fields.
   //
@@ -447,8 +445,8 @@ narrowWideReferences() {
   form_Map(WideInfoMapElem, e, *wideInfoMap) {
     delete e->value;
   }
-  delete wideInfoMap;
-  delete widenMap;
+  delete wideInfoMap; wideInfoMap = 0;
+  delete widenMap; widenMap = 0;
 
   freeDefUseMaps(defMap, useMap);
 
@@ -493,7 +491,10 @@ static void narrowVarsArgsFieldsInMap(Map<Symbol*,Vec<SymExpr*>*>& defMap,
       if (isFnSymbol(var->defPoint->parentSymbol))
         narrowSym(var, wi, defMap, useMap);
       else if (isTypeSymbol(var->defPoint->parentSymbol))
+      {
+        INT_ASSERT(defMap.get(var) == NULL);
         narrowField(var, wi);
+      }
       else
         wi->mustBeWide = true;
     }
