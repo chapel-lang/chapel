@@ -22,7 +22,6 @@
 
 #ifdef __cplusplus
 extern "C" {
-
 #endif
 
 // This macro set to obtain the portable format macro PRIu64 for debug output.
