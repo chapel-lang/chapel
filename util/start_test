@@ -1736,10 +1736,11 @@ set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
 
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 if ($clean_only == 0) then
-    grep "$errormarker" $logfile |& $tee -a $logfile.summary
+    grep "$errormarker" $logfile |& $tee -a $logfile.summary >/dev/null
     if ($suppressions != "") then
         $utildir/test/filterSuppressions $suppressions $logfile.summary
     endif
+    grep "$errormarker" $logfile.summary
 
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
     grep "$warningmarker" $logfile |& $tee -a $logfile.summary
