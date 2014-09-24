@@ -35,6 +35,7 @@ echo ""
 
 # Show me the environment!
 $CHPL_HOME/util/printchplenv
+echo ""
 
 # Check for tabs.
 num_tabs=$($CHPL_HOME/util/devel/lookForTabs | wc -l)
