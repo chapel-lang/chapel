@@ -351,7 +351,14 @@ if ($debug == 1) {
     $nochangerecipient = $debugmail;
 } else {
     $subjectid = "Cron$subjectid";
-    $recipient = "$failuremail $allmail";
+
+    # "email", the mailer program used on cygwin platform, requires multiple
+    # recipient addresses to be comma delimited instead of space delimited.
+    if ($mailer eq "email") {
+        $recipient = "$failuremail,$allmail";
+    } else {
+        $recipient = "$failuremail $allmail";
+    }
     $nochangerecipient = $allmail;
 }
 
@@ -502,6 +509,11 @@ if ($makestat != 0) {
     $compperformance = 0;
     mysystem("cd $chplhomedir && $make DEBUG=0 compiler", "making chapel compiler", 1, 1);
 }
+
+# Speculatively build a couple third-party libraries. This command should not
+# fail, even if it fails to build the libraries.
+print "Making DEBUG=0 OPTIMIZE=1 third-party-try-opt\n";
+mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
 
 if ($buildruntime == 0) {
     $endtime = localtime;
@@ -697,7 +709,7 @@ if ($runtests == 0) {
         print "Executing $testcommand\n";
         $status = mysystem($testcommand, "running standard tests", 0, 0);
         print "Moving the log and summary files\n";
-        mysystem("cd $testdir && mv -v $rawlog $permlog && mv -v $rawsummary $permsum", "moving the log files", 0, 0);
+        mysystem("cd $testdir && cp -v $rawlog $permlog && rm $rawlog && cp -v $rawsummary $permsum && rm $rawsummary", "moving the log files", 0, 0);
         $rawlog = $permlog;
         $rawsummary = $permsum;
     } else {

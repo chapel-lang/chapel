@@ -97,8 +97,12 @@ parallelism to be specified using the following built-in configuration
 constants:
 
   dataParTasksPerLocale       : Number of Chapel tasks to use to execute
-                                forall loops (default: number of cores on
-                                the CPU).
+                                forall loops (default: number of physical
+                                CPUs on the node, which may be reduced by
+                                CHPL_RT_NUM_THREADS_PER_LOCALE; in qthreads
+                                tasking CHPL_RT_NUM_THREADS_PER_LOCALE can
+                                also increase this, up to the number of
+                                logical CPUs).
 
   dataParIgnoreRunningTasks   : If true, always use dataParTasksPerLocale
                                 tasks to execute forall loops.  If false,
@@ -241,11 +245,10 @@ support, please let us know so that we can prioritize accordingly.
 Flags for Tracking Tasks
 ------------------------
 
-For certain tasking layers, such as the default fifo/pthreads
-implementation, Chapel supports a few experimental capabilities for
-tracking the status of tasks, primarily designed for use in a
-single-locale execution.  These flags add a fair amount of runtime
-overhead to task parallel programs. The flags are as follows:
+For certain tasking layers Chapel supports a couple of experimental
+capabilities for tracking the status of tasks, primarily designed for
+use in a single-locale execution.  These flags add a fair amount of
+runtime overhead to task parallel programs. The flags are as follows:
 
   -b, --blockreport : when Ctrl-C is entered during a program
                       executing under this flag, it will display a
@@ -253,13 +256,14 @@ overhead to task parallel programs. The flags are as follows:
                       synchronization variable.  Running with this
                       flag will also cause the executable to
                       automatically detect deadlock for single-locale
-                      executions.
+                      executions.  Both qthreads and fifo tasking
+                      support this.
 
   -t, --taskreport : When Ctrl-C is entered during a program executing
                      under this flag, a list of pending and executing
                      tasks will be printed to the screen, giving an
                      indication of which tasks are at which source
-                     locations.
+                     locations.  Only fifo tasking supports this.
 
 
 -------------------------------------------

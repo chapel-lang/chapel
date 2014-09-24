@@ -287,6 +287,8 @@ extern proc qio_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 extern proc qio_cwd(ref working_dir:c_string):syserr;
 extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
 extern proc qio_file_remove(name: c_string):syserr;
+extern proc qio_is_dir(ref result:c_int, name: c_string):syserr;
+extern proc qio_is_file(ref result:c_int, name: c_string):syserr;
 extern proc qio_mkdir(name: c_string, mode: int, parents: bool):syserr;
 
 pragma "no prototype" // FIXME
@@ -602,18 +604,24 @@ proc file._style:iostyle {
   return ret;
 }
 
-/* Change the current working directory to the specified name. Returns any
-   errors that occurred via an out parameter.
+/* Change the current working directory of the current locale to the specified
+   name. Returns any errors that occurred via an out parameter.
    err: a syserr used to indicate if an error occurred
    name: a string indicating a new directory
+
+   Note: this is not safe within a parallel context.  A chdir call in one task
+   will affect the current working directory of all tasks for that locale.
 */
 proc chdir(out err: syserr, name: string) {
   err = qio_chdir(name.c_str());
 }
 
-/* Change the current working directory to the specified name. Generates an
-   error if one occurred.
+/* Change the current working directory of the current locale to the specified
+   name. Generates an error if one occurred.
    name: a string indicating a new directory
+
+   Note: this is not safe within a parallel context.  A chdir call in one task
+   will affect the current working directory of all tasks for that locale.
 */
 proc chdir(name: string) {
   var err: syserr = ENOERR;
@@ -648,8 +656,12 @@ proc chown(name: string, uid: int, gid: int) {
   if err then ioerror(err, "in chown", name);
 }
 
-/* Returns the current working directory.
+/* Returns the current working directory for the current locale.
    err: a syserr used to indicate if an error occurred
+
+   Note: another task on this locale can change the current working
+   directory from underneath this task, so use caution when making use
+   of this function in a parallel environment.
 */
 proc cwd(out err: syserr): string {
   var tmp:c_string, ret:string;
@@ -660,7 +672,13 @@ proc cwd(out err: syserr): string {
   return ret;
 }
 
-/* Returns the current working directory. Generates an error if one occurred. */
+/* Returns the current working directory for the current locale. Generates an
+   error if one occurred.
+
+   Note: another task on this locale can change the current working
+   directory from underneath this task, so use caution when making use
+   of this function in a parallel environment.
+*/
 proc cwd(): string {
   var err: syserr = ENOERR;
   var ret = cwd(err);
@@ -746,6 +764,48 @@ proc file.length():int(64) {
   return len;
 }
 
+/* Returns true if the name corresponds to a directory, false otherwise.
+   err: a syserr used to indicate if an error occurred
+   name: a string that could be the name of a directory.
+*/
+proc isDir(out err:syserr, name:string):bool {
+  var ret:c_int;
+  err = qio_is_dir(ret, name.c_str());
+  return ret != 0;
+}
+
+/* Returns true if the name corresponds to a directory, false otherwise.
+   Generates an error if one occurs.
+   name: a string that could be the name of a directory.
+*/
+proc isDir(name:string):bool {
+  var err:syserr;
+  var ret = isDir(err, name);
+  if err then ioerror(err, "in isDir", name);
+  return ret;
+}
+
+/* Returns true if the name corresponds to a file, false otherwise.
+   err: a syserr used to indicate if an error occurred
+   name: a string that could be the name of a file.
+*/
+proc isFile(out err:syserr, name:string):bool {
+  var ret:c_int;
+  err = qio_is_file(ret, name.c_str());
+  return ret != 0;
+}
+
+/* Returns true if the name corresponds to a file, false otherwise.
+   Generates an error if one occurs.
+   name: a string that could be the name of a file.
+*/
+proc isFile(name:string):bool {
+  var err:syserr;
+  var ret = isFile(err, name);
+  if err then ioerror(err, "in isFile", name);
+  return ret;
+}
+
 /* These are constant values of the form S_I[R | W | X][USR | GRP | OTH],
    S_IRWX[U | G | O], S_ISUID, S_ISGID, or S_ISVTX, where R corresponds to
    readable, W corresponds to writable, X corresponds to executable, USR and
@@ -783,8 +843,15 @@ extern const S_ISVTX: int;
    parents: a boolean indicating if parent directories should be created.
             If set to false, any nonexistent parent will cause an error to
             occur.
+
+   Important note: In the case where parents is true, there is a potential
+   security vulnerability.  The existence of each parent directory is checked
+   before attempting to create it, and it is possible for an attacker to create
+   the directory in between the check and the intentional creation.  If this
+   should occur, an error about creating a directory that already exists will
+   be stored in err.
 */
-proc mkdir(out err: syserr, name: string, mode: int = 511,
+proc mkdir(out err: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
   err = qio_mkdir(name.c_str(), mode, parents);
 }
@@ -799,8 +866,15 @@ proc mkdir(out err: syserr, name: string, mode: int = 511,
    parents: a boolean indicating if parent directories should be created.
             If set to false, any nonexistent parent will cause an error to
             occur.
+
+   Important note: In the case where parents is true, there is a potential
+   security vulnerability.  The existence of each parent directory is checked
+   before attempting to create it, and it is possible for an attacker to create
+   the directory in between the check and the intentional creation.  If this
+   should occur, an error about creating a directory that already exists will
+   be generated.
 */
-proc mkdir(name: string, mode: int = 511, parents: bool=false) {
+proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   var err: syserr = ENOERR;
   mkdir(err, name, mode, parents);
   if err then ioerror(err, "in mkdir", name);

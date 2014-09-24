@@ -1057,6 +1057,23 @@ void _qio_file_destroy(qio_file_t* f)
   qio_free(f);
 }
 
+qioerr _qio_check_mode(int* ret, const char* name, int mode_flag) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = (buf.st_mode&mode_flag) != 0;
+  return 0;
+}
+
+qioerr qio_is_dir(int* ret, const char* name) {
+  return _qio_check_mode(ret, name, S_IFDIR);
+}
+
+qioerr qio_is_file(int* ret, const char* name) {
+  return _qio_check_mode(ret, name, S_IFREG);
+}
+
 /* Creates a directory with the given name and settings if possible,
    returning a qioerr if not. If parents != 0, then the callee wishes
    to create all interim directories necessary as well. */

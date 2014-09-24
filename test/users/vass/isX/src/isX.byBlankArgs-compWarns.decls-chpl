@@ -1,0 +1,109 @@
+// most contents are copied from
+//   isX.module-writeln.decls-chpl
+
+
+/////////////////////////////////////////////////////////////////////////////
+// declare some none-primitive types //
+
+enum EnumType {
+  eFirst,
+  eSecond,
+  eLast
+}
+const eInstance = EnumType.eSecond;
+
+type HomTupType = 3*int;
+const homInstance: HomTupType = (1011, 1012, 1013);
+
+type HetTupType = (int, real, string);
+const hetInstance = (101, 102.5, "hetInstance");
+
+class ClassType {
+  var zzz: int;
+}
+const cInstance = new ClassType(44444444);
+
+record RecordSmall {
+  var xxx: int;
+}
+const rSmall = new RecordSmall(xxx=600033);
+
+union UnionType {
+  var ufield111, ufield222: int;
+}
+var uInstanceVar: UnionType;
+uInstanceVar.ufield222 = 339933;
+const uInstance = uInstanceVar;
+
+type DomType1 = domain(1);
+const init1dom: DomType1 = {7770..7771};
+
+type DomType2 = domain(2, uint(32), true);
+const init2dom: DomType2 = {110001..110002:uint(32),
+                            330004..330033:uint(32) by 3};
+
+type ArrType1 = [init1dom] int;
+const init1arr: ArrType1 = 11011;
+
+type ArrType2 = [init2dom] uint(16);
+const init2arr: ArrType2; // TODO: = 5555;
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// declare our varaibles //
+
+var b0:  bool;
+var b8:  bool(8);
+var b16: bool(16);
+var b32: bool(32);
+var b64: bool(64);
+
+var i8:  int(8);
+var i16: int(16);
+var i32: int(32);
+var i64: int(64);
+
+var u8:  uint(8);
+var u16: uint(16);
+var u32: uint(32);
+var u64: uint(64);
+
+var r32:  real(32);
+var r64:  real(64);
+var m32:  imag(32);
+var m64:  imag(64);
+var z64:  complex(64);
+var z128: complex(128);
+
+var str:    string;
+var enm:    EnumType;
+var homtup: HomTupType;
+var hettup: HetTupType;
+
+var cls:  ClassType;
+var rec1: RecordSmall;
+var unn:  UnionType;
+
+var rng1: range;
+var rng2: range(uint(8), BoundedRangeType.boundedNone, true);
+var dmp = new dmap(new DefaultDist());
+var dom1: DomType1;
+var dom2: DomType2;
+var arr1: ArrType1;
+var arr2: ArrType2;
+
+var syInt:  sync int;
+var syReal: sync real;
+var siInt:  single int;
+var siReal: single real;
+var aInt:   atomic int;
+var aReal:  atomic real;
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+proc report(param is: bool, param msg: c_string) {
+  if is then compilerWarning(msg);
+}
+
