@@ -3156,7 +3156,8 @@ void resolveNormalCall(CallExpr* call) {
     }
   }
 
-  if (call->partialTag && (!best || !best->fn->hasFlag(FLAG_NO_PARENS))) {
+  if (call->partialTag && (!best || !best->fn ||
+                           !best->fn->hasFlag(FLAG_NO_PARENS))) {
     if (best != NULL) {
       delete best;
       best = NULL;
