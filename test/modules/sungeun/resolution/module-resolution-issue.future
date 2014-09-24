@@ -1,0 +1,9 @@
+bug: modules that are not explicitly used lead to resolution errors
+
+This is a nonsense program, but I believe it replicates a situation
+during internal module resolution.
+
+In this test, module M uses M0, but is not used by the main module (or
+any other module).  Resolution fails when trying to resolve the
+autocopy function for the record R (defined in M), which is dependent
+on a type alias defined in M0.
