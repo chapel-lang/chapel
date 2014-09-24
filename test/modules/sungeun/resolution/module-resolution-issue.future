@@ -1,4 +1,4 @@
-bug: modules that are not explicitly used 
+bug: modules that are not explicitly used lead to resolution errors
 
 This is a nonsense program, but I believe it replicates a situation
 during internal module resolution.
