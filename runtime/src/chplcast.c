@@ -345,6 +345,7 @@ _define_string_to_real_type(complex, 64)
 _define_string_to_real_type(complex, 128)
 
 
+#if 0
 /*
  *  int and uint to string
  */
@@ -364,25 +365,46 @@ integral_to_string(uint16_t, "%" PRIu16)
 integral_to_string(uint32_t, "%" PRIu32)
 integral_to_string(uint64_t, "%" PRIu64)
 
+#else
+c_string_copy
+integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
+{
+  char buffer[256];
+  const char* format;
+  enum {UNSIGNED = 0<<16, SIGNED = 1<<16 };
+  switch (SIGNED * isSigned + size)
+  {
+   case UNSIGNED + 1: format = "%" PRIu8;  break;
+   case UNSIGNED + 2: format = "%" PRIu16; break;
+   case UNSIGNED + 4: format = "%" PRIu32; break;
+   case UNSIGNED + 8: format = "%" PRIu64; break;
+   case   SIGNED + 1: format = "%" PRId8;  break;
+   case   SIGNED + 2: format = "%" PRId16; break;
+   case   SIGNED + 4: format = "%" PRId32; break;
+   case   SIGNED + 8: format = "%" PRId64; break;
+  }
+  sprintf(buffer, format, x);
+  return string_copy(buffer, 0, NULL);
+}
+#endif
+
 /*
  *  real and imag to string
  */
-static void ensureDecimal(char* buffer) {
-  /* add decimal if one does not exist */
+static char* ensureDecimal(char* buffer) {
+  char* last = buffer + strlen(buffer);
   if (!strchr(buffer, '.') && !strchr(buffer, 'e')) {
-    if (strchr(buffer, 'i')) {
-      buffer[strlen(buffer)-1] = '\0';
-      strcat(buffer, ".0i");
-    } else {
-      strcat(buffer, ".0");
-    }
+    strcat(buffer, ".0");
+    last += 2;
   }
+  return last;
 }
 
 #define NANSTRING "nan"
 #define NEGINFSTRING "-inf"
 #define POSINFSTRING "inf"
 
+#if 0
 // the above strings are copied below so the return value of real_to_string
 // can be freed unconditionally
 #define real_to_string(type, format)           \
@@ -407,3 +429,29 @@ real_to_string(_real32, "%lg")
 real_to_string(_real64, "%lg")
 real_to_string(_imag32, "%lgi")
 real_to_string(_imag64, "%lgi")
+#else
+// Note: This function is thread-safe, since the stack-allocated buffer is
+// private to the thread, and each returned c_string_copy is a unique object.
+c_string_copy
+real_to_c_string_copy(_real64 x, chpl_bool isImag)
+{
+  if (isnan(x)) {
+      return string_copy(NANSTRING, 0, NULL);
+    } else if (isinf(x)) {
+      if (x < 0) {
+        return string_copy(NEGINFSTRING, 0, NULL);
+      } else {
+        return string_copy(POSINFSTRING, 0, NULL);
+      }
+    } else {
+      char buffer[256];
+      char* last;
+
+      sprintf(buffer, "%lg", x);
+      last = ensureDecimal(buffer);
+      if (isImag)
+        strcat(last, "i");
+      return string_copy(buffer, 0, NULL);
+    }
+ }
+#endif

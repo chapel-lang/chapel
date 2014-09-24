@@ -62,6 +62,7 @@ _complex64 c_string_to_complex64(c_string str, int lineno, c_string filename);
 _complex128 c_string_to_complex128(c_string str, int lineno, c_string filename);
 
 
+#if 0
 /* every other primitive type to string */
 c_string_copy int8_t_to_c_string(int8_t x);
 c_string_copy int16_t_to_c_string(int16_t x);
@@ -75,14 +76,20 @@ c_string_copy _real32_to_c_string(_real32 x);
 c_string_copy _real64_to_c_string(_real64 x);
 c_string_copy _imag32_to_c_string(_imag32 x);
 c_string_copy _imag64_to_c_string(_imag64 x);
+#else
+c_string_copy integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned);
+c_string_copy real_to_c_string_copy(_real64 x, chpl_bool isImag);
+#endif
 
-// FIXME: The boolean conversions yield strings which may be statically
-// allocated, and must therefore not be freed.  
-// I recommend renaming these as chpl_bool_to_c_string_raw, etc. and supplying
-// wrappers that will return a dynamically-allocated copy of the static string.
 // Since Chapel's type system treats c_string and c_string_copy as distinct
-// types, we can rely on the Chapel compiler doing the right thing if these
+// types, we could rely on the Chapel compiler doing the right thing if these
 // routines are used as externs in module code.
+// TODO: Currently, they are called directly in codegen.  This is dangerous
+// because the C compiler treats the two types identically.
+// However, the distinction between c_string and c_string_copy should be
+// respected, so we can free dynamically-allocated C strings and avoid freeing
+// statically-allocated ones.  The easiest approach is probably to call these
+// (and other type##_to_c_string functions) from module code.
 static ___always_inline
 c_string chpl_bool_to_c_string(chpl_bool x) {
   return x ? "true" : "false";

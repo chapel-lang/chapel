@@ -292,7 +292,7 @@ module GMP {
   extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int, from:__gmp_randstate_struct);
   extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
   extern proc chpl_gmp_mpz_print(x:mpz_t);
-  extern proc chpl_gmp_mpz_get_str(base: c_int, x:mpz_t):c_string;
+  extern proc chpl_gmp_mpz_get_str(base: c_int, x:mpz_t):c_string_copy;
 
 
   enum Round {

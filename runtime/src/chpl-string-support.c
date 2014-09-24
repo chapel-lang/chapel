@@ -107,7 +107,6 @@ string_copy(c_string x, int32_t lineno, c_string filename)
   return strcpy(z, x);
 }
 
-
 c_string_copy
 string_concat(c_string x, c_string y, int32_t lineno, c_string filename) {
   char *z = (char*)chpltypes_malloc(strlen(x)+strlen(y)+1,
@@ -134,11 +133,12 @@ c_string_copy
 string_select(c_string x, int low, int high, int stride, int32_t lineno, c_string filename) {
   char* result = NULL;
   char* dst = NULL;
-  int size = high-low+1;
+  int size;
   c_string src;
 
   if (low  < 1) low = 1;
-  if (high < 1) return "";
+  if (high < low) high = low - 1;
+  size = high - low + 1;
 
   src = stride > 0 ? x + low - 1 : x + high - 1;
   result = chpltypes_malloc(size + 1, CHPL_RT_MD_STRING_SELECT_DATA,

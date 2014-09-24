@@ -5075,62 +5075,13 @@ GenRet CallExpr::codegen() {
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
       if (dst == src) {
+        // Maybe not right for chpl_strings.
+        // Definitely not right for dtStringCopy.
         ret = get(2);
       } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {
         GenRet v = codegenValue(get(2));
         // cast like this: (type) (intptr_t) v
         ret = codegenCast(typeInfo(), codegenCast("intptr_t", v));
-      } else if (dst == dtString || src == dtString ||
-                 dst == dtStringC || src == dtStringC) {
-        const char* dst_cname = dst->symbol->cname;
-        const char* src_cname = src->symbol->cname;
-        if (src == dtString && dst != dtStringC) {
-          src_cname = dtStringC->symbol->cname;
-        } else if (dst == dtString && src != dtStringC) {
-          dst_cname = dtStringC->symbol->cname;
-        }
-        std::string fn;
-        if( dst->symbol->cname[0] == '_' ) {
-          fn += src_cname;
-          fn += "_to";
-          fn += dst_cname;
-        } else {
-          fn += src_cname;
-          fn += "_to_";
-          fn += dst_cname;
-        }
-        if (src == dtString) {
-          if (dst == dtStringC) {
-            ret = codegenCallExpr("chpl_string_to_c_string",
-                                  get(2), get(3), get(4));
-          } else {
-            // convert string to c_string
-            ret = codegenCallExpr(fn.c_str(),
-                                  codegenCallExpr("chpl_string_to_c_string",
-                                                  get(2), get(3), get(4)),
-                                  get(3), get(4));
-          }
-        } else if (src == dtStringC) {
-          if (dst == dtString) {
-            // FIX ME: leak string
-            ret = codegenCallExpr("c_string_to_chpl_string",
-                                  get(2), get(3), get(4));
-          } else {
-            ret = codegenCallExpr(fn.c_str(), codegenValue(get(2)),
-                                  get(3), get(4));
-          }
-
-        } else { // other primitive type
-          if (dst == dtString) {
-            // FIX ME: leak string
-            ret = codegenCallExpr("c_string_to_chpl_string",
-                                  codegenCallExpr(fn.c_str(),
-                                                  codegenValue(get(2))),
-                                  get(3), get(4));
-          } else {
-            ret = codegenCallExpr(fn.c_str(), codegenValue(get(2)));
-          }
-        }
       } else {
         if (isRecord(typeInfo()) || isUnion(typeInfo())) {
           INT_FATAL("TODO - don't like type-punning record/union");

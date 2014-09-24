@@ -37,7 +37,11 @@ void chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl
 
 // implement string_from_c_string and c_string_from_string primitives.
 void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t len, int32_t lineno, c_string filename);
+chpl_string string_from_c_string_copy(c_string_copy str, int haslen, int64_t len);
 void wide_string_from_c_string(struct chpl_chpl____wide_chpl_string_s *ret, c_string str, int haslen, int64_t len, int32_t lineno, c_string filename);
+void wide_string_from_c_string_copy(struct chpl_chpl____wide_chpl_string_s *ret, c_string_copy str,
+                                    int haslen, int64_t len,
+                                    int32_t lineno, chpl_string filename);
 void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, c_string filename);
 void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_string_s* str, int32_t lineno, c_string filename);
 
@@ -51,6 +55,7 @@ void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_stri
 c_string stringMove(c_string dest, c_string src, int64_t len,
                     int32_t lineno, c_string filename);
 
+// TODO: Maybe rename as remoteStringGet.
 c_string_copy remoteStringCopy(c_nodeid_t src_locale,
                           c_string src_addr, int64_t src_len,
                           int32_t lineno, c_string filename);

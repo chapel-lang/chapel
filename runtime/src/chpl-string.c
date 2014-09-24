@@ -121,6 +121,16 @@ void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t le
   s[len] = '\0';
   *ret = s;
 }
+
+// The input is a c_string_copy, which always owns the bytes it points to.
+// On return, the string data is no longer owned by the c_string_copy
+// argument.  It is owned by the returned chpl_string instead.
+chpl_string
+string_from_c_string_copy(c_string_copy str, int haslen, int64_t len)
+{
+  return (chpl_string) str;
+}
+
 void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int haslen, int64_t len, int32_t lineno, chpl_string filename)
 {
   char* s;
@@ -140,10 +150,28 @@ void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int 
   ret->addr = s;
   ret->size = len + 1; // this size includes the terminating NUL
 }
+
+void wide_string_from_c_string_copy(chpl____wide_chpl_string *ret, c_string_copy str,
+                                    int haslen, int64_t len,
+                                    int32_t lineno, chpl_string filename)
+{
+  ret->locale = chpl_gen_getLocaleID();
+  if( str == NULL ) {
+    ret->addr = NULL;
+    ret->size = 0;
+    return;
+  }
+  if( ! haslen ) len = strlen(str);
+
+  ret->addr = str;
+  ret->size = len + 1; // this size includes the terminating NUL
+}
+
 void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, chpl_string filename)
 {
   *ret = *str;
 }
+
 void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int32_t lineno, chpl_string filename)
 {
   if( chpl_nodeID != chpl_rt_nodeFromLocaleID(str->locale) ) {
@@ -170,17 +198,10 @@ c_string stringMove(c_string dest, c_string src, int64_t len,
   char *ret;
   assert(src);
 
-  // TODO: Some versions of "" will be allocated while others will be exactly
-  // equal to the empty string literal, so this will leak memory.  Comparison
-  // should be pointer comparison with the (contents of the) singleton empty
-  // string literal.  Philosophical question: is it really worth the extra
-  // trouble to keep track of this special case?
-  if (!strcmp(dest, "")) {
-    ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
-  } else {
-    // reuse the buffer
-    ret = (char *) dest;
-  }
+  // reuse the buffer
+  // The cast is necessary so we can write into the buffer (which is declared
+  // to be const).
+  ret = (char *) dest;
 
   snprintf(ret, len+1, "%s", src);
   return (c_string) ret;

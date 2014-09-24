@@ -589,7 +589,7 @@ module ChapelIO {
   
   // C can't handle overloaded declarations, so just don't prototype this one.
   pragma "no prototype"
-  extern proc chpl_format(fmt: c_string, x): c_string;
+  extern proc chpl_format(fmt: c_string, x): c_string_copy;
   
   proc format(fmt: c_string, x:?t) where isIntegralType(t) || isFloatType(t) {
     if fmt.substring(1) == "#" {

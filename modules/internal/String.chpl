@@ -34,25 +34,22 @@ module String {
   // String concatenation
   inline proc +(s: string, x: string) {
     const cs = __primitive("string_concat", s.c_str(), x.c_str());
-    // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
-    chpl_free_c_string(cs);
+    // toString steals the c_string_copy, so no need to free it here.
     return ret;
   }
 
   inline proc +(s: c_string, x: string) {
     const cs = __primitive("string_concat", s, x.c_str());
-    // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
-    chpl_free_c_string(cs);
+    // toString steals the c_string_copy, so no need to free it here.
     return ret;
   }
 
   inline proc +(s: string, x: c_string) {
     const cs = __primitive("string_concat", s.c_str(), x);
-    // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
-    chpl_free_c_string(cs);
+    // toString steals the c_string_copy, so no need to free it here.
     return ret;
   }
 
@@ -104,16 +101,14 @@ module String {
   inline proc string.size return this.length;
   inline proc string.substring(i: int) {
     const cs = this.c_str().substring(i);
-    // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
-    if cs.length != 0 then chpl_free_c_string(cs);
+    // toString steals the returned c_string_copy, so no need to free it.
     return ret;
   }
   inline proc string.substring(r: range(?)) {
     const cs = this.c_str().substring(r);
-    // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(cs);
-    if cs.length != 0 then chpl_free_c_string(cs);
+    // toString steals the returned c_string_copy, so no need to free it.
     return ret;
   }
   
@@ -142,21 +137,19 @@ module String {
   
   // cast to and from Chapel strings use c_string
   pragma "compiler generated"
-  inline proc _cast(type t, x) where t==string && x.type != c_string {
+  inline proc _cast(type t, x) where t == string && x.type != c_string {
     // Caution: The result of a cast to c_string does not necessarily own the string data
     // it contains.  Therefore it must not be freed.
     // TODO: Rework the interface to _cast(c_string, x) so it guarantees one or
     // the other.
-    const cs = _cast(c_string, x);
+    const cs = _cast(c_string_copy, x);
+    // Note, this uses a non-allocating toString(), and steals cs (no need to free).
     const ret = toString(cs);
-    // This free is not safe because ownership of the c_string returned by the
-    // _cast above is ambiguous.
-    //    chpl_free_c_string(cs);
     return ret;
   }
 
   pragma "compiler generated"
-  inline proc _cast(type t, x: string) where t !=c_string
+  inline proc _cast(type t, x: string) where t != c_string
     return _cast(t, x.c_str());
   
   inline proc _cast(type t, x: c_string) where _isPrimitiveType(t) && t!=string
@@ -254,6 +247,17 @@ module CString {
     return __primitive("string_from_c_string", cstr, 1, len);
   }
 
+  // These routines consume the c_string_copy argument.  In terms of MM, this
+  // is the same as if the caller had called chpl_free_string_copy()
+  extern proc string_from_c_string_copy(cstrc:c_string_copy,
+                                        hasLen:bool, len:int) : string;
+  inline proc toString(cstrc:c_string_copy) : string {
+    return string_from_c_string_copy(cstrc, false, 0);
+  }
+  inline proc toString(cstrc:c_string_copy, len:int) : string {
+    return string_from_c_string_copy(cstrc, true, len);
+  }
+
   // WARNING: The bytes pointed to by the c_string return value are still owned
   // by the "this" operand.  The returned c_string should not be freed!
   inline proc string.c_str():c_string {
@@ -324,14 +328,10 @@ module CString {
     return (__primitive("string_compare", a, b) > 0);
   }
 
-  // DANGER! Memory is shared between c_strings assigned thus.  Only one (at
-  // most) can be safely freed.
   inline proc =(ref a: c_string, b: c_string) {
     __primitive("=", a, b);
   }
 
-  // DANGER! The c_string on the LHS does not own the string it contains after
-  // this assignment.
   inline proc =(ref a: c_string, b: string) {
     __primitive("=", a, b.c_str());
   }
@@ -344,9 +344,31 @@ module CString {
     return toString(x);
   }
 
-  // DANGER, the result of this cast is an unowned c_string.
   inline proc _cast(type t, x: string) where t == c_string {
     return x.c_str();
+  }
+
+  // A c_string_copy can always be used as a c_string.
+  inline proc _cast(type t, x: c_string_copy) where t == c_string {
+    return x;
+  }
+
+  inline proc _cast(type t, x: bool(?w)) where t == c_string {
+    extern proc chpl_bool_to_c_string(x:bool) : c_string;
+    return chpl_bool_to_c_string(x:bool);
+  }
+
+  inline proc _cast(type t, x:integral) where t == c_string_copy {
+    extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy ;
+    return integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
+  }
+
+  extern proc real_to_c_string_copy(x:real(64), isImag: bool);
+  inline proc _cast(type t, x:real(?w)) where t == c_string_copy {
+    return real_to_c_string_copy(x:real(64), false);
+  }
+  inline proc _cast(type t, x:imag(?w)) where t == c_string_copy {
+    return real_to_c_string_copy(x:real(64), true);
   }
 
   // Only support param c_string concatenation (for now)
@@ -390,7 +412,6 @@ module CString {
     return __primitive("string_index", this, i);
   inline proc c_string.substring(r: range(?)) {
     var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
-    if r2.isEmpty() then return "";
     var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
     return __primitive("string_select", this, lo, hi, r2.stride);
   }
