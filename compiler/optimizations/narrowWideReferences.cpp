@@ -66,6 +66,7 @@ public:
   Vec<SymExpr*> exprsToWiden;   // exprs to widen if sym is narrowed
   Vec<CallExpr*> callsToRemove; // calls to remove if sym is narrowed
 
+  WideInfo() : sym(NULL), mustBeWide(false), fnToNarrow(NULL) { }
   WideInfo(Symbol* isym) : sym(isym), mustBeWide(false), fnToNarrow(NULL) { }
 };
 
@@ -80,23 +81,19 @@ typedef MapElem<Symbol*,WideInfo*> WideInfoMapElem;
 //
 // The map from symbols to wideInfo objects.
 //
-static Map<Symbol*,WideInfo*> wideInfoMap;
+static Map<Symbol*,WideInfo*>* wideInfoMap;
 
 //
-// Set of uses that may need to be widened after narrowing.  This
-// happens, for example, if we widen a reference that has to be passed
-// to a function that expects a wide reference and other calls to that
-// function pass it a wide reference.  Another choice would be to
-// clone the function.
+// Static function declarations
 //
-static SymExprTypeMap widenMap; // could this be a set or vec? we can
-                                // recompute the wide type
-
-//
-// Standard def and use maps
-//
-static Map<Symbol*,Vec<SymExpr*>*> defMap;
-static Map<Symbol*,Vec<SymExpr*>*> useMap;
+static void populateWideInfoMap();
+static void narrowVarsArgsFieldsInMap(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                                      Map<Symbol*,Vec<SymExpr*>*>& useMap);
+static void doNarrowing(SymExprTypeMap&);
+static void pruneNarrowedActuals(SymExprTypeMap&);
+static void printNarrowEffectSummary();
+static void insertWideReferenceTemps(SymExprTypeMap&);
+static void moveAddressSourcesToTemp();
 
 //
 // Print routines for debugging and development
@@ -104,7 +101,7 @@ static Map<Symbol*,Vec<SymExpr*>*> useMap;
 void
 printNode(BaseAST* ast) {
   Symbol* sym = toSymbol(ast);
-  WideInfo* wi = wideInfoMap.get(sym);
+  WideInfo* wi = wideInfoMap->get(sym);
   printf("%s[%d]\n", sym->cname, sym->id);
   printf("%s\n", (wi->mustBeWide) ? "WIDE" : "NARROW");
   printf("IN: ");
@@ -130,7 +127,7 @@ printNode(int id) {
 static void
 forwardPropagateFailToNarrow(WideInfo* wi) {
   forv_Vec(Symbol, outSym, wi->outVec) {
-    WideInfo* nwi = wideInfoMap.get(outSym);
+    WideInfo* nwi = wideInfoMap->get(outSym);
     if (!nwi->mustBeWide) {
       nwi->mustBeWide = true;
       forwardPropagateFailToNarrow(nwi);
@@ -145,8 +142,8 @@ forwardPropagateFailToNarrow(WideInfo* wi) {
 //
 static void
 addNarrowDep(Symbol* from, Symbol* to) {
-  wideInfoMap.get(to)->inVec.add(from);
-  wideInfoMap.get(from)->outVec.add(to);
+  wideInfoMap->get(to)->inVec.add(from);
+  wideInfoMap->get(from)->outVec.add(to);
 }
 
 
@@ -167,8 +164,6 @@ narrowField(Symbol* field, WideInfo* wi) {
     wi->mustBeWide = true;
     return;
   }
-
-  INT_ASSERT(defMap.get(field) == NULL);
 
   //
   // The following code is a work in progress to try to narrow fields.
@@ -203,7 +198,10 @@ narrowField(Symbol* field, WideInfo* wi) {
 // this symbol.
 //
 static void
-narrowSym(Symbol* sym, WideInfo* wi) {
+narrowSym(Symbol* sym, WideInfo* wi,
+          Map<Symbol*,Vec<SymExpr*>*>& defMap,
+          Map<Symbol*,Vec<SymExpr*>*>& useMap)
+{
   bool isWideObj = sym->type->symbol->hasFlag(FLAG_WIDE_CLASS);
   bool isWideRef = sym->type->symbol->hasFlag(FLAG_WIDE);
   INT_ASSERT(isWideObj ^ isWideRef);
@@ -377,7 +375,10 @@ narrowSym(Symbol* sym, WideInfo* wi) {
 // Piggyback on the analysis of variables.
 //
 static void
-narrowArg(ArgSymbol* arg, WideInfo* wi) {
+narrowArg(ArgSymbol* arg, WideInfo* wi,
+          Map<Symbol*,Vec<SymExpr*>*>& defMap,
+          Map<Symbol*,Vec<SymExpr*>*>& useMap)
+{
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
   INT_ASSERT(fn);
   forv_Vec(FnSymbol, indirectlyCalledFn, ftableVec) {
@@ -399,7 +400,7 @@ narrowArg(ArgSymbol* arg, WideInfo* wi) {
       }
     }
   }
-  narrowSym(arg, wi);
+  narrowSym(arg, wi, defMap, useMap);
 }
 
 
@@ -408,31 +409,79 @@ narrowArg(ArgSymbol* arg, WideInfo* wi) {
 //
 void
 narrowWideReferences() {
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+
   buildDefUseMaps(defMap, useMap);
+
+  wideInfoMap = new WideInfoMap();
+
+//
+// Set of uses that may need to be widened after narrowing.  This
+// happens, for example, if we widen a reference that has to be passed
+// to a function that expects a wide reference and other calls to that
+// function pass it a wide reference.  Another choice would be to
+// clone the function.
+//
+  SymExprTypeMap* widenMap = new SymExprTypeMap();
 
   compute_call_sites();
 
+  populateWideInfoMap();
+
+  narrowVarsArgsFieldsInMap(defMap, useMap);
+
+  doNarrowing(*widenMap);
+
+  pruneNarrowedActuals(*widenMap);
+
+  printNarrowEffectSummary();
+
+  insertWideReferenceTemps(*widenMap);
+
+  //
+  // Free WideInfo class instances and def and use maps.
+  //
+  form_Map(WideInfoMapElem, e, *wideInfoMap) {
+    delete e->value;
+  }
+  delete wideInfoMap; wideInfoMap = 0;
+  delete widenMap; widenMap = 0;
+
+  freeDefUseMaps(defMap, useMap);
+
+  // TODO: Test if this step is really necessary.  If it is, document why.
+  moveAddressSourcesToTemp();
+}
+
+
+static void populateWideInfoMap()
+{
   // Insert all wide variables and arguments into wideInfoMap.
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->type->symbol->hasFlag(FLAG_WIDE) ||
         var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      wideInfoMap.put(var, new WideInfo(var));
+      wideInfoMap->put(var, new WideInfo(var));
     }
   }
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->type->symbol->hasFlag(FLAG_WIDE) ||
         arg->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      wideInfoMap.put(arg, new WideInfo(arg));
+      wideInfoMap->put(arg, new WideInfo(arg));
     }
   }
+}
 
-  // Now populate the map
-  form_Map(WideInfoMapElem, e, wideInfoMap) {
+
+static void narrowVarsArgsFieldsInMap(Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                                      Map<Symbol*,Vec<SymExpr*>*>& useMap)
+{
+  form_Map(WideInfoMapElem, e, *wideInfoMap) {
     WideInfo* wi = e->value;
 
     // Narrow arguments unconditionally.
     if (ArgSymbol* arg = toArgSymbol(wi->sym)) {
-      narrowArg(arg, wi);
+      narrowArg(arg, wi, defMap, useMap);
     }
 
     // Narrow variables if they appear in functions or user-defined types.
@@ -440,9 +489,12 @@ narrowWideReferences() {
     // I believe this is intended to leave module-level variables wide.
     if (VarSymbol* var = toVarSymbol(wi->sym)) {
       if (isFnSymbol(var->defPoint->parentSymbol))
-        narrowSym(var, wi);
+        narrowSym(var, wi, defMap, useMap);
       else if (isTypeSymbol(var->defPoint->parentSymbol))
+      {
+        INT_ASSERT(defMap.get(var) == NULL);
         narrowField(var, wi);
+      }
       else
         wi->mustBeWide = true;
     }
@@ -450,15 +502,19 @@ narrowWideReferences() {
 
   // Forward propagate necessary wideness (those for which wi->mustBeWide was
   // set to true above).
-  form_Map(WideInfoMapElem, e, wideInfoMap) {
+  form_Map(WideInfoMapElem, e, *wideInfoMap) {
     WideInfo* wi = e->value;
     if (wi->mustBeWide)
       forwardPropagateFailToNarrow(wi);
   }
+}
 
+
+static void doNarrowing(SymExprTypeMap& widenMap)
+{
   // Now, traverse the wideInfoMap, and perform the narrowings it calls for.
   // Uses of the variable or argument requiring widening are added to widenMap.
-  form_Map(WideInfoMapElem, e, wideInfoMap) {
+  form_Map(WideInfoMapElem, e, *wideInfoMap) {
     WideInfo* wi = e->value;
     if (!wi->mustBeWide) {
 
@@ -492,12 +548,16 @@ narrowWideReferences() {
       wi->sym->type = wi->sym->type->getField("addr")->type;
     }
   }
+}
 
+
+static void pruneNarrowedActuals(SymExprTypeMap& widenMap)
+{
   //
   // Prune the map of expressions to widen because of arguments that
   // have been narrowed.
   //
-  form_Map(WideInfoMapElem, e, wideInfoMap) {
+  form_Map(WideInfoMapElem, e, *wideInfoMap) {
     WideInfo* wi = e->value;
     if (!wi->mustBeWide) {
       if (ArgSymbol* arg = toArgSymbol(wi->sym)) {
@@ -509,7 +569,11 @@ narrowWideReferences() {
       }
     }
   }
+}
 
+
+static void printNarrowEffectSummary()
+{
 #ifdef PRINT_NARROW_EFFECT_SUMMARY
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->type->symbol->hasFlag(FLAG_WIDE) ||
@@ -527,7 +591,11 @@ narrowWideReferences() {
   
   printf("Narrow count: %d\nWide count: %d\n", narrowCount, wideCount);
 #endif
+}
 
+
+static void insertWideReferenceTemps(SymExprTypeMap& widenMap)
+{
   //
   // Insert a wide reference temporary if we narrowed a wide reference
   // that is passed to a function that expects a wide reference.
@@ -544,12 +612,32 @@ narrowWideReferences() {
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, key));
     }
   }
+}
 
-  //
-  // Free WideInfo class instances and def and use maps.
-  //
-  form_Map(WideInfoMapElem, e, wideInfoMap) {
-    delete e->value;
+
+// In every move:
+//   if the LHS type has the WIDE or REF flag
+//   and its value type is a wide class
+//   and the RHS type is the same as the contents of the wide pointer:
+//     Create a temp copy of the RHS, and
+//     replace the RHS of the move with the temp.
+static void moveAddressSourcesToTemp()
+{
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) &&
+          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          call->get(2)->typeInfo() == call->get(1)->getValType()->getField("addr")->type) {
+        //
+        // widen rhs class
+        //
+        SET_LINENO(call);
+        VarSymbol* tmp = newTemp(call->get(1)->getValType());
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
+        call->insertAtTail(tmp);
+      }
+    }
   }
-  freeDefUseMaps(defMap, useMap);
 }
