@@ -1,0 +1,1 @@
+mutualuse3.chpl:9: error: use of 'a' before encountering its definition, type unknown

@@ -74,6 +74,7 @@ struct PassInfo {
 #define LOG_prune2                             'Y'
 #define LOG_returnStarTuplesByRefArgs          's'
 #define LOG_insertWideReferences               'W'
+#define LOG_narrowWideReferences               'a'
 #define LOG_optimizeOnClauses                  'o'
 #define LOG_addInitCalls                       'M'
 #define LOG_insertLineNumbers                  'n'
@@ -143,6 +144,7 @@ static PassInfo sPassList[] = {
   RUN(returnStarTuplesByRefArgs),
 
   RUN(insertWideReferences),    // inserts wide references for on clauses
+  RUN(narrowWideReferences),    // narrows wide references where possible
   RUN(optimizeOnClauses),       // Optimize on clauses
   RUN(addInitCalls),            // Add module init calls and guards.
 

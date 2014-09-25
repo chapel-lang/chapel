@@ -578,6 +578,11 @@ qioerr qio_chown(const char* name, int uid, int gid);
 
 qioerr qio_cwd(const char** working_dir);
 
+qioerr _qio_check_mode(int* ret, const char* name, int mode_flag);
+
+qioerr qio_is_dir(int* ret, const char* name);
+qioerr qio_is_file(int* ret, const char* name);
+
 // Creates a directory with the given name and settings if possible,
 // returning a qioerr if not.
 qioerr qio_mkdir(const char* name, int mode, int parents);

@@ -3,9 +3,19 @@
 \index{overview}
 \index{language overview}
 
-Chapel is a new programming language under development at Cray Inc. as
-part of the DARPA High Productivity Computing Systems (HPCS) program
-to improve the productivity of parallel programmers.
+Chapel is an emerging parallel programming language designed for
+productive scalable computing. Chapel's primary goal is to make
+parallel programming far more productive, from multicore desktops and
+laptops to commodity clusters and the cloud to high-end
+supercomputers. Chapel's design and development are being led by Cray
+Inc. in collaboration with academia, computing centers, and industry.
+
+Chapel is being developed in an open-source manner at GitHub under the
+Apache v2.0 license and also makes use of other third-party
+open-source packages under their own licenses. Chapel emerged from
+Cray's entry in the DARPA-led High Productivity Computing Systems
+program (HPCS). It is currently being hardened from that initial
+prototype to more of a product-grade implementation.
 
 This section provides a brief overview of the Chapel language by
 discussing first the guiding principles behind the design of the
@@ -45,18 +55,18 @@ control}.
 aggregates whose sizes and indices are expressed globally even though
 their implementations may distribute them across the \emph{locales} of
 a parallel system.  A locale is an abstraction of a unit of uniform
-memory access on a target architecture.  That is, within a locale, all
+memory access on a target architecture.  That is, within a locale all
 threads exhibit similar access times to any specific memory address.
 For example, a locale in a commodity cluster could be defined to be a
-single core of a processor, a multicore processor or an SMP node of
+single core of a processor, a multicore processor, or an SMP node of
 multiple processors.
 
 Such a global view of data contrasts with most parallel languages
 which tend to require users to partition distributed data aggregates
 into per-processor chunks either manually or using language
 abstractions.  As a simple example, consider creating a 0-based vector
-with $n$ elements distributed between $p$ locales.  A language like
-Chapel that supports global-view data structures allows the user to
+with $n$ elements distributed between $p$ locales.  A language
+that supports global-view data structures, as Chapel does, allows the user to
 declare the array to contain $n$ elements and to refer to the array
 using the indices $0 \ldots n-1$.  In contrast, most traditional
 approaches require the user to declare the array as $p$ chunks of
@@ -120,15 +130,6 @@ parallel language setting, and to provide a familiar coding paradigm for
 members of the mainstream programming community.  Chapel supports
 traditional reference-based classes as well as value classes that are
 assigned and passed by value.
-
-Chapel does not require the programmer to use an object-oriented style
-in their code, so that traditional Fortran and C programmers in the
-HPC community need not adopt a new programming paradigm to
-use Chapel effectively.  Many of Chapel's standard library
-capabilities are implemented using objects, so such programmers may
-need to utilize a method-invocation style of syntax to use these
-capabilities.  However, using such libraries does not necessitate
-broader adoption of object-oriented methodologies.
 
 \subsection{Generic Programming}
 \label{Generic_Programming}

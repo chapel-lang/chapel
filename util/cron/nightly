@@ -351,7 +351,14 @@ if ($debug == 1) {
     $nochangerecipient = $debugmail;
 } else {
     $subjectid = "Cron$subjectid";
-    $recipient = "$failuremail $allmail";
+
+    # "email", the mailer program used on cygwin platform, requires multiple
+    # recipient addresses to be comma delimited instead of space delimited.
+    if ($mailer eq "email") {
+        $recipient = "$failuremail,$allmail";
+    } else {
+        $recipient = "$failuremail $allmail";
+    }
     $nochangerecipient = $allmail;
 }
 

@@ -242,14 +242,15 @@ An {\em lvalue} is an expression that can be used on the left-hand
 side of an assignment statement or on either side of a swap statement,
 that can be passed to a formal argument of a function that
 has \chpl{out}, \chpl{inout} or \chpl{ref} intent, or that can be returned by a
-variable function.  Valid lvalue expressions include the following:
+function with a \chpl{ref} return intent~(\rsec{Ref_Return_Intent}).  Valid
+lvalue expressions include the following:
 \begin{itemize}
 \item
  Variable expressions.
 \item
  Member access expressions.
 \item
- Call expressions of variable functions.
+ Call expressions of functions with a \chpl{ref} return intent.
 \item
  Indexing expressions.
 \end{itemize}
