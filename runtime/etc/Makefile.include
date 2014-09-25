@@ -77,6 +77,6 @@ printllvminstall:
 #        module. Please send blah blah a message if you would like it
 #        included...". (thomasvandoren, 2014-09-23)
 checkRtLibDir:
-	@if [ ! -d $(CHPL_RT_LIB_DIR) ] ; then \
-	$(warning Expected runtime directory does not exist. Was it compiled?) : ; \
-	fi
+ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
+	$(error The runtime has not been built for this configuration. Check $$CHPL_HOME/util/printchplenv and try (re)building runtime)
+endif
