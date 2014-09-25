@@ -282,14 +282,14 @@ extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
-extern proc qio_chdir(name: c_string):syserr;
-extern proc qio_chown(name: c_string, uid: c_int, gid: c_int):syserr;
-extern proc qio_cwd(ref working_dir:c_string):syserr;
-extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
-extern proc qio_file_remove(name: c_string):syserr;
-extern proc qio_is_dir(ref result:c_int, name: c_string):syserr;
-extern proc qio_is_file(ref result:c_int, name: c_string):syserr;
-extern proc qio_mkdir(name: c_string, mode: int, parents: bool):syserr;
+extern proc chpl_file_chdir(name: c_string):syserr;
+extern proc chpl_file_chown(name: c_string, uid: c_int, gid: c_int):syserr;
+extern proc chpl_file_cwd(ref working_dir:c_string):syserr;
+extern proc chpl_file_is_dir(ref result:c_int, name: c_string):syserr;
+extern proc chpl_file_is_file(ref result:c_int, name: c_string):syserr;
+extern proc chpl_file_mkdir(name: c_string, mode: int, parents: bool):syserr;
+extern proc chpl_file_rename(oldname: c_string, newname: c_string):syserr;
+extern proc chpl_file_remove(name: c_string):syserr;
 
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
@@ -613,7 +613,7 @@ proc file._style:iostyle {
    will affect the current working directory of all tasks for that locale.
 */
 proc chdir(out err: syserr, name: string) {
-  err = qio_chdir(name.c_str());
+  err = chpl_file_chdir(name.c_str());
 }
 
 /* Change the current working directory of the current locale to the specified
@@ -639,7 +639,7 @@ proc chdir(name: string) {
         same.
 */
 proc chown(out err: syserr, name: string, uid: int, gid: int) {
-  err = qio_chown(name.c_str(), uid:c_int, gid:c_int);
+  err = chpl_file_chown(name.c_str(), uid:c_int, gid:c_int);
 }
 
 /* Changes one or both of the owner and group id of the named file to the
@@ -665,7 +665,7 @@ proc chown(name: string, uid: int, gid: int) {
 */
 proc cwd(out err: syserr): string {
   var tmp:c_string, ret:string;
-  err = qio_cwd(tmp);
+  err = chpl_file_cwd(tmp);
   if err then return "";
   ret = toString(tmp);
   chpl_free_c_string(tmp);
@@ -770,7 +770,7 @@ proc file.length():int(64) {
 */
 proc isDir(out err:syserr, name:string):bool {
   var ret:c_int;
-  err = qio_is_dir(ret, name.c_str());
+  err = chpl_file_is_dir(ret, name.c_str());
   return ret != 0;
 }
 
@@ -791,7 +791,7 @@ proc isDir(name:string):bool {
 */
 proc isFile(out err:syserr, name:string):bool {
   var ret:c_int;
-  err = qio_is_file(ret, name.c_str());
+  err = chpl_file_is_file(ret, name.c_str());
   return ret != 0;
 }
 
@@ -853,7 +853,7 @@ extern const S_ISVTX: int;
 */
 proc mkdir(out err: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
-  err = qio_mkdir(name.c_str(), mode, parents);
+  err = chpl_file_mkdir(name.c_str(), mode, parents);
 }
 
 /* Attempt to create a directory with the given path.  If parents is true,
@@ -1040,7 +1040,7 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
 proc rename(out error: syserr, oldname, newname: string) {
-  error = qio_file_rename(oldname.c_str(), newname.c_str());
+  error = chpl_file_rename(oldname.c_str(), newname.c_str());
 }
 
 /* Renames the file specified by oldname to newname, generating an error
@@ -1058,7 +1058,7 @@ proc rename(oldname, newname: string) {
    err: a syserr used to indicate if an error occurred during removal
    name: the name of the file/directory to remove */
 proc remove(out err: syserr, name: string) {
-  err = qio_file_remove(name.c_str());
+  err = chpl_file_remove(name.c_str());
 }
 
 /* Removes the file or directory specified by name, generating an error
