@@ -150,15 +150,15 @@ module String {
   //  inline proc _cast(type t, x: string) where t != c_string
   //    return _cast(t, x.c_str());
 
-  inline proc _cast(type t, x: string)
-    where isBoolType(t) || isNumericType(t)
+  inline proc _cast(type t, x: string) where isBoolType(t) || isNumericType(t)
     return _cast(t, x.c_str());
 
   inline proc _cast(type t, x:c_string) where isBoolType(t)
   {
-    extern proc c_string_to_chpl_bool(x:c_string, lineno:int, filename:c_string) : bool;
+    pragma "insert line file info"
+    extern proc c_string_to_chpl_bool(x:c_string) : bool;
     // TODO: Need compiler filename/lineno primitives.
-    return c_string_to_chpl_bool(x, 0, "") : t;
+    return c_string_to_chpl_bool(x) : t;
   }
 
   //
@@ -390,7 +390,7 @@ module CString {
 
   // A c_string_copy can always be used as a c_string.
   inline proc _cast(type t, x: c_string_copy) where t == c_string {
-    return x;
+    return __primitive("cast", t, x);
   }
 
   extern proc chpl_bool_to_c_string(x:bool) : c_string;
@@ -439,8 +439,13 @@ module CString {
   inline proc +(a: c_string, b: c_string)
     return __primitive("string_concat", a, b);
 
-  proc ref c_string.writeThis(x: Writer) {
-    x.write(this); // FIX ME? toString
+  proc c_string.writeThis(x: Writer) {
+    x.write(this);
+  }
+  // The c_string_copy version is required, since apparently coercions are not
+  // applied to "this".
+  proc c_string_copy.writeThis(x: Writer) {
+    x.write(this);
   }
 
 
