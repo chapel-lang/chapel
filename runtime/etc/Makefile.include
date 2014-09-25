@@ -71,10 +71,7 @@ printmaino:
 printllvminstall:
 	@echo $(LLVM_INSTALL_DIR)
 
-# FIXME: For the cray module, the message should probably be something more
-#        like, "This configuration is not built for the module. Please send
-#        blah blah a message if you would like it included...".
-#        (thomasvandoren, 2014-09-23)
+
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
 ifdef CHPL_DEVELOPER
