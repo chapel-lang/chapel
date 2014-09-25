@@ -71,12 +71,14 @@ printmaino:
 printllvminstall:
 	@echo $(LLVM_INSTALL_DIR)
 
-# FIXME: Improve warning message here. It should probably include the output
-#        directory. Maybe only for developers? For the cray module, it should
-#        also add a message like "This configuration is not compiled for the
-#        module. Please send blah blah a message if you would like it
-#        included...". (thomasvandoren, 2014-09-23)
+# FIXME: For the cray module, the message should probably be something more
+#        like, "This configuration is not built for the module. Please send
+#        blah blah a message if you would like it included...".
+#        (thomasvandoren, 2014-09-23)
 checkRtLibDir:
 ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
+ifdef CHPL_DEVELOPER
+	$(warning Expected runtime configuration: $(shell basename $(CHPL_RT_LIB_DIR)))
+endif
 	$(error The runtime has not been built for this configuration. Check $$CHPL_HOME/util/printchplenv and try (re)building runtime)
 endif
