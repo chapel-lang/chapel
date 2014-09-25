@@ -3156,6 +3156,8 @@ void resolveNormalCall(CallExpr* call) {
     }
   }
 
+  // Future work note: the repeated check to best and best->fn means that we
+  // could probably restructure this function to a better form.
   if (call->partialTag && (!best || !best->fn ||
                            !best->fn->hasFlag(FLAG_NO_PARENS))) {
     if (best != NULL) {
