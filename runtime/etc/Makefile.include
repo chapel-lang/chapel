@@ -80,5 +80,5 @@ ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
 ifdef CHPL_DEVELOPER
 	$(warning Expected runtime configuration: $(shell basename $(CHPL_RT_LIB_DIR)))
 endif
-	$(error The runtime has not been built for this configuration. Check $$CHPL_HOME/util/printchplenv and try (re)building runtime)
+	$(error The runtime has not been built for this configuration. Check $$CHPL_HOME/util/printchplenv and try rebuilding with '$(CHPL_MAKE_MAKE)' from $$CHPL_HOME)
 endif
