@@ -85,8 +85,8 @@ valgrind-specific regressions
 (Reviewed for accuracy 09/25/14)
 ================================
 
-nondeterministic invalid write of size 8 (e.g., 09/15/14, 09/24/14)
--------------------------------------------------------------------
+noisy failure due to invalid write of size 8 (e.g., 09/15/14, 09/24/14, ...)
+----------------------------------------------------------------------------
 [Error matching program output for associative/bharshbarg/parSafeAdd (compopts: 1)]
 
 overlapping memcpy (root cause should be eliminated)
@@ -130,7 +130,7 @@ so the warning does not apply and is not raised, and .good is not matched.
 
 ================================
 no-local regressions
-(Reviewed for accuracy 09/17/14)
+(Reviewed for accuracy 09/26/14)
 ================================
 
 
@@ -139,8 +139,8 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 09/17/14)
 ====================================================
 
-leaks still occasionally reported after Sung's tightening (09/18/14 -- sungeun)
--------------------------------------------------------------------------------
+annoying occasional failures even after Sung clamed down (09/18/14 -- sungeun)
+------------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall]
 
 seg fault (09/17/14 -- fixed 09/19/14)
@@ -180,7 +180,7 @@ fairly consistent timeouts due to qthreads oversubscription (09/15/14)
 
 ========================================================
 none.qthreads.numa-specific tests (other no-local above)
-(Reviewed for accuracy 09/14/14)
+(Reviewed for accuracy 09/26/14)
 ========================================================
 
 
@@ -202,13 +202,21 @@ comm count mismatches
 
 ======================================================
 gasnet.fifo.flat-specific tests (other than the above)
-(Reviewed for accuracy 09/14/14)
+(Reviewed for accuracy 09/25/14)
 ======================================================
+
+annoying, noisy timeouts
+------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
+
+consistent timeouts
+-------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 
 
 ================================
 fifo-specific regressions
-(Reviewed for accuracy 09/12/14)
+(Reviewed for accuracy 09/26/14)
 ================================
 
 
@@ -345,7 +353,7 @@ the following failures (should valgrind these on whiteboxes to diagnose)
 
 ==========================================================
 cray-prgenv-*-specific failures (in addition to the above)
-(Reviewed for accuracy 09/17/14)
+(Reviewed for accuracy 09/26/14)
 ==========================================================
 
 problem with static/dynamic linking?
@@ -437,7 +445,7 @@ compilation timeouts (since at least 02/23/14)
 
 ==================================================
 cray-prgenv-pgi regressions (in addition to above)
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/25/14)
 ==================================================
 
 problem with empty initializer (1/25/14 -- bradc)
@@ -466,6 +474,11 @@ negative floating point 0.0 not supported
 alignment error in output
 -------------------------
 [Error matching program output for types/range/hilde/align]
+
+consistent timeout
+------------------
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
+
 
 ===============================================
 pgi-specific regressions (in addition to above)
@@ -555,17 +568,21 @@ frequent, annoying timeout
 
 ===================================
 cygwin-specific failures
-(Reviewed for accuracy on 09/14/14)
+(Reviewed for accuracy on 09/26/14)
 ===================================
 
-check_channel assertion failure
--------------------------------
-[Error matching C regexp test ./regexp_channel_test Regexp Channels Test]
+no 'siblings' line in /proc/cpuinfo breaks .prediff script (09/20/14)
+---------------------------------------------------------------------
+[Error matching program output for localeModels/gbt/maxTaskPar]
 
 gcc warning about assuming strict overflow
 ------------------------------------------
 [Error matching .bad file for puzzles/hilde/overflow (compopts: 1)]
 [Error matching compiler output for studies/shootout/mandelbrot/bugs/mandelbrot-error]
+
+check_channel assertion failure
+-------------------------------
+[Error matching C regexp test ./regexp_channel_test Regexp Channels Test]
 
 output mistmatch ('PE32+ executable (console)...')
 --------------------------------------------------
@@ -619,16 +636,9 @@ got 'No error' rather than 'success'
 ------------------------------------
 [Error matching program output for io/sungeun/ioerror (execopts: 5)]
 
-no 'siblings' line in /proc/cpuinfo breaks .prediff script (09/20/14)
----------------------------------------------------------------------
-[Error matching program output for localeModels/gbt/maxTaskPar]
-
 amount of memory doesn't match
 ------------------------------
 [Error matching program output for modules/standard/memory/countMemory/countMemory]
-
-problem size didn't match
--------------------------
 [Error matching program output for studies/hpcc/common/testProbSize (compopts: 1)]
 
 numerical roundoff issues
@@ -645,6 +655,11 @@ worrisome, annoying timeouts
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/basic]
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/reuse]
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase]
+
+consistent timeouts
+-------------------
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
+[Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
 
 
 ================================
@@ -720,10 +735,14 @@ Tests suppressions that now succeed due to turning on inlining (12/7/12)
 [Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
 
+frequent, annoying timeout
+--------------------------
+[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
+
 
 ================================
 block distribution regressions
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/26/14)
 ================================
 
 frequent, annoying timeout
@@ -733,8 +752,13 @@ frequent, annoying timeout
 
 ================================
 cyclic distribution regressions
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/26/14)
 ================================
+
+constant, annoying shift in timeouts -- due to machine load or qthreads oversub?
+--------------------------------------------------------------------------------
+[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_zipper_default]
+[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random]
 
 communication counts changed due to r23004, gbt (03/30/14)
 ----------------------------------------------------------
