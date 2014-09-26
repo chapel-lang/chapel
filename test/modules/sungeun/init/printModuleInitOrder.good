@@ -26,6 +26,7 @@ Initializing Modules:
      IO
       Error
       Regexp
+     FileUtils
     LocaleTree
     DefaultAssociative
     ChapelTaskTable
