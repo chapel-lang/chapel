@@ -63,6 +63,9 @@ int64_t string_length(c_string x) {
 
 static ___always_inline
 int32_t string_compare(c_string x, c_string y) {
+  if (x == y) return 0;
+  if (x == NULL) return -1;
+  if (y == NULL) return 1;
   return (int32_t)strcmp(x, y);
 }
 

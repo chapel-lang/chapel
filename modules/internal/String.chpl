@@ -144,50 +144,98 @@ module String {
     return ret;
   }
 
-  // Using a != in a where clause is dangerous.
-  // Better to add the cases that are needed explicitly.
-  //  pragma "compiler generated"
-  //  inline proc _cast(type t, x: string) where t != c_string
-  //    return _cast(t, x.c_str());
+  // The "compiler generated" flag is used, because this cast has to be weaker
+  // than the c_string-to-enum cast generated in buildDefaultFunctions().
+  // The circularity is caused by the built-in c_string-to-string coercion.
+  // TODO: If string literals were all actually chpl_strings, then I think the
+  // coercion (and this cruft) could be removed.
+  pragma "compiler generated"
+  inline proc _cast(type t, x: string) where isEnumType(t)
+    return _cast(t, x.c_str());
 
   inline proc _cast(type t, x: string) where isBoolType(t) || isNumericType(t)
     return _cast(t, x.c_str());
 
+  //
+  // casts from c_string to bool types
+  //
   inline proc _cast(type t, x:c_string) where isBoolType(t)
   {
     pragma "insert line file info"
     extern proc c_string_to_chpl_bool(x:c_string) : bool;
-    // TODO: Need compiler filename/lineno primitives.
     return c_string_to_chpl_bool(x) : t;
   }
 
   //
   // casts from c_string to integer types
   //
-  extern proc c_string_to_int8_t  (x:c_string, line:int, file:c_string) : int(8); 
-  extern proc c_string_to_int16_t (x:c_string, line:int, file:c_string) : int(16);
-  extern proc c_string_to_int32_t (x:c_string, line:int, file:c_string) : int(32);
-  extern proc c_string_to_int64_t (x:c_string, line:int, file:c_string) : int(64);
-  extern proc c_string_to_uint8_t (x:c_string, line:int, file:c_string) : uint(8); 
-  extern proc c_string_to_uint16_t(x:c_string, line:int, file:c_string) : uint(16);
-  extern proc c_string_to_uint32_t(x:c_string, line:int, file:c_string) : uint(32);
-  extern proc c_string_to_uint64_t(x:c_string, line:int, file:c_string) : uint(64);
+  pragma "insert line file info"
+  extern proc c_string_to_int8_t  (x:c_string) : int(8); 
+  pragma "insert line file info"
+  extern proc c_string_to_int16_t (x:c_string) : int(16);
+  pragma "insert line file info"
+  extern proc c_string_to_int32_t (x:c_string) : int(32);
+  pragma "insert line file info"
+  extern proc c_string_to_int64_t (x:c_string) : int(64);
+  pragma "insert line file info"
+  extern proc c_string_to_uint8_t (x:c_string) : uint(8); 
+  pragma "insert line file info"
+  extern proc c_string_to_uint16_t(x:c_string) : uint(16);
+  pragma "insert line file info"
+  extern proc c_string_to_uint32_t(x:c_string) : uint(32);
+  pragma "insert line file info"
+  extern proc c_string_to_uint64_t(x:c_string) : uint(64);
+
   inline proc _cast(type t, x:c_string) where t == int(8)
-    return c_string_to_int8_t  (x, 0, "");
+    return c_string_to_int8_t(x);
   inline proc _cast(type t, x:c_string) where t == int(16)
-    return c_string_to_int16_t (x, 0, "");
+    return c_string_to_int16_t(x);
   inline proc _cast(type t, x:c_string) where t == int(32)
-    return c_string_to_int32_t (x, 0, "");
+    return c_string_to_int32_t(x);
   inline proc _cast(type t, x:c_string) where t == int(64)
-    return c_string_to_int64_t (x, 0, "");
+    return c_string_to_int64_t(x);
   inline proc _cast(type t, x:c_string) where t == uint(8)
-    return c_string_to_uint8_t (x, 0, "");
+    return c_string_to_uint8_t(x);
   inline proc _cast(type t, x:c_string) where t == uint(16)
-    return c_string_to_uint16_t(x, 0, "");
+    return c_string_to_uint16_t(x);
   inline proc _cast(type t, x:c_string) where t == uint(32)
-    return c_string_to_uint32_t(x, 0, "");
+    return c_string_to_uint32_t(x);
   inline proc _cast(type t, x:c_string) where t == uint(64)
-    return c_string_to_uint64_t(x, 0, "");
+    return c_string_to_uint64_t(x);
+
+  //
+  // casts from c_string to real/imag types
+  //
+  pragma "insert line file info"
+  extern proc c_string_to_real32(x:c_string) : real(32);
+  pragma "insert line file info"
+  extern proc c_string_to_real64(x:c_string) : real(64);
+  pragma "insert line file info"
+  extern proc c_string_to_imag32(x:c_string) : imag(32);
+  pragma "insert line file info"
+  extern proc c_string_to_imag64(x:c_string) : imag(64);
+  
+  inline proc _cast(type t, x:c_string) where t == real(32)
+    return c_string_to_real32(x);
+  inline proc _cast(type t, x:c_string) where t == real(64)
+    return c_string_to_real64(x);
+  inline proc _cast(type t, x:c_string) where t == imag(32)
+    return c_string_to_imag32(x);
+  inline proc _cast(type t, x:c_string) where t == imag(64)
+    return c_string_to_imag64(x);
+
+  //
+  // casts from c_string to complex types
+  //
+  pragma "insert line file info"
+  extern proc c_string_to_complex64(x:c_string) : complex(64);
+  pragma "insert line file info"
+  extern proc c_string_to_complex128(x:c_string) : complex(128);
+
+  inline proc _cast(type t, x:c_string) where t == complex(64)
+    return c_string_to_complex64(x);
+  inline proc _cast(type t, x:c_string) where t == complex(128)
+    return c_string_to_complex128(x);
 
   //
   // casts from complex
@@ -213,17 +261,11 @@ module String {
     const ts1 = ts0 + im;
     chpl_free_c_string(ts0);
     if im != "-0.0" then chpl_free_c_string(im);
-    const ret = ts1 + "i":c_string;
+    const ret = ts1 + "i";
     chpl_free_c_string(ts1);
     return ret;
   }
   
-  //
-  // casts from imag
-  //
-  inline proc _cast(type t, x: imag(?w)) where t == c_string
-    return __primitive("cast", t, x);
-
   pragma "compiler generated"
   pragma "init copy fn"
   inline proc chpl__initCopy(a) {
@@ -407,9 +449,15 @@ module CString {
   }
 
   extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy ;
+  //
+  // casts from real
+  //
   inline proc _cast(type t, x:real(?w)) where t == c_string_copy {
     return real_to_c_string_copy(x:real(64), false);
   }
+  //
+  // casts from imag
+  //
   inline proc _cast(type t, x:imag(?w)) where t == c_string_copy {
     return real_to_c_string_copy(x:real(64), true);
   }
@@ -483,7 +531,7 @@ module CString {
   inline proc chpl_free_c_string(cs: c_string) {
     pragma "insert line file info"
     extern proc chpl_rt_free_c_string(cs: c_string);
-    if cs.length > 0 then chpl_rt_free_c_string(cs);
+    if (cs != _nullString) then chpl_rt_free_c_string(cs);
   }
 
 }
