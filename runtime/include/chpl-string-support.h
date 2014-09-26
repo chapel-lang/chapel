@@ -58,6 +58,8 @@ int8_t ascii(c_string s) {
 
 static ___always_inline
 int64_t string_length(c_string x) {
+  if (x == NULL)
+    return 0;
   return strlen(x);
 }
 

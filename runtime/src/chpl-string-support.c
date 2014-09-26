@@ -107,14 +107,33 @@ string_copy(c_string x, int32_t lineno, c_string filename)
   return strcpy(z, x);
 }
 
+// string_concat always returns a newly-allocated c_string (or NULL).
 c_string_copy
 string_concat(c_string x, c_string y, int32_t lineno, c_string filename) {
-  char *z = (char*)chpltypes_malloc(strlen(x)+strlen(y)+1,
-                                    CHPL_RT_MD_STRING_CONCAT_DATA,
-                                    lineno, filename);
-  z[0] = '\0';
-  strcat(z, x);
-  strcat(z, y);
+  char* z;
+  size_t xlen;
+  size_t ylen;
+
+  if (x == NULL)
+    return string_copy(y, lineno, filename);
+  if (y == NULL)
+    return string_copy(x, lineno, filename);
+
+  xlen = strlen(x);
+  ylen = strlen(y);
+
+  z = (char*)chpltypes_malloc(xlen + ylen + 1,
+                              CHPL_RT_MD_STRING_CONCAT_DATA,
+                              lineno, filename);
+
+  // memcpy can be more efficient than the str??? functions because it does not
+  // look for terminating NUL characters.  We are guaranteed that the source
+  // and destination strings do not overlap so we don't need the (very slight)
+  // extra complexity of memmove.
+  memcpy(z, x, xlen);
+  // Using "ylen+1" copies the terminating NUL from the second string.
+  memcpy(z + xlen, y, ylen+1);
+
   return z;
 }
 

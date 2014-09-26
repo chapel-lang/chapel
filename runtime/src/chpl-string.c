@@ -184,10 +184,8 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
 //
 // Support for the new string record implementation
 //
-// NOTE: strings of length 0 are assumed to be the literal ""
 
-/* This function copies src into dest.  If dest == "", allocate a new
- * buffer for the string.  If dest is specified, it is the caller's
+/* This function copies src into dest.  It is the caller's
  * responsibility to make sure that dest is large enough to hold src.
  * Return the moved string.
  */

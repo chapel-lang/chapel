@@ -265,6 +265,13 @@ module String {
     chpl_free_c_string(ts1);
     return ret;
   }
+  // TODO: This is only in place to support test code in types/string/sungeun.
+  // Nor user nor module code should use this cast, because it strips ownership
+  // from the c_string_copy returned by the above cast without first arranging
+  // for its disposal.
+  inline proc _cast(type t, x:complex(?w)) where t == c_string
+    return _cast(c_string_copy, x);
+
   
   pragma "compiler generated"
   pragma "init copy fn"
@@ -443,6 +450,12 @@ module CString {
     return __primitive("string_copy", chpl_bool_to_c_string(x:bool));
   }
 
+  inline proc _cast(type t, x:enumerated) where t == c_string_copy {
+    // Use the compiler-generated enum to c_string conversion.
+    var cs = _cast(c_string, x);
+    return __primitive("string_copy", cs);
+  }
+
   inline proc _cast(type t, x:integral) where t == c_string_copy {
     extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy ;
     return integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
@@ -455,12 +468,28 @@ module CString {
   inline proc _cast(type t, x:real(?w)) where t == c_string_copy {
     return real_to_c_string_copy(x:real(64), false);
   }
+  // TODO: This is only in place to support test code in types/string/sungeun.
+  // Nor user nor module code should use this cast, because it strips ownership
+  // from the c_string_copy returned by the above cast without first arranging
+  // for its disposal.
+  inline proc _cast(type t, x:real(?w)) where t == c_string
+    return _cast(c_string_copy, x);
+
   //
   // casts from imag
   //
   inline proc _cast(type t, x:imag(?w)) where t == c_string_copy {
-    return real_to_c_string_copy(x:real(64), true);
+    // The Chapel version of the imag --> real cast smashes it flat rather than
+    // just stripping off the "i".  See ChapelBase:965.
+    var r = __primitive("cast", real(64), x);
+    return real_to_c_string_copy(r, true);
   }
+  // TODO: This is only in place to support test code in types/string/sungeun.
+  // Nor user nor module code should use this cast, because it strips ownership
+  // from the c_string_copy returned by the above cast without first arranging
+  // for its disposal.
+  inline proc _cast(type t, x:imag(?w)) where t == c_string
+    return _cast(c_string_copy, x);
 
   // Only support param c_string concatenation (for now)
   inline proc +(param a: c_string, param b: c_string) param
@@ -493,7 +522,7 @@ module CString {
   // The c_string_copy version is required, since apparently coercions are not
   // applied to "this".
   proc c_string_copy.writeThis(x: Writer) {
-    x.write(this);
+    x.write(this:c_string);
   }
 
 

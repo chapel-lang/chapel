@@ -876,8 +876,7 @@ module ChapelBase {
   inline proc chpl_typeSupportsPrimitiveCast(type t) param
     return isBoolType(t) || 
            isIntegralType(t) || 
-           isRealType(t) || 
-           t == c_string;
+           isRealType(t);
   
   inline proc _cast(type t, x: bool) where chpl_typeSupportsPrimitiveCast(t)
     return __primitive("cast", t, x);
