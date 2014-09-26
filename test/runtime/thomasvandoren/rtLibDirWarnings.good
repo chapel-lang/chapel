@@ -1,0 +1,1 @@
+$CHPL_HOME/runtime/etc/Makefile.include:nnnnn: *** The runtime has not been built for this configuration. Check $CHPL_HOME/util/printchplenv and try rebuilding with $CHPL_MAKE from $CHPL_HOME.  Stop.

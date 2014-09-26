@@ -71,3 +71,20 @@ printmaino:
 printllvminstall:
 	@echo $(LLVM_INSTALL_DIR)
 
+
+checkRtLibDir:
+ifeq ($(wildcard $(CHPL_RT_LIB_DIR)),)
+ifdef CHPL_DEVELOPER
+	$(warning Expected runtime configuration: $(shell basename $(CHPL_RT_LIB_DIR)))
+endif
+ifeq ($(CHPL_MODULE_HOME),$(CHPL_HOME))
+	$(error The requested configuration is not included in the module. \
+	        Please send the package maintainer the output of \
+	        $$CHPL_HOME/util/printchplenv and request support for this \
+	        configuration)
+else
+	$(error The runtime has not been built for this configuration. Check \
+	        $$CHPL_HOME/util/printchplenv and try rebuilding with \
+	        '$(CHPL_MAKE_MAKE)' from $$CHPL_HOME)
+endif
+endif
