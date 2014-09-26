@@ -20,25 +20,29 @@
 
 ===========================================================
 general regressions (seem to happen in most configurations)
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/25/14)
 ===========================================================
+
+fails about 2-3x a month
+------------------------
+[Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
 
 
 ==============================================
 linux64 regressions (in addition to the above)
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/25/14)
 ==============================================
 
 
 ==========================================================
 linux32 (comm-none) regressions (in addition to the above)
-(Reviewed for accuracy 09/17/14)
+(Reviewed for accuracy 09/25/14)
 ==========================================================
 
 
 ================================
 performance-specific regressions
-(Reviewed for accuracy 09/23/14)
+(Reviewed for accuracy 09/25/14)
 ================================
 
 consistent failures on bradc-lnx and chap03 due to insane memory usage
@@ -49,7 +53,7 @@ this should get better with better string memory management
 
 ================================
 --fast regressions
-(Reviewed for accuracy 09/22/14)
+(Reviewed for accuracy 09/25/14)
 ================================
 
 
@@ -67,7 +71,7 @@ Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 
 ================================
 verify regressions
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/25/14)
 ================================
 
 internal error (mike/hilde)
@@ -78,11 +82,11 @@ internal error (mike/hilde)
 
 ================================
 valgrind-specific regressions
-(Reviewed for accuracy 09/14/14)
+(Reviewed for accuracy 09/25/14)
 ================================
 
-nondeterministic invalid write of size 8 (e.g., 09/15/14)
----------------------------------------------------------
+nondeterministic invalid write of size 8 (e.g., 09/15/14, 09/24/14)
+-------------------------------------------------------------------
 [Error matching program output for associative/bharshbarg/parSafeAdd (compopts: 1)]
 
 overlapping memcpy (root cause should be eliminated)
@@ -118,10 +122,6 @@ missing "unable to create more than 0000 threads" warning
 But under valgrind, the program is executed with --numThreadsPerLocale=100,
 so the warning does not apply and is not raised, and .good is not matched.
 
-invalid read/write in dl_* routines
------------------------------------
-[Error matching program output for performance/sungeun/dgemm]
-
 "Unrecognised instruction" (05/18/2013)
 ---------------------------------------
 [Error matching program output for types/atomic/ferguson/atomictest]
@@ -139,8 +139,8 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 09/17/14)
 ====================================================
 
-leaks reported after these had been tightened up (09/18/14)
------------------------------------------------------------
+leaks still occasionally reported after Sung's tightening (09/18/14 -- sungeun)
+-------------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall]
 
 seg fault (09/17/14 -- fixed 09/19/14)
@@ -159,14 +159,14 @@ error: cannot create C string from remote string (due to r22900 -- sungeun)
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(Reviewed for accuracy 09/13/14)
+(Reviewed for accuracy 09/23/14)
 ==============================================
 
 
 
 ============================================================
 linux32 (comm-gasnet) regressions (in addition to the above)
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/25/14)
 ============================================================
 
 fairly consistent timeouts due to qthreads oversubscription (09/15/14)
@@ -186,7 +186,7 @@ none.qthreads.numa-specific tests (other no-local above)
 
 ==========================================================
 gasnet.qthreads.numa-specific tests (other than the above)
-(Reviewed for accuracy 09/14/14)
+(Reviewed for accuracy 09/24/14)
 ==========================================================
 
 frequent, annoying timeout
@@ -214,7 +214,7 @@ fifo-specific regressions
 
 ================================
 darwin-specific regressions
-(reviewed for accuracy 09/23/14)
+(reviewed for accuracy 09/25/14)
 ================================
 
 need machine specific .good file
@@ -222,14 +222,9 @@ need machine specific .good file
 [Error cannot locate program output comparison file studies/hpcc/common/testProbSize.good]
 [Error matching program output for modules/standard/memory/countMemory/countMemory]
 
-internal module line number doesn't match/not filtered (09/21/14 -- hilde)
---------------------------------------------------------------------------
-[Error cannot locate program output comparison file studies/hpcc/common/testProbSize.good]
-[Error matching .bad file for types/enum/sungeun/cast_enum_weird_4]
-
 integers print out with different justification
 -----------------------------------------------
-[Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
+[Error matching .bad file for performance/bradc/refArgIsWide (compopts: 1)]
 
 gdb output differences?
 -----------------------
@@ -319,14 +314,18 @@ surprising timeouts?
 
 ======================================
 chpbld01 (PrgEnv/XC whitebox) failures
-(Reviewed for accuracy 09/17/14)
+(Reviewed for accuracy 09/25/14)
 ======================================
 
 
 ======================================
 chpbld02 (PrgEnv/XE whitebox) failures
-(Reviewed for accuracy 09/17/14)
+(Reviewed for accuracy 09/25/14)
 ======================================
+
+failure due to use of jgit to check out repo which doesn't preserve symlinks
+----------------------------------------------------------------------------
+[Error matching program output for studies/filerator/walk (execopts: 9)]
 
 The following tests fail nondeterministically on chpbld01/chpbld02 with one of
 the following failures (should valgrind these on whiteboxes to diagnose)
@@ -356,31 +355,8 @@ problem with static/dynamic linking?
 
 =========================================
 cray-prgenv-cray/cce-specific regressions
-(Reviewed for accuracy 09/17/14)
+(Reviewed for accuracy 09/23/14)
 =========================================
-
-undefined reference to gni routine (09/20/14)
----------------------------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)]
-
-zippered iterations have non-equal lengths (09/17/14 -- elliot)
---------------------------------------------------------------
-[Error matching program output for statements/bradc/swaps/swapArrayDiffIndices]
-
-doesn't hit halt (09/17/14 -- elliot)
--------------------------------------
-[Error matching program output for trivial/deitz/test_max_range_iteration (compopts: 1)]
-
-glob portability issue (09/17/14 -- bradc)
-------------------------------------------
-[Error matching program output for studies/filerator/globberator (execopts: 1)]
-[Error matching program output for studies/filerator/globberator (execopts: 2)]
-
-unexpected compiler output (listing the source files) (07/23/14)
-----------------------------------------------------------------
-[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
-gbt is working on getting rid of this
 
 empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
@@ -414,14 +390,28 @@ filenames get printed by C compiler when multiple .c files are specified in one 
 [Error matching program output for modules/standard/BitOps/c-tests/popcount (compopts: 1)]
 [Error matching program output for modules/standard/BitOps/c-tests/popcount (compopts: 2)]
 
-error differs but within acceptable margin; should squash error printing
-------------------------------------------------------------------------
-[Error matching program output for studies/hpcc/FFT/marybeth/fft]
+unexpected compiler output (listing the source files) (07/23/14)
+----------------------------------------------------------------
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+gbt is working on getting rid of this
 
 signal 11 (first seen 03/02/14)
 -------------------------------
 [Error matching compiler output for release/examples/benchmarks/shootout/meteor-fast]
 [Error matching program output for studies/shootout/meteor/kbrady/meteor-parallel-alt]
+
+zippered iterations have non-equal lengths (09/17/14 -- elliot)
+--------------------------------------------------------------
+[Error matching program output for statements/bradc/swaps/swapArrayDiffIndices]
+
+glob portability issue (09/17/14 -- bradc)
+------------------------------------------
+[Error matching program output for studies/filerator/globberator (execopts: 1)]
+[Error matching program output for studies/filerator/globberator (execopts: 2)]
+
+error differs but within acceptable margin; should squash error printing
+------------------------------------------------------------------------
+[Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
 error message missing? (first noted 07/17/2014, but failure may have predated)
 ------------------------------------------------------------------------------
@@ -482,11 +472,26 @@ pgi-specific regressions (in addition to above)
 (Reviewed for accuracy 09/15/14)
 ===============================================
 
+mpz_struct not recognized (09/25/14 -- tvandoren)
+-------------------------------------------------
+[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-BigInt]
+[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt]
+
 
 ==========================================================================
 cray-prgenv-intel-specific regressions (in addition to cray-prgenv* above)
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/23/14)
 ==========================================================================
+
+test assertion failures (09/21-23/14)
+-------------------------------------
+[Error matching program output for io/ferguson/io_test]
+[Error matching program output for io/ferguson/writef_readf]
+
+binary files differ (09/23-24/14)
+---------------------------------
+[Error matching program output for io/ferguson/writefbinary]
+[Error matching program output for studies/parboil/SAD/sadSerial]
 
 alignment mismatch in output
 ----------------------------
@@ -495,17 +500,9 @@ alignment mismatch in output
 
 =================================================================
 intel-specific regressions (in addition to chpbld02 errors above)
-(reviewed for accuracy 08/19/14)
+(reviewed for accuracy 09/24/14)
 =================================================================
 
-assertions within tests fail (09/21/14 -- mppf)
------------------------------------------------
-[Error matching program output for io/ferguson/io_test]
-[Error matching program output for io/ferguson/writef_readf]
-
-binary files differ (09/21/14 -- mppf)
---------------------------------------
-[Error matching program output for io/ferguson/writefbinary]
 
 static/dynamic linking issues
 -----------------------------
@@ -515,10 +512,6 @@ static/dynamic linking issues
 2)]
 [Error matching compiler output for link/sungeun/static_dynamic (compopts:
 3)]
-
-alignment error in output
--------------------------
-[Error matching program output for types/range/hilde/align]
 
 
 ================================
@@ -534,14 +527,14 @@ gcc warning about assuming strict overflow
 =================================
 cray-prgenv-gnu specific failures
 (in addition to the above)
-(Reviewed for accuracy 09/14/14)
+(Reviewed for accuracy 09/25/14)
 =================================
 
 
 
 ================================
 LLVM specific regressions
-(Reviewed for accuracy 09/19/14)
+(Reviewed for accuracy 09/25/14)
 ================================
 
 relies on macro in gmp.h -- not expected to work without effort (09/18/14)
@@ -549,8 +542,14 @@ relies on macro in gmp.h -- not expected to work without effort (09/18/14)
 --------------------------------------------------------------------------
 [Error matching compiler output for release/examples/benchmarks/shootout/pidigits]
 
+================================
+LLVM gasnet specific regressions
+(Reviewed for accuracy 09/25/14)
+================================
+
 frequent, annoying timeout
 --------------------------
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
 
 
@@ -641,8 +640,8 @@ numerical roundoff issues
 [Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy
 
-worrisomee timeouts
--------------------
+worrisome, annoying timeouts
+----------------------------
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/basic]
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/reuse]
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase]
@@ -759,7 +758,7 @@ regular timeouts due to oversubscription under qthreads (08/26/14)
 
 ===================================
 replicated distribution regressions
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/25/14)
 ===================================
 
 SIGSEGV at execution time (started 7/24/14)
