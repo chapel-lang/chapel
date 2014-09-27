@@ -24,14 +24,7 @@
  * NOTES:
  *
  * - An empty string is represented by the default baseType value
- *   which is always considered to be a string literal.  It will never
- *   be freed or reference counted.  Another option would be to use a
- *   special NULL extern symbol.  Unfortunately, since _defaultOf()
- *   currently does not work for types with "ignore noinit", we'd
- *   still have to handle the default baseType value, so it would not
- *   be worth it to use NULL.  If the situation changes, it might be
- *   worth reconsidering (also taking into consideration the runtime
- *   functions that back this).
+ *   which is currently a NULL.
  *
  * - Not all operations support interaction with the baseType, e.g.,
  *   relational operations.  I chose to implement the ones I thought
@@ -72,12 +65,15 @@
 module BaseStringType {
   use CString;
   // This type must support the c_string interface
-  type baseType = c_string;
-  param baseTypeString = "c_string":c_string;
+  type baseType = c_string_copy;
+  param baseTypeString = "c_string_copy":c_string;
+  type baseTypeAlias = c_string;
+  param baseTypeAliasString = "c_string":c_string;
+
   inline proc free_baseType(s) { chpl_free_c_string(s); }
 
   pragma "insert line file info"
-  extern proc stringMove(dest: c_string, src: c_string, len: int): c_string;
+  extern proc stringMove(dest: c_string_copy, src: c_string, len: int): c_string;
   pragma "insert line file info"
   extern proc remoteStringCopy(src_loc: int, src_addr: c_string, len: int): c_string_copy;
 
@@ -135,12 +131,13 @@ module NewString {
     }
 
     // This is assumed to be called from this.home
-    proc ref reinitString(s: baseType, slen:int =-1) {
+    proc ref reinitString(s: baseTypeAlias, slen:int =-1) {
       assert(s.locale.id == here.id);
       assert(this.home.id == here.id);
       if debugStrings then writeln("in string.reinitString()");
       if this.isEmptyString() {
         if slen==0 || s==_defaultOf(baseType) then return; // nothing to do
+        // Why do we increment the ref count on an empty string?
         else this.incRefCntNoAlias(); // update my own ref count
       }
       const new_len = if slen == -1 then s.length else slen;
@@ -151,26 +148,27 @@ module NewString {
           this.base = stringMove(this.base, s, new_len);
         } else {
           // free the old buffer
-          if this.len != 0 then
-            on home do free_baseType(this.base);
+          on home do free_baseType(this.base);
           // allocate a new buffer
           this.base = stringMove(_defaultOf(baseType), s, new_len);
         }
       } else {
         // free the old buffer
-        if this.len != 0 then free_baseType(this.base);
-        this.base = _defaultOf(baseType); // empty string are always literals
+        free_baseType(this.base);
+        this.base = _defaultOf(baseType);
       }
       this.len = new_len;
       if debugStrings then writeln("leaving string.reinitString()");
     }
 
+    // Returns a reference (i.e. alias) to the base representation.
+    // It is expected that "this" will outlast the use of the returned reference.
     inline proc c_str() {
       if debugStrings then writeln("in .c_str()");
       if this.home.id != here.id then
         halt("Cannot call .c_str() on a remote string");
       if debugStrings then writeln("leaving .c_str()");
-      return this.base;
+      return this.base:baseTypeAlias;
     }
 
     inline proc length return len;
@@ -374,16 +372,18 @@ module NewString {
     if debugStrings then writeln("leaving proc =()");
   }
 
-  proc =(ref lhs: string_rec, rhs_c: baseType) {
-    if debugStrings then writeln("in proc =() "+baseTypeString);
+  proc =(ref lhs: string_rec, rhs_c: baseTypeAlias) {
+    if debugStrings then writeln("in proc =() "+baseTypeAliasString);
     const hereId = here.id;
     // Make this some sort of local check once we have local types/vars
     if (rhs_c.locale.id != hereId) || (lhs.home.id != hereId) then
-      halt("Cannot assign a remote "+baseTypeString+" to a string.");
+      halt("Cannot assign a remote "+baseTypeAliasString+" to a string.");
     const len = rhs_c.length;
     lhs.reinitString(rhs_c, len);
-    if debugStrings then writeln("leaving proc =() "+baseTypeString);
+    if debugStrings then writeln("leaving proc =() "+baseTypeAliasString);
   }
+
+  // TODO: Add an assignment that will consume a baseType argument.
 
   //
   // Concatenation
@@ -551,16 +551,17 @@ module NewString {
   // Casts
   //
 
-  // Cast from baseType to string
-  inline proc _cast(type t, cs: baseType) where t==string_rec {
-    if debugStrings then writeln("in _cast() "+baseTypeString+"-string");
+  // Cast from baseTypeAlias to string
+  // Makes a copy of the input alias, so produces a string_rec that is not an alias.
+  inline proc _cast(type t, cs: baseTypeAlias) where t==string_rec {
+    if debugStrings then writeln("in _cast() "+baseTypeAliasString+"-string");
     if cs.locale.id != here.id then
       halt("Cannot cast a remote "+baseTypeString+" to string.");
     var ret: string_rec;
     ret.len = cs.length;
     if ret.len != 0 then ret.base = __primitive("string_copy", cs);
     ret.incRefCntNoAlias();
-    if debugStrings then writeln("leaving _cast() "+baseTypeString+"-string");
+    if debugStrings then writeln("leaving _cast() "+baseTypeAliasString+"-string");
     return ret;
   }
 

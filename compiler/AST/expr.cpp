@@ -5075,8 +5075,6 @@ GenRet CallExpr::codegen() {
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
       if (dst == src) {
-        // Maybe not right for chpl_strings.
-        // Definitely not right for dtStringCopy.
         ret = get(2);
       } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {
         GenRet v = codegenValue(get(2));

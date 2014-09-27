@@ -46,13 +46,10 @@ void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, c_str
 void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_string_s* str, int32_t lineno, c_string filename);
 
 // Chapel string support functions
-// If !strcmp(dest, "") then a new string is allocated to accommodate the
+// If dest == NULL then a new string is allocated to accommodate the
 // result of the move.  Otherwise the caller must supply a dest large enough to
 // accommodate the result.  
-// FIXME: If dest is dynamically allocated and yet matches "" it will leak,
-// even if it is NUL followed by a gazillion random bytes.  Maybe it would be
-// appropriate to use realloc here.
-c_string stringMove(c_string dest, c_string src, int64_t len,
+c_string stringMove(c_string_copy dest, c_string src, int64_t len,
                     int32_t lineno, c_string filename);
 
 // TODO: Maybe rename as remoteStringGet.

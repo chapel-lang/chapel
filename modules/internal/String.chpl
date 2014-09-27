@@ -421,6 +421,7 @@ module CString {
   }
   // Assume ownership of data brought by the RHS.
   inline proc =(ref a: c_string_copy, b: c_string_copy) {
+    chpl_free_c_string(a);
     __primitive("=", a, b);
     // Caution: the RHS should be treated as a c_string after this.
   }
@@ -557,10 +558,12 @@ module CString {
   extern proc string_index_of(haystack:c_string, needle:c_string):int;
 
   // Use with care.  Not for the weak.
+  // TODO: Change operand type to ref c_string_copy and null out result.
   inline proc chpl_free_c_string(cs: c_string) {
     pragma "insert line file info"
     extern proc chpl_rt_free_c_string(cs: c_string);
     if (cs != _nullString) then chpl_rt_free_c_string(cs);
+    //    cs = _nullString;
   }
 
 }

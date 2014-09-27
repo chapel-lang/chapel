@@ -550,9 +550,8 @@ module ChapelIO {
       this.s = __primitive("string_copy", x);
     }
     proc writePrimitive(x) {
-      const orig = this.s;
+      // TODO: Do we leak here?
       this.s += (x:c_string_copy);
-      chpl_free_c_string(orig);
     }
     proc ~StringWriter() {
       chpl_free_c_string(this.s);

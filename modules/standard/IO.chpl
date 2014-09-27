@@ -360,7 +360,7 @@ extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_ch
 extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):syserr;
 extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):syserr;
 
-extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
 extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
@@ -391,7 +391,10 @@ extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):syserr;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
-extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+// Note, the returned ptr argument behaves like an allocated c_string
+// (i.e. c_string_copy).  It should be freed by the caller, or stored and freed
+// later.
+extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipws:c_int):syserr;
@@ -1440,14 +1443,11 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
   } else if (t == c_string) || (t == string) {
     // handle c_string and string
     var len:int(64);
-    var tx: c_string;
+    var tx: c_string_copy;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    if t == c_string then x = tx;
-    else {
-      // FIX ME: could use a toString() that doesn't allocate space
-      x = toString(tx);
-      chpl_free_c_string(tx);
-    }
+    // FIX ME: Should deprecate the t == c_string path, because we always
+    // return an "owned" char* buffer (or NULL).
+    x = toString(tx);
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -1555,14 +1555,12 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
   } else if (t == c_string) || (t == string) {
     // handle c_string and string
     var len:int(64);
-    var tx: c_string;
+    var tx: c_string_copy;
     var ret = qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, tx, len, -1);
-    if t == c_string then x = tx;
-    else {
-      // FIX ME: could use a toString() that doesn't allocate space
-      x = toString(tx);
-      chpl_free_c_string(tx);
-    }
+    // TODO: Deprecate the c_string return type, since this routine always
+    // returns an "owned" string thingy.  Using the c_string return type will
+    // cause leaks.
+    x = toString(tx);
     return ret;
   } else if isEnumType(t) {
     var i:enum_mintype(t);
@@ -1862,7 +1860,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
   on this.home {
     var ret:c_string;
     var lenread:int(64);
-    var tx:c_string;
+    var tx:c_string_copy;
     var lentmp:int(64);
     var actlen:int(64);
     var uselen:ssize_t;
@@ -1898,7 +1896,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
     this.unlock();
 
     str_out = toString(tx);
-    chpl_free_c_string(tx);
   }
 
   return !error;
@@ -3768,10 +3765,9 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
   var s:string;
   if ! error {
     var gotlen:int(64);
-    var ts: c_string;
+    var ts: c_string_copy;
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
     s = toString(ts);
-    chpl_free_c_string(ts);
   }
  
   if ! error {
