@@ -72,7 +72,9 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
     var strerror_err:err_t = ENOERR;
     errstr = sys_strerror_syserr_str(error, strerror_err); 
     quotedpath = quote_string(path, path.length:ssize_t);
-    __primitive("chpl_error", errstr + " " + msg.c_str() + " with path " + quotedpath + " offset " + offset:c_string);
+    // TODO: Because the output of concatenation (+) is an allocated string,
+    // this routine leaks like a sieve.
+    __primitive("chpl_error", errstr + " " + msg.c_str() + " with path " + quotedpath + " offset " + offset:c_string_copy);
   }
 }
 
@@ -80,7 +82,9 @@ proc ioerror(errstr:string, msg:string, path:string, offset:int(64))
 {
   var quotedpath:c_string;
   quotedpath = quote_string(path, path.length:ssize_t);
-  __primitive("chpl_error", errstr + " " + msg.c_str() + " with path " + quotedpath + " offset " + offset:c_string);
+  // TODO: Because the output of concatenation (+) is an allocated string,
+  // this routine leaks like a sieve.
+  __primitive("chpl_error", errstr + " " + msg.c_str() + " with path " + quotedpath + " offset " + offset:c_string_copy);
 }
 
 proc errorToString(error:syserr):string

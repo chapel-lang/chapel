@@ -191,15 +191,18 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
  */
 // Even if allocation is done here, the returned string is already owned
 // elsewhere.  So we return a c_string, not a c_string_copy.
-c_string stringMove(c_string dest, c_string src, int64_t len,
+c_string stringMove(c_string_copy dest, c_string src, int64_t len,
                     int32_t lineno, c_string filename) {
   char *ret;
   assert(src);
 
-  // reuse the buffer
-  // The cast is necessary so we can write into the buffer (which is declared
-  // to be const).
-  ret = (char *) dest;
+  if (dest == NULL)
+    ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
+  else
+    // reuse the buffer
+    // The cast is necessary so we can write into the buffer (which is declared
+    // to be const).
+    ret = (char *) dest;
 
   snprintf(ret, len+1, "%s", src);
   return (c_string) ret;
