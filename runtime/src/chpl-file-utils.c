@@ -32,7 +32,7 @@
 #include <sys/stat.h>
 
 
-qioerr chpl_file_chdir(const char* name) {
+qioerr chpl_fs_chdir(const char* name) {
   qioerr err = 0;
   int exitStatus = chdir(name);
   if (exitStatus)
@@ -40,7 +40,7 @@ qioerr chpl_file_chdir(const char* name) {
   return err;
 }
 
-qioerr chpl_file_chown(const char* name, int uid, int gid) {
+qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   qioerr err = 0;
   int exitStatus = chown(name, uid, gid);
   if (exitStatus)
@@ -48,7 +48,7 @@ qioerr chpl_file_chown(const char* name, int uid, int gid) {
   return err;
 }
 
-qioerr chpl_file_cwd(const char** working_dir) {
+qioerr chpl_fs_cwd(const char** working_dir) {
   qioerr err = 0;
   size_t bufsize = MAXPATHLEN*sizeof(char);
   char* bufptr;
@@ -61,7 +61,7 @@ qioerr chpl_file_cwd(const char** working_dir) {
   return err;
 }
 
-qioerr _chpl_file_check_mode(int* ret, const char* name, int mode_flag) {
+qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag) {
   struct stat buf;
   int exitStatus = stat(name, &buf);
   if (exitStatus)
@@ -70,18 +70,18 @@ qioerr _chpl_file_check_mode(int* ret, const char* name, int mode_flag) {
   return 0;
 }
 
-qioerr chpl_file_is_dir(int* ret, const char* name) {
-  return _chpl_file_check_mode(ret, name, S_IFDIR);
+qioerr chpl_fs_is_dir(int* ret, const char* name) {
+  return _chpl_fs_check_mode(ret, name, S_IFDIR);
 }
 
-qioerr chpl_file_is_file(int* ret, const char* name) {
-  return _chpl_file_check_mode(ret, name, S_IFREG);
+qioerr chpl_fs_is_file(int* ret, const char* name) {
+  return _chpl_fs_check_mode(ret, name, S_IFREG);
 }
 
 /* Creates a directory with the given name and settings if possible,
    returning a qioerr if not. If parents != 0, then the callee wishes
    to create all interim directories necessary as well. */
-qioerr chpl_file_mkdir(const char* name, int mode, int parents) {
+qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
   qioerr err = 0;
   int exitStatus;
   if (!parents) {
@@ -137,7 +137,7 @@ qioerr chpl_file_mkdir(const char* name, int mode, int parents) {
 
 /* Renames the file from oldname to newname, returning a qioerr if one
    occurred. */
-qioerr chpl_file_rename(const char* oldname, const char* newname) {
+qioerr chpl_fs_rename(const char* oldname, const char* newname) {
   qioerr err = 0;
   int exitStatus = rename(oldname, newname);
   // utilizes the C library function rename.
@@ -147,7 +147,7 @@ qioerr chpl_file_rename(const char* oldname, const char* newname) {
 }
 
 /* Removes the file specified, returning a qioerr if one occurred. */
-qioerr chpl_file_remove(const char* name) {
+qioerr chpl_fs_remove(const char* name) {
   qioerr err = 0;
   int exitStatus = remove(name);
   if (exitStatus)

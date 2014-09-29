@@ -24,26 +24,26 @@
 #include "sys_basic.h"
 
 
-qioerr chpl_file_chdir(const char* name);
+qioerr chpl_fs_chdir(const char* name);
 
-qioerr chpl_file_chown(const char* name, int uid, int gid);
+qioerr chpl_fs_chown(const char* name, int uid, int gid);
 
-qioerr chpl_file_cwd(const char** working_dir);
+qioerr chpl_fs_cwd(const char** working_dir);
 
-qioerr _chpl_file_check_mode(int* ret, const char* name, int mode_flag);
+qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag);
 
-qioerr chpl_file_is_dir(int* ret, const char* name);
-qioerr chpl_file_is_file(int* ret, const char* name);
+qioerr chpl_fs_is_dir(int* ret, const char* name);
+qioerr chpl_fs_is_file(int* ret, const char* name);
 
 // Creates a directory with the given name and settings if possible,
 // returning a qioerr if not.
-qioerr chpl_file_mkdir(const char* name, int mode, int parents);
+qioerr chpl_fs_mkdir(const char* name, int mode, int parents);
 
 // Renames the file from oldname to newname, returning a qioerr if one
 // occured.
-qioerr chpl_file_rename(const char* oldname, const char* newname);
+qioerr chpl_fs_rename(const char* oldname, const char* newname);
 // Removes the file specified, returning a qioerr if one occurred
-qioerr chpl_file_remove(const char* name);
+qioerr chpl_fs_remove(const char* name);
 
 
 #endif

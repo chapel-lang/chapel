@@ -18,14 +18,14 @@
  */
 use Error;
 
-extern proc chpl_file_chdir(name: c_string):syserr;
-extern proc chpl_file_chown(name: c_string, uid: c_int, gid: c_int):syserr;
-extern proc chpl_file_cwd(ref working_dir:c_string):syserr;
-extern proc chpl_file_is_dir(ref result:c_int, name: c_string):syserr;
-extern proc chpl_file_is_file(ref result:c_int, name: c_string):syserr;
-extern proc chpl_file_mkdir(name: c_string, mode: int, parents: bool):syserr;
-extern proc chpl_file_rename(oldname: c_string, newname: c_string):syserr;
-extern proc chpl_file_remove(name: c_string):syserr;
+extern proc chpl_fs_chdir(name: c_string):syserr;
+extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
+extern proc chpl_fs_cwd(ref working_dir:c_string):syserr;
+extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
+extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
+extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
+extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
+extern proc chpl_fs_remove(name: c_string):syserr;
 
 
 /* Change the current working directory of the current locale to the specified
@@ -37,7 +37,7 @@ extern proc chpl_file_remove(name: c_string):syserr;
    will affect the current working directory of all tasks for that locale.
 */
 proc chdir(out err: syserr, name: string) {
-  err = chpl_file_chdir(name.c_str());
+  err = chpl_fs_chdir(name.c_str());
 }
 
 /* Change the current working directory of the current locale to the specified
@@ -63,7 +63,7 @@ proc chdir(name: string) {
         same.
 */
 proc chown(out err: syserr, name: string, uid: int, gid: int) {
-  err = chpl_file_chown(name.c_str(), uid:c_int, gid:c_int);
+  err = chpl_fs_chown(name.c_str(), uid:c_int, gid:c_int);
 }
 
 /* Changes one or both of the owner and group id of the named file to the
@@ -89,7 +89,7 @@ proc chown(name: string, uid: int, gid: int) {
 */
 proc cwd(out err: syserr): string {
   var tmp:c_string, ret:string;
-  err = chpl_file_cwd(tmp);
+  err = chpl_fs_cwd(tmp);
   if err then return "";
   ret = toString(tmp);
   chpl_free_c_string(tmp);
@@ -116,7 +116,7 @@ proc cwd(): string {
 */
 proc isDir(out err:syserr, name:string):bool {
   var ret:c_int;
-  err = chpl_file_is_dir(ret, name.c_str());
+  err = chpl_fs_is_dir(ret, name.c_str());
   return ret != 0;
 }
 
@@ -137,7 +137,7 @@ proc isDir(name:string):bool {
 */
 proc isFile(out err:syserr, name:string):bool {
   var ret:c_int;
-  err = chpl_file_is_file(ret, name.c_str());
+  err = chpl_fs_is_file(ret, name.c_str());
   return ret != 0;
 }
 
@@ -199,7 +199,7 @@ extern const S_ISVTX: int;
 */
 proc mkdir(out err: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
-  err = chpl_file_mkdir(name.c_str(), mode, parents);
+  err = chpl_fs_mkdir(name.c_str(), mode, parents);
 }
 
 /* Attempt to create a directory with the given path.  If parents is true,
@@ -232,7 +232,7 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
 proc rename(out error: syserr, oldname, newname: string) {
-  error = chpl_file_rename(oldname.c_str(), newname.c_str());
+  error = chpl_fs_rename(oldname.c_str(), newname.c_str());
 }
 
 /* Renames the file specified by oldname to newname, generating an error message
@@ -250,7 +250,7 @@ proc rename(oldname, newname: string) {
    err: a syserr used to indicate if an error occurred during removal
    name: the name of the file/directory to remove */
 proc remove(out err: syserr, name: string) {
-  err = chpl_file_remove(name.c_str());
+  err = chpl_fs_remove(name.c_str());
 }
 
 /* Removes the file or directory specified by name, generating an error message

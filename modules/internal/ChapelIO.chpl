@@ -426,7 +426,6 @@ module ChapelIO {
   }
   
   use IO;
-  use FileUtils;
   
   // these are overridden to not be inout
   // since they don't change when read anyway
