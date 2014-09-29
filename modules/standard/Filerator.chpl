@@ -189,9 +189,11 @@ iter glob(pattern="*") {
   var glb : glob_t;
 
   const err = glob(pattern:c_string, 0, c_nil, glb);
+  const num = chpl_glob_num(glb);
+  if (num) then
+    for i in 0..num-1 do
+      yield chpl_glob_index(glb, i): string;
 
-  for i in 0..chpl_glob_num(glb)-1 do
-    yield chpl_glob_index(glb, i): string;
 
   globfree(glb);
 }
