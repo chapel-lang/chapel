@@ -196,7 +196,13 @@ c_string stringMove(c_string_copy dest, c_string src, int64_t len,
   char *ret;
   assert(src);
 
-  if (dest == NULL)
+  if (dest == NULL ||
+      // TODO: Want to deprecate indicating an empty string by a string of zero
+      // length.  This works OK if the string is unallocated (such as a string
+      // literal), but does not work well with an allocated string.  An
+      // allocated string of zero length still occupies memory (one byte for
+      // the NUL, at least), so that leaves us with a dilemma.  Which is it?
+      strlen(dest) == 0)
     ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
   else
     // reuse the buffer

@@ -432,6 +432,26 @@ module NewString {
     return ret;
   }
 
+  proc +(s: string_rec, cs: c_string_copy) {
+    if cs.locale.id != here.id then
+      halt("Cannot concatenate a remote "+baseTypeString+"_copy.");
+    if debugStrings then writeln("in proc +() string+"+baseTypeString+"_copy");
+    if cs == _defaultOf(c_string_copy) then return s;
+    if s.isEmptyString() then return cs:string_rec;
+    var ret: string_rec;
+    const slen = s.len;
+    ret.len = slen + cs.length;
+    const sremote = s.home.id != here.id;
+    const sbase = if sremote
+                  then remoteStringCopy(s.home.id, s.base, slen)
+                  else s.base;
+    ret.base = sbase+cs;
+    ret.incRefCntNoAlias();
+    if sremote then free_baseType(sbase);
+    if debugStrings then writeln("leaving proc +() string+"+baseTypeString+"_copy");
+    return ret;
+  }
+
   proc +(cs: baseType, s: string_rec) {
     if cs.locale.id != here.id then
       halt("Cannot concatenate a remote "+baseTypeString+".");
@@ -452,22 +472,38 @@ module NewString {
     return ret;
   }
 
+  proc +(cs: c_string_copy, s: string_rec) {
+    if cs.locale.id != here.id then
+      halt("Cannot concatenate a remote "+baseTypeString+"_copy.");
+    if debugStrings then writeln("in proc +() "+baseTypeString+"_copy+string");
+    if cs == _defaultOf(c_string_copy) then return s;
+    if s.isEmptyString() then return cs:string_rec;
+    var ret: string_rec;
+    const slen = s.len;
+    ret.len = cs.length + slen;
+    const sremote = s.home.id != here.id;
+    const sbase = if sremote
+                  then remoteStringCopy(s.home.id, s.base, slen)
+                  else s.base;
+    ret.base = cs+sbase;
+    ret.incRefCntNoAlias();
+    if sremote then free_baseType(sbase);
+    if debugStrings then writeln("leaving proc +() "+baseTypeString+"+string");
+    return ret;
+  }
+
   //
   // Concatenation with other types is done by casting to the baseType
   //
   inline proc concatHelp(s: string_rec, x:?t) where t != string_rec {
-    const cs = x:baseType;
+    const cs = x:c_string_copy;
     const ret = s + cs;
-    if !isBoolType(x.type) && !isEnumType(x.type) then
-      free_baseType(cs);
     return ret;
   }
 
   inline proc concatHelp(x:?t, s: string_rec) where t != string_rec  {
-    const cs = x:baseType;
+    const cs = x:c_string_copy;
     const ret = cs + s;
-    if !isBoolType(x.type) && !isEnumType(x.type) then
-      free_baseType(cs);
     return ret;
   }
 
@@ -567,15 +603,11 @@ module NewString {
   // Other casts to strings use the baseType
   inline proc _cast(type t, x) where t==string_rec && x.type != baseType {
     if debugStrings then writeln("in _cast() ", typeToString(t), "-string");
-    const cs = x:baseType;
+    const cs = x:c_string_copy;
     var ret: string_rec;
     ret.len = cs.length;
     assert(ret.len != 0);
-    if isBoolType(x.type) || isEnumType(x.type) then
-      // These are returned as string literals so copy the string
-      ret.base = stringMove(_defaultOf(baseType), cs, ret.len);
-    else
-      ret.base = cs;
+    ret.base = cs;
     ret.incRefCntNoAlias();
     if debugStrings then writeln("leaving _cast() ", typeToString(t),
                                  "-string");
