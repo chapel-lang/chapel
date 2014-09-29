@@ -29,7 +29,6 @@ Parsing module files:
   $CHPL_HOME/modules/standard/List.chpl
   $CHPL_HOME/modules/standard/SysBasic.chpl
   $CHPL_HOME/modules/standard/IO.chpl
-  $CHPL_HOME/modules/standard/FileUtils.chpl
   $CHPL_HOME/modules/standard/Sort.chpl
   $CHPL_HOME/modules/standard/Search.chpl
   $CHPL_HOME/modules/standard/CommDiagnostics.chpl
