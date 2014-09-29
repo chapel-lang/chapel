@@ -572,27 +572,6 @@ qioerr qio_file_close(qio_file_t* f);
 
 qioerr qio_file_sync(qio_file_t* f);
 
-qioerr qio_chdir(const char* name);
-
-qioerr qio_chown(const char* name, int uid, int gid);
-
-qioerr qio_cwd(const char** working_dir);
-
-qioerr _qio_check_mode(int* ret, const char* name, int mode_flag);
-
-qioerr qio_is_dir(int* ret, const char* name);
-qioerr qio_is_file(int* ret, const char* name);
-
-// Creates a directory with the given name and settings if possible,
-// returning a qioerr if not.
-qioerr qio_mkdir(const char* name, int mode, int parents);
-
-// Renames the file from oldname to newname, returning a qioerr if one
-// occured.
-qioerr qio_file_rename(const char* oldname, const char* newname);
-// Removes the file specified, returning a qioerr if one occurred
-qioerr qio_file_remove(const char* name);
-
 // This one gets called automatically.
 void _qio_file_destroy(qio_file_t* f);
 
