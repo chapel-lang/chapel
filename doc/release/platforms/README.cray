@@ -296,7 +296,9 @@ program heap will grow to during execution:
 
 By default the heap will occupy as much of the free memory on the locale
 (compute node) as the runtime can acquire, less a certain amount to
-allow for demands from other (system) programs running there.  Advanced
+allow for demands from other (system) programs running there.  (Note
+that the default with slurm job placement is 16 GiB; see "Communication
+Layer Concurrency and Slurm", below, for more information.)  Advanced
 users may want to make the heap smaller than this.  Programs start more
 quickly with a smaller heap, and in the unfortunate event that you need
 to produce core files, those will be written more quickly if the heap is
@@ -538,6 +540,25 @@ Parameters associated with the ugni communication layer:
     performance.  Useful values for CHPL_RT_COMM_CONCURRENCY are in
     the range 1 to 30.  Values specified outside this range are
     silently increased or reduced so as to fall within it.
+
+
+    Communication Layer Concurrency and Slurm
+    -----------------------------------------
+
+    When slurm is used for job placement on Cray systems, it limits the
+    total NIC memory registration in order to allow for job sharing on
+    the compute nodes.  In our experience this limit is approximately
+    240 GiB.  The product of CHPL_RT_MAX_HEAP_SIZE and the communication
+    layer concurrency discussed above must be less than this.  The ugni
+    communication layer adjusts its heap size and concurency defaults to
+    reflect this limit when slurm is responsible for job placement.  The
+    default heap size is reduced to 16 GiB.  The concurrency is computed
+    such that the product of heap size and concurrency is below 240 GiB.
+    Thus under slurm, the ugni communication layer can support programs
+    with very large heaps or programs that need a lot of communication
+    concurrency, but not programs that need both simultaneously.  Such
+    programs need to be run using ALPS for job placement instead of
+    slurm.
 
 
 Network Atomics
