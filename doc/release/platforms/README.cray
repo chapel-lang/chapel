@@ -171,7 +171,7 @@ Using Chapel on a Cray System
    You can use the -v flag to see the commands used by the launcher
    binary to start your program.
 
-   If CHPL_LAUNCHER is set to pbs-aprun or pbs-gasnetrun_ibv:
+   If CHPL_LAUNCHER is pbs-aprun or pbs-gasnetrun_ibv:
 
      a) You can optionally specify a queue name using the environment
         variable CHPL_LAUNCHER_QUEUE.  For example:
@@ -190,6 +190,13 @@ Using Chapel on a Cray System
 
         Alternatively, you can set the wall clock time limit on your
         Chapel program command line using the --walltime flag.
+
+   If CHPL_LAUNCHER is slurm-gasnetrun_ibv:
+
+     You must set the amount of time to request from SLURM.
+     For example, the following requests 15 minutes:
+
+          export CHPL_LAUNCHER_WALLTIME=00:15:00
 
    For further information about launchers, please refer to
    $CHPL_HOME/doc/README.launcher.
