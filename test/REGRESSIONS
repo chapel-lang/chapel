@@ -23,10 +23,6 @@ general regressions (seem to happen in most configurations)
 (Reviewed for accuracy 09/25/14)
 ===========================================================
 
-forgot to turn sorting on for new test (09/30/14 -- bradc)
-----------------------------------------------------------
-[Error matching program output for studies/filerator/testboth] (verify, chap01, valgrind, chap05, no-local, chap13, memory-leaks)
-
 fails about 2-3x a month
 ------------------------
 [Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
@@ -387,8 +383,8 @@ cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 09/23/14)
 =========================================
 
-integers printed instead of records (09/30/14)
-----------------------------------------------
+records missing their formatting characters (09/30/14)
+------------------------------------------------------
 [Error matching program output for functions/diten/refIntents]
 
 empty array size problem (1/25/14 -- bradc)
