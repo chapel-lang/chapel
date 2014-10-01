@@ -134,9 +134,9 @@ GEN_CFLAGS += -Wno-strict-overflow
 endif
 
 #
-# developer settings
+# compiler warnings settings
 #
-ifdef CHPL_DEVELOPER
+ifeq ($(WARNINGS), 1)
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
