@@ -1,0 +1,31 @@
+\section{Introduction}
+
+The original design for Chapel anticpated that memory management would be handled
+by garbage collection.  However, efficient distributed-memory garbage collection
+algorithms have not been forthcoming.  In the mean time, the desire to support a growing
+number of users by keeping memory leakage within practical bounds forced the
+implementation to provide some means for reclaiming memory.  
+
+Since memory reclamation was not part of the original design, it is necessarily somewhat
+ad hoc.  A review of the memory management elements in use in the Chapel compiler revealed
+that all of the necessary elements are present, but have not been applied uniformly across
+all types.  As a result, memory allocated for use by certain types still leaks.
+
+By comparison with C++, which has a strong User-Managed Memory model, the Chapel
+implementation still lacks some elements that would support memory management under
+program control --- at least in a more unified manner.  This proposal restates the object
+model as it relates to the current Chapel implementation, and provides recommendations for
+syntax and semantics modifications necessary to support that model.
+
+The remainder of this documents is organized as follows: The following section discusses
+the object lifecycle and provides a brief overview of the User-Managed Memory model.  It
+also contains general information common to the other sections.  Secion 3 presents the proposed
+syntax and semantics for variable and field declarations outside the context of a
+constructor definition, highlighting how this differs from the current implementation.
+Section 4 presents the proposed syntax and semantics for constructors, highlighting how
+this differs from the current impelemtation.
+
+Appendices are provided for quick reference.  Appendix A provides a summary of the
+proposed changes.  Appendix B gives examples including declarations for the fundamental
+types provided by Chapel.
+
