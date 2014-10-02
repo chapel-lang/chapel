@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
+#
+# Configure environment for testing valgrind.
 
-CWD=$(cd $(dirname $0) ; pwd)
-
-source $CWD/common.bash
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_RT_NUM_THREADS_PER_LOCALE=100
-log_info "Testing valgrind."
-
-# qthreads doesn't have the appropriate suppressions for valgrind testing yet
-source $CWD/common-fifo.bash
 
 # once qthreads+valgrind works, we need to enable oversubscription since we use
 # paratest. --enabled-valgrind builds qthreads with valgrind macros to help
@@ -20,9 +16,4 @@ if [ "${tasks}" == "qthreads" ] ; then
     export CHPL_QTHREAD_MORE_CFG_OPTIONS=--enable-valgrind
 fi
 
-
-$CWD/nightly -cron -valgrind -no-futures \
-    -suppress Suppressions/valgrind.suppress \
-    -parnodefile $CWD/../../test/Nodes/CHAP07
-
-log_info "Finished ${0}."
+nightly_args="-valgrind -no-futures -suppress Suppressions/valgrind.suppress -parnodefile $CWD/../../test/Nodes/CHAP07"
