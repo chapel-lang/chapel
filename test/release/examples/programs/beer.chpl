@@ -68,12 +68,7 @@ proc computeLyrics(verseNum) {
 // # should result in "[N/n]o more" for zero bottles.
 //
 proc describeBottles(bottleNum, startOfVerse = false) {
-  // TODO: The cast to c_string_copy is a crutch.  There is something wrong
-  // with the cast to "string" that needs to be correct.
-  // In either case, with the current implementation of strings, we leak
-  // memory.
-  // Presumably, going to the record-based strings will resolve that.
-  return (if (bottleNum) then bottleNum:c_string_copy
+  return (if (bottleNum) then bottleNum:string
                          else (if startOfVerse then "N" 
                                                else "n") + "o more")
           + " bottle" + (if (bottleNum != 1) then "s" else "") 

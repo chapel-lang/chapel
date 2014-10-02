@@ -1221,10 +1221,12 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if ((((toVarSymbol(actualSym) || toArgSymbol(actualSym))) &&
-       (actualType==dtStringC)) && (formalType == dtString))
+  if (//(toVarSymbol(actualSym) || toArgSymbol(actualSym)) && // What does this exclude?
+      actualType == dtStringC && formalType == dtString)
     return true;
-  if (formalType==dtStringC && actualType == dtStringCopy)
+  if (formalType == dtStringC && actualType == dtStringCopy)
+    return true;
+  if (formalType == dtString && actualType == dtStringCopy)
     return true;
   return false;
 }

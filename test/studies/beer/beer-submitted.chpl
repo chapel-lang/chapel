@@ -52,8 +52,7 @@ proc computeLyric(verseNum) {
 
 proc describeBottles(bottleNum, startOfVerse:bool = false) {
 // NOTE: bool should not be necessary here (^^^^); working around bug
-  // FIXME: Go back to original string cast.
-  var bottleDescription = if (bottleNum) then bottleNum:c_string_copy
+  var bottleDescription = if (bottleNum) then bottleNum:string
                                          else (if startOfVerse then "N" 
                                                                else "n") 
                                               + "o more";

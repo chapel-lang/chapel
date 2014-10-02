@@ -51,8 +51,7 @@ proc computeLyric(verseNum) {
 
 
 proc describeBottles(bottleNum: int, startOfVerse = false) {
-  // FIXME: Go back to the original string cast.
-  var bottleDescription = if (bottleNum) then bottleNum:c_string_copy
+  var bottleDescription = if (bottleNum) then bottleNum:string
                                          else (if startOfVerse then "N" 
                                                                else "n") 
                                               + "o more";
