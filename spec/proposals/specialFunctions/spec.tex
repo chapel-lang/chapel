@@ -1,0 +1,145 @@
+\documentclass[10pt,twoside,titlepage]{../../spec}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage{times}
+%\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage[nottoc]{tocbibind}
+\usepackage{multirow}
+\input{../../chapel_testing}
+\input{../../chapel_listing}
+\input{../../syntax_listing}
+
+%% High section numbers require different number widths
+\usepackage[titles]{tocloft}
+\setlength{\cftchapnumwidth}{1.3em}
+\setlength{\cftsecnumwidth}{2.6em}
+\setlength{\cftsubsecnumwidth}{3.9em}
+\setlength{\cftsubsubsecnumwidth}{5.2em}
+\setlength{\cftsubsecindent}{1.7em}
+\setlength{\cftsubsubsecindent}{4.3em}
+
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex,
+            bookmarks,
+            plainpages=false,
+            breaklinks,
+            pdftitle={Chapel Language Specification},
+            pdfauthor={Cray Inc, 901 Fifth Avenue Suite 1000, Seattle, WA 98164},
+            pdfsubject={Chapel High Productivity Language}
+           ]{hyperref}
+\else
+\usepackage[ps2pdf]{hyperref}
+\fi
+
+\newcommand{\ie}{\emph{i.e.}}
+\newcommand{\eg}{\emph{e.g.}}
+
+\newenvironment{TODO} {
+\begin{quote}
+{\it TODO:}
+}{
+\end{quote}
+}
+
+\newenvironment{example}{
+\begin{quote}
+{\it Example}.
+}{
+\end{quote}
+}
+
+\newenvironment{chapelexample}[1]{
+\begin{quote}
+{\it Example (#1)}.
+}{
+\end{quote}
+}
+
+\newenvironment{note}{
+\begin{quote}
+{\it Implementors' note}.
+}{
+\end{quote}
+}
+
+\newenvironment{rationale}{
+\begin{quote}
+{\it Rationale}.
+}{
+\end{quote}
+}
+
+\newenvironment{openissue}{
+\begin{quote}
+{\it Open issue}.
+}{
+\end{quote}
+}
+
+\newenvironment{future}{
+\begin{quote}
+{\it Future}.
+}{
+\end{quote}
+}
+
+\newenvironment{craychapel}{
+\begin{quote}
+{\it Cray's Chapel Implementation}.
+}{
+\end{quote}
+}
+
+\newenvironment{suggestionbox}{
+\begin{quote}
+{\it Suggestions?}
+}{
+\end{quote}
+}
+
+\newcommand{\rsec}[1]
+           {\S\ref{#1}}
+
+% courtesy: http://www.iam.ubc.ca/~newbury/tex/page-set-up.html
+\newcommand{\sekshun}[1]
+           {
+             \chapter{#1}
+             \markboth{Chapel Language Specification}{#1}
+           }
+
+\oddsidemargin 0.5in
+\evensidemargin 0.0in
+\textwidth 6in
+\headheight 0.2in
+\topmargin 0in
+\headsep 0.3in
+\textheight 8.5in
+
+\title{Chapel Language Specification\\Version 0.91}
+
+\author{Cray Inc\\
+901 Fifth Avenue, Suite 1000\\
+Seattle, WA 98164}
+
+\date{May 21, 2012}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+\begin{document}
+
+\pagestyle{myheadings}
+\markboth{Chapel Language Specification}{Chapel Language Specification}
+%\pagenumbering{roman}
+
+\setlength{\parindent}{0in}
+\setlength{\parskip}{4mm plus2mm minus1mm}
+
+\input{Special_Functions}
+
+\end{document}
