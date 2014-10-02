@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
+#
+# Test default configuration on full suite with baseline enabled on linux64.
 
 CWD=$(cd $(dirname $0) ; pwd)
-
-source $CWD/common-baseline.bash
-
-log_info "Testing baseline."
-
+source $CWD/common.bash
 $CWD/nightly -cron -baseline -suppress Suppressions/baseline.suppress -no-futures -compopts --inline
-
-log_info "Finished ${0}."
