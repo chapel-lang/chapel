@@ -61,12 +61,11 @@ BasicBlock::BasicBlock()
   } while (0)
 
 
-//# Statics
-BasicBlock* BasicBlock::basicBlock;
-Map<LabelSymbol*,std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
-Map<LabelSymbol*,BasicBlock*> BasicBlock::labelMaps;
-int BasicBlock::nextid;
-
+// Class Statics
+BasicBlock*                                  BasicBlock::basicBlock;
+Map<LabelSymbol*, std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
+Map<LabelSymbol*, BasicBlock*>               BasicBlock::labelMaps;
+int                                          BasicBlock::nextid;
 
 // Returns true if the class invariants have been preserved.
 bool BasicBlock::isOK()
@@ -78,16 +77,20 @@ bool BasicBlock::isOK()
   // Every in edge must have a corresponding out edge in the source block.
   for_vector(BasicBlock, source, ins) {
     bool found = false;
+
     for_vector(BasicBlock, bb, source->outs)
       if (bb == this) { found = true; break; }
+
     if (!found) return false;
   }
 
   // Every out edge must have a corresponding in edge in the target block.
   for_vector(BasicBlock, target, outs) {
     bool found = false;
+
     for_vector(BasicBlock, bb, target->ins)
       if (bb == this) { found = true; break; }
+
     if (!found) return false;
   }
 
@@ -96,12 +99,14 @@ bool BasicBlock::isOK()
 
 void BasicBlock::clear(FnSymbol* fn)
 {
-  if (!fn->basicBlocks)
-    return;
+  if (fn->basicBlocks) {
+    for_vector(BasicBlock, bb, *fn->basicBlocks)
+      delete bb;
 
-  for_vector(BasicBlock, bb, *fn->basicBlocks)
-    delete bb, bb = 0;
-  delete fn->basicBlocks; fn->basicBlocks = 0;
+    delete fn->basicBlocks; 
+
+    fn->basicBlocks = 0;
+  }
 }
 
 // Reset the shared statics.
@@ -110,14 +115,17 @@ void BasicBlock::reset(FnSymbol* fn)
   clear(fn);
   gotoMaps.clear();
   labelMaps.clear();
+
   fn->basicBlocks = new std::vector<BasicBlock*>();
-  nextid = 0;
+  nextid          = 0;
 }
 
 BasicBlock* BasicBlock::Steal()
 {
   BasicBlock* temp = basicBlock;
+
   basicBlock = 0;
+
   return temp;
 }
 
@@ -125,112 +133,156 @@ BasicBlock* BasicBlock::Steal()
 void buildBasicBlocks(FnSymbol* fn)
 {
   BasicBlock::reset(fn);
-  BasicBlock::basicBlock = new BasicBlock();    // BB_START();
-  BasicBlock::buildBasicBlocks(fn, fn->body);   // BBB(fn->body);
-  fn->basicBlocks->push_back(BasicBlock::Steal());    // BB_STOP();
+  BasicBlock::basicBlock = new BasicBlock();
+  BasicBlock::buildBasicBlocks(fn, fn->body);
+  fn->basicBlocks->push_back(BasicBlock::Steal());
 
   INT_ASSERT(verifyBasicBlocks(fn));
 }
 
-void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
-{
-  if (!stmt) return;
+void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
+  if (stmt == NULL) {
 
-  if (BlockStmt* s = toBlockStmt(stmt))
-  {
-    CallExpr* loop = toCallExpr(s->blockInfo);
-    if (loop)
-    {
-      bool cForLoop = loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+  } else if (BlockStmt* s = toBlockStmt(stmt)) {
+    if (CallExpr* blockInfo = toCallExpr(s->blockInfo)) {
+      bool cForLoop = blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {
-        for_alist(stmt, toBlockStmt(loop->get(1))->body) { BBB(stmt); }
+        for_alist(stmt, toBlockStmt(blockInfo->get(1))->body) { 
+          BBB(stmt); 
+        }
       }
 
-      // mark the top of the loop
+      // mark the basic block immediately before the loop conditional
       BasicBlock* top = basicBlock;
-      BB_RESTART();
 
-      // for c for loops, add the test expr at the loop top
+      //
+      // Create a basic block for the conditional
+      //
+
+      BB_RESTART();
+      BasicBlock* loopCond = basicBlock;
+
+      // Add the loop condidtional
       if (cForLoop) {
-        for_alist(stmt, toBlockStmt(loop->get(2))->body) { BBB(stmt); }
+        for_alist(stmt, toBlockStmt(blockInfo->get(2))->body) {
+          BBB(stmt); 
+        }
+
+        // MDN 2014/10/02
+        //
+        // It is "surprising" that it is necessary to insert the entire
+        // BlockInfo CallExpr in to the BB for the loop condition.
+        //
+        // Elliot indicates that there are optimizations that rely on
+        // finding a BlockInfo CallExpr in the body of the loop to work and
+        // I have confirmed that the compiler fails on simple programs
+        // without it.
+        //
+        // WhileDoStmt does not have any blockInfo to insert and so I will
+        // explore further in a separate commit
+        BB_ADD(blockInfo);
+
+      } else {
+        BB_ADD(blockInfo);
       }
 
-      // add the CallExpr that is the loop itself and then add the loops body
-      BB_ADD(loop);
-      BasicBlock* loopTop = basicBlock;
+      //
+      // Now create 1 or more BasicBlocks for the body
+      //
+      BB_RESTART();
+      BasicBlock* loopBodyTop    = basicBlock;
+
       for_alist(stmt, s->body) {
         BBB(stmt);
       }
 
       // for c for loops, add the incr expr after the loop body
       if (cForLoop) {
-        for_alist(stmt, toBlockStmt(loop->get(3))->body) { BBB(stmt); }
+        for_alist(stmt, toBlockStmt(blockInfo->get(3))->body) {
+          BBB(stmt); 
+        }
       }
 
-      BasicBlock* loopBottom = basicBlock;
+      BasicBlock* loopBodyBottom = basicBlock;
+
       BB_RESTART();
-      BasicBlock* bottom = basicBlock;
+      BasicBlock* bottom         = basicBlock;
 
       // thread the basic blocks of the pre-loop, loop, and post-loop together
-      BB_THREAD(top, loopTop);
-      BB_THREAD(loopBottom, bottom);
-      BB_THREAD(loopBottom, loopTop);
-      BB_THREAD(top, bottom);
-    }
-    else
-    {
+      BB_THREAD(top,            loopCond);
+
+      BB_THREAD(loopCond,       loopBodyTop);
+      BB_THREAD(loopBodyBottom, loopCond);
+
+      BB_THREAD(loopCond,       bottom);
+
+    } else {
       for_alist(stmt, s->body)
         BBB(stmt);
     }
-  }
-  else if (CondStmt* s = toCondStmt(stmt))
-  {
+
+  } else if (CondStmt* s = toCondStmt(stmt)) {
     INT_ASSERT(s->condExpr);
+
     BB_ADD(s->condExpr);
-    BasicBlock* top = basicBlock;
+
+    BasicBlock* top        = basicBlock;
+
     BB_RESTART();
     BB_THREAD(top, basicBlock);
     BBB(s->thenStmt);
+
     BasicBlock* thenBottom = basicBlock;
+
     BB_RESTART();
-    if (s->elseStmt)
-    {
+
+    if (s->elseStmt) {
       BB_THREAD(top, basicBlock);
       BBB(s->elseStmt);
+
       BasicBlock* elseBottom = basicBlock;
+
       BB_RESTART();
       BB_THREAD(elseBottom, basicBlock);
-    }
-    else
-    {
+
+    } else {
       BB_THREAD(top, basicBlock);
     }
     BB_THREAD(thenBottom, basicBlock);
+
   } else if (GotoStmt* s = toGotoStmt(stmt)) {
     LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
+
     if (BasicBlock* bb = labelMaps.get(label)) {
       BB_THREAD(basicBlock, bb);
     } else {
       std::vector<BasicBlock*>* vbb = gotoMaps.get(label);
+
       if (!vbb)
         vbb = new std::vector<BasicBlock*>();
+
       vbb->push_back(basicBlock);
+
       gotoMaps.put(label, vbb);
     }
+
     BB_ADD(s); // Put the goto at the end of its block.
     BB_RESTART();
   } else {
     DefExpr* def = toDefExpr(stmt);
+
     if (def && toLabelSymbol(def->sym)) {
-      // If a label appears in the middle of a block,
-      // we start a new block.
-      if (basicBlock->exprs.size() > 0)
-      {
+
+      // If a label appears in the middle of a block, we start a new block.
+      if (basicBlock->exprs.size() > 0) {
         BasicBlock* top = basicBlock;
+
         BB_RESTART();
         BB_THREAD(top, basicBlock);
       }
+
       BB_ADD(def); // Put the label def at the start of its block.
 
       // OK, this statement is a label def, so get the label.
@@ -243,7 +295,9 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
           BB_THREAD(bb, basicBlock);
         }
       }
+
       labelMaps.put(label, basicBlock);
+
     } else {
       BB_ADD(stmt);
     }
