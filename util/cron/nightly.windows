@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-
-source $(cd $(dirname $0) ; pwd)/common.bash
-export CHPL_MAILER=email
-
-$CHPL_HOME/util/cron/nightly -cron
