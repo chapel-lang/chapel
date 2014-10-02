@@ -194,7 +194,8 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
 c_string stringMove(c_string_copy dest, c_string src, int64_t len,
                     int32_t lineno, c_string filename) {
   char *ret;
-  assert(src);
+  if (src == NULL)
+    return NULL;
 
   if (dest == NULL ||
       // TODO: Want to deprecate indicating an empty string by a string of zero

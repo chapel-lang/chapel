@@ -448,6 +448,7 @@ module NewString {
     ret.base = sbase+cs;
     ret.incRefCntNoAlias();
     if sremote then free_baseType(sbase);
+    free_baseType(cs);
     if debugStrings then writeln("leaving proc +() string+"+baseTypeString+"_copy");
     return ret;
   }
@@ -488,6 +489,7 @@ module NewString {
     ret.base = cs+sbase;
     ret.incRefCntNoAlias();
     if sremote then free_baseType(sbase);
+    free_baseType(cs);
     if debugStrings then writeln("leaving proc +() "+baseTypeString+"+string");
     return ret;
   }

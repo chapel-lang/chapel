@@ -156,12 +156,12 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, c_strin
   c_string src;
 
   if (low  < 1) low = 1;
-  if (high < low) high = low - 1;
-  size = high - low + 1;
+  if (high < low) return NULL;
 
-  src = stride > 0 ? x + low - 1 : x + high - 1;
+  size = high - low + 1;
   result = chpltypes_malloc(size + 1, CHPL_RT_MD_STRING_SELECT_DATA,
                             lineno, filename);
+  src = stride > 0 ? x + low - 1 : x + high - 1;
   dst = result;
   if (stride == 1) {
     memcpy(result, src, size);
@@ -186,13 +186,13 @@ string_select(c_string x, int low, int high, int stride, int32_t lineno, c_strin
 // string, or an empty string if the index is out of bounds.
 c_string_copy
 string_index(c_string x, int i, int32_t lineno, c_string filename) {
-  char* buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
-                                  lineno, filename);
+  char* buffer;
   if (i-1 < 0 || i-1 >= string_length(x))
   {
-    *buffer = '\0';
-    return buffer;
+    return NULL;
   }
+  buffer = chpltypes_malloc(2, CHPL_RT_MD_STRING_COPY_DATA,
+                            lineno, filename);
   sprintf(buffer, "%c", x[i-1]);
   return buffer;
 }
