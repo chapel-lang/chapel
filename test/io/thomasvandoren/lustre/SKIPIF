@@ -1,2 +1,1 @@
-# Need to say: skip if CHPL_AUX_FILESYS does _not_ contain lustre.
-CHPL_AUX_FILESYS !<= lustre
+CHPL_AUX_FILESYS >= lustre

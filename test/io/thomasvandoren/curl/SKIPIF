@@ -1,2 +1,1 @@
-# Need to say: skip if CHPL_AUX_FILESYS does _not_ contain curl.
-CHPL_AUX_FILESYS !<= curl
+CHPL_AUX_FILESYS >= curl
