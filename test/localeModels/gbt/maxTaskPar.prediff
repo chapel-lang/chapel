@@ -8,6 +8,18 @@ tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 
 function cores_from_proc_cpuinfo() {
   if [[ -f /proc/cpuinfo ]] ; then
+    #
+    # Assumptions about /proc/cpuinfo:
+    # - There is a separate "processor" block for each logical CPU.
+    # - The CPUs are heterogeneous in terms of both cores/socket and
+    #   logical CPUs/core.  (This is true now but someday won't be!)
+    # - The "cpu cores" entry gives physical CPUs/socket.
+    # - The "siblings" entry gives logical CPUs/socket.
+    # - If either "cpu cores" or "siblings" entries are not present,
+    #   each processor block is assumed to represent a hardware core.
+    #   (This is broken in cygwin at least sometimes.)   Otherwise,
+    #   "siblings"/"cpu cores" is the logical/physical CPU ratio.
+    #
     numPUs=$( grep -c '^processor[[:space:]]\+: ' /proc/cpuinfo )
     numCores1=$( grep -m 1 '^cpu cores[[:space:]]\+: ' /proc/cpuinfo |
                  sed 's/^[^[:digit:]]*\([[:digit:]]\+\).*$/\1/' )
