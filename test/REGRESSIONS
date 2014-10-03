@@ -45,6 +45,13 @@ performance-specific regressions
 (Reviewed for accuracy 09/25/14)
 ================================
 
+OOM on bradc-lnx (10/03/14 -- bradc)
+------------------------------------
+[Error matching performance keys for studies/colostate/cfd-mini-serial]
+
+timeout on chap03 (10/03/14 -- bradc)
+-------------------------------------
+
 consistent failures on bradc-lnx and chap03 due to insane memory usage
 this should get better with better string memory management
 -------------------------------------------------------------------------------
@@ -237,6 +244,7 @@ gasnet.fifo.flat-specific tests (other than the above)
 
 annoying, noisy timeouts
 ------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
 
@@ -785,16 +793,14 @@ cyclic distribution regressions
 (Reviewed for accuracy 09/29/14)
 ================================
 
-occasional, annoying timeouts
------------------------------
+constant, annoying shift in timeouts -- due to machine load or qthreads oversub?
+--------------------------------------------------------------------------------
 [Error: Timed out compilation for distributions/robust/arithmetic/basics/test_array_assignment]
 [Error: Timed out compilation for distributions/robust/arithmetic/basics/test_array_swap]
 [Error: Timed out compilation for distributions/robust/arithmetic/reindexing/test_array_alias1]
-
-constant, annoying shift in timeouts -- due to machine load or qthreads oversub?
---------------------------------------------------------------------------------
 [Error: Timed out compilation for distributions/robust/arithmetic/basics/test_zipper_default]
 [Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random]
+[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Search]
 
 communication counts changed due to r23004, gbt (03/30/14)
 ----------------------------------------------------------
