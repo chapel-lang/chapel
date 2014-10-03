@@ -82,8 +82,17 @@ internal error (mike/hilde)
 
 ================================
 valgrind-specific regressions
-(Reviewed for accuracy 09/29/14)
+(Reviewed for accuracy 10/02/14)
 ================================
+
+annoying occasional invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
+read of size 8 in dl_name_match_p (e.g., 10/2/14)
+-----------------------------------------------------------------------------
+[Error matching program output for performance/sungeun/dgemm]
+
+invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
+-----------------------------------------------------------------
+[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
 
 infrequent, annoying timeout
 ----------------------------
@@ -135,8 +144,13 @@ so the warning does not apply and is not raised, and .good is not matched.
 
 ================================
 no-local regressions
-(Reviewed for accuracy 09/26/14)
+(Reviewed for accuracy 10/02/14)
 ================================
+
+memory usage changed due to remote string change? (10/02/14 -- sungeun)
+-----------------------------------------------------------------------
+[Error matching program output for memory/shannon/printFinalMemStat]
+
 
 
 ====================================================
