@@ -20,16 +20,17 @@
 #ifndef _BB_H_
 #define _BB_H_
 
-#include "chpl.h"
-#include <vector>
-#include "stlUtil.h"
-
 class BitVec;
 class Expr;
-class SymExpr;
+class FnSymbol;
+class LabelSymbol;
 class Stmt;
 class Symbol;
-class FnSymbol;
+class SymExpr;
+
+#include "map.h"
+
+#include <vector>
 
 // A pseudo-singleton.
 // Each basic block contains a list of expressions, in and out edges and an index.

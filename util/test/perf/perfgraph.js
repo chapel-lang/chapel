@@ -39,7 +39,10 @@ var branchInfo = [
                     "revision" : 22086},
                   { "release" : "1.9",
                     "branchDate" : "2014-04-07",
-                    "revision" : 23144}
+                    "revision" : 23144},
+                  { "release" : "1.10",
+                    "branchDate" : "2014-09-22",
+                    "revision" : -1}  // TODO: This was a git commit.
                   ];
 
 // stuff for dygraph

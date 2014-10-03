@@ -165,7 +165,8 @@ void AstDumpToNode::exitModSym(ModuleSymbol* node)
 
 bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 {
-  bool firstTime = true;
+  char heading[128] = { '\0' };
+  bool firstTime    = true;
 
   newline();
 
@@ -173,7 +174,19 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  write(false, "#<BlockStmt ",           true);
+  sprintf(heading, "#<BlockStmt   %12d ", node->id);
+
+  write(false, heading, true);
+
+  if (node->blockInfo)
+  {
+    newline();
+    write(false, "BlockInfo: ", false);
+    mOffset = mOffset + 2;
+    node->blockInfo->accept(this);
+    mOffset = mOffset - 2;
+    newline();
+  }
 
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
@@ -193,13 +206,6 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
       fprintf(mFP, "\n");
 
     next_ast->accept(this);
-  }
-
-  if (node->blockInfo)
-  {
-    newline();
-    write(false, "BlockInfo: ", false);
-    node->blockInfo->accept(this);
   }
 
   if (node->modUses)
@@ -231,7 +237,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 bool AstDumpToNode::enterDefExpr(DefExpr* node)
 {
   newline();
-  fprintf(mFP, "#<DefExpr ");
+  fprintf(mFP, "#<DefExpr      %12d", node->id);
 
   mOffset = mOffset + 2;
 
@@ -444,7 +450,7 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
 bool AstDumpToNode::enterCallExpr(CallExpr* node)
 {
   newline();
-  fprintf(mFP, "#<CallExpr");
+  fprintf(mFP, "#<CallExpr    %12d", node->id);
   mOffset = mOffset + 2;
   newline();
 
@@ -524,7 +530,7 @@ void AstDumpToNode::visitSymExpr(SymExpr* node)
 
   newline();
 
-  fprintf(mFP, "#<SymExpr var: ");
+  fprintf(mFP, "#<SymExpr     %12d var: ", node->id);
   writeSymbol(sym);
   fprintf(mFP, ">");
 }
@@ -858,7 +864,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   
   else if (isArgSymbol(sym) == true)
   {
-    fprintf(mFP, "#<ArgSymbol    name: %-36s", name);
+    fprintf(mFP, "#<ArgSymbol    %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
@@ -964,7 +970,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
         *tail   = '\0';
       }
 
-      fprintf(mFP, "#<VarSymbol    imm:  %-36s", imm);
+      fprintf(mFP, "#<VarSymbol    %12d imm:  %-36s", var->id, imm);
 
       if (sym->type) 
       {
@@ -980,7 +986,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     else
     {
-      fprintf(mFP, "#<VarSymbol    name: %-36s", name);
+      fprintf(mFP, "#<VarSymbol    %12d name: %-36s", var->id, name);
 
       if (sym->type) 
       {
