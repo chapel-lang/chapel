@@ -38,6 +38,15 @@ proc main() {
     if i % 10 == 0 then
       writeln("\t:", i);
   }
+
+  //
+  // Free memory associated with multi-precision valuesx
+  //
+  mpz_clear(tmp2);
+  mpz_clear(tmp1);
+  mpz_clear(denom);
+  mpz_clear(accum);
+  mpz_clear(numer);
 }
 
 
