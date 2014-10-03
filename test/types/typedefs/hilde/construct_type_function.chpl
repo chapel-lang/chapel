@@ -6,7 +6,7 @@
 class B { var i:int; }
 class C { var r:real; }
 
-proc foo(flag: bool) type
+proc foo(param flag: bool) type
 {
   if flag then return C;
   else return B;
