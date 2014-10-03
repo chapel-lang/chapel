@@ -1,0 +1,16 @@
+bug: type alias to a class/record with a generic param field in a function does not work
+
+The following does not work:
+
+  type T = someClass(formal);
+
+where someClass has a param field and 'formal' is a param formal
+of the function that this decl is inside of.
+
+Various other compile-time combinations do work - see
+
+  compile-time-messages.chpl
+
+When retiring this future:
+* uncomment the corresponding lines in compile-time-messages.chpl
+* remove this test altogether

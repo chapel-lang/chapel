@@ -22,6 +22,7 @@ on Locales[(here.id + 1) % numLocales] {
   writeln("i is ", i, " and is on locale: ", i.locale.id);
   writeln("c is ", c, " and is on locale: ", c.locale.id);
   writeln("e is ", e, " and is on locale: ", e.locale.id);
-  writeln("s is ", s, " and is on locale: ", s.locale.id);
+  // This line should be commented out once stringConstRepl.future is retired
+  // writeln("s is ", s, " and is on locale: ", s.locale.id);
   writeln("myR is ", myR, " and is on locale: ", myR.locale.id);
 }
