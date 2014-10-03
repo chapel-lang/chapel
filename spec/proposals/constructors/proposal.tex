@@ -29,7 +29,7 @@
             plainpages=false,
             breaklinks,
             pdftitle={Constructors Proposal},
-            pdfauthor={Tom Hildebrandt\\Cray Inc\\901 Fifth Avenue Suite 1000\\Seattle, WA 98164},
+            pdfauthor={Tom Hildebrandt, Cray Inc, 901 Fifth Avenue Suite 1000, Seattle, WA 98164},
            ]{hyperref}
 \else
 \usepackage[ps2pdf]{hyperref}
@@ -94,7 +94,7 @@
 \newcommand{\sekshun}[1]
            {
              \chapter{#1}
-             \markboth{Chapel Language Specification}{#1}
+             \markboth{Constructors Proposal}{#1}
            }
 
 \oddsidemargin 0.5in
@@ -120,7 +120,7 @@ Seattle, WA 98164}
 \begin{document}
 
 \pagestyle{myheadings}
-\markboth{Constructors Proposal}
+%\markboth{Constructors Proposal}
 %\pagenumbering{roman}
 
 \setlength{\parindent}{0in}
@@ -141,6 +141,7 @@ with the recommended changes.
 \input{Declarations}
 \input{Constructors}
 \appendix
+\sekshun{Appendices}
 \input{Changes}
 \input{Examples}
 
