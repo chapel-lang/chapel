@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
+#
+# Test gasnet (segment fast) against full suite on linux64.
 
 CWD=$(cd $(dirname $0) ; pwd)
-
 source $CWD/common-gasnet.bash
 
-#
 # Test a GASNet compile using the fast segment
-#
 export CHPL_GASNET_SEGMENT=fast
 
-log_info "Testing GASNet using segment $CHPL_GASNET_SEGMENT."
 $CWD/nightly -cron
-
-log_info "Finished ${0}."
