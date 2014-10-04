@@ -1981,7 +1981,7 @@ module ChapelArray {
     var newDom : a.type;
 
     serial !newDom._value.parSafe do 
-      forall k in a do
+      forall k in a with (ref newDom) do // no race - in 'serial'
         if b.member(k) then newDom += k;
     return newDom;
   }
@@ -2594,6 +2594,33 @@ module ChapelArray {
   
   inline proc _toLeaderZip(x: _tuple)
     return _toLeader(x(1));
+
+  // additional _toLeader/_toLeaderZip for forall intents
+
+  pragma "no implicit copy"
+  pragma "expand tuples with values"
+  inline proc _toLeader(iterator: _iteratorClass, args...)
+    return chpl__autoCopy(__primitive("to leader", iterator, (...args)));
+
+  pragma "expand tuples with values"
+  inline proc _toLeader(ir: _iteratorRecord, args...) {
+    pragma "no copy" var ic = _getIterator(ir);
+    pragma "no copy" var leader = _toLeader(ic, (...args));
+    _freeIterator(ic);
+    return leader;
+  }
+  
+  pragma "expand tuples with values"
+  inline proc _toLeader(x, args...)
+    return _toLeader(x.these(), (...args));
+  
+  pragma "expand tuples with values"
+  inline proc _toLeaderZip(x, args...)
+    return _toLeader(x, (...args));
+  
+  pragma "expand tuples with values"
+  inline proc _toLeaderZip(x: _tuple, args...)
+    return _toLeader(x(1), (...args));
   
   //
   // return true if any iterator supports fast followers

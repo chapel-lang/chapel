@@ -171,16 +171,16 @@ module test_elemental_explicitly_strided_cholesky {
     const unit_roundoff = 2.0 ** (-53), // IEEE 64 bit floating point
           gamma_n1      = (n * unit_roundoff) / (1.0 - n * unit_roundoff);
 
-    var   resid : real,
-          max_ratio = 0.0;
+    var   max_ratio = 0.0;
 
     var   d : [mat_rows] real;
 
     for i in mat_rows do
       d (i) = sqrt ( A (i,i) );
     
-    forall (i,j) in mat_dom do {
-      resid  = abs (A (i,j) - 
+    forall (i,j) in mat_dom with (ref max_ratio) do { // race
+      const resid: real =
+               abs (A (i,j) - 
 		    + reduce ( [k in mat_dom.dim(1) (..min (i,j))]
 			       L (i,k) * L (j,k) ) ) ;
       max_ratio = max ( max_ratio,

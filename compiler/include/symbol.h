@@ -333,6 +333,7 @@ class FnSymbol : public Symbol {
   void insertFormalAtTail(BaseAST* ast);
 
   Symbol* getReturnSymbol();
+  Symbol* replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType);
 
   int numFormals();
   ArgSymbol* getFormal(int i); // return ith formal

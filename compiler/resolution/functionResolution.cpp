@@ -2728,6 +2728,12 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
   for_formals_actuals(formal, actual, call) {
     argNum++;
     SymExpr* symexpActual = toSymExpr(actual);
+    if (!symexpActual) {
+      // We add NamedExpr args in propagateExtraLeaderArgs().
+      NamedExpr* namedexpActual = toNamedExpr(actual);
+      INT_ASSERT(namedexpActual);
+      symexpActual = toSymExpr(namedexpActual->actual);
+    }
     INT_ASSERT(symexpActual); // because of how we invoke a task function
     Symbol* varActual = symexpActual->var;
 
@@ -5174,6 +5180,14 @@ preFold(Expr* expr) {
         leaderCall = new CallExpr(leader);
       else
         leaderCall = new CallExpr(iterator->name);
+
+      // Ensure these are not in use by another call. If they are,
+      // need the ability to handle multiple such calls, e.g. use a hash map.
+      INT_ASSERT(!extendedLeaderCallOrig && !extendedLeaderCallNew);
+      // ForallLeaderArgs: will need to process after resolving the call
+      extendedLeaderCallOrig = call;
+      extendedLeaderCallNew = leaderCall;
+
       for_formals(formal, iterator) {
         leaderCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
@@ -6000,6 +6014,9 @@ resolveExpr(Expr* expr)
         init = resolveExpr(init);
         // expr is unchanged, so is treated as "resolved".
       }
+      if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
+        implementForallIntents1(def);
+      }
     }
     
     if (CallExpr* call = toCallExpr(expr)) {
@@ -6033,7 +6050,15 @@ resolveExpr(Expr* expr)
       resolveCall(call);
         
       if (!tryFailure && call->isResolved()) {
+        if (call == extendedLeaderCallNew)
+          implementForallIntents2(call);
         resolveFns(call->isResolved());
+      } else {
+        if (call == extendedLeaderCallNew) {
+          // clean up
+          extendedLeaderCallNew = NULL;
+          extendedLeaderCallOrig = NULL;
+        }
       }
         
       if (tryFailure) {
@@ -6316,6 +6341,21 @@ resolveFns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
     return;
 
+  //
+  // mark leaders for inlining
+  //
+  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    for_formals(formal, fn) {
+      if (formal->type == gLeaderTag->type &&
+          paramMap.get(formal) == gLeaderTag) {
+        fn->addFlag(FLAG_INLINE_ITERATOR);
+        // need to do the following before 'fn' gets resolved
+        stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
+        break;
+      }
+    }
+  }
+
   if (fn->retTag == RET_REF) {
     buildValueFunction(fn);
   }
@@ -6356,11 +6396,19 @@ resolveFns(FnSymbol* fn) {
   //
   // mark leaders for inlining
   //
-  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+  // The original computation used to be here, now we do it earlier,
+  // here we only verify that we did not miss a leader.
+  // todo: convert this to an assertion; perhaps factor out the common code
+  // with the above.
+  //
+  if (fn->hasFlag(FLAG_ITERATOR_FN) &&
+      !fn->hasFlag(FLAG_INLINE_ITERATOR))
+  {
     for_formals(formal, fn) {
       if (formal->type == gLeaderTag->type &&
           paramMap.get(formal) == gLeaderTag) {
-        fn->addFlag(FLAG_INLINE_ITERATOR);
+        // oops
+        INT_ASSERT(false);
       }
     }
   }
@@ -7417,6 +7465,17 @@ static void handleRuntimeTypes()
 }
 
 
+static void removePrimForalls() {  // vass - remove in addShadowVarsForForall ?
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (block->byrefVars && block->byrefVars->inTree()) {
+      INT_ASSERT(block->byrefVars->isPrimitive(PRIM_FORALL_LOOP));
+      INT_ASSERT(block->byrefVars->numActuals() == 0);
+      block->byrefVars->remove();
+    }
+  }
+}
+
+
 //
 // pruneResolvedTree -- prunes and cleans the AST after all of the
 // function calls and types have been resolved
@@ -7428,6 +7487,7 @@ pruneResolvedTree() {
   removeRandomPrimitives();
   replaceTypeArgsWithFormalTypeTemps();
   removeParamArgs();
+  removePrimForalls();
 
   removeUnusedGlobals();
   removeUnusedTypes();

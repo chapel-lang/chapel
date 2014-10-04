@@ -32,7 +32,7 @@ var Temp:[outerD] real;
 var moving: bool;
 do {
   moving = false;
-  forall (i,j) in D do {                       // calc new World
+  forall (i,j) in D with (ref moving) do {   // calc new World
     World(i,j) = (Temp(i-1,j) + Temp(i+1,j) + Temp(i,j-1) + Temp(i,j+1)) / 4.0;
     moving |= abs( World(i,j) - Temp(i,j)) > THRESHOLD;
   }

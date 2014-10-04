@@ -198,7 +198,7 @@ void cleanup(void) {
   forv_Vec(BaseAST, ast, asts) {
     SET_LINENO(ast);
     if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->blockTag == BLOCK_SCOPELESS && block->list)
+      if (block->blockTag == BLOCK_SCOPELESS && block->list && !block->byrefVars)
         flatten_scopeless_block(block);
     } else if (CallExpr* call = toCallExpr(ast)) {
       if (call->isNamed("_build_tuple"))

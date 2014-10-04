@@ -1068,6 +1068,7 @@ buildFollowLoop(Symbol* iter, Symbol* leadIdxCopy, Symbol* followIter,
 BlockStmt*
 buildForallLoopStmt(Expr* indices, 
                     Expr* iterExpr, 
+                    CallExpr* byref_vars,
                     BlockStmt* loopBody, 
                     bool zippered) {
   checkControlFlow(loopBody, "forall statement");
@@ -1082,6 +1083,15 @@ buildForallLoopStmt(Expr* indices,
 
   checkIndices(indices);
 
+  INT_ASSERT(!loopBody->byrefVars);
+  if (byref_vars) {
+    INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
+    byref_vars->primitive = primitives[PRIM_FORALL_LOOP];
+  } else {
+    byref_vars = new CallExpr(PRIM_FORALL_LOOP);
+  }
+  loopBody->byrefVars = byref_vars;
+
   VarSymbol* iter = newTemp("chpl__iter");
   VarSymbol* leadIdx = newTemp("chpl__leadIdx");
   VarSymbol* leadIter = newTemp("chpl__leadIter");
@@ -1091,9 +1101,15 @@ buildForallLoopStmt(Expr* indices,
   VarSymbol* followIdx = newTemp("chpl__followIdx");
   VarSymbol* followIter = newTemp("chpl__followIter");
   iter->addFlag(FLAG_EXPR_TEMP);
-  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  iter->addFlag(FLAG_CHPL__ITER);
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+
+  // ForallLeaderArgs: stash references so we know where things are.
+  byref_vars->insertAtHead(leadIdxCopy); // 3rd arg
+  byref_vars->insertAtHead(leadIdx);     // 2nd arg
+  byref_vars->insertAtHead(iter);        // 1st arg
 
   BlockStmt* leadBlock = buildChapelStmt();
   leadBlock->insertAtTail(new DefExpr(iter));
