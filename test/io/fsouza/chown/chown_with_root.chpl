@@ -1,3 +1,4 @@
+use FileSystem;
 /* This test requires root to run.
 
    Users can run this test using fakeroot:

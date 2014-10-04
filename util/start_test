@@ -480,7 +480,8 @@
 #      <blank>        : a blank line is skipped
 #      <var> == <val> : checks to see if envvar "var" is "val"
 #      <var> != <val> : checks to see if envvar "var" is not "val"
-#       <var> <= <val> : true if <var> contains the substring "val".
+#      <var> <= <val> : true if <var> contains the substring "val".
+#      <var> >= <val> : true if <var> does not contain the substring "val".
 #      CHPL_MEM_LEAK_TESTING == true : check if we are testing for memory leaks
 #    All of the lines of containing conditional expressions are logically
 #    or'd together, and if any of them are true, the test is
@@ -1736,10 +1737,11 @@ set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
 
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 if ($clean_only == 0) then
-    grep "$errormarker" $logfile |& $tee -a $logfile.summary
+    grep "$errormarker" $logfile |& $tee -a $logfile.summary >/dev/null
     if ($suppressions != "") then
         $utildir/test/filterSuppressions $suppressions $logfile.summary
     endif
+    grep "$errormarker" $logfile.summary
 
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
     grep "$warningmarker" $logfile |& $tee -a $logfile.summary

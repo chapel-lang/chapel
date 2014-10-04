@@ -62,6 +62,9 @@ Integral Conversions
  %bi  - a binary signed integer
  %bu  - a binary unsigned integer
  %@bu - a binary unsigned integer with 0b
+ %oi  - an octal signed integer
+ %ou  - an octal unsigned integer
+ %@ou - an octal unsigned integer with 0o
  %xu - a hexadecimal unsigned integer
  %xi - a hexadecimal signed integer
  %@xu - a hexadecimal unsigned integer with 0x
@@ -332,6 +335,7 @@ Going through each section for text conversions:
    d means decimal (and not exponential for floating-point)
    x means lower-case hexadecimal
    X means upper-case hexadecimal 
+   o means octal
    b means binary 
    j means JSON-style strings, numbers, and structures
    h means Chapel-style strings, numbers, and structures

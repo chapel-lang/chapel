@@ -17,13 +17,16 @@
  * limitations under the License.
  */
 
-#include <cstdlib>
-#include "astutil.h"
 #include "bb.h"
+
+#include "astutil.h"
 #include "bitVec.h"
 #include "expr.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
+
+#include <cstdlib>
 
 BasicBlock::BasicBlock()
   : id(nextid++) {}

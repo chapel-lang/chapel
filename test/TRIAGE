@@ -69,25 +69,6 @@ failed per day from 09/06/2014 through 09/11/2014, and none failed on 09/12/2014
   Appears to be a simple timeout.  The test ran successfully in the 19 runs immediately 
   preceding the timeout.  Increase the timeout time?
 
-failures retrieving and storing perf data, started 7/19/14
-----------------------------------------------------------
-We are getting these messages, seemingly for all testing (not just perf):
-  ERROR svn-updating perf data before running tests.
-  ERROR svn-updating perf data after running tests.
-  ERROR svn-updating release over release perf data after running tests: 1
-  ERROR svn-committing perf data.
-First reported 7/20/14; Thomas is looking
-There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
-An attempt to fix this on the svn side the night of 7/22/14 failed.
-It is being escalated to github support.
-7/24/14: Think we have a solution; expect good results for 7/25 testing.
-Intermittent: got a lot of these early in the week of 7/20, fewer on 7/25,
-              but then more again on 7/26, only a few on 7/27, etc.
-
-CCE errors building runtime with 8.4 (The identifier "__func__" is undefined.)
----------------------------------------------------------------------
-Bug http://bugzilla.us.cray.com/show_bug.cgi?id=815301
-
 *** Caught a fatal signal: SIGSEGV(11) on node 3/4: gasnet.qthreads.numa
 ------------------------------------------------------------------------
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
