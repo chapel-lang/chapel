@@ -151,6 +151,10 @@ void Expr::verify() {
   if (prev || next)
     if (!list)
       INT_FATAL(this, "Expr is in list but does not point at it");
+  if (prev && prev->next != this)
+    INT_FATAL(this, "Bad Expr->prev->next");
+  if (next && next->prev != this)
+    INT_FATAL(this, "Bad Expr->next->prev");
   if (!parentSymbol)
     INT_FATAL(this, "Expr::parentSymbol is NULL");
   if (parentExpr && parentExpr->parentSymbol != parentSymbol)
