@@ -49,12 +49,12 @@ void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_stri
 // If dest == NULL then a new string is allocated to accommodate the
 // result of the move.  Otherwise the caller must supply a dest large enough to
 // accommodate the result.  
-c_string stringMove(c_string_copy dest, c_string src, int64_t len,
-                    int32_t lineno, c_string filename);
+c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
+                         int32_t lineno, c_string filename);
 
 // TODO: Maybe rename as remoteStringGet.
 c_string_copy remoteStringCopy(c_nodeid_t src_locale,
-                          c_string src_addr, int64_t src_len,
-                          int32_t lineno, c_string filename);
+                               c_string src_addr, int64_t src_len,
+                               int32_t lineno, c_string filename);
 
 #endif

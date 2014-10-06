@@ -125,10 +125,13 @@ void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t le
 // The input is a c_string_copy, which always owns the bytes it points to.
 // On return, the string data is no longer owned by the c_string_copy
 // argument.  It is owned by the returned chpl_string instead.
+// TODO: Would really like "str" to be passed by reference, so we can set it to
+// zero after we usurp its contents.
 chpl_string
 string_from_c_string_copy(c_string_copy str, int haslen, int64_t len)
 {
-  return (chpl_string) str;
+  chpl_string result = str;
+  return result;
 }
 
 void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int haslen, int64_t len, int32_t lineno, chpl_string filename)
@@ -151,6 +154,8 @@ void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int 
   ret->size = len + 1; // this size includes the terminating NUL
 }
 
+// TODO: Would really like "str" to be passed by reference, so we can set it to
+// zero after we usurp its contents.
 void wide_string_from_c_string_copy(chpl____wide_chpl_string *ret, c_string_copy str,
                                     int haslen, int64_t len,
                                     int32_t lineno, chpl_string filename)
@@ -191,8 +196,8 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
  */
 // Even if allocation is done here, the returned string is already owned
 // elsewhere.  So we return a c_string, not a c_string_copy.
-c_string stringMove(c_string_copy dest, c_string src, int64_t len,
-                    int32_t lineno, c_string filename) {
+c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
+                         int32_t lineno, c_string filename) {
   char *ret;
   if (src == NULL)
     return NULL;
@@ -223,8 +228,8 @@ c_string stringMove(c_string_copy dest, c_string src, int64_t len,
  *
  */
 c_string_copy remoteStringCopy(c_nodeid_t src_locale,
-                          c_string src_addr, int64_t src_len,
-                          int32_t lineno, c_string filename) {
+                               c_string src_addr, int64_t src_len,
+                               int32_t lineno, c_string filename) {
   char* ret;
   if (src_addr == NULL) return NULL;
   ret = chpl_mem_alloc(src_len+1, CHPL_RT_MD_STRING_COPY_REMOTE,

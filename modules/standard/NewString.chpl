@@ -72,6 +72,7 @@
 module BaseStringType {
   use CString;
   // This type must support the c_string interface
+  // TODO: It should really be c_string_copy.
   type baseType = c_string;
   param baseTypeString = "c_string":c_string;
   inline proc free_baseType(s) { chpl_free_c_string(s); }

@@ -523,7 +523,7 @@ module ChapelIO {
   }
   
   proc warning(args ...?numArgs) {
-    var tmpstring: c_string;
+    var tmpstring: c_string_copy;
     tmpstring.write((...args));
     warning(tmpstring);
     chpl_free_c_string(tmpstring);
@@ -550,12 +550,14 @@ module ChapelIO {
       this.s = __primitive("string_copy", x);
     }
     proc writePrimitive(x) {
-      const orig = this.s;
-      this.s += (x:c_string_copy);
-      chpl_free_c_string(orig);
+      // TODO: Implement += so it consumes a c_string_copy LHS.
+      const aug = x:c_string_copy;
+      this.s += aug;      // The update frees this.s before overwriting it.
+      chpl_free_c_string(aug);
     }
     proc ~StringWriter() {
       chpl_free_c_string(this.s);
+      this.s = _nullString;
     }
   }
   
@@ -569,7 +571,7 @@ module ChapelIO {
     //else                   x.writeThis(w);
     w.write(x);
     const result = w.s;
-    w.s = _nullString;
+    __primitive("=", w.s, _nullString);
     delete w;
     return result;
   }
@@ -580,7 +582,8 @@ module ChapelIO {
     sc.write((...args));
     // We need to copy this string because the destructor call below frees it
     this = sc.s;
-    sc.s = _nullString;
+    // This is required to prevent double-deletion.
+    __primitive("=", sc.s, _nullString);
     delete sc;
   }
   
@@ -589,7 +592,8 @@ module ChapelIO {
     var sc = new StringWriter(this.c_str());
     sc.write((...args));
     this = toString(sc.s);
-    sc.s = _nullString;
+    // This is required to prevent double-deletion.
+    __primitive("=", sc.s, _nullString);
     delete sc;
   }
   

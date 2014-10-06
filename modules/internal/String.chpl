@@ -244,23 +244,25 @@ module String {
     if isnan(x.re) || isnan(x.im) then
       return __primitive("string_copy", "nan");
     var re = (x.re):c_string_copy;
-    var im: c_string;
+    var im: c_string_copy;
     var op: c_string;
     if x.im < 0 {
       im = (-x.im):c_string_copy;
       op = " - ";
     } else if im == "-0.0" {
-      im = "0.0";
+      im = "0.0":c_string_copy;
       op = " - ";
     } else {
       im = (x.im):c_string_copy;
       op = " + ";
     }
+    // TODO: Add versions of the concatenation operator that consume their
+    // c_string_copy arg or args.
     const ts0 = re + op;
     chpl_free_c_string(re);
     const ts1 = ts0 + im;
     chpl_free_c_string(ts0);
-    if im != "-0.0" then chpl_free_c_string(im);
+    chpl_free_c_string(im);
     const ret = ts1 + "i";
     chpl_free_c_string(ts1);
     return ret;
@@ -296,16 +298,26 @@ module String {
 }
 
 // C strings
-//extern type c_string; is a built-in primitive type
+// extern type c_string; is a built-in primitive type
 //
 // In terms of how they are used, c_strings are a "close to the metal"
 // representation, being in essence the common NUL-terminated C string.
 //
-// Memory management caveat: In general, an object of type c_string does not
-// own its data (that is, some do, but not all).  Therefore it is only safe to
-// free a c_string object if you know its provenance, and can trace this back
-// to a string-allocating function such as string_concat(),
-// chpl_glom_strings() or string_copy().
+// C string copies
+// extern type c_string_copy is also a built-in primitive type.
+// It is the same as a c_string, but in its case represents "owned" data.
+// Low-level routines that allocate string data off the heap and return a deep
+// copy (including string_copy, string_concat, string_index and string_select)
+// have the return type of c_string_copy to denote that ownership.
+//
+// The difference is ignored by the C compiler, but Chapel treats them as
+// different types.  This difference allows us to have two versions of
+// toString: one makes a copy of its c_string argument, the other simply
+// pointer-copies its c_string_copy argument.  Both effectively return an
+// "owned" C string, which is how the internal chpl_string type is currently
+// interpreted.  (The new record-based string implementation has different
+// rules, but still makes use of the distinction between unowned c_strings and
+// owned c_string_copies.
 module CString {
 
   // The following method is called by the compiler to determine the default
@@ -413,20 +425,23 @@ module CString {
     __primitive("=", a, toString(b));
   }
 
-  // Create a fresh copy of the RHS string.
+  // Create a fresh copy of the RHS string, first releasing the LHS.
   inline proc =(ref a: c_string_copy, b: c_string) {
     chpl_free_c_string(a);
     var c = __primitive("string_copy", b);
     __primitive("=", a, c);
   }
-  // Assume ownership of data brought by the RHS.
+  // Assume ownership of data brought by the RHS, first releasing the LHS.
   inline proc =(ref a: c_string_copy, b: c_string_copy) {
-    //    chpl_free_c_string(a);
+    chpl_free_c_string(a);
     __primitive("=", a, b);
-    // Caution: the RHS should be treated as a c_string after this.
   }
 
   inline proc _cast(type t, x: c_string) where t == string {
+    return toString(x);
+  }
+
+  inline proc _cast(type t, x: c_string_copy) where t == string {
     return toString(x);
   }
 
@@ -559,11 +574,11 @@ module CString {
 
   // Use with care.  Not for the weak.
   // TODO: Change operand type to ref c_string_copy and null out result.
-  inline proc chpl_free_c_string(cs: c_string) {
+  inline proc chpl_free_c_string(cs: c_string_copy) {
     pragma "insert line file info"
-    extern proc chpl_rt_free_c_string(cs: c_string);
+    extern proc chpl_rt_free_c_string(cs: c_string_copy);
     if (cs != _nullString) then chpl_rt_free_c_string(cs);
-    //    cs = _nullString;
+    // cs = _nullString;
   }
 
 }

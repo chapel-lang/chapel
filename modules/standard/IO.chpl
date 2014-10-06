@@ -341,13 +341,13 @@ extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
 extern proc qio_free_string(arg:c_string);
 
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
+extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):syserr;
+extern proc qio_file_path_for_fp(fp:_file, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):syserr;
+extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):syserr;
+extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string_copy, path_in:c_string):syserr;
 
 extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
 pragma "no prototype" // FIXME
@@ -655,7 +655,7 @@ proc chown(name: string, uid: int, gid: int) {
    err: a syserr used to indicate if an error occurred
 */
 proc cwd(out err: syserr): string {
-  var tmp:c_string, ret:string;
+  var tmp:c_string_copy, ret:string;
   err = qio_cwd(tmp);
   if err then return "";
   ret = toString(tmp);
@@ -705,8 +705,8 @@ proc file.getPath(out error:syserr) : string {
   check();
   var ret:string;
   on this.home {
-    var tmp:c_string;
-    var tmp2:c_string;
+    var tmp:c_string_copy;
+    var tmp2:c_string_copy;
     error = qio_file_path(_file_internal, tmp);
     if !error {
       error = qio_shortest_path(_file_internal, tmp2, tmp);
@@ -915,7 +915,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   var err:syserr = ENOERR;
   var ret = openfd(fd, err, hints, style);
   if err {
-    var path:c_string;
+    var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path);
     if e2 then path = "unknown".c_str();
@@ -937,7 +937,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   var err:syserr = ENOERR;
   var ret = openfp(fp, err, hints, style);
   if err {
-    var path:c_string;
+    var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
     if e2 then path = "unknown".c_str();
@@ -1709,18 +1709,17 @@ proc _args_to_proto(args ...?k,
                     preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handlling so maybe we don't care.
-  var err_args:c_string = "";
+  var err_args:c_string;
   for param i in 1..k {
     var name:c_string;
     if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:c_string;
+    else name = "x" + i:c_string_copy;
     // FIX ME: leak c_string due to concatenation
+    // Actually, don't fix me.  Fix concatenation to consume its c_string_copy args.
     err_args += preArg + name + ":" + typeToString(args(i).type);
     if i != k then err_args += ", ";
   }
-  // FIX ME: could use a toString() that doesn't allocate space
   const ret = toString(err_args);
-  chpl_free_c_string(err_args);
   return ret;
 }
 
