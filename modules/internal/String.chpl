@@ -573,7 +573,6 @@ module CString {
   extern proc string_index_of(haystack:c_string, needle:c_string):int;
 
   // Use with care.  Not for the weak.
-  // TODO: Change operand type to ref c_string_copy and null out result.
   inline proc chpl_free_c_string(cs: c_string_copy) {
     pragma "insert line file info"
     extern proc chpl_rt_free_c_string(cs: c_string_copy);

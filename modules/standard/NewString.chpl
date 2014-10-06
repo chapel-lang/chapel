@@ -75,7 +75,17 @@ module BaseStringType {
   // TODO: It should really be c_string_copy.
   type baseType = c_string;
   param baseTypeString = "c_string":c_string;
-  inline proc free_baseType(s) { chpl_free_c_string(s); }
+  // This used to be defined in terms of chpl_free_c_string, but that one wants
+  // the argument to be a c_string_copy.  Here, we lie about the interface to
+  // chpl_rt_free_c_string(), so we can get around having to coerce the wrong
+  // baseType (c_string) to the right one (c_string_copy).  The coercion will
+  // allocate more memory, which is not what we want.  When baseType is
+  // replaced by c_string_copy, this workaround can be removed.
+  inline proc free_baseType(s) {
+    pragma "insert line file info"
+    extern proc chpl_rt_free_c_string(cs: c_string);  // Actually, cs: c_string_copy.
+    if (s != _nullString) then chpl_rt_free_c_string(s);
+  }
 
   pragma "insert line file info"
   extern proc stringMove(dest: c_string, src: c_string, len: int): c_string;

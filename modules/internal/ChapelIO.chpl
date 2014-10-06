@@ -557,7 +557,7 @@ module ChapelIO {
     }
     proc ~StringWriter() {
       chpl_free_c_string(this.s);
-      this.s = _nullString;
+      __primitive("=", this.s, _nullString);
     }
   }
   

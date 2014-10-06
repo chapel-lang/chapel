@@ -80,12 +80,29 @@ void chpl_gen_comm_wide_string_get(void* addr,
 void
 chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno, chpl_string filename)
 {
-  size_t len = strlen(from) + 1;
+  size_t len;
+
   x->locale = chpl_gen_getLocaleID();
+  if (from == NULL)
+  {
+    x->addr = NULL;
+    return;
+  }
+    
+  len = strlen(from) + 1;
   x->addr = chpl_mem_calloc(len, CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
   strncpy((char*)x->addr, from, len);
+#if 0
+  // This is moot.
+  // The draft C specification (ISO-IEC:9899-TC3 Sep 2007) says, "The strlen
+  // function returns the number of characters that precede the terminating
+  // null character."  From which we may deduce that the following "if" clause
+  // never fires.  It is -- by the definition of strlen() -- false.
   if (*((len-1)+(char*)x->addr) != '\0')
     chpl_internal_error("String missing terminating NUL.");
+  // OTOH, if "len" is passed in rather than computed here, it would be a
+  // worthwhile check.
+#endif
   x->size = len;    // This size includes the terminating NUL.
 }
 
