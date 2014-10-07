@@ -45,6 +45,7 @@ static IntentTag constIntentForType(Type* t) {
              t == dtTaskList ||
              t == dtNil ||
              t == dtStringC ||
+             t == dtStringCopy ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
     return INTENT_CONST_IN;
   }
@@ -66,6 +67,7 @@ IntentTag blankIntentForType(Type* t) {
              is_enum_type(t) ||
              is_string_type(t) ||
              t == dtStringC ||
+             t == dtStringCopy ||
              isClass(t) ||
              isRecord(t) ||
              isUnion(t) ||

@@ -57,7 +57,7 @@ extern record qio_regexp_string_piece_t {
 extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
 
 extern proc qio_regexp_match(ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
-extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string, ref replaced_len:int(64)):int(64);
+extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string_copy, ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied
@@ -467,7 +467,7 @@ record regexp {
     else pos = 0;
     endpos = pos + text.length;
 
-    var replaced:c_string;
+    var replaced:c_string_copy;
     var nreplaced:int; 
     var replaced_len:int(64); 
     if t == stringPart {
@@ -475,9 +475,7 @@ record regexp {
     } else {
       nreplaced = qio_regexp_replace(_regexp, repl.c_str(), repl.length, text.c_str(), text.length, pos, endpos, global, replaced, replaced_len);
     }
-    // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(replaced);
-    chpl_free_c_string(replaced);
     return (ret, nreplaced);
   }
   proc sub(repl:string, text: ?t, global = true )
@@ -549,11 +547,9 @@ proc chpl__initCopy(x: regexp) {
 inline proc _cast(type t, x: regexp) where t == string {
   var pattern: string;
   on x.home {
-    var cs: c_string;
+    var cs: c_string_copy;
     qio_regexp_get_pattern(x._regexp, cs);
-    // FIX ME: could use a toString() that doesn't allocate space
     pattern = toString(cs);
-    chpl_free_c_string(cs);
   }
   return pattern;
 }
