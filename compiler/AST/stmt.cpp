@@ -788,10 +788,10 @@ void CondStmt::verify() {
     INT_FATAL(this, "CondStmt::elseStmt is a list");
   }
 
-  if (condExpr && condExpr->parentExpr != this)
+  if (condExpr->parentExpr != this)
     INT_FATAL(this, "Bad CondStmt::condExpr::parentExpr");
 
-  if (thenStmt && thenStmt->parentExpr != this)
+  if (thenStmt->parentExpr != this)
     INT_FATAL(this, "Bad CondStmt::thenStmt::parentExpr");
 
   if (elseStmt && elseStmt->parentExpr != this)

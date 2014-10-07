@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ ! -d "task1" ]; then
+   mkdir task1
+   mkdir task1/0
+   mkdir task1/1
+   mkdir task1/2
+   mkdir task1/3
+   mkdir task1/4
+   mkdir task1/5
+fi

@@ -275,8 +275,6 @@ returnInfoGetMemberRef(CallExpr* call) {
     return field->type->refType ? field->type->refType : field->type;
   } else
     return var->type->refType ? var->type->refType : var->type;
-  INT_FATAL(call, "bad member primitive");
-  return NULL;
 }
 
 static Type*

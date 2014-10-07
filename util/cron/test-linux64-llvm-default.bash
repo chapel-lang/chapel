@@ -7,4 +7,4 @@ CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
 source $CWD/common-llvm.bash
 
-$CWD/nightly -cron -llvm
+$CWD/nightly -cron ${nightly_args}

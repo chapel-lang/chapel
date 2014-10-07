@@ -47,6 +47,9 @@ Functions are presented as follows:
 \item function calls \rsec{Function_Calls}
 \item various aspects of defining a procedure
       \rsec{Function_Definitions}--\rsec{Nested_Functions}
+\item calling external functions from Chapel
+      \rsec{Calling_External_Functions}
+\item calling Chapel functions from external functions\rsec{Calling_Chapel_Functions}
 \item determining the function to invoke for a given call site:
       function and operator overloading \rsec{Function_Overloading},
       function resolution \rsec{Function_Resolution}
@@ -115,8 +118,6 @@ procedure-declaration-statement:
 
 linkage-specifier:
   `inline'
-  `export' identifier[OPT]
-  `extern'
 
 function-name:
   identifier
@@ -138,6 +139,8 @@ formal:
   formal-intent[OPT] identifier formal-type[OPT] variable-argument-expression
   formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] default-expression[OPT]
   formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] variable-argument-expression
+
+
 
 formal-type:
   : type-specifier
@@ -163,7 +166,7 @@ formal-intent:
   `type'
 
 return-intent: one of
-  `var' $ $ $ $ `const' $ $ $ $ `param' $ $ $ $ `type'
+  `ref' $ $ $ $ `const' $ $ $ $ `param' $ $ $ $ `type'
 
 return-type:
   : type-specifier
@@ -200,12 +203,8 @@ in~\rsec{Generic_Functions}.
 Functions can take a variable number of arguments.  Such functions are
 discussed in~\rsec{Variable_Length_Argument_Lists}.
 
-The \sntx{return-intent} can be used to indicate
-a variable function \rsec{Variable_Functions},
-or a parameter function \rsec{Parameter_Functions},
-or a type function \rsec{Type_Functions}.
-By default, or if the \sntx{return-intent} is \chpl{const},
-the function returns a value that cannot be used as an lvalue.
+The \sntx{return-intent} can be used to indicate how the value is returned from
+a function.  \sntx{return-intent} is described further in \rsec{Return_Intent}.
 % TODO: define lvalue and rvalue
 
 \begin{openissue}
@@ -224,15 +223,11 @@ discussed in~\rsec{Function_Overloading}.
 Operator overloading is supported on the operators listed
 above (see \sntx{operator-name}).
 
-Linkage specifiers are optional and mutually exclusive.  The linkage
-specifier \chpl{inline} indicates that the function body must be inlined at
+The linkage specifier \chpl{inline} indicates that the function body must be inlined at
 every call site.
-The linkage specifier \chpl{export} indicates that this
-function may be called from outside the current Chapel program.  The linkage
-specifier \chpl{extern} indicates that this function is defined outside the
-Chapel program.  See the chapter on interoperability (\rsec{Interoperability})
-for details on exported and imported functions.
 
+See the chapter on interoperability (\rsec{Interoperability})
+for details on exported and imported functions.
 
 \section{Functions without Parentheses}
 \label{Functions_without_Parentheses}
@@ -692,44 +687,50 @@ writeln(tuple(tuple(1, 2), tuple(3, 4)));
 ((1, 2), (3, 4))
 \end{chapeloutput}
 defines a generic procedure that is equivalent to building a tuple.
-Therefore the expressions \chpl{tuple(1, 2)} and \chpl{(1,2)} are equialent,
+Therefore the expressions \chpl{tuple(1, 2)} and \chpl{(1,2)} are equivalent,
 as are the expressions \chpl{tuple(1)} and \chpl{(1,)}.
 \end{chapelexample}
 
 
-\section{Variable Functions}
-\label{Variable_Functions}
-\index{functions!variable functions}
-\index{functions!var keyword and@\chpl{var} keyword and}
+\section{Return Intents}
+\label{Return_Intent}
+\index{functions!return intent}
+
+The \sntx{return-intent} specifies how the value is returned from a function,
+and in what contexts that function is allowed to be used.  By default, or if
+the \sntx{return-intent} is \chpl{const}, the function returns a value that
+cannot be used as an lvalue.
+
+\subsection{The Ref Return Intent}
+\label{Ref_Return_Intent}
+\index{functions!ref keyword and@\chpl{ref} keyword and}
 \index{functions!lvalues}
 
-A variable function is a function whose call is an lvalue
-(specifically, a call expression for a variable procedure and
-an iterator variable for a variable iterator).
-This implies that a variable function produces a reference;
-however, this
-reference cannot be captured.
+When using a \chpl{ref} return intent, the function call is an lvalue
+(specifically, a call expression for a procedure and an iterator variable for
+an iterator).  This implies that the function produces a reference; however,
+this reference cannot be captured.
+%TODO: is this still true with ref variables?
 
-A variable function is specified by following the argument list with
-the \chpl{var} keyword.  A variable function must return or yield an lvalue.
+The \chpl{ref} return intent is specified by following the argument list with
+the \chpl{ref} keyword.  The function must return or yield an lvalue.
 % Todo: disallow void return types for variable functions?
 
-When a variable procedure is called on the left-hand side of an
-assignment statement or in the context of a call to a formal argument
-by \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the lvalue that is
+When a procedure with a \chpl{ref} return intent is called on the left-hand
+side of an assignment statement or in the context of a call to a formal
+argument by \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the lvalue that is
 returned by the procedure is assigned a value.
 
-Variable functions provide an implicit param formal argument \chpl{setter}
-of type \chpl{bool}.  If the
-variable function is called in a context requiring an lvalue,
-the actual argument for \chpl{setter} is implicitly \chpl{true};
-otherwise it is \chpl{false}.  This argument is useful for adjusting
-the behavior depending to the calling context.
+Functions with a \chpl{ref} return intent provide an implicit \chpl{param}
+formal argument \chpl{setter} of type \chpl{bool}.  If the function is called
+in a context requiring an lvalue, the actual argument for \chpl{setter} is
+implicitly \chpl{true}; otherwise it is \chpl{false}.  This argument is useful
+for adjusting the behavior depending to the calling context.
 
-\begin{chapelexample}{variable-functions.chpl}
+\begin{chapelexample}{ref-return-intent.chpl}
 The following code defines a procedure that can be interpreted as a
-simple two-element array where the elements are actually global
-variables:
+simple two-element array where the elements are actually module
+level variables:
 \begin{chapel}
 var x, y = 0;
 
@@ -779,22 +780,38 @@ if setter && i == 1 && x <= 0 then
 A2(0) = 0;
 A2(1) = 1;
 \end{chapelpost}
+\begin{chapelprediff}
+\#!/usr/bin/env python
+
+"""Sort the output file. Some platforms (especially WLMs) seem to reverse the
+order (probably because one line is on stdout and the other is on stderr).
+"""
+
+import sys
+
+with open(sys.argv[2], 'r') as fp:
+    content = fp.read()
+lines = content.splitlines(True)
+lines.sort()
+with open(sys.argv[2], 'w') as fp:
+    fp.write(''.join(lines))
+\end{chapelprediff}
 \begin{chapeloutput}
 3
-variable-functions.chpl:18: error: halt reached - cannot assign value to A(1) if A(0) <= 0
+ref-return-intent.chpl:18: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 \end{chapeloutput}
 \end{chapelexample}
 
 
-\section{Parameter Functions}
-\label{Parameter_Functions}
+\subsection{The Param Return Intent}
+\label{Param_Return_Intent}
 \index{functions!as parameters}
 \index{functions!parameter function}
 \index{parameter function}
 
-A \emph{parameter function}, or a \emph{param function}, is a function that returns a parameter
-expression.  It is specified by following the function's argument list
-by the keyword \chpl{param}.  It is often, but not necessarily,
+A \emph{parameter function}, or a \emph{param function}, is a function that
+returns a parameter expression.  It is specified by following the function's
+argument list by the keyword \chpl{param}.  It is often, but not necessarily,
 generic.
 
 It is a compile-time error if a parameter function does not return a
@@ -828,14 +845,14 @@ loop~\rsec{Parameter_For_Loops} and conditionals with a conditional
 expressions that is not a parameter.
 
 
-\section{Type Functions}
-\label{Type_Functions}
+\subsection{The Type Return Intent}
+\label{Type_Return_Intent}
 \index{functions!as types}
 \index{functions!type functions}
 
-A \emph{type function} is a function that returns a type, not a value.  It is specified by
-following the function's argument list by the keyword \chpl{type}, without the subsequent return type.  It
-is often, but not necessarily, generic.
+A \emph{type function} is a function that returns a type, not a value.  It is
+specified by following the function's argument list by the keyword \chpl{type},
+without the subsequent return type.  It is often, but not necessarily, generic.
 
 It is a compile-time error if a type function does not return a type.
 The result of a type function is computed during compilation.
@@ -939,9 +956,9 @@ declaration, or is inferred implicitly.
 
 If a return type is specified and is not \chpl{void},
 each return statement of the procedure must include an expression.
-For a non-variable procedure, an implicit conversion occurs
+For a non-\chpl{ref} return intent, an implicit conversion occurs
 from each return expression to the specified return type.
-For variable procedures~(\rsec{Variable_Functions}), the return
+For a \chpl{ref} return intent~(\rsec{Ref_Return_Intent}), the return
 type must match the type returned in all of the return statements
 exactly, when checked after generic instantiation and parameter folding
 (if applicable).
@@ -960,11 +977,11 @@ return statements include an expression, the return type is \chpl{void}.
 
 Otherwise, the types of the expressions in all of the procedure's
 return statements are considered.
-For a variable procedure (\rsec{Variable_Functions}), they all must be
-the same exact type, which becomes the inferred return type.
-For a non-variable procedure, there must exist exactly one type
-such that an implicit conversion is allowed between every other type
-and that type, and that type becomes the inferred return type.
+If a function has a \chpl{ref} return intent (\rsec{Ref_Return_Intent}), they
+all must be the same exact type, which becomes the inferred return type.
+Otherwise, there must exist exactly one type such that an implicit conversion
+is allowed between every other type and that type, and that type becomes the
+inferred return type.
 If the above requirements are not satisfied, it is an error.
 
 \section{Nested Functions}

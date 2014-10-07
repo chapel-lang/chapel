@@ -61,6 +61,12 @@ proc pidigits
     if i >= n then break;
     eliminate_digit(d:uint);
   }
+
+  mpz_clear(denom);
+  mpz_clear(accum);
+  mpz_clear(numer);
+  mpz_clear(tmp2);
+  mpz_clear(tmp1);
 }
 
 proc next_term(k:uint)

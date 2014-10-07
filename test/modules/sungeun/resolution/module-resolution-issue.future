@@ -1,0 +1,122 @@
+bug: modules that are not explicitly used lead to resolution errors
+
+
+Here's Sung's original description:
+-----------------------------------
+
+This is a nonsense program, but I believe it replicates a situation
+during internal module resolution.
+
+In this test, module M uses M0, but is not used by the main module (or
+any other module).  Resolution fails when trying to resolve the
+autocopy function for the record R (defined in M), which is dependent
+on a type alias defined in M0.
+
+
+Here's Brad's diagnosis:
+------------------------
+
+Briefly, the characteristics of the code for the test are as follows:
+
+module-resolution-issue.chpl:
+* the main module
+* doesn't use or rely on code from any of the modules
+
+M.chpl:
+* named on the command line
+* uses M0 (which defines 't')
+* refers to 't' (which 'chpl' complains is unresolved)
+
+M0.chpl:
+* defines 't'
+* may or may not be named on the command line (doesn't seem to matter)
+
+Here's my theory as to what's going on:
+
+* Resolution starts at the main module's init procedure and proceeds from
+  there, making its way to other modules via the 'use' chains.  For this
+  program, this suggests that something like the following is being
+  created by the compiler and resolved (names/details may not be right,
+  but this gives the idea):
+
+        proc init_Program() {
+          init_module-resolution-issue();
+        }
+
+        proc init_module-resolution-issue() {
+          init_Chapel_Standard();
+          /* NOTE: no init_M() or init_M0() because they're not 'use'd by
+             this module */
+          writeln(...);
+        }
+
+* Since the main module isn't using anything else, resolution doesn't
+  ever resolve the initialization functions of M or M0 (which is to
+  say, their global scopes); therefore, it's never resolving type 't' in
+  M0.
+
+* Later, though, something must be iterating over things whether or not
+  they're in modules that are actively used (i.e., "have been resolved")
+  or not.  For this specific test, the failure happens in
+  resolveAutoCopies.  So it looks like we're trying to iterate over all
+  types we've found whether or not they're in active modules.
+
+* Specifically, we're looking at record 'R' in M and trying to make sense
+  out of 't'.  But since M0's init function was never resolved, 't'
+  isn't well-defined/resolved from a type inference perspective and the
+  error is generated.
+
+
+Tom and I then went on to discuss a solution along the following lines:
+-----------------------------------------------------------------------
+
+1) Remove modules and their symbols that are not 'use'd from the IR much
+   earlier in compilation to avoid trying to resolve aspects of them that
+   perhaps don't make sense if its global scope hasn't been resolved.
+   Here, a 'use' should include either an explicit module 'use' or it
+   an indirect use (e.g., 'M.x' without a 'use M').
+
+   Advantages: reduces the IR size and amount of code being considered;
+   Disadvantages: probably a bit surgical to do this cleanly and early
+
+
+Other solutions we threw out that didn't seem as attractive
+-----------------------------------------------------------
+
+2) In the program's init function, include modules that are not actively
+   used, but which have been requested to be compiled in one way or
+   another (here, by naming them on the command line) in a way that will
+   cause them to be resolved but not executed.  For example, imagining
+   generating code like this for this example:
+
+        proc init_Program() {
+          init_module-resolution-issue();
+          if (init_unused_modules) {  // imagine that this always is false
+            init_M();
+          }
+        }
+
+        proc init_M() {
+          init_ChapelStandard();
+          init_M0();
+          // resolve M's global symbols
+        }
+
+        proc init_M0() {
+          init_ChapelStandard();
+          // resolve M0's global symbols
+        }
+
+        proc init_module-resolution-issue() {
+          init_Chapel_Standard();
+          writeln(...);
+        }
+
+   Plus: probably simpler to get working properly
+   Minus: time wasted compiling code that will never execute
+
+3) Throw a warning/error if a user tries to compile modules that are
+   not used to avoid confusing issues like this and have the first
+   message point to the real source of the problem.
+
+4) Other?

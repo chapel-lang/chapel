@@ -127,8 +127,8 @@ These types are the same as C types:
   c_ptr(T) is T*
   c_string is const char*
 
-Note that in some cases, the Chapel string type or ref argument intent may be
-used to more easily achieve the same effect.
+Note that in some cases, a ref argument intent may be used in place of
+c_void_ptr or c_ptr(T).
 
 All three of these pointer types may only point to local memory. The intent is
 that they will be used to interoperate with C libraries that run within a
@@ -197,32 +197,14 @@ differently in Chapel:
 
 c_string:
 
-The c_string type maps to a constant C string (that is, const char*). A
-c_string can be constructed from a Chapel string using the method
-chapelString.c_str(). A Chapel string can be constructed from a C string
-using the function toString(c_string). Note however that the .c_str() method
-currently requires the Chapel string to be stored locally.
+The c_string type maps to a constant C string (that is, const char*)
+that is intended for use locally. A c_string can be obtained from a
+Chapel string using the method string.c_str(). A Chapel string can be
+constructed from a C string using the cast operator. Note however that
+because c_string is a local-only type, the .c_str() method can only be
+called on Chapel strings that are stored on the same locale; calling
+.c_str() on a non-local string will result in a runtime error.
 
-Chapel strings:
-
-Chapel strings are currently represented as 'const char*' types in
-single-locale compilations, so these can normally be used interchangeably with
-'const char*' types in C (and in some cases, 'char*' types as long as the
-difference in const-ness does not cause compilation problems). However, the
-string representation in Chapel may change, and some cases (such as
-c_ptr(string)) cannot be properly supported in multilocale environments.
-The c_string type must be used in such cases. Additionally, automatic
-conversions between Chapel strings and c_string are likely to be added
-in the future.
-
-For example, byString and byCString both have the same C function prototype,
-but they must be used differently:
- // both of these correspond to void fn(const char* x)
- extern proc byString(x:string);
- extern proc byCString(x:c_string);
-
- byString("Hello");
- byCString("Hello".c_str());
 
 Referring to External C Types
 -----------------------------
@@ -349,7 +331,7 @@ C varargs functions can be declared using Chapel's varargs ("...")
 syntax.  For example, the following declaration prototypes C's printf
 function:
 
-       extern proc printf(fmt: string, vals...?numvals): int;
+       extern proc printf(fmt: c_string, vals...?numvals): int;
 
 Note that it can also be prototyped more trivially/less accurately
 as follows:
