@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-./rerun_compiler_with_opposite_gmp.bash $@

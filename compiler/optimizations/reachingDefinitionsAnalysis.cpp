@@ -17,15 +17,14 @@
  * limitations under the License.
  */
 
-#include "optimizations.h"
-
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
 #include "expr.h"
-#include "stlUtil.h"
+#include "optimizations.h"
 #include "stmt.h"
 #include "view.h"
+
 
 static void
 reachingDefinitionsAnalysis(FnSymbol* fn,

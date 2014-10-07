@@ -961,8 +961,7 @@ static bool fits_in_int_helper(int width, int64_t val) {
     case 32:
       return (val >= INT32_MIN && val <= INT32_MAX);
     case 64:
-      // As an int64_t will always fit within a 64 bit int.
-      return true;
+      return (val >= INT64_MIN && val <= INT64_MAX);
   }
 }
 
@@ -999,6 +998,8 @@ static bool fits_in_int(int width, Immediate* imm) {
 static bool fits_in_uint_helper(int width, uint64_t val) {
   switch (width) {
   default: INT_FATAL("bad width in fits_in_uint_helper");
+  case 1:
+    return (val <= 1);
   case 8:
     return (val <= UINT8_MAX);
   case 16:
@@ -1006,8 +1007,7 @@ static bool fits_in_uint_helper(int width, uint64_t val) {
   case 32:
     return (val <= UINT32_MAX);
   case 64:
-    // As a uint64_t will always fit inside a 64 bit uint.
-    return true;
+    return (val <= UINT64_MAX);
   }
 }
 
@@ -3160,10 +3160,7 @@ void resolveNormalCall(CallExpr* call) {
     }
   }
 
-  // Future work note: the repeated check to best and best->fn means that we
-  // could probably restructure this function to a better form.
-  if (call->partialTag && (!best || !best->fn ||
-                           !best->fn->hasFlag(FLAG_NO_PARENS))) {
+  if (call->partialTag && (!best || !best->fn->hasFlag(FLAG_NO_PARENS))) {
     if (best != NULL) {
       delete best;
       best = NULL;
@@ -5245,11 +5242,6 @@ preFold(Expr* expr) {
         if (fieldcount == fieldnum) {
           name = field->name;
         }
-      }
-      if (!name) {
-        // In this case, we ran out of fields without finding the number
-        // specified.  This is the user's error.
-        USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
       }
       result = new SymExpr(new_StringSymbol(name));
       call->replace(result);

@@ -1,2 +1,1 @@
-use FileSystem;
 writeln(cwd());

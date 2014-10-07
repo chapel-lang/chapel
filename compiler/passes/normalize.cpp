@@ -51,11 +51,6 @@ static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
-static void init_array_alias(VarSymbol* var, Expr* type, Expr* init, Expr* stmt);
-static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt);
-static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp);
-static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, VarSymbol* constTemp);
-static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* constTemp);
 static void hack_resolve_types(ArgSymbol* arg);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
@@ -898,7 +893,17 @@ fix_def_expr(VarSymbol* var) {
   // handle var ... : ... => ...;
   //
   if (var->hasFlag(FLAG_ARRAY_ALIAS)) {
-    init_array_alias(var, type, init, stmt);
+    CallExpr* partial;
+    if (!type) {
+      partial = new CallExpr("newAlias", gMethodToken, init->remove());
+      // newAlias is not a method, so we don't set the methodTag
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
+    } else {
+      partial = new CallExpr("reindex", gMethodToken, init->remove());
+      partial->partialTag = true;
+      partial->methodTag = true;
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
+    }
     return;
   }
 
@@ -915,45 +920,7 @@ fix_def_expr(VarSymbol* var) {
   // handle ref variables
   //
   if (var->hasFlag(FLAG_REF_VAR)) {
-    init_ref_var(var, init, stmt);
-    return;
-  }
 
-  //
-  // insert code to initialize config variable from the command line
-  //
-  if (var->hasFlag(FLAG_CONFIG)) {
-    if (!var->hasFlag(FLAG_PARAM)) {
-      init_config_var(var, stmt, constTemp);
-    }
-  }
-
-  if (type) {
-    init_typed_var(var, type, init, stmt, constTemp);
-  } else {
-    init_untyped_var(var, init, stmt, constTemp);
-  }
-}
-
-
-static void init_array_alias(VarSymbol* var, Expr* type, Expr* init, Expr* stmt)
-{
-    CallExpr* partial;
-    if (!type) {
-      partial = new CallExpr("newAlias", gMethodToken, init->remove());
-      // newAlias is not a method, so we don't set the methodTag
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
-    } else {
-      partial = new CallExpr("reindex", gMethodToken, init->remove());
-      partial->partialTag = true;
-      partial->methodTag = true;
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
-    }
-}
-
-
-static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt)
-{
     if (!init) {
       USR_FATAL_CONT(var, "References must be initialized when they are defined.");
     }
@@ -985,11 +952,15 @@ static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt)
     }
 
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_ADDR_OF, varLocation)));
-}
 
+    return;
+  }
 
-static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp)
-{
+  //
+  // insert code to initialize config variable from the command line
+  //
+  if (var->hasFlag(FLAG_CONFIG)) {
+    if (!var->hasFlag(FLAG_PARAM)) {
       Expr* noop = new CallExpr(PRIM_NOOP);
       Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
                              new_StringSymbol(var->getModule()->name) :
@@ -1009,12 +980,13 @@ static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp)
                                     module_name)),
           noop,
           new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
+
       stmt = noop; // insert regular definition code in then block
-}
+    }
+  }
 
+  if (type) {
 
-static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, VarSymbol* constTemp)
-{
     //
     // use cast for parameters to avoid multiple parameter assignments
     //
@@ -1070,11 +1042,9 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
 
       stmt->insertAfter(block);
     }
-}
 
+  } else {
 
-static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* constTemp)
-{
     // See Note 4.
     //
     // initialize untyped variable with initialization expression
@@ -1103,6 +1073,7 @@ static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* 
       // when building default type constructors.
       if ((toSymExpr(init) && (toSymExpr(init)->typeInfo() == dtStringC)) &&
           !var->hasFlag(FLAG_PARAM)) {
+        INT_ASSERT(type==NULL);
         // This logic is the same as the case above under 'if (type)',
         // but simplified for this specific case.
         SET_LINENO(stmt);
@@ -1121,8 +1092,8 @@ static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* 
             new CallExpr("chpl__initCopy", init->remove())));
       }
     }
+  }
 }
-
 
 static void hack_resolve_types(ArgSymbol* arg) {
   // Look only at unknown or arbitrary types.

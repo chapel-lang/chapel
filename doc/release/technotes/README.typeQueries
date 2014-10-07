@@ -2,9 +2,8 @@
 is* Type Queries
 ================
 
-This README describes a set of type query functions
-provided by the Types module in addition to the ones
-documented in the Spec.
+The Types module provides the a set of type query functions
+in addition to the ones documented in the Spec.
 
 These functions:
 * are 'param' procedures

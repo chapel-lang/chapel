@@ -1228,7 +1228,7 @@ GenRet codegenFieldPtr(
     // Reduce GEN_WIDE_PTR or FLAG_WIDE_CLASS cases to local versions
     // and rebuild addresses.
     if( base.isLVPtr == GEN_WIDE_PTR ||
-        (baseType && baseType->symbol->hasFlag(FLAG_WIDE_CLASS)) ) {
+        baseType->symbol->hasFlag(FLAG_WIDE_CLASS) ) {
       GenRet addr;
       addr = codegenRaddr(base);
       addr = codegenFieldPtr(addr, c_field_name, chpl_field_name, special);

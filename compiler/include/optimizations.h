@@ -29,18 +29,9 @@
 // was hoisted into this common include file for convenience.
 #define DEBUG_CP 0
 
-#include "map.h"
-#include "vec.h"
-
 #include <map>
-#include <vector>
 
-class BaseAST;
 class BitVec;
-class BlockStmt;
-class FnSymbol;
-class Symbol;
-class SymExpr;
 
 void collapseBlocks(BlockStmt* block);
 void removeUnnecessaryGotos(FnSymbol* fn);

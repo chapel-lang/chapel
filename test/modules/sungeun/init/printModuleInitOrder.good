@@ -7,8 +7,6 @@ Initializing Modules:
     Atomics
     NetworkAtomics
     AtomicsCommon
-    NewString
-     BaseStringType
     ChapelThreads
     ChapelTuple
     ChapelRange

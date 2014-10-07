@@ -1,5 +1,0 @@
-perfkeys: Time:
-files: Jacobi-2D-Inlined-Diamond-Tiling.dat
-graphkeys: Jacobi-2D-Inlined-Diamond-Tiling
-ylabel: Time (seconds)
-graphtitle: Jacobi-2D Diamond Tiling

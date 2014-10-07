@@ -45,10 +45,6 @@ all:
   09/12/14:
     - switch default memory allocator back to cstdlib
 
-bfs:
-  09/25/14:
-    - addition of octal to, reformatting of format printing.
-
 chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible

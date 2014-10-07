@@ -92,7 +92,7 @@ module BaseStringType {
   pragma "insert line file info"
   extern proc remoteStringCopy(src_loc: int, src_addr: c_string, len: int): c_string_copy;
 
-  config param debugStrings = false;
+  config const debugStrings = false;
 }
 
 // Chapel Strings
