@@ -45,13 +45,6 @@ performance-specific regressions
 (Reviewed for accuracy 09/25/14)
 ================================
 
-OOM on bradc-lnx (10/03/14 -- bradc)
-------------------------------------
-[Error matching performance keys for studies/colostate/cfd-mini-serial]
-
-timeout on chap03 (10/03/14 -- bradc)
--------------------------------------
-
 consistent failures on bradc-lnx and chap03 due to insane memory usage
 this should get better with better string memory management
 -------------------------------------------------------------------------------
@@ -68,6 +61,10 @@ this should get better with better string memory management
 memory-leaks regressions
 (Reviewed for accuracy 09/15/14)
 ================================
+
+very infrequent segfault (10/03/14)
+-----------------------------------
+[Error matching program output for stress/deitz/test_10k_begins]
 
 Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 -----------------------------------------------------------------------------
@@ -154,11 +151,6 @@ no-local regressions
 (Reviewed for accuracy 10/02/14)
 ================================
 
-memory usage changed due to remote string change? (10/02/14 -- sungeun)
------------------------------------------------------------------------
-[Error matching program output for memory/shannon/printFinalMemStat]
-
-
 
 ====================================================
 gasnet-everything regressions (other than the above)
@@ -241,6 +233,10 @@ comm count mismatches
 gasnet.fifo.flat-specific tests (other than the above)
 (Reviewed for accuracy 09/28/14)
 ======================================================
+
+very infrequent segfault (10/03/14)
+-----------------------------------
+[Error matching program output for types/string/StringImpl/stress/plusEquals]
 
 annoying, noisy timeouts
 ------------------------
@@ -405,9 +401,11 @@ cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 09/23/14)
 =========================================
 
-records missing their formatting characters (09/30/14)
-------------------------------------------------------
-[Error matching program output for functions/diten/refIntents]
+some output dropped nondeterministically 
+----------------------------------------
+[Error matching program output for functions/diten/refIntents] (09/30/14)
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (10/03/14)
+[Error matching program output for release/examples/primers/arrays] (10/03/14)
 
 empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
@@ -459,6 +457,8 @@ glob portability issue (09/17/14 -- bradc)
 ------------------------------------------
 [Error matching program output for studies/filerator/globberator (execopts: 1)]
 [Error matching program output for studies/filerator/globberator (execopts: 2)]
+[Error matching program output for studies/filerator/testboth]
+[Error matching program output for studies/filerator/testemptyglob]
 
 error differs but within acceptable margin; should squash error printing
 ------------------------------------------------------------------------
@@ -617,10 +617,6 @@ occasional, annoying timeouts
 -----------------------------
 [Error: Timed out executing program studies/sudoku/dinan/sudoku]
 
-no 'siblings' line in /proc/cpuinfo breaks .prediff script (09/20/14)
----------------------------------------------------------------------
-[Error matching program output for localeModels/gbt/maxTaskPar]
-
 gcc warning about assuming strict overflow
 ------------------------------------------
 [Error matching .bad file for puzzles/hilde/overflow (compopts: 1)]
@@ -710,7 +706,7 @@ consistent timeouts
 
 ================================
 baseline-specific tests
-(Reviewed for accuracy 09/22/14)
+(Reviewed for accuracy 10/04/14)
 ================================
 
 incorrect output -- expected? (04/03/10)
