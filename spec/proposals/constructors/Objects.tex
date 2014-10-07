@@ -301,17 +301,92 @@ class types.  Therefore, the actions taken for the separate declaration and init
 where the two are stored.
 
 
+\subsubsection{Distribution Variables}
+
 \subsubsection{Array Variables}
 
 \subsubsection{Domain Variables}
-
-\subsubsection{Distribution Variables}
 
 \subsubsection{Sync and Single Variables}
 
 \subsubsection{Tuple Variables}
 
+For the Chapel code:
+\begin{chapel}
+  var a:2*real;
+  var b:2*real = noinit;
+  var d:2*real = (12.0,13.3);
+  var e = d;
+\end{chapel}
+we obtain
+\begin{verbatim}
+    var a:2*real(64)
+    {
+      var type_tmp:2*real(64)
+      var call_tmp:2*real(64)
+      ('move' type_tmp (call _defaultOf))
+      ('move' a type_tmp)
+    }
+    var b:2*real(64)
+    var call_tmp:2*real(64)
+    var d:2*real(64)
+    {
+      var type_tmp:2*real(64)
+      var call_tmp:2*real(64)
+      ('move' type_tmp (call _defaultOf))
+      var call_tmp:2*real(64)
+      ('move' call_tmp (call _build_tuple 12.0 13.3))
+      (call = type_tmp call_tmp)
+      ('move' d type_tmp)
+    }
+    var e:2*real(64)
+    ('move' e (call chpl__initCopy d))
+\end{verbatim}
+It is interesting to note that for tuple initialization, there appears to be an extra
+\chpl{call_tmp} for the cases with an explicit type specifier that is inserted and never
+actually used in the initialization.   Other than that, the tuple code looks quite similar
+to the code for scalar variables.
+
 \subsubsection{Scalar Variables}
+
+Scalar variables include those of Boolean, integer, real, complex, enumeration and string
+types.  As with other types, the forms of variable declaration are.
+\begin{chapel}
+// type T = ... ;
+   var a:T;
+   var b:T = noinit;
+   var c:T = new T( ... );
+   var d = 13; // Initializer expression e has type T.
+   var e = d; // Same.
+\end{chapel}
+The third form is not currently supported for integer or real types, because the syntax
+type(size)() in a "new" expression is not recognized as a type expression followed by a
+call (which should invoke a constructor for that type).  The above code results in the
+following AST:
+\begin{verbatim}
+    var a:int(64)
+    {
+      var type_tmp:int(64)
+      ('move' type_tmp 0)
+      ('move' a type_tmp)
+    }
+    var b:int(64)
+    var d:int(64)
+    {
+      var type_tmp:int(64)
+      ('move' type_tmp 0)
+      (call = type_tmp 13)
+      ('move' d type_tmp)
+    }
+    var e:int(64)
+    ('move' e (call chpl__initCopy d))
+\end{verbatim}
+The first form results in default-initialization with a value of the declared type.
+Note that there is no initialization at all (in the AST) for the form
+involving \chpl{= noinit}.  Again, the canonical version contains extra data motion that
+is undesirable.  In particular, it uses assignment, which should not appear in initialization.
+
+
 
 \subsection{Construction in the Current Implementation}
 
