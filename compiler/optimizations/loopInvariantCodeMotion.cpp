@@ -24,16 +24,15 @@
 #include "bitVec.h"
 #include "dominator.h"
 #include "expr.h"
-#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "timer.h"
 #include "view.h"
 
-#include <algorithm>
-#include <set>
 #include <stack>
+#include <set>
+#include <algorithm>
 
 
 

@@ -59,7 +59,6 @@ void check_loopInvariantCodeMotion();
 void check_prune2();
 void check_returnStarTuplesByRefArgs();
 void check_insertWideReferences();
-void check_narrowWideReferences();
 void check_optimizeOnClauses();
 void check_addInitCalls();
 void check_insertLineNumbers();

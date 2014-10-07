@@ -1,4 +1,3 @@
-use FileSystem;
 // This test shows that the current working directory is shared among the tasks
 // on a single locale, so a chdir() call in one task will affect the output of
 // cwd() in another.

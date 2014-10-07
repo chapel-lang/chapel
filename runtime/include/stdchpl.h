@@ -44,7 +44,6 @@
 #include "chpl-comm.h"
 #include "chpldirent.h"
 #include "chplexit.h"
-#include "chpl-file-utils.h"
 #include <chplfp.h>
 #include "chplglob.h"
 #include "chplio.h"

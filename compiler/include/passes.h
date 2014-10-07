@@ -52,7 +52,6 @@ void flattenFunctions();
 void inlineFunctions();
 void insertLineNumbers();
 void insertWideReferences();
-void narrowWideReferences();
 void localizeGlobals();
 void loopInvariantCodeMotion();
 void lowerIterators();

@@ -541,7 +541,7 @@ module GMP {
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_addmul_ui(this.mpz, a_.mpz, b);
+        mpz_addmul(this.mpz, a_.mpz, b);
         if acopy then delete a_;
       }
     }
