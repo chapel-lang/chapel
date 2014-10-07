@@ -54,6 +54,10 @@ returnInfoStringC(CallExpr* call) {
   return dtStringC;
 }
 
+static Type*
+returnInfoStringCopy(CallExpr* call) {
+  return dtStringCopy;
+}
 
 static Type*
 returnInfoLocaleID(CallExpr* call) {
@@ -565,15 +569,15 @@ initPrimitive() {
 
   prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoStringC, true, true);
+  prim_def("string_concat", returnInfoStringCopy, true, true);
   prim_def("string_length", returnInfoDefaultInt);
   prim_def("ascii", returnInfoInt32);
-  prim_def("string_index", returnInfoStringC, true, true);
-  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
+  prim_def("string_index", returnInfoStringCopy, true, true);
+  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
   prim_def(PRIM_STRING_FROM_C_STRING, "string_from_c_string", returnInfoString, false, true);
   prim_def(PRIM_C_STRING_FROM_STRING, "c_string_from_string", returnInfoStringC, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
-  prim_def("string_select", returnInfoStringC, true, true);
+  prim_def("string_select", returnInfoStringCopy, true, true);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoDefaultInt);
   prim_def("object2int", returnInfoDefaultInt);

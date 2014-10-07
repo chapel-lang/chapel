@@ -334,13 +334,13 @@ extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
 extern proc qio_free_string(arg:c_string);
 
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
+extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):syserr;
+extern proc qio_file_path_for_fp(fp:_file, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):syserr;
+extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):syserr;
+extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string_copy, path_in:c_string):syserr;
 
 extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
 pragma "no prototype" // FIXME
@@ -353,7 +353,7 @@ extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_ch
 extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):syserr;
 extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):syserr;
 
-extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
 extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
@@ -377,14 +377,17 @@ extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, co
 extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):syserr;
 
 extern proc qio_nbytes_char(chr:int(32)):c_int;
-extern proc qio_encode_to_string(chr:int(32)):c_string;
+extern proc qio_encode_to_string(chr:int(32)):c_string_copy;
 extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
 
 extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):syserr;
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):syserr;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
-extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+// Note, the returned ptr argument behaves like an allocated c_string
+// (i.e. c_string_copy).  It should be freed by the caller, or stored and freed
+// later.
+extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipws:c_int):syserr;
@@ -629,8 +632,8 @@ proc file.getPath(out error:syserr) : string {
   check();
   var ret:string;
   on this.home {
-    var tmp:c_string;
-    var tmp2:c_string;
+    var tmp:c_string_copy;
+    var tmp2:c_string_copy;
     error = qio_file_path(_file_internal, tmp);
     if !error {
       error = qio_shortest_path(_file_internal, tmp2, tmp);
@@ -765,7 +768,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   var err:syserr = ENOERR;
   var ret = openfd(fd, err, hints, style);
   if err {
-    var path:c_string;
+    var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path);
     if e2 then path = "unknown".c_str();
@@ -787,7 +790,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   var err:syserr = ENOERR;
   var ret = openfp(fp, err, hints, style);
   if err {
-    var path:c_string;
+    var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
     if e2 then path = "unknown".c_str();
@@ -888,7 +891,10 @@ record ioChar {
     halt("ioChar.writeThis must be written in Writer subclasses");
   }
 }
-inline proc _cast(type t, x: ioChar) where t == c_string {
+
+// Note: This returns a c_string_copy.
+// The caller has responsibility for freeing the returned string.
+inline proc _cast(type t, x: ioChar) where t == c_string_copy {
   return qio_encode_to_string(x.ch);
 }
 
@@ -904,8 +910,13 @@ record ioNewline {
     f.write("\n");
   }
 }
+
 inline proc _cast(type t, x: ioNewline) where t == c_string {
   return "\n";
+}
+
+inline proc _cast(type t, x: ioNewline) where t == c_string_copy {
+  return __primitive("string_copy", "\n");
 }
 
 // Used to represent a constant string we want to read or write...
@@ -919,8 +930,11 @@ record ioLiteral {
 }
 
 inline proc _cast(type t, x: ioLiteral) where t == c_string {
-  // FIX ME: should this be copied?
   return x.val;
+}
+
+inline proc _cast(type t, x: ioLiteral) where t == c_string_copy {
+  return __primitive("string_copy", x.val);
 }
 
 // Used to represent some number of bits we want to read or write...
@@ -1246,14 +1260,11 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
   } else if (t == c_string) || (t == string) {
     // handle c_string and string
     var len:int(64);
-    var tx: c_string;
+    var tx: c_string_copy;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    if t == c_string then x = tx;
-    else {
-      // FIX ME: could use a toString() that doesn't allocate space
-      x = toString(tx);
-      chpl_free_c_string(tx);
-    }
+    // FIX ME: Should deprecate the t == c_string path, because we always
+    // return an "owned" char* buffer (or NULL).
+    x = toString(tx);
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -1361,14 +1372,12 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
   } else if (t == c_string) || (t == string) {
     // handle c_string and string
     var len:int(64);
-    var tx: c_string;
+    var tx: c_string_copy;
     var ret = qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, tx, len, -1);
-    if t == c_string then x = tx;
-    else {
-      // FIX ME: could use a toString() that doesn't allocate space
-      x = toString(tx);
-      chpl_free_c_string(tx);
-    }
+    // TODO: Deprecate the c_string return type, since this routine always
+    // returns an "owned" string thingy.  Using the c_string return type will
+    // cause leaks.
+    x = toString(tx);
     return ret;
   } else if isEnumType(t) {
     var i:enum_mintype(t);
@@ -1517,18 +1526,17 @@ proc _args_to_proto(args ...?k,
                     preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handlling so maybe we don't care.
-  var err_args:c_string = "";
+  var err_args:c_string;
   for param i in 1..k {
     var name:c_string;
     if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:c_string;
+    else name = "x" + i:c_string_copy;
     // FIX ME: leak c_string due to concatenation
+    // Actually, don't fix me.  Fix concatenation to consume its c_string_copy args.
     err_args += preArg + name + ":" + typeToString(args(i).type);
     if i != k then err_args += ", ";
   }
-  // FIX ME: could use a toString() that doesn't allocate space
   const ret = toString(err_args);
-  chpl_free_c_string(err_args);
   return ret;
 }
 
@@ -1668,7 +1676,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
   on this.home {
     var ret:c_string;
     var lenread:int(64);
-    var tx:c_string;
+    var tx:c_string_copy;
     var lentmp:int(64);
     var actlen:int(64);
     var uselen:ssize_t;
@@ -1704,7 +1712,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
     this.unlock();
 
     str_out = toString(tx);
-    chpl_free_c_string(tx);
   }
 
   return !error;
@@ -3574,10 +3581,9 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
   var s:string;
   if ! error {
     var gotlen:int(64);
-    var ts: c_string;
+    var ts: c_string_copy;
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
     s = toString(ts);
-    chpl_free_c_string(ts);
   }
  
   if ! error {

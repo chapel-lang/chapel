@@ -62,6 +62,15 @@ iter gen_digits(numDigits) {
   }
 
   //
+  // Free memory associated with multi-precision valuesx
+  //
+  mpz_clear(num);
+  mpz_clear(den);
+  mpz_clear(acc);
+  mpz_clear(tmp2);
+  mpz_clear(tmp1);
+
+  //
   // Helper function to extract the nth digit
   //
   proc extract_digit(nth: c_ulong) {
