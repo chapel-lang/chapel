@@ -91,5 +91,5 @@ Notes:
   that the testing system is running from an end-user perspective and
   not from a developer perspective.
 
-* The 'nightly' script does not set CHPL_DEVELOPER. Instead, it sets DEBUG=0
-  and OPTIMIZE=1 when calling make.
+* The 'nightly' script does set CHPL_DEVELOPER, in addition to setting
+  DEBUG=0 and OPTIMIZE=1 when calling make.
