@@ -12,35 +12,56 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
         then
           echo "Error running ./util/config/fixpath";
         else
-          printf "Setting CHPL_HOME "
-          export CHPL_HOME=$PWD
-          echo "to $CHPL_HOME"
+          echo "Setting CHPL_HOME..."
+          CHPL_HOME=`pwd`
+          export CHPL_HOME
+          echo "                    ...to $CHPL_HOME"
+          echo " "
 
-          printf "Setting CHPL_HOST_PLATFORM "
-          export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
-          echo "to $CHPL_HOST_PLATFORM"
+          echo "Setting CHPL_HOST_PLATFORM..."
+          CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
+          export CHPL_HOST_PLATFORM
+          echo "                        ...to $CHPL_HOST_PLATFORM"
+          echo " "
 
-          printf "Updating PATH to include "
-          export PATH="$MYPATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util
-          echo "$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
-          echo    "                     and ""$CHPL_HOME"/util
+          echo "Updating PATH to include..."
+          PATH="$MYPATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util
+          export PATH
+          echo "                           ...$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
+          echo "                       and ...$CHPL_HOME"/util
+          echo " "
 
-          printf "Updating MANPATH to include "
-          export MANPATH="$MYMANPATH":"$CHPL_HOME"/man
-          echo "$CHPL_HOME"/man
+          echo "Updating MANPATH to include..."
+          MANPATH="$MYMANPATH":"$CHPL_HOME"/man
+          export MANPATH
+          echo "                           ...$CHPL_HOME"/man
+          echo " "
 
-          echo "Setting CHPL_TASKS to fifo"
-          export CHPL_TASKS=fifo
+          echo "Setting CHPL_TASKS to..."
+          CHPL_TASKS=fifo
+          export CHPL_TASKS
+          echo "                           ...fifo"
+          echo " "
 
-          echo "Setting CHPL_MEM to cstdlib"
-          export CHPL_MEM=cstdlib
+          echo "Setting CHPL_MEM to..."
+          CHPL_MEM=cstdlib
+          export CHPL_MEM
+          echo "                           ...cstdlib"
+          echo " "
 
-          echo "Setting CHPL_GMP to none"
-          export CHPL_GMP=none
+          echo "Setting CHPL_GMP to..."
+          CHPL_GMP=none
+          export CHPL_GMP
+          echo "                           ...none"
+          echo " "
 
-          echo "Setting CHPL_REGEXP to none"
-          export CHPL_REGEXP=none
+          echo "Setting CHPL_REGEXP to..."
+          CHPL_REGEXP=none
+          export CHPL_REGEXP
+          echo "                           ...none"
+          echo " "
+          
         fi
    else
-      echo "Error: util/setchplenv must be sourced from within the chapel root directory"
+      echo "Error: You must use '. util/setchplenv' from within the chapel root directory."
 fi
