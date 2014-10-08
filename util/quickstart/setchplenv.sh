@@ -12,20 +12,20 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
         then
           echo "Error running ./util/config/fixpath";
         else
-          printf %s "Setting CHPL_HOME "
+          printf "Setting CHPL_HOME "
           export CHPL_HOME=$PWD
           echo "to $CHPL_HOME"
 
-          printf %s "Setting CHPL_HOST_PLATFORM "
+          printf "Setting CHPL_HOST_PLATFORM "
           export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py`
           echo "to $CHPL_HOST_PLATFORM"
 
-          printf %s "Updating PATH to include "
+          printf "Updating PATH to include "
           export PATH="$MYPATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util
           echo "$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
           echo    "                     and ""$CHPL_HOME"/util
 
-          printf %s "Updating MANPATH to include "
+          printf "Updating MANPATH to include "
           export MANPATH="$MYMANPATH":"$CHPL_HOME"/man
           echo "$CHPL_HOME"/man
 
