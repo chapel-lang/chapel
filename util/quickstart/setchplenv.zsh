@@ -1,4 +1,4 @@
-# zsh shell script to set the Chapel environment variables
+# bash shell script to set the Chapel environment variables
 
 
 # shallow test to see if we are in the correct directory
