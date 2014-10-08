@@ -29,11 +29,14 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
           export MANPATH="$MYMANPATH":"$CHPL_HOME"/man
           echo "$CHPL_HOME"/man
 
+          echo "Setting CHPL_COMM to none"
+          export CHPL_COMM=none
+
           echo "Setting CHPL_TASKS to fifo"
           export CHPL_TASKS=fifo
 
-          echo "Setting CHPL_MEM to cstdlib"
-          export CHPL_MEM=cstdlib
+#          echo "Setting CHPL_MEM to cstdlib"
+#          export CHPL_MEM=cstdlib
 
           echo "Setting CHPL_GMP to none"
           export CHPL_GMP=none
