@@ -147,6 +147,7 @@ extern proc qio_err_to_int(a:syserr):int(32);
 extern proc qio_int_to_err(a:int(32)):syserr;
 extern proc qio_err_iserr(a:syserr):c_int;
 
+// No error occurred
 inline proc ENOERR return 0:err_t;
 
 // When err_t is no longer just int(32), will need to add cases for err_t too.

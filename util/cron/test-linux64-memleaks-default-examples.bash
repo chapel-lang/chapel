@@ -4,4 +4,7 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
-$CWD/nightly.memleaks -examples
+source $CWD/common-memleaks.bash
+
+$CWD/nightly -cron -memleaks $(memleaks_log examples) -examples
+save_memleaks_log examples

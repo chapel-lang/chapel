@@ -40,6 +40,14 @@ qioerr chpl_fs_chdir(const char* name) {
   return err;
 }
 
+qioerr chpl_fs_chmod(const char* name, int mode) {
+  qioerr err = 0;
+  int exitStatus = chmod(name, mode);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+}
+
 qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   qioerr err = 0;
   int exitStatus = chown(name, uid, gid);
