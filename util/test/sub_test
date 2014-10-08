@@ -122,12 +122,10 @@ import shlex
 import datetime
 
 localdir = ''
-sub_test_start_time = time.time()  # datetime.datetime.now()
+sub_test_start_time = time.time()
 def elapsed_sub_test_time():
     """Print elapsed time for sub_test call to console."""
     global sub_test_start_time, localdir
-    # elapsed = datetime.datetime.now() - sub_test_start_time
-    # elapsed_sec = elapsed.seconds
     elapsed_sec = time.time() - sub_test_start_time
 
     test_name = localdir
