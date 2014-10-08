@@ -21,7 +21,7 @@ use Error;
 extern proc chpl_fs_chdir(name: c_string):syserr;
 extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
 extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
-extern proc chpl_fs_cwd(ref working_dir:c_string):syserr;
+extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
 extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
 extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
 extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
@@ -119,11 +119,11 @@ proc chown(name: string, uid: int, gid: int) {
    of this function in a parallel environment.
 */
 proc cwd(out err: syserr): string {
-  var tmp:c_string, ret:string;
+  var tmp:c_string_copy, ret:string;
   err = chpl_fs_cwd(tmp);
   if err then return "";
+  // This version of toString steals its operand.  No need to free.
   ret = toString(tmp);
-  chpl_free_c_string(tmp);
   return ret;
 }
 
