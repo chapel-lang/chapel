@@ -11,4 +11,6 @@ proc main() {
   mpz_set_ui(x[0], 123);
 
   gmp_printf("x[0] is: %Zd\n", x[0]);
+
+  mpz_clear(x[0]);
 }
