@@ -13,7 +13,7 @@ record R {
 
 proc _defaultOf(type t) where t == R
 {
-  var result:R;
+  var result:R = noinit;
   result.i = 4;
   result.r = 2.0;
   return result;
@@ -27,4 +27,4 @@ proc R.R()
 
 var r:R;
 
-writeln(r); // Expect {4,2.0}.
+writeln(r); // Expect (i = 4, r = 2.0).
