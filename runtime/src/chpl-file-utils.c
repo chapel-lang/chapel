@@ -78,6 +78,18 @@ qioerr chpl_fs_is_file(int* ret, const char* name) {
   return _chpl_fs_check_mode(ret, name, S_IFREG);
 }
 
+qioerr chpl_fs_is_link(int* ret, const char* name) {
+  // Note: Cannot use _chpl_fs_check_mode in this case because stat follows
+  // symbolic links instead of evaluating the link itself.  The similar
+  // comparison is also not valid when an unlinked file is provided.
+  struct stat buf;
+  int exitStatus = lstat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = S_ISLNK(buf.st_mode);
+  return 0;
+}
+
 /* Creates a directory with the given name and settings if possible,
    returning a qioerr if not. If parents != 0, then the callee wishes
    to create all interim directories necessary as well. */
