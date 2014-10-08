@@ -37,7 +37,7 @@ uint64_t chpl_gmp_mpz_nlimbs(__mpz_struct from);
 
 void chpl_gmp_mpz_print(mpz_t x);
 
-c_string chpl_gmp_mpz_get_str(int base, mpz_t x);
+c_string_copy chpl_gmp_mpz_get_str(int base, mpz_t x);
 
 #endif
 

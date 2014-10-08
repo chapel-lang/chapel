@@ -26,6 +26,10 @@
 
 qioerr chpl_fs_chdir(const char* name);
 
+// Change the permissions of a given file, returning a qioerr if errors
+// occurred.
+qioerr chpl_fs_chmod(const char* name, int mode);
+
 qioerr chpl_fs_chown(const char* name, int uid, int gid);
 
 qioerr chpl_fs_cwd(const char** working_dir);

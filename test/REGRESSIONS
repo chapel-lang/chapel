@@ -62,6 +62,10 @@ memory-leaks regressions
 (Reviewed for accuracy 09/15/14)
 ================================
 
+very infrequent segfault (10/03/14)
+-----------------------------------
+[Error matching program output for stress/deitz/test_10k_begins]
+
 Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 -----------------------------------------------------------------------------
 [Error matching program output for compflags/bradc/minimalModules/minModDeclPrint]
@@ -82,8 +86,22 @@ internal error (mike/hilde)
 
 ================================
 valgrind-specific regressions
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/02/14)
 ================================
+
+annoying occasional invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
+read of size 8 in dl_name_match_p (e.g., 10/2/14)
+-----------------------------------------------------------------------------
+[Error matching program output for performance/sungeun/dgemm]
+
+invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
+-----------------------------------------------------------------
+[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
+
+infrequent, annoying timeout
+----------------------------
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
 
 noisy failure due to invalid write of size 8 (e.g., 09/15/14, 09/24/14, ...)
 ----------------------------------------------------------------------------
@@ -130,7 +148,7 @@ so the warning does not apply and is not raised, and .good is not matched.
 
 ================================
 no-local regressions
-(Reviewed for accuracy 09/26/14)
+(Reviewed for accuracy 10/02/14)
 ================================
 
 
@@ -139,7 +157,7 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 09/17/14)
 ====================================================
 
-annoying occasional failures even after Sung clamed down (09/18/14 -- sungeun)
+annoying occasional failures even after Sung calmed down (09/18/14 -- sungeun)
 ------------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall]
 
@@ -162,12 +180,19 @@ gasnet-fast regressions (other than the above)
 (Reviewed for accuracy 09/23/14)
 ==============================================
 
+noisy failure due to 'slave got an unknown command on coord socket' (09/27/14)
+------------------------------------------------------------------------------
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5]
 
 
 ============================================================
 linux32 (comm-gasnet) regressions (in addition to the above)
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 09/28/14)
 ============================================================
+
+occasional, annoying timeout
+----------------------------
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
 
 fairly consistent timeouts due to qthreads oversubscription (09/15/14)
 ----------------------------------------------------------------------
@@ -186,8 +211,12 @@ none.qthreads.numa-specific tests (other no-local above)
 
 ==========================================================
 gasnet.qthreads.numa-specific tests (other than the above)
-(Reviewed for accuracy 09/24/14)
+(Reviewed for accuracy 09/28/14)
 ==========================================================
+
+occaaional segfault
+-------------------
+[Error matching program output for release/examples/programs/quicksort]
 
 frequent, annoying timeout
 --------------------------
@@ -202,11 +231,17 @@ comm count mismatches
 
 ======================================================
 gasnet.fifo.flat-specific tests (other than the above)
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 09/28/14)
 ======================================================
+
+very infrequent segfault (10/03/14)
+-----------------------------------
+[Error matching program output for types/string/StringImpl/stress/plusEquals]
 
 annoying, noisy timeouts
 ------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
 
 consistent timeouts
@@ -366,6 +401,12 @@ cray-prgenv-cray/cce-specific regressions
 (Reviewed for accuracy 09/23/14)
 =========================================
 
+some output dropped nondeterministically 
+----------------------------------------
+[Error matching program output for functions/diten/refIntents] (09/30/14)
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (10/03/14)
+[Error matching program output for release/examples/primers/arrays] (10/03/14)
+
 empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
 [Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
@@ -416,6 +457,8 @@ glob portability issue (09/17/14 -- bradc)
 ------------------------------------------
 [Error matching program output for studies/filerator/globberator (execopts: 1)]
 [Error matching program output for studies/filerator/globberator (execopts: 2)]
+[Error matching program output for studies/filerator/testboth]
+[Error matching program output for studies/filerator/testemptyglob]
 
 error differs but within acceptable margin; should squash error printing
 ------------------------------------------------------------------------
@@ -482,18 +525,13 @@ consistent timeout
 
 ===============================================
 pgi-specific regressions (in addition to above)
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 09/29/14)
 ===============================================
-
-mpz_struct not recognized (09/25/14 -- tvandoren)
--------------------------------------------------
-[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-BigInt]
-[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt]
 
 
 ==========================================================================
 cray-prgenv-intel-specific regressions (in addition to cray-prgenv* above)
-(Reviewed for accuracy 09/23/14)
+(Reviewed for accuracy 09/26/14)
 ==========================================================================
 
 test assertion failures (09/21-23/14)
@@ -511,10 +549,10 @@ alignment mismatch in output
 [Error matching program output for types/range/hilde/align]
 
 
-=================================================================
-intel-specific regressions (in addition to chpbld02 errors above)
+==============================================================================
+intel-specific regressions (in addition to cray-prgenv-intel + chpbld02 above)
 (reviewed for accuracy 09/24/14)
-=================================================================
+==============================================================================
 
 
 static/dynamic linking issues
@@ -557,8 +595,12 @@ relies on macro in gmp.h -- not expected to work without effort (09/18/14)
 
 ================================
 LLVM gasnet specific regressions
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 09/29/14)
 ================================
+
+occasional, annoying timeout
+----------------------------
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)]
 
 frequent, annoying timeout
 --------------------------
@@ -568,12 +610,12 @@ frequent, annoying timeout
 
 ===================================
 cygwin-specific failures
-(Reviewed for accuracy on 09/26/14)
+(Reviewed for accuracy on 09/28/14)
 ===================================
 
-no 'siblings' line in /proc/cpuinfo breaks .prediff script (09/20/14)
----------------------------------------------------------------------
-[Error matching program output for localeModels/gbt/maxTaskPar]
+occasional, annoying timeouts
+-----------------------------
+[Error: Timed out executing program studies/sudoku/dinan/sudoku]
 
 gcc warning about assuming strict overflow
 ------------------------------------------
@@ -650,8 +692,8 @@ numerical roundoff issues
 [Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
 [Error matching program output for studies/madness/dinan/mad_chapel/test_likepy
 
-worrisome, annoying timeouts
-----------------------------
+frequent, annoying timeouts
+---------------------------
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/basic]
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/reuse]
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase]
@@ -664,7 +706,7 @@ consistent timeouts
 
 ================================
 baseline-specific tests
-(Reviewed for accuracy 09/22/14)
+(Reviewed for accuracy 10/04/14)
 ================================
 
 incorrect output -- expected? (04/03/10)
@@ -718,13 +760,9 @@ glibc: double free or corruption (09/28/13)
 [Error matching program output for studies/hpcc/HPL/bradc/hpl-blc]
 [Error matching program output for studies/hpcc/HPL/vass/hpl]
 
-Nondeterministic stacksize issue
---------------------------------
-The program fails to run to completion due to memory corruption, but the error
-just looks like an output mismatch because the output comparison script fails
-to find a valid output file.
---------------------------------
-[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)](3/9/14)
+frequent, annoying failure due to memory corruption/stacksize issue (3/9/14)
+----------------------------------------------------------------------------
+[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
 
 still a failure (09/19/14)
 --------------------------
@@ -734,10 +772,6 @@ Tests suppressions that now succeed due to turning on inlining (12/7/12)
 ------------------------------------------------------------------------
 [Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
 [Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
-
-frequent, annoying timeout
---------------------------
-[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
 
 
 ================================
@@ -752,13 +786,17 @@ frequent, annoying timeout
 
 ================================
 cyclic distribution regressions
-(Reviewed for accuracy 09/26/14)
+(Reviewed for accuracy 09/29/14)
 ================================
 
 constant, annoying shift in timeouts -- due to machine load or qthreads oversub?
 --------------------------------------------------------------------------------
+[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_array_assignment]
+[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_array_swap]
+[Error: Timed out compilation for distributions/robust/arithmetic/reindexing/test_array_alias1]
 [Error: Timed out compilation for distributions/robust/arithmetic/basics/test_zipper_default]
 [Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random]
+[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Search]
 
 communication counts changed due to r23004, gbt (03/30/14)
 ----------------------------------------------------------

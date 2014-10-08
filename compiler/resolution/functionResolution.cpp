@@ -1105,6 +1105,8 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (formalType == dtString && actualType==dtStringC)
     return true;
+  if (formalType == dtStringC && actualType==dtStringCopy)
+    return true;
   if (formalType == dtIteratorRecord && actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     return true;
   if (formalType == dtIteratorClass && actualType->symbol->hasFlag(FLAG_ITERATOR_CLASS))
@@ -1219,8 +1221,12 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if ((((toVarSymbol(actualSym) || toArgSymbol(actualSym))) &&
-       (actualType==dtStringC)) && (formalType == dtString))
+  if (//(toVarSymbol(actualSym) || toArgSymbol(actualSym)) && // What does this exclude?
+      actualType == dtStringC && formalType == dtString)
+    return true;
+  if (formalType == dtStringC && actualType == dtStringCopy)
+    return true;
+  if (formalType == dtString && actualType == dtStringCopy)
     return true;
   return false;
 }

@@ -4,4 +4,6 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
-$CWD/nightly.dist replicated
+source $CWD/common-dists.bash
+
+$CWD/nightly -cron -dist replicated

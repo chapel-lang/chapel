@@ -106,18 +106,20 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
   chpl_free(memAlloc);
 }
 
-// free a c_string, no error checking
+// free a c_string_copy, no error checking.
+// The argument type is explicitly c_string_copy, since only an "owned" string
+// should be freed.
 static ___always_inline
-void chpl_rt_free_c_string(c_string s, int32_t lineno, c_string filename)  {
+void chpl_rt_free_c_string(c_string_copy s, int32_t lineno, c_string filename)  {
   assert(s!=NULL);
   chpl_mem_free((void *) s, lineno, filename);
 }
 
 void chpl_mem_layerInit(void);
 void chpl_mem_layerExit(void);
-void* chpl_mem_layerAlloc(size_t, int32_t, c_string);
-void* chpl_mem_layerRealloc(void*, size_t, int32_t, c_string);
-void chpl_mem_layerFree(void*, int32_t, c_string);
+void* chpl_mem_layerAlloc(size_t, int32_t lineno, c_string filename);
+void* chpl_mem_layerRealloc(void*, size_t, int32_t lineno, c_string filename);
+void chpl_mem_layerFree(void*, int32_t lineno, c_string filename);
 
 #else // LAUNCHER
 

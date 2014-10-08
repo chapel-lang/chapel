@@ -19,6 +19,7 @@
 use Error;
 
 extern proc chpl_fs_chdir(name: c_string):syserr;
+extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
 extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 extern proc chpl_fs_cwd(ref working_dir:c_string):syserr;
 extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
@@ -52,6 +53,36 @@ proc chdir(name: string) {
   chdir(err, name);
   if err then ioerror(err, "in chdir", name);
 }
+
+/* Set the permissions of the file or directory specified by name to that
+   indicated by settings.  Returns any errors that occurred via an out
+   parameter.
+   err: a syserr used to indicate if an error occurred
+   name: the name of the file/directory which should have its permissions
+         alterred.
+   mode: an integer representing the permissions desired for the file
+         in question.  See description of the provided constants for potential
+         values.
+*/
+proc chmod(out err: syserr, name: string, mode: int) {
+  err = chpl_fs_chmod(name.c_str(), mode);
+}
+
+
+/* Set the permissions of the file or directory specified by name to that
+   indicated by settings, and may generate an error message
+   name: the name of the file/directory which should have its permissions
+         alterred.
+   mode: an integer representing the permissions desired for the file
+         in question.  See description of the provided constants for potential
+         values.
+*/
+proc chmod(name: string, mode: int){
+  var err: syserr = ENOERR;
+  chmod(err, name, mode);
+  if err then ioerror(err, "in chmod", name);
+}
+
 
 /* Changes one or both of the owner and group id of the named file to the
    specified values.  If uid or gid are -1, the value in question will remain

@@ -4,4 +4,6 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
-$CWD/nightly.numa -full
+source $CWD/common-numa.bash
+
+$CWD/nightly -cron

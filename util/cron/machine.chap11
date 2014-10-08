@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-CWD=$(cd $(dirname $0) ; pwd)
-
-source $CWD/common.bash
-source $CWD/common-fifo.bash
-
-# fifo + flat + none
-$CWD/nightly.fifo -full

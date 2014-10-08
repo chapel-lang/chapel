@@ -4,4 +4,6 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
-$CWD/nightly.tcmalloc
+source $CWD/common-tcmalloc.bash
+
+$CWD/nightly -cron -no-futures

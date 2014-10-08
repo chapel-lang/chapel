@@ -523,7 +523,7 @@ module ChapelIO {
   }
   
   proc warning(args ...?numArgs) {
-    var tmpstring: c_string;
+    var tmpstring: c_string_copy;
     tmpstring.write((...args));
     warning(tmpstring);
     chpl_free_c_string(tmpstring);
@@ -545,27 +545,33 @@ module ChapelIO {
   }
   
   class StringWriter: Writer {
-    var s: c_string = "";
+    var s: c_string_copy; // Should be initialized to NULL.
+    proc StringWriter(x:c_string) {
+      this.s = __primitive("string_copy", x);
+    }
     proc writePrimitive(x) {
-      const orig = this.s;
-      this.s += (x:c_string);
-      if orig.length != 0 then chpl_free_c_string(orig);
+      // TODO: Implement += so it consumes a c_string_copy LHS.
+      const aug = x:c_string_copy;
+      this.s += aug;      // The update frees this.s before overwriting it.
+      chpl_free_c_string(aug);
     }
     proc ~StringWriter() {
-      if this.s.length != 0 then chpl_free_c_string(this.s);
+      chpl_free_c_string(this.s);
+      __primitive("=", this.s, _nullString);
     }
   }
   
   // Convert 'x' to a string just the way it would be written out.
   // Includes Writer.write, with modifications (for simplicity; to avoid 'on').
-  proc _cast(type t, x) where t == c_string {
+  proc _cast(type t, x) where t == c_string_copy {
     //proc isNilObject(o: object) return o == nil;
     //proc isNilObject(o) param return false;
     const w = new StringWriter();
     //if isNilObject(x) then "nil".writeThis(w);
     //else                   x.writeThis(w);
     w.write(x);
-    const result = __primitive("string_copy", w.s);
+    const result = w.s;
+    __primitive("=", w.s, _nullString);
     delete w;
     return result;
   }
@@ -575,7 +581,9 @@ module ChapelIO {
     var sc = new StringWriter(this);
     sc.write((...args));
     // We need to copy this string because the destructor call below frees it
-    this = __primitive("string_copy", sc.s);
+    this = sc.s;
+    // This is required to prevent double-deletion.
+    __primitive("=", sc.s, _nullString);
     delete sc;
   }
   
@@ -584,12 +592,14 @@ module ChapelIO {
     var sc = new StringWriter(this.c_str());
     sc.write((...args));
     this = toString(sc.s);
+    // This is required to prevent double-deletion.
+    __primitive("=", sc.s, _nullString);
     delete sc;
   }
   
   // C can't handle overloaded declarations, so just don't prototype this one.
   pragma "no prototype"
-  extern proc chpl_format(fmt: c_string, x): c_string;
+  extern proc chpl_format(fmt: c_string, x): c_string_copy;
   
   proc format(fmt: c_string, x:?t) where isIntegralType(t) || isFloatType(t) {
     if fmt.substring(1) == "#" {
