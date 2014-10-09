@@ -1633,6 +1633,8 @@ err_t sys_unlink(const char* path)
   return err_out;
 }
 
+// This routine returns a malloc'd string through its path_out pointer.
+// The caller is responsible for freeing that memory.
 err_t sys_getcwd(const char** path_out)
 {
   int sz = 128;

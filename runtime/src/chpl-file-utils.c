@@ -56,6 +56,8 @@ qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   return err;
 }
 
+// This routine returns a malloc'd string (through the working_dir pointer)
+// that must be deallocated by the caller.
 qioerr chpl_fs_cwd(const char** working_dir) {
   qioerr err = 0;
   size_t bufsize = MAXPATHLEN*sizeof(char);

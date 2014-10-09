@@ -349,10 +349,14 @@ c_string_copy
 integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
 {
   char buffer[256];
-  const char* format;
+  const char* format = "";
   enum {UNSIGNED = 0<<16, SIGNED = 1<<16 };
   switch (SIGNED * isSigned + size)
   {
+   default:
+    chpl_error("Unexpected case in integral_to_c_string_copy", -1, "");
+    break;
+
    case UNSIGNED + 1: format = "%" PRIu8;  break;
    case UNSIGNED + 2: format = "%" PRIu16; break;
    case UNSIGNED + 4: format = "%" PRIu32; break;
