@@ -20,12 +20,36 @@
 
 ===========================================================
 general regressions (seem to happen in most configurations)
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/08/14)
 ===========================================================
 
-fails about 2-3x a month
-------------------------
+fails about 2-3x a month (vass)
+-------------------------------
 [Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
+
+
+The following 3 categories show up for linux64 on chpbld02:
+
+no such file or directory error (10/08/14 -- hilde)
+---------------------------------------------------
+[Error matching program output for functions/iterators/tzakian/open_inside_file_iter]
+
+
+error message changed (10/08/14 -- hilde)
+-----------------------------------------
+[Error matching program output for types/file/freadIntFailed]
+[Error matching program output for types/file/fwriteIntFailed]
+
+
+The following 1 category shows up for chap05/numa, no-local, gasnet-everything,
+gasnet.fifo, cygwin:
+
+unresolved call to 'chpl_free_c_string' (10/08/14 -- hilde)
+-----------------------------------------------------------
+[Error matching compiler output for io/fsouza/cwd/print_cwd]
+[Error matching compiler output for io/lydia/parallelDirState/chdirMultiTasks]
+
+
 
 
 ==============================================
@@ -89,13 +113,18 @@ valgrind-specific regressions
 (Reviewed for accuracy 10/02/14)
 ================================
 
+invalid read/write of size 8 in ftoa() (10/08/14)
+-------------------------------------------------
+[Error matching program output for performance/sungeun/assign_across_locales]
+
 annoying occasional invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p (e.g., 10/2/14)
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm]
 
-invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
------------------------------------------------------------------
+occasional invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
+(fixed 10/08/14)
+----------------------------------------------------------------------------
 [Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
 
 infrequent, annoying timeout
@@ -157,6 +186,10 @@ gasnet-everything regressions (other than the above)
 (Reviewed for accuracy 09/17/14)
 ====================================================
 
+unresolved call to 'chpl_free_c_string' (10/08/14 -- hilde)
+-----------------------------------------------------------
+[Error matching compiler output for io/lydia/parallelDirState/chdirMultilocale]
+
 annoying occasional failures even after Sung calmed down (09/18/14 -- sungeun)
 ------------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall]
@@ -183,6 +216,10 @@ gasnet-fast regressions (other than the above)
 noisy failure due to 'slave got an unknown command on coord socket' (09/27/14)
 ------------------------------------------------------------------------------
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5]
+
+unresolved access of range by (2) (10/07/14)
+--------------------------------------------
+[Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug]
 
 
 ============================================================
@@ -406,6 +443,8 @@ some output dropped nondeterministically
 [Error matching program output for functions/diten/refIntents] (09/30/14)
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (10/03/14)
 [Error matching program output for release/examples/primers/arrays] (10/03/14)
+[Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (10/07/14)
+
 
 empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
@@ -612,6 +651,10 @@ frequent, annoying timeout
 cygwin-specific failures
 (Reviewed for accuracy on 09/28/14)
 ===================================
+
+very infrequent "CreateProcessW failed"
+---------------------------------------
+[Error matching program output for domains/johnk/capacityAssoc] (10/08/14)
 
 occasional, annoying timeouts
 -----------------------------
