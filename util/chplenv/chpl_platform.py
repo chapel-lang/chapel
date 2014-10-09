@@ -23,8 +23,8 @@ def get(flag='host'):
                 cle_info = fp.read()
             net_pattern = re.compile('^NETWORK=(?P<net>[a-zA-z]+)$', re.MULTILINE)
             net_match = net_pattern.search(cle_info)
-            if net_match is not None and len(net.groups) == 1:
-                net = m.group('net')
+            if net_match is not None and len(net_match.groups()) == 1:
+                net = net_match.group('net')
                 if net.lower() == 'gem':
                     platform_val = 'cray-xe'
                 elif net.lower() == 'ari':
