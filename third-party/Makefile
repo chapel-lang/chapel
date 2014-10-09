@@ -6,6 +6,8 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 ifdef CHPL_DEVELOPER
 DEBUG=1
 export DEBUG
+WARNINGS=1
+export WARNINGS
 else
 OPTIMIZE=1
 export OPTIMIZE

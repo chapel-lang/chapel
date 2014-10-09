@@ -68,9 +68,9 @@ WARN_CFLAGS = $(WARN_CXXFLAGS)
 WARN_GEN_CFLAGS =
 
 #
-# developer settings
+# compiler warnings settings
 #
-ifdef CHPL_DEVELOPER
+ifeq ($(WARNINGS), 1)
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
 RUNTIME_GEN_CFLAGS +=
