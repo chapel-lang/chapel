@@ -72,4 +72,4 @@ export CHPL_GMP=none
 export CHPL_REGEXP=none
 
 # Compile chapel and make sure the hello world examples run.
-make -C $CHPL_HOME check
+make -C $CHPL_HOME WARNINGS=1 check
