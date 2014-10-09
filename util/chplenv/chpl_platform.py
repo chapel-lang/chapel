@@ -21,7 +21,7 @@ def get(flag='host'):
         if os.path.exists(cle_info_file):
             with open(cle_info_file, 'r') as fp:
                 cle_info = fp.read()
-            net_pattern = re.compile('^NETWORK=(?P<net>[a-zA-z]+)$', re.MULTILINE)
+            net_pattern = re.compile('^NETWORK=(?P<net>[a-zA-Z]+)$', re.MULTILINE)
             net_match = net_pattern.search(cle_info)
             if net_match is not None and len(net_match.groups()) == 1:
                 net = net_match.group('net')
