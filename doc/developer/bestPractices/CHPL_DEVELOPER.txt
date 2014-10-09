@@ -92,5 +92,5 @@ Notes:
   not from a developer perspective.
 
 * the 'nightly' script used to run cron jobs does not set
-  CHPL_DEVELOPER. Instead, it sets WARNINGS=1 and OPTIMIZE=1 when
-  calling make.
+  CHPL_DEVELOPER. Instead, it sets WARNINGS=1, DEBUG=0, and OPTIMIZE=1
+  when calling make.
