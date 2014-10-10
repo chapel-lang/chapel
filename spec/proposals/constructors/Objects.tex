@@ -1,4 +1,6 @@
 \section{The Object Lifecycle Model and UMM}
+\label{Objects}
+
 
 The interaction of language semantics and the User-Managed Memory model can be discussed
 in terms of state transitions in the object lifecycle.  For background, a summary of the
@@ -13,7 +15,7 @@ In general, the states an object can be in are:
 \begin{enumerate}
 \item Undefined
 \item Uninitialized
-\item Value-Initialized
+\item Default-Initialized
 \item Field-Initialized
 \item Fully-Initialized (a.k.a. Constructed)
 \item Destroyed
@@ -28,13 +30,13 @@ Once memory sufficient to represent the object has been allocated, the object
 moves to the ``uninitialized'' state.  The name of the object (or the class
 variable) refers to actual memory, but that memory is in an unknown state.
 
-Value-initialization moves the object to the ``value-initialized'' state.  Each
+Default-initialization moves the object to the ``default-initialized'' state.  Each
 field within an aggregate object is in an initial state consistent with its type,
 but neither the fields nor the object as a whole have been ``constructed''.
-Value-initialization may be applied knowing only the type of the object --- or
+Default-initialization may be applied knowing only the type of the object --- or
 just the types of the fundamental leaves of an aggregate type.  In particular,
 neither the constructors nor the field initializers are consulted in creating a
-value-initialized object.\footnote{This can be stated more simply using just the
+default-initialized object.\footnote{This can be stated more simply using just the
   restriction against consulting constructors, since field-initialization
   depends upon construction.}
 
@@ -46,7 +48,7 @@ passing the initialization expression for that field as its operand.
 
 Following field-initialization, the actions specified in the body of the
 constructor are called.  In many cases, the body of the constructor is empty,
-because the actions of value- and field-initialization bring the object into a
+because the actions of default- and field-initialization bring the object into a
 state consistent with the desired class invariants.  In any case, after the body
 of one of its constructors has run to completeion, the object is
 fully-initialized (i.e. constructed).
@@ -184,7 +186,7 @@ assignment operator is not necessarily trivial.  It may perform reference-counti
 operations, etc.}
 
 It can be observed that the form with \chpl{= noinit} initializer performs no
-initialization whatsoever.  Zero-initialization, field initialization and construction are
+initialization whatsoever.  Default-initialization, field initialization and construction are
 all inhibited.  Because construction is not performed, this breaks encapsulation of the
 corresponding class or record.  And because the choice of whether construction is done or
 not is made at the point of declaration (rather than as part of the class design), the
@@ -415,10 +417,9 @@ variables of record type are not heap-allocated.  Therefore, the allocation code
 inserted in the class constructor wrapper shown above is \emph{not} inserted in the
 compiler-generated default construtor.
 
-\subsubsection{Value Initialization}
+\subsubsection{Default Initialization}
 
-In the current implementation, value-initialization is equivalent to zero-initialization.
-Zero-initialization is applied before field-initialization, and this occurs before any
+Default-initialization is applied before field-initialization, and this occurs before any
 assignments that occur within the body of the constructor.
 
 In record and class constructors, this is done on a field-by-field basis, recursively,
@@ -436,7 +437,7 @@ constructor can be distinguished by the presence of a ``meme'' argument.  This a
 does not appear in any of the constructor-wrapper functions that call the all-fields
 constructor nor in user-supplied constructors.
 
-The zero-initialization code for a class object containing two records of the above type
+The default-initialization code for a class object containing two records of the above type
 looks like:
 \begin{verbatim}
     var this:C
@@ -453,10 +454,10 @@ looks like:
     ('.=' this init _init_class_tmp_)
 \end{verbatim}
 \noindent
-Note that zero-initialization has effectively been recursively inlined.  This AST snapshot
+Note that default-initialization has effectively been recursively inlined.  This AST snapshot
 is taken at the end of the ``resolve'' pass --- well before explicit inlining is applied.
 
-The zero-initialization code is injected by the compiler in all constructors that can be
+The default-initialization code is injected by the compiler in all constructors that can be
 called directly from user code.
 
 \subsubsection{Field Initialization}
@@ -537,7 +538,7 @@ The corresponding AST at the end of resolution is
 
 The compiler post-processes the source code for a constructor in the normalize pass (in
 \chpl{change_method_into_constructor}) to insert a call to the compiler-generated default
-constructor.  For a record, this performs zero-initialization followed by
+constructor.  For a record, this performs default-initialization followed by
 field-initialization.  Control then advances to the code that constituted the original
 constructor body.
 
@@ -577,7 +578,7 @@ instantiation to stamp out two copies of this constructor --- one with the
 \end{verbatim}
 Note that as with records, the compiler inserts a call to the default constructor for C,
 moving the result into \chpl{this}.  The default constructor for C, in addition to
-performing zero- and field-initialization, heap-allocates space to hold the returned object.
+performing default- and field-initialization, heap-allocates space to hold the returned object.
 
 
 \subsubsection{Post-Construction}
@@ -605,7 +606,7 @@ With the exception of the new initialization syntax proposed in sections
 expected to be largely compatible with today's implementation.  
 \subsubsection{Allocation}
 
-\subsubsection{Value Initialization}
+\subsubsection{Default Initialization}
 
 \subsubsection{Field Initialization}
 
