@@ -80,4 +80,11 @@ iter gen_digits(numDigits) {
     mpz_mul_ui(accum, accum, 10);          // accum *= 10
     mpz_mul_ui(numer, numer, 10);          // numer *= 10
   }
+
+  // Clean up when done.
+  mpz_clear(numer);
+  mpz_clear(accum);
+  mpz_clear(denom);
+  mpz_clear(tmp1);
+  mpz_clear(tmp2);
 }
