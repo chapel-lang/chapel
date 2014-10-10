@@ -24,6 +24,7 @@ extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
 extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
 extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
+extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
 extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
 extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
 extern proc chpl_fs_remove(name: c_string):syserr;
@@ -180,6 +181,28 @@ proc isFile(name:string):bool {
   var err:syserr;
   var ret = isFile(err, name);
   if err then ioerror(err, "in isFile", name);
+  return ret;
+}
+
+/* Returns true if the name corresponds to a symbolic link, false if not
+   or if symbolic links are not supported.
+   name: a string that could be the name of a symbolic link.
+*/
+proc isLink(out err:syserr, name: string): bool {
+  var ret:c_int;
+  err = chpl_fs_is_link(ret, name.c_str());
+  return ret != 0;
+}
+
+/* Returns true if the name corresponds to a symbolic link, false if not
+   or if symbolic links are not supported.  Generates an error message if one
+   occurs
+   name: a string that could be the name of a symbolic link.
+*/
+proc isLink(name: string): bool {
+  var err:syserr;
+  var ret = isLink(err, name);
+  if err then ioerror(err, "in isLink", name);
   return ret;
 }
 
