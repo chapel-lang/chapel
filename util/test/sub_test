@@ -131,7 +131,7 @@ def elapsed_sub_test_time():
     test_name = localdir
     if 'CHPL_ONETEST' in os.environ:
         chpl_name = os.environ.get('CHPL_ONETEST')
-        base_name = '.'.join(chpl_name.split('.')[:-1])
+        base_name = os.path.splitext(chpl_name)[0]
         test_name = os.path.join(test_name, base_name)
 
     print('[Finished subtest "{0}" - {1:.3f} seconds]\n'.format(test_name, elapsed_sec))
