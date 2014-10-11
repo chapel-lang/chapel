@@ -57,4 +57,4 @@ binutils:
 
 FORCE:
 
-
+.NOTPARALLEL:

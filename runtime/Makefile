@@ -46,3 +46,4 @@ third-party-pkgs:
 		$(MAKE) -C $(THIRD_PARTY_DIR) $$p; \
 	done
 
+.NOTPARALLEL:

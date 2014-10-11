@@ -62,3 +62,5 @@ endif
 gmp: gmp-config gmp-build
 
 FORCE:
+
+.NOTPARALLEL:

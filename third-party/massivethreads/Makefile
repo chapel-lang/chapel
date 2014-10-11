@@ -38,3 +38,5 @@ massivethreads-build: FORCE
 massivethreads: massivethreads-config massivethreads-build
 
 FORCE:
+
+.NOTPARALLEL:
