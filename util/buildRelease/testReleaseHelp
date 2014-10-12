@@ -41,7 +41,7 @@ if ($tmpstatus != 0) then
     echo "ERROR: make failed"
     exit($tmpstatus)
 endif
-$mymake -j$num_procs check
+$mymake check
 set tmpstatus = $status
 if ($tmpstatus != 0) then
     echo "ERROR: make check failed"

@@ -91,5 +91,7 @@ echo ""
 # when calling make with parallel execution.
 num_procs=$(python -c "import multiprocessing; print(multiprocessing.cpu_count())")
 
-# Compile chapel and make sure the hello world examples run.
-make -j${num_procs} -C $CHPL_HOME $chpl_make_args check
+# Compile chapel and make sure the hello world examples run. Compile first with
+# parallel execution, but call `make check` without it.
+make -j${num_procs} -C $CHPL_HOME $chpl_make_args && \
+    make -C $CHPL_HOME $chpl_make_args check
