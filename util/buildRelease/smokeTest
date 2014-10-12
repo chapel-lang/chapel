@@ -87,5 +87,9 @@ fi
 
 echo ""
 
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+num_procs=$(python -c "import multiprocessing; print(multiprocessing.cpu_count())")
+
 # Compile chapel and make sure the hello world examples run.
-make -C $CHPL_HOME $chpl_make_args check
+make -j${num_procs} -C $CHPL_HOME $chpl_make_args check
