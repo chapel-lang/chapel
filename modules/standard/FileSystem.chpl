@@ -22,6 +22,7 @@ extern proc chpl_fs_chdir(name: c_string):syserr;
 extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
 extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
+extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
 extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
 extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
 extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
@@ -139,6 +140,27 @@ proc cwd(): string {
   var err: syserr = ENOERR;
   var ret = cwd(err);
   if err then ioerror(err, "in cwd");
+  return ret;
+}
+
+/* Returns true if the provided filename corresponds to an existing file,
+   false otherwise.  Returns any errors that occurred via an out parameter
+   name: a string used to attempt to find the file specified.
+*/
+proc exists(out err: syserr, name: string): bool {
+  var ret:c_int;
+  err = chpl_fs_exists(ret, name.c_str());
+  return ret != 0;
+}
+
+/* Returns true if the provided filename corresponds to an existing file, false
+   otherwise.  Generates an error message if one occurred.
+   name: a string used to attempt to find the file specified.
+*/
+proc exists(name: string): bool {
+  var err: syserr = ENOERR;
+  var ret = exists(err);
+  if err then ioerror(err, "in exists");
   return ret;
 }
 
