@@ -1,0 +1,5 @@
+Actual Commit Author: Samuel Figueroa
+
+This commit was inadvertently attributed to the wrong author while converting
+from Subversion to Git. For all intents and purposes, the 'Actual Commit
+Author' should be considered the author for this commit.
