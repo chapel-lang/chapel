@@ -48,7 +48,7 @@ proc computeLyric(verseNum: int) {
 
 
 proc describeBottles(bottleNum, startOfVerse = false) {
-  var bottleDescription = if (bottleNum) then bottleNum:string 
+  var bottleDescription = if (bottleNum) then bottleNum:string
                                          else (if startOfVerse then "N" 
                                                                else "n") 
                                               + "o more";

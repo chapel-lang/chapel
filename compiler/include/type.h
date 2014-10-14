@@ -241,7 +241,8 @@ TYPE_EXTERN AggregateType* dtLocale;
 TYPE_EXTERN AggregateType* dtLocaleID;
 TYPE_EXTERN AggregateType* dtMainArgument;
 
-TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string.
+TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
+TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;

@@ -41,8 +41,16 @@ below.
 Building Chapel for a Cray System from Source
 ---------------------------------------------
 
-1) Set CHPL_HOST_PLATFORM to the appropriate string for your particular
-   Cray system.  These are the supported systems and strings:
+1) If using a XC, XE, or XK system, continue to step 2. If using a
+   CS series system, set CHPL_HOST_PLATFORM to "cray-cs".
+
+   For example:
+
+     export CHPL_HOST_PLATFORM=cray-cs
+
+   These are the supported systems and strings. Note that XC, XE,
+   and XK values are used by default when building on one of those
+   system. They can also be set manually.
 
        System       CHPL_HOST_PLATFORM
        ---------    ------------------
@@ -50,10 +58,6 @@ Building Chapel for a Cray System from Source
        XC series        cray-xc
        XE series        cray-xe
        XK series        cray-xk
-
-   For example:
-
-     export CHPL_HOST_PLATFORM=cray-xc
 
 
 2) Optionally, set the CHPL_LAUNCHER environment variable to indicate

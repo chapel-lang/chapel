@@ -37,17 +37,23 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
           echo "                           ...$CHPL_HOME"/man
           echo " "
 
+          echo "Setting CHPL_COMM to..."
+          CHPL_COMM=none
+          export CHPL_COMM
+          echo "                           ...none"
+          echo ""
+
           echo "Setting CHPL_TASKS to..."
           CHPL_TASKS=fifo
           export CHPL_TASKS
           echo "                           ...fifo"
           echo " "
 
-          echo "Setting CHPL_MEM to..."
-          CHPL_MEM=cstdlib
-          export CHPL_MEM
-          echo "                           ...cstdlib"
-          echo " "
+#          echo "Setting CHPL_MEM to..."
+#          CHPL_MEM=cstdlib
+#          export CHPL_MEM
+#          echo "                           ...cstdlib"
+#          echo " "
 
           echo "Setting CHPL_GMP to..."
           CHPL_GMP=none

@@ -121,6 +121,23 @@ import re
 import shlex
 import datetime
 
+localdir = ''
+sub_test_start_time = time.time()
+def elapsed_sub_test_time():
+    """Print elapsed time for sub_test call to console."""
+    global sub_test_start_time, localdir
+    elapsed_sec = time.time() - sub_test_start_time
+
+    test_name = localdir
+    if 'CHPL_ONETEST' in os.environ:
+        chpl_name = os.environ.get('CHPL_ONETEST')
+        base_name = os.path.splitext(chpl_name)[0]
+        test_name = os.path.join(test_name, base_name)
+
+    print('[Finished subtest "{0}" - {1:.3f} seconds]\n'.format(test_name, elapsed_sec))
+
+import atexit
+atexit.register(elapsed_sub_test_time)
 
 #
 # Time out class:  Read from a stream until time out

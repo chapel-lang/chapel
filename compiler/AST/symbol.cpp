@@ -64,6 +64,7 @@ Symbol *gNoInit = NULL;
 Symbol *gVoid = NULL;
 Symbol *gFile = NULL;
 Symbol *gStringC = NULL;
+Symbol *gStringCopy = NULL;
 Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;

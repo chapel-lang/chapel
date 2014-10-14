@@ -1,0 +1,4 @@
+--permissions 384 # changeMode.rwu.good
+--permissions 256 # changeMode.ru.good
+--permissions 128 # changeMode.wu.good
+--permissions 448 # changeMode.rwxu.good

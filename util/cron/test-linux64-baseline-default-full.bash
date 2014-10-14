@@ -4,4 +4,6 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
+source $CWD/common-baseline.bash
+
 $CWD/nightly -cron -baseline -suppress Suppressions/baseline.suppress -no-futures -compopts --inline
