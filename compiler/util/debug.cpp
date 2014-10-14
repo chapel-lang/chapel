@@ -1,3 +1,5 @@
+#include "debug.h"
+
 #include "expr.h"
 #include "codegen.h"
 #include "symbol.h"
@@ -15,8 +17,9 @@
 // garbage issue could be solved with scrubbing, if it matters.
 
 extern char *current_dir;
-char *null_name = "<internal>";
+const char *null_name = "<internal>";
 
+static
 void shred_path(const char *full_path, char *file_name, char *path_name, int size)
 {
   if(full_path == NULL)
@@ -86,12 +89,15 @@ llvm::DIFile debug_data::get_file(const char *file, const char *directory)
   return this->debug_factory.createFile(file_name, directory_name);
 }
 
-llvm::DIType debug_data::get_struct_type(const ClassType *struct_type)
+llvm::DIType debug_data::get_struct_type(const AggregateType *struct_type)
 {
-  char file_name[128];
-  char path_name[128];
+  llvm::DIType ret;
+  // TODO
+  //char file_name[128];
+  //char path_name[128];
   //shread_path(struct_type->astloc.filename, file_name, path_name, 128);
   //llvm::DINameSpace = get_module_name(stuff, struct_type->astloc.filename, struct_type->astloc.lineno);
+  return ret;
 }
 
 llvm::DIType debug_data::get_type(Type *type)
@@ -101,9 +107,9 @@ llvm::DIType debug_data::get_type(Type *type)
     return get_int_type(type->symbol->name, type->symbol->llvmType->getIntegerBitWidth());
   } else if(type->symbol->llvmType->isFloatingPointTy()) {
     return get_real_type(type->symbol->name, type->symbol->llvmType->getPrimitiveSizeInBits());
-  } else if(type->astTag == E_ClassType) {
-    ClassType *this_class = (ClassType *)type;
-    if(this_class->classTag == CLASS_RECORD) return get_struct_type(this_class);
+  } else if(type->astTag == E_AggregateType) {
+    AggregateType *this_class = (AggregateType *)type;
+    if(this_class->aggregateTag == AGGREGATE_RECORD) return get_struct_type(this_class);
   }
 
   printf("Unhandled type: %s\n\ttype->astTag=%i\n", type->symbol->name, type->astTag);
@@ -128,6 +134,9 @@ llvm::DIType debug_data::get_real_type(const char *name, unsigned int bits)
 
 llvm::DIType debug_data::get_array_type(unsigned int elements, llvm::DIType Type)
 {
+  llvm::DIType ret;
+  // TODO
+  return ret;
 }
 
 llvm::DINameSpace debug_data::get_module_name(const char *name)
@@ -149,13 +158,13 @@ llvm::DINameSpace debug_data::get_module_name(const char *name, const char *file
 {
   //assert(name != NULL);
   // resolved_name needs to stick around. StringRef only points to it, it doesn't keep a copy of it. If leaking this matters it can be freed in a destructor.
-  char *resolved_name = malloc(128);
+  char *resolved_name = (char*) malloc(128);
   if(name == NULL)
   {
     printf("New name using default name\n");
     char new_name[128];
     char path_name[128];
-    shread_path(file_name, new_name, path_name, 128);
+    shred_path(file_name, new_name, path_name, 128);
     char *last_dot = strrchr(new_name,'.');
     assert(strcmp(last_dot,".chpl")==0);
     last_dot[0]='\0';
@@ -183,7 +192,7 @@ llvm::DIType debug_data::get_function_type(const char *file, const std::vector<l
   llvm::DIFile my_file = get_file(file);
   llvm::SmallVector<llvm::Value *,16> my_types;
 
-  for(int idx=0; idx < types.size(); idx++)
+  for(size_t idx=0; idx < types.size(); idx++)
   {
     my_types.push_back(types[idx]);
   }

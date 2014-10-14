@@ -5,10 +5,10 @@
 
 #ifdef HAVE_LLVM
 
+#include "llvmUtil.h"
 #include "llvm/Support/Dwarf.h"
 #include "llvm/DebugInfo.h"
 #include "llvm/DIBuilder.h"
-#include "llvm/Function.h"
 
 #include <vector>
 
@@ -32,7 +32,7 @@ class debug_data
   llvm::DIType get_real_type(const char *name, unsigned int bits);
   llvm::DIType get_array_type(unsigned int elements, llvm::DIType Type);
   //llvm::DIType get_struct_type(const char *name, const char *file_name, unsigned int line_number, std::vector<llvm::DIType>types);
-  llvm::DIType get_struct_type(const ClassType *struct_type);
+  llvm::DIType get_struct_type(const AggregateType *struct_type);
   llvm::DINameSpace get_module_name(const char *name, const char *file_name, unsigned int line_number);
   llvm::DINameSpace get_module_name(const char *name);
   llvm::DISubprogram get_function(const FnSymbol *function);

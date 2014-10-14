@@ -21,12 +21,11 @@ UTIL_SRCS = \
 	llvmAggregateGlobalOps.cpp \
 	llvmGlobalToWide.cpp \
 	llvmUtil.cpp \
+	debug.cpp \
 	misc.cpp \
 	mysystem.cpp \
 	stringutil.cpp \
 	timer.cpp \
-	llvmUtil.cpp \
-	debug.cpp \
         tmpdirname.cpp
 
 SVN_SRCS = $(UTIL_SRCS)
