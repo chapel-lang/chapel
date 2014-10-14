@@ -1068,9 +1068,29 @@ codegen_config() {
 }
 
 
+// Dead code elimination may create C-For loops in which the test expr
+// is an empty BlockStmt.  This is quietly passed through for STD but
+// causes a seg-fault on LLVM.
+static void CForLoopCleanup() {
+  forv_Vec(BlockStmt, stmt, gBlockStmts) {
+    if (CallExpr* loop = stmt->blockInfo) {
+      if (loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        if (BlockStmt* test = toBlockStmt(loop->get(2))) {
+          if (test->body.length == 0) {
+            stmt->remove();
+          }
+        }
+      }
+    }
+  }
+}
+
 void codegen(void) {
   if (no_codegen)
     return;
+
+  // Special cleanup for C-For Loop ahead of codegen
+  CForLoopCleanup();
 
   if( fLLVMWideOpt ) {
     // --llvm-wide-opt is picky about other settings.
