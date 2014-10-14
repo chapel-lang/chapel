@@ -6,7 +6,7 @@ The interaction of language semantics and the User-Managed Memory model can be d
 in terms of state transitions in the object lifecycle.  For background, a summary of the
 object lifecycle is presented in the following subsection.  We then discuss the
 transitions made by the current constructor model, and how the proposed constructor model
-would navigate these same changes.
+would navigate these same transitions.
 
 
 \subsection{The Object Lifecycle}
@@ -50,7 +50,7 @@ Following field-initialization, the actions specified in the body of the
 constructor are called.  In many cases, the body of the constructor is empty,
 because the actions of default- and field-initialization bring the object into a
 state consistent with the desired class invariants.  In any case, after the body
-of one of its constructors has run to completeion, the object is
+of one of its constructors has run to completion, the object is
 fully-initialized (i.e. constructed).
 
 When an object is destroyed, it transitions to the destroyed state.  This state
@@ -83,8 +83,9 @@ there to be three canonical forms for variable declaration and initialization:
    var b:T = noinit;
    var c:T = new T( ... );
 \end{chapel}
+\noindent
 In the final form, any expression coercible to type \chpl{T} should exhibit the same
-semantics, so we could e.g. have said \chpl{var c:T = a;} instead.
+semantics, so we could e.g. have said \chpl{var c:T = a;} instead, for example.
 
 In only the final form, the explicit type specifier on the variable may be omitted.  In that
 case the compiler infers the type from the initializer expression.  In the other forms,
@@ -92,11 +93,12 @@ the type specifier is required.\footnote{The compiler might still be able to inf
 variable depending on how it is used (as it currently does for the return value
 temporary), but that would reflect a change in the semantics of the language.}
 
-Anyway, as things stand, type inference in the compiler allows it to convert the
+As things stand, type inference in the compiler allows it to convert the
 expression
 \begin{chapel}
    var c = new T( ... );
 \end{chapel}
+\noindent
 into its canonical form \chpl{var c:T = new T( ... );}.  Note that since the inferred type
 of c is the same as the type of the initializer expression, the initializer expression is
 always coercible to the variable's type.
@@ -118,8 +120,9 @@ When \chpl{T} is a record type, we observe that the following Chapel code
   var w = new R();
   var x = new R(9, 16, 0.5625);
 \end{chapel}
-gives rise to the corresponding AST
-\begin{chapelcode}
+\noindent
+gives rise to the corresponding AST:
+\begin{numberedchapel}
     var s:R
     {
       var type_tmp:R
@@ -153,7 +156,8 @@ gives rise to the corresponding AST
     var coerce_tmp:uint(64)
     ('move' coerce_tmp (call _cast 9))
     ('move' x (call _construct_R coerce_tmp 16 0.5625))
-\end{chapelcode}
+\end{numberedchapel}
+\noindent
 begin roughly equivalent to the following canonical expansion:
 \begin{chapel}
   pragma "no init" var type_tmp:R; type_tmp <- new R();
@@ -177,27 +181,27 @@ begin roughly equivalent to the following canonical expansion:
 \end{chapel}
 \noindent
 where the invented pragma \chpl{"no init"} performs basically the same function as the
-\chpl{= noinit} initializer --- inhibiting any kind of initialization from being applied
-to the raw memory representeing the object.  The invented syntax \chpl{<-} expresses the
+\chpl{=noinit} initializer --- inhibiting any kind of initialization from being applied
+to the raw memory representing the object.  The invented syntax \chpl{<-} expresses the
 action of the \chpl{'move'} primitive, which is to perform a bit-wise copy from the RHS
 object into the LHS object.  This is in contrast to \chpl{=}, which calls the assignment
 operator (i.e. \chpl{proc =}) compatible with the types of the two arguments.\footnote{The
 assignment operator is not necessarily trivial.  It may perform reference-counting
 operations, etc.}
 
-It can be observed that the form with \chpl{= noinit} initializer performs no
+It can be observed that the form with \chpl{=noinit} initializer performs no
 initialization whatsoever.  Default-initialization, field initialization and construction are
 all inhibited.  Because construction is not performed, this breaks encapsulation of the
 corresponding class or record.  And because the choice of whether construction is done or
 not is made at the point of declaration (rather than as part of the class design), the
 class designer is under no obligation to make any operation on an uninitialized object of
-that type work correctly.  In particular, \emph{assignment into an uninitialized object is
-  not expected to work correctly} which leaves \emph{no pathway for an uninitialized
-  object to ever become properly initialized}.  As it is currently implemented, I would
-have to advise the serious programmer to never use the \chpl{= noinit} feature.
+that type work correctly.  In particular, assignment into an uninitialized object is
+not expected to work correctly which leaves no pathway for an uninitialized
+object to ever become properly initialized.  A redesign is currently underway to address
+these problems.
 
 Somewhat to my surprise, the forms involving type inference are not merely normalized
-to their corresponding cononical forms.  They follow a completely different translation
+to their corresponding canonical forms.  They follow a completely different translation
 pathway.  I suspect this is due more to implementation history rather than being a matter
 of design.  In many places, the current implementation requires the construction of a
 full-up object where the construction of a mere type would suffice.  
@@ -216,16 +220,18 @@ compiler-supplied version of \chpl{_defaultOf()} calls the all-fields constructo
 passed-in type, passing no arguments.  
 
 This is the same behavior as would be achieved by consistently generating a call to the
-constructor for that type, passing no arguments.  In the case that no user-defined
-constructor that can bind to an empty argument list is supplied, the call would bind to
-the compiler-supplied all-fields constructor.  In the case that such a user-defined
+constructor for that type, passing no arguments.  
+In the case that such a user-defined
 constructor is supplied, the compiler would preferentially bind that one.
+In the case that no user-defined
+constructor that can bind to an empty argument list is supplied, the call would instead bind to
+the compiler-supplied all-fields constructor.  
 
 In the current implementation, it is possible to override the compiler-supplied version of
 \chpl{_defaultOf()}.  In that case, the user-defined version is used preferentially.
 However, it is still the case that \chpl{_defaultOf()} will only be called if no
 user-defined constructor that can bind to an empty argument list is supplied for that
-type.
+type.  Part of this proposal is to change that behavior.
 
 Because \chpl{_defaultOf()} produces an object that is properly initialized, it is
 equivalent in its effect to construction.  It should therefore be under the control of the
@@ -251,6 +257,7 @@ When initializing a variable of class type, the following forms are possible:
   var e = new C(false);
   var f:C = noinit;
 \end{chapel}
+\noindent
 This produces the following AST
 \begin{chapelcode}
     var c:C
@@ -275,6 +282,7 @@ This produces the following AST
     ('move' e (call _construct_C))
     var f:C
 \end{chapelcode}
+\noindent
 which is roughly equivalent to the following pseudo-Chapel code:
 \begin{chapel}
   pragma "no init" var c:C;
@@ -292,19 +300,20 @@ which is roughly equivalent to the following pseudo-Chapel code:
   pragma "no init" var e:C; e <- new C(false);
   pragma "no init" var f:C;
 \end{chapel}
-
+\noindent
 For class variables, assignment is rigidly defined by the compiler to be a pointer copy,
 so there is no difference between the assignment operator and move primitives for all
 class types.  Therefore, the actions taken for the separate declaration and initialization
 (for variable \chpl{c}) are the same as those taken for the canonical initialization form
-(for variable \chpl{d}).  In gruesome detail, the first form involves one update of
+(for variable \chpl{d}).  In minute detail, the first form involves one update of
 \chpl{type_tmp} and two updates to \chpl{c} while the second form involves two updates of
 \chpl{type_temp} and only one of \chpl{d}.  This may have performance impacts depending on
-where the two are stored.
+where the two are stored.\footnote{The temporary variable \chpl{type_tmp} is expected to
+  be local.}
 
 For the noinit case, it should be noted that the value returned by \chpl{_defaultOf()} for
-any class type is \chpl{nil}.  But when the \chpl{= noinit} initializer is present,
-\chpl{nil} is not generated and assignmed to the corresponding variable.  In spite of
+any class type is \chpl{nil}.  But when the \chpl{=noinit} initializer is present,
+\chpl{nil} is not generated and assigned to the corresponding variable.  In spite of
 that, we find that both module-level and function-level class variables are initialized to
 \chpl{nil} after all.  This zero-initialization is added at code generation time to the
 backend representation for the variable.  
@@ -318,7 +327,8 @@ var d: Block(rank=2) = noinit;
 var b = new Block({2..5, 2..5});
 var c: Block(rank=2) = new Block({1..4, 1..4});
 \end{chapel}
-We obtain:
+\noindent
+we obtain:
 \begin{numberedchapel}
     var a:Block(2,int(64))
     {
@@ -354,6 +364,7 @@ We obtain:
       ('move' c type_tmp)
     }
 \end{numberedchapel}
+\noindent
 It appears that the \chpl{call_tmp} variables declared on lines 4, 9 and 21 are never
 used.  Otherwise, this code looks quite similar to initialization for the case of a normal
 class variable.
@@ -367,6 +378,7 @@ The Chapel code:
   var C: [1..n] real = [.500, .666, .750, .800];
   var D: [1..n, 1..n] int = noinit;
 \end{chapel}
+\noindent
 produces the following AST:
 \begin{numberedchapel}
     var A:[domain(2,int(64),false)] int(64)
@@ -517,6 +529,7 @@ The Chapel code:
   var F:domain(2) = {6..7, 8..9};
   var G:domain(2) = noinit;
 \end{chapel}
+\noindent
 produces the AST:
 \begin{numberedchapel}
     var D:domain(2,int(64),false)
@@ -590,6 +603,7 @@ The Chapel code:
   var e: single int = noinit;
   var f: single int = n;
 \end{chapel}
+\noindent
 produces:
 \begin{numberedchapel}
     sync var a:_syncvar(int(64))
@@ -631,7 +645,7 @@ produces:
 \end{numberedchapel}
 
 Except for the presence of a \chpl{type_tmp} for \chpl{a}, the cases for \chpl{a} and
-\chpl{b} are the same.  The case for \chpl{c} also contains an initailizer that
+\chpl{b} are the same.  The case for \chpl{c} also contains an initializer that
 overwrites the initial value supplied by \chpl{_defaultOf}.  Both forms could be replaced
 by a suitable constructor call.
 
@@ -647,6 +661,7 @@ For the Chapel code:
   var d:2*real = (12.0,13.3);
   var e = d;
 \end{chapel}
+\noindent
 we obtain
 \begin{chapelcode}
     var a:2*real(64)
@@ -671,6 +686,7 @@ we obtain
     var e:2*real(64)
     ('move' e (call chpl__initCopy d))
 \end{chapelcode}
+\noindent
 It is interesting to note that for tuple initialization, there appears to be an extra
 \chpl{call_tmp} for the cases with an explicit type specifier that is inserted and never
 actually used in the initialization.   Other than that, the tuple code looks quite similar
@@ -679,7 +695,7 @@ to the code for scalar variables.
 \subsubsection{Scalar Variables}
 
 Scalar variables include those of Boolean, integer, real, complex, enumeration and string
-types.  As with other types, the forms of variable declaration are.
+types.  As with other types, the forms of variable declaration are:
 \begin{chapel}
 // type T = ... ;
    var a:T;
@@ -688,6 +704,7 @@ types.  As with other types, the forms of variable declaration are.
    var d = 13; // Initializer expression e has type T.
    var e = d; // Same.
 \end{chapel}
+\noindent
 The third form is not currently supported for integer or real types, because the syntax
 type(size)() in a "new" expression is not recognized as a type expression followed by a
 call (which should invoke a constructor for that type).  The above code results in the
@@ -710,16 +727,17 @@ following AST:
     var e:int(64)
     ('move' e (call chpl__initCopy d))
 \end{chapelcode}
+\noindent
 The first form results in default-initialization with a value of the declared type.
 Note that there is no initialization at all (in the AST) for the form
-involving \chpl{= noinit}.  Again, the canonical version contains extra data motion that
+involving \chpl{=noinit}.  Again, the canonical version contains extra data motion that
 is undesirable.  In particular, it uses assignment, which should not appear in initialization.
 
 
 
 \subsection{Construction in the Current Implementation}
 
-In the current implementation, construction involves all of the steps from undefined
+In the current implementation, construction involves all of the states from undefined
 through fully-initialized.
 
 \subsubsection{Allocation}
@@ -727,7 +745,7 @@ through fully-initialized.
 Variables of class type are only allocated explicitly through the \chpl{new} operator.
 The allocation is performed in the wrapper function which calls the compiler-generated
 ``all-fields'' constructor for that class, passing in all default-valued field arguments.
-\begin{chapelcode}
+\begin{numberedchapel}
   // This is the AST clipped from the compiler-supplied constructor for a class C.
   function C._construct_C() : C
   {
@@ -738,11 +756,12 @@ The allocation is performed in the wrapper function which calls the compiler-gen
     ('move' cast_tmp (call chpl_here_alloc call_tmp 28))
     ('move' this ('cast' C cast_tmp))
     ('setcid' this)
-\end{chapelcode}
+\end{numberedchapel}
+\noindent
 Storage for all other types is allocated either statically or on the stack.  In particular,
 variables of record type are not heap-allocated.  Therefore, the allocation code
 inserted in the class constructor wrapper shown above is \emph{not} inserted in the
-compiler-generated default construtor.
+compiler-generated default constructor.
 
 \subsubsection{Default Initialization}
 
@@ -750,22 +769,38 @@ Default-initialization is applied before field-initialization, and this occurs b
 assignments that occur within the body of the constructor.
 
 In record and class constructors, this is done on a field-by-field basis, recursively,
-according to the default value specified for each fundamental type.  For records --- for
-example --- we have: 
+according to the default value specified for each fundamental type.  For the record:
+\begin{chapel}
+record R {
+  var u:uint = 7;
+  var i      = -2;
+  var r:real;
+}
+\end{chapel}
+\noindent
+we have: 
 \begin{chapelcode}
     var this:R
     ('.=' this u 0)
     ('.=' this i 0)
     ('.=' this r 0.0)
 \end{chapelcode}
+\noindent
 This code appears in every wrapper constructor that is used to call the compiler-generated
 all-fields constructor, but not in the all-fields constructor itself.  The all-fields
 constructor can be distinguished by the presence of a ``meme'' argument.  This argument
 does not appear in any of the constructor-wrapper functions that call the all-fields
 constructor nor in user-supplied constructors.
 
-The default-initialization code for a class object containing two records of the above type
-looks like:
+For a class object of type C containing two records of the above type:
+\begin{chapel}
+class C {
+  var uninit:R;
+  var init = new R(3, 2, 1.0);
+}
+\end{chapel}
+\noindent
+the default-initialization code looks like:
 \begin{chapelcode}
     var this:C
     // Allocation code elided. See above.
@@ -781,8 +816,9 @@ looks like:
     ('.=' this init _init_class_tmp_)
 \end{chapelcode}
 \noindent
-Note that default-initialization has effectively been recursively inlined.  This AST snapshot
-is taken at the end of the ``resolve'' pass --- well before explicit inlining is applied.
+Note that default-initialization has been recursively inlined.  This AST snapshot
+is taken at the end of the ``resolve'' pass --- well before explicit inlining is applied
+--- so we may conclude that the inlining is performed as part of normalization or resolution.
 
 The default-initialization code is injected by the compiler in all constructors that can be
 called directly from user code.
@@ -790,7 +826,7 @@ called directly from user code.
 \subsubsection{Field Initialization}
 
 Field-initialization in class and record construction is performed by the
-compiler-generated all-fields constructor.  Example AST for this function for a record is
+compiler-generated all-fields constructor.  Example AST for this function for a record is:
 \begin{chapelcode}
   function R._construct_R(arg u:uint(64), arg i:int(64), arg r:real(64), arg meme:R) : R
   {
@@ -805,7 +841,8 @@ compiler-generated all-fields constructor.  Example AST for this function for a 
     (return this)
   }
 \end{chapelcode}
-and for a class,
+\noindent
+and for a class:
 \begin{chapelcode}
   function C._construct_C(arg uninit:R, arg init:R, arg meme:C) : C
   {
@@ -824,11 +861,12 @@ and for a class,
     (return this)
   }
 \end{chapelcode}
+\noindent
 Both begin by moving \chpl{meme} into \chpl{this}.  The class constructor then calls its
 base-class constructor, passing in the pointer to the base-class sub-object.  Every class
 inherits from \chpl{object}.  The sub-object of type \chpl{object} contains the class ID
 and in this way, the run-time type of an object is established.  As an optimization,
-objects that are statically bound can be declared withe the \chpl{"no object"} pragma ---
+objects whose methods are statically bound can be declared withe the \chpl{"no object"} pragma ---
 in which case the \chpl{object} base class object is elided.
 
 In the compiler-generated all-fields constructor, it is apparent that the \chpl{meme}
@@ -846,9 +884,10 @@ In the example code, the user-supplied record constructor looks like:
 \begin{chapel}
   proc R() { r = 2.71; }
 \end{chapel}
+\noindent
 It sets the r field of that record to a very bad approximation of $e$.
 
-The corresponding AST at the end of resolution is
+The corresponding AST at the end of resolution is:
 \begin{chapelcode}
   function R._construct_R() : R
   {
@@ -863,7 +902,7 @@ The corresponding AST at the end of resolution is
   }
 \end{chapelcode}
 
-The compiler post-processes the source code for a constructor in the normalize pass (in
+The compiler post-processes the source code for a constructor in the normalize pass (in\\ 
 \chpl{change_method_into_constructor}) to insert a call to the compiler-generated default
 constructor.  For a record, this performs default-initialization followed by
 field-initialization.  Control then advances to the code that constituted the original
@@ -880,9 +919,10 @@ In the example code, the user-supplied class constructor looks like:
     }
   }
 \end{chapel}
+
 The interesting case is when \chpl{overw} is true.  (The param argument causes generic
 instantiation to stamp out two copies of this constructor --- one with the 
-\chpl{overw == true} clause and the other without.)  The corresponding AST is
+\chpl{overw == true} clause and the other without.)  The corresponding AST is:
 \begin{chapelcode}
   function C._construct_C() : C
   {
@@ -903,6 +943,7 @@ instantiation to stamp out two copies of this constructor --- one with the
     (return this)
   }
 \end{chapelcode}
+
 Note that as with records, the compiler inserts a call to the default constructor for C,
 moving the result into \chpl{this}.  The default constructor for C, in addition to
 performing default- and field-initialization, heap-allocates space to hold the returned object.
@@ -919,7 +960,7 @@ There are a number of reasons why this language feature should be deprecated, in
 \item The signature of the built-in \chpl{initialize} method is highly constrained (no
   arguments, no return value) while a user-defined \chpl{initialize} method is not so
   constrained. 
-\item It provides a way for a sophisticated user to write obfuscated code.
+\item It provides a way for a sophisticated coder to write obfuscated code.
 \item It slightly complicates the compiler.
 \item It removes that name from the user's namespace.
 \item Whatever was the historical problem it solved seems to have been overcome by now.
@@ -931,13 +972,50 @@ There are a number of reasons why this language feature should be deprecated, in
 With the exception of the new initialization syntax proposed in sections
 \rsec{Declarations} and \rsec{Constructors}, the observable semantics of construction is
 expected to be largely compatible with today's implementation.  
+
 \subsubsection{Allocation}
+
+Allocation should be moved outside of the definition of a class constructor.  Not only
+will this reduce overall code size, it will allow the structure of class and record
+constructors to be identical.
 
 \subsubsection{Default Initialization}
 
+The current recommendation is to remove the default-initialization phase as it is
+currently implemented.  Default initialization will be unified with variable or field
+initialization --- meaning that initialization will either be performed in response to
+an explicit initializer, or through a call to \chpl{_defaultOf()}.  Since both of these
+methods would overwrite a zero-initialized variable (or field) what was thought of as
+default-initialization is now moot.  (Refer to the second open issue in
+\rsec{Constructors_Syntax} for further discussion.)
+
+As hinted above, an explicit initializer will be used if present, otherwise
+\chpl{defaultOf()} will be called to supply a default value.
+
+The assignment used to update a typed object with its initializer should be replaced with
+a copy constructor call.
+
+Constructors should be implemented and called as methods to avoid the final bit-wise
+copy-back (and to save confusion over ownership).
+
+When the initializer object is created using a new-expression, the copy-constructor call
+should be elided (as an optimization).
+
 \subsubsection{Field Initialization}
+
+Field initialization will be handled by the semantics associated with the
+\sntx{initializer-clause}, including substituting explicit or default initializations from
+the class or record declaration.
+
+The semantic rules for initializations specified in the \sntx{initializer-clause} will be
+consistent with those described for variable declarations.
 
 \subsubsection{Construction}
 
+According to this proposal, the body of a constructor will be ``straight code'', so no
+changes are proposed.  In particular, no restriction is placed on calling a method of the
+same class or record from within one of its constructors.
+
 \subsubsection{Post-Construction}
 
+We propose to deprecate and remove the magic surrounding the \chpl{initialize()} method.

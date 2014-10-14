@@ -4,6 +4,7 @@
 This section describes the proposed syntax and semantics for constructors.
 
 \subsection{Syntax}
+\label{Constructors_Syntax}
 
 A constructor performs initialization of an object.  On entry, a
 constructor may assume that each of its fields has been default-initialized according to the
@@ -13,6 +14,28 @@ Specification.\footnote{Default-initialization may be overridden for an individu
 Default-initialization is supplied by the compiler, so it has no corresponding syntactical
 element.\footnote{A separate proposal is being developed for a ``no-init'' capability,
   whereby default-initialization may be overridden in whole or in part.}
+
+\begin{openissue}
+Taken together, the semantics being proposed for variable and field initialization and
+construction imply that every such object will be initialized one way or the other.  In
+that case, the default-initialization (a.k.a. zero-initialization) step mentioned in the
+object lifecycle can be omitted.
+
+I believe that zero-initialization is a part of the C++ specification to support backward
+compatibility with C, and to allow the creation of global and filescope static objects
+that are in a known state before their construction at the start of execution commences.
+This is important in the execution environment envisioned for programs of that period,
+especially since the order of initialization of global and filescope objects from
+different compilation units is unspecified.
+
+In modern programming practice, however, the use of global objects is strongly
+discouraged.  And if initialization order is strictly specified by the language, then the
+need for such zero-initialization disappears.  
+
+Given its negative impact on performance, the recommendation here is to remove
+zero-initialization unless a strong case can be made for it.  I left it as an open
+issue in case there are use cases that I have overlooked.
+\end{openissue}
 
 \begin{note}
 The default-initialization value for most fundamental types is chosen such that a 
@@ -24,16 +47,17 @@ zero-initialization can still be used for the default-initialization part of the
 definition.
 \end{note}
 
-Default-initialization is followed by field-initialization.  Field-initialization
+Default-initialization (if performed) is followed by field-initialization.  Field-initialization
 constructs each field in an object, in an order specified in the Semantics
 (\rsec{Constructor_Semantics} subsection below.  The syntactical elements influencing
 field-initialization are the field declarations and the initializers appearing in the
 \sntx{initializer-list}.  Field-initialization is complete before control enters the body
 of the constructor.
 
-The body of the constructor performs the actual construction of the object.  Since
-field-initialization is already complete by the time the body of the constructor is
-entered, it is quite common for a constructor body to be empty.
+The body of the constructor performs the actual construction of the object.  If a class or
+record type is merely an aggregation of the fields it contains, it imposes no further
+invariants on its contents.
+Thus, it is quite common for a constructor body to be empty.
 
 The syntax of a constructor may thus be set down as:
 \begin{syntax}
@@ -61,7 +85,7 @@ constructor-body:
   statement
 \end{syntax}
 
-The linkage specifier (if present) is \chpl{inline} \chpl{extern} or \chpl{export}.  Since
+The linkage specifier (if present) is \chpl{inline}, \chpl{extern} or \chpl{export}.  Since
 in general the backend implementation does not support the object model, the
 \chpl{extern} option probably does not make much sense at present.  Constructors are
 expected to be statically-linked methods, so it should be possible for an external program
@@ -96,7 +120,7 @@ constructors to be common.  Also, the parenthesesless form would have the same
 behavior as the default constructor --- that is, it would perform default
 initialization for all fields.  But the compiler-generated constructor already
 does this (if called with an empty argument list).  Given that the
-parenthesesless form is redundant, and potentially takes flexibility away from
+parenthesesless form is redundant and potentially takes flexibility away from
 the user, there is no advantage to supporting it.
 \end{rationale}
 
@@ -104,7 +128,7 @@ If present, the \sntx{initializer-clause} contains a comma-separated list of
 \sntx{initializer}s.  Each field-name in the initializer list must correspond to the name
 of one of the fields declared in that class or record, or in one of its base types
 (recursively).  Each initializer contains a field-name followed by an
-\chpl{=} followed by a new-expression for value fields or a type expression for type fields.
+\chpl{=} followed by a value expression for value fields, a param expression for param fields or a type expression for type fields.
 Each initializer results in the initialization of that field by
 calling the constructor corresponding to the type of that field, passing in the arguments
 supplied.  In this context, the \chpl{=} does not mean assignment; rather, it implies
@@ -123,7 +147,7 @@ specifies how the named variable is to be constructed in-place.
 \end{rationale}
 
 Within an \sntx{initializer-clause}, the name of each field may appear at most
-once.  A field name may contain any number of \chpl{super .} qualifiers to distinguish an
+once.  A field name may contain any number of \chpl{super.} qualifiers to distinguish an
 inherited field from a field of the same name in the most-derived type.
 
 It is illegal to declare a return type for a constructor; the return type is
@@ -154,7 +178,7 @@ constructor-call-expression:
 The \sntx{type-name} must name a type.  The named type may be generic.
 The set of visible constructors are all constructors defined for that type.  Usual
 generic expansion rules are applied to the set of visible functions to select a set of
-candidate constructors.  Any \chpl{where} clauses are applied to further reduce the set of
+candidate constructors.  Any \chpl{where} clauses are then applied to reduce the set of
 candidates.  Disambiguation is applied to select the best candidate from among those
 remaining.  It is a program error if there is no unique best candidate.  Otherwise, the
 call is bound to that unique best candidate.
@@ -184,7 +208,7 @@ use of the name of any field that has not yet been initialized is illegal\footno
   statically.}
 
 After the initializer-list has been processed, some fields may remain uninitialized.
-These fields are initialized using the default initialization specified for them in the
+These fields are initialized using the initializer specified for them in the
 class or record declaration.  The fields of a class or record are processed in lexical
 order.  If not already initialized, the initializer associated with the field declaration
 (if any) is used.  Otherwise, the field is default-initialized via a call to its
@@ -278,6 +302,7 @@ As a special case, the syntax
 \begin{chapel}
 var r = new R(args,...);
 \end{chapel}
+\noindent
 should not construct an anonymous R and call the copy-constructor to then initialize
 \chpl{r}.  Rather, it should call the constructor for \chpl{R} with the given argument
 list to initialize \chpl{r} in situ.  This would be roughly equivalent to:
@@ -363,6 +388,16 @@ ctor DefaultRectangularArr.( ... ) with ( ... ) {}
 It is worth considering alternatives.
 \end{openissue}
 
+\begin{openissue}
+
+The example code shows that there is a lot of copying of formal arguments in to the
+\sntx{initializer-clause}.  As syntactic sugar, we might consider automatically feeding
+through formals to their like-named fields if that field is not mentioned explicitly in
+the \chpl{initializer-clause}.  That would mean that the entire \chpl{with} clause could
+be omitted from the example code above and the overall meaning of the constructor was
+unchanged.
+\end{openissue}
+
 The \chpl{initialize()} routine is called implicitly by each constructor, including
 compiler-generated ones.
 The \chpl{initialize()} routine for this class is given by:
@@ -383,7 +418,7 @@ The \chpl{initialize()} routine for this class is given by:
     }
 \end{chapel}
 
-
+Therefore, our example constructor might look like:
 \begin{chapel}
 ctor DefaultRectangularArr.DefaultRectangularArr(type eltType,
                                                  param rank : int,
@@ -409,8 +444,10 @@ ctor DefaultRectangularArr.DefaultRectangularArr(type eltType,
     initShiftedData();
 }
 \end{chapel}
-Or more simply, the body of this constructor could be replaced by an explicit call to
-\chpl{initialize()}.  According to the current design, implicit calls to
+Here, we have inlined the body of the existing \chpl{initialize} routine in the body of
+the constructor.
+More simply, the body of this constructor could be replaced by an explicit call to
+\chpl{initialize()}.  According to the present proposal, implicit calls to
 \chpl{initialize()} would be eliminated, so in classes that currently exist for which such
 a function is defined, it would have to be called explicitly.
 
@@ -432,7 +469,8 @@ The semantics of this constructor are as follows:
 \end{enumerate}
 
 One possible call that would bind to this constructor is taken from the existing
-implementation of \chpl{DefaultRectangularDom.dsiBuildArray(type eltType)}:
+implementation of\\
+\chpl{DefaultRectangularDom.dsiBuildArray(type eltType)}:
 \begin{chapel}
       return new DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
                                       stridable=stridable, dom=this);

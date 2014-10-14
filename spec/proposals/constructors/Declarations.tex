@@ -13,7 +13,7 @@ possible.
 
 Thus, the proposal mainly deals with implementation details.  The proposed changes should
 not affect the functional behavior of programs: they should affect only performance.  The
-observable changes will affect the total amount of memory allocated and free, the amount
+observable changes will affect the total amount of memory allocated and freed, the amount
 of processing time spent in data motion and the number of times copy-constructors and
 copy-assignment operators are called.  But filtering out a program's introspection
 w.r.t. these quantities, its output should remain unaffected.
@@ -36,8 +36,7 @@ much of the complexity surrounding initialization in the compiler, and the extra
 emitted when a variable's type is specified explicitly.
 
 At a high level, the proposal here is to perform variable type inference separately from
-initialization.  That is, if a variable (or the return type of a function, for that
-matter) has a declared type, that type will be represented internally as a type only.  It
+initialization.  That is, if a variable (or the return type of a function) has a declared type, that type will be represented internally as a type only.  It
 will not have a value associated with it and it will not entail the creation of a default
 value of that type as a stand-in for the type itself.
 
@@ -59,10 +58,21 @@ seemingly small change in the internal representation will in fact be quite exte
 
 \subsubsection{Unify Initialization}
 
+In the current implementation, there is a step where the value is default-initialized
+prior to its value being established with an initializer if present.  If the view is taken
+that the declaration itself always results in a constructor call (the copy-constructor if
+an initializer is supplied and the no-args constructor if not), then default
+initialization becomes moot and should be removed.
+
+As part of this proposal, the existing ``defaultOf'' feature will be preserved.  The
+observation is that a call to \chpl{_defaultOf()} is effectively a constructor call.  This
+is backed up by the fact that the compiler-supplied implementation of \chpl{_defaultOf()}
+actually calls the compiler-supplied zero-args constructor.  
+
 After the type of a variable is established, it will either have an initialization
 expression or not.  If the initialization expression is missing, the compiler will add a
 call to \chpl{_defaultOf()} to supply the default value corresponding to that type.  If the
-special \chpl{= noinit} initializer is supplied, then the special actions specified for
+\chpl{=noinit} initializer is supplied, then the special actions specified for
 that initializer are taken.  Otherwise, the initializer provided explicitly in the code is
 used.
 
@@ -72,15 +82,15 @@ representation will serve: there is no pressing need to unflatten the representa
 
 \subsubsection{Collapse Constructor Calls}
 
-In the current implementation, constructor calls generate and initialize (for class types)
+In the current implementation, constructor calls allocate and initialize (for class types)
 or simply initialize (for record types) an unnamed object of the corresponding type.  
 For class types, the resulting object is copied into the named variable using assignment.
 But since assignment of class variables is rigidly defined by the language to be a bitwise
-copy of a reference (pointer) to that unnamed object, things are not so bad.  
+copy of a reference (pointer) to that unnamed object, the copy is not expensive.
 
 For record types, the story is different.  In general, the semantics of assignment are not
 defined if the left operand is in an uninitialized state.  So using assignment to
-initialize the named variable is flat wrong.  If the initializer expression is named
+initialize the named variable is flat wrong.  If the initializer expression is a named
 object (see below) then at worst copy-construction should be used.  But for constructor
 calls we can do even better by eliminating the copy entirely.
 
@@ -105,7 +115,7 @@ Maintaining that symmetry will keep the specification and implementation of
 
 \subsubsection{Use Copy-Construction, Not Assignment}
 
-The cases discussed so far involve no initializer, the \chpl{= noinit} initializer and an
+The cases discussed so far involve no initializer, the \chpl{=noinit} initializer and an
 initializer that looks like a constructor call (i.e. \chpl{= new T(...)}.  The remaining
 case is where the initializer expression is an expression coercible to the type of the
 named variable.\footnote{In the case that the type of the named variable is not specified
@@ -117,7 +127,7 @@ named variable.\footnote{In the case that the type of the named variable is not 
 As explained above, assignment in the context of initialization is illegal, because the
 left operand is not yet initialized.  Copy-construction should be used instead.  The
 proposal here is to simply substitute a copy-constructor call where assignment is inserted
-today.  For fundamental types, copy-construction, assignment and bit-wise moves are
+today.  For fundamental and class types, copy-construction, assignment and bit-wise moves are
 semantically equivalent, so in that realm it becomes merely a name change.  The change
 will only be of consequence as it applies to records and record-based types (e.g. tuples
 and ranges).
@@ -131,7 +141,7 @@ assignment can be violated, and such a violation may cause incorrect behavior.  
 we already have one test case that fails (only in multilocale testing) due to this
 problem (in privatized arrays, because the default privatization index is not distinguished
 from a valid one).  More such problems may appear as greater use is made of records to
-support ad hoc memory management schemes.  Anyway, the simple solution is to ``do it
+support ad hoc memory management schemes.  The simple solution is to ``do it
 right''.
 
 Normalizing type inference will get rid of the extra type variable initialization code.
