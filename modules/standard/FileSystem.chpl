@@ -143,8 +143,9 @@ proc cwd(): string {
   return ret;
 }
 
-/* Returns true if the provided filename corresponds to an existing file,
-   false otherwise.  Returns any errors that occurred via an out parameter
+/* Returns true if the provided filename corresponds to an existing file, false
+   otherwise.  Returns false for broken symbolic links.  Returns any errors that
+   occurred via an out parameter
    name: a string used to attempt to find the file specified.
 */
 proc exists(out err: syserr, name: string): bool {
@@ -154,7 +155,8 @@ proc exists(out err: syserr, name: string): bool {
 }
 
 /* Returns true if the provided filename corresponds to an existing file, false
-   otherwise.  Generates an error message if one occurred.
+   otherwise.  Returns false for broken symbolic links.  Generates an error
+   message if one occurred.
    name: a string used to attempt to find the file specified.
 */
 proc exists(name: string): bool {
