@@ -60,9 +60,9 @@ WARN_GEN_CFLAGS =
 
 
 #
-# developer settings
+# compiler warnings settings
 #
-ifdef CHPL_DEVELOPER
+ifeq ($(WARNINGS), 1)
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile

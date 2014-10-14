@@ -1,3 +1,4 @@
+use FileSystem;
 // This test demonstrates the effect of chdir() and the result of cwd() when
 // dealing with multiple locales
 

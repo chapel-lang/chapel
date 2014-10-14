@@ -24,6 +24,7 @@
 #include "bitVec.h"
 #include "expr.h"
 #include "stmt.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 #include "optimizations.h"
 #include "view.h"

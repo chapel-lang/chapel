@@ -1,0 +1,5 @@
+todo-const-array-field.chpl:14: error: illegal lvalue in assignment
+todo-const-array-field.chpl:15: error: illegal lvalue in assignment
+todo-const-array-field.chpl:18: error: illegal lvalue in assignment
+todo-const-array-field.chpl:19: error: illegal lvalue in assignment
+todo-const-array-field.chpl:21: error: done

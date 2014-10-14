@@ -51,7 +51,6 @@
 #include <fcntl.h>
 #include <sys/select.h>
 //#include <sys/fcntl.h> no sys/fcntl.h on AIX, fcntl.h should cover it.
-#include <sys/param.h> // MAXPATHLEN
 #include <sys/stat.h>
 
 #include <assert.h>
@@ -1057,113 +1056,6 @@ void _qio_file_destroy(qio_file_t* f)
   qio_free(f);
 }
 
-/* Creates a directory with the given name and settings if possible,
-   returning a qioerr if not. If parents != 0, then the callee wishes
-   to create all interim directories necessary as well. */
-qioerr qio_mkdir(const char* name, int mode, int parents) {
-  qioerr err = 0;
-  int exitStatus;
-  if (!parents) {
-    // Simple, easy.  Callee didn't specify recursive creation, so
-    // if something fails, they get to deal with it.
-    exitStatus = mkdir(name, mode);
-  } else {
-    int len = strlen(name);
-    char tmp[len+1];
-    int index;
-    struct stat statRes;
-    // We don't actually care about the full result of the stat calls, merely
-    // the existance and state of the directory being accessed.
-    while (name[len-1] == '/') {
-      // In case the caller, in their infinite wisdom, decides to send
-      // a directory name of the form "foo///////".
-      len--;
-      // Note: not being able to mix declarations and code means that
-      // tmp must be created larger than might be necessary.
-    }
-    // Copy each step of the directory path into a temporary string,
-    // creating the parent directories as needed. In the case of name
-    // being "foo/bar/baz", this means that tmp will be "foo/" and then
-    // "foo/bar" for each inner call of mkdir.
-    for (index = 0; name[index] != '\0' && index < len; index++) {
-      tmp[index] = name[index];
-      if(tmp[index] == '/') {
-        tmp[index+1] = '\0';
-        exitStatus = stat(tmp, &statRes);
-        if (exitStatus == -1 && errno == ENOENT) {
-          // This error means we could not find the parent directory, so need
-          // to create it.
-          exitStatus = mkdir(tmp, mode);
-        }
-        if (exitStatus) {
-          // We encountered an error making a parent directory or during the
-          // stat call to determine if we need to make a directory.  We will
-          // encounter errors for every step after this, so return this one
-          // as it will be more informative.
-          err = qio_mkerror_errno();
-          return err;
-        }
-      }
-    }
-    tmp[len] = '\0';
-    exitStatus = mkdir(tmp, mode);
-  }
-  if (exitStatus) {
-    err = qio_mkerror_errno();
-  }
-  return err;
-}
-
-
-qioerr qio_chdir(const char* name) {
-  qioerr err = 0;
-  int exitStatus = chdir(name);
-  if (exitStatus)
-    err = qio_mkerror_errno();
-  return err;
-}
-
-qioerr qio_chown(const char* name, int uid, int gid) {
-  qioerr err = 0;
-  int exitStatus = chown(name, uid, gid);
-  if (exitStatus)
-    err = qio_mkerror_errno();
-  return err;
-}
-
-qioerr qio_cwd(const char** working_dir) {
-  qioerr err = 0;
-  size_t bufsize = MAXPATHLEN*sizeof(char);
-  char* bufptr;
-  char* pathbuf = (char *)qio_malloc(bufsize);
-  bufptr = getcwd(pathbuf, bufsize);
-  if (bufptr == NULL)
-    err = qio_mkerror_errno();
-  else
-    *working_dir = pathbuf;
-  return err;
-}
-
-/* Renames the file from oldname to newname, returning a qioerr if one
-   occurred. */
-qioerr qio_file_rename(const char* oldname, const char* newname) {
-  qioerr err = 0;
-  int exitStatus = rename(oldname, newname);
-  // utilizes the C library function rename.
-  if (exitStatus)
-    err = qio_mkerror_errno();
-  return err;
-}
-
-/* Removes the file specified, returning a qioerr if one occurred. */
-qioerr qio_file_remove(const char* name) {
-  qioerr err = 0;
-  int exitStatus = remove(name);
-  if (exitStatus)
-    err = qio_mkerror_errno();
-  return err;
-}
-
 static
 qioerr open_flags_for_string(const char* s, int *flags_out)
 {
@@ -1415,8 +1307,11 @@ qioerr qio_file_path_for_fd(fd_t fd, const char** string_out)
 #ifdef __linux__
   char pathbuf[500];
   qioerr err;
+  const char* result;
   sprintf(pathbuf, "/proc/self/fd/%i", fd);
-  err = qio_int_to_err(sys_readlink(pathbuf, string_out));
+  err = qio_int_to_err(sys_readlink(pathbuf, &result));
+  // result is owned by sys_readlink, so has to be copied.
+  *string_out = qio_strdup(result);
   return err;
 #else
 #ifdef __APPLE__
@@ -1706,6 +1601,8 @@ qioerr qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t h
   }
 }
 
+// This routine always returns a malloc'd string in the path_out pointer.
+// The caller must free the passed-back pointer.
 qioerr qio_relative_path(const char** path_out, const char* cwd, const char* path)
 {
   ssize_t i,j;
@@ -1789,6 +1686,7 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
   const char* relpath = NULL;
   qioerr err;
 
+  // TODO: Ensure that cwd is a malloc'd string.
   if (file->fsfns && file->fsfns->getcwd) {
     err = file->fsfns->getcwd(file, &cwd, file->fs_info);
   } else {
@@ -1801,16 +1699,19 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
 
   //printf("cwd %s abs %s rel %s\n", cwd, path_in, relpath);
 
+  qio_free((void*) cwd); cwd = NULL;
+
   if( ! err ) {
+    // Use relpath or path_in, whichever is shorter.
     if( strlen(relpath) < strlen(path_in) ) {
-      *path_out = relpath;
+      *path_out = relpath; relpath = NULL;
     } else {
+      // Not returning relpath, so free it.
+      qio_free((void*) relpath); relpath = NULL;
       *path_out = qio_strdup(path_in);
       if( ! *path_out ) err = QIO_ENOMEM;
     }
   }
-
-  qio_free((void*) cwd);
 
   return err;
 }

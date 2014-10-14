@@ -282,13 +282,6 @@ extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
-extern proc qio_chdir(name: c_string):syserr;
-extern proc qio_chown(name: c_string, uid: c_int, gid: c_int):syserr;
-extern proc qio_cwd(ref working_dir:c_string):syserr;
-extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
-extern proc qio_file_remove(name: c_string):syserr;
-extern proc qio_mkdir(name: c_string, mode: int, parents: bool):syserr;
-
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
 
@@ -341,13 +334,13 @@ extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
 extern proc qio_free_string(arg:c_string);
 
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
+extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):syserr;
+extern proc qio_file_path_for_fp(fp:_file, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):syserr;
+extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):syserr;
+extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string_copy, path_in:c_string):syserr;
 
 extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
 pragma "no prototype" // FIXME
@@ -360,7 +353,7 @@ extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_ch
 extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):syserr;
 extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):syserr;
 
-extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
 extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
@@ -384,14 +377,17 @@ extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, co
 extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):syserr;
 
 extern proc qio_nbytes_char(chr:int(32)):c_int;
-extern proc qio_encode_to_string(chr:int(32)):c_string;
+extern proc qio_encode_to_string(chr:int(32)):c_string_copy;
 extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
 
 extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):syserr;
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):syserr;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
-extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+// Note, the returned ptr argument behaves like an allocated c_string
+// (i.e. c_string_copy).  It should be freed by the caller, or stored and freed
+// later.
+extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipws:c_int):syserr;
@@ -602,88 +598,6 @@ proc file._style:iostyle {
   return ret;
 }
 
-/* Change the current working directory of the current locale to the specified
-   name. Returns any errors that occurred via an out parameter.
-   err: a syserr used to indicate if an error occurred
-   name: a string indicating a new directory
-
-   Note: this is not safe within a parallel context.  A chdir call in one task
-   will affect the current working directory of all tasks for that locale.
-*/
-proc chdir(out err: syserr, name: string) {
-  err = qio_chdir(name.c_str());
-}
-
-/* Change the current working directory of the current locale to the specified
-   name. Generates an error if one occurred.
-   name: a string indicating a new directory
-
-   Note: this is not safe within a parallel context.  A chdir call in one task
-   will affect the current working directory of all tasks for that locale.
-*/
-proc chdir(name: string) {
-  var err: syserr = ENOERR;
-  chdir(err, name);
-  if err then ioerror(err, "in chdir", name);
-}
-
-/* Changes one or both of the owner and group id of the named file to the
-   specified values.  If uid or gid are -1, the value in question will remain
-   unchanged.
-   err: a syserr used to indicate if an error occurred
-   name: the name of the file to be changed.
-   uid: user id to use as new owner, or -1 if it should remain the same.
-   gid: group id to use as the new group owner, or -1 if it should remain the
-        same.
-*/
-proc chown(out err: syserr, name: string, uid: int, gid: int) {
-  err = qio_chown(name.c_str(), uid:c_int, gid:c_int);
-}
-
-/* Changes one or both of the owner and group id of the named file to the
-   specified values.  If uid or gid are -1, the value in question will remain
-   unchanged. Generates an error if one occurred.
-   name: the name of the file to be changed.
-   uid: user id to use as new owner, or -1 if it should remain the same.
-   gid: group id to use as the new group owner, or -1 if it should remain the
-        same.
-*/
-proc chown(name: string, uid: int, gid: int) {
-  var err: syserr = ENOERR;
-  chown(err, name, uid, gid);
-  if err then ioerror(err, "in chown", name);
-}
-
-/* Returns the current working directory for the current locale.
-   err: a syserr used to indicate if an error occurred
-
-   Note: another task on this locale can change the current working
-   directory from underneath this task, so use caution when making use
-   of this function in a parallel environment.
-*/
-proc cwd(out err: syserr): string {
-  var tmp:c_string, ret:string;
-  err = qio_cwd(tmp);
-  if err then return "";
-  ret = toString(tmp);
-  chpl_free_c_string(tmp);
-  return ret;
-}
-
-/* Returns the current working directory for the current locale. Generates an
-   error if one occurred.
-
-   Note: another task on this locale can change the current working
-   directory from underneath this task, so use caution when making use
-   of this function in a parallel environment.
-*/
-proc cwd(): string {
-  var err: syserr = ENOERR;
-  var ret = cwd(err);
-  if err then ioerror(err, "in cwd");
-  return ret;
-}
-
 /* Close a file.
    Alternately, file will be closed when it is no longer referred to */
 proc file.close(out error:syserr) {
@@ -718,17 +632,17 @@ proc file.getPath(out error:syserr) : string {
   check();
   var ret:string;
   on this.home {
-    var tmp:c_string;
-    var tmp2:c_string;
+    var tmp:c_string_copy;
+    var tmp2:c_string_copy;
     error = qio_file_path(_file_internal, tmp);
     if !error {
       error = qio_shortest_path(_file_internal, tmp2, tmp);
     }
     chpl_free_c_string(tmp);
     if !error {
-      // FIX ME: could use a toString() that doesn't allocate space
+      // This uses the version of toString that steals its operand.
+      // No need to free.
       ret = toString(tmp2);
-      chpl_free_c_string(tmp2);
     } else {
       ret = "unknown";
     }
@@ -760,80 +674,6 @@ proc file.length():int(64) {
   }
   if err then ioerror(err, "in file.length()");
   return len;
-}
-
-/* These are constant values of the form S_I[R | W | X][USR | GRP | OTH],
-   S_IRWX[U | G | O], S_ISUID, S_ISGID, or S_ISVTX, where R corresponds to
-   readable, W corresponds to writable, X corresponds to executable, USR and
-   U correspond to user, GRP and G correspond to group, OTH and O correspond
-   to other, directly tied to the C idea of these constants.  They are intended
-   for use with functions that alter the permissions of files or directories.
-*/
-extern const S_IRUSR: int;
-extern const S_IWUSR: int;
-extern const S_IXUSR: int;
-extern const S_IRWXU: int;
-
-extern const S_IRGRP: int;
-extern const S_IWGRP: int;
-extern const S_IXGRP: int;
-extern const S_IRWXG: int;
-
-extern const S_IROTH: int;
-extern const S_IWOTH: int;
-extern const S_IXOTH: int;
-extern const S_IRWXO: int;
-
-extern const S_ISUID: int;
-extern const S_ISGID: int;
-extern const S_ISVTX: int;
-
-/* Attempt to create a directory with the given path.  If parents is true,
-   will attempt to create any directory in the path that did not previously
-   exist.  Returns any errors that occurred via an out parameter
-   err: a syserr used to indicate if an error occurred
-   name: the name of the directory to be created, fully specified.
-   mode: an integer representing the permissions desired for the file
-         in question.  See description of the provided constants for potential
-         values.
-   parents: a boolean indicating if parent directories should be created.
-            If set to false, any nonexistent parent will cause an error to
-            occur.
-
-   Important note: In the case where parents is true, there is a potential
-   security vulnerability.  The existence of each parent directory is checked
-   before attempting to create it, and it is possible for an attacker to create
-   the directory in between the check and the intentional creation.  If this
-   should occur, an error about creating a directory that already exists will
-   be stored in err.
-*/
-proc mkdir(out err: syserr, name: string, mode: int = 0o777,
-           parents: bool=false) {
-  err = qio_mkdir(name.c_str(), mode, parents);
-}
-
-/* Attempt to create a directory with the given path.  If parents is true,
-   will attempt to create any directory in the path that did not previously
-   exist.  Generates an error if one occurred.
-   name: the name of the directory to be created, fully specified.
-   mode: an integer representing the permissions desired for the file
-         in question.  See description of the provided constants for potential
-         values.
-   parents: a boolean indicating if parent directories should be created.
-            If set to false, any nonexistent parent will cause an error to
-            occur.
-
-   Important note: In the case where parents is true, there is a potential
-   security vulnerability.  The existence of each parent directory is checked
-   before attempting to create it, and it is possible for an attacker to create
-   the directory in between the check and the intentional creation.  If this
-   should occur, an error about creating a directory that already exists will
-   be generated.
-*/
-proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
-  var err: syserr = ENOERR;
-  mkdir(err, name, mode, parents);
-  if err then ioerror(err, "in mkdir", name);
 }
 
 // these strings are here (vs in _modestring)
@@ -928,7 +768,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   var err:syserr = ENOERR;
   var ret = openfd(fd, err, hints, style);
   if err {
-    var path:c_string;
+    var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path);
     if e2 then path = "unknown".c_str();
@@ -950,7 +790,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   var err:syserr = ENOERR;
   var ret = openfp(fp, err, hints, style);
   if err {
-    var path:c_string;
+    var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
     if e2 then path = "unknown".c_str();
@@ -988,42 +828,6 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
   var ret = openmem(err, style);
   if err then ioerror(err, "in openmem");
   return ret;
-}
-
-/* Renames the file specified by oldname to newname, returning an error
-   if one occurred.  The file is not opened during this operation.
-   error: a syserr used to indicate if an error occurred during renaming.
-   oldname: current name of the file
-   newname: name which should refer to the file in the future.*/
-proc rename(out error: syserr, oldname, newname: string) {
-  error = qio_file_rename(oldname.c_str(), newname.c_str());
-}
-
-/* Renames the file specified by oldname to newname, generating an error
-   if one occurred.  The file is not opened during this operation.
-   oldname: current name of the file
-   newname: name which should refer to the file in the future.*/
-proc rename(oldname, newname: string) {
-  var err:syserr = ENOERR;
-  rename(err, oldname, newname);
-  if err then ioerror(err, "in rename", oldname);
-}
-
-/* Removes the file or directory specified by name, returning an error
-   if one occurred via an out parameter.
-   err: a syserr used to indicate if an error occurred during removal
-   name: the name of the file/directory to remove */
-proc remove(out err: syserr, name: string) {
-  err = qio_file_remove(name.c_str());
-}
-
-/* Removes the file or directory specified by name, generating an error
-   if one occurred.
-   name: the name of the file/directory to remove */
-proc remove(name: string) {
-  var err:syserr = ENOERR;
-  remove(err, name);
-  if err then ioerror(err, "in remove", name);
 }
 
 /* in the future, this will be an interface.
@@ -1087,7 +891,10 @@ record ioChar {
     halt("ioChar.writeThis must be written in Writer subclasses");
   }
 }
-inline proc _cast(type t, x: ioChar) where t == c_string {
+
+// Note: This returns a c_string_copy.
+// The caller has responsibility for freeing the returned string.
+inline proc _cast(type t, x: ioChar) where t == c_string_copy {
   return qio_encode_to_string(x.ch);
 }
 
@@ -1103,8 +910,13 @@ record ioNewline {
     f.write("\n");
   }
 }
+
 inline proc _cast(type t, x: ioNewline) where t == c_string {
   return "\n";
+}
+
+inline proc _cast(type t, x: ioNewline) where t == c_string_copy {
+  return __primitive("string_copy", "\n");
 }
 
 // Used to represent a constant string we want to read or write...
@@ -1118,8 +930,11 @@ record ioLiteral {
 }
 
 inline proc _cast(type t, x: ioLiteral) where t == c_string {
-  // FIX ME: should this be copied?
   return x.val;
+}
+
+inline proc _cast(type t, x: ioLiteral) where t == c_string_copy {
+  return __primitive("string_copy", x.val);
 }
 
 // Used to represent some number of bits we want to read or write...
@@ -1445,14 +1260,11 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
   } else if (t == c_string) || (t == string) {
     // handle c_string and string
     var len:int(64);
-    var tx: c_string;
+    var tx: c_string_copy;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    if t == c_string then x = tx;
-    else {
-      // FIX ME: could use a toString() that doesn't allocate space
-      x = toString(tx);
-      chpl_free_c_string(tx);
-    }
+    // FIX ME: Should deprecate the t == c_string path, because we always
+    // return an "owned" char* buffer (or NULL).
+    x = toString(tx);
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -1560,14 +1372,12 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
   } else if (t == c_string) || (t == string) {
     // handle c_string and string
     var len:int(64);
-    var tx: c_string;
+    var tx: c_string_copy;
     var ret = qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, tx, len, -1);
-    if t == c_string then x = tx;
-    else {
-      // FIX ME: could use a toString() that doesn't allocate space
-      x = toString(tx);
-      chpl_free_c_string(tx);
-    }
+    // TODO: Deprecate the c_string return type, since this routine always
+    // returns an "owned" string thingy.  Using the c_string return type will
+    // cause leaks.
+    x = toString(tx);
     return ret;
   } else if isEnumType(t) {
     var i:enum_mintype(t);
@@ -1716,18 +1526,17 @@ proc _args_to_proto(args ...?k,
                     preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handlling so maybe we don't care.
-  var err_args:c_string = "";
+  var err_args:c_string;
   for param i in 1..k {
     var name:c_string;
     if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:c_string;
+    else name = "x" + i:c_string_copy;
     // FIX ME: leak c_string due to concatenation
+    // Actually, don't fix me.  Fix concatenation to consume its c_string_copy args.
     err_args += preArg + name + ":" + typeToString(args(i).type);
     if i != k then err_args += ", ";
   }
-  // FIX ME: could use a toString() that doesn't allocate space
   const ret = toString(err_args);
-  chpl_free_c_string(err_args);
   return ret;
 }
 
@@ -1867,7 +1676,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
   on this.home {
     var ret:c_string;
     var lenread:int(64);
-    var tx:c_string;
+    var tx:c_string_copy;
     var lentmp:int(64);
     var actlen:int(64);
     var uselen:ssize_t;
@@ -1903,7 +1712,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
     this.unlock();
 
     str_out = toString(tx);
-    chpl_free_c_string(tx);
   }
 
   return !error;
@@ -3773,10 +3581,9 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
   var s:string;
   if ! error {
     var gotlen:int(64);
-    var ts: c_string;
+    var ts: c_string_copy;
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
     s = toString(ts);
-    chpl_free_c_string(ts);
   }
  
   if ! error {

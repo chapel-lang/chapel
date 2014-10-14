@@ -5,6 +5,12 @@
    based on C++ RE2 implementation by Alexey Zolotov
 */
 
+// For consistency with the other shootouts, a value is passed to this
+// benchmark in the Computer Language Benchmarks Game test suite, even though
+// the input set provided is used to determine the problem size.  Store that
+// passed value here.
+config const n = 0;
+
 proc main() {
   var variants = [
     "agggtaaa|tttaccct",
