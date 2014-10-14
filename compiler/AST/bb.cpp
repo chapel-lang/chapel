@@ -134,14 +134,19 @@ void buildBasicBlocks(FnSymbol* fn)
 
 void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 {
-  if (!stmt) return;
+  if (stmt == NULL)
+  {
 
-  if (BlockStmt* s = toBlockStmt(stmt))
+  }
+
+  else if (BlockStmt* s = toBlockStmt(stmt))
   {
     CallExpr* loop = toCallExpr(s->blockInfo);
+
     if (loop)
     {
       bool cForLoop = loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(loop->get(1))->body) { BBB(stmt); }
@@ -151,13 +156,14 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
       BasicBlock* top = basicBlock;
       BB_RESTART();
 
-      // for c for loops, add the test expr at the loop top
+      // Add the test expr at the loop top
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(loop->get(2))->body) { BBB(stmt); }
+
+      } else {
+        BB_ADD(loop);
       }
 
-      // add the CallExpr that is the loop itself and then add the loops body
-      BB_ADD(loop);
       BasicBlock* loopTop = basicBlock;
       for_alist(stmt, s->body) {
         BBB(stmt);
