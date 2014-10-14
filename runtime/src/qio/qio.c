@@ -1307,8 +1307,11 @@ qioerr qio_file_path_for_fd(fd_t fd, const char** string_out)
 #ifdef __linux__
   char pathbuf[500];
   qioerr err;
+  const char* result;
   sprintf(pathbuf, "/proc/self/fd/%i", fd);
-  err = qio_int_to_err(sys_readlink(pathbuf, string_out));
+  err = qio_int_to_err(sys_readlink(pathbuf, &result));
+  // result is owned by sys_readlink, so has to be copied.
+  *string_out = qio_strdup(result);
   return err;
 #else
 #ifdef __APPLE__
@@ -1598,6 +1601,8 @@ qioerr qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t h
   }
 }
 
+// This routine always returns a malloc'd string in the path_out pointer.
+// The caller must free the passed-back pointer.
 qioerr qio_relative_path(const char** path_out, const char* cwd, const char* path)
 {
   ssize_t i,j;
@@ -1681,6 +1686,7 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
   const char* relpath = NULL;
   qioerr err;
 
+  // TODO: Ensure that cwd is a malloc'd string.
   if (file->fsfns && file->fsfns->getcwd) {
     err = file->fsfns->getcwd(file, &cwd, file->fs_info);
   } else {
@@ -1693,16 +1699,19 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
 
   //printf("cwd %s abs %s rel %s\n", cwd, path_in, relpath);
 
+  qio_free((void*) cwd); cwd = NULL;
+
   if( ! err ) {
+    // Use relpath or path_in, whichever is shorter.
     if( strlen(relpath) < strlen(path_in) ) {
-      *path_out = relpath;
+      *path_out = relpath; relpath = NULL;
     } else {
+      // Not returning relpath, so free it.
+      qio_free((void*) relpath); relpath = NULL;
       *path_out = qio_strdup(path_in);
       if( ! *path_out ) err = QIO_ENOMEM;
     }
   }
-
-  qio_free((void*) cwd);
 
   return err;
 }

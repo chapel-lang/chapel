@@ -640,9 +640,9 @@ proc file.getPath(out error:syserr) : string {
     }
     chpl_free_c_string(tmp);
     if !error {
-      // FIX ME: could use a toString() that doesn't allocate space
+      // This uses the version of toString that steals its operand.
+      // No need to free.
       ret = toString(tmp2);
-      chpl_free_c_string(tmp2);
     } else {
       ret = "unknown";
     }

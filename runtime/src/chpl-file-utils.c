@@ -40,6 +40,14 @@ qioerr chpl_fs_chdir(const char* name) {
   return err;
 }
 
+qioerr chpl_fs_chmod(const char* name, int mode) {
+  qioerr err = 0;
+  int exitStatus = chmod(name, mode);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+}
+
 qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   qioerr err = 0;
   int exitStatus = chown(name, uid, gid);
@@ -48,6 +56,8 @@ qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   return err;
 }
 
+// This routine returns a malloc'd string (through the working_dir pointer)
+// that must be deallocated by the caller.
 qioerr chpl_fs_cwd(const char** working_dir) {
   qioerr err = 0;
   size_t bufsize = MAXPATHLEN*sizeof(char);
@@ -76,6 +86,18 @@ qioerr chpl_fs_is_dir(int* ret, const char* name) {
 
 qioerr chpl_fs_is_file(int* ret, const char* name) {
   return _chpl_fs_check_mode(ret, name, S_IFREG);
+}
+
+qioerr chpl_fs_is_link(int* ret, const char* name) {
+  // Note: Cannot use _chpl_fs_check_mode in this case because stat follows
+  // symbolic links instead of evaluating the link itself.  The similar
+  // comparison is also not valid when an unlinked file is provided.
+  struct stat buf;
+  int exitStatus = lstat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = S_ISLNK(buf.st_mode);
+  return 0;
 }
 
 /* Creates a directory with the given name and settings if possible,
