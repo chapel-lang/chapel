@@ -36,6 +36,8 @@
 
 #include <inttypes.h>
 
+#include "debug.h"
+
 #include <cctype>
 #include <cstring>
 #include <cstdio>
@@ -1067,6 +1069,11 @@ codegen_config() {
   }
 }
 
+extern bool printCppLineno;
+debug_data *debug_info=NULL;
+
+const char *current_dir = "./";
+const char *empty_string = "";
 
 void codegen(void) {
   if (no_codegen)
@@ -1128,6 +1135,23 @@ void codegen(void) {
     if( fHeterogeneous )
       INT_FATAL("fHeretogeneous not yet supported with LLVM");
 
+    if(printCppLineno)
+    {
+      debug_info = new debug_data(*info->module);
+    }
+    if(debug_info) {
+      // first fine the main module, this will be the compile unit.
+      forv_Vec(ModuleSymbol, currentModule, allModules) {
+        if(currentModule->modTag == MOD_MAIN) {
+          //So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
+          // and no compile flags, since I can't figure out how to get that either.
+          printf("Making a compile unit\n");
+          debug_info->create_compile_unit(currentModule->astloc.filename, current_dir, false, empty_string);
+          break;
+        }
+      }
+    }
+
     prepareCodegenLLVM();
 #endif
   } else {
@@ -1153,10 +1177,14 @@ void codegen(void) {
     forv_Vec(ModuleSymbol, currentModule, allModules) {
       mysystem(astr("# codegen-ing module", currentModule->name),
                "generating comment for --print-commands option");
+      if(debug_info && currentModule->filename) {
+        debug_info->get_module_name(currentModule->name, currentModule->filename, currentModule->astloc.lineno);
+      }
       currentModule->codegenDef();
     }
 
     finishCodegenLLVM();
+    if(debug_info)debug_info->finalize();
 #endif 
     return;
   }

@@ -51,11 +51,13 @@ static void collapseCForLoopBlocks(CallExpr* call) {
 }
 
 void collapseBlocks(BlockStmt* block) {
+
   FnSymbol* fn = toFnSymbol(block->parentSymbol);
   if (fn) {
     INT_ASSERT(fn->body == block); // for correctness of assignment at the end
     block->remove();
   }
+
   Vec<Expr*> exprs;
   collect_stmts(block, exprs);
   forv_Vec(Expr, expr, exprs) {
@@ -69,6 +71,7 @@ void collapseBlocks(BlockStmt* block) {
     fn->body = block;
     insert_help(block, NULL, fn);
   }
+
   removeDeadIterResumeGotos();
 }
 

@@ -42,6 +42,8 @@ def get(flag='host'):
                     platform_val = "linux64_32"
                 else:
                     platform_val = "linux64"
+            elif machine == 'ppc64':
+                platform_val = "linux_ppc64"
             else:
                 platform_val = "linux32"
         elif platform_val.startswith("cygwin"):

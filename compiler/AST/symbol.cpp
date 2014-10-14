@@ -37,6 +37,10 @@
 #include "stringutil.h"
 #include "type.h"
 
+
+//#include "expr.h"
+#include "debug.h"
+
 #include "AstVisitor.h"
 
 #include <cstdlib>
@@ -1111,8 +1115,9 @@ void TypeSymbol::codegenDef() {
       printf("No type '%s'/'%s' found\n", cname, name);
       INT_FATAL(this, "No type found");
     }
- 
+
     llvmType = type;
+    if(debug_info) debug_info->get_type(this->type);
 #endif
   }
 }
@@ -2279,7 +2284,24 @@ void ModuleSymbol::codegenDef() {
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
 
   forv_Vec(FnSymbol, fn, fns) {
+<<<<<<< HEAD
     fn->codegenDef();
+=======
+    // Create external file to be compiled by GPU compiler
+    if (fn->hasFlag(FLAG_GPU_ON) || fn->hasFlag(FLAG_GPU_CALL)) {
+      INT_ASSERT(outfile); // not working with LLVM yet.
+      appendCFile(&gpufile,"chplGPU","cu");
+      FILE* wasfile = info->cfile;
+      info->cfile = gpufile.fptr;
+      fn->codegenDef();
+      flushStatements();
+      info->cfile = wasfile;
+      closeCFile(&gpufile); 
+    } else {
+      fn->codegenDef();
+      if(debug_info)debug_info->get_function(fn);
+    }
+>>>>>>> Debug Patch from Matt Baker
   }
 
   flushStatements();

@@ -27,6 +27,9 @@
 #include "passes.h"
 #include "stringutil.h"
 
+#include "codegen.h"
+#include "debug.h"
+
 #include "AstVisitor.h"
 
 #include <cstring>
@@ -63,6 +66,7 @@ void codegenStmt(Expr* stmt) {
     if (fGenIDS)
       info->cStatements.push_back("/* " + numToString(stmt->id) + "*/ ");
   }
+<<<<<<< HEAD
 
   ++gStmtCount;
 }
@@ -75,6 +79,24 @@ void codegenStmt(Expr* stmt) {
 
 Stmt::Stmt(AstTag astTag) : Expr(astTag) {
 
+=======
+  else
+  {
+#ifdef HAVE_LLVM
+    if (debug_info && stmt->linenum() > 0) 
+    {
+      //Find the partent function
+      if(stmt->parentSymbol == NULL || stmt->parentSymbol->astTag != E_FnSymbol)
+      {
+        printf("Function symbol oops");
+        info->builder->SetCurrentDebugLocation(llvm::DebugLoc());
+      } else {
+        info->builder->SetCurrentDebugLocation(llvm::DebugLoc::get(stmt->linenum(),0,debug_info->get_function((FnSymbol *)stmt->parentSymbol)));
+      }
+    }
+#endif
+  }
+>>>>>>> Debug Patch from Matt Baker
 }
 Stmt::~Stmt() {
 
