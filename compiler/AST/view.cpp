@@ -412,10 +412,12 @@ BaseAST* aid09(int id) {
 }
 
 BaseAST* aid(int id) {
-  if (aidIgnore(id))
+  if (aidIgnore(id)) {
+    printAidError("aid", id);
     return NULL;
-  else
+  } else {
     return aid09(id);
+  }
 }
 
 
