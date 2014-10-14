@@ -65,23 +65,7 @@ void codegenStmt(Expr* stmt) {
 
     if (fGenIDS)
       info->cStatements.push_back("/* " + numToString(stmt->id) + "*/ ");
-  }
-<<<<<<< HEAD
-
-  ++gStmtCount;
-}
-
-
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
-
-Stmt::Stmt(AstTag astTag) : Expr(astTag) {
-
-=======
-  else
-  {
+  } else {
 #ifdef HAVE_LLVM
     if (debug_info && stmt->linenum() > 0) 
     {
@@ -96,7 +80,18 @@ Stmt::Stmt(AstTag astTag) : Expr(astTag) {
     }
 #endif
   }
->>>>>>> Debug Patch from Matt Baker
+
+  ++gStmtCount;
+}
+
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+Stmt::Stmt(AstTag astTag) : Expr(astTag) {
+
 }
 Stmt::~Stmt() {
 

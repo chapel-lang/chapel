@@ -1,13 +1,14 @@
 #include "expr.h"
 #include "codegen.h"
 #include "symbol.h"
-#include <debug.h>
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/Type.h"
-#include "vec.h"
 #include "../main/version.h"
+#include "vec.h"
 #include "type.h"
 #include "alist.h"
+
+#ifdef HAVE_LLVM
+#include "llvmUtil.h"
+#include "llvm/ADT/ArrayRef.h"
 
 // Note: All char strings must be the same size
 // Very hacky, but completely legal and functional. Only issue is that file_name will have garbage from beyond full_path.
@@ -209,3 +210,6 @@ llvm::DISubprogram debug_data::get_function(const FnSymbol *function)
   }
   return get_function(function->name, function->cname, function->defPoint->parentSymbol->name, function->astloc.filename, function->astloc.lineno, parameters, getFunctionLLVM(function->cname));
 }
+
+// end if LLVM
+#endif
