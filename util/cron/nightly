@@ -403,7 +403,7 @@ if ($buildruntime == 0) {
     print "Mailing to minimal group\n";
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
     print MAIL "Built compiler but not runtime, and did not run tests\n";
     print MAIL endMailHeader();
     close(MAIL);
@@ -440,6 +440,16 @@ if ($nofutures == 0) {
 }
 
 #
+# Test directories to run.
+#
+$testdirs = "";
+if (exists($ENV{'CHPL_NIGHTLY_TEST_DIRS'})) {
+    $env_test_dirs = $ENV{'CHPL_NIGHTLY_TEST_DIRS'};
+    $testdirs .= " $env_test_dirs";
+}
+
+
+#
 # don't bother making the spec tests if we're only testing hello, world programs;
 # and they'll get made automatically if we're testing everything; so we only need
 # to make them if we're testing the examples directory.
@@ -447,7 +457,7 @@ if ($nofutures == 0) {
 if ($examples == 1) {
     print "Making spectests\n";
     mysystem("cd $chplhomedir && $make spectests", "making spec tests", 0, 1);
-    $testdirs = "release/examples";
+    $testdirs .= " release/examples";
     if ($multilocale == 1) {
         $testdirs .= " multilocale distributions";
     }
@@ -467,6 +477,7 @@ if ($examples == 1) {
     }
 }
 if (!($dist eq "")) {
+    $testdirs .= " distributions/robust/arithmetic";
     $testflags = "$testflags distributions/robust/arithmetic";
 }
 if ($parnodefile eq "") {
@@ -481,8 +492,10 @@ if ($parnodefile eq "") {
 if ($hello == 1) {
     if ($parnodefile eq "") {
 	if ($allhellos == 1) {
+        $testdirs .= " release/examples/hello*.chpl";
 	    $testflags = "$testflags --no-recurse release/examples";
 	} else {
+        $testdirs .= " release/examples/hello.chpl";
 	    $testflags = "$testflags release/examples/hello.chpl";
 	}
     } else {
@@ -562,7 +575,7 @@ if ($runtests == 0) {
     
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab);
+    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
     print MAIL "Built compiler and runtime but did not run tests\n";
     print MAIL endMailHeader();
     
@@ -733,7 +746,7 @@ if ($runtests == 0) {
     print "Trying... $mailcommand\n";
     open(MAIL, $mailcommand);
     
-    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
+    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
     print MAIL "$numtestssummary\n";
     print MAIL "$summary\n";
     print MAIL endMailHeader();
@@ -828,7 +841,7 @@ sub mysystem {
 
             print "Trying to mail message... using $mailcommand\n";
 	    open(MAIL, $mailcommand);
-            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab);
+            print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, "");
 	    print MAIL "ERROR $errorname: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
             print MAIL endMailHeader();
@@ -880,16 +893,25 @@ sub ensureSummaryExists {
 }
 
 sub startMailHeader {
+    my $revision = $_[0];
+    my $logfile = $_[1];
+    my $started = $_[2];
+    my $ended = $_[3];
+    my $crontab = $_[4];
+    my $tests_run = $_[5];
+    chomp($tests_run);
+
     my $mystr =
         "=== Summary ===================================================\n" .
         "Hostname: " . hostname . "\n" .
-        shift(@_) . "\n" .
-        "Logfile:  " . shift(@_) . "\n" .
-        "Started:  " . shift(@_) . "\n" .
-        "Ended:    " . shift(@_) . "\n\n";
+        $revision . "\n" .
+        "Logfile:  " . $logfile . "\n" .
+        "Started:  " . $started . "\n" .
+        "Ended:    " . $ended . "\n" .
+        "Tests run: " . $tests_run . "\n\n";
 
     if ($debug == 0) {
-        $mystr .= shift(@_) . "\n\n";
+        $mystr .= $crontab . "\n\n";
     }
 
     $mystr;
