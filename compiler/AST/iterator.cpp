@@ -747,7 +747,23 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   }
 
   for_vector(BitVec, out, OUT)
-    delete out, out = 0;
+    delete out;
+
+  // C_FOR_LOOP needs to ensure the for-loop init variables are also
+  // converted to fields.  The test/incr fields are handled correctly
+  // as a result of being inserted in to the body of the loop
+  if (singleLoop && singleLoop->blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+    Vec<SymExpr*> symExprs;
+    Expr*         init = singleLoop->blockInfoGet()->get(1);
+
+    collectSymExprs(init, symExprs);
+
+    forv_Vec(SymExpr, se, symExprs) {
+      if (useSet.set_in(se)) {
+        syms.add_exclusive(se->var);
+      }
+    }
+  }
 }
 
 
