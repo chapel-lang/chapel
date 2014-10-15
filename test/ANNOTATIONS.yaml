@@ -69,6 +69,18 @@ fasta:
   01/14/14:
     - enabled unlocked I/O on fasta and fasta-printf
 
+ft:
+  09/05/14:
+    - switched uses of locale.numCores to locale.maxTaskPar
+
+ft-a:
+  09/05/14:
+    - switched uses of locale.numCores to locale.maxTaskPar
+
+is:
+  09/05/14:
+    - switched uses of locale.numCores to locale.maxTaskPar
+
 lulesh:
   03/15/14:
     - improved constness of de-nested functions, improved remove value forwarding
