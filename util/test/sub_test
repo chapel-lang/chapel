@@ -53,6 +53,7 @@
 # CHPL_LAUNCHER_TIMEOUT: if defined, pass an option/options to the executable
 #                        for it to enforce timeout instead of using timedexec;
 #                        the value of the variable determines the option format.
+# CHPL_TEST_TIMEOUT: The default global timeout to use.
 #
 #
 # DIRECTORY-WIDE FILES:  These settings are for the entire directory and
@@ -528,6 +529,7 @@ if os.getenv('CHPL_TEST_VGRND_COMP')=='on':
     globalTimeout=1000
 else:
     globalTimeout=300
+globalTimeout = int(os.getenv('CHPL_TEST_TIMEOUT', globalTimeout))
 
 # get a threshold for which to report long running tests
 if os.getenv("CHPL_TEST_EXEC_TIME_WARN_LIMIT"):
