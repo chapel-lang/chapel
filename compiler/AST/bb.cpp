@@ -138,7 +138,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 
   if (BlockStmt* s = toBlockStmt(stmt))
   {
-    CallExpr* loop = toCallExpr(s->blockInfo);
+    CallExpr* loop = toCallExpr(s->blockInfoGet());
     if (loop)
     {
       bool cForLoop = loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);

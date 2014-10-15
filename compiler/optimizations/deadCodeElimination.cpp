@@ -188,7 +188,7 @@ void deadCodeElimination(FnSymbol* fn)
         if (Expr* sub = toExpr(ast)) {
           exprMap[sub] = expr;
           if (BlockStmt* block = toBlockStmt(sub->parentExpr))
-            if (block->blockInfo == sub)
+            if (block->blockInfoGet() == sub)
               essential = true;
           if (CondStmt* cond = toCondStmt(sub->parentExpr))
             if (cond->condExpr == sub)
