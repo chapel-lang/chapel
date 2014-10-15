@@ -36,11 +36,11 @@
 // Static function declarations.
 //
 static void deadBlockElimination(FnSymbol* fn);
-// static void deadGotoElimination(FnSymbol* fn);
+static void postPassCleanup();
 
 // Static variables.
-static unsigned deadBlockCount;
-static unsigned deadModuleCount;
+static unsigned int deadBlockCount;
+static unsigned int deadModuleCount;
 
 
 // Determines if an expr is used inside of the header for a c for loop. c for
@@ -288,22 +288,26 @@ static void deadModuleElimination() {
 
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
-    deadBlockCount = 0;
+
+    deadBlockCount  = 0;
     deadModuleCount = 0;
+
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       deadBlockElimination(fn);
-//      deadGotoElimination(fn);
       deadCodeElimination(fn);
       deadVariableElimination(fn);
       deadExpressionElimination(fn);
     }
+
     deadModuleElimination();
     
+    postPassCleanup();
+
     if (fReportDeadBlocks)
       printf("\tRemoved %d dead blocks.\n", deadBlockCount);
+
     if (fReportDeadModules)
       printf("Removed %d dead modules.\n", deadModuleCount);
-
   }
 }
 
@@ -399,6 +403,28 @@ void verifyNcleanRemovedIterResumeGotos() {
       INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label - missing a call to removeDeadIterResumeGotos?");
   }
   removedIterResumeLabels.clear();
+}
+
+//
+// Dead code elimination can create a handful of degenerate nodes.
+// This is a place to sweep those away.
+//
+
+static void postPassCleanup() {
+
+  // Remove degenerate C-For loops.  These could be misinterpreted
+  // as Infinite loops and currently break the LLVM backend
+  forv_Vec(BlockStmt, stmt, gBlockStmts) {
+    if (CallExpr* loop = stmt->blockInfoGet()) {
+      if (loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        if (BlockStmt* test = toBlockStmt(loop->get(2))) {
+          if (test->body.length == 0) {
+            stmt->remove();
+          }
+        }
+      }
+    }
+  }
 }
 
 // Look for pointless gotos and remove them.
