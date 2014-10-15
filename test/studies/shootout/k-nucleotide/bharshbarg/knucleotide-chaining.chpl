@@ -67,7 +67,7 @@ class Table {
 
   proc ~Table() {
     for n in table do {
-      refvar cur = n;
+      var cur = n;
       while cur != nil {
         refvar next = cur.next;
         delete cur;
