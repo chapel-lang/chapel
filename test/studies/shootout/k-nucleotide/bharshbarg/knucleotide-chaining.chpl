@@ -69,7 +69,7 @@ class Table {
     for n in table do {
       var cur = n;
       while cur != nil {
-        refvar next = cur.next;
+        var next = cur.next;
         delete cur;
         cur = next;
       }
