@@ -280,7 +280,7 @@ if ($mailer eq "") {
 if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
     $config_name = $ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'};
 } elsif ($debug == 0) {
-    print "CHPL_NIGHTLY_TEST_CONFIG_NAME required in environment.\n";
+    print "[ERROR] CHPL_NIGHTLY_TEST_CONFIG_NAME required in environment.\n";
     exit 1;
 } else {
     $machine = hostname;
