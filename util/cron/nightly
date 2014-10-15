@@ -24,6 +24,7 @@ $performancedescription = "";
 $releasePerformance = 0;
 $compperformance = 0;
 $compperformancedescription = "";
+$syncdestpath = "";
 $componly = 0;
 $nofutures = 0;
 $suppressions = "";
@@ -86,6 +87,8 @@ while (@ARGV) {
     } elsif ($flag eq "-compperformance") {
         $compperformance = 1;
         $compperformancedescription = shift @ARGV;
+    } elsif ($flag eq "-sync-dest-path") {
+        $syncdestpath = shift@ARGV;
     } elsif ($flag eq "-numtrials") {
         $numtrials = shift @ARGV;
     } elsif ($flag eq "-compopts") {
@@ -169,8 +172,9 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
-    print "\t-performance-description : run performance tests with additional description";
+    print "\t-performance-description : run performance tests with additional description\n";
     print "\t-compperformance <description>: run tests with compiler performance tracking\n";
+    print "\t-sync-dest-path <path>: Additional path to sync performance graphs to\n";
     print "\t-numtrials <number> : number of trials to run\n";
     print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
     print "\t-baseline    : run testins using --baseline\n";
@@ -764,7 +768,11 @@ if ($runtests == 0) {
         mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 0, 1);
 
         # sync the performance graphs over to sourceforge 
-        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $host --logFile $logdir/syncToSourceForge.errors";
+        $sfPath = $host;
+        if ($syncdestpath ne "") {
+            $sfPath = "$sfPath/$syncdestpath";
+        }
+        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $sfPath --logFile $logdir/syncToSourceForge.errors";
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
         

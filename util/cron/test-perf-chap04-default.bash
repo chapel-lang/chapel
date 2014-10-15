@@ -4,4 +4,4 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-perf.bash
-$CWD/nightly -cron -performance-description 'default --genGraphOpts "-m default -m qthreads"' -releasePerformance -numtrials 5 -startdate 07/28/12
+$CWD/nightly -cron -performance -releasePerformance -numtrials 5 -startdate 07/28/12
