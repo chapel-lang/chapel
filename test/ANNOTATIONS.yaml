@@ -71,15 +71,15 @@ fasta:
 
 ft:
   09/05/14:
-    - switched uses of <locale>.numCores to <locale>.maxTaskPar
+    - switched uses of locale.numCores to locale.maxTaskPar
 
 ft-a:
   09/05/14:
-    - switched uses of <locale>.numCores to <locale>.maxTaskPar
+    - switched uses of locale.numCores to locale.maxTaskPar
 
 is:
   09/05/14:
-    - switched uses of <locale>.numCores to <locale>.maxTaskPar
+    - switched uses of locale.numCores to locale.maxTaskPar
 
 lulesh:
   03/15/14:
