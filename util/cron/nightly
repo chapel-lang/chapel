@@ -266,40 +266,25 @@ $testbindirname = dirname($0);
 $utildir = "$testbindirname/../../util";
 
 
-
-#
-# platform variables
-#
-print "Setting platform variables\n";
-$hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
-$targetplatform = `$utildir/chplenv/chpl_platform.py --target`; chomp($targetplatform);
-$hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
-$targetcompiler = `$utildir/chplenv/chpl_compiler.py --target`; chomp($targetcompiler);
-$tasks = `$utildir/chplenv/chpl_tasks.py`; chomp($tasks);
-$localeModel =  `$utildir/chplenv/chpl_locale_model.py`; chomp($localeModel);
-$mem =  `$utildir/chplenv/chpl_mem.py --target`; chomp($mem);
-$comm = `$utildir/chplenv/chpl_comm.py`; chomp($comm);
-if ($comm eq "gasnet" && $ENV{'CHPL_GASNET_SEGMENT'} ne "") {
-    $comm = "$comm-$ENV{'CHPL_GASNET_SEGMENT'}";
-}
-
-$fullplatform = "$targetplatform.$targetcompiler.$comm.$tasks.$localeModel";
-if ($mem ne "cstdlib") {
-    $fullplatform = "$fullplatform.$mem";
-}
-if ($hostplatform ne $targetplatform) {
-    $fullplatform = "$fullplatform--$hostplatform";
-    if ($hostcompiler ne $targetcompiler) {
-        $fullplatform = "$fullplatform.$hostcompiler";
-    }
-}
-
 #
 # set mail options
 #
 $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
     $mailer = "Mail";
+}
+
+#
+# Get test configuration name.
+#
+if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
+    $config_name = $ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'};
+} elsif ($debug == 0) {
+    print "CHPL_NIGHTLY_TEST_CONFIG_NAME required in environment.\n";
+    exit 1;
+} else {
+    $machine = hostname;
+    $config_name = "debug.$machine";
 }
 
 #
@@ -313,42 +298,12 @@ print "\$chplhomedir = $chplhomedir\n";
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 
-#Cron (linux64-gnu-none-none): 0 new failures (39/105 total failures/futures)
-
-if ($performance == 1) {
-    $subjectid = " Perf";
-} elsif ($baseline == 1) {
-    $subjectid = " Baseline";
-} elsif (!($dist eq "")) {
-    $subjectid = " Dist $dist";
-} elsif ($fast == 1) {
-    $subjectid = " Fast";
-} elsif (!($memleaks eq "")) {
-    $subjectid = " Memory-Leaks";
-} elsif ($nolocal == 1) {
-    $subjectid = " No-local";
-} elsif ($verify == 1) {
-    $subjectid = " Verify";
-} elsif ($llvm == 1) {
-    $subjectid = " LLVM";
-} elsif ($runtests == 0) {
-    $subjectid = " Build-only";
-} elsif ($buildruntime == 0) {
-    $subjectid = " Build-compiler-only";
-} elsif ($componly == 1) {
-    $subjectid = " Compile-only";
-} elsif ($valgrind == 1) {
-    $subjectid = " Valgrind";
-} else {
-    $subjectid = "";
-}
-
 if ($debug == 1) {
-    $subjectid = "Dbug$subjectid";
+    $subjectid = "Debug";
     $recipient = $debugmail;
     $nochangerecipient = $debugmail;
 } else {
-    $subjectid = "Cron$subjectid";
+    $subjectid = "Cron";
 
     # "email", the mailer program used on cygwin platform, requires multiple
     # recipient addresses to be comma delimited instead of space delimited.
@@ -360,92 +315,17 @@ if ($debug == 1) {
     $nochangerecipient = $allmail;
 }
 
-
-
-if ($valgrind == 1) {
-    if ($interpret == 1) {
-        $threechars = "vgi";
-        $morechars = "intrp+vgrnd";
-    } elsif ($performance == 1) {
-        $threechars = "vgp";
-        $morechars = "perf+vgrnd";
-    } elsif ($baseline == 1) {
-        $threechars = "vgn";
-        $morechars = "baseline+vgrnd";
-    } elsif (!($dist eq "")) {
-        $threechars = "vgrdist$dist";
-        $morechars = "dist-$dist+vgrnd";
-    } elsif ($fast == 1) {
-        $threechars = "vgn";
-        $morechars = "fast+vgrnd";
-    } elsif (!($memleaks eq "")) {
-        $threechars = "vgrmem";
-        $morechars = "mem+vgrnd";
-    } elsif ($nolocal == 1) {
-        $threechars = "vnl";
-        $morechars = "no-inline+vgrnd";
-    } else {
-        $threechars = "vgr";
-        $morechars = "valgrind";
-    }
-} elsif ($interpret == 1) {
-    $threechars = "int";
-    $morechars = "interpret";
-} elsif ($performance == 1) {
-    $threechars = "prf";
-    $morechars = "performance";
-} elsif ($baseline == 1) {
-    $threechars = "npt";
-    $morechars = "baseline";
-} elsif (!($dist eq "")) {
-    $threechars = "dist$dist";
-    $morechars = "dist-$dist";
-} elsif ($fast == 1) {
-    $threechars = "fst";
-    $morechars = "fast";
-} elsif (!($memleaks eq "")) {
-    if ($examples == 1) {
-        $threechars = "mem";
-        $morechars = "memoryleaks";
-    } else {
-        $threechars = "mlf";
-        $morechars = "memoryleaks-full";
-    }
-} elsif ($nolocal == 1) {
-    $threechars = "nlc";
-    $morechars = "nolocal";
-} elsif ($verify == 1) {
-    $threechars = "vfy";
-    $morechars = "verify";
-} elsif ($llvm == 1) {
-    $threechars = "lvm";
-    $morechars = "llvm";
-} elsif ($examples == 1) {
-    $threechars = "exm";
-    if ($multilocale == 1) {
-        $morechars = "multilocale-examples";
-    } elsif ($localeModelSuite) {
-        $morechars = "localeModel-examples";
-    } else {
-        $morechars = "examples";
-    }
-} else {
-    $threechars = "std";
-    $morechars = "standard";
-}
-
-
 #
 # test log filenames
 #
 if ($debug == 1) {
-  $rawlog = "$logdir/debug-$fullplatform-$threechars.log";
+  $rawlog = "$logdir/debug-$config_name.log";
 } else {
-  $rawlog = "$logdir/day$today-$fullplatform-$threechars.log";
+  $rawlog = "$logdir/day$today-$config_name.log";
 }
 $rawsummary = "$rawlog.summary";
 $sortedsummary = "$rawlog.sorted";
-$prevsummary = "$cronlogdir/last-$fullplatform-$threechars.log.sorted";
+$prevsummary = "$cronlogdir/last-$config_name.log.sorted";
 
 if ($parnodefile eq "") {
   # put the log in /tmp, avoid NFS
@@ -491,6 +371,7 @@ $revision = "Revision: $revision";
 #
 # if on cygwin, blow away FILES files because they wreak havoc on stuff
 #
+$hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
 if ($hostplatform eq "cygwin") {
     mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
 }
@@ -515,9 +396,8 @@ mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 WARNINGS=1 third-party-try
 
 if ($buildruntime == 0) {
     $endtime = localtime;
-    $shortstatus = "Passed";
 
-    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
+    $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $nochangerecipient";
     
     print "Mailing to minimal group\n";
@@ -676,9 +556,8 @@ if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
 
 if ($runtests == 0) {
     $endtime = localtime;
-    $shortstatus = "Passed";
 
-    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
+    $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
     
     open(MAIL, $mailcommand);
@@ -741,9 +620,9 @@ if ($runtests == 0) {
         $delfail = &delta($oldfail, $curfail);
         $delfut  = &delta($oldfut, $curfut);
 
-        $summary = "$morechars run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
+        $summary = "Tests run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
     } else {
-        $summary = "$morechars run: failed";
+        $summary = "Tests run: failed";
     }
 
     $knownumtests = 1;
@@ -839,9 +718,6 @@ if ($runtests == 0) {
         $newpassingfutures = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success" | wc -l`; chomp($newpassingfutures);
         $passingfutures = `grep "$futuremarker" $sortedsummary | grep "\\[Success" | wc -l`; chomp($passingfutures);
         $newfailures += 0;
-        $shortstatus = "$newfailures/$newpassingfutures/$curfail";
-    } else {
-        $shortstatus = "build/test failed";
     }
 
     if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0) {
@@ -851,7 +727,7 @@ if ($runtests == 0) {
         print "Mailing to everyone\n";
     }
 
-    $mailsubject = "$subjectid ($fullplatform) $shortstatus";
+    $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
     print "Trying... $mailcommand\n";
@@ -863,31 +739,31 @@ if ($runtests == 0) {
     print MAIL endMailHeader();
     
     if ($status == 0) {
-        print MAIL "--- New Errors ($morechars) -------------------------------\n";
+        print MAIL "--- New Errors -------------------------------\n";
         print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
 
-        print MAIL "--- Resolved Errors ($morechars) --------------------------\n";
+        print MAIL "--- Resolved Errors --------------------------\n";
         print MAIL `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
     
-        print MAIL "--- New Passing Future tests ($morechars) ---------------------\n";
+        print MAIL "--- New Passing Future tests------------------\n";
         print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
 
-        print MAIL "--- Passing Future tests ($morechars) ---------------------\n";
+        print MAIL "--- Passing Future tests ---------------------\n";
         print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
         print MAIL "\n";    
 
-        print MAIL "--- Unresolved Errors ($morechars) ------------------------\n";
+        print MAIL "--- Unresolved Errors ------------------------\n";
         print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
         print MAIL "\n";
 
-        print MAIL "--- New Failing Future tests ($morechars) -----------------\n";
+        print MAIL "--- New Failing Future tests -----------------\n";
         print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
 
-        print MAIL "--- Unresolved Future tests ($morechars) ------------------\n";
+        print MAIL "--- Unresolved Future tests ------------------\n";
         print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print MAIL "\n";    
     }
@@ -947,7 +823,7 @@ sub mysystem {
 	print "Error $errorname: $status\n";
 
 	if ($mailmsg != 0) {
-            $mailsubject = "$subjectid ($fullplatform) Failure";
+            $mailsubject = "$subjectid $config_name Failure";
             $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
             print "Trying to mail message... using $mailcommand\n";
@@ -1003,7 +879,6 @@ sub ensureSummaryExists {
     }
 }
 
-use Sys::Hostname;
 sub startMailHeader {
     my $mystr =
         "=== Summary ===================================================\n" .
