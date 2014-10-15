@@ -6,4 +6,6 @@ CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
 source $CWD/common-baseline.bash
 
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="baseline"
+
 $CWD/nightly -cron -baseline -suppress Suppressions/baseline.suppress -no-futures -compopts --inline
