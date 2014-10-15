@@ -69,14 +69,18 @@ void codegenStmt(Expr* stmt) {
 #ifdef HAVE_LLVM
     if (debug_info && stmt->linenum() > 0) 
     {
-      //Find the partent function
-      if(stmt->parentSymbol == NULL || stmt->parentSymbol->astTag != E_FnSymbol)
-      {
-        printf("Function symbol oops");
-        info->builder->SetCurrentDebugLocation(llvm::DebugLoc());
+      // Adjust the current line number, but leave the scope alone.
+      llvm::MDNode* scope;
+
+      if(stmt->parentSymbol && stmt->parentSymbol->astTag == E_FnSymbol) {
+        scope = debug_info->get_function((FnSymbol *)stmt->parentSymbol);
       } else {
-        info->builder->SetCurrentDebugLocation(llvm::DebugLoc::get(stmt->linenum(),0,debug_info->get_function((FnSymbol *)stmt->parentSymbol)));
+        scope = info->builder->getCurrentDebugLocation().getScope(
+                                                      info->llvmContext);
       }
+
+      info->builder->SetCurrentDebugLocation(
+                  llvm::DebugLoc::get(stmt->linenum(),0 /*col*/,scope));
     }
 #endif
   }

@@ -16,36 +16,44 @@
 #define DW_LANG_chapel llvm::dwarf::DW_LANG_lo_user
 #endif
 
+struct lessAstr {
+  bool operator() (const char* lhs, const char* rhs) const {
+    return strcmp(lhs,rhs) < 0;
+  }
+};
+
 class debug_data
 {
 #ifdef HAVE_LLVM
  public:
   static bool can_debug() { return true; }
-  debug_data(llvm::Module &m) : debug_factory(m){}
-  void finalize(){debug_factory.finalize();}
+  debug_data(llvm::Module &m) : dibuilder(m){}
+  void finalize(){dibuilder.finalize();}
   void create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags);
 
+  llvm::DIType construct_type(Type *type);
   llvm::DIType get_type(Type *type);
-  llvm::DIFile get_file(const char *file, const char *directory);
+
+  llvm::DIFile construct_file(const char *file);
   llvm::DIFile get_file(const char *file);
-  llvm::DIType get_int_type(const char *name, unsigned int bits);
-  llvm::DIType get_real_type(const char *name, unsigned int bits);
-  llvm::DIType get_array_type(unsigned int elements, llvm::DIType Type);
-  //llvm::DIType get_struct_type(const char *name, const char *file_name, unsigned int line_number, std::vector<llvm::DIType>types);
-  llvm::DIType get_struct_type(const AggregateType *struct_type);
-  llvm::DINameSpace get_module_name(const char *name, const char *file_name, unsigned int line_number);
-  llvm::DINameSpace get_module_name(const char *name);
-  llvm::DISubprogram get_function(const FnSymbol *function);
-  llvm::DIType get_function_type(const char *file, const std::vector<llvm::DIType>types);
-  llvm::DISubprogram get_function(const char *name, const char *cname, const char *module_name, const char *file_name, unsigned int line_number, std::vector<llvm::DIType>parameters, llvm::Function *function);
+
+  llvm::DINameSpace construct_module_scope(ModuleSymbol* modSym);
+  llvm::DINameSpace get_module_scope(ModuleSymbol* modSym);
+
+  llvm::DIType get_function_type(FnSymbol *function);
+  llvm::DISubprogram construct_function(FnSymbol *function);
+  llvm::DISubprogram get_function(FnSymbol *function);
+
  private:
-  llvm::DIBuilder debug_factory;
+  llvm::DIBuilder dibuilder;
   bool optimized;
-  llvm::DIType get_type(const char *name, unsigned int bits, unsigned int encoding);
-  std::vector<llvm::DIFile>files;
-  std::vector<llvm::DIType>types;
-  std::vector<llvm::DINameSpace>name_spaces;
-  std::vector<llvm::DISubprogram>functions;
+  //std::vector<llvm::DIFile>files;
+  std::map<const char*,llvm::DIFile,lessAstr> filesByName;
+  //std::vector<llvm::DIType>types;
+  //std::map<const char*,llvm::DIType,lessAstr> typesByName;
+  //std::vector<llvm::DINameSpace>name_spaces;
+  //std::map<const char*,llvm::DINameSpace,lessAstr> modulesByName;
+  //std::vector<llvm::DISubprogram>functions;
 #else
   static bool can_debug() { return false; }
 #endif

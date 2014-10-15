@@ -1,5 +1,6 @@
 #include "debug.h"
 
+#include "stringutil.h"
 #include "expr.h"
 #include "codegen.h"
 #include "symbol.h"
@@ -12,40 +13,39 @@
 #include "llvmUtil.h"
 #include "llvm/ADT/ArrayRef.h"
 
+/*
+LLVM provides a class called DIBuilder, you pass the LLVM module to this
+class and it will attach the debug information to the LLVM code after the
+call to finalize() on DIBuilder. The initialization happens in the
+constructor of debug_data (inlined in the header). It is instanced during
+codegen after setting up the LLVM module and put into debug_info. If the
+-g flag wasn't passed to the compiler then debug_info is null. The
+finalize call happens in codegen() right after the finishClangGeneration()
+call.
+As for all the additional data structures, all of that was built into LLVM
+rather than me. The functions to create the debug information requires the
+DI* types. It sort of makes sense to me, since it is building a DWARF tree
+rather than building LLVM IR. It starts at the top level with the
+create_compile_unit() call just before working through the modules and
+attaching the simple types and building up more complex structures from
+there. Getting things setup so that I can get a DISubroutine to pass to
+SetCurrentDebugLocation() is needed to get information like line numbers
+into the binary. So I think that the only new data structure that I'm
+creating myself is the debug class itself.
+
+
+See 
+http://llvm.org/docs/SourceLevelDebugging.html
+for more information on LLVM debug information.
+
+*/
+
 // Note: All char strings must be the same size
 // Very hacky, but completely legal and functional. Only issue is that file_name will have garbage from beyond full_path.
 // garbage issue could be solved with scrubbing, if it matters.
 
 extern char *current_dir;
-const char *null_name = "<internal>";
-
-static
-void shred_path(const char *full_path, char *file_name, char *path_name, int size)
-{
-  if(full_path == NULL)
-  {
-    memcpy(path_name, null_name, strlen(null_name)); 
-  } else {
-    memcpy(path_name, full_path, size);
-  }
-  char *last_slash = strrchr(path_name, '/');
-  if(last_slash == NULL)
-  {
-    memcpy(file_name, path_name, size);
-    memcpy(path_name, current_dir, 3);
-  } else {
-    memcpy(file_name, last_slash+1,size);
-    last_slash[1]='\0';
-  }
-}
-
-llvm::DIFile debug_data::get_file(const char *file)
-{
-  char file_name[128];
-  char path_name[128];
-  shred_path(file,file_name,path_name, 128);
-  return debug_info->get_file(file_name, path_name);
-}
+//const char *null_name = "<internal>";
 
 void debug_data::create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags)
 {
@@ -55,61 +55,106 @@ void debug_data::create_compile_unit(const char *file, const char *directory, bo
   get_version(version);
   snprintf(chapel_string, 256, "Chapel version %s", version);
   //the blank string here is meant to be the compile flags, just not sure how to grab that right now.
-  this->debug_factory.createCompileUnit(DW_LANG_chapel, file, directory, chapel_string, is_optimized, flags,0);
+  this->dibuilder.createCompileUnit(DW_LANG_chapel, file, directory, chapel_string, is_optimized, flags,0);
 }
 
-llvm::DIType debug_data::get_type(const char *name, unsigned int bits, unsigned int encoding)
+llvm::DIType debug_data::construct_type(Type *type)
 {
-  llvm::StringRef this_name(name);
-  for(std::vector<llvm::DIType>::iterator idx = this->types.begin(); idx != this->types.end(); idx++)
-  {
-    if(idx->getName() == this_name)
-    {
-      assert(idx->getName() == this_name && idx->getSizeInBits() == bits);
-      return *idx;
-    }
-  }
-  llvm::DIType new_type = this->debug_factory.createBasicType(name, bits, bits, encoding);
-  assert(new_type.Verify());
-  this->types.push_back(new_type);
-  return new_type;
-}
+  GenInfo* info = gGenInfo;
+  LLVM_TARGET_DATA * layout = info->targetData;
 
-llvm::DIFile debug_data::get_file(const char *file, const char *directory)
-{
-  llvm::StringRef file_name = llvm::StringRef(file);
-  llvm::StringRef directory_name = llvm::StringRef(directory);
-  for(std::vector<llvm::DIFile>::iterator current_file = this->files.begin(); current_file != this->files.end(); current_file++)
-  {
-    if(current_file->getFilename() == file_name && current_file->getDirectory() == directory_name)
-    {
-      return *current_file;
-    }
-  }
-  return this->debug_factory.createFile(file_name, directory_name);
-}
+  llvm::Type* ty = type->symbol->llvmType;
+  //const char* cname = type->symbol->cname;
+  const char* name = type->symbol->name;
+  ModuleSymbol* defModule = type->symbol->getModule();
+  const char* defFile = type->symbol->fname();
+  int defLine = type->symbol->linenum();
 
-llvm::DIType debug_data::get_struct_type(const AggregateType *struct_type)
-{
-  llvm::DIType ret;
-  // TODO
-  //char file_name[128];
-  //char path_name[128];
-  //shread_path(struct_type->astloc.filename, file_name, path_name, 128);
-  //llvm::DINameSpace = get_module_name(stuff, struct_type->astloc.filename, struct_type->astloc.lineno);
-  return ret;
-}
-
-llvm::DIType debug_data::get_type(Type *type)
-{
-  if(type->symbol->llvmType == NULL) return llvm::DIType();
-  if(type->symbol->llvmType->isIntegerTy()) {
-    return get_int_type(type->symbol->name, type->symbol->llvmType->getIntegerBitWidth());
-  } else if(type->symbol->llvmType->isFloatingPointTy()) {
-    return get_real_type(type->symbol->name, type->symbol->llvmType->getPrimitiveSizeInBits());
-  } else if(type->astTag == E_AggregateType) {
+  if(!ty) return llvm::DIType();
+  if(ty->isIntegerTy()) {
+    return this->dibuilder.createBasicType(
+        name,
+        layout->getTypeSizeInBits(ty),
+        8*layout->getABITypeAlignment(ty),
+        (is_signed(type))?
+                      (llvm::dwarf::DW_ATE_signed):
+                      (llvm::dwarf::DW_ATE_unsigned));
+  } else if(ty->isFloatingPointTy()) {
+    return this->dibuilder.createBasicType(
+        name,
+        layout->getTypeSizeInBits(ty),
+        8*layout->getABITypeAlignment(ty),
+        llvm::dwarf::DW_ATE_float);
+  } else if(ty->isPointerTy()) {
+    return this->dibuilder.createPointerType(
+        get_type(type->getValType()),
+        layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
+        0, /* alignment */
+        name);
+  } else if(ty->isStructTy() && type->astTag == E_AggregateType) {
     AggregateType *this_class = (AggregateType *)type;
-    if(this_class->aggregateTag == AGGREGATE_RECORD) return get_struct_type(this_class);
+    llvm::SmallVector<llvm::Value *, 8> EltTys;
+    llvm::DIType derivedFrom;
+    if( type->dispatchParents.length() > 0 )
+      derivedFrom = get_type(type->dispatchParents.first());
+
+    const llvm::StructLayout* slayout = NULL;
+    llvm::StructType* struct_type = llvm::cast<llvm::StructType>(ty);
+    slayout = layout->getStructLayout(struct_type);
+
+    for_fields(field, this_class) {
+      // field is a Symbol
+      const char* fieldDefFile = field->defPoint->fname();
+      int fieldDefLine = field->defPoint->linenum();
+      TypeSymbol* fts = field->type->symbol;
+      llvm::Type* fty = fts->llvmType;
+
+      llvm::DIType mty = this->dibuilder.createMemberType(
+        get_module_scope(defModule),
+        field->name,
+        get_file(fieldDefFile),
+        fieldDefLine,
+        layout->getTypeSizeInBits(fty),
+        8*layout->getABITypeAlignment(fty),
+        slayout->getElementOffsetInBits(this_class->getMemberGEP(field->name)),
+        0,
+        get_type(field->type));
+      EltTys.push_back(mty);
+    }
+
+    if(this_class->aggregateTag == AGGREGATE_RECORD) {
+      return this->dibuilder.createStructType(
+          get_module_scope(defModule),
+          name,
+          get_file(defFile),
+          defLine,
+          layout->getTypeSizeInBits(ty),
+          8*layout->getABITypeAlignment(ty),
+          0,
+          derivedFrom,
+          this->dibuilder.getOrCreateArray(EltTys));
+    } else if(this_class->aggregateTag == AGGREGATE_CLASS) {
+      return this->dibuilder.createStructType(
+          get_module_scope(defModule),
+          name,
+          get_file(defFile),
+          defLine,
+          layout->getTypeSizeInBits(ty),
+          8*layout->getABITypeAlignment(ty),
+          0,
+          derivedFrom,
+          this->dibuilder.getOrCreateArray(EltTys));
+    } else if(this_class->aggregateTag == AGGREGATE_UNION) {
+      return this->dibuilder.createUnionType(
+          get_module_scope(defModule),
+          name,
+          get_file(defFile),
+          defLine,
+          layout->getTypeSizeInBits(ty),
+          8*layout->getABITypeAlignment(ty),
+          0,
+          this->dibuilder.getOrCreateArray(EltTys));
+    }
   }
 
   printf("Unhandled type: %s\n\ttype->astTag=%i\n", type->symbol->name, type->astTag);
@@ -119,105 +164,118 @@ llvm::DIType debug_data::get_type(Type *type)
     printf("\tllvmType is NULL\n");
   }
 
-  return llvm::DIType();
-}
-
-llvm::DIType debug_data::get_int_type(const char *name, unsigned int bits)
-{
-  return get_type(name, bits, llvm::dwarf::DW_ATE_signed);
-}
-
-llvm::DIType debug_data::get_real_type(const char *name, unsigned int bits)
-{
-  return get_type(name, bits, llvm::dwarf::DW_ATE_float);
-}
-
-llvm::DIType debug_data::get_array_type(unsigned int elements, llvm::DIType Type)
-{
+  //return this->dibuilder.createUnspecifiedType(name);
   llvm::DIType ret;
-  // TODO
   return ret;
 }
 
-llvm::DINameSpace debug_data::get_module_name(const char *name)
+llvm::DIType debug_data::get_type(Type *type)
 {
-  assert(name != NULL);
-  llvm::StringRef module_name = llvm::StringRef(name);
-  llvm::DINameSpace ret_val;
-  for(std::vector<llvm::DINameSpace>::iterator current_module = this->name_spaces.begin(); current_module != this->name_spaces.end(); current_module++)
-  {
-    if(current_module->getName() == module_name)
-    {
-      ret_val =  *current_module;
-    }
+  if( NULL == type->symbol->llvmDIType ) {
+    type->symbol->llvmDIType = construct_type(type);
   }
-  return ret_val;
+  return llvm::DIType(type->symbol->llvmDIType);
 }
 
-llvm::DINameSpace debug_data::get_module_name(const char *name, const char *file_name, unsigned int line_number)
+llvm::DIFile debug_data::construct_file(const char *fpath)
 {
-  //assert(name != NULL);
-  // resolved_name needs to stick around. StringRef only points to it, it doesn't keep a copy of it. If leaking this matters it can be freed in a destructor.
-  char *resolved_name = (char*) malloc(128);
-  if(name == NULL)
-  {
-    printf("New name using default name\n");
-    char new_name[128];
-    char path_name[128];
-    shred_path(file_name, new_name, path_name, 128);
-    char *last_dot = strrchr(new_name,'.');
-    assert(strcmp(last_dot,".chpl")==0);
-    last_dot[0]='\0';
-    memcpy(resolved_name,new_name,128);
+  // Create strings for the directory and file.
+  const char* last_slash;
+  const char* file;
+  const char* directory;
+
+  last_slash = strrchr(fpath, '/');
+  if( last_slash ) {
+    file = astr(last_slash+1);
+    directory = asubstr(fpath, last_slash);
   } else {
-    memcpy(resolved_name,name,128);
+    file = fpath;
+    directory = astr(current_dir);
   }
 
-  llvm::StringRef module_name = llvm::StringRef(resolved_name);
-  for(std::vector<llvm::DINameSpace>::iterator current_module = this->name_spaces.begin(); current_module != this->name_spaces.end(); current_module++)
-  {
-    if(current_module->getName() == module_name)
-    {
-      return *current_module;
-    }
+  return this->dibuilder.createFile(file, directory);
+}
+
+llvm::DIFile debug_data::get_file(const char *fpath)
+{
+  // First, check to see if it's already a in our hashtable.
+  if( this->filesByName.count(fpath) > 0 ) {
+    return this->filesByName[fpath];
   }
+
+  // Otherwise, construct the type, add it to the map,
+  // and then return it.
+  llvm::DIFile dif = construct_file(fpath);
+  this->filesByName[fpath] = dif;
+  return dif;
+}
+
+llvm::DINameSpace debug_data::construct_module_scope(ModuleSymbol* modSym)
+{
+  const char* fname = modSym->fname();
+  int line = modSym->linenum();
+  llvm::DIFile file = get_file(fname);
+  return this->dibuilder.createNameSpace(file, modSym->name, file, line);
+}
+
+llvm::DINameSpace debug_data::get_module_scope(ModuleSymbol* modSym)
+{
+  if( NULL == modSym->llvmDINameSpace ) {
+    modSym->llvmDINameSpace = construct_module_scope(modSym);
+  }
+  return llvm::DINameSpace(modSym->llvmDINameSpace);
+}
+
+llvm::DIType debug_data::get_function_type(FnSymbol *function)
+{
+  const char *file_name = function->astloc.filename;
   llvm::DIFile file = get_file(file_name);
-  llvm::DINameSpace ret= this->debug_factory.createNameSpace(file, module_name, file, line_number);
-  this->name_spaces.push_back(ret);
-  return ret;
-}
+  llvm::SmallVector<llvm::Value *,16> ret_arg_types;
 
-llvm::DIType debug_data::get_function_type(const char *file, const std::vector<llvm::DIType>types)
-{
-  llvm::DIFile my_file = get_file(file);
-  llvm::SmallVector<llvm::Value *,16> my_types;
-
-  for(size_t idx=0; idx < types.size(); idx++)
-  {
-    my_types.push_back(types[idx]);
-  }
-
-  llvm::DIArray my_array = this->debug_factory.getOrCreateArray(my_types);
-  return this->debug_factory.createSubroutineType(my_file, my_array);
-}
-
-llvm::DISubprogram debug_data::get_function(const char *name, const char *cname, const char *module_name, const char *file_name, unsigned int line_number, std::vector<llvm::DIType>parameters, llvm::Function *function)
-{
-  llvm::DINameSpace module = get_module_name(module_name);
-  llvm::DIFile file = get_file(file_name);
-  llvm::DIType function_type = get_function_type(file_name, parameters);
-  return this->debug_factory.createFunction(module, name, cname, file, line_number, function_type, true, true, line_number, 0, false);
-}
-
-llvm::DISubprogram debug_data::get_function(const FnSymbol *function)
-{
-  std::vector<llvm::DIType> parameters;
-  parameters.push_back(get_type(function->retType));
+  ret_arg_types.push_back(get_type(function->retType));
   for_formals(arg, function)
   {
-    parameters.push_back(get_type(arg->type));
+    ret_arg_types.push_back(get_type(arg->type));
   }
-  return get_function(function->name, function->cname, function->defPoint->parentSymbol->name, function->astloc.filename, function->astloc.lineno, parameters, getFunctionLLVM(function->cname));
+
+  llvm::DIArray ret_arg_arr = dibuilder.getOrCreateArray(ret_arg_types);
+  return this->dibuilder.createSubroutineType(file, ret_arg_arr);
+}
+
+llvm::DISubprogram debug_data::construct_function(FnSymbol *function)
+{
+  const char *name = function->name;
+  const char *cname = function->cname;
+  ModuleSymbol* modSym = (ModuleSymbol*) function->defPoint->parentSymbol;
+  const char *file_name = function->astloc.filename;
+  int line_number = function->astloc.lineno;
+  llvm::Function* llFunc = getFunctionLLVM(function->cname);
+
+  llvm::DINameSpace module = get_module_scope(modSym);
+  llvm::DIFile file = get_file(file_name);
+
+  llvm::DIType function_type = get_function_type(function);
+
+  llvm::DISubprogram ret = this->dibuilder.createFunction(
+      module, /* scope */
+      name, /* name */
+      cname, /* linkage name */
+      file, line_number, function_type,
+      !function->hasFlag(FLAG_EXPORT), /* is local to unit */
+      true, /* is definition */
+      line_number, /* beginning of scope we start */
+      0, /* flags */
+      optimized, /* isOptimized */
+      llFunc);
+  return ret;
+}
+
+llvm::DISubprogram debug_data::get_function(FnSymbol *function)
+{
+  if( NULL == function->llvmDISubprogram ) {
+    function->llvmDISubprogram = construct_function(function);
+  }
+  return llvm::DISubprogram(function->llvmDISubprogram); 
 }
 
 // end if LLVM

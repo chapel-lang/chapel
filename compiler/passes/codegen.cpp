@@ -1177,9 +1177,6 @@ void codegen(void) {
     forv_Vec(ModuleSymbol, currentModule, allModules) {
       mysystem(astr("# codegen-ing module", currentModule->name),
                "generating comment for --print-commands option");
-      if(debug_info && currentModule->filename) {
-        debug_info->get_module_name(currentModule->name, currentModule->filename, currentModule->astloc.lineno);
-      }
       currentModule->codegenDef();
     }
 

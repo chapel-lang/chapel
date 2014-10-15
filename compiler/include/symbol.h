@@ -28,6 +28,14 @@
 #include <bitset>
 #include <vector>
 
+#ifdef HAVE_LLVM
+// Forward declare MDNode.
+namespace llvm
+{
+  class MDNode;
+}
+#endif
+
 //
 // The function that represents the compiler-generated entry point
 //
@@ -232,14 +240,7 @@ class TypeSymbol : public Symbol {
   llvm::MDNode* llvmConstTbaaNode;
   llvm::MDNode* llvmTbaaStructNode;
   llvm::MDNode* llvmConstTbaaStructNode;
-#else
-  // Keep same layout so toggling HAVE_LLVM
-  // will not lead to build errors without make clean
-  void* llvmType;
-  void* llvmTbaaNode;
-  void* llvmConstTbaaNode;
-  void* llvmTbaaStructNode;
-  void* llvmConstTbaaStructNode;
+  llvm::MDNode* llvmDIType;
 #endif
 
   TypeSymbol(const char* init_name, Type* init_type);
@@ -286,7 +287,8 @@ class FnSymbol : public Symbol {
                            // resolve and used in cullOverReferences)
   int codegenUniqueNum;
   const char *doc;
-  
+ 
+
   /// Used to keep track of symbol substitutions during partial copying.
   SymbolMap partialCopyMap;
   /// Source of a partially copied function.
@@ -295,6 +297,11 @@ class FnSymbol : public Symbol {
   Symbol* retSymbol;
   /// Number of formals before tuple type constructor formals are added.
   int numPreTupleFormals;
+
+#ifdef HAVE_LLVM
+  llvm::MDNode* llvmDISubprogram;
+#endif
+
 
   FnSymbol(const char* initName);
   ~FnSymbol();
@@ -409,7 +416,12 @@ public:
   const char*          doc;
 
   // LLVM uses this for extern C blocks.
+#ifdef HAVE_LLVM
   ExternBlockInfo*     extern_info;
+  llvm::MDNode* llvmDINameSpace;
+#endif
+
+
 };
 
 /******************************** | *********************************

@@ -1045,10 +1045,14 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 ********************************* | ********************************/
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
-  Symbol(E_TypeSymbol, init_name, init_type),
+  Symbol(E_TypeSymbol, init_name, init_type)
+#ifdef HAVE_LLVM
+    ,
     llvmType(NULL),
     llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
-    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL)
+    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    llvmDIType(NULL)
+#endif
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
@@ -1305,6 +1309,10 @@ FnSymbol::FnSymbol(const char* initName) :
   doc(NULL),
   partialCopySource(NULL),
   retSymbol(NULL)
+#ifdef HAVE_LLVM
+  ,
+  llvmDISubprogram(NULL)
+#endif
 {
   substitutions.clear();
   gFnSymbols.add(this);
@@ -1869,6 +1877,12 @@ void FnSymbol::codegenDef() {
     
     info->lvt->addLayer();
 
+    if(debug_info) {
+      llvm::DISubprogram dbgScope = debug_info->get_function(this);
+      info->builder->SetCurrentDebugLocation(
+        llvm::DebugLoc::get(linenum(),0,dbgScope));
+    }
+
     llvm::Function::arg_iterator ai = func->arg_begin();
     for_formals(arg, this) {
       if (arg->defPoint == formals.head && hasFlag(FLAG_ON_BLOCK))
@@ -2208,8 +2222,13 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     block(iBlock),
     initFn(NULL),
     filename(NULL),
-    doc(NULL),
-    extern_info(NULL) {
+    doc(NULL)
+#ifdef HAVE_LLVM
+    ,
+    extern_info(NULL),
+    llvmDINameSpace(NULL)
+#endif
+{
 
   block->parentSymbol = this;
   registerModule(this);
@@ -2283,11 +2302,14 @@ void ModuleSymbol::codegenDef() {
 
   qsort(fns.v, fns.n, sizeof(fns.v[0]), compareLineno);
 
+#ifdef HAVE_LLVM
+  if(debug_info && info->filename) {
+    debug_info->get_module_scope(this);
+  }
+#endif
+
   forv_Vec(FnSymbol, fn, fns) {
     fn->codegenDef();
-#ifdef HAVE_LLVM
-    if(debug_info)debug_info->get_function(fn);
-#endif
   }
 
   flushStatements();
