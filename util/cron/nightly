@@ -406,6 +406,7 @@ if ($buildruntime == 0) {
     print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
     print MAIL "Built compiler but not runtime, and did not run tests\n";
     print MAIL endMailHeader();
+    print MAIL endMailChplenv();
     close(MAIL);
     exit 0;
 }
@@ -579,6 +580,7 @@ if ($runtests == 0) {
     print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
     print MAIL "Built compiler and runtime but did not run tests\n";
     print MAIL endMailHeader();
+    print MAIL endMailChplenv();
     
     close(MAIL);
     
@@ -782,6 +784,7 @@ if ($runtests == 0) {
         print MAIL "\n";    
     }
     
+    print MAIL endMailChplenv();
     close(MAIL);
     
     
@@ -846,6 +849,7 @@ sub mysystem {
 	    print MAIL "ERROR $errorname: $status\n";
 	    print MAIL "(workspace left at $tmpdir)\n";
             print MAIL endMailHeader();
+            print MAIL endMailChplenv();
 	    close(MAIL);
 	}
 
@@ -925,3 +929,13 @@ sub endMailHeader {
     $mystr;
 }
 
+sub endMailChplenv {
+    my $chplenv = `$chplhomedir/util/printchplenv --debug`;
+
+    my $mystr = 
+        "===============================================================\n" .
+        "Chapel Environment:\n" .
+        $chplenv . "\n";
+
+    $mystr;
+}
