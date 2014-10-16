@@ -78,12 +78,16 @@ qioerr chpl_fs_exists(int* ret, const char* name) {
   // this means we will detect it and return false.
   int exitStatus = stat(name, &buf);
   if (exitStatus == -1 && errno == ENOENT) {
-    // File or directory does not exist
+    // File or directory does not exist, return false
+    *ret = 0;
   } else if (exitStatus) {
-    // Another error occurred.
+    // Another error occurred.  Return it.
+    err = qio_mkerror_errno();
   } else {
-    // The file or directory exists.
+    // The file or directory exists, return true
+    *ret = 1;
   }
+  return err;
 }
 
 qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag) {
