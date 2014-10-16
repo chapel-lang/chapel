@@ -433,11 +433,10 @@ void verifyNcleanRemovedIterResumeGotos() {
 // so must be hacked out now.
 //
 
-
 static void cleanupCForLoopBlocks(FnSymbol* fn) {
   std::vector<Expr*> stmts;
 
-  collect_stmts_STL(fn, stmts);
+  collect_stmts_STL(fn->body, stmts);
 
   for (size_t i = 0; i < stmts.size(); i++) {
     if (BlockStmt* stmt = toBlockStmt(stmts[i])) {
