@@ -59,7 +59,7 @@ this should get better with better string memory management
 
 ================================
 memory-leaks regressions
-(Reviewed for accuracy 09/15/14)
+(Reviewed for accuracy 10/15/14)
 ================================
 
 very infrequent segfault (10/03/14)
@@ -173,7 +173,7 @@ no-local regressions
 
 ====================================================
 gasnet-everything regressions (other than the above)
-(Reviewed for accuracy 09/17/14)
+(Reviewed for accuracy 10/15/14)
 ====================================================
 
 annoying occasional failures even after Sung calmed down (09/18/14 -- sungeun)
