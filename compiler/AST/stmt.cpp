@@ -94,13 +94,12 @@ bool Stmt::isStmt() const {
 BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   Stmt(E_BlockStmt),
   blockTag(initBlockTag),
-  blockInfo(NULL),
   modUses(NULL),
   breakLabel(NULL),
   continueLabel(NULL),
   userLabel(NULL),
-  byrefVars(NULL) {
-
+  byrefVars(NULL), 
+  blockInfo(NULL) {
   body.parent = this;
 
   if (initBody)
@@ -273,6 +272,16 @@ static GenRet codegenCForLoopConditional(BlockStmt* block)
   return codegenValue(ret);
 }
 #endif
+
+CallExpr* BlockStmt::blockInfoGet() const {
+  return blockInfo;
+}
+
+CallExpr* BlockStmt::blockInfoSet(CallExpr* expr) {
+  blockInfo = expr;
+
+  return blockInfo;
+}
 
 GenRet BlockStmt::codegen() {
   GenInfo* info    = gGenInfo;
@@ -683,7 +692,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
 {
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
-    if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfo)
+    if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
       thenStmt = bs;
     else
       thenStmt = new BlockStmt(s);
@@ -692,7 +701,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   if (iElseStmt) {
     if (Expr* s = toExpr(iElseStmt)) {
       BlockStmt* bs = toBlockStmt(s);
-      if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfo)
+      if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
         elseStmt = bs;
       else
         elseStmt = new BlockStmt(s);

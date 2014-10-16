@@ -36,7 +36,7 @@
 // Static function declarations.
 //
 static void deadBlockElimination(FnSymbol* fn);
-// static void deadGotoElimination(FnSymbol* fn);
+static void cleanupCForLoopBlocks(FnSymbol* fn);
 
 // Static variables.
 static unsigned deadBlockCount;
@@ -188,7 +188,7 @@ void deadCodeElimination(FnSymbol* fn)
         if (Expr* sub = toExpr(ast)) {
           exprMap[sub] = expr;
           if (BlockStmt* block = toBlockStmt(sub->parentExpr))
-            if (block->blockInfo == sub)
+            if (block->blockInfoGet() == sub)
               essential = true;
           if (CondStmt* cond = toCondStmt(sub->parentExpr))
             if (cond->condExpr == sub)
@@ -288,22 +288,26 @@ static void deadModuleElimination() {
 
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
-    deadBlockCount = 0;
+
+    deadBlockCount  = 0;
     deadModuleCount = 0;
+
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       deadBlockElimination(fn);
-//      deadGotoElimination(fn);
       deadCodeElimination(fn);
       deadVariableElimination(fn);
       deadExpressionElimination(fn);
+  
+      cleanupCForLoopBlocks(fn);
     }
+
     deadModuleElimination();
     
     if (fReportDeadBlocks)
       printf("\tRemoved %d dead blocks.\n", deadBlockCount);
+
     if (fReportDeadModules)
       printf("Removed %d dead modules.\n", deadModuleCount);
-
   }
 }
 
@@ -399,6 +403,54 @@ void verifyNcleanRemovedIterResumeGotos() {
       INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label - missing a call to removeDeadIterResumeGotos?");
   }
   removedIterResumeLabels.clear();
+}
+
+// 2014/10/15
+//
+//
+// Dead code elimination can create a variety of degenerate statements.
+// These include
+//
+//    blockStmts with empty bodies
+//    condStmts  with empty then and/or else clauses
+//    loops      with empty bodies
+//
+// etc.
+//
+// Most of these are currently allowed to clutter the AST and are assumed
+// to be cleaned up the by C compiler.  There is an expectation that this
+// will be improved in the future.
+//
+// Howevever it can lead to C-For loops where the body is empty and each
+// of the loop clauses is an empty blockStmt.  This logically corresponds
+// to
+//
+//              for ( ; ; ) {
+//              }
+//
+// which is technically valid C that would implement an infinite loop.
+// However this AST causes a seg-fault in the LLVM code generator and
+// so must be hacked out now.
+//
+
+static void cleanupCForLoopBlocks(FnSymbol* fn) {
+  std::vector<Expr*> stmts;
+
+  collect_stmts_STL(fn->body, stmts);
+
+  for (size_t i = 0; i < stmts.size(); i++) {
+    if (BlockStmt* stmt = toBlockStmt(stmts[i])) {
+      if (CallExpr* loop = stmt->blockInfoGet()) {
+        if (loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+          if (BlockStmt* test = toBlockStmt(loop->get(2))) {
+            if (test->body.length == 0) {
+              stmt->remove();
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 // Look for pointless gotos and remove them.

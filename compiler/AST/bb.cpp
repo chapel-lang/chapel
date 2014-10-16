@@ -134,14 +134,19 @@ void buildBasicBlocks(FnSymbol* fn)
 
 void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 {
-  if (!stmt) return;
-
-  if (BlockStmt* s = toBlockStmt(stmt))
+  if (stmt == 0)
   {
-    CallExpr* loop = toCallExpr(s->blockInfo);
+
+  }
+
+  else if (BlockStmt* s = toBlockStmt(stmt))
+  {
+    CallExpr* loop = toCallExpr(s->blockInfoGet());
+
     if (loop)
     {
       bool cForLoop = loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(loop->get(1))->body) { BBB(stmt); }
@@ -149,16 +154,19 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 
       // mark the top of the loop
       BasicBlock* top = basicBlock;
+
       BB_RESTART();
 
-      // for c for loops, add the test expr at the loop top
+      // add the test expr at the loop top
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(loop->get(2))->body) { BBB(stmt); }
+      } else {
+        BB_ADD(loop);
+
       }
 
-      // add the CallExpr that is the loop itself and then add the loops body
-      BB_ADD(loop);
       BasicBlock* loopTop = basicBlock;
+
       for_alist(stmt, s->body) {
         BBB(stmt);
       }
@@ -169,14 +177,16 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
       }
 
       BasicBlock* loopBottom = basicBlock;
+
       BB_RESTART();
+
       BasicBlock* bottom = basicBlock;
 
       // thread the basic blocks of the pre-loop, loop, and post-loop together
-      BB_THREAD(top, loopTop);
+      BB_THREAD(top,        loopTop);
       BB_THREAD(loopBottom, bottom);
       BB_THREAD(loopBottom, loopTop);
-      BB_THREAD(top, bottom);
+      BB_THREAD(top,        bottom);
     }
     else
     {

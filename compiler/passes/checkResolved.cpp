@@ -116,7 +116,7 @@ static void
 checkConstLoops(void) {
   if (!fWarnConstLoops) return;
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (CallExpr* info = block->blockInfo) {
+    if (CallExpr* info = block->blockInfoGet()) {
       if (info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
           info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))
       {
@@ -270,9 +270,9 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
     return 0;
   if (BlockStmt* block = toBlockStmt(expr))
   {
-    if (!block->blockInfo ||
-        block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-        block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+    if (!block->blockInfoGet() ||
+        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
+        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
     {
       int result = 0;
       for_alist(e, block->body)
