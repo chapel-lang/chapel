@@ -7,8 +7,6 @@ CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/functions.bash
 source $CWD/common-whitebox.bash
 
-# FIXME: resolve test config name...
-
 # Run the tests!
 nightly_args="-cron -examples"
 log_info "Calling nightly with args: ${nightly_args}"
