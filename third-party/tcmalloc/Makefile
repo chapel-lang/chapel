@@ -52,3 +52,4 @@ install-tcmalloc: FORCE
 
 FORCE:
 
+.NOTPARALLEL:

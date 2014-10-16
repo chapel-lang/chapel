@@ -57,3 +57,5 @@ $(RE2_FILE):
 re2: $(RE2_FILE)
 
 FORCE:
+
+.NOTPARALLEL:

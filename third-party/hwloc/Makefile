@@ -76,3 +76,5 @@ hwloc-reconfig:
 	cd $(HWLOC_SUBDIR) && autoreconf -f -i
 
 FORCE:
+
+.NOTPARALLEL:
