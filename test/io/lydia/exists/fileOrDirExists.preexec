@@ -5,4 +5,7 @@ touch file
 if [ ! -e dir_link ]; then
     ln -s dir dir_link
     ln -s file file_link
+    touch going_away
+    ln -s going_away broken_link
+    rm going_away
 fi
