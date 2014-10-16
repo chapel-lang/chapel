@@ -5949,7 +5949,7 @@ postFold(Expr* expr) {
 
 static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr)) {
-    if (block->blockInfo) {
+    if (block->blockInfoGet()) {
       USR_FATAL(expr, "param function cannot contain a non-param loop");
     }
   }

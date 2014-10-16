@@ -21,7 +21,10 @@ fi
 
 # Variable set by Jenkins to indicate type of whitebox. If it is not set, assume cray-xc.
 platform=${CRAY_PLATFORM_FROM_JENKINS:-cray-xc}
-log_info="Using platform: ${platform}"
+log_info "Using platform: ${platform}"
+
+short_platform=$(echo "${platform}" | cut -d- -f2)
+log_info "Short platform: ${short_platform}"
 
 # Setup vars that will help load the correct compiler module.
 case $COMP_TYPE in
@@ -32,7 +35,7 @@ case $COMP_TYPE in
         export CHPL_TARGET_PLATFORM=$platform
         log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
 
-        export CHPL_NIGHTLY_TEST_CONFIG_NAME="xc-wb.prgenv-${COMPILER}"
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.prgenv-${COMPILER}"
         ;;
     HOST-TARGET)
         module_name=PrgEnv-${COMPILER}
@@ -43,7 +46,7 @@ case $COMP_TYPE in
         log_info "Set CHPL_HOST_PLATFORM to: ${CHPL_HOST_PLATFORM}"
         log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
 
-        export CHPL_NIGHTLY_TEST_CONFIG_NAME="xc-wb.host.prgenv-${COMPILER}"
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.host.prgenv-${COMPILER}"
         ;;
     HOST-TARGET-no-PrgEnv)
         the_cc=${COMPILER}
@@ -53,7 +56,7 @@ case $COMP_TYPE in
         module_name=${the_cc}
         chpl_host_value=${COMPILER}
 
-        export CHPL_NIGHTLY_TEST_CONFIG_NAME="xc-wb.${COMPILER}"
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.${COMPILER}"
         ;;
     *)
         log_error "Unknown COMP_TYPE value: ${COMP_TYPE}. Exiting."

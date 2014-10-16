@@ -43,12 +43,12 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
     return false;
 
   // FYI: presently, for a 'coforall', the enclosing block is a for loop.
-  INT_ASSERT(block->blockInfo &&
-             block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP));
+  INT_ASSERT(block->blockInfoGet() &&
+             block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP));
 
   // We could verify that 'sym' is defined via a 'move'
   // from the _indexOfInterest variable referenced by the SymExpr
-  // block->blockInfo->get(1). (It's a move from a tuple component
+  // block->blockInfoGet()->get(1). (It's a move from a tuple component
   // of _indexOfInterest, for zippered coforall loops.)
   //
   return true;
@@ -274,7 +274,7 @@ void createTaskFunctions(void) {
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (CallExpr* info = block->blockInfo) {
+    if (CallExpr* info = block->blockInfoGet()) {
       SET_LINENO(block);
       FnSymbol* fn = NULL;
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
@@ -343,13 +343,13 @@ void createTaskFunctions(void) {
 
         if (fn->hasFlag(FLAG_ON)) {
           // This puts the target locale expression "onExpr" at the start of the call.
-          call->insertAtTail(block->blockInfo->get(1)->remove());
+          call->insertAtTail(block->blockInfoGet()->get(1)->remove());
         }
 
         block->insertBefore(new DefExpr(fn));
 
         if( fCacheRemote ) {
-          if( block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ) {
+          if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
             isBlockingOn = true;
           }
 
@@ -381,7 +381,7 @@ void createTaskFunctions(void) {
            // block->insertBefore(new CallExpr(PRIM_JOIN_RMEM_FENCE));
         }
 
-        block->blockInfo->remove();
+        block->blockInfoGet()->remove();
 
         // Now build the fn for the task or on statement.
 
