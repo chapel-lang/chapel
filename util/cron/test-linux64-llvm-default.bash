@@ -7,4 +7,6 @@ CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
 source $CWD/common-llvm.bash
 
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="llvm"
+
 $CWD/nightly -cron ${nightly_args}

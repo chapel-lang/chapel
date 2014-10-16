@@ -4,6 +4,9 @@
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-perf.bash
 source $CWD/common-qthreads.bash
+
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chap04.playground"
+
 export CHPL_RT_NUM_THREADS_PER_LOCALE=16
 # releasePerformance still generates results based on the fifo timings. It's
 # run here again, otherwise syncing the qthreads results blows away the

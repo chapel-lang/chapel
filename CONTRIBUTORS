@@ -42,15 +42,15 @@ Roxana Diaconescu, CalTech
 James Dinan, Cray Inc./The Ohio State University
 Martha Dumler, Cray Inc.
 Saliya Ekanayake, Indiana University
-Samuel Figueroa, Cray Inc.
+Samuel Figueroa, Cray Inc. (*)
 Roald Frederickx, individual contributor
 Alexey Gokhberg, Unicorn Enterprises SA
 Paul Hargrove, Lawrence Berkeley National Laboratory
 Akihiro Hayashi, Rice University
 Hannah Hemmaplardh, Cray Inc./University of Washington
 Steven Hemmy, Cray Inc./University of Wisconsin
-Shannon Hoffswell, Cray Inc.
-Mary Beth Hribar, Cray Inc.
+Shannon Hoffswell, Cray Inc. (*)
+Mary Beth Hribar, Cray Inc. (*)
 Mackale Joyner, Cray Inc./Rice University
 Jessica Jueckstock, MITRE
 John Koenig, Cray Inc.
@@ -79,3 +79,25 @@ Joe Yan, University of Maryland
 We are also grateful to our many enthusiastic and vocal users for
 helping us continually improve the quality of the Chapel language and
 compiler.
+
+
+
+
+
+
+-----
+
+* = Note that due to a conversion mistake when moving our source
+    repository from SVN/SourceForge to Git/GitHub, some past
+    contributors' names were mapped to an incorrect name in the Git
+    repository.
+
+    For all intents and purposes, any commits that are
+    attributed to...             should actually be attributed to...
+    ----------------             -----------------------------------
+    ...Tito Figueroa             ...Samuel Figueroa
+    ...MaryBeth Seekamp          ...Mary Beth Hribar
+    ...Charles Shannon Hendrix   ...Shannon Hoffswell
+
+    These mistakes have been annotated in the repository itself via
+    git-notes indicating the "Actual Commit Author."

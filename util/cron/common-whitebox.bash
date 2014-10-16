@@ -31,6 +31,8 @@ case $COMP_TYPE in
 
         export CHPL_TARGET_PLATFORM=$platform
         log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
+
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="xc-wb.prgenv-${COMPILER}"
         ;;
     HOST-TARGET)
         module_name=PrgEnv-${COMPILER}
@@ -40,6 +42,8 @@ case $COMP_TYPE in
         export CHPL_TARGET_PLATFORM=$platform
         log_info "Set CHPL_HOST_PLATFORM to: ${CHPL_HOST_PLATFORM}"
         log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
+
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="xc-wb.host.prgenv-${COMPILER}"
         ;;
     HOST-TARGET-no-PrgEnv)
         the_cc=${COMPILER}
@@ -48,6 +52,8 @@ case $COMP_TYPE in
         fi
         module_name=${the_cc}
         chpl_host_value=${COMPILER}
+
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="xc-wb.${COMPILER}"
         ;;
     *)
         log_error "Unknown COMP_TYPE value: ${COMP_TYPE}. Exiting."
@@ -95,10 +101,6 @@ fi
 # Disable launchers, comm.
 export CHPL_LAUNCHER=none
 export CHPL_COMM=none
-
-# Set some vars that nightly cares about.
-export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly/whitebox/${platform}
-export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 # Ensure that one of the CPU modules is loaded.
 my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)

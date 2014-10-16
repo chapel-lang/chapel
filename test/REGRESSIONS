@@ -20,29 +20,29 @@
 
 ===========================================================
 general regressions (seem to happen in most configurations)
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/14/14)
 ===========================================================
 
-fails about 2-3x a month
-------------------------
+fails about 2-3x a month (vass)
+-------------------------------
 [Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
 
 
 ==============================================
 linux64 regressions (in addition to the above)
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/14/14)
 ==============================================
 
 
 ==========================================================
 linux32 (comm-none) regressions (in addition to the above)
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/14/14)
 ==========================================================
 
 
 ================================
 performance-specific regressions
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/14/14)
 ================================
 
 consistent failures on bradc-lnx and chap03 due to insane memory usage
@@ -53,7 +53,7 @@ this should get better with better string memory management
 
 ================================
 --fast regressions
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/14/14)
 ================================
 
 
@@ -75,7 +75,7 @@ Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 
 ================================
 verify regressions
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/14/14)
 ================================
 
 internal error (mike/hilde)
@@ -86,7 +86,7 @@ internal error (mike/hilde)
 
 ================================
 valgrind-specific regressions
-(Reviewed for accuracy 10/02/14)
+(Reviewed for accuracy 10/14/14)
 ================================
 
 annoying occasional invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
@@ -94,8 +94,9 @@ read of size 8 in dl_name_match_p (e.g., 10/2/14)
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm]
 
-invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
------------------------------------------------------------------
+occasional invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
+(fixed 10/08/14)
+----------------------------------------------------------------------------
 [Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
 
 infrequent, annoying timeout
@@ -140,15 +141,33 @@ missing "unable to create more than 0000 threads" warning
 But under valgrind, the program is executed with --numThreadsPerLocale=100,
 so the warning does not apply and is not raised, and .good is not matched.
 
+invalid read/write of size 8 in ftoa() (10/08/14 -- hilde)
+----------------------------------------------------------
+[Error matching program output for performance/sungeun/assign_across_locales]
+
 "Unrecognised instruction" (05/18/2013)
 ---------------------------------------
 [Error matching program output for types/atomic/ferguson/atomictest]
 [Error matching program output for types/atomic/sungeun/atomic_vars]
 
+continual timeouts
+------------------
+[Error: Timed out executing program io/ferguson/ctests/qio_test (compopts: 1)]
+[Error: Timed out executing program parallel/begin/sungeun/captureAppearsToWork]
+[Error: Timed out executing program parallel/begin/sungeun/capture]
+[Error: Timed out executing program studies/hpcc/PTRANS/PTRANS]
+[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n1]
+[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n2]
+[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n4]
+[Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
+[Error: Timed out executing program types/range/bradc/overflowInComputeBlock]
+[Error: Timed out executing program types/single/sungeun/stress]
+
+
 
 ================================
 no-local regressions
-(Reviewed for accuracy 10/02/14)
+(Reviewed for accuracy 10/14/14)
 ================================
 
 
@@ -177,17 +196,29 @@ error: cannot create C string from remote string (due to r22900 -- sungeun)
 
 ==============================================
 gasnet-fast regressions (other than the above)
-(Reviewed for accuracy 09/23/14)
+(Reviewed for accuracy 10/14/14)
 ==============================================
 
 noisy failure due to 'slave got an unknown command on coord socket' (09/27/14)
 ------------------------------------------------------------------------------
 [Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5]
 
+noisy unresolved access of range by (2) (10/07/14)
+--------------------------------------------------
+[Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug]
+
+consistent timeouts
+-------------------
+[Error: Timed out executing program associative/bharshbarg/parSafeAdd (compopts: 1)]
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
+[Error: Timed out executing program memory/shannon/outofmemory/mallocOutOfMemory]
+[Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
+
+
 
 ============================================================
 linux32 (comm-gasnet) regressions (in addition to the above)
-(Reviewed for accuracy 09/28/14)
+(Reviewed for accuracy 10/14/14)
 ============================================================
 
 occasional, annoying timeout
@@ -205,13 +236,13 @@ fairly consistent timeouts due to qthreads oversubscription (09/15/14)
 
 ========================================================
 none.qthreads.numa-specific tests (other no-local above)
-(Reviewed for accuracy 09/26/14)
+(Reviewed for accuracy 10/14/14)
 ========================================================
 
 
 ==========================================================
 gasnet.qthreads.numa-specific tests (other than the above)
-(Reviewed for accuracy 09/28/14)
+(Reviewed for accuracy 10/14/14)
 ==========================================================
 
 occaaional segfault
@@ -231,15 +262,20 @@ comm count mismatches
 
 ======================================================
 gasnet.fifo.flat-specific tests (other than the above)
-(Reviewed for accuracy 09/28/14)
+(Reviewed for accuracy 10/13/14)
 ======================================================
 
 very infrequent segfault (10/03/14)
 -----------------------------------
 [Error matching program output for types/string/StringImpl/stress/plusEquals]
 
+infrequent timeouts
+-------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
+
 annoying, noisy timeouts
 ------------------------
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
@@ -251,13 +287,13 @@ consistent timeouts
 
 ================================
 fifo-specific regressions
-(Reviewed for accuracy 09/26/14)
+(Reviewed for accuracy 10/15/14)
 ================================
 
 
 ================================
 darwin-specific regressions
-(reviewed for accuracy 09/25/14)
+(reviewed for accuracy 10/14/14)
 ================================
 
 need machine specific .good file
@@ -357,14 +393,24 @@ surprising timeouts?
 
 ======================================
 chpbld01 (PrgEnv/XC whitebox) failures
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/15/14)
 ======================================
 
 
 ======================================
 chpbld02 (PrgEnv/XE whitebox) failures
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/15/14)
 ======================================
+
+The following tests fail sporadically on chpbld02 due to a seg fault (10/12/14)
+-------------------------------------------------------------------------------
+[Error matching program output for io/ferguson/asserteof]
+[Error matching program output for trivial/shannon/readWriteBool]
+[Error matching program output for trivial/shannon/readWriteComplex]
+[Error matching program output for trivial/shannon/readWriteEnum]
+[Error matching program output for types/file/freadNoFloat]
+[Error matching program output for types/file/freadNoInt]
+[Error matching program output for types/file/freadNotABoolean]
 
 failure due to use of jgit to check out repo which doesn't preserve symlinks
 ----------------------------------------------------------------------------
@@ -378,6 +424,7 @@ the following failures (should valgrind these on whiteboxes to diagnose)
 [Error matching program output for functions/iterators/tzakian/open_inside_file_iter]
 [Error matching program output for io/ferguson/asserteof]
 [Error matching program output for trivial/shannon/readWriteBool]
+[Error matching program output for trivial/shannon/readWriteComplex]
 [Error matching program output for types/file/freadComplex]
 [Error matching program output for types/file/freadIntFailed]
 [Error matching program output for types/file/freadNoInt]
@@ -388,7 +435,7 @@ the following failures (should valgrind these on whiteboxes to diagnose)
 
 ==========================================================
 cray-prgenv-*-specific failures (in addition to the above)
-(Reviewed for accuracy 09/26/14)
+(Reviewed for accuracy 10/15/14)
 ==========================================================
 
 problem with static/dynamic linking?
@@ -398,7 +445,7 @@ problem with static/dynamic linking?
 
 =========================================
 cray-prgenv-cray/cce-specific regressions
-(Reviewed for accuracy 09/23/14)
+(Reviewed for accuracy 10/14/14)
 =========================================
 
 some output dropped nondeterministically 
@@ -406,6 +453,8 @@ some output dropped nondeterministically
 [Error matching program output for functions/diten/refIntents] (09/30/14)
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (10/03/14)
 [Error matching program output for release/examples/primers/arrays] (10/03/14)
+[Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (10/07/14)
+[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (10/10/14)
 
 empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
@@ -488,7 +537,7 @@ compilation timeouts (since at least 02/23/14)
 
 ==================================================
 cray-prgenv-pgi regressions (in addition to above)
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/14/14)
 ==================================================
 
 problem with empty initializer (1/25/14 -- bradc)
@@ -531,7 +580,7 @@ pgi-specific regressions (in addition to above)
 
 ==========================================================================
 cray-prgenv-intel-specific regressions (in addition to cray-prgenv* above)
-(Reviewed for accuracy 09/26/14)
+(Reviewed for accuracy 10/14/14)
 ==========================================================================
 
 test assertion failures (09/21-23/14)
@@ -585,7 +634,7 @@ cray-prgenv-gnu specific failures
 
 ================================
 LLVM specific regressions
-(Reviewed for accuracy 09/25/14)
+(Reviewed for accuracy 10/14/14)
 ================================
 
 relies on macro in gmp.h -- not expected to work without effort (09/18/14)
@@ -595,7 +644,7 @@ relies on macro in gmp.h -- not expected to work without effort (09/18/14)
 
 ================================
 LLVM gasnet specific regressions
-(Reviewed for accuracy 09/29/14)
+(Reviewed for accuracy 10/15/14)
 ================================
 
 occasional, annoying timeout
@@ -610,8 +659,12 @@ frequent, annoying timeout
 
 ===================================
 cygwin-specific failures
-(Reviewed for accuracy on 09/28/14)
+(Reviewed for accuracy on 10/14/14)
 ===================================
+
+very infrequent "CreateProcessW failed"
+---------------------------------------
+[Error matching program output for domains/johnk/capacityAssoc] (10/08/14)
 
 occasional, annoying timeouts
 -----------------------------
@@ -706,7 +759,7 @@ consistent timeouts
 
 ================================
 baseline-specific tests
-(Reviewed for accuracy 10/04/14)
+(Reviewed for accuracy 10/14/14)
 ================================
 
 incorrect output -- expected? (04/03/10)
@@ -736,10 +789,6 @@ email on 5/9/14) that it could be modified to fail even without giving
 --baseline.
 ------------------------------------------------------------------------
 [Error matching program output for extern/bradc/structs/externFloat4calls.someFields (compopts: 1)]
-
-initcopy for extern record with no fields doing the wrong thing (09/17/14 -- hilde)
------------------------------------------------------------------------------------
-[Error matching program output for extern/ferguson/crazyRecord (compopts: 1)]
 
 segv due to turning on inlining (12/7/12)
 -----------------------------------------
@@ -776,7 +825,7 @@ Tests suppressions that now succeed due to turning on inlining (12/7/12)
 
 ================================
 block distribution regressions
-(Reviewed for accuracy 09/26/14)
+(Reviewed for accuracy 10/14/14)
 ================================
 
 frequent, annoying timeout
@@ -786,8 +835,12 @@ frequent, annoying timeout
 
 ================================
 cyclic distribution regressions
-(Reviewed for accuracy 09/29/14)
+(Reviewed for accuracy 10/15/14)
 ================================
+
+sporadic extent mismatch errors (10/11/14)
+------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex2 (compopts: 1)]
 
 constant, annoying shift in timeouts -- due to machine load or qthreads oversub?
 --------------------------------------------------------------------------------
