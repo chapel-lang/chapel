@@ -404,7 +404,7 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   // same as the number of variables.  These checks will get inserted in
   // buildVarDecls after it asserts that only DefExprs are in this block.
   //
-  tupleBlock->blockInfo = new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count-1));
+  tupleBlock->blockInfoSet(new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count-1)));
   tupleBlock->insertAtHead(new DefExpr(tmp, init, type));
   return tupleBlock;
 }
@@ -421,9 +421,9 @@ buildLabelStmt(const char* name, Expr* stmt) {
     }
     BlockStmt* loop = toBlockStmt(breakLabelStmt->prev);
     if (loop && loop->isLoop() &&
-         (loop->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)     ||
-          loop->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-          loop->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))) {
+        (loop->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP)     ||
+         loop->blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+         loop->blockInfoGet()->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))) {
       if (!loop->breakLabel || !loop->continueLabel) {
         USR_FATAL(stmt, "cannot label parallel loop");
       } else {
@@ -539,7 +539,7 @@ static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
 
   // Regular loop setup
   BlockStmt* loop = new BlockStmt(body);
-  loop->blockInfo = call;
+  loop->blockInfoSet(call);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_COMPILER_GENERATED);
   continueLabel->addFlag(FLAG_LABEL_CONTINUE);
@@ -569,7 +569,7 @@ BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   cond = new CallExpr("_cond_test", cond);
   VarSymbol* condVar = newTemp();
   body = new BlockStmt(body);
-  body->blockInfo = new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar);
+  body->blockInfoSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar));
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_COMPILER_GENERATED);
   continueLabel->addFlag(FLAG_LABEL_CONTINUE);
@@ -609,7 +609,7 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
   BlockStmt* block = new BlockStmt(body);
   block->continueLabel = continueLabel;
   block->breakLabel = breakLabel;
-  block->blockInfo = new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar);
+  block->blockInfoSet(new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar));
   BlockStmt* stmts = buildChapelStmt();
   stmts->insertAtTail(new DefExpr(condVar));
   stmts->insertAtTail(block);
@@ -1019,7 +1019,7 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   if (coforall)
     index->addFlag(FLAG_COFORALL_INDEX_VAR);
   
-  body->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator);
+  body->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
 
   body->insertAtTail(new DefExpr(continueLabel));
   stmts->insertAtTail(body);
@@ -1058,7 +1058,7 @@ buildFollowLoop(Symbol* iter, Symbol* leadIdxCopy, Symbol* followIter,
   BlockStmt* followBody = new BlockStmt();
   followBody->insertAtTail(loopBody);
   destructureIndices(followBody, indices, new SymExpr(followIdx), false);
-  followBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter);
+  followBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter));
   followBlock->insertAtTail(followBody);
   followBlock->insertAtTail(new CallExpr("_freeIterator", followIter));
   return followBlock;
@@ -1145,7 +1145,7 @@ buildForallLoopStmt(Expr* indices,
   } else {
     leadBody->insertAtTail(followBlock);
   }
-  leadBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter);
+  leadBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter));
   leadBlock->insertAtTail(leadBody);
   leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
 
@@ -1156,10 +1156,6 @@ static void
 addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
   // nothing to do if there is no 'ref' clause
   if (!byrefVarsSource) return;
-
-  // (a) Ensure we are adding the 'ref' clause to the right block.
-  // (b) Document the fact that blockInfo is specifically a CallExpr.
-  INT_ASSERT(isCallExpr(target->blockInfo));
 
   // Could set byrefVars->parentExpr/Symbol right here.
   target->byrefVars = byrefVarsSource;
@@ -1191,14 +1187,14 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   BlockStmt* tmp = body;
   while (tmp) {
     if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfo && b->blockInfo->isPrimitive(PRIM_BLOCK_ON)) {
+      if (b->blockInfoGet() && b->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON)) {
         onBlock = b;
         break;
       }
     }
     if (tmp->body.tail == tmp->body.head) {
       tmp = toBlockStmt(tmp->body.tail);
-      if (tmp && tmp->blockInfo)
+      if (tmp && tmp->blockInfoGet())
         tmp = NULL;
     } else
       tmp = NULL;
@@ -1221,7 +1217,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     body->insertAtHead(new CallExpr("_upEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
-    onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_COFORALL_ON];
+    onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_COFORALL_ON];
     addByrefVars(onBlock, byref_vars);
     BlockStmt* innerOnBlock = new BlockStmt();
     for_alist(tmp, onBlock->body) {
@@ -1233,7 +1229,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   } else {
     VarSymbol* coforallCount = newTemp("_coforallCount");
     BlockStmt* beginBlk = new BlockStmt();
-    beginBlk->blockInfo = new CallExpr(PRIM_BLOCK_COFORALL);
+    beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COFORALL));
     addByrefVars(beginBlk, byref_vars);
     beginBlk->insertAtHead(body);
     beginBlk->insertAtTail(new CallExpr("_downEndCount", coforallCount));
@@ -1287,7 +1283,7 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
   Symbol* lowVar = insertBeforeCompilerTemp(block, low);
   Symbol* highVar = insertBeforeCompilerTemp(block, high);
   Symbol* strideVar = insertBeforeCompilerTemp(block, stride);
-  block->blockInfo = new CallExpr(PRIM_BLOCK_PARAM_LOOP, indexVar, lowVar, highVar, strideVar);
+  block->blockInfoSet(new CallExpr(PRIM_BLOCK_PARAM_LOOP, indexVar, lowVar, highVar, strideVar));
   return buildChapelStmt(outer);
 }
 
@@ -1487,7 +1483,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
   BlockStmt* followBody = new BlockStmt();
   followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
-  followBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter);
+  followBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter));
   BlockStmt* followBlock = new BlockStmt();
   followBlock->insertAtTail(new DefExpr(followIter));
   followBlock->insertAtTail(new DefExpr(followIdx));
@@ -1509,7 +1505,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
   leadBody->insertAtTail(followBlock);
-  leadBody->blockInfo = new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter);
+  leadBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter));
   BlockStmt* leadBlock = buildChapelStmt();
   leadBlock->insertAtTail(new DefExpr(leadIdx));
   leadBlock->insertAtTail(new DefExpr(leadIter));
@@ -1640,10 +1636,10 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, Flag ref, char
   // compilerErrors. blockInfo has the form:
   // call("_check_tuple_var_decl", rhsTuple, numVars)
   //
-  if (stmts->blockInfo) {
-    INT_ASSERT(stmts->blockInfo->isNamed("_check_tuple_var_decl"));
-    SymExpr* tuple = toSymExpr(stmts->blockInfo->get(1));
-    Expr* varCount = stmts->blockInfo->get(2);
+  if (stmts->blockInfoGet()) {
+    INT_ASSERT(stmts->blockInfoGet()->isNamed("_check_tuple_var_decl"));
+    SymExpr* tuple = toSymExpr(stmts->blockInfoGet()->get(1));
+    Expr* varCount = stmts->blockInfoGet()->get(2);
     tuple->var->defPoint->insertAfter(
       buildIfStmt(new CallExpr("!=", new CallExpr(".", tuple->remove(),
                                                   new_StringSymbol("size")),
@@ -1653,7 +1649,7 @@ buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, Flag ref, char
     tuple->var->defPoint->insertAfter(
       buildIfStmt(new CallExpr("!", new CallExpr("isTuple", tuple->copy())),
                   new CallExpr("compilerError", new_StringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
-    stmts->blockInfo = NULL;
+    stmts->blockInfoSet(NULL);
   }
   return stmts;
 }
@@ -1900,7 +1896,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
   }
 
   BlockStmt* localBlock = new BlockStmt(stmt);
-  localBlock->blockInfo = new CallExpr(PRIM_BLOCK_LOCAL);
+  localBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
   block->insertAtTail(localBlock);
   return block;
 }
@@ -1944,14 +1940,14 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   BlockStmt* tmp = body;
   while (tmp) {
     if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfo && b->blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)) {
+      if (b->blockInfoGet() && b->blockInfoGet()->isPrimitive(PRIM_BLOCK_BEGIN)) {
         beginBlock = b;
         break;
       }
     }
     if (tmp->body.tail == tmp->body.head) {
       tmp = toBlockStmt(tmp->body.tail);
-      if (tmp && tmp->blockInfo)
+      if (tmp && tmp->blockInfoGet())
         tmp = NULL;
     } else
       tmp = NULL;
@@ -1978,7 +1974,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     Symbol* tmp = newTemp();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
-    beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_BEGIN_ON, tmp);
+    beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN_ON, tmp));
     // If there are beginBlock->byrefVars, they will be preserved.
     return body;
   } else {
@@ -1988,7 +1984,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     block->insertAtTail(new DefExpr(tmp));
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, onExpr));
     BlockStmt* onBlock = new BlockStmt(stmt);
-    onBlock->blockInfo = new CallExpr(PRIM_BLOCK_ON, tmp);
+    onBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_ON, tmp));
     block->insertAtTail(onBlock);
     return block;
   }
@@ -2008,14 +2004,14 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   BlockStmt* tmp = body;
   while (tmp) {
     if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfo && b->blockInfo->isPrimitive(PRIM_BLOCK_ON)) {
+      if (b->blockInfoGet() && b->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON)) {
         onBlock = b;
         break;
       }
     }
     if (tmp->body.tail == tmp->body.head) {
       tmp = toBlockStmt(tmp->body.tail);
-      if (tmp && tmp->blockInfo)
+      if (tmp && tmp->blockInfoGet())
         tmp = NULL;
     } else
       tmp = NULL;
@@ -2024,14 +2020,14 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   if (onBlock) {
     body->insertAtHead(new CallExpr("_upEndCount"));
     onBlock->insertAtTail(new CallExpr("_downEndCount"));
-    onBlock->blockInfo->primitive = primitives[PRIM_BLOCK_BEGIN_ON];
+    onBlock->blockInfoGet()->primitive = primitives[PRIM_BLOCK_BEGIN_ON];
     addByrefVars(onBlock, byref_vars);
     return body;
   } else {
     BlockStmt* block = buildChapelStmt();
     block->insertAtTail(new CallExpr("_upEndCount"));
     BlockStmt* beginBlock = new BlockStmt();
-    beginBlock->blockInfo = new CallExpr(PRIM_BLOCK_BEGIN);
+    beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN));
     addByrefVars(beginBlock, byref_vars);
     beginBlock->insertAtHead(stmt);
     beginBlock->insertAtTail(new CallExpr("_downEndCount"));
@@ -2080,7 +2076,7 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
 
   for_alist(stmt, block->body) {
     BlockStmt* beginBlk = new BlockStmt();
-    beginBlk->blockInfo = new CallExpr(PRIM_BLOCK_COBEGIN);
+    beginBlk->blockInfoSet(new CallExpr(PRIM_BLOCK_COBEGIN));
     // the original byref_vars is dead - will be clean_gvec-ed
     addByrefVars(beginBlk, byref_vars ? byref_vars->copy() : NULL);
     stmt->insertBefore(beginBlk);

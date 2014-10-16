@@ -127,7 +127,7 @@ class Loop {
             if (CallExpr* call = toCallExpr(blockStmt->parentExpr)) {
               if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
                 if (BlockStmt* outer = toBlockStmt(call->parentExpr)) {
-                  if (outer->blockInfo == call) {
+                  if (outer->blockInfoGet() == call) {
                     outer->insertBefore(expr->remove());
                   }
                 }

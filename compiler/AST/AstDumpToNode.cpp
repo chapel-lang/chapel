@@ -178,13 +178,18 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 
   write(false, heading, true);
 
-  if (node->blockInfo)
+  if (node->blockInfoGet())
   {
+    mOffset = mOffset + 2;
+
     newline();
     write(false, "BlockInfo: ", false);
     mOffset = mOffset + 2;
-    node->blockInfo->accept(this);
+    node->blockInfoGet()->accept(this);
     mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
     newline();
   }
 
@@ -339,7 +344,7 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
 bool AstDumpToNode::enterFnSym(FnSymbol* node)
 {
   newline();
-  fprintf(mFP, "#<FnSymbol");
+  fprintf(mFP, "#<FnSymbol %12d", node->id);
 
   mOffset = mOffset + 2;
 
