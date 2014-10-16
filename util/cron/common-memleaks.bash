@@ -4,6 +4,8 @@
 # other scripts that wish to make use of the variables set here.
 
 export CHPL_COMM=none
+export CHPL_NIGHTLY_LOGDIR=$logdir_prefix/NightlyMemLeaks
+export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 
 function memleaks_log()
 {
