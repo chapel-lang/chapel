@@ -14,6 +14,8 @@ Here is a synopsis of the proposed changes, in approximate priority order.
 \item[Rename initCopy] -- For consistency, mostly.
 \item[Unify Initialization] -- Reduce the initialization logic to a single conditional:
   Use the explicit initializer if present; otherwise, call \chpl{_defaultOf()}.
+\item[Separate Allocation] -- Pull allocation out of class constructors and get rid of the
+  \chpl{meme} argument passed to the all-fields constructor.
 \item[Constructors as Methods] -- To support in-place initialization.
 \item[Add Initializer Clause] -- To control field initialization in the context of a
   constructor.
@@ -45,9 +47,11 @@ Proposed changes to the specification are listed below:
 \item Describe in an implementor's note that copy-construction can be collapsed out when
   the initializer expression is a constructor call.
 \item Review the description of allocation w.r.t. class object construction, and revise if
-  necessary.
+  necessary.  It should allow the implementation to pull allocation outside of class
+  constructors (including the all-fields constructor).
 \item Review the initialization story for Classes and Records and ensure that it does not
   require default- or zero-initialization to be applied before field initialization.
+\item Deprecate the \chpl{initialize} method.
 \end{itemize}
 
 \subsection{Implementation Priorities}
@@ -66,6 +70,9 @@ Rename initCopy & Med & Med & More consistent object model increases usability, 
  & & & benefit is removing special-case code (prama "init copy fn", etc.). \\ \hline
 Unify Initialization & Med & Low & Mostly in place and a clean-up task suggested to \\
  & & & Lydia.  Enables the removal of zero-initialization. \\ \hline
+Separate Allocation & Med & Low & Means getting rid of the \chpl{meme} argument. \\
+ & & & Makes all constructors uniform and enables the \\
+ & & & Constructors as Methods task. \\ \hline
 Constructors as Methods & Med & High & More consistent object model. Simplifies \\
  & & & initialization. Supports in-place initialization (performance). \\
  & & & Major change in how initialization is done. \\

@@ -4,3 +4,239 @@
 This section contains specific examples, showing how the proposal would be expanded
 relative to the fundamental types provided by the Chapel language.
 
+\subsection{Record Variables}
+
+When \chpl{T} is a record type, we observe that the following Chapel code
+\begin{chapel}
+  var s:R;
+  var t:R = noinit;
+  var u:R = new R();
+  var v:R = new R(8, 9, 10.0);
+  var w = new R();
+  var x = new R(9, 16, 0.5625);
+\end{chapel}
+\noindent
+
+\subsection{Class Variables}
+
+When initializing a variable of class type, the following forms are possible:
+\begin{chapel}
+  var c:C; c = new C(false);
+  var d:C = new C(true);
+  var e = new C(false);
+  var f:C = noinit;
+\end{chapel}
+\noindent
+
+\subsection{Distribution Variables}
+
+For the Chapel code:
+\begin{chapel}
+var a: Block(rank=2);
+var d: Block(rank=2) = noinit;
+var b = new Block({2..5, 2..5});
+var c: Block(rank=2) = new Block({1..4, 1..4});
+\end{chapel}
+\noindent
+
+\subsection{Array Variables}
+
+The Chapel code:
+\begin{chapel}
+  var A: [1..n, 1..n] int;
+  var B = ["1", "2", "3", "4", "5"];
+  var C: [1..n] real = [.500, .666, .750, .800];
+  var D: [1..n, 1..n] int = noinit;
+\end{chapel}
+\noindent
+
+\subsection{Domain Variables}
+
+The Chapel code:
+\begin{chapel}
+  var D:domain(2);
+  var E = {1..2, 3..4};
+  var F:domain(2) = {6..7, 8..9};
+  var G:domain(2) = noinit;
+\end{chapel}
+\noindent
+
+\subsection{Sync and Single Variables}
+
+The Chapel code:
+\begin{chapel}
+  var a: sync int;
+  var b: sync int = noinit;
+  var c: sync int = n;
+
+  var d: single int;
+  var e: single int = noinit;
+  var f: single int = n;
+\end{chapel}
+\noindent
+
+\subsection{Tuple Variables}
+
+For the Chapel code:
+\begin{chapel}
+  var a:2*real;
+  var b:2*real = noinit;
+  var d:2*real = (12.0,13.3);
+  var e = d;
+\end{chapel}
+\noindent
+the proposed implementation would give rise the the following AST:
+\begin{numberedchapel}
+  var a:2*real(64)
+  (call _defaultOf a) // Calls 2*real(64)._defaultOf().
+
+  var b:2*real(64)
+  (call _construct_2_real64_t b) // Calls 2*real(64).2*real(64)(noinit=true).
+
+  var d:2*real(64)
+  (call _construct_2_real64_t d 12.0 13.3)
+
+  var e:2*real(64)
+  (call _construct_2_real64_t e d) // Calls the copy-constructor.
+\end{numberedchapel}
+The compiler-generated \chpl{_defaultOf()} for a 2-tuple of reals would look like:
+\begin{chapel}
+  proc 2*real(64)._defaultOf() {
+    this.(); // Call the zero-args constructor (see below).
+  }
+\end{chapel}
+\noindent
+This raises a bit of a design issue: The compiler-generated version of \chpl{_defaultOf()}
+wants to call a constructor as a method on \chpl{this}, but we don't really have syntax
+for that.  I normally expect \sntx{`new' type-name} on a record type to produce an
+anonymous object, so adding a \chpl{`new'} keyword is not the right choice.  I chose to
+omit the type name, but supplying it explicitly is equally valid.  
+
+The problem is that calling a constructor on an object that has already been initialized
+(as we expect all objects to be) is normally illegal.  Even going as far as to supply
+syntax for calling a constructor on an existing object seems like bending the rules.  On
+the other hand, we know (special case) that the operand of a \chpl{_defaultOf} method is
+uninitialized, so at least in that context the constructor call is semantically correct.
+
+The syntax problem is created by the existence of \chpl{_defaultOf()}, which is really
+just a synonym for a call to the zero-args constructor.  After more of the constructor
+story is in place, we can consider deprecating \chpl{_defaultOf()} as an approach to
+avoiding the syntax problem.  In the mean time, it is acceptable to treat the body of
+\chpl{_defaultOf()} as a special case, and allow constructor calls (only on \chpl{this})
+in that syntactical context only.
+
+The code for the compiler-generated zero-args constructor (supporting the noinit
+initializer) would look like:
+\begin{chapel}
+  ctor 2*real(64)(param noinit = false) {
+    if noinit then { }
+    else { this.x0 = 0.0; this.x1 = 0.0; }
+  }
+\end{chapel}
+
+The code for the compiler-generated all-fields constructor (called on line 8) would look
+like:
+\begin{chapel}
+  ctor 2*real(64)(a0:real(64), a1:real(64)) {
+    this.x0 = a0; this.x1 = a1;
+  }
+\end{chapel}
+After inlining and scalar substitution, the AST would reduce to:
+\begin{numberedchapel}
+  var a:2*real(64)
+  ('.=' a x0 0.0)
+  ('.=' a x1 0.0)
+
+  var b:2*real(64)
+
+  var d:2*real(64)
+  ('.=' a x0 12.0)
+  ('.=' a x1 13.3)
+
+  var e:2*real(64)
+  ('.=' a x0 ('.' d x0))
+  ('.=' a x1 ('.' d x1))
+\end{numberedchapel}
+
+
+\subsection{Scalar Variables}
+
+For scalar types, we would expect declarations of the form:
+\begin{chapel}
+// type T = int(64);
+   var a:T;
+   var b:T = noinit;
+   var c:T = new T('B');
+   var d = 13; // Initializer expression e has type T.
+   var e = d; // Same.
+\end{chapel}
+\noindent
+to produce the following AST (after resolution):
+\begin{numberedchapel}
+    var a:int(64)
+    (call _defaultOf a) // Calls int(64)._defaultOf().
+
+    var b:int(64)
+    (call _construct_int64_t b) // Calls b._construct_int64_t(noinit=true).
+
+    var c:int(64)
+    var tmp:int(64)
+    (call _construct_int64_t tmp 0x42) // Calls _construct_int64_t(c:char).
+    (call _construct_int64_t c tmp) // Calls _construct_int64_t(i:int(64)).
+    // === OR === //
+    (call _construct_int64_t c 0x42) // Calls _construct_int64_t(c:char) in situ.
+
+    var d:int(64)
+    (call _construct_int64_t d 13) // Calls the copy-constructor.
+
+    var e:int(64)
+    (call _construct_int64_t e d) // Calls the copy-constructor.
+\end{numberedchapel}
+This looks a lot more complex than one would expect, but that is for consistency with more
+complex types.  Scalar types are really a special case, because they exhibit value
+semantics and have trivial constructors, destructors and assignment operators.  When that
+is true copy-construction is equivalent to assignment is equivalent to a move operation.
+
+The definition of the various constructors provide the semantics you would expect.  On
+line 2, the \chpl{_defaultOf()} method on a 64-bit integer replaces the LHS with a zero of
+that size.  If \chpl{=noinit} is a valid initializer for an object of type \chpl{int(64)},
+then at least one of its constructors will accept a \chpl{param bool} to control its
+actions.  For example:
+\begin{chapel}
+  ctor int(64)(param noinit = false) {
+    if noinit then { }
+    else { this = 0; }
+  }
+\end{chapel}
+The promotion constructor from type \chpl{char} to type \chpl{int(64)} is completely
+made-up (since we don't have a char type).  But presumably it would do something logical,
+like casting the operand to the result type and then overwriting the receiver.
+\begin{chapel}
+  ctor int(64)(c:char) {
+    this = c:int(64);
+  }
+\end{chapel}
+\noindent
+The first form (lines 9-10) would be without the optimization that collapses out
+unnecessary copy-constructors: the second form (line 12) would be with that optimization
+applied.  The last two cases are simple copy-constructor calls.
+
+After the compiler has inlined the calls to \chpl{_defaultOf()} and the various
+constructors, and replaced scalar assignment with move (or assign) primitives, the above
+AST would devolve to:
+\begin{numberedchapel}
+    var a:int(64)
+    ('move' a 0)
+
+    var b:int(64)
+
+    var c:int(64)
+    ('move' c ('cast' 0x42)) // Cast from a char literal to int(64).
+
+    var d:int(64)
+    ('move' d 13)
+
+    var e:int(64)
+    ('move' e d)
+\end{numberedchapel}
+

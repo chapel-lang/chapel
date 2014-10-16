@@ -158,7 +158,7 @@ gives rise to the corresponding AST:
     ('move' x (call _construct_R coerce_tmp 16 0.5625))
 \end{numberedchapel}
 \noindent
-begin roughly equivalent to the following canonical expansion:
+being roughly equivalent to the following canonical expansion:
 \begin{chapel}
   pragma "no init" var type_tmp:R; type_tmp <- new R();
   pragma "no init" var s:R; s <- type_tmp;
@@ -189,7 +189,7 @@ operator (i.e. \chpl{proc =}) compatible with the types of the two arguments.\fo
 assignment operator is not necessarily trivial.  It may perform reference-counting
 operations, etc.}
 
-It can be observed that the form with \chpl{=noinit} initializer performs no
+It can be observed that the form with the \chpl{=noinit} initializer performs no
 initialization whatsoever.  Default-initialization, field initialization and construction are
 all inhibited.  Because construction is not performed, this breaks encapsulation of the
 corresponding class or record.  And because the choice of whether construction is done or
@@ -197,8 +197,8 @@ not is made at the point of declaration (rather than as part of the class design
 class designer is under no obligation to make any operation on an uninitialized object of
 that type work correctly.  In particular, assignment into an uninitialized object is
 not expected to work correctly which leaves no pathway for an uninitialized
-object to ever become properly initialized.  A redesign is currently underway to address
-these problems.
+object to ever become properly initialized.  A redesign of the "noinit" feature to address
+these problems is currently underway.
 
 Somewhat to my surprise, the forms involving type inference are not merely normalized
 to their corresponding canonical forms.  They follow a completely different translation
@@ -241,11 +241,13 @@ concept they are aliases for one another.  The two differences that exist in the
 implementation are that the user-defined no-argument constructor will take precedence over
 \chpl{_defaultOf()} and that \chpl{_defaultOf()} bypasses any user-defined no-argument
 constructor (which doesn't exist, by definition), and calls the compiler-defined
-all-fields constructor (passing no arguments) instead.  A way to bring these concepts
+all-fields constructor (passing no arguments) instead.  
+
+A way to bring these concepts
 closer into alignment would be to have the compiler-supplied version of
 \chpl{_defaultOf()} for record types call a constructor of that type by name, passing no
 arguments.  This will bind with the compiler-supplied all-fields constructor (passing no
-arguments) if no user-defined no-argument constructor is supplied, and bind to the
+arguments) if no user-defined no-argument constructor is supplied, and will bind to the
 user-defined version if one is present.
 
 \subsubsection{Class Variables}
@@ -259,7 +261,7 @@ When initializing a variable of class type, the following forms are possible:
 \end{chapel}
 \noindent
 This produces the following AST
-\begin{chapelcode}
+\begin{numberedchapel}
     var c:C
     {
       var type_tmp:C
@@ -281,7 +283,7 @@ This produces the following AST
     var e:C
     ('move' e (call _construct_C))
     var f:C
-\end{chapelcode}
+\end{numberedchapel}
 \noindent
 which is roughly equivalent to the following pseudo-Chapel code:
 \begin{chapel}
@@ -471,7 +473,7 @@ This is a workable solution, and only suffers from the fact that a verbatim copy
 required after the full-fledged literal array is built.\footnote{The literal copy could also
   be avoided if memory management in the compiler were sophisticated enough to transfer
   ownership of that array from an unnamed temporary to the named array variable.  That
-  capability has been discussed and is feasible, but it makes good sense to put first put
+  capability has been discussed and is feasible, but it makes good sense to first put
   in place the basics discussed in this document.}
 
 Since array support for the \chpl{noinit} initializer is not yet provided, the generated code for
@@ -510,14 +512,13 @@ the call to \chpl{chpl__buildArrayExpr}, and this is followed by assignment to t
 \chpl{type_tmp}.  Finally, the \chpl{type_tmp} is assigned to the the named variable.  It
 gets the job done, but in a surprising and somewhat roundabout way.
 
-The autoCopy to initialize the \chpl{type_tmp} is arguably correct, although we have
-argued that a constructor call could appear instead, to initialize the \chpl{type_tmp} directly.
+The autoCopy to initialize the \chpl{type_tmp} is arguably correct.
 If that much is done to establish the type of the array, then assignment is the correct
 choice for updating with values from the initializer.  Even so, since the type of the LHS
 is fully known by this point, a constructor that can accept the array literal as an
 argument can appear instead.  The move performs a bitwise copy of the \chpl{type_tmp}
 variable into the named variable \chpl{C}.  This is also correct --- assuming that no
-attempt is made to reclaim resource initially held by the \chpl{type_tmp}.  Ownership of
+attempt is made to reclaim resources initially held by the \chpl{type_tmp}.  Ownership of
 them has been transferred to C.
 
 \subsubsection{Domain Variables}
@@ -663,7 +664,7 @@ For the Chapel code:
 \end{chapel}
 \noindent
 we obtain
-\begin{chapelcode}
+\begin{numberedchapel}
     var a:2*real(64)
     {
       var type_tmp:2*real(64)
@@ -685,7 +686,7 @@ we obtain
     }
     var e:2*real(64)
     ('move' e (call chpl__initCopy d))
-\end{chapelcode}
+\end{numberedchapel}
 \noindent
 It is interesting to note that for tuple initialization, there appears to be an extra
 \chpl{call_tmp} for the cases with an explicit type specifier that is inserted and never
@@ -709,7 +710,7 @@ The third form is not currently supported for integer or real types, because the
 type(size)() in a "new" expression is not recognized as a type expression followed by a
 call (which should invoke a constructor for that type).  The above code results in the
 following AST:
-\begin{chapelcode}
+\begin{numberedchapel}
     var a:int(64)
     {
       var type_tmp:int(64)
@@ -726,7 +727,7 @@ following AST:
     }
     var e:int(64)
     ('move' e (call chpl__initCopy d))
-\end{chapelcode}
+\end{numberedchapel}
 \noindent
 The first form results in default-initialization with a value of the declared type.
 Note that there is no initialization at all (in the AST) for the form
@@ -779,12 +780,12 @@ record R {
 \end{chapel}
 \noindent
 we have: 
-\begin{chapelcode}
+\begin{numberedchapel}
     var this:R
     ('.=' this u 0)
     ('.=' this i 0)
     ('.=' this r 0.0)
-\end{chapelcode}
+\end{numberedchapel}
 \noindent
 This code appears in every wrapper constructor that is used to call the compiler-generated
 all-fields constructor, but not in the all-fields constructor itself.  The all-fields
@@ -801,7 +802,7 @@ class C {
 \end{chapel}
 \noindent
 the default-initialization code looks like:
-\begin{chapelcode}
+\begin{numberedchapel}
     var this:C
     // Allocation code elided. See above.
     var _init_class_tmp_:R
@@ -814,7 +815,7 @@ the default-initialization code looks like:
     ('.=' _init_class_tmp_ i 0)
     ('.=' _init_class_tmp_ r 0.0)
     ('.=' this init _init_class_tmp_)
-\end{chapelcode}
+\end{numberedchapel}
 \noindent
 Note that default-initialization has been recursively inlined.  This AST snapshot
 is taken at the end of the ``resolve'' pass --- well before explicit inlining is applied
@@ -827,7 +828,7 @@ called directly from user code.
 
 Field-initialization in class and record construction is performed by the
 compiler-generated all-fields constructor.  Example AST for this function for a record is:
-\begin{chapelcode}
+\begin{numberedchapel}
   function R._construct_R(arg u:uint(64), arg i:int(64), arg r:real(64), arg meme:R) : R
   {
     // Move meme into this.
@@ -840,10 +841,10 @@ compiler-generated all-fields constructor.  Example AST for this function for a 
     // Return this.
     (return this)
   }
-\end{chapelcode}
+\end{numberedchapel}
 \noindent
 and for a class:
-\begin{chapelcode}
+\begin{numberedchapel}
   function C._construct_C(arg uninit:R, arg init:R, arg meme:C) : C
   {
     // Move meme into this.
@@ -860,7 +861,7 @@ and for a class:
     // Return this.
     (return this)
   }
-\end{chapelcode}
+\end{numberedchapel}
 \noindent
 Both begin by moving \chpl{meme} into \chpl{this}.  The class constructor then calls its
 base-class constructor, passing in the pointer to the base-class sub-object.  Every class
@@ -888,7 +889,7 @@ In the example code, the user-supplied record constructor looks like:
 It sets the r field of that record to a very bad approximation of $e$.
 
 The corresponding AST at the end of resolution is:
-\begin{chapelcode}
+\begin{numberedchapel}
   function R._construct_R() : R
   {
     // The compiler adds this.
@@ -900,7 +901,7 @@ The corresponding AST at the end of resolution is:
     (call = call_tmp 2.71)
     (return this)
   }
-\end{chapelcode}
+\end{numberedchapel}
 
 The compiler post-processes the source code for a constructor in the normalize pass (in\\ 
 \chpl{change_method_into_constructor}) to insert a call to the compiler-generated default
@@ -923,7 +924,7 @@ In the example code, the user-supplied class constructor looks like:
 The interesting case is when \chpl{overw} is true.  (The param argument causes generic
 instantiation to stamp out two copies of this constructor --- one with the 
 \chpl{overw == true} clause and the other without.)  The corresponding AST is:
-\begin{chapelcode}
+\begin{numberedchapel}
   function C._construct_C() : C
   {
     var this:C
@@ -942,7 +943,7 @@ instantiation to stamp out two copies of this constructor --- one with the
     }
     (return this)
   }
-\end{chapelcode}
+\end{numberedchapel}
 
 Note that as with records, the compiler inserts a call to the default constructor for C,
 moving the result into \chpl{this}.  The default constructor for C, in addition to

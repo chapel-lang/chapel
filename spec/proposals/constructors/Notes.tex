@@ -85,7 +85,8 @@ fully-constructed object (e.g. calling methods within the same type).
 
 I believe the discussion lapsed without coming to a conclusion.  However, it may now be
 argued that the person writing a constructor should know the point at which an object of
-that type is fully-initialized.  Therefore, there is no need set this point off specially
+that type is fully-initialized.  At the same time, without external knowledge the compiler has no way to determine
+whether the division between the two bodies is correct.  Therefore, there is no need set this point off specially
 in the syntax.  
 
 Carrying this argument further, the author of a constructor should know fully the
@@ -102,5 +103,5 @@ prevent early escape.
 
 The availability of a second body may help the author consider the order in which things
 must be done, but it cannot force him to do this correctly.  For that matter, there is
-nothing special about the number 2.  We may as well support any number of bodies,
+nothing special about the number 2 in this context.  We may as well support any number of bodies,
 including zero.
