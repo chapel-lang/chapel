@@ -344,7 +344,7 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
 bool AstDumpToNode::enterFnSym(FnSymbol* node)
 {
   newline();
-  fprintf(mFP, "#<FnSymbol");
+  fprintf(mFP, "#<FnSymbol %12d", node->id);
 
   mOffset = mOffset + 2;
 
