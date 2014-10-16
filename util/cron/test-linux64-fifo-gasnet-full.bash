@@ -7,4 +7,6 @@ source $CWD/common.bash
 source $CWD/common-fifo.bash
 source $CWD/common-gasnet.bash
 
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.fifo"
+
 $CWD/nightly -cron
