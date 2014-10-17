@@ -1,5 +1,5 @@
 perfkeys: LoopTime:
-files: cfd-mini-baseline.dat
-graphkeys: cfd-mini-baseline
+files: cfd-mini-c.dat
+graphkeys: cfd-mini Baseline C Serial
 ylabel: Time (seconds)
 graphtitle: CFD-mini Baseline (C Implementation)

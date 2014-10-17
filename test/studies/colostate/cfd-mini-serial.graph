@@ -1,5 +1,5 @@
 perfkeys: LoopTime:
 files: cfd-mini-serial.dat
-graphkeys: cfd-mini-serial
+graphkeys: cfd-mini Baseline Chapel Serial
 ylabel: Time (seconds)
-graphtitle: CFD-mini Serial
+graphtitle: CFD-mini Chapel Serial

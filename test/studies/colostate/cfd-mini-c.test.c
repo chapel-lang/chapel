@@ -54,6 +54,7 @@ const Real compMultiplier = 1.;
 // comparison)
 int tests = 0;
 int verify=0;
+int np;
 
 int cfd_mini(int numCell, int numBox, int kernel);
 // kernel 0
@@ -76,10 +77,16 @@ int main(int argc, char **argv) {
   // by default the explain kernel is used
   int kernel = 0;
 
+#ifdef OPEN_MP
+  np = omp_get_num_threads();
+#else 
+  np = 1;
+#endif
+
   // Step 1: process command line arguments
   opterr = 0;
      
-  while ((c = getopt (argc, argv, "tvb:c:k:")) != -1){
+  while ((c = getopt (argc, argv, "tvb:c:k:p:")) != -1){
     switch (c)
       {
       case 't':
@@ -96,6 +103,12 @@ int main(int argc, char **argv) {
         break;
       case 'b':
         numBox = atoi(optarg);
+        break;
+      case 'p':
+        np = atoi(optarg);
+#ifdef OPEN_MP
+        omp_set_num_threads(np);
+#endif
         break;
       case '?':
         if (optopt == 'c' || optopt == 'b') 
