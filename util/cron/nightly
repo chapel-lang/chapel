@@ -254,11 +254,22 @@ unless(-d $cronlogdir) {
 $logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
 if ($debug == 1 && $logdir eq "") {
     $logdir = getcwd()."/Log";
-    if (! -e $logdir) {
-        mysystem("mkdir $logdir > /dev/null", "creating log dir", 1, 1);
-    } elsif (! (-r $logdir and -w $logdir and -d $logdir)) {
-        print "Error: CHPL_NIGHTLY_LOGDIR ($logdir) not accessible\n";
-    }
+}
+
+# Raise error if logdir is not set by now.
+if ($logdir eq "") {
+    print "[Error: CHPL_NIGHTLY_LOGDIR must be set.]\n";
+    exit 1;
+}
+
+# Create the logdir if it does not exist.
+unless(-d $logdir) {
+    mkpath $logdir;
+}
+
+# Check that logdir is accessible.
+if (! (-r $logdir and -w $logdir and -d $logdir)) {
+    print "Error: CHPL_NIGHTLY_LOGDIR ($logdir) not accessible\n";
 }
 
 
