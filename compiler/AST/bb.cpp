@@ -125,8 +125,11 @@ BasicBlock* BasicBlock::Steal()
 void buildBasicBlocks(FnSymbol* fn)
 {
   BasicBlock::reset(fn);
+
   BasicBlock::basicBlock = new BasicBlock();    // BB_START();
+
   BasicBlock::buildBasicBlocks(fn, fn->body);   // BBB(fn->body);
+
   fn->basicBlocks->push_back(BasicBlock::Steal());    // BB_STOP();
 
   INT_ASSERT(verifyBasicBlocks(fn));
@@ -141,15 +144,16 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 
   else if (BlockStmt* s = toBlockStmt(stmt))
   {
-    CallExpr* loop = toCallExpr(s->blockInfoGet());
-
-    if (loop)
+    if (s->isLoop() == true)
     {
-      bool cForLoop = loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+      CallExpr* info      = s->blockInfoGet();
+      bool      cForLoop  = info->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+      bool      whileLoop = info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+                            info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP);
 
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {
-        for_alist(stmt, toBlockStmt(loop->get(1))->body) { BBB(stmt); }
+        for_alist(stmt, toBlockStmt(info->get(1))->body) { BBB(stmt); }
       }
 
       // mark the top of the loop
@@ -159,10 +163,15 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 
       // add the test expr at the loop top
       if (cForLoop) {
-        for_alist(stmt, toBlockStmt(loop->get(2))->body) { BBB(stmt); }
-      } else {
-        BB_ADD(loop);
+        for_alist(stmt, toBlockStmt(info->get(2))->body) { BBB(stmt); }
 
+      // add the condition expr at the loop top; this is not quite right for DoWhile
+      } else if (whileLoop) {
+        BB_ADD(info->get(1));
+
+      // PARAM_LOOP and FOR_LOOP
+      } else {
+        BB_ADD(info);
       }
 
       BasicBlock* loopTop = basicBlock;
@@ -173,7 +182,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
 
       // for c for loops, add the incr expr after the loop body
       if (cForLoop) {
-        for_alist(stmt, toBlockStmt(loop->get(3))->body) { BBB(stmt); }
+        for_alist(stmt, toBlockStmt(info->get(3))->body) { BBB(stmt); }
       }
 
       BasicBlock* loopBottom = basicBlock;
