@@ -36,12 +36,34 @@
 // Static function declarations.
 //
 static void deadBlockElimination(FnSymbol* fn);
-static void cleanupCForLoopBlocks(FnSymbol* fn);
-static void cleanupWhileLoopBlocks(FnSymbol* fn);
+static void cleanupLoopBlocks(FnSymbol* fn);
 
 // Static variables.
 static unsigned deadBlockCount;
 static unsigned deadModuleCount;
+
+//
+//
+// 2014/10/17 TO DO Noakes/Elliot
+//
+// There are opportunities to do additional cleanup of the AST e.g.
+// 
+// remove blockStmts with empty bodies
+// remove condStmts  with empty bodies
+// remove jumps to labels that immmediately follow
+//
+// This may require multiple passses to converge e.g.
+//
+// A block statement that contains an empty block statement
+//
+// An empty cond statement between a goto and the target of the goto
+//
+//
+
+
+
+
+
 
 // Determines if the expression is in the header of a Loop expression
 //
@@ -323,15 +345,9 @@ void deadCodeElimination() {
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       deadBlockElimination(fn);
-      cleanupCForLoopBlocks(fn);
-      cleanupWhileLoopBlocks(fn);
-
       deadCodeElimination(fn);
       deadVariableElimination(fn);
       deadExpressionElimination(fn);
-  
-      cleanupCForLoopBlocks(fn);
-      cleanupWhileLoopBlocks(fn);
     }
 
     deadModuleElimination();
@@ -412,6 +428,10 @@ static void deadBlockElimination(FnSymbol* fn)
         expr->remove();
     }
   }
+
+  // Dead Block Elimination may create "malformed" loops.
+  // Remove these before they break downstream code
+  cleanupLoopBlocks(fn);
 }
 
 //
@@ -440,39 +460,31 @@ void verifyNcleanRemovedIterResumeGotos() {
 
 // 2014/10/15
 //
+// Dead Block elimination can create at least two forms of mal-formed AST
 //
-// Dead code elimination can create a variety of degenerate statements.
-// These include
-//
-//    blockStmts with empty bodies
-//    condStmts  with empty then and/or else clauses
-//    loops      with empty bodies
-//
-// etc.
-//
-// Most of these are currently allowed to clutter the AST and are assumed
-// to be cleaned up the by C compiler.  There is an expectation that this
-// will be improved in the future.
-//
-// Howevever it can lead to C-For loops where the body is empty and each
-// of the loop clauses is an empty blockStmt.  This logically corresponds
-// to
+// A valid ForLoop can be transformed in to
 //
 //              for ( ; ; ) {
 //              }
 //
-// which is technically valid C that would implement an infinite loop.
-// However this AST causes a seg-fault in the LLVM code generator and
-// so must be hacked out now.
+// and a valid WhileLoop can be transformed in to
+//
+//              while ( ) {
+//              }
+//
+// The C standard defines these as infinite loops.  In practice the
+// Chapel compiler will only leave these ASTs in unreachable code and
+// so these wouldn't lead to runtime failures but each of these forms
+// cause problems in the compiler down stream from here.
 //
 
-static void cleanupCForLoopBlocks(FnSymbol* fn) {
+static void cleanupLoopBlocks(FnSymbol* fn) {
   std::vector<Expr*> stmts;
 
   collect_stmts_STL(fn->body, stmts);
 
-  for (size_t i = 0; i < stmts.size(); i++) {
-    if (BlockStmt* stmt = toBlockStmt(stmts[i])) {
+  for_vector (Expr, expr, stmts) {
+    if (BlockStmt* stmt = toBlockStmt(expr)) {
       if (CallExpr* loop = stmt->blockInfoGet()) {
         if (loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
           if (BlockStmt* test = toBlockStmt(loop->get(2))) {
@@ -480,22 +492,9 @@ static void cleanupCForLoopBlocks(FnSymbol* fn) {
               stmt->remove();
             }
           }
-        }
-      }
-    }
-  }
-}
 
-static void cleanupWhileLoopBlocks(FnSymbol* fn) {
-  std::vector<Expr*> stmts;
-
-  collect_stmts_STL(fn->body, stmts);
-
-  for (size_t i = 0; i < stmts.size(); i++) {
-    if (BlockStmt* stmt = toBlockStmt(stmts[i])) {
-      if (CallExpr* loop = stmt->blockInfoGet()) {
-        if (loop->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-            loop->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
+        } else if (loop->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+                   loop->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
           if (stmt->blockInfoGet()->numActuals() == 0) {
             stmt->remove();
           }
