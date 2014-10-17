@@ -106,7 +106,7 @@ export CHPL_LAUNCHER=none
 export CHPL_COMM=none
 
 # Set some vars that nightly cares about.
-export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly/${platform}
+export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 # Ensure that one of the CPU modules is loaded.
