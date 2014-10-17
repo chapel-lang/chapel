@@ -29,7 +29,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "timer.h"
-#include "view.h"
 
 #include <algorithm>
 #include <set>

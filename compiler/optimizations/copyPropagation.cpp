@@ -28,7 +28,6 @@
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
-#include "view.h"
 
 //#############################################################################
 //# COPY PROPAGATION
