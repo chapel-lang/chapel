@@ -63,6 +63,16 @@ perl -c $CHPL_HOME/util/tokencount/tokctnightly
 # Check copyrights in source files.
 $CHPL_HOME/util/test/checkCopyrights.bash
 
+# Check that test script names match their registered config names (for consistency).
+config_name_errors=$(grep CHPL_NIGHTLY_TEST_CONFIG_NAME $CHPL_HOME/util/cron/test-*.bash | \
+    $CHPL_HOME/util/cron/verify_config_names.py)
+if [ -n "${config_name_errors}" ] ; then
+    echo ""
+    echo "Test script naming errors:"
+    echo "${config_name_errors}"
+    exit 1
+fi
+
 # Source common.bash, which sets up a bunch of environment variables that are
 # required for nightly testing.
 source $CHPL_HOME/util/cron/common.bash
