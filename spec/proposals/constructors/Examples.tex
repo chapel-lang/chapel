@@ -6,7 +6,7 @@ relative to the fundamental types provided by the Chapel language.
 
 \subsection{Record Variables}
 
-When \chpl{T} is a record type, we observe that the following Chapel code
+When \chpl{T} is a record type, we expect the following Chapel code
 \begin{chapel}
   var s:R;
   var t:R = noinit;
@@ -16,9 +16,102 @@ When \chpl{T} is a record type, we observe that the following Chapel code
   var x = new R(9, 16, 0.5625);
 \end{chapel}
 \noindent
+to produce the corresponding AST:
+\begin{numberedchapel}
+  var s:R
+  (call _defaultOf s) // Calls R._defaultOf()
+  var t:R
+  (call _construct_R t) // Calls R.R(noinit=true)
+  var u:R
+  (call _construct_R u) // Calls R.R()
+  var v:R
+  (call _construct_R v 8 9 10.0) // Calls R.R(8, 9, 10.0)
+  var w:R
+  (call _construct_R w) // Calls R.R()
+  var x:R
+  (call _construct_R x 9 16 0.5625) // Call R.R(9, 16, 0.5625)
+\end{numberedchapel}
+The compiler-supplied definition for \chpl{_defaultOf} for this type is expected to look
+like:
+\begin{chapel}
+  proc R._defaultOf() {
+    this.();
+  }
+\end{chapel}
+The implementation might supply a default constructor that looks like:
+\begin{chapel}
+  ctor R(param noinit:bool, u:uint = 7, i:int = -2, r:real = 0.0)
+    with (u = new uint(noinit, u),
+          i = new int(noinit, i),
+          r = new real(noinit, real)) 
+  { }
+\end{chapel}
+\noindent
+The nested constructor calls in the \sntx{initializer-clause} pass along the noinit flag
+to the constructor for that field type.  Those in turn will replace the operand
+field with the input or defaulted formal if \chpl{noinit} is \chpl{false} and otherwise do
+nothing.
+
+We note here that the execution of an initialization in the \sntx{initializer-clause} is
+unconditional, so there is no way to control whether a field is initialized explicitly
+vs. falling back to default initialization.  The puzzle can be solved by using a where
+clause to implement the effects of the \chpl{noinit} flag.  So another way to write the
+above is:
+\begin{chapel}
+  ctor R(param noinit=false, u:uint = 7, i:int = -2, r:real = 0.0)
+    where noinit == false
+    with (u = u, i = i, r = r)
+  { }
+
+  ctor R(param noinit=false, u:uint = 7, i:int = -2, r:real = 0.0)
+    where noinit == true
+    with (u = noinit, i = noinit, r = noinit)
+  { }
+\end{chapel}
+\noindent
+In this case, the \chpl{noinit} field initializer inhibits initialization of the
+corresponding field.  
+
+There is still the question of how to default to the field-default value when an explicit
+argument is not supplied to that formal in the constructor call.  This is a more general
+problem related to determining whether the corresponding argument has been supplied.
+Providing a property with the formal to indicate this would support that, but to pick up
+the default value for each field would still require writing the full binary matrix
+possibilities for arguments supplied or not.  The question of a better syntax is left open.
+
+With the \chpl{_defaultOf} and constructors defined above inlined in the AST and scalar
+replacement applied, the result would be:
+\begin{numberedchapel}
+  var s:R
+  ('.=' s u 7)
+  ('.=' s i -2)
+  ('.=' s r 0.0)
+
+  var t:R
+
+  var u:R
+  ('.=' u u 7)
+  ('.=' u i -2)
+  ('.=' u r 0.0)
+
+  var v:R
+  ('.=' v u 8)
+  ('.=' v i 9)
+  ('.=' v r 10.0)
+
+  var w:R
+  ('.=' w u 7)
+  ('.=' w i -2)
+  ('.=' w r 0.0)
+
+  var x:R
+  ('.=' v u 9)
+  ('.=' v i 16)
+  ('.=' v r 0.5625)
+\end{numberedchapel}
+
 
 \subsection{Class Variables}
-
 When initializing a variable of class type, the following forms are possible:
 \begin{chapel}
   var c:C; c = new C(false);
@@ -27,10 +120,33 @@ When initializing a variable of class type, the following forms are possible:
   var f:C = noinit;
 \end{chapel}
 \noindent
+According to the proposal, these would result in the following AST:
+\begin{numberedchapel}
+  var c:C
+  ('move' c nil)
+  var tmp:C
+  ('move' tmp ('alloc' sizeof(C)))
+  (call _construct_C tmp) // Calls C(false)
+  ('move' c tmp)
+
+  var d:C
+  ('move' d ('alloc' sizeof(C)))
+  (call _construct_C d) // Calls C(true)
+
+  var e:C
+  ('move' e ('alloc' sizeof(C)))
+  (call _construct_C e) // Calls C(false)
+
+  var f:C
+  ('move' f nil)
+\end{numberedchapel}
+
 
 \subsection{Distribution Variables}
 
-For the Chapel code:
+In the current implementation, distributions are implemented as classes, so we expect the
+creation of distribution variables to follow the pattern outlined for class types above.
+Thus, for the Chapel code:
 \begin{chapel}
 var a: Block(rank=2);
 var d: Block(rank=2) = noinit;
@@ -38,6 +154,48 @@ var b = new Block({2..5, 2..5});
 var c: Block(rank=2) = new Block({1..4, 1..4});
 \end{chapel}
 \noindent
+we expect the intermediate AST:
+\begin{numberedchapel}
+  var a:Block(2,int(64))
+  (call _defaultOf a) // Calls Block(2,int(64))._defaultOf()
+
+  var d:Block(2,int(64))
+  (call _construct_Block d) // Calls Block(2,int(64))(noinit = true)
+
+  var b:Block(2,int(64))
+  var tmp0:domain(2,int(64),false)
+  var tmp1:range(int(64),bounded,false)
+  (call _construct_range tmp1 2 5)
+  var tmp2:range(int(64),bounded,false)
+  (call _construct_range tmp2 2 5)
+  (call _construct_domain_2_int64_t_F tmp0 tmp1 tmp2)
+  (call _construct_Block b tmp0) // Calls Block(2,int(64))(boundingBox = tmp0)
+
+  var c:Block(2,int(64))
+  var tmp0:domain(2,int(64),false)
+  var tmp1:range(int(64),bounded,false)
+  (call _construct_range tmp1 1 4)
+  var tmp2:range(int(64),bounded,false)
+  (call _construct_range tmp2 1 4)
+  (call _construct_domain_2_int64_t_F tmp0 tmp1 tmp2)
+  (call _construct_Block c tmp0) // Calls Block(2,int(64))(boundingBox = tmp0)
+\end{numberedchapel}
+As for classes, as show above, the action of \chpl{_defaultOf} on a distribution class is
+to set \chpl{this} to \chpl{nil}.
+
+I am not sure what actions would be taken here when \chpl{noinit} was passed as
+\chpl{true}.  It is up to the author for that distribution to do something sensible in
+that case.  It seems like initializing the environment arguments \chpl{dataPar...} can be
+done early at low cost.  Other parts of the distribution need to be filled in before it is
+used.  This can be done piecemeal, or through an initialization-finalization method.  In
+either case, the finalization of the initialization must be done explicitly in the client code.
+
+At present, we may lack the syntax to perform a pointer replacement of a \chpl{nil}
+array pointer with a full-fledged array.  Practically, this can be accomplished by
+inventing a new pointer-copy primitive and calling that.  This leaves the user view of
+array assignment as being an element-by-element replacement undisturbed while supporting
+partial initialization of objects containing arrays.  
+
 
 \subsection{Array Variables}
 
@@ -52,7 +210,42 @@ The Chapel code:
 
 \subsection{Domain Variables}
 
-The Chapel code:
+I suspect (though I still don't understand it fully) that the ``runtime type'' mechanism ---
+as used with domain variable declarations --- provides the means to create a variable with
+a partial type, and have the rest of the type information filled in later in the code.  It
+modifies the compiler's normal type resolution machinery, to back-patch the concrete type
+of the variable after the initially-lacking information is supplied.
+
+This technique has the advantages that the full type of the may be resolved statically, and
+the representation of the type itself remains flat.  It has the disadvantage that it adds
+complexity and special-case code to the compiler handle this specialized type inference.
+It also adds bulk to the AST and even the generated code, so the efficiency advantages of
+the flat representation become questionable.
+
+An alternative approach would be to partition the representation of the type, so that
+information supplied in the initial declaration was stored in the top-level object.
+Information that was supplied later (e.g. in an initializer) would be stored in a
+contained object that could be polymorphic.  To represent the variable type information,
+the top-level structure need only contain a class variable.  The object attached to that
+class variable at run time would determine the full type of the domain being represented.
+
+Certain code in the compiler needs to inspect elements of the full static type of a
+domain.  Here is where the special-case code must come into play.  The compiler needs to
+know how to traverse the AST to extract element types that are added post-facto.  I think
+that this kind of introspection follows a much more logical path --- meaning that it would
+be easier to understand and maintain.  Another large benefit of this approach is that code
+implementing the top-level \chpl{domain} type need not be expanded for each concrete type
+supported.  The sizes of the AST and generated code would shrink accordingly.  
+
+Example AST given below assumes that the full concrete type of the domain has been
+computed by the compiler without specifying the method used.   Any AST elements related to
+that type computation are omitted. It also assumes that the
+existing ``flat'' representation is used.  However, for clarity, we assume that the actual
+construcion of the object has been factored --- specifically, the call to the
+convertRuntimeTypeToValue is used only to establish the type of the variable; construction
+of the object is performed through a separate call.
+
+In that case, the Chapel code:
 \begin{chapel}
   var D:domain(2);
   var E = {1..2, 3..4};
@@ -60,10 +253,134 @@ The Chapel code:
   var G:domain(2) = noinit;
 \end{chapel}
 \noindent
+will give rise to the following AST:
+\begin{numberedchapel}
+  var D:domain(2,int(64),false)
+  (call _defaultOf D) // Calls domain(2,int(64),false)._defaultOf()
+
+  var E:domain(2,int(64),false)
+  var tmp1:range(int(64),bounded,false)
+  var tmp2:range(int(64),bounded,false)
+  (call _construct__range_int64_t_bounded_F tmp1 1 2)
+  (call _construct__range_int64_t_bounded_F tmp2 3 4)
+  (call _construct__domain_2_int64_t_F F tmp1 tmp2) // Calls domain(2,int(64),false)(tmp0)
+
+  var F:domain(2,int(64),false)
+  var tmp1:range(int(64),bounded,false)
+  var tmp2:range(int(64),bounded,false)
+  (call _construct__range_int64_t_bounded_F tmp1 6 7)
+  (call _construct__range_int64_t_bounded_F tmp2 8 9)
+  (call _construct__domain_2_int64_t_F F tmp1 tmp2) // Calls domain(2,int(64),false)(tmp0)
+
+  var G:domain(2,int(64),false)
+  (call _construct__domain_2_int64_t_F G) // Calls domain(2,int(64),false)(noinit=true)
+\end{numberedchapel}
+\noindent
+For the domain labelled \chpl{D}, the type constructor supplies default values for the
+\chpl{idxType} and \chpl{stridable} type parameters.  These are \chpl{int(64)} and
+\chpl{false}, respectively.  It then calls the default (i.e. zero-args) constructor
+through \chpl{_defaultOf()}.
+
+There is no difference between the initialization code for variables \chpl{E} and
+\chpl{F}.  The internal difference is that the compiler infers the full type of \chpl{E} from
+its initializer, whereas for \chpl{F} the rank is provided explicitly: the compiler only
+has to infer the \chpl{idxType} and \chpl{stridable} type parameters.  The \chpl{idxType}
+it infers from the initializer; for \chpl{stridable}, it uses the default value
+(\chpl{false}).
+
+Initialization for \chpl{G} passes the \chpl{noinit} flag to a constructor that can
+receive it (most likely the ``zero-args'' constructor).
+
+The compiler-generated implementation of \chpl{_defaultOf()} for domain types is expected
+to look like:
+\begin{chapel}
+  proc domain(2,int(64),false)._defaultOf() {
+    this.(); // Call the zero-args constructor.
+  }
+\end{chapel}
+The default constructor could be written explicitly as:
+\begin{chapel}
+  ctor domain(2,int(64),false)(param noinit=false) {
+  }
+\end{chapel}
+\noindent
+Since the \sntx{initializer-clause} is empty, this basically means ``use the default value
+for every field''.  For this domain type, it ends up setting the two ranges to empty
+ranges and setting the \chpl{dist} field to \chpl{nil}.  Note that the \chpl{noinit} flag
+is ignored.  This means that the domain is initialized in the same way whether or not the
+\chpl{noinit} initializer is supplied.  Also, it means that the \chpl{pragma "noinit"}
+need not be specified on concrete domain implementations.
+
+At least one of the constructors for a rectangular domain would expand to:
+\begin{chapel}
+  ctor domain(2,int(64),false)(r1:range, r2:range) {
+    with (ranges = (r1,r2))
+  }
+\end{chapel}
+\noindent
+which means that the supplied range arguments should be used to replace the ranges in the
+domain structure.  Since it is not mentioned in the \sntx{initializer-clause}, the
+\chpl{dist} field is set to \chpl{nil}.
+
+When these definitions are inlined in the above code and scalar replacement applied, the
+resulting AST is expected to look like:
+\begin{numberedchapel}
+  var D:domain(2,int(64),false)
+  var tmp0:range(int(64),bounded,false)
+  (call _defaultOf tmp0)
+  ('.=' D ranges.x0 tmp0)
+  var tmp1:range(int(64),bounded,false)
+  (call _defaultOf tmp1)
+  ('.=' D ranges.x1 tmp1)
+  ('.=' D dist nil)
+
+  var E:domain(2,int(64),false)
+  var tmp1:range(int(64),bounded,false)
+  var tmp2:range(int(64),bounded,false)
+  (call _construct__range_int64_t_bounded_F tmp1 1 2)
+  (call _construct__range_int64_t_bounded_F tmp2 3 4)
+  ('.=' E ranges.x0 tmp1)
+  var tmp1:range(int(64),bounded,false)
+  ('.=' E ranges.x1 tmp2)
+  ('.=' E dist nil)
+  
+  var F:domain(2,int(64),false)
+  var tmp1:range(int(64),bounded,false)
+  var tmp2:range(int(64),bounded,false)
+  (call _construct__range_int64_t_bounded_F tmp1 5 6)
+  (call _construct__range_int64_t_bounded_F tmp2 7 8)
+  ('.=' F ranges.x0 tmp1)
+  var tmp1:range(int(64),bounded,false)
+  ('.=' F ranges.x1 tmp2)
+  ('.=' F dist nil)
+  
+  var G:domain(2,int(64),false)
+  var tmp0:range(int(64),bounded,false)
+  (call _defaultOf tmp0)
+  ('.=' G ranges.x0 tmp0)
+  var tmp1:range(int(64),bounded,false)
+  (call _defaultOf tmp1)
+  ('.=' G ranges.x1 tmp1)
+  ('.=' G dist nil)
+\end{numberedchapel}
+An interesting observation here is that the AST still forces us to create an unnamed range
+literal and then copy it into the appropriate field in the domain.  If the AST instead
+supported the creation of a field reference, then fields in a structure could be updated
+in-place.  This could be used in some places to avoid bitwise copies (such as that
+performed by the \chpl{PRIM_SET_FIELD} primitive.  In that case, for example,
+initialization of the first range on lines 2-4 above could be replaced by:
+\begin{chapelcode}
+  var tmp0:ref 2*range(int(64),bounded,false)
+  ('move' tmp0 ('.' D ranges)) // Here '.' means extract field reference.
+  var tmp1:ref range(int(64),bounded,false)
+  ('move' tmp1 ('.' tmp0 x0))
+  (call _defaultOf tmp1)
+\end{chapelcode}
+
 
 \subsection{Sync and Single Variables}
 
-The Chapel code:
+For the Chapel code:
 \begin{chapel}
   var a: sync int;
   var b: sync int = noinit;
@@ -74,6 +391,92 @@ The Chapel code:
   var f: single int = n;
 \end{chapel}
 \noindent
+the proposed implementation would give the following AST:
+\begin{numberedchapel}
+  var a:_syncvar(int(64))
+  (call _defaultOf a) // Calls _syncvar(int(64))._defaultOf().
+
+  var b:_syncvar(int(64))
+  (call _construct__syncvar_int64_t b) // Calls _syncvar(int(64))(noinit=true).
+
+  var c:_syncvar(int(64))
+  (call _construct__syncvar_int64_t c n) // Calls _syncvar(int(64))(i:int).
+
+  var d:_singlevar(int(64))
+  (call _defaultOf a) // Calls _singlevar(int(64))._defaultOf().
+
+  var e:_singlevar(int(64))
+  (call _construct__singlevar_int64_t b) // Calls _singlevar(int(64))(noinit=true).
+
+  var f:_singlevar(int(64))
+  (call _construct__singlevar_int64_t c n) // Calls _singlevar(int(64))(i:int).
+\end{numberedchapel}
+\noindent
+This rendition assumes that the \chpl{_syncvar} and \chpl{_singlevar} types have been
+rewritten as records to take advantage of automatic allocation and deallocation within the
+compiler.  Blank intent for those types would have to be adjusted to \chpl{ref} to
+preserve the existing semantics.  A concrete \chpl{ref} intent makes no attempt to read 
+the value stored in the sync var (e.g. using \chpl{readFE}).  The AST for the current
+class-based implementation would include explicit allocation for each of the variables and the
+assumption that they are properly deallocated at the end of the scope in which they are declared.
+Mention of a class variable in the AST includes an implicit dereferencing, consistent with
+current behavior.
+
+The compiler-generated \chpl{_defaultOf()} for the sync type would look like:
+\begin{chapel}
+  proc _syncvar(int(64))._defaultOf() {
+    this.(); // Call the zero-args constructor
+  }
+\end{chapel}
+\noindent
+which serves just fine.  The code for the constructor that can accept zero arguments might
+look like:
+\begin{chapel}
+  ctor _syncvar(?t).(param noinit=false, val=t._defaultOf()) {
+    with (value=val)
+    __primitive("sync_init", this);
+  }
+\end{chapel}
+The current implementation uses the special pragma ``ignore noinit'', which is no longer
+needed because the noinit flag is simply ignored.
+
+When constructors are implemented to the point of supporting \sntx{initializer-clause}s,
+the pragma ``omit from constructor'' will also be unnecessary because the all-fields
+constructor would not always be called from an explicit constructor as it is today.
+Instead, field-initialization would be covered by the semantics of the
+\sntx{initializer-clause}.  The all-fields constructor would be called only if invoked
+explicitly from user code (impossible if any user-defined constructor is present), or to
+implement the semantics of \chpl{_defaultOf()}.
+
+The implementation for single variable would, of course, parallel the implementation for
+sync vars.  When the \chpl{_defaultOf()} and the constructor calls are inlined, the above as would
+simplify to:
+\begin{numberedchapel}
+  var a:_syncvar(int(64))
+  ('.=' a val 0)
+  ('sync_init' a)
+
+  var b:_syncvar(int(64))
+  ('.=' b val 0)
+  ('sync_init' b)
+
+  var c:_syncvar(int(64))
+  ('.=' c val n)
+  ('sync_init' c)
+
+  var d:_singlevar(int(64))
+  ('.=' d val 0)
+  ('single_init' d)
+
+  var e:_singlevar(int(64))
+  ('.=' e val 0)
+  ('single_init' e)
+
+  var f:_singlevar(int(64))
+  ('.=' f val n)
+  ('single_init' f)
+\end{numberedchapel}
+
 
 \subsection{Tuple Variables}
 

@@ -33,6 +33,8 @@ Here is a synopsis of the proposed changes, in approximate priority order.
   initialization.  Disadvantages: Major implementation change.
 \item[Add ctor keyword] -- and optional naming, to better support generic
   programming.
+\item[Field Extraction] -- Some AST could be simplified if a field-extraction primitive
+  were supported.
 \end{itemize}
 
 \subsection{Proposed Changes to the Specification}
@@ -42,6 +44,8 @@ Proposed changes to the specification are listed below:
 \item Review initialization story w.r.t. fundamental types to ensure that it is accurate
   under the new mode.
 \item Add description of the initializer list to Classes and Records chapters.
+\item Describe visibility of the all-fields constructor (hidden if any user-defined
+  constructors are present.
 \item Revise the description of initialiation of Classes and Records in terms of a call to
   either \chpl{_defaultOf()} or the copy-constructor.
 \item Describe in an implementor's note that copy-construction can be collapsed out when
@@ -94,5 +98,11 @@ Normalize Type Inference & High & High & Reverse very bad design decision. Compl
  & & & much of initialization and resolution. Big change, but probably \\
  & & & smaller than Constructors as Methods. Low priority due to risks \\
  & & & involved, but may be bumped based on need. \\ \hline
+Field Extraction & Low & Low & Enable further optimization of the AST using in-place \\
+ & & & updates of record fields. \\ \hline
 Add ctor Keyword & Low & Med & Better support for generic programming.  Low current need. \\ \hline
 \end{tabular}
+
+\subsection{Open Questions}
+
+

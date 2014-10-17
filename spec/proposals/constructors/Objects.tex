@@ -967,6 +967,43 @@ There are a number of reasons why this language feature should be deprecated, in
 \item Whatever was the historical problem it solved seems to have been overcome by now.
 \end{itemize}
 
+\subsubsection{Visibility}
+
+The current implementation contains two classes of procedure symbols,
+\emph{compiler-generated} and \emph{user-defined}.  Compiler-generated versions have
+\chpl{FLAG_COMPILER_GENERATED} attached: user-defined versions do not.  When a call is
+being resolved, user-defined versions are considered first.  If there are no user-defined
+candidates, then the compiler-generated versions are examined.
+
+Almost all of the compiler-generated functions, including
+\begin{itemize}
+\item \chpl{_defaultOf}
+\item All-fields constructors
+\item Record equality and inequality
+\item \chpl{chpl_enum_first}
+\item Integral-to-enum casts
+\item c\_string-to-enum casts
+\item Assignment
+\item Extern init functions
+\item Record initCopy functions
+\item Read/write functions
+\end{itemize}
+are created with \chpl{FLAG_COMPILER_GENERATED} set to true.  Certain others, including
+\begin{itemize}
+\item Setters and getters
+\item \chpl{enum_enumerate}
+\item Record casts (coercions)
+\item Record hash functions
+\item enum-to-c\_string casts
+\item Destructors
+\end{itemize}
+\noindent
+do not, but special-case code generally allows them to be overridden anyway.
+
+There is an ongoing effort to treat these cases uniformly (i.e. all using the
+\chpl{FLAG_COMPILER_GENERATED} mechanism in \chpl{functionResolution}).  Irrespective of
+the implementation details the basic behavior should be that the user can always override
+the compiler's version if he desires.
 
 \subsection{Construction in the Proposed Implementation}
 
@@ -1020,3 +1057,24 @@ same class or record from within one of its constructors.
 \subsubsection{Post-Construction}
 
 We propose to deprecate and remove the magic surrounding the \chpl{initialize()} method.
+
+\subsubsection{Visibility}
+
+Assuming that all of the compiler-generated function classes mentioned above can be
+overridden in user code, the proposed behavior is the same as the existing behavior, with
+one exception.
+
+Currently, all-fields constructors remain visible unless they are specifically
+overridden.  We propose that the all-fields constructor for a given type be hidden if the
+definition of the corresponding type contains one or more explicitly-defined constructors.
+
+The reason for allowing user-code to invoke the all-fields constructor at all is that it
+supports rapid prototyping.  Much of what would be done in an explicit constructor can be
+simulated in client code.  The reason for hiding the all-fields constructor is that it
+breaks encapsulation.  It seems appropriate to hide the compiler-generated all-fields
+constructor after the first user-defined constructor is present in the code.  This means
+that the class (or record) author is thinking about encapsulation (construction and
+encapsulation are closely related).  At that point, he can add back as much of the
+all-fields capability as he needs while managing the encapsulation of his class (or
+record) to suit his needs.
+
