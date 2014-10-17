@@ -162,7 +162,7 @@ proc exists(out err: syserr, name: string): bool {
 proc exists(name: string): bool {
   var err: syserr = ENOERR;
   var ret = exists(err, name);
-  if err then ioerror(err, "in exists");
+  if err != ENOERR then ioerror(err, "in exists");
   return ret;
 }
 
