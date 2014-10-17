@@ -884,7 +884,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isEnumSymbol(sym) == true)
   {
-    fprintf(mFP, "#<EnumSymbol   name: %-36s", name);
+    fprintf(mFP, "#<EnumSymbol   %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
@@ -899,7 +899,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isFnSymbol(sym) == true)
   {
-    fprintf(mFP, "#<FnSymbol     name: %-36s", name);
+    fprintf(mFP, "#<FnSymbol     %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
@@ -914,7 +914,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isLabelSymbol(sym) == true)
   {
-    fprintf(mFP, "#<LabelSymbol  name: %-36s", name);
+    fprintf(mFP, "#<LabelSymbol  %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
@@ -929,7 +929,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isModuleSymbol(sym) == true)
   {
-    fprintf(mFP, "#<ModuleSymbol name: %-36s", name);
+    fprintf(mFP, "#<ModuleSymbol %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
@@ -945,7 +945,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   
   else if (isTypeSymbol(sym) == true)
   {
-    fprintf(mFP, "#<TypeSymbol   name: %-36s", name);
+    fprintf(mFP, "#<TypeSymbol   %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
