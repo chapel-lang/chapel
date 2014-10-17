@@ -52,7 +52,7 @@ proc chdir(out err: syserr, name: string) {
 proc chdir(name: string) {
   var err: syserr = ENOERR;
   chdir(err, name);
-  if err then ioerror(err, "in chdir", name);
+  if err != ENOERR then ioerror(err, "in chdir", name);
 }
 
 /* Set the permissions of the file or directory specified by name to that
@@ -81,7 +81,7 @@ proc chmod(out err: syserr, name: string, mode: int) {
 proc chmod(name: string, mode: int){
   var err: syserr = ENOERR;
   chmod(err, name, mode);
-  if err then ioerror(err, "in chmod", name);
+  if err != ENOERR then ioerror(err, "in chmod", name);
 }
 
 
@@ -109,7 +109,7 @@ proc chown(out err: syserr, name: string, uid: int, gid: int) {
 proc chown(name: string, uid: int, gid: int) {
   var err: syserr = ENOERR;
   chown(err, name, uid, gid);
-  if err then ioerror(err, "in chown", name);
+  if err != ENOERR then ioerror(err, "in chown", name);
 }
 
 /* Returns the current working directory for the current locale.
@@ -122,7 +122,7 @@ proc chown(name: string, uid: int, gid: int) {
 proc cwd(out err: syserr): string {
   var tmp:c_string_copy, ret:string;
   err = chpl_fs_cwd(tmp);
-  if err then return "";
+  if err != ENOERR then return "";
   // This version of toString steals its operand.  No need to free.
   ret = toString(tmp);
   return ret;
@@ -138,7 +138,7 @@ proc cwd(out err: syserr): string {
 proc cwd(): string {
   var err: syserr = ENOERR;
   var ret = cwd(err);
-  if err then ioerror(err, "in cwd");
+  if err != ENOERR then ioerror(err, "in cwd");
   return ret;
 }
 
@@ -159,7 +159,7 @@ proc isDir(out err:syserr, name:string):bool {
 proc isDir(name:string):bool {
   var err:syserr;
   var ret = isDir(err, name);
-  if err then ioerror(err, "in isDir", name);
+  if err != ENOERR then ioerror(err, "in isDir", name);
   return ret;
 }
 
@@ -180,7 +180,7 @@ proc isFile(out err:syserr, name:string):bool {
 proc isFile(name:string):bool {
   var err:syserr;
   var ret = isFile(err, name);
-  if err then ioerror(err, "in isFile", name);
+  if err != ENOERR then ioerror(err, "in isFile", name);
   return ret;
 }
 
@@ -202,7 +202,7 @@ proc isLink(out err:syserr, name: string): bool {
 proc isLink(name: string): bool {
   var err:syserr;
   var ret = isLink(err, name);
-  if err then ioerror(err, "in isLink", name);
+  if err != ENOERR then ioerror(err, "in isLink", name);
   return ret;
 }
 
@@ -277,7 +277,7 @@ proc mkdir(out err: syserr, name: string, mode: int = 0o777,
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   var err: syserr = ENOERR;
   mkdir(err, name, mode, parents);
-  if err then ioerror(err, "in mkdir", name);
+  if err != ENOERR then ioerror(err, "in mkdir", name);
 }
 
 /* Renames the file specified by oldname to newname, returning an error
@@ -296,7 +296,7 @@ proc rename(out error: syserr, oldname, newname: string) {
 proc rename(oldname, newname: string) {
   var err:syserr = ENOERR;
   rename(err, oldname, newname);
-  if err then ioerror(err, "in rename", oldname);
+  if err != ENOERR then ioerror(err, "in rename", oldname);
 }
 
 /* Removes the file or directory specified by name, returning an error
@@ -313,5 +313,5 @@ proc remove(out err: syserr, name: string) {
 proc remove(name: string) {
   var err:syserr = ENOERR;
   remove(err, name);
-  if err then ioerror(err, "in remove", name);
+  if err != ENOERR then ioerror(err, "in remove", name);
 }
