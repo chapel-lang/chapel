@@ -469,13 +469,14 @@ if ($examples == 1) {
             $testdirs .= " localeModels memory distributions/robust/arithmetic";
         }
     }
+    if ($parnodefile neq "") {
+        mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE", 
+                 "making directory file", 1, 1);
+        $testflags = "$testflags -dirfile DIRFILE";
+    }
 }
 if ($parnodefile eq "") {
     $testflags = "$testflags $testdirs";
-} else {
-    mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE", 
-             "making directory file", 1, 1);
-    $testflags = "$testflags -dirfile DIRFILE";
 }
 
 if (!($dist eq "")) {
