@@ -37,30 +37,51 @@
 //
 static void deadBlockElimination(FnSymbol* fn);
 static void cleanupCForLoopBlocks(FnSymbol* fn);
+static void cleanupWhileLoopBlocks(FnSymbol* fn);
 
 // Static variables.
 static unsigned deadBlockCount;
 static unsigned deadModuleCount;
 
-
-// Determines if an expr is used inside of the header for a c for loop. c for
-// loop header is of the form '"c for loop" {inits}, {test}, {incrs}'
+// Determines if the expression is in the header of a Loop expression
 //
-// Only returns true for exprs in the init, test, incr blocks, not for the
-// blocks themselves.
+// After normalization, the conditional test for a WhileStmt is expressed as
+// a SymExpr inside a primitive CallExpr.
+//
+// The init, test, incr clauses of a C-For loop are expressed as BlockStmts
+// that contain the relevant expressions.  This function only returns true
+// for the expressions inside the BlockStmt and not the BlockStmt itself
 //
 // TODO should this be updated to only look for exprs in the test segment that
 // are conditional primitives?
-static bool isInCForLoopHeader(Expr* expr) {
-  if (expr->parentExpr && expr->parentExpr->parentExpr) {
-    if (CallExpr* call = toCallExpr(expr->parentExpr->parentExpr)) {
-      if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
-        return true;
-      }
+//
+static bool isInLoopHeader(Expr* expr) {
+  bool retval = false;
+
+  if (expr->parentExpr == NULL) {
+    retval = false;
+
+  } else if (CallExpr* call = toCallExpr(expr->parentExpr)) {
+    if (call->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+        call->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
+      retval = true;
     }
+
+  } else if (expr->parentExpr->parentExpr == NULL) {
+    retval = false;
+
+  } else if (CallExpr* call = toCallExpr(expr->parentExpr->parentExpr)) {
+
+    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
+      retval = true;
+
+  } else {
+    retval = false;
   }
-  return false;
+
+  return retval;
 }
+
 
 //
 // Removes local variables that are only targets for moves, but are
@@ -128,9 +149,10 @@ void deadExpressionElimination(FnSymbol* fn) {
     if (expr && expr->parentExpr == NULL) // expression already removed
       continue;
     if (SymExpr* expr = toSymExpr(ast)) {
-      if (isInCForLoopHeader(expr)) {
+      if (isInLoopHeader(expr)) {
         continue;
-      }
+      } 
+
       if (expr == expr->getStmtExpr())
         expr->remove();
     } else if (CallExpr* expr = toCallExpr(ast)) {
@@ -159,20 +181,25 @@ void deadCodeElimination(FnSymbol* fn)
 
   std::map<SymExpr*,Vec<SymExpr*>*> DU;
   std::map<SymExpr*,Vec<SymExpr*>*> UD;
+
   buildDefUseChains(fn, DU, UD);
 
   std::map<Expr*,Expr*> exprMap;
   Vec<Expr*> liveCode;
   Vec<Expr*> workSet;
+
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     for_vector(Expr, expr, bb->exprs) {
-      bool essential = false;
+      bool          essential = false;
       Vec<BaseAST*> asts;
+
       collect_asts(expr, asts);
+
       forv_Vec(BaseAST, ast, asts) {
-        if (isInCForLoopHeader(expr)) {
+        if (isInLoopHeader(expr)) {
           essential = true;
         }
+
         if (CallExpr* call = toCallExpr(ast)) {
           // mark function calls and essential primitives as essential
           if (call->isResolved() ||
@@ -185,6 +212,7 @@ void deadCodeElimination(FnSymbol* fn)
                   !se->var->type->refType) // reference issue
                 essential = true;
         }
+
         if (Expr* sub = toExpr(ast)) {
           exprMap[sub] = expr;
           if (BlockStmt* block = toBlockStmt(sub->parentExpr))
@@ -195,6 +223,7 @@ void deadCodeElimination(FnSymbol* fn)
               essential = true;
         }
       }
+
       if (essential) {
         liveCode.set_add(expr);
         workSet.add(expr);
@@ -294,11 +323,15 @@ void deadCodeElimination() {
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       deadBlockElimination(fn);
+      cleanupCForLoopBlocks(fn);
+      cleanupWhileLoopBlocks(fn);
+
       deadCodeElimination(fn);
       deadVariableElimination(fn);
       deadExpressionElimination(fn);
   
       cleanupCForLoopBlocks(fn);
+      cleanupWhileLoopBlocks(fn);
     }
 
     deadModuleElimination();
@@ -446,6 +479,25 @@ static void cleanupCForLoopBlocks(FnSymbol* fn) {
             if (test->body.length == 0) {
               stmt->remove();
             }
+          }
+        }
+      }
+    }
+  }
+}
+
+static void cleanupWhileLoopBlocks(FnSymbol* fn) {
+  std::vector<Expr*> stmts;
+
+  collect_stmts_STL(fn->body, stmts);
+
+  for (size_t i = 0; i < stmts.size(); i++) {
+    if (BlockStmt* stmt = toBlockStmt(stmts[i])) {
+      if (CallExpr* loop = stmt->blockInfoGet()) {
+        if (loop->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
+            loop->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
+          if (stmt->blockInfoGet()->numActuals() == 0) {
+            stmt->remove();
           }
         }
       }
