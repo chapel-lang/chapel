@@ -345,8 +345,22 @@ void deadCodeElimination() {
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       deadBlockElimination(fn);
+
+      // 2014/10/17   Noakes and Elliot
+      // Dead Block Elimination may convert valid loops to "malformed" loops.
+      // Some of these will break BasicBlock construction. Clean them up.
+      cleanupLoopBlocks(fn);
+
       deadCodeElimination(fn);
+
       deadVariableElimination(fn);
+
+      // 2014/10/17   Noakes and Elliot
+      // Dead Variable Elimination may convert some "uninteresting" loops
+      // that were left behind by DeadBlockElimination and turn them in to
+      // "malformed" loops.  Cleanup again.
+      cleanupLoopBlocks(fn);
+
       deadExpressionElimination(fn);
     }
 
@@ -428,10 +442,6 @@ static void deadBlockElimination(FnSymbol* fn)
         expr->remove();
     }
   }
-
-  // Dead Block Elimination may create "malformed" loops.
-  // Remove these before they break downstream code
-  cleanupLoopBlocks(fn);
 }
 
 //
@@ -476,6 +486,14 @@ void verifyNcleanRemovedIterResumeGotos() {
 // Chapel compiler will only leave these ASTs in unreachable code and
 // so these wouldn't lead to runtime failures but each of these forms
 // cause problems in the compiler down stream from here.
+//
+// 2014/10/17
+// 
+// Additionally DBE can create loops that are similar to the above but
+// that include some number of DefExprs (there is currently code in DBE
+// to prevent it removing DefExprs for reasons that are partially but
+// not fully understood).  These loops will be converted to the former
+// case during DeadVariableElimination
 //
 
 static void cleanupLoopBlocks(FnSymbol* fn) {
