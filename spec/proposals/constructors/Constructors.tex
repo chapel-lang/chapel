@@ -22,10 +22,10 @@ that case, the default-initialization (a.k.a. zero-initialization) step mentione
 object lifecycle can be omitted.
 
 I believe that zero-initialization is a part of the C++ specification to support backward
-compatibility with C, and to allow the creation of global and filescope static objects
+compatibility with C, and to allow the creation of global and file-scope static objects
 that are in a known state before their construction at the start of execution commences.
 This is important in the execution environment envisioned for programs of that period,
-especially since the order of initialization of global and filescope objects from
+especially since the order of initialization of global and file-scope objects from
 different compilation units is unspecified.
 
 In modern programming practice, however, the use of global objects is strongly
@@ -37,18 +37,8 @@ zero-initialization unless a strong case can be made for it.  I left it as an op
 issue in case there are use cases that I have overlooked.
 \end{openissue}
 
-\begin{note}
-The default-initialization value for most fundamental types is chosen such that a 
-\chpl{memset( , 0, );} call would have the desired effect.  This could be quite useful in
-initializing contiguous memory occupied by the representation of a class, record or tuple.
-This property does not hold for the more complex types: range, domain, array, sync, single
-or atomic.  However, since all of these types are implemented in module code,
-zero-initialization can still be used for the default-initialization part of their
-definition.
-\end{note}
-
 Default-initialization (if performed) is followed by field-initialization.  Field-initialization
-constructs each field in an object, in an order specified in the Semantics
+constructs each field in an object in an order specified in the Semantics
 (\rsec{Constructor_Semantics} subsection below.  The syntactical elements influencing
 field-initialization are the field declarations and the initializers appearing in the
 \sntx{initializer-list}.  Field-initialization is complete before control enters the body
@@ -114,13 +104,13 @@ of overloaded constructors.
 
 Constructor declarations do not have a parentheses-less form.
 \begin{rationale}
-Normal methods may have either a single parenthesesless version or overloaded
+Normal methods may have either a single parentheses-less version or overloaded
 versions taking various argument lists.  In typical usage, we expect overloaded
-constructors to be common.  Also, the parenthesesless form would have the same
+constructors to be common.  Also, the parentheses-less form would have the same
 behavior as the default constructor --- that is, it would perform default
 initialization for all fields.  But the compiler-generated constructor already
 does this (if called with an empty argument list).  Given that the
-parenthesesless form is redundant and potentially takes flexibility away from
+parentheses-less form is redundant and potentially takes flexibility away from
 the user, there is no advantage to supporting it.
 \end{rationale}
 
@@ -177,7 +167,7 @@ constructor-call-expression:
 \end{syntax}
 The \sntx{type-name} must name a type.  The named type may be generic.
 The set of visible constructors are all constructors defined for that type.  Usual
-generic expansion rules are applied to the set of visible functions to select a set of
+generic instantiation rules are applied to the set of visible functions to select a set of
 candidate constructors.  Any \chpl{where} clauses are then applied to reduce the set of
 candidates.  Disambiguation is applied to select the best candidate from among those
 remaining.  It is a program error if there is no unique best candidate.  Otherwise, the
@@ -203,16 +193,15 @@ named-expression passed as an actual argument to a field-initializer call may co
 any expression that is valid in that scope (including function calls and other
 expressions).  In particular, the names of any or all formal arguments of the constructor
 as well as the names of any fields that have already been initialized may be used.  The
-use of the name of any field that has not yet been initialized is illegal\footnote{This
+use of the name of any field that has not yet been initialized is illegal.\footnote{This
   can be reported as a syntax error, since the error condition can be detected
   statically.}
 
 After the initializer-list has been processed, some fields may remain uninitialized.
-These fields are initialized using the initializer specified for them in the
+These fields are initialized using the initializers specified for them in the
 class or record declaration.  The fields of a class or record are processed in lexical
 order.  If not already initialized, the initializer associated with the field declaration
-(if any) is used.  Otherwise, the field is default-initialized via a call to its
-default-constructor.
+(if any) is used.  Otherwise, the field is default-initialized via a call to \chpl{_defaultOf()}.
 
 \begin{chapelexample}{InitializationOrder.chpl}
 \begin{chapel}
@@ -232,7 +221,8 @@ then \chpl{d} is initialized to \chpl{5}.  It is legal to use \chpl{c} in this c
 because it has already been initialized.  Because initializers for \chpl{a} and \chpl{b}
 were not listed in the \sntx{initializer-clause}, they are initialized as specified by
 their field declarations in the record itself.  In lexical order, \chpl{a} appears first.
-Because no explicit initializer is called, the default constructor for type \chpl{int} is
+Because no explicit initializer is provided, the \chpl{_defaultOf()} method (for a
+receiver of type \chpl{int}) is
 called on \chpl{a}, which has the effect of setting \chpl{a} to zero.  The declaration for
 \chpl{b} is equivalent to a copy-constructor call for type \chpl{int}.  It sets the value
 of \chpl{b} to \chpl{3}.
@@ -280,11 +270,13 @@ should be interpreted roughly as
 r.R();
 \end{chapel}
 That is, the a constructor for type \chpl{R} is called as a method, specifying \chpl{r} as
-the receiver and passing no arguments.
+the receiver and passing no arguments.\footnote{The \chpl{_defaultOf()} feature, as proposed,
+  allows the user to override the compiler-supplied behavior of calling the record's
+  zero-args constructor.}
 
 A declaration with an \sntx{initializer-part} should be interpreted as a constructor call
 in which only one argument is passed.  If the type of the variable (or field) and the initializer
-expression are the same (as will always be true if the type of the variable for field is
+expression are the same (as will always be true if the type of the variable or field is
 inferred), then the method called will be the copy-constructor for that type.  The two
 types may differ as long as there is a constructor that will accept a single argument of
 the initialization expression's type.  (If not, then an unresolved call error will be
@@ -312,15 +304,15 @@ r.R(args,...);
 
 It is desirable that the transformation of the two forms involving \chpl{=} into in-place
 constructor calls take place before resolution.  In that way, construction of variables
-and fields will be called as a method, and all standard steps of resolution (including
+and fields will be called as methods, and all standard steps of resolution (including
 scope resolution, visible method selection, generic instantiation, candidate selection and
-argument binding) used in a consisten way.
+argument binding) used in a consistent way.
 
 \subsection{Examples}
 
 As a practical example, we can consider an explicit initializer for one of the array
 implementation types.  At present, the code relies upon the compiler-supplied all-fields
-constructor and the special initialize function.  These two pieces can be combined in an
+constructor and the special \chpl{initialize()} function.  These two pieces can be combined in an
 explicit constructor, to make the semantics of initializing an object of that type
 somewhat more obvious.
 

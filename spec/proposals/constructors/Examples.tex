@@ -76,7 +76,7 @@ There is still the question of how to default to the field-default value when an
 argument is not supplied to that formal in the constructor call.  This is a more general
 problem related to determining whether the corresponding argument has been supplied.
 Providing a property with the formal to indicate this would support that, but to pick up
-the default value for each field would still require writing the full binary matrix
+the default value for each field would still require writing the full matrix
 possibilities for arguments supplied or not.  The question of a better syntax is left open.
 
 With the \chpl{_defaultOf} and constructors defined above inlined in the AST and scalar
@@ -221,7 +221,7 @@ The function \chpl{dsiBuildArray} calls down to the array constructor for the
 corresponding domain type.  For a default rectangular array, this is
 \chpl{DefaultRectangularArr}.  The generic arguments \chpl{rank}, \chpl{idxType} and
 \chpl{stridable} are copied from the domain on which \chpl{dsiBuildArray} is called.  The
-elementType is supplied as an argument, and the a pointer to the domain is passed to the
+elementType is supplied as an argument, and a pointer to the domain is passed to the
 array constructor as the \chpl{dom} argument.
 
 There is no explicit constructor for the \chpl{DefaultRectangularArr} as it stands, so a
@@ -243,7 +243,7 @@ guarantee that initialization were performed later.
 At this point, the proposal is to keep the construction of arrays largely intact.  In
 order to carry out the deprecation of the \chpl{initialize} function, however, it would be
 necessary to rewrite the pertinent forms of array constructors so that they could call the
-initialize function explicitly.  
+\chpl{initialize()} function explicitly.  
 
 Under this proposal, the explicit constructor for a \chpl{DefaultRectangularArr} would
 look like:
@@ -316,7 +316,7 @@ Example AST given below assumes that the full concrete type of the domain has be
 computed by the compiler without specifying the method used.   Any AST elements related to
 that type computation are omitted. It also assumes that the
 existing ``flat'' representation is used.  However, for clarity, we assume that the actual
-construcion of the object has been factored --- specifically, the call to the
+construction of the object has been factored --- specifically, the call to the
 convertRuntimeTypeToValue is used only to establish the type of the variable; construction
 of the object is performed through a separate call.
 
@@ -586,14 +586,14 @@ The compiler-generated \chpl{_defaultOf()} for a 2-tuple of reals would look lik
 \noindent
 This raises a bit of a design issue: The compiler-generated version of \chpl{_defaultOf()}
 wants to call a constructor as a method on \chpl{this}, but we don't really have syntax
-for that.  I normally expect \sntx{`new' type-name} on a record type to produce an
+for that.  I normally expect \sntx{`new'~type-name} on a record type to produce an
 anonymous object, so adding a \chpl{`new'} keyword is not the right choice.  I chose to
 omit the type name, but supplying it explicitly is equally valid.  
 
 The problem is that calling a constructor on an object that has already been initialized
-(as we expect all objects to be) is normally illegal.  Even going as far as to supply
+(as we expect all objects to be) is normally illegal.  Even going so far as to supply
 syntax for calling a constructor on an existing object seems like bending the rules.  On
-the other hand, we know (special case) that the operand of a \chpl{_defaultOf} method is
+the other hand, we know (special case) that the operand of a \chpl{_defaultOf()} method is
 uninitialized, so at least in that context the constructor call is semantically correct.
 
 The syntax problem is created by the existence of \chpl{_defaultOf()}, which is really
@@ -671,11 +671,11 @@ to produce the following AST (after resolution):
     (call _construct_int64_t e d) // Calls the copy-constructor.
 \end{numberedchapel}
 This looks a lot more complex than one would expect, but that is for consistency with more
-complex types.  Scalar types are really a special case, because they exhibit value
+complex types.  Scalar types are really a special case because they exhibit value
 semantics and have trivial constructors, destructors and assignment operators.  When that
-is true copy-construction is equivalent to assignment is equivalent to a move operation.
+is true, copy-construction is equivalent to assignment is equivalent to a move operation.
 
-The definition of the various constructors provide the semantics you would expect.  On
+The definition of the various constructors provides the semantics you would expect.  On
 line 2, the \chpl{_defaultOf()} method on a 64-bit integer replaces the LHS with a zero of
 that size.  If \chpl{=noinit} is a valid initializer for an object of type \chpl{int(64)},
 then at least one of its constructors will accept a \chpl{param bool} to control its
