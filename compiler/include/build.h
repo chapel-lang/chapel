@@ -66,7 +66,7 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
-BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body);
+BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body);
 BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,

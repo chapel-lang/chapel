@@ -17,30 +17,37 @@
  * limitations under the License.
  */
 
-#ifndef _LEXYACC_H_
-#define _LEXYACC_H_
+#ifndef _WHILE_DO_STMT_H_
+#define _WHILE_DO_STMT_H_
 
-#include "build.h"
-#include "countTokens.h"
-#include "driver.h"
-#include "expr.h"
-#include "parser.h"
-#include "processTokens.h"
-#include "stmt.h"
-#include "stringutil.h"
-#include "symbol.h"
-#include "type.h"
-#include "WhileDoStmt.h"
-#include "yy.h"
+#include "WhileStmt.h"
 
-// Make sure exit is undefined:
-#ifdef exit
-#undef exit
+class WhileDoStmt : public WhileStmt {
+  //
+  // Class interface
+  //
+public:
+  static BlockStmt*   build(Expr* cond, BlockStmt* body);
+
+
+private:
+  static bool         isCForLoop(Expr* cond);
+
+
+  //
+  // Instance interface
+  //
+public:
+  virtual            ~WhileDoStmt();
+
+private:
+
+                      WhileDoStmt();
+
+                      WhileDoStmt(VarSymbol* condVar,
+                                  CallExpr*  condTest,
+                                  BlockStmt* body);
+};
+
 #endif
-// And redefine it to call our exit routine:
-#define exit(x) clean_exit(x)
 
-extern int captureTokens;
-extern char captureString[1024];
-
-#endif

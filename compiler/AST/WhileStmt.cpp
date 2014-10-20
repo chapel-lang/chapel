@@ -17,30 +17,15 @@
  * limitations under the License.
  */
 
-#ifndef _LEXYACC_H_
-#define _LEXYACC_H_
+#include "WhileStmt.h"
 
-#include "build.h"
-#include "countTokens.h"
-#include "driver.h"
-#include "expr.h"
-#include "parser.h"
-#include "processTokens.h"
-#include "stmt.h"
-#include "stringutil.h"
-#include "symbol.h"
-#include "type.h"
-#include "WhileDoStmt.h"
-#include "yy.h"
+WhileStmt::WhileStmt(Expr* initBody) : BlockStmt(initBody)
+{
 
-// Make sure exit is undefined:
-#ifdef exit
-#undef exit
-#endif
-// And redefine it to call our exit routine:
-#define exit(x) clean_exit(x)
+}
 
-extern int captureTokens;
-extern char captureString[1024];
+WhileStmt::~WhileStmt()
+{
 
-#endif
+}
+

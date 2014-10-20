@@ -28,6 +28,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "WhileDoStmt.h"
 
 static void
 checkControlFlow(Expr* expr, const char* context) {
@@ -420,10 +421,7 @@ buildLabelStmt(const char* name, Expr* stmt) {
       breakLabelStmt = breakLabelStmt->prev;
     }
     BlockStmt* loop = toBlockStmt(breakLabelStmt->prev);
-    if (loop && loop->isLoop() &&
-        (loop->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP)     ||
-         loop->blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-         loop->blockInfoGet()->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))) {
+    if (loop && loop->isLoop()) {
       if (!loop->breakLabel || !loop->continueLabel) {
         USR_FATAL(stmt, "cannot label parallel loop");
       } else {
@@ -527,7 +525,7 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   return new CallExpr(new DefExpr(fn));
 }
 
-static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
+BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
 
   // C for loops have the form:
   //   __primitive("C for loop", initExpr, testExpr, incrExpr)
@@ -556,37 +554,6 @@ static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
 }
 
 
-BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
-  // C for loops are invoked with 'while __primitive("C for loop" ...)'
-  // This checks if we had such a case and if we did builds the c for loop
-  // instead of the while loop and returns it.
-  if (CallExpr* call = toCallExpr(cond)) {
-    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
-      BlockStmt* loop = buildCForLoopStmt(call, body);
-      return loop;
-    }
-  }
-  cond = new CallExpr("_cond_test", cond);
-  VarSymbol* condVar = newTemp();
-  body = new BlockStmt(body);
-  body->blockInfoSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar));
-  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  continueLabel->addFlag(FLAG_COMPILER_GENERATED);
-  continueLabel->addFlag(FLAG_LABEL_CONTINUE);
-  body->continueLabel = continueLabel;
-  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-  breakLabel->addFlag(FLAG_COMPILER_GENERATED);
-  breakLabel->addFlag(FLAG_LABEL_BREAK);
-  body->breakLabel = breakLabel;
-  body->insertAtTail(new DefExpr(continueLabel));
-  body->insertAtTail(new CallExpr(PRIM_MOVE, condVar, cond->copy()));
-  BlockStmt* stmts = buildChapelStmt();
-  stmts->insertAtTail(new DefExpr(condVar));
-  stmts->insertAtTail(new CallExpr(PRIM_MOVE, condVar, cond->copy()));
-  stmts->insertAtTail(body);
-  stmts->insertAtTail(new DefExpr(breakLabel));
-  return stmts;
-}
 
 
 BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
