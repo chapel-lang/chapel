@@ -6044,9 +6044,12 @@ resolveExpr(Expr* expr)
         
       if (tryFailure) {
         if (tryStack.tail()->parentSymbol == fn) {
-          while (callStack.tail()->isResolved() != tryStack.tail()->elseStmt->parentSymbol) {
-            if (callStack.n == 0)
-              INT_FATAL(call, "unable to roll back stack due to try block failure");
+          // Roll the callStack back to the function where the nearest
+          // tryToken conditional is because that is where resolution
+          // will be restarted.
+          while (callStack.n > 0 &&
+                 callStack.tail()->isResolved() !=
+                 tryStack.tail()->elseStmt->parentSymbol) {
             callStack.pop();
           }
           BlockStmt* block = tryStack.tail()->elseStmt;
