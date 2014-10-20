@@ -24,6 +24,7 @@
 #include "countTokens.h"
 #include "driver.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "parser.h"
 #include "processTokens.h"
 #include "stmt.h"

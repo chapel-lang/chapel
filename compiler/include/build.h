@@ -62,11 +62,15 @@ BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
 ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char *docs);
-CallExpr* buildPrimitiveExpr(CallExpr* exprs);
+CallExpr*  buildPrimitiveExpr(CallExpr* exprs);
 
-FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
-CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
-BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body);
+FnSymbol*  buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
+CallExpr*  buildLetExpr(BlockStmt* decls, Expr* expr);
+void       checkIndices(BaseAST* indices);
+void       destructureIndices(BlockStmt* block,
+                              BaseAST*   indices,
+                              Expr*      init,
+                              bool       coforall);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
@@ -75,11 +79,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
-BlockStmt* buildForLoopStmt(Expr* indices,
-                            Expr* iterator,
-                            BlockStmt* body,
-                            bool coforall = false,
-                            bool zippered = false);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
                                BlockStmt* body,

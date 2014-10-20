@@ -39,7 +39,8 @@ AST_SRCS = \
                              \
         WhileStmt.cpp        \
         WhileDoStmt.cpp      \
-        DoWhileStmt.cpp
+        DoWhileStmt.cpp      \
+        ForLoop.cpp
 
 SVN_SRCS = $(AST_SRCS)
 SRCS = $(SVN_SRCS)

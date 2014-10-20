@@ -20,6 +20,7 @@
 #include "WhileDoStmt.h"
 
 #include "build.h"
+#include "ForLoop.h"
 
 /************************************ | *************************************
 *                                                                           *
@@ -33,7 +34,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
 
   if (isCForLoop(cond) == true)
   {
-    retval = buildCForLoopStmt(toCallExpr(cond), body);
+    retval = ForLoop::buildCForLoop(toCallExpr(cond), body);
   }
 
   else
