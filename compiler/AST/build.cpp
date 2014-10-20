@@ -29,6 +29,7 @@
 #include "symbol.h"
 #include "type.h"
 #include "WhileDoStmt.h"
+#include "DoWhileStmt.h"
 
 static void
 checkControlFlow(Expr* expr, const char* context) {
@@ -552,40 +553,6 @@ BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
   stmts->insertAtTail(new DefExpr(breakLabel));
   return stmts;
 }
-
-
-
-
-BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
-  cond = new CallExpr("_cond_test", cond);
-  VarSymbol* condVar = newTemp();
-
-  // make variables declared in the scope of the body visible to
-  // expressions in the condition of a do..while block
-  if (body->length() == 1 && toBlockStmt(body->body.only())) {
-    body = toBlockStmt(body->body.only());
-    body->remove();
-  }
-
-  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  continueLabel->addFlag(FLAG_COMPILER_GENERATED);
-  continueLabel->addFlag(FLAG_LABEL_CONTINUE);
-  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-  breakLabel->addFlag(FLAG_COMPILER_GENERATED);
-  breakLabel->addFlag(FLAG_LABEL_BREAK);
-  BlockStmt* block = new BlockStmt(body);
-  block->continueLabel = continueLabel;
-  block->breakLabel = breakLabel;
-  block->blockInfoSet(new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar));
-  BlockStmt* stmts = buildChapelStmt();
-  stmts->insertAtTail(new DefExpr(condVar));
-  stmts->insertAtTail(block);
-  body->insertAtTail(new DefExpr(continueLabel));
-  body->insertAtTail(new CallExpr(PRIM_MOVE, condVar, cond->copy()));
-  stmts->insertAtTail(new DefExpr(breakLabel));
-  return stmts;
-}
-
 
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
   cond = new CallExpr("_cond_test", cond);

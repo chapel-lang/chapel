@@ -38,7 +38,8 @@ AST_SRCS = \
         AstDumpToNode.cpp    \
                              \
         WhileStmt.cpp        \
-        WhileDoStmt.cpp
+        WhileDoStmt.cpp      \
+        DoWhileStmt.cpp
 
 SVN_SRCS = $(AST_SRCS)
 SRCS = $(SVN_SRCS)
