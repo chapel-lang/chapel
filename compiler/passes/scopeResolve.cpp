@@ -218,7 +218,8 @@ static void addToSymbolTable(Vec<DefExpr*>& defs) {
     // If the symbol is a compiler-generated variable, function or label,
     // do not add it to the symbol table.
     if (def->sym->hasFlag(FLAG_TEMP) ||
-        def->sym->hasFlag(FLAG_COMPILER_GENERATED))
+        def->sym->hasFlag(FLAG_INVISIBLE_LABEL))
+      // (Compiler-generated functions are visible.)
       continue;
 
     BaseAST* scope = getScope(def);
