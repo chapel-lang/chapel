@@ -199,14 +199,89 @@ partial initialization of objects containing arrays.
 
 \subsection{Array Variables}
 
-The Chapel code:
+The process through which an array variable is constructed is similar to that for a
+domain.  The runtime type info variable has a field that contains a copy of the domain
+information. The type of the structure is fully known after resolution: it contains only
+one field whose type is exactly \chpl{domain(2,int(64),false)}.
+
+The call to \chpl{chpl_convertRuntimeTypeToValue()} produces a result of the array type,
+which is the element type \chpl{int(64)} attached to the domain type above.  The runtime
+type info variable also conveys the dimensions of the domain.  (Note that a
+fully-constructed domain object would convey the same information.)
+
+In the current implementation, the function \chpl{chpl__buildArrayRuntimeType()} calls
+\chpl{dom.buildArray(eltType)}, which attaches the element type to the passed-in domain
+and returns a fully-constructed array.  The \chpl{buildArray()} function in turn calls
+\chpl{dsiBuildArray} on the value extracted from the domain representation.  The value
+field is the actual domain object, which is wrapped in the \chpl{_domain} record to support
+privatization.  The actual work of building the array is done in \chpl{dsiBuildArray}; the
+call to \chpl{_newArray()} merely updates the fields in the container record.
+
+The function \chpl{dsiBuildArray} calls down to the array constructor for the
+corresponding domain type.  For a default rectangular array, this is
+\chpl{DefaultRectangularArr}.  The generic arguments \chpl{rank}, \chpl{idxType} and
+\chpl{stridable} are copied from the domain on which \chpl{dsiBuildArray} is called.  The
+elementType is supplied as an argument, and the a pointer to the domain is passed to the
+array constructor as the \chpl{dom} argument.
+
+There is no explicit constructor for the \chpl{DefaultRectangularArr} as it stands, so a
+wrapper for the all-fields constructor is created to set up the fields in the
+\chpl{DefaultRectangularArr} object.  The generic fields include everything except the
+\chpl{dom} argument.  The remaining fields in the object are value fields.  Their types
+are mostly dependent upon the generic fields.  Thus, the generic fields must all be
+resolved before the types of the remaining fields can be established.
+
+The \chpl{initialize()} procedure is called implicitly as part of the all-fields
+constructor implementation.  In this routine, if the field \chpl{noinit_data} is true,
+then allocation and initialization of the \chpl{_ddata} representation is skipped.  This
+is used in \chpl{dsiReindex} and \chpl{dsiSlice} to create an alias of that representation
+(rather than creating it anew).  Otherwise, the call to \chpl{_ddata_allocate} takes care
+of both allocating and initializing the array data.  We note that at this point, the
+allocation and initialization could be separated if, for example, the algorithm could
+guarantee that initialization were performed later.
+
+At this point, the proposal is to keep the construction of arrays largely intact.  In
+order to carry out the deprecation of the \chpl{initialize} function, however, it would be
+necessary to rewrite the pertinent forms of array constructors so that they could call the
+initialize function explicitly.  
+
+Under this proposal, the explicit constructor for a \chpl{DefaultRectangularArr} would
+look like:
 \begin{chapel}
-  var A: [1..n, 1..n] int;
-  var B = ["1", "2", "3", "4", "5"];
-  var C: [1..n] real = [.500, .666, .750, .800];
-  var D: [1..n, 1..n] int = noinit;
+  ctor DefaultRectangularArr(type eltType, param rank:int, type idxType,
+                             param stridable:bool, dom: _domain)
+    with (eltType = eltType, rank = rank, idxType = idxType,
+          stridable = stridable, dom = dom) {
+      initialize();
+    }
 \end{chapel}
 \noindent
+As noted above, the four generic arguments establish the type of the object being
+constructed.  Once the type is instantiated, the types of all of the fields in that type
+is determined.  Current behavior is to default-initialize those fields.  The same action
+will be taken in the constructor shown.  The type of the domain argument was abbreviated
+as \chpl{_domain}.  However, given the arguments to the constructor, this type could be
+expanded as \chpl{DefaultRectangularDom(rank=rank, idxType=idxType, stridable=stridable)},
+just as it is in the class declaration.
+
+Aside from the layers that are added by the DSI abstraction and the privatization
+mechanism, the representation of arrays are mostly class-based.  As has been mentioned
+above, it should be possible to replace the runtime type implementation with appropriate
+introspection in the compiler.  That done, in the actual implementation, the domain field
+in an array could be represented by a base class that was the common ancestor of all
+domain times.  No further information would be required in the representation of the
+domain field in an array.  On the other hand, the domain object actually attached has a
+runtime type associated with it.  This supports the polymorphic behavior required to
+uniformly represent arrays based on disparate domain types.  I believe that dynamic
+dispatch is already used to handle this polymorphic behavior, so there would be no
+performance loss associated with removing an explicit type from the domain field.
+
+To implement a \chpl{noinit} capability that initializes everything except the values of
+the array elements, it would be necessary to supply a boolean to control whether the call
+to \chpl{init_elts} is made.  That flag would have to be propagate back up the call
+hierarchy outlined above, and the \chpl{noinit} initializer translated into that flag by
+the compiler at the place where \chpl{chpl__convertRuntimeTypeToValue()} is currently
+called.
 
 \subsection{Domain Variables}
 
