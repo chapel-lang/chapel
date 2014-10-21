@@ -217,6 +217,17 @@ consistent failure due to insane memory usage (should get better with strings)
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
+======================
+perf.chap03.playground
+Inherits 'perf*'
+Reviewed 2014-10-16
+======================
+
+consistent failure due to insane memory usage (should get better with strings)
+------------------------------------------------------------------------------
+[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
+
+
 ===================
 perf.chap04
 Inherits 'perf*'
@@ -250,14 +261,14 @@ Inherits 'memleaks.examples'
 Reviewed ??/??/??
 ============================
 
-sporadic segfault (infrequent) (10/03/14)
------------------------------------------
-[Error matching program output for stress/deitz/test_10k_begins]
-
 Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
 -----------------------------------------------------------------------------
 [Error matching program output for compflags/bradc/minimalModules/minModDeclPrint]
 [Error matching program output for compflags/bradc/minimalModules/minModFnRefArg]
+
+sporadic segfault (infrequent) (10/03/14)
+-----------------------------------------
+[Error matching program output for stress/deitz/test_10k_begins]
 
 
 
@@ -276,23 +287,8 @@ internal error (mike/hilde)
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2014-10-16
+Reviewed 2014-10-17
 ===================
-
-annoying occasional invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
-read of size 8 in dl_name_match_p (e.g., 10/2/14)
------------------------------------------------------------------------------
-[Error matching program output for performance/sungeun/dgemm]
-
-occasional invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
-(fixed 10/08/14)
-----------------------------------------------------------------------------
-[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
-
-infrequent, annoying timeout
-----------------------------
-[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
-[Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
 
 noisy failure due to invalid write of size 8 (e.g., 09/15/14, 09/24/14, ...)
 ----------------------------------------------------------------------------
@@ -353,6 +349,22 @@ continual timeouts
 [Error: Timed out executing program types/range/bradc/overflowInComputeBlock]
 [Error: Timed out executing program types/single/sungeun/stress]
 
+sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
+read of size 8 in dl_name_match_p (e.g., 10/2/14)
+-----------------------------------------------------------------------------
+[Error matching program output for performance/sungeun/dgemm]
+
+sporadic invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
+(fixed 10/08/14)
+----------------------------------------------------------------------------
+[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
+
+sporadic timeouts (infrequent)
+------------------------------
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
+
+
 
 ===================
 llvm
@@ -383,7 +395,7 @@ Reviewed 2014-10-16
 ===================
 no-local
 Inherits 'general'
-Reviewed ????-??-??
+Reviewed 2014-10-16
 ===================
 
 
@@ -392,10 +404,6 @@ gasnet* regressions
 Inherits 'no-local'
 Reviewed 2014-10-16
 ===================
-
-annoying occasional failures even after Sung calmed down (09/18/14 -- sungeun)
-------------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall]
 
 error: cannot create C string from remote string (due to r22900 -- sungeun)
 ---------------------------------------------------------------------------
@@ -406,31 +414,27 @@ error: cannot create C string from remote string (due to r22900 -- sungeun)
 [Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)] (2014/06/14)
 [Error matching program output for optimizations/sungeun/RADOpt/access3d (compopts: 1)] (2014/06/14)
 
+sporadic failures even after Sung quieted it down (frequently, esp. gasnet.fifo)
+--------------------------------------------------------------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/coforall]
+
 
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed ????-??-??
+Reviewed 2014-10-17
 ===================
 
-seg fault (09/17/14 -- fixed 09/19/14)
---------------------------------------
+seg fault (09/17/14 -- resolved itself 09/19/14)
+------------------------------------------------
 [Error matching program output for multilocale/deitz/needMultiLocales/mdblock/test_block2d_2]
 
 
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed ????-??-??
+Reviewed 2014-10-16
 ===================
-
-noisy failure due to 'slave got an unknown command on coord socket' (09/27/14)
-------------------------------------------------------------------------------
-[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5]
-
-noisy unresolved access of range by (2) (10/07/14)
---------------------------------------------------
-[Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug]
 
 consistent timeouts
 -------------------
@@ -438,6 +442,14 @@ consistent timeouts
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
 [Error: Timed out executing program memory/shannon/outofmemory/mallocOutOfMemory]
 [Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
+
+sporadic failure due to 'slave got an unknown command on coord socket' (infrequent) (09/27/14)
+------------------------------------------------------------------------------
+[Error matching program output for multilocale/diten/localBlock/needMultiLocales/localBlock5]
+
+sporadic unresolved access of range by (2) (infrequent) (10/07/14)
+------------------------------------------------------------------
+[Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug]
 
 
 
@@ -463,24 +475,16 @@ sporadic timeout (infrequent)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed ????-??-??
+Reviewed 2014-10-17
 ===============================
 
 
 
-==========================================================
-gasnet.numa (TODO: checkme)
+=============================
+gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed ????-??-??
-==========================================================
-
-occaaional segfault
--------------------
-[Error matching program output for release/examples/programs/quicksort]
-
-frequent, annoying timeout
---------------------------
-[Error: Timed out executing program release/examples/programs/quicksort]
+Reviewed 2014-10-16
+=============================
 
 comm count mismatches
 ---------------------
@@ -488,31 +492,39 @@ comm count mismatches
 [Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceSlice]
 [Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduce]
 
+sporadic segfault
+-----------------
+[Error matching program output for release/examples/programs/quicksort]
 
-================================
-gasnet.fifo.flat (TODO_ checkme)
+sporadic timeout
+----------------
+[Error: Timed out executing program release/examples/programs/quicksort]
+
+
+=============================
+gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed ????-??-??
-================================
+Reviewed 2014-06-16
+=============================
 
-very infrequent segfault (10/03/14)
------------------------------------
-[Error matching program output for types/string/StringImpl/stress/plusEquals]
-
-infrequent timeouts
+consistent timeouts
 -------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 
-annoying, noisy timeouts
-------------------------
+sporadic timeouts (frequent)
+----------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy]
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
 
-consistent timeouts
--------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
+sporadic timeouts (infrequent)
+------------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
+
+sporadic segfault (very infrequent) (10/03/14)
+----------------------------------------------
+[Error matching program output for types/string/StringImpl/stress/plusEquals]
 
 
 ===================
