@@ -542,11 +542,9 @@ static BlockStmt* buildCForLoopStmt(CallExpr* call, BlockStmt* body) {
   loop->blockInfoSet(call);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_INVISIBLE_LABEL);
-  continueLabel->addFlag(FLAG_LABEL_CONTINUE);
   loop->continueLabel = continueLabel;
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
   breakLabel->addFlag(FLAG_INVISIBLE_LABEL);
-  breakLabel->addFlag(FLAG_LABEL_BREAK);
   loop->breakLabel = breakLabel;
   loop->insertAtTail(new DefExpr(continueLabel));
   BlockStmt* stmts = buildChapelStmt();
@@ -572,11 +570,9 @@ BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body) {
   body->blockInfoSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar));
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_INVISIBLE_LABEL);
-  continueLabel->addFlag(FLAG_LABEL_CONTINUE);
   body->continueLabel = continueLabel;
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
   breakLabel->addFlag(FLAG_INVISIBLE_LABEL);
-  breakLabel->addFlag(FLAG_LABEL_BREAK);
   body->breakLabel = breakLabel;
   body->insertAtTail(new DefExpr(continueLabel));
   body->insertAtTail(new CallExpr(PRIM_MOVE, condVar, cond->copy()));
@@ -602,10 +598,8 @@ BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body) {
 
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_INVISIBLE_LABEL);
-  continueLabel->addFlag(FLAG_LABEL_CONTINUE);
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
   breakLabel->addFlag(FLAG_INVISIBLE_LABEL);
-  breakLabel->addFlag(FLAG_LABEL_BREAK);
   BlockStmt* block = new BlockStmt(body);
   block->continueLabel = continueLabel;
   block->breakLabel = breakLabel;
@@ -988,11 +982,9 @@ BlockStmt* buildForLoopStmt(Expr* indices,
   BlockStmt* stmts = buildChapelStmt();
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   continueLabel->addFlag(FLAG_INVISIBLE_LABEL);
-  continueLabel->addFlag(FLAG_LABEL_CONTINUE);
   body->continueLabel = continueLabel;
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
   breakLabel->addFlag(FLAG_INVISIBLE_LABEL);
-  breakLabel->addFlag(FLAG_LABEL_BREAK);
   body->breakLabel = breakLabel;
 
   VarSymbol* iterator = newTemp("_iterator");
@@ -1276,7 +1268,6 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
 
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
   breakLabel->addFlag(FLAG_INVISIBLE_LABEL);
-  breakLabel->addFlag(FLAG_LABEL_BREAK);
   block->breakLabel = breakLabel;
   outer->insertAtTail(new DefExpr(breakLabel));
 

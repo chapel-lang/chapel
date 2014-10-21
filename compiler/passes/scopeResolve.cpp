@@ -215,6 +215,9 @@ void scopeResolve() {
 static void addToSymbolTable(Vec<DefExpr*>& defs) {
   forv_Vec(DefExpr, def, defs)
   {
+    // Is there any label at this stage that is not also invisible?
+    INT_ASSERT(!isLabelSymbol(def->sym) || def->sym->hasFlag(FLAG_INVISIBLE_LABEL));
+
     // If the symbol is a compiler-generated variable, function or label,
     // do not add it to the symbol table.
     if (def->sym->hasFlag(FLAG_TEMP) ||
