@@ -432,7 +432,10 @@ utildir = os.path.realpath(utildir)
 # sys.stdout.write('utildir='+utildir+'\n');
 
 # Find the c compiler
-p = subprocess.Popen([utildir+'/config/compileline', '--compile'],
+# We open the compileline inside of CHPL_HOME rather than CHPL_TEST_UTIL_DIR on
+# purpose. compileline will not work correctly in some configurations when run
+# outside of its directory tree.
+p = subprocess.Popen([os.path.join(chpl_home,'util','config','compileline'), '--compile'],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 c_compiler = p.communicate()[0].rstrip()
 if p.returncode != 0:
