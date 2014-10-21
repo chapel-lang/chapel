@@ -33,6 +33,10 @@ class F {
   proc ddName() { return name; }
 }
 
+// Because the getters are compiler-generated, we have to add the flag here to
+// put this pseudo-getter on equal footing.  Otherwise, it always wins, which
+// is not what the test is supposed to show.
+pragma "compiler generated"
 proc object.name: string return "object";
 proc object.ddName(): string { return "object"; }
 
