@@ -6044,9 +6044,12 @@ resolveExpr(Expr* expr)
         
       if (tryFailure) {
         if (tryStack.tail()->parentSymbol == fn) {
-          // Roll the callStack back to the function where the nearest
-          // tryToken conditional is because that is where resolution
-          // will be restarted.
+          // The code in the 'true' branch of a tryToken conditional has failed
+          // to resolve fully. Roll the callStack back to the function where
+          // the nearest tryToken conditional is and replace the entire
+          // conditional with the 'false' branch then continue resolution on
+          // it.  If the 'true' branch did fully resolve, we would replace the
+          // conditional with the 'true' branch instead.
           while (callStack.n > 0 &&
                  callStack.tail()->isResolved() !=
                  tryStack.tail()->elseStmt->parentSymbol) {
