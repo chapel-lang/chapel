@@ -121,7 +121,6 @@ symbolFlag( FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW , npr, "insert auto destro
 symbolFlag( FLAG_INSERT_LINE_FILE_INFO , ypr, "insert line file info" , ncm )
 symbolFlag( FLAG_INSTANTIATED_PARAM , npr, "instantiated param" , "this formal is bound to a param" )
 symbolFlag( FLAG_INVISIBLE_FN , npr, "invisible fn" , "invisible function (not a candidate for resolution)" )
-symbolFlag( FLAG_INVISIBLE_LABEL , npr, "invisible label" , "invisible label (not available as the target of a goto)" )
 symbolFlag( FLAG_IS_MEME , npr, "is meme" , ncm )
 symbolFlag( FLAG_ITERATOR_CLASS , npr, "iterator class" , ncm )
 symbolFlag( FLAG_ITERATOR_FN , npr, "iterator fn" , ncm )
