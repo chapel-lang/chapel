@@ -355,7 +355,10 @@ GenRet BlockStmt::codegen() {
     if(blockInfo) {
       blockStmtEnd = llvm::BasicBlock::Create(
           info->module->getContext(), FNAME("blk_end"));
+
       if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        printf("Noakes 2014/10/22  This code should not be reached. CFOR         %12d\n", id);
+
         // C for loop...
         // blockInfo->get(1) is the initialization block 
         // blockInfo->get(2) is the test block 
@@ -403,6 +406,8 @@ GenRet BlockStmt::codegen() {
 
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
                  blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
+        printf("Noakes 2014/10/22  This code should not be reached. WHILEDO/FOR  %12d\n", id);
+
         // Add the condition block.
         blockStmtCond = llvm::BasicBlock::Create(
             info->module->getContext(), FNAME("blk_cond"));
