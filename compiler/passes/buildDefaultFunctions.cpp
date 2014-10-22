@@ -207,6 +207,9 @@ static FnSymbol* function_exists(const char* name,
 }
 
 
+// Getter and setter functions are provided by the compiler if not supplied by
+// the user.
+// These functions have the same binding strength as if they were user-defined.
 static void build_getter(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
@@ -232,7 +235,6 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
   fn->addFlag(FLAG_INLINE);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
   if (ct->symbol->hasFlag(FLAG_SYNC)) 
     fn->addFlag(FLAG_SYNC);
   if (ct->symbol->hasFlag(FLAG_SINGLE)) 
