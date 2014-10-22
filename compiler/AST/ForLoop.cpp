@@ -19,6 +19,110 @@
 
 #include "ForLoop.h"
 
+#include "build.h"
+
+/************************************ | *************************************
+*                                                                           *
+* Factory methods for the Parser                                            *
+*                                                                           *
+************************************* | ************************************/
+
+BlockStmt* ForLoop::buildForLoop(Expr*      indices,
+                                 Expr*      iteratorExpr,
+                                 BlockStmt* body,
+                                 bool       coforall,
+                                 bool       zippered) 
+{
+  VarSymbol*   index         = newTemp("_indexOfInterest");
+  VarSymbol*   iterator      = newTemp("_iterator");
+  CallExpr*    iterInit      = 0;
+  CallExpr*    iterMove      = 0;
+  ForLoop*     loop          = new ForLoop(body);
+  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+  LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
+  BlockStmt*   retval        = buildChapelStmt();
+
+  iterator->addFlag(FLAG_EXPR_TEMP);
+
+
+  // Unzippered loop, treat all objects (including tuples) the same
+  if (zippered == false) 
+    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr));
+
+  // Expand tuple to a tuple containing appropriate iterators for each value.
+  else 
+    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
+
+  index->addFlag(FLAG_INDEX_OF_INTEREST);
+
+  iterMove = new CallExpr(PRIM_MOVE, index, new CallExpr("iteratorIndex", iterator));
+
+  if (indices == 0)
+    indices = new UnresolvedSymExpr("chpl__elidedIdx");
+
+  checkIndices(indices);
+
+  destructureIndices(loop, indices, new SymExpr(index), coforall);
+
+  if (coforall)
+    index->addFlag(FLAG_COFORALL_INDEX_VAR);
+  
+  loop->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
+
+  loop->continueLabel = continueLabel;
+  loop->breakLabel    = breakLabel;
+
+  loop->insertAtTail(new DefExpr(continueLabel));
+
+  retval->insertAtTail(new DefExpr(index));
+  retval->insertAtTail(new DefExpr(iterator));
+
+  retval->insertAtTail(iterInit);
+  retval->insertAtTail(new BlockStmt(iterMove, BLOCK_TYPE));
+
+  retval->insertAtTail(loop);
+
+  retval->insertAtTail(new DefExpr(breakLabel));
+  retval->insertAtTail(new CallExpr("_freeIterator", iterator));
+
+  return retval;
+}
+
+BlockStmt* ForLoop::buildCForLoop(CallExpr* call, BlockStmt* body) 
+{
+  // Regular loop setup
+  BlockStmt*   loop          = new BlockStmt(body);
+  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+  LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
+  BlockStmt*   retval        = buildChapelStmt();
+
+  // C for loops have the form:
+  //   __primitive("C for loop", initExpr, testExpr, incrExpr)
+  //
+  // This simply wraps the init, test, and incr expr with block stmts
+  call->get(1)->replace(new BlockStmt(call->get(1)->copy()));
+  call->get(2)->replace(new BlockStmt(call->get(2)->copy()));
+  call->get(3)->replace(new BlockStmt(call->get(3)->copy()));
+
+  loop->blockInfoSet(call);
+
+  loop->continueLabel = continueLabel;
+  loop->breakLabel    = breakLabel;
+
+  loop->insertAtTail(new DefExpr(continueLabel));
+
+  retval->insertAtTail(loop);
+  retval->insertAtTail(new DefExpr(breakLabel));
+
+  return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+* Instance methods                                                          *
+*                                                                           *
+************************************* | ************************************/
+
 ForLoop::ForLoop(BlockStmt* initBody) : BlockStmt(initBody)
 {
 

@@ -24,11 +24,29 @@
 
 class ForLoop : public BlockStmt 
 {
+  //
+  // Class interface
+  //
 public:
-                         ForLoop(BlockStmt* initBody);
+  static BlockStmt*      buildForLoop (Expr*      indices,
+                                       Expr*      iteratorExpr,
+                                       BlockStmt* body,
+                                       bool       coforall,
+                                       bool       zippered);
+
+  static BlockStmt*      buildCForLoop(CallExpr*  cforInfo, 
+                                       BlockStmt* body);
+
+  //
+  // Instance Interface
+  //
+public:
   virtual               ~ForLoop();
 
   virtual ForLoop*       copy(SymbolMap* map = NULL, bool internal = false);
+
+private:
+                         ForLoop(BlockStmt* initBody);
 };
 
 #endif

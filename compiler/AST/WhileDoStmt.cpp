@@ -19,6 +19,72 @@
 
 #include "WhileDoStmt.h"
 
+#include "build.h"
+#include "ForLoop.h"
+
+/************************************ | *************************************
+*                                                                           *
+* Factory methods for the Parser                                            *
+*                                                                           *
+************************************* | ************************************/
+
+BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body) 
+{
+  BlockStmt* retval = NULL;
+
+  if (isCForLoop(cond) == true)
+  {
+    retval = ForLoop::buildCForLoop(toCallExpr(cond), body);
+  }
+
+  else
+  {
+    VarSymbol*   condVar       = newTemp();
+    CallExpr*    condTest      = new CallExpr("_cond_test", cond);
+
+    LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+    LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
+
+    WhileDoStmt* loop          = new WhileDoStmt(body);
+
+    loop->blockInfoSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar));
+
+    loop->continueLabel = continueLabel;
+    loop->breakLabel    = breakLabel;
+
+    loop->insertAtTail(new DefExpr(continueLabel));
+    loop->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
+
+    retval = buildChapelStmt();
+
+    retval->insertAtTail(new DefExpr(condVar));
+    retval->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
+    retval->insertAtTail(loop);
+    retval->insertAtTail(new DefExpr(breakLabel));
+  }
+
+  return retval;
+}
+
+// C for loops are invoked with 'while __primitive("C for loop" ...)'
+// This checks if we had such a case and if we did builds the c for loop
+// instead of the while loop and returns it.
+bool WhileDoStmt::isCForLoop(Expr* cond)
+{
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(cond)) 
+    retval = (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) ? true : false;
+
+  return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+* Instance methods                                                          *
+*                                                                           *
+************************************* | ************************************/
+
 WhileDoStmt::WhileDoStmt(BlockStmt* initBody) : WhileStmt(initBody)
 {
 

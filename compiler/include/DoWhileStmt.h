@@ -24,11 +24,24 @@
 
 class DoWhileStmt : public WhileStmt
 {
+  //
+  // Class interface
+  //
 public:
-                         DoWhileStmt(BlockStmt* initBody);
+  static BlockStmt*      build(Expr* cond, BlockStmt* body);
+
+
+
+  //
+  // Instance interface
+  //
+public:
   virtual               ~DoWhileStmt();
 
   virtual DoWhileStmt*   copy(SymbolMap* map = NULL, bool internal = false);
+
+private:
+                         DoWhileStmt(BlockStmt* initBody);
 };
 
 #endif

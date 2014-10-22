@@ -24,11 +24,26 @@
 
 class WhileDoStmt : public WhileStmt 
 {
+  //
+  // Class interface
+  //
 public:
-                         WhileDoStmt(BlockStmt* initBody);
+  static BlockStmt*      build(Expr* cond, BlockStmt* body);
+
+private:
+  static bool            isCForLoop(Expr* cond);
+
+
+  //
+  // Instance interface
+  //
+public:
   virtual               ~WhileDoStmt();
 
   virtual WhileDoStmt*   copy(SymbolMap* map = NULL, bool internal = false);
+
+private:
+                         WhileDoStmt(BlockStmt* initBody);
 };
 
 #endif
