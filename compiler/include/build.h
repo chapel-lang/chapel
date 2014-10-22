@@ -66,9 +66,12 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
-BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body);
-BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
+void       checkIndices(BaseAST* indices);
+void       destructureIndices(BlockStmt* block,
+                              BaseAST*   indices,
+                              Expr*      init,
+                              bool       coforall);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  CallExpr* byref_vars,
@@ -76,11 +79,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
-BlockStmt* buildForLoopStmt(Expr* indices,
-                            Expr* iterator,
-                            BlockStmt* body,
-                            bool coforall = false,
-                            bool zippered = false);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
                                BlockStmt* body,
