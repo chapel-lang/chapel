@@ -45,6 +45,14 @@ public:
   virtual               ~ForLoop();
 
   virtual ForLoop*       copy(SymbolMap* map = NULL, bool internal = false);
+
+  virtual GenRet         codegen();
+
+private:
+                         ForLoop();
+
+  std::string            codegenCForLoopHeader   (BlockStmt* block);
+  GenRet                 codegenCForLoopCondition(BlockStmt* block);
 };
 
 #endif

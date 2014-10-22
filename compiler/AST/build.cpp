@@ -980,7 +980,8 @@ buildForallLoopStmt(Expr* indices,
                                            followIdx,
                                            indices,
                                            loopBody->copy(),
-                                           false, zippered);
+                                           false, 
+                                           zippered);
 
   if (!fNoFastFollowers) {
     Symbol* T1 = newTemp();
@@ -1130,7 +1131,6 @@ insertBeforeCompilerTemp(Expr* stmt, Expr* expr) {
   stmt->insertBefore(new CallExpr(PRIM_MOVE, expr_var, expr));
   return expr_var;
 }
-
 
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmts) {
   BlockStmt* block = new BlockStmt(stmts);

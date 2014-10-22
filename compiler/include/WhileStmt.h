@@ -31,6 +31,9 @@ protected:
   void                copyShare(const WhileStmt& ref,
                                 SymbolMap*       mapRef, 
                                 bool             internal);
+
+private:
+                      WhileStmt();
 };
 
 #endif
