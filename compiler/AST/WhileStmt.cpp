@@ -29,7 +29,7 @@ WhileStmt::~WhileStmt()
 
 }
 
-void WhileStmt::copyInner(const WhileStmt& ref,
+void WhileStmt::copyShare(const WhileStmt& ref,
                           SymbolMap*       mapRef, 
                           bool             internal) 
 {

@@ -28,7 +28,7 @@ protected:
                       WhileStmt(BlockStmt* initBody);
   virtual            ~WhileStmt();
 
-  void                copyInner(const WhileStmt& ref,
+  void                copyShare(const WhileStmt& ref,
                                 SymbolMap*       mapRef, 
                                 bool             internal);
 };
