@@ -139,13 +139,10 @@ function genDygraph(graphInfo, expandInfo) {
     var logToggle = divs.logToggle;
     var annToggle = divs.annToggle;
 
-    var startdate = graphInfo.startdate;
-    var enddate = graphInfo.enddate;
-    // if our x axis values are actually dates, parse them as such
-    if (!numericX) {
-      startdate= Dygraph.dateParser(startdate);
-      enddate= Dygraph.dateParser(enddate);
-    }
+    var startdate = getOption(OptionsEnum.STARTDATE) || graphInfo.startdate;
+    var enddate = getOption(OptionsEnum.ENDDATE) || graphInfo.enddate;
+    startdate = parseDate(startdate);
+    enddate = parseDate(enddate);
 
     // setup our options
     var graphOptions = {
@@ -186,7 +183,6 @@ function genDygraph(graphInfo, expandInfo) {
     var g = new Dygraph(div, 'CSVfiles/'+graphInfo.datfname, graphOptions);
     g.isReady = false;
     setupSeriesLocking(g);
-
     // we use options in graphinfo in dygraph callbacks that we can't pass
     // arguments to so we add it to the graph to be able to pass it around
     g.divs = divs;
@@ -207,13 +203,6 @@ function genDygraph(graphInfo, expandInfo) {
     gs.push(g);
 }
 
-// This is a small helper function to see if a string ends with a certain
-// string. Do not redefine if a browser has a built in version
-if (typeof String.prototype.endsWith !== 'function') {
-    String.prototype.endsWith = function(suffix) {
-        return this.indexOf(suffix, this.length - suffix.length) !== -1;
-    };
-}
 
 // Function to expand an existing graph. This will potentially change the
 // visibility of the current graph and will create multiple graphs from the
@@ -525,11 +514,19 @@ function customDrawCallback(g, initial) {
     // sync this graphs x-axis with all other ready graphs along the x-axis
     if (!initial && g.isReady) {
         var range = g.xAxisRange();
+        range[0] = roundDate(range[0], false);
+        range[1] = roundDate(range[1], true);
+
+        setQueryStringFromOption(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
+        setQueryStringFromOption(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
+
         for (var j = 0; j < gs.length; j++) {
-            if (gs[j] === g || !gs[j].isReady ||
-                range.toString() === gs[j].xAxisRange().toString()) continue;
+            if (gs[j].isReady && (g === gs[j] ||
+                  range.toString() !== gs[j].xAxisRange().toString())) {
             gs[j].updateOptions({ dateWindow: range });
+            }
         }
+
     }
     blockRedraw = false;
 }
@@ -545,11 +542,7 @@ function markReleaseDates (canvas, area, g) {
         canvas.stroke();
     }
     for (var i = 0; i < branchInfo.length; i++) {
-        if (numericX) {
-            markReleaseDate(branchInfo[i].revision);
-        } else {
-            markReleaseDate(Dygraph.dateParser(branchInfo[i].branchDate));
-        }
+        markReleaseDate(parseDate(branchInfo[i].branchDate));
     }
 }
 
@@ -580,7 +573,7 @@ function perfGraphInit() {
 
     // if the graphs weren't synced today let the user know
     var dateElem= document.getElementById('dateElem');
-    if(Dygraph.dateParser(runDate) < Dygraph.dateParser(todayDate)) {
+    if(parseDate(runDate) < parseDate(todayDate)) {
         dateElem.innerHTML = 'Graphs Last Updated on ' + runDate;
         dateElem.style.color = "RED";
     }
@@ -588,6 +581,14 @@ function perfGraphInit() {
     // generate the configuration menu and toggle options
     var toggleConf = document.getElementById('toggleConf');
     if (descriptions.length > 0) {
+      var queryStringConf = getOption(OptionsEnum.CONFIGURATIONS)
+      if (queryStringConf) {
+          var setConfigurations = queryStringConf.split(',');
+      } else {
+          var setConfigurations = [descriptions[0].trim()];
+      }
+
+      console.log(setConfigurations);
       for (var i = 0; i < descriptions.length; i++) {
         var elem = document.createElement('div');
         var description = descriptions[i];
@@ -595,7 +596,7 @@ function perfGraphInit() {
         elem.innerHTML = '<input id="hide' + i + '"type="checkbox">' + description;
         toggleConf.appendChild(elem);
         var checkBox = document.getElementById('hide' + i);
-        if (i === 0) {
+        if (setConfigurations.indexOf(description.trim()) >= 0) {
           checkBox.checked = true;
         } else {
           checkBox.checked = false;
@@ -645,11 +646,19 @@ function perfGraphInit() {
 
 function setConfigurationVisibility(graph, blockRedraw) {
   var checked = {};
+  var configs = ''
   for (var i = 0; i<descriptions.length; i++) {
     var checkBox = document.getElementById('hide' + i);
+      if (checkBox.checked) {
+        configs += i + ','; 
+      }
       checked[descriptions[i]] = checkBox.checked;
   }
-
+  if (configs.removeTrailingChar() === descriptions[0].trim()) {
+    configs = '';
+  }
+  console.log(configs);
+  setQueryStringFromOption(OptionsEnum.CONFIGURATIONS, configs.removeTrailingChar());
   var labels = graph.getLabels();
   var visibility = graph.visibility();
   for (var j = 1; j < labels.length; j++) {
@@ -667,36 +676,68 @@ function setConfigurationVisibility(graph, blockRedraw) {
 }
 
 
+
+
+
+
+
 // This function parses the query string of the url and sets check boxes
 // accordingly. All check boxes are set to not checked by default but if the
 // query string contains <boxnumber>=1 then the box is set to be initially
 // checked.
 function setCheckBoxesFromURL() {
-    var queryString = document.location.search.slice(1);
-    var hashes = queryString.split('&');
-    for(var i = 0; i < hashes.length; i++)  {
-        var hash = hashes[i].split('=');
-        if (hash[1] === '1') {
-            var checkBox = document.getElementById('graph' + hash[0]);
+    var graphsToDisplay = getOption(OptionsEnum.GRAPHS);
+    if (graphsToDisplay === 'all') {
+        selectAllGraphs();
+    } else if (graphsToDisplay.length) {
+        var boxesToCheck = graphsToDisplay.split(',');
+        for (var i = 0; i < boxesToCheck.length; i++) {
+            var checkBox = document.getElementById('graph' + boxesToCheck[i]);
             checkBox.checked = true;
         }
     }
+  
 }
 
 // Update the query string of the url based on the current set of checkboxes
 // that are checked.
 function setURLFromCheckBoxes() {
-    var baseURL = document.location.href.split('?')[0];
-    var queryString = '?';
+    var checkedBoxes = '';
+    var allChecked = true;
     for (var i = 0; i < allGraphs.length; i++) {
-        var checkBox  = document.getElementById('graph' + i);
+        var checkBox = document.getElementById('graph' + i);
         if (checkBox.checked) {
-            queryString += i + '=1&'
+            checkedBoxes += i + ',';
+        } else {
+            allChecked = false;
         }
     }
-    queryString = queryString.slice(0, -1);
-    history.replaceState(null, null, baseURL + queryString);
+    checkedBoxes = checkedBoxes.removeTrailingChar();
+    if (allChecked) {
+        checkedBoxes = 'all';
+    }
+    setQueryStringFromOption(OptionsEnum.GRAPHS, checkedBoxes);
 }
+
+
+
+function clearDates() {
+    setQueryStringFromOption(OptionsEnum.STARTDATE, '');
+    setQueryStringFromOption(OptionsEnum.ENDDATE, '');
+
+    blockRedraw = true;
+    for (var j = 0; j < gs.length; j++) {
+        var start = parseDate(gs[j].graphInfo.startdate);
+        var end = parseDate(gs[j].graphInfo.enddate);
+        var range = [start, end];
+        if (gs[j].isReady && range.toString() !== gs[j].xAxisRange().toString())
+        gs[j].updateOptions({ dateWindow: range });
+    }
+
+    blockRedraw = false;
+}
+
+
 
 function selectAllGraphs() {
     checkAll(true);
@@ -746,5 +787,128 @@ function displaySelectedGraphs() {
     }
 
     setURLFromCheckBoxes();
+}
+
+
+
+
+// Start of options
+// Options are just a simple object (key pair relationship) of option name to
+// the specified option. Options are stored in the query string. This enum of
+// options just to not have to use the sring name throughout the code and to
+// allow the options to be ordered in the query string (you probably want the
+// dates before graphs because the dates are likely something a user might want
+// to change to get a specific range.)
+OptionsEnum = {
+    STARTDATE      : 'startdate',
+    ENDDATE        : 'enddate',
+    CONFIGURATIONS : 'configs',
+    GRAPHS         : 'graphs'
+}
+
+
+
+// get an object of options from the current query string
+function getOptions() {
+    var options = {};
+    for (option in OptionsEnum) { options[OptionsEnum[option]] = '';}
+
+    var queryString = document.location.search.slice(1);
+    var queryStrings = queryString.split('&');
+    for (var i = 0; i < queryStrings.length; i++) {
+      var curOption = queryStrings[i].split('=');
+      var curOptionName = curOption[0];
+      var curOptionValue = curOption[1];
+      options[curOptionName] = curOptionValue; 
+    }
+    return options;
+}
+
+// get a specific option from the query string. returns empty string if option
+// was not in the query string
+function getOption(optionName) {
+    var options = getOptions();
+    if (optionName in options) {
+      return options[optionName];
+    }
+    return '';
+}
+
+// set the query string based on the set of options passed in
+function setQueryStringFromOptions(options) {
+    var baseURL = document.location.href.split('?')[0];
+    var queryString = '?';
+
+    for (var option in options) {
+        if (options[option]) {
+            queryString += option+'='+options[option]+'&';
+        }
+    }
+
+    queryString = queryString.removeTrailingChar();
+    history.replaceState(null, null, baseURL + queryString);
+}
+
+// set the query string based on the particular option. This only overrides/add
+// the option specified without changing the rest of the options
+function setQueryStringFromOption(option, optionValue) {
+    var options = getOptions();
+    options[option] = optionValue;
+    setQueryStringFromOptions(options);
+}
+
+
+
+
+// Helper functions
+
+// remove a trailing character from a string. removes any character by default,
+// or only the specified character if one is passed.
+String.prototype.removeTrailingChar = function(charToRemove) {
+    charToRemove = charToRemove || '.';
+    var re = new RegExp(charToRemove +'$');
+    return this.replace(re, '');
+}
+
+
+// This is a small helper function to see if a string ends with a certain
+// string. Do not redefine if a browser has a built in version
+if (typeof String.prototype.endsWith !== 'function') {
+    String.prototype.endsWith = function(suffix) {
+        return this.indexOf(suffix, this.length - suffix.length) !== -1;
+    };
+}
+
+
+
+// help function to round a date up or down (for the purposes on zooming in on
+// date ranges only) 
+function roundDate(date, roundUp) {
+    if (numericX) {
+        return date;
+    } else {
+        var roundDay = 24 * 60 * 60 * 1000 - 1;
+        if (!roundUp) {
+          roundDay = 0;
+        }
+
+        var dateString = Dygraph.dateString_(date).split(' ');
+        if (dateString[1]) {
+            dateString = Dygraph.dateString_(date+roundDay).split(' ');
+        }
+        return parseDate(dateString[0]);
+    }
+}
+
+
+
+// Help function to parse a date (either use dygraph date parser, or do nothing
+// for numericX)
+function parseDate(date) {
+  if (numericX) {
+    return date;
+  } else {
+    return Dygraph.dateParser(date);
+  }
 }
 
