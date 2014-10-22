@@ -41,12 +41,10 @@ public:
   // Instance Interface
   //
 public:
+                         ForLoop(BlockStmt* initBody);
   virtual               ~ForLoop();
 
   virtual ForLoop*       copy(SymbolMap* map = NULL, bool internal = false);
-
-private:
-                         ForLoop(BlockStmt* initBody);
 };
 
 #endif

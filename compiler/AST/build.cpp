@@ -421,10 +421,7 @@ buildLabelStmt(const char* name, Expr* stmt) {
       breakLabelStmt = breakLabelStmt->prev;
     }
     BlockStmt* loop = toBlockStmt(breakLabelStmt->prev);
-    if (loop && loop->isLoop() &&
-        (loop->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP)     ||
-         loop->blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-         loop->blockInfoGet()->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))) {
+    if (loop && loop->isLoop()) {
       if (!loop->breakLabel || !loop->continueLabel) {
         USR_FATAL(stmt, "cannot label parallel loop");
       } else {
@@ -879,36 +876,45 @@ CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
 }
 
 static BlockStmt*
-buildFollowLoop(Symbol* iter, Symbol* leadIdxCopy, Symbol* followIter,
-                Symbol* followIdx, Expr* indices, BlockStmt* loopBody,
-                bool fast, bool zippered) {
+buildFollowLoop(VarSymbol* iter, 
+                VarSymbol* leadIdxCopy,
+                VarSymbol* followIter,
+                VarSymbol* followIdx,
+                Expr*      indices,
+                BlockStmt* loopBody,
+                bool       fast,
+                bool       zippered) {
   BlockStmt* followBlock = new BlockStmt();
+  ForLoop*   followBody  = new ForLoop(loopBody);
+
   followBlock->insertAtTail(new DefExpr(followIter));
 
-  if( fast ) {
+  if (fast) {
     
-    if( zippered ) {
+    if (zippered) {
       followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFastFollowerZip(%S, %S)))", followIter, iter, leadIdxCopy);
     } else {
-      followBlock->insertAtTail("'move'(%S, _getIterator(_toFastFollower(%S, %S)))", followIter, iter, leadIdxCopy);
+      followBlock->insertAtTail("'move'(%S, _getIterator(_toFastFollower(%S, %S)))",       followIter, iter, leadIdxCopy);
     }
   } else {
 
-    if( zippered ) {
-      followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFollowerZip(%S, %S)))", followIter, iter, leadIdxCopy);
+    if (zippered) {
+      followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFollowerZip(%S, %S)))",     followIter, iter, leadIdxCopy);
     } else {
-      followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))", followIter, iter, leadIdxCopy);
+      followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))",           followIter, iter, leadIdxCopy);
     } 
   }
   
   followBlock->insertAtTail(new DefExpr(followIdx));
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
-  BlockStmt* followBody = new BlockStmt();
-  followBody->insertAtTail(loopBody);
+
   destructureIndices(followBody, indices, new SymExpr(followIdx), false);
+
   followBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter));
+
   followBlock->insertAtTail(followBody);
   followBlock->insertAtTail(new CallExpr("_freeIterator", followIter));
+
   return followBlock;
 }
 
@@ -963,14 +969,28 @@ buildForallLoopStmt(Expr* indices,
   leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }",
                           leadIdx, leadIter);
 
-  BlockStmt* leadBody = new BlockStmt();
+  ForLoop* leadBody = new ForLoop(NULL);
+
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
-  BlockStmt* followBlock = buildFollowLoop(iter, leadIdxCopy, followIter,
-          followIdx, indices, loopBody->copy(), false, zippered);
+
+  BlockStmt* followBlock = buildFollowLoop(iter,
+                                           leadIdxCopy,
+                                           followIter,
+                                           followIdx,
+                                           indices,
+                                           loopBody->copy(),
+                                           false, zippered);
+
   if (!fNoFastFollowers) {
-    Symbol* T1 = newTemp(); T1->addFlag(FLAG_EXPR_TEMP); T1->addFlag(FLAG_MAYBE_PARAM);
-    Symbol* T2 = newTemp(); T2->addFlag(FLAG_EXPR_TEMP); T2->addFlag(FLAG_MAYBE_PARAM);
+    Symbol* T1 = newTemp();
+    Symbol* T2 = newTemp();
+
+    T1->addFlag(FLAG_EXPR_TEMP);
+    T1->addFlag(FLAG_MAYBE_PARAM);
+
+    T2->addFlag(FLAG_EXPR_TEMP);
+    T2->addFlag(FLAG_MAYBE_PARAM);
 
     leadBody->insertAtTail(new DefExpr(T1));
     leadBody->insertAtTail(new DefExpr(T2));
@@ -978,22 +998,31 @@ buildForallLoopStmt(Expr* indices,
     if( !zippered ) {
       leadBody->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))", T1, iter);
       leadBody->insertAtTail(new CondStmt(new SymExpr(T1),
-                               new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))", T2, iter),
-                               new_Expr("'move'(%S, %S)", T2, gFalse)));
+                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))", T2, iter),
+                                          new_Expr("'move'(%S, %S)", T2, gFalse)));
     } else {
       leadBody->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iter);
       leadBody->insertAtTail(new CondStmt(new SymExpr(T1),
-                               new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iter),
-                               new_Expr("'move'(%S, %S)", T2, gFalse)));
+                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iter),
+                                          new_Expr("'move'(%S, %S)", T2, gFalse)));
     }
 
-    BlockStmt* fastFollowBlock = buildFollowLoop(iter, leadIdxCopy,
-            fastFollowIter, fastFollowIdx, indices, loopBody, true, zippered);
+    BlockStmt* fastFollowBlock = buildFollowLoop(iter,
+                                                 leadIdxCopy,
+                                                 fastFollowIter,
+                                                 fastFollowIdx,
+                                                 indices,
+                                                 loopBody,
+                                                 true,
+                                                 zippered);
+
     leadBody->insertAtTail(new CondStmt(new SymExpr(T2), fastFollowBlock, followBlock));
   } else {
     leadBody->insertAtTail(followBlock);
   }
+
   leadBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter));
+
   leadBlock->insertAtTail(leadBody);
   leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
 
@@ -1332,10 +1361,14 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   VarSymbol* localOp = newTemp();
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  BlockStmt* followBody = new BlockStmt();
+
+  ForLoop* followBody = new ForLoop(NULL);
+
   followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
   followBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter));
+
   BlockStmt* followBlock = new BlockStmt();
+
   followBlock->insertAtTail(new DefExpr(followIter));
   followBlock->insertAtTail(new DefExpr(followIdx));
   followBlock->insertAtTail(new DefExpr(localOp));
@@ -1352,11 +1385,14 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail("chpl__reduceCombine(%S, %S)", globalOp, localOp);
   followBlock->insertAtTail("'delete'(%S)", localOp);
   followBlock->insertAtTail("_freeIterator(%S)", followIter);
-  BlockStmt* leadBody = new BlockStmt();
+
+  ForLoop* leadBody = new ForLoop(NULL);
+
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
   leadBody->insertAtTail(followBlock);
   leadBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter));
+
   BlockStmt* leadBlock = buildChapelStmt();
   leadBlock->insertAtTail(new DefExpr(leadIdx));
   leadBlock->insertAtTail(new DefExpr(leadIter));
