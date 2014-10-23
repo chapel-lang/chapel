@@ -885,7 +885,9 @@ buildFollowLoop(VarSymbol* iter,
                 bool       fast,
                 bool       zippered) {
   BlockStmt* followBlock = new BlockStmt();
-  ForLoop*   followBody  = new ForLoop(loopBody);
+  ForLoop*   followBody  = new ForLoop(loopBody, followIdx, followIter);
+
+  destructureIndices(followBody, indices, new SymExpr(followIdx), false);
 
   followBlock->insertAtTail(new DefExpr(followIter));
 
@@ -907,10 +909,6 @@ buildFollowLoop(VarSymbol* iter,
   
   followBlock->insertAtTail(new DefExpr(followIdx));
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
-
-  destructureIndices(followBody, indices, new SymExpr(followIdx), false);
-
-  followBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter));
 
   followBlock->insertAtTail(followBody);
   followBlock->insertAtTail(new CallExpr("_freeIterator", followIter));
@@ -969,7 +967,7 @@ buildForallLoopStmt(Expr* indices,
   leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }",
                           leadIdx, leadIter);
 
-  ForLoop* leadBody = new ForLoop(NULL);
+  ForLoop* leadBody = new ForLoop(NULL, leadIdx, leadIter);
 
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
@@ -1021,8 +1019,6 @@ buildForallLoopStmt(Expr* indices,
   } else {
     leadBody->insertAtTail(followBlock);
   }
-
-  leadBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter));
 
   leadBlock->insertAtTail(leadBody);
   leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
@@ -1353,19 +1349,19 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
                                                   false,
                                                   zippered));
 
-  VarSymbol* leadIdx = newTemp("chpl__leadIdx");
-  VarSymbol* leadIter = newTemp("chpl__leadIter");
+  VarSymbol* leadIdx     = newTemp("chpl__leadIdx");
+  VarSymbol* leadIter    = newTemp("chpl__leadIter");
   VarSymbol* leadIdxCopy = newTemp("chpl__leadIdxCopy");
-  VarSymbol* followIdx = newTemp("chpl__followIdx");
-  VarSymbol* followIter = newTemp("chpl__followIter");
-  VarSymbol* localOp = newTemp();
+  VarSymbol* followIdx   = newTemp("chpl__followIdx");
+  VarSymbol* followIter  = newTemp("chpl__followIter");
+  VarSymbol* localOp     = newTemp();
+
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-  ForLoop* followBody = new ForLoop(NULL);
+  ForLoop* followBody = new ForLoop(NULL, followIdx, followIter);
 
   followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
-  followBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, followIdx, followIter));
 
   BlockStmt* followBlock = new BlockStmt();
 
@@ -1386,12 +1382,11 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail("'delete'(%S)", localOp);
   followBlock->insertAtTail("_freeIterator(%S)", followIter);
 
-  ForLoop* leadBody = new ForLoop(NULL);
+  ForLoop* leadBody = new ForLoop(NULL, leadIdx, leadIter);
 
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
   leadBody->insertAtTail(followBlock);
-  leadBody->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, leadIdx, leadIter));
 
   BlockStmt* leadBlock = buildChapelStmt();
   leadBlock->insertAtTail(new DefExpr(leadIdx));
