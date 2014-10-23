@@ -29,6 +29,16 @@ WhileStmt::~WhileStmt()
 
 }
 
+bool WhileStmt::isLoop() const 
+{
+  return true;
+}
+
+bool WhileStmt::isWhileLoop() const
+{
+  return true;
+}
+
 void WhileStmt::copyShare(const WhileStmt& ref,
                           SymbolMap*       mapRef, 
                           bool             internal) 

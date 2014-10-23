@@ -87,6 +87,11 @@ DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
   return retval;
 }
 
+bool DoWhileStmt::isDoWhileLoop() const
+{
+  return true;
+}
+
 GenRet DoWhileStmt::codegen() 
 {
   GenInfo* info    = gGenInfo;

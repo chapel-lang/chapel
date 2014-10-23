@@ -176,6 +176,25 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   return retval;
 }
 
+bool ForLoop::isLoop() const 
+{
+  // Noakes 2014/10/23.
+  // There are operations can clear the blockInfo 
+  // i.e. convert a ForLoop back to a BlockStmt.
+  // This needs more work. Lever is BlockStmt::replaceChild
+  return (blockInfoGet() != 0) ? true : false;
+}
+
+bool ForLoop::isForLoop() const
+{
+  return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP);
+}
+
+bool ForLoop::isCforLoop() const
+{
+  return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+}
+
 GenRet ForLoop::codegen() 
 {
   GenInfo* info    = gGenInfo;

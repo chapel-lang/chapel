@@ -42,6 +42,8 @@ public:
 
   virtual WhileDoStmt*   copy(SymbolMap* map = NULL, bool internal = false);
 
+  virtual bool           isWhileDoLoop()                              const;
+
   virtual GenRet         codegen();
 
 private:

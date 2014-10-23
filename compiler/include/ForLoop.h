@@ -48,6 +48,10 @@ public:
 
   virtual GenRet         codegen();
 
+  virtual bool           isLoop()                                     const;
+  virtual bool           isForLoop()                                  const;
+  virtual bool           isCforLoop()                                 const;
+
 private:
                          ForLoop();
 
