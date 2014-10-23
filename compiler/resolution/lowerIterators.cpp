@@ -220,8 +220,8 @@ static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
 
     // See if it is an unlocal block.
     BlockStmt* block = toBlockStmt(ast);
-    if (block && block->blockInfo &&
-        block->blockInfo->isPrimitive(PRIM_BLOCK_UNLOCAL))
+    if (block && block->blockInfoGet() &&
+        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
       return false;     // Yes, FAIL.
     
     // See if it is a label.
@@ -250,8 +250,8 @@ fragmentLocalBlocks() {
   Vec<BlockStmt*> localBlocks; // old local blocks
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol &&
-        block->blockInfo &&
-        block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL) &&
+        block->blockInfoGet() &&
+        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) &&
         !leaveLocalBlockUnfragmented(block))
       localBlocks.add(block);
   }
@@ -290,8 +290,8 @@ fragmentLocalBlocks() {
           isBlockStmt(current)) {
         insertNewLocal = true;
         if (BlockStmt* block = toBlockStmt(current)) {
-          if (block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_UNLOCAL))
-            block->blockInfo->remove(); // UNLOCAL applies to a single LOCAL
+          if (block->blockInfoGet() && block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
+            block->blockInfoGet()->remove(); // UNLOCAL applies to a single LOCAL
           else if (block->body.head)
             queue.add(block->body.head);
         } else if (CondStmt* cond = toCondStmt(current)) {
@@ -321,7 +321,7 @@ fragmentLocalBlocks() {
       if (insertNewLocal || !current->next) {
         if (preVec.n || inVec.n) {
           BlockStmt* newLocalBlock = new BlockStmt();
-          newLocalBlock->blockInfo = new CallExpr(PRIM_BLOCK_LOCAL);
+          newLocalBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
           current->insertBefore(newLocalBlock);
           forv_Vec(Expr, expr, preVec) {
             newLocalBlock->insertBefore(expr->remove());
@@ -340,7 +340,7 @@ fragmentLocalBlocks() {
   // remove old local blocks
   //
   forv_Vec(BlockStmt, block, localBlocks) {
-    block->blockInfo->remove();
+    block->blockInfoGet()->remove();
   }
 }
 
@@ -707,9 +707,9 @@ countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
   int count = 0;
   for (Expr* tmp = expr; tmp && tmp != outer; tmp = tmp->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(tmp)) {
-      if (blk->blockInfo && blk->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+      if (blk->blockInfoGet() && blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
         count++;
-      if (blk->blockInfo && blk->blockInfo->isPrimitive(PRIM_BLOCK_UNLOCAL))
+      if (blk->blockInfoGet() && blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
         count--;
     }
   }
@@ -919,7 +919,7 @@ static void convertYieldsAndReturns(Vec<BaseAST*>& asts, Symbol* index,
         while (count-- > 0)
         {
           BlockStmt* blk = new BlockStmt(callOrBlk);
-          blk->blockInfo = new CallExpr(PRIM_BLOCK_UNLOCAL);
+          blk->blockInfoSet(new CallExpr(PRIM_BLOCK_UNLOCAL));
           callOrBlk = blk;
         }
         call->replace(callOrBlk);
@@ -1159,7 +1159,7 @@ expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Symbol* index, bo
         if (int count = countEnclosingLocalBlocks(call, ibody)) {
           for (int i = 0; i < count; i++) {
             bodyCopy = new BlockStmt(bodyCopy);
-            bodyCopy->blockInfo = new CallExpr(PRIM_BLOCK_UNLOCAL);
+            bodyCopy->blockInfoSet(new CallExpr(PRIM_BLOCK_UNLOCAL));
           }
         }
 
@@ -1502,7 +1502,7 @@ inlineSingleYieldIterator(CallExpr* call) {
 static void
 expand_for_loop(CallExpr* call) {
   BlockStmt* block = toBlockStmt(call->parentExpr);
-  if (!block || block->blockInfo != call)
+  if (!block || block->blockInfoGet() != call)
     INT_FATAL(call, "bad for loop primitive");
   SymExpr* se1 = toSymExpr(call->get(1));
   SymExpr* se2 = toSymExpr(call->get(2));
@@ -1632,11 +1632,11 @@ static void
 inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol) {
-      if (block->blockInfo && block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
-        Symbol* iterator = toSymExpr(block->blockInfo->get(2))->var;
+      if (block->blockInfoGet() && block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
+        Symbol* iterator = toSymExpr(block->blockInfoGet()->get(2))->var;
         FnSymbol* ifn = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
         if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
-          expandIteratorInline(block->blockInfo);
+          expandIteratorInline(block->blockInfoGet());
         }
       }
     }

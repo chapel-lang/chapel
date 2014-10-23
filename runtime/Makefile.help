@@ -149,3 +149,5 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
 #
 src/tasks/qthreads/Makefile.include:
 	cd src/tasks/qthreads && $(MAKE) copy_qthread_files
+
+.NOTPARALLEL:

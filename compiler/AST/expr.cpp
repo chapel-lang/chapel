@@ -151,6 +151,10 @@ void Expr::verify() {
   if (prev || next)
     if (!list)
       INT_FATAL(this, "Expr is in list but does not point at it");
+  if (prev && prev->next != this)
+    INT_FATAL(this, "Bad Expr->prev->next");
+  if (next && next->prev != this)
+    INT_FATAL(this, "Bad Expr->next->prev");
   if (!parentSymbol)
     INT_FATAL(this, "Expr::parentSymbol is NULL");
   if (parentExpr && parentExpr->parentSymbol != parentSymbol)
@@ -3418,7 +3422,7 @@ void CallExpr::verify() {
     case PRIM_BLOCK_LOCAL:
       if (toBlockStmt(parentExpr)) {
         // does not pass:
-        //if (toBlockStmt(parentExpr)->blockInfo != this)
+        //if (toBlockStmt(parentExpr)->blockInfoGet() != this)
         //  INT_FATAL(this, "blockInfo-type CallExpr not parent's blockInfo");
       } else {
         INT_FATAL(this, "blockInfo-type CallExpr not in a BlockStmt");
@@ -5756,7 +5760,7 @@ Expr* getFirstExpr(Expr* expr) {
   case E_DefExpr:
     return expr;
   case E_BlockStmt:
-    AST_RET_CHILD(BlockStmt, blockInfo);
+    AST_RET_CHILD(BlockStmt, blockInfoGet());
     AST_RET_LIST(BlockStmt, body);
     break;
   case E_CondStmt:
@@ -5788,7 +5792,7 @@ Expr* getNextExpr(Expr* expr) {
     else if (expr == parent->thenStmt && parent->elseStmt)
       return getFirstExpr(parent->elseStmt);
   } else if (BlockStmt* parent = toBlockStmt(expr->parentExpr)) {
-    if (expr == parent->blockInfo && parent->body.head)
+    if (expr == parent->blockInfoGet() && parent->body.head)
       return getFirstExpr(parent->body.head);
   }
   if (expr->parentExpr)

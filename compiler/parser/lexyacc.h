@@ -22,7 +22,9 @@
 
 #include "build.h"
 #include "countTokens.h"
+#include "DoWhileStmt.h"
 #include "driver.h"
+#include "ForLoop.h"
 #include "expr.h"
 #include "parser.h"
 #include "processTokens.h"
@@ -30,6 +32,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "WhileDoStmt.h"
 #include "yy.h"
 
 // Make sure exit is undefined:

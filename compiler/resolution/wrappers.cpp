@@ -43,6 +43,7 @@
 #include "callInfo.h"
 #include "chpl.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -740,7 +741,7 @@ buildPromotionWrapper(FnSymbol* fn,
     }
 
     BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
-    BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
+    BlockStmt* loop = ForLoop::buildForLoop(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
     lifn->insertAtTail(loop);
     theProgram->block->insertAtTail(new DefExpr(lifn));
     toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
@@ -778,7 +779,7 @@ buildPromotionWrapper(FnSymbol* fn,
     followerBlock->insertAtTail(new DefExpr(yieldTmp));
     followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall->copy(&followerMap)));
     followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-    fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
+    fifn->insertAtTail(ForLoop::buildForLoop(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
     theProgram->block->insertAtTail(new DefExpr(fifn));
     normalize(fifn);
     fifn->addFlag(FLAG_GENERIC);
@@ -790,7 +791,7 @@ buildPromotionWrapper(FnSymbol* fn,
     yieldBlock->insertAtTail(new DefExpr(yieldTmp));
     yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall));
     yieldBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, yieldBlock, false, zippered)));
+    wrapper->insertAtTail(new BlockStmt(ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered)));
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);

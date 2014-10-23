@@ -235,8 +235,8 @@ static void handleLocalBlocks() {
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol)
-      if (block->blockInfo)
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+      if (block->blockInfoGet())
+        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
           queue.add(block);
   }
 

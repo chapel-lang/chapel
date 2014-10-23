@@ -5949,7 +5949,7 @@ postFold(Expr* expr) {
 
 static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr)) {
-    if (block->blockInfo) {
+    if (block->blockInfoGet()) {
       USR_FATAL(expr, "param function cannot contain a non-param loop");
     }
   }
@@ -6044,9 +6044,15 @@ resolveExpr(Expr* expr)
         
       if (tryFailure) {
         if (tryStack.tail()->parentSymbol == fn) {
-          while (callStack.tail()->isResolved() != tryStack.tail()->elseStmt->parentSymbol) {
-            if (callStack.n == 0)
-              INT_FATAL(call, "unable to roll back stack due to try block failure");
+          // The code in the 'true' branch of a tryToken conditional has failed
+          // to resolve fully. Roll the callStack back to the function where
+          // the nearest tryToken conditional is and replace the entire
+          // conditional with the 'false' branch then continue resolution on
+          // it.  If the 'true' branch did fully resolve, we would replace the
+          // conditional with the 'true' branch instead.
+          while (callStack.n > 0 &&
+                 callStack.tail()->isResolved() !=
+                 tryStack.tail()->elseStmt->parentSymbol) {
             callStack.pop();
           }
           BlockStmt* block = tryStack.tail()->elseStmt;
