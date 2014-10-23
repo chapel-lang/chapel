@@ -136,7 +136,7 @@ snprint_imm(char *str, size_t max, Immediate &imm) {
         case INT_SIZE_32:
           res = snprintf(str, max, "%u", (unsigned)imm.v_uint32); break;
         case INT_SIZE_64:
-          res = snprintf(str, max, "%"PRIu64, imm.v_uint64); break;
+          res = snprintf(str, max, "%" PRIu64, imm.v_uint64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -148,9 +148,9 @@ snprint_imm(char *str, size_t max, Immediate &imm) {
         case INT_SIZE_16:
           res = snprintf(str, max, "%d", imm.v_int16); break;
         case INT_SIZE_32:
-          res = snprintf(str, max, "%"PRId32, imm.v_int32); break;
+          res = snprintf(str, max, "%" PRId32, imm.v_int32); break;
         case INT_SIZE_64:
-          res = snprintf(str, max, "%"PRId64, imm.v_int64); break;
+          res = snprintf(str, max, "%" PRId64, imm.v_int64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -191,7 +191,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
     case NUM_KIND_BOOL: {
       // Since I'm using uints to store the bools, should cast to the
       // same to be consistent.
-      res = fprintf(fp, "%"PRIu64, imm.bool_value()); break;
+      res = fprintf(fp, "%" PRIu64, imm.bool_value()); break;
     }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
@@ -202,7 +202,7 @@ fprint_imm(FILE *fp, Immediate &imm) {
         case INT_SIZE_32:
           res = fprintf(fp, "%u", (unsigned)imm.v_uint32); break;
         case INT_SIZE_64:
-          res = fprintf(fp, "%"PRIu64, imm.v_uint64); break;
+          res = fprintf(fp, "%" PRIu64, imm.v_uint64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -214,9 +214,9 @@ fprint_imm(FILE *fp, Immediate &imm) {
         case INT_SIZE_16:
           res = fprintf(fp, "%d", imm.v_int16); break;
         case INT_SIZE_32:
-          res = fprintf(fp, "%"PRId32, imm.v_int32); break;
+          res = fprintf(fp, "%" PRId32, imm.v_int32); break;
         case INT_SIZE_64:
-          res = fprintf(fp, "%"PRId64, imm.v_int64); break;
+          res = fprintf(fp, "%" PRId64, imm.v_int64); break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
