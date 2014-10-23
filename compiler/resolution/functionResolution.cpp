@@ -4422,6 +4422,8 @@ static Type* resolveTypeAlias(SymExpr* se)
 }
 
 
+#define UserCtorsAndDefaultOfHack 0
+#if UserCtorsAndDefaultOfHack
 static CallExpr* generateConcreteConstructorCall(Type* type)
 {
   UnresolvedSymExpr* ctorSym =
@@ -4455,6 +4457,7 @@ static CallExpr* generateConcreteConstructorCall(Type* type)
 
   return call;
 }
+
 
 
 // Substitution of runtime type values for types bearing that flag
@@ -4519,6 +4522,7 @@ static void flattenAndResolveArgs(CallExpr* call)
     }
   }
 }
+#endif
 
 
 // Returns NULL if no substitution was made.  Otherwise, returns the expression
@@ -4671,13 +4675,7 @@ static Expr* resolvePrimInit(CallExpr* call)
       // default constructors.  So give up now!
       return result;
 
-    CallExpr* initCall = generateConcreteConstructorCall(type);
-    call->replace(initCall);
-    flattenAndResolveArgs(initCall);
-    fixupRuntimeTypeArguments(initCall);
-    resolveCall(initCall);
-
-#define UserCtorsAndDefaultOfHack 1
+    CallExpr* initCall = call;
 #if UserCtorsAndDefaultOfHack
     // Hack alert! This is a really lame way to get user default
     // constructor calls  and _defaultOf to work together.  The basic idea is
@@ -4695,16 +4693,23 @@ static Expr* resolvePrimInit(CallExpr* call)
     // converted to copy-initialization of those fields instead.  Also, it
     // would probably be very handy to be able to invoke both _defaultOf and
     // constructors themselves as methods.
-    FnSymbol* ctor = initCall->isResolved();
+    CallExpr* ctorCall = generateConcreteConstructorCall(type);
+    call->replace(ctorCall);
+    flattenAndResolveArgs(ctorCall);
+    fixupRuntimeTypeArguments(ctorCall);
+    resolveCall(ctorCall);
+    initCall = ctorCall;
+
+    FnSymbol* ctor = ctorCall->isResolved();
     if (ctor->hasFlag(FLAG_COMPILER_GENERATED) ||
         ctor->hasFlag(FLAG_WAS_COMPILER_GENERATED))
+#endif
     {
       CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
       initCall->replace(defOfCall);
       resolveCall(defOfCall);
       initCall = defOfCall;
     }
-#endif
 
     resolveFns(initCall->isResolved());
     result = initCall;
