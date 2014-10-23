@@ -35,8 +35,16 @@ protected:
   virtual bool           isLoop()                                     const;
   virtual bool           isWhileLoop()                                const;
 
+  virtual void           checkConstLoops();
+
 private:
                          WhileStmt();
+
+  void                   checkWhileLoopCondition(Expr* condExp);
+  bool                   symDeclaredInBlock(Symbol* condSym);
+  void                   checkConstWhileLoop();
+  bool                   loopBodyHasExits();
+  SymExpr*               getWhileCondDef(CallExpr* info, VarSymbol* condSym);
 };
 
 #endif

@@ -364,6 +364,11 @@ BlockStmt::isCforLoop() const {
   return false;
 }
 
+void
+BlockStmt::checkConstLoops() {
+
+}
+
 int
 BlockStmt::length() const {
   return body.length;

@@ -87,6 +87,8 @@ public:
   virtual bool        isForLoop()                                  const;
   virtual bool        isCforLoop()                                 const;
 
+  virtual void        checkConstLoops();
+
   void                appendChapelStmt(BlockStmt* stmt);
 
   void                insertAtHead(Expr* ast);
