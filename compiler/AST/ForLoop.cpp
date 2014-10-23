@@ -41,17 +41,16 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   VarSymbol*   iterator      = newTemp("_iterator");
   CallExpr*    iterInit      = 0;
   CallExpr*    iterMove      = 0;
-  ForLoop*     loop          = new ForLoop(body);
+  ForLoop*     loop          = new ForLoop(body, index, iterator);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = buildChapelStmt();
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
-
   // Unzippered loop, treat all objects (including tuples) the same
   if (zippered == false) 
-    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr));
+    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
 
   // Expand tuple to a tuple containing appropriate iterators for each value.
   else 
@@ -71,8 +70,6 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   if (coforall)
     index->addFlag(FLAG_COFORALL_INDEX_VAR);
   
-  loop->blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
-
   loop->continueLabel = continueLabel;
   loop->breakLabel    = breakLabel;
 
@@ -95,7 +92,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 BlockStmt* ForLoop::buildCForLoop(CallExpr* call, BlockStmt* body) 
 {
   // Regular loop setup
-  ForLoop*     loop          = new ForLoop(body);
+  ForLoop*     loop          = new ForLoop(call, body);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = buildChapelStmt();
@@ -107,8 +104,6 @@ BlockStmt* ForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
   call->get(1)->replace(new BlockStmt(call->get(1)->copy()));
   call->get(2)->replace(new BlockStmt(call->get(2)->copy()));
   call->get(3)->replace(new BlockStmt(call->get(3)->copy()));
-
-  loop->blockInfoSet(call);
 
   loop->continueLabel = continueLabel;
   loop->breakLabel    = breakLabel;
@@ -127,9 +122,22 @@ BlockStmt* ForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
 *                                                                           *
 ************************************* | ************************************/
 
-ForLoop::ForLoop(BlockStmt* initBody) : BlockStmt(initBody)
+ForLoop::ForLoop()
 {
 
+}
+
+ForLoop::ForLoop(CallExpr*  cforInfo,
+                 BlockStmt* initBody) : BlockStmt(initBody)
+{
+  blockInfoSet(cforInfo);
+}
+
+ForLoop::ForLoop(BlockStmt* initBody,
+                 VarSymbol* index,
+                 VarSymbol* iterator) : BlockStmt(initBody)
+{
+  blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
 }
 
 ForLoop::~ForLoop()
@@ -142,7 +150,7 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
   CallExpr*  blockInfo = blockInfoGet();
-  ForLoop*   retval    = new ForLoop(NULL);
+  ForLoop*   retval    = new ForLoop();
 
   retval->astloc        = astloc;
   retval->blockTag      = blockTag;
