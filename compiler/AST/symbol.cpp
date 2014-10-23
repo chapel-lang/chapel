@@ -710,7 +710,7 @@ void VarSymbol::codegenGlobalDef() {
         GenRet v = info->lvt->getValue(cname);
         if( ! v.val ) {
           // TODO should be USR_FATAL
-          USR_WARN(this, "Could not find extern def of %s", cname);
+          //USR_WARN(this, "Could not find extern def of %s", cname);
         }
       }
     } else {
