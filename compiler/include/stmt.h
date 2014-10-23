@@ -22,6 +22,16 @@
 
 #include "expr.h"
 
+#ifdef HAVE_LLVM
+
+#define FNAME(str) (llvm::Twine(getFunction()->cname)            + \
+                    llvm::Twine("_")                             + \
+                    llvm::Twine(getFunction()->codegenUniqueNum) + \
+                    llvm::Twine(str)                             + \
+                    llvm::Twine("_"))
+
+#endif
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *

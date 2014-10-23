@@ -38,12 +38,6 @@ Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
 // remember these so we can remove their iterResumeGoto
 Vec<LabelSymbol*> removedIterResumeLabels;
 
-#ifdef HAVE_LLVM
-
-#define FNAME(str) (llvm::Twine(getFunction()->cname) + llvm::Twine("_") + llvm::Twine(getFunction()->codegenUniqueNum) + llvm::Twine(str) + llvm::Twine("_"))
-
-#endif
-
 void codegenStmt(Expr* stmt) {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -293,14 +287,22 @@ GenRet BlockStmt::codegen() {
   if( outfile ) {
     if (blockInfo) {
       if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) {
+        printf("Noakes 2014/10/22  This code should not be reached. WHILEDO   %12d\n", id);
+
         std::string hdr = "while (" + codegenValue(blockInfo->get(1)).c + ") ";
         info->cStatements.push_back(hdr);
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
+        printf("Noakes 2014/10/22  This code should not be reached. DOWHILE\n");
+
         info->cStatements.push_back("do ");
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
+        printf("Noakes 2014/10/22  This code should not be reached. FOR_LOOP  %12d\n", id);
+
         std::string hdr = "for (;" + codegenValue(blockInfo->get(1)).c + ";) ";
         info->cStatements.push_back(hdr);
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        printf("Noakes 2014/10/22  This code should not be reached. CFOR_LOOP %12d\n", id);
+
         BlockStmt* initBlock = toBlockStmt(blockInfo->get(1));
         // These copy calls are needed or else values get code generated twice.
         std::string init = codegenCForLoopHeaderSegment(initBlock->copy());
@@ -353,7 +355,10 @@ GenRet BlockStmt::codegen() {
     if(blockInfo) {
       blockStmtEnd = llvm::BasicBlock::Create(
           info->module->getContext(), FNAME("blk_end"));
+
       if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+        printf("Noakes 2014/10/22  This code should not be reached. CFOR         %12d\n", id);
+
         // C for loop...
         // blockInfo->get(1) is the initialization block 
         // blockInfo->get(2) is the test block 
@@ -401,6 +406,8 @@ GenRet BlockStmt::codegen() {
 
       } else if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
                  blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
+        printf("Noakes 2014/10/22  This code should not be reached. WHILEDO/FOR  %12d\n", id);
+
         // Add the condition block.
         blockStmtCond = llvm::BasicBlock::Create(
             info->module->getContext(), FNAME("blk_cond"));

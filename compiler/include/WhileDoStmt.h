@@ -42,7 +42,10 @@ public:
 
   virtual WhileDoStmt*   copy(SymbolMap* map = NULL, bool internal = false);
 
+  virtual GenRet         codegen();
+
 private:
+                         WhileDoStmt();
                          WhileDoStmt(BlockStmt* initBody);
 };
 

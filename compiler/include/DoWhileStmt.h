@@ -40,7 +40,10 @@ public:
 
   virtual DoWhileStmt*   copy(SymbolMap* map = NULL, bool internal = false);
 
+  virtual GenRet         codegen();
+
 private:
+                         DoWhileStmt();
                          DoWhileStmt(BlockStmt* initBody);
 };
 
