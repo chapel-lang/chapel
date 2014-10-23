@@ -368,6 +368,9 @@ VarSymbol *handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
           // The simple code below doesn't quite manage.
           //ret = new VarSymbol(astr(idName.c_str()), dtUnknown);
           //ret->addFlag(FLAG_EXTERN);
+          // We need to handle macros that wrap functions
+          // that are defined after the macros if we want
+          // GMP to work...
         }
       }
       break;
