@@ -105,6 +105,11 @@ WhileDoStmt* WhileDoStmt::copy(SymbolMap* map, bool internal)
   return retval;
 }
 
+bool WhileDoStmt::isWhileDoLoop() const
+{
+  return true;
+}
+
 GenRet WhileDoStmt::codegen() 
 {
   GenInfo* info    = gGenInfo;

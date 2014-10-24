@@ -25,15 +25,26 @@
 class WhileStmt : public BlockStmt 
 {
 protected:
-                      WhileStmt(BlockStmt* initBody);
-  virtual            ~WhileStmt();
+                         WhileStmt(BlockStmt* initBody);
+  virtual               ~WhileStmt();
 
-  void                copyShare(const WhileStmt& ref,
-                                SymbolMap*       mapRef, 
-                                bool             internal);
+  void                   copyShare(const WhileStmt& ref,
+                                   SymbolMap*       mapRef, 
+                                   bool             internal);
+
+  virtual bool           isLoop()                                     const;
+  virtual bool           isWhileLoop()                                const;
+
+  virtual void           checkConstLoops();
 
 private:
-                      WhileStmt();
+                         WhileStmt();
+
+  void                   checkWhileLoopCondition(Expr* condExp);
+  bool                   symDeclaredInBlock(Symbol* condSym);
+  void                   checkConstWhileLoop();
+  bool                   loopBodyHasExits();
+  SymExpr*               getWhileCondDef(CallExpr* info, VarSymbol* condSym);
 };
 
 #endif

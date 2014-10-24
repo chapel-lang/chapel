@@ -147,9 +147,8 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt)
     if (s->isLoop() == true)
     {
       CallExpr* info      = s->blockInfoGet();
-      bool      cForLoop  = info->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
-      bool      whileLoop = info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-                            info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP);
+      bool      cForLoop  = s->isCforLoop();
+      bool      whileLoop = s->isWhileLoop();
 
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {

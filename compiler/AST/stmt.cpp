@@ -336,14 +336,38 @@ BlockStmt::isScopeless() const {
 
 bool
 BlockStmt::isLoop() const {
-  return (blockInfo &&
-          (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)));
+  return blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP);
 }
 
+bool
+BlockStmt::isWhileLoop() const {
+  return false;
+}
+
+bool
+BlockStmt::isWhileDoLoop() const {
+  return false;
+}
+
+bool
+BlockStmt::isDoWhileLoop() const {
+  return false;
+}
+
+bool
+BlockStmt::isForLoop() const {
+  return false;
+}
+
+bool
+BlockStmt::isCforLoop() const {
+  return false;
+}
+
+void
+BlockStmt::checkConstLoops() {
+
+}
 
 int
 BlockStmt::length() const {
