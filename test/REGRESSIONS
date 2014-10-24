@@ -69,6 +69,11 @@ general
 Reviewed 2014-10-16
 ===================
 
+bad mismatch (10/22/14 -- diten/hilde)
+(fifo, darwin, no_local, gasnet-everything, gasnet.fifo, cygwin)
+----------------------------------------------------------------
+[Error matching .bad file for users/ferguson/record_from_string]
+
 sporadic failure (2-3x a month -- vass)
 ---------------------------------------
 [Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
@@ -270,10 +275,6 @@ timed out (10/17/14 -- same date it moved to chap16)
 ------------------------------------------------------------
 [Error matching program output for parallel/cobegin/diten/cobeginRace]
 
-syntax error in prediff (10/17/14 -- same date it moved to chap16)
-------------------------------------------------------------------
-[Error matching program output for runtime/gbt/numThreadsSymbolicPhysical]
-
 timeouts (10/17/14 -- same date it moved to chap16)
 ---------------------------------------------------
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_iterator_7]
@@ -282,7 +283,7 @@ timeouts (10/17/14 -- same date it moved to chap16)
 
 sporadic timeout (started 10/17/14 -- same date it moved to chap16)
 -------------------------------------------------------------------
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5]
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (10/21/14)
 
 sporadic segfault (infrequent) (10/03/14)
 -----------------------------------------
@@ -411,6 +412,9 @@ Inherits 'general'
 Reviewed 2014-10-21
 ===================
 
+something broke with tryToken commit (10/22/14 -- diten/hilde)
+--------------------------------------------------------------
+*all*
 
 ===================
 no-local
@@ -501,7 +505,7 @@ Reviewed 2014-10-21
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2014-10-21
+Reviewed 2014-10-23
 =============================
 
 comm count mismatches
@@ -540,7 +544,6 @@ sporadic timeouts (infrequent)
 ------------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest] (10/21/14)
-
 
 sporadic segfault (very infrequent) (10/03/14)
 ----------------------------------------------
@@ -708,19 +711,22 @@ compilation timeouts (since at least 02/23/14)
 [Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
 [Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
 
+======================================
+xc-wb.host.prgenv-cray
+Inherits 'x?-wb.*' and '*prgenv-cray*'
+Reviewed 2014-10-23
+======================================
+
+unresolved call list(BaseArr) (2014-10-23 -- mike)
+--------------------------------------------------
+*all*
+
 
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2014-10-16
+Reviewed 2014-10-22
 ===================
-
-
-=============================
-x?-wb.host.prgenv-pgi
-Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-10-16
-=============================
 
 problem with empty initializer (1/25/14 -- bradc)
 -------------------------------------------------
@@ -755,9 +761,17 @@ consistent timeout
 
 
 =============================
+x?-wb.host.prgenv-pgi
+Inherits 'x?-wb*' and '*pgi*'
+Reviewed 2014-10-20
+=============================
+
+
+
+=============================
 x?-wb.pgi (TODO: checkme)
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed ????-??-??
+Reviewed 2014-10-22
 =============================
 
 
@@ -806,9 +820,9 @@ static/dynamic linking issues
 
 
 ===============================
-*gnu*
+x?-wb.gnu
 Inherits 'x?-wb*' and 'linux64'
-Reviewed ????-??-??
+Reviewed 2014-10-21
 ================================
 
 gcc warning about assuming strict overflow
@@ -817,9 +831,9 @@ gcc warning about assuming strict overflow
 
 
 =================================
-x?-wb.prgenv-gnu (TODO: checkme)
-Inherits 'x?-wb*' and '*gnu*'
-Reviewed ????-??-??
+x?-wb.prgenv-gnu
+Inherits 'x?-wb*' and 'x?-wb.gnu'
+Reviewed 2014-10-21
 =================================
 
 
@@ -1003,12 +1017,12 @@ Tests suppressions that now succeed due to turning on inlining (12/7/12)
 
 ===================
 dist-block
-Reviewed 2014-10-21
+Reviewed 2014-10-22
 ===================
 
 sporadic timeout (frequent)
 ---------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (10/22/14)
 
 
 ===================
