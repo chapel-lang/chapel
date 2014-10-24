@@ -755,6 +755,7 @@ if systemPreexec:
 if systemPrediff:
     sys.stdout.write('[system-wide prediff: \'%s\']\n'%(systemPrediff))
 
+# consistently look only at the files in the current directory
 dirlist=os.listdir(".")
 
 onetestsrc = os.getenv('CHPL_ONETEST')

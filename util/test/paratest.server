@@ -254,8 +254,11 @@ sub feed_nodes {
                 } else {
                     systemd ("$rem_cmd 2>&1 | grep -i 'Error in paratest.client:'");
                 }
-                $pe_command = $show_all_errors ?
-                  '/^\\[Error/p; /^\\[Test Summary/q' : '/^\\[Error/{p;q}';
+                $pe_command = $show_all_errors
+                  # print Error lines; terminate when we reach Test Summary
+                  ? '/^\\[Error/p; /^\\[Test Summary/q'
+                  # once an Error line is seen, print it and terminate
+                  : '/^\\[Error/{p;q}';
                 $partial_errors = `sed -n '$pe_command' $logfile`;
                 if ($partial_errors) {
                     print "\n:( $partial_errors";
