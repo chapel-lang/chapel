@@ -4422,109 +4422,6 @@ static Type* resolveTypeAlias(SymExpr* se)
 }
 
 
-#define UserCtorsAndDefaultOfHack 0
-#if UserCtorsAndDefaultOfHack
-static CallExpr* generateConcreteConstructorCall(Type* type)
-{
-  UnresolvedSymExpr* ctorSym =
-    new UnresolvedSymExpr(type->defaultInitializer->name);
-  CallExpr* call = new CallExpr(ctorSym);
-
-  if (isAggregateType(type))
-  {
-    // Do what the default type constructor does for this type does by default.
-    form_Map(SymbolMapElem, sub, type->substitutions)
-    {
-      Symbol* field = sub->key;
-      SymExpr* typeExpr = new SymExpr(sub->value);
-      Expr* init = typeExpr;
-      if (field->hasFlag(FLAG_GENERIC) && isTypeSymbol(typeExpr->var))
-        // This argument expects a value (not a type expression).
-        init = new CallExpr(PRIM_INIT, // This should be "_defaultOf".
-                            typeExpr);
-      NamedExpr* arg = new NamedExpr(field->name, init);
-      call->insertAtTail(arg);
-
-      // Special handling for nested record types:
-      // If the field name is "outer", we assume it is the outer class or
-      // record pointer.  In that case, we have to convert the constructor call
-      // into a method call, because that is what the enclosing class or record
-      // expects.
-      if (!strcmp(field->name, "outer"))
-        call->insertAtHead(gMethodToken);
-    }
-  }
-
-  return call;
-}
-
-
-
-// Substitution of runtime type values for types bearing that flag
-// depends on the type already having been stored in a variable, so we
-// cannot simply name the type as an actual argument and expect it to
-// be replaced by a runtime type value....
-// This function inserts a type temp for type arguments carrying the
-// HAS_RUNTIME_TYPE flag, so that runtime type handling can perform the rest of
-// the substitution.
-// As an alternative to this workaround, we could make the
-// handling of runtime types more robust...
-static void fixupRuntimeTypeArguments(CallExpr* call)
-{
-  for_actuals(actual, call)
-  {
-    // Skip the method token, if present.
-    if (SymExpr* se = toSymExpr(actual))
-      if (se->var == gMethodToken)
-        continue;
-
-    NamedExpr* ne = toNamedExpr(actual);
-    SymExpr* se = toSymExpr(ne->actual);
-    if (TypeSymbol* ts = toTypeSymbol(se->var))
-    {
-      if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE))
-      {
-        Expr* stmt = call->getStmtExpr();
-        VarSymbol* typeTmp = newTemp(astr("_RTT_tmp_", ne->name), se->var->type);
-        typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-        stmt->insertBefore(new DefExpr(typeTmp));
-        CallExpr* init = new CallExpr(PRIM_INIT, se->copy());
-        stmt->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(typeTmp), init));
-        se->replace(new SymExpr(typeTmp));
-      }
-    }
-  }
-}
-
-
-// generateConcreteConstructorCall() could have inserted call expressions into
-// the argument list for the call.  These need to be flattened and resolved.
-static void flattenAndResolveArgs(CallExpr* call)
-{
-  for_actuals(actual, call)
-  {
-    // Skip the method token, if present.
-    if (SymExpr* se = toSymExpr(actual))
-      if (se->var == gMethodToken)
-        continue;
-
-    NamedExpr* ne = toNamedExpr(actual);
-    if (CallExpr* ce = toCallExpr(ne->actual))
-    {
-      Expr* stmt = call->getStmtExpr();
-      VarSymbol* typeTemp = newTemp(astr("_type_tmp_",  ne->name));
-      stmt->insertBefore(new DefExpr(typeTemp));
-      CallExpr* move = new CallExpr(PRIM_MOVE, new SymExpr(typeTemp),
-                                    ce->copy());
-      stmt->insertBefore(move);
-      resolveCall(move);
-      ce->replace(new SymExpr(typeTemp));
-    }
-  }
-}
-#endif
-
-
 // Returns NULL if no substitution was made.  Otherwise, returns the expression
 // that replaced 'call'.
 static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar)
@@ -4657,7 +4554,11 @@ static Expr* resolvePrimInit(CallExpr* call)
       call->replace(result);
       return result;
     }
-    
+
+    // If this assert is true, then the suffix of this and the following clause
+    // can be unified
+    INT_ASSERT(!type->defaultInitializer || !type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+
     // It should be possible to eliminate the defaultValue field from the type
     // respresentation, and just use _defaultOf to supply this in module code.
     CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
@@ -4675,44 +4576,16 @@ static Expr* resolvePrimInit(CallExpr* call)
       // default constructors.  So give up now!
       return result;
 
-    CallExpr* initCall = call;
-#if UserCtorsAndDefaultOfHack
-    // Hack alert! This is a really lame way to get user default
-    // constructor calls  and _defaultOf to work together.  The basic idea is
-    // to use _defaultOf if we know that the implementation does not call a
-    // user default constructor and the user default constructor otherwise.
-    // The way that we test this is to go ahead and insert a call to the
-    // default construtor and resolve this.  If it turns out that the bound
-    // function is compiler-generated, then we switch to _defaultOf and
-    // resolve again.
-    // The way to use _defaultOf correctly is to insert a call to it at the
-    // beginning of every constructor (to perform value-initialization as
-    // guaranteed by the spec).  But in order to do this neatly, several
-    // changes must be made in how constructors are implemented.
-    // Primarily, statements that look like assignments to fields need to be
-    // converted to copy-initialization of those fields instead.  Also, it
-    // would probably be very handy to be able to invoke both _defaultOf and
-    // constructors themselves as methods.
-    CallExpr* ctorCall = generateConcreteConstructorCall(type);
-    call->replace(ctorCall);
-    flattenAndResolveArgs(ctorCall);
-    fixupRuntimeTypeArguments(ctorCall);
-    resolveCall(ctorCall);
-    initCall = ctorCall;
+    // If this assert is true, then the suffix of this clause and the preceding
+    // one can be merged.
+    INT_ASSERT(!(type->defaultValue || type->symbol->hasFlag(FLAG_TUPLE)) ||
+               type != dtMethodToken);
 
-    FnSymbol* ctor = ctorCall->isResolved();
-    if (ctor->hasFlag(FLAG_COMPILER_GENERATED) ||
-        ctor->hasFlag(FLAG_WAS_COMPILER_GENERATED))
-#endif
-    {
-      CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
-      initCall->replace(defOfCall);
-      resolveCall(defOfCall);
-      initCall = defOfCall;
-    }
-
-    resolveFns(initCall->isResolved());
-    result = initCall;
+    CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+    call->replace(defOfCall);
+    resolveCall(defOfCall);
+    resolveFns(defOfCall->isResolved());
+    result = postFold(defOfCall);
     return result;
   }
 
