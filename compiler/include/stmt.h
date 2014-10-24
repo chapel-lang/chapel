@@ -89,6 +89,8 @@ public:
 
   virtual void        checkConstLoops();
 
+  virtual bool        deadBlockCleanup();
+
   void                appendChapelStmt(BlockStmt* stmt);
 
   void                insertAtHead(Expr* ast);

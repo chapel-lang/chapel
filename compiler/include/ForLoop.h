@@ -52,6 +52,8 @@ public:
   virtual bool           isForLoop()                                  const;
   virtual bool           isCforLoop()                                 const;
 
+  virtual bool           deadBlockCleanup();
+
 private:
                          ForLoop();
 

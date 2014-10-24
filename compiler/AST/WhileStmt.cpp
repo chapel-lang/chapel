@@ -73,6 +73,18 @@ bool WhileStmt::isWhileLoop() const
   return true;
 }
 
+bool WhileStmt::deadBlockCleanup()
+{
+  bool retval = false;
+
+  if (blockInfoGet()->numActuals() == 0) {
+    remove();
+    retval = true;
+  }
+
+  return retval;
+}
+
 void WhileStmt::checkConstLoops()
 {
   CallExpr* info    = blockInfoGet();
