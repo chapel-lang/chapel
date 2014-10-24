@@ -4554,19 +4554,6 @@ static Expr* resolvePrimInit(CallExpr* call)
       call->replace(result);
       return result;
     }
-
-    // If this assert is true, then the suffix of this and the following clause
-    // can be unified
-    INT_ASSERT(!type->defaultInitializer || !type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
-
-    // It should be possible to eliminate the defaultValue field from the type
-    // respresentation, and just use _defaultOf to supply this in module code.
-    CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
-    call->replace(defOfCall);
-    resolveCall(defOfCall);
-    resolveFns(defOfCall->isResolved());
-    result = postFold(defOfCall);
-    return result;
   } 
     
   if (type->defaultInitializer)
@@ -4575,22 +4562,13 @@ static Expr* resolvePrimInit(CallExpr* call)
       // defaultInitializers for iterator record types cannot be called as
       // default constructors.  So give up now!
       return result;
-
-    // If this assert is true, then the suffix of this clause and the preceding
-    // one can be merged.
-    INT_ASSERT(!(type->defaultValue || type->symbol->hasFlag(FLAG_TUPLE)) ||
-               type != dtMethodToken);
-
-    CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
-    call->replace(defOfCall);
-    resolveCall(defOfCall);
-    resolveFns(defOfCall->isResolved());
-    result = postFold(defOfCall);
-    return result;
   }
 
-  // If we reach here, we'll fall through and report an error in
-  // replaceInitPrims().
+  CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+  call->replace(defOfCall);
+  resolveCall(defOfCall);
+  resolveFns(defOfCall->isResolved());
+  result = postFold(defOfCall);
   return result;
 }
 
