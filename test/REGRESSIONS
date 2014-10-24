@@ -70,8 +70,8 @@ Reviewed 2014-10-16
 ===================
 
 bad mismatch (10/22/14 -- diten/hilde)
-(fifo, darwin, no_local, gasnet-everything, gasnet.fifo, cygwin)
-----------------------------------------------------------------
+(no_local, gasnet-everything, gasnet-fast gasnet.fifo, cygwin, numa)
+----------------------------------------------------------------------------------
 [Error matching .bad file for users/ferguson/record_from_string]
 
 sporadic failure (2-3x a month -- vass)
@@ -283,11 +283,11 @@ timeouts (10/17/14 -- same date it moved to chap16)
 
 sporadic timeout (started 10/17/14 -- same date it moved to chap16)
 -------------------------------------------------------------------
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (10/21/14)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (10/21/14, 10/23/14)
 
-sporadic segfault (infrequent) (10/03/14)
------------------------------------------
-[Error matching program output for stress/deitz/test_10k_begins]
+sporadic segfault (infrequent)
+------------------------------
+[Error matching program output for stress/deitz/test_10k_begins] (10/03/14, 10/23/14)
 
 
 
@@ -412,10 +412,6 @@ Inherits 'general'
 Reviewed 2014-10-21
 ===================
 
-something broke with tryToken commit (10/22/14 -- diten/hilde)
---------------------------------------------------------------
-*all*
-
 ===================
 no-local
 Inherits 'general'
@@ -440,7 +436,7 @@ error: cannot create C string from remote string (due to r22900 -- sungeun)
 
 sporadic failures even after Sung quieted it down (frequently, esp. gasnet.fifo)
 --------------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall]
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (10/23/14)
 
 
 ===================
@@ -542,7 +538,7 @@ sporadic timeouts (frequent)
 
 sporadic timeouts (infrequent)
 ------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (10/23/14)
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest] (10/21/14)
 
 sporadic segfault (very infrequent) (10/03/14)
@@ -567,16 +563,23 @@ frequent sporadic timeout
 
 
 ===================
-xc-wb.*
+x?-wb.*
 Inherits 'general'
+Reviewed 2014-10-24
+===================
+
+
+===================
+xc-wb.*
+Inherits 'x?-wb.*'
 Reviewed 2014-10-16
 ===================
 
 
 ===================
 xe-wb.*
-Inherits 'general'
-Reviewed ????-??-??
+Inherits 'x?-wb.*'
+Reviewed 2014-10-24
 ===================
 
 The following tests fail sporadically on chpbld02 due to a seg fault (10/12/14)
@@ -610,28 +613,22 @@ the following failures (should valgrind these on whiteboxes to diagnose)
 [Error matching program output for types/file/fwriteIntFailed]
 
 
-========================
-*prgenv-* TODO: reviewme
-Reviewed ????-??-??
-========================
+==================
+*prgenv-*
+Inherits 'general'
+Reviewed 2014-10-24
+===================
 
 problem with static/dynamic linking?
 ------------------------------------
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)] (started 10/26/2012)
 
 
-=============================
-prgenv-cray* (TODO: reviewme)
-Reviewed ????-??-??
-=============================
-
-some output dropped nondeterministically 
-----------------------------------------
-[Error matching program output for functions/diten/refIntents] (09/30/14)
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (10/03/14)
-[Error matching program output for release/examples/primers/arrays] (10/03/14)
-[Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (10/07/14)
-[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (10/10/14)
+====================
+*prgenv-cray*
+Inherits '*prgenv-*'
+Reviewed 2014-10-24
+====================
 
 empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
@@ -697,19 +694,43 @@ error message missing? (first noted 07/17/2014, but failure may have predated)
 compilation timeouts (since at least 07/16/14)
 ----------------------------------------------
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest_v2 (compopts: 1)]
 
-Compilation timeout (since ??? at least 01/26/14)
--------------------------------------------------
+Compilation timeout (since at least 01/26/14)
+---------------------------------------------
 [Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
 
 compilation timeouts (since at least 02/23/14)
 ----------------------------------------------
 [Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
 [Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
+
+sporadic dropping of output
+---------------------------
+[Error matching program output for functions/diten/refIntents] (09/30/14)
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (10/03/14)
+[Error matching program output for release/examples/primers/arrays] (10/03/14)
+[Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (10/07/14)
+[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (10/10/14)
+[Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (10/24/14)
+
+
+==================
+x?-wb.prgenv-cray
+Inherits 'x?-wb.*'
+Reviewed 2014-10-24
+===================
+
+
+
+======================================
+xe-wb.prgenv-cray
+Inherits '*prgenv-cray*' and 'xe-wb.*'
+Reviewed 2014-10-24
+======================================
+
+
 
 ======================================
 xc-wb.host.prgenv-cray
