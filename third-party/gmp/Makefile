@@ -52,18 +52,15 @@ gmp-config: $(GMP_UNPACKED_DIR) FORCE
 	mkdir -p $(GMP_BUILD_DIR)
 	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS) $(CHPL_GMP_CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CXXFLAGS) $(CHPL_GMP_CXXFLAGS)' --prefix=$(GMP_INSTALL_DIR) $(CHPL_GMP_CFG_OPTIONS)
 
-# Determine the number of available cpus on the system. Used as the -j argument
-# when calling make below. This can be overridden at the command line with
-# NPROCS=<int>.
-NPROCS := $(shell python -c 'import multiprocessing ; print multiprocessing.cpu_count()')
-
 gmp-build: FORCE
-	cd $(GMP_BUILD_DIR) && $(MAKE) -j$(NPROCS)
+	cd $(GMP_BUILD_DIR) && $(MAKE)
 ifneq ($(CHPL_MAKE_TARGET_ARCH),knc)
-	cd $(GMP_BUILD_DIR) && $(MAKE) -j$(NPROCS) check
+	cd $(GMP_BUILD_DIR) && $(MAKE) check
 endif
 	cd $(GMP_BUILD_DIR) && $(MAKE) install
 
 gmp: gmp-config gmp-build
 
 FORCE:
+
+.NOTPARALLEL:

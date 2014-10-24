@@ -326,9 +326,9 @@ static BlockStmt* discoverFromFollowIter(DefExpr* defFollowIter)
   BlockStmt* bFollowerLoop = NULL;
   for (Expr* curr = defFollowIter->next; curr; curr = curr->next)
     if (BlockStmt* nestB = toBlockStmt(curr))
-      if (nestB->blockInfo)
-        if (nestB->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP))
-          if (SymExpr* seFollowIter = toSymExpr(nestB->blockInfo->get(2)))
+      if (nestB->blockInfoGet())
+        if (nestB->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP))
+          if (SymExpr* seFollowIter = toSymExpr(nestB->blockInfoGet()->get(2)))
             if (seFollowIter->var == defFollowIter->sym) {
               bFollowerLoop = nestB;
               break;

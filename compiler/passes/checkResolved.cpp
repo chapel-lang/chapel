@@ -41,136 +41,17 @@ static void checkReturnPaths(FnSymbol* fn);
 static void checkNoRecordDeletes();
 
 
-static bool
-loopBodyHasExits(BlockStmt* block) {
-  INT_ASSERT(block->isLoop()); // this function is intended for loops only
-  std::vector<Expr*> exprs;
-  collectExprs(block, exprs);
-  for_vector(Expr, node, exprs) {
-    if (CallExpr* call = toCallExpr(node)) {
-      // seems returns are gotos now
-      if (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))
-        return true;
-    } else if (GotoStmt* gs = toGotoStmt(node)) {
-      if (gs->gotoTag == GOTO_RETURN || gs->gotoTag == GOTO_BREAK)
-        return true;
-    }
-  }
-  return false;
-}
-
 static void
-checkConstWhileLoop(BlockStmt* block) {
-  if (!loopBodyHasExits(block))
-    USR_WARN(block, "A while loop with a constant condition");
-}
-
-
-static bool
-SymDeclaredInBlock(Symbol* condSym, BlockStmt* block) {
-  Expr* parent = condSym->defPoint->parentExpr;
-  while (parent) {
-    if (parent == block)
-      return true;
-    parent = parent->parentExpr;
-  }
-  return false;
-}
-
-
-static void
-checkWhileLoopCondition(BlockStmt* block, Expr* condExp) {
-  if (SymExpr* condSE = toSymExpr(condExp)) {
-    Symbol* condSym = condSE->var;
-    if (condSym->isConstant() && !SymDeclaredInBlock(condSym, block)) {
-      checkConstWhileLoop(block);
+checkConstLoops() {
+  if (fWarnConstLoops == true) {
+    forv_Vec(BlockStmt, block, gBlockStmts) {
+      block->checkConstLoops();
     }
   }
 }
-
-static SymExpr*
-getWhileCondDef(BlockStmt* block, CallExpr* info, VarSymbol* condSym) {
-  std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(block, symExprs);
-  SymExpr* condDef = NULL;
-  for_vector(SymExpr, se, symExprs) {
-    if (se->var == condSym) {
-      if (se->parentExpr == info) {
-        // The reference is in blockInfo - not interesting.
-      } else if (condDef) {
-        // There are >1 references to condSym. Let us notify ourselves
-        // so we can adjust the code to handle this case as well.
-        // If desired, disable this assert - the only outcome of that may be
-        // that the warning will not be issued in some cases.
-        INT_ASSERT(false);
-      } else {
-        // This is what we are looking for.
-        condDef = se;
-      }
-    }
-  }
-  return condDef;
-}
-
-static void
-checkConstLoops(void) {
-  if (!fWarnConstLoops) return;
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (CallExpr* info = block->blockInfo) {
-      if (info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-          info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP))
-      {
-        bool foundit = false;
-        if (SymExpr* condSE = toSymExpr(info->get(1))) {
-          if (VarSymbol* condSym = toVarSymbol(condSE->var)) {
-            SymExpr* condDef = getWhileCondDef(block, info, condSym);
-            if (condDef) {
-              // Parse the move expr.
-              if (CallExpr* outerCall = toCallExpr(condDef->parentExpr)) {
-                if (outerCall->get(1) == condDef) {
-                  if (outerCall->isPrimitive(PRIM_MOVE)) {
-                    if (CallExpr* innerCall = toCallExpr(outerCall->get(2))) {
-                      if (innerCall->numActuals() == 1) {
-                        if (innerCall->isNamed("_cond_test")) {
-                          // yay, the expr matched our expectation
-                          foundit = true;
-                          checkWhileLoopCondition(block, innerCall->get(1));
-                        }
-                      }
-                    } else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2))) {
-                      // Sometimes _cond_test resolves to a param version, so
-                      // we get either true or false.
-                      if (moveSrc->var == gTrue) {
-                        foundit = true;
-                        // A loop with a param condition is most likely intentional,
-                        // so we skip the warning in this case.
-                        //checkConstWhileLoop(block);
-                      } else if (moveSrc->var == gFalse) {
-                        foundit = true;
-                        // while false do ...; -- probably nothing to worry about
-                      } else {
-                        // What else can it be?
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        // Let us notify ourselves if the block structure is something else,
-        // so we can adjust the code to handle those cases as well.
-        // If desired, disable this assert - the only outcome of that may be
-        // that the warning will not be issued in some cases.
-        INT_ASSERT(foundit);
-      }
-    }
-  }
-}
-
 
 void
-checkResolved(void) {
+checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
@@ -202,25 +83,34 @@ checkResolved(void) {
 // Returns the smallest number of definitions of ret on any path through the
 // given expression.
 static int
-isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
+isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) 
+{
   if (!expr)
     return 0;
+
   if (isDefExpr(expr))
     return 0;
+
   if (isSymExpr(expr))
     return 0;
-  if (CallExpr* call = toCallExpr(expr)) {
+
+  if (CallExpr* call = toCallExpr(expr)) 
+  {
     // Maybe add a "no return" pragma and use that instead.
     if (call->isNamed("halt"))
       return 1;
+
     if (call->isPrimitive(PRIM_MOVE) ||
         call->isPrimitive(PRIM_ASSIGN))
     {
       SymExpr* lhs = toSymExpr(call->get(1));
+
       if (lhs->var == ret)
         return 1;
+
       if (refs.find(lhs->var) != refs.end())
         return 1;
+
       if (CallExpr* rhs = toCallExpr(call->get(2)))
         if (rhs->isPrimitive(PRIM_ADDR_OF))
         {
@@ -231,6 +121,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
             refs.insert(lhs->var);
         }
     }
+
     if (call->isResolved())
     {
       for_alist(e, call->argList)
@@ -244,6 +135,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
                arg->intent == INTENT_INOUT ||
                arg->intent == INTENT_REF))
             return 1;
+
           // Treat all (non-const) refs as definitions, until we know better.
           // TODO: This may not be needed after moving insertReferenceTemps()
           // after this pass.
@@ -261,26 +153,33 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
     }
     return 0;
   }
+
   if (CondStmt* cond = toCondStmt(expr))
   {
     return std::min(isDefinedAllPaths(cond->thenStmt, ret, refs),
                     isDefinedAllPaths(cond->elseStmt, ret, refs));
   }
+
   if (isGotoStmt(expr))
     return 0;
+
   if (BlockStmt* block = toBlockStmt(expr))
   {
-    if (!block->blockInfo ||
-        block->blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-        block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+    if (block->blockInfoGet()  == NULL ||
+        block->isDoWhileLoop() == true ||
+        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
     {
       int result = 0;
+
       for_alist(e, block->body)
         result += isDefinedAllPaths(e, ret, refs);
+
       return result;
     }
+
     return 0;
   }
+
   if (isExternBlockStmt(expr))
     return 0;
 

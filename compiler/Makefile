@@ -134,3 +134,5 @@ third-party-pkgs:
 # include standard footer for compiler
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+
+.NOTPARALLEL:

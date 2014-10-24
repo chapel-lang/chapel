@@ -71,6 +71,25 @@ qioerr chpl_fs_cwd(const char** working_dir) {
   return err;
 }
 
+qioerr chpl_fs_exists(int* ret, const char* name) {
+  qioerr err = 0;
+  struct stat buf;
+  // Stat will attempt to follow all symbolic links.  If the link is broken,
+  // this means we will detect it and return false.
+  int exitStatus = stat(name, &buf);
+  if (exitStatus == -1 && errno == ENOENT) {
+    // File or directory does not exist, return false
+    *ret = 0;
+  } else if (exitStatus) {
+    // Another error occurred.  Return it.
+    err = qio_mkerror_errno();
+  } else {
+    // The file or directory exists, return true
+    *ret = 1;
+  }
+  return err;
+}
+
 qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag) {
   struct stat buf;
   int exitStatus = stat(name, &buf);

@@ -54,6 +54,8 @@ capabilities in the interest of a simple and clean build.
 
         make
 
+   Parallel build execution (e.g. `gmake -j`) is supported.
+
 4) csh/tcsh users only: Update your shell's path cache using:
 
         rehash
