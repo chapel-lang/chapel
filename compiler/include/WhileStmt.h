@@ -37,6 +37,8 @@ protected:
 
   virtual void           checkConstLoops();
 
+  virtual bool           deadBlockCleanup();
+
 private:
                          WhileStmt();
 
