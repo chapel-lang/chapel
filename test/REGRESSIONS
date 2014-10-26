@@ -224,13 +224,9 @@ consistent failure due to insane memory usage (should get better with strings)
 
 ======================
 perf.chap03.playground
-Inherits 'perf*'
+Inherits 'perf.chap03'
 Reviewed 2014-10-20
 ======================
-
-consistent failure due to insane memory usage (should get better with strings)
-------------------------------------------------------------------------------
-[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
 ===================
@@ -242,7 +238,7 @@ Reviewed 2014-10-21
 
 ======================
 perf.chap04.playground
-Inherits 'perf*'
+Inherits 'perf.chap04'
 Reviewed 2014-10-21
 ======================
 
@@ -373,12 +369,6 @@ read of size 8 in dl_name_match_p (e.g., 10/2/14)
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm] (10/2/14)
 [Error matching program output for studies/sudoku/dinan/sudoku] (10/19/14, 10/21/14)
-
-
-sporadic invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
-(fixed 10/08/14)
-----------------------------------------------------------------------------
-[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
 
 sporadic timeouts (infrequent)
 ------------------------------
@@ -832,12 +822,9 @@ Reviewed 2014-10-20
 
 static/dynamic linking issues
 -----------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (compopts:
-1)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts:
-2)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts:
-3)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
 
 
 ===============================
