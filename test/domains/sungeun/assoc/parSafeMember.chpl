@@ -1,5 +1,5 @@
-config const iters = 400;
-config const trials = 1000;
+config const iters = 200;
+config const trials = 500;
 config const n = 20;
 
 var D: domain(real);
