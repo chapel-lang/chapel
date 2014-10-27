@@ -191,5 +191,6 @@ studies/colostate/Jacobi-3D-Naive-Parallel.graph
 studies/colostate/Jacobi-3D-Inlined-Diamond-Tiling.graph  
 studies/colostate/Jacobi-3D-Serial.graph
 studies/colostate/cfd-mini-serial.graph
+studies/colostate/jacobi-unroll.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph

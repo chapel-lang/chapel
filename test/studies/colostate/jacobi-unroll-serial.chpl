@@ -7,13 +7,16 @@
 use Time;
 use Random; 
 
+config var test = 0;
+
 config const printTime: bool = true; // print timer
 
 type Cell = real(64);
-config const globalSeed = SeedGenerator.currentTime;
+//config const globalSeed = SeedGenerator.currentTime;
+config const globalSeed = 41;
 
 
-config const problemSize = 100000; 
+config const problemSize = 1000; 
 config const lowerBound = 1; // start of computation space
 const upperBound = lowerBound + problemSize - 1; // end of computation space
 config const T = 1000; // number of time steps      
@@ -59,7 +62,18 @@ proc main(){
    
     timer.stop();
 
-    writeln( "Time: ", timer.elapsed() );
+    // output result if we are testing and time if we are not
+    if (test ) {
+        for x in computationSpaceRange do {
+            write(space[0,x], ", ");
+        }
+        writeln();
+        for x in computationSpaceRange do {
+            write(space[1,x], ", ");
+        }
+    } else {
+        writeln( "Time: ", timer.elapsed() );
+    }
    
     // This is the baseline so just indicate SUCCESS.
     //if verifyResult( false ) then writeln( "SUCCESS" );
