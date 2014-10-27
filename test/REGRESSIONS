@@ -69,9 +69,9 @@ general
 Reviewed 2014-10-16
 ===================
 
-bad mismatch (10/22/14 -- diten/hilde)
-(no_local, gasnet-everything, gasnet-fast gasnet.fifo, cygwin, numa)
-----------------------------------------------------------------------------------
+bad mismatch (10/22/14 -- hilde)
+(gasnet-fast, xe-wb.*)
+--------------------------------
 [Error matching .bad file for users/ferguson/record_from_string]
 
 sporadic failure (2-3x a month -- vass)
@@ -368,7 +368,7 @@ sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p (e.g., 10/2/14)
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm] (10/2/14)
-[Error matching program output for studies/sudoku/dinan/sudoku] (10/19/14, 10/21/14)
+[Error matching program output for studies/sudoku/dinan/sudoku] (10/19/14, 10/21/14, 10/25/14)
 
 sporadic timeouts (infrequent)
 ------------------------------
@@ -523,7 +523,7 @@ sporadic timeouts (frequent)
 ----------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (10/19/14)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (10/19/14, 10/24/14)
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
 
 sporadic timeouts (infrequent)
@@ -935,7 +935,7 @@ consistent timeouts
 sporadic timeouts (frequent)
 ----------------------------
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/basic]
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/reuse]
+[Error: Timed out executing program parallel/taskPar/sungeun/barrier/reuse] (10/24/14)
 [Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase]
 
 sporadic timeouts (occasional)
