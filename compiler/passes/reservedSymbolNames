@@ -45,6 +45,7 @@
   asin
   atan
   chdir
+  chmod
   chown
   cwd
   floor

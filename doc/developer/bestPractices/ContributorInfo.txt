@@ -21,7 +21,7 @@ similar, though the specific people involved are likely to change and grow).
   Chapel.
 
 * Make sure you have configured your environment to work with git. See
-  :ref:`Intial Git Set up <initial_git_setup>` instructions.
+  :ref:`Initial Git Set up <initial_git_setup>` instructions.
 
 * If you will need commit/push access to the main repository,
   `chapel-lang/chapel`_, send a request including your github username to
@@ -145,6 +145,39 @@ similar, though the specific people involved are likely to change and grow).
 * In general, all changes will go through a pull request and have a review. We
   have intentionally made the process as lightweight as possible, so it can be
   used for changes big and small alike.
+
+
+Reviewer Responsibilities
+-------------------------
+
+* If you're reviewing a commit from a developer outside the Chapel core
+  team, be sure they have signed the contributor's agreement (see the
+  `Developer Workflow`_ instructions for this).  If the developer cannot
+  or will not sign the agreement, bring the situation to the attention
+  of the Chapel project leadership.
+
+  Care may need to be taken when committing third-party code that
+  originates from a different git[hub] repository.  As an example, in
+  one case in the past we brought in a copy of an outside commit that
+  had originally been made in the git repository belonging to one of our
+  third-party packages.  We did that by using git-am to commit a copy of
+  their raw commit (in git-send-mail format) to the appropriate
+  third-party directory in the Chapel repository.  For the commit in our
+  repo, their developer was listed as the author, but the Chapel core
+  team member who did the Chapel commit was listed as the contributor.
+  Had we instead split the original commit apart into its constituent
+  meta-information and patch parts and committed just the patch using
+  git-apply, the Chapel core team member would have been listed as both
+  author and contributor.  In the end it didn't matter because although
+  the outside developer couldn't sign our contributor's agreement, their
+  IP attorneys decided that given their license (which was BSD), their
+  commit constituted publishing the work rather than contributing it,
+  and what Chapel did with it afterward was not their concern.  Also, we
+  would have picked up the same commit the next time we updated our
+  third-party release of that package.  Nevertheless, this gives an
+  example of how tricky this kind of situation can be, and shows why
+  decisions may need to be made (or at least understood) at a high
+  level.
 
 .. _chapel-developers: chapel-developers@lists.sourceforge.net
 .. _chapel-test-results-regressions: chapel-test-results-regressions@lists.sourceforge.net

@@ -17,11 +17,13 @@
  * limitations under the License.
  */
 
+#include "optimizations.h"
+
 #include "astutil.h"
 #include "bb.h"
 #include "expr.h"
-#include "optimizations.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 
 //

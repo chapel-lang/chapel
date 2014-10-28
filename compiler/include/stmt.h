@@ -22,6 +22,16 @@
 
 #include "expr.h"
 
+#ifdef HAVE_LLVM
+
+#define FNAME(str) (llvm::Twine(getFunction()->cname)            + \
+                    llvm::Twine("_")                             + \
+                    llvm::Twine(getFunction()->codegenUniqueNum) + \
+                    llvm::Twine(str)                             + \
+                    llvm::Twine("_"))
+
+#endif
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -53,49 +63,65 @@ enum BlockTag {
 
 class BlockStmt : public Stmt {
 public:
-                  BlockStmt(Expr*    initBody     = NULL, 
-                            BlockTag initBlockTag = BLOCK_NORMAL);
-  virtual        ~BlockStmt();
+                      BlockStmt(Expr*    initBody     = NULL, 
+                                BlockTag initBlockTag = BLOCK_NORMAL);
+  virtual            ~BlockStmt();
 
   DECLARE_COPY(BlockStmt);
 
   // Interface to BaseAST
-  virtual GenRet  codegen();
-  virtual void    verify();
-  virtual void    accept(AstVisitor* visitor);
+  virtual GenRet      codegen();
+  virtual void        verify();
+  virtual void        accept(AstVisitor* visitor);
 
   // Interface to Expr
-  virtual void    replaceChild(Expr* oldAst, Expr* newAst);
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
 
   // New interface
-  void            appendChapelStmt(BlockStmt* stmt);
+  virtual bool        isLoop()                                     const;
+  
+  virtual bool        isWhileLoop()                                const;
+  virtual bool        isWhileDoLoop()                              const;
+  virtual bool        isDoWhileLoop()                              const;
 
-  void            insertAtHead(Expr* ast);
-  void            insertAtTail(Expr* ast);
-  void            insertAtTailBeforeGoto(Expr* ast);
+  virtual bool        isForLoop()                                  const;
+  virtual bool        isCforLoop()                                 const;
 
-  void            insertAtHead(const char* format, ...);
-  void            insertAtTail(const char* format, ...);
+  virtual void        checkConstLoops();
 
-  bool            isScopeless()                                const;
-  bool            isLoop()                                     const;
-  int             length()                                     const;
+  virtual bool        deadBlockCleanup();
 
-  void            moduleUseAdd(ModuleSymbol* mod);
-  bool            moduleUseRemove(ModuleSymbol* mod);
-  void            moduleUseClear();
+  void                appendChapelStmt(BlockStmt* stmt);
 
-  BlockTag        blockTag;
-  AList           body;
-  CallExpr*       blockInfo;
-  CallExpr*       modUses;       // module uses via PRIM_USE
-  LabelSymbol*    breakLabel;
-  LabelSymbol*    continueLabel;
-  const char*     userLabel;
-  CallExpr*       byrefVars;     // 'ref' clause in begin/cobegin/coforall
+  void                insertAtHead(Expr* ast);
+  void                insertAtTail(Expr* ast);
+  void                insertAtTailBeforeGoto(Expr* ast);
+
+  void                insertAtHead(const char* format, ...);
+  void                insertAtTail(const char* format, ...);
+
+  bool                isScopeless()                                const;
+  int                 length()                                     const;
+
+  void                moduleUseAdd(ModuleSymbol* mod);
+  bool                moduleUseRemove(ModuleSymbol* mod);
+  void                moduleUseClear();
+
+  virtual CallExpr*   blockInfoGet()                               const;
+  virtual CallExpr*   blockInfoSet(CallExpr* expr);
+
+  BlockTag            blockTag;
+  AList               body;
+  CallExpr*           modUses;       // module uses via PRIM_USE
+  LabelSymbol*        breakLabel;
+  LabelSymbol*        continueLabel;
+  const char*         userLabel;
+  CallExpr*           byrefVars;     // 'ref' clause in begin/cobegin/coforall
 
 private:
-  bool            canFlattenChapelStmt(const BlockStmt* stmt)  const;
+  bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
+
+  CallExpr*           blockInfo;
 };
 
 /******************************** | *********************************

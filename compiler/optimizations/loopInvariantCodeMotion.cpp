@@ -24,15 +24,15 @@
 #include "bitVec.h"
 #include "dominator.h"
 #include "expr.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "timer.h"
-#include "view.h"
 
-#include <stack>
-#include <set>
 #include <algorithm>
+#include <set>
+#include <stack>
 
 
 
@@ -126,7 +126,7 @@ class Loop {
             if (CallExpr* call = toCallExpr(blockStmt->parentExpr)) {
               if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
                 if (BlockStmt* outer = toBlockStmt(call->parentExpr)) {
-                  if (outer->blockInfo == call) {
+                  if (outer->blockInfoGet() == call) {
                     outer->insertBefore(expr->remove());
                   }
                 }

@@ -481,7 +481,7 @@ sub main {
         if (/^-compopts/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $compopts = $ARGV[0];
+                $compopts = "$compopts $ARGV[0]";
             } else {
                 print "missing -compopts arg\n";
                 exit (8);
@@ -489,7 +489,7 @@ sub main {
         } elsif (/^-execopts/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $execopts = $ARGV[0];
+                $execopts = "$execopts $ARGV[0]";
             } else {
                 print "missing -execopts arg\n";
                 exit (8);

@@ -99,28 +99,14 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 # target-based rules
 #
 
-ifdef CHPL_DEVELOPER
-CheckForStandardCHeaders:
-	@if [ `$(CHPL_MAKE_HOME)/util/devel/grepstdchdrs | wc -l` -gt 0 ]; then \
-	  echo; \
-	  echo Standard C headers found in the following file\(s\):; \
-	  echo `$(CHPL_MAKE_HOME)/util/devel/grepstdchdrs`; \
-	  echo; \
-	  echo The above list was generated with the util/devel/grepstdchdrs script.; \
-	  exit 1; \
-	fi
-else
-CheckForStandardCHeaders:
-endif
-
 CHPL_CONFIG_CHECK_PREFIX = $(CHPL_BIN_DIR)/.built-for
 CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_PREFIX)-$(CHPL_MAKE_COMPILER_SUBDIR)
 
 UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
-$(BUILD_VERSION_FILE): CheckForStandardCHeaders
+$(BUILD_VERSION_FILE): FORCE
 	@({ test -x $(CHPL_MAKE_HOME)/.git || test -x $(CHPL_MAKE_HOME)/.svn ; } && \
-	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || (echo 0 > $@);
+	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || (echo '"0"' > $@);
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -f $(CHPL_CONFIG_CHECK_PREFIX)-*
@@ -148,3 +134,5 @@ third-party-pkgs:
 # include standard footer for compiler
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+
+.NOTPARALLEL:

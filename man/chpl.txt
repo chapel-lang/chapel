@@ -308,7 +308,14 @@ OPTIONS
                     executes in order to compile the Chapel program.
 
   --[no-]print-passes    Prints the compiler passes during compilation and the
-                    amount of wall clock time required for the pass.
+                    amount of wall clock time required for the pass. After
+                    compilation is complete two tables are produced that
+                    provide more detail of how time is spent in each pass
+                    (compiling, verifying, and memory management) and the
+                    percentage of the total time that is attributed to each
+                    pass. The first table is sorted by pass and the second
+                    table is sorted by the time for the pass in descending
+                    order.
 
   --print-passes-file <filename>   Saves the compiler passes and the amount of
                     wall clock time required for the pass to <filename>. An 

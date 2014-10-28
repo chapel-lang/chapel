@@ -961,7 +961,8 @@ static bool fits_in_int_helper(int width, int64_t val) {
     case 32:
       return (val >= INT32_MIN && val <= INT32_MAX);
     case 64:
-      return (val >= INT64_MIN && val <= INT64_MAX);
+      // As an int64_t will always fit within a 64 bit int.
+      return true;
   }
 }
 
@@ -998,8 +999,6 @@ static bool fits_in_int(int width, Immediate* imm) {
 static bool fits_in_uint_helper(int width, uint64_t val) {
   switch (width) {
   default: INT_FATAL("bad width in fits_in_uint_helper");
-  case 1:
-    return (val <= 1);
   case 8:
     return (val <= UINT8_MAX);
   case 16:
@@ -1007,7 +1006,8 @@ static bool fits_in_uint_helper(int width, uint64_t val) {
   case 32:
     return (val <= UINT32_MAX);
   case 64:
-    return (val <= UINT64_MAX);
+    // As a uint64_t will always fit inside a 64 bit uint.
+    return true;
   }
 }
 
@@ -1104,6 +1104,8 @@ canInstantiate(Type* actualType, Type* formalType) {
        is_real_type(actualType) || is_complex_type(actualType)))
     return true;
   if (formalType == dtString && actualType==dtStringC)
+    return true;
+  if (formalType == dtStringC && actualType==dtStringCopy)
     return true;
   if (formalType == dtIteratorRecord && actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     return true;
@@ -1219,8 +1221,12 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if ((((toVarSymbol(actualSym) || toArgSymbol(actualSym))) &&
-       (actualType==dtStringC)) && (formalType == dtString))
+  if (//(toVarSymbol(actualSym) || toArgSymbol(actualSym)) && // What does this exclude?
+      actualType == dtStringC && formalType == dtString)
+    return true;
+  if (formalType == dtStringC && actualType == dtStringCopy)
+    return true;
+  if (formalType == dtString && actualType == dtStringCopy)
     return true;
   return false;
 }
@@ -3154,7 +3160,10 @@ void resolveNormalCall(CallExpr* call) {
     }
   }
 
-  if (call->partialTag && (!best || !best->fn->hasFlag(FLAG_NO_PARENS))) {
+  // Future work note: the repeated check to best and best->fn means that we
+  // could probably restructure this function to a better form.
+  if (call->partialTag && (!best || !best->fn ||
+                           !best->fn->hasFlag(FLAG_NO_PARENS))) {
     if (best != NULL) {
       delete best;
       best = NULL;
@@ -5237,6 +5246,11 @@ preFold(Expr* expr) {
           name = field->name;
         }
       }
+      if (!name) {
+        // In this case, we ran out of fields without finding the number
+        // specified.  This is the user's error.
+        USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
+      }
       result = new SymExpr(new_StringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
@@ -5935,7 +5949,7 @@ postFold(Expr* expr) {
 
 static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr)) {
-    if (block->blockInfo) {
+    if (block->blockInfoGet()) {
       USR_FATAL(expr, "param function cannot contain a non-param loop");
     }
   }
@@ -6030,9 +6044,15 @@ resolveExpr(Expr* expr)
         
       if (tryFailure) {
         if (tryStack.tail()->parentSymbol == fn) {
-          while (callStack.tail()->isResolved() != tryStack.tail()->elseStmt->parentSymbol) {
-            if (callStack.n == 0)
-              INT_FATAL(call, "unable to roll back stack due to try block failure");
+          // The code in the 'true' branch of a tryToken conditional has failed
+          // to resolve fully. Roll the callStack back to the function where
+          // the nearest tryToken conditional is and replace the entire
+          // conditional with the 'false' branch then continue resolution on
+          // it.  If the 'true' branch did fully resolve, we would replace the
+          // conditional with the 'true' branch instead.
+          while (callStack.n > 0 &&
+                 callStack.tail()->isResolved() !=
+                 tryStack.tail()->elseStmt->parentSymbol) {
             callStack.pop();
           }
           BlockStmt* block = tryStack.tail()->elseStmt;

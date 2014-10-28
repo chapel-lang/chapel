@@ -59,9 +59,12 @@ FORCE:
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
 
+# Use chapel.tab.h as prerequisite, to ensure bison only invoked once, even
+# with parallel execution.
+#
 # no-error required here for bison 1.875 (not 1.875d)
-$(OBJ_SUBDIR)/chapel.tab.o: chapel.tab.cpp $(OBJ_SUBDIR_MADE) $(LEXYACC_INCLUDES)
-	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ $<
+$(OBJ_SUBDIR)/chapel.tab.o: chapel.tab.h $(OBJ_SUBDIR_MADE) $(LEXYACC_INCLUDES)
+	$(CXX) -c $(COMP_CFLAGS) $(COMP_CFLAGS_NONCHPL) -o $@ chapel.tab.cpp $(OBJ_SUBDIR_MADE) $(LEXYACC_INCLUDES)
 
 
 # no-error required here for flex 2.5.33

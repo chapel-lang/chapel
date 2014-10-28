@@ -41,8 +41,16 @@ below.
 Building Chapel for a Cray System from Source
 ---------------------------------------------
 
-1) Set CHPL_HOST_PLATFORM to the appropriate string for your particular
-   Cray system.  These are the supported systems and strings:
+1) If using a XC, XE, or XK system, continue to step 2. If using a
+   CS series system, set CHPL_HOST_PLATFORM to "cray-cs".
+
+   For example:
+
+     export CHPL_HOST_PLATFORM=cray-cs
+
+   These are the supported systems and strings. Note that XC, XE,
+   and XK values are used by default when building on one of those
+   system. They can also be set manually.
 
        System       CHPL_HOST_PLATFORM
        ---------    ------------------
@@ -50,10 +58,6 @@ Building Chapel for a Cray System from Source
        XC series        cray-xc
        XE series        cray-xe
        XK series        cray-xk
-
-   For example:
-
-     export CHPL_HOST_PLATFORM=cray-xc
 
 
 2) Optionally, set the CHPL_LAUNCHER environment variable to indicate
@@ -171,7 +175,7 @@ Using Chapel on a Cray System
    You can use the -v flag to see the commands used by the launcher
    binary to start your program.
 
-   If CHPL_LAUNCHER is set to pbs-aprun or pbs-gasnetrun_ibv:
+   If CHPL_LAUNCHER is pbs-aprun or pbs-gasnetrun_ibv:
 
      a) You can optionally specify a queue name using the environment
         variable CHPL_LAUNCHER_QUEUE.  For example:
@@ -190,6 +194,13 @@ Using Chapel on a Cray System
 
         Alternatively, you can set the wall clock time limit on your
         Chapel program command line using the --walltime flag.
+
+   If CHPL_LAUNCHER is slurm-gasnetrun_ibv:
+
+     You must set the amount of time to request from SLURM.
+     For example, the following requests 15 minutes:
+
+          export CHPL_LAUNCHER_WALLTIME=00:15:00
 
    For further information about launchers, please refer to
    $CHPL_HOME/doc/README.launcher.
@@ -289,7 +300,9 @@ program heap will grow to during execution:
 
 By default the heap will occupy as much of the free memory on the locale
 (compute node) as the runtime can acquire, less a certain amount to
-allow for demands from other (system) programs running there.  Advanced
+allow for demands from other (system) programs running there.  (Note
+that the default with slurm job placement is 16 GiB; see "Communication
+Layer Concurrency and Slurm", below, for more information.)  Advanced
 users may want to make the heap smaller than this.  Programs start more
 quickly with a smaller heap, and in the unfortunate event that you need
 to produce core files, those will be written more quickly if the heap is
@@ -323,10 +336,10 @@ Native Runtime Layers
 
 The README.multilocale and README.tasking files describe a variety of
 communication and tasking layers that can be used by Chapel programs.
-By default, Chapel programs on Cray systems use the GASNet
-communication layer and the FIFO tasking layer.  There are several
-other tasking layers available that can also be used with the GASNet
-communication layer.
+By default, Chapel programs on Cray systems use the GASNet communication
+layer and the qthreads tasking layer.  There are several other tasking
+layers available that can also be used with the GASNet communication
+layer.
 
 In addition to the standard runtime layers available in any Chapel
 release, the pre-built Chapel modules for Cray XC, XE, and XK series
@@ -416,7 +429,7 @@ runtime layers for Cray X* systems.  Here are those parameters and their
 default values:
 
     CHPL_RT_CALL_STACK_SIZE        : 8 MiB (see README.executing)
-    CHPL_RT_NUM_HARDWARE_THREADS   : number of cores per locale
+    CHPL_RT_NUM_HARDWARE_THREADS   : number of physical CPUs per locale
     CHPL_RT_NUM_THREADS_PER_LOCALE : 16 * CHPL_RT_NUM_HARDWARE_THREADS
     CHPL_RT_COMM_CONCURRENCY       : CHPL_RT_NUM_HARDWARE_THREADS
 
@@ -531,6 +544,25 @@ Parameters associated with the ugni communication layer:
     performance.  Useful values for CHPL_RT_COMM_CONCURRENCY are in
     the range 1 to 30.  Values specified outside this range are
     silently increased or reduced so as to fall within it.
+
+
+    Communication Layer Concurrency and Slurm
+    -----------------------------------------
+
+    When slurm is used for job placement on Cray systems, it limits the
+    total NIC memory registration in order to allow for job sharing on
+    the compute nodes.  In our experience this limit is approximately
+    240 GiB.  The product of CHPL_RT_MAX_HEAP_SIZE and the communication
+    layer concurrency discussed above must be less than this.  The ugni
+    communication layer adjusts its heap size and concurency defaults to
+    reflect this limit when slurm is responsible for job placement.  The
+    default heap size is reduced to 16 GiB.  The concurrency is computed
+    such that the product of heap size and concurrency is below 240 GiB.
+    Thus under slurm, the ugni communication layer can support programs
+    with very large heaps or programs that need a lot of communication
+    concurrency, but not programs that need both simultaneously.  Such
+    programs need to be run using ALPS for job placement instead of
+    slurm.
 
 
 Network Atomics

@@ -69,25 +69,6 @@ failed per day from 09/06/2014 through 09/11/2014, and none failed on 09/12/2014
   Appears to be a simple timeout.  The test ran successfully in the 19 runs immediately 
   preceding the timeout.  Increase the timeout time?
 
-failures retrieving and storing perf data, started 7/19/14
-----------------------------------------------------------
-We are getting these messages, seemingly for all testing (not just perf):
-  ERROR svn-updating perf data before running tests.
-  ERROR svn-updating perf data after running tests.
-  ERROR svn-updating release over release perf data after running tests: 1
-  ERROR svn-committing perf data.
-First reported 7/20/14; Thomas is looking
-There is a Bugzilla Bug: http://bugzilla.us.cray.com/show_bug.cgi?id=814934
-An attempt to fix this on the svn side the night of 7/22/14 failed.
-It is being escalated to github support.
-7/24/14: Think we have a solution; expect good results for 7/25 testing.
-Intermittent: got a lot of these early in the week of 7/20, fewer on 7/25,
-              but then more again on 7/26, only a few on 7/27, etc.
-
-CCE errors building runtime with 8.4 (The identifier "__func__" is undefined.)
----------------------------------------------------------------------
-Bug http://bugzilla.us.cray.com/show_bug.cgi?id=815301
-
 *** Caught a fatal signal: SIGSEGV(11) on node 3/4: gasnet.qthreads.numa
 ------------------------------------------------------------------------
 [Error matching program output for distributions/diten/oneOrMoreLocales/testCyclicDist]
@@ -550,6 +531,24 @@ numerical discrepancies - same cause as for --no-local above?
 numerical discrepancies with --fast - same cause as for --no-local above?
 -------------------------------------------------------------
 studies/jacobi/waynew/example2 (06/13, 7/10/14, 09/11/14)
+
+Minor investigation notes: fails with both fifo and qthreads but much more
+frequently with fifo.  Qthreads+tcmalloc increases the rate of occurrence for
+qthreads, but vanilla fifo is still the most frequent (11/200 fifo, 5/200
+qthreads+tcmalloc, 1/500 qthreads).  There are two distinct failure modes.
+Output will match in its entirety either:
+
+0.459976 0.428143 0.432688 0.476339
+0.571779 0.569937 0.5763 0.592688
+0.667234 0.703573 0.709937 0.688143
+0.803612 0.867234 0.871779 0.819976
+
+or
+
+0.45998 0.42815 0.432696 0.476344
+0.571787 0.569949 0.576312 0.592696
+0.667241 0.703585 0.709949 0.68815
+0.803617 0.867241 0.871787 0.81998
 
 
 intermittent valgrind error

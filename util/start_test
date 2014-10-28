@@ -480,7 +480,8 @@
 #      <blank>        : a blank line is skipped
 #      <var> == <val> : checks to see if envvar "var" is "val"
 #      <var> != <val> : checks to see if envvar "var" is not "val"
-#       <var> <= <val> : true if <var> contains the substring "val".
+#      <var> <= <val> : true if <var> contains the substring "val".
+#      <var> >= <val> : true if <var> does not contain the substring "val".
 #      CHPL_MEM_LEAK_TESTING == true : check if we are testing for memory leaks
 #    All of the lines of containing conditional expressions are logically
 #    or'd together, and if any of them are true, the test is
@@ -526,6 +527,12 @@
 #    will be assumed to be
 #         <testname>.<compopts line no>-<execopts line no>.good
 #    A '0' will be used if there is no appropriate line number.
+#    In addition to execution options, a file can be specified to
+#    be piped in via stdin. The format for this feature is:
+#      <execution options> < foo.txt
+#    Where 'foo.txt' is the desired file to be piped into stdin. An
+#    error occurs if a .stdin file exists for the test, or if the
+#    desired file does not exist.
 #
 #  - also added support for a LASTCOMPOPTS file that contains
 #    compiler options to be added after the source file.  Thus:
@@ -1730,10 +1737,11 @@ set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
 
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 if ($clean_only == 0) then
-    grep "$errormarker" $logfile |& $tee -a $logfile.summary
+    grep "$errormarker" $logfile |& $tee -a $logfile.summary >/dev/null
     if ($suppressions != "") then
         $utildir/test/filterSuppressions $suppressions $logfile.summary
     endif
+    grep "$errormarker" $logfile.summary
 
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
     grep "$warningmarker" $logfile |& $tee -a $logfile.summary

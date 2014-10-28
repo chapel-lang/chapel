@@ -1,0 +1,7 @@
+#!/bin/bash
+if [ ! -d dir ]; then
+   mkdir dir
+fi
+if [ ! -e file ]; then
+    touch file
+fi
