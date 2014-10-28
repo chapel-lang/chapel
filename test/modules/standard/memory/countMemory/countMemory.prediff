@@ -14,21 +14,18 @@ if (-r $memfile) {
     }
   }
 } else {
-    $system = `uname -s`; chomp($system);
-    if ($system eq "Darwin") {
-	$mem = `system_profiler | grep "   Memory:"`;
-	if ($mem =~ m/(\s*)Memory: (\s*)(\S*) GB/) {
-	    $memInGB = "$3";
-	    $memfree = $memInGB * 1024 * 1024;
-	} else {
-#	    printf "Unexpected system_profiler output\n";
+    $platform = `$ENV{CHPL_HOME}/util/chplenv/chpl_platform.py --target`; chomp($platform);
+    printf "Platform is $platform\n";
+    if ($platform eq "darwin") {
+	$mem = `sysctl hw.memsize`;
+	if ($mem =~ m/^hw.memsize: (\d*)$/) {
+	    $memInBytes = "$1";
+	    $memfree = $memInBytes / 1024;
 	}
-#	printf "On darwin and mem is $memfree!\n";
     }
 }
 
 if ($memfree ne "unknown") {
     $hostname = `hostname -s`; chomp($hostname);
-#    printf "Running ./countMemory.makegood $memfree\n";
     system("./countMemory.makegood $memfree > countMemory.$hostname.good");
 }
