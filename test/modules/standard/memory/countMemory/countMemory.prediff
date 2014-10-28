@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 $memfile = "/proc/meminfo";
+$memfree = "unknown";
 
 if (-r $memfile) {
   open MEMFILE, "$memfile" or die "can't open $memfile $!";
@@ -12,6 +13,22 @@ if (-r $memfile) {
       $memfree = "$2";
     }
   }
-  $hostname = `hostname -s`; chomp($hostname);
-  system("./countMemory.makegood $memfree > countMemory.$hostname.good");
+} else {
+    $system = `uname -s`; chomp($system);
+    if ($system eq "Darwin") {
+	$mem = `system_profiler | grep "   Memory:"`;
+	if ($mem =~ m/(\s*)Memory: (\s*)(\S*) GB/) {
+	    $memInGB = "$3";
+	    $memfree = $memInGB * 1024 * 1024;
+	} else {
+#	    printf "Unexpected system_profiler output\n";
+	}
+#	printf "On darwin and mem is $memfree!\n";
+    }
+}
+
+if ($memfree ne "unknown") {
+    $hostname = `hostname -s`; chomp($hostname);
+#    printf "Running ./countMemory.makegood $memfree\n";
+    system("./countMemory.makegood $memfree > countMemory.$hostname.good");
 }

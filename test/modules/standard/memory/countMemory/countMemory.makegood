@@ -31,6 +31,14 @@ $realMemInGBytes = $realMemInMBytes / 1024;
 printf "memory is: %g\n",$realMemInBytes;
 printf " in bytes: %g\n",$realMemInBytes;
 printf "    in kb: %g\n",$realMemInKBytes;
-printf "    in mb: %g\n",$realMemInMBytes;
-printf "    in gb: %g\n",$realMemInGBytes;
+#
+# The following two use $.1f so that if the
+# number of MB or GB is precisely an integer,
+# we get a trailing ".0" as when printing
+# reals in Chapel.  The assumption here is
+# that we'd never use exponential notation
+# for these values.
+#
+printf "    in mb: %.1f\n",$realMemInMBytes;
+printf "    in gb: %.1f\n",$realMemInGBytes;
 
