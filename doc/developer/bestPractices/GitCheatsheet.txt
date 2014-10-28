@@ -395,6 +395,28 @@ ignored files):
 
     git ls-files --others
 
+
+If you've gotten your master branch mucked up but haven't pushed the branch
+with errors to your remote fork, you can fix it with the following series of
+commands:
+
+# This will save your old master state to a different branch name, removing
+# the name "master" from the list of branches you can access on your fork
+git branch -m <name for old, messed up master>
+
+# You will get a message indicating you are in a "detached HEAD state".  This is
+# expected (and desired).  Now the repository you are in is in line with your
+# fork's master branch.
+git checkout origin/master
+
+# This will save the state of the repository right now to a new branch, named
+# master.
+git checkout -b master
+
+At this point, a `git push origin master` should work as expected.  Remember, do
+not try this with a master branch that has been corrupted on your remote fork.
+
+
 Other Logging Commands
 ----------------------
 
