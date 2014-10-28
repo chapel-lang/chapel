@@ -1,3 +1,4 @@
 #! /bin/sh
-grep foo gen_output/$1.c | grep wide | wc -l >> $2
+# awk command is to strip leading whitespace from OSX wc
+grep foo gen_output/$1.c | grep wide | wc -l | awk '{print $1}' >> $2
 rm -r gen_output
