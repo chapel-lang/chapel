@@ -1,3 +1,4 @@
-This test is non-portable, so a .good file needs
-to be created for each platform on which it is
-to be run.  See countMemory.good for more info.
+This test relies on the .prediff file to determine from the command
+line how much physical memory is available on the system.
+Alternatively (but less attractively), one can check in a
+.hostname.good file manually.

@@ -197,23 +197,7 @@ gen
 /test/modules/gbt/printchplenv.good
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/modules/standard/machine/numCores.good
-/test/modules/standard/memory/countMemory/countMemory.bradc-lnx.good
-/test/modules/standard/memory/countMemory/countMemory.chap01.good
-/test/modules/standard/memory/countMemory/countMemory.chap02.good
-/test/modules/standard/memory/countMemory/countMemory.chap03.good
-/test/modules/standard/memory/countMemory/countMemory.chap04.good
-/test/modules/standard/memory/countMemory/countMemory.chap05.good
-/test/modules/standard/memory/countMemory/countMemory.chap06.good
-/test/modules/standard/memory/countMemory/countMemory.chap07.good
-/test/modules/standard/memory/countMemory/countMemory.chap08.good
-/test/modules/standard/memory/countMemory/countMemory.chap09.good
-/test/modules/standard/memory/countMemory/countMemory.chap10.good
-/test/modules/standard/memory/countMemory/countMemory.chap11.good
-/test/modules/standard/memory/countMemory/countMemory.chap12.good
-/test/modules/standard/memory/countMemory/countMemory.chap13.good
-/test/modules/standard/memory/countMemory/countMemory.chap14.good
-/test/modules/standard/memory/countMemory/countMemory.lnx-vass.good
-/test/modules/standard/memory/countMemory/countMemory.stemp7.good
+/test/modules/standard/memory/countMemory/countMemory.*.good
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
 /test/multilocale/numLocales/bradc/testVerboseFlag.good
