@@ -15,7 +15,6 @@ if (-r $memfile) {
   }
 } else {
     $platform = `$ENV{CHPL_HOME}/util/chplenv/chpl_platform.py --target`; chomp($platform);
-    printf "Platform is $platform\n";
     if ($platform eq "darwin") {
 	$memInBytes = `sysctl -n hw.memsize`; chomp($memInBytes);
 	$memFreeInKB = $memInBytes / 1024;
