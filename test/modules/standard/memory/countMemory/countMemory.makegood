@@ -23,10 +23,16 @@ print "    in kb: $memoryInKBytes\n";
 print "    in mb: $memoryInMBytes\n";
 print "    in gb: $memoryInGBytes\n";
 
-$realMemInKBytes = sprintf("%g", $memoryInKBytes);
-$realMemInBytes = sprintf("%g", $realMemInKBytes * 1024);
-$realMemInMBytes = sprintf("%g", $realMemInKBytes / 1024);
-$realMemInGBytes = sprintf("%g", $realMemInMBytes / 1024);
+$realMemInKBytesVal = $memoryInKBytes;
+$realMemInBytesVal  = $realMemInKBytesVal * 1024;
+$realMemInMBytesVal = $realMemInKBytesVal / 1024;
+$realMemInGBytesVal = $realMemInMBytesVal / 1024;
+
+$realMemInKBytes = sprintf("%g", $realMemInKBytesVal);
+$realMemInBytes  = sprintf("%g", $realMemInBytesVal);
+$realMemInMBytes = sprintf("%g", $realMemInMBytesVal);
+$realMemInGBytes = sprintf("%g", $realMemInGBytesVal);
+			   
 
 #
 # if a string is all digits, add a trailing .0 to match
