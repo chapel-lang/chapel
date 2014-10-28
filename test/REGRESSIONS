@@ -1017,11 +1017,6 @@ still a failure (09/19/14)
 --------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/promotion]
 
-Tests suppressions that now succeed due to turning on inlining (12/7/12)
-------------------------------------------------------------------------
-[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
-
 
 ===================
 dist-block
@@ -1030,7 +1025,7 @@ Reviewed 2014-10-22
 
 sporadic timeout (frequent)
 ---------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (10/22/14)
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (10/22/14, 10/28/14)
 
 
 ===================
@@ -1051,11 +1046,8 @@ regular timeouts due to oversubscription under qthreads (08/26/14)
 ------------------------------------------------------------------
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Norm]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
 
 sporadic extent mismatch errors (infrequent) (10/11/14)
 -------------------------------------------------------
@@ -1069,6 +1061,9 @@ sporadic timeouts (frequent)
 [Error: Timed out compilation for distributions/robust/arithmetic/basics/test_zipper_default]
 [Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random]
 [Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Search]
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Norm] (10/28/14)
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort] (10/28/14)
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (10/28/14)
 
 
 
