@@ -90,10 +90,6 @@ module ChapelRange {
   // If it is not a constructor, then the user can still create a maximal range
   // (for example) without being warned.
   //
-  pragma "compiler generated"
-    // Workaround: Resolution does not rank the visibility of symbols imported
-    // from standard modules lower than user's symbols, which is a problem if
-    // he declares a "range" type.
   proc range.range(type idxType = int,
                    param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                    param stridable : bool = false,
