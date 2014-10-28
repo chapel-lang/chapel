@@ -1,7 +1,7 @@
 use Barrier;
 use BlockDist;
 
-config const numTasks = 31;
+config const numTasks = 21;
 config const numRemoteTasks = numLocales*11;
 
 proc localTest(ref b, numTasks) {
