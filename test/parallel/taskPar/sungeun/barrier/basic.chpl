@@ -1,7 +1,7 @@
 use Barrier;
 use BlockDist;
 
-config const numTasks = 31;
+config const numTasks = 21;
 config const numRemoteTasks = numLocales*11;
 
 proc localTest(ref b, numTasks) {
@@ -25,7 +25,9 @@ proc remoteTest(ref b, numRemoteTasks) {
   }
 }
 
-
+// Note: on cygwin, this first call seems to take up most of the time for this
+// test.  Perhaps our atomic implementation is more significantly slowed down
+// here?
 var b: Barrier(reusable=false) = new Barrier(numTasks);
 localTest(b, numTasks);
 
