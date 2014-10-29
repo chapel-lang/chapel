@@ -1,6 +1,6 @@
-config const iters = 200;
-config const trials = 500;
-config const n = 20;
+config const iters = 300;
+config const trials = 400;
+config const n = 80;
 
 var D: domain(real);
 
