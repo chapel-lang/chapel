@@ -1,2 +1,1 @@
-no-use-record.chpl:6: In function 'main':
-no-use-record.chpl:7: error: unresolved call 'R()'
+$CHPL_HOME/modules/standard/Types.chpl:301: error: illegal cast from nil to R
