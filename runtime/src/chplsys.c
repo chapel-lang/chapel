@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#if defined __CYGWIN__
+#include <windows.h>
+#endif
 #if defined __APPLE__
 #include <sys/sysctl.h>
 #endif
@@ -71,6 +74,17 @@ uint64_t chpl_bytesPerLocale(void) {
   if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0))
     chpl_internal_error("query of physical memory failed");
   return membytes;
+#elif defined __CYGWIN__
+  MEMORYSTATUS status;
+  status.dwLength = sizeof(status);
+  GlobalMemoryStatus( &status );
+  return (uint64_t)status.dwTotalPhys;
+  //
+  // The following general case used to work for cygwin, but no longer
+  // seems to.  Now, it seems to return a very small number of pages
+  // for SC_PHYS_PAGES, which I can't explain.  Found the recipe above
+  // on the web and it works, so adopting it.
+  //
 #else
   long int numPages, pageSize;
   numPages = sysconf(_SC_PHYS_PAGES);
