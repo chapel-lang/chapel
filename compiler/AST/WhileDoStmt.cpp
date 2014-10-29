@@ -56,7 +56,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     loop->insertAtTail(new DefExpr(continueLabel));
     loop->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
 
-    retval = buildChapelStmt();
+    retval = new BlockStmt();
 
     retval->insertAtTail(new DefExpr(condVar));
     retval->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
