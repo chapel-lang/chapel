@@ -1,6 +1,6 @@
 #!/bin/bash
 
 # Set virtual memory limit
-ulimit -v 400000
+ulimit -v 40000000
 
 ../../../../util/test/sub_test $1
