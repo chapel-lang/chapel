@@ -137,20 +137,26 @@ o sporadic segfaults/glibc issues (xe-wb.*): anyone
   - types/file/fwriteIntFailed]
 
 
-o sporadic glibc double free or corruption (baseline): anyone
+* sporadic glibc double free or corruption (baseline): anyone
 
   The following tests sporadically, but frequently, get a glibc double
   free or corruption error on --baseline testing.  Why?
 
   - release/examples/benchmarks/hpcc/hpl
-  - studies/glob/test_glob (compopts: 1)
   - studies/hpcc/FFT/marybeth/fft-test-even
   - studies/hpcc/HPL/bradc/hpl-blc-noreindex
   - studies/hpcc/HPL/bradc/hpl-blc
   - studies/hpcc/HPL/vass/hpl
 
+o sporadic glibc double free or corruption (baseline): anyone
 
-o studies/amr/diffusion/level/Level_DiffusionBE_driver (baseline): anyone
+  The following tests sporadically, but frequently, get a glibc double
+  free or corruption error on --baseline testing.  Why?
+
+  - studies/glob/test_glob (compopts: 1)
+
+
+* studies/amr/diffusion/level/Level_DiffusionBE_driver (baseline): anyone
 
   This test gets a frequent memory corruption/stacksize issue in
   baseline testing.  What can we do about that?
@@ -255,7 +261,13 @@ o memory/shannon/outofmemory/mallocOutOfMemory (darwin, gasnet-fast): anyone
   out of memory?)
 
 
-o associative/bharshbarg/parSafeAdd (gasnet-fast, valgrind): anyone/ben
+o associative/bharshbarg/parSafeAdd (gasnet-fast): anyone/ben
+
+  This test times out fairly consistently with gasnet-fast and gets a
+  sporadic failure due to invalid write of size 8 on valgrind testing.
+  What can we do about these?
+
+* associative/bharshbarg/parSafeAdd (valgrind): anyone/ben
 
   This test times out fairly consistently with gasnet-fast and gets a
   sporadic failure due to invalid write of size 8 on valgrind testing.
@@ -284,7 +296,12 @@ o parallel/cobegin/diten/cobeginRace (darwin, memleaks on chap16): anyone
   This test is printing that it times out.  Why?
 
 
-o io/sungeun/ioerror (darwin, cygwin): anyone
+* io/sungeun/ioerror (darwin): anyone
+
+  Test isn't working as expected -- why?
+
+
+o io/sungeun/ioerror (cygwin): anyone
 
   Test isn't working as expected -- why?
 
@@ -416,7 +433,7 @@ o communication counts changed in March 2014, still failing (cyclic): gbt
   - distributions/robust/arithmetic/performance/multilocale/alloc
 
 
-o communication counts chnaged in May, 2013, still failing (cyclic): vass
+* communication counts chnaged in May, 2013, still failing (cyclic): vass
 
   - distributions/robust/arithmetic/performance/multilocale/assign
   - distributions/robust/arithmetic/performance/multilocale/reduce
@@ -446,28 +463,34 @@ o cannot create C string from remote string (due to r22900/23558): anyone/kyleb
   But is there anything we can do about them in the meantime?
 
   - classes/sungeun/remoteDynamicDispatch (compopts: 1)
-  - multilocale/diten/needMultiLocales/remoteStringTuple
   - optimizations/sungeun/RADOpt/access1d (compopts: 1)
   - optimizations/sungeun/RADOpt/access2d (compopts: 1)
   - optimizations/sungeun/RADOpt/access3d (compopts: 1)
+
+* cannot create C string from remote string (due to r22900/23558): anyone/kyleb
+  - multilocale/diten/needMultiLocales/remoteStringTuple
 
 
 
 high priority (easy)
 --------------------
 
-o testProbSize/countMemory issues (darwin, cygwin): bradc
+* testProbSize/countMemory issues (darwin): bradc
+
+  Get these working cleanly
+
+o testProbSize/countMemory issues (cygwin): bradc
 
   Get these working cleanly
 
 
-o refArgIsWide (darwin): anyone
+* refArgIsWide (darwin): anyone
 
   Some script/command on darwin (probably in the prediff) is not
   justifying integers as the .good expects.  Make portable
 
 
-o nonportable prediff (darwin): anyone
+* nonportable prediff (darwin): anyone
 
   I believe these two tests have non-portable prediff commands:
   - parallel/coforall/gbt/time-sync-incs
@@ -491,7 +514,7 @@ o missing "unable to create more than ... threads" warning (valgrind): anyone
   - parallel/taskPool/figueroa/TooManyThreads
 
 
-o we should presumably unsuppress these tests (baseline): bradc
+* we should presumably unsuppress these tests (baseline): bradc
 
   - trivial/mjoyner/inlinefunc/inlfunc1_report
   - trivial/mjoyner/inlinefunc/inlfunc2_report
