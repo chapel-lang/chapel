@@ -70,8 +70,8 @@ Reviewed 2014-10-16
 ===================
 
 something related to the constructor/defaultOf change (10/29/14 -- hilde)
-(no-local, numa, xe-wb.gnu, gasnet.fifo, cygwin, xe-*)
-------------------------------------------------------
+(numa, xe-wb.gnu, gasnet.fifo, cygwin, xe-*)
+-------------------------------------------------------------------------
 [Error matching .bad file for modules/sungeun/no-use-record (compopts: 1)]
 
 bad mismatch (10/22/14 -- hilde -- should be fixed on next run)
