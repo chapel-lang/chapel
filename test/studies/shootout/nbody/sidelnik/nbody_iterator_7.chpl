@@ -68,12 +68,12 @@ proc main() {
   
   var p0,v0 : [vecLen] real = (0,0,0);
   bodies(0) = new Planet(p0,v0, solar_mass);
-  var p1 : [vecLen] real =     (4.84143144246472090e+00,
-                                -1.16032004402742839e+00,
-                                -1.03622044471123109e-01);
-  var v1 : [vecLen] real =     (1.66007664274403694e-03 * days_per_year,
-                                7.69901118419740425e-03 * days_per_year,
-                                -6.90460016972063023e-05 * days_per_year);
+  var p1 : [vecLen] real = (4.84143144246472090e+00,
+                            -1.16032004402742839e+00,
+                            -1.03622044471123109e-01);
+  var v1 : [vecLen] real = (1.66007664274403694e-03 * days_per_year,
+                            7.69901118419740425e-03 * days_per_year,
+                            -6.90460016972063023e-05 * days_per_year);
   bodies(1) = new Planet(p1, v1, 9.54791938424326609e-04 * solar_mass);
   var p2 : [vecLen] real = (8.34336671824457987e+00,
                             4.12479856412430479e+00,
