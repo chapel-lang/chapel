@@ -35,7 +35,7 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   DoWhileStmt* loop          = 0;
-  BlockStmt*   retval        = buildChapelStmt();
+  BlockStmt*   retval        = new BlockStmt();
 
   // make variables declared in the scope of the body visible to
   // expressions in the condition of a do..while block
