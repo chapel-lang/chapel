@@ -21,8 +21,8 @@ record Planet {
 proc advance(nbodies:int, B: [] Planet, dt: real) {
   var b2 : Planet;
   
-  for (b1, i) in zip(B, 0..) do {
-    for j in i+1..nbodies-1 do {
+  for (b1, i) in zip(B, 0..) {
+    for j in i+1..nbodies-1 {
       var b2 = B(j);
       var dx = b1.x - b2.x;
       var dy = b1.y - b2.y;
@@ -39,7 +39,7 @@ proc advance(nbodies:int, B: [] Planet, dt: real) {
     }
   }
   
-  for b in B do {
+  for b in B {
     b.x += dt * b.vx;
     b.y += dt * b.vy;
     b.z += dt * b.vz;
@@ -50,9 +50,9 @@ proc energy(nbodies:int, B : [] Planet) : real {
   var b2 : Planet;
   var e : real;
   
-  for (b1, i) in zip(B, 0..) do {
+  for (b1, i) in zip(B, 0..) {
     e += 0.5 * b1.mass * (b1.vx * b1.vx + b1.vy * b1.vy + b1.vz * b1.vz);
-    for j in i+1..nbodies-1 do {
+    for j in i+1..nbodies-1 {
       b2 = B(j);
       var dx = b1.x - b2.x;
       var dy = b1.y - b2.y;
@@ -66,7 +66,7 @@ proc energy(nbodies:int, B : [] Planet) : real {
 
 proc offset_momentum(nbodies:int, B : [] Planet) {
   var px,py,pz : real;
-  for b in B do {
+  for b in B {
     px += b.vx * b.mass;
     py += b.vy * b.mass;
     pz += b.vz * b.mass;
@@ -115,7 +115,7 @@ proc main() {
                          );
   offset_momentum(NBODIES, bodies);
   writeln(format("#.#########", energy(NBODIES, bodies)));
-  for 1..n do {
+  for 1..n {
     advance(NBODIES, bodies, 0.01);
   }
   writeln(format("#.#########", energy(NBODIES, bodies)));

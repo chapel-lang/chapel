@@ -11,8 +11,9 @@ config var n = 10000;
 param PI = 3.141592653589793;
 const solar_mass = (4 * PI * PI);
 param days_per_year = 365.24;
-const vecLen = 0..2;
-const NBODIES = 0..4;
+const vecLen = {0..2};
+const numBodies = 4;
+const NBODIES = 0..numBodies;
 
 record Planet {
   var coord_vector : [vecLen] real; // x,y,z
@@ -21,8 +22,10 @@ record Planet {
 }
 
 proc advance(B: [] Planet, dt: real) {
-  for (b1, i) in zip(B, NBODIES) do {
-    for b2 in B[i+1..] do {
+  for i in NBODIES {
+    refvar b1 = B[i];
+    for j in i+1..numBodies {
+      refvar b2 = B[j];
       var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
       var distance = sqrt(d[0]**2 + d[1]**2 + d[2]**2);
       var mag = dt / (distance**3);
@@ -36,11 +39,11 @@ proc advance(B: [] Planet, dt: real) {
 
 proc energy(B : [] Planet) : real {
   var e : real;
-  for (b1,i) in zip(B,NBODIES) do {
+  for (b1,i) in zip(B,NBODIES) {
     e += 0.5 * b1.mass * (b1.vel_vector(0)**2 +
                           b1.vel_vector(1)**2 + 
                           b1.vel_vector(2)**2);
-    for b2 in B[i+1..] do {
+    for b2 in B[i+1..] {
       var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
       var distance = sqrt(d[0]**2 + d[1]**2 + d[2]**2);
       e -= (b1.mass * b2.mass) / distance;
@@ -92,7 +95,7 @@ proc main() {
   
   offset_momentum(bodies);
   writeln(format("#.#########", energy(bodies)));
-  for 1..n do {
+  for 1..n {
     advance(bodies, 0.01);
   }
   writeln(format("#.#########", energy(bodies)));

@@ -21,8 +21,8 @@ class Planet {
 }
 
 proc advance(B: [] Planet, dt: real) {
-  for (b1, i) in zip(B, NBODIES) do {
-    for b2 in B[i+1..] do {
+  for (b1, i) in zip(B, NBODIES) {
+    for b2 in B[i+1..] {
       var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
       var distance = sqrt(+ reduce d**2);
       var mag = dt / (distance**3);
@@ -31,16 +31,16 @@ proc advance(B: [] Planet, dt: real) {
     }
   }
   B.coord_vector = + reduce [b in B] (dt * b.vel_vector);
-//	for b in B do {
+//	for b in B {
 //		b.coord_vector += dt * b.vel_vector;
 //	}
 }
 
 proc energy(B : [] Planet) : real {
   var e : real;
-  for (b1,i) in zip(B,NBODIES) do {
+  for (b1,i) in zip(B,NBODIES) {
     e += 0.5 * b1.mass * (+ reduce b1.vel_vector**2);
-    for b2 in B[i+1..] do {
+    for b2 in B[i+1..] {
       var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
       var distance = sqrt(+ reduce d**2);
       e -= (b1.mass * b2.mass) / distance;
@@ -94,7 +94,7 @@ proc main() {
   
   offset_momentum(bodies);
   writeln(energy(bodies));
-  for 1..n do {
+  for 1..n {
     advance(bodies, 0.01);
   }
   writeln(energy(bodies));
