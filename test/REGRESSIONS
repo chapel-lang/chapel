@@ -70,7 +70,7 @@ Reviewed 2014-10-16
 ===================
 
 something related to the constructor/defaultOf change (10/29/14 -- hilde)
-(fifo, linux64, darwin, no-local)
+(fifo, linux64, darwin, no-local, cygwin)
 -------------------------------------------------------------------------
 [Error matching .bad file for modules/sungeun/no-use-record (compopts: 1)]
 
@@ -907,15 +907,6 @@ invalid argument in chown (since test added -- fszouza)
 -------------------------------------------------------
 [Error matching program output for io/fsouza/chown/permission_error]
 
-got 'No error' rather than 'success'
-------------------------------------
-[Error matching program output for io/sungeun/ioerror (execopts: 5)]
-
-amount of memory doesn't match
-------------------------------
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-[Error matching program output for studies/hpcc/common/testProbSize (compopts: 1)]
-
 numerical roundoff issues
 -------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)]
@@ -929,12 +920,6 @@ consistent timeouts
 -------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
 [Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
-
-sporadic timeouts (frequent)
-----------------------------
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/basic]
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/reuse] (10/24/14)
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase]
 
 sporadic timeouts (occasional)
 ------------------------------
