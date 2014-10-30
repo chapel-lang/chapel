@@ -1,0 +1,9 @@
+feature request: Protect user from integer overflow oddities.
+
+Chapel should have well-specified behavior w.r.t. integer overflow, so that this
+can be implemented consistently across all platforms.  Some options are:
+ - Always roll over silently
+     max(int(64)) + 1 == min(int(64))
+     max(uint(64)) + 1 == min(uint(64)), etc.
+ - Throw an integer overflow exception (very future).
+
