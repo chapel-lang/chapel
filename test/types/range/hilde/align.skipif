@@ -6,4 +6,8 @@
 # the result of '%' tracks the sign of the first argument (if the second
 # argument is positive).  But the Intel compiler changes its mind for this
 # particular test case.
-CHPL_TARGET_COMPILER==intel
+CHPL_TARGET_COMPILER<=intel
+# The PGI compiler exhibits the same behavior.  Both are apparently GCC
+# derivatives, so the similar behavior is not too surprising.
+CHPL_TARGET_COMPILER<=pgi
+
