@@ -22,10 +22,10 @@ case $testname in
      # (the absense of the 'start...finish' line) plus guard against
      # other failures like syntax errors.
      # The error "ReplicatedDist.chpl:272: error: attempt to dereference nil"
-     # is sometimes reported in a failed run, sometimes not.
+     # or similar is sometimes reported in a failed run, sometimes not.
 
      egrep -i '^start...finish$|error|warning' $outputfile.orig \
-       | grep -v 'ReplicatedDist.chpl:.*: error: attempt to dereference nil' \
+       | grep -v 'error: attempt to dereference nil' \
        > $outputfile
 
      # preserve $outputfile.orig
