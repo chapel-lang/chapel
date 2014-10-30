@@ -154,6 +154,7 @@ gen
 /test/compflags/waynew/*.h
 /test/compflags/waynew/chplmake.out
 
+/test/distributions/dm/hplx.exec.out.tmp.orig
 /test/distributions/robust/arithmetic/reindexing/test_reindexing6.good
 /test/distributions/robust/arithmetic/reindexing/test_strided_reindex2.good
 /test/domains/shannon/OUTPUT

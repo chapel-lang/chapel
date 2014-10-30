@@ -267,6 +267,12 @@ static void* initial_pthread_func(void* ignore) {
   while (1) {
     pthread_testcancel();
     sched_yield();
+
+    // see comment in chpl_thread_yield()
+#ifdef __CYGWIN__
+    usleep(1);
+#endif
+
   }
   return NULL;
 }
@@ -414,6 +420,11 @@ void chpl_thread_destroy(void) {
   // thread regains the processor.
   //
   sched_yield();
+
+  // see comment in chpl_thread_yield()
+#ifdef __CYGWIN__
+  usleep(1);
+#endif
 
   (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
   pthread_testcancel();
