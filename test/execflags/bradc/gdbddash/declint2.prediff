@@ -7,8 +7,8 @@ set tmpfile = $outfile.raw.tmp
 #
 # some gdbs print out extra stuff.  This filters it out
 #
-grep "gdbShouldBreakHere" $outfile | grep "gdb.c" > $tmpfile
-sed -e "s/\.\///" $tmpfile > $outfile
+grep "halt reached" $outfile > $tmpfile
+mv -f $tmpfile $outfile
 
 #
 # some greps don't add a linefeed onto the end; others do
