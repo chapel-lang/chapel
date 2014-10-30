@@ -11,8 +11,9 @@ config var n = 10000;
 param PI = 3.141592653589793;
 const solar_mass = (4 * PI * PI);
 param days_per_year = 365.24;
-const vecLen = 0..2;
-const NBODIES = 0..4;
+const vecLen = {0..2};
+const numBodies = 4;
+const NBODIES = 0..numBodies;
 
 class Planet {
   var coord_vector : [vecLen] real; // x,y,z
@@ -21,9 +22,10 @@ class Planet {
 }
 
 iter TriangleIter(B: [] Planet) {
-  for (b1,i) in zip(B,NBODIES) do {
-    for b2 in B[i+1..] do {
-      yield (b1,b2);
+  for i in NBODIES {
+    refvar b1 = B[i];
+    for j in i+1..numBodies {
+      yield (b1,B[j]);
     }
   }
 }
@@ -66,12 +68,12 @@ proc main() {
   
   var p0,v0 : [vecLen] real = (0,0,0);
   bodies(0) = new Planet(p0,v0, solar_mass);
-  var p1 : [vecLen] real = 	(4.84143144246472090e+00,
-                                 -1.16032004402742839e+00,
-                                 -1.03622044471123109e-01);
-  var v1 : [vecLen] real = 	(1.66007664274403694e-03 * days_per_year,
-                                 7.69901118419740425e-03 * days_per_year,
-                                 -6.90460016972063023e-05 * days_per_year);
+  var p1 : [vecLen] real =     (4.84143144246472090e+00,
+                                -1.16032004402742839e+00,
+                                -1.03622044471123109e-01);
+  var v1 : [vecLen] real =     (1.66007664274403694e-03 * days_per_year,
+                                7.69901118419740425e-03 * days_per_year,
+                                -6.90460016972063023e-05 * days_per_year);
   bodies(1) = new Planet(p1, v1, 9.54791938424326609e-04 * solar_mass);
   var p2 : [vecLen] real = (8.34336671824457987e+00,
                             4.12479856412430479e+00,
