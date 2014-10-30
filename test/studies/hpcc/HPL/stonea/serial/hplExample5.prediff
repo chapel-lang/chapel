@@ -1,14 +1,14 @@
-#!/bin/csh -f
-set testname = $1
-set outfile  = $2
-set tmpfile  = $outfile.prediff.tmp
+#!/usr/bin/env python
+import sys, re, shutil
 
-echo "Outfile: " $outfile
-echo "tmpFile: " $tmpfile
+test_name = sys.argv[1]
+out_file = sys.argv[2]
+tmp_file = out_file+'.prediff.tmp'
 
-# Replace seconds and gflops values with "NUM"
-sed 's/[0-9]*\.[0-9]* seconds./NUM seconds./' $outfile > $tmpfile
-sed 's/[0-9]*\.[0-9]*\(e[+-][0-9]\+\)\? Gflops\/s/NUM Gflops\/s/' $tmpfile > $outfile
-
-rm $tmpfile
-
+with open(tmp_file, 'w') as tf:
+    with open(out_file) as of:
+        for line in of:
+            line = re.sub(r'[0-9]*\.[0-9]* seconds', 'NUM seconds', line)
+            line = re.sub(r'[0-9]*\.[0-9]*(e[+-][0-9]+)? Gflops/s', 'NUM Gflops/s', line)
+            tf.write(line)
+shutil.move(tmp_file, out_file)

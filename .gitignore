@@ -154,6 +154,7 @@ gen
 /test/compflags/waynew/*.h
 /test/compflags/waynew/chplmake.out
 
+/test/distributions/dm/hplx.exec.out.tmp.orig
 /test/distributions/robust/arithmetic/reindexing/test_reindexing6.good
 /test/distributions/robust/arithmetic/reindexing/test_strided_reindex2.good
 /test/domains/shannon/OUTPUT
@@ -178,6 +179,16 @@ gen
 /test/io/ferguson/binary-output.bin
 /test/io/fsouza/chdir/destination
 /test/io/fsouza/chown/file.txt
+/test/io/fsouza/isdir/my_file
+/test/io/fsouza/isfile/my_file
+/test/io/lydia/chmod/file
+/test/io/lydia/exists/broken_link
+/test/io/lydia/exists/dir_link
+/test/io/lydia/exists/file
+/test/io/lydia/exists/file_link
+/test/io/lydia/isLink/my_file
+/test/io/lydia/isLink/my_link_dir
+/test/io/lydia/isLink/my_link_file
 
 /test/localeModels/gbt/maxTaskPar.good
 
@@ -187,23 +198,7 @@ gen
 /test/modules/gbt/printchplenv.good
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/modules/standard/machine/numCores.good
-/test/modules/standard/memory/countMemory/countMemory.bradc-lnx.good
-/test/modules/standard/memory/countMemory/countMemory.chap01.good
-/test/modules/standard/memory/countMemory/countMemory.chap02.good
-/test/modules/standard/memory/countMemory/countMemory.chap03.good
-/test/modules/standard/memory/countMemory/countMemory.chap04.good
-/test/modules/standard/memory/countMemory/countMemory.chap05.good
-/test/modules/standard/memory/countMemory/countMemory.chap06.good
-/test/modules/standard/memory/countMemory/countMemory.chap07.good
-/test/modules/standard/memory/countMemory/countMemory.chap08.good
-/test/modules/standard/memory/countMemory/countMemory.chap09.good
-/test/modules/standard/memory/countMemory/countMemory.chap10.good
-/test/modules/standard/memory/countMemory/countMemory.chap11.good
-/test/modules/standard/memory/countMemory/countMemory.chap12.good
-/test/modules/standard/memory/countMemory/countMemory.chap13.good
-/test/modules/standard/memory/countMemory/countMemory.chap14.good
-/test/modules/standard/memory/countMemory/countMemory.lnx-vass.good
-/test/modules/standard/memory/countMemory/countMemory.stemp7.good
+/test/modules/standard/memory/countMemory/countMemory.*.good
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
 /test/multilocale/numLocales/bradc/testVerboseFlag.good

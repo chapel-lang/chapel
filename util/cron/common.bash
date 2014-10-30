@@ -74,9 +74,6 @@ log_info "CHPL_HOME is: ${CHPL_HOME}"
 export CHPL_HOST_PLATFORM=$($CHPL_HOME/util/chplenv/chpl_platform.py --host)
 log_info "CHPL_HOST_PLATFORM is: ${CHPL_HOST_PLATFORM}"
 
-# Enable warnings and errors.
-export CHPL_DEVELOPER=true
-
 # Disable processor specialization (overridden in some configurations)
 export CHPL_TARGET_ARCH=none
 

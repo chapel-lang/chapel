@@ -134,6 +134,7 @@ def main():
     percentTimeCompiling = (totalTimeCompiling/elapsedTestTime) * 100
 
     # remove the colons in the compiler pass keys
+    perfKeysString = perfKeysString.rstrip()
     allOutputPerfKeys = perfKeysString.replace(' :', ' (all)')
     releaseExampleOutputPerfKeys = perfKeysString.replace(' :', ' (examples)')
     # combine the date, and each averaged value

@@ -86,6 +86,7 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno,
   if (from == NULL)
   {
     x->addr = NULL;
+    x->size = 0;
     return;
   }
     
@@ -110,7 +111,15 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno,
 void
 chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
-  char* chpl_macro_tmp =
+  char* chpl_macro_tmp;
+
+  if (x->addr == NULL)
+  {
+    *local = NULL;
+    return;
+  }
+
+  chpl_macro_tmp =
       chpl_mem_calloc(x->size, CHPL_RT_MD_GET_WIDE_STRING, lineno, filename);
   if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
     memcpy(chpl_macro_tmp, x->addr, x->size);
@@ -197,10 +206,13 @@ void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, chpl_
 void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int32_t lineno, chpl_string filename)
 {
   if( chpl_nodeID != chpl_rt_nodeFromLocaleID(str->locale) ) {
-    chpl_error("cannot create a C string from a remote string",
-               lineno, filename);
+    // TODO: ret gets leaked
+    chpl_comm_wide_get_string(ret, str,
+                              -CHPL_TYPE_chpl_string,
+                              lineno, filename);
+  } else {
+    *ret = str->addr;
   }
-  *ret = str->addr;
 }
 
 //
