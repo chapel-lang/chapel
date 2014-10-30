@@ -206,10 +206,13 @@ void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, chpl_
 void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int32_t lineno, chpl_string filename)
 {
   if( chpl_nodeID != chpl_rt_nodeFromLocaleID(str->locale) ) {
-    chpl_error("cannot create a C string from a remote string",
-               lineno, filename);
+    // TODO: ret gets leaked
+    chpl_comm_wide_get_string(ret, str,
+                              -CHPL_TYPE_chpl_string,
+                              lineno, filename);
+  } else {
+    *ret = str->addr;
   }
-  *ret = str->addr;
 }
 
 //
