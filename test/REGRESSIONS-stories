@@ -246,7 +246,7 @@ o test_10k_begins (darwin, memleaks on chap16): anyone
   of the test but make it less of a nuisance?
 
 
-~ memory/shannon/outofmemory/mallocOutOfMemory (darwin, gasnet-fast): anyone
+* memory/shannon/outofmemory/mallocOutOfMemory (darwin, gasnet-fast): anyone
 
   This test times out in these two configurations quite consistently.
   Is there a good reason for this?  What can be done to make it go
@@ -255,7 +255,7 @@ o test_10k_begins (darwin, memleaks on chap16): anyone
   out of memory?)
 
 
-~ associative/bharshbarg/parSafeAdd (gasnet-fast, valgrind): anyone/ben
+* associative/bharshbarg/parSafeAdd (gasnet-fast, valgrind): anyone/ben
 
   This test times out fairly consistently with gasnet-fast and gets a
   sporadic failure due to invalid write of size 8 on valgrind testing.
@@ -289,7 +289,7 @@ o parallel/cobegin/diten/cobeginRace (darwin, memleaks on chap16): anyone
   Test isn't working as expected -- why?
 
 
-o minMod* (memleaks, prgenv-*, pgi): bradc
+~ minMod* (memleaks, prgenv-*, pgi): bradc
 
   These tests have never been as portable as they should be.  Fix
   them, Brad.
@@ -330,13 +330,13 @@ o "warning about using a non-literal format string" (darwin): anyone
   think).
 
 
-o parallel/sync/diten/userLevelEndCount (darwin): anyone
+* parallel/sync/diten/userLevelEndCount (darwin): anyone
 
   We get a "static declaration of 'wait3' follows non-static" warning
   here.  What should be done about it?
 
 
-o */compSampler* (darwin): anyone
+* */compSampler* (darwin): anyone
 
   We get various errors in the generated code.  What needs to be done
   to make them go away?
@@ -411,7 +411,7 @@ o binary files differ (intel): anyone
 high priority (open way too long)
 ---------------------------------
 
-o communication counts changed in March 2014, still failing (cyclic): gbt
+* communication counts changed in March 2014, still failing (cyclic): gbt
 
   - distributions/robust/arithmetic/performance/multilocale/alloc
 
@@ -474,7 +474,7 @@ high priority (easy)
   - studies/hpcc/HPL/stonea/serial/hplExample5
 
 
-o quiet gdbddash tests (darwin, pgi): anyone
+~ quiet gdbddash tests (darwin, pgi): anyone
 
   I believe these are failing due to different gdb versions (at least
   that's been the case in the past).  Can a .prediff or specialized
@@ -482,7 +482,7 @@ o quiet gdbddash tests (darwin, pgi): anyone
   where they don't?  If not, should we .skipif?
 
 
-o missing "unable to create more than ... threads" warning (valgrind): anyone
+* missing "unable to create more than ... threads" warning (valgrind): anyone
 
   The following test dials down the number of threads when running with
   valgrind so doesn't get the expected .good.  What should we be doing
