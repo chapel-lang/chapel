@@ -1,5 +1,5 @@
 /*
-    Jacobi-3D (2d-space x time) Serial implementation
+    Jacobi-3D (2d-space x time) Naive Parallel implementation
     Ian J. Bertolacci (Colorado State Univeristy)
     9/18/2014
 */
@@ -90,7 +90,7 @@ proc Test_1(){
 	timer.start();
 	
 	for t in computationTimeRange {
-		for (x, y) in computationSpaceDomain {
+		forall (x, y) in computationSpaceDomain {
 			stencil( read, write, x, y);
 		}
 		read <=> write;

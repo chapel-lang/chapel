@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:, Time:, Time:
+files: Jacobi-1D-Serial.dat, Jacobi-1D-NaiveParallel.dat, Jacobi-1D-Diamond-Tiling.dat, Jacobi-1D-Inlined-Diamond-Tiling.dat
+graphkeys: Jacobi-1D-Serial, Jacobi-1D-NaiveParallel, Jacobi-1D-Diamond-Tiling, Jacobi-1D-Inlined-Diamond-Tiling
+ylabel: Time (seconds)
+graphtitle: Jacobi-1D Data

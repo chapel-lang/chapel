@@ -1,203 +1,65 @@
-/* Jacobi-2D (space x time), Inlined Diamond Slab Tiling Implementation
- * Ian J. Bertolacci - CSU
- * 9.18.2014
- */
-
+/*
+    Jacobi-3D (2d-space x time) Inlined Diamond Slab Tiling implementation
+    adapted to chapel by Ian J. Bertolacci (Colorado State Univeristy), originally 
+    written by Michelle M. Strout (CSU), modified by Cathie Olschanowsky (CSU) 
+    and David G. Wonnacott (Haverford College) 
+    9/18/2014
+*/
 
 use Time;
-use Random; 
+use Random;
+use AdvancedIters;
 
 config const printTime: bool = true; // print timer
 
 type Cell = real(64);
+
 config const globalSeed = SeedGenerator.currentTime;
 
+config const problemSize = 1000;
+config const T = 100;
+config const lowerBound = 1;
+const upperBound = lowerBound + problemSize - 1;
 
-config const problemSize = 100000; 
-config const lowerBound = 1; // start of computation space
-const upperBound = lowerBound + problemSize - 1; // end of computation space
-config const T = 1000; // number of time steps      
+const computationSpaceDomain: domain(2) = { lowerBound .. upperBound, lowerBound .. upperBound };
+const computationTimeRange: range = 1 .. T;
 
-// create a haloed domain
-var totalSpaceRange = lowerBound - 1 .. upperBound + 1;
-var computationTimeRange = 1..T;
-var computationSpaceRange = lowerBound..upperBound;
+var space: [ 0..1, lowerBound - 1 .. upperBound + 1, lowerBound - 1 .. upperBound + 1] Cell;
 
-// Storage array.
-var space: [0..1, totalSpaceRange ] Cell;   
-   
-
-type Tile = (int, int, int, int, int, int); // tile type, describes tile shape: (x_0, dx_0, x_1, dx_1, t_0, t_1)
-// the following are parameters for tiles
-// they are given values when buildTileSize() runs
-config const timeBand: int = 50; // time slice size
-config const width_max: int = problemSize / here.numCores; // maximum width of a trapezoid
-const width_min: int = (width_max + -1 * timeBand) - (0 + 1 * timeBand) +1; // minimum width of trapezoid
-
-// fail if tile is an invalid size.
-assert( width_min >= 1 && width_max >= width_min );
-
-proc InlinedTrapezoidTilingProcedure(){
-
-  var tiles_A_start = lowerBound - timeBand + 1; // starting point for doing '1' tiles loops
-  var tiles_B_start = tiles_A_start + width_max; // starting point for doing '2' tiles loop
-  var betweenTiles = width_min + width_max; // distance to next point in tile set
-
-  var x0, t0, t1 : int; 
-  var dx0: int = 1, dx1: int = -1;
-  //var readBuffer: int, writeBuffer: int;
-
-  // iterate over time band
-  for t0 in 1..T by timeBand{   
-
-     // clamp t1 to T if t1 > T
-     t1 = min( t0 + timeBand - 1, T );
-  
-     // Do A-tiles
-
-     // for all starting points of x0 do a tile
-     forall x0 in tiles_A_start .. upperBound by betweenTiles {
-     
-        var x1 = x0 + width_max - 1;
-  
-        // this lacks the complexity of previous iterators
-        // because we are ignoring it.
-  
-        // check if left edge tile
-        if x0 <= lowerBound {
-           //T(lowerBound, 0, x1, dx1, t0, t1)
-
-           // for t in t0..t1
-           var readBuffer = (t0 - 1) & 1; 
-           var writeBuffer = 1 - readBuffer;
-           for t in t0..t1 {
-
-              // for x in x0+dx0*(t-t0) .. x1+dx1*(t-t0) && in computation space
-              for x in lowerBound .. min( x1 + dx1 * (t - t0), upperBound ) {         
-                 stencil (readBuffer, writeBuffer, x);
-              }// for x
-              readBuffer <=> writeBuffer;
-           }// for t
-        
-        }// if below lower
-     
-        // check if right edge tile
-        else if x1 >= upperBound {
-           //T(x0, dx0, upperBound, 0, t0, t1);
-        
-
-           // for t in t0..t1
-           var readBuffer = (t0 - 1) & 1;
-           var writeBuffer = 1 - readBuffer;
-           for t in t0..t1 {
-
-              // for x in x0+dx0*(t-t0) .. x1+dx1*(t-t0) && in computation space
-              for x in max( x0 + dx0 * (t - t0), lowerBound) .. upperBound {         
-                 stencil (readBuffer, writeBuffer, x);
-              } // for x
-              readBuffer <=> writeBuffer;
-           } // for t
-        
-        } // if outside upper
-     
-        // otherwise, regular ol' tile
-        else {
-           //T(x0, dx0, x1, dx1, t0, t1)
-        
-           // for t in t0..t1
-           var readBuffer = (t0 - 1) & 1;
-           var writeBuffer = 1 - readBuffer;
-           for t in t0..t1 {
-
-              // for x in x0+dx0*(t-t0) .. x1+dx1*(t-t0) && in computation space
-              for x in max( x0 + dx0 * (t - t0), lowerBound) .. min( x1 + dx1 * (t - t0), upperBound ) {         
-                 stencil (readBuffer, writeBuffer, x);
-              }
-              readBuffer <=> writeBuffer;
-           }
-        }// else
-     } // for x0 (A)
-
-     // swap dx0 and dx1.
-     dx0 <=> dx1 ;
-
-     // Do B-tiles
-
-     // for all starting points of x0 do a tile
-     forall x0 in tiles_B_start .. upperBound by betweenTiles {
-
-        var x1 = x0 + width_min - 1;
-  
-        // check if right edge tile
-        if x1 >= upperBound {
-           //T( x0, dx0, upperBound, 0, t0, t1 )
-        
-           // for t in t0..t1
-           var readBuffer = (t0 - 1) & 1;
-           var writeBuffer = 1 - readBuffer;
-           for t in t0..t1 {
-
-              // for x in x0+dx0*(t-t0) .. x1+dx1*(t-t0) && in computation space
-              for x in max( x0 + dx0 * (t - t0), lowerBound) .. upperBound  {         
-                 stencil (readBuffer, writeBuffer, x);
-              } // for x
-              readBuffer <=> writeBuffer;
-           } // for t
-        } // if outside upper bound
-     
-        // otherwise, regular ol' tile            
-        else {
-           //T( x0, dx0, x1, dx1, t0, t1 )
-        
-           // for t in t0..t1
-           var readBuffer = (t0 - 1) & 1;
-           var writeBuffer = 1 - readBuffer;
-           for t in t0..t1 {
-
-              // for x in x0+dx0*(t-t0) .. x1+dx1*(t-t0) && in computation space
-              for x in max( x0 + dx0 * (t - t0), lowerBound) .. min( x1 + dx1 * (t - t0), upperBound ) {         
-                 stencil (readBuffer, writeBuffer, x);
-              } // for x
-              readBuffer <=> writeBuffer;
-           } // for t
-        } // else
-  
-     } // for x0 (B)
-
-     // swap dx0 and dx1 back for next '1' tiles round
-     dx0 <=> dx1; 
-
-  } // for time-band
-} // proc   
+// diamond tile size, can be any multiple of 3 >=15
+config const tau: int  = 15; 
+// number of time slices to use in each round of the tiling pattern
+config const subset_s: int  = 3; 
 
 
-// procedure computing the 3-point stencil.
-inline proc stencil( readBuffer: int, writeBuffer: int, x: int){   
-  space[writeBuffer, x] = (space[readBuffer, x-1] + space[readBuffer, x] + space[readBuffer, x+1]) / 3;
+
+// space initialization function
+proc initializeSpace( seed = globalSeed ){
+   var generator = new RandomStream( seed, parSafe = false );
+
+   for (x, y) in computationSpaceDomain {
+	   space[0, x, y] = generator.getNext();
+   } 
+
+} 
+
+// stencil method(s)
+inline proc stencil( t: int, x: int, y: int ){
+   stencil( (t -1) & 1, t & 1, x, y );
 }
 
-// masking procedure taking values at time t and updating t+1
-inline proc stencil( t: int, x: int ){
-  stencil( (t - 1) & 1, t & 1, x );
+
+inline proc stencil( read: int, write: int, x: int, y: int ){
+   space[write, x, y] = ( space[read, x,y] 
+							   + space[read, x-1,y] + space[read, x+1,y] 
+							   + space[read, x,y-1] + space[read, x,y+1] )/5;
 }
 
-// Give initial values to the storage array
-// Parameter: seed, seed for random stream. Default to global seed
-proc initializeSpace( ){
-  var generator = new RandomStream( globalSeed, parSafe = false );
-
-  for i in computationSpaceRange do
-     space[0, i] = generator.getNext();
-
-}
-
-// return true if the current end state is the same as the 
-// stencil applied to the original state, in serial iteration.
 proc verifyResult( verbose: bool = true ): bool {
-  var spaceEndState: [computationSpaceRange] Cell;
+  var spaceEndState: [computationSpaceDomain] Cell;
 
-  for x in computationSpaceRange do
-     spaceEndState[ x ] = space[ T & 1, x ];
+  for (x, y) in computationSpaceDomain do
+     spaceEndState[ x, y ] = space[ T & 1, x, y ];
      
   initializeSpace( );
 
@@ -205,17 +67,19 @@ proc verifyResult( verbose: bool = true ): bool {
   var write = 1;
   
   for t in computationTimeRange {
-     for x in computationSpaceRange do
-        stencil( t, x );
+     for (x, y) in computationSpaceDomain do
+        stencil( t, x, y );
      //read <=> write;   
   }      
   
   var passed: bool = true;
   
-  for x in computationSpaceRange do
-     if spaceEndState[x] != space[ T & 1, x ]  {
-        if verbose then
-           writeln( "FAILED! ", spaceEndState[x] , " != ", space[ x, T & 1 ] , " at ", x );
+  for (x, y) in computationSpaceDomain do
+     if spaceEndState[x, y] != space[ T & 1, x, y ]  {
+        if verbose {
+            writeln( "FAILED! ", spaceEndState[x, y] , " != ", space[ T & 1, x, y ] , " at ", x, ", ", y );
+            writeln( "diff: ", abs( spaceEndState[x, y] - space[ T & 1, x, y ] ) );
+        }   
         passed = false;
         break;
      }
@@ -226,18 +90,244 @@ proc verifyResult( verbose: bool = true ): bool {
   return passed;
   
 }
-proc Test_1( ) {
-   var timer: Timer;
-   // initialize space with values
-   initializeSpace();
-   
-   timer.start();
-   
-   InlinedTrapezoidTilingProcedure();
-   
-   timer.stop();
 
-   return timer.elapsed();
+    proc floord( n: int , d: int ): int {
+        var r: int = n/d - ( if n % d < 0 then 1 else 0);
+        assert(d*r <= n && n < d*(r+1));
+        assert(d*r + n%d + (if n % d < 0 then d else 0) == n);
+        return r;
+    }
+   
+    proc maxs( x ... ?k ){
+        var maxVal = x(1);
+        for param i in 2..k {
+            if maxVal < x(i) then
+                maxVal = x(i);
+        }
+        return maxVal;
+    }
+    
+    proc mins( x ... ?k ){
+        var minVal = x(1);
+        for param i in 2..k{
+            if minVal > x(i) then
+                minVal = x(i);
+        }
+        return minVal;
+    }
+
+proc Test_1(){
+    var timer: Timer;
+	
+	initializeSpace();
+	
+    timer.start();
+    //var read: int = 0, write: int = 1;
+    var tau_OVER_3: int = (tau/3); // common subexpression for CSE
+
+    // s is the number of non-pointy bit 2D slices of diamond tiling
+    // that is available for the current tile size.
+    var s: int = tau_OVER_3: - 2;
+
+    // subset_s is an input parameter indicating how many of those
+    // slices we want to use in the repeated tiling pattern.
+    // subset_s should be less than s and greater than or equal to 2.
+    if subset_s > s  || subset_s < 2 {
+        writeln("Error: need 2<=subset_s<=s: ", subset_s, "\n");
+        exit(-1);
+    }
+
+    // We want to position subset_s in the middle of the s range
+    // so, take s and subtract subset_s divide that by 2 and we have
+    // the beginning of the middle.
+    // Due to the read and write flags, we need start_s
+    // to start on an odd number.
+    var start_s: int =  (s/2)-(subset_s/2);
+    if start_s % 2 == 0 then start_s -=1;
+    if start_s < 0 then start_s = 1;
+    var stop_s:int = start_s + subset_s - 1;
+
+    // Set lower and upper bounds for spatial dimensions.
+    // When did code gen have a non-inclusive upper bound.
+    // Ian's upper bound is inclusive.
+    var Li: int = 1, 
+        Lj: int = 1, 
+        Ui: int = upperBound + 1, 
+        Uj: int = upperBound + 1;
+
+    // Loop over the tiling pattern.
+    //for (int toffset=0; toffset<T; toffset+=subset_s){
+    for toffset in 0 .. T by subset_s {
+
+        // Loop over phases.  Tiles within each phase can be executed in parallel.
+		//for (int c0 = -2; c0 <= 0; c0 += 1){
+		// We have unrolled this loop below because then
+		// we can specialize the c1 and c2 bounds and make them bounding
+		// boxes for OpenMP.
+
+		// ================= Phase 1, c0=-2 =====================
+		var c0: int = -2;
+		var c1lb: int = floord(Lj + 1, tau);
+		var c1ub: int = floord(Uj -5, tau);
+		var c2lb: int = floord(-Ui - Uj + 3, tau);
+		var c2ub: int = -floord(Lj + 1, tau) + floord(-Li - 2, tau) - 1;
+        //#if PARALLEL
+        //#pragma omp parallel for shared(start_time, s, Li, Lj, Ui, Uj, toffset, c0 ) private(read, write) collapse(2) schedule(dynamic)
+        //#endif
+		// for (int c1 = c1lb; c1 <= c1ub; c1 += 1){
+        var c1range = c1lb..c1ub;
+	    var csize = max( 1, ceil(c1range.length/(if dataParTasksPerLocale==0 then here.numCores else dataParTasksPerLocale)):int);
+        forall c1 in dynamic(c1range, chunkSize=csize ){
+            
+			//for (int c2 = c2lb; c2<=c2ub; c2++) 
+            for c2 in c2lb..c2ub {
+                
+				// Every time the pattern is repeated, toffset will be
+				// subset_s bigger.
+				// The real t value is c3+toffset-start_s+1.  
+				// We are just using the tiling pattern from c3=start_s to 
+				// c3<=stop_s.
+				for c3 in start_s..min( T-toffset+start_s-1, stop_s) {
+					 var t: int = c3 + toffset - start_s + 1;
+					 // if t % 2  is 1, then read=0 and write=1
+					 var write = t & 1;
+					 var read = 1-write;
+
+                    for c4 in maxs(-tau * c1 - tau * c2 + 2 * c3 - (2*tau-2),
+                                       -Uj - tau * c2 + c3 - (tau-2),
+                                       tau * c0 - tau * c1 - tau * c2 - c3,
+                                       Li)
+				                  .. 
+					              mins(tau * c0 - tau * c1 - tau * c2 - c3 + (tau-1),
+					                   -tau * c1 - tau * c2 + 2 * c3,
+					                   -Lj - tau * c2 + c3,
+					                   Ui - 1)
+				                  {
+						//for (int c5 = max(max(tau * c1 - c3, Lj), -tau * c2 + c3 - c4 - (tau-1)); c5 <= min(min(Uj - 1, -tau * c2 + c3 - c4), tau * c1 - c3 + (tau-1)); c5 += 1) 
+                        for c5 in maxs(tau * c1 - c3,
+                                            Lj, 
+                                           -tau * c2 + c3 - c4 - (tau-1))
+                                       ..
+                                       mins(Uj - 1, 
+                                            -tau * c2 + c3 - c4, 
+                                            tau * c1 - c3 + (tau-1))
+                                       {
+							stencil( read, write, c4, c5);
+                        } // for c5
+                    }// for c4
+                }// for c3
+            }// for c2
+		}// for c1
+
+		// ================= Phase 2, c0=-1 =====================
+        c0 = -1;
+		c1lb = floord(Lj + 1, tau);
+		c1ub = floord(Uj + (tau_OVER_3)-2, tau);
+		c2lb = floord(-Ui - Uj + 3, tau);
+		c2ub = floord(-Li - Lj + (tau_OVER_3)-3, tau);
+        //#if PARALLEL
+        //#pragma omp parallel for shared(start_time, s, Li, Lj, Ui, Uj, toffset, c0 ) private(read, write) collapse(2) schedule(dynamic)
+        //#endif
+        //for (int c1 = c1lb; c1 <= c1ub; c1 += 1)
+		c1range = c1lb..c1ub;
+	    csize = max( 1, ceil(c1range.length/(if dataParTasksPerLocale==0 then here.numCores else dataParTasksPerLocale)):int);
+        forall c1 in dynamic(c1range, chunkSize=csize ){
+		    
+			//for (int c2 = c2lb; c2<=c2ub; c2++) 
+            for c2 in c2lb..c2ub {
+
+                // Every time the pattern is repeated, toffset will be
+			    // subset_s bigger.
+			    // The real t value is c3+toffset-start_s+1.  
+			    // We are just using the tiling pattern from c3=start_s to 
+			    // c3<=stop_s.
+			    //for (int c3 = start_s; c3 <= min(T-toffset+start_s-1,stop_s); c3 += 1)
+				for c3 in start_s..min(T-toffset+start_s-1,stop_s) {
+				    var t: int = c3 + toffset - start_s + 1;
+					// if t % 2  is 1, then read=0 and write=1
+					var write = t & 1;
+					var read = 1-write;
+                    for c4 in maxs(-tau * c1 - tau * c2 + 2 * c3 - (2*tau-2),
+                                            -Uj - tau * c2 + c3 - (tau-2),
+                                            tau * c0 - tau * c1 - tau * c2 - c3,
+                                            Li) 
+                                       ..
+                                       mins( tau * c0 - tau * c1 - tau * c2 - c3 + (tau-1),
+                                           -tau * c1 - tau * c2 + 2 * c3,
+                                           -Lj - tau * c2 + c3, Ui - 1)
+                                       {
+                        //for (int c5 = max(max(tau * c1 - c3, Lj), -tau * c2 + c3 - c4 - (tau-1)); c5 <= min(min(Uj - 1, -tau * c2 + c3 - c4), tau * c1 - c3 + (tau-1)); c5 += 1) 
+						for c5 in maxs(tau * c1 - c3, Lj, 
+					                        -tau * c2 + c3 - c4 - (tau-1))
+				                        ..
+				                        mins(Uj - 1, -tau * c2 + c3 - c4,
+				                             tau * c1 - c3 + (tau-1))
+			                            {
+
+                            stencil( read, write, c4, c5);
+                        }
+                    }
+                }
+            }
+        }
+		// ================= Phase 3, c0=0 =====================
+        c0 = 0;
+		c1lb = floord(Lj + (tau_OVER_3)+4, tau);
+		c1ub = floord(Uj + (tau_OVER_3)-2, tau);
+		c2lb = -floord(Uj + (tau_OVER_3)-2, tau) + floord(-Ui-(tau_OVER_3-3),tau)+1;
+		c2ub = floord(-Li - Lj + (tau_OVER_3-3), tau);
+        //#if PARALLEL
+        //#pragma omp parallel for shared(start_time, s, Li, Lj, Ui, Uj, toffset, c0 ) private(read, write) collapse(2) schedule(dynamic)
+        //#endif
+        //for (int c1 = c1lb; c1 <= c1ub; c1 += 1)
+        c1range = c1lb..c1ub;
+	    csize = max( 1, ceil(c1range.length/(if dataParTasksPerLocale==0 then here.numCores else dataParTasksPerLocale)):int);
+        forall c1 in dynamic(c1range, chunkSize=csize ){
+            var read: int = 0;
+            var write: int = 1;
+			//for (int c2 = c2lb; c2<=c2ub; c2++)
+            for c2 in c2lb..c2ub { 
+                // Every time the pattern is repeated, toffset will be
+				// subset_s bigger.
+				// The real t value is c3+toffset-start_s+1.  
+				// We are just using the tiling pattern from c3=start_s to 
+				// c3<=stop_s.
+				//for (int c3 = start_s; c3 <= min(T-toffset+start_s-1,stop_s); c3 += 1)
+                for c3 in start_s..min(T-toffset+start_s-1,stop_s) {
+					var t: int = c3 + toffset - start_s + 1;
+					// if t % 2  is 1, then read=0 and write=1
+                    var write = t & 1;
+                    var read = 1-write;
+
+					//for (int c4 = max(max(max(-tau * c1 - tau * c2 + 2 * c3 - (2*tau-2), -Uj - tau * c2 + c3 - (tau-2)), tau * c0 - tau * c1 - tau * c2 - c3), Li); c4 <= min(min(min(tau * c0 - tau * c1 - tau * c2 - c3 + (tau-1), -tau * c1 - tau * c2 + 2 * c3), -Lj - tau * c2 + c3), Ui - 1); c4 += 1) 
+                    for c4 in maxs(-tau * c1 - tau * c2 + 2 * c3 - (2*tau-2),
+                                         -Uj - tau * c2 + c3 - (tau-2),
+                                         tau * c0 - tau * c1 - tau * c2 - c3,
+                                         Li)
+                                    ..
+                                    mins(tau * c0 - tau * c1 - tau * c2 - c3 + (tau-1),
+                                         -tau * c1 - tau * c2 + 2 * c3,
+                                         -Lj - tau * c2 + c3,
+                                         Ui - 1)
+                                    {  
+						//for (int c5 = max(max(tau * c1 - c3, Lj), -tau * c2 + c3 - c4 - (tau-1)); c5 <= min(min(Uj - 1, -tau * c2 + c3 - c4), tau * c1 - c3 + (tau-1)); c5 += 1) 
+                        for c5 in maxs(tau * c1 - c3, Lj,
+                                            -tau * c2 + c3 - c4 - (tau-1) )
+                                       ..
+                                       mins( Uj - 1,
+                                             -tau * c2 + c3 - c4,
+                                             tau * c1 - c3 + (tau-1) )
+                                       {
+								stencil( read, write, c4, c5);
+                        }
+                    }
+                }
+            }
+        }
+    } // for toffset
+	
+	timer.stop();
+	return timer.elapsed();
 }
 
 proc main(){
