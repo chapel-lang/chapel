@@ -637,12 +637,11 @@ compilation timeouts (since at least 02/23/14)
 
 sporadic compilation timeouts
 -----------------------------
-[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple] (..., 10/30/14)
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (..., 10/30/14)
 
 sporadic execution timeouts
 ---------------------------
 [Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)] (10/30/14)
-
 
 sporadic dropping of output
 ---------------------------
