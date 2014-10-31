@@ -803,7 +803,16 @@ chpl_taskID_t chpl_task_getId(void)
 
 void chpl_task_sleep(int secs)
 {
-    sleep(secs); // goes into the syscall interception system
+    if (qthread_shep() == NO_SHEPHERD) {
+        sleep(secs);
+    } else {
+        qtimer_t t = qtimer_create();
+        qtimer_start(t);
+        do {
+            qthread_yield();
+            qtimer_stop(t);
+        } while (qtimer_secs(t) < secs);
+    }
 }
 
 /* The get- and setSerial() methods assume the beginning of the task-local
