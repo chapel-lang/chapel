@@ -4,5 +4,6 @@ test_dot_expand.good
 test_dot_exterior.good
 test_dot_interior.good
 test_dot_numIndices.good
+test_dot_translate.good
 test_tuple_to_array.good
 test_writeln.good
