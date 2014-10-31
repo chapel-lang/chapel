@@ -137,7 +137,7 @@ o sporadic segfaults/glibc issues (xe-wb.*): anyone
   - types/file/fwriteIntFailed]
 
 
-o sporadic glibc double free or corruption (baseline): anyone
+* sporadic glibc double free or corruption (baseline): anyone
 
   The following tests sporadically, but frequently, get a glibc double
   free or corruption error on --baseline testing.  Why?
@@ -150,13 +150,13 @@ o sporadic glibc double free or corruption (baseline): anyone
   - studies/hpcc/HPL/vass/hpl
 
 
-o studies/amr/diffusion/level/Level_DiffusionBE_driver (baseline): anyone
+* studies/amr/diffusion/level/Level_DiffusionBE_driver (baseline): anyone
 
   This test gets a frequent memory corruption/stacksize issue in
   baseline testing.  What can we do about that?
 
 
-o surprising cygwin timeouts (darwin): anyone
+~ surprising cygwin timeouts (darwin): anyone
 
   The following tests time out frequently/sporadically on cygwin and
   nowhere else, which seems very surprising (and suggests, to me, a
@@ -246,7 +246,7 @@ o test_10k_begins (darwin, memleaks on chap16): anyone
   of the test but make it less of a nuisance?
 
 
-o memory/shannon/outofmemory/mallocOutOfMemory (darwin, gasnet-fast): anyone
+* memory/shannon/outofmemory/mallocOutOfMemory (darwin, gasnet-fast): anyone
 
   This test times out in these two configurations quite consistently.
   Is there a good reason for this?  What can be done to make it go
@@ -255,14 +255,14 @@ o memory/shannon/outofmemory/mallocOutOfMemory (darwin, gasnet-fast): anyone
   out of memory?)
 
 
-o associative/bharshbarg/parSafeAdd (gasnet-fast, valgrind): anyone/ben
+* associative/bharshbarg/parSafeAdd (gasnet-fast, valgrind): anyone/ben
 
   This test times out fairly consistently with gasnet-fast and gets a
   sporadic failure due to invalid write of size 8 on valgrind testing.
   What can we do about these?
 
 
-o domains/sungeun/assoc/parSafeMember (gasnet-fast, valgrind, pgi): anyone/ben
+~ domains/sungeun/assoc/parSafeMember (gasnet-fast, valgrind, pgi): anyone/ben
 
   This test has a tendency to time out in several configurations.
   What can we do to help that?  (Note that PGI doesn't support native
@@ -284,12 +284,12 @@ o parallel/cobegin/diten/cobeginRace (darwin, memleaks on chap16): anyone
   This test is printing that it times out.  Why?
 
 
-o io/sungeun/ioerror (darwin, cygwin): anyone
+* io/sungeun/ioerror (darwin, cygwin): anyone
 
   Test isn't working as expected -- why?
 
 
-o minMod* (memleaks, prgenv-*, pgi): bradc
+~ minMod* (memleaks, prgenv-*, pgi): bradc
 
   These tests have never been as portable as they should be.  Fix
   them, Brad.
@@ -330,13 +330,13 @@ o "warning about using a non-literal format string" (darwin): anyone
   think).
 
 
-o parallel/sync/diten/userLevelEndCount (darwin): anyone
+* parallel/sync/diten/userLevelEndCount (darwin): anyone
 
   We get a "static declaration of 'wait3' follows non-static" warning
   here.  What should be done about it?
 
 
-o */compSampler* (darwin): anyone
+* */compSampler* (darwin): anyone
 
   We get various errors in the generated code.  What needs to be done
   to make them go away?
@@ -411,12 +411,12 @@ o binary files differ (intel): anyone
 high priority (open way too long)
 ---------------------------------
 
-o communication counts changed in March 2014, still failing (cyclic): gbt
+* communication counts changed in March 2014, still failing (cyclic): gbt
 
   - distributions/robust/arithmetic/performance/multilocale/alloc
 
 
-o communication counts chnaged in May, 2013, still failing (cyclic): vass
+* communication counts changed in May, 2013, still failing (cyclic): vass
 
   - distributions/robust/arithmetic/performance/multilocale/assign
   - distributions/robust/arithmetic/performance/multilocale/reduce
@@ -439,7 +439,7 @@ o types/records/sungeun/recordWithRefCopyFns (verify): mike/hilde/bradc
   with this test?
 
 
-o cannot create C string from remote string (due to r22900/23558): anyone/kyleb
+* cannot create C string from remote string (due to r22900/23558): anyone/kyleb
 
   The following tests have been failing under gasnet due to string
   changes and would hopefully be resolved when strings are all done.
@@ -456,25 +456,25 @@ o cannot create C string from remote string (due to r22900/23558): anyone/kyleb
 high priority (easy)
 --------------------
 
-o testProbSize/countMemory issues (darwin, cygwin): bradc
+* testProbSize/countMemory issues (darwin, cygwin): bradc
 
   Get these working cleanly
 
 
-o refArgIsWide (darwin): anyone
+* refArgIsWide (darwin): anyone
 
   Some script/command on darwin (probably in the prediff) is not
   justifying integers as the .good expects.  Make portable
 
 
-o nonportable prediff (darwin): anyone
+* nonportable prediff (darwin): anyone
 
   I believe these two tests have non-portable prediff commands:
   - parallel/coforall/gbt/time-sync-incs
   - studies/hpcc/HPL/stonea/serial/hplExample5
 
 
-o quiet gdbddash tests (darwin, pgi): anyone
+~ quiet gdbddash tests (darwin, pgi): anyone
 
   I believe these are failing due to different gdb versions (at least
   that's been the case in the past).  Can a .prediff or specialized
@@ -482,7 +482,7 @@ o quiet gdbddash tests (darwin, pgi): anyone
   where they don't?  If not, should we .skipif?
 
 
-o missing "unable to create more than ... threads" warning (valgrind): anyone
+* missing "unable to create more than ... threads" warning (valgrind): anyone
 
   The following test dials down the number of threads when running with
   valgrind so doesn't get the expected .good.  What should we be doing
@@ -491,7 +491,7 @@ o missing "unable to create more than ... threads" warning (valgrind): anyone
   - parallel/taskPool/figueroa/TooManyThreads
 
 
-o we should presumably unsuppress these tests (baseline): bradc
+* we should presumably unsuppress these tests (baseline): bradc
 
   - trivial/mjoyner/inlinefunc/inlfunc1_report
   - trivial/mjoyner/inlinefunc/inlfunc2_report

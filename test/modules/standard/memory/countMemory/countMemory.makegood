@@ -23,14 +23,38 @@ print "    in kb: $memoryInKBytes\n";
 print "    in mb: $memoryInMBytes\n";
 print "    in gb: $memoryInGBytes\n";
 
-$realMemInKBytes = $memoryInKBytes;
-$realMemInBytes = $realMemInKBytes * 1024;
-$realMemInMBytes = $realMemInKBytes / 1024;
-$realMemInGBytes = $realMemInMBytes / 1024;
+$realMemInKBytesVal = $memoryInKBytes;
+$realMemInBytesVal  = $realMemInKBytesVal * 1024;
+$realMemInMBytesVal = $realMemInKBytesVal / 1024;
+$realMemInGBytesVal = $realMemInMBytesVal / 1024;
 
-printf "memory is: %g\n",$realMemInBytes;
-printf " in bytes: %g\n",$realMemInBytes;
-printf "    in kb: %g\n",$realMemInKBytes;
-printf "    in mb: %g\n",$realMemInMBytes;
-printf "    in gb: %g\n",$realMemInGBytes;
+$realMemInKBytes = sprintf("%g", $realMemInKBytesVal);
+$realMemInBytes  = sprintf("%g", $realMemInBytesVal);
+$realMemInMBytes = sprintf("%g", $realMemInMBytesVal);
+$realMemInGBytes = sprintf("%g", $realMemInGBytesVal);
+			   
+
+#
+# if a string is all digits, add a trailing .0 to match
+# Chapel's default formatting of reals
+#
+if ($realMemInKBytes =~ m/^\d+$/) {
+    $realMemInKBytes .= ".0";
+}
+if ($realMemInBytes =~ m/^\d+$/) {
+    $realMemInBytes .= ".0";
+}
+if ($realMemInMBytes =~ m/^\d+$/) {
+    $realMemInMBytes .= ".0";
+}
+if ($realMemInGBytes =~ m/^\d+$/) {
+    $realMemInGBytes .= ".0";
+}
+
+
+printf "memory is: %s\n", $realMemInBytes;
+printf " in bytes: %s\n", $realMemInBytes;
+printf "    in kb: %s\n", $realMemInKBytes;
+printf "    in mb: %s\n", $realMemInMBytes;
+printf "    in gb: %s\n", $realMemInGBytes;
 
