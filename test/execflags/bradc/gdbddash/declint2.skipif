@@ -1,0 +1,4 @@
+# This test is supposed to show that GDB will break on a halt when the
+# "array index out of bounds" error occurs.  But when --fast is tossed, the 
+# array bounds check is disabled.
+COMPOPTS<=--fast
