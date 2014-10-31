@@ -71,30 +71,30 @@ extern proc cf_trial(n: int);
 extern proc cs_trial(n: int);
 
 proc lstr_trial() {
-  extern proc printf(format: c_string);
+  extern proc printf(format: c_string, arg...);
   for 1..n do
-    printf("\n");
+    printf("%s", "\n");
 }
 
 proc lcs_trial() {
-  extern proc printf(format: c_string);
+  extern proc printf(format: c_string, arg...);
   const c_newline_local = "\n".c_str();
   for 1..n do
-    printf(c_newline_local);
+    printf("%s", c_newline_local);
 }
 
 const str_newline_global = "\n";
 proc gstr_trial() {
-  extern proc printf(format: c_string);
+  extern proc printf(format: c_string, arg...);
   for 1..n do
-    printf(str_newline_global.c_str());
+    printf("%s", str_newline_global.c_str());
 }
 
 const c_newline_global = "\n".c_str();
 proc gcs_trial() {
-  extern proc printf(format: c_string);
+  extern proc printf(format: c_string, arg...);
   for 1..n do
-    printf(c_newline_global);
+    printf("%s", c_newline_global);
 }
 
 // could do the same with puts() - would be too much, skip it for now
