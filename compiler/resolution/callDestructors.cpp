@@ -600,6 +600,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
             INT_ASSERT(useMove->isPrimitive(PRIM_MOVE));
 
             Symbol* useLhs = toSymExpr(useMove->get(1))->var;
+#if 0
             if (!useLhs->type->symbol->hasFlag(FLAG_REF)) {
               // I think this code is not needed because insertReferenceTemps()
               // will add it.
@@ -607,6 +608,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
               move->insertBefore(new DefExpr(useLhs));
               move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, new CallExpr(PRIM_ADDR_OF, useMove->get(1)->remove())));
             }
+#endif
             // lhs->defPoint->remove();
             move->replace(call->remove());
             useMove->remove();
