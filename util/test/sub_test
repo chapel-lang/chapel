@@ -785,12 +785,8 @@ if systemPreexec:
 if systemPrediff:
     sys.stdout.write('[system-wide prediff: \'%s\']\n'%(systemPrediff))
 
-if os.path.isdir(testdir+'/'+localdir):
-    dirlist=os.listdir(testdir+'/'+localdir)
-elif os.path.isdir(localdir):
-    dirlist=os.listdir(localdir)
-else:
-    Fatal('Could not find local test directory: \''+localdir+'\'')
+# consistently look only at the files in the current directory
+dirlist=os.listdir(".")
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:

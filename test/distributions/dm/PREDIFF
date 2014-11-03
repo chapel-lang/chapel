@@ -1,4 +1,4 @@
-#!/bin/bash --norc
+#!/bin/bash
 
 testname=$1
 outputfile=$2
@@ -13,6 +13,23 @@ case $testname in
   (t5a) doRLN=true; doSort=false ;;
   (s7)  doSort=false ;;
   (tmath) doSort=false ;;
+  (hplx)
+     # special handling
+     mv $outputfile $outputfile.orig
+
+     # There is no consistent failing output.
+     # These filters are an attempt to distinguish failure reliably
+     # (the absense of the 'start...finish' line) plus guard against
+     # other failures like syntax errors.
+     # The error "ReplicatedDist.chpl:272: error: attempt to dereference nil"
+     # or similar is sometimes reported in a failed run, sometimes not.
+
+     egrep -i '^start...finish$|error|warning' $outputfile.orig \
+       | grep -v 'error: attempt to dereference nil' \
+       > $outputfile
+
+     # preserve $outputfile.orig
+     ;; #hplx
 esac
 
 # remove line numbers from warnings

@@ -369,6 +369,11 @@ BlockStmt::checkConstLoops() {
 
 }
 
+bool
+BlockStmt::deadBlockCleanup() {
+  return false;
+}
+
 int
 BlockStmt::length() const {
   return body.length;

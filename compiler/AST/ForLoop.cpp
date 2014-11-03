@@ -44,7 +44,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   ForLoop*     loop          = new ForLoop(body, index, iterator);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
-  BlockStmt*   retval        = buildChapelStmt();
+  BlockStmt*   retval        = new BlockStmt();
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
@@ -193,6 +193,22 @@ bool ForLoop::isForLoop() const
 bool ForLoop::isCforLoop() const
 {
   return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+}
+
+bool ForLoop::deadBlockCleanup()
+{
+  bool retval = false;
+
+  if (CallExpr* loop = blockInfoGet()) {
+    if (BlockStmt* test = toBlockStmt(loop->get(2))) {
+      if (test->body.length == 0) {
+        remove();
+        retval = true;
+      }
+    }
+  }
+
+  return retval;
 }
 
 GenRet ForLoop::codegen() 

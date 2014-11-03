@@ -5,6 +5,10 @@ config const n: int = 500;
 for i in 1..n do
   foo(i);
 
+// account for replication
+proc replFac(d: domain) return 1;
+proc replFac(d: domain) where d.dist._value: ReplicatedDist return numLocales;
+
 proc foo(i: int) {
   const modi = i % 20;
 
@@ -12,7 +16,7 @@ proc foo(i: int) {
 
   const sum = + reduce [(i,j) in D] i;
 
-  const expectedSum = modi * + reduce [j in 1..modi] j;
+  const expectedSum = replFac(D) * modi * + reduce [j in 1..modi] j;
 
   if sum != expectedSum then
     halt("fail -- ", sum, " != ", expectedSum);

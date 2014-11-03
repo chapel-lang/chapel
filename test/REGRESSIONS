@@ -69,10 +69,10 @@ general
 Reviewed 2014-10-16
 ===================
 
-bad mismatch (10/22/14 -- diten/hilde)
-(no_local, gasnet-everything, gasnet-fast gasnet.fifo, cygwin, numa)
-----------------------------------------------------------------------------------
-[Error matching .bad file for users/ferguson/record_from_string]
+something related to the constructor/defaultOf change (10/29/14 -- hilde)
+(cygwin, xe-*)
+-------------------------------------------------------------------------
+[Error matching .bad file for modules/sungeun/no-use-record (compopts: 1)]
 
 sporadic failure (2-3x a month -- vass)
 ---------------------------------------
@@ -99,22 +99,6 @@ Inherits 'general'
 Reviewed 2014-10-16
 ===================
 
-need machine-specific .good file (bradc)
-----------------------------------------
-[Error cannot locate program output comparison file studies/hpcc/common/testProbSize.good]
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-
-integers print out with different justification
------------------------------------------------
-[Error matching .bad file for performance/bradc/refArgIsWide (compopts: 1)]
-
-gdb output differences?
------------------------
-[Error matching compiler output for compflags/bradc/gdbddash/declint]
-[Error matching program output for execflags/bradc/gdbddash/declint2]
-[Error matching program output for execflags/bradc/gdbddash/declint]
-[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
-
 error: self-comparison always evaluates to true [-Werror,-Wtautological-compare])
 ---------------------------------------------------------------------------------
 [Error matching compiler output for extern/ferguson/c_ptrs (compopts: 1)]
@@ -134,19 +118,6 @@ linker error (library not found for -lcrt0.o)
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)]
 [Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)]
 
-error: static declaration of 'wait3' follows non-static declaration
--------------------------------------------------------------------
-[Error matching compiler output for parallel/sync/diten/userLevelEndCount]
-
-various errors in the generated code
-------------------------------------
-[Error matching compiler output for performance/compiler/bradc/compSampler-timecomp]
-[Error matching compiler output for trivial/shannon/compSampler]
-
-undefined error
----------------
-[Error matching program output for io/sungeun/ioerror (execopts: 5)]
-
 nondeterministic output order issue?
 ------------------------------------
 [Error matching program output for parallel/begin/deitz/test_begin_cobegin2]
@@ -159,11 +130,6 @@ incorrect output
 timeout (printed by test?)
 --------------------------
 [Error matching program output for parallel/cobegin/diten/cobeginRace]
-
-nonportable prediff?
---------------------
-[Error matching program output for parallel/coforall/gbt/time-sync-incs]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
 
 incorrect initial values?
 -------------------------
@@ -186,7 +152,6 @@ halt reached
 consistent timeouts (surprising?)
 ---------------------------------
 [Error: Timed out executing program exercises/RandomNumber6]
-[Error: Timed out executing program memory/shannon/outofmemory/mallocOutOfMemory]
 [Error: Timed out executing program parallel/begin/deitz/test_begin2]
 [Error: Timed out executing program parallel/begin/deitz/test_begin]
 [Error: Timed out executing program parallel/begin/deitz/test_coforall_sugar3]
@@ -224,13 +189,9 @@ consistent failure due to insane memory usage (should get better with strings)
 
 ======================
 perf.chap03.playground
-Inherits 'perf*'
+Inherits 'perf.chap03'
 Reviewed 2014-10-20
 ======================
-
-consistent failure due to insane memory usage (should get better with strings)
-------------------------------------------------------------------------------
-[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
 ===================
@@ -242,7 +203,7 @@ Reviewed 2014-10-21
 
 ======================
 perf.chap04.playground
-Inherits 'perf*'
+Inherits 'perf.chap04'
 Reviewed 2014-10-21
 ======================
 
@@ -266,23 +227,18 @@ Inherits 'memleaks.examples'
 Reviewed 2014-10-17
 ============================
 
-Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
------------------------------------------------------------------------------
-[Error matching program output for compflags/bradc/minimalModules/minModDeclPrint]
-[Error matching program output for compflags/bradc/minimalModules/minModFnRefArg]
-
 timed out (10/17/14 -- same date it moved to chap16)
 ------------------------------------------------------------
 [Error matching program output for parallel/cobegin/diten/cobeginRace]
 
 timeouts (10/17/14 -- same date it moved to chap16)
 ---------------------------------------------------
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_iterator_7]
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6]
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4]
 
 sporadic timeout (started 10/17/14 -- same date it moved to chap16)
 -------------------------------------------------------------------
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_iterator_7] (10/17/14, 10/28/14)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4] (10/17/14, 10/28/14)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (10/21/14, 10/23/14)
 
 sporadic segfault (infrequent)
@@ -309,10 +265,6 @@ Inherits 'general'
 Reviewed 2014-10-17
 ===================
 
-noisy failure due to invalid write of size 8 (e.g., 09/15/14, 09/24/14, ...)
-----------------------------------------------------------------------------
-[Error matching program output for associative/bharshbarg/parSafeAdd (compopts: 1)]
-
 overlapping memcpy (root cause should be eliminated)
 ----------------------------------------------------
 [Error matching program output for io/bradc/readWholeArr]
@@ -337,14 +289,6 @@ invalid read (04/08/14 -- since gmp was turned on)
 stack overflow
 --------------
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
-
-missing "unable to create more than 0000 threads" warning
----------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads (compopts: 1)]
-  Perhaps not a real error: The program is expected to raise the warning
-"maxThreadsPerLocale is unbounded, but unable to create more than 0000 threads"
-But under valgrind, the program is executed with --numThreadsPerLocale=100,
-so the warning does not apply and is not raised, and .good is not matched.
 
 invalid read/write of size 8 in ftoa() (10/08/14 -- hilde)
 ----------------------------------------------------------
@@ -372,18 +316,11 @@ sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p (e.g., 10/2/14)
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm] (10/2/14)
-[Error matching program output for studies/sudoku/dinan/sudoku] (10/19/14, 10/21/14)
-
-
-sporadic invalid write of size 8 in buffered_get_mmap (10/2/14 -- sungeun)
-(fixed 10/08/14)
-----------------------------------------------------------------------------
-[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
+[Error matching program output for studies/sudoku/dinan/sudoku] (10/19/14, 10/21/14, 10/25/14, 10/30/14)
 
 sporadic timeouts (infrequent)
 ------------------------------
-[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
-[Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (2014-10-31)
 
 
 
@@ -406,6 +343,7 @@ reviewed 2014-10-21
 ===================
 
 
+
 ===================
 numa
 Inherits 'general'
@@ -425,15 +363,6 @@ Inherits 'no-local'
 Reviewed 2014-10-16
 ===================
 
-error: cannot create C string from remote string (due to r22900 -- sungeun)
----------------------------------------------------------------------------
-[Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
-(due to r23558)
-[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014/06/14)
-[Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)] (2014/06/14)
-[Error matching program output for optimizations/sungeun/RADOpt/access3d (compopts: 1)] (2014/06/14)
-
 sporadic failures even after Sung quieted it down (frequently, esp. gasnet.fifo)
 --------------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] (10/23/14)
@@ -452,11 +381,16 @@ Inherits 'gasnet*'
 Reviewed 2014-10-21
 ===================
 
+never worked (10/30/14 -- vass -- should now be fixed)
+------------------------------------------------------
+[Error matching .bad file for distributions/dm/hplx]
+
+behavior change due to change in remote string behavior (2014-10-29 -- kbrady)
+------------------------------------------------------------------------------
+[Error matching .bad file for types/string/sungeun/c_string/multilocale/c_str_on_remote_string]
+
 consistent timeouts
 -------------------
-[Error: Timed out executing program associative/bharshbarg/parSafeAdd (compopts: 1)]
-[Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
-[Error: Timed out executing program memory/shannon/outofmemory/mallocOutOfMemory]
 [Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
 
 sporadic failure due to 'slave got an unknown command on coord socket' (infrequent) (09/27/14)
@@ -486,7 +420,7 @@ fairly consistent timeouts due to qthreads oversubscription (09/15/14)
 sporadic timeout (infrequent)
 -----------------------------
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (10/20/14)
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (10/20/14, 10/30/14)
 [Error: Timed out executing program release/examples/primers/distributions] (10/19/14)
 
 
@@ -533,12 +467,12 @@ sporadic timeouts (frequent)
 ----------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (10/19/14)
-[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (10/19/14, 10/24/14)
+[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3] (2014-10-29)
 
 sporadic timeouts (infrequent)
 ------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (10/23/14)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (10/23/14, 10/28/14)
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest] (10/21/14)
 
 sporadic segfault (very infrequent) (10/03/14)
@@ -672,10 +606,6 @@ signal 11 (first seen 03/02/14)
 [Error matching compiler output for release/examples/benchmarks/shootout/meteor-fast]
 [Error matching program output for studies/shootout/meteor/kbrady/meteor-parallel-alt]
 
-zippered iterations have non-equal lengths (09/17/14 -- elliot)
---------------------------------------------------------------
-[Error matching program output for statements/bradc/swaps/swapArrayDiffIndices]
-
 glob portability issue (09/17/14 -- bradc)
 ------------------------------------------
 [Error matching program output for studies/filerator/globberator (execopts: 1)]
@@ -694,7 +624,6 @@ error message missing? (first noted 07/17/2014, but failure may have predated)
 compilation timeouts (since at least 07/16/14)
 ----------------------------------------------
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
 
 Compilation timeout (since at least 01/26/14)
@@ -706,6 +635,14 @@ compilation timeouts (since at least 02/23/14)
 [Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
 [Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
 
+sporadic compilation timeouts
+-----------------------------
+[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (..., 10/30/14)
+
+sporadic execution timeouts
+---------------------------
+[Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)] (10/30/14)
+
 sporadic dropping of output
 ---------------------------
 [Error matching program output for functions/diten/refIntents] (09/30/14)
@@ -715,12 +652,36 @@ sporadic dropping of output
 [Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (10/10/14)
 [Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (10/24/14)
 
+zippered iterations have non-equal lengths (09/17/14 -- elliot/diten)
+(resolved 10/30/14 -- but did it stick?)
+---------------------------------------------------------------------
+[Error matching program output for statements/bradc/swaps/swapArrayDiffIndices]
+
+
 
 ==================
 x?-wb.prgenv-cray
 Inherits 'x?-wb.*'
 Reviewed 2014-10-24
 ===================
+
+out-of-bounds error access (2014-10-29 -- hilde due to PR #678; mike looking)
+-----------------------------------------------------------------------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
+[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
+
+
+======================================
+xc-wb.prgenv-cray
+Inherits '*prgenv-cray*' and 'xc-wb.*'
+Reviewed 2014-10-29
+======================================
+
 
 
 
@@ -832,12 +793,9 @@ Reviewed 2014-10-20
 
 static/dynamic linking issues
 -----------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (compopts:
-1)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts:
-2)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts:
-3)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
+[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
 
 
 ===============================
@@ -922,15 +880,6 @@ invalid argument in chown (since test added -- fszouza)
 -------------------------------------------------------
 [Error matching program output for io/fsouza/chown/permission_error]
 
-got 'No error' rather than 'success'
-------------------------------------
-[Error matching program output for io/sungeun/ioerror (execopts: 5)]
-
-amount of memory doesn't match
-------------------------------
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-[Error matching program output for studies/hpcc/common/testProbSize (compopts: 1)]
-
 numerical roundoff issues
 -------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)]
@@ -944,12 +893,6 @@ consistent timeouts
 -------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
 [Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
-
-sporadic timeouts (frequent)
-----------------------------
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/basic]
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/reuse]
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase]
 
 sporadic timeouts (occasional)
 ------------------------------
@@ -1013,27 +956,9 @@ think we would prefer these errors.
 
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 
-sporadic glibc: double free or corruption (frequent) (09/28/13)
----------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/hpcc/hpl]
-[Error matching program output for studies/glob/test_glob (compopts: 1)]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
-[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc-noreindex]
-[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc]
-[Error matching program output for studies/hpcc/HPL/vass/hpl]
-
-frequent, annoying failure due to memory corruption/stacksize issue (3/9/14)
-----------------------------------------------------------------------------
-[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
-
 still a failure (09/19/14)
 --------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/promotion]
-
-Tests suppressions that now succeed due to turning on inlining (12/7/12)
-------------------------------------------------------------------------
-[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
 
 
 ===================
@@ -1043,7 +968,7 @@ Reviewed 2014-10-22
 
 sporadic timeout (frequent)
 ---------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (10/22/14)
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (10/22/14, 10/28/14, 10/30/14)
 
 
 ===================
@@ -1051,24 +976,12 @@ dist-cyclic
 Reviewed 2014-10-16
 ===================
 
-communication counts changed due to r23004, gbt (03/30/14)
-----------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc]
-
-communication counts changed due to task functions commit (05/30/13 -- vass)
-----------------------------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assign]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduce]
-
 regular timeouts due to oversubscription under qthreads (08/26/14)
 ------------------------------------------------------------------
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Norm]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
 [Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
 [Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
 
 sporadic extent mismatch errors (infrequent) (10/11/14)
 -------------------------------------------------------
@@ -1076,12 +989,9 @@ sporadic extent mismatch errors (infrequent) (10/11/14)
 
 sporadic timeouts (frequent)
 ----------------------------
-[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_array_assignment]
-[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_array_swap]
-[Error: Timed out compilation for distributions/robust/arithmetic/reindexing/test_array_alias1]
-[Error: Timed out compilation for distributions/robust/arithmetic/basics/test_zipper_default]
-[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Random]
-[Error: Timed out compilation for distributions/robust/arithmetic/modules/test_module_Search]
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Norm] (10/28/14)
+[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort] (10/28/14)
+[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (10/28/14)
 
 
 
