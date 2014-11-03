@@ -780,12 +780,6 @@ static void insertDestructorCalls()
       Type* type = call->get(1)->typeInfo();
       if (!type->destructor) {
         call->remove();
-      } else if (call->get(1)->typeInfo()->refType == type->destructor->_this->type) {
-        SET_LINENO(call);
-        VarSymbol* tmp = newTemp("_destructor_tmp_", type->destructor->_this->type);
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, call->get(1)->remove())));
-        call->replace(new CallExpr(type->destructor, tmp));
       } else {
         SET_LINENO(call);
         call->replace(new CallExpr(type->destructor, call->get(1)->remove()));
