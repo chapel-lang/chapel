@@ -1,24 +1,3 @@
-#!/usr/bin/env python
+#!/bin/bash
 
-import sys, os, shutil, string;
-
-testname=sys.argv[1]
-compopts=sys.argv[4]
-
-chpl_comm = os.getenv('CHPL_COMM')
-if chpl_comm=='none' or chpl_comm==None:
-    dist = 'default'
-else:
-    dist = 'block'
-    searchstring='distType=DistType.'
-    s = string.rfind(compopts, searchstring)
-
-    if s != -1:
-        opt = compopts[s+len(searchstring):len(compopts)]
-        dist = opt.split()[0]
-
-goodfn=testname+'.'+dist+'.good'
-if os.path.isfile(goodfn):
-    shutil.copy(goodfn, testname+'.good')
-else:
-    shutil.copy(testname+'.default.good', testname+'.good')
+../../PREDIFF "$@"
