@@ -30,7 +30,7 @@ if [ "${tasks}" == "qthreads" ] ; then
     # hardware we get the performance we expect
     logicalCores=`python -c 'import multiprocessing ; print multiprocessing.cpu_count()'`
     if [ $logicalCores -le 8 ] ; then
-        export CHPL_TEST_TIMEOUT=500
+        export CHPL_TEST_TIMEOUT=900
     fi
 
 fi
