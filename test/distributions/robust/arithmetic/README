@@ -21,15 +21,20 @@ directory.
 USING AND RUNNING THE SUITE
 
 The top-level file driver.chpl defines an enum type called DistType.
-Currently, default, block, cyclic, and blockcylic are supported.  To
-test a new distribution, add a new enum type and add the appropriate
-initialization for your distribution in the procedure
-setupDistributions().  When compiling a test, specify
-'-sdistType=myNewDist' on the command line, where myNewDist is the
-name of the enum type for your new distribution.  To run the entire
-suite using your new distribution with start_test, specify -compopts
-'-sdistType=DistType.myNewDist' on the command line.
-
+Currently, default, block, cyclic, and blockcylic are supported.
 By default, the test suite uses the default (single locale) distribution
 when $CHPL_COMM is 'none', and Block distribution otherwise.
 
+To test a new distribution:
+* add a new enum constant to DistType
+* add the appropriate initialization for your distribution to
+  setupDistributions()
+
+To run a test for a particular distribution, say Cyclic,
+add these compiler options:
+
+  -sdistType=DistType.cyclic -M$CHPL_HOME/test/distributions/robust/arithmetic
+
+To run tests for Cyclic using start_test or paratest.server, pass:
+
+  -compopts -sdistType=DistType.cyclic
