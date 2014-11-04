@@ -129,27 +129,27 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
     forall num in lxim.domain {
       const (i,j,k) = elemIdxTo3D(num);
       
-      lxim[num] = if (indices3D || k == 0) 
+      lxim[num] = if (indices3D && k == 0) 
                     then num
                     else elemIdxTo3D(i,j,k-1);
 
-      lxip[num] = if (indices3D || k == elemsPerEdge-1)
+      lxip[num] = if (indices3D && k == elemsPerEdge-1)
                     then num
                     else elemIdxTo3D(i,j,k+1);
     
-      letam[num] = if (indices3D || j == 0) 
+      letam[num] = if (indices3D && j == 0) 
                     then num
                     else elemIdxTo3D(i,j-1,k);
 
-      letap[num] = if (indices3D || j == elemsPerEdge-1)
+      letap[num] = if (indices3D && j == elemsPerEdge-1)
                     then num
                     else elemIdxTo3D(i,j+1,k);
     
-      lzetam[num] = if (indices3D || i == 0) 
+      lzetam[num] = if (indices3D && i == 0) 
                     then num
                     else elemIdxTo3D(i-1,j,k);
 
-      lzetap[num] = if (indices3D || i == elemsPerEdge-1)
+      lzetap[num] = if (indices3D && i == elemsPerEdge-1)
                     then num
                     else elemIdxTo3D(i+1,j,k);
     }
@@ -260,8 +260,14 @@ inline proc node3DToIdx(param idxRank, i, j, k) {
     return idx3DTo1D((i, j, k), nodesPerEdge);
 }
 
+/*
 inline proc elemIdxTo3D(i,j,k) {
   return idx3DTo1D((i,j,k), elemsPerEdge);
+}
+*/
+
+inline proc elemIdxTo3D(i,j,k) {
+  return (i,j,k);
 }
 
 inline proc idx1DTo3D(ind, len) {

@@ -276,7 +276,7 @@ proc main() {
     LagrangeLeapFrog();
 
     if debug {
-      //      deprint("[[ Forces ]]", fx$, fy$, fz$);
+      deprintsync("[[ Forces ]]", fx$, fy$, fz$);
       deprint("[[ Positions ]]", x, y, z);
       deprint("[[ p, e, q ]]", p, e, q);
     }
@@ -1281,6 +1281,16 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
                             delx_xi, delx_eta, delx_zeta) {
   //got rid of call through to "CalcMonotonicQRegionForElems"
 
+  deprint("[[delv_xi, delv_eta, delv_zeta]]", delv_xi, delv_eta, delv_zeta);
+  deprint("[[delv_xi, delv_eta, delv_zeta]]", delx_xi, delx_eta, delx_zeta);
+  writeln("elemBC =\n", elemBC);
+  writeln("vdov=\n", vdov);
+  writeln("elemMass=\n", elemMass);
+  writeln("volo=\n", volo);
+  writeln("vnew=\n", vnew);
+  deprintm("[[lxim, letam, lzetam]]");
+  deprintp("[[lxip, letap, lzetap]]");
+
   forall i in MatElems {
     const ptiny = 1.0e-36;
     const bcMask = elemBC[i];
@@ -1397,6 +1407,7 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
     ql[i] = qlin;
 
   }
+  writeln("ql at end of CalcMonotonic...() =\n", ql);
 }
 
 
@@ -1415,6 +1426,7 @@ proc EvalEOSForElems(vnewc) {
     qq_old[i] = qq[i];
     ql_old[i] = ql[i];
   }
+  writeln("ql_old at init=\n", ql_old);
 
   //
   // TODO: Uncomment local once sparse domain is distributed
@@ -1475,6 +1487,16 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep, 
                        vnewc, pmin, p_cut, eosvmax);
 
+  deprint("[[ p_new, e_new, q_new ]] A", p_new, e_new, q_new);
+
+  writeln("delvc =\n", delvc);
+  writeln("pbvc =\n", pbvc);
+  writeln("bvc =\n", bvc);
+  writeln("pHalfStep =\n", pHalfStep);
+  writeln("compHalfStep =\n", compHalfStep);
+  writeln("ql_old=\n", ql_old);
+  writeln("qq_old=\n", qq_old);
+
   forall i in Elems {
     const vhalf = 1.0 / (1.0 + compHalfStep[i]);
 
@@ -1490,14 +1512,21 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
     e_new[i] += 0.5 * delvc[i]
       * (3.0*(p_old[i] + q_old[i]) - 4.0*(pHalfStep[i] + q_new[i]));
   }
+
+  deprint("[[ p_new, e_new, q_new ]] B0", p_new, e_new, q_new);
+
   forall i in Elems {
     e_new[i] += 0.5 * work[i];
     if abs(e_new[i] < e_cut) then e_new[i] = 0.0;
     if e_new[i] < emin then e_new[i] = emin;
   }
 
+  deprint("[[ p_new, e_new, q_new ]] B1", p_new, e_new, q_new);
+
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin, p_cut,
                        eosvmax);
+
+  deprint("[[ p_new, e_new, q_new ]] B2", p_new, e_new, q_new);
 
   forall i in Elems {
     var q_tilde:real;
@@ -1519,6 +1548,8 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   }
 
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin, p_cut, eosvmax);
+
+  deprint("[[ p_new, e_new, q_new ]] C", p_new, e_new, q_new);
 
 
   //
@@ -1590,4 +1621,30 @@ proc deprint(title:string, x:[?D] real, y:[D]real, z:[D]real) {
             format("%3.4e", y[i]), " ", 
             format("%3.4e", z[i]));
   }
+}
+
+
+proc deprintm(title:string) {
+  writeln(title);
+  for i in Elems {
+    writef("%3i", Elems.indexOrder(i));
+    writeln(lxim[i], letam[i], lzetam[i]);
+  }
+}
+
+proc deprintp(title:string) {
+  writeln(title);
+  for i in Elems {
+    writef("%3i", Elems.indexOrder(i));
+    writeln(lxip[i], letap[i], lzetap[i]);
+  }
+}
+
+proc deprintsync(title:string, x:[?D] sync real, y:[] sync real, z:[] sync real) {
+  writeln(title);
+  for i in D do
+    writeln(format("%3d",D.indexOrder(i)), ": ", 
+            format("%3.4e", x[i].readXX()), " ", 
+            format("%3.4e", y[i].readXX()), " ", 
+            format("%3.4e", z[i].readXX()));
 }
