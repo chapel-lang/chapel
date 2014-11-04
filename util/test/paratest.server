@@ -400,8 +400,13 @@ sub find_subdirs {
         # When attached to a directory name, skips it and all descendents if the condition is true.
         my $skipfilen = "$targetdir/$filen.skipif";
         if (-e "$skipfilen") {
-            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
-            next unless `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` == 0;
+            if (-x "$skipfilen") {
+                print "$skipfilen = " . `$skipfilen` if $debug;
+                next unless `$skipfilen` == 0;
+            } else {
+                print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+                next unless `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` == 0;
+            }
         }
 	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
 	    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
