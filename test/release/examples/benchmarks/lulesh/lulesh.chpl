@@ -1410,8 +1410,8 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
     writeln("elemMass=\n", elemMass);
     writeln("volo=\n", volo);
     writeln("vnew=\n", vnew);
-    deprintint("[[lxim, letam, lzetam]]", lxim, letam, lzetam);
-    deprintint("[[lxip, letap, lzetap]]", lxip, letap, lzetap);
+    //    deprintint("[[lxim, letam, lzetam]]", lxim, letam, lzetam);
+    //    deprintint("[[lxip, letap, lzetap]]", lxip, letap, lzetap);
   }
 
   forall i in MatElems {
@@ -1733,6 +1733,7 @@ proc deprint(title:string, x:[?D] real, y:[] real, z:[] real) {
            x[i], y[i], z[i]);
 }
 
+/*
 proc deprintint(title:string, x:[?D] 3*int, y:[] 3*int, z:[] 3*int) {
   writeln(title);
   for i in D {
@@ -1741,6 +1742,7 @@ proc deprintint(title:string, x:[?D] 3*int, y:[] 3*int, z:[] 3*int) {
     writeln(x[i], y[i], z[i]);
   }
 }
+*/
 
 proc deprintatomic(title:string, x:[?D] atomic real, y:[] atomic real, z:[] atomic real) {
   writeln(title);

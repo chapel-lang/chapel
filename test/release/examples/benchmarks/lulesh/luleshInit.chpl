@@ -121,6 +121,7 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
 // read/compute the greek variables
 
 proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
+  param elemRank = lxim.domain.rank;
   param indices3D = isTupleType(lxim.eltType);
   if (initFromFile) {
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
@@ -131,27 +132,27 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
       
       lxim[num] = if (indices3D && k == 0) 
                     then num
-                    else elemIdxTo3D(i,j,k-1);
+                    else elem3DToIdx(elemRank,i,j,k-1);
 
       lxip[num] = if (indices3D && k == elemsPerEdge-1)
                     then num
-                    else elemIdxTo3D(i,j,k+1);
+                      else elem3DToIdx(elemRank,i,j,k+1);
     
       letam[num] = if (indices3D && j == 0) 
                     then num
-                    else elemIdxTo3D(i,j-1,k);
+                      else elem3DToIdx(elemRank,i,j-1,k);
 
       letap[num] = if (indices3D && j == elemsPerEdge-1)
                     then num
-                    else elemIdxTo3D(i,j+1,k);
+                    else elem3DToIdx(elemRank,i,j+1,k);
     
       lzetam[num] = if (indices3D && i == 0) 
                     then num
-                    else elemIdxTo3D(i-1,j,k);
+                    else elem3DToIdx(elemRank,i-1,j,k);
 
       lzetap[num] = if (indices3D && i == elemsPerEdge-1)
                     then num
-                    else elemIdxTo3D(i+1,j,k);
+                    else elem3DToIdx(elemRank,i+1,j,k);
     }
   }
   if (debugInit) then
@@ -266,8 +267,11 @@ inline proc elemIdxTo3D(i,j,k) {
 }
 */
 
-inline proc elemIdxTo3D(i,j,k) {
-  return (i,j,k);
+inline proc elem3DToIdx(param idxRank, i,j,k) {
+  if (idxRank == 3) then
+    return (i,j,k);
+  else
+    return idx3DTo1D((i,j,k), elemsPerEdge);
 }
 
 inline proc idx1DTo3D(ind, len) {
