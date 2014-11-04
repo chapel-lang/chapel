@@ -457,7 +457,6 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
             (!parent || !parent->isPrimitive(PRIM_MOVE))) {
           replacementHelper(move, ret, arg, useFn);
         } else {
-          // Is this PRIM_DEREF needed?
           Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
           se->getStmtExpr()->insertBefore(new DefExpr(tmp));
           se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
@@ -562,7 +561,13 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
           INT_ASSERT(useMove->isPrimitive(PRIM_MOVE));
 
           Symbol* useLhs = toSymExpr(useMove->get(1))->var;
-          // lhs->defPoint->remove();
+          if (!useLhs->type->symbol->hasFlag(FLAG_REF))
+          {
+            useLhs = newTemp("ret_to_arg_ref_tmp_", useFn->retType->refType);
+            move->insertBefore(new DefExpr(useLhs));
+            move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, new CallExpr(PRIM_ADDR_OF, useMove->get(1)->remove())));
+          }
+
           move->replace(call->remove());
           useMove->remove();
           call->insertAtTail(useLhs);
@@ -595,9 +600,6 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
       }
     }
   }
-  // When this was USR_WARN, release/examples/hello.chpl generates 10 warnings
-  // if this was uncommented.  Really, it should be an internal error, though.
-  //INT_FATAL(move, "possible premature free");
 }
 
 
@@ -632,13 +634,6 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
   // the result of the above call to that function.
   if (use.n > 0) {
     replaceUsesOfFnResultInCaller(move, call, use, fn);
-  } else {
-    if (useMap.get(lhs) && useMap.get(lhs)->n > 0) {
-      // When this was USR_WARN, release/examples/hello.chpl generates 10
-      // warnings if this was uncommented.  Really, it should be an internal
-      // error, though.
-      //INT_FATAL(move, "possible premature free (use not found)");
-    }
   }
 }
 
