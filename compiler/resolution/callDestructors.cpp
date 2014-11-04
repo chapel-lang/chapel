@@ -410,6 +410,16 @@ replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
 }
 
 
+// Clone fn, add a ref arg to the end of the argument list, remove the return
+// primitive and change the return type of the function to void.  
+// In the body of the clone, replace updates to the return value variable with
+// calls to the useFn in the calling context.
+//
+// This effectively replaces return-by-value from the given function into
+// return-by-reference through the new argument.  It allows the result to be
+// written directly into sapce allocated in the caller, thus avoiding a
+// verbatim copy.
+// 
 static FnSymbol*
 createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
 {
@@ -464,8 +474,8 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
                                  Symbol* actual)
 {
   // for each remaining use "se"
-  //   replace se with deref of retArg, unless parent is accessing its
-  //   address
+  //   replace se with deref of the actual return value argument, unless parent is
+  //   accessing its address
   forv_Vec(SymExpr, se, use) {
     // Because we've already handled the first use
     if (se != firstUse) {
@@ -482,7 +492,6 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
             // moving information back to us.
 
             // Copy the information we currently have into the temp
-            // Is this PRIM_DEREF needed?
             se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->var, new CallExpr(PRIM_DEREF, actual)));
           }
         }
