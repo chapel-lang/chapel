@@ -2029,7 +2029,7 @@ void cache_put(struct rdcache_s* cache,
     entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
 
     // Copy the data into page.
-    memcpy(page+(requested_start-ra_page),
+    chpl_memcpy(page+(requested_start-ra_page),
            addr+(requested_start-raddr),
            requested_size);
 
@@ -2409,7 +2409,7 @@ void cache_get(struct rdcache_s* cache,
           //       node, (void*) ra_page, (void*) requested_start,
           //       (int) entry->readahead_len);
           // Copy the data out.
-          memcpy(addr+(requested_start-raddr),
+          chpl_memcpy(addr+(requested_start-raddr),
                  page+(requested_start-ra_page),
                  requested_size);
     
@@ -2569,7 +2569,7 @@ void cache_get(struct rdcache_s* cache,
 #endif
 
       // Then, copy it out.
-      memcpy(addr+(requested_start-raddr),
+      chpl_memcpy(addr+(requested_start-raddr),
              page+(requested_start-ra_page),
              requested_size);
   

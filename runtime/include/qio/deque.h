@@ -143,7 +143,7 @@ void deque_it_forward_n(const ssize_t item_size, deque_iterator_t* it, ssize_t n
 static inline
 void deque_it_get_cur(const ssize_t item_size, const deque_iterator_t it, void* out)
 {
-  memcpy(out, it.cur, item_size);
+  chpl_memcpy(out, it.cur, item_size);
 }
 
 static inline
@@ -155,7 +155,7 @@ void* deque_it_get_cur_ptr(const ssize_t item_size, const deque_iterator_t it)
 static inline
 void deque_it_set_cur(const ssize_t item_size, const deque_iterator_t it, void* in)
 {
-  memcpy(it.cur, in, item_size);
+  chpl_memcpy(it.cur, in, item_size);
 }
 
 static inline
@@ -339,7 +339,7 @@ qioerr _deque_push_back_aux(const ssize_t item_size, deque_t* d, void* value)
   (d->finish.node + 1)->data = newdata;
 
   //construct(d->finish.cur, v);
-  memcpy(d->finish.cur, value, item_size);
+  chpl_memcpy(d->finish.cur, value, item_size);
 
   _deque_set_node(item_size, __deque_buf_size(item_size), & d->finish, d->finish.node + 1);
   d->finish.cur = d->finish.first;
@@ -369,7 +369,7 @@ qioerr _deque_push_front_aux(const ssize_t item_size, deque_t* d, void* value)
   d->start.cur = PTR_ADDBYTES(d->start.last, -item_size);
 
   //construct(d->start.cur, v); // calls the constructor
-  memcpy(d->start.cur, value, item_size);
+  chpl_memcpy(d->start.cur, value, item_size);
 
   return 0;
 }
@@ -410,7 +410,7 @@ qioerr deque_push_front(const ssize_t item_size, deque_t* d, void* value)
 {
   if( d->start.cur != d->start.first ) {
     //construct(d->start.cur - item_size, value);
-    memcpy(PTR_ADDBYTES(d->start.cur, -item_size), value, item_size);
+    chpl_memcpy(PTR_ADDBYTES(d->start.cur, -item_size), value, item_size);
 
     d->start.cur = PTR_ADDBYTES(d->start.cur, -item_size);
 
@@ -425,7 +425,7 @@ qioerr deque_push_back(const ssize_t item_size, deque_t* d, void* value)
 {
   if( d->finish.cur != PTR_ADDBYTES(d->finish.last, -item_size) ) {
     //construct(d->finish.cur, value);
-    memcpy(d->finish.cur, value, item_size);
+    chpl_memcpy(d->finish.cur, value, item_size);
 
     d->finish.cur = PTR_ADDBYTES(d->finish.cur, item_size);
 
