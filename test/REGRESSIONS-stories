@@ -107,7 +107,7 @@ Guidance for REGRESSIONS week
 high priority (sources of noise)
 --------------------------------
 
-o gasnet oversubscription timeouts (gasnet*): elliot
+~ gasnet oversubscription timeouts (gasnet*): elliot
 
   We get regular and/or sporadic timeouts on gasnet.linux32,
   gasnet.numa, gasnet.fifo, gasnet.llvm, dist-block, dist-cyclic,
@@ -201,7 +201,7 @@ o sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
   - studies/sudoku/dinan/sudoku
 
 
-o sporadic cyclic compilation timeouts (cyclic): anyone/diten
+* sporadic cyclic compilation timeouts (cyclic): anyone/diten
 
   Cyclic compilations time out sporadically and frequently.  Is this
   for some reasonbecause David's machine is too slow/busy?  What can
@@ -226,7 +226,7 @@ o types/string/StringImpl/memLeaks/coforall (gasnet.fifo, gasnet*?): anyone
 high priority (failing in one or more configurations)
 -----------------------------------------------------
 
-o static_dynamic tests (darwin, cygwin, prgenv-*, x?-wb.intel): anyone
+* static_dynamic tests (darwin, cygwin, prgenv-*, x?-wb.intel): anyone
 
   These tests fail in a number of configurations and variations.  All
   variations fail on darwin and cygwin.  compopts 6 fails in most any
@@ -236,7 +236,7 @@ o static_dynamic tests (darwin, cygwin, prgenv-*, x?-wb.intel): anyone
   in these cases?
 
 
-o test_10k_begins (darwin, memleaks on chap16): anyone
+~ test_10k_begins (darwin, memleaks on chap16): anyone
 
   This test hits a 'halt' on darwin, a sporadic segfault on memleaks
   testing, and frequently causes problems in parallel testing when a
@@ -271,7 +271,7 @@ o test_10k_begins (darwin, memleaks on chap16): anyone
   Not sure what about gasnet-fast would be slower... use of dlmalloc?
 
 
-o types/range/hilde/align (pgi, intel): anyone
+* types/range/hilde/align (pgi, intel): anyone
 
   Something about this test makes it simply print the wrong answer on
   PGI and Intel compiles.  If it's in module code (e.g., reliance on
@@ -279,7 +279,7 @@ o types/range/hilde/align (pgi, intel): anyone
   let's fix it there.
 
 
-o parallel/cobegin/diten/cobeginRace (darwin, memleaks on chap16): anyone
+* parallel/cobegin/diten/cobeginRace (darwin, memleaks on chap16): anyone
 
   This test is printing that it times out.  Why?
 
@@ -321,7 +321,7 @@ o extern/ferguson/c_ptrs (darwin): anyone
   last resort).
 
 
-o "warning about using a non-literal format string" (darwin): anyone
+* "warning about using a non-literal format string" (darwin): anyone
 
   Three tests are failing with a warning about using a non-literal
   format string.  Is there anything we can do to help with this short
@@ -342,23 +342,23 @@ o "warning about using a non-literal format string" (darwin): anyone
   to make them go away?
 
 
-o "nondeterministic output order issue?" (darwin): anyone
+* "nondeterministic output order issue?" (darwin): anyone
 
   These tests seemed to be getting misorderings in their output.  Why?
 
 
-o parallel/begin/vass/multi-yield-leader (darwin): anyone
+* parallel/begin/vass/multi-yield-leader (darwin): anyone
 
   This test seems to be getting the incorrect output.  Why?
 
 
-o parallel/sync/figueroa/ReadMethods (darwin): anyone
+* parallel/sync/figueroa/ReadMethods (darwin): anyone
 
   I noted (with some uncertainty) that this test seems to have/get
   incorrect initial values.  What's going wrong?
 
 
-o parallel/taskPar/figueroa/taskParallel (darwin): anyone
+* parallel/taskPar/figueroa/taskParallel (darwin): anyone
 
   The referee's output is missing?  Why?
 
@@ -370,7 +370,7 @@ o "unused value warning" (darwin): anyone
   Would a compiler change help catch the issue further upstream?
 
 
-o surprising darwin timeouts (darwin): anyone
+* surprising darwin timeouts (darwin): anyone
 
   The following tests time out consistently on darwin but nowhere else
   (and don't strike me as being particularly long-running tests.  Is
@@ -422,7 +422,7 @@ high priority (open way too long)
   - distributions/robust/arithmetic/performance/multilocale/reduce
 
 
-o replicated testing appears not to be useful -- is it? (replicated): vass
+* replicated testing appears not to be useful -- is it? (replicated): vass
 
   2/3rds of the replicated tests fail on a nightly basis (and have
   since this configuration was enabled, I believe).  The replicated
@@ -474,7 +474,7 @@ high priority (easy)
   - studies/hpcc/HPL/stonea/serial/hplExample5
 
 
-~ quiet gdbddash tests (darwin, pgi): anyone
+* quiet gdbddash tests (darwin, pgi): anyone
 
   I believe these are failing due to different gdb versions (at least
   that's been the case in the past).  Can a .prediff or specialized
@@ -812,7 +812,7 @@ o madness numerical roundoff issues (cygwin): anyone
   - studies/madness/dinan/mad_chapel/test_likepy
 
 
-o incorrect baseline output (baseline): anyone
+* incorrect baseline output (baseline): anyone
 
   These tests get the incorrect output, but maybe this is to be expected
   on baseline testing?  How should we quiet them?
@@ -836,13 +836,13 @@ o different string leakage in baseline (baseline): anyone
   - memory/vass/memleak-array-of-records-1
 
 
-o classes/figueroa/RecordConstructor2 (baseline): anyone/hilde
+* classes/figueroa/RecordConstructor2 (baseline): anyone/hilde
 
   This test gets the wrong output on baseline -- why?  What can we do
   about it?
 
 
-o extern/bradc/structs/externFloat4calls.someFields (baseline): anyone
+* extern/bradc/structs/externFloat4calls.someFields (baseline): anyone
 
   This fails with --baseline and seems to be related to --inline vs. --no
 
