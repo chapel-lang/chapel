@@ -330,12 +330,6 @@ proc initLulesh() {
   // initialize the coordinates
   initCoordinates(x,y,z);
 
-  if debug {
-    writeln("locations are:");
-    for (locX,locY,locZ) in zip(x,y,z) do
-      writeln((locX, locY, locZ));
-  }
-
   // initialize the element to node mapping
   initElemToNodeMapping(elemToNode);
 
@@ -1402,18 +1396,6 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
                             delx_xi, delx_eta, delx_zeta) {
   //got rid of call through to "CalcMonotonicQRegionForElems"
 
-  if (debug) {
-    deprint("[[delv_xi, delv_eta, delv_zeta]]", delv_xi, delv_eta, delv_zeta);
-    deprint("[[delv_xi, delv_eta, delv_zeta]]", delx_xi, delx_eta, delx_zeta);
-    writeln("elemBC =\n", elemBC);
-    writeln("vdov=\n", vdov);
-    writeln("elemMass=\n", elemMass);
-    writeln("volo=\n", volo);
-    writeln("vnew=\n", vnew);
-    //    deprintint("[[lxim, letam, lzetam]]", lxim, letam, lzetam);
-    //    deprintint("[[lxip, letap, lzetap]]", lxip, letap, lzetap);
-  }
-
   forall i in MatElems {
     const ptiny = 1.0e-36;
     const bcMask = elemBC[i];
@@ -1530,8 +1512,6 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
     ql[i] = qlin;
 
   }
-  if debug then
-    writeln("ql at end of CalcMonotonic...() =\n", ql);
 }
 
 
@@ -1549,9 +1529,6 @@ proc EvalEOSForElems(vnewc) {
     q_old[i]  = q[i];
     qq_old[i] = qq[i];
     ql_old[i] = ql[i];
-  }
-  if (debug) {
-    writeln("ql_old at init=\n", ql_old);
   }
 
   //
@@ -1614,18 +1591,6 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
   CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep,
                        vnewc, pmin, p_cut, eosvmax);
 
-  if (debug) {
-    deprint("[[ p_new, e_new, q_new ]] A", p_new, e_new, q_new);
-
-    writeln("delvc =\n", delvc);
-    writeln("pbvc =\n", pbvc);
-    writeln("bvc =\n", bvc);
-    writeln("pHalfStep =\n", pHalfStep);
-    writeln("compHalfStep =\n", compHalfStep);
-    writeln("ql_old=\n", ql_old);
-    writeln("qq_old=\n", qq_old);
-  }
-
   forall i in Elems {
     const vhalf = 1.0 / (1.0 + compHalfStep[i]);
 
@@ -1641,24 +1606,14 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
     e_new[i] += 0.5 * delvc[i]
       * (3.0*(p_old[i] + q_old[i]) - 4.0*(pHalfStep[i] + q_new[i]));
   }
-
-  if debug then
-    deprint("[[ p_new, e_new, q_new ]] B0", p_new, e_new, q_new);
-
   forall i in Elems {
     e_new[i] += 0.5 * work[i];
     if abs(e_new[i] < e_cut) then e_new[i] = 0.0;
     if e_new[i] < emin then e_new[i] = emin;
   }
 
-  if debug then
-    deprint("[[ p_new, e_new, q_new ]] B1", p_new, e_new, q_new);
-
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin,
                        p_cut, eosvmax);
-
-  if debug then
-    deprint("[[ p_new, e_new, q_new ]] B2", p_new, e_new, q_new);
 
   forall i in Elems {
     var q_tilde:real;
@@ -1681,9 +1636,6 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
 
   CalcPressureForElems(p_new, bvc, pbvc, e_new, compression, vnewc, pmin,
                        p_cut, eosvmax);
-
-  if debug then
-    deprint("[[ p_new, e_new, q_new ]] C", p_new, e_new, q_new);
 
 
   //
@@ -1725,7 +1677,7 @@ iter elemToNodesTuple(e) {
 }
 
 
-proc deprint(title:string, x:[?D] real, y:[] real, z:[] real) {
+proc deprint(title:string, x:[?D] real, y:[D] real, z:[D] real) {
   writeln(title);
   for i in D do
     writef("%3i: %3.4er %3.4er %3.4er\n", 
@@ -1733,16 +1685,6 @@ proc deprint(title:string, x:[?D] real, y:[] real, z:[] real) {
            x[i], y[i], z[i]);
 }
 
-/*
-proc deprintint(title:string, x:[?D] 3*int, y:[] 3*int, z:[] 3*int) {
-  writeln(title);
-  for i in D {
-    writef("%3i", 
-           if use3DRepresentation then idx3DTo1D(i, D.dim(1).size) else i);
-    writeln(x[i], y[i], z[i]);
-  }
-}
-*/
 
 proc deprintatomic(title:string, x:[?D] atomic real, y:[] atomic real, z:[] atomic real) {
   writeln(title);

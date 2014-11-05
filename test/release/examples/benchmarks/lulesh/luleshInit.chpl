@@ -261,12 +261,6 @@ inline proc node3DToIdx(param idxRank, i, j, k) {
     return idx3DTo1D((i, j, k), nodesPerEdge);
 }
 
-/*
-inline proc elemIdxTo3D(i,j,k) {
-  return idx3DTo1D((i,j,k), elemsPerEdge);
-}
-*/
-
 inline proc elem3DToIdx(param idxRank, i,j,k) {
   if (idxRank == 3) then
     return (i,j,k);
