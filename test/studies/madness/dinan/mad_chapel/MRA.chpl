@@ -576,8 +576,6 @@ class Function {
             //writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.5e", Fval),
             //        "  f_analytic()=", format("% 0.5e", fval), " err=", format("% 0.5e", Fval-fval),
             //        if abs(Fval-fval) > thresh then "  > thresh" else "");
-	    // Squash negative zeroes to suppress noise due to the minus sign.
-	    fval = if fval < 0 && -fval < 1e-8 then -fval else fval;
             writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", truncate(Fval)),
                     "  f_analytic()=", format("% 0.8f", truncate(fval)), " err=", format("% 0.8f", truncate(Fval-fval)),
                     if abs(Fval-fval) > thresh then "  > thresh" else "");
