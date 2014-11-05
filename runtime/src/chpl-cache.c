@@ -2030,8 +2030,8 @@ void cache_put(struct rdcache_s* cache,
 
     // Copy the data into page.
     chpl_memcpy(page+(requested_start-ra_page),
-           addr+(requested_start-raddr),
-           requested_size);
+                addr+(requested_start-raddr),
+                requested_size);
 
     // Make sure that there is a dirty page available for next time.
     ensure_free_dirty(cache);
@@ -2410,8 +2410,8 @@ void cache_get(struct rdcache_s* cache,
           //       (int) entry->readahead_len);
           // Copy the data out.
           chpl_memcpy(addr+(requested_start-raddr),
-                 page+(requested_start-ra_page),
-                 requested_size);
+                      page+(requested_start-ra_page),
+                      requested_size);
     
           // If we are accessing a page that has a readahead condition,
           // trigger that readahead.
@@ -2570,8 +2570,8 @@ void cache_get(struct rdcache_s* cache,
 
       // Then, copy it out.
       chpl_memcpy(addr+(requested_start-raddr),
-             page+(requested_start-ra_page),
-             requested_size);
+                  page+(requested_start-ra_page),
+                  requested_size);
   
     }
   }
