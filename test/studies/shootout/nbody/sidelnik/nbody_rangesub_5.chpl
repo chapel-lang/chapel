@@ -23,9 +23,9 @@ record Planet {
 
 proc advance(B: [] Planet, dt: real) {
   for i in NBODIES {
-    refvar b1 = B[i];
+    ref b1 = B[i];
     for j in i+1..numBodies {
-      refvar b2 = B[j];
+      ref b2 = B[j];
       var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
       var distance = sqrt(d[0]**2 + d[1]**2 + d[2]**2);
       var mag = dt / (distance**3);

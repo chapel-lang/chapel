@@ -1,2 +1,2 @@
-refvar r: int;
+ref r: int;
 writeln(r);

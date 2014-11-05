@@ -20,6 +20,8 @@
 #ifndef _BUILD_H_
 #define _BUILD_H_
 
+#include <set>
+
 #include "flags.h"
 #include "stmt.h"
 #include "vec.h"
@@ -107,7 +109,8 @@ BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
 CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, Flag ref, char* docs);
+
+BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, char* docs);
 
 DefExpr*  buildClassDefExpr(const char* name, 
                             Type*       type,
