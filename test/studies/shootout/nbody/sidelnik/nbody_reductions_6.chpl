@@ -23,9 +23,9 @@ class Planet {
 
 proc advance(B: [] Planet, dt: real) {
   for i in NBODIES {
-    refvar b1 = B[i];
+    ref b1 = B[i];
     for j in i+1..nbodies {
-      refvar b2 = B[j];
+      ref b2 = B[j];
       var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
       var distance = sqrt(+ reduce d**2);
       var mag = dt / (distance**3);
