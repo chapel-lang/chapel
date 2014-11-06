@@ -1570,7 +1570,7 @@ foreach testType ($testTypes)
                     else
                         set skiptest = `$utildir/test/testEnv ./SKIPIF`
                     endif
-                    if ($skiptest == 1) then
+                    if ( $skiptest == "1" || $skiptest == "True" ) then
                         echo "[Skipping directory based on SKIPIF environment settings]" |& $tee -a $logfile
                         continue
                     endif
@@ -1591,7 +1591,7 @@ foreach testType ($testTypes)
                     endif
                     cd ..
                 end
-                if ($pruneif) then
+                if ( $pruneif == "1" || $pruneif == "True" ) then
                     echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]" |& $tee -a $logfile
                     continue
                 endif

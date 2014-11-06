@@ -17,6 +17,6 @@ import re
 
 compopts = os.getenv('COMPOPTS', '')
 if re.search(r'--baseline', compopts) or re.search(r'--no-remove-copy-calls', compopts):
-    print '1'
+    print 'True'
 else:
-    print '0'
+    print 'False'

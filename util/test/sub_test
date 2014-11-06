@@ -895,7 +895,7 @@ for testname in testsrc:
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
             skiptest=runSkipIf(f)
             try:
-                skipme = int(skiptest)
+                skipme = skiptest.strip() == "True" or int(skiptest) == 1
                 if skipme:
                     sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,test_filename))
                     do_not_test=True
