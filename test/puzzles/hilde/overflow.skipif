@@ -1,1 +1,5 @@
 CHPL_TARGET_COMPILER != gnu
+# On cygwin and the whiteboxes, GCC produces a compile-time error rather than 
+# allowing integer rollover (the expected bad behavior).
+CHPL_HOST_PLATFORM == cygwin
+GNU_VERSION <= 4.9
