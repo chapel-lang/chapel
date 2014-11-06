@@ -1410,6 +1410,7 @@ for testname in testsrc:
             # Run program (with timeout)
             #
             for count in xrange(numTrials):
+                exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
                 sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
                 if redirectin:
                     sys.stdout.write(' < %s'%(redirectin))
