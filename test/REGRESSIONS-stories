@@ -116,7 +116,7 @@ high priority (sources of noise)
   these configurations and not gasnet-fast/gasnet-everything?
 
 
-o sporadic segfaults/glibc issues (xe-wb.*): anyone
+* sporadic segfaults/glibc issues (xe-wb.*): anyone
 
   The following tests fail sporadically, but very frequently, either
   with a segfault or a glibc assertion error in our whitebox testing
@@ -535,7 +535,7 @@ o invalid read in gmp (valgrind): anyone
   - modules/standard/gmp/ferguson/gmp_dist_array
 
 
-o unresolved call list(BaseArr) (host.prgenv-cray): mike
+* unresolved call list(BaseArr) (host.prgenv-cray): mike
 
   Can we capture this issue well enough to feel confident that it's a
   CCE issue?  Does valgrind turn up anything new?  Is there any way we
@@ -821,7 +821,7 @@ o madness numerical roundoff issues (cygwin): anyone
   - arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel
 
 
-o different string leakage in baseline (baseline): anyone
+* different string leakage in baseline (baseline): anyone
 
   These tests leak different amounts of memory when run with --baseline;
   This will perhaps be resolved when strings are records.  Is there
@@ -852,7 +852,7 @@ o extern/ferguson/crazyRecord (baseline): anyone
   This fails on baseline with the wrong output -- why?
 
 
-o types/string/StringImpl/memLeaks/promotion (baseline): anyone
+* types/string/StringImpl/memLeaks/promotion (baseline): anyone
 
   This fails on baseline (even after Sung tried to get all these tests
   passing).  Why?
