@@ -60,7 +60,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        int ln, c_string fn)
 {
   assert(node == 0);
-  memcpy(raddr, addr, len*elemSize);
+  chpl_memcpy(raddr, addr, len*elemSize);
   return NULL;
 }
 
@@ -70,7 +70,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        int ln, c_string fn)
 {
   assert(node == 0);
-  memcpy(addr, raddr, len*elemSize);
+  chpl_memcpy(addr, raddr, len*elemSize);
   return NULL;
 }
 
@@ -494,7 +494,7 @@ void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)
-    memcpy(&(info->arg), arg, arg_size);
+    chpl_memcpy(&(info->arg), arg, arg_size);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
                            subloc, chpl_nullTaskID, false);
 }

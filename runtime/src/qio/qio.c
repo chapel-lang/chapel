@@ -1671,7 +1671,7 @@ qioerr qio_relative_path(const char** path_out, const char* cwd, const char* pat
     tmp[j++] = '/';
   }
   // Now, copy the path after last_common_slash, including trailing '\0'
-  memcpy(&tmp[j], &path[last_common_slash + 1], after_len+1);
+  chpl_memcpy(&tmp[j], &path[last_common_slash + 1], after_len+1);
 
   *path_out = tmp;
   return 0;
@@ -2674,7 +2674,7 @@ qioerr _qio_unbuffered_write(qio_channel_t* ch, const void* ptr, ssize_t len_in,
   if( method == QIO_METHOD_MMAP &&
       ch->file->mmap && _right_mark_start(ch) + len <= ch->file->mmap->len) {
     // Copy the data to the mmap.
-    memcpy( VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), ptr, len);
+    chpl_memcpy( VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), ptr, len);
     _add_right_mark_start(ch, len);
   } else {
     while( len > 0 ) {
@@ -2765,7 +2765,7 @@ qioerr _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_
       _right_mark_start(ch) + len <= ch->file->mmap->len) {
     // As long as we're using an I/O method that seeks on every read,
     // copy the data out of the mmap.
-    memcpy( ptr, VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), len);
+    chpl_memcpy( ptr, VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), len);
     _add_right_mark_start(ch, len);
   } else {
     while( len > 0 ) {
@@ -3591,7 +3591,7 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   
   //printf("WRITE BITS REALIGNALIGNED WRITING %llx %i\n", (long long int) part_one_bits, (int) (8*to_copy));
   // memcpy will work because part_one_bits is big endian now.
-  memcpy(ch->cached_cur, &part_one_bits_be, to_copy);
+  chpl_memcpy(ch->cached_cur, &part_one_bits_be, to_copy);
   ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
 
   // Remove junk from the top of tmp_bits, so only bottom tmp_live bits are set.
@@ -3791,7 +3791,7 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   to_copy = (7 + value_part) / 8;
 
   buf = 0;
-  memcpy(&buf, ch->cached_cur, to_copy);
+  chpl_memcpy(&buf, ch->cached_cur, to_copy);
   ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
 
   // now we've set the top several bytes of buf.
@@ -3818,7 +3818,8 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   if( to_copy == sizeof(qio_bitbuffer_t) ) to_copy = 0;
 
   buf = 0;
-  if( to_copy ) memcpy(&buf, ch->cached_cur, to_copy);
+  if( to_copy )
+    chpl_memcpy(&buf, ch->cached_cur, to_copy);
   tmp_read = to_copy;
   part_two = 8*to_copy;
 
