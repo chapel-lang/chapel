@@ -4,7 +4,5 @@
 #these.
 #trivial/mjoyner/inlinefunc/inlfunc1_report
 #trivial/mjoyner/inlinefunc/inlfunc2_report
-#Removing unnecessary autocopies necessary to get to minimum number of leaks
-memory/figueroa/LeakedMemory5
 # lack of optimizations lead to extra leaked memory
 memory/sungeun/refCount/domainMaps
