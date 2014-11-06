@@ -53,7 +53,7 @@ static void add_env_options(int* argc, char** argv[]) {
   //
   // Duplicate the old argv into the start of the new one.
   //
-  chpl_memcpy(new_argv, (*argv), *argc * sizeof((*argv)[0]));
+  memcpy(new_argv, (*argv), *argc * sizeof((*argv)[0]));
 
   //
   // Add a -E option for each environment variable.

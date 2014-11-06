@@ -110,7 +110,8 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
 static ___always_inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
-  return (dest == src) ? dest : memcpy(dest, src, num);
+  assert(dest != src);
+  return memcpy(dest, src, num);
 }
 
 // free a c_string_copy, no error checking.
