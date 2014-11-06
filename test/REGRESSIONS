@@ -309,11 +309,6 @@ Inherits 'no-local'
 Reviewed 2014-11-01
 ===================
 
-sporadic failures even after Sung quieted it down (frequently, esp. gasnet.fifo)
---------------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (10/23/14, 11/02/14: gasnet.fifo)
-
-
 ===================
 gasnet-everything
 Inherits 'gasnet*'
@@ -412,6 +407,11 @@ consistent timeouts
 -------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 
+sporadic failures even after Sung quieted it down (frequently)
+--------------------------------------------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (10/23/14, 11/02/14, 11/05/14)
+
+
 sporadic timeouts (frequent)
 ----------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
@@ -454,35 +454,9 @@ Inherits 'general'
 Reviewed 2014-10-24
 ===================
 
-The following tests fail sporadically on chpbld02 due to a seg fault (10/12/14)
--------------------------------------------------------------------------------
-[Error matching program output for io/ferguson/asserteof]
-[Error matching program output for trivial/shannon/readWriteBool]
-[Error matching program output for trivial/shannon/readWriteComplex]
-[Error matching program output for trivial/shannon/readWriteEnum]
-[Error matching program output for types/file/freadNoFloat]
-[Error matching program output for types/file/freadNoInt]
-[Error matching program output for types/file/freadNotABoolean]
-
 failure due to use of jgit to check out repo which doesn't preserve symlinks
 ----------------------------------------------------------------------------
 [Error matching program output for studies/filerator/walk (execopts: 9)]
-
-The following tests fail nondeterministically on chpbld01/chpbld02 with one of
-the following failures (should valgrind these on whiteboxes to diagnose)
-* glibc: invalid next size
-* glibc: double free or corruption
---------------------------------------------------------------------
-[Error matching program output for functions/iterators/tzakian/open_inside_file_iter]
-[Error matching program output for io/ferguson/asserteof]
-[Error matching program output for trivial/shannon/readWriteBool]
-[Error matching program output for trivial/shannon/readWriteComplex]
-[Error matching program output for types/file/freadComplex]
-[Error matching program output for types/file/freadIntFailed]
-[Error matching program output for types/file/freadNoInt]
-[Error matching program output for types/file/freadNoFloat]
-[Error matching program output for types/file/freadNotABoolean]
-[Error matching program output for types/file/fwriteIntFailed]
 
 
 ==================
@@ -599,16 +573,6 @@ Inherits 'x?-wb.*' and '*prgenv-cray*'
 Reviewed 2014-10-24
 ======================================
 
-out-of-bounds error access (2014-10-29 -- hilde due to PR #678; mike looking)
------------------------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 3)]
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
-[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
-
 
 ======================================
 xc-wb.prgenv-cray
@@ -665,7 +629,7 @@ negative floating point 0.0 not supported
 
 consistent timeout
 ------------------
-[Error: Timed out executing program domains/sungeun/assoc/parSafeMember]
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
 
 
 =============================
@@ -677,9 +641,9 @@ Reviewed 2014-10-20
 
 
 =============================
-x?-wb.pgi (TODO: checkme)
+x?-wb.pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-10-22
+Reviewed 2014-11-04
 =============================
 
 
@@ -795,13 +759,13 @@ consistent timeouts
 -------------------
 [Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
 
-sporadic pthread_cond_init() failed (once)
-------------------------------------------
-[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (11/03/14)
-
 sporadic timeouts (frequent)
 ----------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
+
+sporadic pthread_cond_init() failed (once)
+------------------------------------------
+[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (11/03/14)
 
 sporadic timeouts (occasional)
 ------------------------------
@@ -824,15 +788,9 @@ Inherits 'general'
 Reviewed 2014-11-01
 ===================
 
-different amount of string data leaked without optimization (2014/06/13)
-(may be resolved by strings-as-records)
------------------------------------------------------------
-[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
-[Error matching program output for memory/sungeun/refCount/arraysAndDomains]
-[Error matching program output for memory/sungeun/refCount/arrays]
-[Error matching program output for memory/vass/memleak-array-of-records-1]
+LeakedMemory5 no longer fails/suppression not found (11/05/14)
+--------------------------------------------------------------
+[Error: did not find expected suppression memory/figueroa/LeakedMemory5] (lydia)
 
 ??? (wrong output)
 ------------------
@@ -846,10 +804,6 @@ intermittent or at least less so than the others with inilining, I
 think we would prefer these errors.
 
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
-
-still a failure (09/19/14)
---------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/promotion]
 
 
 ===================
