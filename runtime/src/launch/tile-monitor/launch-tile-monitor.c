@@ -55,7 +55,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
     newargv[8] = _nlbuf;
     if (argc > 1) {
       // other args (skip binary name)
-      chpl_memcpy(newargv+largc, argv+1, (argc-1)*sizeof(char *));
+      memcpy(newargv+largc, argv+1, (argc-1)*sizeof(char *));
     }
   }
 
