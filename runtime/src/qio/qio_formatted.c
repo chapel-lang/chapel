@@ -2163,7 +2163,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   }
 
   // now output the digits.
-  memcpy(dst + i, tmp+tmp_skip, tmp_len);
+  chpl_memcpy(dst + i, tmp+tmp_skip, tmp_len);
   i += tmp_len;
 
   // Now if we're left justified we might need padding.
@@ -2441,7 +2441,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
   }
 
   // now output the digits
-  memcpy(dst + i, buf + j, buf_len);
+  chpl_memcpy(dst + i, buf + j, buf_len);
   i += buf_len;
 
   if( needs_i ) {
