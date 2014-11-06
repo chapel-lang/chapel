@@ -8,16 +8,16 @@ Adding F1 ...
 
 Evaluating F+G on [0, 1]:
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.10:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.30:  F_numeric()= 0.00000002  f_analytic()= 0.00000001
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.30:  F_numeric()= 0.00000002  f_analytic()= 0.00000000
  -- 0.40:  F_numeric()= 0.05691985  f_analytic()= 0.02846034 err > thresh
  -- 0.50:  F_numeric()= 8.44777829  f_analytic()= 4.22388934 err > thresh
  -- 0.60:  F_numeric()= 0.05691985  f_analytic()= 0.02846034 err > thresh
- -- 0.70:  F_numeric()= 0.00000002  f_analytic()= 0.00000001
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.90:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 1.00:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.70:  F_numeric()= 0.00000002  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
 
 Subtracting F1 ...
 
@@ -25,11 +25,11 @@ Evaluating F-G on [0, 1]:
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000001
+ -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.40:  F_numeric()= 0.00000000  f_analytic()= 0.02846034 err > thresh
  -- 0.50:  F_numeric()= 0.00000000  f_analytic()= 4.22388934 err > thresh
  -- 0.60:  F_numeric()= 0.00000000  f_analytic()= 0.02846034 err > thresh
- -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000001
+ -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
@@ -41,7 +41,7 @@ Evaluating F-G on [0, 1]:
 Adding F2 ...
 
 Evaluating F+G on [0, 1]:
- -- 0.00:  F_numeric()= 0.00000006  f_analytic()= 0.00000001
+ -- 0.00:  F_numeric()= 0.00000006  f_analytic()= 0.00000000
  -- 0.10:  F_numeric()= 0.05692143  f_analytic()= 0.02846034 err > thresh
  -- 0.20:  F_numeric()= 8.44777866  f_analytic()= 4.22388934 err > thresh
  -- 0.30:  F_numeric()= 0.05692114  f_analytic()= 0.02846035 err > thresh
@@ -51,12 +51,12 @@ Evaluating F+G on [0, 1]:
  -- 0.70:  F_numeric()= 0.05692114  f_analytic()= 0.02846035 err > thresh
  -- 0.80:  F_numeric()= 8.44777866  f_analytic()= 4.22388934 err > thresh
  -- 0.90:  F_numeric()= 0.05692143  f_analytic()= 0.02846034 err > thresh
- -- 1.00:  F_numeric()= 0.00000006  f_analytic()= 0.00000001
+ -- 1.00:  F_numeric()= 0.00000006  f_analytic()= 0.00000000
 
 Subtracting F2 ...
 
 Evaluating F-G on [0, 1]:
- -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000001
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.02846034 err > thresh
  -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 4.22388934 err > thresh
  -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.02846035 err > thresh
@@ -66,7 +66,7 @@ Evaluating F-G on [0, 1]:
  -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.02846035 err > thresh
  -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 4.22388934 err > thresh
  -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.02846034 err > thresh
- -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000001
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
 
 ======================================================================
 
