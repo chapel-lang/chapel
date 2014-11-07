@@ -1,0 +1,10 @@
+bug: on certain machines, valgrind will recognize an invalid read with fac_ui
+
+When this future was created, chap07 was set up in such a way that building the
+Chapel runtime and GMP led to an invalid read in fac_ui, as detected by
+valgrind.  This did not occur on a separate machine, lydia-lnx.  A C version of
+the basic case linked against our GMP build results in the same problem, as
+demonstrated by this future.
+
+When this future has been resolved, please remove the valgrind skipif for
+test/modules/standard/gmp/ferguson/gmp_dist_array.chpl and this file.
