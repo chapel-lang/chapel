@@ -86,7 +86,6 @@ sporadic failure (2-3x a month -- vass)
 [Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
 
 
-
 ===================
 linux64
 Inherits 'general'
@@ -213,11 +212,8 @@ internal error (mike/hilde)
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-06
 ===================
-
-overlapping memcpy (root cause should be eliminated)
-----------------------------------------------------
 
 conditional jump depends on uninitialized value (04/08/14 -- since re2 on)
 --------------------------------------------------------------------------

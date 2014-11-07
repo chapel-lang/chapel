@@ -301,7 +301,7 @@ o nbody* (memleaks): bradc
   Why?  Do we still care about these tests?
 
 
-o studies/lulesh/sungeun/lulesh (valgrind, gasnet-fast, cygwin): bradc
+~ studies/lulesh/sungeun/lulesh (valgrind, gasnet-fast, cygwin): bradc
 
   Do we still need to be testing this version?  What value does it
   have other than historical?  Isn't it race-y still?
@@ -312,7 +312,7 @@ o studies/lulesh/sungeun/lulesh (valgrind, gasnet-fast, cygwin): bradc
 high priority (mac quiettude)
 -----------------------------
 
-o extern/ferguson/c_ptrs (darwin): anyone
+* extern/ferguson/c_ptrs (darwin): anyone
 
   This test is getting a "self-comparison always evaluates to tree"
   warning/error when compiling for darwin.  What can be done to make
@@ -501,7 +501,7 @@ high priority (easy)
 medium priority (worrisome)
 ---------------------------
 
-o overlapping memcpy in valgrind (valgrind): anyone
+* overlapping memcpy in valgrind (valgrind): anyone
 
   The following tests get an overlapping memcpy error in valgrind,
   though this doesn't seem to cause any real problems anywhere else.
