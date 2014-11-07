@@ -70,7 +70,7 @@ Reviewed 2014-11-01
 ===================
 
 missing chpl_memcpy() prototypes (11/06/14)
-(valgrind, numa, memleaks)
+(numa, memleaks)
 -------------------------------------------
 [Error compiling C Regexp tests]
 [Error matching compiler output for io/ferguson/ctests/deque_test (compopts: 1)]
@@ -232,11 +232,6 @@ invalid read/write of size 8 in ftoa() (10/08/14 -- hilde)
 ----------------------------------------------------------
 [Error matching program output for performance/sungeun/assign_across_locales]
 
-"Unrecognised instruction" (05/18/2013)
----------------------------------------
-[Error matching program output for types/atomic/ferguson/atomictest]
-[Error matching program output for types/atomic/sungeun/atomic_vars]
-
 continual compilation timeouts
 ------------------------------
 [Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar]
@@ -247,14 +242,12 @@ continual execution timeouts
 [Error: Timed out executing program parallel/begin/sungeun/capture]
 [Error: Timed out executing program studies/hpcc/PTRANS/PTRANS]
 [Error: Timed out executing program studies/lammps/shemmy/p-lammps-n1]
-[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n2]
-[Error: Timed out executing program studies/lammps/shemmy/p-lammps-n4]
 [Error: Timed out executing program types/range/bradc/overflowInComputeBlock]
 [Error: Timed out executing program types/single/sungeun/stress]
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program io/ferguson/ctests/qio_test (compopts: 1)] (last seen 11/05/14)
+[Error: Timed out executing program io/ferguson/ctests/qio_test (compopts: 1)] (...11/05/14, 11/07/14)
 
 
 sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,

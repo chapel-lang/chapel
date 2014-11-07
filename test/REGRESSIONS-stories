@@ -572,7 +572,7 @@ o invalid read/write of size 8 in ftoa() (valgrind): hilde
   - performance/sungeun/assign_across_locales
 
 
-o "Unrecognized instruction" (valgrind): anyone
+* "Unrecognized instruction" (valgrind): anyone
 
   The following two tests get an unrecognized instruction error.  Is
   there anything we can/should do about this?  Does it indicate a
@@ -584,7 +584,7 @@ o "Unrecognized instruction" (valgrind): anyone
   - types/atomic/sungeun/atomic_vars
 
 
-o Valgrind timeouts (valgrind): anyone
+~ Valgrind timeouts (valgrind): anyone
 
   The following tests time out very consistently under valgrind.  By
   nature, valgrind testing takes a long time so maybe this is why.
