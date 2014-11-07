@@ -140,6 +140,18 @@ According to the proposal, these would result in the following AST:
   var f:C
   ('move' f nil)
 \end{numberedchapel}
+\noindent
+Note that the primitive \chpl{'move'} in the above code is intended to mean a bit-wise
+copy.  It corresponds to whatever primitive operation in the implmentation accomplishes
+this, so it is not tied to the deprecated \chpl{PRIM_MOVE} primitive.  Reference to its
+replacement \chpl{PRIM_ASSIGN} was avoided, because its representation in AST logging is
+\chpl{'='}, which suggests assignment.  Assignment in general means more than a
+bit-wise copy, since it may also entail releasing resources currently held by the LHS.
+
+One may imagine that after \chpl{PRIM_MOVE} has been deprecated and removed from the
+compiler, the \chpl{PRIM_ASSIGN} primitive may be renamed as \chpl{PRIM_MOVE} and its
+representation in the AST log changed to \chpl{'move'}.  That is the implementation to
+which this document is speaking.
 
 
 \subsection{Distribution Variables}
@@ -644,7 +656,7 @@ For scalar types, we would expect declarations of the form:
 // type T = int(64);
    var a:T;
    var b:T = noinit;
-   var c:T = new T('B');
+   var c:T = new T("42");
    var d = 13; // Initializer expression e has type T.
    var e = d; // Same.
 \end{chapel}
@@ -659,10 +671,10 @@ to produce the following AST (after resolution):
 
     var c:int(64)
     var tmp:int(64)
-    (call _construct_int64_t tmp 0x42) // Calls _construct_int64_t(c:char).
-    (call _construct_int64_t c tmp) // Calls _construct_int64_t(i:int(64)).
+    (call _construct_int64_t tmp "42") // Calls tmp._construct_int64_t(s:c_string).
+    (call _construct_int64_t c tmp) // Calls c._construct_int64_t(i:int(64)).
     // === OR === //
-    (call _construct_int64_t c 0x42) // Calls _construct_int64_t(c:char) in situ.
+    (call _construct_int64_t c "42") // Calls c._construct_int64_t(s:c_string) in situ.
 
     var d:int(64)
     (call _construct_int64_t d 13) // Calls the copy-constructor.
@@ -679,19 +691,24 @@ The definition of the various constructors provides the semantics you would expe
 line 2, the \chpl{_defaultOf()} method on a 64-bit integer replaces the LHS with a zero of
 that size.  If \chpl{=noinit} is a valid initializer for an object of type \chpl{int(64)},
 then at least one of its constructors will accept a \chpl{param bool} to control its
-actions.  For example:
+actions.  For example, the default- and copy-constructor for int(64) could be covered by:
 \begin{chapel}
-  ctor int(64)(param noinit = false) {
+  ctor int(64)(val = 0, param noinit = false) {
     if noinit then { }
-    else { this = 0; }
+    else { this = val; }
   }
 \end{chapel}
-The promotion constructor from type \chpl{char} to type \chpl{int(64)} is completely
-made-up (since we don't have a char type).  But presumably it would do something logical,
-like casting the operand to the result type and then overwriting the receiver.
+\noindent
+The constructor does not contain a field-initializer list, because the int(64) type has no
+sub-fields.
+
+The promotion constructor from type \chpl{c_string} to type \chpl{int(64)} does not
+currently exist, but would presumably do something logical,
+like converting a text representation of an integer into the internal representation of an
+integer and then overwriting the receiver with that value, for example:
 \begin{chapel}
-  ctor int(64)(c:char) {
-    this = c:int(64);
+  ctor int(64)(s:c_string) {
+    this = __primitive("convert_c_string_to_int64", s);
   }
 \end{chapel}
 \noindent
