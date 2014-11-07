@@ -576,6 +576,12 @@ static void handleStackCheck(const ArgumentState* state, const char* unused) {
   }
 }
 
+static void handleTaskTracking(const ArgumentState* state, const char* unused) {
+  if (fEnableTaskTracking && strcmp(CHPL_TASKS, "fifo") != 0) {
+    USR_WARN("Enabling task tracking with CHPL_TASKS=%s has no effect other than to slow down compilation", CHPL_TASKS);
+  }
+}
+
 static void setFastFlag(const ArgumentState* state, const char* unused) {
   //
   // Enable all compiler optimizations, disable all runtime checks
@@ -773,7 +779,7 @@ static ArgumentDescription arg_desc[] = {
 // Support for extern { c-code-here } blocks could be toggled with this
 // flag, but instead we just leave it on if the compiler can do it.
 // {"extern-c", ' ', NULL, "Enable [disable] extern C block support", "f", &externC, "CHPL_EXTERN_C", NULL},
- {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
+ {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", handleTaskTracking},
  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
