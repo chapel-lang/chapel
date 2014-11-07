@@ -42,7 +42,6 @@ class FnSymbol;
 class Symbol;
 class SymExpr;
 
-void collapseBlocks(BlockStmt* block);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);
 size_t localCopyPropagation(FnSymbol* fn);

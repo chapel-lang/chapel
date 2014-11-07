@@ -570,12 +570,14 @@ class Function {
      */
     proc evalNPT(npt) {
         for i in 0..npt {
-            var (fval, Fval) = (truncate(f(i/npt:real)), truncate(this(i/npt:real)));
+	    // This truncation may lead to a loss of precision in the error calculation.
+            // var (fval, Fval) = (truncate(f(i/npt:real)), truncate(this(i/npt:real)));
+            var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
             //writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.5e", Fval),
             //        "  f_analytic()=", format("% 0.5e", fval), " err=", format("% 0.5e", Fval-fval),
             //        if abs(Fval-fval) > thresh then "  > thresh" else "");
-            writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", Fval),
-                    "  f_analytic()=", format("% 0.8f", fval), " err=", format("% 0.1e", Fval-fval),
+            writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", truncate(Fval)),
+                    "  f_analytic()=", format("% 0.8f", truncate(fval)), " err=", format("% 0.8f", truncate(Fval-fval)),
                     if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }

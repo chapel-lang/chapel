@@ -7,10 +7,10 @@ norm of function is 1.0
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.05:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.15:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.15:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.25:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.30:  F_numeric()= 0.00000001  f_analytic()= 0.00000001
+ -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.35:  F_numeric()= 0.00005408  f_analytic()= 0.00005494
  -- 0.40:  F_numeric()= 0.02845992  f_analytic()= 0.02846034
  -- 0.45:  F_numeric()= 1.21016317  f_analytic()= 1.21016456
@@ -18,10 +18,10 @@ norm of function is 1.0
  -- 0.55:  F_numeric()= 1.21016317  f_analytic()= 1.21016456
  -- 0.60:  F_numeric()= 0.02845992  f_analytic()= 0.02846034
  -- 0.65:  F_numeric()= 0.00005408  f_analytic()= 0.00005494
- -- 0.70:  F_numeric()= 0.00000001  f_analytic()= 0.00000001
+ -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.75:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.85:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.85:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.95:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
@@ -30,7 +30,7 @@ coefficients before compressing
 -----------------------------------------------------
 k=5 thresh=1e-05 compressed=false
 sum coefficients:
-   level  3   #boxes=   4  norm=4.42e-15
+   level  3   #boxes=   4  norm=0.00e+00
    level  5   #boxes=   8  norm=1.51e-04
    level  6   #boxes=  12  norm=4.03e-01
    level  7   #boxes=   8  norm=9.15e-01
@@ -60,7 +60,7 @@ coefficients after reconstructing
 -----------------------------------------------------
 k=5 thresh=1e-05 compressed=false
 sum coefficients:
-   level  3   #boxes=   4  norm=4.45e-15
+   level  3   #boxes=   4  norm=0.00e+00
    level  5   #boxes=   8  norm=1.51e-04
    level  6   #boxes=  12  norm=4.03e-01
    level  7   #boxes=   8  norm=9.15e-01
@@ -69,30 +69,30 @@ difference coefficients:
 
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.05:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.10:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.15:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.25:  F_numeric()= 0.00000008  f_analytic()= 0.00000000
  -- 0.30:  F_numeric()= 0.00000064  f_analytic()= 0.00000174
  -- 0.35:  F_numeric()= 0.00903981  f_analytic()= 0.00824121 err > thresh
  -- 0.40:  F_numeric()= 2.84605633  f_analytic()= 2.84603425 err > thresh
  -- 0.45:  F_numeric()= 60.50694575  f_analytic()= 60.50822787 err > thresh
- -- 0.50:  F_numeric()= 0.00046752  f_analytic()=-0.00000000 err > thresh
+ -- 0.50:  F_numeric()= 0.00046752  f_analytic()= 0.00000000 err > thresh
  -- 0.55:  F_numeric()=-60.50694575  f_analytic()=-60.50822787 err > thresh
  -- 0.60:  F_numeric()=-2.84605633  f_analytic()=-2.84603425 err > thresh
  -- 0.65:  F_numeric()=-0.00903981  f_analytic()=-0.00824121 err > thresh
  -- 0.70:  F_numeric()=-0.00000064  f_analytic()=-0.00000174
- -- 0.75:  F_numeric()=-0.00000000  f_analytic()=-0.00000000
- -- 0.80:  F_numeric()= 0.00000000  f_analytic()=-0.00000000
- -- 0.85:  F_numeric()=-0.00000000  f_analytic()=-0.00000000
- -- 0.90:  F_numeric()= 0.00000000  f_analytic()=-0.00000000
- -- 0.95:  F_numeric()=-0.00000000  f_analytic()=-0.00000000
- -- 1.00:  F_numeric()=-0.00000000  f_analytic()=-0.00000000
+ -- 0.75:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.85:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.95:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
 
 
 
 norm of function is 1.73205
- -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001
+ -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000
  -- 0.05:  F_numeric()= 0.00005435  f_analytic()= 0.00005494
  -- 0.10:  F_numeric()= 0.02846071  f_analytic()= 0.02846034
  -- 0.15:  F_numeric()= 1.21016458  f_analytic()= 1.21016456
@@ -112,7 +112,7 @@ norm of function is 1.73205
  -- 0.85:  F_numeric()= 1.21016458  f_analytic()= 1.21016456
  -- 0.90:  F_numeric()= 0.02846071  f_analytic()= 0.02846034
  -- 0.95:  F_numeric()= 0.00005435  f_analytic()= 0.00005494
- -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001
+ -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000
 coefficients before compressing
 
 -----------------------------------------------------
@@ -160,7 +160,7 @@ difference coefficients:
  -- 0.20:  F_numeric()= 0.00008198  f_analytic()= 0.00000000 err > thresh
  -- 0.25:  F_numeric()=-60.50843990  f_analytic()=-60.50822787 err > thresh
  -- 0.30:  F_numeric()=-2.84620888  f_analytic()=-2.84603251 err > thresh
- -- 0.35:  F_numeric()= 0.00002971  f_analytic()=-0.00000000 err > thresh
+ -- 0.35:  F_numeric()= 0.00002971  f_analytic()= 0.00000000 err > thresh
  -- 0.40:  F_numeric()= 2.84605452  f_analytic()= 2.84603251 err > thresh
  -- 0.45:  F_numeric()= 60.50694575  f_analytic()= 60.50822787 err > thresh
  -- 0.50:  F_numeric()= 0.00046752  f_analytic()= 0.00000000 err > thresh
@@ -169,7 +169,7 @@ difference coefficients:
  -- 0.65:  F_numeric()=-0.00002971  f_analytic()= 0.00000000 err > thresh
  -- 0.70:  F_numeric()= 2.84620888  f_analytic()= 2.84603251 err > thresh
  -- 0.75:  F_numeric()= 60.50810456  f_analytic()= 60.50822787 err > thresh
- -- 0.80:  F_numeric()=-0.00008198  f_analytic()=-0.00000000 err > thresh
+ -- 0.80:  F_numeric()=-0.00008198  f_analytic()= 0.00000000 err > thresh
  -- 0.85:  F_numeric()=-60.50822205  f_analytic()=-60.50822787
  -- 0.90:  F_numeric()=-2.84579819  f_analytic()=-2.84603425 err > thresh
  -- 0.95:  F_numeric()=-0.00795571  f_analytic()=-0.00824121 err > thresh
@@ -331,7 +331,7 @@ norm of f3 = f1 + f2 is 2.0
 -----------------------------------------------------
 k=5 thresh=1e-05 compressed=false
 sum coefficients:
-   level  3   #boxes=   4  norm=8.89e-15
+   level  3   #boxes=   4  norm=0.00e+00
    level  5   #boxes=   8  norm=3.01e-04
    level  6   #boxes=  12  norm=8.06e-01
    level  7   #boxes=   8  norm=1.83e+00
@@ -339,10 +339,10 @@ difference coefficients:
 -----------------------------------------------------
 
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.05:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.10:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.15:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.05:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.15:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.25:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.30:  F_numeric()= 0.00000002  f_analytic()= 0.00000002
  -- 0.35:  F_numeric()= 0.00010816  f_analytic()= 0.00010988
@@ -354,11 +354,11 @@ difference coefficients:
  -- 0.65:  F_numeric()= 0.00010816  f_analytic()= 0.00010988
  -- 0.70:  F_numeric()= 0.00000002  f_analytic()= 0.00000002
  -- 0.75:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.85:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.90:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.95:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 1.00:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.85:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.95:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
 
 
 
@@ -375,7 +375,7 @@ sum coefficients:
 difference coefficients:
 -----------------------------------------------------
 
- -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001
+ -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000
  -- 0.05:  F_numeric()= 0.00005435  f_analytic()= 0.00005494
  -- 0.10:  F_numeric()= 0.02846071  f_analytic()= 0.02846034
  -- 0.15:  F_numeric()= 1.21016458  f_analytic()= 1.21016456
@@ -395,7 +395,7 @@ difference coefficients:
  -- 0.85:  F_numeric()= 1.21016458  f_analytic()= 1.21016456
  -- 0.90:  F_numeric()= 0.02846071  f_analytic()= 0.02846034
  -- 0.95:  F_numeric()= 0.00005435  f_analytic()= 0.00005494
- -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001
+ -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000
 
 
 
@@ -462,18 +462,18 @@ norm of f3 = f1 * f2 is 3.55185
 -----------------------------------------------------
 k=5 thresh=1e-05 compressed=false
 sum coefficients:
-   level  4   #boxes=   8  norm=1.29e-28
+   level  4   #boxes=   8  norm=0.00e+00
    level  6   #boxes=  16  norm=1.83e-07
    level  7   #boxes=  24  norm=7.79e-01
    level  8   #boxes=  16  norm=3.47e+00
 difference coefficients:
 -----------------------------------------------------
 
- -- 0.00:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.05:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.10:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.15:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.25:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.35:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
@@ -485,11 +485,11 @@ difference coefficients:
  -- 0.65:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.75:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.85:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.90:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.95:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 1.00:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
 
 
 
@@ -500,7 +500,7 @@ norm of f3 = f1 * f2 is 3.55185
 -----------------------------------------------------
 k=5 thresh=1e-05 compressed=false
 sum coefficients:
-   level  6   #boxes=   8  norm=6.64e-38
+   level  6   #boxes=   8  norm=0.00e+00
    level  7   #boxes=  64  norm=7.79e-01
    level  8   #boxes=  96  norm=3.47e+00
 difference coefficients:
@@ -509,21 +509,21 @@ difference coefficients:
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.05:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.15:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.15:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.25:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.35:  F_numeric()= 0.00000001  f_analytic()= 0.00000001
+ -- 0.35:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.40:  F_numeric()= 0.00080994  f_analytic()= 0.00080999
  -- 0.45:  F_numeric()= 1.46449616  f_analytic()= 1.46449826
  -- 0.50:  F_numeric()= 17.84123943  f_analytic()= 17.84124116
  -- 0.55:  F_numeric()= 1.46449616  f_analytic()= 1.46449826
  -- 0.60:  F_numeric()= 0.00080994  f_analytic()= 0.00080999
- -- 0.65:  F_numeric()= 0.00000001  f_analytic()= 0.00000001
+ -- 0.65:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.75:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.85:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.85:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.95:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
@@ -562,11 +562,11 @@ difference coefficients:
 -----------------------------------------------------
 
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.05:  F_numeric()=-0.00000000  f_analytic()=-0.00000000
+ -- 0.05:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.15:  F_numeric()= 0.00000000  f_analytic()=-0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.25:  F_numeric()=-0.00000000  f_analytic()=-0.00000000
+ -- 0.15:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.25:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.30:  F_numeric()= 0.00000002  f_analytic()= 0.00000002
  -- 0.35:  F_numeric()=-0.00013963  f_analytic()=-0.00014186
  -- 0.40:  F_numeric()= 0.08999819  f_analytic()= 0.08999951
@@ -576,9 +576,9 @@ difference coefficients:
  -- 0.60:  F_numeric()= 0.08999819  f_analytic()= 0.08999951
  -- 0.65:  F_numeric()=-0.00013963  f_analytic()=-0.00014186
  -- 0.70:  F_numeric()= 0.00000002  f_analytic()= 0.00000002
- -- 0.75:  F_numeric()=-0.00000000  f_analytic()=-0.00000000
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.85:  F_numeric()= 0.00000000  f_analytic()=-0.00000000
+ -- 0.75:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.85:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.95:  F_numeric()=-0.00000000  f_analytic()=-0.00000000
+ -- 0.95:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
