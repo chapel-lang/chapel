@@ -1,0 +1,2 @@
+use lulesh;
+lulesh.main();

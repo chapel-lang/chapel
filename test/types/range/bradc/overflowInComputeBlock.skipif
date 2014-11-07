@@ -1,0 +1,5 @@
+# This test takes a lot of time and does not seem worth
+# running under valgrind.
+# Once our testing system allows, we could pass valgrind-specific
+# execopt --n=(something 100+x smaller than the default).
+CHPL_TEST_VGRND_EXE == on
