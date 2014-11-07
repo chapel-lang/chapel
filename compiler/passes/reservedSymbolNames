@@ -45,6 +45,7 @@
   asin
   atan
   chdir
+  chmod
   chown
   cwd
   floor
@@ -255,3 +256,9 @@
   ten23
   ts
   two
+
+  // reserved on darwin
+  fls
+  wait2
+  wait3
+  wait4

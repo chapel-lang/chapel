@@ -28,7 +28,7 @@ capabilities in the interest of a simple and clean build.
 
    If you use...                         then type...
 
-   ...a bash-compatible shell (bash)     source util/quickstart/setchplenv.bash
+   ...a bash-compatible shell (bash/zsh) source util/quickstart/setchplenv.bash
    ...a csh-compatible shell (csh/tcsh)  source util/quickstart/setchplenv.csh
    ...the fish shell (fish)              . util/quickstart/setchplenv.fish
    ...the Bourne shell (sh)              . util/quickstart/setchplenv.sh
@@ -53,6 +53,8 @@ capabilities in the interest of a simple and clean build.
    Cygwin), use:
 
         make
+
+   Parallel build execution (e.g. `gmake -j`) is supported.
 
 4) csh/tcsh users only: Update your shell's path cache using:
 

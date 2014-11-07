@@ -136,6 +136,17 @@ void chpl_thread_yield(void) {
   //
   sched_yield();
 
+  //
+  // We expect sched_yield to yield the processor and move the thread to the
+  // end of the scheduling queue. However, on cygwin it seems there is no
+  // guarantee that the same thread won't be immediately rescheduled even if
+  // there are others threads waiting to run. Sleeping should yield the rest of
+  // the time slice and allow other threads to actually run.
+  //
+#ifdef __CYGWIN__
+  usleep(1);
+#endif
+
   (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
   pthread_testcancel();
   (void) pthread_setcancelstate(last_cancel_state, NULL);
@@ -256,6 +267,12 @@ static void* initial_pthread_func(void* ignore) {
   while (1) {
     pthread_testcancel();
     sched_yield();
+
+    // see comment in chpl_thread_yield()
+#ifdef __CYGWIN__
+    usleep(1);
+#endif
+
   }
   return NULL;
 }
@@ -403,6 +420,11 @@ void chpl_thread_destroy(void) {
   // thread regains the processor.
   //
   sched_yield();
+
+  // see comment in chpl_thread_yield()
+#ifdef __CYGWIN__
+  usleep(1);
+#endif
 
   (void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_cancel_state);
   pthread_testcancel();

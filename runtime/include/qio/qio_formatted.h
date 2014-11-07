@@ -576,8 +576,9 @@ qioerr qio_encode_char_buf(char* dst, int32_t chr)
   return err;
 }
 
-// Returns NULL if it's an illegal character OR we're out of memory.
-c_string qio_encode_to_string(int32_t chr);
+// Returns NULL if it's an illegal character OR we're out of memory; otherwise,
+// a newly-allocated ASCIIZ string containing the result.
+c_string_copy qio_encode_to_string(int32_t chr);
 
 static inline
 qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const char* buf, ssize_t buflen)

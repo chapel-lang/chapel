@@ -254,15 +254,14 @@ sub feed_nodes {
                 } else {
                     systemd ("$rem_cmd 2>&1 | grep -i 'Error in paratest.client:'");
                 }
-                $partial_errors = `grep -a "^\\[Error" $logfile`;
-                if ($partial_errors =~ /^\[Error/) {
-                    @errors = split /^/m, $partial_errors;
-                    if ($show_all_errors) {
-                        print "\n:( \n @errors";
-                    } else {
-                        chomp $errors[0];
-                        print "\n:( " . $errors[0] . "\n";
-                    }
+                $pe_command = $show_all_errors
+                  # print Error lines; terminate when we reach Test Summary
+                  ? '/^\\[Error/p; /^\\[Test Summary/q'
+                  # once an Error line is seen, print it and terminate
+                  : '/^\\[Error/{p;q}';
+                $partial_errors = `sed -n '$pe_command' $logfile`;
+                if ($partial_errors) {
+                    print "\n:( $partial_errors";
                 } else {
                     print ":)";
                 }
@@ -481,7 +480,7 @@ sub main {
         if (/^-compopts/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $compopts = $ARGV[0];
+                $compopts = "$compopts $ARGV[0]";
             } else {
                 print "missing -compopts arg\n";
                 exit (8);
@@ -489,7 +488,7 @@ sub main {
         } elsif (/^-execopts/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $execopts = $ARGV[0];
+                $execopts = "$execopts $ARGV[0]";
             } else {
                 print "missing -execopts arg\n";
                 exit (8);

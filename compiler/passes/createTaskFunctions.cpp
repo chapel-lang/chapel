@@ -43,12 +43,11 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
     return false;
 
   // FYI: presently, for a 'coforall', the enclosing block is a for loop.
-  INT_ASSERT(block->blockInfo &&
-             block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP));
+  INT_ASSERT(block->isForLoop());
 
   // We could verify that 'sym' is defined via a 'move'
   // from the _indexOfInterest variable referenced by the SymExpr
-  // block->blockInfo->get(1). (It's a move from a tuple component
+  // block->blockInfoGet()->get(1). (It's a move from a tuple component
   // of _indexOfInterest, for zippered coforall loops.)
   //
   return true;
@@ -274,9 +273,14 @@ void createTaskFunctions(void) {
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (CallExpr* info = block->blockInfo) {
+    // Loops are not a parallel block construct
+    if (block->isLoop() == true) {
+
+    } else if (CallExpr* info = block->blockInfoGet()) {
       SET_LINENO(block);
+
       FnSymbol* fn = NULL;
+
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
         fn->addFlag(FLAG_BEGIN);
@@ -305,12 +309,7 @@ void createTaskFunctions(void) {
         ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "dummy_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
       }
-      else if (info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution will remove this case.
-               info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_LOCAL) ||
+      else if (info->isPrimitive(PRIM_BLOCK_LOCAL) ||
                info->isPrimitive(PRIM_BLOCK_UNLOCAL))
         ; // Not a parallel block construct, so do nothing special.
       else
@@ -343,13 +342,13 @@ void createTaskFunctions(void) {
 
         if (fn->hasFlag(FLAG_ON)) {
           // This puts the target locale expression "onExpr" at the start of the call.
-          call->insertAtTail(block->blockInfo->get(1)->remove());
+          call->insertAtTail(block->blockInfoGet()->get(1)->remove());
         }
 
         block->insertBefore(new DefExpr(fn));
 
         if( fCacheRemote ) {
-          if( block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ) {
+          if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
             isBlockingOn = true;
           }
 
@@ -381,7 +380,7 @@ void createTaskFunctions(void) {
            // block->insertBefore(new CallExpr(PRIM_JOIN_RMEM_FENCE));
         }
 
-        block->blockInfo->remove();
+        block->blockInfoGet()->remove();
 
         // Now build the fn for the task or on statement.
 

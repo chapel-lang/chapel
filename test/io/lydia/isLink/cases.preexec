@@ -1,0 +1,8 @@
+#!/bin/bash
+
+mkdir -p my_dir
+touch my_file
+if [ ! -e my_link_dir ]; then
+    ln -s my_dir my_link_dir
+    ln -s my_file my_link_file
+fi

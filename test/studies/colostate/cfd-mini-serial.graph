@@ -1,0 +1,5 @@
+perfkeys: LoopTime:
+files: cfd-mini-serial.dat
+graphkeys: cfd-mini-serial
+ylabel: Time (seconds)
+graphtitle: CFD-mini Serial

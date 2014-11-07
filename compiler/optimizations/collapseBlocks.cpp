@@ -23,7 +23,7 @@
 #include "stmt.h"
 
 static void collapseBlock(BlockStmt* block) {
-  if (block->list && !block->blockInfo) {
+  if (block->list && !block->blockInfoGet()) {
     for_alist(expr, block->body)
       block->insertBefore(expr->remove());
     block->remove();

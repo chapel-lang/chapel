@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import platform, os, sys, optparse
+import platform, os, os.path, re, sys, optparse
 
 from utils import memoize
 
@@ -13,6 +13,22 @@ def get(flag='host'):
             platform_val = get('host')
     else:
         raise ValueError("Invalid flag: '{0}'".format(flag))
+
+    if not platform_val:
+        # Check for cray platform. It is a cray platform if there is an CLEinfo
+        # config file and it has a known network value in it.
+        cle_info_file = os.path.abspath('/etc/opt/cray/release/CLEinfo')
+        if os.path.exists(cle_info_file):
+            with open(cle_info_file, 'r') as fp:
+                cle_info = fp.read()
+            net_pattern = re.compile('^NETWORK=(?P<net>[a-zA-Z]+)$', re.MULTILINE)
+            net_match = net_pattern.search(cle_info)
+            if net_match is not None and len(net_match.groups()) == 1:
+                net = net_match.group('net')
+                if net.lower() == 'gem':
+                    platform_val = 'cray-xe'
+                elif net.lower() == 'ari':
+                    platform_val = 'cray-xc'
 
     if not platform_val:
         # uname() -> (system, node, release, version, machine, processor)
@@ -30,6 +46,7 @@ def get(flag='host'):
                 platform_val = "linux32"
         elif platform_val.startswith("cygwin"):
             platform_val = "cygwin"
+
     return platform_val
 
 

@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-CWD=$(cd $(dirname $0) ; pwd)
-
-source $CWD/common.bash
-
-CHPL_HOST_COMPILER=gnu CHPL_TARGET_COMPILER=gnu $CWD/nightly.standard

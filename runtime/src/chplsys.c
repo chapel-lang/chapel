@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#if defined __CYGWIN__
+#include <windows.h>
+#endif
 #if defined __APPLE__
 #include <sys/sysctl.h>
 #endif
@@ -71,6 +74,17 @@ uint64_t chpl_bytesPerLocale(void) {
   if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0))
     chpl_internal_error("query of physical memory failed");
   return membytes;
+#elif defined __CYGWIN__
+  MEMORYSTATUS status;
+  status.dwLength = sizeof(status);
+  GlobalMemoryStatus( &status );
+  return (uint64_t)status.dwTotalPhys;
+  //
+  // The following general case used to work for cygwin, but no longer
+  // seems to.  Now, it seems to return a very small number of pages
+  // for SC_PHYS_PAGES, which I can't explain.  Found the recipe above
+  // on the web and it works, so adopting it.
+  //
 #else
   long int numPages, pageSize;
   numPages = sysconf(_SC_PHYS_PAGES);
@@ -327,18 +341,24 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
 }
 
 
+// Using a static buffer is a bad idea from the standpoint of thread-safety.
+// However, since the node name is not expected to change it is OK to
+// initialize it once and share the singleton string.
+// There could still be a race condition concerning which thread actually gets
+// to initialize the static, but since two or more should end up writing the
+// same bytes, it probably just works out.
 c_string chpl_nodeName(void) {
   static char* namespace = NULL;
-  static int namelen = 0;
-  struct utsname utsinfo;
-  int newnamelen;
-  uname(&utsinfo);
-  newnamelen = strlen(utsinfo.nodename)+1;
-  if (newnamelen > namelen) {
-    namelen = newnamelen;
-    namespace = chpl_mem_realloc(namespace, newnamelen * sizeof(char), 
+  if (namespace == NULL)
+  {
+    struct utsname utsinfo;
+    int namelen;
+
+    uname(&utsinfo);
+    namelen = strlen(utsinfo.nodename)+1;
+    namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
                                  CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
+    strcpy(namespace, utsinfo.nodename);
   }
-  strcpy(namespace, utsinfo.nodename);
   return namespace;
 }

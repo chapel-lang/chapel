@@ -24,6 +24,7 @@
 #include "bitVec.h"
 #include "expr.h"
 #include "stmt.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 #include "optimizations.h"
 #include "view.h"
@@ -115,10 +116,10 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         if (singleYield) {
           return NULL;
         } else if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
-          if (block->blockInfo &&
-              (block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-               block->blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
-               block->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP))) {
+          if (block->blockInfoGet() &&
+              (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
+               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP))) {
             singleYield = call;
           } else {
             return NULL;
@@ -128,13 +129,13 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         }
       }
     } else if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->blockInfo && !(block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL) ||
-                                block->blockInfo->isPrimitive(PRIM_BLOCK_UNLOCAL))) {
+      if (block->blockInfoGet() && !(block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) ||
+                                     block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))) {
         if (singleFor) {
           return NULL;
-        } else if ((block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-                    block->blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
-                    block->blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) &&
+        } else if ((block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
+                    block->blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
+                    block->blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) &&
                    block->parentExpr == fn->body) {
           singleFor = block;
         } else {
@@ -400,7 +401,7 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
 
   // Check for more (only for non c for loops)
-  CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
+  CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
   if (!blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
     zip1body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
@@ -483,7 +484,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
 
   // Check for more (only for non c for loops)
-  CallExpr* blockInfo = singleLoop->blockInfo->copy(&map);
+  CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
   if (!blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
     zip3body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
@@ -511,24 +512,26 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = toDefExpr(ast))
-        if (!isArgSymbol(def->sym))
-          zip4body->insertAtTail(def->copy(&map));
-    }
+    if (DefExpr* def = toDefExpr(ast))
+      if (!isArgSymbol(def->sym))
+        zip4body->insertAtTail(def->copy(&map));
+  }
 
   // Copy all iterator body expressions after singleLoop that are not
   // declarations
   bool flag = true;
+
   for_alist(expr, ii->iterator->body->body) {
     // Skip everything before the singleLoop
     if (flag) {
       if (expr == singleLoop)
         flag = false;
-      continue;
-    }
-    if (!isDefExpr(expr) && expr->next)
+
+    } else if (!isDefExpr(expr)) {
       zip4body->insertAtTail(expr->copy(&map));
+    }
   }
+
   zip4body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip4->body->replace(zip4body);
@@ -611,7 +614,7 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
   hasMoreBody->insertAtTail(new DefExpr(tmp));
 
   CallExpr* blockInfo = NULL;
-  if (singleLoop) blockInfo = singleLoop->blockInfo->copy(&map);
+  if (singleLoop) blockInfo = singleLoop->blockInfoGet()->copy(&map);
   if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
     if (BlockStmt* testSeg = toBlockStmt(blockInfo->get(2))) {
       for_alist(expr, testSeg->body) {
@@ -654,7 +657,7 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* initBody = new BlockStmt();
 
   CallExpr* blockInfo = NULL;
-  if (singleLoop) blockInfo = singleLoop->blockInfo->copy(&map);
+  if (singleLoop) blockInfo = singleLoop->blockInfoGet()->copy(&map);
   if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
     if (BlockStmt* initSeg = toBlockStmt(blockInfo->get(1))) {
       for_alist(expr, initSeg->body) {
@@ -678,7 +681,7 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* incrBody = new BlockStmt();
 
   CallExpr* blockInfo = NULL;
-  if (singleLoop) blockInfo = singleLoop->blockInfo->copy(&map);
+  if (singleLoop) blockInfo = singleLoop->blockInfoGet()->copy(&map);
   if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
     if (BlockStmt* incrSeg = toBlockStmt(blockInfo->get(3))) {
       for_alist(expr, incrSeg->body) {
@@ -746,7 +749,23 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   }
 
   for_vector(BitVec, out, OUT)
-    delete out, out = 0;
+    delete out;
+
+  // C_FOR_LOOP needs to ensure the for-loop init variables are also
+  // converted to fields.  The test/incr fields are handled correctly
+  // as a result of being inserted in to the body of the loop
+  if (singleLoop && singleLoop->blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+    Vec<SymExpr*> symExprs;
+    Expr*         init = singleLoop->blockInfoGet()->get(1);
+
+    collectSymExprs(init, symExprs);
+
+    forv_Vec(SymExpr, se, symExprs) {
+      if (useSet.set_in(se)) {
+        syms.add_exclusive(se->var);
+      }
+    }
+  }
 }
 
 

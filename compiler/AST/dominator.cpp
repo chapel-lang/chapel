@@ -19,6 +19,8 @@
 
 #include "dominator.h"
 
+#include "stlUtil.h"
+
 /*
  * TODO Is there a need to do the post dominators and strictly post dominators?
  *       - The algorithm to do so is the same as computing dominators but you 

@@ -38,12 +38,6 @@ Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
 // remember these so we can remove their iterResumeGoto
 Vec<LabelSymbol*> removedIterResumeLabels;
 
-#ifdef HAVE_LLVM
-
-#define FNAME(str) (llvm::Twine(getFunction()->cname) + llvm::Twine("_") + llvm::Twine(getFunction()->codegenUniqueNum) + llvm::Twine(str) + llvm::Twine("_"))
-
-#endif
-
 void codegenStmt(Expr* stmt) {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -94,13 +88,12 @@ bool Stmt::isStmt() const {
 BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   Stmt(E_BlockStmt),
   blockTag(initBlockTag),
-  blockInfo(NULL),
   modUses(NULL),
   breakLabel(NULL),
   continueLabel(NULL),
   userLabel(NULL),
-  byrefVars(NULL) {
-
+  byrefVars(NULL), 
+  blockInfo(NULL) {
   body.parent = this;
 
   if (initBody)
@@ -186,93 +179,15 @@ void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
     INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
 }
 
-
-// This function is used to codegen the init, test, and incr segments of c for
-// loops. In c for loops instead of using statements comma operators must be
-// used. So for the init instead of generating something like:
-//   i = 4;
-//   j = 4;
-//
-// We need to generate:
-// i = 4, j = 4
-static std::string codegenCForLoopHeaderSegment(BlockStmt* block) {
-  GenInfo* info = gGenInfo;
-  std::string seg = "";
-
-  for_alist(expr, block->body) {
-    CallExpr* call = toCallExpr(expr);
-
-    // Generate defExpr normally (they always get codegenned at the top of a
-    // function currently, if that changes this code will probably be wrong.)
-    if (DefExpr* defExpr = toDefExpr(expr)) {
-      defExpr->codegen();
-    }
-
-    // If inlining is off, the init, test, and incr are just functions and we
-    // need to generate them inline so we use codegenValue. The semicolon is
-    // added so it can be replaced with the comma later. If inlinining is on
-    // the test will be a <= and it also needs to be codegenned with
-    // codegenValue.
-    //
-    // TODO when the test operator is user specifiable and not just <= this
-    // will need to be updated to include all possible conditionals. (I'm
-    // imagining we'll want a separate function that can check if a primitive
-    // is a conditional as I think we'll need that info elsewhere.)
-    else if (call && (call->isResolved() || isRelationalOperator(call))) {
-
-      std::string callStr = codegenValue(call).c;
-      if (callStr != "") {
-        seg += callStr + ';';
-      }
-
-    }
-    // Similar to above, generate symExprs
-    else if (SymExpr* symExpr = toSymExpr(expr)) {
-      std::string symStr = codegenValue(symExpr).c;
-      if (symStr != "") {
-        seg += symStr + ';';
-      }
-    }
-    // Everything else is just a bunch of statements. We do normal codegen() on
-    // them which ends up putting whatever got codegenned into CStatements. We
-    // pop all of those back off (note that the order we pop and attach to our
-    // segment is important.)
-    else {
-      int prevStatements = (int)info->cStatements.size();
-      expr->codegen();
-      int newStatements = (int)info->cStatements.size() - prevStatements;
-      for (std::vector<std::string>::iterator it = info->cStatements.end() -
-          newStatements; it != info->cStatements.end(); ++it) {
-        seg += *it;
-      }
-      info->cStatements.erase(info->cStatements.end()-newStatements,
-          info->cStatements.end());
-    }
-  }
-
-  // replace all the semicolons (from "statements") with commas
-  std::replace(seg.begin(), seg.end(), ';', ',');
-
-  // remove all the newlines
-  seg.erase(std::remove(seg.begin(), seg.end(), '\n'), seg.end());
-
-  // remove the last character if any were generated (it's a trailing comma
-  // since we previously had an appropriate "trailing" semicolon
-  if (seg.size () > 0)  seg.resize (seg.size () - 1);
-
-  return seg;
+CallExpr* BlockStmt::blockInfoGet() const {
+  return blockInfo;
 }
 
-#ifdef HAVE_LLVM
-static GenRet codegenCForLoopConditional(BlockStmt* block)
-{
-  GenRet ret;
-  for_alist(expr, block->body) {
-    ret = expr->codegen();
-  }
-  return codegenValue(ret);
+CallExpr* BlockStmt::blockInfoSet(CallExpr* expr) {
+  blockInfo = expr;
+
+  return blockInfo;
 }
-#endif
 
 GenRet BlockStmt::codegen() {
   GenInfo* info    = gGenInfo;
@@ -281,212 +196,50 @@ GenRet BlockStmt::codegen() {
 
   codegenStmt(this);
 
-  if( outfile ) {
-    if (blockInfo) {
-      if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) {
-        std::string hdr = "while (" + codegenValue(blockInfo->get(1)).c + ") ";
-        info->cStatements.push_back(hdr);
-      } else if (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
-        info->cStatements.push_back("do ");
-      } else if (blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
-        std::string hdr = "for (;" + codegenValue(blockInfo->get(1)).c + ";) ";
-        info->cStatements.push_back(hdr);
-      } else if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
-        BlockStmt* initBlock = toBlockStmt(blockInfo->get(1));
-        // These copy calls are needed or else values get code generated twice.
-        std::string init = codegenCForLoopHeaderSegment(initBlock->copy());
-
-        BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
-        std::string test = codegenCForLoopHeaderSegment(testBlock->copy());
-        // wrap the test with paren. Could probably check if it already has
-        // outer paren to make the code a little cleaner.
-        if (test != "") test = "(" + test + ")";
-
-        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
-        std::string incr = codegenCForLoopHeaderSegment(incrBlock->copy());
-
-        std::string hdr = "for (" + init + "; " + test + "; " + incr + ") ";
-        info->cStatements.push_back(hdr);
-      }
-    }
-
+  if (outfile) {
     if (this != getFunction()->body)
       info->cStatements.push_back("{\n");
 
     body.codegen("");
 
-    if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
-      std::string ftr= "} while (" + codegenValue(blockInfo->get(1)).c + ");\n";
-      info->cStatements.push_back(ftr);
-    } else if (this != getFunction()->body) {
-      std::string end = "}";
-      CondStmt* cond = toCondStmt(parentExpr);
+    if (this != getFunction()->body) {
+      std::string end  = "}";
+      CondStmt*   cond = toCondStmt(parentExpr);
+
       if (!cond || !(cond->thenStmt == this && cond->elseStmt))
         end += "\n";
+
       info->cStatements.push_back(end);
     }
-  } else {
 
+  } else {
 #ifdef HAVE_LLVM
-    llvm::Function *func = info->builder->GetInsertBlock()->getParent();
+    llvm::Function*   func          = info->builder->GetInsertBlock()->getParent();
+    llvm::BasicBlock* blockStmtBody = NULL;
 
     getFunction()->codegenUniqueNum++;
 
-    llvm::BasicBlock *blockStmtInit = NULL;
-    llvm::BasicBlock *blockStmtCond = NULL;
-    llvm::BasicBlock *blockStmtBody = NULL;
-    llvm::BasicBlock *blockStmtEndCond = NULL;
-    llvm::BasicBlock *blockStmtEnd = NULL;
-
-    blockStmtBody = llvm::BasicBlock::Create(
-        info->module->getContext(), FNAME("blk_body"));
+    blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
    
-    if(blockInfo) {
-      blockStmtEnd = llvm::BasicBlock::Create(
-          info->module->getContext(), FNAME("blk_end"));
-      if (blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
-        // C for loop...
-        // blockInfo->get(1) is the initialization block 
-        // blockInfo->get(2) is the test block 
-        // blockInfo->get(3) is the increment block
-
-        // In order to track more easily with the C backend
-        // and because mem2reg should optimize all of these
-        // cases, we generate a for loop as the same
-        // as if(cond) do { body; step; } while(cond).
-
-        BlockStmt* initBlock = toBlockStmt(blockInfo->get(1));
-        BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
-        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
-
-        assert(initBlock && testBlock && incrBlock);
-
-        // Create the init basic block
-        blockStmtInit = llvm::BasicBlock::Create(
-            info->module->getContext(), FNAME("blk_c_for_init"));
-        func->getBasicBlockList().push_back(blockStmtInit);
-
-        // Insert an explicit branch from the current block to the init block
-        info->builder->CreateBr(blockStmtInit);
-
-        // Now switch to the init block for code generation
-        info->builder->SetInsertPoint(blockStmtInit);
-
-        // Code generate the init block.
-        initBlock->body.codegen("");
-
-        // Add the loop condition to figure out if we run the loop at all.
-        GenRet test = codegenCForLoopConditional(testBlock);
-        // Add a branch based on test.
-        llvm::Value* condValue = test.val;
-        // Normalize it to boolean
-        if( condValue->getType() !=
-            llvm::Type::getInt1Ty(info->module->getContext()) ) {
-          condValue = info->builder->CreateICmpNE(
-              condValue,
-              llvm::ConstantInt::get(condValue->getType(), 0),
-              FNAME("condition"));
-        }
-        // Create the conditional branch
-        info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
-
-      } else if (blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-                 blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
-        // Add the condition block.
-        blockStmtCond = llvm::BasicBlock::Create(
-            info->module->getContext(), FNAME("blk_cond"));
-        func->getBasicBlockList().push_back(blockStmtCond);
-        // Insert an explicit branch from the current block to the loop start.
-        info->builder->CreateBr(blockStmtCond);
-        // Now switch to the condition for code generation 
-        info->builder->SetInsertPoint(blockStmtCond);
-
-        GenRet condValueRet = codegenValue(blockInfo->get(1));
-        llvm::Value *condValue = condValueRet.val;
-        if( condValue->getType() !=
-            llvm::Type::getInt1Ty(info->module->getContext()) ) {
-          condValue = info->builder->CreateICmpNE(
-              condValue,
-              llvm::ConstantInt::get(condValue->getType(), 0),
-              FNAME("condition"));
-        }
-
-        // Now we might do either to the Body or to the End.
-        info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
-      } else {
-        info->builder->CreateBr(blockStmtBody);
-      }
-    } else {
-      info->builder->CreateBr(blockStmtBody);
-    }
+    info->builder->CreateBr(blockStmtBody);
     
     // Now add the body.
     func->getBasicBlockList().push_back(blockStmtBody);
+
     info->builder->SetInsertPoint(blockStmtBody);
-    
+
     info->lvt->addLayer();
 
     body.codegen("");
+
     info->lvt->removeLayer();
-    
-    if(blockInfo) {
-      if(blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
-        // Generate the step operations and the termination test
-        // after the loop body
-        BlockStmt* testBlock = toBlockStmt(blockInfo->get(2));
-        BlockStmt* incrBlock = toBlockStmt(blockInfo->get(3));
 
-        // Code generate the step operations.
-        incrBlock->body.codegen("");
-
-        GenRet test = codegenCForLoopConditional(testBlock);
-        // Add a branch based on test.
-        llvm::Value* condValue = test.val;
-        // Normalize it to boolean
-        if( condValue->getType() !=
-            llvm::Type::getInt1Ty(info->module->getContext()) ) {
-          condValue = info->builder->CreateICmpNE(
-              condValue,
-              llvm::ConstantInt::get(condValue->getType(), 0),
-              FNAME("condition"));
-        }
-        // Create the conditional branch
-        info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
-      } else if(blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
-        // Add the condition block.
-        blockStmtEndCond = llvm::BasicBlock::Create(
-            info->module->getContext(), FNAME("blk_end_cond"));
-        func->getBasicBlockList().push_back(blockStmtEndCond);
-        // Insert an explicit branch from the body block to the loop condition.
-        info->builder->CreateBr(blockStmtEndCond);
-        // set insert point
-        info->builder->SetInsertPoint(blockStmtEndCond);
-        GenRet condValueRet = codegenValue(blockInfo->get(1));
-        llvm::Value *condValue = condValueRet.val;
-        if( condValue->getType() !=
-            llvm::Type::getInt1Ty(info->module->getContext()) ) {
-          condValue = info->builder->CreateICmpNE(
-              condValue,
-              llvm::ConstantInt::get(condValue->getType(), 0),
-              FNAME("condition"));
-        }
-        info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
-      } else if( blockStmtCond ) {
-        info->builder->CreateBr(blockStmtCond);
-      } else {
-        info->builder->CreateBr(blockStmtEnd);
-      }
-      func->getBasicBlockList().push_back(blockStmtEnd);
-      info->builder->SetInsertPoint(blockStmtEnd);
-    }
-    if( blockStmtCond ) INT_ASSERT(blockStmtCond->getParent() == func);
-    if( blockStmtBody ) INT_ASSERT(blockStmtBody->getParent() == func);
-    if( blockStmtEndCond ) INT_ASSERT(blockStmtEndCond->getParent() == func);
-    if( blockStmtEnd ) INT_ASSERT(blockStmtEnd->getParent() == func);
- 
+    INT_ASSERT(blockStmtBody->getParent() == func);
 #endif
   }
+
   INT_ASSERT(!byrefVars); // these should not persist past parallel()
+
   return ret;
 }
 
@@ -583,14 +336,43 @@ BlockStmt::isScopeless() const {
 
 bool
 BlockStmt::isLoop() const {
-  return (blockInfo &&
-          (blockInfo->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-           blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)));
+  return blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP);
 }
 
+bool
+BlockStmt::isWhileLoop() const {
+  return false;
+}
+
+bool
+BlockStmt::isWhileDoLoop() const {
+  return false;
+}
+
+bool
+BlockStmt::isDoWhileLoop() const {
+  return false;
+}
+
+bool
+BlockStmt::isForLoop() const {
+  return false;
+}
+
+bool
+BlockStmt::isCforLoop() const {
+  return false;
+}
+
+void
+BlockStmt::checkConstLoops() {
+
+}
+
+bool
+BlockStmt::deadBlockCleanup() {
+  return false;
+}
 
 int
 BlockStmt::length() const {
@@ -683,7 +465,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
 {
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
-    if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfo)
+    if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
       thenStmt = bs;
     else
       thenStmt = new BlockStmt(s);
@@ -692,7 +474,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   if (iElseStmt) {
     if (Expr* s = toExpr(iElseStmt)) {
       BlockStmt* bs = toBlockStmt(s);
-      if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfo)
+      if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
         elseStmt = bs;
       else
         elseStmt = new BlockStmt(s);

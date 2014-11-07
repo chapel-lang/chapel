@@ -235,8 +235,8 @@ static void handleLocalBlocks() {
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol)
-      if (block->blockInfo)
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+      if (block->blockInfoGet())
+        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
           queue.add(block);
   }
 
@@ -838,7 +838,9 @@ static void derefWideRefsToWideClasses()
         call->isPrimitive(PRIM_WIDE_GET_ADDR) ||
         call->isPrimitive(PRIM_SET_MEMBER)) {
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          // This should be removed when string_rec is the default string type
+          call->get(1)->getValType() != wideStringType) {
         SET_LINENO(call);
         VarSymbol* tmp = newTemp(call->get(1)->getValType());
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));

@@ -19,7 +19,7 @@ proc main {
 //| >    Scalar-tuple arithmetic    | >
 //|/________________________________|/
 
-proc =(T,a)
+proc =(ref T,a)
   where isTuple(T) && isHomogeneousTuple(T) && a.type==T(1).type
 {
   for i in 1..T.size do
