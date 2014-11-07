@@ -1083,7 +1083,6 @@ for testname in testsrc:
         #
         # Compile (with timeout)
         #
-        comptimeout = False
         sys.stdout.write('[Executing compiler %s'%(cmd))
         if args:
             sys.stdout.write(' %s'%(' '.join(args)))
@@ -1099,7 +1098,6 @@ for testname in testsrc:
             status = p.returncode
 
             if status == 222:
-                comptimeout = True
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, test_filename))
                 printTestVariation(compoptsnum);
@@ -1115,7 +1113,6 @@ for testname in testsrc:
             try:
                 output = SuckOutputWithTimeout(p.stdout, timeout)
             except ReadTimeoutException:
-                comptimeout = True
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, test_filename))
                 printTestVariation(compoptsnum);
@@ -1282,9 +1279,9 @@ for testname in testsrc:
                 datFileName = localdir.replace('/', '~~') + '~~' + test_filename + compoptsstring
 
                 # computePerfStats for the current test
-                sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, str(comptimeout)))
+                sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'))
                 sys.stdout.flush()
-                p = subprocess.Popen([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, str(comptimeout)], stdout=subprocess.PIPE)
+                p = subprocess.Popen([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'], stdout=subprocess.PIPE)
                 compkeysOutput = p.communicate()[0]
                 datFiles = [tempDatFilesDir+'/'+datFileName+'.dat',  tempDatFilesDir+'/'+datFileName+'.error']
                 status = p.returncode
