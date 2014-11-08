@@ -100,6 +100,7 @@ Compilation Trace Options:
       --print-passes-file <filename>  Print compiler passes to <filename>
 
 Miscellaneous Options:
+      --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]devel                    Compile as a developer [user]
       --explain-call <call>[:<module>][:<line>]
                                       Explain resolution of call
