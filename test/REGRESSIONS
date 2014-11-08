@@ -77,21 +77,21 @@ sporadic failure (2-3x a month -- vass)
 ===================
 linux64
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 
 ===================
 linux32
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 
 ===================
 darwin
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 unused value warning
@@ -110,7 +110,7 @@ Reviewed 2014-11-01
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -121,7 +121,7 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -139,28 +139,28 @@ Reviewed 2014-11-01
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 
 ======================
 perf.chap04.playground
 Inherits 'perf.chap04'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ======================
 
 
 ===================
 fast
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 ============================
@@ -188,7 +188,7 @@ sporadic segfault (infrequent)
 ===================
 verify
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 internal error (mike/hilde)
@@ -253,7 +253,7 @@ sporadic timeouts (infrequent)
 ===================
 llvm
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (09/18/14)
@@ -265,7 +265,7 @@ relies on macro in gmp.h -- not expected to work without effort (09/18/14)
 ===================
 fifo
 Inherits 'general'
-reviewed 2014-11-01
+reviewed 2014-11-08
 ===================
 
 
@@ -332,10 +332,13 @@ Reviewed 2014-11-01
 
 fairly consistent timeouts due to qthreads oversubscription (09/15/14)
 ----------------------------------------------------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/hpl]
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
+
+sporadic timeout (frequent)
+---------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/hpl] (...11/07/14)
 
 sporadic timeout (infrequent)
 -----------------------------
@@ -348,7 +351,7 @@ sporadic timeout (infrequent)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2014-11-07
+Reviewed 2014-11-08
 ===============================
 
 
@@ -356,14 +359,8 @@ Reviewed 2014-11-07
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 =============================
-
-comm count mismatches
----------------------
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceAlias]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceSlice]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduce]
 
 sporadic segfault
 -----------------
@@ -417,7 +414,7 @@ sporadic "recursive failure in AMUDP_SPMDShutdown"
 ===================
 gasnet.llvm
 Inherits 'llvm'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 occasional sporadic timeout
@@ -570,32 +567,80 @@ Reviewed 2014-10-24
 ======================================
 
 
-======================================
-xc-wb.prgenv-cray
-Inherits '*prgenv-cray*' and 'x?-wb.*'
-Reviewed 2014-10-29
-======================================
 
-
-
-
-======================================
-xe-wb.prgenv-cray
-Inherits '*prgenv-cray*' and 'x?-wb.*'
-Reviewed 2014-10-24
-======================================
-
-
-
-======================================
+============================
 xc-wb.host.prgenv-cray
-Inherits 'x?-wb.*' and '*prgenv-cray*'
-Reviewed 2014-10-23
-======================================
+Inherits 'x?-wb.prgenv-cray'
+Reviewed 2014-11-08
+============================
 
 unresolved call list(BaseArr) (2014-10-23 -- mike)
 --------------------------------------------------
 *all*
+
+
+===================
+*intel*
+Inherits 'general'
+Reviewed 2014-11-07
+===================
+
+test assertion failures (09/21-23/14)
+-------------------------------------
+[Error matching program output for io/ferguson/io_test]
+[Error matching program output for io/ferguson/writef_readf]
+
+binary files differ (09/23-24/14)
+---------------------------------
+[Error matching program output for io/ferguson/writefbinary]
+[Error matching program output for studies/parboil/SAD/sadSerial]
+
+
+===============================
+x?-wb.intel
+Inherits 'x?-wb*' and '*intel*'
+Reviewed 2014-10-20
+===============================
+
+
+===============================
+x?-wb.prgenv-intel
+Inherits 'x?-wb*' and '*intel*'
+Reviewed 2014-11-07
+===============================
+
+
+=============================
+xc-wb.host.prgenv-intel
+Inherits 'x?-wb.prgenv-intel'
+Reviewed 2014-11-08
+=============================
+
+
+===============================
+x?-wb.gnu
+Inherits 'x?-wb*' and 'linux64'
+Reviewed 2014-11-05
+================================
+
+gcc warning about assuming strict overflow
+------------------------------------------
+[Error matching .bad file for puzzles/hilde/overflow (compopts: 1)]
+
+
+=================================
+x?-wb.prgenv-gnu
+Inherits 'x?-wb*' and 'x?-wb.gnu'
+Reviewed 2014-11-06
+=================================
+
+
+===========================
+xc-wb.host.prgenv-gnu
+Inherits 'x?-wb.prgenv-gnu'
+Reviewed 2014-11-08
+===========================
+
 
 
 ===================
@@ -629,68 +674,24 @@ consistent timeout
 
 
 =============================
-x?-wb.host.prgenv-pgi
-Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-10-20
-=============================
-
-
-
-=============================
 x?-wb.pgi
 Inherits 'x?-wb*' and '*pgi*'
 Reviewed 2014-11-04
 =============================
 
 
-===================
-*intel*
-Inherits 'general'
-Reviewed 2014-11-07
-===================
-
-test assertion failures (09/21-23/14)
--------------------------------------
-[Error matching program output for io/ferguson/io_test]
-[Error matching program output for io/ferguson/writef_readf]
-
-binary files differ (09/23-24/14)
----------------------------------
-[Error matching program output for io/ferguson/writefbinary]
-[Error matching program output for studies/parboil/SAD/sadSerial]
-
-
 =============================
-x?-wb.prgenv-intel
-Inherits 'x?-wb*' and 'intel'
-Reviewed 2014-11-07
+x?-wb.prgenv-pgi
+Inherits 'x?-wb*' and '*pgi*'
+Reviewed 2014-11-04
 =============================
 
 
-=============================
-x?-wb.intel
-Inherits 'x?-wb*' and 'intel'
-Reviewed 2014-10-20
-=============================
-
-
-===============================
-x?-wb.gnu
-Inherits 'x?-wb*' and 'linux64'
-Reviewed 2014-11-05
-================================
-
-gcc warning about assuming strict overflow
-------------------------------------------
-[Error matching .bad file for puzzles/hilde/overflow (compopts: 1)]
-
-
-=================================
-x?-wb.prgenv-gnu
-Inherits 'x?-wb*' and 'x?-wb.gnu'
-Reviewed 2014-11-06
-=================================
-
+===========================
+xc-wb.host.prgenv-pgi
+Inherits 'x?-wb.prgenv-pgi'
+Reviewed 2014-11-08
+===========================
 
 
 ===================
@@ -784,6 +785,12 @@ Inherits 'general'
 Reviewed 2014-11-01
 ===================
 
+problem due to a made up C type (11/08/14)
+------------------------------------------
+[Error matching compiler output for studies/filerator/globberator]
+[Error matching compiler output for studies/filerator/testboth]
+[Error matching compiler output for studies/filerator/testemptyglob]
+
 ??? (wrong output)
 ------------------
 [Error matching program output for extern/ferguson/crazyRecord (compopts: 1)]
@@ -800,7 +807,7 @@ think we would prefer these errors.
 
 ===================
 dist-block
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 sporadic timeout (frequent)
@@ -810,7 +817,7 @@ sporadic timeout (frequent)
 
 ===================
 dist-cyclic
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 regular timeouts due to oversubscription under qthreads (08/26/14)
@@ -833,7 +840,7 @@ sporadic timeouts (frequent)
 
 ===================
 dist-replicated
-Reviewed 2014-10-16
+Reviewed 2014-11-08
 ===================
 
 
