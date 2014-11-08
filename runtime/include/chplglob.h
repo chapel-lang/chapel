@@ -26,7 +26,10 @@
 // from qio runtime
 #include "sys.h"
 
-typedef int (*glob_err_fn_t)(const char*, int);
+static inline
+int chpl_glob(const char* pattern, int flags, glob_t* ret_glob) {
+  return glob(pattern, flags, NULL, ret_glob);
+}
 
 static inline
 size_t chpl_glob_num(const glob_t glb) {
