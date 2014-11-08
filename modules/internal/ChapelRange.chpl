@@ -701,32 +701,34 @@ module ChapelRange {
   {
     return chpl_by_help(r, step);
   }
-  
+
+/*
   proc by(r : range(?i,?b,?s), param step:chpl__unsignedType(i))
   {
     if (step == 0) then
       compilerError("the 'by' operator cannot take a value of zero");
-  
+
   // This should work, but doesn't correctly -- test/types/range/hilde/by.chpl
   // is max(step.type) not correctly a param in some way?
   /*
     if (step == max(step.type)) then
       compilerError("the 'by' operator cannot take a value this large");
   */
-  
+
     return chpl_by_help(r, step);
   }
-  
-  
+
+
   proc by(r : range(?i,?b,?s), param step:chpl__signedType(i))
   {
     if (step == 0) then
       compilerError("the 'by' operator cannot take a value of zero");
-  
+
     return chpl_by_help(r, step);
   }
-  
-  
+*/
+
+
   proc by(r : range(?i,?b,?s), step)
   {
     compilerError("can't apply 'by' to a range with idxType ", 
@@ -1022,6 +1024,78 @@ module ChapelRange {
     }
     return willOverFlow;
   }
+
+
+
+  //################################################################################
+  //# Optimized iterators that use should not call
+  //#
+  // Need optimized iterator for const and param versions
+  iter _opt_range_iter(param start: ?t, param end: t, param stride : t = 1) {
+//    = 1:chpl__signedType(t)) {
+    // check for overflow...
+    // general iter option
+
+    var i: t;
+    if (stride > 0) {
+      while __primitive("C for loop",
+                        __primitive( "=", i, start),
+                        __primitive("<=", i, end),
+                        __primitive("+=", i, stride:t)) {
+        yield i;
+      }
+    } else if (stride < 0) {
+      while __primitive("C for loop",
+                        __primitive( "=", i, start),
+                        __primitive(">=", i, end),
+                        __primitive("+=", i, stride:t)) {
+        yield i;
+      }
+
+    } else {
+      compilerError("the 'by' operator cannot take a value of zero");
+    }
+  }
+ 
+  
+  iter _opt_range_iter(const start: ?t, const end: t) {
+//    = 1:chpl__signedType(t)) {
+
+    // check for overflow...
+    // general iter option
+
+    var i: t;
+      while __primitive("C for loop",
+                        __primitive( "=", i, start),
+                        __primitive("<=", i, end),
+                        __primitive("+=", i, 1:t)) {
+        yield i;
+      }
+  }
+
+  iter _opt_range_iter(const start: ?t, const end: t, const stride) {
+    // check for overflow...
+    // general iter option
+    var r = start..end by stride;
+    for i in r {
+      yield i;
+    }
+  }
+
+
+  iter bounded_non_strided_iterartor(start: ?t, end: t) {
+    // check for overflow...
+
+    var i: t;
+    while __primitive("C for loop",
+                      __primitive( "=", i, start),
+                      __primitive("<=", i, end),
+                      __primitive("+=", i, 1:t)) {
+      yield i;
+    }
+  }
+
+
 
   //################################################################################
   //# Serial Iterators

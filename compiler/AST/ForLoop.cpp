@@ -32,6 +32,62 @@
 *                                                                           *
 ************************************* | ************************************/
 
+
+
+
+
+
+
+/*
+ * Attempts to replace iteration of simple anonymous ranges with calls to
+ * direct iterators over low, high and possible stride to avoid cost of
+ * constructing the range.
+ */
+static Expr* replaceWithRangeIterator(Expr* iteratorExpr) {
+  CallExpr* range = NULL;
+  Expr* stride = NULL;
+  if (CallExpr* call = toCallExpr(iteratorExpr)) {
+    if (call->isNamed("by")) {
+      range = toCallExpr(call->get(1)->copy());
+      stride = toExpr(call->get(2)->copy());
+    } else {
+      range = call;
+    }
+    if (range && range->isNamed("_build_range")) { // if we have a range
+      if (range->numActuals() == 2) {              // bounded only for now
+        Expr* low = range->get(1)->copy();
+        Expr* high = range->get(2)->copy();
+        if (stride) {
+          iteratorExpr = (new CallExpr("_opt_range_iter", low, high, stride));
+        } else {
+          iteratorExpr = (new CallExpr("_opt_range_iter", low, high));
+        }
+      }
+    }
+  }
+  return iteratorExpr;
+}
+
+
+static void optimizeRangeIteration(Expr*& iteratorExpr) {
+  iteratorExpr = replaceWithRangeIterator(iteratorExpr);
+  if (CallExpr* call = toCallExpr(iteratorExpr)) {
+    if (call->isNamed("_build_tuple")) {
+      for (int i = 1; i <= call->numActuals(); i++) {
+        call->get(i)->replace(replaceWithRangeIterator(call->get(i)->copy()));
+      }
+      //for_actuals(actual, call) {
+      //  optimizeRangeIteration(actual);
+      //}
+    }
+  }
+}
+
+
+
+
+
+
 BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  Expr*      iteratorExpr,
                                  BlockStmt* body,
@@ -46,6 +102,8 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
+
+  optimizeRangeIteration(iteratorExpr);
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
