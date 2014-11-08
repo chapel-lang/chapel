@@ -1,4 +1,4 @@
-var D: domain((int,int));
+var D: domain((int,int), parSafe=false);
 
 var lock: sync bool;
 

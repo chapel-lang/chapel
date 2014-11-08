@@ -1304,7 +1304,7 @@ qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_st
 // string_out must be freed by the caller.
 qioerr qio_file_path_for_fd(fd_t fd, const char** string_out)
 {
-#ifdef __linux__
+#if defined(__linux__) || defined(__CYGWIN__)
   char pathbuf[500];
   qioerr err;
   const char* result;
