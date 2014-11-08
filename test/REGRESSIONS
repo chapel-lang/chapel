@@ -70,7 +70,7 @@ Reviewed 2014-11-01
 ===================
 
 missing chpl_memcpy() prototypes (11/06/14)
-(numa, memleaks)
+(memleaks)
 -------------------------------------------
 [Error compiling C Regexp tests]
 [Error matching compiler output for io/ferguson/ctests/deque_test (compopts: 1)]
@@ -305,6 +305,7 @@ Inherits 'no-local'
 Reviewed 2014-11-01
 ===================
 
+
 ===================
 gasnet-everything
 Inherits 'gasnet*'
@@ -313,7 +314,7 @@ Reviewed 2014-10-20
 
 sporadic execution timeout (once)
 ---------------------------------
-[Error: Timed out executing program studies/sudoku/dinan/sudoku] (11/03/14)
+[Error: Timed out executing program studies/sudoku/dinan/sudoku] (11/03/14, 11/07/14)
 
 
 ===================
@@ -321,10 +322,6 @@ gasnet-fast
 Inherits 'gasnet*'
 Reviewed 2014-11-01
 ===================
-
-behavior change due to change in remote string behavior (2014-10-29 -- kbrady)
-------------------------------------------------------------------------------
-[Error matching .bad file for types/string/sungeun/c_string/multilocale/c_str_on_remote_string]
 
 sporadic failure due to 'slave got an unknown command on coord socket' (infrequent) (09/27/14)
 ------------------------------------------------------------------------------
@@ -395,10 +392,6 @@ Inherits 'gasnet*' and 'fifo'
 Reviewed 2014-10-20
 =============================
 
-recursive failure in AMUDP_SPMDShutdown (11/06/14)
---------------------------------------------------
-[Error matching .bad file for distributions/dm/hplx]
-
 consistent timeouts
 -------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
@@ -426,6 +419,11 @@ sporadic segfault (very infrequent) (10/03/14)
 sporadic glibc "invalid next size" (once)
 -----------------------------------------
 [Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug] (10/31/14)
+
+sporadic "recursive failure in AMUDP_SPMDShutdown"
+--------------------------------------------------
+[Error matching .bad file for distributions/dm/hplx] (11/06/14)
+
 
 
 ===================
@@ -467,21 +465,6 @@ Reviewed 2014-10-24
 Inherits '*prgenv-*'
 Reviewed 2014-11-06
 ====================
-
-sporadic array index out of bounds
-----------------------------------
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)] (11/29/14, last seen 11/07/14)
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)] (11/29/14, last seen 11/07/14)
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (11/29/14, last seen 11/07/14)
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)] (11/29/14, last seen 11/07/14)
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 3)] (11/29/14, last seen 11/07/14)
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)] (11/29/14, last seen 11/07/14)
-[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple] (11/29/14, last seen 11/07/14)
-[Error matching program output for studies/590o/alaska/graph] (11/06/14)
-[Error matching program output for studies/590o/kfm/solver-blc] (11/06/14)
-[Error matching program output for studies/590o/kfm/solver] (11/06/14)
-[Error matching program output for studies/sort/radix] (11/06/14)
-
 
 empty array size problem (1/25/14 -- bradc)
 -------------------------------------------
@@ -570,6 +553,20 @@ sporadic dropping of output
 [Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (10/07/14)
 [Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (10/10/14)
 [Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (10/24/14)
+
+sporadic array index out of bounds
+----------------------------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)] (11/29/14, last seen 11/07/14)
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)] (11/29/14, last seen 11/07/14)
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (11/29/14, last seen 11/07/14)
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)] (11/29/14, last seen 11/07/14)
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 3)] (11/29/14, last seen 11/07/14)
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)] (11/29/14, last seen 11/07/14)
+[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple] (11/29/14, last seen 11/07/14)
+[Error matching program output for studies/590o/alaska/graph] (11/06/14)
+[Error matching program output for studies/590o/kfm/solver-blc] (11/06/14)
+[Error matching program output for studies/590o/kfm/solver] (11/06/14)
+[Error matching program output for studies/sort/radix] (11/06/14)
 
 zippered iterations have non-equal lengths (09/17/14 -- elliot/diten)
 (resolved 10/30/14 -- but did it stick?)
