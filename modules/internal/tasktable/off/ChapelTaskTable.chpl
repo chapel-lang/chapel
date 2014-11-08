@@ -26,11 +26,8 @@ module ChapelTaskTable {
   //
   // Exported task table code.
   //
-  // In general, tasks may have been created before the task table was
-  // initialized.
-  // In that case, operations may be attempted on the task table using
-  // taskIDs that are unknown to it.  That is why we check
-  // for membership on all operations.
+  // In the --no-task-table mode, these are just no-op stubs and a halt()
+  // if someone tries to print the task table.
   //
   ////////////////////////////////////////////////////////////////////////}
   
