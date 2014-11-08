@@ -24,5 +24,8 @@ serial do sum += foo();
 var m2 = memoryUsed();
 
 writeln("Amount of leaked memory after calling foo(): ", m2:int - m1:int);
+// This call should return 8, because the domain for B is now 8 bytes longer
+// than it was previously.  That memory is not actually leaked as it will be
+// handled when B and its domain are cleaned up at the end of this test.
 writeln("sum is ", sum);
 writeln(B);

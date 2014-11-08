@@ -296,49 +296,54 @@ class FnSymbol : public Symbol {
   /// Number of formals before tuple type constructor formals are added.
   int numPreTupleFormals;
 
-  FnSymbol(const char* initName);
-  ~FnSymbol();
+                  FnSymbol(const char* initName);
+                 ~FnSymbol();
            
-  void verify(); 
+  void            verify(); 
   virtual void    accept(AstVisitor* visitor);
+
   DECLARE_SYMBOL_COPY(FnSymbol);
-  FnSymbol* copyInnerCore(SymbolMap* map);
-  FnSymbol* getFnSymbol(void);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+
+  FnSymbol*       copyInnerCore(SymbolMap* map);
+  FnSymbol*       getFnSymbol(void);
+  void            replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   
-  FnSymbol* partialCopy(SymbolMap* map);
-  void finalizeCopy(void);
+  FnSymbol*       partialCopy(SymbolMap* map);
+  void            finalizeCopy();
   
   // Returns an LLVM type or a C-cast expression
-  GenRet codegenFunctionType(bool forHeader);
-  GenRet codegenCast(GenRet fnPtr);
+  GenRet          codegenFunctionType(bool forHeader);
+  GenRet          codegenCast(GenRet fnPtr);
 
-  void codegenHeaderC();
-  void codegenPrototype();
-  void codegenDef();
-  GenRet codegen();
+  GenRet          codegen();
+  void            codegenHeaderC();
+  void            codegenPrototype();
+  void            codegenDef();
 
-  void printDef(FILE* outfile);
+  void            printDef(FILE* outfile);
 
-  void insertAtHead(Expr* ast);
-  void insertAtTail(Expr* ast);
-  void insertAtHead(const char* format, ...);
-  void insertAtTail(const char* format, ...);
+  void            insertAtHead(Expr* ast);
+  void            insertAtHead(const char* format, ...);
 
-  void insertBeforeReturn(Expr* ast);
-  void insertBeforeReturnAfterLabel(Expr* ast);
-  void insertBeforeDownEndCount(Expr* ast);
+  void            insertAtTail(Expr* ast);
+  void            insertAtTail(const char* format, ...);
 
-  void insertFormalAtHead(BaseAST* ast);
-  void insertFormalAtTail(BaseAST* ast);
+  void            insertBeforeReturn(Expr* ast);
+  void            insertBeforeReturnAfterLabel(Expr* ast);
+  void            insertBeforeDownEndCount(Expr* ast);
 
-  Symbol* getReturnSymbol();
+  void            insertFormalAtHead(BaseAST* ast);
+  void            insertFormalAtTail(BaseAST* ast);
 
-  int numFormals();
-  ArgSymbol* getFormal(int i); // return ith formal
+  Symbol*         getReturnSymbol();
 
-  bool tag_generic();
-  bool isResolved() { return this->hasFlag(FLAG_RESOLVED); }
+  int             numFormals()                                 const;
+  ArgSymbol*      getFormal(int i); // return ith formal
+
+  void            collapseBlocks();
+
+  bool            tag_generic();
+  bool            isResolved()                                 const;
 };
 
 /******************************** | *********************************

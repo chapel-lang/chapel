@@ -36,7 +36,7 @@ class Table {
 
   proc this(d : uint) ref {
     const slot :int = (d & (tableSize-1)):int;
-    refvar head = table[slot];
+    ref head = table[slot];
     var n = head;
     if n == nil {
       n = new Node(d, 0, nil);

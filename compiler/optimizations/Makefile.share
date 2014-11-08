@@ -17,7 +17,6 @@
 
 OPTIMIZATIONS_SRCS = \
 	bulkCopyRecords.cpp \
-	collapseBlocks.cpp \
 	complex2record.cpp \
 	copyPropagation.cpp \
 	deadCodeElimination.cpp \
