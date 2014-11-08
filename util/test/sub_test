@@ -797,7 +797,6 @@ else:
 
 for testname in testsrc:
     sys.stdout.flush()
-    exectimeout = False
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
@@ -1280,9 +1279,9 @@ for testname in testsrc:
                 datFileName = localdir.replace('/', '~~') + '~~' + test_filename + compoptsstring
 
                 # computePerfStats for the current test
-                sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)))
+                sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'))
                 sys.stdout.flush()
-                p = subprocess.Popen([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)], stdout=subprocess.PIPE)
+                p = subprocess.Popen([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'], stdout=subprocess.PIPE)
                 compkeysOutput = p.communicate()[0]
                 datFiles = [tempDatFilesDir+'/'+datFileName+'.dat',  tempDatFilesDir+'/'+datFileName+'.error']
                 status = p.returncode
