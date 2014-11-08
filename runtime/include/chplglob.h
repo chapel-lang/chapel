@@ -26,6 +26,8 @@
 // from qio runtime
 #include "sys.h"
 
+typedef int (*glob_err_fn_t)(const char*, int);
+
 static inline
 size_t chpl_glob_num(const glob_t glb) {
   return glb.gl_pathc;
