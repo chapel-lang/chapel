@@ -286,6 +286,8 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
         }
       }
     }
+    if (types.n == 0 || maxVMT == 0)
+      fprintf(hdrfile, "(chpl_fn_p)0");
     fprintf(hdrfile, "\n};\n");
   } else {
 #ifdef HAVE_LLVM
