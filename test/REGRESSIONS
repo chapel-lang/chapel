@@ -66,20 +66,8 @@
 
 ===================
 general
-Reviewed 2014-11-01
+Reviewed 2014-11-07
 ===================
-
-missing chpl_memcpy() prototypes (11/06/14)
-(memleaks)
--------------------------------------------
-[Error compiling C Regexp tests]
-[Error matching compiler output for io/ferguson/ctests/deque_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qbuffer_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_bits_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_mark_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_memfile_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_test (compopts: 1)]
 
 sporadic failure (2-3x a month -- vass)
 ---------------------------------------
