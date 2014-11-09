@@ -4,7 +4,7 @@ use SysBasic;
 extern type glob_t;
 extern type wordexp_t;
 
-extern proc chpl_glob(pattern:c_string, flags:c_int, ref ret_glob:glob_t):c_int;
+extern proc chpl_study_glob(pattern:c_string, flags:c_int, ref ret_glob:glob_t):c_int;
 extern proc chpl_wordexp(pattern:c_string, flags:c_int, ref ret_glob:wordexp_t):c_int;
 
 extern proc glob_num(x:glob_t): size_t;
@@ -90,7 +90,7 @@ iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, directory:st
   var tx  : c_string;
   var glb : glob_t;
 
-  err = chpl_glob((directory + pattern).c_str(), flags:c_int, glb);
+  err = chpl_study_glob((directory + pattern).c_str(), flags:c_int, glb);
 
   for i in 0..glob_num(glb) - 1 {
     tx = glob_index(glb, i);
