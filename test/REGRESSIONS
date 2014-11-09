@@ -70,7 +70,8 @@ Reviewed 2014-11-09
 ===================
 
 redefinition of chpl_glob() (11/09/14 -- bradc)
-(verify, linux64, baseline, fast, fifo, darwin, valgrind)
+(verify, linux64, baseline, fast, fifo, darwin, valgrind, no-local, xe-wb,
+ gasnet.fifo, numa)
 ---------------------------------------------------------
 [Error matching compiler output for studies/glob/test_glob (compopts: 1)]
 
@@ -261,6 +262,10 @@ numa
 Inherits 'general'
 Reviewed 2014-11-08
 ===================
+
+compiler-based munging of identifiers shifted (2014-11-09 -- bradc)
+-------------------------------------------------------------------
+[Error matching .bad file for classes/bradc/arrayInClass/genericArrayInClass-otharrs-inline-iterators (compopts: 1)]
 
 
 ===================
@@ -605,10 +610,6 @@ x?-wb.gnu
 Inherits 'x?-wb*' and 'linux64'
 Reviewed 2014-11-05
 ================================
-
-gcc warning about assuming strict overflow
-------------------------------------------
-[Error matching .bad file for puzzles/hilde/overflow (compopts: 1)]
 
 
 =================================
