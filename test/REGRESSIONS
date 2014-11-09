@@ -69,6 +69,11 @@ general
 Reviewed 2014-11-07
 ===================
 
+redefinition of chpl_glob() (11/09/14 -- bradc)
+(verify, linux64, baseline, fast, fifo, darwin
+-----------------------------------------------
+[Error matching compiler output for studies/glob/test_glob (compopts: 1)]
+
 sporadic failure (2-3x a month -- vass)
 ---------------------------------------
 [Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
@@ -132,7 +137,7 @@ consistent failure due to insane memory usage (should get better with strings)
 ======================
 perf.chap03.playground
 Inherits 'perf.chap03'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ======================
 
 
@@ -176,7 +181,7 @@ timeouts (10/17/14 -- same date it moved to chap16)
 sporadic timeout (started 10/17/14 -- same date it moved to chap16)
 -------------------------------------------------------------------
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_iterator_7] (10/17/14, 10/28/14)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (10/21/14, 10/23/14, 11/04/14)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (10/21/14, 10/23/14, 11/04/14, 11/08/14)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4] (10/17/14, 10/28/14)
 
 sporadic segfault (infrequent)
@@ -270,17 +275,14 @@ reviewed 2014-11-08
 ===================
 numa
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
-amount of leaked memory differs for numa testing (11/06/14)
------------------------------------------------------------
-[Error matching program output for memory/figueroa/LeakedMemory6 (compopts: 1)]
 
 ===================
 no-local
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 
@@ -305,7 +307,7 @@ sporadic execution timeout (once)
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2014-11-01
+Reviewed 2014-11-08
 ===================
 
 sporadic failure due to 'slave got an unknown command on coord socket' (infrequent) (09/27/14)
@@ -335,14 +337,14 @@ fairly consistent timeouts due to qthreads oversubscription (09/15/14)
 
 sporadic timeout (frequent)
 ---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/hpl] (...11/07/14)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/hpl] (...11/07/14, 01/09/14)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans] (..., 11/03/14, 11/06/14, 11/09/14)
 
 sporadic timeout (infrequent)
 -----------------------------
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)] (11/04/14)
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (10/20/14, 10/30/14)
 [Error: Timed out executing program release/examples/primers/distributions] (10/19/14)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans] (..., 11/03/14, 11/06/14)
 
 
 ===============================
@@ -391,7 +393,7 @@ sporadic timeouts (frequent)
 
 sporadic timeouts (infrequent)
 ------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (10/23/14, 10/28/14, 10/31/14, 11/02/14, 11/04/14)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (10/23/14, 10/28/14, 10/31/14, 11/02/14, 11/04/14, 11/08/14)
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest] (10/21/14)
 
 sporadic segfault (very infrequent) (10/03/14)
@@ -694,35 +696,22 @@ Reviewed 2014-11-08
 ===================
 cygwin
 Inherits 'linux64'
-Reviewed 2014-10-31
+Reviewed 2014-11-08
 ===================
-
-gcc warning about assuming strict overflow
-------------------------------------------
-[Error matching compiler output for studies/shootout/mandelbrot/bugs/mandelbrot-error]
 
 check_channel assertion failure
 -------------------------------
 [Error matching C regexp test ./regexp_channel_test Regexp Channels Test]
 
+internal error (2014-11-08 -- bradc)
+------------------------------------
+[Error matching compiler output for studies/filerator/findfiles]
+[Error matching compiler output for studies/filerator/walk]
+
 CHPL_RT_CALL_STACK_SIZE too big issue
 -------------------------------------
 [Error matching program output for execflags/bradc/callStackSize]
 [Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
-
-filename 'unknown' causes output mismatch
------------------------------------------
-[Error matching program output for functions/iterators/tzakian/open_inside_file_iter]
-[Error matching program output for io/ferguson/asserteof]
-[Error matching program output for trivial/shannon/readWriteBool]
-[Error matching program output for trivial/shannon/readWriteComplex]
-[Error matching program output for trivial/shannon/readWriteEnum]
-[Error matching program output for types/file/freadComplex]
-[Error matching program output for types/file/freadIntFailed]
-[Error matching program output for types/file/freadNoFloat]
-[Error matching program output for types/file/freadNoInt]
-[Error matching program output for types/file/freadNotABoolean]
-[Error matching program output for types/file/fwriteIntFailed]
 
 QIO strcmp(got, expect) assertion error
 ---------------------------------------
@@ -736,26 +725,9 @@ error matching output (apparent whitespace difference)
 ------------------------------------------------------
 [Error matching program output for io/ferguson/utf8/widecols.chpl]
 
-invalid argument in chown (since test added -- fszouza)
--------------------------------------------------------
-[Error matching program output for io/fsouza/chown/permission_error]
-
-numerical roundoff issues
--------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)]
-[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy
-
-consistent timeouts
--------------------
-[Error: Timed out executing program studies/lulesh/sungeun/lulesh (compopts: 1)]
-
 sporadic timeouts (frequent)
 ----------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (..., 2014-11-08)
 
 sporadic pthread_cond_init() failed (once)
 ------------------------------------------
@@ -779,14 +751,8 @@ sporadic data read copy failed
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-11-01
+Reviewed 2014-11-09
 ===================
-
-problem due to a made up C type (11/08/14)
-------------------------------------------
-[Error matching compiler output for studies/filerator/globberator]
-[Error matching compiler output for studies/filerator/testboth]
-[Error matching compiler output for studies/filerator/testemptyglob]
 
 ??? (wrong output)
 ------------------
