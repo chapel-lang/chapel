@@ -268,3 +268,9 @@
 
   // symbols in glob.h
   glob
+
+  // symbols in math.h
+  isinf
+  isfinite
+  NAN
+  INFINITY
