@@ -11,6 +11,7 @@ config const debug = false;
 config const perfTest = false;
 config const reportFrequency = 1025;
 config const displayLIZ = false;
+config const serialForall = true;
 
 config const span = 5;
 
@@ -43,7 +44,6 @@ proc main() {
 
 	writeln("[[ LSMS ]]");
 	writeln("Problem size = [", span_x, ", ", span_y, ", ", span_z, "]");
-	assert(dataParTasksPerLocale == 1);
 
 	//parameters for each atom 
 	var atoms: [GridDist] AtomMatrix;
@@ -57,6 +57,7 @@ proc main() {
 	}
 
 	//compute LIZ and caches
+        serial serialForall do // TODO: enable 'forall' in parallel
 	forall (a, liz) in zip(GridDist, lizDoms) {
 		for ac in GridDom do if a != ac {
 			local {
