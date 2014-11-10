@@ -205,7 +205,7 @@
 %type <pdefexpr> query_expr opt_query_expr
 
 %type <pcallexpr> opt_inherit expr_ls assoc_expr_ls tuple_expr_ls
-%type <pcallexpr> opt_actual_ls actual_ls ref_var_ls
+%type <pcallexpr> opt_actual_ls actual_ls
 %type <pcallexpr> opt_task_intent_ls task_intent_ls task_intent_clause
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
