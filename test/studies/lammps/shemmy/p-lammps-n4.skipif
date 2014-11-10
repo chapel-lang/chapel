@@ -1,3 +1,0 @@
-# This test differs from p-lammps-n1.chpl
-# only in numlocales. Skip on single locale.
-CHPL_COMM==none
