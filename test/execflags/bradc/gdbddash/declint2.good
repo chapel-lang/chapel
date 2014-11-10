@@ -1,1 +1,1 @@
-Breakpoint 1, gdbShouldBreakHere () at gdb.c:27
+declint2.chpl:7: error: halt reached - array index out of bounds: (0)

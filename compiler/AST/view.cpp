@@ -70,24 +70,43 @@ list_sym(Symbol* sym, bool type = true) {
 }
 
 
+static const char*
+block_explanation(BaseAST* ast, BaseAST* parentAst) {
+  if (ArgSymbol* parentArg = toArgSymbol(parentAst)) {
+    if (ast == parentArg->typeExpr)
+      return "  typeExpr=";
+    if (ast == parentArg->defaultExpr)
+      return "  defaultExpr=";
+    if (ast == parentArg->variableExpr)
+      return "  variableExpr=";
+  }
+  return "";
+}
+
 static bool
-list_line(Expr* expr) {
+list_line(Expr* expr, BaseAST* parentAst) {
   if (expr->isStmt())
-    return true;
-  if (CondStmt* cond = toCondStmt(expr->parentExpr)) {
+    return !*block_explanation(expr, parentAst);
+  if (CondStmt* cond = toCondStmt(parentAst)) {
     if (cond->condExpr == expr)
       return false;
   }
-  if (!expr->parentExpr || expr->parentExpr->isStmt())
+  if (Expr* pExpr = toExpr(parentAst))
+   if (pExpr->isStmt())
+    return true;
+  if (isSymbol(parentAst))
     return true;
   return false;
 }
 
-
 static void
-list_ast(BaseAST* ast, int indent = 0) {
+list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
+  bool do_list_line = false;
+  bool is_C_loop = false;
+  const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
-    if (list_line(expr)) {
+    do_list_line = !parentAst || list_line(expr, parentAst);
+    if (do_list_line) {
       printf("%-7d ", expr->id);
       for (int i = 0; i < indent; i++)
         printf(" ");
@@ -96,16 +115,19 @@ list_ast(BaseAST* ast, int indent = 0) {
       printf("goto ");
       if (SymExpr* label = toSymExpr(e->label)) {
         if (label->var != gNil) {
-          list_ast(e->label, indent+1);
+          list_ast(e->label, ast, indent+1);
         }
       } else {
-        list_ast(e->label, indent+1);
+        list_ast(e->label, ast, indent+1);
       }
     } else if (toBlockStmt(ast)) {
-      printf("{\n");
+      block_explain = block_explanation(ast, parentAst);
+      printf("%s{\n", block_explain);
     } else if (toCondStmt(ast)) {
       printf("if ");
     } else if (CallExpr* e = toCallExpr(expr)) {
+      if (e->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
+          is_C_loop = true;
       if (e->primitive)
         printf("%s( ", e->primitive->name);
       else
@@ -123,47 +145,64 @@ list_ast(BaseAST* ast, int indent = 0) {
 
   if (Symbol* sym = toSymbol(ast))
     list_sym(sym);
-  if (toFnSymbol(ast) || toModuleSymbol(ast)) {
+
+  bool early_newline = toFnSymbol(ast) || toModuleSymbol(ast); 
+  if (early_newline || is_C_loop)
     printf("\n");
-  }
 
   int new_indent = indent;
 
-  if (Expr* expr = toExpr(ast))
-    if (list_line(expr))
+  if (isExpr(ast))
+    if (do_list_line)
       new_indent = indent+2;
 
-  AST_CHILDREN_CALL(ast, list_ast, new_indent);
+  AST_CHILDREN_CALL(ast, list_ast, ast, new_indent);
 
   if (Expr* expr = toExpr(ast)) {
+    CallExpr* parent_C_loop = NULL;
+    if (CallExpr* call = toCallExpr(parentAst))
+      if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
+        parent_C_loop = call;
     if (toCallExpr(expr)) {
       printf(") ");
     }
     if (toBlockStmt(ast)) {
       printf("%-7d ", expr->id);
+      if (*block_explain)
+        indent -= 2;
       for (int i = 0; i < indent; i++)
         printf(" ");
-      printf("}\n");
-    } else if (CondStmt* cond = toCondStmt(expr->parentExpr)) {
+      if ((parent_C_loop && parent_C_loop->get(3) == expr) || *block_explain)
+        printf("} ");
+      else
+        printf("}\n");
+    } else if (CondStmt* cond = toCondStmt(parentAst)) {
       if (cond->condExpr == expr)
         printf("\n");
-    } else if (!toCondStmt(expr) && list_line(expr)) {
+    } else if (!toCondStmt(expr) && do_list_line) {
       DefExpr* def = toDefExpr(expr);
-      if (!(def && (toFnSymbol(def->sym) ||
-                    toModuleSymbol(def->sym))))
-        printf("\n");
+      if (!(def && early_newline))
+        if (!parent_C_loop)
+          printf("\n");
     }
   }
 }
 
 
+// If I invoke nprint_view et al. in aid(1) by accident,
+// the debugger prints the entire program, which is too much.
+// This safeguards against that.
+// As of this writing, id >= 6 is OK; we use 9 to be slightly conservative.
+static bool aidIgnore(int id) { return id < 9; }
+
 static const char*
 aidError(const char* callerMsg, int id) {
   const int tmpBuffSize = 256;
   static char tmpBuff[tmpBuffSize];
-  snprintf(tmpBuff, tmpBuffSize, "<%s%s"
-           "the ID %d does not correspond to an AST node>",
-           callerMsg ? callerMsg : "", callerMsg ? ": " : "", id);
+  snprintf(tmpBuff, tmpBuffSize, "<%s%s""the ID %d %s>",
+           callerMsg ? callerMsg : "", callerMsg ? ": " : "", id,
+           aidIgnore(id) ? " is small, use aid09(id) to examine it" :
+             "does not correspond to an AST node");
   return tmpBuff;
 }
 
@@ -361,7 +400,8 @@ void nprint_view_noline(BaseAST* ast) {
 }
 
 
-BaseAST* aid(int id) {
+// This version does not exlude any id.
+BaseAST* aid09(int id) {
   #define match_id(type)                        \
     forv_Vec(type, a, g##type##s) {             \
       if (a->id == id)                          \
@@ -369,6 +409,15 @@ BaseAST* aid(int id) {
     }
   foreach_ast(match_id);
   return NULL;
+}
+
+BaseAST* aid(int id) {
+  if (aidIgnore(id)) {
+    printAidError("aid", id);
+    return NULL;
+  } else {
+    return aid09(id);
+  }
 }
 
 

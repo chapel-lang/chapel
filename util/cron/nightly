@@ -1,5 +1,13 @@
 #!/usr/bin/env perl
 
+# Developers: To test changes with nightly against a clean repo, use this command:
+#
+# cd /tmp && \
+#   git clone $CHPL_HOME/.git test-chapel-nightly-debug && \
+#   cd test-chapel-nightly-debug && \
+#   source util/setchplenv.bash && \
+#   ./util/cron/nightly -debug -hellos
+
 use File::Basename;
 use File::Path qw(mkpath);
 use Cwd;

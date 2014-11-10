@@ -1,0 +1,86 @@
+Vector norm (baseline)
+	R1D:
+	1-norm: 186.993
+	2-norm: 10.6421
+	infinity norm: 0.983749
+	frobenius norm: 10.6421
+	R2D:
+	1-norm: 50.9737
+	2-Norm not yet implemented for rank=2
+	infinity norm: 48.0489
+	frobenius norm: 23.3091
+	R2D32:
+	1-norm: 21.3322
+	2-Norm not yet implemented for rank=2
+	infinity norm: 24.698
+	frobenius norm: 11.0357
+Vector norm
+	R1D:
+	1-norm OK
+	2-norm OK
+	infinity norm OK
+	frobenius norm OK
+	R2D:
+	1-norm OK
+	2-Norm not yet implemented for rank=2
+	infinity norm OK
+	frobenius norm OK
+	R2D32:
+	1-norm OK
+	2-Norm not yet implemented for rank=2
+	infinity norm OK
+	frobenius norm OK
+Vector norm aliased arrays
+	R1D:
+	1-norm OK
+	2-norm OK
+	infinity norm OK
+	frobenius norm OK
+	R2D:
+	1-norm OK
+	2-Norm not yet implemented for rank=2
+	infinity norm OK
+	frobenius norm OK
+	R2D32:
+	1-norm OK
+	2-Norm not yet implemented for rank=2
+	infinity norm OK
+	frobenius norm OK
+Vector norm reindexed arrays
+	R1D:
+	1-norm OK
+	2-norm OK
+	infinity norm OK
+	frobenius norm OK
+	R2D:
+	1-norm OK
+	2-Norm not yet implemented for rank=2
+	infinity norm OK
+	frobenius norm OK
+	R2D32:
+	1-norm OK
+	2-Norm not yet implemented for rank=2
+	infinity norm OK
+	frobenius norm OK
+Vector norm rank changed arrays (baseline)
+	rcR1D:
+	1-norm: 35.2777
+	2-norm: 4.92504
+	infinity norm: 0.978383
+	frobenius norm: 4.92504
+	rcR2D:
+	1-norm: 10.1396
+	2-Norm not yet implemented for rank=2
+	infinity norm: 13.2824
+	frobenius norm: 5.21086
+Vector norm rank changed arrays
+	rcR1D:
+	1-norm OK
+	2-norm OK
+	infinity norm OK
+	frobenius norm OK
+	rcR2D:
+	1-norm OK
+	2-Norm not yet implemented for rank=2
+	infinity norm OK
+	frobenius norm OK

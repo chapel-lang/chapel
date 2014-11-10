@@ -19,7 +19,6 @@
 
 #include "passes.h"
 #include "resolveIntents.h"
-#include "view.h"
 
 bool intentsResolved = false;
 

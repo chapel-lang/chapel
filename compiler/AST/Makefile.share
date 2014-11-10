@@ -35,8 +35,12 @@ AST_SRCS = \
         AstVisitor.cpp       \
         AstDump.cpp          \
         AstDumpToHtml.cpp    \
-        AstDumpToNode.cpp
-
+        AstDumpToNode.cpp    \
+                             \
+        WhileStmt.cpp        \
+        WhileDoStmt.cpp      \
+        DoWhileStmt.cpp      \
+        ForLoop.cpp
 
 SVN_SRCS = $(AST_SRCS)
 SRCS = $(SVN_SRCS)

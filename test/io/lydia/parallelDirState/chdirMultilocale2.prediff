@@ -1,0 +1,27 @@
+#!/bin/bash
+
+countThisDir=0
+countOtherDir=0
+thisDirString="${PWD}"
+otherDirString="${PWD}/foo/bar"
+
+passed="true"
+while read line; do
+    if [ $line = "${thisDirString}" ]; then
+        countThisDir=$((countThisDir + 1))
+    elif [ $line = "${otherDirString}" ]; then
+        countOtherDir=$((countOtherDir + 1))
+    else
+        passed="false"
+        echo "found neither!"
+    fi
+done < $2
+
+if [ $passed = "false" ] || [ $countThisDir != "3" ] ||
+    [ $countOtherDir != "1" ]; then
+    echo "Found $countThisDir occurrences of the starting directory"
+    echo "Found $countOtherDir occurrences of the other directory"
+    echo failed > $2
+else
+    echo ok > $2
+fi

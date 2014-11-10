@@ -1,1 +1,1 @@
-record_from_string.chpl:1: error: type mismatch in assignment from string to Point
+record_from_string.chpl:11: error: type mismatch in assignment from string to Point

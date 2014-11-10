@@ -512,24 +512,26 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
   // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
-      if (DefExpr* def = toDefExpr(ast))
-        if (!isArgSymbol(def->sym))
-          zip4body->insertAtTail(def->copy(&map));
-    }
+    if (DefExpr* def = toDefExpr(ast))
+      if (!isArgSymbol(def->sym))
+        zip4body->insertAtTail(def->copy(&map));
+  }
 
   // Copy all iterator body expressions after singleLoop that are not
   // declarations
   bool flag = true;
+
   for_alist(expr, ii->iterator->body->body) {
     // Skip everything before the singleLoop
     if (flag) {
       if (expr == singleLoop)
         flag = false;
-      continue;
-    }
-    if (!isDefExpr(expr) && expr->next)
+
+    } else if (!isDefExpr(expr)) {
       zip4body->insertAtTail(expr->copy(&map));
+    }
   }
+
   zip4body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip4->body->replace(zip4body);

@@ -2,5 +2,6 @@
 
 # Set virtual memory limit
 ulimit -v 400000
+export CHPL_RT_MAX_HEAP_SIZE=4M
 
 ../../../../util/test/sub_test $1
