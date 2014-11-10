@@ -1,1 +1,1 @@
---reportFrequency=128 --debug=true --dataParTasksPerLocale=1
+--debug=true --reportFrequency=128
