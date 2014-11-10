@@ -182,9 +182,11 @@ static bool isClassMethodCall(CallExpr* call) {
 
 // insert nil checks primitives in front of most member accesses
 //
-// The Chapel specification indicates that it is acceptable to
-// invoke the destructor on NIL, so we add special case code for
-// use of the destructor
+// Exceptions:
+//   1) The Chapel specification indicates that it is acceptable to
+//      invoke the destructor on NIL, so we avoid doing so when
+//      handling a call to a destructor.
+//
 static void insertNilChecks() {
   forv_Vec(CallExpr, call, gCallExprs) {
     // A member access is one of these primitives or a method call.
@@ -201,6 +203,7 @@ static void insertNilChecks() {
       if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
         FnSymbol* fn = call->isResolved();
 
+        // Avoid inserting a nil-check if this is a call to a destrutor
         if (fn == NULL || fn->hasFlag(FLAG_DESTRUCTOR) == false) {
           Expr* stmt = call->getStmtExpr();
 
