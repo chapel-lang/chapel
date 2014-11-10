@@ -301,7 +301,7 @@ o nbody* (memleaks): bradc
   Why?  Do we still care about these tests?
 
 
-~ studies/lulesh/sungeun/lulesh (valgrind, gasnet-fast, cygwin): bradc
+* studies/lulesh/sungeun/lulesh (valgrind, gasnet-fast, cygwin): bradc
 
   Do we still need to be testing this version?  What value does it
   have other than historical?  Isn't it race-y still?
@@ -527,7 +527,7 @@ o conditional jump in re2 (valgrind): anyone
   - regexp/ferguson/rechan
 
 
-o invalid read in gmp (valgrind): anyone
+* invalid read in gmp (valgrind): anyone
 
   The following test gets an "invalid read" -- is there something we
   can do about this?
@@ -584,7 +584,7 @@ o invalid read/write of size 8 in ftoa() (valgrind): hilde
   - types/atomic/sungeun/atomic_vars
 
 
-~ Valgrind timeouts (valgrind): anyone
+* Valgrind timeouts (valgrind): anyone
 
   The following tests time out very consistently under valgrind.  By
   nature, valgrind testing takes a long time so maybe this is why.
@@ -606,14 +606,14 @@ o invalid read/write of size 8 in ftoa() (valgrind): hilde
   - release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4) (sporadically)
 
 
-o comm count mismatches (gasnet.numa): elliot/diten/gbt
+* comm count mismatches (gasnet.numa): elliot/diten/gbt
 
   The following tests have gotten comm count mismatches (since we
   started numa testing, I believe).  What can we do to make these go
   away?
 
 
-o overflow issues (cygwin, x?-wb.gnu): anyone
+* overflow issues (cygwin, x?-wb.gnu): anyone
 
   Newer gccs seem to warn about these tests -- is the Chapel
   implementation relying on overflow, or just these tests?  What
@@ -635,7 +635,7 @@ o types/enum/ferguson/enum_mintype_test (prgenv-cray): anyone
   What should we do about this?
 
 
-o expressions/bradc/uminusVsTimesPrec (prgenv-cray): anyone/bradc
+* expressions/bradc/uminusVsTimesPrec (prgenv-cray): anyone/bradc
 
   This test gets the wrong result due to its reliance on wraparound in
   signed integers within the test itself (which Chapel sholdn't
@@ -675,7 +675,7 @@ o zippered iterations have non-equal lengths (prgenv-cray): elliot
   this is in Elliot's court.
 
 
-o glob tests have a portability issue (prgenv-cray): bradc
+* glob tests have a portability issue (prgenv-cray): bradc
 
   This has been since they've been checked in:
 
@@ -713,7 +713,7 @@ o compilation timeouts (prgenv-cray): anyone
   - users/franzf/v1/chpl/main (compopts: 1)
 
 
-o long identifiers names are a problem (pgi): anyone
+* long identifiers names are a problem (pgi): anyone
 
   The following test fails due to having too-long identifiers:
   - distributions/dm/t5a
@@ -757,7 +757,7 @@ o CHPL_RT_CALL_STACK_SIZE too big (cygwin): anyone
   - parallel/cobegin/gbt/cobegin-stacksize
 
 
-o Tests print 'output' as the filename? (cygwin): anyone
+* Tests print 'output' as the filename? (cygwin): anyone
 
   Michael seemed to think there was nothing to be done for these.
   Is he right?  If so, should we suppress?
@@ -789,7 +789,7 @@ o io/ferguson/utf8/widecols.chpl (cygwin): anyone
   for some reason.
 
 
-o io/fsouza/chown/permission_error (cygwin): anyone
+* io/fsouza/chown/permission_error (cygwin): anyone
 
   This test has had an output mismatch since added.
 
@@ -799,7 +799,7 @@ o io/sungeun/ioerror (execopts: 5) (cygwin): anyone
   This test gets the wrong result.
 
 
-o madness numerical roundoff issues (cygwin): anyone
+* madness numerical roundoff issues (cygwin): anyone
 
   These madness tests seem to get roundoff issues on cygwin (and only
   for some reasoncygwin?  really?)

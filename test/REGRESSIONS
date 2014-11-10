@@ -70,8 +70,8 @@ Reviewed 2014-11-09
 ===================
 
 redefinition of chpl_glob() (11/09/14 -- bradc)
-(xe-wb*, gasnet.fifo, numa, memleaks, cygwin)
----------------------------------------------
+(xe-wb*, gasnet.fifo, memleaks, cygwin)
+-----------------------------------------------
 [Error matching compiler output for studies/glob/test_glob (compopts: 1)]
 
 sporadic failure (2-3x a month -- vass)
@@ -254,12 +254,8 @@ reviewed 2014-11-09
 ===================
 numa
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-10
 ===================
-
-compiler-based munging of identifiers shifted (2014-11-09 -- bradc)
--------------------------------------------------------------------
-[Error matching .bad file for classes/bradc/arrayInClass/genericArrayInClass-otharrs-inline-iterators (compopts: 1)]
 
 
 ===================
