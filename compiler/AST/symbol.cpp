@@ -32,6 +32,7 @@
 #include "intlimits.h"
 #include "iterator.h"
 #include "misc.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -2080,7 +2081,7 @@ FnSymbol::insertFormalAtTail(BaseAST* ast) {
 
 
 int
-FnSymbol::numFormals() {
+FnSymbol::numFormals() const {
   return formals.length;
 }
 
@@ -2090,6 +2091,10 @@ FnSymbol::getFormal(int i) {
   return toArgSymbol(toDefExpr(formals.get(i))->sym);
 }
 
+void
+FnSymbol::collapseBlocks() {
+  body->collapseBlocks();
+}
 
 //
 // returns 1 if generic
@@ -2141,6 +2146,10 @@ bool FnSymbol::tag_generic() {
     return true;
   }
   return false;
+}
+
+bool FnSymbol::isResolved() const {
+  return hasFlag(FLAG_RESOLVED); 
 }
 
 void FnSymbol::accept(AstVisitor* visitor) {

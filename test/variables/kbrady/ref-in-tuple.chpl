@@ -1,5 +1,5 @@
 var x = 1;
-refvar y = x;
+ref y = x;
 var t = (x, y);
 
 writeln(t);

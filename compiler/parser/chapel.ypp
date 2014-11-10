@@ -97,7 +97,6 @@
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TWITH TYIELD TZIP
-%token TREFVAR
 
 //
 // operators and punctuation (alphabetical)
@@ -812,23 +811,38 @@ opt_init_type:
 var_decl_stmt:
   opt_config TPARAM var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_PARAM, FLAG_UNKNOWN, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      flags.insert(FLAG_PARAM);
+      $$ = buildVarDecls($3, flags, @1.comment);
     }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_CONST, FLAG_UNKNOWN, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      flags.insert(FLAG_CONST);
+      $$ = buildVarDecls($3, flags, @1.comment);
     }
-| opt_config TREFVAR var_decl_stmt_inner_ls TSEMI
+| opt_config TREF var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN, FLAG_REF_VAR, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      flags.insert(FLAG_REF_VAR);
+      $$ = buildVarDecls($3, flags, @1.comment);
     }
-| opt_config TCONST TREFVAR var_decl_stmt_inner_ls TSEMI
+| opt_config TCONST TREF var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($4, $1, FLAG_CONST, FLAG_REF_VAR, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      flags.insert(FLAG_CONST);
+      flags.insert(FLAG_REF_VAR);
+      $$ = buildVarDecls($4, flags, @1.comment);
     }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN, FLAG_UNKNOWN, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      $$ = buildVarDecls($3, flags, @1.comment);
     }
 ;
 
@@ -1124,12 +1138,6 @@ stmt_level_expr:
 
 opt_task_intent_ls:
                                 { $$ = NULL; }
-| TREF TLP ref_var_ls TRP       {
-    $$ = $3;
-    USR_WARN($3, "In the next release, ref(x, y, ...) will no longer be valid. "
-                 "You will need to convert any task intents to the new form "
-                 "of `with (ref x, ref y, ...)`");
-                                }
 | task_intent_clause
 ;
 
@@ -1151,11 +1159,6 @@ intent_expr:
         $$ = $2;
       }
     }
-;
-
-ref_var_ls:
-  ident_expr                    { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
-| ref_var_ls TCOMMA ident_expr  { $1->insertAtTail($3); }
 ;
 
 io_expr:

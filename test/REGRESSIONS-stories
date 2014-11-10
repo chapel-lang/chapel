@@ -107,7 +107,7 @@ Guidance for REGRESSIONS week
 high priority (sources of noise)
 --------------------------------
 
-o gasnet oversubscription timeouts (gasnet*): elliot
+~ gasnet oversubscription timeouts (gasnet*): elliot
 
   We get regular and/or sporadic timeouts on gasnet.linux32,
   gasnet.numa, gasnet.fifo, gasnet.llvm, dist-block, dist-cyclic,
@@ -116,7 +116,7 @@ o gasnet oversubscription timeouts (gasnet*): elliot
   these configurations and not gasnet-fast/gasnet-everything?
 
 
-o sporadic segfaults/glibc issues (xe-wb.*): anyone
+* sporadic segfaults/glibc issues (xe-wb.*): anyone
 
   The following tests fail sporadically, but very frequently, either
   with a segfault or a glibc assertion error in our whitebox testing
@@ -201,7 +201,7 @@ o sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
   - studies/sudoku/dinan/sudoku
 
 
-o sporadic cyclic compilation timeouts (cyclic): anyone/diten
+* sporadic cyclic compilation timeouts (cyclic): anyone/diten
 
   Cyclic compilations time out sporadically and frequently.  Is this
   for some reasonbecause David's machine is too slow/busy?  What can
@@ -226,7 +226,7 @@ o types/string/StringImpl/memLeaks/coforall (gasnet.fifo, gasnet*?): anyone
 high priority (failing in one or more configurations)
 -----------------------------------------------------
 
-o static_dynamic tests (darwin, cygwin, prgenv-*, x?-wb.intel): anyone
+* static_dynamic tests (darwin, cygwin, prgenv-*, x?-wb.intel): anyone
 
   These tests fail in a number of configurations and variations.  All
   variations fail on darwin and cygwin.  compopts 6 fails in most any
@@ -236,7 +236,7 @@ o static_dynamic tests (darwin, cygwin, prgenv-*, x?-wb.intel): anyone
   in these cases?
 
 
-o test_10k_begins (darwin, memleaks on chap16): anyone
+~ test_10k_begins (darwin, memleaks on chap16): anyone
 
   This test hits a 'halt' on darwin, a sporadic segfault on memleaks
   testing, and frequently causes problems in parallel testing when a
@@ -271,7 +271,7 @@ o test_10k_begins (darwin, memleaks on chap16): anyone
   Not sure what about gasnet-fast would be slower... use of dlmalloc?
 
 
-o types/range/hilde/align (pgi, intel): anyone
+* types/range/hilde/align (pgi, intel): anyone
 
   Something about this test makes it simply print the wrong answer on
   PGI and Intel compiles.  If it's in module code (e.g., reliance on
@@ -279,7 +279,7 @@ o types/range/hilde/align (pgi, intel): anyone
   let's fix it there.
 
 
-o parallel/cobegin/diten/cobeginRace (darwin, memleaks on chap16): anyone
+* parallel/cobegin/diten/cobeginRace (darwin, memleaks on chap16): anyone
 
   This test is printing that it times out.  Why?
 
@@ -301,7 +301,7 @@ o nbody* (memleaks): bradc
   Why?  Do we still care about these tests?
 
 
-o studies/lulesh/sungeun/lulesh (valgrind, gasnet-fast, cygwin): bradc
+* studies/lulesh/sungeun/lulesh (valgrind, gasnet-fast, cygwin): bradc
 
   Do we still need to be testing this version?  What value does it
   have other than historical?  Isn't it race-y still?
@@ -312,7 +312,7 @@ o studies/lulesh/sungeun/lulesh (valgrind, gasnet-fast, cygwin): bradc
 high priority (mac quiettude)
 -----------------------------
 
-o extern/ferguson/c_ptrs (darwin): anyone
+* extern/ferguson/c_ptrs (darwin): anyone
 
   This test is getting a "self-comparison always evaluates to tree"
   warning/error when compiling for darwin.  What can be done to make
@@ -321,7 +321,7 @@ o extern/ferguson/c_ptrs (darwin): anyone
   last resort).
 
 
-o "warning about using a non-literal format string" (darwin): anyone
+* "warning about using a non-literal format string" (darwin): anyone
 
   Three tests are failing with a warning about using a non-literal
   format string.  Is there anything we can do to help with this short
@@ -342,23 +342,23 @@ o "warning about using a non-literal format string" (darwin): anyone
   to make them go away?
 
 
-o "nondeterministic output order issue?" (darwin): anyone
+* "nondeterministic output order issue?" (darwin): anyone
 
   These tests seemed to be getting misorderings in their output.  Why?
 
 
-o parallel/begin/vass/multi-yield-leader (darwin): anyone
+* parallel/begin/vass/multi-yield-leader (darwin): anyone
 
   This test seems to be getting the incorrect output.  Why?
 
 
-o parallel/sync/figueroa/ReadMethods (darwin): anyone
+* parallel/sync/figueroa/ReadMethods (darwin): anyone
 
   I noted (with some uncertainty) that this test seems to have/get
   incorrect initial values.  What's going wrong?
 
 
-o parallel/taskPar/figueroa/taskParallel (darwin): anyone
+* parallel/taskPar/figueroa/taskParallel (darwin): anyone
 
   The referee's output is missing?  Why?
 
@@ -370,7 +370,7 @@ o "unused value warning" (darwin): anyone
   Would a compiler change help catch the issue further upstream?
 
 
-o surprising darwin timeouts (darwin): anyone
+* surprising darwin timeouts (darwin): anyone
 
   The following tests time out consistently on darwin but nowhere else
   (and don't strike me as being particularly long-running tests.  Is
@@ -422,7 +422,7 @@ high priority (open way too long)
   - distributions/robust/arithmetic/performance/multilocale/reduce
 
 
-o replicated testing appears not to be useful -- is it? (replicated): vass
+* replicated testing appears not to be useful -- is it? (replicated): vass
 
   2/3rds of the replicated tests fail on a nightly basis (and have
   since this configuration was enabled, I believe).  The replicated
@@ -474,7 +474,7 @@ high priority (easy)
   - studies/hpcc/HPL/stonea/serial/hplExample5
 
 
-~ quiet gdbddash tests (darwin, pgi): anyone
+* quiet gdbddash tests (darwin, pgi): anyone
 
   I believe these are failing due to different gdb versions (at least
   that's been the case in the past).  Can a .prediff or specialized
@@ -501,7 +501,7 @@ high priority (easy)
 medium priority (worrisome)
 ---------------------------
 
-o overlapping memcpy in valgrind (valgrind): anyone
+* overlapping memcpy in valgrind (valgrind): anyone
 
   The following tests get an overlapping memcpy error in valgrind,
   though this doesn't seem to cause any real problems anywhere else.
@@ -527,7 +527,7 @@ o conditional jump in re2 (valgrind): anyone
   - regexp/ferguson/rechan
 
 
-o invalid read in gmp (valgrind): anyone
+* invalid read in gmp (valgrind): anyone
 
   The following test gets an "invalid read" -- is there something we
   can do about this?
@@ -535,7 +535,7 @@ o invalid read in gmp (valgrind): anyone
   - modules/standard/gmp/ferguson/gmp_dist_array
 
 
-o unresolved call list(BaseArr) (host.prgenv-cray): mike
+* unresolved call list(BaseArr) (host.prgenv-cray): mike
 
   Can we capture this issue well enough to feel confident that it's a
   CCE issue?  Does valgrind turn up anything new?  Is there any way we
@@ -572,7 +572,7 @@ o invalid read/write of size 8 in ftoa() (valgrind): hilde
   - performance/sungeun/assign_across_locales
 
 
-o "Unrecognized instruction" (valgrind): anyone
+* "Unrecognized instruction" (valgrind): anyone
 
   The following two tests get an unrecognized instruction error.  Is
   there anything we can/should do about this?  Does it indicate a
@@ -584,7 +584,7 @@ o "Unrecognized instruction" (valgrind): anyone
   - types/atomic/sungeun/atomic_vars
 
 
-o Valgrind timeouts (valgrind): anyone
+* Valgrind timeouts (valgrind): anyone
 
   The following tests time out very consistently under valgrind.  By
   nature, valgrind testing takes a long time so maybe this is why.
@@ -606,14 +606,14 @@ o Valgrind timeouts (valgrind): anyone
   - release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4) (sporadically)
 
 
-o comm count mismatches (gasnet.numa): elliot/diten/gbt
+* comm count mismatches (gasnet.numa): elliot/diten/gbt
 
   The following tests have gotten comm count mismatches (since we
   started numa testing, I believe).  What can we do to make these go
   away?
 
 
-o overflow issues (cygwin, x?-wb.gnu): anyone
+* overflow issues (cygwin, x?-wb.gnu): anyone
 
   Newer gccs seem to warn about these tests -- is the Chapel
   implementation relying on overflow, or just these tests?  What
@@ -635,7 +635,7 @@ o types/enum/ferguson/enum_mintype_test (prgenv-cray): anyone
   What should we do about this?
 
 
-o expressions/bradc/uminusVsTimesPrec (prgenv-cray): anyone/bradc
+* expressions/bradc/uminusVsTimesPrec (prgenv-cray): anyone/bradc
 
   This test gets the wrong result due to its reliance on wraparound in
   signed integers within the test itself (which Chapel sholdn't
@@ -675,7 +675,7 @@ o zippered iterations have non-equal lengths (prgenv-cray): elliot
   this is in Elliot's court.
 
 
-o glob tests have a portability issue (prgenv-cray): bradc
+* glob tests have a portability issue (prgenv-cray): bradc
 
   This has been since they've been checked in:
 
@@ -713,7 +713,7 @@ o compilation timeouts (prgenv-cray): anyone
   - users/franzf/v1/chpl/main (compopts: 1)
 
 
-o long identifiers names are a problem (pgi): anyone
+* long identifiers names are a problem (pgi): anyone
 
   The following test fails due to having too-long identifiers:
   - distributions/dm/t5a
@@ -757,7 +757,7 @@ o CHPL_RT_CALL_STACK_SIZE too big (cygwin): anyone
   - parallel/cobegin/gbt/cobegin-stacksize
 
 
-o Tests print 'output' as the filename? (cygwin): anyone
+* Tests print 'output' as the filename? (cygwin): anyone
 
   Michael seemed to think there was nothing to be done for these.
   Is he right?  If so, should we suppress?
@@ -789,7 +789,7 @@ o io/ferguson/utf8/widecols.chpl (cygwin): anyone
   for some reason.
 
 
-o io/fsouza/chown/permission_error (cygwin): anyone
+* io/fsouza/chown/permission_error (cygwin): anyone
 
   This test has had an output mismatch since added.
 
@@ -799,7 +799,7 @@ o io/sungeun/ioerror (execopts: 5) (cygwin): anyone
   This test gets the wrong result.
 
 
-o madness numerical roundoff issues (cygwin): anyone
+* madness numerical roundoff issues (cygwin): anyone
 
   These madness tests seem to get roundoff issues on cygwin (and only
   for some reasoncygwin?  really?)
@@ -812,7 +812,7 @@ o madness numerical roundoff issues (cygwin): anyone
   - studies/madness/dinan/mad_chapel/test_likepy
 
 
-o incorrect baseline output (baseline): anyone
+* incorrect baseline output (baseline): anyone
 
   These tests get the incorrect output, but maybe this is to be expected
   on baseline testing?  How should we quiet them?
@@ -821,7 +821,7 @@ o incorrect baseline output (baseline): anyone
   - arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel
 
 
-o different string leakage in baseline (baseline): anyone
+* different string leakage in baseline (baseline): anyone
 
   These tests leak different amounts of memory when run with --baseline;
   This will perhaps be resolved when strings are records.  Is there
@@ -836,13 +836,13 @@ o different string leakage in baseline (baseline): anyone
   - memory/vass/memleak-array-of-records-1
 
 
-o classes/figueroa/RecordConstructor2 (baseline): anyone/hilde
+* classes/figueroa/RecordConstructor2 (baseline): anyone/hilde
 
   This test gets the wrong output on baseline -- why?  What can we do
   about it?
 
 
-o extern/bradc/structs/externFloat4calls.someFields (baseline): anyone
+* extern/bradc/structs/externFloat4calls.someFields (baseline): anyone
 
   This fails with --baseline and seems to be related to --inline vs. --no
 
@@ -852,7 +852,7 @@ o extern/ferguson/crazyRecord (baseline): anyone
   This fails on baseline with the wrong output -- why?
 
 
-o types/string/StringImpl/memLeaks/promotion (baseline): anyone
+* types/string/StringImpl/memLeaks/promotion (baseline): anyone
 
   This fails on baseline (even after Sung tried to get all these tests
   passing).  Why?
