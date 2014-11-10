@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Need to set the library path to include our gmp build.
+export LD_LIBRARY_PATH=$CHPL_HOME/third-party/gmp/install/`python $CHPL_HOME/util/chplenv/chpl_platform.py`-`python $CHPL_HOME/util/chplenv/chpl_compiler.py`-`python $CHPL_HOME/util/chplenv/chpl_arch.py`/lib:$LD_LIBRARY_PATH
+
+${CHPL_TEST_UTIL_DIR:-$CHPL_HOME/util}/test/sub_test $1

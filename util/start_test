@@ -166,8 +166,8 @@
 # the value "x.yz" out of the output file (all non-whitespace 
 # characters after the key string until the next whitespace 
 # character).  These data values will then be written to a file
-# named $CHPL_TEST_PERF_DIR/<machine name>/foo.dat (where
-# $CHPL_TEST_PERF_DIR is "$CHPL_HOME/test/perfdat" by default) in a
+# named $CHPL_TEST_PERF_DIR/foo.dat (where by default
+# $CHPL_TEST_PERF_DIR is "$CHPL_HOME/test/perfdat/<machine name>") in a
 # TAB-separated manner for graphing or display using gnuplot or Excel.
 #
 # When running with the -performance flag, compiler and executable
@@ -1337,8 +1337,8 @@ else
 endif
 
 # If we are running the performance tests, then check for unique .dat
-#  filenames.  Issue a error and exit if we have specified a common
-#  common directory via CHPL_TEST_PERF_DIR otherwise issue a warning.
+#  filenames.  Issue an error and exit if we have specified the data
+#  directory via CHPL_TEST_PERF_DIR, otherwise issue a warning.
 # NOTE: I am not proud of having written the following.
 if ($performance) then
     echo ""

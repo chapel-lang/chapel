@@ -1,0 +1,3 @@
+# For valgrind, instead of this test
+# use its duplicate, capture.valgrind.chpl
+CHPL_TEST_VGRND_EXE == on

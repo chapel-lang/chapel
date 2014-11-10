@@ -1,5 +1,13 @@
 #!/usr/bin/env perl
 
+# Developers: To test changes with nightly against a clean repo, use this command:
+#
+# cd /tmp && \
+#   git clone $CHPL_HOME/.git test-chapel-nightly-debug && \
+#   cd test-chapel-nightly-debug && \
+#   source util/setchplenv.bash && \
+#   ./util/cron/nightly -debug -hellos
+
 use File::Basename;
 use File::Path qw(mkpath);
 use Cwd;
@@ -474,13 +482,14 @@ if ($examples == 1) {
             $testdirs .= " localeModels memory distributions/robust/arithmetic";
         }
     }
+    if ($parnodefile ne "") {
+        mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE", 
+                 "making directory file", 1, 1);
+        $testflags = "$testflags -dirfile DIRFILE";
+    }
 }
 if ($parnodefile eq "") {
     $testflags = "$testflags $testdirs";
-} else {
-    mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE", 
-             "making directory file", 1, 1);
-    $testflags = "$testflags -dirfile DIRFILE";
 }
 
 if (!($dist eq "")) {

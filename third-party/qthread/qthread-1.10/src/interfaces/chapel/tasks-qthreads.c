@@ -713,9 +713,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              int               lineno,
                              c_string          filename)
 {
-    qthread_shepherd_id_t const here_shep_id = qthread_shep();
     chpl_bool serial_state = chpl_task_getSerial();
-    chpl_qthread_wrapper_args_t wrapper_args = 
+    chpl_qthread_wrapper_args_t wrapper_args =
         {chpl_ftable[fid], arg, filename, lineno, false,
          PRV_DATA_IMPL_VAL(subloc, serial_state) };
 
@@ -724,11 +723,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     PROFILE_INCR(profile_task_addToTaskList,1);
 
     if (serial_state) {
-        syncvar_t ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
-                                         sizeof(chpl_qthread_wrapper_args_t), &ret,
-                                         here_shep_id);
-        qthread_syncvar_readFF(NULL, &ret);
+        // call the function directly.
+        (chpl_ftable[fid])(arg);
     } else if (subloc == c_sublocid_any) {
         qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
                               sizeof(chpl_qthread_wrapper_args_t), NULL);
@@ -803,7 +799,16 @@ chpl_taskID_t chpl_task_getId(void)
 
 void chpl_task_sleep(int secs)
 {
-    sleep(secs); // goes into the syscall interception system
+    if (qthread_shep() == NO_SHEPHERD) {
+        sleep(secs);
+    } else {
+        qtimer_t t = qtimer_create();
+        qtimer_start(t);
+        do {
+            qthread_yield();
+            qtimer_stop(t);
+        } while (qtimer_secs(t) < secs);
+    }
 }
 
 /* The get- and setSerial() methods assume the beginning of the task-local

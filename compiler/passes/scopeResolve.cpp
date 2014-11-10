@@ -215,10 +215,10 @@ void scopeResolve() {
 static void addToSymbolTable(Vec<DefExpr*>& defs) {
   forv_Vec(DefExpr, def, defs)
   {
-    // If the symbol is a compiler-generated variable, function or label,
+    // If the symbol is a compiler-generated variable or a label,
     // do not add it to the symbol table.
     if (def->sym->hasFlag(FLAG_TEMP) ||
-        def->sym->hasFlag(FLAG_COMPILER_GENERATED))
+        isLabelSymbol(def->sym))
       continue;
 
     BaseAST* scope = getScope(def);

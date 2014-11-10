@@ -3,7 +3,7 @@ config param truncateAtEps  = false;
 
 // Truncate values to 0 if they are below machine precision
 proc truncate(x) {
-    if truncateAtEps && x <= eps then return 0.0;
+    if truncateAtEps && abs(x) <= eps then return 0.0;
     else return x;
 }
 

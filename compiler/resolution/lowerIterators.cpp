@@ -17,22 +17,24 @@
  * limitations under the License.
  */
 
+#include "optimizations.h"
+
 #include "astutil.h"
 #include "expr.h"
-#include "optimizations.h"
+#include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "iterator.h"
-#include "resolveIntents.h"
 
 
 // This consistency check should probably be moved earlier in the compilation.
 // It needs to be after resolution because it sets FLAG_INLINE_ITERATOR.
 // Does it need to be recursive? (Currently, it is not.)
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields);
+
 static void nonLeaderParCheck()
 {
   //
@@ -2007,7 +2009,7 @@ void lowerIterators() {
   
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-      collapseBlocks(fn->body);
+      fn->collapseBlocks();
       removeUnnecessaryGotos(fn);
     }
   }
@@ -2023,16 +2025,20 @@ void lowerIterators() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-      collapseBlocks(fn->body);
+      fn->collapseBlocks();
+
       removeUnnecessaryGotos(fn);
+
 #if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
       if (!fNoCopyPropagation)
         localCopyPropagation(fn);
+
       if (!fNoDeadCodeElimination)
         deadCodeElimination(fn);
 #endif
     }
   }
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       lowerIterator(fn);

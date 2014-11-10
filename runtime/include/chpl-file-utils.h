@@ -34,6 +34,8 @@ qioerr chpl_fs_chown(const char* name, int uid, int gid);
 
 qioerr chpl_fs_cwd(const char** working_dir);
 
+qioerr chpl_fs_exists(int* ret, const char* name);
+
 qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag);
 
 qioerr chpl_fs_is_dir(int* ret, const char* name);

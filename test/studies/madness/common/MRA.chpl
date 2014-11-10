@@ -544,7 +544,12 @@ class Function {
         return result;
     }
 
-
+    inline proc truncate(x) {
+      const eps = 1e-8;
+      if abs(x) < eps then return 0.0;
+      else return x;
+    }
+    
     /** Mostly for debugging, print summary of coefficients,
         optionally printing the norm of each block
      */
@@ -560,7 +565,7 @@ class Function {
             }
             if ncoeffs != 0 then
                 writeln("   level ", format("##", n), "   #boxes=",
-                        format("####", ncoeffs), "  norm=", format("%0.2e", sqrt(sum)));
+                        format("####", ncoeffs), "  norm=", format("%0.2e", truncate(sqrt(sum))));
         }
 
         writeln("difference coefficients:");
@@ -572,7 +577,7 @@ class Function {
             }
             if ncoeffs != 0 then
                 writeln("   level ", format("##", n), "   #boxes=",
-                        format("####", ncoeffs), "  norm=", format("%0.2e", sqrt(sum)));
+                        format("####", ncoeffs), "  norm=", format("%0.2e", truncate(sqrt(sum))));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -588,8 +593,8 @@ class Function {
             //writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.5e", Fval),
             //        "  f_analytic()=", format("% 0.5e", fval), " err=", format("% 0.5e", Fval-fval),
             //        if abs(Fval-fval) > thresh then "  > thresh" else "");
-            writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", Fval),
-                    "  f_analytic()=", format("% 0.8f", fval),
+            writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", truncate(Fval)),
+                    "  f_analytic()=", format("% 0.8f", truncate(fval)),
                     if abs(Fval-fval) > thresh then " err > thresh" else "");
         }
     }

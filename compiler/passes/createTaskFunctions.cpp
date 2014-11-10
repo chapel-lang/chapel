@@ -43,8 +43,7 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
     return false;
 
   // FYI: presently, for a 'coforall', the enclosing block is a for loop.
-  INT_ASSERT(block->blockInfoGet() &&
-             block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP));
+  INT_ASSERT(block->isForLoop());
 
   // We could verify that 'sym' is defined via a 'move'
   // from the _indexOfInterest variable referenced by the SymExpr
@@ -274,9 +273,14 @@ void createTaskFunctions(void) {
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (CallExpr* info = block->blockInfoGet()) {
+    // Loops are not a parallel block construct
+    if (block->isLoop() == true) {
+
+    } else if (CallExpr* info = block->blockInfoGet()) {
       SET_LINENO(block);
+
       FnSymbol* fn = NULL;
+
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
         fn->addFlag(FLAG_BEGIN);
@@ -305,12 +309,7 @@ void createTaskFunctions(void) {
         ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "dummy_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
       }
-      else if (info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution will remove this case.
-               info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_LOCAL) ||
+      else if (info->isPrimitive(PRIM_BLOCK_LOCAL) ||
                info->isPrimitive(PRIM_BLOCK_UNLOCAL))
         ; // Not a parallel block construct, so do nothing special.
       else

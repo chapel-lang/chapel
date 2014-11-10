@@ -23,8 +23,8 @@
 #include "baseAST.h"
 #include "vec.h"
 
-// These are used by the compiler itself
 BaseAST*    aid(int id);
+BaseAST*    aid09(int id);
 
 void        list_view_noline(BaseAST* ast);
 void        nprint_view(BaseAST* ast);

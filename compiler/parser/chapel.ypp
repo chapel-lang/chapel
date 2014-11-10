@@ -97,7 +97,6 @@
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTYPE TUNDERSCORE TUNION TUSE TVAR
 %token TWHEN TWHERE TWHILE TWITH TYIELD TZIP
-%token TREFVAR
 
 //
 // operators and punctuation (alphabetical)
@@ -206,7 +205,7 @@
 %type <pdefexpr> query_expr opt_query_expr
 
 %type <pcallexpr> opt_inherit expr_ls assoc_expr_ls tuple_expr_ls
-%type <pcallexpr> opt_actual_ls actual_ls ref_var_ls
+%type <pcallexpr> opt_actual_ls actual_ls
 %type <pcallexpr> opt_task_intent_ls task_intent_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
@@ -368,15 +367,15 @@ extern_block_stmt:
 ;
 
 loop_stmt:
-  TDO stmt TWHILE expr TSEMI                    { $$ = buildDoWhileLoopStmt($4, $2); }
-| TWHILE expr do_stmt                           { $$ = buildWhileDoLoopStmt($2, $3); }
+  TDO stmt TWHILE expr TSEMI                    { $$ = DoWhileStmt::build($4, $2); }
+| TWHILE expr do_stmt                           { $$ = WhileDoStmt::build($2, $3); }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6); }
 | TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
 | TCOFORALL expr opt_task_intent_ls do_stmt     { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4); }
-| TFOR expr TIN expr do_stmt                    { $$ = buildForLoopStmt($2, $4, $5); }
-| TFOR expr TIN zippered_iterator do_stmt       { $$ = buildForLoopStmt($2, $4, $5, false, true); }
-| TFOR expr do_stmt                             { $$ = buildForLoopStmt(NULL, $2, $3); }
-| TFOR zippered_iterator do_stmt                { $$ = buildForLoopStmt(NULL, $2, $3, false, true); }
+| TFOR expr TIN expr do_stmt                    { $$ = ForLoop::buildForLoop(  $2, $4, $5, false, false); }
+| TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, false,  true); }
+| TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
+| TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, false,  true); }
 | TFOR TPARAM ident TIN expr do_stmt            { $$ = buildParamForLoopStmt($3, $5, $6); }
 | TFORALL expr TIN expr do_stmt                 { $$ = buildForallLoopStmt($2, $4, $5); }
 | TFORALL expr TIN zippered_iterator do_stmt    { $$ = buildForallLoopStmt($2, $4, $5, true); }
@@ -790,23 +789,38 @@ opt_init_type:
 var_decl_stmt:
   opt_config TPARAM var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_PARAM, FLAG_UNKNOWN, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      flags.insert(FLAG_PARAM);
+      $$ = buildVarDecls($3, flags, @1.comment);
     }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_CONST, FLAG_UNKNOWN, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      flags.insert(FLAG_CONST);
+      $$ = buildVarDecls($3, flags, @1.comment);
     }
-| opt_config TREFVAR var_decl_stmt_inner_ls TSEMI
+| opt_config TREF var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN, FLAG_REF_VAR, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      flags.insert(FLAG_REF_VAR);
+      $$ = buildVarDecls($3, flags, @1.comment);
     }
-| opt_config TCONST TREFVAR var_decl_stmt_inner_ls TSEMI
+| opt_config TCONST TREF var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($4, $1, FLAG_CONST, FLAG_REF_VAR, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      flags.insert(FLAG_CONST);
+      flags.insert(FLAG_REF_VAR);
+      $$ = buildVarDecls($4, flags, @1.comment);
     }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
     {
-      $$ = buildVarDecls($3, $1, FLAG_UNKNOWN, FLAG_UNKNOWN, @1.comment);
+      std::set<Flag> flags;
+      flags.insert($1);
+      $$ = buildVarDecls($3, flags, @1.comment);
     }
 ;
 
@@ -1102,12 +1116,6 @@ stmt_level_expr:
 
 opt_task_intent_ls:
                                 { $$ = NULL; }
-| TREF TLP ref_var_ls TRP       {
-    $$ = $3;
-    USR_WARN($3, "In the next release, ref(x, y, ...) will no longer be valid. "
-                 "You will need to convert any task intents to the new form "
-                 "of `with (ref x, ref y, ...)`");
-                                }
 | TWITH TLP task_intent_ls TRP  { $$ = $3; }
 ;
 
@@ -1125,11 +1133,6 @@ intent_expr:
         $$ = $2;
       }
     }
-;
-
-ref_var_ls:
-  ident_expr                    { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
-| ref_var_ls TCOMMA ident_expr  { $1->insertAtTail($3); }
 ;
 
 io_expr:

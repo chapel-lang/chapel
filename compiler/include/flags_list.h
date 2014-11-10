@@ -68,7 +68,7 @@ symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
 // == false), the callstack is searched ignoring compiler-generated functions.
 // 3. Assignment operations flagged as 'compiler generated' shall contain only
 // field assignments and assignment primitives.
-symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions and labels that are compiler-generated or supplied by an internal module" )
+symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions that are compiler-generated or supplied by an internal module" )
 symbolFlag( FLAG_COMPILER_NESTED_FUNCTION , npr, "compiler nested function" , ncm )
 symbolFlag( FLAG_CONCURRENTLY_ACCESSED , npr, "concurrently accessed" , "local variables accessed by multiple threads" )
 symbolFlag( FLAG_CONFIG , npr, "config" , "config variable, constant, or parameter" )
@@ -126,8 +126,6 @@ symbolFlag( FLAG_ITERATOR_CLASS , npr, "iterator class" , ncm )
 symbolFlag( FLAG_ITERATOR_FN , npr, "iterator fn" , ncm )
 symbolFlag( FLAG_ITERATOR_RECORD , npr, "iterator record" , ncm )
 symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which contains an on block" )
-symbolFlag( FLAG_LABEL_BREAK , npr, "label break" , ncm )
-symbolFlag( FLAG_LABEL_CONTINUE , npr, "label continue" , ncm )
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
 symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
 

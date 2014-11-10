@@ -1,0 +1,23 @@
+bug: concurrent slicing of privatized domains and arrays causes crash
+
+This test crashes intermittently at runtime in the forall loop with -nl4.
+
+The errors I observed in various runs include:
+* ReplicatedDist.chpl:272: error: attempt to dereference nil
+* ChapelBase.chpl:1022: error: attempt to dereference nil
+* Caught a fatal signal: SIGABRT(6) on node 0/4
+* *** glibc detected *** hplx_real: corrupted double-linked list: ....
+* malloc.c:3091: sYSMALLOc: Assertion `.....' failed.
+
+Uncommenting the commented-out code in the test and/or increasing 'fac'
+should increase the probability of failure.
+
+Valgrind detects "Invalid read of size 8", perhaps reliably,
+even under -nl2.
+In my setup (with fifo) it runs longer than several minutes,
+I don't know if it ever terminates.
+
+When this test is fixed, please enable this test for ReplicatedDist
+by removing its .skipif:
+
+  test/distributions/robust/arithmetic/kernels/hpl.chpl

@@ -77,7 +77,7 @@ proc initCoordinates(X, Y, Z) {
 
   if debugInit then
     for (x,y,z) in zip(X,Y,Z) do
-      writeln(format("%.6f",x), " ", format("%.6f",y), " ", format("%.6f",z));
+      writef("%6dr %6dr %6dr\n", x, y, z);
 }
 
 
@@ -121,7 +121,7 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
 // read/compute the greek variables
 
 proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
-  param indices3D = isTupleType(lxim.eltType);
+  param elemRank = lxim.domain.rank;
   if (initFromFile) {
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
       reader.read(xm,xp,em,ep,zm,zp);
@@ -129,29 +129,29 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
     forall num in lxim.domain {
       const (i,j,k) = elemIdxTo3D(num);
       
-      lxim[num] = if (indices3D || k == 0) 
+      lxim[num] = if (k == 0) 
                     then num
-                    else elemIdxTo3D(i,j,k-1);
+                    else elem3DToIdx(elemRank,i,j,k-1);
 
-      lxip[num] = if (indices3D || k == elemsPerEdge-1)
+      lxip[num] = if (k == elemsPerEdge-1)
                     then num
-                    else elemIdxTo3D(i,j,k+1);
+                      else elem3DToIdx(elemRank,i,j,k+1);
     
-      letam[num] = if (indices3D || j == 0) 
+      letam[num] = if (j == 0) 
                     then num
-                    else elemIdxTo3D(i,j-1,k);
+                      else elem3DToIdx(elemRank,i,j-1,k);
 
-      letap[num] = if (indices3D || j == elemsPerEdge-1)
+      letap[num] = if (j == elemsPerEdge-1)
                     then num
-                    else elemIdxTo3D(i,j+1,k);
+                    else elem3DToIdx(elemRank,i,j+1,k);
     
-      lzetam[num] = if (indices3D || i == 0) 
+      lzetam[num] = if (i == 0) 
                     then num
-                    else elemIdxTo3D(i-1,j,k);
+                    else elem3DToIdx(elemRank,i-1,j,k);
 
-      lzetap[num] = if (indices3D || i == elemsPerEdge-1)
+      lzetap[num] = if (i == elemsPerEdge-1)
                     then num
-                    else elemIdxTo3D(i+1,j,k);
+                    else elem3DToIdx(elemRank,i+1,j,k);
     }
   }
   if (debugInit) then
@@ -260,8 +260,11 @@ inline proc node3DToIdx(param idxRank, i, j, k) {
     return idx3DTo1D((i, j, k), nodesPerEdge);
 }
 
-inline proc elemIdxTo3D(i,j,k) {
-  return idx3DTo1D((i,j,k), elemsPerEdge);
+inline proc elem3DToIdx(param idxRank, i,j,k) {
+  if (idxRank == 3) then
+    return (i,j,k);
+  else
+    return idx3DTo1D((i,j,k), elemsPerEdge);
 }
 
 inline proc idx1DTo3D(ind, len) {
