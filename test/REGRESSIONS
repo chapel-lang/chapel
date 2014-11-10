@@ -1,16 +1,16 @@
 # USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.
 #
-# Each category represents a Cron run that we do nightly and mail to
-# chapel-test-results-all (and chapel-test-results-regressions if
-# anything unusual happened.  The label for each category should match
-# the unique ID of that testing configuration.  In some cases,
-# categories will have a wildcard name such as 'gasnet*' implying that
-# they are an abstract category for all configurations that match that
-# pattern.  In the past we have used specific instances (like
-# 'gasnet-everything', historically) for such purposes, but in
+# Each category represents a Cron run that we perform nightly and mail
+# to chapel-test-results-all (and chapel-test-results-regressions if
+# anything unusual happened).  The label for each category should
+# match the unique ID for that testing configuration.  In some cases,
+# categories will have a wildcard name such as 'gasnet*' or 'x?-wb...'
+# implying that they are an abstract category for all configurations
+# that match that pattern.  In the past we have used specific testing
+# instances (like 'gasnet-everything') for such purposes, but in
 # practice there often isn't a test configuration that serves as a
-# good root for the hierarchy described in the next paragraph.
+# good root for the purposes of inheriting errors.
 #
 # There is an informal hierarchy embedded in this file in order to try
 # and reduce redundancy in which each suite is marked as inheriting
@@ -18,15 +18,15 @@
 # everywhere, it should only be noted in "general regressions" (the
 # root of the hierarchy) and not in every configuration.  Similarly,
 # if something fails for every gasnet configuration, it can be listed
-# in gasnet-everything which forms the root of the gasnet sub-tree.
+# in 'gasnet*' which forms the root of the logical gasnet sub-tree.
 #
 # Ultimately, the hope is to do more of this filtering and
 # categorization automatically, but for the time being it is manual
 # and rotated among members of the core Chapel team.  Periodically,
-# all failures in a test suite should be reviewed with what's in this
-# file to ensure that they match.  The last time that this full review
-# was done is marked in the "Reviewed" slot in the header of the
-# category.
+# all failures in a test suite should be compared against what's in
+# this file to ensure that they match.  The last time that this full
+# review was done is marked in the "Reviewed" slot in the header of
+# the category.
 #
 # Each regression itself should be marked with a brief (one-line)
 # description of why the failure is occurring, the date on which the
@@ -35,31 +35,14 @@
 #
 # In some cases, more extensive notes may be in order, but this file
 # should lean towards being spare (for the purposes of maintenance).
-# Soon we will have an issue tracker in which each regression will
-# be tracked and dialogue, notes, etc. can take place there.
+# The project's pivotal task tracker should be used to store notes
+# on any given failure mode or story.
 #
-# In some cases, if a bunch of failures share the same behavior but
-# come and go on different nights, dates may be attached to the tests
-# themselves rather than the failure category.  Use judgement and
-# taste.
-#
-# Sporadic timeouts are an ongoing concern about how to track them.
-# As of this writing, I am tracking them here, because there are not
-# so many that it's unwieldy, but ultimately we may need to come up
-# with a better plan.  Ultimately, we should quiet down all such
-# sporadic timeouts, for instance by upping the timeout for a specific
-# test or configuration (slow machine or back-end compiler, e.g.)
-
-# approximation to priority order.  Formatting for each entry can be
-# loose, but should roughly follow the format of brief note on why the
-# test is failing followed by a list of tests that are failing for
-# that reason.  If someone owns a particular regression, their name
-# can be added to the description as well.
-# The path to each test should appear here, so it can be be grepped for.
-# The convention here is to include the entire error message, with [].
-# Except if a lot of test fail for the identical reason or in the same
-# directory, a wildcard is more appropriate.
-# The date the entry is added is also useful.
+# At the bottom of each category is a list of "sporadic" failures
+# that come and go at different times.  These are followed by a
+# list of dates for a "new failure" was last reported.  If a test
+# has not failed in a month, it can probably be removed from this
+# list.
 #
 # The status of failing future tests is detailed in ../STATUS.devel
 
@@ -70,8 +53,8 @@ Reviewed 2014-11-09
 ===================
 
 redefinition of chpl_glob() (11/09/14 -- bradc)
-(xe-wb*, gasnet.fifo, memleaks, cygwin)
------------------------------------------------
+(xe-wb*, memleaks, cygwin)
+--------------------------
 [Error matching compiler output for studies/glob/test_glob (compopts: 1)]
 
 sporadic failure (2-3x a month -- vass)
@@ -275,11 +258,11 @@ Reviewed 2014-11-01
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed 2014-10-20
+Reviewed 2014-11-10
 ===================
 
-sporadic execution timeout (once)
----------------------------------
+sporadic execution timeout (regularly)
+--------------------------------------
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (11/03/14, 11/07/14)
 
 
@@ -368,7 +351,7 @@ sporadic timeouts (frequent)
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (10/19/14, 10/24/14)
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (10/23/14, 10/28/14, 10/31/14, 11/02/14, 11/04/14, 11/08/14)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (10/23/14, 10/28/14, 10/31/14, 11/02/14, 11/04/14, 11/08/14, 11/10/14)
 
 sporadic timeouts (infrequent)
 ------------------------------
