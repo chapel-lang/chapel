@@ -12,6 +12,10 @@ unsetenv CHPLDEVTMP
 
 set mymake = $argv[1]
 
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+set num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`
+
 #
 # execute actions specified in README
 #
@@ -25,7 +29,7 @@ if ($tmpstatus != 0) then
     echo "ERROR: source of setchplenv.csh failed"
     exit($tmpstatus)
 endif
-$mymake
+$mymake -j$num_procs
 set tmpstatus = $status
 if ($tmpstatus != 0) then
     echo "ERROR: make failed"
@@ -77,9 +81,8 @@ endif
 #
 # run make in examples directory
 #
-set nprocs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`
 cd examples
-$mymake -j$nprocs
+$mymake -j$num_procs
 cd ..
 
 
