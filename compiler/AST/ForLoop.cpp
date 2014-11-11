@@ -20,6 +20,7 @@
 #include "ForLoop.h"
 
 #include "astutil.h"
+#include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
 
@@ -456,4 +457,25 @@ GenRet ForLoop::codegenCForLoopCondition(BlockStmt* block)
   return ret;
 
 #endif
+}
+
+void 
+ForLoop::accept(AstVisitor* visitor) {
+  if (visitor->enterForLoop(this) == true) {
+    CallExpr* blockInfo = blockInfoGet();
+
+    for_alist(next_ast, body)
+      next_ast->accept(visitor);
+
+    if (blockInfo)
+      blockInfo->accept(visitor);
+
+    if (modUses)
+      modUses->accept(visitor);
+
+    if (byrefVars)
+      byrefVars->accept(visitor);
+
+    visitor->exitForLoop(this);
+  }
 }

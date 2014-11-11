@@ -28,6 +28,10 @@
 #include "symbol.h"
 #include "type.h"
 
+#include "WhileDoStmt.h"
+#include "DoWhileStmt.h"
+#include "ForLoop.h"
+
 void AstDumpToNode::view(const char* passName, int passNum) 
 {
   forv_Vec(ModuleSymbol, module, allModules) 
@@ -234,6 +238,260 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 
   return false;
 }
+
+//
+//
+//
+
+bool AstDumpToNode::enterWhileDoStmt(WhileDoStmt* node)
+{
+  char heading[128] = { '\0' };
+  bool firstTime    = true;
+
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  sprintf(heading, "#<WhileDoStmt %12d ", node->id);
+
+  write(false, heading, true);
+
+  if (node->blockInfoGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "BlockInfo: ", false);
+    mOffset = mOffset + 2;
+    node->blockInfoGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(false, "extern ", true);
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(false, "scopeless ", true);
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(false, "type_only ", true);
+
+  mOffset = mOffset + 2;
+
+  for_alist(next_ast, node->body)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      fprintf(mFP, "\n");
+
+    next_ast->accept(this);
+  }
+
+  if (node->modUses)
+  {
+    newline();
+    write(false, "ModUses: ", false);
+    node->modUses->accept(this);
+  }
+
+  if (node->byrefVars)
+  {
+    newline();
+    write(false, "ByRefVars: ", false);
+    node->byrefVars->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+
+  newline();
+  write(false, ">", true);
+
+  return false;
+}
+
+//
+//
+//
+
+bool AstDumpToNode::enterDoWhileStmt(DoWhileStmt* node)
+{
+  char heading[128] = { '\0' };
+  bool firstTime    = true;
+
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  sprintf(heading, "#<DoWhileStmt %12d ", node->id);
+
+  write(false, heading, true);
+
+  if (node->blockInfoGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "BlockInfo: ", false);
+    mOffset = mOffset + 2;
+    node->blockInfoGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(false, "extern ", true);
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(false, "scopeless ", true);
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(false, "type_only ", true);
+
+  mOffset = mOffset + 2;
+
+  for_alist(next_ast, node->body)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      fprintf(mFP, "\n");
+
+    next_ast->accept(this);
+  }
+
+  if (node->modUses)
+  {
+    newline();
+    write(false, "ModUses: ", false);
+    node->modUses->accept(this);
+  }
+
+  if (node->byrefVars)
+  {
+    newline();
+    write(false, "ByRefVars: ", false);
+    node->byrefVars->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+
+  newline();
+  write(false, ">", true);
+
+  return false;
+}
+
+//
+//
+//
+
+bool AstDumpToNode::enterForLoop(ForLoop* node)
+{
+  char heading[128] = { '\0' };
+  bool firstTime    = true;
+
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  sprintf(heading, "#<ForLoop     %12d ", node->id);
+
+  write(false, heading, true);
+
+  if (node->blockInfoGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "BlockInfo: ", false);
+    mOffset = mOffset + 2;
+    node->blockInfoGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(false, "extern ", true);
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(false, "scopeless ", true);
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(false, "type_only ", true);
+
+  mOffset = mOffset + 2;
+
+  for_alist(next_ast, node->body)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      fprintf(mFP, "\n");
+
+    next_ast->accept(this);
+  }
+
+  if (node->modUses)
+  {
+    newline();
+    write(false, "ModUses: ", false);
+    node->modUses->accept(this);
+  }
+
+  if (node->byrefVars)
+  {
+    newline();
+    write(false, "ByRefVars: ", false);
+    node->byrefVars->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+
+  newline();
+  write(false, ">", true);
+
+  return false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //
 //

@@ -19,6 +19,7 @@
 
 #include "WhileDoStmt.h"
 
+#include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
 #include "ForLoop.h"
@@ -206,4 +207,25 @@ GenRet WhileDoStmt::codegen()
   INT_ASSERT(!byrefVars); // these should not persist past parallel()
 
   return ret;
+}
+
+void 
+WhileDoStmt::accept(AstVisitor* visitor) {
+  if (visitor->enterWhileDoStmt(this) == true) {
+    CallExpr* blockInfo = blockInfoGet();
+
+    for_alist(next_ast, body)
+      next_ast->accept(visitor);
+
+    if (blockInfo)
+      blockInfo->accept(visitor);
+
+    if (modUses)
+      modUses->accept(visitor);
+
+    if (byrefVars)
+      byrefVars->accept(visitor);
+
+    visitor->exitWhileDoStmt(this);
+  }
 }

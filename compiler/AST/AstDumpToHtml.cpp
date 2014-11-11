@@ -30,6 +30,10 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+#include "WhileDoStmt.h"
+#include "DoWhileStmt.h"
+#include "ForLoop.h"
+
 #include <cstdio>
 #include <inttypes.h>
 
@@ -399,6 +403,106 @@ void AstDumpToHtml::exitBlockStmt(BlockStmt* node) {
   printBlockID(node);
   fprintf(mFP, "</DL>\n");
 }
+
+
+//
+// WhileDoStmt
+//
+bool AstDumpToHtml::enterWhileDoStmt(WhileDoStmt* node) {
+  fprintf(mFP, "<DL>\n");
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      fprintf(mFP, "<B>where</B>\n");
+
+  fprintf(mFP, "<B>WhileDo<B> {");
+
+  printBlockID(node);
+
+  return true;
+}
+
+void AstDumpToHtml::exitWhileDoStmt(WhileDoStmt* node) {
+  fprintf(mFP, "}");
+  printBlockID(node);
+  fprintf(mFP, "</DL>\n");
+}
+
+
+//
+// DoWhileStmt
+//
+bool AstDumpToHtml::enterDoWhileStmt(DoWhileStmt* node) {
+  fprintf(mFP, "<DL>\n");
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      fprintf(mFP, "<B>where</B>\n");
+
+  fprintf(mFP, "<B>DoWhile<B> {");
+
+  printBlockID(node);
+
+  return true;
+}
+
+void AstDumpToHtml::exitDoWhileStmt(DoWhileStmt* node) {
+  fprintf(mFP, "}");
+  printBlockID(node);
+  fprintf(mFP, "</DL>\n");
+}
+
+
+//
+// ForLoop
+//
+bool AstDumpToHtml::enterForLoop(ForLoop* node) {
+  fprintf(mFP, "<DL>\n");
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      fprintf(mFP, "<B>where</B>\n");
+
+  fprintf(mFP, "<B>ForLoop<B> {");
+
+  printBlockID(node);
+
+  return true;
+}
+
+void AstDumpToHtml::exitForLoop(ForLoop* node) {
+  fprintf(mFP, "}");
+  printBlockID(node);
+  fprintf(mFP, "</DL>\n");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //
