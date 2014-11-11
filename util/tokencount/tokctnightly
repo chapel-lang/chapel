@@ -62,7 +62,7 @@ if (exists($ENV{"BUILD_URL"})) {
 #
 $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
-    $mailer = "Mail";
+    $mailer = "mail";
 }
 
 if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
