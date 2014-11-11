@@ -305,16 +305,10 @@ module GMP {
     var mpz:mpz_t;
 
     // initializing integers (constructors)
-    proc BigInt(init2:bool, nbits:c_ulong) {
-      mpz_init2(this.mpz, nbits);
-    }
     proc BigInt(init2:bool, nbits:uint(64)) {
       mpz_init2(this.mpz, nbits:c_ulong);
     }
 
-    proc BigInt(num:c_long) {
-      mpz_init_set_si(this.mpz, num);
-    }
     proc BigInt(num:int(64)) {
       mpz_init_set_si(this.mpz, num:c_long);
     }
