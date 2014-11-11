@@ -22,6 +22,16 @@
 
 #include "expr.h"
 
+#ifdef HAVE_LLVM
+
+#define FNAME(str) (llvm::Twine(getFunction()->cname)            + \
+                    llvm::Twine("_")                             + \
+                    llvm::Twine(getFunction()->codegenUniqueNum) + \
+                    llvm::Twine(str)                             + \
+                    llvm::Twine("_"))
+
+#endif
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -68,6 +78,19 @@ public:
   virtual void        replaceChild(Expr* oldAst, Expr* newAst);
 
   // New interface
+  virtual bool        isLoop()                                     const;
+  
+  virtual bool        isWhileLoop()                                const;
+  virtual bool        isWhileDoLoop()                              const;
+  virtual bool        isDoWhileLoop()                              const;
+
+  virtual bool        isForLoop()                                  const;
+  virtual bool        isCforLoop()                                 const;
+
+  virtual void        checkConstLoops();
+
+  virtual bool        deadBlockCleanup();
+
   void                appendChapelStmt(BlockStmt* stmt);
 
   void                insertAtHead(Expr* ast);
@@ -78,7 +101,6 @@ public:
   void                insertAtTail(const char* format, ...);
 
   bool                isScopeless()                                const;
-  virtual bool        isLoop()                                     const;
   int                 length()                                     const;
 
   void                moduleUseAdd(ModuleSymbol* mod);
@@ -87,6 +109,8 @@ public:
 
   virtual CallExpr*   blockInfoGet()                               const;
   virtual CallExpr*   blockInfoSet(CallExpr* expr);
+
+  void                collapseBlocks();
 
   BlockTag            blockTag;
   AList               body;
@@ -98,6 +122,9 @@ public:
 
 private:
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
+
+  void                collapseCForLoopBlocks(CallExpr* call);
+  void                collapseBlock();
 
   CallExpr*           blockInfo;
 };

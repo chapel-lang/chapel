@@ -432,7 +432,10 @@ utildir = os.path.realpath(utildir)
 # sys.stdout.write('utildir='+utildir+'\n');
 
 # Find the c compiler
-p = subprocess.Popen([utildir+'/config/compileline', '--compile'],
+# We open the compileline inside of CHPL_HOME rather than CHPL_TEST_UTIL_DIR on
+# purpose. compileline will not work correctly in some configurations when run
+# outside of its directory tree.
+p = subprocess.Popen([os.path.join(chpl_home,'util','config','compileline'), '--compile'],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 c_compiler = p.communicate()[0].rstrip()
 if p.returncode != 0:
@@ -782,12 +785,8 @@ if systemPreexec:
 if systemPrediff:
     sys.stdout.write('[system-wide prediff: \'%s\']\n'%(systemPrediff))
 
-if os.path.isdir(testdir+'/'+localdir):
-    dirlist=os.listdir(testdir+'/'+localdir)
-elif os.path.isdir(localdir):
-    dirlist=os.listdir(localdir)
-else:
-    Fatal('Could not find local test directory: \''+localdir+'\'')
+# consistently look only at the files in the current directory
+dirlist=os.listdir(".")
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:
@@ -798,7 +797,6 @@ else:
 
 for testname in testsrc:
     sys.stdout.flush()
-    exectimeout = False
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
@@ -1281,9 +1279,9 @@ for testname in testsrc:
                 datFileName = localdir.replace('/', '~~') + '~~' + test_filename + compoptsstring
 
                 # computePerfStats for the current test
-                sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)))
+                sys.stdout.write('[Executing computePerfStats %s %s %s %s %s]\n'%(datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'))
                 sys.stdout.flush()
-                p = subprocess.Popen([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, str(exectimeout)], stdout=subprocess.PIPE)
+                p = subprocess.Popen([utildir+'/test/computePerfStats', datFileName, tempDatFilesDir, keyfile, printpassesfile, 'False'], stdout=subprocess.PIPE)
                 compkeysOutput = p.communicate()[0]
                 datFiles = [tempDatFilesDir+'/'+datFileName+'.dat',  tempDatFilesDir+'/'+datFileName+'.error']
                 status = p.returncode
@@ -1411,6 +1409,7 @@ for testname in testsrc:
             # Run program (with timeout)
             #
             for count in xrange(numTrials):
+                exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
                 sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
                 if redirectin:
                     sys.stdout.write(' < %s'%(redirectin))

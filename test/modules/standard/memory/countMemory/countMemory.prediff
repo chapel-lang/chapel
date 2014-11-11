@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 $memfile = "/proc/meminfo";
+$memFreeInKB = "unknown";
 
 if (-r $memfile) {
   open MEMFILE, "$memfile" or die "can't open $memfile $!";
@@ -9,9 +10,18 @@ if (-r $memfile) {
 
   foreach my $line (@memLines) {
     if ($line =~ m/MemTotal: (\s*)(\S*)/) {
-      $memfree = "$2";
+      $memFreeInKB = "$2";
     }
   }
-  $hostname = `hostname -s`; chomp($hostname);
-  system("./countMemory.makegood $memfree > countMemory.$hostname.good");
+} else {
+    $platform = `$ENV{CHPL_HOME}/util/chplenv/chpl_platform.py --target`; chomp($platform);
+    if ($platform eq "darwin") {
+	$memInBytes = `sysctl -n hw.memsize`; chomp($memInBytes);
+	$memFreeInKB = $memInBytes / 1024;
+    }
+}
+
+if ($memFreeInKB ne "unknown") {
+    $hostname = `hostname -s`; chomp($hostname);
+    system("./countMemory.makegood $memFreeInKB > countMemory.$hostname.good");
 }

@@ -207,6 +207,9 @@ static FnSymbol* function_exists(const char* name,
 }
 
 
+// Getter and setter functions are provided by the compiler if not supplied by
+// the user.
+// These functions have the same binding strength as if they were user-defined.
 static void build_getter(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
@@ -232,7 +235,6 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
   fn->addFlag(FLAG_INLINE);
-//  fn->addFlag(FLAG_COMPILER_GENERATED); // Getter functions act as if user-defined.
   if (ct->symbol->hasFlag(FLAG_SYNC)) 
     fn->addFlag(FLAG_SYNC);
   if (ct->symbol->hasFlag(FLAG_SINGLE)) 
@@ -388,7 +390,6 @@ static void build_chpl_entry_points(void) {
     SET_LINENO(mainModule);
     chpl_user_main = new FnSymbol("main");
     chpl_user_main->retType = dtVoid;
-//    chpl_user_main->addFlag(FLAG_COMPILER_GENERATED);
     mainModule->block->insertAtTail(new DefExpr(chpl_user_main));
     normalize(chpl_user_main);
   } else {
@@ -584,9 +585,7 @@ static void build_enum_enumerate_function(EnumType* et) {
   // Build a function that returns a tuple of the enum's values
   // Each enum type has its own chpl_enum_enumerate function.
   FnSymbol* fn = new FnSymbol("chpl_enum_enumerate");
-// TODO: This flag should be enabled, so a user-defined version of the enum
-//  enumerate function can override the compiler-generated version.
-//  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   arg->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(arg);
@@ -816,9 +815,7 @@ static void build_extern_assignment_function(Type* type)
 // the target type.
 static void build_record_cast_function(AggregateType* ct) {
   FnSymbol* fn = new FnSymbol("_cast");
-// TODO: This flag should be enabled, so a user-defined version of the record
-//  cast function can override the compiler-generated version.
-//  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
@@ -909,9 +906,7 @@ static void build_record_hash_function(AggregateType *ct) {
     return;
 
   FnSymbol *fn = new FnSymbol("chpl__defaultHash");
-// TODO: This flag should be enabled, so a user-defined version of the record
-//  hash function can override the compiler-generated version.
-//  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
   arg->addFlag(FLAG_MARKED_GENERIC);
   fn->insertFormalAtTail(arg);
@@ -970,66 +965,71 @@ static void build_record_init_function(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // Preserving previous functionality
     fn->insertAtTail(new CallExpr(PRIM_RETURN, arg));
-  } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
+  } else if (ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Tuples are handled by generics.cpp because some of their information is
     // not known at this point.  The function needs to exist prior to generic
     // resolution, which is why its outer shell is created here, but its body
     // is not capable of being created until then.
-
-    // To default initialize, call the type specified default initializer
-    CallExpr* call = new CallExpr(ct->defaultInitializer);
+  } else {
+    // To default initialize, call the type specified default constructor (by
+    // name), passing in all generic arguments.
+    CallExpr* call = new CallExpr(ct->defaultInitializer->name);
     // Need to insert all required arguments into this call
     for_formals(formal, ct->defaultInitializer) {
-      if (!formal->hasFlag(FLAG_IS_MEME)) {
-        // If the initializer function is a method, we must call it as a
-        // method.  So just pass the method token along.  (No need to create a
-        // formal temp, etc.)
-        if (formal->type == dtMethodToken)
-        {
-          call->insertAtTail(gMethodToken);
-          continue;
-        }
+      if (formal->hasFlag(FLAG_IS_MEME))
+        // Do not pass in the meme argument.
+        // Resolution creates a wrapper and arranges for "this" to be passed in
+        // in this position
+        continue;
 
-        VarSymbol* tmp = newTemp(formal->name);
-        if (formal->isParameter()) {
-          // Param and type fields are specific to the generic instantiation
-          // of the type, so they cannot be known when we create this method.
-          // However, they are knowable when the method is resolved.  This
-          // utilizes the field query primitives to get the correct values
-          // when those substitutions are known
-          tmp->addFlag(FLAG_PARAM);          
-          fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_StringSymbol(formal->name))));
-          fn->insertAtHead(new DefExpr(tmp));
-          call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
-        } else if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-          tmp->addFlag(FLAG_TYPE_VARIABLE);
-          fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_TYPE_FIELD, arg, new_StringSymbol(formal->name))));
-          fn->insertAtHead(new DefExpr(tmp));
-          call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
-        } else {
-          if (!formal->defaultExpr) {
-            // There are no substitutions for var fields, so if a defaultExpr
-            // has been provided, we don't need to worry about copying values
-            // over.
-            if (formal->type && formal->type != dtAny &&
-                strcmp(formal->name, "outer") != 0) {
-              // We know the type already, make use of it
-              fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, formal->type->symbol)));
-            } else {
-              // Type wasn't currently able to be determined, so we'll have to
-              // get it the long way.
-              VarSymbol* typeTemp = newTemp ("type_tmp");
-              VarSymbol* callTemp = newTemp ("call_tmp");
-              typeTemp->addFlag(FLAG_TYPE_VARIABLE);
-              fn->insertAtTail(new CallExpr(PRIM_MOVE, callTemp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_StringSymbol(formal->name))));
-              fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTemp, new CallExpr(PRIM_TYPEOF, callTemp)));
-              fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTemp)));
-              fn->insertAtHead(new DefExpr(callTemp));
-              fn->insertAtHead(new DefExpr(typeTemp));
-            }
-            fn->insertAtHead(new DefExpr(tmp));
-            call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+      // If the initializer function is a method, we must call it as a
+      // method.  So just pass the method token along.  (No need to create a
+      // formal temp, etc.)
+      if (formal->type == dtMethodToken)
+      {
+        call->insertAtTail(gMethodToken);
+        continue;
+      }
+
+      VarSymbol* tmp = newTemp(formal->name);
+      if (formal->isParameter()) {
+        // Param and type fields are specific to the generic instantiation
+        // of the type, so they cannot be known when we create this method.
+        // However, they are knowable when the method is resolved.  This
+        // utilizes the field query primitives to get the correct values
+        // when those substitutions are known
+        tmp->addFlag(FLAG_PARAM);          
+        fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_StringSymbol(formal->name))));
+        fn->insertAtHead(new DefExpr(tmp));
+        call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+      } else if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
+        fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_TYPE_FIELD, arg, new_StringSymbol(formal->name))));
+        fn->insertAtHead(new DefExpr(tmp));
+        call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
+      } else {
+        if (!formal->defaultExpr) {
+          // There are no substitutions for var fields, so if a defaultExpr
+          // has been provided, we don't need to worry about copying values
+          // over.
+          if (formal->type && formal->type != dtAny &&
+              strcmp(formal->name, "outer") != 0) {
+            // We know the type already, make use of it
+            fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, formal->type->symbol)));
+          } else {
+            // Type wasn't currently able to be determined, so we'll have to
+            // get it the long way.
+            VarSymbol* typeTemp = newTemp ("type_tmp");
+            VarSymbol* callTemp = newTemp ("call_tmp");
+            typeTemp->addFlag(FLAG_TYPE_VARIABLE);
+            fn->insertAtTail(new CallExpr(PRIM_MOVE, callTemp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_StringSymbol(formal->name))));
+            fn->insertAtTail(new CallExpr(PRIM_MOVE, typeTemp, new CallExpr(PRIM_TYPEOF, callTemp)));
+            fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTemp)));
+            fn->insertAtHead(new DefExpr(callTemp));
+            fn->insertAtHead(new DefExpr(typeTemp));
           }
+          fn->insertAtHead(new DefExpr(tmp));
+          call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
         }
       }
     }
@@ -1133,9 +1133,7 @@ static void buildStringCastFunction(EnumType* et) {
     return;
 
   FnSymbol* fn = new FnSymbol("_cast");
-// TODO: This flag should be enabled, so a user-defined version of the record
-//  copy function can override the compiler-generated version.
-//  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtAny);
   t->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
@@ -1170,9 +1168,7 @@ void buildDefaultDestructor(AggregateType* ct) {
   SET_LINENO(ct->symbol);
 
   FnSymbol* fn = new FnSymbol("~chpl_destroy");
-// TODO: This flag should be enabled, so a user-defined version of the record
-//  copy function can override the compiler-generated version.
-//  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_DESTRUCTOR);
   fn->addFlag(FLAG_INLINE);
   fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);

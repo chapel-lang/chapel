@@ -1,0 +1,4 @@
+# This test crashes with Replicated, so disable it there for now.
+# Re-enable it for Replicated when the following .future is fixed:
+#   test/distributions/dm/hplx.chpl
+COMPOPTS <= distType=DistType.replicated

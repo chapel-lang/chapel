@@ -292,14 +292,14 @@ proc main() {
     LagrangeLeapFrog();
 
     if debug {
-      //      deprint("[[ Forces ]]", fx, fy, fz);
+      deprintatomic("[[ Forces ]]", fx, fy, fz);
       deprint("[[ Positions ]]", x, y, z);
       deprint("[[ p, e, q ]]", p, e, q);
     }
     if showProgress then
-      writeln("time = ", format("%e", time), ", dt=", format("%e", deltatime),
-              if doTiming then ", elapsed = " + (getCurrentTime()-iterTime) 
-                          else "");
+      writef("time = %er, dt=%er, %s", time, deltatime,
+             if doTiming then ", elapsed = " + (getCurrentTime()-iterTime) +"\n"
+                         else "\n");
   }
   if (cycle == maxcycles) {
     writeln("Stopped early due to reaching maxnumsteps");
@@ -314,12 +314,10 @@ proc main() {
   if printCoords {
     var outfile = open("coords.out", iomode.cw);
     var writer = outfile.writer();
-    var fmtstr = if debug then "%1.9e" else "%1.4e";
-    for i in Nodes {
-      writer.writeln(format(fmtstr, x[i]), " ", 
-                     format(fmtstr, y[i]), " ", 
-                     format(fmtstr, z[i]));
-    }
+    var fmtstr = if debug then "%1.9re %1.9er %1.9er\n" 
+                          else "%1.4er %1.4er %1.4er\n";
+    for i in Nodes do
+      writer.writef(fmtstr, x[i], y[i], z[i]);
     writer.close();
     outfile.close();
   }
@@ -1679,14 +1677,19 @@ iter elemToNodesTuple(e) {
 }
 
 
-proc deprint(title:string, x:[?D] real, y:[D]real, z:[D]real) {
+proc deprint(title:string, x:[?D] real, y:[D] real, z:[D] real) {
   writeln(title);
-  for i in D {
-    writeln(format("%3d", i), ": ", 
-            format("%3.4e", x[i]), " ", 
-            format("%3.4e", y[i]), " ", 
-            format("%3.4e", z[i]));
-  }
+  for i in D do
+    writef("%3i: %3.4er %3.4er %3.4er\n", 
+           if use3DRepresentation then idx3DTo1D(i, D.dim(1).size) else i, 
+           x[i], y[i], z[i]);
 }
 
 
+proc deprintatomic(title:string, x:[?D] atomic real, y:[] atomic real, z:[] atomic real) {
+  writeln(title);
+  for i in D do
+    writef("%3i: %3.4er %3.4er %3.4er\n", 
+           if use3DRepresentation then idx3DTo1D(i, D.dim(1).size) else i, 
+           x[i].peek(), y[i].peek(), z[i].peek());
+}

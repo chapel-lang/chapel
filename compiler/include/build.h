@@ -20,6 +20,8 @@
 #ifndef _BUILD_H_
 #define _BUILD_H_
 
+#include <set>
+
 #include "flags.h"
 #include "stmt.h"
 #include "vec.h"
@@ -66,9 +68,12 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
-BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body);
-BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
+void       checkIndices(BaseAST* indices);
+void       destructureIndices(BlockStmt* block,
+                              BaseAST*   indices,
+                              Expr*      init,
+                              bool       coforall);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  CallExpr* byref_vars,
@@ -76,11 +81,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
-BlockStmt* buildForLoopStmt(Expr* indices,
-                            Expr* iterator,
-                            BlockStmt* body,
-                            bool coforall = false,
-                            bool zippered = false);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
                                BlockStmt* body,
@@ -109,7 +109,8 @@ BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
 CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, Flag ref, char* docs);
+
+BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, char* docs);
 
 DefExpr*  buildClassDefExpr(const char* name, 
                             Type*       type,

@@ -1,1 +1,0 @@
-bug: Calling c_str() on a string from a remote locale results in a runtime error

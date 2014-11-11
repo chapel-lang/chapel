@@ -367,6 +367,12 @@ OPTIONS
                      boolean configuration variables, the value can
                      be omitted, causing the default value to be toggled.
 
+  --[no-]task-tracking  Enable [disable] the Chapel-implemented task tracking
+                     table that supports the execution-time -b / -t flags.
+                     This option is currently only useful when $CHPL_TASKS
+                     is set or inferred to 'fifo' and adds compilation-time
+                     overhead when it will not be used, so is off by default.
+
   --[no-]warn-const-loops  Enable [disable] warnings for 'while' loops
                      whose condition is a 'const' variable, because such
                      a loop condition is likely unintended.  'While' loops

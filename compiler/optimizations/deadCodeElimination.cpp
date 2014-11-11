@@ -103,7 +103,6 @@ static bool isInLoopHeader(Expr* expr) {
   return retval;
 }
 
-
 //
 // Removes local variables that are only targets for moves, but are
 // never used anywhere.
@@ -164,31 +163,37 @@ void deadVariableElimination(FnSymbol* fn) {
 //
 void deadExpressionElimination(FnSymbol* fn) {
   Vec<BaseAST*> asts;
-  collect_asts(fn, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    Expr *expr = toExpr(ast);
-    if (expr && expr->parentExpr == NULL) // expression already removed
-      continue;
-    if (SymExpr* expr = toSymExpr(ast)) {
-      if (isInLoopHeader(expr)) {
-        continue;
-      } 
 
-      if (expr == expr->getStmtExpr())
+  collect_asts(fn, asts);
+
+  forv_Vec(BaseAST, ast, asts) {
+    Expr* exprAst = toExpr(ast);
+
+    if (exprAst == 0) {
+
+    } else if (exprAst->parentExpr == NULL) { // expression already removed 
+
+    } else if (SymExpr* expr = toSymExpr(ast)) {
+      if (isInLoopHeader(expr) == false && expr == expr->getStmtExpr()) {
         expr->remove();
+      }
+
     } else if (CallExpr* expr = toCallExpr(ast)) {
       if (expr->isPrimitive(PRIM_CAST) ||
           expr->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
           expr->isPrimitive(PRIM_GET_MEMBER) ||
           expr->isPrimitive(PRIM_DEREF) ||
-          expr->isPrimitive(PRIM_ADDR_OF))
+          expr->isPrimitive(PRIM_ADDR_OF)) {
         if (expr == expr->getStmtExpr())
           expr->remove();
+      }
+
       if (expr->isPrimitive(PRIM_MOVE) || expr->isPrimitive(PRIM_ASSIGN))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
             if (lhs->var == rhs->var)
               expr->remove();
+
     } else if (CondStmt* cond = toCondStmt(ast)) {
       cond->fold_cond_stmt();
     }
@@ -502,21 +507,7 @@ static void cleanupLoopBlocks(FnSymbol* fn) {
 
   for_vector (Expr, expr, stmts) {
     if (BlockStmt* stmt = toBlockStmt(expr)) {
-      if (CallExpr* loop = stmt->blockInfoGet()) {
-        if (loop->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
-          if (BlockStmt* test = toBlockStmt(loop->get(2))) {
-            if (test->body.length == 0) {
-              stmt->remove();
-            }
-          }
-
-        } else if (loop->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-                   loop->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
-          if (stmt->blockInfoGet()->numActuals() == 0) {
-            stmt->remove();
-          }
-        }
-      }
+      stmt->deadBlockCleanup();
     }
   }
 }

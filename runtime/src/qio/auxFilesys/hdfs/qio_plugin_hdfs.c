@@ -339,32 +339,40 @@ qioerr hdfs_fsync(void* fl, void* fs)
 
 qioerr hdfs_getcwd(void* file, const char** path_out, void* fs)
 {
-  int sz = 128;
-  char* buf;
-  char* got;
+  int    sz   = 128;
+  char*  buf  = (char*) qio_malloc(sz);
   qioerr err = 0;
 
-  buf = (char*) qio_malloc(sz);
-  if( !buf )
+  if ( !buf )
     QIO_GET_CONSTANT_ERROR(err, ENOMEM, "Out of memory in hdfs_getcwd");
-  while( 1 ) {
-    got = hdfsGetWorkingDirectory(to_hdfs_fs(fs)->hfs, buf, sz);
-    if( got != NULL ) break;
-    else if( errno == ERANGE ) {
-      // keep looping but with bigger buffer.
-      sz = 2*sz;
-      got = (char*) qio_realloc(buf, sz);
-      if( ! got ) {
-        qio_free(buf);
+
+  // hdfsGetWorkingDirectory will return 0 if buf[] is not large enough
+  // If this happens, grow the buffer and try again
+  while (err == 0 && hdfsGetWorkingDirectory(to_hdfs_fs(fs)->hfs, buf, sz) == 0) {
+    if (errno == ERANGE) {
+      int   newSz  = 2 * sz;
+      char* newBuf = (char*) qio_realloc(buf, newSz);
+
+      if (newBuf == 0) {
         QIO_GET_CONSTANT_ERROR(err, ENOMEM, "Out of memory in hdfs_getcwd");
+      } else {
+        sz  = newSz;
+        buf = newBuf;
       }
+
     } else {
       // Other error, stop.
-        QIO_GET_CONSTANT_ERROR(err, EREMOTEIO, "Unable to get path to file in HDFS");
+      QIO_GET_CONSTANT_ERROR(err, EREMOTEIO, "Unable to get path to file in HDFS");
     }
   }
 
+  if (err != 0) {
+    qio_free(buf);
+    buf = 0;
+  }
+
   *path_out = buf;
+
   return err;
 }
 
