@@ -31,6 +31,10 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_CFG_OPTIONS += --enable-static --disable-shared
 endif
 
+CHPL_GMP_ABI_ARG =
+ifeq (linux32, $(CHPL_MAKE_TARGET_PLATFORM))
+CHPL_GMP_ABI_ARG = ABI=32
+endif
 
 default: all
 
@@ -50,7 +54,7 @@ $(GMP_UNPACKED_DIR):
 
 gmp-config: $(GMP_UNPACKED_DIR) FORCE
 	mkdir -p $(GMP_BUILD_DIR)
-	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS) $(CHPL_GMP_CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CXXFLAGS) $(CHPL_GMP_CXXFLAGS)' --prefix=$(GMP_INSTALL_DIR) $(CHPL_GMP_CFG_OPTIONS)
+	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS) $(CHPL_GMP_CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CXXFLAGS) $(CHPL_GMP_CXXFLAGS)' $(CHPL_GMP_ABI_ARG) --prefix=$(GMP_INSTALL_DIR) $(CHPL_GMP_CFG_OPTIONS)
 
 gmp-build: FORCE
 	cd $(GMP_BUILD_DIR) && $(MAKE)
