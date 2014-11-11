@@ -33,6 +33,14 @@ getting .bad to match. The troubles seem to be: (A) 'sed' works
 differently on the mac, so it seems, and (B) I don't know how consistent
 the additional output on the mac is.
 
+This test also succeeded under numa in the nightly testing, and I do
+not know whether it was a false positive or whether it actually works
+correctly under numa. Brad and I agree that it is not worth putting
+time into investigating this further. Therefore...
+I skipif this test under all but the default configuration.
+Once it works there, remove the .skipif and let it run on other
+configurations as well.
+
 
 Once this bug is fixed: (a) remove this test altogether;
 (b) remove 'serialForall' and the 'serial' statement from m-lsms.chpl

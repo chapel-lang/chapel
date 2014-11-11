@@ -1,3 +1,9 @@
-# Avoid the trouble of matching .bad on the mac/darwin.
+# This test behaves differently under various configurations,
+# so test it under the default configuration only.
 # See .future for more info.
-CHPL_TARGET_PLATFORM==darwin
+CHPL_COMM != none
+COMPOPTS <= --baseline
+COMPOPTS <= --no-local
+CHPL_TEST_PERF == on
+CHPL_TEST_VGRND_EXE == on
+CHPL_TARGET_PLATFORM != linux64
