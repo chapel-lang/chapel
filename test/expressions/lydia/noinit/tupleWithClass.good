@@ -1,1 +1,3 @@
+I default initialized!
 (5, {bar = 2})
+(0, {bar = 3})
