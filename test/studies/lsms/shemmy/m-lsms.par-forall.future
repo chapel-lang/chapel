@@ -19,6 +19,21 @@ Serializing that particular forall, the code runs successfully.
 So I am putting a 'serial serialForall do' around it where serialForall
 default to 'true' and is 'false' for this .future.
 
-Once this bug is fixed, this future should be removed altogether
-and 'serialForall' and the 'serial' statement be removed from
-the main code.
+
+It seems like some memory error is detected on the mac/darwin, where we get:
+
+  m-lsms.par-forall(56564,0x1094bf000) malloc: *** error for object 0x7fcf2b600170: pointer being freed was not allocated
+  *** set a breakpoint in malloc_error_break to debug
+  m-lsms.par-forall.chpl:67: error: halt reached - array index out of bounds: (2)
+
+So maybe it is easier to debug the issue on that platform.
+
+However, I am skipif-ing this test for the mac to avoid the trouble of
+getting .bad to match. The troubles seem to be: (A) 'sed' works
+differently on the mac, so it seems, and (B) I don't know how consistent
+the additional output on the mac is.
+
+
+Once this bug is fixed: (a) remove this test altogether;
+(b) remove 'serialForall' and the 'serial' statement from m-lsms.chpl
+- to make that adjacent 'forall' parallel, as originally intended.

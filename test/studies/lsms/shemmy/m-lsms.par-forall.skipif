@@ -1,0 +1,3 @@
+# Avoid the trouble of matching .bad on the mac/darwin.
+# See .future for more info.
+CHPL_TARGET_PLATFORM==darwin
