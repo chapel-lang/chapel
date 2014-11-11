@@ -200,8 +200,10 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
     write(false, "extern ", true);
+
   if (node->blockTag & BLOCK_SCOPELESS)
     write(false, "scopeless ", true);
+
   if (node->blockTag & BLOCK_TYPE_ONLY)
     write(false, "type_only ", true);
 
@@ -466,31 +468,6 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
 
   return false;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 //
