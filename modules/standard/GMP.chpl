@@ -308,17 +308,9 @@ module GMP {
     proc BigInt(init2:bool, nbits:c_ulong) {
       mpz_init2(this.mpz, nbits);
     }
-    proc BigInt(init2:bool, nbits:uint(64)) {
-      mpz_init2(this.mpz, nbits:c_ulong);
-    }
-
     proc BigInt(num:c_long) {
       mpz_init_set_si(this.mpz, num);
     }
-    proc BigInt(num:int(64)) {
-      mpz_init_set_si(this.mpz, num:c_long);
-    }
-
     proc BigInt(str:string, base:c_int=0) {
       var e:c_int;
       e = mpz_init_set_str(this.mpz, str.c_str(), base);
@@ -371,8 +363,7 @@ module GMP {
         return (false,this);
       } else {
         var mpz_struct = this.mpz[1];
-        var nbits = (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct);
-        var tmp = new BigInt(true, nbits);
+        var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
         chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct); 
         return (true, tmp);
       }
