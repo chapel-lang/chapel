@@ -7333,17 +7333,6 @@ static void handleRuntimeTypes()
 }
 
 
-static void removePrimForalls() {  // vass - remove in addShadowVarsForForall ?
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->byrefVars && block->byrefVars->inTree()) {
-      INT_ASSERT(block->byrefVars->isPrimitive(PRIM_FORALL_LOOP));
-      INT_ASSERT(block->byrefVars->numActuals() == 0);
-      block->byrefVars->remove();
-    }
-  }
-}
-
-
 //
 // pruneResolvedTree -- prunes and cleans the AST after all of the
 // function calls and types have been resolved
@@ -7355,7 +7344,6 @@ pruneResolvedTree() {
   removeRandomPrimitives();
   replaceTypeArgsWithFormalTypeTemps();
   removeParamArgs();
-  removePrimForalls();
 
   removeUnusedGlobals();
   removeUnusedTypes();

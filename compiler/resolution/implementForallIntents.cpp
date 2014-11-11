@@ -471,15 +471,6 @@ static void verifyOuterVars(BlockStmt* body2, Symbol* serIterSym1,
   INT_ASSERT(numOuterVars1 == numOuterVars2);
 }
 
-static void cleanupByrefVars(BlockStmt* body) {
-  // vass todo - maybe remove byrefVars altogether?
-  // then do not need removePrimForalls() in resolve()
-  CallExpr* const byrefVars = body->byrefVars;
-  for_actuals(actual, byrefVars)
-    actual->remove();
-  INT_ASSERT(!byrefVars->numActuals());
-}
-
 void implementForallIntents1(DefExpr* defChplIter)
 {
   // Find the corresponding forall loop body,
@@ -523,7 +514,7 @@ void implementForallIntents1(DefExpr* defChplIter)
     replaceVarUsesWithFormals(forallBody1, uses1);
   }
 
-  cleanupByrefVars(forallBody1);
+  forallBody1->byrefVars->remove();
 
   // Now process the second clone, using what we already computed.
 
@@ -540,7 +531,7 @@ void implementForallIntents1(DefExpr* defChplIter)
       // same outer variables, same shadow variables as for forallBody1
       replaceVarUsesWithFormals(forallBody2, uses1);
 
-    cleanupByrefVars(forallBody2);
+    forallBody2->byrefVars->remove();
   }
 
   // todo: do we need to deallocate 'uses'?
