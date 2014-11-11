@@ -1,2 +1,2 @@
--ECHPL_RT_CALL_STACK_SIZE=32K  #cobegin-stacksize-failure.good
--ECHPL_RT_CALL_STACK_SIZE=32M  #cobegin-stacksize-success.good
+-ECHPL_RT_CALL_STACK_SIZE=2K  #cobegin-stacksize-failure.good
+-ECHPL_RT_CALL_STACK_SIZE=2M  #cobegin-stacksize-success.good

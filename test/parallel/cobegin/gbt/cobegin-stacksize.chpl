@@ -7,7 +7,7 @@
 // large stack size to avoid having to think about what the stack size is for
 // different configurations and worrying about it changing in the future.
 //
-config var depth: uint(64) = 128 * 1024;
+config var depth: uint(64) = 1024;
 
 var sum1$, sum2$: single uint(64);
 
