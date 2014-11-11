@@ -549,7 +549,7 @@ void implementForallIntents1(DefExpr* defChplIter)
 
 //
 //-----------------------------------------------------------------------------
-//  implementForallIntents1()
+//  implementForallIntents2()
 //-----------------------------------------------------------------------------
 //
 // This is Part 2 - it processes each call to _toLeader() or _toLeaderZip().
