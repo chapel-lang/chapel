@@ -1,0 +1,1 @@
+-L$CHPL_HOME/third-party/gmp/install/`python $CHPL_HOME/util/chplenv/chpl_platform.py`-`python $CHPL_HOME/util/chplenv/chpl_compiler.py`-`python $CHPL_HOME/util/chplenv/chpl_arch.py`/lib -lgmp -lm

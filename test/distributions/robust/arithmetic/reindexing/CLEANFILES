@@ -1,2 +1,6 @@
-test_strided_reindex2.good
+test_array_alias1.good
+test_array_alias2.good
+test_array_alias3.good
 test_reindexing6.good
+test_strided_reindex1.good
+test_strided_reindex2.good

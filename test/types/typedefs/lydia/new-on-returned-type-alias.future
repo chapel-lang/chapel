@@ -1,0 +1,7 @@
+bug: allow creation of new class instances on returned type aliases
+
+Though new t() was allowed as of May 8th, 2014, if the type alias is gained from
+an outside function, new t() will not work.
+
+When this future is resolved, distributions will be able to define their own
+_defaultOf function in module code.

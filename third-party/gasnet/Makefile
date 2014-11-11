@@ -136,3 +136,5 @@ gasnet: gasnet-config gasnet-build gasnet-install
 	$(CHPL_MAKE_HOME)/util/chplenv/check_huge_pages.py
 
 FORCE:
+
+.NOTPARALLEL:

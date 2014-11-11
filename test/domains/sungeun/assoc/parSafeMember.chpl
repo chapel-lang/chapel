@@ -1,17 +1,17 @@
-config const iters = 800;
-config const n = 50;
+config const iters = 300;
+config const trials = 400;
+config const n = 80;
 
 var D: domain(real);
 
-for i in 1..iters {
+for i in 1..trials {
   coforall t in 1..n {
-    if n & 1 {
-      for j in 1..iters do
-        if !D.member((t+j):real) then D += (t+j);
-    } else {
-      for j in 1..iters by -1 do
-        if !D.member((t+j):real) then D += (t+j);
-    }
+    const b = if t & 1 then -1 else 1;
+    var r = 1..iters by b;
+    for j in r do
+      if !D.member((t+j):real) then
+        D += (t+j);
   }
+  for j in 2..n+iters do assert(D.member(j));
   D.clear();
 }

@@ -1,9 +1,9 @@
 class Foo {
-  refvar x: int;
+  ref x: int;
 }
 
 record Bar {
-  refvar x: int;
+  ref x: int;
 }
 
 

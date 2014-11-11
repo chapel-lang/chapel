@@ -1,0 +1,6 @@
+test_array_slicing1.good
+test_array_slicing2.good
+test_array_slicing3.good
+test_domain_slicing1.good
+test_strided_slice1.good
+test_strided_slice2.good

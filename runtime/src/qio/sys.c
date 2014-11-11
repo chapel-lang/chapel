@@ -403,7 +403,7 @@ const char* sys_strerror_syserr_str(qioerr error, err_t* err_in_strerror)
     start = strlen(ret);
     ret[start] = ':';
     ret[start+1] = ' ';
-    memcpy(&ret[start+2], msg, msg_len);
+    qio_memcpy(&ret[start+2], msg, msg_len);
     ret[start+2+msg_len] = '\0';
   }
   return ret;
@@ -1296,7 +1296,7 @@ int sys_getaddrinfo_socktype(sys_addrinfo_ptr_t a) {return a->ai_socktype;}
 int sys_getaddrinfo_protocol(sys_addrinfo_ptr_t a) {return a->ai_protocol;}
 sys_sockaddr_t sys_getaddrinfo_addr(sys_addrinfo_ptr_t a) {
   sys_sockaddr_t ret;
-  memcpy(&ret.addr, a->ai_addr, a->ai_addrlen);
+  qio_memcpy(&ret.addr, a->ai_addr, a->ai_addrlen);
   ret.len = a->ai_addrlen;
   return ret;
 }
@@ -1637,30 +1637,37 @@ err_t sys_unlink(const char* path)
 // The caller is responsible for freeing that memory.
 err_t sys_getcwd(const char** path_out)
 {
-  int sz = 128;
-  char* buf;
-  char* got;
-  err_t err = 0;
+  int   sz  = 128;
+  char* buf = (char*) qio_malloc(sz);
+  err_t err = (buf == 0) ? ENOMEM : 0;
 
-  buf = (char*) qio_malloc(sz);
-  if( !buf ) return ENOMEM;
-  while( 1 ) {
-    got = getcwd(buf, sz);
-    if( got != NULL ) break;
-    else if( errno == ERANGE ) {
-      // keep looping but with bigger buffer.
-      sz = 2*sz;
-      got = (char*) qio_realloc(buf, sz);
-      if( ! got ) {
+  // getcwd() returns 0 if the provided buffer is too small
+  // If this happens, grow the buffer and try again
+  while (err == 0 && getcwd(buf, sz) == 0) {
+    if (errno == ERANGE) {
+      int   newSz  = 2 * sz;
+      char* newBuf = (char*) qio_realloc(buf, newSz);
+
+      if (newBuf == 0) {
         qio_free(buf);
-        return ENOMEM;
+        err = ENOMEM;
+      } else {
+        sz  = newSz;
+        buf = newBuf;
       }
+
     } else {
-      // Other error, stop.
       err = errno;
     }
   }
 
+  if (err != 0) {
+    qio_free(buf);
+    sz  = 0;
+    buf = 0;
+  }
+
   *path_out = buf;
+
   return err;
 }

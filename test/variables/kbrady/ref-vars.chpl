@@ -1,7 +1,7 @@
 // Simple case ///////////////////////////
 writeln("x y");
 var x = 5;
-refvar y = x;
+ref y = x;
 writeln(x, ' ', y);
 x += 1;
 writeln(x, ' ', y);
@@ -12,7 +12,7 @@ writeln(x, ' ', y, '\n');
 var A = [1, 2, 3, 4, 5];
 writeln("A  : ", A);
 for i in 1..5 {
-  refvar element = A[i];
+  ref element = A[i];
   element += 1;
 }
 writeln("A' : ", A, '\n');
@@ -23,7 +23,7 @@ var B = [[1, 2], [3, 4]];
 writeln("B  : ", B);
 for i in 1..2 {
   for j in 1..2 {
-    refvar element = B[i][j];
+    ref element = B[i][j];
     element += 1;
   }
 }
@@ -51,8 +51,8 @@ for r in rectangles do
   writeln(r);
 
 for r in rectangles {
-  refvar upLeft = r.upLeft;
-  refvar botRight = r.botRight;
+  ref upLeft = r.upLeft;
+  ref botRight = r.botRight;
   upLeft.x += 1.0;
   botRight.y -= 1.0;
 }
@@ -71,7 +71,7 @@ class Foo {
 }
 
 var myFoo = new Foo();
-refvar myrefFoo = myFoo;
+ref myrefFoo = myFoo;
 writeln('\n', "myFoo     myrefFoo");
 writeln(myFoo, ' ', myrefFoo);
 myFoo.doubleMe();
@@ -81,11 +81,11 @@ writeln(myFoo, ' ', myrefFoo);
 
 // Ref Functions ////////////////////////
 proc testRefReturn(ref x: int) ref {
-  refvar y = x;
+  ref y = x;
   return y;
 }
 var fx = 10;
-refvar fy = testRefReturn(fx);
+ref fy = testRefReturn(fx);
 writeln('\n', "fx fy");
 writeln(fx, ' ', fy);
 fx += 5;

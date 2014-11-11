@@ -613,11 +613,13 @@ const char* AggregateType::classStructName(bool standalone) {
       if (symbol->hasFlag(FLAG_EXTERN)) {
         return astr("_", basename);
       } else {
+        // keep in sync with maxCNameAddedChars
         return astr(CLASS_STRUCT_PREFIX, basename, "_object");
       }
     } else
       return basename;
   } else {
+    // keep in sync with maxCNameAddedChars
     return astr(CLASS_STRUCT_PREFIX, symbol->cname, "_s");
   }
 }

@@ -121,3 +121,5 @@ qthread-reconfig:
 	cd $(QTHREAD_SUBDIR) && autoreconf -f -i
 
 FORCE:
+
+.NOTPARALLEL:

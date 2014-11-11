@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+outfile=$2
+
+cat $outfile | \
+    sed 's/Operation not permitted/SYS_ERR/' | \
+    sed 's/Invalid argument/SYS_ERR/' > \
+    $outfile.tmp
+mv $outfile.tmp $outfile
