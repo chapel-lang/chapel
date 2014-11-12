@@ -53,8 +53,8 @@ Reviewed 2014-11-09
 ===================
 
 redefinition of chpl_glob() (11/09/14 -- bradc)
-(xe-wb*, memleaks, cygwin)
---------------------------
+(xe-wb*)
+-----------------------------------------------
 [Error matching compiler output for studies/glob/test_glob (compopts: 1)]
 
 sporadic failure (2-3x a month -- vass)
@@ -79,14 +79,8 @@ Reviewed 2014-11-08
 ===================
 darwin
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-12
 ===================
-
-unused value warning
---------------------
-[Error matching program output for release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
 
 
 ===================
@@ -154,22 +148,12 @@ Reviewed 2014-11-08
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2014-11-08
+Reviewed 2014-11-11
 ============================
-
-timeouts (10/17/14 -- same date it moved to chap16)
----------------------------------------------------
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6]
-
-sporadic timeout (started 10/17/14 -- same date it moved to chap16)
--------------------------------------------------------------------
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_iterator_7] (10/17/14, 10/28/14)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (10/21/14, 10/23/14, 11/04/14, 11/08/14)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4] (10/17/14, 10/28/14, 11/09/14)
 
 sporadic segfault (infrequent)
 ------------------------------
-[Error matching program output for stress/deitz/test_10k_begins] (10/03/14, 10/23/14)
+[Error matching program output for stress/deitz/test_10k_begins] (10/03/14, 10/23/14, 11/10/14)
 
 
 
@@ -195,10 +179,6 @@ conditional jump depends on uninitialized value (04/08/14 -- since re2 on)
 --------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
 [Error matching program output for regexp/ferguson/rechan]
-
-stack overflow
---------------
-[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 
 invalid read/write of size 8 in ftoa() (10/08/14 -- hilde)
 ----------------------------------------------------------
@@ -248,6 +228,13 @@ Reviewed 2014-11-08
 ===================
 
 
+=================================
+no-local.linux32
+Inherits 'linux32' and 'no-local'
+Reviewed 2014-11-11
+=================================
+
+
 ===================
 gasnet* regressions
 Inherits 'no-local'
@@ -283,30 +270,6 @@ sporadic unresolved access of range by (2) (infrequent) (10/07/14)
 sporadic execution timeout (once)
 ---------------------------------
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (11/01/14, 11/06/14)
-
-
-================================
-gasnet.linux32
-inherits 'linux32' and 'gasnet*'
-Reviewed 2014-11-01
-================================
-
-fairly consistent timeouts due to qthreads oversubscription (09/15/14)
-----------------------------------------------------------------------
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
-
-sporadic timeout (frequent)
----------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/hpl] (...11/07/14, 01/09/14)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans] (..., 11/03/14, 11/06/14, 11/09/14)
-
-sporadic timeout (infrequent)
------------------------------
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)] (11/04/14)
-[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (10/20/14, 10/30/14)
-[Error: Timed out executing program release/examples/primers/distributions] (10/19/14)
 
 
 ===============================
@@ -350,7 +313,7 @@ sporadic timeouts (frequent)
 ----------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (10/19/14, 10/24/14)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (10/19/14, 10/24/14, 11/11/14)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (10/23/14, 10/28/14, 10/31/14, 11/02/14, 11/04/14, 11/08/14, 11/10/14)
 
 sporadic timeouts (infrequent)
@@ -549,15 +512,19 @@ binary files differ (09/23-24/14)
 ===============================
 x?-wb.intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2014-10-20
+Reviewed 2014-11-10
 ===============================
 
 
 ===============================
 x?-wb.prgenv-intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2014-11-07
+Reviewed 2014-11-10
 ===============================
+
+error matching .bad (11/10/14)
+------------------------------
+[Error matching .bad file for extern/lydia/externRecordLostFields (compopts: 1)]
 
 
 =============================
@@ -646,7 +613,7 @@ Reviewed 2014-11-08
 ===================
 cygwin
 Inherits 'linux64'
-Reviewed 2014-11-08
+Reviewed 2014-11-11
 ===================
 
 check_channel assertion failure
@@ -665,10 +632,6 @@ QIO strcmp(got, expect) assertion error
 QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
-
-error matching output (apparent whitespace difference)
-------------------------------------------------------
-[Error matching program output for io/ferguson/utf8/widecols.chpl]
 
 sporadic timeouts (frequent)
 ----------------------------
@@ -696,21 +659,8 @@ sporadic data read copy failed
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-11-10
+Reviewed 2014-11-12
 ===================
-
-??? (wrong output)
-------------------
-[Error matching program output for extern/ferguson/crazyRecord (compopts: 1)]
-
-segv due to turning on inlining (12/7/12)
------------------------------------------
-sungeun: I have confirmed that almost all of these are due to running
-out of stack space (lulesh timed out).  Assuming they are *not*
-intermittent or at least less so than the others with inilining, I
-think we would prefer these errors.
-
-[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 
 
 ===================
