@@ -247,6 +247,7 @@ if ($make eq "") {
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
 $num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`;
+chomp($num_procs);
 
 $cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
 
