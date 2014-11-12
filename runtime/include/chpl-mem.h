@@ -117,6 +117,7 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 // free a c_string_copy, no error checking.
 // The argument type is explicitly c_string_copy, since only an "owned" string
 // should be freed.
+// TODO: The passed-in argument should be set to zero to prevent double-frees.
 static ___always_inline
 void chpl_rt_free_c_string(c_string_copy s, int32_t lineno, c_string filename)  {
   assert(s!=NULL);

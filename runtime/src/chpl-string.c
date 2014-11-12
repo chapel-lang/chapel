@@ -151,12 +151,12 @@ void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t le
 // The input is a c_string_copy, which always owns the bytes it points to.
 // On return, the string data is no longer owned by the c_string_copy
 // argument.  It is owned by the returned chpl_string instead.
-// TODO: Would really like "str" to be passed by reference, so we can set it to
-// zero after we usurp its contents.
+// TODO: This should be inlined.
 chpl_string
-string_from_c_string_copy(c_string_copy str, int haslen, int64_t len)
+string_from_c_string_copy(c_string_copy* str, int haslen, int64_t len)
 {
-  chpl_string result = str;
+  chpl_string result = *str;
+  *str = NULL;
   return result;
 }
 
@@ -180,9 +180,10 @@ void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int 
   ret->size = len + 1; // this size includes the terminating NUL
 }
 
+#if 0
 // TODO: Would really like "str" to be passed by reference, so we can set it to
 // zero after we usurp its contents.
-void wide_string_from_c_string_copy(chpl____wide_chpl_string *ret, c_string_copy str,
+void wide_string_from_c_string_copy(chpl____wide_chpl_string *ret, c_string_copy* str,
                                     int haslen, int64_t len,
                                     int32_t lineno, chpl_string filename)
 {
@@ -192,11 +193,12 @@ void wide_string_from_c_string_copy(chpl____wide_chpl_string *ret, c_string_copy
     ret->size = 0;
     return;
   }
-  if( ! haslen ) len = strlen(str);
+  if( ! haslen ) len = strlen(*str);
 
-  ret->addr = str;
+  ret->addr = *str; *str = NULL;
   ret->size = len + 1; // this size includes the terminating NUL
 }
+#endif
 
 void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, chpl_string filename)
 {

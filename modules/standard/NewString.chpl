@@ -75,7 +75,7 @@ module BaseStringType {
   // TODO: It should really be c_string_copy.
   type baseType = c_string;
   param baseTypeString = "c_string":c_string;
-  // This used to be defined in terms of chpl_free_c_string, but that one wants
+  // This used to be defined in terms of chpl_free_c_string_copy, but that one wants
   // the argument to be a c_string_copy.  Here, we lie about the interface to
   // chpl_rt_free_c_string(), so we can get around having to coerce the wrong
   // baseType (c_string) to the right one (c_string_copy).  The coercion will
