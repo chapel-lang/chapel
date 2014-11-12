@@ -180,10 +180,6 @@ conditional jump depends on uninitialized value (04/08/14 -- since re2 on)
 [Error matching program output for io/tzakian/recordReader/test]
 [Error matching program output for regexp/ferguson/rechan]
 
-stack overflow
---------------
-[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
-
 invalid read/write of size 8 in ftoa() (10/08/14 -- hilde)
 ----------------------------------------------------------
 [Error matching program output for performance/sungeun/assign_across_locales]

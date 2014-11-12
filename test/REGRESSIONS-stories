@@ -553,7 +553,7 @@ o 21-capture-in-cobegin: vass
 medium priority (clutter)
 -------------------------
 
-o stack overflow (valgrind): anyone
+* stack overflow (valgrind): anyone
 
   The following test gets a stack overflow -- is there something we
   can/should do about this?  Should we skip if in valgrind testing?
