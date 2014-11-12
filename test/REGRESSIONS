@@ -79,18 +79,8 @@ Reviewed 2014-11-08
 ===================
 darwin
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-12
 ===================
-
-.bad mismatch for new test (2014-11-11 -- vass)
------------------------------------------------
-[Error matching .bad file for studies/lsms/shemmy/m-lsms.par-forall]
-
-unused value warning
---------------------
-[Error matching program output for release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
 
 
 ===================
@@ -627,7 +617,7 @@ Reviewed 2014-11-08
 ===================
 cygwin
 Inherits 'linux64'
-Reviewed 2014-11-08
+Reviewed 2014-11-11
 ===================
 
 check_channel assertion failure
@@ -646,10 +636,6 @@ QIO strcmp(got, expect) assertion error
 QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
-
-error matching output (apparent whitespace difference)
-------------------------------------------------------
-[Error matching program output for io/ferguson/utf8/widecols.chpl]
 
 sporadic timeouts (frequent)
 ----------------------------
@@ -677,21 +663,8 @@ sporadic data read copy failed
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-11-10
+Reviewed 2014-11-12
 ===================
-
-??? (wrong output)
-------------------
-[Error matching program output for extern/ferguson/crazyRecord (compopts: 1)]
-
-segv due to turning on inlining (12/7/12)
------------------------------------------
-sungeun: I have confirmed that almost all of these are due to running
-out of stack space (lulesh timed out).  Assuming they are *not*
-intermittent or at least less so than the others with inilining, I
-think we would prefer these errors.
-
-[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
 
 
 ===================
