@@ -1,2 +1,0 @@
-COMPOPTS <= --baseline
-# This test fails with --no-remove-copy-calls
