@@ -72,8 +72,8 @@ try-gmp: FORCE
 	@echo "Speculatively attempting to build gmp"
 	-@$(MAKE) gmp
 
-gmp: $(GMP_INSTALL_DIR)
-$(GMP_INSTALL_DIR):
+gmp: $(GMP_BUILD_DIR)
+$(GMP_BUILD_DIR):
 	cd gmp && $(MAKE)
 
 hwloc: $(HWLOC_INSTALL_DIR)
