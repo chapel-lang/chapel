@@ -79,7 +79,7 @@ endif
 endif
 
 gmp: $(GMP_INSTALL_DIR)/include/gmp.h
-$(GMP_BUILD_DIR)/include/gmp.h:
+$(GMP_INSTALL_DIR)/include/gmp.h:
 	cd gmp && $(MAKE)
 
 hwloc: $(HWLOC_INSTALL_DIR)
