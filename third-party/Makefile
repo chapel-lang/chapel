@@ -78,8 +78,8 @@ ifeq ($(wildcard $(GMP_INSTALL_DIR)/include/gmp.h),)
 endif
 endif
 
-gmp: $(GMP_BUILD_DIR)
-$(GMP_BUILD_DIR):
+gmp: $(GMP_INSTALL_DIR)/include/gmp.h
+$(GMP_BUILD_DIR)/include/gmp.h:
 	cd gmp && $(MAKE)
 
 hwloc: $(HWLOC_INSTALL_DIR)
@@ -116,8 +116,8 @@ ifeq ($(wildcard $(RE2_INSTALL_DIR)/include/re2/re2.h),)
 endif
 endif
 
-re2: $(RE2_BUILD_DIR)
-$(RE2_BUILD_DIR):
+re2: $(RE2_INSTALL_DIR)/include/re2/re2.h
+$(RE2_INSTALL_DIR)/include/re2/re2.h:
 	cd re2 && $(MAKE)
 
 -include Makefile.devel
