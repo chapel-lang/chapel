@@ -31,9 +31,9 @@ endif
 
 RE2_FILE := $(RE2_INSTALL_DIR)/include/re2/re2.h
 
-default: $(RE2_FILE)
+default: all
 
-all: $(RE2_FILE)
+all: re2
 
 clean: FORCE
 	rm -rf $(RE2_BUILD_SUBDIR)
@@ -44,7 +44,11 @@ cleanall: FORCE
 clobber: FORCE
 	rm -rf build install re2
 
-$(RE2_FILE):
+$(RE2_BUILD_SUBDIR):
+	mkdir -p $@
+
+$(RE2_FILE): $(RE2_BUILD_SUBDIR)
+	false
 	if [ ! -d re2 ]; then ./unpack-re2.sh; fi
 	cd re2 && \
 	$(MAKE) clean && \

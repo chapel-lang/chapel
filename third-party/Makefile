@@ -104,8 +104,8 @@ try-re2: FORCE
 	@echo "Speculatively attempting to build re2"
 	-@$(MAKE) re2
 
-re2: $(RE2_INSTALL_DIR)
-$(RE2_INSTALL_DIR):
+re2: $(RE2_BUILD_DIR)
+$(RE2_BUILD_DIR):
 	cd re2 && $(MAKE)
 
 -include Makefile.devel
