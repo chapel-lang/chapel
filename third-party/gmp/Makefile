@@ -8,10 +8,6 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 #
 # set up the directories
 #
-GMP_ABS_DIR = $(shell pwd)
-GMP_INSTALL_DIR = $(GMP_ABS_DIR)/$(GMP_INSTALL_SUBDIR)
-GMP_BUILD_DIR = $(GMP_ABS_DIR)/$(GMP_BUILD_SUBDIR)
-GMP_DIR = $(GMP_ABS_DIR)
 GMP_UNPACKED_DIR = gmp-$(GMP_VERSION)
 GMP_TARBALL = $(GMP_UNPACKED_DIR)a.tar.bz2
 
