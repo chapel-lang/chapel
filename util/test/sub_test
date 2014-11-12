@@ -402,9 +402,8 @@ def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
 # Otherwise, use testEnv to process it the old way.
 def runSkipIf(skipifName):
     name = './' + skipifName
-    skipifFile = open(name, 'r')
-    line = skipifFile.readline()
-    if re.search(r'/usr/bin/env', line):
+    # Already a file because os.R_OK is true?
+    if os.access(name, os.X_OK):
         skiptest = subprocess.Popen(name, stdout=subprocess.PIPE).communicate()[0]
     else:
         skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
