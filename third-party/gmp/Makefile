@@ -32,6 +32,9 @@ ifeq (linux32, $(CHPL_MAKE_TARGET_PLATFORM))
 CHPL_GMP_ABI_ARG = ABI=32
 endif
 
+GMP_MAKEFILE = $(GMP_BUILD_SUBDIR)/Makefile
+GMP_H_FILE = $(GMP_INSTALL_SUBDIR)/include/gmp.h
+
 default: all
 
 all: gmp
@@ -48,18 +51,20 @@ clobber: FORCE
 $(GMP_UNPACKED_DIR):
 	cd $(GMP_DIR) && tar --bzip2 -xf $(GMP_TARBALL)
 
-gmp-config: $(GMP_UNPACKED_DIR) FORCE
-	mkdir -p $(GMP_BUILD_DIR)
+$(GMP_BUILD_SUBDIR):
+	mkdir -p $@
+
+$(GMP_MAKEFILE): $(GMP_BUILD_SUBDIR) $(GMP_UNPACKED_DIR)
 	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS) $(CHPL_GMP_CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CXXFLAGS) $(CHPL_GMP_CXXFLAGS)' $(CHPL_GMP_ABI_ARG) --prefix=$(GMP_INSTALL_DIR) $(CHPL_GMP_CFG_OPTIONS)
 
-gmp-build: FORCE
+$(GMP_H_FILE): $(GMP_MAKEFILE)
 	cd $(GMP_BUILD_DIR) && $(MAKE)
 ifneq ($(CHPL_MAKE_TARGET_ARCH),knc)
 	cd $(GMP_BUILD_DIR) && $(MAKE) check
 endif
 	cd $(GMP_BUILD_DIR) && $(MAKE) install
 
-gmp: gmp-config gmp-build
+gmp: $(GMP_H_FILE)
 
 FORCE:
 
