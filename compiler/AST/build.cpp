@@ -943,6 +943,9 @@ buildForallLoopStmt(Expr*      indices,
   }
   loopBody->byrefVars = byref_vars;
 
+  // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
+  loopBody->blockTag = BLOCK_NORMAL;
+
   BlockStmt* resultBlock     = new BlockStmt();
 
   VarSymbol* iter            = newTemp("chpl__iter");
