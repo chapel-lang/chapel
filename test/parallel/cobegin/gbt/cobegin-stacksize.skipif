@@ -1,0 +1,4 @@
+# This test sets a low stack size expecting the program to fail with that
+# amount, but it ends up succeeding with --fast because the stack sizes with
+# --fast are really small.
+COMPOPTS <= --fast
