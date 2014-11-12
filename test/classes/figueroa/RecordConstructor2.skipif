@@ -11,12 +11,7 @@
 # removeUnnecessaryAutoCopyCalls() pass can go away, and this skipif will also
 # be unnecessary.
 
-import sys
 import os
-import re
 
 compopts = os.getenv('COMPOPTS', '')
-if re.search(r'--baseline', compopts) or re.search(r'--no-remove-copy-calls', compopts):
-    print 'True'
-else:
-    print 'False'
+print('--baseline' in compopts or '--no-remove-copy-calls' in compopts)
