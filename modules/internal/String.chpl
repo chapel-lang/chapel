@@ -575,7 +575,7 @@ module CString {
   // Use with care.  Not for the weak.
   inline proc chpl_free_c_string_copy(ref cs: c_string_copy) {
     pragma "insert line file info"
-    extern proc chpl_rt_free_c_string(cs: c_string_copy);
+    extern proc chpl_rt_free_c_string(ref cs: c_string_copy);
     if (cs != _nullString) then chpl_rt_free_c_string(cs);
     // cs = _nullString;
   }
