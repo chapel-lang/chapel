@@ -31,7 +31,7 @@
 //  implementForallIntents1()
 //-----------------------------------------------------------------------------
 //
-// This is Part 1 - it is executed earlier:
+// This is Part 1 of implementing forall intents, executed earlier than Part 2:
 // * discover the relevant AST pieces of a forall loop
 // * compute outer variables
 // * does some AST transformations
@@ -98,19 +98,24 @@ static bool isOuterVar(Symbol* sym, BlockStmt* block) {
 // Find all symbols used in 'block' and defined outside of it.
 //
 static void findOuterVars(BlockStmt* block, SymbolMap* uses) {
-  Vec<BaseAST*> asts;
-  collect_asts(block, asts);
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* symExpr = toSymExpr(ast)) {
-      Symbol* sym = symExpr->var;
-      if (toVarSymbol(sym) || toArgSymbol(sym))
-        if (!isCorrespIndexVar(block, sym) && isOuterVar(sym, block))
-          uses->put(sym,gNil);
-    }
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(block, symExprs);
+  for_vector(SymExpr, symExpr, symExprs) {
+    Symbol* sym = symExpr->var;
+    if (toVarSymbol(sym) || toArgSymbol(sym))
+      if (!isCorrespIndexVar(block, sym) && isOuterVar(sym, block))
+        uses->put(sym,gNil);
   }
 }
 
 
+//
+// Create a new var, for use as a shadow var in the body of the forall loop,
+// for each un-pruned variable in 'uses'.
+// Add the original var to 'outerVars' and the new var to 'shadowVars'
+// so an ordered traversal of the two lists gives matching pairs.
+// Count the number of these variables into 'numOuterVars'.
+//
 static void createShadowVars(SymbolMap* uses, int& numOuterVars,
                              std::vector<Symbol*>& outerVars,
                              std::vector<Symbol*>& shadowVars)
@@ -285,22 +290,20 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
 static void
 replaceVarUsesWithFormals(Expr* block, SymbolMap* vars) {
   if (vars->n == 0) return;
-  Vec<BaseAST*> asts;
-  collect_asts(block, asts);
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(block, symExprs);
   form_Map(SymbolMapElem, e, *vars) {
-      Symbol* sym = e->key;
-      INT_ASSERT(sym); // todo: if this succeeds, remove such 'if' elsewhere
-      if (e->value != markPruned) {
-        SET_LINENO(sym);
-        Symbol* arg = e->value;
-        forv_Vec(BaseAST, ast, asts) {
-          if (SymExpr* se = toSymExpr(ast)) {
-            if (se->var == sym) {
-              se->var = arg;
-            }
-          }
+    Symbol* sym = e->key;
+    INT_ASSERT(sym); // todo: if this succeeds, remove such 'if' elsewhere
+    if (e->value != markPruned) {
+      SET_LINENO(sym);
+      Symbol* arg = e->value;
+      for_vector(SymExpr, se, symExprs) {
+        if (se->var == sym) {
+          se->var = arg;
         }
       }
+    }
   }
 }
 
@@ -377,6 +380,7 @@ static void discoverForallBodies(DefExpr* defChplIter,
     // yes fast followers
 
     if (defChplIter->sym->type != dtUnknown) {
+      printf("VASS: undesirable case in discoverForallBodies()\n"); // TODO either replace with an assertion or comment when this is encountered and is still OK.
       //
       // Remark: if the function has been resolved, we may be doomed -
       // because the 'if' that we will rely on may have been folded away.
@@ -471,6 +475,12 @@ static void verifyOuterVars(BlockStmt* body2, Symbol* serIterSym1,
   INT_ASSERT(numOuterVars1 == numOuterVars2);
 }
 
+//
+// This is Part 1 of implementing forall intents, executed earlier than Part 2:
+// * discover the relevant AST pieces of a forall loop
+// * compute outer variables
+// * does some AST transformations
+//
 void implementForallIntents1(DefExpr* defChplIter)
 {
   // Find the corresponding forall loop body,
@@ -479,7 +489,7 @@ void implementForallIntents1(DefExpr* defChplIter)
   BlockStmt* forallBody2;
   discoverForallBodies(defChplIter, forallBody1, forallBody2);
 
-  // If both bodies are present, they [gotta] be copies of one another.
+  // If both bodies are present, I expect them to be copies of one another.
   // So we discover everything for the first one and verify
   // that it's the same for the second one.
   // I think swapping the first and the second in the below
@@ -585,17 +595,27 @@ static FnSymbol* copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved) {
   // is already set, although resolution is not yet started.
   // fn->copy() carries this flag over, which is confusing. Reset it.
   if (ignore_isResolved) {
+    // Even if this assert fails, we still want to remove FLAG_RESOLVED.
     INT_ASSERT(origFn->isResolved());
     copyFn->removeFlag(FLAG_RESOLVED);
   }
 
-  // We need to resolve the _build_tuple calls that we insert.
-  // Either, as we assert, copyFn is not resolved, in which case
-  // it will get resolved right after this.
-  // If it is already resolved and the assertion fails, need to resolve those
-  // calls ourselves: resolveCall(bldTup); resolveFns(bldTup->isResolved()).
-  // Furthermore, if it is resolved, chpl__leaderIdx is already set and
-  // ignores the tuple that the leader yields, so we'd have to redo that.
+  //
+  // We do not want copyFn to be already resolved because:
+  //
+  // * We need to resolve the _build_tuple calls that we will insert.
+  //   If copyFn were already resolved, we could resolve those calls by hand
+  //   like so:  resolveCall(bldTplCall); resolveFns(bldTplCall->isResolved());
+  //   for each bldTplCall - the inserted _build_tuple call.
+  //
+  // * If copyFn were already resolved, chpl__leaderIdx's type would
+  //   already have been set -- before we convert the leader's yield values
+  //   from <whatever> to tuple(<whatever>, shadow variables).
+  //   So we would need to redo chpl__leaderIdx's type and whatever it affects.
+  //
+  // Currently, as we assert, copyFn is not resolved - it will get resolved
+  // right after this.
+  //
   INT_ASSERT(!copyFn->isResolved());
 
   return copyFn;
@@ -641,7 +661,10 @@ static VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
   return NULL;       // dummy
 }
 
-static void checkOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
+//
+// Verify that 'origRet' is not used, and remove it from the tree.
+//
+static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   // parentFn and this assert are just sanity checking for the caller
   INT_ASSERT(origRet->defPoint->parentSymbol == parentFn);
 
@@ -654,6 +677,10 @@ static void checkOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   origRet->defPoint->remove();
 }
 
+//
+// Propagate 'extraActuals' through the task constructs, implementing
+// task intents. See the header comment for extendLeader().
+//
 static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
                                      int numExtraArgs, Symbol* extraActuals[],
                                      bool nested)
@@ -709,7 +736,22 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
   }
 }
 
-// ForallLeaderArgs: propagating the extra args
+//
+// ForallLeaderArgs: propagate the extra args through the leader,
+// specifically through a fresh copy of the leader.
+// That is, replace
+//   iter ITERATOR(originalArgs...) {
+//     ... yield originalYield; ...
+//   }
+// with
+//   iter ITERATOR(originalArgs..., forallOuterVars...) {
+//     ... yield (originalYield, forallOuterVars...); ...
+//   }
+// where 'outerVars' are propagated through task constructs
+// as per task intents. Since createTaskFunctions() is done
+// earlier (before resolution), we have to do task intents
+// for forallOuterVars ourselves.
+//
 static void extendLeader(CallExpr* call) {
   FnSymbol* origIterFn = call->isResolved();
   INT_ASSERT(origIterFn);  // caller's responsibility
@@ -737,14 +779,14 @@ static void extendLeader(CallExpr* call) {
   }
 
   // Setup the new return/yield symbol.
-  VarSymbol* retSym  = newTemp("ret"); // its type is to be inferred later
+  VarSymbol* retSym  = newTemp("ret"); // its type is to be inferred
   Symbol* origRetSym = iterFn->replaceReturnSymbol(retSym, /*newRetType*/NULL);
   origRetSym->defPoint->insertBefore(new DefExpr(retSym));
   origRetSym->name = "origRet";
 
   propagateExtraLeaderArgs(call, retSym, numExtraArgs, extraActuals, false);
 
-  checkOrigRetSym(origRetSym, iterFn);
+  checkAndRemoveOrigRetSym(origRetSym, iterFn);
 }
 
 void implementForallIntents2(CallExpr* call) {

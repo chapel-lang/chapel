@@ -934,6 +934,11 @@ buildForallLoopStmt(Expr*      indices,
 
   checkIndices(indices);
 
+  //
+  // 'byrefVars' will contain a PRIM_FORALL_LOOP, whose "arguments"
+  // are variables listed in the forall's with(ref...) clause.
+  // This list is processed during implementForallIntents1().
+  //
   INT_ASSERT(!loopBody->byrefVars);
   if (byref_vars) {
     INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
@@ -1052,6 +1057,12 @@ addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
   // nothing to do if there is no 'ref' clause
   if (!byrefVarsSource) return;
 
+  //
+  // 'byrefVars' will contain a CallExpr, whose "arguments"
+  // are variables listed in the with(ref...) clause
+  // of the enclosing begin/cobegin/coforall.
+  // This list is processed during createTaskFunctions().
+  //
   // Could set byrefVars->parentExpr/Symbol right here.
   target->byrefVars = byrefVarsSource;
 

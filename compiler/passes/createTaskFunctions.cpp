@@ -287,7 +287,7 @@ void createTaskFunctions(void) {
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    bool neededCapture = false;
+    bool hasTaskIntentClause = false;  // this 'block' has task intent clause ?
     // Loops are not a parallel block construct
     if (block->isLoop() == true) {
 
@@ -429,7 +429,7 @@ void createTaskFunctions(void) {
         fn->retType = dtVoid;
 
         if (needsCapture(fn)) {
-          neededCapture = true;
+          hasTaskIntentClause = true;
           // Convert referenced variables to explicit arguments.
           // Note: this collects only the variables, including globals,
           // that are referenced directly within in the task-parallel block.
@@ -460,7 +460,7 @@ void createTaskFunctions(void) {
     // syntactically allowed, and should be always empty for anything else.
     // Except where it marks a forall loop body.
     INT_ASSERT(!block->byrefVars ||
-               (!neededCapture &&
+               (!hasTaskIntentClause &&
                 block->byrefVars->isPrimitive(PRIM_FORALL_LOOP)));
 
   } // for block

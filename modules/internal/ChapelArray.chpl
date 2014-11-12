@@ -2595,7 +2595,12 @@ module ChapelArray {
   inline proc _toLeaderZip(x: _tuple)
     return _toLeader(x(1));
 
+  //
   // additional _toLeader/_toLeaderZip for forall intents
+  //
+  // The extra args... are used to pass the outer variables of the
+  // forall loop body, which are subject to forall intents.
+  //
 
   pragma "no implicit copy"
   pragma "expand tuples with values"
