@@ -53,8 +53,8 @@ module SSCA2_kernels
       // of all edges  matching the heaviest weight
       // ---------------------------------------------
 
-      forall s in G.vertices do
-        forall (t, w) in G.NeighborPairs (s) do
+      forall s in G.vertices with (ref heavy_edge_list) do
+        forall (t, w) in G.NeighborPairs (s) with (ref heavy_edge_list) do
 
 	  if w == heaviest_edge_weight then {
 	    heavy_edge_list.add ( (s,t) ); 
