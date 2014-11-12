@@ -45,10 +45,8 @@ const char* toString(FnSymbol* fn);
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
 // forall intents
-extern CallExpr* extendedLeaderCallOrig;
-extern CallExpr* extendedLeaderCallNew;
 void implementForallIntents1(DefExpr* defChplIter);
-void implementForallIntents2(CallExpr* call);
+void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
 void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignore_isResolved);
 
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs, CallExpr* call);

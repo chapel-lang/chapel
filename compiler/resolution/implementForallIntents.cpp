@@ -562,9 +562,6 @@ void implementForallIntents1(DefExpr* defChplIter)
 // Like SymbolMapCache?
 static Map<FnSymbol*,FnSymbol*> pristineLeaderIterators;
 
-CallExpr* extendedLeaderCallOrig = NULL;
-CallExpr* extendedLeaderCallNew = NULL;
-
 
 static FnSymbol* copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved) {
   FnSymbol* copyFn = origFn->copy();
@@ -752,7 +749,7 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
 // earlier (before resolution), we have to do task intents
 // for forallOuterVars ourselves.
 //
-static void extendLeader(CallExpr* call) {
+static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall) {
   FnSymbol* origIterFn = call->isResolved();
   INT_ASSERT(origIterFn);  // caller's responsibility
 
@@ -767,9 +764,9 @@ static void extendLeader(CallExpr* call) {
   FnSymbol* iterFn = copyLeaderFn(origIterFn, /*ignore_isResolved:*/false);
   toSymExpr(call->baseExpr)->var = iterFn;
 
-  int numExtraArgs = extendedLeaderCallOrig->numActuals()-1;
+  int numExtraArgs = origToLeaderCall->numActuals()-1;
   INT_ASSERT(numExtraArgs > 0); // we shouldn't be doing all this otherwise
-  Expr* origArg = extendedLeaderCallOrig->get(1);
+  Expr* origArg = origToLeaderCall->get(1);
   Symbol* extraActuals[numExtraArgs];
   for (int ix = 0; ix < numExtraArgs; ix++) {
     origArg = origArg->next;
@@ -789,10 +786,8 @@ static void extendLeader(CallExpr* call) {
   checkAndRemoveOrigRetSym(origRetSym, iterFn);
 }
 
-void implementForallIntents2(CallExpr* call) {
-  INT_ASSERT(call == extendedLeaderCallNew); // caller's responsibility
-
-  if (extendedLeaderCallOrig->numActuals() <= 1) {
+void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall) {
+  if (origToLeaderCall->numActuals() <= 1) {
     // No variables to propagate => no extendLeader.
     // Ensure we have a pristine copy for the other case.
     FnSymbol* origLeader = call->isResolved();
@@ -800,13 +795,7 @@ void implementForallIntents2(CallExpr* call) {
 
     if (!pristineLeaderIterators.get(origLeader))
       stashPristineCopyOfLeaderIter(origLeader, /*ignore_isResolved:*/ false);
-
   } else {
-    extendLeader(call);
-
+    extendLeader(call, origToLeaderCall);
   }
-
-  // clean up
-  extendedLeaderCallNew = NULL;
-  extendedLeaderCallOrig = NULL;
 }

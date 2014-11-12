@@ -4404,6 +4404,13 @@ isNormalField(Symbol* field)
   return true;
 }
 
+static CallExpr* toPrimToLeaderCall(Expr* expr) {
+  if (CallExpr* call = toCallExpr(expr))
+    if (call->isPrimitive(PRIM_TO_LEADER))
+      return call;
+  return NULL;
+}
+
 // Recursively resolve typedefs
 static Type* resolveTypeAlias(SymExpr* se)
 {
@@ -5042,14 +5049,6 @@ preFold(Expr* expr) {
         leaderCall = new CallExpr(leader);
       else
         leaderCall = new CallExpr(iterator->name);
-
-      // Ensure these are not in use by another call. If they are,
-      // need the ability to handle multiple such calls, e.g. use a hash map.
-      INT_ASSERT(!extendedLeaderCallOrig && !extendedLeaderCallNew);
-      // ForallLeaderArgs: will need to process after resolving the call
-      extendedLeaderCallOrig = call;
-      extendedLeaderCallNew = leaderCall;
-
       for_formals(formal, iterator) {
         leaderCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
@@ -5860,6 +5859,7 @@ resolveExpr(Expr* expr)
       }
     }
     
+    Expr* const origExpr = expr;
     expr = preFold(expr);
 
     if (fn && fn->retTag == RET_PARAM) {
@@ -5912,15 +5912,10 @@ resolveExpr(Expr* expr)
       resolveCall(call);
         
       if (!tryFailure && call->isResolved()) {
-        if (call == extendedLeaderCallNew)
-          implementForallIntents2(call);
+        if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
+          // ForallLeaderArgs: process the leader that 'call' invokes.
+          implementForallIntents2(call, origToLeaderCall);
         resolveFns(call->isResolved());
-      } else {
-        if (call == extendedLeaderCallNew) {
-          // clean up
-          extendedLeaderCallNew = NULL;
-          extendedLeaderCallOrig = NULL;
-        }
       }
         
       if (tryFailure) {
