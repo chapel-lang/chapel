@@ -6,7 +6,7 @@ inline proc _defaultOf(type t) where t: enumt {
 }
 
 var blah: enumt = noinit; // Should not print out the message
-var blah2: enumt;         // Should print out the message
 blah = enumt.bar;
 writeln(blah);
+var blah2: enumt;         // Should print out the message
 writeln(blah2);
