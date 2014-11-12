@@ -2,3 +2,7 @@
 # amount, but it ends up succeeding with --fast because the stack sizes with
 # --fast are really small.
 COMPOPTS <= --fast
+
+# cygwin doesn't support changing the stack size
+CHPL_TARGET_PLATFORM == cygwin
+
