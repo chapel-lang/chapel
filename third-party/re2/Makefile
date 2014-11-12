@@ -48,7 +48,6 @@ $(RE2_BUILD_SUBDIR):
 	mkdir -p $@
 
 $(RE2_FILE): $(RE2_BUILD_SUBDIR)
-	false
 	if [ ! -d re2 ]; then ./unpack-re2.sh; fi
 	cd re2 && \
 	$(MAKE) clean && \
