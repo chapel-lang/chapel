@@ -7,8 +7,5 @@ source $CWD/common-qthreads.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chap04.playground"
 
-export CHPL_RT_NUM_THREADS_PER_LOCALE=16
-# releasePerformance still generates results based on the fifo timings. It's
-# run here again, otherwise syncing the qthreads results blows away the
-# directory with the releaseOverRelease graphs in
-$CWD/nightly -cron -performance-description 'qthreads --genGraphOpts "-m default -m qthreads"' -releasePerformance -numtrials 5 -startdate 07/28/12
+# disabled until there are some more performance comparisons we want to do
+#$CWD/nightly -cron -performance-description 'qthreads --genGraphOpts "-m default -m qthreads"' -releasePerformance -numtrials 5 -startdate 07/28/12
