@@ -31,16 +31,19 @@ AST_SRCS = \
 	symbol.cpp \
 	type.cpp \
 	view.cpp \
+                             \
+        WhileStmt.cpp        \
+        WhileDoStmt.cpp      \
+        DoWhileStmt.cpp      \
+        ForLoop.cpp          \
+                             \
         AstLogger.cpp        \
         AstVisitor.cpp       \
         AstDump.cpp          \
         AstDumpToHtml.cpp    \
         AstDumpToNode.cpp    \
                              \
-        WhileStmt.cpp        \
-        WhileDoStmt.cpp      \
-        DoWhileStmt.cpp      \
-        ForLoop.cpp
+        CollapseBlocks.cpp
 
 SVN_SRCS = $(AST_SRCS)
 SRCS = $(SVN_SRCS)

@@ -102,6 +102,14 @@ echo ""
 # when calling make with parallel execution.
 num_procs=$(python -c "import multiprocessing; print(multiprocessing.cpu_count())")
 
+# If make check fails, store the log file in CHPL_HOME. Also, create a temp dir
+# in $CHPL_HOME where the hello*.chpl tests are copied and run.
+export CHPL_CHECK_INSTALL_DIR=$CHPL_HOME
+
+if [ "${TRAVIS}" = "true" ] ; then
+    export CHPL_CHECK_INSTALL_PRINT_ERROR="true"
+fi
+
 # Compile chapel and make sure the hello world examples run. Compile first with
 # parallel execution, but call `make check` without it.
 make -j${num_procs} $chpl_make_args && \
