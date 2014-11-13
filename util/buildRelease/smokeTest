@@ -9,6 +9,9 @@ set -e
 
 CWD=$(cd $(dirname $0) ; pwd)
 
+export
+exit 0
+
 # Ensure CC is respected, since it is typically ignored by chplenv/.
 if [ -n "${CC}" ] ; then
     case $CC in
