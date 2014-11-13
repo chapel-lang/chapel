@@ -181,15 +181,9 @@ spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
 # suite: Colorado State University 
-studies/colostate/Jacobi-2D-Diamond-Tiling.graph          
-studies/colostate/Jacobi-2D-NaiveParallel.graph
-studies/colostate/Jacobi-2D-Inlined-Diamond-Tiling.graph  
-studies/colostate/Jacobi-2D-Serial.graph
-studies/colostate/Jacobi-3D-Diamond-Tiling.graph          
-studies/colostate/Jacobi-3D-Naive-Parallel.graph
-studies/colostate/Jacobi-3D-Inlined-Diamond-Tiling.graph  
-studies/colostate/Jacobi-3D-Serial.graph
-studies/colostate/cfd-mini-serial.graph
+studies/colostate/Jacobi-1D.graph
+studies/colostate/Jacobi-2D.graph
+studies/colostate/cfd-mini.graph
 studies/colostate/jacobi-unroll.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph

@@ -116,6 +116,27 @@ bool AstLogger::enterBlockStmt(BlockStmt* node) {
 void AstLogger::exitBlockStmt(BlockStmt* node) {
 }
 
+bool AstLogger::enterWhileDoStmt(WhileDoStmt* node) {
+  return true;
+}
+
+void AstLogger::exitWhileDoStmt(WhileDoStmt* node) {
+}
+
+bool AstLogger::enterDoWhileStmt(DoWhileStmt* node) {
+  return true;
+}
+
+void AstLogger::exitDoWhileStmt(DoWhileStmt* node) {
+}
+
+bool AstLogger::enterForLoop(ForLoop* node) {
+  return true;
+}
+
+void AstLogger::exitForLoop(ForLoop* node) {
+}
+
 bool AstLogger::enterCondStmt(CondStmt* node) {
   return true;
 }

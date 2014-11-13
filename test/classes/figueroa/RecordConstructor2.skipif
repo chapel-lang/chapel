@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # There is different behavior when --baseline is tossed, due to
 # fNoRemoveCopyCalls preventing removeUnnecessaryAutoCopyCalls() from running.
 # Given that the compiler may remove autoCopy calls as long as it can prove they
@@ -8,5 +10,8 @@
 # Also, if autoCopy calls are inserted only where they are needed, then the
 # removeUnnecessaryAutoCopyCalls() pass can go away, and this skipif will also
 # be unnecessary.
-COMPOPTS<=--baseline
-COMPOPTS<=--no-remove-copy-calls
+
+import os
+
+compopts = os.getenv('COMPOPTS', '')
+print('--baseline' in compopts or '--no-remove-copy-calls' in compopts)
