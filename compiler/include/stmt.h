@@ -110,8 +110,6 @@ public:
   virtual CallExpr*   blockInfoGet()                               const;
   virtual CallExpr*   blockInfoSet(CallExpr* expr);
 
-  void                collapseBlocks();
-
   BlockTag            blockTag;
   AList               body;
   CallExpr*           modUses;       // module uses via PRIM_USE
@@ -122,9 +120,6 @@ public:
 
 private:
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
-
-  void                collapseCForLoopBlocks(CallExpr* call);
-  void                collapseBlock();
 
   CallExpr*           blockInfo;
 };
