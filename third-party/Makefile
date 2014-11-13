@@ -74,7 +74,7 @@ ifeq ($(wildcard $(GMP_BUILD_DIR)),)
 	-@$(MAKE) gmp
 else
 ifeq ($(wildcard $(GMP_INSTALL_DIR)/include/gmp.h),)
-	$(warning Speculative build of gmp squashed due to previous failures.)
+	$(info Speculative build of gmp squashed due to previous failures.)
 endif
 endif
 
@@ -112,7 +112,7 @@ ifeq ($(wildcard $(RE2_BUILD_DIR)),)
 	-@$(MAKE) re2
 else
 ifeq ($(wildcard $(RE2_INSTALL_DIR)/include/re2/re2.h),)
-	$(warning Speculative build of re2 squashed due to previous failures.)
+	$(info Speculative build of re2 squashed due to previous failures.)
 endif
 endif
 
