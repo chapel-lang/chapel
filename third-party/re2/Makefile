@@ -29,8 +29,6 @@ CHPL_RE2_CXXFLAGS=-mmic
 endif
 endif
 
-RE2_FILE := $(RE2_INSTALL_DIR)/include/re2/re2.h
-
 default: all
 
 all: re2
@@ -47,7 +45,7 @@ clobber: FORCE
 $(RE2_BUILD_SUBDIR):
 	mkdir -p $@
 
-$(RE2_FILE): $(RE2_BUILD_SUBDIR)
+$(RE2_H_FILE): $(RE2_BUILD_SUBDIR)
 	if [ ! -d re2 ]; then ./unpack-re2.sh; fi
 	cd re2 && \
 	$(MAKE) clean && \
@@ -57,7 +55,7 @@ $(RE2_FILE): $(RE2_BUILD_SUBDIR)
 	rm -rf ../build/$(RE2_UNIQUE_SUBDIR) && \
 	mv obj ../build/$(RE2_UNIQUE_SUBDIR)
 
-re2: $(RE2_FILE)
+re2: $(RE2_H_FILE)
 
 FORCE:
 

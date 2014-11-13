@@ -73,13 +73,13 @@ ifeq ($(wildcard $(GMP_BUILD_DIR)),)
 	@echo "Speculatively attempting to build gmp"
 	-@$(MAKE) gmp
 else
-ifeq ($(wildcard $(GMP_INSTALL_DIR)/include/gmp.h),)
+ifeq ($(wildcard $(GMP_H_FILE)),)
 	$(info Speculative build of gmp squashed due to previous failures.)
 endif
 endif
 
-gmp: $(GMP_INSTALL_DIR)/include/gmp.h
-$(GMP_INSTALL_DIR)/include/gmp.h:
+gmp: $(GMP_H_FILE)
+$(GMP_H_FILE):
 	cd gmp && $(MAKE)
 
 hwloc: $(HWLOC_INSTALL_DIR)
@@ -111,13 +111,13 @@ ifeq ($(wildcard $(RE2_BUILD_DIR)),)
 	@echo "Speculatively attempting to build re2"
 	-@$(MAKE) re2
 else
-ifeq ($(wildcard $(RE2_INSTALL_DIR)/include/re2/re2.h),)
+ifeq ($(wildcard $(RE2_H_FILE)),)
 	$(info Speculative build of re2 squashed due to previous failures.)
 endif
 endif
 
-re2: $(RE2_INSTALL_DIR)/include/re2/re2.h
-$(RE2_INSTALL_DIR)/include/re2/re2.h:
+re2: $(RE2_H_FILE)
+$(RE2_H_FILE):
 	cd re2 && $(MAKE)
 
 -include Makefile.devel

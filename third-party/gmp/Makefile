@@ -33,7 +33,6 @@ CHPL_GMP_ABI_ARG = ABI=32
 endif
 
 GMP_MAKEFILE = $(GMP_BUILD_SUBDIR)/Makefile
-GMP_H_FILE = $(GMP_INSTALL_SUBDIR)/include/gmp.h
 
 default: all
 
