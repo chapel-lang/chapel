@@ -52,10 +52,12 @@ general
 Reviewed 2014-11-09
 ===================
 
-redefinition of chpl_glob() (11/09/14 -- bradc)
-(xe-wb*)
------------------------------------------------
-[Error matching compiler output for studies/glob/test_glob (compopts: 1)]
+failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
+(linux32, x?-wb.*)
+--------------------------------------------------------------------------
+[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)]
+[Error running sub_test in /.../test/studies/lsms/shemmy (255)]
+[Error matching program output for studies/filerator/walk (execopts: 9)]
 
 sporadic failure (2-3x a month -- vass)
 ---------------------------------------
@@ -72,8 +74,67 @@ Reviewed 2014-11-08
 ===================
 linux32
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-12
 ===================
+
+tasking #include didn't get a filename (since first run, 2014-11-12)
+--------------------------------------------------------------------
+[Error matching compiler output for io/ferguson/ctests/qbuffer_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_bits_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_mark_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_memfile_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_test (compopts: 1)]
+
+GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
+------------------------------------------------------------------------
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_dist_array]
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_random]
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_test]
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_writeln]
+[Error matching compiler output for modules/standard/gmp/studies/gmp-chudnovsky (compopts: 1)]
+[Error matching compiler output for studies/shootout/pidigits/hilde/pidigits-hilde]
+[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-BigInt]
+[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt]
+
+memmax/memthreshold flags are C types; should be Chapel types (2014-11-12)
+--------------------------------------------------------------------------
+[Error matching program output for execflags/ferguson/help2]
+[Error matching program output for execflags/shannon/configs/help/configVar-Dash]
+[Error matching program output for execflags/shannon/configs/help/configVarHelp]
+[Error matching program output for execflags/shannon/configs/help/configVarModStrings1]
+[Error matching program output for execflags/shannon/configs/help/configVarModStrings2]
+[Error matching program output for execflags/shannon/configs/help/configVarSetOver]
+[Error matching program output for execflags/shannon/configs/help/configVarSetTwoTypes]
+[Error matching program output for execflags/shannon/configs/help/configVarTwoModules]
+[Error matching program output for execflags/shannon/configs/help/varNameEnumQM]
+[Error matching program output for execflags/shannon/configs/help/varNameQMark]
+[Error matching program output for execflags/shannon/help]
+[Error matching program output for memory/shannon/memmaxIntOnly]
+
+different amounts of memory leakedon 32-bit platforms (2014-11-12, first run)
+-----------------------------------------------------------------------------
+[Error matching program output for memory/sungeun/refCount/domainMaps]
+
+prefetch instruction not found (2014-11-12, first run)
+------------------------------------------------------
+[Error matching program output for modules/standard/Prefetch/prefetch (compopts: 1)]
+
+some sort of 64-bit assertion fails (2014-11-12, first run)
+-----------------------------------------------------------
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+
+seg fault (2014-11-12, first run)
+---------------------------------
+[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
+
+timeout (2014-11-12, first run)
+-------------------------------
+[Error matching program output for parallel/cobegin/diten/cobeginRace]
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
+[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder]
+[Error: Timed out executing program stress/deitz/test_10k_begins]
+
 
 
 ===================
@@ -241,6 +302,12 @@ Inherits 'no-local'
 Reviewed 2014-11-01
 ===================
 
+test broke with smaller stacksize (2014-11-12 -- elliot)
+--------------------------------------------------------
+[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize (execopts: 1)]
+[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize (execopts: 2)]
+
+
 
 ===================
 gasnet-everything
@@ -250,7 +317,7 @@ Reviewed 2014-11-10
 
 sporadic execution timeout (regularly)
 --------------------------------------
-[Error: Timed out executing program studies/sudoku/dinan/sudoku] (11/03/14, 11/07/14)
+[Error: Timed out executing program studies/sudoku/dinan/sudoku] (11/03/14, 11/07/14, 2014-11-12)
 
 
 ===================
@@ -355,10 +422,6 @@ x?-wb.*
 Inherits 'general'
 Reviewed 2014-11-09
 ===================
-
-failure due to use of jgit to check out repo which doesn't preserve symlinks
-----------------------------------------------------------------------------
-[Error matching program output for studies/filerator/walk (execopts: 9)]
 
 
 ==================
@@ -544,7 +607,7 @@ Reviewed 2014-11-09
 =============================
 x?-wb.gnu
 Inherits 'x?-wb*' and '*gnu*'
-Reviewed 2014-11-09
+Reviewed 2014-11-12
 =============================
 
 
