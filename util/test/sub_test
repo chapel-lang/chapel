@@ -397,6 +397,18 @@ def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
     else:
         return '{0}.{1}-{2}{3}'.format(execname, comp_opts_count, exec_opts_count, suffix)
 
+# If the first line of the skipif file contains '/usr/bin/env', then just execute it.
+# (Don't forget to add execute permission to a script skipif file.)
+# Otherwise, use testEnv to process it the old way.
+def runSkipIf(skipifName):
+    name = './' + skipifName
+    # Already a file because os.R_OK is true?
+    if os.access(name, os.X_OK):
+        skiptest = subprocess.Popen(name, stdout=subprocess.PIPE).communicate()[0]
+    else:
+        skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
+    return skiptest
+
 # Start of sub_test proper
 #
 
@@ -879,9 +891,11 @@ for testname in testsrc:
 
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
-            skiptest=subprocess.Popen([utildir+'/test/testEnv', './'+f], stdout=subprocess.PIPE).communicate()[0]
+            skiptest=runSkipIf(f)
             try:
-                skipme = int(skiptest)
+                skipme=False
+                if skiptest.strip() != "False":
+                    skipme = skiptest.strip() == "True" or int(skiptest) == 1
                 if skipme:
                     sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,test_filename))
                     do_not_test=True
