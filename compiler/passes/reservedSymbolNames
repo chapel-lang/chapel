@@ -262,3 +262,15 @@
   wait2
   wait3
   wait4
+
+  // symbols in wordexp.h
+  wordexp
+
+  // symbols in glob.h
+  glob
+
+  // symbols in math.h
+  isinf
+  isfinite
+  NAN
+  INFINITY

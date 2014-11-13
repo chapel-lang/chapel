@@ -402,9 +402,8 @@ def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
 # Otherwise, use testEnv to process it the old way.
 def runSkipIf(skipifName):
     name = './' + skipifName
-    skipifFile = open(name, 'r')
-    line = skipifFile.readline()
-    if re.search(r'/usr/bin/env', line):
+    # Already a file because os.R_OK is true?
+    if os.access(name, os.X_OK):
         skiptest = subprocess.Popen(name, stdout=subprocess.PIPE).communicate()[0]
     else:
         skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
@@ -894,7 +893,9 @@ for testname in testsrc:
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
             skiptest=runSkipIf(f)
             try:
-                skipme = skiptest.strip() == "True" or int(skiptest) == 1
+                skipme=False
+                if skiptest.strip() != "False":
+                    skipme = skiptest.strip() == "True" or int(skiptest) == 1
                 if skipme:
                     sys.stdout.write('[Skipping test based on .skipif environment settings: %s/%s]\n'%(localdir,test_filename))
                     do_not_test=True

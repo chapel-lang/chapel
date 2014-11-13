@@ -1,0 +1,10 @@
+bug: Certain utf8 characters miscount their width on cygwin
+
+On Linux, the character G Clef takes up one character width,
+while cygwin thinks it takes up two when determining how to
+fill a line, making the output line which includes it
+shorter than it would be if the length was counted correctly.
+
+This test is a symlink to the original, widecols.chpl.  Once
+this future has been resolved, remove this test and the
+skipif for widecols on cygwin.

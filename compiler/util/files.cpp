@@ -670,6 +670,8 @@ void setupModulePaths(void) {
 
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/localeModels/",
                       CHPL_LOCALE_MODEL));
+  intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/tasktable/",
+                      fEnableTaskTracking ? "on" : "off"));
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/threads/", 
                       CHPL_THREADS));
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/tasks/", 
@@ -747,6 +749,9 @@ static void helpPrintPath(Vec<const char*> path) {
 
 void printModuleSearchPath(void) {
   fprintf(stderr, "module search dirs:\n");
+  if (developer) {
+    helpPrintPath(intModPath);
+  }
   helpPrintPath(usrModPath);
   helpPrintPath(stdModPath);
   fprintf(stderr, "end of module search dirs\n");

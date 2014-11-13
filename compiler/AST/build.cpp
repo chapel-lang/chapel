@@ -1166,23 +1166,26 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
   return buildChapelStmt(new CallExpr(op, lhs, rhs));
 }
 
-
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = buildChapelStmt();
+  BlockStmt* stmt = new BlockStmt();
   VarSymbol* ltmp = newTemp();
+
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
-  stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalAndExpr(ltmp, rhs)));
+  stmt->insertAtTail(new CallExpr("=",       ltmp, buildLogicalAndExpr(ltmp, rhs)));
+
   return stmt;
 }
 
 
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = buildChapelStmt();
+  BlockStmt* stmt = new BlockStmt();
   VarSymbol* ltmp = newTemp();
+
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
-  stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOrExpr(ltmp, rhs)));
+  stmt->insertAtTail(new CallExpr("=",       ltmp, buildLogicalOrExpr(ltmp, rhs)));
+
   return stmt;
 }
 

@@ -29,6 +29,9 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+#include "WhileDoStmt.h"
+#include "DoWhileStmt.h"
+#include "ForLoop.h"
 
 AstDump::AstDump() {
   mName      =     0;
@@ -269,6 +272,87 @@ bool AstDump::enterBlockStmt(BlockStmt* node) {
 }
 
 void AstDump::exitBlockStmt(BlockStmt* node) {
+  --mIndent;
+  newline();
+  write(false, "}", true);
+  printBlockID(node);
+}
+
+
+//
+// WhileDoStmt
+//
+bool AstDump::enterWhileDoStmt(WhileDoStmt* node) {
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  write("WhileDo");
+  newline();
+  write("{");
+  printBlockID(node);
+  ++mIndent;
+
+  return true;
+}
+
+void AstDump::exitWhileDoStmt(WhileDoStmt* node) {
+  --mIndent;
+  newline();
+  write(false, "}", true);
+  printBlockID(node);
+}
+
+
+//
+// DoWhileStmt
+//
+bool AstDump::enterDoWhileStmt(DoWhileStmt* node) {
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  write("DoWhile");
+  newline();
+  write("{");
+  printBlockID(node);
+  ++mIndent;
+
+  return true;
+}
+
+void AstDump::exitDoWhileStmt(DoWhileStmt* node) {
+  --mIndent;
+  newline();
+  write(false, "}", true);
+  printBlockID(node);
+}
+
+
+//
+// ForLoop
+//
+bool AstDump::enterForLoop(ForLoop* node) {
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  write("ForLoop");
+  newline();
+  write("{");
+  printBlockID(node);
+  ++mIndent;
+
+  return true;
+}
+
+void AstDump::exitForLoop(ForLoop* node) {
   --mIndent;
   newline();
   write(false, "}", true);

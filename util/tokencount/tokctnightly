@@ -62,7 +62,7 @@ if (exists($ENV{"BUILD_URL"})) {
 #
 $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
-    $mailer = "Mail";
+    $mailer = "mail";
 }
 
 if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
@@ -97,6 +97,11 @@ if ($debug == 1) {
 } else {
     $statfile = "$statdir/tokctnightly.cron.dat";
 }
+
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+$num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`;
+chomp($num_procs);
 
 mysystem("cd $tokctdir && make > /dev/null", "building token counter", 1, 1);
 
@@ -136,7 +141,7 @@ foreach $currentcompilerdir (@compilerdirs) {
 # Now count tokens in the runtime.
 mysystem("$tokctr `find $chplhomedir/runtime $findflags` > $chplhomedir/runtime/runtime.ntoks", "counting runtime tokens", 0, 1);
 
-mysystem("cd $chplhomedir && make comprt", "making compiler", 1, 1);
+mysystem("cd $chplhomedir && make -j$num_procs comprt", "making compiler", 1, 1);
 $ENV{'CHPL_HOME'} = $chplhomedir;
 mysystem("$bindir/chpl --count-tokens $chplhomedir/modules/standard/*.chpl $chplhomedir/modules/internal/*.chpl $chplhomedir/modules/dists/*.chpl $chplhomedir/modules/layouts/*.chpl >& $compdir/chpcode.ntoks", "counting module tokens", 1, 1);
 

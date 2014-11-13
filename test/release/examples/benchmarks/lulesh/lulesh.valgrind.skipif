@@ -1,3 +1,0 @@
-# Use this test only under valgrind.
-# Otherwise use its origin, lulesh.chpl
-CHPL_TEST_VGRND_EXE != on

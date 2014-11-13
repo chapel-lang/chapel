@@ -101,7 +101,7 @@ if ($debug == 1) {
 #
 $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
-    $mailer = "Mail";
+    $mailer = "mail";
 }
 
 $somethingfailed = 0;
