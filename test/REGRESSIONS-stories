@@ -749,7 +749,7 @@ o RLIMIT_NPROC undeclared (cygwin): anyone
   - parallel/taskPool/figueroa/TooManyThreads (compopts: 1)
 
 
-o CHPL_RT_CALL_STACK_SIZE too big (cygwin): anyone
+* CHPL_RT_CALL_STACK_SIZE too big (cygwin): anyone
 
   What should we do about the following tests?
 
