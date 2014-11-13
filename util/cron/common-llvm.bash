@@ -9,5 +9,4 @@ export CHPL_LLVM=llvm
 # Run examples and test/extern/ferguson/.
 export CHPL_NIGHTLY_TEST_DIRS="extern/ferguson"
 
-suppression_file=$CWD/../../test/Suppressions/llvm.suppress
-nightly_args="-llvm -suppress ${suppression_file}"
+nightly_args="-llvm"
