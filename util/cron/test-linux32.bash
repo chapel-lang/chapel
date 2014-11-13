@@ -7,4 +7,5 @@ source $CWD/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux32"
 
-$CWD/nightly -cron -no-futures
+suppression_file=$CWD/../../test/Suppressions/linux32.suppress
+$CWD/nightly -cron -no-futures -suppress ${suppression_file}

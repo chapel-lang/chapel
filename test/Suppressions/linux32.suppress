@@ -1,0 +1,9 @@
+# For details on linux32 GMP suppressions, see: https://www.pivotaltracker.com/story/show/82526190
+modules/standard/gmp/studies/gmp-chudnovsky
+modules/standard/gmp/ferguson/gmp_dist_array
+modules/standard/gmp/ferguson/gmp_test
+modules/standard/gmp/ferguson/gmp_random
+modules/standard/gmp/ferguson/gmp_writeln
+studies/shootout/pidigits/hilde/pidigits-hilde
+studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt
+studies/shootout/pidigits/thomasvandoren/pidigits-BigInt
