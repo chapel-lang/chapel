@@ -364,27 +364,33 @@ compareSymbol(const void* v1, const void* v2) {
 // given a name and up to two sets of names, return a name that is in
 // neither set and add the name to the first set; the second set may
 // be omitted; the returned name to be capped at fMaxCIdentLen if non-0
+// less how much can be added to it - maxCNameAddedChars
 //
 // the unique numbering is based on the map uniquifyNameCounts which
 // can be cleared to reset
 //
 int fMaxCIdentLen = 0;
 static const int maxUniquifyAddedChars = 25;
+// keep in sync with AggregateType::classStructName()
+static const int maxCNameAddedChars = 20;
 static char* longCNameReplacementBuffer = NULL;
 static Map<const char*, int> uniquifyNameCounts;
 static const char* uniquifyName(const char* name,
                                 Vec<const char*>* set1,
                                 Vec<const char*>* set2 = NULL) {
   const char* newName = name;
-  if (fMaxCIdentLen > 0 && (int)(strlen(newName)) > fMaxCIdentLen) {
+  if (fMaxCIdentLen > 0 &&
+      (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
+  {
     // how much of the name to preserve
-    int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars;
+    int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
     if (!longCNameReplacementBuffer) {
       longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
       longCNameReplacementBuffer[prefixLen] = '\0';
     }
     strncpy(longCNameReplacementBuffer, newName, prefixLen);
     INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
+    longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
     name = newName = astr(longCNameReplacementBuffer);
   }
   while (set1->set_in(newName) || (set2 && set2->set_in(newName))) {

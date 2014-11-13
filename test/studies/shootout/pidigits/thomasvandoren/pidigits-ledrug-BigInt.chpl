@@ -26,7 +26,7 @@ iter genDigits(numDigits) {
     tmp1 = new BigInt(),
     tmp2 = new BigInt();
 
-  var digit, k: c_ulong;
+  var digit, k: uint(64);
 
   for i in 1..numDigits {
     do {

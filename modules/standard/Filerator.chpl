@@ -180,15 +180,15 @@ iter wordexp(pattern="*") {
 
 iter glob(pattern="*") {
   extern type glob_t;
-  extern proc glob(pattern:c_string, flags: c_int, errfunc:c_void_ptr, 
-                   ref ret_glob:glob_t):c_int;
+  extern proc chpl_glob(pattern:c_string, flags: c_int, 
+                        ref ret_glob:glob_t):c_int;
   extern proc chpl_glob_num(x:glob_t): size_t;
   extern proc chpl_glob_index(x:glob_t, idx:size_t): c_string;
   extern proc globfree(ref glb:glob_t);
 
   var glb : glob_t;
 
-  const err = glob(pattern:c_string, 0, c_nil, glb);
+  const err = chpl_glob(pattern:c_string, 0, glb);
   const num = chpl_glob_num(glb);
   if (num) then
     for i in 0..num-1 do

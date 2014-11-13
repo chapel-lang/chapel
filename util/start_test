@@ -1565,8 +1565,12 @@ foreach testType ($testTypes)
                 # Skip this directory if there is a SKIPIF file
                 # and the condition it contains evaluates to true.
                 if (-e ./SKIPIF) then
-                    set skiptest = `$utildir/test/testEnv ./SKIPIF`
-                    if ($skiptest == 1) then
+                    if (-x ./SKIPIF) then
+                        set skiptest = `./SKIPIF`
+                    else
+                        set skiptest = `$utildir/test/testEnv ./SKIPIF`
+                    endif
+                    if ( $skiptest == "1" || $skiptest == "True" ) then
                         echo "[Skipping directory based on SKIPIF environment settings]" |& $tee -a $logfile
                         continue
                     endif
@@ -1579,11 +1583,15 @@ foreach testType ($testTypes)
                 while (! $pruneif && $cwd != $basedir)
                     set skipfilen = $cwd.skipif
                     if (-e $skipfilen) then
-                        set pruneif = `$utildir/test/testEnv $skipfilen`
+                        if (-x $skipfilen) then
+                            set pruneif = `$skipfilen`
+                        else
+                            set pruneif = `$utildir/test/testEnv $skipfilen`
+                        endif
                     endif
                     cd ..
                 end
-                if ($pruneif) then
+                if ( $pruneif == "1" || $pruneif == "True" ) then
                     echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]" |& $tee -a $logfile
                     continue
                 endif

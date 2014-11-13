@@ -25,11 +25,11 @@ const char* wordexp_index(const wordexp_t wexp, size_t i) {
 }
 
 // to make --cc-warnings happy
-int chpl_glob(const char* pattern, int flags, glob_t* ret_glob);
+int chpl_study_glob(const char* pattern, int flags, glob_t* ret_glob);
 int chpl_wordexp(const char* pattern, int flags, wordexp_t* ret_glob);
 int chpl_isdir(const char* path);
 
-int chpl_glob(const char* pattern, int flags, glob_t* ret_glob)
+int chpl_study_glob(const char* pattern, int flags, glob_t* ret_glob)
 {
   int err;
   err = glob(pattern, flags, NULL, ret_glob);
