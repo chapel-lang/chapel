@@ -379,22 +379,20 @@ static void discoverForallBodies(DefExpr* defChplIter,
   } else {
     // yes fast followers
 
-    if (defChplIter->sym->type != dtUnknown) {
-      printf("VASS: undesirable case in discoverForallBodies()\n"); // TODO either replace with an assertion or comment when this is encountered and is still OK.
-      //
-      // Remark: if the function has been resolved, we may be doomed -
-      // because the 'if' that we will rely on may have been folded away.
-      //
-      // In that case we'd have to traverse all CallExprs
-      // looking for SymExpr(s) for defChplIter->sym
-      // that is/are in the PRIM_FORALL_LOOP CallExpr.
-      // That/those will be our forall loop bodies.
-      //
-      // BTW FLAG_RESOLVED is already set on defChplIter->parentSymbol.
-      // That's because it is set before the function body is resolved.
-      // So, if need to, use the above test for dtUnknown instead.
-      //
-    }
+    //
+    // If the function has been resolved, the current implementation is doomed
+    // - because the 'if' that we will rely on may have been folded away.
+    //
+    // In that case we'd have to traverse all CallExprs
+    // looking for SymExpr(s) for defChplIter->sym
+    // that is/are in the PRIM_FORALL_LOOP CallExpr.
+    // That/those will be our forall loop bodies.
+    //
+    // BTW FLAG_RESOLVED is already set on defChplIter->parentSymbol.
+    // That's because it is set before the function body is resolved.
+    // So I am testing for dtUnknown instead.
+    //
+    INT_ASSERT(defChplIter->sym->type == dtUnknown);
 
     // Find   if ... { def chpl__fastFollowIter; ... }
     //        else   { def chpl__followIter; ... }
