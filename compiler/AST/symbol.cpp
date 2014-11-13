@@ -39,6 +39,7 @@
 #include "type.h"
 
 #include "AstVisitor.h"
+#include "CollapseBlocks.h"
 
 #include <cstdlib>
 #include <inttypes.h>
@@ -2068,7 +2069,9 @@ FnSymbol::getFormal(int i) {
 
 void
 FnSymbol::collapseBlocks() {
-  body->collapseBlocks();
+  CollapseBlocks visitor;
+
+  body->accept(&visitor);
 }
 
 //
