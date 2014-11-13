@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,7 +40,7 @@
 
   {
     var x = 10;
-   
+
     x = 20;
 
     var y =  0;
@@ -66,7 +66,7 @@
    NOAKES 2014/11/12
 
    Currently WhileDo/DoWhile/ForLoop *are* BlockStmts and so those
-   cases look a little odd for now.  I am currently working to 
+   cases look a little odd for now.  I am currently working to
    decouple these nodes from BlockStmt.
 */
 
@@ -79,22 +79,22 @@
 #include "alist.h"
 #include "stmt.h"
 
-CollapseBlocks::CollapseBlocks() 
+CollapseBlocks::CollapseBlocks()
 {
 
 }
 
-CollapseBlocks::~CollapseBlocks() 
+CollapseBlocks::~CollapseBlocks()
 {
 
 }
 
-bool CollapseBlocks::enterBlockStmt(BlockStmt* node) 
+bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
 {
   AList shuffle;
 
   // Transfer all of the expressions in to a temporary Alist
-  for_alist(expr, node->body) 
+  for_alist(expr, node->body)
   {
     expr->remove();
 
@@ -102,7 +102,7 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
   }
 
   // Copy them back in to the body with recursive collapsing
-  for_alist(expr, shuffle) 
+  for_alist(expr, shuffle)
   {
     BlockStmt* stmt = toBlockStmt(expr);
 
@@ -119,8 +119,8 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
         subItem->remove();
         node->body.insertAtTail(subItem);
       }
-    } 
-    else 
+    }
+    else
     {
       node->body.insertAtTail(expr);
     }
@@ -144,11 +144,11 @@ bool CollapseBlocks::enterForLoop(ForLoop* node)
   CallExpr* call = node->blockInfoGet();
 
   // Handle the init/test/incr fields specially
-  if (call != 0 && call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) 
+  if (call != 0 && call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
   {
-    for_alist(cForExprs, call->argList) 
+    for_alist(cForExprs, call->argList)
     {
-      if (BlockStmt* block = toBlockStmt(cForExprs)) 
+      if (BlockStmt* block = toBlockStmt(cForExprs))
         enterBlockStmt(block);
     }
   }
@@ -182,161 +182,161 @@ bool CollapseBlocks::enterCondStmt(CondStmt* node)
 *                                                                           *
 ************************************* | ************************************/
 
-bool CollapseBlocks::enterAggrType(AggregateType* node) 
+bool CollapseBlocks::enterAggrType(AggregateType* node)
 {
   return false;
 }
 
-void CollapseBlocks::exitAggrType(AggregateType* node) 
+void CollapseBlocks::exitAggrType(AggregateType* node)
 {
 
 }
 
-bool CollapseBlocks::enterEnumType(EnumType* node) 
-{
-  return false;
-}
-
-void CollapseBlocks::exitEnumType(EnumType* node) 
-{
-
-}
-
-void CollapseBlocks::visitPrimType(PrimitiveType* node) 
-{
-
-}
-
-bool CollapseBlocks::enterArgSym(ArgSymbol* node) 
+bool CollapseBlocks::enterEnumType(EnumType* node)
 {
   return false;
 }
 
-void CollapseBlocks::exitArgSym(ArgSymbol* node) 
+void CollapseBlocks::exitEnumType(EnumType* node)
 {
 
 }
 
-void CollapseBlocks::visitEnumSym(EnumSymbol* node) 
+void CollapseBlocks::visitPrimType(PrimitiveType* node)
 {
 
 }
 
-bool CollapseBlocks::enterFnSym(FnSymbol* node) 
-{
-  return false;
-}
-
-void CollapseBlocks::exitFnSym(FnSymbol* node) 
-{
-
-}
-
-void CollapseBlocks::visitLabelSym(LabelSymbol* node) 
-{
-
-}
-
-bool CollapseBlocks::enterModSym(ModuleSymbol* node) 
+bool CollapseBlocks::enterArgSym(ArgSymbol* node)
 {
   return false;
 }
 
-void CollapseBlocks::exitModSym(ModuleSymbol* node) 
+void CollapseBlocks::exitArgSym(ArgSymbol* node)
 {
 
 }
 
-bool CollapseBlocks::enterTypeSym(TypeSymbol* node) 
-{
-  return false;
-}
-
-void CollapseBlocks::exitTypeSym(TypeSymbol* node) 
+void CollapseBlocks::visitEnumSym(EnumSymbol* node)
 {
 
 }
 
-void CollapseBlocks::visitVarSym(VarSymbol* node) 
-{
-
-}
-
-bool CollapseBlocks::enterCallExpr(CallExpr* node) 
+bool CollapseBlocks::enterFnSym(FnSymbol* node)
 {
   return false;
 }
 
-void CollapseBlocks::exitCallExpr(CallExpr* node) 
-{
-}
-
-bool CollapseBlocks::enterDefExpr(DefExpr* node) 
-{
-  return false;
-}
-
-void CollapseBlocks::exitDefExpr(DefExpr* node) 
+void CollapseBlocks::exitFnSym(FnSymbol* node)
 {
 
 }
 
-bool CollapseBlocks::enterNamedExpr(NamedExpr* node) 
+void CollapseBlocks::visitLabelSym(LabelSymbol* node)
+{
+
+}
+
+bool CollapseBlocks::enterModSym(ModuleSymbol* node)
 {
   return false;
 }
 
-void CollapseBlocks::exitNamedExpr(NamedExpr* node) 
+void CollapseBlocks::exitModSym(ModuleSymbol* node)
 {
 
 }
 
-void CollapseBlocks::visitSymExpr(SymExpr* node) 
-{
-
-}
-
-void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node) 
-{
-
-}
-
-void CollapseBlocks::exitBlockStmt(BlockStmt* node) 
-{
-
-}
-
-void CollapseBlocks::exitWhileDoStmt(WhileDoStmt* node) 
-{
-
-}
-
-void CollapseBlocks::exitDoWhileStmt(DoWhileStmt* node) 
-{
-
-}
-
-void CollapseBlocks::exitForLoop(ForLoop* node) 
-{
-
-}
-
-void CollapseBlocks::exitCondStmt(CondStmt* node) 
-{
-
-}
-
-void CollapseBlocks::visitEblockStmt(ExternBlockStmt* node) 
-{
-
-}
-
-bool CollapseBlocks::enterGotoStmt(GotoStmt* node) 
+bool CollapseBlocks::enterTypeSym(TypeSymbol* node)
 {
   return false;
 }
 
-void CollapseBlocks::exitGotoStmt(GotoStmt* node) 
+void CollapseBlocks::exitTypeSym(TypeSymbol* node)
+{
+
+}
+
+void CollapseBlocks::visitVarSym(VarSymbol* node)
+{
+
+}
+
+bool CollapseBlocks::enterCallExpr(CallExpr* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitCallExpr(CallExpr* node)
+{
+}
+
+bool CollapseBlocks::enterDefExpr(DefExpr* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitDefExpr(DefExpr* node)
+{
+
+}
+
+bool CollapseBlocks::enterNamedExpr(NamedExpr* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitNamedExpr(NamedExpr* node)
+{
+
+}
+
+void CollapseBlocks::visitSymExpr(SymExpr* node)
+{
+
+}
+
+void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node)
+{
+
+}
+
+void CollapseBlocks::exitBlockStmt(BlockStmt* node)
+{
+
+}
+
+void CollapseBlocks::exitWhileDoStmt(WhileDoStmt* node)
+{
+
+}
+
+void CollapseBlocks::exitDoWhileStmt(DoWhileStmt* node)
+{
+
+}
+
+void CollapseBlocks::exitForLoop(ForLoop* node)
+{
+
+}
+
+void CollapseBlocks::exitCondStmt(CondStmt* node)
+{
+
+}
+
+void CollapseBlocks::visitEblockStmt(ExternBlockStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterGotoStmt(GotoStmt* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitGotoStmt(GotoStmt* node)
 {
 
 }
