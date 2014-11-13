@@ -295,7 +295,7 @@ high priority (failing in one or more configurations)
   them, Brad.
 
 
-o nbody* (memleaks): bradc
+* nbody* (memleaks): bradc
 
   These tests have been timing out ever since moving them to chap16.
   Why?  Do we still care about these tests?
@@ -363,7 +363,7 @@ high priority (mac quiettude)
   The referee's output is missing?  Why?
 
 
-o "unused value warning" (darwin): anyone
+* "unused value warning" (darwin): anyone
 
   These tests are getting an unused value warning in their generated
   code.  Does fixing this require a compiler change or a code change?
@@ -553,7 +553,7 @@ o 21-capture-in-cobegin: vass
 medium priority (clutter)
 -------------------------
 
-o stack overflow (valgrind): anyone
+* stack overflow (valgrind): anyone
 
   The following test gets a stack overflow -- is there something we
   can/should do about this?  Should we skip if in valgrind testing?
@@ -783,7 +783,7 @@ o QIO assertion errors (cygwin): anyone
   - io/ferguson/ctests/qio_test (compopts: 1)
 
 
-o io/ferguson/utf8/widecols.chpl (cygwin): anyone
+* io/ferguson/utf8/widecols.chpl (cygwin): anyone
 
   This test gets an apparent whitespace difference on cygwin
   for some reason.
@@ -847,7 +847,7 @@ o io/sungeun/ioerror (execopts: 5) (cygwin): anyone
   This fails with --baseline and seems to be related to --inline vs. --no
 
 
-o extern/ferguson/crazyRecord (baseline): anyone
+* extern/ferguson/crazyRecord (baseline): anyone
 
   This fails on baseline with the wrong output -- why?
 
