@@ -532,12 +532,6 @@ sporadic dropping/mangling of output (due to bad qthreads fence?)
 [Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (2014-10-24)
 [Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)] (2014-11-13)
 
-zippered iterations have non-equal lengths (2014-09-17 -- elliot/diten)
-(resolved 2014-10-30 -- but did it stick?)
----------------------------------------------------------------------
-[Error matching program output for statements/bradc/swaps/swapArrayDiffIndices]
-
-
 
 ======================================
 x?-wb.prgenv-cray

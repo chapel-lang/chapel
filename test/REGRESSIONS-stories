@@ -156,7 +156,7 @@ high priority (sources of noise)
   baseline testing.  What can we do about that?
 
 
-~ surprising cygwin timeouts (darwin): anyone
+* surprising cygwin timeouts (darwin): anyone
 
   The following tests time out frequently/sporadically on cygwin and
   nowhere else, which seems very surprising (and suggests, to me, a
@@ -192,7 +192,7 @@ o sporadic quicksort segfault/timeout (gasnet.numa): elliot/diten/gbt
   it?
 
 
-o sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
+~ sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
 
   Under valgrind testing, these tests fail fairly frequently due to
   invalid reads/writes in routines starting with dl_*.  Why?
@@ -236,7 +236,7 @@ high priority (failing in one or more configurations)
   in these cases?
 
 
-~ test_10k_begins (darwin, memleaks on chap16): anyone
+~ test_10k_begins (darwin, memleaks on chap16, linux32): anyone
 
   This test hits a 'halt' on darwin, a sporadic segfault on memleaks
   testing, and frequently causes problems in parallel testing when a
@@ -262,7 +262,7 @@ high priority (failing in one or more configurations)
   What can we do about these?
 
 
-~ domains/sungeun/assoc/parSafeMember (gasnet-fast, valgrind, pgi): anyone/ben
+~ domains/sungeun/assoc/parSafeMember (gasnet-fast, valgrind, pgi, linux32): anyone/ben
 
   This test has a tendency to time out in several configurations.
   What can we do to help that?  (Note that PGI doesn't support native
@@ -543,7 +543,7 @@ o conditional jump in re2 (valgrind): anyone
   Chapel?x
 
 
-o 21-capture-in-cobegin: vass
+~ 21-capture-in-cobegin: vass
 
   Is this still failing sporadically?  (I haven't seen it in awhile)
   Can we reproduce it?  Is there anything to do here?
@@ -668,7 +668,7 @@ o segfault in meteor-fast (prgenv-cray): tmac
   We've seen a segfault in meteor-fast for prgenv-cray since it was filed.
 
 
-o zippered iterations have non-equal lengths (prgenv-cray): elliot
+* zippered iterations have non-equal lengths (prgenv-cray): elliot
 
   statements/bradc/swaps/swapArrayDiffIndices has gotten an error about
   zippered iterations having different lengths since 9/17/14.  I think
@@ -741,7 +741,7 @@ o check_channel assertion failure (cygwin): anyone
   - ./regexp_channel_test
 
 
-o RLIMIT_NPROC undeclared (cygwin): anyone
+* RLIMIT_NPROC undeclared (cygwin): anyone
 
   The following test relies on RLIMIT_NPROC which cygwin doesn't support.
   What should we do?
@@ -794,7 +794,7 @@ o QIO assertion errors (cygwin): anyone
   This test has had an output mismatch since added.
 
 
-o io/sungeun/ioerror (execopts: 5) (cygwin): anyone
+* io/sungeun/ioerror (execopts: 5) (cygwin): anyone
 
   This test gets the wrong result.
 
@@ -897,7 +897,7 @@ o release/examples/benchmarks/shootout/pidigits (llvm): anyone/thomas
 low priority (so infrequent as to be potentially not our issue)
 ---------------------------------------------------------------
 
-o multilocale/diten/localBlock/needMultiLocales/localBlock5 (gasnet-fast): anyone
+* multilocale/diten/localBlock/needMultiLocales/localBlock5 (gasnet-fast): anyone
 
   This got a 'slave got an unknown command on coord socket' once (and maybe
   once ever)
@@ -909,11 +909,11 @@ o users/jglewis/SSCA2_sync_array_initialization_bug (gasnet-fast): anyone
   once ever)
 
 
-o domains/johnk/capacityAssoc (cygwin): anyone
+* domains/johnk/capacityAssoc (cygwin): anyone
 
   This got a "CreateProcessW failed" error once (and maybe once ever)
 
 
-o distributions/robust/arithmetic/reindexing/test_strided_reindex2 (cyclic): anyone
+* distributions/robust/arithmetic/reindexing/test_strided_reindex2 (cyclic): anyone
 
   This got an "extent mismatch error" once (and maybe once ever
