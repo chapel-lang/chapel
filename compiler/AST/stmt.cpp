@@ -493,31 +493,6 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
 
 Expr*
 CondStmt::foldConstantCondition() {
-  // deadBlockElimination() can get rid of the condition expression
-  // without getting rid of the parent if.  We do that here.
-  if (! condExpr) {
-    this->remove();
-    return NULL;
-  }
-
-  // Similarly, deadBlockElimination() can kill the THEN expression
-  if (! thenStmt) {
-    // Two cases:
-    // If elseExpr is also null, just kill the whole IF.
-    if (! elseStmt) {
-      this->remove();
-      return NULL;
-    }
-
-    // Otherwise, invert the condition and move the else clause into
-    // the THEN slot.
-    Expr* cond = new CallExpr(PRIM_UNARY_LNOT, condExpr);
-
-    this->replaceChild(condExpr, cond);
-    this->replaceChild(thenStmt, elseStmt);
-    this->replaceChild(elseStmt, NULL);
-  }
-
   Expr* result = NULL;
 
   if (SymExpr* cond = toSymExpr(condExpr)) {
@@ -528,29 +503,27 @@ CondStmt::foldConstantCondition() {
 
         result = new CallExpr(PRIM_NOOP);
 
-        this->insertBefore(result);
+        insertBefore(result);
 
         if (var->immediate->bool_value() == gTrue->immediate->bool_value()) {
           Expr* then_stmt = thenStmt;
 
           then_stmt->remove();
-          this->replace(then_stmt);
+          replace(then_stmt);
 
-        } else if (var->immediate->bool_value() == gFalse->immediate->bool_value()) {
+        } else {
           Expr* else_stmt = elseStmt;
 
           if (else_stmt) {
             else_stmt->remove();
-            this->replace(else_stmt);
+            replace(else_stmt);
           } else {
-            this->remove();
+            remove();
           }
         }
       }
     }
   }
-
-  removeDeadIterResumeGotos();
 
   return result;
 }

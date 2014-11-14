@@ -195,7 +195,31 @@ void deadExpressionElimination(FnSymbol* fn) {
               expr->remove();
 
     } else if (CondStmt* cond = toCondStmt(ast)) {
-      cond->foldConstantCondition();
+      // Compensate for deadBlockElimination
+      if (cond->condExpr == NULL) {
+        cond->remove();
+
+      } else if (cond->thenStmt == NULL && cond->elseStmt == NULL) {
+        cond->remove();
+
+      } else {
+
+        // Invert the condition and shuffle the alternative
+        if (cond->thenStmt == NULL) {
+          Expr* condExpr = new CallExpr(PRIM_UNARY_LNOT, condExpr);
+
+          cond->replaceChild(cond->condExpr, condExpr);
+          cond->replaceChild(cond->thenStmt, cond->elseStmt);
+          cond->replaceChild(cond->elseStmt, NULL);
+
+        // NOAKES 2014/11/14 It's "odd" that folding is being done here
+        } else {
+          cond->foldConstantCondition();
+        }
+
+        // NOAKES 2014/11/14 Testing suggests this is always a NOP
+        removeDeadIterResumeGotos();
+      }
     }
   }
 }
