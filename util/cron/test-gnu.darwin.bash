@@ -5,6 +5,7 @@
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="darwin"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="gnu.darwin"
 
+export CHPL_HOST_COMPILER=gnu
 $CWD/nightly -cron
