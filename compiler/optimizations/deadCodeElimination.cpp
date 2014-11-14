@@ -195,7 +195,7 @@ void deadExpressionElimination(FnSymbol* fn) {
               expr->remove();
 
     } else if (CondStmt* cond = toCondStmt(ast)) {
-      cond->fold_cond_stmt();
+      cond->foldConstantCondition();
     }
   }
 }

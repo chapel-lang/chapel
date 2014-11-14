@@ -141,7 +141,7 @@ public:
   virtual void  verify();
   virtual void  accept(AstVisitor* visitor);
 
-  Expr*         fold_cond_stmt();
+  Expr*         foldConstantCondition();
 
   GenRet        codegen();
 

@@ -491,9 +491,8 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   gCondStmts.add(this);
 }
 
-
 Expr*
-CondStmt::fold_cond_stmt() {
+CondStmt::foldConstantCondition() {
   // deadBlockElimination() can get rid of the condition expression
   // without getting rid of the parent if.  We do that here.
   if (! condExpr) {

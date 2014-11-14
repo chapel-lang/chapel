@@ -24,10 +24,7 @@
 #define __STDC_LIMIT_MACROS
 #endif
 
-#include <sstream>
-#include <inttypes.h>
-#include <map>
-#include <vector>
+#include "resolution.h"
 
 #include "astutil.h"
 #include "build.h"
@@ -36,12 +33,16 @@
 #include "expr.h"
 #include "iterator.h"
 #include "passes.h"
-#include "resolution.h"
 #include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "../ifa/prim_data.h"
+
+#include <inttypes.h>
+#include <map>
+#include <sstream>
+#include <vector>
 
 // Allow disambiguation tracing to be controlled by the command-line option
 // --explain-verbose.
@@ -5774,7 +5775,7 @@ postFold(Expr* expr) {
 
   if (CondStmt* cond = toCondStmt(result->parentExpr)) {
     if (cond->condExpr == result) {
-      if (Expr* expr = cond->fold_cond_stmt()) {
+      if (Expr* expr = cond->foldConstantCondition()) {
         result = expr;
       } else {
         //
