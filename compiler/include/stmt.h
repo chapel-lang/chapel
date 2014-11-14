@@ -130,19 +130,24 @@ private:
 ************************************* | ************************************/
 
 class CondStmt : public Stmt {
- public:
-  Expr* condExpr;
-  BlockStmt* thenStmt;
-  BlockStmt* elseStmt;
+public:
+                CondStmt(Expr*    iCondExpr,
+                         BaseAST* iThenStmt,
+                         BaseAST* iElseStmt = NULL);
 
-  CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt = NULL);
-  Expr* fold_cond_stmt();
-  DECLARE_COPY(CondStmt);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void verify();
-  virtual void    accept(AstVisitor* visitor);
+                DECLARE_COPY(CondStmt);
 
-  GenRet codegen();
+  virtual void  replaceChild(Expr* oldAst, Expr* newAst);
+  virtual void  verify();
+  virtual void  accept(AstVisitor* visitor);
+
+  Expr*         fold_cond_stmt();
+
+  GenRet        codegen();
+
+  Expr*         condExpr;
+  BlockStmt*    thenStmt;
+  BlockStmt*    elseStmt;
 };
 
 /************************************ | *************************************
