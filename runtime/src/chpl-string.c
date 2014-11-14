@@ -93,17 +93,6 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno,
   len = strlen(from) + 1;
   x->addr = chpl_mem_calloc(len, CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
   strncpy((char*)x->addr, from, len);
-#if 0
-  // This is moot.
-  // The draft C specification (ISO-IEC:9899-TC3 Sep 2007) says, "The strlen
-  // function returns the number of characters that precede the terminating
-  // null character."  From which we may deduce that the following "if" clause
-  // never fires.  It is -- by the definition of strlen() -- false.
-  if (*((len-1)+(char*)x->addr) != '\0')
-    chpl_internal_error("String missing terminating NUL.");
-  // OTOH, if "len" is passed in rather than computed here, it would be a
-  // worthwhile check.
-#endif
   x->size = len;    // This size includes the terminating NUL.
 }
 
@@ -151,12 +140,12 @@ void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t le
 // The input is a c_string_copy, which always owns the bytes it points to.
 // On return, the string data is no longer owned by the c_string_copy
 // argument.  It is owned by the returned chpl_string instead.
-// TODO: Would really like "str" to be passed by reference, so we can set it to
-// zero after we usurp its contents.
+// TODO: This should be inlined.
 chpl_string
-string_from_c_string_copy(c_string_copy str, int haslen, int64_t len)
+string_from_c_string_copy(c_string_copy* str, int haslen, int64_t len)
 {
-  chpl_string result = str;
+  chpl_string result = *str;
+  *str = NULL;
   return result;
 }
 
@@ -177,24 +166,6 @@ void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int 
   s[len] = '\0';
 
   ret->addr = s;
-  ret->size = len + 1; // this size includes the terminating NUL
-}
-
-// TODO: Would really like "str" to be passed by reference, so we can set it to
-// zero after we usurp its contents.
-void wide_string_from_c_string_copy(chpl____wide_chpl_string *ret, c_string_copy str,
-                                    int haslen, int64_t len,
-                                    int32_t lineno, chpl_string filename)
-{
-  ret->locale = chpl_gen_getLocaleID();
-  if( str == NULL ) {
-    ret->addr = NULL;
-    ret->size = 0;
-    return;
-  }
-  if( ! haslen ) len = strlen(str);
-
-  ret->addr = str;
   ret->size = len + 1; // this size includes the terminating NUL
 }
 

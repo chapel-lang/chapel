@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,6 +39,7 @@
 #include "type.h"
 
 #include "AstVisitor.h"
+#include "CollapseBlocks.h"
 
 #include <cstdlib>
 #include <inttypes.h>
@@ -393,7 +394,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       }
       break;
     case CONST_KIND_STRING:
-      
+
         // Note that string immediate values are stored
         // with C escapes - that is newline is 2 chars \ n
         // so we have to convert to a sequence of bytes
@@ -502,7 +503,7 @@ GenRet VarSymbol::codegen() {
           default:
             INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
           }
-            
+
           ret.c = castString + int64_to_string(iconst) + ")";
         }
       } else if (immediate->const_kind == NUM_KIND_UINT) {
@@ -552,7 +553,7 @@ GenRet VarSymbol::codegen() {
 #ifdef HAVE_LLVM
 
     // for LLVM
-    
+
     // Handle extern type variables.
     if( hasFlag(FLAG_EXTERN) && hasFlag(FLAG_TYPE_VARIABLE) ) {
       // code generate the type.
@@ -588,7 +589,7 @@ GenRet VarSymbol::codegen() {
     }
 
     if(!isImmediate()) {
-      // check LVT for value 
+      // check LVT for value
       GenRet got = info->lvt->getValue(cname);
       got.chplType = typeInfo();
       if( got.val ) {
@@ -597,7 +598,7 @@ GenRet VarSymbol::codegen() {
     }
 
     if(isImmediate()) {
-      ret.isLVPtr = GEN_VAL; 
+      ret.isLVPtr = GEN_VAL;
       if(immediate->const_kind == CONST_KIND_STRING) {
         if(llvm::Value *value = info->module->getNamedGlobal(name)) {
           ret.val = value;
@@ -663,7 +664,7 @@ void VarSymbol::codegenDefC(bool global) {
   if (ct) {
     if (ct->isClass()) {
       if (isFnSymbol(defPoint->parentSymbol)) {
-        str += " = NULL";  
+        str += " = NULL";
       }
     } else if (ct->symbol->hasFlag(FLAG_WIDE) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -793,7 +794,7 @@ void VarSymbol::codegenDef() {
     llvm::Type *varType = type->codegen().type;
     llvm::Value *varAlloca = createTempVarLLVM(varType, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
-    
+
     if(AggregateType *ctype = toAggregateType(type)) {
       if(ctype->isClass() ||
          ctype->symbol->hasFlag(FLAG_WIDE) ||
@@ -822,7 +823,7 @@ void VarSymbol::accept(AstVisitor* visitor) {
 *                                                                   *
 ********************************* | ********************************/
 
-ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName, 
+ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
                      Type* iType, Expr* iTypeExpr,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
   Symbol(E_ArgSymbol, iName, iType),
@@ -1107,12 +1108,12 @@ void TypeSymbol::codegenDef() {
   } else {
 #ifdef HAVE_LLVM
     llvm::Type *type = info->lvt->getType(cname);
-    
+
     if(type == NULL) {
       printf("No type '%s'/'%s' found\n", cname, name);
       INT_FATAL(this, "No type found");
     }
- 
+
     llvmType = type;
 #endif
   }
@@ -1350,37 +1351,37 @@ FnSymbol*
 FnSymbol::copyInner(SymbolMap* map) {
   // Copy members that are common to innerCopy and partialCopy.
   FnSymbol* copy = this->copyInnerCore(map);
-  
+
   // Copy members that weren't set by copyInnerCore.
   copy->setter      = COPY_INT(this->setter);
   copy->where       = COPY_INT(this->where);
   copy->body        = COPY_INT(this->body);
   copy->retExprType = COPY_INT(this->retExprType);
   copy->_this       = this->_this;
-  
+
   return copy;
 }
 
 
 /** Copy over members common to both copyInner and partialCopy.
- * 
+ *
  * \param map Map from symbols in the old function to symbols in the new one
  */
 FnSymbol*
 FnSymbol::copyInnerCore(SymbolMap* map) {
   FnSymbol* newFn = new FnSymbol(this->name);
-  
+
   /* Copy the flags.
-   * 
+   *
    * TODO: See if it is necessary to copy flags both here and in the copy
    * method.
    */
   newFn->copyFlags(this);
-  
+
   for_formals(formal, this) {
     newFn->insertFormalAtTail(COPY_INT(formal->defPoint));
   }
-  
+
   // Copy members that are needed by both copyInner and partialCopy.
   newFn->partialCopySource  = this;
   newFn->astloc             = this->astloc;
@@ -1392,33 +1393,33 @@ FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->instantiatedFrom   = this->instantiatedFrom;
   newFn->instantiationPoint = this->instantiationPoint;
   newFn->numPreTupleFormals = this->numPreTupleFormals;
-  
+
   return newFn;
 }
 
 /** Copy just enough of the AST to get through filter candidate and
- *  disambiguate-by-match.  
- * 
+ *  disambiguate-by-match.
+ *
  * This function selectively copies portions of the function's AST
  * representation.  The goal here is to copy exactly as many nodes as are
  * necessary to determine if a function is the best candidate for resolving a
  * call site and no more.  Special handling is necessary for the _this, where,
  * and retExprType members.  In addition, the return symbol needs to be made
  * available despite the fact that we have skipped copying the body.
- * 
+ *
  * \param map Map from symbols in the old function to symbols in the new one
  */
 FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
   FnSymbol* newFn = this->copyInnerCore(map);
-  
+
   if (this->_this == NULL) {
     // Case 1: No _this pointer.
     newFn->_this = NULL;
-    
+
   } else if (Symbol* replacementThis = map->get(this->_this)) {
     // Case 2: _this symbol is defined as one of the formal arguments.
     newFn->_this = replacementThis;
-    
+
   } else {
     /*
      * Case 3: _this symbol is defined in the function's body.  A new symbol is
@@ -1426,23 +1427,23 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
      * generated from copying the function's body during finalizeCopy.
      */
     newFn->_this           = this->_this->copy(map);
-    newFn->_this->defPoint = new DefExpr(newFn->_this, 
+    newFn->_this->defPoint = new DefExpr(newFn->_this,
                                          COPY_INT(this->_this->defPoint->init),
                                          COPY_INT(this->_this->defPoint->exprType));
   }
-  
+
   // Copy and insert the where clause if it is present.
   if (this->where != NULL) {
     newFn->where = COPY_INT(this->where);
     insert_help(newFn->where, NULL, newFn);
   }
-  
+
   // Copy and insert the retExprType if it is present.
   if (this->retExprType != NULL) {
     newFn->retExprType = COPY_INT(this->retExprType);
     insert_help(newFn->retExprType, NULL, newFn);
   }
-  
+
   /*
    * Because we are not copying the function's body we need to make the return
    * symbol available through other means.  To do this we first have to find
@@ -1455,64 +1456,64 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
   if (this->getReturnSymbol() == gVoid) {
     // Case 1: Function returns void.
     newFn->retSymbol = gVoid;
-    
+
   } else if (this->getReturnSymbol() == this->_this) {
     // Case 2: Function returns _this.
     newFn->retSymbol = newFn->_this;
-    
+
   } else if (Symbol* replacementRet = map->get(this->getReturnSymbol())) {
     // Case 3: Function returns a formal argument.
     newFn->retSymbol = replacementRet;
-    
+
   } else {
     // Case 4: Function returns a symbol defined in the body.
     newFn->retSymbol = COPY_INT(this->getReturnSymbol());
-    
+
     newFn->retSymbol->defPoint = new DefExpr(newFn->retSymbol,
                                              COPY_INT(this->getReturnSymbol()->defPoint->init),
                                              COPY_INT(this->getReturnSymbol()->defPoint->exprType));
-    
+
     update_symbols(newFn->retSymbol, map);
   }
-  
+
   // Add a map entry from this FnSymbol to the newly generated one.
   map->put(this, newFn);
   // Update symbols in the sub-AST as is appropriate.
   update_symbols(newFn, map);
-  
+
   // Copy over the partialCopyMap, to be used later in finalizeCopy.
   newFn->partialCopyMap.copy(*map);
-  
+
   /*
    * Add the PARTIAL_COPY flag so we will know if we need to instantiate its
    * body later.
    */
   newFn->addFlag(FLAG_PARTIAL_COPY);
-  
+
   return newFn;
 }
 
 /** Finish copying the function's AST after a partial copy.
- * 
+ *
  * This function finishes the work started by partialCopy.  This involves
  * copying the setter and body, and repairing some inconsistencies in the
  * copied body.
- * 
+ *
  * \param map Map from symbols in the old function to symbols in the new one
  */
 void FnSymbol::finalizeCopy(void) {
   if (this->hasFlag(FLAG_PARTIAL_COPY)) {
-    
+
     // Make sure that the source has been finalized.
     this->partialCopySource->finalizeCopy();
-    
+
     SET_LINENO(this);
-    
+
     // Retrieve our old/new symbol map from the partial copy process.
     SymbolMap* map = &(this->partialCopyMap);
-    
+
     this->setter = COPY_INT(this->partialCopySource->setter);
-    
+
     /*
      * When we reach this point we will be in one of three scenarios:
      *  1) The function's body is empty and needs to be copied over from the
@@ -1527,7 +1528,7 @@ void FnSymbol::finalizeCopy(void) {
       // Alias the old body and make a new copy of the body from the source.
       BlockStmt* varArgNodes = this->body;
       this->body             = COPY_INT(this->partialCopySource->body);
-      
+
       /*
        * Iterate over the statements that have been added to the function body
        * and add them to the new body.
@@ -1537,22 +1538,22 @@ void FnSymbol::finalizeCopy(void) {
         node->list = NULL;
         this->body->insertAtHead(node);
       }
-      
+
       // Clean up blocks that aren't going to be used any more.
       gBlockStmts.remove(gBlockStmts.index(varArgNodes));
       delete varArgNodes;
-      
+
       this->removeFlag(FLAG_EXPANDED_VARARGS);
-      
+
     } else if (this->body->body.length == 0) {
       gBlockStmts.remove(gBlockStmts.index(this->body));
       delete this->body;
-      
+
       this->body = COPY_INT(this->partialCopySource->body);
     }
-    
+
     Symbol* replacementThis = map->get(this->partialCopySource->_this);
-    
+
     /*
      * Two cases may arise here.  The first is when the _this symbol is defined
      * in the formal arguments.  In this case no additional work needs to be
@@ -1565,26 +1566,26 @@ void FnSymbol::finalizeCopy(void) {
        * In Case 2:
        * this->partialCopySource->_this := A
        * this->_this                    := B
-       * 
+       *
        * map[A] := C
        */
-      
+
       // Set map[A] := B
       map->put(this->partialCopySource->_this, this->_this);
       // Set map[C] := B
       map->put(replacementThis, this->_this);
-      
+
       // Replace the definition of _this in the body: def(C) -> def(B)
       replacementThis->defPoint->replace(this->_this->defPoint);
     }
-    
+
     /*
      * Cases where the return symbol is gVoid or this->_this don't require any
      * additional actions.
      */
     if (this->retSymbol != gVoid && this->retSymbol != this->_this) {
       Symbol* replacementRet = map->get(this->partialCopySource->getReturnSymbol());
-      
+
       if (replacementRet != this->retSymbol) {
         /*
          * We now know that retSymbol is defined in function's body.  We must
@@ -1593,27 +1594,27 @@ void FnSymbol::finalizeCopy(void) {
          * was done above for the _this symbol.
          */
         replacementRet->defPoint->replace(this->retSymbol->defPoint);
-        
+
         map->put(this->partialCopySource->getReturnSymbol(), this->retSymbol);
         map->put(replacementRet, this->retSymbol);
       }
     }
-    
+
     /*
      * Null out the return symbol so that future changes to the return symbol
      * will be reflected in calls to getReturnSymbol().
      */
     this->retSymbol = NULL;
-    
+
     // Repair broken up-pointers.
     insert_help(this, this->defPoint, this->defPoint->parentSymbol);
-    
+
     /*
      * Update all old symbols left in the function's AST with their appropriate
      * replacements.
      */
     update_symbols(this, map);
-    
+
     // Clean up book keeping information.
     this->partialCopyMap.clear();
     this->partialCopySource = NULL;
@@ -1776,10 +1777,10 @@ void FnSymbol::codegenPrototype() {
       argumentNames.push_back(arg->cname);
       numArgs++;
     }
-  
+
     llvm::FunctionType *type = llvm::cast<llvm::FunctionType>(
         this->codegenFunctionType(false).type);
-    
+
     llvm::Function *existing;
 
     // Look for the function in the LayeredValueTable
@@ -1831,7 +1832,7 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
   llvm::Function *func = NULL;
 #endif
- 
+
   if( breakOnCodegenCname[0] &&
       0 == strcmp(cname, breakOnCodegenCname) ) {
     gdbShouldBreakHere();
@@ -1857,12 +1858,12 @@ void FnSymbol::codegenDef() {
   } else {
 #ifdef HAVE_LLVM
     func = getFunctionLLVM(cname);
-   
+
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
-    
+
     info->builder->SetInsertPoint(block);
-    
+
     info->lvt->addLayer();
 
     llvm::Function::arg_iterator ai = func->arg_begin();
@@ -1922,7 +1923,7 @@ void FnSymbol::codegenDef() {
     info->FPM_postgen->run(*func);
 #endif
   }
-  
+
   return;
 }
 
@@ -1986,7 +1987,7 @@ Symbol*
 FnSymbol::getReturnSymbol() {
   if (this->retSymbol != NULL) {
     return this->retSymbol;
-    
+
   } else {
     CallExpr* ret = toCallExpr(body->body.last());
     if (!ret || !ret->isPrimitive(PRIM_RETURN))
@@ -2068,7 +2069,9 @@ FnSymbol::getFormal(int i) {
 
 void
 FnSymbol::collapseBlocks() {
-  body->collapseBlocks();
+  CollapseBlocks visitor;
+
+  body->accept(&visitor);
 }
 
 //
@@ -2124,7 +2127,7 @@ bool FnSymbol::tag_generic() {
 }
 
 bool FnSymbol::isResolved() const {
-  return hasFlag(FLAG_RESOLVED); 
+  return hasFlag(FLAG_RESOLVED);
 }
 
 void FnSymbol::accept(AstVisitor* visitor) {
@@ -2270,7 +2273,7 @@ void ModuleSymbol::codegenDef() {
 
   info->cStatements.clear();
   info->cLocalDecls.clear();
- 
+
   Vec<FnSymbol*> fns;
 
   for_alist(expr, block->body) {
@@ -2308,7 +2311,7 @@ void ModuleSymbol::codegenDef() {
 // and after case.  The before case can be pulled out once the
 // construction of the initFn is cleaned up.
 //
- 
+
 Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
   Vec<AggregateType*> classes;
 
@@ -2387,7 +2390,7 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (includeExterns == false && 
+        if (includeExterns == false &&
             (fn->hasFlag(FLAG_EXTERN) ||
              fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
           continue;
@@ -2395,7 +2398,7 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
 
         fns.add(fn);
 
-        // The following additional overhead and that present in getConfigVars 
+        // The following additional overhead and that present in getConfigVars
         // and getClasses is a result of the docs pass occurring before
         // the functions/configvars/classes are taken out of the module
         // initializer function and put on the same level as that function.
@@ -2422,7 +2425,7 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
 
   return fns;
 }
-  
+
 Vec<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
   Vec<ModuleSymbol*> mods;
 
@@ -2524,7 +2527,7 @@ void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
 LabelSymbol::LabelSymbol(const char* init_name) :
   Symbol(E_LabelSymbol, init_name, NULL),
   iterResumeGoto(NULL)
-{ 
+{
   gLabelSymbols.add(this);
 }
 
@@ -2544,7 +2547,7 @@ void LabelSymbol::verify() {
   }
 }
 
-LabelSymbol* 
+LabelSymbol*
 LabelSymbol::copyInner(SymbolMap* map) {
   LabelSymbol* copy = new LabelSymbol(name);
   copy->copyFlags(this);
@@ -2575,7 +2578,7 @@ void LabelSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 void LabelSymbol::codegenDef() { }
-  
+
 void LabelSymbol::accept(AstVisitor* visitor) {
   visitor->visitLabelSym(this);
 }
@@ -2614,7 +2617,7 @@ VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   switch (size) {
   default:
     INT_FATAL( "unknown BOOL_SIZE");
-    
+
   case BOOL_SIZE_1  :
   case BOOL_SIZE_SYS:
   case BOOL_SIZE_8  :
@@ -2688,8 +2691,8 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   return s;
 }
 
-static VarSymbol* new_FloatSymbol(const char* n, long double b, 
-                                  IF1_float_type size, IF1_num_kind kind, 
+static VarSymbol* new_FloatSymbol(const char* n, long double b,
+                                  IF1_float_type size, IF1_num_kind kind,
                                   Type* type) {
   Immediate imm;
   switch (size) {
@@ -2729,13 +2732,13 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
                              IF1_complex_type size) {
   Immediate imm;
   switch (size) {
-  case COMPLEX_SIZE_64: 
-    imm.v_complex64.r  = r; 
-    imm.v_complex64.i  = i; 
+  case COMPLEX_SIZE_64:
+    imm.v_complex64.r  = r;
+    imm.v_complex64.i  = i;
     break;
-  case COMPLEX_SIZE_128: 
-    imm.v_complex128.r = r; 
-    imm.v_complex128.i = i; 
+  case COMPLEX_SIZE_128:
+    imm.v_complex128.r = r;
+    imm.v_complex128.i = i;
     break;
   default:
     INT_FATAL( "unknown COMPLEX_SIZE for complex");

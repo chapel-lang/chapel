@@ -638,7 +638,7 @@ proc file.getPath(out error:syserr) : string {
     if !error {
       error = qio_shortest_path(_file_internal, tmp2, tmp);
     }
-    chpl_free_c_string(tmp);
+    chpl_free_c_string_copy(tmp);
     if !error {
       // This uses the version of toString that steals its operand.
       // No need to free.
