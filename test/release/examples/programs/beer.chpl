@@ -68,11 +68,29 @@ proc computeLyrics(verseNum) {
 // # should result in "[N/n]o more" for zero bottles.
 //
 proc describeBottles(bottleNum, startOfVerse = false) {
-  return (if (bottleNum) then bottleNum:string
-                         else (if startOfVerse then "N" 
-                                               else "n") + "o more")
-          + " bottle" + (if (bottleNum != 1) then "s" else "") 
-          + " of beer";
+  // Passing the result of a function call by (modifiable) ref to another function requires
+  // that it first be captured in a named variable.
+  // In this respect, Chapel differs from C++, which allows an lvalue reference
+  // to bind to an rvalue [ISO/IEC14882:1998, 8.5.3].
+
+  // Following this revision, toString(ref csc:c_string_copy) and
+  // variations of proc + (concatenation) take their c_string_copy
+  // arguments by reference, so temporary c_string_copy results must
+  // be stored in a variable.  In addition to making toString happy, it allows
+  // the concatenation routines to be written in a way that they do not leak
+  // memory.  One can consider a ref c_string_copy argument to be the equivalent of
+  // an rvalue reference.
+  // This change is only temporary: When rvalue
+  // references are implemented, then it should be legal to bind an rref to the
+  // result of a function, so the need for named temporaries goes away.
+  var count:string;
+  if bottleNum then count = bottleNum:string;
+  else {
+    var first = (if startOfVerse then "N" 
+                                 else "n") + "o more";
+    count = first;
+  }
+  return count + " bottle" + (if (bottleNum != 1) then "s" else "") + " of beer";
 }
 
 

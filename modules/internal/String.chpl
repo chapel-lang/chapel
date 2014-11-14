@@ -441,7 +441,7 @@ module CString {
     return toString(x);
   }
 
-  inline proc _cast(type t, x: c_string_copy) where t == string {
+  inline proc _cast(type t, ref x: c_string_copy) where t == string {
     return toString(x);
   }
 

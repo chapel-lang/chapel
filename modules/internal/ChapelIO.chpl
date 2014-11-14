@@ -633,7 +633,7 @@ module ChapelIO {
     var afterdot = false;
     var dplaces = 0;
     for i in 1..sn {
-      const ss = s.substring(i);
+      var ss = s.substring(i);
       if ((ss == '#') & afterdot) then dplaces += 1;
       if (ss == '.') then afterdot=true;
       chpl_free_c_string_copy(ss);
