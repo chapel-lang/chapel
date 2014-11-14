@@ -471,16 +471,17 @@ function customDrawCallback(g, initial) {
   // same color. After sorting is done, we may expand the graph.
   if (initial) {
     if (g.graphInfo.sort) {
-      var origColors = g.getColors().slice();
-      g.rawData_ = sortData(g);
-      g.setAnnotations(g.annotations());
-      setColors(g, origColors, true);
+      //var origColors = g.getColors().slice();
+      //g.rawData_ = sortData(g);
+      //g.setAnnotations(g.annotations());
+      //setColors(g, origColors, true);
+      //g.setAnnotations(g.annotations());
     }
     if (descriptions.length > 0) {
       setConfigurationVisibility(g, true);
+      g.setAnnotations(g.annotations());
     }
 
-    g.setAnnotations(g.annotations());
     expandGraphs(g);
   }
 
