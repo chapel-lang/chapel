@@ -980,7 +980,7 @@ for testname in testsrc:
         continue # on to next test
 
     # Set numlocales
-    if (numlocales == 0) or (chplcomm=='none'):
+    if (numlocales == 0) or (chplcomm=='none') or is_c_test:
         numlocexecopts = None
     else:
         numlocexecopts = ' -nl '+str(numlocales)
