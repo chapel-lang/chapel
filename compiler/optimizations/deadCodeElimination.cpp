@@ -206,7 +206,7 @@ void deadExpressionElimination(FnSymbol* fn) {
 
         // Invert the condition and shuffle the alternative
         if (cond->thenStmt == NULL) {
-          Expr* condExpr = new CallExpr(PRIM_UNARY_LNOT, condExpr);
+          Expr* condExpr = new CallExpr(PRIM_UNARY_LNOT, cond->condExpr);
 
           cond->replaceChild(cond->condExpr, condExpr);
           cond->replaceChild(cond->thenStmt, cond->elseStmt);
