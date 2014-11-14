@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,7 +51,7 @@ void codegenStmt(Expr* stmt) {
         info->cStatements.push_back(
             "/* ZLINE: " + numToString(stmt->linenum())
             + " " + stmt->fname() + " */\n");
-      } 
+      }
     }
 
     if (fGenIDS)
@@ -74,8 +74,8 @@ Stmt::~Stmt() {
 
 }
 
-bool Stmt::isStmt() const { 
-  return true; 
+bool Stmt::isStmt() const {
+  return true;
 }
 
 
@@ -92,7 +92,7 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   breakLabel(NULL),
   continueLabel(NULL),
   userLabel(NULL),
-  byrefVars(NULL), 
+  byrefVars(NULL),
   blockInfo(NULL) {
   body.parent = this;
 
@@ -103,7 +103,7 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
 }
 
 
-BlockStmt::~BlockStmt() { 
+BlockStmt::~BlockStmt() {
 
 }
 
@@ -220,9 +220,9 @@ GenRet BlockStmt::codegen() {
     getFunction()->codegenUniqueNum++;
 
     blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
-   
+
     info->builder->CreateBr(blockStmtBody);
-    
+
     // Now add the body.
     func->getBasicBlockList().push_back(blockStmtBody);
 
@@ -405,7 +405,7 @@ BlockStmt::moduleUseRemove(ModuleSymbol* mod) {
         if (ModuleSymbol* curMod = toModuleSymbol(symExpr->var)) {
           if (curMod == mod) {
             symExpr->remove();
-            
+
             retval = true;
             break;
           }
@@ -433,7 +433,7 @@ BlockStmt::moduleUseClear() {
   }
 }
 
-void 
+void
 BlockStmt::accept(AstVisitor* visitor) {
   if (visitor->enterBlockStmt(this) == true) {
     for_alist(next_ast, body)
@@ -488,7 +488,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
 Expr*
 CondStmt::fold_cond_stmt()
 {
-  // deadBlockElimination() can get rid of the condition expression 
+  // deadBlockElimination() can get rid of the condition expression
   // without getting rid of the parent if.  We do that here.
   if (! condExpr)
   {
@@ -628,19 +628,19 @@ GenRet CondStmt::codegen() {
     llvm::BasicBlock *condStmtElse = NULL;
     llvm::BasicBlock *condStmtEnd = llvm::BasicBlock::Create(
         info->module->getContext(), FNAME("cond_end"));
-          
+
     if(elseStmt) {
       condStmtElse = llvm::BasicBlock::Create(
           info->module->getContext(), FNAME("cond_else"));
     }
-          
+
     info->lvt->addLayer();
-    
+
     info->builder->CreateBr(condStmtIf);
 
     func->getBasicBlockList().push_back(condStmtIf);
     info->builder->SetInsertPoint(condStmtIf);
-    
+
     GenRet condValueRet = codegenValue(condExpr);
     llvm::Value *condValue = condValueRet.val;
     if( condValue->getType() !=
@@ -654,29 +654,29 @@ GenRet CondStmt::codegen() {
         condValue,
         condStmtThen,
         (elseStmt) ? condStmtElse : condStmtEnd);
-    
+
     func->getBasicBlockList().push_back(condStmtThen);
     info->builder->SetInsertPoint(condStmtThen);
-    
+
     info->lvt->addLayer();
     thenStmt->codegen();
 
     info->builder->CreateBr(condStmtEnd);
     info->lvt->removeLayer();
-    
+
     if(elseStmt) {
       func->getBasicBlockList().push_back(condStmtElse);
       info->builder->SetInsertPoint(condStmtElse);
-    
+
       info->lvt->addLayer();
       elseStmt->codegen();
       info->builder->CreateBr(condStmtEnd);
       info->lvt->removeLayer();
     }
-    
+
     func->getBasicBlockList().push_back(condStmtEnd);
     info->builder->SetInsertPoint(condStmtEnd);
-    
+
     info->lvt->removeLayer();
 #endif
   }
@@ -859,7 +859,7 @@ GenRet GotoStmt::codegen() {
   } else {
 #ifdef HAVE_LLVM
     llvm::Function *func = info->builder->GetInsertBlock()->getParent();
-  
+
     const char *cname;
     if(isDefExpr(label)) {
       cname = toDefExpr(label)->sym->cname;
@@ -867,15 +867,15 @@ GenRet GotoStmt::codegen() {
     else {
       cname = toSymExpr(label)->var->cname;
     }
-    
+
     llvm::BasicBlock *blockLabel;
     if(!(blockLabel = info->lvt->getBlock(cname))) {
       blockLabel = llvm::BasicBlock::Create(info->module->getContext(), cname);
       info->lvt->addBlock(cname, blockLabel);
     }
-    
+
     info->builder->CreateBr(blockLabel);
- 
+
     getFunction()->codegenUniqueNum++;
 
     llvm::BasicBlock *afterGoto = llvm::BasicBlock::Create(
