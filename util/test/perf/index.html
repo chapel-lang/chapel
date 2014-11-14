@@ -21,7 +21,8 @@
       <!-- hide
            function jumpto(x){
              if (document.form1.jumpmenu.value != "null") {
-             selectSuite(x)
+               selectSuite(x);
+               displaySelectedGraphs();
              }
            }
            // end hide -->
@@ -35,7 +36,10 @@
           <p><strong>OR</strong></p>
           <p><em>Select and display specific tests</em></p>
           <input type="button" onclick="displaySelectedGraphs()"
-          value="Display"><br>
+          value="Display">
+           <input type="button" onclick="clearDates()"
+          value="Clear Dates">
+          <br>
           <input type="button" onclick="selectAllGraphs()"
           value="Select All">
           <input type="button" onclick="unselectAllGraphs()"
