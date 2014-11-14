@@ -461,74 +461,85 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   Stmt(E_CondStmt),
   condExpr(iCondExpr),
   thenStmt(NULL),
-  elseStmt(NULL)
-{
+  elseStmt(NULL) {
+
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
+
     if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
       thenStmt = bs;
     else
       thenStmt = new BlockStmt(s);
-    } else
+  } else {
     INT_FATAL(iThenStmt, "Bad then-stmt passed to CondStmt constructor");
+  }
+
   if (iElseStmt) {
     if (Expr* s = toExpr(iElseStmt)) {
       BlockStmt* bs = toBlockStmt(s);
+
       if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
         elseStmt = bs;
       else
         elseStmt = new BlockStmt(s);
-    } else
+
+    } else {
       INT_FATAL(iElseStmt, "Bad else-stmt passed to CondStmt constructor");
+    }
   }
+
   gCondStmts.add(this);
 }
 
 
 Expr*
-CondStmt::fold_cond_stmt()
-{
+CondStmt::fold_cond_stmt() {
   // deadBlockElimination() can get rid of the condition expression
   // without getting rid of the parent if.  We do that here.
-  if (! condExpr)
-  {
+  if (! condExpr) {
     this->remove();
     return NULL;
   }
 
   // Similarly, deadBlockElimination() can kill the THEN expression
-  if (! thenStmt)
-  {
+  if (! thenStmt) {
     // Two cases:
     // If elseExpr is also null, just kill the whole IF.
-    if (! elseStmt)
-    {
+    if (! elseStmt) {
       this->remove();
       return NULL;
     }
+
     // Otherwise, invert the condition and move the else clause into
     // the THEN slot.
     Expr* cond = new CallExpr(PRIM_UNARY_LNOT, condExpr);
+
     this->replaceChild(condExpr, cond);
     this->replaceChild(thenStmt, elseStmt);
     this->replaceChild(elseStmt, NULL);
   }
 
   Expr* result = NULL;
-  if (SymExpr* cond = toSymExpr(condExpr))
-  {
+
+  if (SymExpr* cond = toSymExpr(condExpr)) {
     if (VarSymbol* var = toVarSymbol(cond->var)) {
-      if (var->immediate &&
-          var->immediate->const_kind == NUM_KIND_BOOL) {
+      if (var->immediate && var->immediate->const_kind == NUM_KIND_BOOL) {
+
         SET_LINENO(this);
+
         result = new CallExpr(PRIM_NOOP);
+
         this->insertBefore(result);
+
         if (var->immediate->bool_value() == gTrue->immediate->bool_value()) {
           Expr* then_stmt = thenStmt;
+
           then_stmt->remove();
           this->replace(then_stmt);
+
         } else if (var->immediate->bool_value() == gFalse->immediate->bool_value()) {
           Expr* else_stmt = elseStmt;
+
           if (else_stmt) {
             else_stmt->remove();
             this->replace(else_stmt);
@@ -539,13 +550,16 @@ CondStmt::fold_cond_stmt()
       }
     }
   }
+
   removeDeadIterResumeGotos();
+
   return result;
 }
 
-
-void CondStmt::verify() {
+void
+CondStmt::verify() {
   Expr::verify();
+
   if (astTag != E_CondStmt) {
     INT_FATAL(this, "Bad CondStmt::astTag");
   }
@@ -581,7 +595,6 @@ void CondStmt::verify() {
 
 }
 
-
 CondStmt*
 CondStmt::copyInner(SymbolMap* map) {
   return new CondStmt(COPY_INT(condExpr),
@@ -590,48 +603,64 @@ CondStmt::copyInner(SymbolMap* map) {
 }
 
 
-void CondStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+void
+CondStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == condExpr) {
     condExpr = new_ast;
+
   } else if (old_ast == thenStmt) {
     thenStmt = toBlockStmt(new_ast);
+
   } else if (old_ast == elseStmt) {
     elseStmt = toBlockStmt(new_ast);
+
   } else {
     INT_FATAL(this, "Unexpected case in CondStmt::replaceChild");
   }
 }
 
 
-GenRet CondStmt::codegen() {
-  GenInfo* info = gGenInfo;
-  FILE* outfile = info->cfile;
-  GenRet ret;
+GenRet
+CondStmt::codegen() {
+  GenInfo* info    = gGenInfo;
+  FILE*    outfile = info->cfile;
+  GenRet   ret;
 
   codegenStmt(this);
-  if( outfile ) {
+
+  if ( outfile ) {
     info->cStatements.push_back("if (" + codegenValue(condExpr).c + ") ");
+
     thenStmt->codegen();
+
     if (elseStmt) {
       info->cStatements.push_back(" else ");
       elseStmt->codegen();
     }
+
   } else {
 #ifdef HAVE_LLVM
-    llvm::Function *func = info->builder->GetInsertBlock()->getParent();
+    llvm::Function* func = info->builder->GetInsertBlock()->getParent();
+
     getFunction()->codegenUniqueNum++;
 
     llvm::BasicBlock *condStmtIf = llvm::BasicBlock::Create(
-        info->module->getContext(), FNAME("cond_if"));
-    llvm::BasicBlock *condStmtThen = llvm::BasicBlock::Create(
-        info->module->getContext(), FNAME("cond_then"));
-    llvm::BasicBlock *condStmtElse = NULL;
-    llvm::BasicBlock *condStmtEnd = llvm::BasicBlock::Create(
-        info->module->getContext(), FNAME("cond_end"));
+        info->module->getContext(),
+        FNAME("cond_if"));
 
-    if(elseStmt) {
-      condStmtElse = llvm::BasicBlock::Create(
-          info->module->getContext(), FNAME("cond_else"));
+    llvm::BasicBlock *condStmtThen = llvm::BasicBlock::Create(
+        info->module->getContext(),
+        FNAME("cond_then"));
+
+    llvm::BasicBlock *condStmtElse = NULL;
+
+    llvm::BasicBlock *condStmtEnd = llvm::BasicBlock::Create(
+        info->module->getContext(),
+        FNAME("cond_end"));
+
+    if (elseStmt) {
+      condStmtElse = llvm::BasicBlock::Create(info->module->getContext(),
+                                              FNAME("cond_else"));
     }
 
     info->lvt->addLayer();
@@ -642,7 +671,9 @@ GenRet CondStmt::codegen() {
     info->builder->SetInsertPoint(condStmtIf);
 
     GenRet condValueRet = codegenValue(condExpr);
+
     llvm::Value *condValue = condValueRet.val;
+
     if( condValue->getType() !=
         llvm::Type::getInt1Ty(info->module->getContext()) ) {
       condValue = info->builder->CreateICmpNE(
@@ -650,6 +681,7 @@ GenRet CondStmt::codegen() {
           llvm::ConstantInt::get(condValue->getType(), 0),
           FNAME("condition"));
     }
+
     info->builder->CreateCondBr(
         condValue,
         condStmtThen,
@@ -683,8 +715,8 @@ GenRet CondStmt::codegen() {
   return ret;
 }
 
-
-void CondStmt::accept(AstVisitor* visitor) {
+void
+CondStmt::accept(AstVisitor* visitor) {
   if (visitor->enterCondStmt(this) == true) {
 
     if (condExpr)
