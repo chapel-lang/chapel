@@ -697,9 +697,11 @@ function setConfigurationVisibility(graph, blockRedraw) {
 // to check. It handles individual graphs, all graphs, and suites
 function setGraphsFromURL() {
   var suiteToDisplay = getOption(OptionsEnum.SUITE);
-
+  if (suiteToDisplay === '') {
+    suiteToDisplay = NO_SUITE;
+  }
   // if no suite was selected, set individual graphs
-  if (suiteToDisplay == normalizeForURL(NO_SUITE)) {
+  if (normalizeForURL(suiteToDisplay) === normalizeForURL(NO_SUITE)) {
     var graphsToDisplay = getOption(OptionsEnum.GRAPHS);
     // special case for all graphs
     if (graphsToDisplay === 'all') {
