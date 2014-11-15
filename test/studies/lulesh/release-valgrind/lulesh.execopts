@@ -1,1 +1,4 @@
-orig-dir/lulesh.execopts
+--doTiming=false                                      # lulesh-noargs.good
+--filename=lmeshes/sedov2cube.lmesh --doTiming=false
+--elemsPerEdge=2 --doTiming=false
+--elemsPerEdge=3 --doTiming=false                     # lulesh-3cube.good
