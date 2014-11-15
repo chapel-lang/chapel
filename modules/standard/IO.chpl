@@ -1528,12 +1528,13 @@ proc _args_to_proto(args ...?k,
   // But this is used for error handlling so maybe we don't care.
   var err_args:c_string;
   for param i in 1..k {
-    var name:c_string;
-    if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:c_string_copy;
-    // FIX ME: leak c_string due to concatenation
-    // Actually, don't fix me.  Fix concatenation to consume its c_string_copy args.
-    err_args += preArg + name + ":" + typeToString(args(i).type);
+    err_args += preArg;
+    if i <= _arg_to_proto_names.size then err_args += _arg_to_proto_names[i];
+    else {
+      var i_str = i:c_string_copy;
+      err_args = err_args + i_str;
+    }
+    err_args += ":" + typeToString(args(i).type);
     if i != k then err_args += ", ";
   }
   const ret = toString(err_args);
