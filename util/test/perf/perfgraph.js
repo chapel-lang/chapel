@@ -470,17 +470,20 @@ function customDrawCallback(g, initial) {
   // reset so that multiple series that are next to each other don't have the
   // same color. After sorting is done, we may expand the graph.
   if (initial) {
-    if (g.graphInfo.sort) {
-      var origColors = g.getColors().slice();
-      g.rawData_ = sortData(g);
+    var graphInfo = g.graphInfo;
+    var expandNum = graphInfo.expand;
+
+    // if we're expanding a graph, or we have multiple configs, set new colors
+    if ((expandNum !== undefined && expandNum !== 0) || descriptions.length > 0) {
+      setColors(g, g.getColors().slice(), true);
       g.setAnnotations(g.annotations());
-      setColors(g, origColors, true);
-    }
-    if (descriptions.length > 0) {
-      setConfigurationVisibility(g, true);
     }
 
-    g.setAnnotations(g.annotations());
+    if (descriptions.length > 0) {
+      setConfigurationVisibility(g, true);
+      g.setAnnotations(g.annotations());
+    }
+
     expandGraphs(g);
   }
 

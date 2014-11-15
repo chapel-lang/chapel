@@ -1,0 +1,8 @@
+bug: Verify error. Generated calls to autoCopy functions do not insert reference temps.
+
+Ref temp insertion is performed during resolution, but not in later passes
+(e.g. parallel).  So if the autoCopy funciton takes an argument by reference
+there will be a mismatch.
+
+Reference levels are adjusted in the backend, so this mismatch only shows up
+when verification is enabled.

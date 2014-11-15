@@ -77,6 +77,97 @@ def show_date(value):
     else:
         return time.strftime('%Y-%m-%d', value)
 
+
+# Helper functions to parse/write/sort a dygraphs compatible csv file.
+#
+# Expected form of csv file is:
+#
+# Date,<perfKey1>,<perfKey2>
+# YYYY-mm-dd,<key1Value>,<key2Value>
+# YYYY-mm-dd,<key1Value>,<key2Value>
+#
+# where <keyXValue> is of the form 'val' for numtrials=1 (customBars are not
+# being used), 'lowVal;medVal;highVal' for numTrials>1 (customBars are being
+# used), or '' if there was no no value for that key for that date
+#
+# Parses a csv file of the above form into a list of the form:
+#
+# [[['Date'], ['perfKey1'], ['perfKey2']],
+# [['YYYY-mm-dd'],[<key1Value>],[<key2Value>]],
+# [['YYYY-mm-dd'],[<key1Value>],[<key2Value>]]]
+#
+# where <keyXValue> is either a single value as a string, 3 values (low, med,
+# high) as strings, or the empty string if there was no value for that key for
+# that date
+
+def parse_csv(csvFile):
+    with open(csvFile, 'r') as f:
+        lines = f.readlines();
+
+    data = []
+    for line in lines:
+        valuesString = line.strip('\n').split(',')
+        values = []
+        for valueString in valuesString:
+             values.append(valueString.split(';'))
+        data.append(values)
+
+    return data
+
+def data_to_csv(data, csvFile):
+    lines = []
+    for values in data:
+        line = []
+        for value in values:
+            line.append(';'.join(value))
+        lines.append(','.join(line)+'\n')
+
+    with open(csvFile, 'w') as f:
+        f.writelines(lines)
+
+# sorts a csv of the aforementioned form. Sorts a series' keys and it's
+# corresponding values (column) from greatest to least in terms of a series
+# most recent data.
+# Takes:
+#   Date,<perfKey1>,<perfKey2>
+#   YYYY-mm-dd,1;2;3,0;1;2
+#   YYYY-mm-dd,1;2;3,3;4;5
+# and transforms it into:
+#   Date,<perfKey2>,<perfKey1>
+#   YYYY-mm-dd,0;1;2,1;2;3
+#   YYYY-mm-dd,3;4;5,1;2;3
+#
+# also works for 'val', instead of 'low;med;high' and empty values: ''
+def sort_csv(csvFile):
+    data = parse_csv(csvFile)
+
+    # transpose the data so that we can sort by row
+    data = zip(*data)
+    # remove the Date perfkey and the actual dates as they screw up sorting
+    dates = data.pop(0)
+
+    # sort function called on values of the form:
+    #   [['perfKey1'],[<key1Value>],[<key1Value>]]
+    # where keyXValue are of the form described above. sorts by the most recent
+    # date, and grabs the middle value. returns -1 for empty values, so that
+    # series with no recent data filter down to the bottom
+    def parse_sortable_float(values):
+        mostRecentValues = values[len(values)-1]
+        value = mostRecentValues[len(mostRecentValues)//2]
+        if value == '':
+            return -1.0
+        return try_parse_float(value)
+
+    data.sort(key=lambda values: parse_sortable_float(values), reverse=True)
+
+    # add the dates back in
+    data.insert(0, dates)
+    # untranspose the data
+    data = zip(*data)
+
+    data_to_csv(data, csvFile)
+
+
 ############
 
 # Global info about generating graphs
@@ -213,7 +304,7 @@ class GraphStuff:
         self.gfile.write('   "enddate" : "%s",\n'%(ginfo.enddate))
         self.gfile.write('   "displayrange" : %s,\n'%(str(ginfo.displayrange).lower()))
         self.gfile.write('   "expand" : %d,\n'%(ginfo.expand))
-        self.gfile.write('   "sort" : %s,\n'%(str(ginfo.sort).lower()))
+        self.gfile.write('   "sort" : false,\n')
         self.gfile.write('   "annotations" : [')
         if ginfo.annotations:
           self.gfile.write('\n      ')
@@ -525,6 +616,15 @@ class GraphClass:
 
         f.write('\n')
         f.close()
+
+        # sort the csv if sorting is enabled for this graph. This happens after
+        # the file is created instead of above because the above process
+        # appends to the file line by line and it wasn't clear to me how to get
+        # it into a better form. If instead of writing out line by line, you
+        # put the data into a list of the form described in the csv helper
+        # functions section above, you can eliminate the intermediate step.
+        if self.sort:
+            sort_csv(fname)
 
         if startdate == None:
             startdate = time.localtime()
