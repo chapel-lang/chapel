@@ -97,7 +97,7 @@ module BaseStringType {
   }
 
   pragma "insert line file info"
-  extern proc stringMove(dest: c_string, src: c_string, len: int): c_string;
+  extern proc stringMove(ref dest: c_string, src: c_string, len: int): c_string;
   pragma "insert line file info"
   extern proc remoteStringCopy(src_loc: int, src_addr: c_string, len: int): c_string_copy;
 
@@ -174,7 +174,8 @@ module NewString {
           if this.len != 0 then
             on home do free_baseType(this.base);
           // allocate a new buffer
-          this.base = stringMove(_defaultOf(baseType), s, new_len);
+          var empty_buffer = _defaultOf(baseType);
+          this.base = stringMove(empty_buffer, s, new_len);
         }
       } else {
         // free the old buffer
@@ -352,7 +353,8 @@ module NewString {
       const slen = s.len; // cache the remote copy of len
       if s.home.id == here.id {
         if debugStrings then writeln("  local initCopy");
-        ret.base = stringMove(_defaultOf(baseType), s.base, slen);
+        var empty_buffer = _defaultOf(baseType);
+        ret.base = stringMove(empty_buffer, s.base, slen);
       } else {
         if debugStrings then writeln("  remote initCopy: ", s.home.id);
         ret.base = remoteStringCopy(s.home.id, s.base, slen);

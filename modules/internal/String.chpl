@@ -532,6 +532,25 @@ module CString {
   inline proc +(a: c_string, b: c_string)
     return __primitive("string_concat", a, b);
 
+  inline proc +(a: c_string, ref b: c_string_copy) {
+    var result = __primitive("string_concat", a, b);
+    chpl_free_c_string_copy(b);
+    return result;
+  }
+
+  inline proc +(ref a: c_string_copy, b: c_string) {
+    var result = __primitive("string_concat", a, b);
+    chpl_free_c_string_copy(a);
+    return result;
+  }
+
+  inline proc +(ref a: c_string_copy, ref b: c_string_copy) {
+    var result = __primitive("string_concat", a, b);
+    chpl_free_c_string_copy(a);
+    chpl_free_c_string_copy(b);
+    return result;
+  }
+
   proc c_string.writeThis(x: Writer) {
     x.write(this);
   }

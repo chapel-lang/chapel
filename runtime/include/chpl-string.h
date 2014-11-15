@@ -43,12 +43,12 @@ void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, c_str
 void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_string_s* str, int32_t lineno, c_string filename);
 
 // Chapel string support functions
-// If dest == NULL then a new string is allocated to accommodate the
+// If dest == NULL or *dest == NULL then a new string is allocated to accommodate the
 // result of the move.  Otherwise the caller must supply a dest large enough to
 // accommodate the result.  
-// TODO:  This interface is weird.  It would be better to always allocate.  Is
-// it ever called with a non-NULL dest?
-c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
+// If non-NULL, The supplied c_string_copy is consumed, but the same value is
+// returned (as in realloc).
+c_string_copy stringMove(c_string_copy* dest, c_string src, int64_t len,
                          int32_t lineno, c_string filename);
 
 c_string_copy remoteStringCopy(c_nodeid_t src_locale,

@@ -48,7 +48,10 @@ proc ioerror(error:syserr, msg:string)
     var errstr:c_string;
     var strerror_err:err_t = ENOERR;
     errstr = sys_strerror_syserr_str(error, strerror_err); 
-    __primitive("chpl_error", errstr + " " + msg.c_str());
+    var errstr_s =  errstr + " ";
+    var errstr_s_m = errstr_s + msg.c_str();
+    __primitive("chpl_error", errstr_s_m);
+    chpl_free_c_string_copy(errstr_s_m);
   }
 }
 
@@ -60,7 +63,14 @@ proc ioerror(error:syserr, msg:string, path:string)
     var strerror_err:err_t = ENOERR;
     errstr = sys_strerror_syserr_str(error, strerror_err); 
     quotedpath = quote_string(path, path.length:ssize_t);
-    __primitive("chpl_error", errstr + " " + msg.c_str() + " with path " + quotedpath);
+    // Intermediate concatenations consume their c_string_copy args.
+    var errstr_s = errstr + " ";
+    var errstr_s_m = errstr_s + msg.c_str();
+    var errstr_s_m_w = errstr_s_m + " with path ";
+    var errstr_s_m_w_q = errstr_s_m_w + quotedpath;
+    __primitive("chpl_error", errstr_s_m_w_q);
+    // But the last one must be freed explicitly.
+    chpl_free_c_string_copy(errstr_s_m_w_q);
   }
 }
 
@@ -72,9 +82,17 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
     var strerror_err:err_t = ENOERR;
     errstr = sys_strerror_syserr_str(error, strerror_err); 
     quotedpath = quote_string(path, path.length:ssize_t);
-    // TODO: Because the output of concatenation (+) is an allocated string,
-    // this routine leaks like a sieve.
-    __primitive("chpl_error", errstr + " " + msg.c_str() + " with path " + quotedpath + " offset " + offset:c_string_copy);
+    // Intermediate concatenations consume their c_string_copy args.
+    var errstr_s = errstr + " ";
+    var errstr_s_m = errstr_s + msg.c_str();
+    var errstr_s_m_w = errstr_s_m + " with path ";
+    var errstr_s_m_w_q = errstr_s_m_w + quotedpath;
+    var errstr_s_m_w_q_o = errstr_s_m_w_q + " offset ";
+    var offset_cstr = offset:c_string_copy;
+    var errstr_s_m_w_q_o_o = errstr_s_m_w_q_o + offset_cstr;
+    __primitive("chpl_error", errstr_s_m_w_q_o_o);
+    // But the last one must be freed explicitly.
+    chpl_free_c_string_copy(errstr_s_m_w_q_o_o);
   }
 }
 
@@ -82,9 +100,17 @@ proc ioerror(errstr:string, msg:string, path:string, offset:int(64))
 {
   var quotedpath:c_string;
   quotedpath = quote_string(path, path.length:ssize_t);
-  // TODO: Because the output of concatenation (+) is an allocated string,
-  // this routine leaks like a sieve.
-  __primitive("chpl_error", errstr + " " + msg.c_str() + " with path " + quotedpath + " offset " + offset:c_string_copy);
+  // Intermediate concatenations consume their c_string_copy args.
+  var errstr_s = errstr + " ";
+  var errstr_s_m = errstr_s + msg.c_str();
+  var errstr_s_m_w = errstr_s_m + " with path ";
+  var errstr_s_m_w_q = errstr_s_m_w + quotedpath;
+  var errstr_s_m_w_q_o = errstr_s_m_w_q + " offset ";
+  var offset_cstr = offset:c_string_copy;
+  var errstr_s_m_w_q_o_o = errstr_s_m_w_q_o + offset_cstr;
+  __primitive("chpl_error", errstr_s_m_w_q_o_o);
+    // But the last one must be freed explicitly.
+  chpl_free_c_string_copy(errstr_s_m_w_q_o_o);
 }
 
 proc errorToString(error:syserr):string
