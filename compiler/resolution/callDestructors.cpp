@@ -871,24 +871,31 @@ static void insertYieldTemps()
 }
 
 
+//
+// Insert reference temps for function arguments that expect them.
+//
+void insertReferenceTemps(CallExpr* call)
+{
+  for_formals_actuals(formal, actual, call) {
+    if (formal->type == actual->typeInfo()->refType) {
+      SET_LINENO(call);
+      Expr* stmt = call->getStmtExpr();
+      VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
+      tmp->addFlag(FLAG_REF_TEMP);
+      stmt->insertBefore(new DefExpr(tmp));
+      actual->replace(new SymExpr(tmp));
+      stmt->insertBefore(
+        new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+    }
+  }
+}
+
+
 static void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if ((call->parentSymbol && call->isResolved()) ||
         call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      //
-      // Insert reference temps for function arguments that expect them.
-      //
-      for_formals_actuals(formal, actual, call) {
-        if (formal->type == actual->typeInfo()->refType) {
-          SET_LINENO(call);
-          VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
-          tmp->addFlag(FLAG_REF_TEMP);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          actual->replace(new SymExpr(tmp));
-          call->getStmtExpr()->insertBefore(
-              new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
-        }
-      }
+      insertReferenceTemps(call);
     }
   }
 }

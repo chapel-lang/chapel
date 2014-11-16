@@ -261,6 +261,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         fcall->insertBefore(new DefExpr(valTmp));
         CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
         fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
+        insertReferenceTemps(autoCopyCall);
         var = valTmp;
 
         if (firstCall)
