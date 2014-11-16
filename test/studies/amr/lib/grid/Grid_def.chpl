@@ -285,8 +285,10 @@ proc readGrid(file_name: string) {
 
   var dim_in: int;
   input_file.readln(dim_in);
-  assert(dim_in == dimension, 
-         "error: dimension of space.txt must equal " + format("%i",dimension));
+  var dimf = format("%i",dimension);
+  var msg = "error: dimension of space.txt must equal " + dimf;
+  assert(dim_in == dimension, msg);
+  chpl_free_c_string_copy(msg);
   input_file.readln(); // empty line
 
   var x_low, x_high:                 dimension*real;

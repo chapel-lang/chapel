@@ -1405,13 +1405,14 @@ iter sdom.dsiFollowerArrayIterator1d(denseRange) {
 
 /// label the output with "phases" //////////////////////////////////////////
 
-var pfx = "# ";
+var pfx:c_string_copy = "# ";
 var phase = 0;
 
 // to preserve coarse ordering ("phases") when sorting the output
 proc nextphase() {
   phase += 1;
-  pfx = format("####", phase) + "  ";
+  var fmt_p = format("####", phase);
+  pfx = fmt_p + "  ";
   traceDimensionalDistPrefix = pfx;
 }
 

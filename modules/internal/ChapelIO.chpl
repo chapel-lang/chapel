@@ -603,8 +603,10 @@ module ChapelIO {
   proc format(fmt: c_string, x:?t) where isIntegralType(t) || isFloatType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
-      if isImagType(t) then
-        return (chpl_format(fmt2, _i2r(x))+"i");
+      if isImagType(t) {
+        var resb = chpl_format(fmt2, _i2r(x));
+        return (resb+"i");
+      }
       else
         return chpl_format(fmt2, x:real);
     } else 
@@ -614,7 +616,11 @@ module ChapelIO {
   proc format(fmt: c_string, x:?t) where isComplexType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
-      return (chpl_format(fmt2, x.re)+" + "+ chpl_format(fmt2, x.im)+"i");
+      var fmt_r = chpl_format(fmt2, x.re);
+      var fmt_i = chpl_format(fmt2, x.im);
+      var fmt_i_i = fmt_i + "i";
+      var res1 = fmt_r + " + ";
+      return res1 + fmt_i_i;
     } else 
       return chpl_format(fmt, x);
   }

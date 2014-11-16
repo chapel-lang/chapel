@@ -166,7 +166,11 @@ proc GridVariable.writeData (
       when 1 do linelabel = "                 mx";
       when 2 do linelabel = "                 my";
       when 3 do linelabel = "                 mz";
-      otherwise linelabel = "                 mx(" + format("%1i",d) + ")";
+      otherwise {
+        var dimf = format("%1i",d);
+        var ldimf = "                 mx(" + dimf;
+        linelabel = ldimf + ")";
+      }
     }
     outfile.writeln( format(ifmt, grid.n_cells(d)),  linelabel);
   }
@@ -178,7 +182,11 @@ proc GridVariable.writeData (
       when 1 do linelabel = "    xlow";
       when 2 do linelabel = "    ylow";
       when 3 do linelabel = "    zlow";
-      otherwise linelabel = "    xlow(" + format("%1i",d) + ")";
+      otherwise {
+        var dimf = format("%1i",d);
+        var ldimf = "    xlow(" + dimf;
+        linelabel = ldimf + ")";
+      }
     }
     outfile.writeln( format(efmt, grid.x_low(d)),  linelabel);
   }
@@ -190,7 +198,11 @@ proc GridVariable.writeData (
       when 1 do linelabel = "    dx";
       when 2 do linelabel = "    dy";
       when 3 do linelabel = "    dz";
-      otherwise linelabel = "    dx(" + format("%1i",d) + ")";
+      otherwise {
+        var dimf = format("%1i",d);
+        var ldimf = "    dx(" + dimf;
+        linelabel = ldimf + ")";
+      }
     }
     outfile.writeln( format(efmt, grid.dx(d)),  linelabel);
   }

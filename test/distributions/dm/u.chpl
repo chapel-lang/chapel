@@ -5,14 +5,19 @@ use DimensionalDist2D;
 
 /// label the output with "phases" //////////////////////////////////////////
 
-var pfx = "# ";
+var pfx:c_string_copy = "# ";
 var phase = 0;
 var no_pfx = false;
 
 // to preserve coarse ordering ("phases") when sorting the output
 proc nextphase() {
   phase += 1;
-  pfx = if no_pfx then "" else format("####", phase) + "  ";
+  if no_pfx
+    then pfx = "";
+    else {
+      var p_fmt = format("####", phase);
+      pfx = p_fmt + "  ";
+    }
   traceDimensionalDistPrefix = pfx;
 }
 

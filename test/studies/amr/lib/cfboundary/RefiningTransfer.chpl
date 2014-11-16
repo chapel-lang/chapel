@@ -555,13 +555,20 @@ proc GridVariable.fillCFGhostRegion (
   
   
   //==== Make sure that t1 < time < t2, with small margin for roundoff error ====
-  assert(time > t1 - 1.0E-8  &&  time < t2 + 1.0E-8,
-	 "Warning: LevelVariable.getFineBoundaryValues\n" +
-	 "Requesting fine data at time " + format("%8.4E",time) + "\n" +
-	 "coarse_overlap_solution.old_time =     " + format("%8.4E", t1) + "\n" +
-	 "coarse_overlap_solution.current_time = " + format("%8.4E", t2));
-  
-  
+  var timef = format("%8.4E",time);
+  var time1f = format("%8.4E", t1);
+  var time2f = format("%8.4E", t2);
+  var ptimef = "Requesting fine data at time " + timef;
+  var pptimef = "Warning: LevelVariable.getFineBoundaryValues\n" + ptimef;
+  var pptimefl = pptimef + "\n";
+  var ptime1f = "coarse_overlap_solution.old_time =     " + time1f;
+  var ptime1fl = ptime1f + "\n";
+  var ptime2f = "coarse_overlap_solution.current_time = " + time2f;
+  var msg1 = pptimefl + ptime1fl;
+  var msg2 = msg1 + ptime2f;
+  assert(time > t1 - 1.0E-8  &&  time < t2 + 1.0E-8, msg2);
+  chpl_free_c_string_copy(msg2);
+
   //==== Interpolate ====
   const c2 = (time - t1) / (t2 - t1);
   const c1 = 1 - c2;

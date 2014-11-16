@@ -1,12 +1,16 @@
 /////////////////////////////////
-var pfx = "# ";
+var pfx:c_string_copy = "# ";
 var phase = 0;
 var no_pfx = false;
 
 // to preserve coarse ordering ("phases") when sorting the output
 proc nextphase() {
   phase += 1;
-  pfx = if no_pfx then "" else format("####", phase) + "  ";
+  if no_pfx then pfx = "";
+  else {
+    var fmt_p = format("####", phase);
+    pfx = fmt_p + "  ";
+  }
 }
 
 // Force the next phase to be 'ph' - so that when phases are added earlier,
