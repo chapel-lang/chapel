@@ -52,24 +52,18 @@ general
 Reviewed 2014-11-14
 ===================
 
-skipif mods seem to have broken test (2014-11-14 -- hilde)
-(darwin, fifo, baseline, fast, verify, linux64, valgrind, no-local, numa, 
- memleaks, linux32, gasnet-everything, gasnet.fifo, gnu.darwin, cygwin)
---------------------------------------------------------------------------------------------
-[Error running sub_test in /Users/chapelu/jenkins/chapel-ci/workspace/correctness-test-darwin/test/link/sungeun (1)]
-
 failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
 (linux32, x?-wb.*)
 --------------------------------------------------------------------------
-[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)]
-[Error running sub_test in /.../test/studies/lsms/shemmy (255)]
+[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)] (passed on 2014-11-16)
+[Error running sub_test in /.../test/studies/lsms/shemmy (255)] (passed for xe-wb.gnu on 2014-11-16)
 [Error matching program output for studies/filerator/walk (execopts: 9)]
 
 
 ===================
 linux64
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
@@ -141,11 +135,11 @@ timeout (2014-11-12, first run)
 sporadic timeout
 ----------------
 [Error: Timed out executing program stress/deitz/test_10k_begins] (2014-11-12, first run)
-[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12, first run)
+[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12, 2014-11-16)
 
 sporadic signal 11
 ------------------
-[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13)
+[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13, 2014-11-16)
 
 sporadic tasks not being created
 --------------------------------
@@ -155,7 +149,7 @@ sporadic tasks not being created
 ===================
 darwin
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 for some reason, gets wrong problem size (2014-11-13 -- bradc/cathieO)
@@ -166,7 +160,7 @@ for some reason, gets wrong problem size (2014-11-13 -- bradc/cathieO)
 ===================
 gnu.darwin
 Inherits 'darwin'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
@@ -179,7 +173,7 @@ Reviewed 2014-11-14
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -190,7 +184,7 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -201,28 +195,28 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
 ===================
 fast
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ============================
 
 
@@ -237,28 +231,20 @@ sporadic segfault (infrequent)
 ===================
 verify
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
-
-internal error (2014-09-03 -- when .future file removed, hilde/mike/bradc)
---------------------------------------------------------------------------
-[Error matching compiler output for types/records/sungeun/recordWithRefCopyFns]
 
 
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
 [Error matching program output for regexp/ferguson/rechan]
-
-invalid read/write of size 8 in ftoa() (2014-10-08 -- hilde)
-------------------------------------------------------------
-[Error matching program output for performance/sungeun/assign_across_locales]
 
 continual compilation timeouts
 ------------------------------
@@ -271,12 +257,13 @@ sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for studies/sudoku/dinan/sudoku] (2014-10-19, 2014-10-21, 2014-10-25, 2014-10-30)
+[Error matching program output for performance/sungeun/dgemm] (2014-11-16)
 
 
 ===================
 llvm
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
@@ -287,28 +274,28 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 ===================
 fifo
 Inherits 'general'
-reviewed 2014-11-14
+reviewed 2014-11-16
 ===================
 
 
 ===================
 numa
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
 ===================
 no-local
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
 =================================
 no-local.linux32
 Inherits 'linux32' and 'no-local'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 =================================
 
 
@@ -350,7 +337,7 @@ sporadic execution timeout (regularly)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===============================
 
 
@@ -358,7 +345,7 @@ Reviewed 2014-11-14
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 =============================
 
 
@@ -372,7 +359,7 @@ sporadic segfault
 =============================
 gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 =============================
 
 consistent timeouts
@@ -384,7 +371,7 @@ consistent timeouts
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23, 2014-11-02, 2014-11-05, 2014-11-13)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23, 2014-11-02, 2014-11-05, 2014-11-13, 2014-11-16)
 
 sporadic timeouts (frequent)
 ----------------------------
@@ -403,7 +390,7 @@ sporadic glibc "invalid next size" (once)
 ===================
 gasnet.llvm
 Inherits 'llvm'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
@@ -529,9 +516,8 @@ Reviewed 2014-11-10
 ============================
 xc-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ============================
-
 
 === sporadic failures below ===
 
@@ -567,14 +553,21 @@ Reviewed 2014-11-14
 ===============================
 x?-wb.prgenv-intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===============================
+
+intel warning "icc: command line warning #10121: overriding '-std=gnu99' with '-std=c99'" (2014-11-16 -- ben?)
+--------------------------------------------------------------------------------------------------------------
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
 
 
 =============================
 xc-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 =============================
 
 
@@ -588,7 +581,7 @@ Reviewed 2014-11-09
 =============================
 x?-wb.gnu
 Inherits 'x?-wb*' and '*gnu*'
-Reviewed 2014-11-12
+Reviewed 2014-11-16
 =============================
 
 
@@ -602,7 +595,7 @@ Reviewed 2014-11-09
 ===========================
 xc-wb.host.prgenv-gnu
 Inherits 'x?-wb.prgenv-gnu'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===========================
 
 
@@ -646,11 +639,22 @@ Inherits 'x?-wb*' and '*pgi*'
 Reviewed 2014-11-14
 =============================
 
+pgcc command line errors (unknown switch: -fopenmp and -std=c99) (2014-11-16 -- ben?)
+-------------------------------------------------------------------------------------
+[Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
+[Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
+[Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
+[Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
+
+target program died with signal 11, without coredump
+----------------------------------------------------
+[Error matching program output for stress/deitz/test_10k_begins] (2014-11-16)
+
 
 ===========================
 xc-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===========================
 
 
@@ -697,28 +701,24 @@ sporadic data read copy failed
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
-
-when we removed --inline from baseline, this started failing (2014-11-14 -- hilde/mike/bradc)
----------------------------------------------------------------------------------------------
-[Error matching compiler output for types/records/sungeun/recordWithRefCopyFns]
 
 
 ===================
 dist-block
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
 ===================
 dist-cyclic
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
 
 
 
 ===================
 dist-replicated
-Reviewed 2014-11-14
+Reviewed 2014-11-16
 ===================
