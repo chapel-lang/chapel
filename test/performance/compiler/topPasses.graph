@@ -2,7 +2,7 @@ perfkeys: init (all), parse (all), checkParsed (all), readExternC (all), expandE
 
 repeat-files: compilerPerformance-all.dat, compilerPerformance-examples.dat
 
-graphtitle: Average Compilation Time Per Pass
+graphtitle: Top Average Compilation Time Per Pass
 ylabel: Time (seconds)
 # expand top 10 only
 expand: 10

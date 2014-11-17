@@ -1,0 +1,2 @@
+# This error only shows up when --verify is tossed.
+COMPOPTS >= --verify

@@ -889,21 +889,21 @@ sub mysystem {
 sub numsuccesses {
   $mystr = $_[0];
   $mystr =~ s/.* #Successes = //;
-  $mystr =~ s/ \|.*//;
+  $mystr =~ s/(\]| \|).*//;
   $mystr;
 }
 
 sub numfailures {
   $mystr = $_[0];
   $mystr =~ s/.* #Failures = //;
-  $mystr =~ s/ \|.*//;
+  $mystr =~ s/(\]| \|).*//;
   $mystr;
 }
 
 sub numfutures {
   $mystr = $_[0];
   $mystr =~ s/.* #Futures = //;
-  $mystr =~ s/ \|.*//;
+  $mystr =~ s/(\]| \|).*//;
   $mystr;
 }
 

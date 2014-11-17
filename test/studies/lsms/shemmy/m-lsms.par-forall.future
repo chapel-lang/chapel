@@ -41,6 +41,16 @@ I skipif this test under all but the default configuration.
 Once it works there, remove the .skipif and let it run on other
 configurations as well.
 
+11/14/14 Update: This test also succeeded in the default configuration
+in the nightly testing. I believe that it was a false positive, because
+it failed when I ran it by hand for comm=none with both fifo and qthreads
+tasking.
+  SO I am making it a .notest, to avoid further noise in nightly testing.
+This is a poor-man's solution to the situation, I just do not have
+any better ideas, given that this test is not a high priority for us.
+The serial-forall variant, which passes, is still being tested
+as m-lsms.chpl.
+
 
 Once this bug is fixed: (a) remove this test altogether;
 (b) remove 'serialForall' and the 'serial' statement from m-lsms.chpl

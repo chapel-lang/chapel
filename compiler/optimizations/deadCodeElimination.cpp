@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,7 +46,7 @@ static unsigned deadModuleCount;
 // 2014/10/17 TO DO Noakes/Elliot
 //
 // There are opportunities to do additional cleanup of the AST e.g.
-// 
+//
 // remove blockStmts with empty bodies
 // remove condStmts  with empty bodies
 // remove jumps to labels that immmediately follow
@@ -142,7 +142,7 @@ void deadVariableElimination(FnSymbol* fn) {
     if (isDeadVariable(sym, defMap, useMap)) {
       for_defs(se, defMap, sym) {
         CallExpr* call = toCallExpr(se->parentExpr);
-        INT_ASSERT(call && 
+        INT_ASSERT(call &&
                    (call->isPrimitive(PRIM_MOVE) ||
                     call->isPrimitive(PRIM_ASSIGN)));
         Expr* rhs = call->get(2)->remove();
@@ -171,7 +171,7 @@ void deadExpressionElimination(FnSymbol* fn) {
 
     if (exprAst == 0) {
 
-    } else if (exprAst->parentExpr == NULL) { // expression already removed 
+    } else if (exprAst->parentExpr == NULL) { // expression already removed
 
     } else if (SymExpr* expr = toSymExpr(ast)) {
       if (isInLoopHeader(expr) == false && expr == expr->getStmtExpr()) {
@@ -195,7 +195,31 @@ void deadExpressionElimination(FnSymbol* fn) {
               expr->remove();
 
     } else if (CondStmt* cond = toCondStmt(ast)) {
-      cond->fold_cond_stmt();
+      // Compensate for deadBlockElimination
+      if (cond->condExpr == NULL) {
+        cond->remove();
+
+      } else if (cond->thenStmt == NULL && cond->elseStmt == NULL) {
+        cond->remove();
+
+      } else {
+
+        // Invert the condition and shuffle the alternative
+        if (cond->thenStmt == NULL) {
+          Expr* condExpr = new CallExpr(PRIM_UNARY_LNOT, cond->condExpr);
+
+          cond->replaceChild(cond->condExpr, condExpr);
+          cond->replaceChild(cond->thenStmt, cond->elseStmt);
+          cond->replaceChild(cond->elseStmt, NULL);
+
+        // NOAKES 2014/11/14 It's "odd" that folding is being done here
+        } else {
+          cond->foldConstantCondition();
+        }
+
+        // NOAKES 2014/11/14 Testing suggests this is always a NOP
+        removeDeadIterResumeGotos();
+      }
     }
   }
 }
@@ -291,7 +315,7 @@ void deadCodeElimination(FnSymbol* fn)
 // Determines if a module is dead. A module is dead if the module's init
 // function can only be called from module code, and the init function
 // is empty, and the init function is the only thing in the module, and the
-// module is not a nested module. 
+// module is not a nested module.
 static bool isDeadModule(ModuleSymbol* mod) {
   // The main module and any module whose init function is exported
   // should never be considered dead, as the init function can be
@@ -300,18 +324,18 @@ static bool isDeadModule(ModuleSymbol* mod) {
 
   // because of the way modules are initialized, we don't want to consider a
   // nested function as dead as its outer module and all of its uses should
-  // have their initializer called by the inner module. 
-  if (mod->defPoint->getModule() != theProgram && 
-      mod->defPoint->getModule() != rootModule) 
+  // have their initializer called by the inner module.
+  if (mod->defPoint->getModule() != theProgram &&
+      mod->defPoint->getModule() != rootModule)
     return false;
 
   // if there is only one thing in the module
   if (mod->block->body.length == 1) {
-    // and that thing is the init function 
+    // and that thing is the init function
     if (mod->block->body.only() == mod->initFn->defPoint) {
       // and the init function is empty (only has a return)
       if (mod->initFn->body->body.length == 1) {
-        // then the module is dead 
+        // then the module is dead
         return true;
       }
     }
@@ -369,7 +393,7 @@ void deadCodeElimination() {
     }
 
     deadModuleElimination();
-    
+
     if (fReportDeadBlocks)
       printf("\tRemoved %d dead blocks.\n", deadBlockCount);
 
@@ -399,7 +423,7 @@ static void deadBlockElimination(FnSymbol* fn)
   while (!work_queue.empty())
   {
     // Fetch and remove the next block.
-    BasicBlock* bb = work_queue.front(); 
+    BasicBlock* bb = work_queue.front();
     work_queue.pop();
 
     // Ignore it if we've already seen it.
@@ -492,7 +516,7 @@ void verifyNcleanRemovedIterResumeGotos() {
 // cause problems in the compiler down stream from here.
 //
 // 2014/10/17
-// 
+//
 // Additionally DBE can create loops that are similar to the above but
 // that include some number of DefExprs (there is currently code in DBE
 // to prevent it removing DefExprs for reasons that are partially but

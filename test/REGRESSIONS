@@ -49,32 +49,28 @@
 
 ===================
 general
-Reviewed 2014-11-09
+Reviewed 2014-11-14
 ===================
 
 failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
 (linux32, x?-wb.*)
 --------------------------------------------------------------------------
-[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)]
-[Error running sub_test in /.../test/studies/lsms/shemmy (255)]
+[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)] (passed on 2014-11-16)
+[Error running sub_test in /.../test/studies/lsms/shemmy (255)] (passed for xe-wb.gnu on 2014-11-16)
 [Error matching program output for studies/filerator/walk (execopts: 9)]
-
-sporadic failure (2-3x a month -- vass)
----------------------------------------
-[Error matching program output for parallel/taskPar/taskIntents/21-capture-in-cobegin]
 
 
 ===================
 linux64
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
 
 
 ===================
 linux32
 Inherits 'general'
-Reviewed 2014-11-12
+Reviewed 2014-11-14
 ===================
 
 tasking #include didn't get a filename (since first run, 2014-11-12)
@@ -132,28 +128,52 @@ timeout (2014-11-12, first run)
 -------------------------------
 [Error matching program output for parallel/cobegin/diten/cobeginRace]
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
-[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder]
-[Error: Timed out executing program stress/deitz/test_10k_begins]
 
+
+=== sporadic failures below ===
+
+sporadic timeout
+----------------
+[Error: Timed out executing program stress/deitz/test_10k_begins] (2014-11-12, first run)
+[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12, 2014-11-16)
+
+sporadic signal 11
+------------------
+[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13, 2014-11-16)
+
+sporadic tasks not being created
+--------------------------------
+[Error matching program output for parallel/coforall/bradc/manyThreads-inorder] (2014-11-14)
 
 
 ===================
 darwin
 Inherits 'general'
-Reviewed 2014-11-12
+Reviewed 2014-11-16
+===================
+
+for some reason, gets wrong problem size (2014-11-13 -- bradc/cathieO)
+----------------------------------------------------------------------
+[Error matching program output for studies/colostate/cfd-mini-c]
+
+
+===================
+gnu.darwin
+Inherits 'darwin'
+Reviewed 2014-11-16
 ===================
 
 
 ===================
 perf*
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-14
 ===================
 
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -164,7 +184,7 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -172,45 +192,35 @@ consistent failure due to insane memory usage (should get better with strings)
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
-======================
-perf.chap03.playground
-Inherits 'perf.chap03'
-Reviewed 2014-11-08
-======================
-
-
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
-
-
-======================
-perf.chap04.playground
-Inherits 'perf.chap04'
-Reviewed 2014-11-08
-======================
 
 
 ===================
 fast
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
+
 
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2014-11-11
+Reviewed 2014-11-16
 ============================
+
+
+=== sporadic failures below ===
 
 sporadic segfault (infrequent)
 ------------------------------
@@ -221,19 +231,14 @@ sporadic segfault (infrequent)
 ===================
 verify
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
-
-internal error (mike/hilde)
----------------------------
-[Error matching compiler output for types/records/sungeun/recordWithRefCopyFns]
-  (2014/09/03 -- .future file removed 09/02)
 
 
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2014-11-10
+Reviewed 2014-11-16
 ===================
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
@@ -241,28 +246,27 @@ conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 [Error matching program output for io/tzakian/recordReader/test]
 [Error matching program output for regexp/ferguson/rechan]
 
-invalid read/write of size 8 in ftoa() (2014-10-08 -- hilde)
-------------------------------------------------------------
-[Error matching program output for performance/sungeun/assign_across_locales]
-
 continual compilation timeouts
 ------------------------------
 [Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar]
+
+
+=== sporadic failures below ===
 
 sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for studies/sudoku/dinan/sudoku] (2014-10-19, 2014-10-21, 2014-10-25, 2014-10-30)
+[Error matching program output for performance/sungeun/dgemm] (2014-11-16)
 
 
 ===================
 llvm
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
-***suppressed (but shouldn't be in bradc's NSHO)***
 ----------------------------------------------------------------------------
 [Error matching compiler output for release/examples/benchmarks/shootout/pidigits]
 
@@ -270,49 +274,46 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 ===================
 fifo
 Inherits 'general'
-reviewed 2014-11-09
+reviewed 2014-11-16
 ===================
 
 
 ===================
 numa
 Inherits 'general'
-Reviewed 2014-11-10
+Reviewed 2014-11-16
 ===================
 
 
 ===================
 no-local
 Inherits 'general'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
 
 
 =================================
 no-local.linux32
 Inherits 'linux32' and 'no-local'
-Reviewed 2014-11-11
+Reviewed 2014-11-16
 =================================
 
 
 ===================
 gasnet* regressions
 Inherits 'no-local'
-Reviewed 2014-11-01
+Reviewed 2014-11-14
 ===================
-
-test broke with smaller stacksize (2014-11-12 -- elliot)
---------------------------------------------------------
-[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize (execopts: 1)]
-[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize (execopts: 2)]
-
 
 
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed 2014-11-10
+Reviewed 2014-11-14
 ===================
+
+
+=== sporadic failures below ===
 
 sporadic execution timeout (regularly)
 --------------------------------------
@@ -325,6 +326,9 @@ Inherits 'gasnet*'
 Reviewed 2014-11-08
 ===================
 
+
+=== sporadic failures below ===
+
 sporadic execution timeout (regularly)
 --------------------------------------
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (2014-11-01, 2014-11-06)
@@ -333,7 +337,7 @@ sporadic execution timeout (regularly)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===============================
 
 
@@ -341,37 +345,37 @@ Reviewed 2014-11-08
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 =============================
+
+
+=== sporadic failures below ===
 
 sporadic segfault
 -----------------
 [Error matching program output for release/examples/programs/quicksort] (2014-10-20)
 
-sporadic timeout
-----------------
-[Error: Timed out executing program release/examples/programs/quicksort]
-
 
 =============================
 gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed 2014-11-09
+Reviewed 2014-11-16
 =============================
 
 consistent timeouts
 -------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 
-sporadic failures even after Sung quieted it down (frequently)
---------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23, 2014-11-02, 2014-11-05)
+
+=== sporadic failures below ===
+
+sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
+---------------------------------------------------------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23, 2014-11-02, 2014-11-05, 2014-11-13, 2014-11-16)
 
 sporadic timeouts (frequent)
 ----------------------------
-[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dBDtoDRTest]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_diff]
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-14)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (2014-10-23, 2014-10-28, 2014-10-31, 2014-11-02, 2014-11-04, 2014-11-08, 2014-11-10)
 
 sporadic timeouts (infrequent)
@@ -386,17 +390,8 @@ sporadic glibc "invalid next size" (once)
 ===================
 gasnet.llvm
 Inherits 'llvm'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
-
-sporadic timeout (occasional)
------------------------------
-[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)]
-
-sporadic timeout (frequent)
----------------------------
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
 
 
 ===================
@@ -418,10 +413,6 @@ Reviewed 2014-11-09
 Inherits '*prgenv-*'
 Reviewed 2014-11-09
 ====================
-
-error message garbled, possibly due to fence issue? (2014-11-10)
-----------------------------------------------------------------
-[Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)]
 
 empty array size problem (2014-01-25)
 -------------------------------------
@@ -493,6 +484,7 @@ sporadic array index out of bounds due to broken memory fence (gbt)
 [Error matching program output for studies/590o/kfm/solver] (2014-11-06)
 [Error matching program output for studies/sort/radix] (2014-11-06)
 
+
 sporadic compilation timeouts
 -----------------------------
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (..., 2014-10-30)
@@ -502,20 +494,15 @@ sporadic execution timeouts
 ---------------------------
 [Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)] (2014-10-30)
 
-sporadic dropping of output (due to bad qthreads fence?)
---------------------------------------------------------
+sporadic dropping/mangling of output (due to bad qthreads fence?)
+-----------------------------------------------------------------
 [Error matching program output for functions/diten/refIntents] (2014-09-30)
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (2014-10-03)
 [Error matching program output for release/examples/primers/arrays] (2014-10-03)
 [Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (2014-10-07)
 [Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014-10-10)
 [Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (2014-10-24)
-
-zippered iterations have non-equal lengths (2014-09-17 -- elliot/diten)
-(resolved 2014-10-30 -- but did it stick?)
----------------------------------------------------------------------
-[Error matching program output for statements/bradc/swaps/swapArrayDiffIndices]
-
+[Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)] (2014-11-13)
 
 
 ======================================
@@ -529,8 +516,10 @@ Reviewed 2014-11-10
 ============================
 xc-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2014-11-09
+Reviewed 2014-11-16
 ============================
+
+=== sporadic failures below ===
 
 sporadic? unresolved call list(BaseArr) (2014-10-23 -- mike)
 ------------------------------------------------------------
@@ -540,7 +529,7 @@ sporadic? unresolved call list(BaseArr) (2014-10-23 -- mike)
 ===================
 *intel*
 Inherits 'general'
-Reviewed 2014-11-07
+Reviewed 2014-11-14
 ===================
 
 test assertion failures (2014-09-21-2014-09-23)
@@ -557,25 +546,28 @@ binary files differ (2014-09-21-2014-09-23)
 ===============================
 x?-wb.intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2014-11-10
+Reviewed 2014-11-14
 ===============================
 
 
 ===============================
 x?-wb.prgenv-intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2014-11-10
+Reviewed 2014-11-16
 ===============================
 
-error matching .bad (2014-11-10)
---------------------------------
-[Error matching .bad file for extern/lydia/externRecordLostFields (compopts: 1)]
+intel warning "icc: command line warning #10121: overriding '-std=gnu99' with '-std=c99'" (2014-11-16 -- ben?)
+--------------------------------------------------------------------------------------------------------------
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
 
 
 =============================
 xc-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 =============================
 
 
@@ -589,7 +581,7 @@ Reviewed 2014-11-09
 =============================
 x?-wb.gnu
 Inherits 'x?-wb*' and '*gnu*'
-Reviewed 2014-11-12
+Reviewed 2014-11-16
 =============================
 
 
@@ -603,7 +595,7 @@ Reviewed 2014-11-09
 ===========================
 xc-wb.host.prgenv-gnu
 Inherits 'x?-wb.prgenv-gnu'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===========================
 
 
@@ -611,7 +603,7 @@ Reviewed 2014-11-08
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2014-11-06
+Reviewed 2014-11-14
 ===================
 
 problem with empty initializer (2014-01-25 -- bradc)
@@ -637,28 +629,39 @@ consistent timeout
 =============================
 x?-wb.pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-11-04
+Reviewed 2014-11-14
 =============================
 
 
 =============================
 x?-wb.prgenv-pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-11-04
+Reviewed 2014-11-14
 =============================
+
+pgcc command line errors (unknown switch: -fopenmp and -std=c99) (2014-11-16 -- ben?)
+-------------------------------------------------------------------------------------
+[Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
+[Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
+[Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
+[Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
+
+target program died with signal 11, without coredump
+----------------------------------------------------
+[Error matching program output for stress/deitz/test_10k_begins] (2014-11-16)
 
 
 ===========================
 xc-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===========================
 
 
 ===================
 cygwin
 Inherits 'linux64'
-Reviewed 2014-11-11
+Reviewed 2014-11-14
 ===================
 
 check_channel assertion failure
@@ -673,6 +676,13 @@ QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
 
+for some reason, gets wrong problem size (2014-11-13 -- bradc/cathieO)
+----------------------------------------------------------------------
+[Error matching program output for studies/colostate/cfd-mini-c]
+
+
+=== sporadic failures below ===
+
 sporadic timeouts (frequent)
 ----------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (..., 2014-11-08)
@@ -680,10 +690,6 @@ sporadic timeouts (frequent)
 sporadic pthread_cond_init() failed (once)
 ------------------------------------------
 [Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (2014-11-03)
-
-sporadic timeouts (occasional)
-------------------------------
-[Error: Timed out executing program studies/sudoku/dinan/sudoku]
 
 sporadic data read copy failed
 ------------------------------
@@ -695,64 +701,24 @@ sporadic data read copy failed
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-11-12
+Reviewed 2014-11-16
 ===================
 
 
 ===================
 dist-block
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
-
-sporadic timeout (frequent)
----------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi] (2014-10-22, 2014-10-28, 2014-10-30)
 
 
 ===================
 dist-cyclic
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
-
-regular timeouts due to oversubscription under qthreads (2014-08-26)
---------------------------------------------------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
-
-sporadic timeouts (frequent)
-----------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Norm] (2014-10-28)
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort] (2014-10-28)
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains] (2014-10-28)
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
 
 
 
 ===================
 dist-replicated
-Reviewed 2014-11-08
+Reviewed 2014-11-16
 ===================
-
-
-
-TODO: Need to bring the following up-to-snuff, automate mailings
-
-============================================
-CHPL_COMM=ugni, CHPL_TASKS=muxed regressions
-============================================
-
-Incorrect output (should be fixed by r21213)
-  parallel/taskPar/sungeun/barrier/basic
-
-Comm diags mismatch
-  multilocale/deitz/needMultiLocales/dist/test_private_space
-  multilocale/deitz/needMultiLocales/raCommCheck
-  multilocale/deitz/needMultiLocales/streamCommCheck
-  parallel/taskPar/sungeun/barrier/commDiags
-
-Output mismatch
-  multilocale/numLocales/bradc/testVFlag
-  multilocale/numLocales/bradc/testVerboseFlag
-
-Network atomics don't support memory_order
-  chameneosredux.chpl

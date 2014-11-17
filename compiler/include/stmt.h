@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,10 +32,10 @@
 
 #endif
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 class Stmt : public Expr {
 public:
@@ -46,10 +46,10 @@ public:
   virtual bool   isStmt()                                      const;
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 enum BlockTag {
 // Bits:
@@ -63,7 +63,7 @@ enum BlockTag {
 
 class BlockStmt : public Stmt {
 public:
-                      BlockStmt(Expr*    initBody     = NULL, 
+                      BlockStmt(Expr*    initBody     = NULL,
                                 BlockTag initBlockTag = BLOCK_NORMAL);
   virtual            ~BlockStmt();
 
@@ -79,7 +79,7 @@ public:
 
   // New interface
   virtual bool        isLoop()                                     const;
-  
+
   virtual bool        isWhileLoop()                                const;
   virtual bool        isWhileDoLoop()                              const;
   virtual bool        isDoWhileLoop()                              const;
@@ -110,8 +110,6 @@ public:
   virtual CallExpr*   blockInfoGet()                               const;
   virtual CallExpr*   blockInfoSet(CallExpr* expr);
 
-  void                collapseBlocks();
-
   BlockTag            blockTag;
   AList               body;
   CallExpr*           modUses;       // module uses via PRIM_USE
@@ -123,37 +121,39 @@ public:
 private:
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
 
-  void                collapseCForLoopBlocks(CallExpr* call);
-  void                collapseBlock();
-
   CallExpr*           blockInfo;
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 class CondStmt : public Stmt {
- public:
-  Expr* condExpr;
-  BlockStmt* thenStmt;
-  BlockStmt* elseStmt;
+public:
+                CondStmt(Expr*    iCondExpr,
+                         BaseAST* iThenStmt,
+                         BaseAST* iElseStmt = NULL);
 
-  CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt = NULL);
-  Expr* fold_cond_stmt();
-  DECLARE_COPY(CondStmt);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void verify();
-  virtual void    accept(AstVisitor* visitor);
+                DECLARE_COPY(CondStmt);
 
-  GenRet codegen();
+  virtual void  replaceChild(Expr* oldAst, Expr* newAst);
+  virtual void  verify();
+  virtual void  accept(AstVisitor* visitor);
+
+  Expr*         foldConstantCondition();
+
+  GenRet        codegen();
+
+  Expr*         condExpr;
+  BlockStmt*    thenStmt;
+  BlockStmt*    elseStmt;
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 enum GotoTag {
   GOTO_NORMAL,
@@ -184,10 +184,10 @@ class GotoStmt : public Stmt {
   const char* getName();
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 class ExternBlockStmt : public Stmt {
 public:
@@ -208,10 +208,10 @@ public:
 };
 
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 extern Vec<LabelSymbol*>         removedIterResumeLabels;
 extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
