@@ -1,1 +1,1 @@
---printTime=true
+--printTime=true -ECHPL_RT_NUM_THREADS_PER_LOCALE=MAX_LOGICAL
