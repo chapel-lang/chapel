@@ -646,7 +646,7 @@ proc file.getPath(out error:syserr) : string {
     if !error {
       // This uses the version of toString that steals its operand.
       // No need to free.
-      ret = toString(tmp2);
+      ret = tmp2:string;
     } else {
       ret = "unknown";
     }
@@ -824,7 +824,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     e2 = qio_file_path_for_fd(fd, path);
     if e2 then path = "unknown".c_str();
     // FIX ME: could use a toString() that doesn't allocate space
-    ioerror(err, "in openfd", toString(path));
+    ioerror(err, "in openfd", path:string);
   }
   return ret;
 }
@@ -845,7 +845,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
     if e2 then path = "unknown".c_str();
-    ioerror(err, "in openfp", toString(path));
+    ioerror(err, "in openfp", path:string);
     // c_string path leaked, but ioerror will exit
   }
   return ret;
@@ -1025,7 +1025,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = toString(tmp_path);
+      path = tmp_path:string;
       offset = tmp_offset;
     }
   }
@@ -1041,7 +1041,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = toString(tmp_path);
+      path = tmp_path:string;
       offset = tmp_offset;
     }
   }
@@ -1326,7 +1326,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
     // FIX ME: Should deprecate the t == c_string path, because we always
     // return an "owned" char* buffer (or NULL).
-    x = toString(tx);
+    x = tx:string;
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -1439,7 +1439,7 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
     // TODO: Deprecate the c_string return type, since this routine always
     // returns an "owned" string thingy.  Using the c_string return type will
     // cause leaks.
-    x = toString(tx);
+    x = tx:string;
     return ret;
   } else if isEnumType(t) {
     var i:enum_mintype(t);
@@ -1588,17 +1588,15 @@ proc _args_to_proto(args ...?k,
                     preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handlling so maybe we don't care.
-  var err_args:c_string;
+  var err_args: string;
   for param i in 1..k {
-    var name:c_string;
+    var name: string;
     if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:c_string_copy;
-    // FIX ME: leak c_string due to concatenation
-    // Actually, don't fix me.  Fix concatenation to consume its c_string_copy args.
-    err_args += preArg + name + ":" + typeToString(args(i).type);
+    else name = "x" + i:string;
+    err_args += preArg + name + ":" + typeToString(args(i).type):string;
     if i != k then err_args += ", ";
   }
-  const ret = toString(err_args);
+  const ret = err_args:string;
   return ret;
 }
 
@@ -1773,7 +1771,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 
     this.unlock();
 
-    str_out = toString(tx);
+    str_out = tx:string;
   }
 
   return !error;
@@ -3647,7 +3645,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     var gotlen:int(64);
     var ts: c_string_copy;
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
-    s = toString(ts);
+    s = ts:string;
   }
  
   if ! error {

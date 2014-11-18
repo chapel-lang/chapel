@@ -130,11 +130,6 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
           USR_WARN(fn, "function's return type is not a value type.  Ignoring.");
         }
         fn->retTag = RET_TYPE;
-      } else if (flag == FLAG_DEFAULT_STRING_VALUE) {
-        INT_ASSERT(dtString->defaultValue==NULL);
-        INT_ASSERT(toVarSymbol(sym));
-        sym->type = dtString;
-        dtString->defaultValue = sym;
       }
     }
   }
@@ -168,7 +163,7 @@ static Expr* convertStringLiteral(Expr *e) {
     INT_ASSERT(v);
     if (v->immediate &&
         v->immediate->const_kind==CONST_KIND_STRING) {
-      return new CallExpr("toString", s);
+      return new CallExpr("_cast", new SymExpr(dtString->symbol), s);
     }
   }
   return e;

@@ -39,9 +39,8 @@ module MemTracking
     cMemThreshold = safe_cast(size_t, memThreshold);
 
   // Globally accessible copy of the corresponding c_string consts
-  use NewString;
-  const s_memLog: string_rec = memLog;
-  const s_memLeaksLog: string_rec = memLeaksLog;
+  const s_memLog: string = memLog;
+  const s_memLeaksLog: string = memLeaksLog;
 
   //
   // This communicates the settings of the various memory tracking

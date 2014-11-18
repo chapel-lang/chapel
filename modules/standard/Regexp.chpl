@@ -178,7 +178,7 @@ record regexp {
     return qio_regexp_ok(_regexp);
   }
   proc error():string {
-    return toString(qio_regexp_error(_regexp));
+    return qio_regexp_error(_regexp):string;
   }
 
   // note - more = overloads are below.
@@ -478,7 +478,7 @@ record regexp {
     } else {
       nreplaced = qio_regexp_replace(_regexp, repl.c_str(), repl.length, text.c_str(), text.length, pos, endpos, global, replaced, replaced_len);
     }
-    const ret = toString(replaced);
+    const ret = replaced:string;
     return (ret, nreplaced);
   }
   proc sub(repl:string, text: ?t, global = true )
@@ -552,7 +552,7 @@ inline proc _cast(type t, x: regexp) where t == string {
   on x.home {
     var cs: c_string_copy;
     qio_regexp_get_pattern(x._regexp, cs);
-    pattern = toString(cs);
+    pattern = cs:string;
   }
   return pattern;
 }

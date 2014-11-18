@@ -1279,10 +1279,11 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   if (// isLcnSymbol(actualSym) && // What does this exclude?
       actualType == dtStringC && formalType == dtString)
     return true;
+  //if (formalType == dtString && actualType == dtStringCopy)
+  //  return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
     return true;
-  if (formalType == dtString && actualType == dtStringCopy)
-    return true;
+
   return false;
 }
 
@@ -1486,6 +1487,7 @@ computeGenericSubs(SymbolMap &subs,
           // non-param formals with string literal default expressions
           // (see fix_def_expr() and hack_resolve_types() in
           // normalize.cpp).
+
           if ((formal->type == dtAny) && (!formal->hasFlag(FLAG_PARAM)) &&
               (type == dtStringC) &&
               (alignedActuals.v[i]->type == dtStringC) &&

@@ -527,19 +527,12 @@ module ChapelIO {
   }
   
   class StringWriter: Writer {
-    var s: c_string_copy; // Should be initialized to NULL.
-    proc StringWriter(x:c_string) {
-      this.s = __primitive("string_copy", x);
+    var s: string; // Should be initialized to NULL.
+    proc StringWriter(x:string) {
+      this.s = x;
     }
     proc writePrimitive(x) {
-      // TODO: Implement += so it consumes a c_string_copy LHS.
-      var aug = x:c_string_copy;
-      this.s += aug;      // The update frees this.s before overwriting it.
-      chpl_free_c_string_copy(aug);
-    }
-    proc ~StringWriter() {
-      chpl_free_c_string_copy(this.s);
-      __primitive("=", this.s, _nullString);
+      this.s += x:string;
     }
   }
   
@@ -553,29 +546,24 @@ module ChapelIO {
     //else                   x.writeThis(w);
     w.write(x);
     const result = w.s;
-    __primitive("=", w.s, _nullString);
     delete w;
     return result;
   }
   
   pragma "dont disable remote value forwarding"
   proc ref c_string.write(args ...?n) {
-    var sc = new StringWriter(this);
+    var sc = new StringWriter(this:string);
     sc.write((...args));
     // We need to copy this string because the destructor call below frees it
-    this = sc.s;
-    // This is required to prevent double-deletion.
-    __primitive("=", sc.s, _nullString);
+    this = sc.s.c_str();
     delete sc;
   }
   
   pragma "dont disable remote value forwarding"
   proc ref string.write(args ...?n) {
-    var sc = new StringWriter(this.c_str());
+    var sc = new StringWriter(this);
     sc.write((...args));
-    this = toString(sc.s);
-    // This is required to prevent double-deletion.
-    __primitive("=", sc.s, _nullString);
+    this = sc.s;
     delete sc;
   }
   

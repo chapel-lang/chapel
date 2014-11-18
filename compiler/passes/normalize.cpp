@@ -1222,8 +1222,7 @@ static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* 
         stmt->insertBefore(new DefExpr(typeTemp));
         CallExpr* newInit;
         newInit = new CallExpr(PRIM_MOVE, typeTemp,
-                               new CallExpr(PRIM_INIT, new SymExpr(dtString->
-                                                                   symbol)));
+                               new CallExpr(PRIM_INIT, new SymExpr(dtString->symbol)));
         stmt->insertBefore(newInit);
         stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
         stmt->insertAfter(new CallExpr("=", typeTemp, init->remove()));
