@@ -61,7 +61,7 @@ def syncToSourceForge(dirToSync, destDir, logFile):
 
     # The rsync command that we will execute -- authenticates over ssh
     # --del to remove any old data (graphs merged, changed names, removed etc)
-    rsyncCommand = 'rsync -avz --del -e ssh ' + localPerfSrc + ' ' + sfPerfDest
+    rsyncCommand = 'rsync -avz --del -e ssh ' + dirToSync + ' ' + sfPerfDest
     logFile.write('Sync to sourceforge command was: ' + rsyncCommand + '\n\n')
     logFile.write('Rsync output is: \n')
     logFile.flush()
