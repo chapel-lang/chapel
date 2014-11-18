@@ -130,7 +130,8 @@ static void cullExplicitAutoDestroyFlags()
       if (VarSymbol* var = toVarSymbol(def->sym))
       {
         // Examine only those bearing the explicit autodestroy flag.
-        if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
+        if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+            ! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
           continue;
 
         // Look for the specific breaking case and amend that.
@@ -139,6 +140,7 @@ static void cullExplicitAutoDestroyFlags()
           CallExpr* call = toCallExpr(se->parentExpr);
           if (call->isPrimitive(PRIM_MOVE) &&
               toSymExpr(call->get(1))->var == retVar)
+            var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
             var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
         }
       }
