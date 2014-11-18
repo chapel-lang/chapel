@@ -87,6 +87,9 @@ public:
   virtual bool   enterDoWhileStmt(DoWhileStmt*       node);
   virtual void   exitDoWhileStmt (DoWhileStmt*       node);
 
+  virtual bool   enterCForLoop   (CForLoop*          node);
+  virtual void   exitCForLoop    (CForLoop*          node);
+
   virtual bool   enterForLoop    (ForLoop*           node);
   virtual void   exitForLoop     (ForLoop*           node);
 
