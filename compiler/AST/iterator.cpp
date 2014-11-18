@@ -116,10 +116,10 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         if (singleYield) {
           return NULL;
         } else if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
-          if (block->blockInfoGet() &&
-              (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
-               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP))) {
+          // NOAKES 2014/11/17  It is strange that this ignores DOWHILE
+          if (block->isForLoop()     == true  ||
+              block->isCForLoop()    == true  ||
+              block->isWhileDoLoop() == true) {
             singleYield = call;
           } else {
             return NULL;
@@ -133,9 +133,9 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
                                      block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))) {
         if (singleFor) {
           return NULL;
-        } else if ((block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-                    block->blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
-                    block->blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) &&
+        } else if ((block->isForLoop()     == true ||
+                    block->isCForLoop()    == true ||
+                    block->isWhileDoLoop() == true) &&
                    block->parentExpr == fn->body) {
           singleFor = block;
         } else {

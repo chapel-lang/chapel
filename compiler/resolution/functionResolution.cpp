@@ -4922,9 +4922,6 @@ preFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIM_BLOCK_PARAM_LOOP)) {
       fold_param_for(call);
-//     } else if (call->isPrimitive(PRIM_BLOCK_FOR_LOOP) &&
-//                call->numActuals() == 2) {
-//       result = expand_for_loop(call);
     } else if (call->isPrimitive(PRIM_LOGICAL_FOLDER)) {
       bool removed = false;
       SymExpr* sym1 = toSymExpr(call->get(1));
