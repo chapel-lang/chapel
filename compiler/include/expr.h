@@ -54,6 +54,8 @@ public:
   void            replace(Expr* new_ast);
 
   Expr*           remove();
+
+  bool            isStmtExpr()                                       const;
   Expr*           getStmtExpr();
 
   Symbol*         parentSymbol;

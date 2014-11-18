@@ -110,7 +110,7 @@ Expr::Expr(AstTag astTag) :
   next(NULL)
 { }
 
-Expr::~Expr() { 
+Expr::~Expr() {
 
 }
 
@@ -121,7 +121,7 @@ bool Expr::isModuleDefinition() {
   bool retval = false;
 
 #if 1
-  //  MDN 2014/07/02  
+  //  MDN 2014/07/02
   //  Leaving the old definition here until the scope-less BlockStmt
   //  change is stable.
   if (BlockStmt* block = toBlockStmt(this))
@@ -138,11 +138,16 @@ bool Expr::isModuleDefinition() {
   return retval;
 }
 
+bool Expr::isStmtExpr() const {
+  return isStmt() == true || isBlockStmt(parentExpr) == true;
+}
+
 Expr* Expr::getStmtExpr() {
   for (Expr* expr = this; expr; expr = expr->parentExpr) {
     if (expr->isStmt() || isBlockStmt(expr->parentExpr))
       return expr;
   }
+
   return NULL;
 }
 
@@ -162,7 +167,7 @@ void Expr::verify() {
 }
 
 
-bool Expr::inTree(void) {
+bool Expr::inTree() {
   if (parentSymbol)
     return parentSymbol->inTree();
   else
@@ -170,7 +175,7 @@ bool Expr::inTree(void) {
 }
 
 
-Type* Expr::typeInfo(void) {
+Type* Expr::typeInfo() {
   INT_FATAL(this, "Illegal call to Expr::typeInfo()");
   return NULL;
 }
