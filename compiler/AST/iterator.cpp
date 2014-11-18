@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -116,10 +116,10 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         if (singleYield) {
           return NULL;
         } else if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
-          if (block->blockInfoGet() &&
-              (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
-               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP))) {
+          // NOAKES 2014/11/18 It is strange that this ignores DOWHILE
+          if (block->isForLoop()     == true ||
+              block->isCForLoop()    == true ||
+              block->isWhileDoLoop() == true) {
             singleYield = call;
           } else {
             return NULL;
@@ -133,9 +133,9 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
                                      block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))) {
         if (singleFor) {
           return NULL;
-        } else if ((block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-                    block->blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
-                    block->blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP)) &&
+        } else if ((block->isForLoop()     == true ||
+                    block->isCForLoop()    == true ||
+                    block->isWhileDoLoop() == true) &&
                    block->parentExpr == fn->body) {
           singleFor = block;
         } else {
