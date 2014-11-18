@@ -33,6 +33,7 @@ module ChapelStandard {
   use NetworkAtomicTypes;
   use AtomicsCommon;
   use NewString;
+  use ChapelIteratorSupport;
   use ChapelThreads;
   use ChapelThreadsInternal;
   use ChapelTasksInternal;
