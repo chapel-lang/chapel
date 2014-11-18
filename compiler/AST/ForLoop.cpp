@@ -36,7 +36,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  Expr*      iteratorExpr,
                                  BlockStmt* body,
                                  bool       coforall,
-                                 bool       zippered) 
+                                 bool       zippered)
 {
   VarSymbol*   index         = newTemp("_indexOfInterest");
   VarSymbol*   iterator      = newTemp("_iterator");
@@ -50,16 +50,22 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   iterator->addFlag(FLAG_EXPR_TEMP);
 
   // Unzippered loop, treat all objects (including tuples) the same
-  if (zippered == false) 
-    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
+  if (zippered == false)
+    iterInit = new CallExpr(PRIM_MOVE,
+                            iterator,
+                            new CallExpr("_getIterator",    iteratorExpr));
 
   // Expand tuple to a tuple containing appropriate iterators for each value.
-  else 
-    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
+  else
+    iterInit = new CallExpr(PRIM_MOVE,
+                            iterator,
+                            new CallExpr("_getIteratorZip", iteratorExpr));
 
   index->addFlag(FLAG_INDEX_OF_INTEREST);
 
-  iterMove = new CallExpr(PRIM_MOVE, index, new CallExpr("iteratorIndex", iterator));
+  iterMove = new CallExpr(PRIM_MOVE,
+                          index,
+                          new CallExpr("iteratorIndex", iterator));
 
   if (indices == 0)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
@@ -70,7 +76,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 
   if (coforall)
     index->addFlag(FLAG_COFORALL_INDEX_VAR);
-  
+
   loop->continueLabel = continueLabel;
   loop->breakLabel    = breakLabel;
 
@@ -90,7 +96,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   return retval;
 }
 
-BlockStmt* ForLoop::buildCForLoop(CallExpr* call, BlockStmt* body) 
+BlockStmt* ForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
 {
   // Regular loop setup
   ForLoop*     loop          = new ForLoop(call, body);
@@ -146,7 +152,7 @@ ForLoop::~ForLoop()
 
 }
 
-ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal) 
+ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
@@ -177,10 +183,10 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   return retval;
 }
 
-bool ForLoop::isLoop() const 
+bool ForLoop::isLoop() const
 {
   // Noakes 2014/10/23.
-  // There are operations can clear the blockInfo 
+  // There are operations that can clear the blockInfo
   // i.e. convert a ForLoop back to a BlockStmt.
   // This needs more work. Lever is BlockStmt::replaceChild
   return (blockInfoGet() != 0) ? true : false;
@@ -191,7 +197,7 @@ bool ForLoop::isForLoop() const
   return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP);
 }
 
-bool ForLoop::isCforLoop() const
+bool ForLoop::isCForLoop() const
 {
   return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
 }
@@ -212,7 +218,7 @@ bool ForLoop::deadBlockCleanup()
   return retval;
 }
 
-GenRet ForLoop::codegen() 
+GenRet ForLoop::codegen()
 {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -233,7 +239,7 @@ GenRet ForLoop::codegen()
 
     // wrap the test with paren. Could probably check if it already has
     // outer paren to make the code a little cleaner.
-    if (test != "") 
+    if (test != "")
       test = "(" + test + ")";
 
     BlockStmt*  incrBlock = toBlockStmt(blockInfo->get(3));
@@ -247,7 +253,7 @@ GenRet ForLoop::codegen()
 
     body.codegen("");
 
-    if (this != getFunction()->body) 
+    if (this != getFunction()->body)
     {
       std::string end  = "}";
       CondStmt*   cond = toCondStmt(parentExpr);
@@ -257,9 +263,9 @@ GenRet ForLoop::codegen()
 
       info->cStatements.push_back(end);
     }
-  } 
+  }
 
-  else 
+  else
   {
 #ifdef HAVE_LLVM
     llvm::Function*   func          = info->builder->GetInsertBlock()->getParent();
@@ -279,9 +285,9 @@ GenRet ForLoop::codegen()
     blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
     blockStmtEnd  = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
 
-    // In order to track more easily with the C backend and because mem2reg should optimize 
-    // all of these cases, we generate a for loop as the same as 
-    // if(cond) do { body; step; } while(cond).
+    // In order to track more easily with the C backend and because mem2reg
+    // should optimize all of these cases, we generate a for loop as the same
+    // as if (cond) do { body; step; } while(cond).
 
     // Create the init basic block
     blockStmtInit = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_c_for_init"));
@@ -309,7 +315,7 @@ GenRet ForLoop::codegen()
 
     // Create the conditional branch
     info->builder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
-    
+
     // Now add the body.
     func->getBasicBlockList().push_back(blockStmtBody);
 
@@ -319,7 +325,7 @@ GenRet ForLoop::codegen()
     body.codegen("");
 
     info->lvt->removeLayer();
-    
+
     incrBlock->body.codegen("");
 
     GenRet       test1      = codegenCForLoopCondition(testBlock);
@@ -459,8 +465,7 @@ GenRet ForLoop::codegenCForLoopCondition(BlockStmt* block)
 #endif
 }
 
-void 
-ForLoop::accept(AstVisitor* visitor) {
+void ForLoop::accept(AstVisitor* visitor) {
   if (visitor->enterForLoop(this) == true) {
     CallExpr* blockInfo = blockInfoGet();
 

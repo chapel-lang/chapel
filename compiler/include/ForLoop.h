@@ -22,7 +22,7 @@
 
 #include "stmt.h"
 
-class ForLoop : public BlockStmt 
+class ForLoop : public BlockStmt
 {
   //
   // Class interface
@@ -34,14 +34,16 @@ public:
                                        bool       coforall,
                                        bool       zippered);
 
-  static BlockStmt*      buildCForLoop(CallExpr*  cforInfo, 
+  static BlockStmt*      buildCForLoop(CallExpr*  cforInfo,
                                        BlockStmt* body);
 
   //
   // Instance Interface
   //
 public:
-                         ForLoop(BlockStmt* initBody, VarSymbol* index, VarSymbol* iterator);
+                         ForLoop(BlockStmt* initBody,
+                                 VarSymbol* index,
+                                 VarSymbol* iterator);
   virtual               ~ForLoop();
 
   virtual ForLoop*       copy(SymbolMap* map = NULL, bool internal = false);
@@ -51,7 +53,7 @@ public:
 
   virtual bool           isLoop()                                     const;
   virtual bool           isForLoop()                                  const;
-  virtual bool           isCforLoop()                                 const;
+  virtual bool           isCForLoop()                                 const;
 
   virtual bool           deadBlockCleanup();
 

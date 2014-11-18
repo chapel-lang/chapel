@@ -360,7 +360,7 @@ BlockStmt::isForLoop() const {
 }
 
 bool
-BlockStmt::isCforLoop() const {
+BlockStmt::isCForLoop() const {
   return false;
 }
 
