@@ -1097,8 +1097,9 @@ expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Symbol* index, bo
 
 /// \param call A for loop block primitive.
 static void
-expandIteratorInline(CallExpr* call) {
-  Symbol* ic = toSymExpr(call->get(2))->var;
+expandIteratorInline(BlockStmt* block) {
+  CallExpr* call     = block->blockInfoGet();
+  Symbol*   ic       = toSymExpr(call->get(2))->var;
   FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
@@ -1431,31 +1432,43 @@ buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children)
   return outerBlock;
 }
 
+//
+// NOAKES 2014/11/17
+//
+// Note that this function implicitly converts a ForLoop to a BlockStmt
+// It does so by removing the blockInfo at the end of the function.
+//
 
 static void
-inlineSingleYieldIterator(CallExpr* call) {
-  BlockStmt* block = toBlockStmt(call->parentExpr);
-  SymExpr* se1 = toSymExpr(call->get(1));
-  SymExpr* se2 = toSymExpr(call->get(2));
-  VarSymbol* index = toVarSymbol(se1->var);
-  VarSymbol* iterator = toVarSymbol(se2->var);
+inlineSingleYieldIterator(ForLoop* block) {
+  CallExpr*    call     = block->blockInfoGet();
 
   SET_LINENO(call);
+
+  SymExpr*     se1      = toSymExpr(call->get(1));
+  VarSymbol*   index    = toVarSymbol(se1->var);
+
+  SymExpr*     se2      = toSymExpr(call->get(2));
+  VarSymbol*   iterator = toVarSymbol(se2->var);
+
+  CallExpr*    noop     = new CallExpr(PRIM_NOOP);
+
   Vec<Symbol*> iterators;
   Vec<Symbol*> indices;
+
   setupSimultaneousIterators(iterators, indices, iterator, index, block);
 
-  CallExpr *noop = new CallExpr(PRIM_NOOP);
   block->insertAtHead(noop);
+
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol *iterator = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
-    Vec<Expr*> exprs;
-
-    BlockStmt *ibody = iterator->body->copy();
-
+    FnSymbol*     iterator   = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+    BlockStmt*    ibody      = iterator->body->copy();
+    Vec<Expr*>    exprs;
     Vec<BaseAST*> asts;
+    bool          afterYield = false;
+
     collect_asts(ibody, asts);
-    bool afterYield = false;
+
     for_alist(expr, ibody->body) {
       if (CallExpr *curr_expr = toCallExpr(expr)) {
         if (curr_expr->isPrimitive(PRIM_YIELD)) {
@@ -1465,20 +1478,22 @@ inlineSingleYieldIterator(CallExpr* call) {
           if (resolvedToTaskFun(curr_expr))
             // what should we do in this case?
             INT_FATAL(curr_expr, "inlineSingleYieldIterator is not implemented for outlined coforall/cobegin/begin blocks");
+
           if (!afterYield)
             noop->insertBefore(curr_expr->remove());
-          else 
+          else
             block->insertAtTail(curr_expr->remove());
         }
       } else {
         if (!afterYield)
           noop->insertBefore(expr->remove());
-        else 
+        else
           block->insertAtTail(expr->remove());
       }
     }
 
     int count = 1;
+
     for_formals(formal, iterator) {
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
@@ -1486,18 +1501,21 @@ inlineSingleYieldIterator(CallExpr* call) {
             //if ((se->var->type == formal->type) && (!strcmp(se->var->name, formal->name))) {
             // count is used to get the nth field out of the iterator class;
             // it is replaced by the field once the iterator class is created
-            Expr* stmt = se->getStmtExpr();
-            VarSymbol* tmp = newTemp(formal->name, formal->type);
+            Expr*      stmt = se->getStmtExpr();
+            VarSymbol* tmp  = newTemp(formal->name, formal->type);
+
             stmt->insertBefore(new DefExpr(tmp));
             stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterators.v[i], new_IntSymbol(count))));
+
             se->var = tmp;
           }
         }
       }
+
       count++;
     }
-
   }
+
   noop->remove();
   call->remove();
 }
@@ -1519,9 +1537,11 @@ expandForLoop(ForLoop* block) {
       (iterator->type->dispatchChildren.n == 0 ||
        (iterator->type->dispatchChildren.n == 1 &&
         iterator->type->dispatchChildren.v[0] == dtObject))) {
-    expandIteratorInline(call);
+    expandIteratorInline(block);
+
   } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator)) {
-    inlineSingleYieldIterator(call);
+    inlineSingleYieldIterator(block);
+
   } else {
     // This code handles zippered iterators, dynamic iterators, and any other
     // iterator that cannot be inlined.
@@ -1638,7 +1658,7 @@ inlineIterators() {
         FnSymbol* ifn      = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
         if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
-          expandIteratorInline(block->blockInfoGet());
+          expandIteratorInline(block);
         }
       }
     }
