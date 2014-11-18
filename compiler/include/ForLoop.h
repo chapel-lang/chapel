@@ -48,7 +48,7 @@ public:
 
   virtual bool           isLoop()                                     const;
   virtual bool           isForLoop()                                  const;
-  virtual bool           isCforLoop()                                 const;
+  virtual bool           isCForLoop()                                 const;
 
   virtual bool           deadBlockCleanup();
 

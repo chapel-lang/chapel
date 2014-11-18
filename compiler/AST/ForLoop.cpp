@@ -188,7 +188,7 @@ bool ForLoop::isForLoop() const
 }
 
 // NOAKES 2014/11/18   This might be needed during transition
-bool ForLoop::isCforLoop() const
+bool ForLoop::isCForLoop() const
 {
   return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
 }

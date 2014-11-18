@@ -127,7 +127,7 @@ bool CForLoop::isLoop() const
   return (blockInfoGet() != 0) ? true : false;
 }
 
-bool CForLoop::isCforLoop() const
+bool CForLoop::isCForLoop() const
 {
   return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
 }
