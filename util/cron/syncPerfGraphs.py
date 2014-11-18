@@ -9,6 +9,7 @@
 # this script needs to have configured access to web.sourceforge.net.
 
 import os
+import posixpath
 import sys
 import subprocess
 import shlex
@@ -54,7 +55,7 @@ def syncToSourceForge(dirToSync, destDir, logFile):
     # Assumes correct username and authentication for web.sourceforge.net is
     # configured for the current system.
     sfBaseDest = 'web.sourceforge.net:/home/project-web/chapel/htdocs/perf/'
-    sfPerfDest = os.path.join(sfBaseDest, destDir)
+    sfPerfDest = posixpath.join(sfBaseDest, destDir)
 
     logFile.write('Attempting to rsync %s to %s\n'%(dirToSync, sfPerfDest))
 
