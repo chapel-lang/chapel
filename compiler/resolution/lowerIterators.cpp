@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
@@ -1053,10 +1054,11 @@ expandRecursiveIteratorInline(CallExpr* call)
   // "normal" iterator function body.
   forLoopBlock->insertBefore(loopBodyFnCall);
   forLoopBlock->insertBefore(iteratorFnCall);
+
   // The forLoopBlock becomes the body of the (new) loop body function.
   loopBodyFn->insertAtTail(forLoopBlock->remove());
-  // The PRIM_BLOCK_FOR_LOOP is removed, to convert that block statement into a
-  // "plain-old" block.
+
+  // ForLoop is removed; convert that block statement into a "plain-old" block.
   call->remove();
 
   // Now populate the loop body function.
@@ -1502,18 +1504,15 @@ inlineSingleYieldIterator(CallExpr* call) {
 
 
 static void
-expand_for_loop(CallExpr* call) {
-  BlockStmt* block = toBlockStmt(call->parentExpr);
-  if (!block || block->blockInfoGet() != call)
-    INT_FATAL(call, "bad for loop primitive");
-  SymExpr* se1 = toSymExpr(call->get(1));
-  SymExpr* se2 = toSymExpr(call->get(2));
-  if (!se1 || !se2)
-    INT_FATAL(call, "bad for loop primitive");
-  VarSymbol* index = toVarSymbol(se1->var);
+expandForLoop(ForLoop* block) {
+  CallExpr*  call     = block->blockInfoGet();
+
+  SymExpr*   se1      = toSymExpr(call->get(1));
+  SymExpr*   se2      = toSymExpr(call->get(2));
+
+  VarSymbol* index    = toVarSymbol(se1->var);
   VarSymbol* iterator = toVarSymbol(se2->var);
-  if (!index || !iterator)
-    INT_FATAL(call, "bad for loop primitive");
+
   if (!fNoInlineIterators &&
       iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer->iteratorInfo &&
       canInlineIterator(iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer) &&
@@ -1634,9 +1633,10 @@ static void
 inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol) {
-      if (block->blockInfoGet() && block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
-        Symbol* iterator = toSymExpr(block->blockInfoGet()->get(2))->var;
-        FnSymbol* ifn = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      if (block->isForLoop() == true) {
+        Symbol*   iterator = toSymExpr(block->blockInfoGet()->get(2))->var;
+        FnSymbol* ifn      = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+
         if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
           expandIteratorInline(block->blockInfoGet());
         }
@@ -2006,7 +2006,7 @@ void lowerIterators() {
   computeRecursiveIteratorSet();
 
   inlineIterators();
-  
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       fn->collapseBlocks();
@@ -2014,11 +2014,10 @@ void lowerIterators() {
     }
   }
 
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol)
-      if (call->isPrimitive(PRIM_BLOCK_FOR_LOOP))
-        if (call->numActuals() > 1)
-          expand_for_loop(call);
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (isAlive(block) == true && block->isForLoop() == true) {
+      expandForLoop((ForLoop*) block);
+    }
   }
 
   fragmentLocalBlocks();
