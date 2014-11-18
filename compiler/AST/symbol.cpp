@@ -804,8 +804,7 @@ void VarSymbol::codegenDefC(bool global) {
     } else if (ct->symbol->hasFlag(FLAG_WIDE_REF) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol)) {
-        if( widePointersStruct || isWideString(ct) ) {
-
+        if (widePointersStruct) {
           //
           // CHPL_LOCALEID_T_INIT is #defined in the chpl-locale-model.h
           // file in the runtime, for the selected locale model.
@@ -1047,8 +1046,6 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 bool argMustUseCPtr(Type* type) {
-  if (isWideString(type))
-    return false;
   if (isRecord(type) || isUnion(type))
     return true;
   return false;

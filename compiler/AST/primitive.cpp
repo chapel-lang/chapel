@@ -45,11 +45,6 @@ returnInfoBool(CallExpr* call) {
 }
 
 static Type*
-returnInfoString(CallExpr* call) {
-  return dtString;
-}
-
-static Type*
 returnInfoStringC(CallExpr* call) {
   return dtStringC;
 }
@@ -387,7 +382,6 @@ initPrimitive() {
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIM_NO_INIT, "no init", returnInfoFirstDeref);
   prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
-  prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoString);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_YIELD, "yield", returnInfoFirst, true);
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirst);
@@ -579,7 +573,6 @@ initPrimitive() {
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoStringCopy, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
-  prim_def(PRIM_STRING_FROM_C_STRING, "string_from_c_string", returnInfoString, false, true);
   prim_def(PRIM_C_STRING_FROM_STRING, "c_string_from_string", returnInfoStringC, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
   prim_def("string_select", returnInfoStringCopy, true, true);
@@ -610,7 +603,7 @@ initPrimitive() {
   prim_def(PRIM_VIRTUAL_METHOD_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
-  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
+  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoStringC);
   prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
   prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
   prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);

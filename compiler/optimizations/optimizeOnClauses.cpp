@@ -52,7 +52,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
     return false;
 
   case PRIM_NOOP:
-  case PRIM_REF_TO_STRING:
   case PRIM_RETURN:
   case PRIM_UNARY_MINUS:
   case PRIM_UNARY_PLUS:

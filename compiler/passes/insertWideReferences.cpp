@@ -225,11 +225,9 @@ static std::map<FnSymbol*, bool> downstreamFromOn;
 static void convertNilToObject();
 static void buildWideClasses();
 static void buildWideRefMap();
-static void insertStringLiteralTemps();
 static void narrowWideClassesThroughCalls();
 static void insertWideClassTempsForNil();
 static void insertWideCastTemps();
-static void derefWideStringActuals();
 static void derefWideRefsToWideClasses();
 static void widenGetPrivClass();
 static void moveAddressSourcesToTemp();
@@ -504,17 +502,6 @@ static void buildWideClass(Type* type) {
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
-
-  //
-  // Strings need an extra field in their wide class to hold their length
-  //
-  if (type == dtString) {
-    wide->fields.insertAtTail(new DefExpr(new VarSymbol("size", dtInt[INT_SIZE_DEFAULT])));
-    if (wideStringType) {
-      INT_FATAL("Created two wide string types");
-    }
-    wideStringType = wide;
-  }
 
   //
   // set reference type of wide class to reference type of class since
@@ -979,78 +966,6 @@ static void propagateField(Symbol* sym) {
       }
       else {
         DEBUG_PRINTF("Unhandled field use\n");
-      }
-    }
-  }
-}
-
-
-static void insertStringLiteralTemps()
-{
-  //
-  // Special case string literals (and the default string value)
-  // passed to functions, set field primitives and array element
-  // initializers by pushing them into temps first so that they will
-  // be widened.
-  //
-  forv_Vec(SymExpr, se, gSymExprs) {
-    if ((se->var->type == dtStringC) || (se->var->type == dtString)) {
-      if (VarSymbol* var = toVarSymbol(se->var)) {
-        if (var->immediate || (var == dtString->defaultValue)) {
-          if (CallExpr* call = toCallExpr(se->parentExpr)) {
-            SET_LINENO(se);
-            if (call->isResolved())
-            {
-              if (!call->isResolved()->hasEitherFlag(FLAG_EXTERN,FLAG_LOCAL_ARGS)) {
-                if (Type* type = actual_to_formal(se)->typeInfo()) {
-                  VarSymbol* tmp = newTemp(type);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  se->replace(new SymExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-                }
-              }
-            }
-            else // isResolved() is false for primitives.
-            {
-              if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-                if (Type* type = actual_to_formal(se)->typeInfo()) {
-                  VarSymbol* tmp = newTemp(type);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  se->replace(new SymExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-                }
-              }
-              if (call->isPrimitive(PRIM_SET_MEMBER)) {
-                if (SymExpr* wide = toSymExpr(call->get(2))) {
-                  Type* type = wide->var->type;
-                  VarSymbol* tmp = newTemp(type);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  se->replace(new SymExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-                }
-              }
-              if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-                Type* valueType = call->get(1)->getValType();
-                Type* componentType = valueType->getField("x1")->type;
-                if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-                  VarSymbol* tmp = newTemp(componentType);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  se->replace(new SymExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-                }
-              }
-              if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
-                if (SymExpr* wide = toSymExpr(call->get(3))) {
-                  Type* type = wide->var->type;
-                  VarSymbol* tmp = newTemp(wideClassMap.get(type));
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  se->replace(new SymExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, se));
-                }
-              }
-            }
-          }
-        }
       }
     }
   }
@@ -1796,7 +1711,6 @@ insertWideReferences(void) {
   debugTimer.stop();
 
   // IWR
-  insertStringLiteralTemps();
   widenGetPrivClass(); // widens class type in PRIM_GET_PRIV_CLASS
   narrowWideClassesThroughCalls();
   insertWideClassTempsForNil();

@@ -92,7 +92,7 @@ module LocaleModel {
   class LocaleModel : AbstractLocaleModel {
     const callStackSize: size_t;
     const _node_id : int;
-    const local_name : string;
+    const local_name : c_string;
 
     // This constructor must be invoked "on" the node
     // that it is intended to represent.  This trick is used
@@ -167,8 +167,8 @@ module LocaleModel {
       // sys_getenv returns zero on success.
       if sys_getenv("CHPL_COMM".c_str(), comm) == 0 && comm == "gasnet" &&
         sys_getenv("GASNET_SPAWNFN".c_str(), spawnfn) == 0 && spawnfn == "L"
-      then local_name = toString(chpl_nodeName()) + "-" + _node_id : string;
-      else local_name = toString(chpl_nodeName());
+      then local_name = chpl_nodeName():c_string + "-" + _node_id : c_string;
+      else local_name = chpl_nodeName():c_string;
 
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
@@ -223,7 +223,7 @@ module LocaleModel {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
     proc chpl_name() return local_name();
-    proc local_name() return toString("rootLocale");
+    proc local_name() return "rootLocale":c_string;
 
     proc readWriteThis(f) {
       f <~> name;

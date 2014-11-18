@@ -219,8 +219,8 @@ module LocaleModel {
       // sys_getenv returns zero on success.
       if sys_getenv("CHPL_COMM".c_str(), comm) == 0 && comm == "gasnet" &&
         sys_getenv("GASNET_SPAWNFN".c_str(), spawnfn) == 0 && spawnfn == "L"
-      then local_name = toString(chpl_nodeName()) + "-" + _node_id : string;
-      else local_name = toString(chpl_nodeName());
+      then local_name = chpl_nodeName():string + "-" + _node_id : string;
+      else local_name = chpl_nodeName():string;
 
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
@@ -297,7 +297,7 @@ module LocaleModel {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
     proc chpl_name() return local_name();
-    proc local_name() return toString("rootLocale");
+    proc local_name() return "rootLocale":string;
 
     proc readWriteThis(f) {
       f <~> name;

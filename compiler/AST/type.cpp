@@ -31,7 +31,7 @@
 #include "intlimits.h"
 #include "ipe.h"
 #include "misc.h"
-#include "passes.h" // for isWideString
+#include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
@@ -798,7 +798,6 @@ void AggregateType::codegenDef() {
   } else {
     if( outfile ) {
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -915,7 +914,6 @@ void AggregateType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -1493,9 +1491,6 @@ void initPrimitiveTypes() {
   gStringCopy->cname = "NULL";
   gStringCopy->addFlag(FLAG_EXTERN);
 
-  dtString = createPrimitiveType( "string", "chpl_string");
-  dtString->defaultValue = NULL;
-
   dtSymbol = createPrimitiveType( "symbol", "_symbol");
 
   dtFile = createPrimitiveType ("_file", "_cfile");
@@ -1768,10 +1763,6 @@ bool is_enum_type(Type *t) {
   return toEnumType(t);
 }
 
-bool is_string_type(Type *t) {
-  return t == dtString;
-}
-
 int get_width(Type *t) {
   if (t == dtBools[BOOL_SIZE_SYS]) {
     return 1;
@@ -1921,20 +1912,12 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
   GenInfo* info = gGenInfo;
   GenRet ret;
   if (fHeterogeneous) {
-    // strings are special
-    if (toPrimitiveType(typesym) == dtString) {
-      if( info->cfile )
-        ret.c = std::string("-") + typesym->cname;
-      else
-        INT_FATAL("TODO: genTypeStructureIndex llvm strings");
-    } else {
-      if( info->cfile )
-        ret.c = genChplTypeEnumString(typesym);
-      else {
+    if( info->cfile )
+      ret.c = genChplTypeEnumString(typesym);
+    else {
 #ifdef HAVE_LLVM
-        ret = info->lvt->getValue(genChplTypeEnumString(typesym));
+      ret = info->lvt->getValue(genChplTypeEnumString(typesym));
 #endif
-      }
     }
   } else {
     if( info->cfile )
@@ -2063,7 +2046,6 @@ bool needsCapture(Type* t) {
       is_imag_type(t) ||
       is_complex_type(t) ||
       is_enum_type(t) ||
-      is_string_type(t) ||
       t == dtStringC ||
       isClass(t) ||
       isRecord(t) ||

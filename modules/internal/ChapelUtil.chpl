@@ -163,7 +163,7 @@ module ChapelUtil {
 
     for i in 0..#arg.argc {
       // FIX ME: leak c_string
-      array[i] = toString(chpl_get_argument_i(local_arg, i:int(32)));
+      array[i] = chpl_get_argument_i(local_arg, i:int(32)):string;
     }
 
     return array;
