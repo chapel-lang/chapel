@@ -240,6 +240,47 @@ initializer for this field.  In which case
 would mean, ``initialize \chpl{a} to \chpl{2}, \chpl{c} to \chpl{_c}, \chpl{b} to \chpl{3}
 and then \chpl{d} to \chpl{8}.''
 
+\subsubsection{\chpl{const} Objects and Fields}
+
+When a variable or field is declared as \chpl{const}, that specifier does not take effect
+until after its initialization is complete.  For a variable, this occurs after the call to
+the constructor returns.  The declaration
+\begin{chapel}
+  const r = new R(<args>);
+\end{chapel}
+\noindent
+is legal, because the above declaration is semantically equivalent to 
+\begin{chapel}
+  ('=' r chpl_mem_alloc(sizeof(R)))
+  (_construct_R r <args>) // r._construct_R(<args>)
+\end{chapel}
+\noindent
+.  Since \chpl{const}-ness of the object as a whole does not take effect until after the
+constructor returns, any writable fields in \chpl{r} may be overwritten within the body of
+the constructor.
+
+When a field is declared as \chpl{const}, its value is established during initialization.
+Once processing of the initializer-list within a constructor is complete, it cannot be
+overwritten.  This means that a \chpl{const} field cannot be overwritten in the body of a
+constructor for the type that contains it.
+\begin{chapel}
+record R {
+  const _i : int;
+  var _r : real = -7.0;
+
+  // Sets _i to the value of the int argument, and _r to 2.0:
+  ctor (i : int) with (_i = i) { _r = 2.0; }
+
+  // Error: Cannot write _i in the body of the constructor since it is const.
+//  ctor (r : real) with (_r = r) { _i = 3; }
+}
+
+const r = new R(4);  // The update of r._r in the body of the constructor is legal.
+writeln(r); // (_i = 4, _r = 2.0)
+// r._r = 4.2;  // Error: r is const, so no updates after initialization.
+\end{chapel}
+
+
 \subsection{Discussion}
 
 The existing initialization syntax for variable and field initialization can also be

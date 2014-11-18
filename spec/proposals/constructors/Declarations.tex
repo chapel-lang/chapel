@@ -131,9 +131,9 @@ As explained above, assignment in the context of initialization is illegal, beca
 left operand is not yet initialized.  Copy-construction should be used instead.  The
 proposal here is to simply substitute a copy-constructor call where assignment is inserted
 today.  For fundamental and class types, copy-construction, assignment and bit-wise moves are
-semantically equivalent, so in that realm it becomes merely a name change.  The change
-will only be of consequence as it applies to records and record-based types (e.g. tuples
-and ranges).
+semantically equivalent, so in that realm it becomes merely a name change.  The difference
+between assignment, copy-construction and a bitwise copy is only of consequence as it
+applies to records and record-based types (e.g. tuples and ranges).
 
 \subsection{Discussion}
 
