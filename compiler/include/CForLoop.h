@@ -17,48 +17,42 @@
  * limitations under the License.
  */
 
-#ifndef _FOR_LOOP_H_
-#define _FOR_LOOP_H_
+#ifndef _CFOR_LOOP_H_
+#define _CFOR_LOOP_H_
 
 #include "stmt.h"
 
-class ForLoop : public BlockStmt
+class CForLoop : public BlockStmt
 {
   //
   // Class interface
   //
 public:
-  static BlockStmt*      buildForLoop (Expr*      indices,
-                                       Expr*      iteratorExpr,
-                                       BlockStmt* body,
-                                       bool       coforall,
-                                       bool       zippered);
+  static BlockStmt*      buildCForLoop(CallExpr*  cforInfo,
+                                       BlockStmt* body);
 
   //
   // Instance Interface
   //
 public:
-                         ForLoop(BlockStmt* initBody, VarSymbol* index, VarSymbol* iterator);
-  virtual               ~ForLoop();
+                         CForLoop(BlockStmt* initBody, VarSymbol* index, VarSymbol* iterator);
+  virtual               ~CForLoop();
 
-  virtual ForLoop*       copy(SymbolMap* map = NULL, bool internal = false);
+  virtual CForLoop*      copy(SymbolMap* map = NULL, bool internal = false);
 
   virtual GenRet         codegen();
   virtual void           accept(AstVisitor* visitor);
 
   virtual bool           isLoop()                                     const;
-  virtual bool           isForLoop()                                  const;
   virtual bool           isCForLoop()                                 const;
 
   virtual bool           deadBlockCleanup();
 
-  BlockStmt*             copyBody(SymbolMap* map);
-
 private:
-                         ForLoop();
+                         CForLoop();
 
-                         ForLoop(CallExpr*  cforInfo,
-                                 BlockStmt* body);
+                         CForLoop(CallExpr*  cforInfo,
+                                  BlockStmt* body);
 
   std::string            codegenCForLoopHeader   (BlockStmt* block);
   GenRet                 codegenCForLoopCondition(BlockStmt* block);

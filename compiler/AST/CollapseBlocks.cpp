@@ -74,6 +74,7 @@
 
 #include "WhileDoStmt.h"
 #include "DoWhileStmt.h"
+#include "CForLoop.h"
 #include "ForLoop.h"
 
 #include "alist.h"
@@ -139,6 +140,24 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
 // (essentially scopeless) block statements next to each other. We want to
 // collapse those into a single block (otherwise codegen would be a nightmare.)
 //
+bool CollapseBlocks::enterCForLoop(CForLoop* node)
+{
+  CallExpr* call = node->blockInfoGet();
+
+  // Handle the init/test/incr fields specially
+  if (call != 0 && call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
+  {
+    for_alist(cForExprs, call->argList)
+    {
+      if (BlockStmt* block = toBlockStmt(cForExprs))
+        enterBlockStmt(block);
+    }
+  }
+
+  // Now simply forward to handle the body
+  return enterBlockStmt(node);
+}
+
 bool CollapseBlocks::enterForLoop(ForLoop* node)
 {
   CallExpr* call = node->blockInfoGet();
@@ -312,6 +331,11 @@ void CollapseBlocks::exitWhileDoStmt(WhileDoStmt* node)
 }
 
 void CollapseBlocks::exitDoWhileStmt(DoWhileStmt* node)
+{
+
+}
+
+void CollapseBlocks::exitCForLoop(CForLoop* node)
 {
 
 }
