@@ -434,7 +434,7 @@ void reorderActuals(FnSymbol* fn,
     }
   }
   if (need_to_reorder) {
-    Expr* savedActuals[numArgs];
+    std::vector<Expr*> savedActuals(numArgs);
     int i = 0;
     // remove all actuals in an order
     for_actuals(actual, info->call)
