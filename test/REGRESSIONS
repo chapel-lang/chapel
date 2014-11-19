@@ -599,13 +599,6 @@ Inherits 'x?-wb*' and '*intel*'
 Reviewed 2014-11-16
 ===============================
 
-intel warning "icc: command line warning #10121: overriding '-std=gnu99' with '-std=c99'" (2014-11-16 -- ben?)
---------------------------------------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
-[Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
-[Error matching program output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
-
 
 =============================
 xc-wb.host.prgenv-intel
