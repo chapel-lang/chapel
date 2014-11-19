@@ -31,7 +31,7 @@ public:
   static BlockStmt*      build(Expr* cond, BlockStmt* body);
 
 private:
-  static bool            isCForLoop(Expr* cond);
+  static bool            isPrimitiveCForLoop(Expr* cond);
 
 
   //

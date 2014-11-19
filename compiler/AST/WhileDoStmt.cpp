@@ -34,7 +34,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
 {
   BlockStmt* retval = NULL;
 
-  if (isCForLoop(cond) == true)
+  if (isPrimitiveCForLoop(cond) == true)
   {
     retval = CForLoop::buildCForLoop(toCallExpr(cond), body);
   }
@@ -71,7 +71,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
 // C for loops are invoked with 'while __primitive("C for loop" ...)'
 // This checks if we had such a case and if we did builds the c for loop
 // instead of the while loop and returns it.
-bool WhileDoStmt::isCForLoop(Expr* cond)
+bool WhileDoStmt::isPrimitiveCForLoop(Expr* cond)
 {
   bool retval = false;
 
