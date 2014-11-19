@@ -1436,31 +1436,37 @@ buildIteratorCall(Symbol* ret, int fnid, Symbol* iterator, Vec<Type*>& children)
 
 
 static void
-inlineSingleYieldIterator(CallExpr* call) {
-  BlockStmt* block = toBlockStmt(call->parentExpr);
-  SymExpr* se1 = toSymExpr(call->get(1));
-  SymExpr* se2 = toSymExpr(call->get(2));
-  VarSymbol* index = toVarSymbol(se1->var);
-  VarSymbol* iterator = toVarSymbol(se2->var);
+inlineSingleYieldIterator(ForLoop* forLoop) {
+  SET_LINENO(forLoop);
 
-  SET_LINENO(call);
+  CallExpr*    call     = forLoop->blockInfoGet();
+
+  SymExpr*     se1      = toSymExpr(call->get(1));
+  VarSymbol*   index    = toVarSymbol(se1->var);
+
+  SymExpr*     se2      = toSymExpr(call->get(2));
+  VarSymbol*   iterator = toVarSymbol(se2->var);
+
+  CallExpr*    noop     = new CallExpr(PRIM_NOOP);
+
   Vec<Symbol*> iterators;
   Vec<Symbol*> indices;
-  setupSimultaneousIterators(iterators, indices, iterator, index, block);
 
-  CallExpr *noop = new CallExpr(PRIM_NOOP);
-  block->insertAtHead(noop);
+  setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
+
+  forLoop->insertAtHead(noop);
+
   for (int i = 0; i < iterators.n; i++) {
-    FnSymbol *iterator = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
-    Vec<Expr*> exprs;
-
-    BlockStmt *ibody = iterator->body->copy();
-
+    FnSymbol*     iterator   = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+    BlockStmt*    ibody      = iterator->body->copy();
+    bool          afterYield = false;
+    int           count      = 1;
     Vec<BaseAST*> asts;
+
     collect_asts(ibody, asts);
-    bool afterYield = false;
+
     for_alist(expr, ibody->body) {
-      if (CallExpr *curr_expr = toCallExpr(expr)) {
+      if (CallExpr* curr_expr = toCallExpr(expr)) {
         if (curr_expr->isPrimitive(PRIM_YIELD)) {
           afterYield = true;
           noop->insertAfter(new CallExpr(PRIM_MOVE, indices.v[i], curr_expr->get(1)->remove()));
@@ -1468,20 +1474,21 @@ inlineSingleYieldIterator(CallExpr* call) {
           if (resolvedToTaskFun(curr_expr))
             // what should we do in this case?
             INT_FATAL(curr_expr, "inlineSingleYieldIterator is not implemented for outlined coforall/cobegin/begin blocks");
-          if (!afterYield)
+
+          else if (!afterYield)
             noop->insertBefore(curr_expr->remove());
-          else 
-            block->insertAtTail(curr_expr->remove());
+
+          else
+            forLoop->insertAtTail(curr_expr->remove());
         }
       } else {
         if (!afterYield)
           noop->insertBefore(expr->remove());
-        else 
-          block->insertAtTail(expr->remove());
+        else
+          forLoop->insertAtTail(expr->remove());
       }
     }
 
-    int count = 1;
     for_formals(formal, iterator) {
       forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
@@ -1489,18 +1496,22 @@ inlineSingleYieldIterator(CallExpr* call) {
             //if ((se->var->type == formal->type) && (!strcmp(se->var->name, formal->name))) {
             // count is used to get the nth field out of the iterator class;
             // it is replaced by the field once the iterator class is created
-            Expr* stmt = se->getStmtExpr();
-            VarSymbol* tmp = newTemp(formal->name, formal->type);
+            Expr*      stmt = se->getStmtExpr();
+            VarSymbol* tmp  = newTemp(formal->name, formal->type);
+
             stmt->insertBefore(new DefExpr(tmp));
             stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterators.v[i], new_IntSymbol(count))));
+
             se->var = tmp;
           }
         }
       }
+
       count++;
     }
 
   }
+
   noop->remove();
   call->remove();
 }
@@ -1522,7 +1533,7 @@ expandForLoop(ForLoop* forLoop) {
     expandIteratorInline(forLoop);
 
   } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator)) {
-    inlineSingleYieldIterator(call);
+    inlineSingleYieldIterator(forLoop);
 
   } else {
     // This code handles zippered iterators, dynamic iterators, and any other
