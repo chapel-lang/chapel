@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "ForLoop.h"
+#include "CForLoop.h"
 
 #include "astutil.h"
 #include "AstVisitor.h"
@@ -32,60 +32,29 @@
 *                                                                           *
 ************************************* | ************************************/
 
-BlockStmt* ForLoop::buildForLoop(Expr*      indices,
-                                 Expr*      iteratorExpr,
-                                 BlockStmt* body,
-                                 bool       coforall,
-                                 bool       zippered)
+BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
 {
-  VarSymbol*   index         = newTemp("_indexOfInterest");
-  VarSymbol*   iterator      = newTemp("_iterator");
-  CallExpr*    iterInit      = 0;
-  CallExpr*    iterMove      = 0;
-  ForLoop*     loop          = new ForLoop(body, index, iterator);
+  // Regular loop setup
+  CForLoop*    loop          = new CForLoop(call, body);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
-  BlockStmt*   retval        = new BlockStmt();
+  BlockStmt*   retval        = buildChapelStmt();
 
-  iterator->addFlag(FLAG_EXPR_TEMP);
-
-  // Unzippered loop, treat all objects (including tuples) the same
-  if (zippered == false)
-    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
-
-  // Expand tuple to a tuple containing appropriate iterators for each value.
-  else
-    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
-
-  index->addFlag(FLAG_INDEX_OF_INTEREST);
-
-  iterMove = new CallExpr(PRIM_MOVE, index, new CallExpr("iteratorIndex", iterator));
-
-  if (indices == 0)
-    indices = new UnresolvedSymExpr("chpl__elidedIdx");
-
-  checkIndices(indices);
-
-  destructureIndices(loop, indices, new SymExpr(index), coforall);
-
-  if (coforall)
-    index->addFlag(FLAG_COFORALL_INDEX_VAR);
+  // C for loops have the form:
+  //   __primitive("C for loop", initExpr, testExpr, incrExpr)
+  //
+  // This simply wraps the init, test, and incr expr with block stmts
+  call->get(1)->replace(new BlockStmt(call->get(1)->copy()));
+  call->get(2)->replace(new BlockStmt(call->get(2)->copy()));
+  call->get(3)->replace(new BlockStmt(call->get(3)->copy()));
 
   loop->continueLabel = continueLabel;
   loop->breakLabel    = breakLabel;
 
   loop->insertAtTail(new DefExpr(continueLabel));
 
-  retval->insertAtTail(new DefExpr(index));
-  retval->insertAtTail(new DefExpr(iterator));
-
-  retval->insertAtTail(iterInit);
-  retval->insertAtTail(new BlockStmt(iterMove, BLOCK_TYPE));
-
   retval->insertAtTail(loop);
-
   retval->insertAtTail(new DefExpr(breakLabel));
-  retval->insertAtTail(new CallExpr("_freeIterator", iterator));
 
   return retval;
 }
@@ -96,35 +65,35 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 *                                                                           *
 ************************************* | ************************************/
 
-ForLoop::ForLoop()
+CForLoop::CForLoop()
 {
 
 }
 
-ForLoop::ForLoop(CallExpr*  cforInfo,
-                 BlockStmt* initBody) : BlockStmt(initBody)
+CForLoop::CForLoop(CallExpr*  cforInfo,
+                   BlockStmt* initBody) : BlockStmt(initBody)
 {
   blockInfoSet(cforInfo);
 }
 
-ForLoop::ForLoop(BlockStmt* initBody,
+CForLoop::CForLoop(BlockStmt* initBody,
                  VarSymbol* index,
                  VarSymbol* iterator) : BlockStmt(initBody)
 {
   blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
 }
 
-ForLoop::~ForLoop()
+CForLoop::~CForLoop()
 {
 
 }
 
-ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
+CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
   CallExpr*  blockInfo = blockInfoGet();
-  ForLoop*   retval    = new ForLoop();
+  CForLoop*  retval    = new CForLoop();
 
   retval->astloc        = astloc;
   retval->blockTag      = blockTag;
@@ -150,50 +119,20 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   return retval;
 }
 
-BlockStmt* ForLoop::copyBody(SymbolMap* map)
+bool CForLoop::isLoop() const
 {
-  BlockStmt* retval = new BlockStmt();
-
-  retval->astloc        = astloc;
-  retval->blockTag      = blockTag;
-
-  retval->breakLabel    = breakLabel;
-  retval->continueLabel = continueLabel;
-
-  if (modUses   != 0)
-    retval->modUses = modUses->copy(map, true);
-
-  if (byrefVars != 0)
-    retval->byrefVars = byrefVars->copy(map, true);
-
-  for_alist(expr, body)
-    retval->insertAtTail(expr->copy(map, true));
-
-  update_symbols(retval, map);
-
-  return retval;
-}
-
-bool ForLoop::isLoop() const
-{
-  // Noakes 2014/10/23.
+  // Noakes 2014/11/18.
   // There are operations can clear the blockInfo
-  // i.e. convert a ForLoop back to a BlockStmt.
+  // i.e. convert a CForLoop back to a BlockStmt.
   return (blockInfoGet() != 0) ? true : false;
 }
 
-bool ForLoop::isForLoop() const
-{
-  return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP);
-}
-
-// NOAKES 2014/11/18   This might be needed during transition
-bool ForLoop::isCForLoop() const
+bool CForLoop::isCForLoop() const
 {
   return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
 }
 
-bool ForLoop::deadBlockCleanup()
+bool CForLoop::deadBlockCleanup()
 {
   bool retval = false;
 
@@ -209,7 +148,7 @@ bool ForLoop::deadBlockCleanup()
   return retval;
 }
 
-GenRet ForLoop::codegen()
+GenRet CForLoop::codegen()
 {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -353,7 +292,7 @@ GenRet ForLoop::codegen()
 //
 // We need to generate:
 // i = 4, j = 4
-std::string ForLoop::codegenCForLoopHeader(BlockStmt* block)
+std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
 {
   GenInfo*    info = gGenInfo;
   std::string seg  = "";
@@ -437,7 +376,7 @@ std::string ForLoop::codegenCForLoopHeader(BlockStmt* block)
   return seg;
 }
 
-GenRet ForLoop::codegenCForLoopCondition(BlockStmt* block)
+GenRet CForLoop::codegenCForLoopCondition(BlockStmt* block)
 {
   GenRet ret;
 
@@ -457,8 +396,8 @@ GenRet ForLoop::codegenCForLoopCondition(BlockStmt* block)
 }
 
 void
-ForLoop::accept(AstVisitor* visitor) {
-  if (visitor->enterForLoop(this) == true) {
+CForLoop::accept(AstVisitor* visitor) {
+  if (visitor->enterCForLoop(this) == true) {
     CallExpr* blockInfo = blockInfoGet();
 
     for_alist(next_ast, body)
@@ -473,6 +412,6 @@ ForLoop::accept(AstVisitor* visitor) {
     if (byrefVars)
       byrefVars->accept(visitor);
 
-    visitor->exitForLoop(this);
+    visitor->exitCForLoop(this);
   }
 }

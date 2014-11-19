@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,7 @@
 
 #include "WhileDoStmt.h"
 #include "DoWhileStmt.h"
+#include "CForLoop.h"
 #include "ForLoop.h"
 
 #include <cstdio>
@@ -52,7 +53,7 @@ void AstDumpToHtml::init() {
   if (!(sIndexFP = fopen(astr(log_dir, "index.html"), "w"))) {
     USR_FATAL("cannot open html index file \"%s\" for writing", astr(log_dir, "index.html"));
   }
-  
+
   fprintf(sIndexFP, "<HTML>\n");
   fprintf(sIndexFP, "<HEAD>\n");
   fprintf(sIndexFP, "<TITLE> Compilation Dump </TITLE>\n");
@@ -62,7 +63,7 @@ void AstDumpToHtml::init() {
   fprintf(sIndexFP, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
   fprintf(sIndexFP, "Compilation Dump<br><br></span></big></big>\n");
   fprintf(sIndexFP, "<div style=\"text-align: left;\">\n\n");
-  
+
   fprintf(sIndexFP, "<TABLE CELLPADDING=\"0\" CELLSPACING=\"0\">");
 }
 
@@ -151,7 +152,7 @@ bool AstDumpToHtml::close() {
     retval = (fclose(mFP) == 0) ? true : false;
     mFP    = 0;
   }
-  
+
   return retval;
 }
 
@@ -293,7 +294,7 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
 }
 
 void AstDumpToHtml::exitDefExpr(DefExpr* node) {
-  if (isFnSymbol(node->sym) || 
+  if (isFnSymbol(node->sym) ||
       (isTypeSymbol(node->sym) &&
        isAggregateType(node->sym->type))) {
 
@@ -354,7 +355,7 @@ void AstDumpToHtml::visitSymExpr(SymExpr* node) {
     snprint_imm(imm, bufSize, *var->immediate);
 
     fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(var->type) ? "i" : "");
-      
+
   } else {
     writeSymbol(sym, false);
   }
@@ -471,6 +472,30 @@ bool AstDumpToHtml::enterForLoop(ForLoop* node) {
 }
 
 void AstDumpToHtml::exitForLoop(ForLoop* node) {
+  fprintf(mFP, "}");
+  printBlockID(node);
+  fprintf(mFP, "</DL>\n");
+}
+
+
+//
+// CForLoop
+//
+bool AstDumpToHtml::enterCForLoop(CForLoop* node) {
+  fprintf(mFP, "<DL>\n");
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      fprintf(mFP, "<B>where</B>\n");
+
+  fprintf(mFP, "<B>CForLoop<B> {");
+
+  printBlockID(node);
+
+  return true;
+}
+
+void AstDumpToHtml::exitCForLoop(CForLoop* node) {
   fprintf(mFP, "}");
   printBlockID(node);
   fprintf(mFP, "</DL>\n");
@@ -636,7 +661,7 @@ const char* AstDumpToHtml::html_file_name(int passNum, const char* module) {
 }
 
 bool AstDumpToHtml::hasHref(Symbol* sym) {
-  return sym->defPoint               && 
+  return sym->defPoint               &&
          sym->defPoint->parentSymbol &&
          sym->defPoint->getModule();
 }

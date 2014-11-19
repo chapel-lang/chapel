@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ class ModuleSymbol;
 class Symbol;
 class Type;
 
-class AstDumpToNode : public AstLogger 
+class AstDumpToNode : public AstLogger
 {
 public:
   //
@@ -95,6 +95,8 @@ public:
   virtual bool     enterWhileDoStmt(WhileDoStmt*       node);
 
   virtual bool     enterDoWhileStmt(DoWhileStmt*       node);
+
+  virtual bool     enterCForLoop   (CForLoop*          node);
 
   virtual bool     enterForLoop    (ForLoop*           node);
 

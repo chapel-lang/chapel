@@ -102,6 +102,9 @@ void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore);
 // flattenFunctions.cpp
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
+// callDestructors.cpp
+void insertReferenceTemps(CallExpr* call);
+
 // parallel.cpp
 bool isRefWideString(Type* t);
 bool isWideString(Type* t);

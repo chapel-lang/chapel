@@ -85,7 +85,7 @@ public:
   virtual bool        isDoWhileLoop()                              const;
 
   virtual bool        isForLoop()                                  const;
-  virtual bool        isCforLoop()                                 const;
+  virtual bool        isCForLoop()                                 const;
 
   virtual void        checkConstLoops();
 
