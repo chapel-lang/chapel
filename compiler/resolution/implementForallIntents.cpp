@@ -321,6 +321,7 @@ static void findBlockWithDefOf(Expr* start, const char* varName,
           }
 
   INT_ASSERT(false); // not found... need to search harder?
+  resultDef = NULL;  // suppress "may be used uninitialized" in callers
 }
 
 static BlockStmt* discoverFromFollowIter(DefExpr* defFollowIter)
