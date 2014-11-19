@@ -2735,6 +2735,12 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
   for_formals_actuals(formal, actual, call) {
     argNum++;
     SymExpr* symexpActual = toSymExpr(actual);
+    if (!symexpActual) {
+      // We add NamedExpr args in propagateExtraLeaderArgs().
+      NamedExpr* namedexpActual = toNamedExpr(actual);
+      INT_ASSERT(namedexpActual);
+      symexpActual = toSymExpr(namedexpActual->actual);
+    }
     INT_ASSERT(symexpActual); // because of how we invoke a task function
     Symbol* varActual = symexpActual->var;
 
@@ -4399,6 +4405,13 @@ isNormalField(Symbol* field)
   return true;
 }
 
+static CallExpr* toPrimToLeaderCall(Expr* expr) {
+  if (CallExpr* call = toCallExpr(expr))
+    if (call->isPrimitive(PRIM_TO_LEADER))
+      return call;
+  return NULL;
+}
+
 // Recursively resolve typedefs
 static Type* resolveTypeAlias(SymExpr* se)
 {
@@ -5844,6 +5857,8 @@ resolveExpr(Expr* expr)
       }
     }
 
+    Expr* const origExpr = expr;
+
     expr = preFold(expr);
 
     if (fn && fn->retTag == RET_PARAM) {
@@ -5859,6 +5874,9 @@ resolveExpr(Expr* expr)
         Expr* init = preFold(def->init);
         init = resolveExpr(init);
         // expr is unchanged, so is treated as "resolved".
+      }
+      if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
+        implementForallIntents1(def);
       }
     }
 
@@ -5893,6 +5911,9 @@ resolveExpr(Expr* expr)
       resolveCall(call);
 
       if (!tryFailure && call->isResolved()) {
+        if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
+          // ForallLeaderArgs: process the leader that 'call' invokes.
+          implementForallIntents2(call, origToLeaderCall);
         resolveFns(call->isResolved());
       }
 
@@ -6182,6 +6203,21 @@ resolveFns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
     return;
 
+  //
+  // mark leaders for inlining
+  //
+  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    for_formals(formal, fn) {
+      if (formal->type == gLeaderTag->type &&
+          paramMap.get(formal) == gLeaderTag) {
+        fn->addFlag(FLAG_INLINE_ITERATOR);
+        // need to do the following before 'fn' gets resolved
+        stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
+        break;
+      }
+    }
+  }
+
   if (fn->retTag == RET_REF) {
     buildValueFunction(fn);
   }
@@ -6222,11 +6258,19 @@ resolveFns(FnSymbol* fn) {
   //
   // mark leaders for inlining
   //
-  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+  // The original computation used to be here, now we do it earlier,
+  // here we only verify that we did not miss a leader.
+  // todo: convert this to an assertion; perhaps factor out the common code
+  // with the above.
+  //
+  if (fn->hasFlag(FLAG_ITERATOR_FN) &&
+      !fn->hasFlag(FLAG_INLINE_ITERATOR))
+  {
     for_formals(formal, fn) {
       if (formal->type == gLeaderTag->type &&
           paramMap.get(formal) == gLeaderTag) {
-        fn->addFlag(FLAG_INLINE_ITERATOR);
+        // oops
+        INT_ASSERT(false);
       }
     }
   }

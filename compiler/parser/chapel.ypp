@@ -206,7 +206,7 @@
 
 %type <pcallexpr> opt_inherit expr_ls assoc_expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
-%type <pcallexpr> opt_task_intent_ls task_intent_ls
+%type <pcallexpr> opt_task_intent_ls task_intent_ls task_intent_clause
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <procIter> proc_or_iter
@@ -377,27 +377,49 @@ loop_stmt:
 | TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
 | TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, false,  true); }
 | TFOR TPARAM ident TIN expr do_stmt            { $$ = buildParamForLoopStmt($3, $5, $6); }
-| TFORALL expr TIN expr do_stmt                 { $$ = buildForallLoopStmt($2, $4, $5); }
-| TFORALL expr TIN zippered_iterator do_stmt    { $$ = buildForallLoopStmt($2, $4, $5, true); }
-| TFORALL expr do_stmt                          { $$ = buildForallLoopStmt(NULL, $2, $3); }
+| TFORALL expr TIN expr                                 do_stmt    { $$ = buildForallLoopStmt($2, $4, NULL, $5); }
+| TFORALL expr TIN expr              task_intent_clause do_stmt    { $$ = buildForallLoopStmt($2, $4, $5,   $6); }
+| TFORALL expr TIN zippered_iterator                    do_stmt    { $$ = buildForallLoopStmt($2, $4, NULL, $5, true); }
+| TFORALL expr TIN zippered_iterator task_intent_clause do_stmt    { $$ = buildForallLoopStmt($2, $4, $5,   $6, true); }
+| TFORALL expr                                          do_stmt    { $$ = buildForallLoopStmt(NULL, $2, NULL, $3); }
+| TFORALL expr                       task_intent_clause do_stmt    { $$ = buildForallLoopStmt(NULL, $2, $3,   $4); }
 | TLSBR expr_ls TIN expr TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, new BlockStmt($6));
+      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, NULL, new BlockStmt($6));
+    }
+| TLSBR expr_ls TIN expr task_intent_clause TRSBR stmt
+    {
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, $5,   new BlockStmt($7));
     }
 | TLSBR expr_ls TIN zippered_iterator TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, new BlockStmt($6), true);
+      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, NULL, new BlockStmt($6), true);
+    }
+| TLSBR expr_ls TIN zippered_iterator task_intent_clause TRSBR stmt
+    {
+      if ($2->argList.length != 1)
+        USR_FATAL($4, "invalid index expression");
+      $$ = buildForallLoopStmt($2->get(1)->remove(), $4, $5,   new BlockStmt($7), true);
     }
 | TLSBR expr_ls TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__ensureDomainExpr", $2), new BlockStmt($4));
+        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__ensureDomainExpr", $2), NULL, new BlockStmt($4));
       else
-        $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), new BlockStmt($4));
+        $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), NULL, new BlockStmt($4));
+    }
+| TLSBR expr_ls task_intent_clause TRSBR stmt
+    {
+      if ($2->argList.length > 1)
+        $$ = buildForallLoopStmt(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $3,   new BlockStmt($5));
+      else
+        $$ = buildForallLoopStmt(NULL, $2->get(1)->remove(), $3,   new BlockStmt($5));
     }
 ;
 
@@ -1116,7 +1138,11 @@ stmt_level_expr:
 
 opt_task_intent_ls:
                                 { $$ = NULL; }
-| TWITH TLP task_intent_ls TRP  { $$ = $3; }
+| task_intent_clause
+;
+
+task_intent_clause:
+  TWITH TLP task_intent_ls TRP  { $$ = $3; }
 ;
 
 task_intent_ls:

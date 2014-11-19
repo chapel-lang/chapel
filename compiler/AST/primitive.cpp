@@ -541,6 +541,7 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
   prim_def(PRIM_BLOCK_UNLOCAL, "unlocal block", returnInfoVoid);
 
+  prim_def(PRIM_FORALL_LOOP, "forall loop", returnInfoVoid);
   prim_def(PRIM_TO_LEADER, "to leader", returnInfoVoid);
   prim_def(PRIM_TO_FOLLOWER, "to follower", returnInfoVoid);
 

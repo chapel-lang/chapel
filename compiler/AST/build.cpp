@@ -919,6 +919,7 @@ buildFollowLoop(VarSymbol* iter,
 BlockStmt*
 buildForallLoopStmt(Expr*      indices, 
                     Expr*      iterExpr, 
+                    CallExpr*  byref_vars,
                     BlockStmt* loopBody, 
                     bool       zippered) {
   checkControlFlow(loopBody, "forall statement");
@@ -932,6 +933,23 @@ buildForallLoopStmt(Expr*      indices,
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
 
   checkIndices(indices);
+
+  //
+  // 'byrefVars' will contain a PRIM_FORALL_LOOP, whose "arguments"
+  // are variables listed in the forall's with(ref...) clause.
+  // This list is processed during implementForallIntents1().
+  //
+  INT_ASSERT(!loopBody->byrefVars);
+  if (byref_vars) {
+    INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
+    byref_vars->primitive = primitives[PRIM_FORALL_LOOP];
+  } else {
+    byref_vars = new CallExpr(PRIM_FORALL_LOOP);
+  }
+  loopBody->byrefVars = byref_vars;
+
+  // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
+  loopBody->blockTag = BLOCK_NORMAL;
 
   BlockStmt* resultBlock     = new BlockStmt();
 
@@ -951,11 +969,18 @@ buildForallLoopStmt(Expr*      indices,
   BlockStmt* followBlock     = NULL;
 
   iter->addFlag(FLAG_EXPR_TEMP);
+  iter->addFlag(FLAG_CHPL__ITER);
 
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+
+  // ForallLeaderArgs: stash references so we know where things are.
+  byref_vars->insertAtHead(leadIdxCopy); // 3rd arg
+  byref_vars->insertAtHead(leadIdx);     // 2nd arg
+  byref_vars->insertAtHead(iter);        // 1st arg
 
   resultBlock->insertAtTail(new DefExpr(iter));
   resultBlock->insertAtTail(new DefExpr(leadIdx));
@@ -1032,6 +1057,12 @@ addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
   // nothing to do if there is no 'ref' clause
   if (!byrefVarsSource) return;
 
+  //
+  // 'byrefVars' will contain a CallExpr, whose "arguments"
+  // are variables listed in the with(ref...) clause
+  // of the enclosing begin/cobegin/coforall.
+  // This list is processed during createTaskFunctions().
+  //
   // Could set byrefVars->parentExpr/Symbol right here.
   target->byrefVars = byrefVarsSource;
 

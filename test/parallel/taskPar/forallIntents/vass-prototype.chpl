@@ -154,7 +154,7 @@ proc nocapture() {
       q$ = true;
     }
     {
-      forall j in ITR(3) {
+      forall j in ITR(3) with (ref i) {
         s$.writeXF(true);
         q$;
         writeln("A-", j, "  i=", i);

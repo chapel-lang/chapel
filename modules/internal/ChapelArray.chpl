@@ -1981,7 +1981,7 @@ module ChapelArray {
     var newDom : a.type;
 
     serial !newDom._value.parSafe do 
-      forall k in a do
+      forall k in a with (ref newDom) do // no race - in 'serial'
         if b.member(k) then newDom += k;
     return newDom;
   }

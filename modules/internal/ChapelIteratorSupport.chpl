@@ -136,6 +136,38 @@ module ChapelIteratorSupport {
     return _toLeader(x(1));
 
   //
+  // additional _toLeader/_toLeaderZip for forall intents
+  //
+  // The extra args... are used to pass the outer variables of the
+  // forall loop body, which are subject to forall intents.
+  //
+
+  pragma "no implicit copy"
+  pragma "expand tuples with values"
+  inline proc _toLeader(iterator: _iteratorClass, args...)
+    return chpl__autoCopy(__primitive("to leader", iterator, (...args)));
+
+  pragma "expand tuples with values"
+  inline proc _toLeader(ir: _iteratorRecord, args...) {
+    pragma "no copy" var ic = _getIterator(ir);
+    pragma "no copy" var leader = _toLeader(ic, (...args));
+    _freeIterator(ic);
+    return leader;
+  }
+  
+  pragma "expand tuples with values"
+  inline proc _toLeader(x, args...)
+    return _toLeader(x.these(), (...args));
+  
+  pragma "expand tuples with values"
+  inline proc _toLeaderZip(x, args...)
+    return _toLeader(x, (...args));
+  
+  pragma "expand tuples with values"
+  inline proc _toLeaderZip(x: _tuple, args...)
+    return _toLeader(x(1), (...args));
+
+  //
   // return true if any iterator supports fast followers
   //
   proc chpl__staticFastFollowCheck(x) param {

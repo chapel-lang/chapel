@@ -2000,6 +2000,31 @@ FnSymbol::getReturnSymbol() {
 }
 
 
+// Replace the return symbol with 'newRetSymbol',
+// return the previous return symbol.
+// If newRetType != NULL, also update fn->retType.
+Symbol*
+FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType)
+{
+  // follows getReturnSymbol()
+  CallExpr* ret = toCallExpr(this->body->body.last());
+  if (!ret || !ret->isPrimitive(PRIM_RETURN))
+    INT_FATAL(this, "function is not normal");
+  SymExpr* sym = toSymExpr(ret->get(1));
+  if (!sym)
+    INT_FATAL(this, "function is not normal");
+  Symbol* prevRetSymbol = sym->var;
+
+  // updating
+  sym->var = newRetSymbol;
+  this->retSymbol = newRetSymbol;
+  if (newRetType)
+    this->retType = newRetType;
+
+  return prevRetSymbol;
+}
+
+
 void
 FnSymbol::insertBeforeReturn(Expr* ast) {
   CallExpr* ret = toCallExpr(body->body.last());

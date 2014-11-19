@@ -94,6 +94,11 @@ void checkReturnTypesHaveRefTypes();
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
 
+// createTaskFunctions.cpp -> implementForallIntents.cpp
+extern Symbol* markPruned;
+void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars);
+void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore);
+
 // flattenFunctions.cpp
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 

@@ -15,7 +15,7 @@ proc main() {
 
   var passed = true;
   // Check that A is sorted
-  [i in 1..size] {
+  [i in 1..size with (ref passed)] {
     if A(i) != 12345 then {
       writeln(A(i));
       passed = false;

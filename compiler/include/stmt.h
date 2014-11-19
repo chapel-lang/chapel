@@ -116,7 +116,7 @@ public:
   LabelSymbol*        breakLabel;
   LabelSymbol*        continueLabel;
   const char*         userLabel;
-  CallExpr*           byrefVars;     // 'ref' clause in begin/cobegin/coforall
+  CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
 
 private:
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;

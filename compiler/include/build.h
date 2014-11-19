@@ -83,6 +83,7 @@ BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
+                               CallExpr* byref_vars,
                                BlockStmt* body,
                                bool zippered = false);
 CallExpr* buildForLoopExpr(Expr* indices,
