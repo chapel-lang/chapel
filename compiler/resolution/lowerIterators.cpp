@@ -1096,12 +1096,12 @@ expandBodyForIteratorInline(BlockStmt* body, BlockStmt* ibody, Symbol* index, bo
 
 /// \param call A for loop block primitive.
 static void
-expandIteratorInline(CallExpr* call) {
-  Symbol* ic = toSymExpr(call->get(2))->var;
+expandIteratorInline(ForLoop* forLoop) {
+  CallExpr* call     = forLoop->blockInfoGet();
+  Symbol*   ic       = toSymExpr(call->get(2))->var;
   FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
-
     //
     // loops over recursive iterators in recursive iterators only need
     // to be handled in the recursive iterator function
@@ -1119,28 +1119,28 @@ expandIteratorInline(CallExpr* call) {
 
   SET_LINENO(call);
 
-  Symbol* index = toSymExpr(call->get(1))->var;
-  BlockStmt* ibody = iterator->body->copy();
+  Symbol*       index = toSymExpr(call->get(1))->var;
+  BlockStmt*    ibody = iterator->body->copy();
+  Vec<BaseAST*> asts;
+
   if (!preserveInlinedLineNumbers)
     reset_ast_loc(ibody, call);
 
-  // Body is the entire for loop block.
-  BlockStmt* body = toBlockStmt(call->parentExpr);
-
   // The for loop primitive is removed
   call->remove();
+
   // and the entire for loop block is replaced by the iterator body.
-  body->replace(ibody);
+  forLoop->replace(ibody);
 
-  // Now replace yield statements in the inlined iterator body with copies of the
-  // body of the for loop that invoked the iterator, substituting the yielded
-  // index for the iterator formal.
+  // Now replace yield statements in the inlined iterator body with copies
+  // of the body of the for loop that invoked the iterator, substituting
+  // the yielded index for the iterator formal.
   TaskFnCopyMap taskFnCopies;
-  expandBodyForIteratorInline(body, ibody, index, true, taskFnCopies);
 
-  // TODO: Can this be pushed inside expandBody...() ?
-  Vec<BaseAST*> asts;
+  expandBodyForIteratorInline(forLoop, ibody, index, true, taskFnCopies);
+
   collect_asts(ibody, asts);
+
   replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
 }
 
@@ -1515,7 +1515,7 @@ expandForLoop(ForLoop* forLoop) {
       (iterator->type->dispatchChildren.n == 0 ||
        (iterator->type->dispatchChildren.n == 1 &&
         iterator->type->dispatchChildren.v[0] == dtObject))) {
-    expandIteratorInline(call);
+    expandIteratorInline(forLoop);
 
   } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator)) {
     inlineSingleYieldIterator(call);
@@ -1658,11 +1658,12 @@ static void
 inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol) {
-      if (block->blockInfoGet() && block->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP)) {
-        Symbol* iterator = toSymExpr(block->blockInfoGet()->get(2))->var;
-        FnSymbol* ifn = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      if (block->isForLoop() == true) {
+        Symbol*   iterator = toSymExpr(block->blockInfoGet()->get(2))->var;
+        FnSymbol* ifn      = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+
         if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
-          expandIteratorInline(block->blockInfoGet());
+          expandIteratorInline((ForLoop*) block);
         }
       }
     }
