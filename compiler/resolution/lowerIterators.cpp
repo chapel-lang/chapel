@@ -1010,11 +1010,12 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
 
 /// \param call A for loop block primitive.
 static void
-expandRecursiveIteratorInline(CallExpr* call)
+expandRecursiveIteratorInline(ForLoop* forLoop)
 {
+  CallExpr* call     = forLoop->blockInfoGet();
+
   SET_LINENO(call);
 
-  BlockStmt* forLoopBlock = toBlockStmt(call->parentExpr);
   FnSymbol* parent = toFnSymbol(call->parentSymbol);
 
   //
@@ -1023,7 +1024,8 @@ expandRecursiveIteratorInline(CallExpr* call)
   // nested function as an argument
   //
   FnSymbol* loopBodyFn = new FnSymbol(astr("_rec_iter_loop_", parent->name));
-  forLoopBlock->insertBefore(new DefExpr(loopBodyFn));
+
+  forLoop->insertBefore(new DefExpr(loopBodyFn));
 
   // The index is passed to the loop body function as its first argument.
   Symbol* index = toSymExpr(call->get(1))->var;
@@ -1052,10 +1054,12 @@ expandRecursiveIteratorInline(CallExpr* call)
   // use and remove loopBodyFnCall later
   // We expect this call to cause the loop body function to be converted like a
   // "normal" iterator function body.
-  forLoopBlock->insertBefore(loopBodyFnCall);
-  forLoopBlock->insertBefore(iteratorFnCall);
-  // The forLoopBlock becomes the body of the (new) loop body function.
-  loopBodyFn->insertAtTail(forLoopBlock->remove());
+  forLoop->insertBefore(loopBodyFnCall);
+  forLoop->insertBefore(iteratorFnCall);
+
+  // The forLoop becomes the body of the (new) loop body function.
+  loopBodyFn->insertAtTail(forLoop->remove());
+
   // The PRIM_BLOCK_FOR_LOOP is removed, to convert that block statement into a
   // "plain-old" block.
   call->remove();
@@ -1106,42 +1110,42 @@ expandIteratorInline(ForLoop* forLoop) {
     // loops over recursive iterators in recursive iterators only need
     // to be handled in the recursive iterator function
     //
-    if (call->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR))
-      return;
+    if (call->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
 
     // ditto for task functions called from recursive iterators
-    if (taskFunInRecursiveIteratorSet.set_in(call->parentSymbol))
-      return;
+    } else if (taskFunInRecursiveIteratorSet.set_in(call->parentSymbol)) {
 
-    expandRecursiveIteratorInline(call);
-    return;
+    } else {
+      expandRecursiveIteratorInline(forLoop);
+    }
+
+  } else {
+    SET_LINENO(forLoop);
+
+    Symbol*       index = toSymExpr(call->get(1))->var;
+    BlockStmt*    ibody = iterator->body->copy();
+    Vec<BaseAST*> asts;
+
+    if (!preserveInlinedLineNumbers)
+      reset_ast_loc(ibody, call);
+
+    // The for loop primitive is removed
+    call->remove();
+
+    // and the entire for loop block is replaced by the iterator body.
+    forLoop->replace(ibody);
+
+    // Now replace yield statements in the inlined iterator body with copies
+    // of the body of the for loop that invoked the iterator, substituting
+    // the yielded index for the iterator formal.
+    TaskFnCopyMap taskFnCopies;
+
+    expandBodyForIteratorInline(forLoop, ibody, index, true, taskFnCopies);
+
+    collect_asts(ibody, asts);
+
+    replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
   }
-
-  SET_LINENO(call);
-
-  Symbol*       index = toSymExpr(call->get(1))->var;
-  BlockStmt*    ibody = iterator->body->copy();
-  Vec<BaseAST*> asts;
-
-  if (!preserveInlinedLineNumbers)
-    reset_ast_loc(ibody, call);
-
-  // The for loop primitive is removed
-  call->remove();
-
-  // and the entire for loop block is replaced by the iterator body.
-  forLoop->replace(ibody);
-
-  // Now replace yield statements in the inlined iterator body with copies
-  // of the body of the for loop that invoked the iterator, substituting
-  // the yielded index for the iterator formal.
-  TaskFnCopyMap taskFnCopies;
-
-  expandBodyForIteratorInline(forLoop, ibody, index, true, taskFnCopies);
-
-  collect_asts(ibody, asts);
-
-  replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
 }
 
 static void
