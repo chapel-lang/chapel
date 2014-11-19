@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
@@ -1502,18 +1503,15 @@ inlineSingleYieldIterator(CallExpr* call) {
 
 
 static void
-expand_for_loop(CallExpr* call) {
-  BlockStmt* block = toBlockStmt(call->parentExpr);
-  if (!block || block->blockInfoGet() != call)
-    INT_FATAL(call, "bad for loop primitive");
-  SymExpr* se1 = toSymExpr(call->get(1));
-  SymExpr* se2 = toSymExpr(call->get(2));
-  if (!se1 || !se2)
-    INT_FATAL(call, "bad for loop primitive");
-  VarSymbol* index = toVarSymbol(se1->var);
+expandForLoop(ForLoop* block) {
+  CallExpr*  call     = block->blockInfoGet();
+
+  SymExpr*   se1      = toSymExpr(call->get(1));
+  SymExpr*   se2      = toSymExpr(call->get(2));
+
+  VarSymbol* index    = toVarSymbol(se1->var);
   VarSymbol* iterator = toVarSymbol(se2->var);
-  if (!index || !iterator)
-    INT_FATAL(call, "bad for loop primitive");
+
   if (!fNoInlineIterators &&
       iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer->iteratorInfo &&
       canInlineIterator(iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer) &&
@@ -2006,7 +2004,7 @@ void lowerIterators() {
   computeRecursiveIteratorSet();
 
   inlineIterators();
-  
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       fn->collapseBlocks();
@@ -2014,11 +2012,10 @@ void lowerIterators() {
     }
   }
 
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol)
-      if (call->isPrimitive(PRIM_BLOCK_FOR_LOOP))
-        if (call->numActuals() > 1)
-          expand_for_loop(call);
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (isAlive(block) == true && block->isForLoop() == true) {
+      expandForLoop((ForLoop*) block);
+    }
   }
 
   fragmentLocalBlocks();
