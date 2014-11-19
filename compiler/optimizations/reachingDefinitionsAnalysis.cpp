@@ -49,8 +49,6 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   // efficient manner
   //
   std::vector<int> localDefs(locals.n);
-  for (int i = 0; i < locals.n; i++)
-    localDefs[i] = 0;
   forv_Vec(SymExpr, se, defSet) {
     if (se) {
       localDefs[localMap.get(se->var)]++;
