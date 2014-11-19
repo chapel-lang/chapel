@@ -47,7 +47,7 @@ static Expr* replaceWithRangeIterator(Expr* iteratorExpr) {
   CallExpr* range = NULL;
   Expr* stride = NULL;
   if (CallExpr* call = toCallExpr(iteratorExpr)) {
-    if (call->isNamed("by")) {
+   if (call->isNamed("by")) {
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
     } else {
@@ -58,9 +58,10 @@ static Expr* replaceWithRangeIterator(Expr* iteratorExpr) {
         Expr* low = range->get(1)->copy();
         Expr* high = range->get(2)->copy();
         if (stride) {
-          iteratorExpr = (new CallExpr("_opt_range_iter", low, high, stride));
+          iteratorExpr = (new CallExpr("_direct_range_iter", low, high, stride));
         } else {
-          iteratorExpr = (new CallExpr("_opt_range_iter", low, high));
+          SymExpr* noStr = new SymExpr( new_IntSymbol(1));
+          iteratorExpr = (new CallExpr("_direct_range_iter", low, high, noStr));
         }
       }
     }
@@ -69,23 +70,17 @@ static Expr* replaceWithRangeIterator(Expr* iteratorExpr) {
 }
 
 
-static void optimizeRangeIteration(Expr*& iteratorExpr) {
+static Expr* optimizeRangeIteration(Expr* iteratorExpr) {
   iteratorExpr = replaceWithRangeIterator(iteratorExpr);
   if (CallExpr* call = toCallExpr(iteratorExpr)) {
     if (call->isNamed("_build_tuple")) {
-      for (int i = 1; i <= call->numActuals(); i++) {
-        call->get(i)->replace(replaceWithRangeIterator(call->get(i)->copy()));
+      for_actuals(actual, call) {
+        actual->replace(replaceWithRangeIterator(actual->copy()));
       }
-      //for_actuals(actual, call) {
-      //  optimizeRangeIteration(actual);
-      //}
     }
   }
+  return iteratorExpr;
 }
-
-
-
-
 
 
 BlockStmt* ForLoop::buildForLoop(Expr*      indices,
@@ -103,7 +98,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
 
-  optimizeRangeIteration(iteratorExpr);
+  iteratorExpr = optimizeRangeIteration(iteratorExpr);
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 

@@ -30,6 +30,7 @@ module ChapelRange {
   config param useOptimizedRangeIterators = true;
 
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
+  enum RangeStrideSign { pos, neg, unknown };
   
   //
   // range type
@@ -1028,74 +1029,115 @@ module ChapelRange {
 
 
   //################################################################################
-  //# Optimized iterators that use should not call
+  //# Optimized iterators that users should not call
   //#
-  // Need optimized iterator for const and param versions
-  iter _opt_range_iter(param start: ?t, param end: t, param stride : t = 1) {
-//    = 1:chpl__signedType(t)) {
-    // check for overflow...
-    // general iter option
+  //# These iterators exist to optimize anonymous range iteration by eliminate
+  //# the cost of range construction and to provide optimized iterators for
+  //# strides that are known at compile time.
+  //#
 
-    var i: t;
-    if (stride > 0) {
+  iter _direct_range_iter(const start: ?t, const end: t, const stride: ?strT)
+    where isIntegral(t) && chpl__unsignedType(t) == strT {
+
+    if (useOptimizedRangeIterators) {
+      if boundsChecking {
+        var r = start..end by stride;
+        r.checkIfIterWillOverflow();
+      }
+      var i: t;
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("<=", i, end),
-                        __primitive("+=", i, stride:t)) {
-        yield i;
-      }
-    } else if (stride < 0) {
-      while __primitive("C for loop",
-                        __primitive( "=", i, start),
-                        __primitive(">=", i, end),
                         __primitive("+=", i, stride:t)) {
         yield i;
       }
 
     } else {
-      compilerError("the 'by' operator cannot take a value of zero");
-    }
-  }
- 
-  
-  iter _opt_range_iter(const start: ?t, const end: t) {
-//    = 1:chpl__signedType(t)) {
-
-    // check for overflow...
-    // general iter option
-
-    var i: t;
-      while __primitive("C for loop",
-                        __primitive( "=", i, start),
-                        __primitive("<=", i, end),
-                        __primitive("+=", i, 1:t)) {
+      for i in this.generalIterator() {
         yield i;
       }
+    }
   }
 
-  iter _opt_range_iter(const start: ?t, const end: t, const stride) {
-    // check for overflow...
-    // general iter option
+  iter _direct_range_iter(const start: ?t, const end: t, param stride: ?strT)
+    where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
+
+    if (useOptimizedRangeIterators) {
+      if boundsChecking {
+        var r = start..end by stride;
+        r.checkIfIterWillOverflow();
+      }
+
+      var i: t;
+      if (stride > 0) {
+        while __primitive("C for loop",
+                          __primitive( "=", i, start),
+                          __primitive("<=", i, end),
+                          __primitive("+=", i, stride:t)) {
+          yield i;
+        }
+      } else if (stride < 0) {
+        while __primitive("C for loop",
+                          __primitive( "=", i, end),
+                          __primitive(">=", i, start),
+                          __primitive("+=", i, stride:t)) {
+          yield i;
+        }
+      } else {
+        compilerError("the 'by' operator cannot take a value of zero");
+      }
+    } else {
+      for i in this.generalIterator() {
+        yield i;
+      }
+    }
+  }
+
+  iter _direct_range_iter(param start: ?t, param end: t, param stride: ?strT)
+    where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
+    if (useOptimizedRangeIterators) {
+      if boundsChecking {
+        var r = start..end by stride;
+        r.checkIfIterWillOverflow();
+      }
+
+      var i: t;
+      if (stride > 0) {
+        while __primitive("C for loop",
+                          __primitive( "=", i, start),
+                          __primitive("<=", i, end),
+                          __primitive("+=", i, stride:t)) {
+          yield i;
+        }
+      } else if (stride < 0) {
+        while __primitive("C for loop",
+                          __primitive( "=", i, end),
+                          __primitive(">=", i, start),
+                          __primitive("+=", i, stride:t)) {
+          yield i;
+        }
+      } else {
+        compilerError("the 'by' operator cannot take a value of zero");
+      }
+    } else {
+      for i in this.generalIterator() {
+        yield i;
+      }
+    }
+
+  }
+
+  // to avoid having to deal with cases like for i in s..e by str where str
+  // isn't know at compile time, just build a non-anonymous range and iterate
+  // over it. This is also the base case where any type mismatches will be
+  // handled by existing range code
+  iter _direct_range_iter(start, end, stride)
+  {
     var r = start..end by stride;
     for i in r {
       yield i;
     }
   }
-
-
-  iter bounded_non_strided_iterartor(start: ?t, end: t) {
-    // check for overflow...
-
-    var i: t;
-    while __primitive("C for loop",
-                      __primitive( "=", i, start),
-                      __primitive("<=", i, end),
-                      __primitive("+=", i, 1:t)) {
-      yield i;
-    }
-  }
-
-
 
   //################################################################################
   //# Serial Iterators
