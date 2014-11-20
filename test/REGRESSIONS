@@ -318,8 +318,8 @@ Inherits 'general'
 Reviewed 2014-11-16
 ===================
 
-increased memory leak counts (2014-11-19 -- tom)
-------------------------------------------------
+increased memory leak counts (2014-11-19 -- vass)
+-------------------------------------------------
 [Error matching program output for memory/figueroa/LeakedMemory2]
 [Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
 [Error matching program output for memory/figueroa/LeakedMemory6 (compopts: 1)]
