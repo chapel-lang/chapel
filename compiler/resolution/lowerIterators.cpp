@@ -20,6 +20,7 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -1591,25 +1592,11 @@ expandForLoop(ForLoop* forLoop) {
     SymExpr*     se1       = toSymExpr(forLoop->blockInfoGet()->get(1));
     VarSymbol*   index     = toVarSymbol(se1->var);
 
-    BlockStmt*   firstCond = NULL;
-    BlockStmt*   testBlock = new BlockStmt();
-
-    CallExpr*    call      = forLoop->blockInfoGet();
+    BlockStmt*   initBlock = new BlockStmt();
+    BlockStmt*   testBlock = NULL;
+    BlockStmt*   incrBlock = new BlockStmt();
 
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
-
-    // Convert loop to c for loop and add empty blocks for init, test, and incr
-    // Not all loops need to be converted, only if the iterator has a c for
-    // loop, but it doesn't hurt to convert them all.
-    for_alist(expr, call->argList) {
-      expr->remove();
-    }
-
-    call->primitive = primitives[PRIM_BLOCK_C_FOR_LOOP];
-
-    for (int i = 0; i < 3; i++) {
-      call->insertAtTail(new BlockStmt());
-    }
 
     // For each iterator we add the zip* functions in the appropriate place and
     // if bounds checking was on, we insert the code for that. Note that this
@@ -1634,8 +1621,8 @@ expandForLoop(ForLoop* forLoop) {
         // add the init, and incr functions to the init, and incr blocks of the
         // c for loop. If the underlying iterator does not have a c for loop,
         // these blocks will be empty
-        toBlockStmt(call->get(1))->insertAtTail(buildIteratorCall(NULL, INIT, iterators.v[i], children));
-        toBlockStmt(call->get(3))->insertAtTail(buildIteratorCall(NULL, INCR, iterators.v[i], children));
+        initBlock->insertAtTail(buildIteratorCall(NULL, INIT, iterators.v[i], children));
+        incrBlock->insertAtTail(buildIteratorCall(NULL, INCR, iterators.v[i], children));
 
       } else {
         // for dynamically dispatched iterators, conditional checks and other
@@ -1651,10 +1638,10 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAfter (buildIteratorCall(NULL, ZIP4, iterators.v[i], children));
 
       if (isBoundedIterator(iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer)) {
-        if (!firstCond) {
+        if (testBlock == NULL) {
           if (isNotDynIter) {
             // note that we have found the first test
-            firstCond = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
+            testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
 
           } else {
             // note that we have found the first test block and add checks for
@@ -1667,14 +1654,14 @@ expandForLoop(ForLoop* forLoop) {
             forLoop->insertBefore(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
             forLoop->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
 
-            firstCond = new BlockStmt(new SymExpr(cond));
+            testBlock = new BlockStmt(new SymExpr(cond));
           }
 
         } else if (!fNoBoundsChecks) {
           // for all but the first iterator add checks at the begining of each loop run
           // and a final one after to make sure the other iterators don't finish before
           // the "leader" and they don't have more afterwards.
-          VarSymbol* hasMore    = newTemp("hasMore", dtBool);
+          VarSymbol* hasMore    = newTemp("hasMore",    dtBool);
           VarSymbol* isFinished = newTemp("isFinished", dtBool);
 
           forLoop->insertBefore(new DefExpr(isFinished));
@@ -1699,17 +1686,29 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAtHead(buildIteratorCall(NULL, ZIP2, iterators.v[i], children));
     }
 
+    forLoop->insertAtHead(index->defPoint->remove());
+
     // Even for zippered iterators we only have one conditional test for the
     // loop. This takes that conditional and puts it into the test segment of
     // the c for loop.
-    if (firstCond)
-      testBlock = firstCond;
-    else
+    if (testBlock == NULL) {
+      testBlock = new BlockStmt();
+
       testBlock->insertAtTail(new SymExpr(gTrue));
+    }
 
-    call->get(2)->replace(testBlock);
+    // NOAKES 2014/11/19: An error occurs if the replacement is moved to
+    // earlier in the pass.  I have yet to identify the issue but suspect
+    // that doing the copy too soon causes variables to cross from one
+    // scope to another if done in mid-transformation.
+    CForLoop* cforLoop = CForLoop::buildWithBodyFrom(forLoop);
 
-    forLoop->insertAtHead(index->defPoint->remove());
+    cforLoop->blockInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
+                                        initBlock,
+                                        testBlock,
+                                        incrBlock));
+
+    forLoop->replace(cforLoop);
   }
 }
 

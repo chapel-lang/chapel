@@ -23,6 +23,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
+#include "ForLoop.h"
 
 #include <algorithm>
 
@@ -59,6 +60,30 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
   return retval;
 }
 
+CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
+{
+  SymbolMap map;
+  CForLoop* retval = new CForLoop();
+
+  retval->astloc        = forLoop->astloc;
+  retval->blockTag      = forLoop->blockTag;
+  retval->breakLabel    = forLoop->breakLabel;
+  retval->continueLabel = forLoop->continueLabel;
+
+  if (forLoop->modUses   != 0)
+    retval->modUses = forLoop->modUses->copy(&map, true);
+
+  if (forLoop->byrefVars != 0)
+    retval->byrefVars = forLoop->byrefVars->copy(&map, true);
+
+  for_alist(expr, forLoop->body)
+    retval->insertAtTail(expr->copy(&map, true));
+
+  update_symbols(retval, &map);
+
+  return retval;
+}
+
 /************************************ | *************************************
 *                                                                           *
 * Instance methods                                                          *
@@ -77,8 +102,8 @@ CForLoop::CForLoop(CallExpr*  cforInfo,
 }
 
 CForLoop::CForLoop(BlockStmt* initBody,
-                 VarSymbol* index,
-                 VarSymbol* iterator) : BlockStmt(initBody)
+                   VarSymbol* index,
+                   VarSymbol* iterator) : BlockStmt(initBody)
 {
   blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
 }
@@ -371,7 +396,8 @@ std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
 
   // remove the last character if any were generated (it's a trailing comma
   // since we previously had an appropriate "trailing" semicolon
-  if (seg.size () > 0)  seg.resize (seg.size () - 1);
+  if (seg.size () > 0)
+    seg.resize (seg.size () - 1);
 
   return seg;
 }
@@ -395,8 +421,7 @@ GenRet CForLoop::codegenCForLoopCondition(BlockStmt* block)
 #endif
 }
 
-void
-CForLoop::accept(AstVisitor* visitor) {
+void CForLoop::accept(AstVisitor* visitor) {
   if (visitor->enterCForLoop(this) == true) {
     CallExpr* blockInfo = blockInfoGet();
 

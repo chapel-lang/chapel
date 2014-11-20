@@ -432,7 +432,8 @@ std::string ForLoop::codegenCForLoopHeader(BlockStmt* block)
 
   // remove the last character if any were generated (it's a trailing comma
   // since we previously had an appropriate "trailing" semicolon
-  if (seg.size () > 0)  seg.resize (seg.size () - 1);
+  if (seg.size () > 0)
+    seg.resize (seg.size () - 1);
 
   return seg;
 }
@@ -456,8 +457,7 @@ GenRet ForLoop::codegenCForLoopCondition(BlockStmt* block)
 #endif
 }
 
-void
-ForLoop::accept(AstVisitor* visitor) {
+void ForLoop::accept(AstVisitor* visitor) {
   if (visitor->enterForLoop(this) == true) {
     CallExpr* blockInfo = blockInfoGet();
 
