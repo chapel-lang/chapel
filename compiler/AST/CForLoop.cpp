@@ -39,15 +39,20 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
   CForLoop*    loop          = new CForLoop(call, body);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
+
+  Expr*        initClause    = call->get(1)->copy();
+  Expr*        testClause    = call->get(2)->copy();
+  Expr*        incrClause    = call->get(3)->copy();
+
+  BlockStmt*   initBlock     = new BlockStmt(initClause, BLOCK_C_FOR_LOOP);
+  BlockStmt*   testBlock     = new BlockStmt(testClause, BLOCK_C_FOR_LOOP);
+  BlockStmt*   incrBlock     = new BlockStmt(incrClause, BLOCK_C_FOR_LOOP);
+
   BlockStmt*   retval        = buildChapelStmt();
 
-  // C for loops have the form:
-  //   __primitive("C for loop", initExpr, testExpr, incrExpr)
-  //
-  // This simply wraps the init, test, and incr expr with block stmts
-  call->get(1)->replace(new BlockStmt(call->get(1)->copy()));
-  call->get(2)->replace(new BlockStmt(call->get(2)->copy()));
-  call->get(3)->replace(new BlockStmt(call->get(3)->copy()));
+  call->get(1)->replace(initBlock);
+  call->get(2)->replace(testBlock);
+  call->get(3)->replace(incrBlock);
 
   loop->continueLabel = continueLabel;
   loop->breakLabel    = breakLabel;
@@ -171,6 +176,32 @@ bool CForLoop::deadBlockCleanup()
   }
 
   return retval;
+}
+
+void CForLoop::verify()
+{
+  BlockStmt::verify();
+
+  if (blockInfoGet() == 0)
+    INT_FATAL(this, "CForLoop::verify. blockInfo is NULL");
+
+  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) == false)
+    INT_FATAL(this, "CForLoop::verify. blockInfo type is not PRIM_BLOCK_C_FOR_LOOP");
+
+  if (toBlockStmt(blockInfoGet()->get(1))->blockTag != BLOCK_C_FOR_LOOP)
+    INT_FATAL(this, "CForLoop::verify. initBlock is not BLOCK_C_FOR_LOOP");
+
+  if (toBlockStmt(blockInfoGet()->get(2))->blockTag != BLOCK_C_FOR_LOOP)
+    INT_FATAL(this, "CForLoop::verify. testBlock is not BLOCK_C_FOR_LOOP");
+
+  if (toBlockStmt(blockInfoGet()->get(3))->blockTag != BLOCK_C_FOR_LOOP)
+    INT_FATAL(this, "CForLoop::verify. incrBlock is not BLOCK_C_FOR_LOOP");
+
+  if (modUses   != 0)
+    INT_FATAL(this, "CForLoop::verify. modUses   is not NULL");
+
+  if (byrefVars != 0)
+    INT_FATAL(this, "CForLoop::verify. byrefVars is not NULL");
 }
 
 GenRet CForLoop::codegen()

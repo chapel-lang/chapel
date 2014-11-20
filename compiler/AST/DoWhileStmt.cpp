@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,7 @@
 *                                                                           *
 ************************************* | ************************************/
 
-BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body) 
+BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 {
   VarSymbol*   condVar       = newTemp();
   CallExpr*    condTest      = new CallExpr("_cond_test", cond);
@@ -79,7 +79,7 @@ DoWhileStmt::~DoWhileStmt()
 
 }
 
-DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal) 
+DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
 {
   DoWhileStmt* retval = new DoWhileStmt(NULL);
 
@@ -93,7 +93,15 @@ bool DoWhileStmt::isDoWhileLoop() const
   return true;
 }
 
-GenRet DoWhileStmt::codegen() 
+void DoWhileStmt::verify()
+{
+  WhileStmt::verify();
+
+  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) == false)
+    INT_FATAL(this, "DoWhileStmt::verify. blockInfo type is not PRIM_BLOCK_DOWHILE_LOOP");
+}
+
+GenRet DoWhileStmt::codegen()
 {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -115,9 +123,9 @@ GenRet DoWhileStmt::codegen()
     std::string ftr= "} while (" + codegenValue(blockInfo->get(1)).c + ");\n";
 
     info->cStatements.push_back(ftr);
-  } 
+  }
 
-  else 
+  else
   {
 #ifdef HAVE_LLVM
     llvm::Function*   func             = info->builder->GetInsertBlock()->getParent();
@@ -144,7 +152,7 @@ GenRet DoWhileStmt::codegen()
     body.codegen("");
 
     info->lvt->removeLayer();
-    
+
     // Add the condition block.
     blockStmtEndCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end_cond"));
 
@@ -183,7 +191,7 @@ GenRet DoWhileStmt::codegen()
   return ret;
 }
 
-void 
+void
 DoWhileStmt::accept(AstVisitor* visitor) {
   if (visitor->enterDoWhileStmt(this) == true) {
     CallExpr* blockInfo = blockInfoGet();

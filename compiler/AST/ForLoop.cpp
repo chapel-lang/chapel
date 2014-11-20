@@ -150,6 +150,13 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   return retval;
 }
 
+BlockStmt* ForLoop::copyBody()
+{
+  SymbolMap map;
+
+  return copyBody(&map);
+}
+
 BlockStmt* ForLoop::copyBody(SymbolMap* map)
 {
   BlockStmt* retval = new BlockStmt();
@@ -207,6 +214,23 @@ bool ForLoop::deadBlockCleanup()
   }
 
   return retval;
+}
+
+void ForLoop::verify()
+{
+  BlockStmt::verify();
+
+  if (blockInfoGet() == 0)
+    INT_FATAL(this, "ForLoop::verify. blockInfo is NULL");
+
+  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) == false)
+    INT_FATAL(this, "ForLoop::verify. blockInfo type is not PRIM_BLOCK_FOR_LOOP");
+
+  if (modUses   != 0)
+    INT_FATAL(this, "ForLoop::verify. modUses   is not NULL");
+
+  if (byrefVars != 0)
+    INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
 }
 
 GenRet ForLoop::codegen()

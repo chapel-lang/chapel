@@ -57,6 +57,7 @@ enum BlockTag {
   BLOCK_SCOPELESS   = 1<<0, ///< does not introduce a new scope
   BLOCK_TYPE_ONLY   = 1<<1, ///< deleted after type resolution
   BLOCK_EXTERN      = 1<<2, ///< init block for an extern var
+  BLOCK_C_FOR_LOOP  = 1<<3, ///< init/test/incr block for a CForLoop
 // Bit masks:
   BLOCK_TYPE        = BLOCK_SCOPELESS | BLOCK_TYPE_ONLY,
 };

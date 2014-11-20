@@ -43,6 +43,7 @@ public:
   virtual bool           isDoWhileLoop()                              const;
 
   virtual GenRet         codegen();
+  virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
 
 private:

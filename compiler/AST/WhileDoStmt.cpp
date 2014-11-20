@@ -111,6 +111,14 @@ bool WhileDoStmt::isWhileDoLoop() const
   return true;
 }
 
+void WhileDoStmt::verify()
+{
+  WhileStmt::verify();
+
+  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) == false)
+    INT_FATAL(this, "WhileDoStmt::verify. blockInfo type is not PRIM_BLOCK_WHILEDO_LOOP");
+}
+
 GenRet WhileDoStmt::codegen()
 {
   GenInfo* info    = gGenInfo;
@@ -209,8 +217,7 @@ GenRet WhileDoStmt::codegen()
   return ret;
 }
 
-void
-WhileDoStmt::accept(AstVisitor* visitor) {
+void WhileDoStmt::accept(AstVisitor* visitor) {
   if (visitor->enterWhileDoStmt(this) == true) {
     CallExpr* blockInfo = blockInfoGet();
 
