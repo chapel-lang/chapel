@@ -45,6 +45,7 @@ public:
   virtual CForLoop*      copy(SymbolMap* map = NULL, bool internal = false);
 
   virtual GenRet         codegen();
+  virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
 
   virtual bool           isLoop()                                     const;

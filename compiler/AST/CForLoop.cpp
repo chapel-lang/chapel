@@ -173,6 +173,23 @@ bool CForLoop::deadBlockCleanup()
   return retval;
 }
 
+void CForLoop::verify()
+{
+  BlockStmt::verify();
+
+  if (blockInfoGet() == 0)
+    INT_FATAL(this, "CForLoop::verify. blockInfo is NULL");
+
+  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) == false)
+    INT_FATAL(this, "CForLoop::verify. blockInfo type is not PRIM_BLOCK_C_FOR_LOOP");
+
+  if (modUses   != 0)
+    INT_FATAL(this, "CForLoop::verify. modUses   is not NULL");
+
+  if (byrefVars != 0)
+    INT_FATAL(this, "CForLoop::verify. byrefVars is not NULL");
+}
+
 GenRet CForLoop::codegen()
 {
   GenInfo* info    = gGenInfo;
