@@ -1138,16 +1138,12 @@ expandIteratorInline(ForLoop* forLoop) {
     if (preserveInlinedLineNumbers == false)
       reset_ast_loc(ibody, call);
 
-    // The for loop primitive is removed
-    call->remove();
-
     // and the entire for loop block is replaced by the iterator body.
     forLoop->replace(ibody);
 
     // Now replace yield statements in the inlined iterator body with copies
     // of the body of the for loop that invoked the iterator, substituting
     // the yielded index for the iterator formal.
-
     expandBodyForIteratorInline(forLoop, ibody, index);
 
     collect_asts(ibody, asts);
@@ -1187,7 +1183,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 
         map.put(index, yieldedIndex);
 
-        bodyCopy = forLoop->copy(&map);
+        bodyCopy = forLoop->copyBody(&map);
 
         if (int count = countEnclosingLocalBlocks(call, ibody)) {
           for (int i = 0; i < count; i++) {
