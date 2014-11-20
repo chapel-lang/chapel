@@ -418,7 +418,7 @@ void reorderActuals(FnSymbol* fn,
     return;  // no way we will need to reorder
 
   bool need_to_reorder = false;
-  int formals_to_formals[numArgs];
+  std::vector<int> formals_to_formals(numArgs);
   int i = 0;
   for_formals(formal, fn) {
     i++;
@@ -445,8 +445,8 @@ void reorderActuals(FnSymbol* fn,
     // reorder CallInfo data as well
     // ideally this would be encapsulated in within the CallInfo class
     INT_ASSERT(info->actuals.n == numArgs);
-    Symbol* ciActuals[numArgs];
-    const char* ciActualNames[numArgs];
+    std::vector<Symbol*> ciActuals(numArgs);
+    std::vector<const char*> ciActualNames(numArgs);
     for (i = 0; i < numArgs; i++)
       ciActuals[i] = info->actuals.v[i],
       ciActualNames[i] = info->actualNames.v[i];
