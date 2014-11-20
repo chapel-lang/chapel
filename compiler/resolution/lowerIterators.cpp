@@ -1592,24 +1592,11 @@ expandForLoop(ForLoop* forLoop) {
     VarSymbol*   index     = toVarSymbol(se1->var);
 
     BlockStmt*   firstCond = NULL;
+    BlockStmt*   initBlock = new BlockStmt();
     BlockStmt*   testBlock = new BlockStmt();
-
-    CallExpr*    call      = forLoop->blockInfoGet();
+    BlockStmt*   incrBlock = new BlockStmt();
 
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
-
-    // Convert loop to c for loop and add empty blocks for init, test, and incr
-    // Not all loops need to be converted, only if the iterator has a c for
-    // loop, but it doesn't hurt to convert them all.
-    for_alist(expr, call->argList) {
-      expr->remove();
-    }
-
-    call->primitive = primitives[PRIM_BLOCK_C_FOR_LOOP];
-
-    for (int i = 0; i < 3; i++) {
-      call->insertAtTail(new BlockStmt());
-    }
 
     // For each iterator we add the zip* functions in the appropriate place and
     // if bounds checking was on, we insert the code for that. Note that this
@@ -1634,8 +1621,8 @@ expandForLoop(ForLoop* forLoop) {
         // add the init, and incr functions to the init, and incr blocks of the
         // c for loop. If the underlying iterator does not have a c for loop,
         // these blocks will be empty
-        toBlockStmt(call->get(1))->insertAtTail(buildIteratorCall(NULL, INIT, iterators.v[i], children));
-        toBlockStmt(call->get(3))->insertAtTail(buildIteratorCall(NULL, INCR, iterators.v[i], children));
+        initBlock->insertAtTail(buildIteratorCall(NULL, INIT, iterators.v[i], children));
+        incrBlock->insertAtTail(buildIteratorCall(NULL, INCR, iterators.v[i], children));
 
       } else {
         // for dynamically dispatched iterators, conditional checks and other
@@ -1674,7 +1661,7 @@ expandForLoop(ForLoop* forLoop) {
           // for all but the first iterator add checks at the begining of each loop run
           // and a final one after to make sure the other iterators don't finish before
           // the "leader" and they don't have more afterwards.
-          VarSymbol* hasMore    = newTemp("hasMore", dtBool);
+          VarSymbol* hasMore    = newTemp("hasMore",    dtBool);
           VarSymbol* isFinished = newTemp("isFinished", dtBool);
 
           forLoop->insertBefore(new DefExpr(isFinished));
@@ -1707,7 +1694,19 @@ expandForLoop(ForLoop* forLoop) {
     else
       testBlock->insertAtTail(new SymExpr(gTrue));
 
-    call->get(2)->replace(testBlock);
+    CallExpr*    call      = forLoop->blockInfoGet();
+
+    // Convert loop to c for loop and add empty blocks for init, test, and incr
+    // Not all loops need to be converted, only if the iterator has a c for
+    // loop, but it doesn't hurt to convert them all.
+    for_alist(expr, call->argList) {
+      expr->remove();
+    }
+
+    call->primitive = primitives[PRIM_BLOCK_C_FOR_LOOP];
+    call->insertAtTail(initBlock);
+    call->insertAtTail(testBlock);
+    call->insertAtTail(incrBlock);
 
     forLoop->insertAtHead(index->defPoint->remove());
   }
