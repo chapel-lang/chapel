@@ -611,7 +611,12 @@ if ($runtests == 0) {
     close(MAIL);
     
 } else {
-    my $svnPerfDir = $cronlogdir;
+
+    my $svnPerfDir = $ENV{'CHPL_TEST_PERF_DIR'};
+    if ($compperformance == 1) {
+        $svnPerfDir = $ENV{'CHPL_TEST_COMP_PERF_DIR'};
+    }
+
     my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
     if ($performance == 1 || $compperformance == 1) {
 

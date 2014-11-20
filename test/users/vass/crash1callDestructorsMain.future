@@ -3,6 +3,13 @@ bug: compiler crashes with assertion error [callDestructors.cpp:256]
 NOTE: It is currently skipif'ed for --no-local/etc.
 Once this test works for --local, enable it for --no-local and re-test.
 
+NOTE: crash1callDestructorsAddon.chpl replicates half of
+crash1callDestructorsMain.chpl *intentionally*.
+
+11/19/2014: the failure mode is:
+internal error: assertion error [callDestructors.cpp:671]
+
+Previously:
 The current failure mode under --no-local --devel is:
 $CHPL_HOME/modules/internal/ChapelDistribution.chpl:114: In function 'destroyDom':
 $CHPL_HOME/modules/internal/ChapelDistribution.chpl:123: error: SymExpr::var::defPoint is not in AST [expr.cpp:263]

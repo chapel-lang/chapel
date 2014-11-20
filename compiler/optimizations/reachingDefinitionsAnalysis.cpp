@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include <vector>
+
 #include "optimizations.h"
 
 #include "astutil.h"
@@ -46,9 +48,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   // buildDefUseMaps, but is computed from the defSet in this more
   // efficient manner
   //
-  int localDefs[locals.n];
-  for (int i = 0; i < locals.n; i++)
-    localDefs[i] = 0;
+  std::vector<int> localDefs(locals.n);
   forv_Vec(SymExpr, se, defSet) {
     if (se) {
       localDefs[localMap.get(se->var)]++;
