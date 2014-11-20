@@ -1,1 +1,3 @@
-m-lammps.good
+-- LAMMPS - (Parallel,Chapel) -- 
+i=1 positions[111]=(11.7577, 4.19786, 0.837228)
+i=4 positions[111]=(11.7593, 4.19446, 0.829584)
