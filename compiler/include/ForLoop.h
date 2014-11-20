@@ -53,6 +53,7 @@ public:
 
   virtual bool           deadBlockCleanup();
 
+  BlockStmt*             copyBody();
   BlockStmt*             copyBody(SymbolMap* map);
 
 private:

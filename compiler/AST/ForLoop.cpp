@@ -150,6 +150,13 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   return retval;
 }
 
+BlockStmt* ForLoop::copyBody()
+{
+  SymbolMap map;
+
+  return copyBody(&map);
+}
+
 BlockStmt* ForLoop::copyBody(SymbolMap* map)
 {
   BlockStmt* retval = new BlockStmt();
