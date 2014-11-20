@@ -18,7 +18,6 @@ if ($version eq "") {
 } else {
     $version = "-$version";
 }
-$reldir = "chapel$version";
 
 $origCwd = abs_path(cwd());
 
@@ -36,11 +35,13 @@ if (exists($ENV{"CHPL_HOME"})) {
 $no_clone = 0;
 $archive_dir = "";
 $resultdir = "";
+$reldir = ""
 if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     $no_clone = 1;
     $archive_dir = $chplhome;
     $rootdir = $chplhome;
     $resultdir = "$chplhome/tar";
+    $reldir = ".";
 }
 
 if ($no_clone == 0) {
@@ -54,6 +55,7 @@ if ($no_clone == 0) {
     }
     $tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
 
+    $reldir = "chapel$version";
     $rootdir = "$tmpdir/$reldir";
     $git_url = $ENV{'CHPL_HOME_REPOSITORY'};
     if ($git_url eq "") {
@@ -212,10 +214,11 @@ if (! -d $resultdir) {
     mkpath($resultdir, 1);
 }
 
-$cmd = "tar -cz -f $resultdir/$reldir.tar.gz @tarfiles";
+$tarball_name = "$resultdir/chapel$version.tar.gz"
+$cmd = "tar -cz -f $tarball_name @tarfiles";
 print "$cmd\n";
 system ($cmd);
 
-print "Left result in $resultdir/$reldir.tar.gz\n";
+print "Left result in $tarball_name\n";
 
 chdir $origCwd;
