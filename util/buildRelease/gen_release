@@ -215,7 +215,7 @@ if (! -d $resultdir) {
 }
 
 $tarball_name = "$resultdir/chapel$version.tar.gz";
-$cmd = "tar -cz -f $tarball_name @tarfiles";
+$cmd = "tar -cz -s '/./chapel$version/' -f $tarball_name @tarfiles";
 print "$cmd\n";
 system ($cmd);
 
