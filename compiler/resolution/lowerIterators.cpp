@@ -1591,9 +1591,8 @@ expandForLoop(ForLoop* forLoop) {
     SymExpr*     se1       = toSymExpr(forLoop->blockInfoGet()->get(1));
     VarSymbol*   index     = toVarSymbol(se1->var);
 
-    BlockStmt*   firstCond = NULL;
     BlockStmt*   initBlock = new BlockStmt();
-    BlockStmt*   testBlock = new BlockStmt();
+    BlockStmt*   testBlock = NULL;
     BlockStmt*   incrBlock = new BlockStmt();
 
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
@@ -1638,10 +1637,10 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAfter (buildIteratorCall(NULL, ZIP4, iterators.v[i], children));
 
       if (isBoundedIterator(iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer)) {
-        if (!firstCond) {
+        if (testBlock == NULL) {
           if (isNotDynIter) {
             // note that we have found the first test
-            firstCond = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
+            testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
 
           } else {
             // note that we have found the first test block and add checks for
@@ -1654,7 +1653,7 @@ expandForLoop(ForLoop* forLoop) {
             forLoop->insertBefore(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
             forLoop->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
 
-            firstCond = new BlockStmt(new SymExpr(cond));
+            testBlock = new BlockStmt(new SymExpr(cond));
           }
 
         } else if (!fNoBoundsChecks) {
@@ -1689,12 +1688,13 @@ expandForLoop(ForLoop* forLoop) {
     // Even for zippered iterators we only have one conditional test for the
     // loop. This takes that conditional and puts it into the test segment of
     // the c for loop.
-    if (firstCond)
-      testBlock = firstCond;
-    else
-      testBlock->insertAtTail(new SymExpr(gTrue));
+    if (testBlock == NULL) {
+      testBlock = new BlockStmt();
 
-    CallExpr*    call      = forLoop->blockInfoGet();
+      testBlock->insertAtTail(new SymExpr(gTrue));
+    }
+
+    CallExpr* call = forLoop->blockInfoGet();
 
     // Convert loop to c for loop and add empty blocks for init, test, and incr
     // Not all loops need to be converted, only if the iterator has a c for
