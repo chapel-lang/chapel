@@ -36,12 +36,20 @@ $no_clone = 0;
 $archive_dir = "";
 $resultdir = "";
 $reldir = "";
+$transform_args = "";
 if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     $no_clone = 1;
     $archive_dir = $chplhome;
     $rootdir = $chplhome;
     $resultdir = "$chplhome/tar";
     $reldir = ".";
+
+    $tar_version = `tar --version`;
+    if ( $tar_version =~ /bsd/ ) {
+        $transform_args = "-s '/./chapel$version/'";
+    } else {
+        $transform_args = "--transform 's/./chapel$version/'"
+    }
 }
 
 if ($no_clone == 0) {
@@ -215,8 +223,7 @@ if (! -d $resultdir) {
 }
 
 $tarball_name = "$resultdir/chapel$version.tar.gz";
-$cmd = "tar -cz -s '/./chapel$version/' -f $tarball_name @tarfiles";  # works on darwin (bsd tar)
-$cmd = "gtar -cz --transform 's/./chapel$version/' -f $tarball_name @tarfiles";  # works on linux (gnu tar)
+$cmd = "gtar -cz $transform_args -f $tarball_name @tarfiles";
 print "$cmd\n";
 system ($cmd);
 
