@@ -30,7 +30,6 @@ module ChapelRange {
   config param useOptimizedRangeIterators = true;
 
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
-  enum RangeStrideSign { pos, neg, unknown };
   
   //
   // range type
@@ -703,33 +702,6 @@ module ChapelRange {
     return chpl_by_help(r, step);
   }
 
-/*
-  proc by(r : range(?i,?b,?s), param step:chpl__unsignedType(i))
-  {
-    if (step == 0) then
-      compilerError("the 'by' operator cannot take a value of zero");
-
-  // This should work, but doesn't correctly -- test/types/range/hilde/by.chpl
-  // is max(step.type) not correctly a param in some way?
-  /*
-    if (step == max(step.type)) then
-      compilerError("the 'by' operator cannot take a value this large");
-  */
-
-    return chpl_by_help(r, step);
-  }
-
-
-  proc by(r : range(?i,?b,?s), param step:chpl__signedType(i))
-  {
-    if (step == 0) then
-      compilerError("the 'by' operator cannot take a value of zero");
-
-    return chpl_by_help(r, step);
-  }
-*/
-
-
   proc by(r : range(?i,?b,?s), step)
   {
     compilerError("can't apply 'by' to a range with idxType ", 
@@ -1036,9 +1008,8 @@ module ChapelRange {
   //# strides that are known at compile time.
   //#
 
-  iter _direct_range_iter(const start: ?t, const end: t, const stride: ?strT)
+  iter _direct_uint_stride_range_iter(const start: ?t, const end: t, const stride: ?strT)
     where isIntegral(t) && chpl__unsignedType(t) == strT {
-
     if (useOptimizedRangeIterators) {
       if boundsChecking {
         var r = start..end by stride;
@@ -1059,7 +1030,7 @@ module ChapelRange {
     }
   }
 
-  iter _direct_range_iter(const start: ?t, const end: t, param stride: ?strT)
+  iter _direct_param_stride_range_iter(const start: ?t, const end: t, param stride: ?strT)
     where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
 
     if (useOptimizedRangeIterators) {
@@ -1093,7 +1064,7 @@ module ChapelRange {
     }
   }
 
-  iter _direct_range_iter(param start: ?t, param end: t, param stride: ?strT)
+  /*iter _direct_range_iter(param start: ?t, param end: t, param stride: ?strT)
     where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
     if (useOptimizedRangeIterators) {
       if boundsChecking {
@@ -1125,18 +1096,83 @@ module ChapelRange {
       }
     }
 
-  }
+  }*/
 
   // to avoid having to deal with cases like for i in s..e by str where str
   // isn't know at compile time, just build a non-anonymous range and iterate
   // over it. This is also the base case where any type mismatches will be
   // handled by existing range code
-  iter _direct_range_iter(start, end, stride)
+
+  // int start and end versions
+  iter _direct_range_iter(start: int(?w), end: int(w), stride: int(w))
+  {
+    // don't want to deal with finding chpl__diffMod and the likes, just create
+    // a non-anonymous range to iterate over
+    var r = start..end by stride;
+    for i in r {
+      yield i;
+    }
+  }
+
+  iter _direct_range_iter(start: int(?w), end: int(w), param stride : int(w))
+  {
+    for i in _direct_param_stride_range_iter(start, end, stride) {
+      yield i;
+    }
+  }
+
+  iter _direct_range_iter(start: int(?w), end: int(w), stride: uint(w))
+  {
+    for i in _direct_uint_stride_range_iter(start, end, stride) {
+      yield i;
+    }
+  }
+
+  iter _direct_range_iter(start: int(?w), end: int(w), stride)
+  {
+    compilerError("can't apply 'by' to a range with idxType ",
+                  typeToString(int(w)), " using a step of type ",
+                  typeToString(stride.type));
+    yield nil;
+  }
+
+
+  // uint start and end versions
+  iter _direct_range_iter(start: uint(?w), end: uint(w), stride: int(w))
   {
     var r = start..end by stride;
     for i in r {
       yield i;
     }
+  }
+
+  iter _direct_range_iter(start: uint(?w), end: uint(w), param stride: int(w))
+  {
+    for i in _direct_param_stride_range_iter(start, end, stride) {
+      yield i;
+    }
+  }
+
+  iter _direct_range_iter(start: uint(?w), end: uint(w), stride: uint(w))
+  {
+    for i in _direct_uint_stride_range_iter(start, end, stride) {
+      yield i;
+    }
+  }
+
+  iter _direct_range_iter(start: uint(?w), end: uint(w), stride)
+  {
+    compilerError("can't apply 'by' to a range with idxType ",
+                  typeToString(uint(w)), " using a step of type ",
+                  typeToString(stride.type));
+    yield nil;
+  }
+
+  // fallout for when start aren't and can't be coered to similiar types
+  iter _direct_range_iter(start, end, stride)
+  {
+    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+    yield nil;
   }
 
   //################################################################################
