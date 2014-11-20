@@ -8,7 +8,10 @@
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/functions.bash
 
+# Tell gen_release to use existing repo instead of creating a new one with
+# git-archive.
 export CHPL_GEN_RELEASE_NO_CLONE=true
+
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
