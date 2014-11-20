@@ -223,7 +223,7 @@ if (! -d $resultdir) {
 }
 
 $tarball_name = "$resultdir/chapel$version.tar.gz";
-$cmd = "gtar -cz $transform_args -f $tarball_name @tarfiles";
+$cmd = "tar -cz $transform_args -f $tarball_name @tarfiles";
 print "$cmd\n";
 system ($cmd);
 
