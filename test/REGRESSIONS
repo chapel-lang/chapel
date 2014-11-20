@@ -52,11 +52,30 @@ general
 Reviewed 2014-11-14
 ===================
 
+error syncing compiler perf graphs due to "SUCCESS file did not exist in /data/sea/chapel/Nightly/html/" (2014-11-19 -- elliot)
+(fast, linux64, no-local)
+-------------------------------------------------------------------------------------------------------------------------------
+ERROR syncing performance graph to sourceforge -- log file at /data/sea/chapel/Nightly/syncToSourceForge.errors: 124
+
+
+new internal module ChapelIteratorSupport (2014-11-19 -- david)
+(darwin, fifo, gnu.darwin, linux64, no-local, xe-wb.*, numa, gasnet-everything, gasnet.fifo)
+--------------------------------------------------------------------------------------------
+[Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
+
+
+new errors in .bad files (2014-11-19 -- vass?)
+(darwin, fifo, gnu.darwin, linux64, no-local, xe-wb.*, numa, gasnet-everything, gasnet.fifo)
+--------------------------------------------------------------------------------------------
+[Error matching .bad file for parallel/begin/sungeun/autoCopyWithBegin (compopts: 1)]
+[Error matching .bad file for users/vass/crash1callDestructorsMain]
+
+
 failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
 (linux32, x?-wb.*)
 --------------------------------------------------------------------------
-[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)] (passed on 2014-11-16)
-[Error running sub_test in /.../test/studies/lsms/shemmy (255)] (passed for xe-wb.gnu on 2014-11-16)
+[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)] (passed on 2014-11-16, 2014-11-18)
+[Error running sub_test in /.../test/studies/lsms/shemmy (255)] (passed for xe-wb.gnu on 2014-11-16, 2014-11-18)
 [Error matching program output for studies/filerator/walk (execopts: 9)]
 
 
@@ -135,7 +154,7 @@ timeout (2014-11-12, first run)
 sporadic timeout
 ----------------
 [Error: Timed out executing program stress/deitz/test_10k_begins] (2014-11-12, first run)
-[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12, 2014-11-16)
+[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12, 2014-11-16, 2014-11-18, 2014-11-19)
 
 sporadic signal 11
 ------------------
@@ -199,6 +218,21 @@ Reviewed 2014-11-16
 ===================
 
 
+====================
+perf.chapel-shootout
+Inherits 'perf*'
+Reviewed 2014-11-18
+====================
+
+consistent failure due to insane memory usage (should get better with strings)
+------------------------------------------------------------------------------
+[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
+
+error syncing perf graphs to sourceforge
+----------------------------------------
+ERROR syncing performance graph to sourceforge -- log file at /tmp/chapel_logs/NightlyPerformance/shootout/syncToSourceForge.errors: 124 (2014-11-18)
+
+
 ===================
 fast
 Inherits 'general'
@@ -257,7 +291,7 @@ sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for studies/sudoku/dinan/sudoku] (2014-10-19, 2014-10-21, 2014-10-25, 2014-10-30)
-[Error matching program output for performance/sungeun/dgemm] (2014-11-16)
+[Error matching program output for performance/sungeun/dgemm] (2014-11-16, 2014-11-17, 2014-11-18)
 
 
 ===================
@@ -284,6 +318,12 @@ Inherits 'general'
 Reviewed 2014-11-16
 ===================
 
+increased memory leak counts (2014-11-19 -- vass)
+-------------------------------------------------
+[Error matching program output for memory/figueroa/LeakedMemory2]
+[Error matching program output for memory/figueroa/LeakedMemory5 (compopts: 1)]
+[Error matching program output for memory/figueroa/LeakedMemory6 (compopts: 1)]
+[Error matching program output for types/string/StringImpl/memLeaks/promotion]
 
 ===================
 no-local
@@ -312,6 +352,9 @@ Inherits 'gasnet*'
 Reviewed 2014-11-14
 ===================
 
+increase in memory leaked (2014-11-19 -- tom)
+---------------------------------------------
+[Error matching program output for memory/sungeun/refCount/domainMaps]
 
 === sporadic failures below ===
 
@@ -371,7 +414,7 @@ consistent timeouts
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23, 2014-11-02, 2014-11-05, 2014-11-13, 2014-11-16)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23, 2014-11-02, 2014-11-05, 2014-11-13, 2014-11-16, 2014-11-18)
 
 sporadic timeouts (frequent)
 ----------------------------
@@ -385,6 +428,11 @@ sporadic timeouts (infrequent)
 sporadic glibc "invalid next size" (once)
 -----------------------------------------
 [Error matching program output for users/jglewis/SSCA2_sync_array_initialization_bug] (2014-10-31)
+
+sporadic "Caught a fatal signal: SIGSEGV(11) on node 1/2" (tom/kyle)
+--------------------------------------------------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/begin] (2014-11-18)
+[Error matching program output for types/string/StringImpl/memLeaks/concat] (2014-11-19)
 
 
 ===================
@@ -413,11 +461,6 @@ Reviewed 2014-11-09
 Inherits '*prgenv-*'
 Reviewed 2014-11-09
 ====================
-
-empty array size problem (2014-01-25)
--------------------------------------
-[Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
-[Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
 
 infinite loop warning (since filed?)
 ------------------------------------
@@ -556,13 +599,6 @@ Inherits 'x?-wb*' and '*intel*'
 Reviewed 2014-11-16
 ===============================
 
-intel warning "icc: command line warning #10121: overriding '-std=gnu99' with '-std=c99'" (2014-11-16 -- ben?)
---------------------------------------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
-[Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
-[Error matching program output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
-
 
 =============================
 xc-wb.host.prgenv-intel
@@ -606,11 +642,6 @@ Inherits 'general'
 Reviewed 2014-11-14
 ===================
 
-problem with empty initializer (2014-01-25 -- bradc)
-----------------------------------------------------
-[Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
-[Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
-
 undefined reference to chpl_bitops_debruijn64 (2014-07-14)
 ----------------------------------------------------------
 [Error matching compiler output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
@@ -624,6 +655,10 @@ negative floating point 0.0 not supported
 consistent timeout
 ------------------
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
+
+target program died with signal 11, without coredump
+----------------------------------------------------
+[Error matching program output for stress/deitz/test_10k_begins] (xe-wb.prgenv-pgi  2014-11-16, xe-wb.pgi 2014-11-18)
 
 
 =============================
@@ -645,10 +680,6 @@ pgcc command line errors (unknown switch: -fopenmp and -std=c99) (2014-11-16 -- 
 [Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
 [Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
 [Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
-
-target program died with signal 11, without coredump
-----------------------------------------------------
-[Error matching program output for stress/deitz/test_10k_begins] (2014-11-16)
 
 
 ===========================
