@@ -121,7 +121,7 @@ module String {
     }
   }
 
-  //pragma "string record"
+  pragma "string record"
   pragma "ignore noinit"
   pragma "no default functions"
   record string {
@@ -211,6 +211,15 @@ module String {
 
     inline proc length return len;
     inline proc size return len;
+
+    // Steals ownership of string.base. This is unsafe and you probably don't
+    // want to use it. I'd like to figure out how to get rid of it entirely.
+    proc _steal_base() : baseType {
+      const ret = this.base;
+      this.base = _defaultOf(baseType);
+      this.len = 0;
+      return ret;
+    }
 
     // Returns a string containing the character at the given index of
     // the string, or an empty string if the index is out of bounds.
@@ -363,7 +372,7 @@ module String {
    * used by initCopy().
    */
   pragma "init copy fn"
-  inline proc chpl__initCopy(ref s: string) {
+  /*inline*/ proc chpl__initCopy(ref s: string) {
     if debugStrings then
       chpl_debug_string_print("in initCopy()");
     var ret: string;
@@ -650,7 +659,7 @@ module String {
   //
 
   // Cast from baseType to string
-  inline proc _cast(type t, cs: baseType) : string where t==string {
+  inline proc _cast(type t, cs: baseType) where t==string {
     if debugStrings then
       chpl_debug_string_print("in _cast() "+baseTypeString+"->string");
     if cs.locale.id != here.id then
@@ -665,7 +674,7 @@ module String {
   }
 
   // Other casts to strings use the baseType
-  inline proc _cast(type t, x) : string where t==string && x.type != baseType {
+  inline proc _cast(type t, x) where t==string && x.type != baseType {
     if debugStrings then
       chpl_debug_string_print("in _cast() "+typeToString(t)+"->string");
     const cs = x:c_string_copy;
@@ -682,15 +691,15 @@ module String {
   // Cast from string to the baseType
   // This currently does not allocate a new baseType string
   // It is exactly the same as string.c_str()
-  inline proc _cast(type t, s: string) : baseType where t==baseType {
-    if debugStrings then
-      chpl_debug_string_print("in _cast() string->"+baseTypeString);
-    if s.home.id != here.id then
-      halt("Cannot cast a remote string to "+baseTypeString);
-    if debugStrings then
-      chpl_debug_string_print("leaving _cast() string->"+baseTypeString);
-    return s.base;
-  }
+  //inline proc _cast(type t, s: string) : baseType where t==baseType {
+  //  if debugStrings then
+  //    chpl_debug_string_print("in _cast() string->"+baseTypeString);
+  //  if s.home.id != here.id then
+  //    halt("Cannot cast a remote string to "+baseTypeString);
+  //  if debugStrings then
+  //    chpl_debug_string_print("leaving _cast() string->"+baseTypeString);
+  //  return s.base;
+  //}
 
   // Other casts from strings use the baseType
   inline proc _cast(type t, s: string) : t where t!=baseType {
