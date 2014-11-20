@@ -1141,8 +1141,8 @@ expandIteratorInline(ForLoop* forLoop) {
     // and the entire for loop block is replaced by the iterator body.
     forLoop->replace(ibody);
 
-    // Now replace yield statements in the inlined iterator body with copies
-    // of the body of the for loop that invoked the iterator, substituting
+    // Replace yield statements in the inlined iterator body with copies
+    // of the body of the For Loop that invoked the iterator, substituting
     // the yielded index for the iterator formal.
     expandBodyForIteratorInline(forLoop, ibody, index);
 
@@ -1558,19 +1558,15 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
 
       count++;
     }
-
   }
 
   noop->remove();
   call->remove();
 }
 
-
 static void
 expandForLoop(ForLoop* forLoop) {
-  CallExpr*  call     = forLoop->blockInfoGet();
-
-  SymExpr*   se2      = toSymExpr(call->get(2));
+  SymExpr*   se2      = toSymExpr(forLoop->blockInfoGet()->get(2));
   VarSymbol* iterator = toVarSymbol(se2->var);
 
   if (!fNoInlineIterators &&
@@ -1587,17 +1583,18 @@ expandForLoop(ForLoop* forLoop) {
   } else {
     // This code handles zippered iterators, dynamic iterators, and any other
     // iterator that cannot be inlined.
-
     SET_LINENO(forLoop);
 
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
 
-    SymExpr*     se1       = toSymExpr(call->get(1));
+    SymExpr*     se1       = toSymExpr(forLoop->blockInfoGet()->get(1));
     VarSymbol*   index     = toVarSymbol(se1->var);
 
     BlockStmt*   firstCond = NULL;
     BlockStmt*   testBlock = new BlockStmt();
+
+    CallExpr*    call      = forLoop->blockInfoGet();
 
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
 
