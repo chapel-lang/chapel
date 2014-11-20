@@ -1061,8 +1061,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   forLoop->insertBefore(loopBodyFnCall);
   forLoop->insertBefore(iteratorFnCall);
 
-  SymbolMap  map;
-  BlockStmt* blockStmt = forLoop->copyBody(&map);
+  BlockStmt* blockStmt = forLoop->copyBody();
 
   // Replace the ForLoop with a BlockStmt of the body
   forLoop->replace(blockStmt);
@@ -1583,7 +1582,11 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
   }
 
   noop->remove();
-  call->remove();
+
+  // Create a true BlockStmt for the body of the ForLoop
+  BlockStmt* body = forLoop->copyBody();
+
+  forLoop->replace(body);
 }
 
 static void
