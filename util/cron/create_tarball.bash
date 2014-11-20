@@ -2,6 +2,8 @@
 #
 # Create a tarball from current repo. Beware, this will corrupt the state of
 # the repo.
+#
+# The tarball is left in root of repo in tar/ directory.
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/functions.bash
