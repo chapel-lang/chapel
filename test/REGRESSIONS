@@ -52,20 +52,14 @@ general
 Reviewed 2014-11-14
 ===================
 
-error syncing compiler perf graphs due to "SUCCESS file did not exist in /data/sea/chapel/Nightly/html/" (2014-11-19 -- elliot)
-(fast, linux64, no-local)
--------------------------------------------------------------------------------------------------------------------------------
-ERROR syncing performance graph to sourceforge -- log file at /data/sea/chapel/Nightly/syncToSourceForge.errors: 124
-
-
 new internal module ChapelIteratorSupport (2014-11-19 -- david)
-(darwin, fifo, gnu.darwin, linux64, no-local, xe-wb.*, numa, gasnet-everything, gasnet.fifo)
+(xe-wb.*, gasnet-everything, gasnet.fifo)
 --------------------------------------------------------------------------------------------
 [Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
 
 
 new errors in .bad files (2014-11-19 -- vass?)
-(darwin, fifo, gnu.darwin, linux64, no-local, xe-wb.*, numa, gasnet-everything, gasnet.fifo)
+(xe-wb.*, gasnet-everything, gasnet.fifo)
 --------------------------------------------------------------------------------------------
 [Error matching .bad file for parallel/begin/sungeun/autoCopyWithBegin (compopts: 1)]
 [Error matching .bad file for users/vass/crash1callDestructorsMain]
@@ -228,10 +222,6 @@ consistent failure due to insane memory usage (should get better with strings)
 ------------------------------------------------------------------------------
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
-error syncing perf graphs to sourceforge
-----------------------------------------
-ERROR syncing performance graph to sourceforge -- log file at /tmp/chapel_logs/NightlyPerformance/shootout/syncToSourceForge.errors: 124 (2014-11-18)
-
 
 ===================
 fast
@@ -291,7 +281,11 @@ sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for studies/sudoku/dinan/sudoku] (2014-10-19, 2014-10-21, 2014-10-25, 2014-10-30)
-[Error matching program output for performance/sungeun/dgemm] (2014-11-16, 2014-11-17, 2014-11-18)
+[Error matching program output for performance/sungeun/dgemm] (2014-11-16, 2014-11-17, 2014-11-18, 2014-11-20)
+
+sporadic execution timeout (vass)
+---------------------------------
+[Error: Timed out executing program studies/lammps/shemmy/m-lammps.valgrind] (2014-11-20)
 
 
 ===================
@@ -331,6 +325,10 @@ Inherits 'general'
 Reviewed 2014-11-16
 ===================
 
+increase in memory leaked counts (2014-11-19 -- vass)
+-----------------------------------------------------
+[Error matching program output for memory/sungeun/refCount/domainMaps]
+
 
 =================================
 no-local.linux32
@@ -352,8 +350,8 @@ Inherits 'gasnet*'
 Reviewed 2014-11-14
 ===================
 
-increase in memory leaked (2014-11-19 -- tom)
----------------------------------------------
+increase in memory leaked (2014-11-19 -- vass)
+----------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
 
 === sporadic failures below ===
@@ -382,7 +380,6 @@ gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
 Reviewed 2014-11-16
 ===============================
-
 
 
 =============================
@@ -673,13 +670,6 @@ x?-wb.prgenv-pgi
 Inherits 'x?-wb*' and '*pgi*'
 Reviewed 2014-11-14
 =============================
-
-pgcc command line errors (unknown switch: -fopenmp and -std=c99) (2014-11-16 -- ben?)
--------------------------------------------------------------------------------------
-[Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
-[Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
-[Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
-[Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
 
 
 ===========================
