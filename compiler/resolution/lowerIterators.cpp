@@ -20,6 +20,7 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -1685,6 +1686,8 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAtHead(buildIteratorCall(NULL, ZIP2, iterators.v[i], children));
     }
 
+    forLoop->insertAtHead(index->defPoint->remove());
+
     // Even for zippered iterators we only have one conditional test for the
     // loop. This takes that conditional and puts it into the test segment of
     // the c for loop.
@@ -1694,21 +1697,18 @@ expandForLoop(ForLoop* forLoop) {
       testBlock->insertAtTail(new SymExpr(gTrue));
     }
 
-    CallExpr* call = forLoop->blockInfoGet();
+    // NOAKES 2014/11/19: An error occurs if the replacement is moved to
+    // earlier in the pass.  I have yet to identify the issue but suspect
+    // that doing the copy too soon causes variables to cross from one
+    // scope to another if done in mid-transformation.
+    CForLoop* cforLoop = CForLoop::buildWithBodyFrom(forLoop);
 
-    // Convert loop to c for loop and add empty blocks for init, test, and incr
-    // Not all loops need to be converted, only if the iterator has a c for
-    // loop, but it doesn't hurt to convert them all.
-    for_alist(expr, call->argList) {
-      expr->remove();
-    }
+    cforLoop->blockInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
+                                        initBlock,
+                                        testBlock,
+                                        incrBlock));
 
-    call->primitive = primitives[PRIM_BLOCK_C_FOR_LOOP];
-    call->insertAtTail(initBlock);
-    call->insertAtTail(testBlock);
-    call->insertAtTail(incrBlock);
-
-    forLoop->insertAtHead(index->defPoint->remove());
+    forLoop->replace(cforLoop);
   }
 }
 

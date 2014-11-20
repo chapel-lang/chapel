@@ -22,6 +22,8 @@
 
 #include "stmt.h"
 
+class ForLoop;
+
 class CForLoop : public BlockStmt
 {
   //
@@ -30,6 +32,8 @@ class CForLoop : public BlockStmt
 public:
   static BlockStmt*      buildCForLoop(CallExpr*  cforInfo,
                                        BlockStmt* body);
+
+  static CForLoop*       buildWithBodyFrom(ForLoop* forLoop);
 
   //
   // Instance Interface
