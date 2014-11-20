@@ -53,13 +53,13 @@ Reviewed 2014-11-14
 ===================
 
 new internal module ChapelIteratorSupport (2014-11-19 -- david)
-(xe-wb.*, gasnet-everything, gasnet.fifo)
+(xe-wb.*, gasnet-everything)
 --------------------------------------------------------------------------------------------
 [Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
 
 
 new errors in .bad files (2014-11-19 -- vass?)
-(xe-wb.*, gasnet-everything, gasnet.fifo)
+(xe-wb.*, gasnet-everything)
 --------------------------------------------------------------------------------------------
 [Error matching .bad file for parallel/begin/sungeun/autoCopyWithBegin (compopts: 1)]
 [Error matching .bad file for users/vass/crash1callDestructorsMain]
@@ -326,7 +326,8 @@ Reviewed 2014-11-16
 ===================
 
 increase in memory leaked counts (2014-11-19 -- vass)
------------------------------------------------------
+(gasnet-everything, gasnet.fifo, no-local, gasnet-fast)
+-------------------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
 
 
@@ -349,10 +350,6 @@ gasnet-everything
 Inherits 'gasnet*'
 Reviewed 2014-11-14
 ===================
-
-increase in memory leaked (2014-11-19 -- vass)
-----------------------------------------------
-[Error matching program output for memory/sungeun/refCount/domainMaps]
 
 === sporadic failures below ===
 
