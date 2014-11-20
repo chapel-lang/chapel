@@ -58,8 +58,9 @@ static void cullAutoDestroyFlags()
       if (ts->hasFlag(FLAG_ARRAY) ||
           ts->hasFlag(FLAG_DOMAIN) ||
           ts->hasFlag(FLAG_SYNC) ||
-          ts->hasFlag(FLAG_SINGLE))
+          ts->hasFlag(FLAG_SINGLE)) {
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
       // Do we need to add other record-wrapped types here?  Testing will tell.
 
       // NOTE 1: When the value of a record field is established in a default

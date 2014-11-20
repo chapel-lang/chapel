@@ -1256,9 +1256,9 @@ proc _isIoPrimitiveType(type t) param return
  proc _isIoPrimitiveTypeOrNewline(type t) param return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
 
-const _trues: 1*c_string  = ("true",);
-const _falses: 1*c_string = ("false",);
-const _i = "i";
+const _trues: 1*c_string  = ("true":c_string,);
+const _falses: 1*c_string = ("false":c_string,);
+const _i = "i":c_string;
 
 // Read routines for all primitive types.
 proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr where _isIoPrimitiveType(t) {
