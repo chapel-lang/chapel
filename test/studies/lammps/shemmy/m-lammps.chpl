@@ -8,8 +8,8 @@
 
 use Norm, Time, BlockDist;
 config const perfTest:bool = false;
-const numAtoms:int = 3200;
-const numSteps:int = 20;
+config const numAtoms:int = 3200;
+config const numSteps:int = 20;
 const stepSize:real = 0.0025;
 const thresh:real = 6.25;
 const mass:real = 1.0;
@@ -46,7 +46,7 @@ const neighborDist:domain(2) dmapped Block(neighborExt,locGrid)=neighborExt;
 var   neighbors:[neighborDist] int;
 var   membcounts:[atomsDist] int;
 
-const infile:string = 'ljcut.in';
+config const infile:string = 'ljcut.in';
 
 loadParticles(infile, positions, velocities);
 var timer:Timer;
