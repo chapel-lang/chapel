@@ -162,6 +162,17 @@ bool CForLoop::isCForLoop() const
   return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
 }
 
+void CForLoop::loopHeaderSet(BlockStmt* initBlock,
+                             BlockStmt* testBlock,
+                             BlockStmt* incrBlock)
+{
+  blockInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
+                            initBlock,
+                            testBlock,
+                            incrBlock));
+}
+
+
 bool CForLoop::deadBlockCleanup()
 {
   bool retval = false;
