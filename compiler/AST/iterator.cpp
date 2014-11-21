@@ -373,15 +373,12 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
 // body that occur *before* the singleLoop
 static void
 buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
+  BlockStmt* zip1body = new BlockStmt();
+  Symbol*    ic       = ii->advance->getFormal(1);
+  SymbolMap  map;
 
   // In copied expressions, replace _ic --> zip1->_this .
-  SymbolMap map;
-  Symbol* ic = ii->advance->getFormal(1);
   map.put(ic, ii->zip1->_this);
-
-  // This block will replace the body of the zip1 function stubbed in
-  // during resolution.
-  BlockStmt* zip1body = new BlockStmt();
 
   // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
@@ -396,17 +393,19 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     // Quit when we reach singleLoop
     if (expr == singleLoop)
       break;
+
     if (!isDefExpr(expr))
       zip1body->insertAtTail(expr->copy(&map));
   }
 
-  // Check for more (only for non c for loops)
-  CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
-  if (!blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+  if (singleLoop->isCForLoop() == false) {
+    CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
+
     zip1body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
   }
+
   zip1body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip1->body->replace(zip1body);
@@ -453,14 +452,13 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 static void
 buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
-  // In copied expressions, replace _ic with zip2->_this .
-  Symbol* ic = ii->advance->getFormal(1);
-  SymbolMap map;
-  map.put(ic, ii->zip3->_this);
-
-  // This block will replace the body of the zip3 function stubbed in
-  // during resolution.
   BlockStmt* zip3body = new BlockStmt();
+  bool       flag     = true;
+  Symbol*    ic       = ii->advance->getFormal(1);
+  SymbolMap  map;
+
+  // In copied expressions, replace _ic with zip2->_this .
+  map.put(ic, ii->zip3->_this);
 
   // Copy non-arg def expressions from the original iterator
   forv_Vec(BaseAST, ast, asts) {
@@ -470,26 +468,27 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
 
   // Copy all non-defs in singleLoop after the yield
-  bool flag = true;
   for_alist(expr, singleLoop->body) {
     // Skip everything before the yield
     if (flag) {
       if (CallExpr* call = toCallExpr(expr))
         if (call->isPrimitive(PRIM_YIELD))
           flag = false;
-      continue;
-    }
-    if (!isDefExpr(expr))
+
+    } else if (!isDefExpr(expr)) {
       zip3body->insertAtTail(expr->copy(&map));
+    }
   }
 
   // Check for more (only for non c for loops)
-  CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
-  if (!blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+  if (singleLoop->isCForLoop() == false) {
+    CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
+
     zip3body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
   }
+
   zip3body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ii->zip3->body->replace(zip3body);
@@ -603,93 +602,109 @@ buildAdvance(FnSymbol* fn,
 // Build hasMore function.
 static void
 buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
-  // In copied expressions, replace _ic with hasMore->_this .
-  SymbolMap map;
-  Symbol* ic = ii->advance->getFormal(1);
-  map.put(ic, ii->hasMore->_this);
-
-  // This block will replace the stubbed-in body of ii->hasMore.
   BlockStmt* hasMoreBody = new BlockStmt();
-  VarSymbol* tmp = newTemp(ii->hasMore->retType);
+  VarSymbol* tmp         = newTemp(ii->hasMore->retType);
+
   hasMoreBody->insertAtTail(new DefExpr(tmp));
 
-  CallExpr* blockInfo = NULL;
-  if (singleLoop) blockInfo = singleLoop->blockInfoGet()->copy(&map);
-  if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    CallExpr* blockInfo = NULL;
+
+    Symbol*   ic        = ii->advance->getFormal(1);
+    SymbolMap map;
+
+    // In copied expressions, replace _ic with hasMore->_this .
+    map.put(ic, ii->hasMore->_this);
+
+    blockInfo = singleLoop->blockInfoGet()->copy(&map);
+
     if (BlockStmt* testSeg = toBlockStmt(blockInfo->get(2))) {
       for_alist(expr, testSeg->body) {
         if (expr != testSeg->body.tail) {
           hasMoreBody->insertAtTail(expr->copy(&map));
         }
       }
+
       hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, testSeg->body.tail->copy(&map)));
     }
 
   } else {
-    hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->hasMore->getFormal(1), ii->iclass->getField("more"))));
+    hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE,
+                                           tmp,
+                                           new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                                        ii->hasMore->getFormal(1),
+                                                        ii->iclass->getField("more"))));
   }
+
   hasMoreBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
 
   ii->hasMore->body->replace(hasMoreBody);
 }
 
-
 // Build getValue function.
 static void
 buildGetValue(IteratorInfo* ii) {
-  VarSymbol* tmp = newTemp(ii->getValue->retType);
-  // This block will replace the stubbed-in body of ii->getValue.
   BlockStmt* getMoreBody = new BlockStmt();
+  VarSymbol* tmp         = newTemp(ii->getValue->retType);
+
   getMoreBody->insertAtTail(new DefExpr(tmp));
   getMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ii->getValue->getFormal(1), ii->iclass->getField("value"))));
   getMoreBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
+
   ii->getValue->body->replace(getMoreBody);
 }
 
 static void
 buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
-  // In copied expressions, replace _ic with init->_this .
-  SymbolMap map;
-  Symbol* ic = ii->advance->getFormal(1);
-  map.put(ic, ii->init->_this);
-
-  // This block will replace the stubbed-in body of ii->init.
   BlockStmt* initBody = new BlockStmt();
 
-  CallExpr* blockInfo = NULL;
-  if (singleLoop) blockInfo = singleLoop->blockInfoGet()->copy(&map);
-  if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    CallExpr* blockInfo = NULL;
+
+    Symbol*   ic        = ii->advance->getFormal(1);
+    SymbolMap map;
+
+    // In copied expressions, replace _ic with init->_this .
+    map.put(ic, ii->init->_this);
+
+    blockInfo = singleLoop->blockInfoGet()->copy(&map);
+
     if (BlockStmt* initSeg = toBlockStmt(blockInfo->get(1))) {
       for_alist(expr, initSeg->body) {
         initBody->insertAtTail(expr->copy(&map));
       }
     }
   }
+
   initBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
   ii->init->body->replace(initBody);
 }
 
-
 static void
 buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
-  // In copied expressions, replace _ic with incr->_this .
-  SymbolMap map;
-  Symbol* ic = ii->advance->getFormal(1);
-  map.put(ic, ii->incr->_this);
-
-  // This block will replace the stubbed-in body of ii->incr.
   BlockStmt* incrBody = new BlockStmt();
 
-  CallExpr* blockInfo = NULL;
-  if (singleLoop) blockInfo = singleLoop->blockInfoGet()->copy(&map);
-  if (blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    CallExpr* blockInfo = NULL;
+
+    Symbol*   ic        = ii->advance->getFormal(1);
+    SymbolMap map;
+
+    // In copied expressions, replace _ic with incr->_this .
+    map.put(ic, ii->incr->_this);
+
+    blockInfo = singleLoop->blockInfoGet()->copy(&map);
+
     if (BlockStmt* incrSeg = toBlockStmt(blockInfo->get(3))) {
       for_alist(expr, incrSeg->body) {
         incrBody->insertAtTail(expr->copy(&map));
       }
     }
   }
+
   incrBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
   ii->incr->body->replace(incrBody);
 }
 
@@ -754,7 +769,7 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   // C_FOR_LOOP needs to ensure the for-loop init variables are also
   // converted to fields.  The test/incr fields are handled correctly
   // as a result of being inserted in to the body of the loop
-  if (singleLoop && singleLoop->blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+  if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
     Vec<SymExpr*> symExprs;
     Expr*         init = singleLoop->blockInfoGet()->get(1);
 

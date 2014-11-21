@@ -328,15 +328,16 @@ static BlockStmt* discoverFromFollowIter(DefExpr* defFollowIter)
 {
   // find the follower for loop
   BlockStmt* bFollowerLoop = NULL;
+
   for (Expr* curr = defFollowIter->next; curr; curr = curr->next)
     if (BlockStmt* nestB = toBlockStmt(curr))
-      if (nestB->blockInfoGet())
-        if (nestB->blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP))
-          if (SymExpr* seFollowIter = toSymExpr(nestB->blockInfoGet()->get(2)))
-            if (seFollowIter->var == defFollowIter->sym) {
-              bFollowerLoop = nestB;
-              break;
-            }
+      if (nestB->isForLoop())
+        if (SymExpr* seFollowIter = toSymExpr(nestB->blockInfoGet()->get(2)))
+          if (seFollowIter->var == defFollowIter->sym) {
+            bFollowerLoop = nestB;
+            break;
+          }
+
   INT_ASSERT(bFollowerLoop);  // ensure we found it
 
   // find the forall loop body
