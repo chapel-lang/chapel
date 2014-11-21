@@ -179,7 +179,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<BlockStmt   %12d ", node->id);
+  sprintf(heading, "#<BlockStmt   %12d", node->id);
 
   write(false, heading, true);
 
@@ -200,13 +200,16 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
-    write(false, "extern ", true);
+    write(true, "extern", true);
 
   if (node->blockTag & BLOCK_SCOPELESS)
-    write(false, "scopeless ", true);
+    write(true, "scopeless", true);
 
   if (node->blockTag & BLOCK_TYPE_ONLY)
-    write(false, "type_only ", true);
+    write(true, "type_only", true);
+
+  if (node->blockTag & BLOCK_C_FOR_LOOP)
+    write(true, "C_FOR_LOOP", true);
 
   mOffset = mOffset + 2;
 
@@ -257,7 +260,7 @@ bool AstDumpToNode::enterWhileDoStmt(WhileDoStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<WhileDoStmt %12d ", node->id);
+  sprintf(heading, "#<WhileDoStmt %12d", node->id);
 
   write(false, heading, true);
 
@@ -333,7 +336,7 @@ bool AstDumpToNode::enterDoWhileStmt(DoWhileStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<DoWhileStmt %12d ", node->id);
+  sprintf(heading, "#<DoWhileStmt %12d", node->id);
 
   write(false, heading, true);
 
@@ -409,7 +412,7 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<CForLoop    %12d ", node->id);
+  sprintf(heading, "#<CForLoop    %12d", node->id);
 
   write(false, heading, true);
 
@@ -486,7 +489,7 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<ForLoop     %12d ", node->id);
+  sprintf(heading, "#<ForLoop     %12d", node->id);
 
   write(false, heading, true);
 
@@ -507,11 +510,13 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
 
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
-    write(false, "extern ", true);
+    write(false, "extern", true);
+
   if (node->blockTag & BLOCK_SCOPELESS)
-    write(false, "scopeless ", true);
+    write(false, "scopeless", true);
+
   if (node->blockTag & BLOCK_TYPE_ONLY)
-    write(false, "type_only ", true);
+    write(false, "type_only", true);
 
   mOffset = mOffset + 2;
 
