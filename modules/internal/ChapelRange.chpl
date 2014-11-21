@@ -1008,6 +1008,10 @@ module ChapelRange {
   //# strides that are known at compile time.
   //#
 
+  // TODO need to do overflow checking in a better way?
+  // TODO move these into a seperate file?
+
+
   iter _direct_uint_stride_range_iter(const start: ?t, const end: t, const stride: ?strT)
     where isIntegral(t) && chpl__unsignedType(t) == strT {
     if (useOptimizedRangeIterators) {
@@ -1064,7 +1068,7 @@ module ChapelRange {
     }
   }
 
-  /*iter _direct_range_iter(param start: ?t, param end: t, param stride: ?strT)
+  iter _direct_all_param_range_iter(param start: ?t, param end: t, param stride: ?strT)
     where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
     if (useOptimizedRangeIterators) {
       if boundsChecking {
@@ -1096,14 +1100,13 @@ module ChapelRange {
       }
     }
 
-  }*/
+  }
 
-  // to avoid having to deal with cases like for i in s..e by str where str
-  // isn't know at compile time, just build a non-anonymous range and iterate
-  // over it. This is also the base case where any type mismatches will be
-  // handled by existing range code
 
-  // int start and end versions
+  // TODO need to do checks on stride to make sure it's != and <= max of
+
+  // cases for when stride is an int
+
   iter _direct_range_iter(start: int(?w), end: int(w), stride: int(w))
   {
     // don't want to deal with finding chpl__diffMod and the likes, just create
@@ -1114,34 +1117,20 @@ module ChapelRange {
     }
   }
 
-  iter _direct_range_iter(start: int(?w), end: int(w), param stride : int(w))
-  {
-    for i in _direct_param_stride_range_iter(start, end, stride) {
-      yield i;
-    }
-  }
-
-  iter _direct_range_iter(start: int(?w), end: int(w), stride: uint(w))
-  {
-    for i in _direct_uint_stride_range_iter(start, end, stride) {
-      yield i;
-    }
-  }
-
-  iter _direct_range_iter(start: int(?w), end: int(w), stride)
-  {
-    compilerError("can't apply 'by' to a range with idxType ",
-                  typeToString(int(w)), " using a step of type ",
-                  typeToString(stride.type));
-    yield nil;
-  }
-
-
-  // uint start and end versions
   iter _direct_range_iter(start: uint(?w), end: uint(w), stride: int(w))
   {
     var r = start..end by stride;
     for i in r {
+      yield i;
+    }
+  }
+
+  // cases for when stride is a param int (underlying iter can figure out sign
+  // of stride)
+
+  iter _direct_range_iter(start: int(?w), end: int(w), param stride : int(w))
+  {
+    for i in _direct_param_stride_range_iter(start, end, stride) {
       yield i;
     }
   }
@@ -1153,11 +1142,46 @@ module ChapelRange {
     }
   }
 
+
+  // cases where all arguments are params? Not strictly needed but creates a
+  // cleaner loop. 'for i in 1..10' generates for (i=1; i<=10; i+=1) with no
+  // temp variables. Only implemented all int version (most likely iterator.)
+  // Could be implemented for uint low/hi and uint stride as well, but it seems
+  // unlikely a user will write a for loop over such an anonymous range
+
+  iter _direct_range_iter(param start: int(?w), param end: int(w), param stride: int(w)) {
+    for i in _direct_all_param_range_iter(start, end, stride) {
+      yield i;
+    }
+  }
+
+
+  // cases for when stride is a uint (we know the stride is positive)
+
+  iter _direct_range_iter(start: int(?w), end: int(w), stride: uint(w))
+  {
+    for i in _direct_uint_stride_range_iter(start, end, stride) {
+      yield i;
+    }
+  }
+
+
   iter _direct_range_iter(start: uint(?w), end: uint(w), stride: uint(w))
   {
     for i in _direct_uint_stride_range_iter(start, end, stride) {
       yield i;
     }
+  }
+
+
+  // cases for when stride isn't allowed
+
+  iter _direct_range_iter(start: int(?w), end: int(w), stride)
+  {
+    compilerError("can't apply 'by' to a range with idxType ",
+                  typeToString(int(w)), " using a step of type ",
+                  typeToString(stride.type));
+    yield nil;
   }
 
   iter _direct_range_iter(start: uint(?w), end: uint(w), stride)
@@ -1168,7 +1192,9 @@ module ChapelRange {
     yield nil;
   }
 
-  // fallout for when start aren't and can't be coered to similiar types
+
+  // case for when low and high aren't compatible types and can't be coerced
+
   iter _direct_range_iter(start, end, stride)
   {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
