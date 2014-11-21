@@ -135,6 +135,22 @@ module ChapelIteratorSupport {
   inline proc _toLeaderZip(x: _tuple)
     return _toLeader(x(1));
 
+  pragma "no implicit copy"
+  inline proc _toStandalone(iterator: _iteratorClass)
+    return chpl__autoCopy(__primitive("to standalone", iterator));
+
+  inline proc _toStandalone(ir: _iteratorRecord) {
+    pragma "no copy" var ic = _getIterator(ir);
+    pragma "no copy" var standalone = _toStandalone(ic);
+    _freeIterator(ic);
+    return standalone;
+  }
+
+  inline proc _toStandalone(x) {
+    _toStandalone(x.these());
+  }
+
+
   //
   // additional _toLeader/_toLeaderZip for forall intents
   //
