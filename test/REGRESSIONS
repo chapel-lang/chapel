@@ -517,15 +517,15 @@ sporadic array index out of bounds due to broken memory fence (gbt)
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)] (2014-11-07)
 [Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple] (2014-11-07)
 [Error matching program output for studies/590o/alaska/graph] (2014-11-06)
-[Error matching program output for studies/590o/kfm/solver-blc] (2014-11-06)
-[Error matching program output for studies/590o/kfm/solver] (2014-11-06)
-[Error matching program output for studies/sort/radix] (2014-11-06)
+[Error matching program output for studies/590o/kfm/solver-blc] (2014-11-06, 2014-11-16)
+[Error matching program output for studies/590o/kfm/solver] (2014-11-06, 2014-11-16)
+[Error matching program output for studies/sort/radix] (2014-11-06, 2014-11-16)
 
 
 sporadic compilation timeouts
 -----------------------------
 [Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)] (..., 2014-10-30)
-[Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)] (2014-01-26..2014-11-09)
+[Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)] (2014-01-26..2014-11-16)
 
 sporadic execution timeouts
 ---------------------------
