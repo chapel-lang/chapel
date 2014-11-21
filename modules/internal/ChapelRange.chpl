@@ -1028,7 +1028,7 @@ module ChapelRange {
       }
 
     } else {
-      for i in this.generalIterator() {
+      for i in (start..end by stride).generalIterator() {
         yield i;
       }
     }
@@ -1062,7 +1062,7 @@ module ChapelRange {
         compilerError("the 'by' operator cannot take a value of zero");
       }
     } else {
-      for i in this.generalIterator() {
+      for i in (start..end by stride).generalIterator() {
         yield i;
       }
     }
@@ -1095,11 +1095,10 @@ module ChapelRange {
         compilerError("the 'by' operator cannot take a value of zero");
       }
     } else {
-      for i in this.generalIterator() {
+      for i in (start..end by stride).generalIterator() {
         yield i;
       }
     }
-
   }
 
 
