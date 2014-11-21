@@ -1731,15 +1731,11 @@ expandForLoop(ForLoop* forLoop) {
     testBlock->blockTag = BLOCK_C_FOR_LOOP;
     incrBlock->blockTag = BLOCK_C_FOR_LOOP;
 
-    cforLoop->blockInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
-                                        initBlock,
-                                        testBlock,
-                                        incrBlock));
+    cforLoop->loopHeaderSet(initBlock, testBlock, incrBlock);
 
     forLoop->replace(cforLoop);
   }
 }
-
 
 static void
 inlineIterators() {
