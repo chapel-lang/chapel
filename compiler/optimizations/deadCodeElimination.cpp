@@ -104,26 +104,15 @@ static bool isInLoopHeader(Expr* expr) {
 }
 
 static bool isInCForLoopHeader(Expr* expr) {
-  bool retval = false;
+  Expr* stmtExpr = expr->parentExpr;
+  bool  retval   = false;
 
-  if (expr->parentExpr == NULL) {
-    retval = false;
-
-  } else if (expr->parentExpr->parentExpr == NULL) {
-    retval = false;
-
-  } else if (CallExpr* call = toCallExpr(expr->parentExpr->parentExpr)) {
-
-    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
-      retval = true;
-
-  } else {
-    retval = false;
+  if (BlockStmt* blockStmt = toBlockStmt(stmtExpr)) {
+    retval = (blockStmt->blockTag == BLOCK_C_FOR_LOOP) ? true : false;
   }
 
   return retval;
 }
-
 
 //
 // Removes local variables that are only targets for moves, but are
@@ -193,10 +182,10 @@ void deadExpressionElimination(FnSymbol* fn) {
 
     if (exprAst == 0) {
 
-    } else if (exprAst->parentExpr == NULL) { // expression already removed
+    } else if (isAlive(exprAst) == false) {
 
     } else if (SymExpr* expr = toSymExpr(ast)) {
-      if (isInCForLoopHeader(expr) == false && expr->isStmtExpr() == true) {
+      if (expr->isStmtExpr() == true && isInCForLoopHeader(expr) == false) {
         expr->remove();
       }
 
