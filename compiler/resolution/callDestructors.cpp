@@ -139,7 +139,7 @@ static void cullExplicitAutoDestroyFlags()
         // the merge of P.R. #860.  In the future, if ref counts for
         // ReplicatedDists start going below zero, removing this line should
         // help.
-        TypeSymbol* ts = ret->type->symbol;
+        TypeSymbol* ts = var->type->symbol;
         if (ts->hasFlag(FLAG_DOMAIN))
           continue;
 
