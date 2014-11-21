@@ -166,6 +166,10 @@ void CForLoop::loopHeaderSet(BlockStmt* initBlock,
                              BlockStmt* testBlock,
                              BlockStmt* incrBlock)
 {
+  initBlock->blockTag = BLOCK_C_FOR_LOOP;
+  testBlock->blockTag = BLOCK_C_FOR_LOOP;
+  incrBlock->blockTag = BLOCK_C_FOR_LOOP;
+
   blockInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
                             initBlock,
                             testBlock,
