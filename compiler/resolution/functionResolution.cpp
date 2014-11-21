@@ -3487,10 +3487,11 @@ static void resolveMove(CallExpr* call) {
   INT_ASSERT(lhs);
 
   FnSymbol* fn = toFnSymbol(call->parentSymbol);
+  bool isReturn = fn ? lhs == fn->getReturnSymbol() : false;
 
   if (lhs->hasFlag(FLAG_TYPE_VARIABLE) && !isTypeExpr(rhs)) {
-    if (lhs == fn->getReturnSymbol()) {
-      if (!fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN))
+    if (isReturn) {
+      if (!call->parentSymbol->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN))
         USR_FATAL(call, "illegal return of value where type is expected");
     } else {
       USR_FATAL(call, "illegal assignment of value to type");
@@ -3498,7 +3499,7 @@ static void resolveMove(CallExpr* call) {
   }
 
   if (!lhs->hasFlag(FLAG_TYPE_VARIABLE) && !lhs->hasFlag(FLAG_MAYBE_TYPE) && isTypeExpr(rhs)) {
-    if (lhs == fn->getReturnSymbol()) {
+    if (isReturn) {
       USR_FATAL(call, "illegal return of type where value is expected");
     } else {
       USR_FATAL(call, "illegal assignment of type to value");
@@ -3508,7 +3509,7 @@ static void resolveMove(CallExpr* call) {
   // do not resolve function return type yet
   // except for constructors
   if (fn && call->parentExpr != fn->where && call->parentExpr != fn->retExprType &&
-      fn->getReturnSymbol() == lhs && fn->_this != lhs) {
+      isReturn && fn->_this != lhs) {
 
     if (fn->retType == dtUnknown) {
       return;
@@ -3518,8 +3519,7 @@ static void resolveMove(CallExpr* call) {
   Type* rhsType = rhs->typeInfo();
 
   if (rhsType == dtVoid) {
-    if (lhs == fn->getReturnSymbol() &&
-        (lhs->type == dtVoid || lhs->type == dtUnknown))
+    if (isReturn && (lhs->type == dtVoid || lhs->type == dtUnknown))
     {
       // It is OK to assign void to the return value variable as long as its
       // type is void or is not yet established.
