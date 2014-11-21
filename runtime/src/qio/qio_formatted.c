@@ -2068,15 +2068,17 @@ qioerr qio_channel_scan_imag(const int threadsafe, qio_channel_t* restrict ch, v
 
 // core of ltoa for arbitrary base.
 // Fills in tmp from right to left
-// Returns the number of positions in tmp to skip to get to number.
+// Returns the position of the first digit in the result string (tmp).
 // supports up to base 36.
-static inline int _ltoa_convert(char *tmp, int tmplen, uint64_t num, int base, int uppercase)
+// We assume that size_t is an unsigned type, so the result can never be negative.
+static inline size_t _ltoa_convert(char *tmp, int tmplen, uint64_t num, int base, int uppercase)
 {
-  int at;
+  size_t at;
   int digit;
   char ch;
   tmp[tmplen-1] = '\0';
-  for( at = tmplen-2; at >= 0; at-- ) {
+  for( at = tmplen-1; at > 0;) {
+    --at;
     // Get the remainder mod base
     digit = num % base;
     // Divide by base
@@ -2102,7 +2104,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 {
   char tmp[65]; // enough room for largest 64-bit number base 2.
   int tmp_len=0;
-  int tmp_skip=0;
+  int tmp_start=0;
   char b=0;
   int i;
   int width;
@@ -2110,16 +2112,16 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 
   // Optimize conversions for supported bases
   if( base == 2 )
-    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 2, 0);
+    tmp_start = _ltoa_convert(tmp, sizeof(tmp), num, 2, 0);
   else if( base == 8 )
-    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 8, 0);
+    tmp_start = _ltoa_convert(tmp, sizeof(tmp), num, 8, 0);
   else if( base == 10 )
-    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 10, 0);
+    tmp_start = _ltoa_convert(tmp, sizeof(tmp), num, 10, 0);
   else if( base == 16 )
-    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 16, style->uppercase);
+    tmp_start = _ltoa_convert(tmp, sizeof(tmp), num, 16, style->uppercase);
   else
-    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, base, style->uppercase);
-  tmp_len = sizeof(tmp) - 1 - tmp_skip;
+    tmp_start = _ltoa_convert(tmp, sizeof(tmp), num, base, style->uppercase);
+  tmp_len = sizeof(tmp) - tmp_start;
   width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
