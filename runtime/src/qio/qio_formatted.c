@@ -2121,7 +2121,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
     tmp_start = _ltoa_convert(tmp, sizeof(tmp), num, 16, style->uppercase);
   else
     tmp_start = _ltoa_convert(tmp, sizeof(tmp), num, base, style->uppercase);
-  tmp_len = sizeof(tmp) - tmp_start;
+  tmp_len = sizeof(tmp) - 1 - tmp_start;
   width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
@@ -2165,7 +2165,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   }
 
   // now output the digits.
-  qio_memcpy(dst + i, tmp+tmp_skip, tmp_len);
+  qio_memcpy(dst + i, tmp+tmp_start, tmp_len);
   i += tmp_len;
 
   // Now if we're left justified we might need padding.
