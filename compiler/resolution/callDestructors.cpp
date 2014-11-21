@@ -129,18 +129,9 @@ static void cullExplicitAutoDestroyFlags()
     {
       if (VarSymbol* var = toVarSymbol(def->sym))
       {
-        // Examine only those bearing the explicit autodestroy flag.
+        // Examine only those bearing an autodestroy flag.
         if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
             ! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
-          continue;
-
-        // This test was added just to get leaked byte counts in
-        // memory/sungeun/refCount/domainMaps back down their level prior to
-        // the merge of P.R. #860.  In the future, if ref counts for
-        // ReplicatedDists start going below zero, removing this line should
-        // help.
-        TypeSymbol* ts = var->type->symbol;
-        if (ts->hasFlag(FLAG_DOMAIN))
           continue;
 
         // Look for the specific breaking case and amend that.
