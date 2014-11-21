@@ -237,8 +237,7 @@ void deadExpressionElimination(FnSymbol* fn) {
 
 void deadCodeElimination(FnSymbol* fn)
 {
-// TODO: Factor this long function?
-  buildBasicBlocks(fn);
+  BasicBlock::buildBasicBlocks(fn);
 
   std::map<SymExpr*,Vec<SymExpr*>*> DU;
   std::map<SymExpr*,Vec<SymExpr*>*> UD;
@@ -420,7 +419,7 @@ void deadCodeElimination() {
 static void deadBlockElimination(FnSymbol* fn)
 {
   // We need the basic block information to be correct, so recompute it.
-  buildBasicBlocks(fn);
+  BasicBlock::buildBasicBlocks(fn);
 
   // Find the reachable basic blocks within this function.
   std::set<BasicBlock*> reachable;
