@@ -19,21 +19,15 @@
 
 #include "bb.h"
 
-#include "astutil.h"
 #include "bitVec.h"
-#include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
 
-#include <cstdlib>
-
-//# Statics
 int                                          BasicBlock::nextID     = 0;
 BasicBlock*                                  BasicBlock::basicBlock = NULL;
 Map<LabelSymbol*, std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
 Map<LabelSymbol*, BasicBlock*>               BasicBlock::labelMaps;
-
 
 BasicBlock::BasicBlock() {
   id = nextID++;
@@ -406,7 +400,7 @@ void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
 
         if (new_in != IN[i]->data[j]) {
           IN[i]->data[j] = new_in;
-          change = true;
+          change         = true;
         }
       }
 
@@ -414,7 +408,7 @@ void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
 
       if (new_out != OUT[i]->data[j]) {
         OUT[i]->data[j] = new_out;
-        change = true;
+        change          = true;
       }
     }
 
@@ -496,6 +490,7 @@ void BasicBlock::printLocalsVectorSets(std::vector<BitVec*>& sets, Vec<Symbol*> 
     }
 
     printf("\n");
+
     i++;
   }
 
