@@ -105,6 +105,8 @@ public:
   int                       id;
 
   std::vector<Expr*>        exprs;
+  std::vector<bool>         marks;
+
   std::vector<BasicBlock*>  ins;
   std::vector<BasicBlock*>  outs;
 

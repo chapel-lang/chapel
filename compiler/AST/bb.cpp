@@ -235,6 +235,7 @@ void BasicBlock::restart(FnSymbol* fn) {
 
 void BasicBlock::append(Expr* expr) {
   basicBlock->exprs.push_back(expr);
+  basicBlock->marks.push_back(false);
 }
 
 void BasicBlock::thread(BasicBlock* src, BasicBlock* dst) {
@@ -254,6 +255,10 @@ bool BasicBlock::verifyBasicBlocks(FnSymbol* fn) {
 
 // Returns true if the class invariants have been preserved.
 bool BasicBlock::isOK() {
+  // Ensure exprs[] and marks[] are same length
+  if (exprs.size() != marks.size())
+    return false;
+
   // Expressions must be live (non-NULL);
   for_vector(Expr, expr, exprs)
     if (expr == 0)
