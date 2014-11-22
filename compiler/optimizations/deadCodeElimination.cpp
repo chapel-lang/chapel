@@ -30,16 +30,12 @@
 #include <queue>
 #include <set>
 
+static bool         isInCForLoopHeader(Expr* expr);
+static void         deadBlockElimination(FnSymbol* fn);
+static void         cleanupLoopBlocks(FnSymbol* fn);
 
-//
-// Static function declarations.
-//
-static void deadBlockElimination(FnSymbol* fn);
-static void cleanupLoopBlocks(FnSymbol* fn);
-
-// Static variables.
-static unsigned deadBlockCount;
-static unsigned deadModuleCount;
+static unsigned int deadBlockCount;
+static unsigned int deadModuleCount;
 
 //
 //
@@ -58,61 +54,6 @@ static unsigned deadModuleCount;
 // An empty cond statement between a goto and the target of the goto
 //
 //
-
-
-
-
-
-
-// Determines if the expression is in the header of a Loop expression
-//
-// After normalization, the conditional test for a WhileStmt is expressed as
-// a SymExpr inside a primitive CallExpr.
-//
-// The init, test, incr clauses of a C-For loop are expressed as BlockStmts
-// that contain the relevant expressions.  This function only returns true
-// for the expressions inside the BlockStmt and not the BlockStmt itself
-//
-// TODO should this be updated to only look for exprs in the test segment that
-// are conditional primitives?
-//
-static bool isInLoopHeader(Expr* expr) {
-  bool retval = false;
-
-  if (expr->parentExpr == NULL) {
-    retval = false;
-
-  } else if (CallExpr* call = toCallExpr(expr->parentExpr)) {
-    if (call->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-        call->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
-      retval = true;
-    }
-
-  } else if (expr->parentExpr->parentExpr == NULL) {
-    retval = false;
-
-  } else if (CallExpr* call = toCallExpr(expr->parentExpr->parentExpr)) {
-
-    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
-      retval = true;
-
-  } else {
-    retval = false;
-  }
-
-  return retval;
-}
-
-static bool isInCForLoopHeader(Expr* expr) {
-  Expr* stmtExpr = expr->parentExpr;
-  bool  retval   = false;
-
-  if (BlockStmt* blockStmt = toBlockStmt(stmtExpr)) {
-    retval = (blockStmt->blockTag == BLOCK_C_FOR_LOOP) ? true : false;
-  }
-
-  return retval;
-}
 
 //
 // Removes local variables that are only targets for moves, but are
@@ -233,6 +174,17 @@ void deadExpressionElimination(FnSymbol* fn) {
       }
     }
   }
+}
+
+static bool isInCForLoopHeader(Expr* expr) {
+  Expr* stmtExpr = expr->parentExpr;
+  bool  retval   = false;
+
+  if (BlockStmt* blockStmt = toBlockStmt(stmtExpr)) {
+    retval = (blockStmt->blockTag == BLOCK_C_FOR_LOOP) ? true : false;
+  }
+
+  return retval;
 }
 
 void deadCodeElimination(FnSymbol* fn) {
