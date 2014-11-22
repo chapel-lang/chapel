@@ -852,7 +852,7 @@ static void
 addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop,
                       Vec<Symbol*>& yldSymSet)
 {
-  buildBasicBlocks(fn);
+  BasicBlock::buildBasicBlocks(fn);
 
 #ifdef DEBUG_LIVE
   printf("Iterator\n");
@@ -861,16 +861,18 @@ addLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStmt* singleLoop,
 
 #ifdef DEBUG_LIVE
   printf("Basic Blocks\n");
-  printBasicBlocks(fn);
+  BasicBlock::printBasicBlocks(fn);
 #endif
 
   collectLiveLocalVariables(syms, fn, singleLoop);
 
 #ifdef DEBUG_LIVE
   printf("LIVE at Yield Points\n");
+
   forv_Vec(Symbol, sym, syms) {
     printf("%s[%d]\n", sym->name, sym->id);
   }
+
   printf("\n");
 #endif
 

@@ -1147,10 +1147,15 @@ void loopInvariantCodeMotion(void) {
 
     //build the basic blocks, where the first bb is the entry block 
     startTimer(buildBBTimer);
-    buildBasicBlocks(fn);
+
+    BasicBlock::buildBasicBlocks(fn);
+
     std::vector<BasicBlock*> basicBlocks = *fn->basicBlocks;
+
     BasicBlock* entryBlock = basicBlocks[0];
+
     unsigned nBlocks = basicBlocks.size();
+
     stopTimer(buildBBTimer);
     
     //compute the dominators 
