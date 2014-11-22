@@ -36,9 +36,6 @@
     basicBlock->exprs.push_back(expr);          \
   } while (0)
 
-#define BBB(stmt)                               \
-    buildBasicBlocks(fn, stmt)
-
 #define BB_THREAD(src, dst)                     \
   do {                                          \
     (dst)->ins.push_back(src);                  \
@@ -113,7 +110,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(info->get(1))->body) {
-          BBB(stmt);
+          buildBasicBlocks(fn, stmt);
         }
       }
 
@@ -125,7 +122,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       // add the test expr at the loop top
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(info->get(2))->body) {
-          BBB(stmt);
+          buildBasicBlocks(fn, stmt);
         }
 
       // add the condition expr at the loop top; this is not quite right for DoWhile
@@ -140,13 +137,13 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       BasicBlock* loopTop = basicBlock;
 
       for_alist(stmt, s->body) {
-        BBB(stmt);
+        buildBasicBlocks(fn, stmt);
       }
 
       // for c for loops, add the incr expr after the loop body
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(info->get(3))->body) {
-          BBB(stmt);
+          buildBasicBlocks(fn, stmt);
         }
       }
 
@@ -164,7 +161,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
     } else {
       for_alist(stmt, s->body)
-        BBB(stmt);
+        buildBasicBlocks(fn, stmt);
     }
 
   } else if (CondStmt* s = toCondStmt(stmt)) {
@@ -176,7 +173,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
     restart(fn);
     BB_THREAD(top, basicBlock);
-    BBB(s->thenStmt);
+    buildBasicBlocks(fn, s->thenStmt);
 
     BasicBlock* thenBottom = basicBlock;
 
@@ -185,11 +182,12 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     if (s->elseStmt) {
       BB_THREAD(top, basicBlock);
 
-      BBB(s->elseStmt);
+      buildBasicBlocks(fn, s->elseStmt);
 
       BasicBlock* elseBottom = basicBlock;
 
       restart(fn);
+
       BB_THREAD(elseBottom, basicBlock);
 
     } else {
