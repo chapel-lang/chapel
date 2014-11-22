@@ -28,9 +28,6 @@
 
 #include <cstdlib>
 
-BasicBlock::BasicBlock()
-  : id(nextid++) {}
-
 #define BB_START()                              \
   basicBlock = new BasicBlock()
 
@@ -62,62 +59,14 @@ BasicBlock::BasicBlock()
 
 
 //# Statics
-int                                          BasicBlock::nextid     = 0;
+int                                          BasicBlock::nextID     = 0;
 BasicBlock*                                  BasicBlock::basicBlock = NULL;
 Map<LabelSymbol*, std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
 Map<LabelSymbol*, BasicBlock*>               BasicBlock::labelMaps;
 
 
-// Returns true if the class invariants have been preserved.
-bool BasicBlock::isOK() {
-  // Expressions must be live (non-NULL);
-  for_vector(Expr, expr, exprs)
-    if (expr == 0)
-      return false;
-
-  // Every in edge must have a corresponding out edge in the source block.
-  for_vector(BasicBlock, source, ins) {
-    bool found = false;
-
-    for_vector(BasicBlock, bb, source->outs) {
-      if (bb == this) {
-        found = true;
-        break;
-      }
-    }
-
-    if (found == false)
-      return false;
-  }
-
-  // Every out edge must have a corresponding in edge in the target block.
-  for_vector(BasicBlock, target, outs) {
-    bool found = false;
-
-    for_vector(BasicBlock, bb, target->ins) {
-      if (bb == this) {
-        found = true;
-        break;
-      }
-    }
-
-    if (found == false)
-      return false;
-  }
-
-  return true;
-}
-
-void BasicBlock::clear(FnSymbol* fn) {
-  if (fn->basicBlocks != NULL) {
-
-    for_vector(BasicBlock, bb, *fn->basicBlocks)
-      delete bb;
-
-    delete fn->basicBlocks;
-
-    fn->basicBlocks = 0;
-  }
+BasicBlock::BasicBlock() {
+  id = nextID++;
 }
 
 // Reset the shared statics.
@@ -129,15 +78,18 @@ void BasicBlock::reset(FnSymbol* fn) {
 
   fn->basicBlocks = new std::vector<BasicBlock*>();
 
-  nextid = 0;
+  nextID = 0;
 }
 
-BasicBlock* BasicBlock::steal() {
-  BasicBlock* temp = basicBlock;
+void BasicBlock::clear(FnSymbol* fn) {
+  if (fn->basicBlocks != NULL) {
+    for_vector(BasicBlock, bb, *fn->basicBlocks)
+      delete bb;
 
-  basicBlock = 0;
+    delete fn->basicBlocks;
 
-  return temp;
+    fn->basicBlocks = 0;
+  }
 }
 
 // This is the top-level (public) builder function.
@@ -153,6 +105,14 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn) {
   INT_ASSERT(verifyBasicBlocks(fn));
 }
 
+BasicBlock* BasicBlock::steal() {
+  BasicBlock* temp = basicBlock;
+
+  basicBlock = 0;
+
+  return temp;
+}
+
 void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
   if (stmt == 0) {
 
@@ -164,7 +124,9 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {
-        for_alist(stmt, toBlockStmt(info->get(1))->body) { BBB(stmt); }
+        for_alist(stmt, toBlockStmt(info->get(1))->body) {
+          BBB(stmt);
+        }
       }
 
       // mark the top of the loop
@@ -274,8 +236,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     if (def && toLabelSymbol(def->sym)) {
       // If a label appears in the middle of a block,
       // we start a new block.
-      if (basicBlock->exprs.size() > 0)
-      {
+      if (basicBlock->exprs.size() > 0) {
         BasicBlock* top = basicBlock;
 
         BB_RESTART();
@@ -306,6 +267,46 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 bool BasicBlock::verifyBasicBlocks(FnSymbol* fn) {
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     if (bb->isOK() == false)
+      return false;
+  }
+
+  return true;
+}
+
+// Returns true if the class invariants have been preserved.
+bool BasicBlock::isOK() {
+  // Expressions must be live (non-NULL);
+  for_vector(Expr, expr, exprs)
+    if (expr == 0)
+      return false;
+
+  // Every in edge must have a corresponding out edge in the source block.
+  for_vector(BasicBlock, source, ins) {
+    bool found = false;
+
+    for_vector(BasicBlock, bb, source->outs) {
+      if (bb == this) {
+        found = true;
+        break;
+      }
+    }
+
+    if (found == false)
+      return false;
+  }
+
+  // Every out edge must have a corresponding in edge in the target block.
+  for_vector(BasicBlock, target, outs) {
+    bool found = false;
+
+    for_vector(BasicBlock, bb, target->ins) {
+      if (bb == this) {
+        found = true;
+        break;
+      }
+    }
+
+    if (found == false)
       return false;
   }
 
@@ -409,7 +410,7 @@ void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
 
     for (int j = 0; j < IN[i]->ndata; j++) {
       if (bb->ins.size() > 0) {
-        unsigned int new_in = (intersect) ? (unsigned)(-1) : 0;
+        unsigned int new_in = (intersect) ? (unsigned int) (-1) : 0;
 
         for_vector(BasicBlock, bbin, bb->ins) {
           if (intersect)
@@ -488,8 +489,11 @@ void BasicBlock::printDefsVector(std::vector<SymExpr*> defs, Map<SymExpr*,int>& 
   printf("Variable Definitions\n");
 
   for_vector(SymExpr, def, defs) {
-    printf("%2d: %s[%d] in %d\n", defMap.get(def), def->var->name,
-           def->var->id, def->getStmtExpr()->id);
+    printf("%2d: %s[%d] in %d\n",
+           defMap.get(def),
+           def->var->name,
+           def->var->id,
+           def->getStmtExpr()->id);
   }
 
   printf("\n");
@@ -525,6 +529,7 @@ void BasicBlock::printBitVectorSets(std::vector<BitVec*>& sets) {
     }
 
     printf("\n");
+
     i++;
   }
 
