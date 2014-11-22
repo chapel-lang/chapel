@@ -62,7 +62,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn) {
 
   basicBlock = new BasicBlock();
 
-  buildBasicBlocks(fn, fn->body);
+  buildBasicBlocks(fn, fn->body, false);
 
   fn->basicBlocks->push_back(BasicBlock::steal());
 
@@ -77,7 +77,7 @@ BasicBlock* BasicBlock::steal() {
   return temp;
 }
 
-void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
+void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
   if (stmt == 0) {
 
   } else if (BlockStmt* s = toBlockStmt(stmt)) {
@@ -89,7 +89,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(info->get(1))->body) {
-          buildBasicBlocks(fn, stmt);
+          buildBasicBlocks(fn, stmt, mark);
         }
       }
 
@@ -98,31 +98,31 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
       restart(fn);
 
-      // add the test expr at the loop top
+      // Mark and add the test expr at the loop top
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(info->get(2))->body) {
-          buildBasicBlocks(fn, stmt);
+          buildBasicBlocks(fn, stmt, true);
         }
 
       // add the condition expr at the loop top; this is not quite right for DoWhile
       } else if (whileLoop) {
-        append(info->get(1));
+        append(info->get(1), true);
 
       // PARAM_LOOP and FOR_LOOP
       } else {
-        append(info);
+        append(info, true);
       }
 
       BasicBlock* loopTop = basicBlock;
 
       for_alist(stmt, s->body) {
-        buildBasicBlocks(fn, stmt);
+        buildBasicBlocks(fn, stmt, mark);
       }
 
       // for c for loops, add the incr expr after the loop body
       if (cForLoop) {
         for_alist(stmt, toBlockStmt(info->get(3))->body) {
-          buildBasicBlocks(fn, stmt);
+          buildBasicBlocks(fn, stmt, mark);
         }
       }
 
@@ -140,19 +140,20 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
     } else {
       for_alist(stmt, s->body)
-        buildBasicBlocks(fn, stmt);
+        buildBasicBlocks(fn, stmt, mark);
     }
 
   } else if (CondStmt* s = toCondStmt(stmt)) {
     INT_ASSERT(s->condExpr);
 
-    append(s->condExpr);
+    // Mark the conditional expression
+    append(s->condExpr, true);
 
     BasicBlock* top = basicBlock;
 
     restart(fn);
     thread(top, basicBlock);
-    buildBasicBlocks(fn, s->thenStmt);
+    buildBasicBlocks(fn, s->thenStmt, mark);
 
     BasicBlock* thenBottom = basicBlock;
 
@@ -161,7 +162,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     if (s->elseStmt) {
       thread(top, basicBlock);
 
-      buildBasicBlocks(fn, s->elseStmt);
+      buildBasicBlocks(fn, s->elseStmt, mark);
 
       BasicBlock* elseBottom = basicBlock;
 
@@ -192,7 +193,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       gotoMaps.put(label, vbb);
     }
 
-    append(s); // Put the goto at the end of its block.
+    append(s, mark); // Put the goto at the end of its block.
     restart(fn);
 
   } else {
@@ -208,7 +209,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
         thread(top, basicBlock);
       }
 
-      append(def); // Put the label def at the start of its block.
+      append(def, mark); // Put the label def at the start of its block.
 
       // OK, this statement is a label def, so get the label.
       LabelSymbol* label = toLabelSymbol(def->sym);
@@ -223,7 +224,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
       labelMaps.put(label, basicBlock);
     } else {
-      append(stmt);
+      append(stmt, mark);
     }
   }
 }
@@ -233,9 +234,9 @@ void BasicBlock::restart(FnSymbol* fn) {
   basicBlock = new BasicBlock();
 }
 
-void BasicBlock::append(Expr* expr) {
+void BasicBlock::append(Expr* expr, bool mark) {
   basicBlock->exprs.push_back(expr);
-  basicBlock->marks.push_back(false);
+  basicBlock->marks.push_back(mark);
 }
 
 void BasicBlock::thread(BasicBlock* src, BasicBlock* dst) {
