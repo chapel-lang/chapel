@@ -266,10 +266,6 @@ void deadCodeElimination(FnSymbol* fn) {
       if (isEssential == false) {
         forv_Vec(BaseAST, ast, asts) {
           if (Expr* sub = toExpr(ast)) {
-            if (isInLoopHeader(expr)) {
-              isEssential = true;
-            }
-
             if (CallExpr* call = toCallExpr(ast)) {
               // mark function calls as essential
               if (call->isResolved() != NULL)
@@ -286,16 +282,9 @@ void deadCodeElimination(FnSymbol* fn) {
                     isEssential = true;
                 }
               }
-            }
 
-            if (BlockStmt* block = toBlockStmt(sub->parentExpr)) {
+            } else if (BlockStmt* block = toBlockStmt(sub->parentExpr)) {
               if (block->blockInfoGet() == sub) {
-                isEssential = true;
-              }
-            }
-
-            if (CondStmt* cond = toCondStmt(sub->parentExpr)) {
-              if (cond->condExpr == sub) {
                 isEssential = true;
               }
             }
