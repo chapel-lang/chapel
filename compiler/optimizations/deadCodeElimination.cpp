@@ -235,18 +235,18 @@ void deadExpressionElimination(FnSymbol* fn) {
   }
 }
 
-void deadCodeElimination(FnSymbol* fn)
-{
+void deadCodeElimination(FnSymbol* fn) {
+  std::map<SymExpr*, Vec<SymExpr*>*> DU;
+  std::map<SymExpr*, Vec<SymExpr*>*> UD;
+
+  std::map<Expr*,    Expr*>          exprMap;
+
+  Vec<Expr*>                         liveCode;
+  Vec<Expr*>                         workSet;
+
   BasicBlock::buildBasicBlocks(fn);
 
-  std::map<SymExpr*,Vec<SymExpr*>*> DU;
-  std::map<SymExpr*,Vec<SymExpr*>*> UD;
-
   buildDefUseChains(fn, DU, UD);
-
-  std::map<Expr*,Expr*> exprMap;
-  Vec<Expr*> liveCode;
-  Vec<Expr*> workSet;
 
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
     for_vector(Expr, expr, bb->exprs) {
@@ -261,26 +261,37 @@ void deadCodeElimination(FnSymbol* fn)
         }
 
         if (CallExpr* call = toCallExpr(ast)) {
-          // mark function calls and essential primitives as essential
-          if (call->isResolved() ||
-              (call->primitive && call->primitive->isEssential))
+          // mark function calls as essential
+          if (call->isResolved() != NULL)
             essential = true;
+
+          // mark essential primitives as essential
+          if (call->primitive && call->primitive->isEssential)
+            essential = true;
+
           // mark assignments to global variables as essential
-          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-            if (SymExpr* se = toSymExpr(call->get(1)))
-              if (DU.count(se) == 0 || // DU chain only contains locals
-                  !se->var->type->refType) // reference issue
+          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+            if (SymExpr* se = toSymExpr(call->get(1))) {
+              if (DU.count(se) == 0 || !se->var->type->refType)
                 essential = true;
+            }
+          }
         }
 
         if (Expr* sub = toExpr(ast)) {
           exprMap[sub] = expr;
-          if (BlockStmt* block = toBlockStmt(sub->parentExpr))
-            if (block->blockInfoGet() == sub)
+
+          if (BlockStmt* block = toBlockStmt(sub->parentExpr)) {
+            if (block->blockInfoGet() == sub) {
               essential = true;
-          if (CondStmt* cond = toCondStmt(sub->parentExpr))
-            if (cond->condExpr == sub)
+            }
+          }
+
+          if (CondStmt* cond = toCondStmt(sub->parentExpr)) {
+            if (cond->condExpr == sub) {
               essential = true;
+            }
+          }
         }
       }
 
@@ -293,13 +304,18 @@ void deadCodeElimination(FnSymbol* fn)
 
   forv_Vec(Expr, expr, workSet) {
     Vec<SymExpr*> symExprs;
+
     collectSymExprs(expr, symExprs);
+
     forv_Vec(SymExpr, se, symExprs) {
       if (UD.count(se) != 0) {
         Vec<SymExpr*>* defs = UD[se];
+
         forv_Vec(SymExpr, def, *defs) {
           INT_ASSERT(exprMap.count(def) != 0);
+
           Expr* expr = exprMap[def];
+
           if (!liveCode.set_in(expr)) {
             liveCode.set_add(expr);
             workSet.add(expr);
