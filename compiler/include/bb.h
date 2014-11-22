@@ -43,6 +43,7 @@ public:
   static void               clear(FnSymbol* fn);
 
   static void               buildBasicBlocks(FnSymbol* fn);
+
   static void               printBasicBlocks(FnSymbol* fn);
 
   static void               buildLocalsVectorMap(FnSymbol*             fn,
@@ -73,20 +74,27 @@ public:
 
   static void               printBitVectorSets(std::vector<BitVec*>& sets);
 
+  static BasicBlock*        basicBlock;
 
-  static int                                          nextid;
-  static BasicBlock*                                  basicBlock;
+  static Map<LabelSymbol*,
+             BasicBlock*>   labelMaps;
 
-  static Map<LabelSymbol*, std::vector<BasicBlock*>*> gotoMaps;
-  static Map<LabelSymbol*, BasicBlock*>               labelMaps;
+  static Map<LabelSymbol*,
+             std::vector<BasicBlock*>*> gotoMaps;
 
 private:
   static void               buildBasicBlocks(FnSymbol* fn, Expr* stmt);
+  static void               restart(FnSymbol* fn);
+  static void               append(Expr* expr);
+  static void               thread(BasicBlock* src, BasicBlock* dst);
+
   static void               reset(FnSymbol* fn);
 
   static BasicBlock*        steal();
 
   static bool               verifyBasicBlocks(FnSymbol* fn);
+
+  static int                nextID;
 
   //
   // Instance methods/variables

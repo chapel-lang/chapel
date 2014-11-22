@@ -19,54 +19,238 @@
 
 #include "bb.h"
 
-#include "astutil.h"
 #include "bitVec.h"
-#include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
 
-#include <cstdlib>
-
-BasicBlock::BasicBlock()
-  : id(nextid++) {}
-
-#define BB_START()                              \
-  basicBlock = new BasicBlock()
-
-// The assert tests that the expression we are adding to this basic block
-// has not already been deleted.
-#define BB_ADD(expr)                            \
-  do {                                          \
-    INT_ASSERT(expr);                           \
-    basicBlock->exprs.push_back(expr);          \
-  } while (0)
-
-#define BB_STOP()                               \
-  fn->basicBlocks->push_back(steal())
-
-#define BB_RESTART()                            \
-  do {                                          \
-    BB_STOP();                                  \
-    BB_START();                                 \
-  } while (0)
-
-#define BBB(stmt)                               \
-    buildBasicBlocks(fn, stmt)
-
-#define BB_THREAD(src, dst)                     \
-  do {                                          \
-    (dst)->ins.push_back(src);                  \
-    (src)->outs.push_back(dst);                 \
-  } while (0)
-
-
-//# Statics
-int                                          BasicBlock::nextid     = 0;
+int                                          BasicBlock::nextID     = 0;
 BasicBlock*                                  BasicBlock::basicBlock = NULL;
 Map<LabelSymbol*, std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
 Map<LabelSymbol*, BasicBlock*>               BasicBlock::labelMaps;
 
+BasicBlock::BasicBlock() {
+  id = nextID++;
+}
+
+// Reset the shared statics.
+void BasicBlock::reset(FnSymbol* fn) {
+  clear(fn);
+
+  gotoMaps.clear();
+  labelMaps.clear();
+
+  fn->basicBlocks = new std::vector<BasicBlock*>();
+
+  nextID = 0;
+}
+
+void BasicBlock::clear(FnSymbol* fn) {
+  if (fn->basicBlocks != NULL) {
+    for_vector(BasicBlock, bb, *fn->basicBlocks)
+      delete bb;
+
+    delete fn->basicBlocks;
+
+    fn->basicBlocks = 0;
+  }
+}
+
+// This is the top-level (public) builder function.
+void BasicBlock::buildBasicBlocks(FnSymbol* fn) {
+  reset(fn);
+
+  basicBlock = new BasicBlock();
+
+  buildBasicBlocks(fn, fn->body);
+
+  fn->basicBlocks->push_back(BasicBlock::steal());
+
+  INT_ASSERT(verifyBasicBlocks(fn));
+}
+
+BasicBlock* BasicBlock::steal() {
+  BasicBlock* temp = basicBlock;
+
+  basicBlock = 0;
+
+  return temp;
+}
+
+void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
+  if (stmt == 0) {
+
+  } else if (BlockStmt* s = toBlockStmt(stmt)) {
+    if (s->isLoop() == true) {
+      CallExpr* info      = s->blockInfoGet();
+      bool      cForLoop  = s->isCForLoop();
+      bool      whileLoop = s->isWhileLoop();
+
+      // for c for loops, add the init expr before the loop body
+      if (cForLoop) {
+        for_alist(stmt, toBlockStmt(info->get(1))->body) {
+          buildBasicBlocks(fn, stmt);
+        }
+      }
+
+      // mark the top of the loop
+      BasicBlock* top = basicBlock;
+
+      restart(fn);
+
+      // add the test expr at the loop top
+      if (cForLoop) {
+        for_alist(stmt, toBlockStmt(info->get(2))->body) {
+          buildBasicBlocks(fn, stmt);
+        }
+
+      // add the condition expr at the loop top; this is not quite right for DoWhile
+      } else if (whileLoop) {
+        append(info->get(1));
+
+      // PARAM_LOOP and FOR_LOOP
+      } else {
+        append(info);
+      }
+
+      BasicBlock* loopTop = basicBlock;
+
+      for_alist(stmt, s->body) {
+        buildBasicBlocks(fn, stmt);
+      }
+
+      // for c for loops, add the incr expr after the loop body
+      if (cForLoop) {
+        for_alist(stmt, toBlockStmt(info->get(3))->body) {
+          buildBasicBlocks(fn, stmt);
+        }
+      }
+
+      BasicBlock* loopBottom = basicBlock;
+
+      restart(fn);
+
+      BasicBlock* bottom = basicBlock;
+
+      // thread the basic blocks of the pre-loop, loop, and post-loop together
+      thread(top,        loopTop);
+      thread(loopBottom, bottom);
+      thread(loopBottom, loopTop);
+      thread(top,        bottom);
+
+    } else {
+      for_alist(stmt, s->body)
+        buildBasicBlocks(fn, stmt);
+    }
+
+  } else if (CondStmt* s = toCondStmt(stmt)) {
+    INT_ASSERT(s->condExpr);
+
+    append(s->condExpr);
+
+    BasicBlock* top = basicBlock;
+
+    restart(fn);
+    thread(top, basicBlock);
+    buildBasicBlocks(fn, s->thenStmt);
+
+    BasicBlock* thenBottom = basicBlock;
+
+    restart(fn);
+
+    if (s->elseStmt) {
+      thread(top, basicBlock);
+
+      buildBasicBlocks(fn, s->elseStmt);
+
+      BasicBlock* elseBottom = basicBlock;
+
+      restart(fn);
+
+      thread(elseBottom, basicBlock);
+
+    } else {
+      thread(top, basicBlock);
+    }
+
+    thread(thenBottom, basicBlock);
+
+  } else if (GotoStmt* s = toGotoStmt(stmt)) {
+    LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
+
+    if (BasicBlock* bb = labelMaps.get(label)) {
+      thread(basicBlock, bb);
+
+    } else {
+      std::vector<BasicBlock*>* vbb = gotoMaps.get(label);
+
+      if (!vbb)
+        vbb = new std::vector<BasicBlock*>();
+
+      vbb->push_back(basicBlock);
+
+      gotoMaps.put(label, vbb);
+    }
+
+    append(s); // Put the goto at the end of its block.
+    restart(fn);
+
+  } else {
+    DefExpr* def = toDefExpr(stmt);
+
+    if (def && toLabelSymbol(def->sym)) {
+      // If a label appears in the middle of a block,
+      // we start a new block.
+      if (basicBlock->exprs.size() > 0) {
+        BasicBlock* top = basicBlock;
+
+        restart(fn);
+        thread(top, basicBlock);
+      }
+
+      append(def); // Put the label def at the start of its block.
+
+      // OK, this statement is a label def, so get the label.
+      LabelSymbol* label = toLabelSymbol(def->sym);
+
+      // See if we have any unresolved references to this label,
+      // and resolve them.
+      if (std::vector<BasicBlock*>* vbb = gotoMaps.get(label)) {
+        for_vector(BasicBlock, bb, *vbb) {
+          thread(bb, basicBlock);
+        }
+      }
+
+      labelMaps.put(label, basicBlock);
+    } else {
+      append(stmt);
+    }
+  }
+}
+
+void BasicBlock::restart(FnSymbol* fn) {
+  fn->basicBlocks->push_back(steal());
+  basicBlock = new BasicBlock();
+}
+
+void BasicBlock::append(Expr* expr) {
+  basicBlock->exprs.push_back(expr);
+}
+
+void BasicBlock::thread(BasicBlock* src, BasicBlock* dst) {
+  dst->ins.push_back(src);
+  src->outs.push_back(dst);
+}
+
+// Returns true if the basic block structure is OK, false otherwise.
+bool BasicBlock::verifyBasicBlocks(FnSymbol* fn) {
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    if (bb->isOK() == false)
+      return false;
+  }
+
+  return true;
+}
 
 // Returns true if the class invariants have been preserved.
 bool BasicBlock::isOK() {
@@ -102,210 +286,6 @@ bool BasicBlock::isOK() {
     }
 
     if (found == false)
-      return false;
-  }
-
-  return true;
-}
-
-void BasicBlock::clear(FnSymbol* fn) {
-  if (fn->basicBlocks != NULL) {
-
-    for_vector(BasicBlock, bb, *fn->basicBlocks)
-      delete bb;
-
-    delete fn->basicBlocks;
-
-    fn->basicBlocks = 0;
-  }
-}
-
-// Reset the shared statics.
-void BasicBlock::reset(FnSymbol* fn) {
-  clear(fn);
-
-  gotoMaps.clear();
-  labelMaps.clear();
-
-  fn->basicBlocks = new std::vector<BasicBlock*>();
-
-  nextid = 0;
-}
-
-BasicBlock* BasicBlock::steal() {
-  BasicBlock* temp = basicBlock;
-
-  basicBlock = 0;
-
-  return temp;
-}
-
-// This is the top-level (public) builder function.
-void BasicBlock::buildBasicBlocks(FnSymbol* fn) {
-  reset(fn);
-
-  basicBlock = new BasicBlock();
-
-  buildBasicBlocks(fn, fn->body);
-
-  fn->basicBlocks->push_back(BasicBlock::steal());
-
-  INT_ASSERT(verifyBasicBlocks(fn));
-}
-
-void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
-  if (stmt == 0) {
-
-  } else if (BlockStmt* s = toBlockStmt(stmt)) {
-    if (s->isLoop() == true) {
-      CallExpr* info      = s->blockInfoGet();
-      bool      cForLoop  = s->isCForLoop();
-      bool      whileLoop = s->isWhileLoop();
-
-      // for c for loops, add the init expr before the loop body
-      if (cForLoop) {
-        for_alist(stmt, toBlockStmt(info->get(1))->body) { BBB(stmt); }
-      }
-
-      // mark the top of the loop
-      BasicBlock* top = basicBlock;
-
-      BB_RESTART();
-
-      // add the test expr at the loop top
-      if (cForLoop) {
-        for_alist(stmt, toBlockStmt(info->get(2))->body) {
-          BBB(stmt);
-        }
-
-      // add the condition expr at the loop top; this is not quite right for DoWhile
-      } else if (whileLoop) {
-        BB_ADD(info->get(1));
-
-      // PARAM_LOOP and FOR_LOOP
-      } else {
-        BB_ADD(info);
-      }
-
-      BasicBlock* loopTop = basicBlock;
-
-      for_alist(stmt, s->body) {
-        BBB(stmt);
-      }
-
-      // for c for loops, add the incr expr after the loop body
-      if (cForLoop) {
-        for_alist(stmt, toBlockStmt(info->get(3))->body) {
-          BBB(stmt);
-        }
-      }
-
-      BasicBlock* loopBottom = basicBlock;
-
-      BB_RESTART();
-
-      BasicBlock* bottom = basicBlock;
-
-      // thread the basic blocks of the pre-loop, loop, and post-loop together
-      BB_THREAD(top,        loopTop);
-      BB_THREAD(loopBottom, bottom);
-      BB_THREAD(loopBottom, loopTop);
-      BB_THREAD(top,        bottom);
-
-    } else {
-      for_alist(stmt, s->body)
-        BBB(stmt);
-    }
-
-  } else if (CondStmt* s = toCondStmt(stmt)) {
-    INT_ASSERT(s->condExpr);
-
-    BB_ADD(s->condExpr);
-
-    BasicBlock* top = basicBlock;
-
-    BB_RESTART();
-    BB_THREAD(top, basicBlock);
-    BBB(s->thenStmt);
-
-    BasicBlock* thenBottom = basicBlock;
-
-    BB_RESTART();
-
-    if (s->elseStmt) {
-      BB_THREAD(top, basicBlock);
-
-      BBB(s->elseStmt);
-
-      BasicBlock* elseBottom = basicBlock;
-
-      BB_RESTART();
-      BB_THREAD(elseBottom, basicBlock);
-
-    } else {
-      BB_THREAD(top, basicBlock);
-    }
-
-    BB_THREAD(thenBottom, basicBlock);
-
-  } else if (GotoStmt* s = toGotoStmt(stmt)) {
-    LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
-
-    if (BasicBlock* bb = labelMaps.get(label)) {
-      BB_THREAD(basicBlock, bb);
-
-    } else {
-      std::vector<BasicBlock*>* vbb = gotoMaps.get(label);
-
-      if (!vbb)
-        vbb = new std::vector<BasicBlock*>();
-
-      vbb->push_back(basicBlock);
-
-      gotoMaps.put(label, vbb);
-    }
-
-    BB_ADD(s); // Put the goto at the end of its block.
-    BB_RESTART();
-
-  } else {
-    DefExpr* def = toDefExpr(stmt);
-
-    if (def && toLabelSymbol(def->sym)) {
-      // If a label appears in the middle of a block,
-      // we start a new block.
-      if (basicBlock->exprs.size() > 0)
-      {
-        BasicBlock* top = basicBlock;
-
-        BB_RESTART();
-        BB_THREAD(top, basicBlock);
-      }
-
-      BB_ADD(def); // Put the label def at the start of its block.
-
-      // OK, this statement is a label def, so get the label.
-      LabelSymbol* label = toLabelSymbol(def->sym);
-
-      // See if we have any unresolved references to this label,
-      // and resolve them.
-      if (std::vector<BasicBlock*>* vbb = gotoMaps.get(label)) {
-        for_vector(BasicBlock, bb, *vbb) {
-          BB_THREAD(bb, basicBlock);
-        }
-      }
-
-      labelMaps.put(label, basicBlock);
-    } else {
-      BB_ADD(stmt);
-    }
-  }
-}
-
-// Returns true if the basic block structure is OK, false otherwise.
-bool BasicBlock::verifyBasicBlocks(FnSymbol* fn) {
-  for_vector(BasicBlock, bb, *fn->basicBlocks) {
-    if (bb->isOK() == false)
       return false;
   }
 
@@ -409,7 +389,7 @@ void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
 
     for (int j = 0; j < IN[i]->ndata; j++) {
       if (bb->ins.size() > 0) {
-        unsigned int new_in = (intersect) ? (unsigned)(-1) : 0;
+        unsigned int new_in = (intersect) ? (unsigned int) (-1) : 0;
 
         for_vector(BasicBlock, bbin, bb->ins) {
           if (intersect)
@@ -420,7 +400,7 @@ void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
 
         if (new_in != IN[i]->data[j]) {
           IN[i]->data[j] = new_in;
-          change = true;
+          change         = true;
         }
       }
 
@@ -428,7 +408,7 @@ void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
 
       if (new_out != OUT[i]->data[j]) {
         OUT[i]->data[j] = new_out;
-        change = true;
+        change          = true;
       }
     }
 
@@ -488,8 +468,11 @@ void BasicBlock::printDefsVector(std::vector<SymExpr*> defs, Map<SymExpr*,int>& 
   printf("Variable Definitions\n");
 
   for_vector(SymExpr, def, defs) {
-    printf("%2d: %s[%d] in %d\n", defMap.get(def), def->var->name,
-           def->var->id, def->getStmtExpr()->id);
+    printf("%2d: %s[%d] in %d\n",
+           defMap.get(def),
+           def->var->name,
+           def->var->id,
+           def->getStmtExpr()->id);
   }
 
   printf("\n");
@@ -507,6 +490,7 @@ void BasicBlock::printLocalsVectorSets(std::vector<BitVec*>& sets, Vec<Symbol*> 
     }
 
     printf("\n");
+
     i++;
   }
 
@@ -525,6 +509,7 @@ void BasicBlock::printBitVectorSets(std::vector<BitVec*>& sets) {
     }
 
     printf("\n");
+
     i++;
   }
 
