@@ -258,6 +258,12 @@ void deadCodeElimination(FnSymbol* fn) {
       collect_asts(expr, asts);
 
       forv_Vec(BaseAST, ast, asts) {
+        if (Expr* sub = toExpr(ast)) {
+          exprMap[sub] = expr;
+        }
+      }
+
+      forv_Vec(BaseAST, ast, asts) {
         if (isInLoopHeader(expr)) {
           isEssential = true;
         }
@@ -281,8 +287,6 @@ void deadCodeElimination(FnSymbol* fn) {
         }
 
         if (Expr* sub = toExpr(ast)) {
-          exprMap[sub] = expr;
-
           if (BlockStmt* block = toBlockStmt(sub->parentExpr)) {
             if (block->blockInfoGet() == sub) {
               isEssential = true;
