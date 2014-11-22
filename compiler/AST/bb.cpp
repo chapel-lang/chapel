@@ -28,24 +28,12 @@
 
 #include <cstdlib>
 
-#define BB_START()                              \
-  basicBlock = new BasicBlock()
-
 // The assert tests that the expression we are adding to this basic block
 // has not already been deleted.
 #define BB_ADD(expr)                            \
   do {                                          \
     INT_ASSERT(expr);                           \
     basicBlock->exprs.push_back(expr);          \
-  } while (0)
-
-#define BB_STOP()                               \
-  fn->basicBlocks->push_back(steal())
-
-#define BB_RESTART()                            \
-  do {                                          \
-    BB_STOP();                                  \
-    BB_START();                                 \
   } while (0)
 
 #define BBB(stmt)                               \
@@ -132,7 +120,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       // mark the top of the loop
       BasicBlock* top = basicBlock;
 
-      BB_RESTART();
+      restart(fn);
 
       // add the test expr at the loop top
       if (cForLoop) {
@@ -164,7 +152,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
       BasicBlock* loopBottom = basicBlock;
 
-      BB_RESTART();
+      restart(fn);
 
       BasicBlock* bottom = basicBlock;
 
@@ -186,13 +174,13 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
     BasicBlock* top = basicBlock;
 
-    BB_RESTART();
+    restart(fn);
     BB_THREAD(top, basicBlock);
     BBB(s->thenStmt);
 
     BasicBlock* thenBottom = basicBlock;
 
-    BB_RESTART();
+    restart(fn);
 
     if (s->elseStmt) {
       BB_THREAD(top, basicBlock);
@@ -201,7 +189,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
       BasicBlock* elseBottom = basicBlock;
 
-      BB_RESTART();
+      restart(fn);
       BB_THREAD(elseBottom, basicBlock);
 
     } else {
@@ -228,7 +216,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     }
 
     BB_ADD(s); // Put the goto at the end of its block.
-    BB_RESTART();
+    restart(fn);
 
   } else {
     DefExpr* def = toDefExpr(stmt);
@@ -239,7 +227,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       if (basicBlock->exprs.size() > 0) {
         BasicBlock* top = basicBlock;
 
-        BB_RESTART();
+        restart(fn);
         BB_THREAD(top, basicBlock);
       }
 
@@ -262,6 +250,12 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     }
   }
 }
+
+void BasicBlock::restart(FnSymbol* fn) {
+  fn->basicBlocks->push_back(steal());
+  basicBlock = new BasicBlock();
+}
+
 
 // Returns true if the basic block structure is OK, false otherwise.
 bool BasicBlock::verifyBasicBlocks(FnSymbol* fn) {
