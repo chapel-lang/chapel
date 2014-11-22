@@ -28,13 +28,6 @@
 
 #include <cstdlib>
 
-#define BB_THREAD(src, dst)                     \
-  do {                                          \
-    (dst)->ins.push_back(src);                  \
-    (src)->outs.push_back(dst);                 \
-  } while (0)
-
-
 //# Statics
 int                                          BasicBlock::nextID     = 0;
 BasicBlock*                                  BasicBlock::basicBlock = NULL;
@@ -146,10 +139,10 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       BasicBlock* bottom = basicBlock;
 
       // thread the basic blocks of the pre-loop, loop, and post-loop together
-      BB_THREAD(top,        loopTop);
-      BB_THREAD(loopBottom, bottom);
-      BB_THREAD(loopBottom, loopTop);
-      BB_THREAD(top,        bottom);
+      thread(top,        loopTop);
+      thread(loopBottom, bottom);
+      thread(loopBottom, loopTop);
+      thread(top,        bottom);
 
     } else {
       for_alist(stmt, s->body)
@@ -164,7 +157,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     BasicBlock* top = basicBlock;
 
     restart(fn);
-    BB_THREAD(top, basicBlock);
+    thread(top, basicBlock);
     buildBasicBlocks(fn, s->thenStmt);
 
     BasicBlock* thenBottom = basicBlock;
@@ -172,7 +165,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
     restart(fn);
 
     if (s->elseStmt) {
-      BB_THREAD(top, basicBlock);
+      thread(top, basicBlock);
 
       buildBasicBlocks(fn, s->elseStmt);
 
@@ -180,19 +173,19 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
       restart(fn);
 
-      BB_THREAD(elseBottom, basicBlock);
+      thread(elseBottom, basicBlock);
 
     } else {
-      BB_THREAD(top, basicBlock);
+      thread(top, basicBlock);
     }
 
-    BB_THREAD(thenBottom, basicBlock);
+    thread(thenBottom, basicBlock);
 
   } else if (GotoStmt* s = toGotoStmt(stmt)) {
     LabelSymbol* label = toLabelSymbol(toSymExpr(s->label)->var);
 
     if (BasicBlock* bb = labelMaps.get(label)) {
-      BB_THREAD(basicBlock, bb);
+      thread(basicBlock, bb);
 
     } else {
       std::vector<BasicBlock*>* vbb = gotoMaps.get(label);
@@ -218,7 +211,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
         BasicBlock* top = basicBlock;
 
         restart(fn);
-        BB_THREAD(top, basicBlock);
+        thread(top, basicBlock);
       }
 
       append(def); // Put the label def at the start of its block.
@@ -230,7 +223,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       // and resolve them.
       if (std::vector<BasicBlock*>* vbb = gotoMaps.get(label)) {
         for_vector(BasicBlock, bb, *vbb) {
-          BB_THREAD(bb, basicBlock);
+          thread(bb, basicBlock);
         }
       }
 
@@ -248,6 +241,11 @@ void BasicBlock::restart(FnSymbol* fn) {
 
 void BasicBlock::append(Expr* expr) {
   basicBlock->exprs.push_back(expr);
+}
+
+void BasicBlock::thread(BasicBlock* src, BasicBlock* dst) {
+  dst->ins.push_back(src);
+  src->outs.push_back(dst);
 }
 
 // Returns true if the basic block structure is OK, false otherwise.

@@ -86,6 +86,7 @@ private:
   static void               buildBasicBlocks(FnSymbol* fn, Expr* stmt);
   static void               restart(FnSymbol* fn);
   static void               append(Expr* expr);
+  static void               thread(BasicBlock* src, BasicBlock* dst);
 
   static void               reset(FnSymbol* fn);
 
