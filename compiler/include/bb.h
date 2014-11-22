@@ -83,9 +83,11 @@ public:
              std::vector<BasicBlock*>*> gotoMaps;
 
 private:
-  static void               buildBasicBlocks(FnSymbol* fn, Expr* stmt);
+  static void               buildBasicBlocks(FnSymbol* fn,
+                                             Expr*     stmt,
+                                             bool      mark);
   static void               restart(FnSymbol* fn);
-  static void               append(Expr* expr);
+  static void               append(Expr* expr, bool mark);
   static void               thread(BasicBlock* src, BasicBlock* dst);
 
   static void               reset(FnSymbol* fn);
@@ -105,6 +107,8 @@ public:
   int                       id;
 
   std::vector<Expr*>        exprs;
+  std::vector<bool>         marks;
+
   std::vector<BasicBlock*>  ins;
   std::vector<BasicBlock*>  outs;
 
