@@ -249,31 +249,33 @@ void deadCodeElimination(FnSymbol* fn) {
   buildDefUseChains(fn, DU, UD);
 
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
-    for_vector(Expr, expr, bb->exprs) {
-      bool          essential = false;
+    for (size_t i = 0; i < bb->exprs.size(); i++) {
+      Expr*         expr        = bb->exprs[i];
+      bool          isEssential = bb->marks[i];
+
       Vec<BaseAST*> asts;
 
       collect_asts(expr, asts);
 
       forv_Vec(BaseAST, ast, asts) {
         if (isInLoopHeader(expr)) {
-          essential = true;
+          isEssential = true;
         }
 
         if (CallExpr* call = toCallExpr(ast)) {
           // mark function calls as essential
           if (call->isResolved() != NULL)
-            essential = true;
+            isEssential = true;
 
           // mark essential primitives as essential
           if (call->primitive && call->primitive->isEssential)
-            essential = true;
+            isEssential = true;
 
           // mark assignments to global variables as essential
           if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
             if (SymExpr* se = toSymExpr(call->get(1))) {
               if (DU.count(se) == 0 || !se->var->type->refType)
-                essential = true;
+                isEssential = true;
             }
           }
         }
@@ -283,19 +285,19 @@ void deadCodeElimination(FnSymbol* fn) {
 
           if (BlockStmt* block = toBlockStmt(sub->parentExpr)) {
             if (block->blockInfoGet() == sub) {
-              essential = true;
+              isEssential = true;
             }
           }
 
           if (CondStmt* cond = toCondStmt(sub->parentExpr)) {
             if (cond->condExpr == sub) {
-              essential = true;
+              isEssential = true;
             }
           }
         }
       }
 
-      if (essential) {
+      if (isEssential) {
         liveCode.set_add(expr);
         workSet.add(expr);
       }
