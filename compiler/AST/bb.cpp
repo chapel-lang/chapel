@@ -28,14 +28,6 @@
 
 #include <cstdlib>
 
-// The assert tests that the expression we are adding to this basic block
-// has not already been deleted.
-#define BB_ADD(expr)                            \
-  do {                                          \
-    INT_ASSERT(expr);                           \
-    basicBlock->exprs.push_back(expr);          \
-  } while (0)
-
 #define BB_THREAD(src, dst)                     \
   do {                                          \
     (dst)->ins.push_back(src);                  \
@@ -127,11 +119,11 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
       // add the condition expr at the loop top; this is not quite right for DoWhile
       } else if (whileLoop) {
-        BB_ADD(info->get(1));
+        append(info->get(1));
 
       // PARAM_LOOP and FOR_LOOP
       } else {
-        BB_ADD(info);
+        append(info);
       }
 
       BasicBlock* loopTop = basicBlock;
@@ -167,7 +159,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
   } else if (CondStmt* s = toCondStmt(stmt)) {
     INT_ASSERT(s->condExpr);
 
-    BB_ADD(s->condExpr);
+    append(s->condExpr);
 
     BasicBlock* top = basicBlock;
 
@@ -213,7 +205,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
       gotoMaps.put(label, vbb);
     }
 
-    BB_ADD(s); // Put the goto at the end of its block.
+    append(s); // Put the goto at the end of its block.
     restart(fn);
 
   } else {
@@ -229,7 +221,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
         BB_THREAD(top, basicBlock);
       }
 
-      BB_ADD(def); // Put the label def at the start of its block.
+      append(def); // Put the label def at the start of its block.
 
       // OK, this statement is a label def, so get the label.
       LabelSymbol* label = toLabelSymbol(def->sym);
@@ -244,7 +236,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt) {
 
       labelMaps.put(label, basicBlock);
     } else {
-      BB_ADD(stmt);
+      append(stmt);
     }
   }
 }
@@ -254,6 +246,9 @@ void BasicBlock::restart(FnSymbol* fn) {
   basicBlock = new BasicBlock();
 }
 
+void BasicBlock::append(Expr* expr) {
+  basicBlock->exprs.push_back(expr);
+}
 
 // Returns true if the basic block structure is OK, false otherwise.
 bool BasicBlock::verifyBasicBlocks(FnSymbol* fn) {
