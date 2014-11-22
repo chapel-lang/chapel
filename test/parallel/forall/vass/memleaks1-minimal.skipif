@@ -1,0 +1,5 @@
+# It sufficient to test this in the default configuration.
+# Once the leak is fixed, can open this up to all configurations.
+CHPL_COMM != none
+CHPL_LOCALE_MODEL != flat
+CHPL_TARGET_PLATFORM != linux64
