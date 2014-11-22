@@ -263,39 +263,41 @@ void deadCodeElimination(FnSymbol* fn) {
         }
       }
 
-      forv_Vec(BaseAST, ast, asts) {
-        if (isInLoopHeader(expr)) {
-          isEssential = true;
-        }
+      if (isEssential == false) {
+        forv_Vec(BaseAST, ast, asts) {
+          if (Expr* sub = toExpr(ast)) {
+            if (isInLoopHeader(expr)) {
+              isEssential = true;
+            }
 
-        if (CallExpr* call = toCallExpr(ast)) {
-          // mark function calls as essential
-          if (call->isResolved() != NULL)
-            isEssential = true;
-
-          // mark essential primitives as essential
-          if (call->primitive && call->primitive->isEssential)
-            isEssential = true;
-
-          // mark assignments to global variables as essential
-          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-            if (SymExpr* se = toSymExpr(call->get(1))) {
-              if (DU.count(se) == 0 || !se->var->type->refType)
+            if (CallExpr* call = toCallExpr(ast)) {
+              // mark function calls as essential
+              if (call->isResolved() != NULL)
                 isEssential = true;
-            }
-          }
-        }
 
-        if (Expr* sub = toExpr(ast)) {
-          if (BlockStmt* block = toBlockStmt(sub->parentExpr)) {
-            if (block->blockInfoGet() == sub) {
-              isEssential = true;
-            }
-          }
+              // mark essential primitives as essential
+              if (call->primitive && call->primitive->isEssential)
+                isEssential = true;
 
-          if (CondStmt* cond = toCondStmt(sub->parentExpr)) {
-            if (cond->condExpr == sub) {
-              isEssential = true;
+              // mark assignments to global variables as essential
+              if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+                if (SymExpr* se = toSymExpr(call->get(1))) {
+                  if (DU.count(se) == 0 || !se->var->type->refType)
+                    isEssential = true;
+                }
+              }
+            }
+
+            if (BlockStmt* block = toBlockStmt(sub->parentExpr)) {
+              if (block->blockInfoGet() == sub) {
+                isEssential = true;
+              }
+            }
+
+            if (CondStmt* cond = toCondStmt(sub->parentExpr)) {
+              if (cond->condExpr == sub) {
+                isEssential = true;
+              }
             }
           }
         }
