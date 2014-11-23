@@ -1035,6 +1035,7 @@ for testname in testsrc:
         continue # on to next test
 
     clist = list()
+    curFileTestStart = time.time()
     # For all compopts + execopts combos..
     compoptsnum = 0
     for compopts in compoptslist:
@@ -1094,6 +1095,7 @@ for testname in testsrc:
         if lastcompopts:
             args += lastcompopts
 
+        compStart = time.time()
         #
         # Compile (with timeout)
         #
@@ -1137,6 +1139,15 @@ for testname in testsrc:
                 continue # on to next compopts
 
             status = p.returncode
+
+        elapsedCompTime = time.time() - compStart
+        test_name = os.path.join(localdir, test_filename)
+        if compoptsnum != 0:
+            test_name += ' (compopts: {0})'.format(compoptsnum)
+
+        print('[Elapsed compilation time for "{0}" - {1:.3f} '
+            'seconds]'.format(test_name, elapsedCompTime))
+
 
         if (status!=0 or not executebin):
             # Save original output
@@ -1430,7 +1441,7 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
                 sys.stdout.flush()
 
-                execstart = time.time()
+                execStart = time.time()
                 if useLauncherTimeout:
                     if redirectin == None:
                         my_stdin = None
@@ -1508,8 +1519,20 @@ for testname in testsrc:
 
                     status = p.returncode
 
-                execend = time.time()
-                if execTimeWarnLimit and execend - execstart > execTimeWarnLimit:
+                elapsedExecTime = time.time() - execStart
+                test_name = os.path.join(localdir, test_filename)
+                compExecStr = ''
+                if compoptsnum != 0:
+                    compExecStr += 'compopts: {0} '.format(compoptsnum)
+                if execoptsnum != 0:
+                    compExecStr += 'execopts: {0}'.format(execoptsnum)
+                if compExecStr:
+                    test_name += ' ({0})'.format(compExecStr.strip())
+
+                print('[Elapsed execution time for "{0}" - {1:.3f} '
+                    'seconds]'.format(test_name, elapsedExecTime))
+
+                if execTimeWarnLimit and elapsedExcTime > execTimeWarnLimit:
                     sys.stdout.write('[Warning: %s/%s took over %.0f seconds to '
                         'execute]\n' %(localdir, test_filename, execTimeWarnLimit))
 
@@ -1666,5 +1689,11 @@ for testname in testsrc:
 
     del execoptslist
     del compoptslist
+
+    elapsedCurFileTestTime = time.time() - curFileTestStart
+    test_name = os.path.join(localdir, test_filename)
+    print('[Elapsed time to compile and execute all versions of "{0}" - '
+        '{1:.3f} seconds]'.format(test_name, elapsedCurFileTestTime))
+
 
 sys.exit(0)

@@ -53,6 +53,9 @@ public:
 
   virtual bool           deadBlockCleanup();
 
+  void                   loopHeaderSet(BlockStmt* initBlock,
+                                       BlockStmt* testBlock,
+                                       BlockStmt* incrBlock);
 private:
                          CForLoop();
 
