@@ -234,11 +234,6 @@ void deadCodeElimination(FnSymbol* fn) {
                     isEssential = true;
                 }
               }
-
-            } else if (BlockStmt* block = toBlockStmt(sub->parentExpr)) {
-              if (block->blockInfoGet() == sub) {
-                isEssential = true;
-              }
             }
           }
         }
