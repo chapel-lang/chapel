@@ -19,6 +19,7 @@
 
 #include "bb.h"
 
+#include "astutil.h"
 #include "bitVec.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -197,7 +198,30 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
     restart(fn);
 
   } else {
-    DefExpr* def = toDefExpr(stmt);
+    DefExpr*      def = toDefExpr(stmt);
+    Vec<BaseAST*> asts;
+
+    collect_asts(stmt, asts);
+
+    forv_Vec(BaseAST, ast, asts) {
+      if (CallExpr* call = toCallExpr(ast)) {
+        // mark function calls as essential
+        if (call->isResolved() != NULL)
+          mark = true;
+
+        // mark essential primitives as essential
+        else if (call->primitive && call->primitive->isEssential)
+          mark = true;
+
+        // mark assignments to global variables as essential
+        else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+          if (SymExpr* se = toSymExpr(call->get(1))) {
+            if (se->var->type->refType == NULL)
+              mark = true;
+          }
+        }
+      }
+    }
 
     if (def && toLabelSymbol(def->sym)) {
       // If a label appears in the middle of a block,

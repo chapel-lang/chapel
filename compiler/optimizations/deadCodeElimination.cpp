@@ -220,18 +220,27 @@ void deadCodeElimination(FnSymbol* fn) {
           if (Expr* sub = toExpr(ast)) {
             if (CallExpr* call = toCallExpr(ast)) {
               // mark function calls as essential
-              if (call->isResolved() != NULL)
+              if (call->isResolved() != NULL) {
+                printf("Surprise DCE isResolved\n");
                 isEssential = true;
+              }
 
               // mark essential primitives as essential
-              if (call->primitive && call->primitive->isEssential)
+              else if (call->primitive && call->primitive->isEssential) {
+                printf("Surprise DCE isPrimitive\n");
                 isEssential = true;
+              }
 
               // mark assignments to global variables as essential
-              if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+              else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
                 if (SymExpr* se = toSymExpr(call->get(1))) {
-                  if (DU.count(se) == 0 || !se->var->type->refType)
+                  if (DU.count(se) == 0) {
                     isEssential = true;
+
+                  } else if (se->var->type->refType == NULL) {
+                    printf("Surprise DCE is ref\n");
+                    isEssential = true;
+                  }
                 }
               }
             }
