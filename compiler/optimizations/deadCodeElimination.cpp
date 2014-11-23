@@ -30,16 +30,12 @@
 #include <queue>
 #include <set>
 
+static bool         isInCForLoopHeader(Expr* expr);
+static void         deadBlockElimination(FnSymbol* fn);
+static void         cleanupLoopBlocks(FnSymbol* fn);
 
-//
-// Static function declarations.
-//
-static void deadBlockElimination(FnSymbol* fn);
-static void cleanupLoopBlocks(FnSymbol* fn);
-
-// Static variables.
-static unsigned deadBlockCount;
-static unsigned deadModuleCount;
+static unsigned int deadBlockCount;
+static unsigned int deadModuleCount;
 
 //
 //
@@ -58,61 +54,6 @@ static unsigned deadModuleCount;
 // An empty cond statement between a goto and the target of the goto
 //
 //
-
-
-
-
-
-
-// Determines if the expression is in the header of a Loop expression
-//
-// After normalization, the conditional test for a WhileStmt is expressed as
-// a SymExpr inside a primitive CallExpr.
-//
-// The init, test, incr clauses of a C-For loop are expressed as BlockStmts
-// that contain the relevant expressions.  This function only returns true
-// for the expressions inside the BlockStmt and not the BlockStmt itself
-//
-// TODO should this be updated to only look for exprs in the test segment that
-// are conditional primitives?
-//
-static bool isInLoopHeader(Expr* expr) {
-  bool retval = false;
-
-  if (expr->parentExpr == NULL) {
-    retval = false;
-
-  } else if (CallExpr* call = toCallExpr(expr->parentExpr)) {
-    if (call->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-        call->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP)) {
-      retval = true;
-    }
-
-  } else if (expr->parentExpr->parentExpr == NULL) {
-    retval = false;
-
-  } else if (CallExpr* call = toCallExpr(expr->parentExpr->parentExpr)) {
-
-    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
-      retval = true;
-
-  } else {
-    retval = false;
-  }
-
-  return retval;
-}
-
-static bool isInCForLoopHeader(Expr* expr) {
-  Expr* stmtExpr = expr->parentExpr;
-  bool  retval   = false;
-
-  if (BlockStmt* blockStmt = toBlockStmt(stmtExpr)) {
-    retval = (blockStmt->blockTag == BLOCK_C_FOR_LOOP) ? true : false;
-  }
-
-  return retval;
-}
 
 //
 // Removes local variables that are only targets for moves, but are
@@ -235,56 +176,75 @@ void deadExpressionElimination(FnSymbol* fn) {
   }
 }
 
-void deadCodeElimination(FnSymbol* fn)
-{
-  BasicBlock::buildBasicBlocks(fn);
+static bool isInCForLoopHeader(Expr* expr) {
+  Expr* stmtExpr = expr->parentExpr;
+  bool  retval   = false;
 
-  std::map<SymExpr*,Vec<SymExpr*>*> DU;
-  std::map<SymExpr*,Vec<SymExpr*>*> UD;
+  if (BlockStmt* blockStmt = toBlockStmt(stmtExpr)) {
+    retval = (blockStmt->blockTag == BLOCK_C_FOR_LOOP) ? true : false;
+  }
+
+  return retval;
+}
+
+void deadCodeElimination(FnSymbol* fn) {
+  std::map<SymExpr*, Vec<SymExpr*>*> DU;
+  std::map<SymExpr*, Vec<SymExpr*>*> UD;
+
+  std::map<Expr*,    Expr*>          exprMap;
+
+  Vec<Expr*>                         liveCode;
+  Vec<Expr*>                         workSet;
+
+  BasicBlock::buildBasicBlocks(fn);
 
   buildDefUseChains(fn, DU, UD);
 
-  std::map<Expr*,Expr*> exprMap;
-  Vec<Expr*> liveCode;
-  Vec<Expr*> workSet;
-
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
-    for_vector(Expr, expr, bb->exprs) {
-      bool          essential = false;
+    for (size_t i = 0; i < bb->exprs.size(); i++) {
+      Expr*         expr        = bb->exprs[i];
+      bool          isEssential = bb->marks[i];
+
       Vec<BaseAST*> asts;
 
       collect_asts(expr, asts);
 
       forv_Vec(BaseAST, ast, asts) {
-        if (isInLoopHeader(expr)) {
-          essential = true;
-        }
-
-        if (CallExpr* call = toCallExpr(ast)) {
-          // mark function calls and essential primitives as essential
-          if (call->isResolved() ||
-              (call->primitive && call->primitive->isEssential))
-            essential = true;
-          // mark assignments to global variables as essential
-          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-            if (SymExpr* se = toSymExpr(call->get(1)))
-              if (DU.count(se) == 0 || // DU chain only contains locals
-                  !se->var->type->refType) // reference issue
-                essential = true;
-        }
-
         if (Expr* sub = toExpr(ast)) {
           exprMap[sub] = expr;
-          if (BlockStmt* block = toBlockStmt(sub->parentExpr))
-            if (block->blockInfoGet() == sub)
-              essential = true;
-          if (CondStmt* cond = toCondStmt(sub->parentExpr))
-            if (cond->condExpr == sub)
-              essential = true;
         }
       }
 
-      if (essential) {
+      if (isEssential == false) {
+        forv_Vec(BaseAST, ast, asts) {
+          if (Expr* sub = toExpr(ast)) {
+            if (CallExpr* call = toCallExpr(ast)) {
+              // mark function calls as essential
+              if (call->isResolved() != NULL)
+                isEssential = true;
+
+              // mark essential primitives as essential
+              if (call->primitive && call->primitive->isEssential)
+                isEssential = true;
+
+              // mark assignments to global variables as essential
+              if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+                if (SymExpr* se = toSymExpr(call->get(1))) {
+                  if (DU.count(se) == 0 || !se->var->type->refType)
+                    isEssential = true;
+                }
+              }
+
+            } else if (BlockStmt* block = toBlockStmt(sub->parentExpr)) {
+              if (block->blockInfoGet() == sub) {
+                isEssential = true;
+              }
+            }
+          }
+        }
+      }
+
+      if (isEssential) {
         liveCode.set_add(expr);
         workSet.add(expr);
       }
@@ -293,13 +253,18 @@ void deadCodeElimination(FnSymbol* fn)
 
   forv_Vec(Expr, expr, workSet) {
     Vec<SymExpr*> symExprs;
+
     collectSymExprs(expr, symExprs);
+
     forv_Vec(SymExpr, se, symExprs) {
       if (UD.count(se) != 0) {
         Vec<SymExpr*>* defs = UD[se];
+
         forv_Vec(SymExpr, def, *defs) {
           INT_ASSERT(exprMap.count(def) != 0);
+
           Expr* expr = exprMap[def];
+
           if (!liveCode.set_in(expr)) {
             liveCode.set_add(expr);
             workSet.add(expr);
