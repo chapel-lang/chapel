@@ -24,6 +24,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
+#include "WhileStmt.h"
 
 int                                          BasicBlock::nextID     = 0;
 BasicBlock*                                  BasicBlock::basicBlock = NULL;
@@ -83,12 +84,12 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
   } else if (BlockStmt* s = toBlockStmt(stmt)) {
     if (s->isLoop() == true) {
-      CallExpr* info      = s->blockInfoGet();
-      bool      cForLoop  = s->isCForLoop();
-      bool      whileLoop = s->isWhileStmt();
+      bool cForLoop  = s->isCForLoop();
 
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {
+        CallExpr* info = s->blockInfoGet();
+
         for_alist(stmt, toBlockStmt(info->get(1))->body) {
           buildBasicBlocks(fn, stmt, mark);
         }
@@ -101,16 +102,22 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
       // Mark and add the test expr at the loop top
       if (cForLoop) {
+        CallExpr* info = s->blockInfoGet();
+
         for_alist(stmt, toBlockStmt(info->get(2))->body) {
           buildBasicBlocks(fn, stmt, true);
         }
 
       // add the condition expr at the loop top; this is not quite right for DoWhile
-      } else if (whileLoop) {
+      } else if (WhileStmt* whileStmt = toWhileStmt(stmt)) {
+        CallExpr* info = whileStmt->condExprGet();
+
         append(info->get(1), true);
 
       // PARAM_LOOP and FOR_LOOP
       } else {
+        CallExpr* info = s->blockInfoGet();
+
         append(info, true);
       }
 
@@ -122,6 +129,8 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
       // for c for loops, add the incr expr after the loop body
       if (cForLoop) {
+        CallExpr* info = s->blockInfoGet();
+
         for_alist(stmt, toBlockStmt(info->get(3))->body) {
           buildBasicBlocks(fn, stmt, mark);
         }
