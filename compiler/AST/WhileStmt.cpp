@@ -87,6 +87,16 @@ bool WhileStmt::isWhileLoop() const
   return true;
 }
 
+CallExpr* WhileStmt::condExprGet() const
+{
+  return BlockStmt::blockInfoGet();
+}
+
+CallExpr* WhileStmt::condExprSet(CallExpr* info)
+{
+  return BlockStmt::blockInfoSet(info);
+}
+
 bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
