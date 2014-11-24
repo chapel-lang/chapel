@@ -101,7 +101,7 @@ bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (blockInfoGet()->numActuals() == 0) {
+  if (blockInfoGet() == 0 || blockInfoGet()->numActuals() == 0) {
     remove();
     retval = true;
   }
