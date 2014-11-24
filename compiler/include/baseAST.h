@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -362,12 +362,27 @@ def_to_ast(Type)
     AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
     AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                \
     break;                                                              \
-  case E_BlockStmt:                                                     \
-    AST_CALL_LIST (_a, BlockStmt, body,           call, __VA_ARGS__);   \
-    AST_CALL_CHILD(_a, BlockStmt, blockInfoGet(), call, __VA_ARGS__);   \
-    AST_CALL_CHILD(_a, BlockStmt, modUses,        call, __VA_ARGS__);   \
-    AST_CALL_CHILD(_a, BlockStmt, byrefVars,      call, __VA_ARGS__);   \
-    break;                                                              \
+                                                                            \
+  case E_BlockStmt: {                                                       \
+    BlockStmt* stmt = toBlockStmt(_a);                                      \
+                                                                            \
+    if (stmt->isWhileDoLoop() == true) {                                    \
+      AST_CALL_CHILD(stmt, WhileStmt, condExprGet(),  call, __VA_ARGS__);   \
+      AST_CALL_LIST (stmt, WhileStmt, body,           call, __VA_ARGS__);   \
+                                                                            \
+    } else if (stmt->isDoWhileLoop() == true) {                             \
+      AST_CALL_LIST (stmt, WhileStmt, body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, WhileStmt, condExprGet(),  call, __VA_ARGS__);   \
+                                                                            \
+    } else  {                                                               \
+      AST_CALL_LIST (stmt, BlockStmt, body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt, blockInfoGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt, modUses,        call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt, byrefVars,      call, __VA_ARGS__);   \
+    }                                                                       \
+    break;                                                                  \
+  }                                                                         \
+                                                                            \
   case E_CondStmt:                                                      \
     AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);          \
     AST_CALL_CHILD(_a, CondStmt, thenStmt, call, __VA_ARGS__);          \
