@@ -5818,16 +5818,21 @@ postFold(Expr* expr) {
 
 static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr)) {
-    if (block->blockInfoGet()) {
+    if (block->isWhileStmt() == true) {
+      USR_FATAL(expr, "param function cannot contain a non-param while loop");
+
+    } else if (block->blockInfoGet()) {
       USR_FATAL(expr, "param function cannot contain a non-param loop");
     }
   }
+
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
     if (isCondStmt(block->parentExpr)) {
       USR_FATAL(block->parentExpr,
                 "param function cannot contain a non-param conditional");
     }
   }
+
   if (paramMap.get(fn->getReturnSymbol())) {
     CallExpr* call = toCallExpr(fn->body->body.tail);
     INT_ASSERT(call);
@@ -5835,6 +5840,7 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
     call->get(1)->replace(new SymExpr(paramMap.get(fn->getReturnSymbol())));
     return true; // param function is resolved
   }
+
   return false;
 }
 
