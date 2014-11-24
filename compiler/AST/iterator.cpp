@@ -119,7 +119,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           // NOAKES 2014/11/18 It is strange that this ignores DOWHILE
           if (block->isForLoop()     == true ||
               block->isCForLoop()    == true ||
-              block->isWhileDoLoop() == true) {
+              block->isWhileDoStmt() == true) {
             singleYield = call;
           } else {
             return NULL;
@@ -135,7 +135,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           return NULL;
         } else if ((block->isForLoop()     == true ||
                     block->isCForLoop()    == true ||
-                    block->isWhileDoLoop() == true) &&
+                    block->isWhileDoStmt() == true) &&
                    block->parentExpr == fn->body) {
           singleFor = block;
         } else {

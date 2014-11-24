@@ -81,9 +81,9 @@ public:
   // New interface
   virtual bool        isLoop()                                     const;
 
-  virtual bool        isWhileLoop()                                const;
-  virtual bool        isWhileDoLoop()                              const;
-  virtual bool        isDoWhileLoop()                              const;
+  virtual bool        isWhileStmt()                                const;
+  virtual bool        isWhileDoStmt()                              const;
+  virtual bool        isDoWhileStmt()                              const;
 
   virtual bool        isForLoop()                                  const;
   virtual bool        isCForLoop()                                 const;

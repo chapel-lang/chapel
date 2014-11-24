@@ -85,7 +85,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
     if (s->isLoop() == true) {
       CallExpr* info      = s->blockInfoGet();
       bool      cForLoop  = s->isCForLoop();
-      bool      whileLoop = s->isWhileLoop();
+      bool      whileLoop = s->isWhileStmt();
 
       // for c for loops, add the init expr before the loop body
       if (cForLoop) {

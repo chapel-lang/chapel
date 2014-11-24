@@ -71,6 +71,7 @@ class Expr;
 class GenRet;
 class Symbol;
 class Type;
+class WhileStmt;
 
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
@@ -300,6 +301,8 @@ def_is_ast(EnumType)
 def_is_ast(AggregateType)
 #undef def_is_ast
 
+bool isWhileStmt(BaseAST* a);
+
 //
 // safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
@@ -328,7 +331,11 @@ def_to_ast(PrimitiveType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)
 def_to_ast(Type)
+
+def_to_ast(WhileStmt);
+
 #undef def_to_ast
+
 //
 // traversal macros
 //
@@ -366,11 +373,11 @@ def_to_ast(Type)
   case E_BlockStmt: {                                                       \
     BlockStmt* stmt = toBlockStmt(_a);                                      \
                                                                             \
-    if (stmt->isWhileDoLoop() == true) {                                    \
+    if (stmt->isWhileDoStmt() == true) {                                    \
       AST_CALL_CHILD(stmt, WhileStmt, condExprGet(),  call, __VA_ARGS__);   \
       AST_CALL_LIST (stmt, WhileStmt, body,           call, __VA_ARGS__);   \
                                                                             \
-    } else if (stmt->isDoWhileLoop() == true) {                             \
+    } else if (stmt->isDoWhileStmt() == true) {                             \
       AST_CALL_LIST (stmt, WhileStmt, body,           call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, WhileStmt, condExprGet(),  call, __VA_ARGS__);   \
                                                                             \
