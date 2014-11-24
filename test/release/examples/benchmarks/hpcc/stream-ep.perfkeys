@@ -5,7 +5,6 @@ min (seconds) =
 max =
 avg =
 min =
-# file: hpcc-stream-ep-problem-size.dat
 Problem size =
 Bytes per array =
 Total memory required (GB) =
