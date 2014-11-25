@@ -298,6 +298,16 @@ BlockStmt::getFirstExpr() {
   return this;
 }
 
+Expr*
+BlockStmt::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == blockInfoGet() && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  return retval;
+}
+
 void
 BlockStmt::insertAtHead(Expr* ast) {
   body.insertAtHead(ast);
@@ -720,6 +730,19 @@ CondStmt::getFirstExpr() {
     return condExpr->getFirstExpr();
 
   return this;
+}
+
+Expr*
+CondStmt::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == condExpr && thenStmt != NULL)
+    retval = thenStmt->getFirstExpr();
+
+  else if (expr == thenStmt && elseStmt != NULL)
+    retval = elseStmt->getFirstExpr();
+
+  return retval;
 }
 
 /******************************** | *********************************
