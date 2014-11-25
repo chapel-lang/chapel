@@ -88,7 +88,7 @@ DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
   return retval;
 }
 
-bool DoWhileStmt::isDoWhileLoop() const
+bool DoWhileStmt::isDoWhileStmt() const
 {
   return true;
 }

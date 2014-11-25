@@ -40,7 +40,7 @@ public:
 
   virtual DoWhileStmt*   copy(SymbolMap* map = NULL, bool internal = false);
 
-  virtual bool           isDoWhileLoop()                              const;
+  virtual bool           isDoWhileStmt()                              const;
 
   virtual GenRet         codegen();
   virtual void           verify();
