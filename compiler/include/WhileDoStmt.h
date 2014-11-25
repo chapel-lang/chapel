@@ -42,7 +42,7 @@ public:
 
   virtual WhileDoStmt*   copy(SymbolMap* map = NULL, bool internal = false);
 
-  virtual bool           isWhileDoLoop()                              const;
+  virtual bool           isWhileDoStmt()                              const;
 
   virtual GenRet         codegen();
   virtual void           verify();

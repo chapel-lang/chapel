@@ -39,7 +39,7 @@ protected:
   virtual void           verify();
 
   virtual bool           isLoop()                                     const;
-  virtual bool           isWhileLoop()                                const;
+  virtual bool           isWhileStmt()                                const;
 
   virtual void           checkConstLoops();
 

@@ -106,7 +106,7 @@ WhileDoStmt* WhileDoStmt::copy(SymbolMap* map, bool internal)
   return retval;
 }
 
-bool WhileDoStmt::isWhileDoLoop() const
+bool WhileDoStmt::isWhileDoStmt() const
 {
   return true;
 }
