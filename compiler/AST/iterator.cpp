@@ -91,6 +91,7 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   return rsym->type;
 }
 
+#include "AstDumpToNode.h"
 
 //
 // Determines that an iterator has a single loop with a single yield
@@ -128,9 +129,36 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           return NULL;
         }
       }
+
+    } else if (isWhileDoStmt(ast) ||
+               isDoWhileStmt(ast) ||
+               isForLoop(ast)     ||
+               isCForLoop(ast)) {
+      BlockStmt* block = toBlockStmt(ast);
+
+      INT_ASSERT(block->blockInfoGet());
+
+      if (singleFor) {
+        return NULL;
+
+      } else if (block->parentExpr == fn->body) {
+        singleFor = block;
+
+      } else {
+        return NULL;
+      }
+
     } else if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockInfoGet() && !(block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) ||
                                      block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))) {
+
+        printf("Surprise isSingleLoopIterator is handling a BlockStmt as if a LOOP\n");
+
+        AstDumpToNode logger(stdout);
+
+        block->accept(&logger);
+        printf("\n\n");
+
         if (singleFor) {
           return NULL;
         } else if ((block->isForLoop()     == true ||
