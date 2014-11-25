@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -3426,9 +3426,7 @@ void CallExpr::verify() {
     case PRIM_BLOCK_COFORALL_ON:
     case PRIM_BLOCK_LOCAL:
       if (toBlockStmt(parentExpr)) {
-        // does not pass:
-        //if (toBlockStmt(parentExpr)->blockInfoGet() != this)
-        //  INT_FATAL(this, "blockInfo-type CallExpr not parent's blockInfo");
+
       } else {
         INT_FATAL(this, "blockInfo-type CallExpr not in a BlockStmt");
       }

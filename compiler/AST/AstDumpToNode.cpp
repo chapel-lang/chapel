@@ -264,14 +264,14 @@ bool AstDumpToNode::enterWhileDoStmt(WhileDoStmt* node)
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->condExprGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "BlockInfo: ", false);
+    write(false, "CondExpr:", false);
     mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
+    node->condExprGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
@@ -282,8 +282,10 @@ bool AstDumpToNode::enterWhileDoStmt(WhileDoStmt* node)
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
     write(false, "extern ", true);
+
   if (node->blockTag & BLOCK_SCOPELESS)
     write(false, "scopeless ", true);
+
   if (node->blockTag & BLOCK_TYPE_ONLY)
     write(false, "type_only ", true);
 
@@ -340,14 +342,14 @@ bool AstDumpToNode::enterDoWhileStmt(DoWhileStmt* node)
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->condExprGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "BlockInfo: ", false);
+    write(false, "CondExpr:", false);
     mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
+    node->condExprGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
@@ -358,8 +360,10 @@ bool AstDumpToNode::enterDoWhileStmt(DoWhileStmt* node)
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
     write(false, "extern ", true);
+
   if (node->blockTag & BLOCK_SCOPELESS)
     write(false, "scopeless ", true);
+
   if (node->blockTag & BLOCK_TYPE_ONLY)
     write(false, "type_only ", true);
 

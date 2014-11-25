@@ -340,17 +340,17 @@ BlockStmt::isLoop() const {
 }
 
 bool
-BlockStmt::isWhileLoop() const {
+BlockStmt::isWhileStmt() const {
   return false;
 }
 
 bool
-BlockStmt::isWhileDoLoop() const {
+BlockStmt::isWhileDoStmt() const {
   return false;
 }
 
 bool
-BlockStmt::isDoWhileLoop() const {
+BlockStmt::isDoWhileStmt() const {
   return false;
 }
 
