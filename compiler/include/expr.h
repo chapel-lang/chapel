@@ -46,6 +46,7 @@ public:
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
 
   virtual Expr*   getFirstExpr()                                       = 0;
+  virtual Expr*   getNextExpr(Expr* expr);
 
   virtual bool    isNoInitExpr()                                     const;
 
@@ -176,6 +177,7 @@ class CallExpr : public Expr {
   virtual Type*   typeInfo();
 
   virtual Expr*   getFirstExpr();
+  virtual Expr*   getNextExpr(Expr* expr);
 
   void            insertAtHead(BaseAST* ast);
   void            insertAtTail(BaseAST* ast);

@@ -160,6 +160,9 @@ Expr* Expr::getStmtExpr() {
   return NULL;
 }
 
+Expr* Expr::getNextExpr(Expr* expr) {
+  return NULL;
+}
 
 void Expr::verify() {
   if (prev || next)
@@ -3427,13 +3430,18 @@ CallExpr::~CallExpr() { }
 
 
 Expr* CallExpr::getFirstExpr() {
+  Expr* retval = NULL;
+
   if (baseExpr != NULL)
-    return baseExpr->getFirstExpr();
+    retval = baseExpr->getFirstExpr();
 
-  if (argList.head != NULL)
-    return argList.head;
+  else if (argList.head != NULL)
+    retval = argList.head;
 
-  return this;
+  else
+    retval = this;
+
+  return retval;
 }
 
 void CallExpr::verify() {
@@ -5622,10 +5630,7 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
 
 
 Expr* NamedExpr::getFirstExpr() {
-  if (actual != NULL)
-    return actual->getFirstExpr();
-
-  return this;
+  return (actual != NULL) ? actual->getFirstExpr() : this;
 }
 
 void NamedExpr::verify() {
@@ -5817,30 +5822,32 @@ CallExpr* callChplHereFree(BaseAST* p) {
   }
 }
 
+Expr* CallExpr::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == baseExpr && argList.head != NULL)
+    retval = argList.head->getFirstExpr();
+
+  return retval;
+}
+
 Expr* getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
   if (expr->next) {
-    return expr->next->getFirstExpr();
+    retval = expr->next->getFirstExpr();
 
-  } else if (CallExpr* parent = toCallExpr(expr->parentExpr)) {
-    if (expr == parent->baseExpr && parent->argList.head)
-      return parent->argList.head->getFirstExpr();
+  } else if (expr->parentExpr == NULL) {
+    retval = NULL;
 
-  } else if (CondStmt* parent = toCondStmt(expr->parentExpr)) {
-    if (expr == parent->condExpr && parent->thenStmt)
-      return parent->thenStmt->getFirstExpr();
+  } else {
+    retval = expr->parentExpr->getNextExpr(expr);
 
-    else if (expr == parent->thenStmt && parent->elseStmt)
-      return parent->elseStmt->getFirstExpr();
-
-  } else if (BlockStmt* parent = toBlockStmt(expr->parentExpr)) {
-    if (expr == parent->blockInfoGet() && parent->body.head)
-      return parent->body.head->getFirstExpr();
+    if (retval == NULL)
+      retval = expr->parentExpr;
   }
 
-  if (expr->parentExpr)
-    return expr->parentExpr;
-
-  return NULL;
+  return retval;
 }
 
 static bool

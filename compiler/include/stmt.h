@@ -78,6 +78,7 @@ public:
   // Interface to Expr
   virtual void        replaceChild(Expr* oldAst, Expr* newAst);
   virtual Expr*       getFirstExpr();
+  virtual Expr*       getNextExpr(Expr* expr);
 
   // New interface
   virtual bool        isLoop()                                     const;
@@ -145,6 +146,7 @@ public:
   virtual void        accept(AstVisitor* visitor);
 
   virtual Expr*       getFirstExpr();
+  virtual Expr*       getNextExpr(Expr* expr);
 
   Expr*               foldConstantCondition();
 
