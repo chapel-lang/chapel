@@ -50,7 +50,7 @@ def syncToSourceForge(dirToSync, destDir, logFile):
 
     if not os.path.isfile(successFile):
         logFile.write('SUCCESS file did not exist in %s. Assuming genGraph was '
-          'unsuccessful. Graphs will NOT be synced.'%(dirToSync))
+          'unsuccessful. Graphs will NOT be synced.\n' % dirToSync)
         return 124
 
     # Assumes correct username and authentication for web.sourceforge.net is
@@ -68,7 +68,7 @@ def syncToSourceForge(dirToSync, destDir, logFile):
     logFile.flush()
 
     # Actually send graphs to sourceforge and pipe output to the logfile
-    rsync = subprocess.call(shlex.split(rsyncCommand), stdout=logFile)
+    rsync = subprocess.call(shlex.split(rsyncCommand), stdout=logFile, stderr=subprocess.STDOUT)
 
     if rsync == 0:
         logFile.write('\n\nSuccessfully sent performance graphs to sourceforge\n')
