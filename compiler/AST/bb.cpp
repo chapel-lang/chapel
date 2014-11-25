@@ -485,8 +485,6 @@ void BasicBlock::printBasicBlocks(FnSymbol* fn) {
     for_vector(Expr, expr, b->exprs) {
       if (expr)
         list_view_noline(expr);
-      else
-        printf("0 (null)\n");
     }
 
     printf("\n");
