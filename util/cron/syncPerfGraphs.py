@@ -8,6 +8,7 @@
 # rsync over ssh is used to transfer the files to SourceForge. The user running
 # this script needs to have configured access to web.sourceforge.net.
 
+import contextlib
 import os
 import posixpath
 import sys
@@ -33,7 +34,8 @@ def main():
     destDir = args.destDir
     logFile = args.logFile
 
-    sync = syncToSourceForge(dirToSync, destDir, logFile)
+    with contextlib.closing(logFile):
+        sync = syncToSourceForge(dirToSync, destDir, logFile)
     exit(sync)
 
 # Send the performance graphs to sourceforge
@@ -49,7 +51,6 @@ def syncToSourceForge(dirToSync, destDir, logFile):
     if not os.path.isfile(successFile):
         logFile.write('SUCCESS file did not exist in %s. Assuming genGraph was '
           'unsuccessful. Graphs will NOT be synced.'%(dirToSync))
-        logFile.close()
         return 124
 
     # Assumes correct username and authentication for web.sourceforge.net is
@@ -70,11 +71,9 @@ def syncToSourceForge(dirToSync, destDir, logFile):
     rsync = subprocess.call(shlex.split(rsyncCommand), stdout=logFile)
 
     if rsync == 0:
-        logFile.write('\n\nSuccessfully sent performance graphs to sourceforge')
+        logFile.write('\n\nSuccessfully sent performance graphs to sourceforge\n')
     else:
-        logFile.write('\n\nFailure sending performance graphs to sourceforge')
-
-    logFile.close()
+        logFile.write('\n\nFailure sending performance graphs to sourceforge\n')
 
     return rsync
 
