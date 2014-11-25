@@ -1443,9 +1443,9 @@ for testname in testsrc:
                     status = p.returncode
 
                     launcherTimeout = False
-                    if re.search('PBS: job killed: walltime', output, re.I) != None:
+                    if re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None:
                         launcherTimeout = True
-                    if re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.I) != None:
+                    if re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None:
                         launcherTimeout = True
 
                     if launcherTimeout:
