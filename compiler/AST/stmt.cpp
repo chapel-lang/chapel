@@ -287,6 +287,16 @@ BlockStmt::canFlattenChapelStmt(const BlockStmt* stmt) const {
   return retval;
 }
 
+Expr*
+BlockStmt::getFirstExpr() {
+  if (blockInfoGet() != 0)
+    return blockInfoGet()->getFirstExpr();
+
+  if (body.head      != 0)
+    return body.head->getFirstExpr();
+
+  return this;
+}
 
 void
 BlockStmt::insertAtHead(Expr* ast) {
@@ -704,6 +714,14 @@ CondStmt::accept(AstVisitor* visitor) {
   }
 }
 
+Expr*
+CondStmt::getFirstExpr() {
+  if (condExpr != 0)
+    return condExpr->getFirstExpr();
+
+  return this;
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -911,6 +929,13 @@ void GotoStmt::accept(AstVisitor* visitor) {
   }
 }
 
+Expr* GotoStmt::getFirstExpr() {
+  if (label != 0)
+    return label->getFirstExpr();
+
+  return this;
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -956,3 +981,7 @@ void ExternBlockStmt::accept(AstVisitor* visitor) {
   visitor->visitEblockStmt(this);
 }
 
+Expr* ExternBlockStmt::getFirstExpr() {
+  INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
+  return NULL;
+}

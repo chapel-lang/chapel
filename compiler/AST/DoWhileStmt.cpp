@@ -191,8 +191,7 @@ GenRet DoWhileStmt::codegen()
   return ret;
 }
 
-void
-DoWhileStmt::accept(AstVisitor* visitor) {
+void DoWhileStmt::accept(AstVisitor* visitor) {
   if (visitor->enterDoWhileStmt(this) == true) {
     CallExpr* blockInfo = blockInfoGet();
 
@@ -210,4 +209,14 @@ DoWhileStmt::accept(AstVisitor* visitor) {
 
     visitor->exitDoWhileStmt(this);
   }
+}
+
+Expr* DoWhileStmt::getFirstExpr() {
+  if (blockInfoGet() != 0)
+    return blockInfoGet()->getFirstExpr();
+
+  if (body.head      != 0)
+    return body.head->getFirstExpr();
+
+  return this;
 }
