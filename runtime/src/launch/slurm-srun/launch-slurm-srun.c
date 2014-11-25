@@ -428,7 +428,7 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "  %s : generate an sbatch script and exit\n", CHPL_GENERATE_SBATCH_SCRIPT);
   fprintf(stdout, "  %s <HH:MM:SS> : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
-  fprintf(stdout, "  %s <nodelist> : specify a wallclock time limit\n", CHPL_NODELIST_FLAG);
+  fprintf(stdout, "  %s <nodelist> : specify a nodelist to use\n", CHPL_NODELIST_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_NODELIST)\n");
 
 
