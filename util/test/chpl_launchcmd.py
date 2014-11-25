@@ -725,7 +725,7 @@ class SlurmJob(AbstractJob):
 
     submit_bin = None
     status_bin = 'squeue'
-    hostlist_resource = None
+    hostlist_resource = 'nodelist'
     num_nodes_resource = None
     processing_elems_per_node_resource = None
     num_cpus_resource = None
@@ -804,11 +804,13 @@ class SlurmJob(AbstractJob):
         env['CHPL_LAUNCHER_USE_SBATCH'] = 'true'
         env['CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME'] = output_file
 
+        cmd = self.test_command[:]
+        # Add --nodelist into the command line
         if self.hostlist is not None:
-            env['SLURM_JOB_NODELIST'] = self.hostlist
+            cmd.append('--{0}={1}'.format(
+                self.hostlist_resource, self.hostlist))
 
         # Add --walltime back into the command line.
-        cmd = self.test_command[:]
         if self.walltime is not None:
             cmd.append('--walltime')
             cmd.append(self.walltime)
