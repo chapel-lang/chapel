@@ -49,7 +49,7 @@
 
 ===================
 general
-Reviewed 2014-11-14
+Reviewed 2014-11-25
 ===================
 
 failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
@@ -63,14 +63,14 @@ failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
 ===================
 linux64
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ===================
 linux32
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-25
 ===================
 
 tasking #include didn't get a filename (since first run, 2014-11-12)
@@ -135,7 +135,7 @@ timeout (2014-11-12, first run)
 sporadic timeout
 ----------------
 [Error: Timed out executing program stress/deitz/test_10k_begins] (2014-11-12, first run)
-[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12, 2014-11-16, 2014-11-18, 2014-11-19)
+[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12, 2014-11-16, 2014-11-18, 2014-11-19, 2014-11-25)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6] (2014-11-24)
 
 sporadic signal 11
@@ -151,27 +151,27 @@ sporadic tasks not being created
 ===================
 darwin
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ===================
 gnu.darwin
 Inherits 'darwin'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ===================
 perf*
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-25
 ===================
 
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -182,7 +182,7 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -193,14 +193,14 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ====================
 perf.chapel-shootout
 Inherits 'perf*'
-Reviewed 2014-11-18
+Reviewed 2014-11-25
 ====================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -211,21 +211,21 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 fast
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ============================
 
 
@@ -240,14 +240,14 @@ sporadic segfault (infrequent)
 ===================
 verify
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
@@ -266,13 +266,13 @@ sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for studies/sudoku/dinan/sudoku] (2014-10-19, 2014-10-21, 2014-10-25, 2014-10-30)
-[Error matching program output for performance/sungeun/dgemm] (2014-11-16, 2014-11-17, 2014-11-18, 2014-11-20, 2014-11-22, 2014-11-23, 2014-11-24)
+[Error matching program output for performance/sungeun/dgemm] (2014-11-16, 2014-11-17, 2014-11-18, 2014-11-20, 2014-11-22, 2014-11-23, 2014-11-24, 2014-11-25)
 
 
 ===================
 llvm
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
@@ -283,45 +283,45 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 ===================
 fifo
 Inherits 'general'
-reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ===================
 numa
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ===================
 no-local
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25`
 ===================
 
 
 =================================
 no-local.linux32
 Inherits 'linux32' and 'no-local'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 =================================
 
-timeout running lulesh (2014-11-23, 2014-11-24 -- ???)
-------------------------------------------------------
+timeout running lulesh (2014-11-23, 2014-11-24 -- mike/thomas)
+--------------------------------------------------------------
 [Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
 
 ===================
 gasnet* regressions
 Inherits 'no-local'
-Reviewed 2014-11-14
+Reviewed 2014-11-25
 ===================
 
 
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed 2014-11-14
+Reviewed 2014-11-24
 ===================
 
 === sporadic failures below ===
@@ -334,7 +334,7 @@ sporadic execution timeout (regularly)
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2014-11-08
+Reviewed 2014-11-25
 ===================
 
 
@@ -348,14 +348,14 @@ sporadic execution timeout (regularly)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===============================
 
 
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 =============================
 
 
@@ -369,7 +369,7 @@ sporadic segfault
 =============================
 gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 =============================
 
 consistent timeouts
@@ -405,7 +405,7 @@ sporadic "Caught a fatal signal: SIGSEGV(11) on node 1/2" (tom/kyle)
 ===================
 gasnet.llvm
 Inherits 'llvm'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
@@ -526,7 +526,7 @@ Reviewed 2014-11-10
 ============================
 xc-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ============================
 
 === sporadic failures below ===
@@ -570,7 +570,7 @@ Reviewed 2014-11-16
 =============================
 xc-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 =============================
 
 
@@ -598,7 +598,7 @@ Reviewed 2014-11-09
 ===========================
 xc-wb.host.prgenv-gnu
 Inherits 'x?-wb.prgenv-gnu'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===========================
 
 
@@ -606,7 +606,7 @@ Reviewed 2014-11-16
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2014-11-14
+Reviewed 2014-11-23
 ===================
 
 undefined reference to chpl_bitops_debruijn64 (2014-07-14)
@@ -631,7 +631,7 @@ target program died with signal 11, without coredump
 =============================
 x?-wb.pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-11-14
+Reviewed 2014-11-23
 =============================
 
 
@@ -645,14 +645,14 @@ Reviewed 2014-11-14
 ===========================
 xc-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===========================
 
 
 ===================
 cygwin
 Inherits 'linux64'
-Reviewed 2014-11-14
+Reviewed 2014-11-24
 ===================
 
 check_channel assertion failure
@@ -688,24 +688,23 @@ sporadic data read copy failed
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ===================
 dist-block
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
 
 
 ===================
 dist-cyclic
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
-
 
 
 ===================
 dist-replicated
-Reviewed 2014-11-16
+Reviewed 2014-11-25
 ===================
