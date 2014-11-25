@@ -3444,6 +3444,15 @@ Expr* CallExpr::getFirstExpr() {
   return retval;
 }
 
+Expr* CallExpr::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == baseExpr && argList.head != NULL)
+    retval = argList.head->getFirstExpr();
+
+  return retval;
+}
+
 void CallExpr::verify() {
   Expr::verify();
   if (astTag != E_CallExpr) {
@@ -5614,7 +5623,6 @@ bool CallExpr::isPrimitive(const char* primitiveName) {
   return primitive && !strcmp(primitive->name, primitiveName);
 }
 
-
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -5820,15 +5828,6 @@ CallExpr* callChplHereFree(BaseAST* p) {
   else {
     return new CallExpr(gChplHereFree, castExpr);
   }
-}
-
-Expr* CallExpr::getNextExpr(Expr* expr) {
-  Expr* retval = NULL;
-
-  if (expr == baseExpr && argList.head != NULL)
-    retval = argList.head->getFirstExpr();
-
-  return retval;
 }
 
 Expr* getNextExpr(Expr* expr) {

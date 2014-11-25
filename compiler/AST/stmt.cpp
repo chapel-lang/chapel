@@ -289,20 +289,25 @@ BlockStmt::canFlattenChapelStmt(const BlockStmt* stmt) const {
 
 Expr*
 BlockStmt::getFirstExpr() {
+  Expr* retval = 0;
+
   if (blockInfoGet() != 0)
-    return blockInfoGet()->getFirstExpr();
+    retval = blockInfoGet()->getFirstExpr();
 
-  if (body.head      != 0)
-    return body.head->getFirstExpr();
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
 
-  return this;
+  else
+    retval = this;
+
+  return retval;
 }
 
 Expr*
 BlockStmt::getNextExpr(Expr* expr) {
-  Expr* retval = NULL;
+  Expr* retval = 0;
 
-  if (expr == blockInfoGet() && body.head != NULL)
+  if (expr == blockInfoGet() && body.head != 0)
     retval = body.head->getFirstExpr();
 
   return retval;
@@ -726,10 +731,7 @@ CondStmt::accept(AstVisitor* visitor) {
 
 Expr*
 CondStmt::getFirstExpr() {
-  if (condExpr != 0)
-    return condExpr->getFirstExpr();
-
-  return this;
+  return (condExpr != 0) ? condExpr->getFirstExpr() : this;
 }
 
 Expr*
@@ -953,10 +955,7 @@ void GotoStmt::accept(AstVisitor* visitor) {
 }
 
 Expr* GotoStmt::getFirstExpr() {
-  if (label != 0)
-    return label->getFirstExpr();
-
-  return this;
+  return (label != 0) ? label->getFirstExpr() : this;
 }
 
 /******************************** | *********************************

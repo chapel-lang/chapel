@@ -47,6 +47,7 @@ public:
   virtual void           accept(AstVisitor* visitor);
 
   virtual Expr*          getFirstExpr();
+  virtual Expr*          getNextExpr(Expr* expr);
 
 private:
                          DoWhileStmt();
