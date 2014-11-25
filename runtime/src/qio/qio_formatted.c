@@ -2069,6 +2069,7 @@ qioerr qio_channel_scan_imag(const int threadsafe, qio_channel_t* restrict ch, v
 // core of ltoa for arbitrary base.
 // Fills in tmp from right to left
 // Returns the number of positions in tmp to skip to get to number.
+// Returns -1 on buffer overflow.
 // supports up to base 36.
 static inline int _ltoa_convert(char *tmp, int tmplen, uint64_t num, int base, int uppercase)
 {
@@ -2119,6 +2120,12 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
     tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 16, style->uppercase);
   else
     tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, base, style->uppercase);
+
+  if (tmp_skip < 0) {
+    // Internal buffer too small.  Increase size of tmp[].
+    return -1;
+  }
+
   tmp_len = sizeof(tmp) - 1 - tmp_skip;
   width = tmp_len;
 
