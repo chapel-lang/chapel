@@ -398,14 +398,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
-  // handle --nodelist <nodelist> or --nolist=<nodelist> 
+  // handle --nodelist <nodelist> or --nolist=<nodelist>
   if (!strcmp(argv[argNum], CHPL_NODELIST_FLAG)) {
     nodelist = argv[argNum+1];
     return 2;
   } else if (!strncmp(argv[argNum], CHPL_NODELIST_FLAG"=", strlen(CHPL_NODELIST_FLAG))) {
-    walltime = &(argv[argNum][strlen(CHPL_NODELIST_FLAG)+1]);
+    nodelist = &(argv[argNum][strlen(CHPL_NODELIST_FLAG)+1]);
     return 1;
   }
+
   // handle --generate-sbatch-script
   if (!strcmp(argv[argNum], CHPL_GENERATE_SBATCH_SCRIPT)) {
     generate_sbatch_script = 1;
