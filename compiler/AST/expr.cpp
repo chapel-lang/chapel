@@ -101,6 +101,11 @@ static GenRet codegenFieldPtr(GenRet base, const char* field);
 
 static int codegen_tmp = 1;
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 Expr::Expr(AstTag astTag) :
   BaseAST(astTag),
   parentSymbol(NULL),
@@ -112,6 +117,10 @@ Expr::Expr(AstTag astTag) :
 
 Expr::~Expr() {
 
+}
+
+bool Expr::isStmt() const {
+  return false;
 }
 
 // Return true if this expression is a ModuleDefinition i.e. it
@@ -319,6 +328,11 @@ void Expr::insertAfter(Expr* new_ast) {
 }
 
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(E_SymExpr),
   var(init_var)
@@ -334,6 +348,10 @@ bool SymExpr::isNoInitExpr() const {
 
 void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
+}
+
+Expr* SymExpr::getFirstExpr() {
+  return this;
 }
 
 void SymExpr::verify() {
@@ -411,6 +429,11 @@ void SymExpr::accept(AstVisitor* visitor) {
   visitor->visitSymExpr(this);
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
   Expr(E_UnresolvedSymExpr),
   unresolved(astr(i_unresolved))
@@ -420,12 +443,15 @@ UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
   gUnresolvedSymExprs.add(this);
 }
 
-
-void 
+void
 UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "unexpected case in UnresolvedSymExpr::replaceChild");
 }
 
+
+Expr* UnresolvedSymExpr::getFirstExpr() {
+  return this;
+}
 
 void
 UnresolvedSymExpr::verify() {
@@ -465,6 +491,11 @@ void UnresolvedSymExpr::accept(AstVisitor* visitor) {
   visitor->visitUsymExpr(this);
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   Expr(E_DefExpr),
   sym(initSym),
@@ -498,6 +529,10 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
     INT_FATAL(this, "DefExpr of ArgSymbol cannot have either exprType or init");
 
   gDefExprs.add(this);
+}
+
+Expr* DefExpr::getFirstExpr() {
+  return this;
 }
 
 void DefExpr::verify() {
@@ -557,15 +592,15 @@ GenRet DefExpr::codegen() {
 #ifdef HAVE_LLVM
     if (toLabelSymbol(sym)) {
       llvm::Function *func = info->builder->GetInsertBlock()->getParent();
-      
+
       llvm::BasicBlock *blockLabel;
-      
+
       if(!(blockLabel = info->lvt->getBlock(sym->cname))) {
         blockLabel = llvm::BasicBlock::Create(
             info->module->getContext(), sym->cname);
         info->lvt->addBlock(sym->cname, blockLabel);
       }
-      
+
       info->builder->CreateBr(blockLabel);
 
       func->getBasicBlockList().push_back(blockLabel);
@@ -590,6 +625,11 @@ void DefExpr::accept(AstVisitor* visitor) {
     visitor->exitDefExpr(this);
   }
 }
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 #ifdef HAVE_LLVM
 // Easier-to-use versions of functions in llvmUtil.h, not
@@ -633,7 +673,7 @@ static const char* wide_fields[] = {"locale", "addr", "size", NULL};
 // or in case it would be difficult to compute it. It used to be the case that
 // it was sometimes impossible to reference types for some arguments but
 // getOrMakeRefTypeDuringCodegen/getOrMakeWideTypeDuringCodegen may cover
-// all the cases. 
+// all the cases.
 static
 GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 {
@@ -707,7 +747,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
       llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
 
-      // call GLOBAL_FN_GLOBAL_MAKE dummy function 
+      // call GLOBAL_FN_GLOBAL_MAKE dummy function
       llvm::Function* fn = getMakeFn(info->module, &info->globalToWideInfo,
                                      addrType);
       INT_ASSERT(fn);
@@ -3296,6 +3336,11 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 }
 
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(E_CallExpr),
@@ -3380,6 +3425,16 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
 
 CallExpr::~CallExpr() { }
 
+
+Expr* CallExpr::getFirstExpr() {
+  if (baseExpr != NULL)
+    return baseExpr->getFirstExpr();
+
+  if (argList.head != NULL)
+    return argList.head;
+
+  return this;
+}
 
 void CallExpr::verify() {
   Expr::verify();
@@ -5552,7 +5607,12 @@ bool CallExpr::isPrimitive(const char* primitiveName) {
 }
 
 
-NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) : 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   Expr(E_NamedExpr),
   name(init_name),
   actual(init_actual)
@@ -5560,6 +5620,13 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   gNamedExprs.add(this);
 }
 
+
+Expr* NamedExpr::getFirstExpr() {
+  if (actual != NULL)
+    return actual->getFirstExpr();
+
+  return this;
+}
 
 void NamedExpr::verify() {
   Expr::verify();
@@ -5613,7 +5680,12 @@ void NamedExpr::accept(AstVisitor* visitor) {
   }
 }
 
-bool 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+bool
 get_int(Expr *e, int64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
@@ -5630,7 +5702,7 @@ get_int(Expr *e, int64_t *i) {
   return false;
 }
 
-bool 
+bool
 get_uint(Expr *e, uint64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
@@ -5647,7 +5719,7 @@ get_uint(Expr *e, uint64_t *i) {
   return false;
 }
 
-bool 
+bool
 get_string(Expr *e, const char **s) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
@@ -5745,61 +5817,29 @@ CallExpr* callChplHereFree(BaseAST* p) {
   }
 }
 
-
-// getNextExpr(expr) returns the lexically next expr in a normalized
-// tree
-#define AST_RET_CHILD(_t, _m) \
-  if (((_t*)expr)->_m) return getFirstExpr(((_t*)expr)->_m)
-#define AST_RET_LIST(_t, _m) \
-  if (((_t*)expr)->_m.head) return getFirstExpr(((_t*)expr)->_m.head)
-
-Expr* getFirstExpr(Expr* expr) {
-  switch (expr->astTag) {
-  default:
-    INT_FATAL(expr, "unexpected expr in getFirstExpr");
-    return NULL;
-  case E_SymExpr:
-  case E_UnresolvedSymExpr:
-  case E_DefExpr:
-    return expr;
-  case E_BlockStmt:
-    AST_RET_CHILD(BlockStmt, blockInfoGet());
-    AST_RET_LIST(BlockStmt, body);
-    break;
-  case E_CondStmt:
-    AST_RET_CHILD(CondStmt, condExpr);
-    break;
-  case E_GotoStmt:
-    AST_RET_CHILD(GotoStmt, label);
-    break;
-  case E_CallExpr:
-    AST_RET_CHILD(CallExpr, baseExpr);
-    AST_RET_LIST(CallExpr, argList);
-    break;
-  case E_NamedExpr:
-    AST_RET_CHILD(NamedExpr, actual);
-    break;
-  }
-  return expr;
-}
-
 Expr* getNextExpr(Expr* expr) {
-  if (expr->next)
-    return getFirstExpr(expr->next);
-  if (CallExpr* parent = toCallExpr(expr->parentExpr)) {
+  if (expr->next) {
+    return expr->next->getFirstExpr();
+
+  } else if (CallExpr* parent = toCallExpr(expr->parentExpr)) {
     if (expr == parent->baseExpr && parent->argList.head)
-      return getFirstExpr(parent->argList.head);
+      return parent->argList.head->getFirstExpr();
+
   } else if (CondStmt* parent = toCondStmt(expr->parentExpr)) {
     if (expr == parent->condExpr && parent->thenStmt)
-      return getFirstExpr(parent->thenStmt);
+      return parent->thenStmt->getFirstExpr();
+
     else if (expr == parent->thenStmt && parent->elseStmt)
-      return getFirstExpr(parent->elseStmt);
+      return parent->elseStmt->getFirstExpr();
+
   } else if (BlockStmt* parent = toBlockStmt(expr->parentExpr)) {
     if (expr == parent->blockInfoGet() && parent->body.head)
-      return getFirstExpr(parent->body.head);
+      return parent->body.head->getFirstExpr();
   }
+
   if (expr->parentExpr)
     return expr->parentExpr;
+
   return NULL;
 }
 

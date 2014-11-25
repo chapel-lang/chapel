@@ -486,3 +486,13 @@ void CForLoop::accept(AstVisitor* visitor) {
     visitor->exitCForLoop(this);
   }
 }
+
+Expr* CForLoop::getFirstExpr() {
+  if (blockInfoGet() != 0)
+    return blockInfoGet()->getFirstExpr();
+
+  if (body.head      != 0)
+    return body.head->getFirstExpr();
+
+  return this;
+}

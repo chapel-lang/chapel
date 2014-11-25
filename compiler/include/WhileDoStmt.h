@@ -48,6 +48,8 @@ public:
   virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
 
+  virtual Expr*          getFirstExpr();
+
 private:
                          WhileDoStmt();
                          WhileDoStmt(BlockStmt* initBody);
