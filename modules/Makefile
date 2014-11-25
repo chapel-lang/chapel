@@ -29,6 +29,7 @@ SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 default: all
 
 all: $(SYS_CTYPES_MODULE)
+	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) --options="$(CHPL_MAKE_HOME)/etc/ctags/ctags.chapel" --recurse) || echo "$(CHPL_TAGS_UTIL) not available"
 
 clean: FORCE
 
