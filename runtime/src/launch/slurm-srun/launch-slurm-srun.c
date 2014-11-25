@@ -398,7 +398,7 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
-  // handle --nodelist <nodelist> or --nolist=<nodelist>
+  // handle --nodelist <nodelist> or --nodelist=<nodelist>
   if (!strcmp(argv[argNum], CHPL_NODELIST_FLAG)) {
     nodelist = argv[argNum+1];
     return 2;
