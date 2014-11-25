@@ -321,12 +321,15 @@ def ReadIntegerValue(f, localdir):
                 return string.atoi(l)
             else:
                 break
-    Fatal('Invalid integer value in '+f+' ('+localdir+')');
+    Fatal('Invalid integer value in '+f+' ('+localdir+')', clean_exit=True);
 
 # report an error message and exit
-def Fatal(message):
+def Fatal(message, clean_exit=False):
     sys.stdout.write('[Error (sub_test): '+message+']\n')
-    sys.exit(-1)
+    if clean_exit:
+        sys.exit(0)
+    else:
+        sys.exit(-1)
 
 # Attempts to find an appropriate timer to use. The timer must be in
 # util/test/timers/. Expects to be passed a file containing only the name of
