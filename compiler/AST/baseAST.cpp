@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "log.h"
 #include "passes.h"
 #include "runpasses.h"

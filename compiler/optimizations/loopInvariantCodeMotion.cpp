@@ -24,6 +24,7 @@
 #include "bitVec.h"
 #include "dominator.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"

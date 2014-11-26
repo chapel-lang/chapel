@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "bitVec.h"
+#include "ForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
@@ -114,7 +115,12 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
         append(info->get(1), true);
 
-      // PARAM_LOOP and FOR_LOOP
+      } else if (ForLoop* forLoop = toForLoop(stmt)) {
+        CallExpr* info = forLoop->forInfoGet();
+
+        append(info, true);
+
+      // PARAM_LOOP
       } else {
         CallExpr* info = s->blockInfoGet();
 
