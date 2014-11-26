@@ -47,6 +47,9 @@ public:
   virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
 
+  virtual Expr*          getFirstExpr();
+  virtual Expr*          getNextExpr(Expr* expr);
+
   virtual bool           isLoop()                                     const;
   virtual bool           isForLoop()                                  const;
   virtual bool           isCForLoop()                                 const;

@@ -106,7 +106,7 @@ WhileDoStmt* WhileDoStmt::copy(SymbolMap* map, bool internal)
   return retval;
 }
 
-bool WhileDoStmt::isWhileDoLoop() const
+bool WhileDoStmt::isWhileDoStmt() const
 {
   return true;
 }
@@ -235,4 +235,28 @@ void WhileDoStmt::accept(AstVisitor* visitor) {
 
     visitor->exitWhileDoStmt(this);
   }
+}
+
+Expr* WhileDoStmt::getFirstExpr() {
+  Expr* retval = 0;
+
+  if (blockInfoGet() != 0)
+    retval = blockInfoGet()->getFirstExpr();
+
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* WhileDoStmt::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == blockInfoGet() && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  return retval;
 }

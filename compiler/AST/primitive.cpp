@@ -148,7 +148,7 @@ returnInfoCast(CallExpr* call) {
   if (t2->symbol->hasFlag(FLAG_WIDE_CLASS))
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
-  if (t2->symbol->hasFlag(FLAG_WIDE))
+  if (t2->symbol->hasFlag(FLAG_WIDE_REF))
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
   return t1;

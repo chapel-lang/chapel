@@ -500,3 +500,27 @@ void ForLoop::accept(AstVisitor* visitor) {
     visitor->exitForLoop(this);
   }
 }
+
+Expr* ForLoop::getFirstExpr() {
+  Expr* retval = 0;
+
+  if (blockInfoGet() != 0)
+    retval = blockInfoGet()->getFirstExpr();
+
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* ForLoop::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == blockInfoGet() && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  return retval;
+}

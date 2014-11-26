@@ -24,6 +24,10 @@
 
 class WhileStmt : public BlockStmt
 {
+public:
+  CallExpr*              condExprGet()                                const;
+  CallExpr*              condExprSet(CallExpr* info);
+
 protected:
                          WhileStmt(BlockStmt* initBody);
   virtual               ~WhileStmt();
@@ -35,7 +39,7 @@ protected:
   virtual void           verify();
 
   virtual bool           isLoop()                                     const;
-  virtual bool           isWhileLoop()                                const;
+  virtual bool           isWhileStmt()                                const;
 
   virtual void           checkConstLoops();
 

@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,8 +28,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "WhileStmt.h"
 #include "yy.h"
-
 
 static void cleanModuleList();
 
@@ -337,7 +337,7 @@ Type* BaseAST::getValType() {
   INT_ASSERT(type);
   if (type->symbol->hasFlag(FLAG_REF))
     return type->getField("_val")->type;
-  else if (type->symbol->hasFlag(FLAG_WIDE))
+  else if (type->symbol->hasFlag(FLAG_WIDE_REF))
     return type->getField("addr")->getValType();
   else
     return type;
@@ -348,7 +348,7 @@ Type* BaseAST::getRefType() {
   INT_ASSERT(type);
   if (type->symbol->hasFlag(FLAG_REF))
     return type;
-  else if (type->symbol->hasFlag(FLAG_WIDE))
+  else if (type->symbol->hasFlag(FLAG_WIDE_REF))
     return type->getField("addr")->type;
   else
     return type->refType;
@@ -359,7 +359,7 @@ Type* BaseAST::getWideRefType() {
   INT_ASSERT(type);
   if (type->symbol->hasFlag(FLAG_REF))
     return wideRefMap.get(type);
-  else if (type->symbol->hasFlag(FLAG_WIDE))
+  else if (type->symbol->hasFlag(FLAG_WIDE_REF))
     return type;
   else
     return wideRefMap.get(type->getRefType());
@@ -521,13 +521,55 @@ GenRet baseASTCodegen(BaseAST* ast)
   ret.isUnsigned = ! is_signed(ret.chplType);
   return ret;
 }
+
 GenRet baseASTCodegenInt(int x)
 {
   return baseASTCodegen(new_IntSymbol(x, INT_SIZE_64));
 }
+
 GenRet baseASTCodegenString(const char* str)
 {
   return baseASTCodegen(new_StringSymbol(str));
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool isWhileStmt(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isWhileStmt()) ? true : false;
+}
+
+bool isWhileDoStmt(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isWhileDoStmt()) ? true : false;
+}
+
+bool isDoWhileStmt(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isDoWhileStmt()) ? true : false;
+}
+
+bool isForLoop(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isForLoop()) ? true : false;
+}
+
+bool isCForLoop(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isCForLoop()) ? true : false;
 }
 
 /************************************* | **************************************

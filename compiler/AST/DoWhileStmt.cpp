@@ -88,7 +88,7 @@ DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
   return retval;
 }
 
-bool DoWhileStmt::isDoWhileLoop() const
+bool DoWhileStmt::isDoWhileStmt() const
 {
   return true;
 }
@@ -191,8 +191,7 @@ GenRet DoWhileStmt::codegen()
   return ret;
 }
 
-void
-DoWhileStmt::accept(AstVisitor* visitor) {
+void DoWhileStmt::accept(AstVisitor* visitor) {
   if (visitor->enterDoWhileStmt(this) == true) {
     CallExpr* blockInfo = blockInfoGet();
 
@@ -210,4 +209,28 @@ DoWhileStmt::accept(AstVisitor* visitor) {
 
     visitor->exitDoWhileStmt(this);
   }
+}
+
+Expr* DoWhileStmt::getFirstExpr() {
+  Expr* retval = 0;
+
+  if (blockInfoGet() != 0)
+    retval = blockInfoGet()->getFirstExpr();
+
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* DoWhileStmt::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == blockInfoGet() && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  return retval;
 }

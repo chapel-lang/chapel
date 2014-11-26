@@ -42,11 +42,14 @@ public:
 
   virtual WhileDoStmt*   copy(SymbolMap* map = NULL, bool internal = false);
 
-  virtual bool           isWhileDoLoop()                              const;
+  virtual bool           isWhileDoStmt()                              const;
 
   virtual GenRet         codegen();
   virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
+
+  virtual Expr*          getFirstExpr();
+  virtual Expr*          getNextExpr(Expr* expr);
 
 private:
                          WhileDoStmt();

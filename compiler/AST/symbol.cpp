@@ -666,7 +666,7 @@ void VarSymbol::codegenDefC(bool global) {
       if (isFnSymbol(defPoint->parentSymbol)) {
         str += " = NULL";
       }
-    } else if (ct->symbol->hasFlag(FLAG_WIDE) ||
+    } else if (ct->symbol->hasFlag(FLAG_WIDE_REF) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol)) {
         if( widePointersStruct || isWideString(ct) ) {
@@ -797,7 +797,7 @@ void VarSymbol::codegenDef() {
 
     if(AggregateType *ctype = toAggregateType(type)) {
       if(ctype->isClass() ||
-         ctype->symbol->hasFlag(FLAG_WIDE) ||
+         ctype->symbol->hasFlag(FLAG_WIDE_REF) ||
          ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if(isFnSymbol(defPoint->parentSymbol)) {
           info->builder->CreateStore(
@@ -1178,7 +1178,7 @@ void TypeSymbol::codegenMetadata() {
   // get simple TBAA (they can get struct tbaa).
   if( is_bool_type(type) || is_int_type(type) || is_uint_type(type) ||
       is_real_type(type) || is_imag_type(type) || is_enum_type(type) ||
-      isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE) ||
+      isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
     // Now create tbaa metadata, one for const and one for not.
     {
@@ -1201,7 +1201,7 @@ void TypeSymbol::codegenMetadata() {
       hasFlag(FLAG_STAR_TUPLE) ||
       hasFlag(FLAG_REF) ||
       hasFlag(FLAG_DATA_CLASS) ||
-      hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) ) {
+      hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
     return;
   }
 
