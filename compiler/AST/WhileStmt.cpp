@@ -39,7 +39,7 @@ void WhileStmt::copyShare(const WhileStmt& ref,
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*  blockInfo = ref.blockInfoGet();
+  CallExpr*  blockInfo = ref.BlockStmt::blockInfoGet();
 
   astloc        = ref.astloc;
   blockTag      = ref.blockTag;
@@ -48,7 +48,7 @@ void WhileStmt::copyShare(const WhileStmt& ref,
   continueLabel = ref.continueLabel;
 
   if (blockInfo != 0)
-    blockInfoSet(blockInfo->copy(map, true));
+    BlockStmt::blockInfoSet(blockInfo->copy(map, true));
 
   if (ref.modUses  != 0)
     modUses = ref.modUses->copy(map, true);
@@ -67,7 +67,7 @@ void WhileStmt::verify()
 {
   BlockStmt::verify();
 
-  if (blockInfoGet() == 0)
+  if (BlockStmt::blockInfoGet() == 0)
     INT_FATAL(this, "WhileStmt::verify. blockInfo is NULL");
 
   if (modUses   != 0)
@@ -97,11 +97,25 @@ CallExpr* WhileStmt::condExprSet(CallExpr* info)
   return BlockStmt::blockInfoSet(info);
 }
 
+CallExpr* WhileStmt::blockInfoGet() const
+{
+  printf("Migration: WhileStmt %12d Unexpected call to blockInfoGet()\n", id);
+
+  return BlockStmt::blockInfoGet();
+}
+
+CallExpr* WhileStmt::blockInfoSet(CallExpr* expr)
+{
+  printf("Migration: WhileStmt %12d Unexpected call to blockInfoSet()\n", id);
+
+  return BlockStmt::blockInfoSet(expr);
+}
+
 bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (blockInfoGet() == 0 || blockInfoGet()->numActuals() == 0) {
+  if (BlockStmt::blockInfoGet() == 0 || BlockStmt::blockInfoGet()->numActuals() == 0) {
     remove();
     retval = true;
   }
@@ -111,7 +125,7 @@ bool WhileStmt::deadBlockCleanup()
 
 void WhileStmt::checkConstLoops()
 {
-  CallExpr* info    = blockInfoGet();
+  CallExpr* info    = BlockStmt::blockInfoGet();
   bool      foundit = false;
 
   if (SymExpr* condSE = toSymExpr(info->get(1)))

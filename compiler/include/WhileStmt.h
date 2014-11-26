@@ -45,6 +45,9 @@ protected:
 
   virtual bool           deadBlockCleanup();
 
+  virtual CallExpr*      blockInfoGet()                               const;
+  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+
 private:
                          WhileStmt();
 

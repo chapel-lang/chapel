@@ -49,7 +49,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
 
     WhileDoStmt* loop          = new WhileDoStmt(body);
 
-    loop->blockInfoSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar));
+    loop->BlockStmt::blockInfoSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar));
 
     loop->continueLabel = continueLabel;
     loop->breakLabel    = breakLabel;
@@ -115,7 +115,7 @@ void WhileDoStmt::verify()
 {
   WhileStmt::verify();
 
-  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) == false)
+  if (BlockStmt::blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) == false)
     INT_FATAL(this, "WhileDoStmt::verify. blockInfo type is not PRIM_BLOCK_WHILEDO_LOOP");
 }
 
@@ -129,7 +129,7 @@ GenRet WhileDoStmt::codegen()
 
   if (outfile)
   {
-    CallExpr* blockInfo = blockInfoGet();
+    CallExpr* blockInfo = BlockStmt::blockInfoGet();
 
     std::string hdr = "while (" + codegenValue(blockInfo->get(1)).c + ") ";
 
@@ -174,7 +174,7 @@ GenRet WhileDoStmt::codegen()
     // Now switch to the condition for code generation
     info->builder->SetInsertPoint(blockStmtCond);
 
-    GenRet            condValueRet     = codegenValue(blockInfoGet()->get(1));
+    GenRet            condValueRet     = codegenValue(BlockStmt::blockInfoGet()->get(1));
     llvm::Value*      condValue        = condValueRet.val;
 
     if (condValue->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
@@ -219,7 +219,7 @@ GenRet WhileDoStmt::codegen()
 
 void WhileDoStmt::accept(AstVisitor* visitor) {
   if (visitor->enterWhileDoStmt(this) == true) {
-    CallExpr* blockInfo = blockInfoGet();
+    CallExpr* blockInfo = BlockStmt::blockInfoGet();
 
     for_alist(next_ast, body)
       next_ast->accept(visitor);
@@ -240,8 +240,8 @@ void WhileDoStmt::accept(AstVisitor* visitor) {
 Expr* WhileDoStmt::getFirstExpr() {
   Expr* retval = 0;
 
-  if (blockInfoGet() != 0)
-    retval = blockInfoGet()->getFirstExpr();
+  if (BlockStmt::blockInfoGet() != 0)
+    retval = BlockStmt::blockInfoGet()->getFirstExpr();
 
   else if (body.head      != 0)
     retval = body.head->getFirstExpr();
@@ -255,7 +255,7 @@ Expr* WhileDoStmt::getFirstExpr() {
 Expr* WhileDoStmt::getNextExpr(Expr* expr) {
   Expr* retval = NULL;
 
-  if (expr == blockInfoGet() && body.head != NULL)
+  if (expr == BlockStmt::blockInfoGet() && body.head != NULL)
     retval = body.head->getFirstExpr();
 
   return retval;
