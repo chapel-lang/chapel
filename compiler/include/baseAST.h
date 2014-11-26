@@ -72,6 +72,10 @@ class GenRet;
 class Symbol;
 class Type;
 class WhileStmt;
+class WhileDoStmt;
+class DoWhileStmt;
+class ForLoop;
+class CForLoop;
 
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
@@ -302,6 +306,10 @@ def_is_ast(AggregateType)
 #undef def_is_ast
 
 bool isWhileStmt(BaseAST* a);
+bool isWhileDoStmt(BaseAST* a);
+bool isDoWhileStmt(BaseAST* a);
+bool isForLoop(BaseAST* a);
+bool isCForLoop(BaseAST* a);
 
 //
 // safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
@@ -333,6 +341,10 @@ def_to_ast(AggregateType)
 def_to_ast(Type)
 
 def_to_ast(WhileStmt);
+def_to_ast(WhileDoStmt);
+def_to_ast(DoWhileStmt);
+def_to_ast(ForLoop);
+def_to_ast(CForLoop);
 
 #undef def_to_ast
 

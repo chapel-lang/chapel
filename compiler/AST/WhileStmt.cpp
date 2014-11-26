@@ -82,7 +82,7 @@ bool WhileStmt::isLoop() const
   return true;
 }
 
-bool WhileStmt::isWhileLoop() const
+bool WhileStmt::isWhileStmt() const
 {
   return true;
 }

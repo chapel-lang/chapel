@@ -521,10 +521,12 @@ GenRet baseASTCodegen(BaseAST* ast)
   ret.isUnsigned = ! is_signed(ret.chplType);
   return ret;
 }
+
 GenRet baseASTCodegenInt(int x)
 {
   return baseASTCodegen(new_IntSymbol(x, INT_SIZE_64));
 }
+
 GenRet baseASTCodegenString(const char* str)
 {
   return baseASTCodegen(new_StringSymbol(str));
@@ -540,6 +542,34 @@ bool isWhileStmt(BaseAST* a)
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isWhileStmt()) ? true : false;
+}
+
+bool isWhileDoStmt(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isWhileDoStmt()) ? true : false;
+}
+
+bool isDoWhileStmt(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isDoWhileStmt()) ? true : false;
+}
+
+bool isForLoop(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isForLoop()) ? true : false;
+}
+
+bool isCForLoop(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isCForLoop()) ? true : false;
 }
 
 /************************************* | **************************************
