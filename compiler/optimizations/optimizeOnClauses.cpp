@@ -329,7 +329,10 @@ static bool
 inLocalBlock(CallExpr *call) {
   for (Expr* parent = call->parentExpr; parent; parent = parent->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(parent)) {
-      if (blk->blockInfoGet() && blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
+      // NOAKES 2014/11/25  Transitional. Do not trip over blockInfoGet for a Loop
+      if (blk->isLoop() == true)
+        ;
+      else if (blk->blockInfoGet() && blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
         return true;
     }
   }
