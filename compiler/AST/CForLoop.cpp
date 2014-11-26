@@ -177,6 +177,31 @@ void CForLoop::loopHeaderSet(BlockStmt* initBlock,
 }
 
 
+// NOAKES 2014/11/26   Transitional
+CallExpr* CForLoop::cforInfoGet() const
+{
+ return BlockStmt::blockInfoGet();
+}
+
+CallExpr* CForLoop::cforInfoSet(CallExpr* info)
+{
+  return BlockStmt::blockInfoSet(info);
+}
+
+CallExpr* CForLoop::blockInfoGet() const
+{
+  printf("Migration: CForLoop  %12d Unexpected call to blockInfoGet()\n", id);
+
+  return BlockStmt::blockInfoGet();
+}
+
+CallExpr* CForLoop::blockInfoSet(CallExpr* expr)
+{
+  printf("Migration: CForLoop  %12d Unexpected call to blockInfoSet()\n", id);
+
+  return BlockStmt::blockInfoSet(expr);
+}
+
 bool CForLoop::deadBlockCleanup()
 {
   bool retval = false;

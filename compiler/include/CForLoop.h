@@ -59,6 +59,14 @@ public:
   void                   loopHeaderSet(BlockStmt* initBlock,
                                        BlockStmt* testBlock,
                                        BlockStmt* incrBlock);
+
+  // NOAKES 2014/11/26 Transitional
+  CallExpr*              cforInfoGet()                                const;
+  CallExpr*              cforInfoSet(CallExpr* expr);
+
+  virtual CallExpr*      blockInfoGet()                               const;
+  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+
 private:
                          CForLoop();
 
