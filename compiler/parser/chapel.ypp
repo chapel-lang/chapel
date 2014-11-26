@@ -729,13 +729,6 @@ proc_or_iter:
 opt_ret_tag:
             { $$ = RET_VALUE; }
 | TCONST    { $$ = RET_VALUE; }
-| TVAR      {
-    $$ = RET_REF;
-    // create a new dummy AST node to get a location into USR_WARN
-    USR_WARN(new BlockStmt(), "In the next release, 'var' return intents will "
-                              "no longer be supported. Please use the "
-                              "equivalent 'ref' return intent.");
-            }
 | TREF      { $$ = RET_REF; }
 | TPARAM    { $$ = RET_PARAM; }
 | TTYPE     { $$ = RET_TYPE; }
