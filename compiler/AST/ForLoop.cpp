@@ -200,6 +200,17 @@ bool ForLoop::isCForLoop() const
   return BlockStmt::blockInfoGet() && BlockStmt::blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
 }
 
+// NOAKES 2014/11/26   Transitional
+CallExpr* ForLoop::forInfoGet() const
+{
+ return BlockStmt::blockInfoGet();
+}
+
+CallExpr* ForLoop::forInfoSet(CallExpr* info)
+{
+  return BlockStmt::blockInfoSet(info);
+}
+
 CallExpr* ForLoop::blockInfoGet() const
 {
   printf("Migration: ForLoop   %12d Unexpected call to blockInfoGet()\n", id);

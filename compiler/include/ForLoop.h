@@ -59,6 +59,10 @@ public:
   BlockStmt*             copyBody();
   BlockStmt*             copyBody(SymbolMap* map);
 
+  // NOAKES 2014/11/26 Transitional
+  CallExpr*              forInfoGet()                                 const;
+  CallExpr*              forInfoSet(CallExpr* expr);
+
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);
 
