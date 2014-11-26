@@ -59,6 +59,9 @@ public:
   BlockStmt*             copyBody();
   BlockStmt*             copyBody(SymbolMap* map);
 
+  virtual CallExpr*      blockInfoGet()                               const;
+  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+
 private:
                          ForLoop();
 
