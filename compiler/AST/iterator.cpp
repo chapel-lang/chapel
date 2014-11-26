@@ -23,6 +23,7 @@
 #include "bb.h"
 #include "bitVec.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "stmt.h"
 #include "stlUtil.h"
 #include "stringutil.h"
@@ -412,19 +413,18 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       zip1body->insertAtTail(expr->copy(&map));
   }
 
-  if (singleLoop->isWhileStmt() == true) {
-    WhileStmt* stmt = toWhileStmt(singleLoop);
-    CallExpr*  info = stmt->condExprGet()->copy(&map);
+  if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
+    CallExpr* info = stmt->condExprGet()->copy(&map);
 
     zip1body->insertAtTail(new CondStmt(info->get(1)->remove(),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
 
 
-  } else if (singleLoop->isForLoop() == true) {
-    CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
+  } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
+    CallExpr* info = forLoop->forInfoGet()->copy(&map);
 
-    zip1body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
+    zip1body->insertAtTail(new CondStmt(info->get(1)->remove(),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
   }
@@ -504,16 +504,15 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
 
   // Check for more (only for non c for loops)
-  if (isWhileStmt(singleLoop)) {
-    WhileStmt* stmt = toWhileStmt(singleLoop);
-    CallExpr*  info = stmt->condExprGet()->copy(&map);
+  if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
+    CallExpr* info = stmt->condExprGet()->copy(&map);
 
     zip3body->insertAtTail(new CondStmt(info->get(1)->remove(),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
 
-  } else if (singleLoop->isForLoop() == true) {
-    CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
+  } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
+    CallExpr* blockInfo = forLoop->forInfoGet()->copy(&map);
 
     zip3body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),

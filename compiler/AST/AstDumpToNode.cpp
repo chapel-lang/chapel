@@ -497,14 +497,14 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->forInfoGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "BlockInfo: ", false);
+    write(false, "ForInfo:", false);
     mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
+    node->forInfoGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;

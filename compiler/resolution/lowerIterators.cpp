@@ -1041,7 +1041,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
 {
   SET_LINENO(forLoop);
 
-  CallExpr*  call              = forLoop->blockInfoGet();
+  CallExpr*  call              = forLoop->forInfoGet();
   FnSymbol*  parent            = toFnSymbol(call->parentSymbol);
 
   //
@@ -1157,7 +1157,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 /// \param call A for loop block primitive.
 static void
 expandIteratorInline(ForLoop* forLoop) {
-  CallExpr* call     = forLoop->blockInfoGet();
+  CallExpr* call     = forLoop->forInfoGet();
   Symbol*   ic       = toSymExpr(call->get(2))->var;
   FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
@@ -1535,7 +1535,7 @@ static void
 inlineSingleYieldIterator(ForLoop* forLoop) {
   SET_LINENO(forLoop);
 
-  CallExpr*    call     = forLoop->blockInfoGet();
+  CallExpr*    call     = forLoop->forInfoGet();
 
   SymExpr*     se1      = toSymExpr(call->get(1));
   VarSymbol*   index    = toVarSymbol(se1->var);
@@ -1617,7 +1617,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
 
 static void
 expandForLoop(ForLoop* forLoop) {
-  SymExpr*   se2      = toSymExpr(forLoop->blockInfoGet()->get(2));
+  SymExpr*   se2      = toSymExpr(forLoop->forInfoGet()->get(2));
   VarSymbol* iterator = toVarSymbol(se2->var);
 
   if (!fNoInlineIterators &&
@@ -1639,7 +1639,7 @@ expandForLoop(ForLoop* forLoop) {
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
 
-    SymExpr*     se1       = toSymExpr(forLoop->blockInfoGet()->get(1));
+    SymExpr*     se1       = toSymExpr(forLoop->forInfoGet()->get(1));
     VarSymbol*   index     = toVarSymbol(se1->var);
 
     BlockStmt*   initBlock = new BlockStmt();
@@ -1763,12 +1763,12 @@ static void
 inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol) {
-      if (block->isForLoop() == true) {
-        Symbol*   iterator = toSymExpr(block->blockInfoGet()->get(2))->var;
+      if (ForLoop* forLoop = toForLoop(block)) {
+        Symbol*   iterator = toSymExpr(forLoop->forInfoGet()->get(2))->var;
         FnSymbol* ifn      = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
         if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
-          expandIteratorInline((ForLoop*) block);
+          expandIteratorInline(forLoop);
         }
       }
     }

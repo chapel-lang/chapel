@@ -393,6 +393,10 @@ def_to_ast(CForLoop);
       AST_CALL_LIST (stmt, WhileStmt, body,           call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, WhileStmt, condExprGet(),  call, __VA_ARGS__);   \
                                                                             \
+    } else if (stmt->isForLoop()     == true) {                             \
+      AST_CALL_LIST (stmt, ForLoop, body,             call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ForLoop, forInfoGet(),     call, __VA_ARGS__);   \
+                                                                            \
     } else  {                                                               \
       AST_CALL_LIST (stmt, BlockStmt, body,           call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, BlockStmt, blockInfoGet(), call, __VA_ARGS__);   \
