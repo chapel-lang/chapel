@@ -97,6 +97,20 @@ CallExpr* WhileStmt::condExprSet(CallExpr* info)
   return BlockStmt::blockInfoSet(info);
 }
 
+CallExpr* WhileStmt::blockInfoGet() const
+{
+  printf("Migration: WhileStmt %12d Unexpected call to blockInfoGet()\n", id);
+
+  return BlockStmt::blockInfoGet();
+}
+
+CallExpr* WhileStmt::blockInfoSet(CallExpr* expr)
+{
+  printf("Migration: WhileStmt %12d Unexpected call to blockInfoSet()\n", id);
+
+  return BlockStmt::blockInfoSet(expr);
+}
+
 bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
