@@ -50,7 +50,7 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 
   loop = new DoWhileStmt(body);
 
-  loop->blockInfoSet(new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar));
+  loop->BlockStmt::blockInfoSet(new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar));
 
   loop->continueLabel = continueLabel;
   loop->breakLabel    = breakLabel;
@@ -97,7 +97,7 @@ void DoWhileStmt::verify()
 {
   WhileStmt::verify();
 
-  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) == false)
+  if (BlockStmt::blockInfoGet()->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) == false)
     INT_FATAL(this, "DoWhileStmt::verify. blockInfo type is not PRIM_BLOCK_DOWHILE_LOOP");
 }
 
@@ -111,7 +111,7 @@ GenRet DoWhileStmt::codegen()
 
   if (outfile)
   {
-    CallExpr* blockInfo = blockInfoGet();
+    CallExpr* blockInfo = BlockStmt::blockInfoGet();
 
     info->cStatements.push_back("do ");
 
@@ -134,7 +134,7 @@ GenRet DoWhileStmt::codegen()
     llvm::BasicBlock* blockStmtEnd     = NULL;
     llvm::BasicBlock* blockStmtEndCond = NULL;
 
-    CallExpr*         blockInfo        = blockInfoGet();
+    CallExpr*         blockInfo        = BlockStmt::blockInfoGet();
 
     getFunction()->codegenUniqueNum++;
 
@@ -193,7 +193,7 @@ GenRet DoWhileStmt::codegen()
 
 void DoWhileStmt::accept(AstVisitor* visitor) {
   if (visitor->enterDoWhileStmt(this) == true) {
-    CallExpr* blockInfo = blockInfoGet();
+    CallExpr* blockInfo = BlockStmt::blockInfoGet();
 
     for_alist(next_ast, body)
       next_ast->accept(visitor);
@@ -214,8 +214,8 @@ void DoWhileStmt::accept(AstVisitor* visitor) {
 Expr* DoWhileStmt::getFirstExpr() {
   Expr* retval = 0;
 
-  if (blockInfoGet() != 0)
-    retval = blockInfoGet()->getFirstExpr();
+  if (BlockStmt::blockInfoGet() != 0)
+    retval = BlockStmt::blockInfoGet()->getFirstExpr();
 
   else if (body.head      != 0)
     retval = body.head->getFirstExpr();
@@ -229,7 +229,7 @@ Expr* DoWhileStmt::getFirstExpr() {
 Expr* DoWhileStmt::getNextExpr(Expr* expr) {
   Expr* retval = NULL;
 
-  if (expr == blockInfoGet() && body.head != NULL)
+  if (expr == BlockStmt::blockInfoGet() && body.head != NULL)
     retval = body.head->getFirstExpr();
 
   return retval;

@@ -135,8 +135,6 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
       Expr*      expr  = toExpr(ast);
       BlockStmt* block = toBlockStmt(ast);
 
-      INT_ASSERT(block->blockInfoGet());
-
       if (singleFor == NULL && expr->parentExpr == fn->body) {
         singleFor = block;
 
