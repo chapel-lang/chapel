@@ -127,8 +127,8 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_OR_ASSIGN:
   case PRIM_XOR_ASSIGN:
     if (!isCallExpr(call->get(2))) { // callExprs checked in calling function
-      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         DEBUG_PRINTF(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
         return true;
       }
@@ -146,7 +146,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_WIDE_GET_NODE:
   case PRIM_WIDE_GET_ADDR:
     // If this test is true, a remote get is required.
-    if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+    if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
       DEBUG_PRINTF(" *** OK (PRIM_WIDE_GET_LOCALE, etc.): %s\n",
                    call->primitive->name);
@@ -158,7 +158,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_GET_UNION_ID:
   case PRIM_GET_MEMBER_VALUE:
   case PRIM_GET_SVEC_MEMBER_VALUE:
-    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
       return true;
       DEBUG_PRINTF(" *** OK (PRIM_SET_UNION_ID, etc.): %s\n",
                    call->primitive->name);
@@ -183,7 +183,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_DEREF:
   case PRIM_SET_MEMBER:
   case PRIM_SET_SVEC_MEMBER:
-    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
         !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       DEBUG_PRINTF(" *** OK (PRIM_DEREF, etc.): %s\n", call->primitive->name);
       return true;

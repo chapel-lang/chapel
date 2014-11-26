@@ -1233,7 +1233,7 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
   if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
-    wts->addFlag(FLAG_WIDE);
+    wts->addFlag(FLAG_WIDE_REF);
   else
     wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
