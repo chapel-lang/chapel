@@ -11,6 +11,15 @@ Workarounds:
 * replace R.getNext() with a literal (although this changes the behavior)
 
 
+A smaller example that currently crashes in the same way is:
+
+  proc main() {
+    var X = 1..1;
+    var R = 2;
+    var Y = [x in X] R;
+  }
+
+
 Here is the investigation I did:
 
 
