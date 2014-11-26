@@ -211,27 +211,32 @@ static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
       return false;     // Yes, FAIL.
 
     // See if it is a yield or return statement.
-    CallExpr* call = toCallExpr(ast);
-    if (call &&
-        (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN)))
-      return false;     // Yes, FAIL.
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))
+        return false;     // Yes, FAIL.
 
-    // Check coforall et al. recursively.
-    if (call)
+      // Check coforall et al. recursively.
       if (FnSymbol* taskFn = resolvedToTaskFun(call))
         if (!leaveLocalBlockUnfragmented(taskFn->body))
           return false;
+    }
 
     // See if it is an unlocal block.
-    BlockStmt* block = toBlockStmt(ast);
-    if (block && block->blockInfoGet() &&
-        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
-      return false;     // Yes, FAIL.
-    
+    if (BlockStmt* block = toBlockStmt(ast)) {
+      // NOAKES 2014/11/25. Transitional.  Avoid calling blockInfoGet
+      if (block->isLoop() == true) {
+
+      } else if (block->blockInfoGet() &&
+                 block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL)) {
+        return false;     // Yes, FAIL.
+      }
+    }
+
     // See if it is a label.
-    DefExpr* def = toDefExpr(ast);
-    if (def && isLabelSymbol(def->sym))
-      return false;     // Yes, FAIL.
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (def && isLabelSymbol(def->sym))
+        return false;     // Yes, FAIL.
+    }
   }
 
   // OK.  No undesirable statements found.
@@ -252,18 +257,24 @@ fragmentLocalBlocks() {
   // collect all local blocks which need to be fragmented
   //
   Vec<BlockStmt*> localBlocks; // old local blocks
+
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol &&
-        block->blockInfoGet() &&
-        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) &&
-        !leaveLocalBlockUnfragmented(block))
+    // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
+    if (block->isLoop() == true) {
+
+    } else if (block->parentSymbol &&
+               block->blockInfoGet() &&
+               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) &&
+               !leaveLocalBlockUnfragmented(block)) {
       localBlocks.add(block);
+    }
   }
 
   //
   // collect first statements of local blocks into queue vector
   //
   Vec<Expr*> queue;
+
   forv_Vec(BlockStmt, block, localBlocks) {
     if (block->body.head)
       queue.add(block->body.head);
@@ -271,10 +282,11 @@ fragmentLocalBlocks() {
 
   forv_Vec(Expr, expr, queue) {
     SET_LINENO(expr);
+
     for (Expr* current = expr; current; current = current->next) {
-      bool insertNewLocal = false;
-      CallExpr* call = toCallExpr(current);
-      DefExpr* def = toDefExpr(current);
+      bool      insertNewLocal = false;
+      CallExpr* call           = toCallExpr(current);
+      DefExpr*  def            = toDefExpr(current);
 
       //
       // If this statement is a yield, a return, a label definition, a
@@ -293,9 +305,14 @@ fragmentLocalBlocks() {
           isCondStmt(current) ||
           isBlockStmt(current)) {
         insertNewLocal = true;
+
         if (BlockStmt* block = toBlockStmt(current)) {
-          if (block->blockInfoGet() && block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
+          // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
+          if (block->isLoop()       == false &&
+              block->blockInfoGet() != NULL  &&
+              block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
             block->blockInfoGet()->remove(); // UNLOCAL applies to a single LOCAL
+
           else if (block->body.head)
             queue.add(block->body.head);
         } else if (CondStmt* cond = toCondStmt(current)) {
@@ -679,11 +696,12 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
         actual = new SymExpr(tmp);
       }
     }
-    
+
     iteratorFnCall->insertBefore(new CallExpr(PRIM_SET_MEMBER, argBundle, field, actual));
+
     VarSymbol* tmp = newTemp(field->name, field->type);
 
-    // In the wrapper function, moves the current arg bundle field into a temp 
+    // In the wrapper function, moves the current arg bundle field into a temp
     // (unbundles it) and adds it to the args used  to call the loop body function.
     loopBodyFnWrapper->insertAtTail(new DefExpr(tmp));
     loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, wrapperArgsArg, field)));
@@ -709,12 +727,20 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
 static int
 countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
   int count = 0;
+
   for (Expr* tmp = expr; tmp && tmp != outer; tmp = tmp->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(tmp)) {
-      if (blk->blockInfoGet() && blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
+      // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
+      if (blk->isLoop() == true) {
+
+      } else if (blk->blockInfoGet() == NULL) {
+
+      } else if (blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
         count++;
-      if (blk->blockInfoGet() && blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
+
+      } else if (blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL)) {
         count--;
+      }
     }
   }
   return count;

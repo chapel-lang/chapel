@@ -234,10 +234,16 @@ static void handleLocalBlocks() {
   Vec<BlockStmt*> queue; // queue of blocks to localize
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol)
-      if (block->blockInfoGet())
-        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
+    if (block->parentSymbol) {
+      // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet()
+      if (block->isLoop() == true) {
+
+      } else if (block->blockInfoGet()) {
+        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
           queue.add(block);
+        }
+      }
+    }
   }
 
   forv_Vec(BlockStmt, block, queue) {
