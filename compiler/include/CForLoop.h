@@ -35,6 +35,8 @@ public:
 
   static CForLoop*       buildWithBodyFrom(ForLoop* forLoop);
 
+  static CForLoop*       loopForClause(BlockStmt* clause);
+
   //
   // Instance Interface
   //
