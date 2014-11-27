@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
+#include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "stmt.h"
@@ -638,6 +639,7 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
   hasMoreBody->insertAtTail(new DefExpr(tmp));
 
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    CForLoop* cforLoop  = toCForLoop(singleLoop);
     CallExpr* blockInfo = NULL;
 
     Symbol*   ic        = ii->advance->getFormal(1);
@@ -646,7 +648,7 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with hasMore->_this .
     map.put(ic, ii->hasMore->_this);
 
-    blockInfo = singleLoop->blockInfoGet()->copy(&map);
+    blockInfo = cforLoop->cforInfoGet()->copy(&map);
 
     if (BlockStmt* testSeg = toBlockStmt(blockInfo->get(2))) {
       for_alist(expr, testSeg->body) {
@@ -689,6 +691,7 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* initBody = new BlockStmt();
 
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    CForLoop* cforLoop  = toCForLoop(singleLoop);
     CallExpr* blockInfo = NULL;
 
     Symbol*   ic        = ii->advance->getFormal(1);
@@ -697,7 +700,7 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with init->_this .
     map.put(ic, ii->init->_this);
 
-    blockInfo = singleLoop->blockInfoGet()->copy(&map);
+    blockInfo = cforLoop->cforInfoGet()->copy(&map);
 
     if (BlockStmt* initSeg = toBlockStmt(blockInfo->get(1))) {
       for_alist(expr, initSeg->body) {
@@ -716,6 +719,7 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* incrBody = new BlockStmt();
 
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    CForLoop* cforLoop  = toCForLoop(singleLoop);
     CallExpr* blockInfo = NULL;
 
     Symbol*   ic        = ii->advance->getFormal(1);
@@ -724,7 +728,7 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with incr->_this .
     map.put(ic, ii->incr->_this);
 
-    blockInfo = singleLoop->blockInfoGet()->copy(&map);
+    blockInfo = cforLoop->cforInfoGet()->copy(&map);
 
     if (BlockStmt* incrSeg = toBlockStmt(blockInfo->get(3))) {
       for_alist(expr, incrSeg->body) {
@@ -801,7 +805,8 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   // as a result of being inserted in to the body of the loop
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
     Vec<SymExpr*> symExprs;
-    Expr*         init = singleLoop->blockInfoGet()->get(1);
+    CForLoop*     cforLoop = toCForLoop(singleLoop);
+    Expr*         init     = cforLoop->cforInfoGet()->get(1);
 
     collectSymExprs(init, symExprs);
 

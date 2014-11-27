@@ -20,6 +20,7 @@
 #include "baseAST.h"
 
 #include "astutil.h"
+#include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "log.h"
@@ -512,6 +513,7 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
   } else if (ArgSymbol* ps = toArgSymbol(ast)) {
     SUB_TYPE(ps->type);
   }
+
   AST_CHILDREN_CALL(ast, update_symbols, map);
 }
 

@@ -420,14 +420,14 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->cforInfoGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "BlockInfo: ", false);
+    write(false, "CForInfo:", false);
     mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
+    node->cforInfoGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;

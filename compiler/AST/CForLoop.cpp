@@ -151,15 +151,12 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
 
 bool CForLoop::isLoop() const
 {
-  // Noakes 2014/11/18.
-  // There are operations can clear the blockInfo
-  // i.e. convert a CForLoop back to a BlockStmt.
-  return (BlockStmt::blockInfoGet() != 0) ? true : false;
+  return true;
 }
 
 bool CForLoop::isCForLoop() const
 {
-  return BlockStmt::blockInfoGet() && BlockStmt::blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+  return true;
 }
 
 void CForLoop::loopHeaderSet(BlockStmt* initBlock,

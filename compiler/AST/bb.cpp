@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "bitVec.h"
+#include "CForLoop.h"
 #include "ForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -85,11 +86,9 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
   } else if (BlockStmt* s = toBlockStmt(stmt)) {
     if (s->isLoop() == true) {
-      bool cForLoop  = s->isCForLoop();
-
       // for c for loops, add the init expr before the loop body
-      if (cForLoop) {
-        CallExpr* info = s->blockInfoGet();
+      if (CForLoop* cforLoop = toCForLoop(s)) {
+        CallExpr* info = cforLoop->cforInfoGet();
 
         for_alist(stmt, toBlockStmt(info->get(1))->body) {
           buildBasicBlocks(fn, stmt, mark);
@@ -102,8 +101,8 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       restart(fn);
 
       // Mark and add the test expr at the loop top
-      if (cForLoop) {
-        CallExpr* info = s->blockInfoGet();
+      if (CForLoop* cforLoop = toCForLoop(s)) {
+        CallExpr* info = cforLoop->cforInfoGet();
 
         for_alist(stmt, toBlockStmt(info->get(2))->body) {
           buildBasicBlocks(fn, stmt, true);
@@ -134,8 +133,8 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       }
 
       // for c for loops, add the incr expr after the loop body
-      if (cForLoop) {
-        CallExpr* info = s->blockInfoGet();
+      if (CForLoop* cforLoop = toCForLoop(s)) {
+        CallExpr* info = cforLoop->cforInfoGet();
 
         for_alist(stmt, toBlockStmt(info->get(3))->body) {
           buildBasicBlocks(fn, stmt, mark);
