@@ -30,8 +30,11 @@ typedef struct chpl_chpl____wide_chpl_string_s chpl____wide_chpl_string;
 
 chpl_string
 chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
-  if (chpl_rt_nodeFromLocaleID(x->locale) == chpl_nodeID)
-    return string_copy(x->addr, lineno, filename);
+  if (chpl_rt_nodeFromLocaleID(x->locale) == chpl_nodeID) {
+    if (x->size > 0)
+      return string_copy_len(x->addr, x->size, lineno, filename);
+    return NULL;
+  }
   else {
     chpl_string s;
     chpl_comm_wide_get_string(&s, x,

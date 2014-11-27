@@ -81,7 +81,11 @@ c_string_copy chpl_format(c_string format, ...)
 char* chpl_glom_strings(int numstrings, ...);
 
 chpl_bool string_contains(c_string x, c_string y);
-c_string_copy string_copy(c_string x, int32_t lineno, c_string filename);
+
+// len is the length of the result string exclusive of the terminating NUL.
+// Exactly len characters are copied and then the terminating NUL is added
+// explicitly, so the input string need not be NUL-terminated.
+c_string_copy string_copy_len(c_string x, size_t len, int32_t lineno, c_string filename);
 c_string_copy string_concat(c_string x, c_string y, int32_t lineno, c_string filename);
 int string_index_of(c_string x, c_string y);
 c_string_copy string_index(c_string x, int i, int32_t lineno, c_string filename);
