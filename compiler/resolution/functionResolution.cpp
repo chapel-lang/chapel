@@ -30,6 +30,7 @@
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"

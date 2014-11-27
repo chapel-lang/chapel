@@ -142,7 +142,7 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
 //
 bool CollapseBlocks::enterCForLoop(CForLoop* node)
 {
-  CallExpr* call = node->blockInfoGet();
+  CallExpr* call = node->cforInfoGet();
 
   // Handle the init/test/incr fields specially
   for_alist(cForExprs, call->argList)

@@ -2146,7 +2146,9 @@ void lowerIterators() {
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (isAlive(block) == true && block->isForLoop() == true) {
-      expandForLoop((ForLoop*) block);
+      if (ForLoop* loop = toForLoop(block)) {
+        expandForLoop(loop);
+      }
     }
   }
 

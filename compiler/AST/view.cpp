@@ -23,6 +23,7 @@
 
 #include "view.h"
 
+#include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "log.h"

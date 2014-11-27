@@ -103,14 +103,14 @@ CForLoop::CForLoop()
 CForLoop::CForLoop(CallExpr*  cforInfo,
                    BlockStmt* initBody) : BlockStmt(initBody)
 {
-  blockInfoSet(cforInfo);
+  BlockStmt::blockInfoSet(cforInfo);
 }
 
 CForLoop::CForLoop(BlockStmt* initBody,
                    VarSymbol* index,
                    VarSymbol* iterator) : BlockStmt(initBody)
 {
-  blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
+  BlockStmt::blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
 }
 
 CForLoop::~CForLoop()
@@ -122,7 +122,7 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*  blockInfo = blockInfoGet();
+  CallExpr*  blockInfo = BlockStmt::blockInfoGet();
   CForLoop*  retval    = new CForLoop();
 
   retval->astloc        = astloc;
@@ -132,7 +132,7 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
   retval->continueLabel = continueLabel;
 
   if (blockInfo != 0)
-    retval->blockInfoSet(blockInfo->copy(map, true));
+    retval->BlockStmt::blockInfoSet(blockInfo->copy(map, true));
 
   if (modUses   != 0)
     retval->modUses = modUses->copy(map, true);
@@ -151,15 +151,12 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
 
 bool CForLoop::isLoop() const
 {
-  // Noakes 2014/11/18.
-  // There are operations can clear the blockInfo
-  // i.e. convert a CForLoop back to a BlockStmt.
-  return (blockInfoGet() != 0) ? true : false;
+  return true;
 }
 
 bool CForLoop::isCForLoop() const
 {
-  return blockInfoGet() && blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+  return true;
 }
 
 void CForLoop::loopHeaderSet(BlockStmt* initBlock,
@@ -170,18 +167,43 @@ void CForLoop::loopHeaderSet(BlockStmt* initBlock,
   testBlock->blockTag = BLOCK_C_FOR_LOOP;
   incrBlock->blockTag = BLOCK_C_FOR_LOOP;
 
-  blockInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
-                            initBlock,
-                            testBlock,
-                            incrBlock));
+  BlockStmt::blockInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
+                                       initBlock,
+                                       testBlock,
+                                       incrBlock));
 }
 
+
+// NOAKES 2014/11/26   Transitional
+CallExpr* CForLoop::cforInfoGet() const
+{
+ return BlockStmt::blockInfoGet();
+}
+
+CallExpr* CForLoop::cforInfoSet(CallExpr* info)
+{
+  return BlockStmt::blockInfoSet(info);
+}
+
+CallExpr* CForLoop::blockInfoGet() const
+{
+  printf("Migration: CForLoop  %12d Unexpected call to blockInfoGet()\n", id);
+
+  return BlockStmt::blockInfoGet();
+}
+
+CallExpr* CForLoop::blockInfoSet(CallExpr* expr)
+{
+  printf("Migration: CForLoop  %12d Unexpected call to blockInfoSet()\n", id);
+
+  return BlockStmt::blockInfoSet(expr);
+}
 
 bool CForLoop::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (CallExpr* loop = blockInfoGet()) {
+  if (CallExpr* loop = BlockStmt::blockInfoGet()) {
     if (BlockStmt* test = toBlockStmt(loop->get(2))) {
       if (test->body.length == 0) {
         remove();
@@ -197,19 +219,19 @@ void CForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (blockInfoGet() == 0)
+  if (BlockStmt::blockInfoGet() == 0)
     INT_FATAL(this, "CForLoop::verify. blockInfo is NULL");
 
-  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) == false)
+  if (BlockStmt::blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) == false)
     INT_FATAL(this, "CForLoop::verify. blockInfo type is not PRIM_BLOCK_C_FOR_LOOP");
 
-  if (toBlockStmt(blockInfoGet()->get(1))->blockTag != BLOCK_C_FOR_LOOP)
+  if (toBlockStmt(BlockStmt::blockInfoGet()->get(1))->blockTag != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. initBlock is not BLOCK_C_FOR_LOOP");
 
-  if (toBlockStmt(blockInfoGet()->get(2))->blockTag != BLOCK_C_FOR_LOOP)
+  if (toBlockStmt(BlockStmt::blockInfoGet()->get(2))->blockTag != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. testBlock is not BLOCK_C_FOR_LOOP");
 
-  if (toBlockStmt(blockInfoGet()->get(3))->blockTag != BLOCK_C_FOR_LOOP)
+  if (toBlockStmt(BlockStmt::blockInfoGet()->get(3))->blockTag != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. incrBlock is not BLOCK_C_FOR_LOOP");
 
   if (modUses   != 0)
@@ -229,7 +251,7 @@ GenRet CForLoop::codegen()
 
   if (outfile)
   {
-    CallExpr*   blockInfo = blockInfoGet();
+    CallExpr*   blockInfo = BlockStmt::blockInfoGet();
     BlockStmt*  initBlock = toBlockStmt(blockInfo->get(1));
 
     // These copy calls are needed or else values get code generated twice.
@@ -275,9 +297,9 @@ GenRet CForLoop::codegen()
     llvm::BasicBlock* blockStmtBody = NULL;
     llvm::BasicBlock* blockStmtEnd  = NULL;
 
-    BlockStmt*        initBlock     = toBlockStmt(blockInfoGet()->get(1));
-    BlockStmt*        testBlock     = toBlockStmt(blockInfoGet()->get(2));
-    BlockStmt*        incrBlock     = toBlockStmt(blockInfoGet()->get(3));
+    BlockStmt*        initBlock     = toBlockStmt(BlockStmt::blockInfoGet()->get(1));
+    BlockStmt*        testBlock     = toBlockStmt(BlockStmt::blockInfoGet()->get(2));
+    BlockStmt*        incrBlock     = toBlockStmt(BlockStmt::blockInfoGet()->get(3));
 
     assert(initBlock && testBlock && incrBlock);
 
@@ -469,7 +491,7 @@ GenRet CForLoop::codegenCForLoopCondition(BlockStmt* block)
 
 void CForLoop::accept(AstVisitor* visitor) {
   if (visitor->enterCForLoop(this) == true) {
-    CallExpr* blockInfo = blockInfoGet();
+    CallExpr* blockInfo = BlockStmt::blockInfoGet();
 
     for_alist(next_ast, body)
       next_ast->accept(visitor);
@@ -490,8 +512,8 @@ void CForLoop::accept(AstVisitor* visitor) {
 Expr* CForLoop::getFirstExpr() {
   Expr* retval = 0;
 
-  if (blockInfoGet() != 0)
-    retval = blockInfoGet()->getFirstExpr();
+  if (BlockStmt::blockInfoGet() != 0)
+    retval = BlockStmt::blockInfoGet()->getFirstExpr();
 
   else if (body.head      != 0)
     retval = body.head->getFirstExpr();
@@ -505,7 +527,7 @@ Expr* CForLoop::getFirstExpr() {
 Expr* CForLoop::getNextExpr(Expr* expr) {
   Expr* retval = NULL;
 
-  if (expr == blockInfoGet() && body.head != NULL)
+  if (expr == BlockStmt::blockInfoGet() && body.head != NULL)
     retval = body.head->getFirstExpr();
 
   return retval;
