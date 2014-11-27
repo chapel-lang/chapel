@@ -104,11 +104,8 @@ public:
 
     ~Loop() {
       delete loopBlocks;
-      loopBlocks = 0;
       delete bitBlocks;
-      bitBlocks = 0;
       delete bitExits;
-      bitExits = 0;
     }
 
     // This function exists to place an expr in the
@@ -120,24 +117,11 @@ public:
         if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
           if (blockStmt->isLoop()) {
             blockStmt->insertBefore(expr->remove());
-          } else {
-            // for c for loops, the header is the test segment of the c for loop
-            // primitive which is still in the primitive. In this case we need
-            // to first get the primitive and then get its parent which will be
-            // the surrounding block stmt of the loop.
-            if (CallExpr* call = toCallExpr(blockStmt->parentExpr)) {
-              if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
-                if (CForLoop* outer = toCForLoop(call->parentExpr)) {
-                  INT_ASSERT(blockStmt->blockTag == BLOCK_C_FOR_LOOP);
 
-                  if (outer->cforInfoGet() == call) {
-                    outer->insertBefore(expr->remove());
-                  }
-                } else {
-                  INT_FATAL(blockStmt, "Call parent is a not a CForLoop");
-                }
-              }
-            }
+          } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
+            CForLoop* cforLoop = CForLoop::loopForClause(blockStmt);
+
+            cforLoop->insertBefore(expr->remove());
           }
         }
       }

@@ -89,6 +89,25 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
   return retval;
 }
 
+// Provide an abstraction around a requirement to find the CForLoop for
+// a BlockStmt that is presumed to be one of the header claiuses
+CForLoop* CForLoop::loopForClause(BlockStmt* clause)
+{
+  CForLoop* retval = 0;
+
+  INT_ASSERT(clause->blockTag == BLOCK_C_FOR_LOOP);
+
+  if (CallExpr* call = toCallExpr(clause->parentExpr)) {
+    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+      retval = toCForLoop(call->parentExpr);
+
+      INT_ASSERT(retval != 0);
+    }
+  }
+
+  return retval;
+}
+
 /************************************ | *************************************
 *                                                                           *
 * Instance methods                                                          *
