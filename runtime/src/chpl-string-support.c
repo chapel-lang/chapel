@@ -118,7 +118,7 @@ string_copy_len(c_string x, size_t len, int32_t lineno, c_string filename)
   return buf;
 }
 
-static c_string_copy
+c_string_copy
 string_copy(c_string x, int32_t lineno, c_string filename)
 {
   size_t len;
