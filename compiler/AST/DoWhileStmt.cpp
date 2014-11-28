@@ -48,9 +48,7 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
   body->insertAtTail(new DefExpr(continueLabel));
   body->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
 
-  loop = new DoWhileStmt(body);
-
-  loop->condExprSet(new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar));
+  loop = new DoWhileStmt(condVar, body);
 
   loop->continueLabel = continueLabel;
   loop->breakLabel    = breakLabel;
@@ -69,7 +67,8 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 *                                                                           *
 ************************************* | ************************************/
 
-DoWhileStmt::DoWhileStmt(BlockStmt* initBody) : WhileStmt(initBody)
+DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* initBody) :
+  WhileStmt(var, initBody)
 {
 
 }
@@ -81,7 +80,7 @@ DoWhileStmt::~DoWhileStmt()
 
 DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
 {
-  DoWhileStmt* retval = new DoWhileStmt(NULL);
+  DoWhileStmt* retval = new DoWhileStmt(NULL, NULL);
 
   retval->copyShare(*this, map, internal);
 

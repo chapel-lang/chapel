@@ -29,7 +29,9 @@ public:
   CallExpr*              condExprSet(CallExpr* info);
 
 protected:
-                         WhileStmt(BlockStmt* initBody);
+                         WhileStmt(VarSymbol* sym,
+                                   BlockStmt* initBody);
+
   virtual               ~WhileStmt();
 
   void                   copyShare(const WhileStmt& ref,

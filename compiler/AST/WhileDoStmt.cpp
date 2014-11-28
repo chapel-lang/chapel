@@ -47,9 +47,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
     LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
 
-    WhileDoStmt* loop          = new WhileDoStmt(body);
-
-    loop->condExprSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar));
+    WhileDoStmt* loop          = new WhileDoStmt(condVar, body);
 
     loop->continueLabel = continueLabel;
     loop->breakLabel    = breakLabel;
@@ -87,7 +85,8 @@ bool WhileDoStmt::isPrimitiveCForLoop(Expr* cond)
 *                                                                           *
 ************************************* | ************************************/
 
-WhileDoStmt::WhileDoStmt(BlockStmt* initBody) : WhileStmt(initBody)
+WhileDoStmt::WhileDoStmt(VarSymbol* var, BlockStmt* initBody) :
+  WhileStmt(var, initBody)
 {
 
 }
@@ -99,7 +98,7 @@ WhileDoStmt::~WhileDoStmt()
 
 WhileDoStmt* WhileDoStmt::copy(SymbolMap* map, bool internal)
 {
-  WhileDoStmt* retval = new WhileDoStmt(NULL);
+  WhileDoStmt* retval = new WhileDoStmt(NULL, NULL);
 
   retval->copyShare(*this, map, internal);
 

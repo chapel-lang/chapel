@@ -23,9 +23,12 @@
 #include "expr.h"
 #include "stlUtil.h"
 
-WhileStmt::WhileStmt(BlockStmt* initBody) : BlockStmt(initBody)
+WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* initBody) :
+  BlockStmt(initBody)
 {
-
+  // NOAKES 2014/11/27 Transitional
+  if (var != 0)
+    condExprSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, var));
 }
 
 WhileStmt::~WhileStmt()

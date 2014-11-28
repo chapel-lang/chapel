@@ -52,7 +52,9 @@ public:
 
 private:
                          WhileDoStmt();
-                         WhileDoStmt(BlockStmt* initBody);
+
+                         WhileDoStmt(VarSymbol* var,
+                                     BlockStmt* initBody);
 };
 
 #endif

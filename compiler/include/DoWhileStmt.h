@@ -31,7 +31,6 @@ public:
   static BlockStmt*      build(Expr* cond, BlockStmt* body);
 
 
-
   //
   // Instance interface
   //
@@ -50,7 +49,9 @@ public:
 
 private:
                          DoWhileStmt();
-                         DoWhileStmt(BlockStmt* initBody);
+
+                         DoWhileStmt(VarSymbol* var,
+                                     BlockStmt* initBody);
 };
 
 #endif
