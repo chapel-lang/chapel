@@ -93,14 +93,6 @@ bool DoWhileStmt::isDoWhileStmt() const
   return true;
 }
 
-void DoWhileStmt::verify()
-{
-  WhileStmt::verify();
-
-  if (condExprGet()->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) == false)
-    INT_FATAL(this, "DoWhileStmt::verify. condExpr type is not PRIM_BLOCK_DOWHILE_LOOP");
-}
-
 GenRet DoWhileStmt::codegen()
 {
   GenInfo* info    = gGenInfo;

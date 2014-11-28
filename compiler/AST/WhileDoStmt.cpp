@@ -111,14 +111,6 @@ bool WhileDoStmt::isWhileDoStmt() const
   return true;
 }
 
-void WhileDoStmt::verify()
-{
-  WhileStmt::verify();
-
-  if (condExprGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) == false)
-    INT_FATAL(this, "WhileDoStmt::verify. condExpr type is not PRIM_BLOCK_WHILEDO_LOOP");
-}
-
 GenRet WhileDoStmt::codegen()
 {
   GenInfo* info    = gGenInfo;

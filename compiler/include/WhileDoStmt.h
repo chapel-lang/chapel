@@ -45,7 +45,6 @@ public:
   virtual bool           isWhileDoStmt()                              const;
 
   virtual GenRet         codegen();
-  virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
 
   virtual Expr*          getFirstExpr();
