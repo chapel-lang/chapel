@@ -28,7 +28,7 @@ WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* initBody) :
 {
   // NOAKES 2014/11/27 Transitional
   if (var != 0)
-    condExprSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, var));
+    mCondExpr = new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, var);
 }
 
 WhileStmt::~WhileStmt()
@@ -51,7 +51,7 @@ void WhileStmt::copyShare(const WhileStmt& ref,
   continueLabel = ref.continueLabel;
 
   if (condExpr != 0)
-    condExprSet(condExpr->copy(map, true));
+    mCondExpr = condExpr->copy(map, true);
 
   if (ref.modUses  != 0)
     modUses = ref.modUses->copy(map, true);
@@ -119,13 +119,6 @@ CallExpr* WhileStmt::condExprGet() const
   return mCondExpr;
 }
 
-CallExpr* WhileStmt::condExprSet(CallExpr* info)
-{
-  mCondExpr = info;
-
-  return mCondExpr;
-}
-
 CallExpr* WhileStmt::blockInfoGet() const
 {
   printf("Migration: WhileStmt %12d Unexpected call to blockInfoGet()\n", id);
@@ -151,8 +144,6 @@ bool WhileStmt::deadBlockCleanup()
 
   return retval;
 }
-
-
 
 /************************************ | *************************************
 *                                                                           *
