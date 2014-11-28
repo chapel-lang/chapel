@@ -25,7 +25,7 @@
 class WhileStmt : public BlockStmt
 {
 public:
-  CallExpr*              condExprGet()                                const;
+  SymExpr*               condExprGet()                                const;
 
 protected:
                          WhileStmt(VarSymbol* sym,
@@ -55,13 +55,13 @@ private:
                          WhileStmt();
 
   // Helper functions for checkConstLoops()
-  SymExpr*               getWhileCondDef(CallExpr* info, VarSymbol* condSym);
+  SymExpr*               getWhileCondDef(VarSymbol* condSym);
   void                   checkWhileLoopCondition(Expr* condExp);
   bool                   symDeclaredInBlock(Symbol* condSym);
   void                   checkConstWhileLoop();
   bool                   loopBodyHasExits();
 
-  CallExpr*              mCondExpr;
+  SymExpr*               mCondExpr;
 };
 
 #endif
