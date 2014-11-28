@@ -66,6 +66,27 @@ void WhileStmt::copyShare(const WhileStmt& ref,
     update_symbols(this, map);
 }
 
+// Note that newAst can be NULL to reflect deletion
+void WhileStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  CallExpr* oldExpr = toCallExpr(oldAst);
+  CallExpr* newExpr = toCallExpr(newAst);
+
+  if (oldExpr == NULL)
+    INT_FATAL(this, "WhileStmt::replaceChild. oldAst is not a CallExpr");
+
+  else if (oldExpr == mCondExpr)
+    mCondExpr = newExpr;
+
+  else if (oldExpr == modUses)
+    modUses   = newExpr;
+
+  else if (oldExpr == byrefVars)
+    byrefVars = newExpr;
+
+  else
+    INT_FATAL(this, "WhileStmt::replaceChild. Failed to match the oldAst ");
+}
+
 void WhileStmt::verify()
 {
   BlockStmt::verify();
@@ -73,10 +94,13 @@ void WhileStmt::verify()
   if (condExprGet() == 0)
     INT_FATAL(this, "WhileStmt::verify. condExpr  is NULL");
 
-  if (modUses          != 0)
+  if (BlockStmt::blockInfoGet() != 0)
+    INT_FATAL(this, "WhileStmt::verify. condExpr  is not NULL");
+
+  if (modUses                   != 0)
     INT_FATAL(this, "WhileStmt::verify. modUses   is not NULL");
 
-  if (byrefVars        != 0)
+  if (byrefVars                 != 0)
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");
 }
 
@@ -92,12 +116,14 @@ bool WhileStmt::isWhileStmt() const
 
 CallExpr* WhileStmt::condExprGet() const
 {
-  return BlockStmt::blockInfoGet();
+  return mCondExpr;
 }
 
 CallExpr* WhileStmt::condExprSet(CallExpr* info)
 {
-  return BlockStmt::blockInfoSet(info);
+  mCondExpr = info;
+
+  return mCondExpr;
 }
 
 CallExpr* WhileStmt::blockInfoGet() const
@@ -125,6 +151,14 @@ bool WhileStmt::deadBlockCleanup()
 
   return retval;
 }
+
+
+
+/************************************ | *************************************
+*                                                                           *
+* Additional Validation                                                     *
+*                                                                           *
+************************************* | ************************************/
 
 void WhileStmt::checkConstLoops()
 {
@@ -190,6 +224,42 @@ void WhileStmt::checkConstLoops()
   INT_ASSERT(foundit);
 }
 
+SymExpr* WhileStmt::getWhileCondDef(CallExpr* info, VarSymbol* condSym)
+{
+  std::vector<SymExpr*> symExprs;
+  SymExpr*              condDef = NULL;
+
+  collectSymExprsSTL(this, symExprs);
+
+  for_vector(SymExpr, se, symExprs)
+  {
+    if (se->var == condSym)
+    {
+      if (se->parentExpr == info)
+      {
+        // The reference is in blockInfo - not interesting.
+      }
+
+      else if (condDef)
+      {
+        // There are >1 references to condSym. Let us notify ourselves
+        // so we can adjust the code to handle this case as well.
+        // If desired, disable this assert - the only outcome of that may be
+        // that the warning will not be issued in some cases.
+        INT_ASSERT(false);
+      }
+
+      else
+      {
+        // This is what we are looking for.
+        condDef = se;
+      }
+    }
+  }
+
+  return condDef;
+}
+
 void WhileStmt::checkWhileLoopCondition(Expr* condExp)
 {
   if (SymExpr* condSE = toSymExpr(condExp))
@@ -245,40 +315,4 @@ bool WhileStmt::loopBodyHasExits()
   }
 
   return false;
-}
-
-SymExpr* WhileStmt::getWhileCondDef(CallExpr* info, VarSymbol* condSym)
-{
-  std::vector<SymExpr*> symExprs;
-  SymExpr*              condDef = NULL;
-
-  collectSymExprsSTL(this, symExprs);
-
-  for_vector(SymExpr, se, symExprs)
-  {
-    if (se->var == condSym)
-    {
-      if (se->parentExpr == info)
-      {
-        // The reference is in blockInfo - not interesting.
-      }
-
-      else if (condDef)
-      {
-        // There are >1 references to condSym. Let us notify ourselves
-        // so we can adjust the code to handle this case as well.
-        // If desired, disable this assert - the only outcome of that may be
-        // that the warning will not be issued in some cases.
-        INT_ASSERT(false);
-      }
-
-      else
-      {
-        // This is what we are looking for.
-        condDef = se;
-      }
-    }
-  }
-
-  return condDef;
 }

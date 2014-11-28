@@ -40,6 +40,8 @@ protected:
 
   virtual void           verify();
 
+  virtual void           replaceChild(Expr* old_ast, Expr* new_ast);
+
   virtual bool           isLoop()                                     const;
   virtual bool           isWhileStmt()                                const;
 
@@ -53,12 +55,14 @@ protected:
 private:
                          WhileStmt();
 
+  // Helper functions for checkConstLoops()
+  SymExpr*               getWhileCondDef(CallExpr* info, VarSymbol* condSym);
   void                   checkWhileLoopCondition(Expr* condExp);
   bool                   symDeclaredInBlock(Symbol* condSym);
   void                   checkConstWhileLoop();
   bool                   loopBodyHasExits();
-  SymExpr*               getWhileCondDef(CallExpr* info, VarSymbol* condSym);
+
+  CallExpr*              mCondExpr;
 };
 
 #endif
-
