@@ -165,7 +165,7 @@ GenRet WhileDoStmt::codegen()
     // Now switch to the condition for code generation
     info->builder->SetInsertPoint(blockStmtCond);
 
-    GenRet            condValueRet     = codegenValue(condExpr()->get(1));
+    GenRet            condValueRet     = codegenValue(condExprGet()->get(1));
     llvm::Value*      condValue        = condValueRet.val;
 
     if (condValue->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
