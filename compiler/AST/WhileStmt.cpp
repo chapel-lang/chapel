@@ -214,7 +214,7 @@ SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
     {
       if (se == mCondExpr)
       {
-        // The reference is in blockInfo - not interesting.
+        // The reference is the condition expression - not interesting.
       }
 
       else if (condDef)

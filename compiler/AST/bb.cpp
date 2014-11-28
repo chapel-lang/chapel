@@ -86,6 +86,13 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
   } else if (BlockStmt* s = toBlockStmt(stmt)) {
     if (s->isLoop() == true) {
+
+      // Determine if the whileStmt is dead
+      if (WhileStmt* whileStmt = toWhileStmt(stmt)) {
+        if (whileStmt->condExprGet() == 0)
+          return;
+      }
+
       // for c for loops, add the init expr before the loop body
       if (CForLoop* cforLoop = toCForLoop(s)) {
         CallExpr* info = cforLoop->cforInfoGet();
@@ -110,9 +117,11 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
       // add the condition expr at the loop top; this is not quite right for DoWhile
       } else if (WhileStmt* whileStmt = toWhileStmt(stmt)) {
-        CallExpr* info = whileStmt->condExprGet();
+        SymExpr* condExpr = whileStmt->condExprGet();
 
-        append(info->get(1), true);
+        INT_ASSERT(condExpr);
+
+        append(condExpr, true);
 
       } else if (ForLoop* forLoop = toForLoop(stmt)) {
         CallExpr* info = forLoop->forInfoGet();
@@ -273,6 +282,8 @@ void BasicBlock::restart(FnSymbol* fn) {
 }
 
 void BasicBlock::append(Expr* expr, bool mark) {
+  INT_ASSERT(expr);
+
   basicBlock->exprs.push_back(expr);
   basicBlock->marks.push_back(mark);
 }

@@ -32,6 +32,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "WhileStmt.h"
 
 #include "AstVisitor.h"
 
@@ -148,13 +149,38 @@ bool Expr::isModuleDefinition() {
 }
 
 bool Expr::isStmtExpr() const {
-  return isStmt() == true || isBlockStmt(parentExpr) == true;
+  bool retval = false;
+
+  if (isStmt() == true) {
+    retval = true;
+
+  // NOAKES 2014/11/28 A WhileStmt is currently a BlockStmt
+  // but needs special handling
+  } else if (WhileStmt* parent = toWhileStmt(parentExpr)) {
+    retval = (parent->condExprGet() != this) ? true : false;
+
+  } else {
+    retval = isBlockStmt(parentExpr);
+  }
+
+  return retval;
 }
 
 Expr* Expr::getStmtExpr() {
   for (Expr* expr = this; expr; expr = expr->parentExpr) {
-    if (expr->isStmt() || isBlockStmt(expr->parentExpr))
+    if (expr->isStmt() == true) {
       return expr;
+
+    // NOAKES 2014/11/28 A WhileStmt is currently a BlockStmt
+    // but needs special handling
+    } else if (WhileStmt* parent = toWhileStmt(expr->parentExpr)) {
+      if (parent->condExprGet() != expr) {
+        return expr;
+      }
+
+    } else if (isBlockStmt(expr->parentExpr) == true) {
+      return expr;
+    }
   }
 
   return NULL;
@@ -168,12 +194,16 @@ void Expr::verify() {
   if (prev || next)
     if (!list)
       INT_FATAL(this, "Expr is in list but does not point at it");
+
   if (prev && prev->next != this)
     INT_FATAL(this, "Bad Expr->prev->next");
+
   if (next && next->prev != this)
     INT_FATAL(this, "Bad Expr->next->prev");
+
   if (!parentSymbol)
     INT_FATAL(this, "Expr::parentSymbol is NULL");
+
   if (parentExpr && parentExpr->parentSymbol != parentSymbol)
     INT_FATAL(this, "Bad Expr::parentSymbol");
 }
