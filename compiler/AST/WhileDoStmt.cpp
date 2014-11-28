@@ -120,7 +120,7 @@ GenRet WhileDoStmt::codegen()
 
   if (outfile)
   {
-    std::string hdr = "while (" + codegenValue(condExpr).c + ") ";
+    std::string hdr = "while (" + codegenValue(condExprGet()).c + ") ";
 
     info->cStatements.push_back(hdr);
 
