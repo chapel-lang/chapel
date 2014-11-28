@@ -45,7 +45,6 @@ public:
   virtual bool           isWhileDoStmt()                              const;
 
   virtual GenRet         codegen();
-  virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
 
   virtual Expr*          getFirstExpr();
@@ -53,7 +52,9 @@ public:
 
 private:
                          WhileDoStmt();
-                         WhileDoStmt(BlockStmt* initBody);
+
+                         WhileDoStmt(VarSymbol* var,
+                                     BlockStmt* initBody);
 };
 
 #endif

@@ -31,7 +31,6 @@ public:
   static BlockStmt*      build(Expr* cond, BlockStmt* body);
 
 
-
   //
   // Instance interface
   //
@@ -43,7 +42,6 @@ public:
   virtual bool           isDoWhileStmt()                              const;
 
   virtual GenRet         codegen();
-  virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
 
   virtual Expr*          getFirstExpr();
@@ -51,7 +49,9 @@ public:
 
 private:
                          DoWhileStmt();
-                         DoWhileStmt(BlockStmt* initBody);
+
+                         DoWhileStmt(VarSymbol* var,
+                                     BlockStmt* initBody);
 };
 
 #endif
