@@ -39,7 +39,7 @@ void WhileStmt::copyShare(const WhileStmt& ref,
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*  blockInfo = ref.BlockStmt::blockInfoGet();
+  CallExpr*  condExpr  = ref.condExprGet();
 
   astloc        = ref.astloc;
   blockTag      = ref.blockTag;
@@ -47,8 +47,8 @@ void WhileStmt::copyShare(const WhileStmt& ref,
   breakLabel    = ref.breakLabel;
   continueLabel = ref.continueLabel;
 
-  if (blockInfo != 0)
-    BlockStmt::blockInfoSet(blockInfo->copy(map, true));
+  if (condExpr != 0)
+    condExprSet(condExpr->copy(map, true));
 
   if (ref.modUses  != 0)
     modUses = ref.modUses->copy(map, true);
@@ -67,13 +67,13 @@ void WhileStmt::verify()
 {
   BlockStmt::verify();
 
-  if (BlockStmt::blockInfoGet() == 0)
-    INT_FATAL(this, "WhileStmt::verify. blockInfo is NULL");
+  if (condExprGet() == 0)
+    INT_FATAL(this, "WhileStmt::verify. condExpr  is NULL");
 
-  if (modUses   != 0)
+  if (modUses          != 0)
     INT_FATAL(this, "WhileStmt::verify. modUses   is not NULL");
 
-  if (byrefVars != 0)
+  if (byrefVars        != 0)
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");
 }
 
@@ -101,21 +101,21 @@ CallExpr* WhileStmt::blockInfoGet() const
 {
   printf("Migration: WhileStmt %12d Unexpected call to blockInfoGet()\n", id);
 
-  return BlockStmt::blockInfoGet();
+  return 0;
 }
 
 CallExpr* WhileStmt::blockInfoSet(CallExpr* expr)
 {
   printf("Migration: WhileStmt %12d Unexpected call to blockInfoSet()\n", id);
 
-  return BlockStmt::blockInfoSet(expr);
+  return 0;
 }
 
 bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (BlockStmt::blockInfoGet() == 0 || BlockStmt::blockInfoGet()->numActuals() == 0) {
+  if (condExprGet() == 0 || condExprGet()->numActuals() == 0) {
     remove();
     retval = true;
   }
@@ -125,7 +125,7 @@ bool WhileStmt::deadBlockCleanup()
 
 void WhileStmt::checkConstLoops()
 {
-  CallExpr* info    = BlockStmt::blockInfoGet();
+  CallExpr* info    = condExprGet();
   bool      foundit = false;
 
   if (SymExpr* condSE = toSymExpr(info->get(1)))
