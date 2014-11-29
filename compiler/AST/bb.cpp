@@ -22,11 +22,12 @@
 #include "astutil.h"
 #include "bitVec.h"
 #include "CForLoop.h"
+#include "DoWhileStmt.h"
 #include "ForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
-#include "WhileStmt.h"
+#include "WhileDoStmt.h"
 
 int                                          BasicBlock::nextID     = 0;
 BasicBlock*                                  BasicBlock::basicBlock = NULL;
@@ -87,12 +88,6 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
   } else if (BlockStmt* s = toBlockStmt(stmt)) {
     if (s->isLoop() == true) {
 
-      // Determine if the whileStmt is dead
-      if (WhileStmt* whileStmt = toWhileStmt(stmt)) {
-        if (whileStmt->condExprGet() == 0)
-          return;
-      }
-
       // for c for loops, add the init expr before the loop body
       if (CForLoop* cforLoop = toCForLoop(s)) {
         CallExpr* info = cforLoop->cforInfoGet();
@@ -115,13 +110,15 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
           buildBasicBlocks(fn, stmt, true);
         }
 
-      // add the condition expr at the loop top; this is not quite right for DoWhile
-      } else if (WhileStmt* whileStmt = toWhileStmt(stmt)) {
-        SymExpr* condExpr = whileStmt->condExprGet();
+      // add the condition expr at the loop top
+      } else if (WhileDoStmt* whileDoStmt = toWhileDoStmt(stmt)) {
+        SymExpr* condExpr = whileDoStmt->condExprGet();
 
         INT_ASSERT(condExpr);
 
         append(condExpr, true);
+
+      } else if (isDoWhileStmt(stmt) == true) {
 
       } else if (ForLoop* forLoop = toForLoop(stmt)) {
         CallExpr* info = forLoop->forInfoGet();
@@ -148,6 +145,13 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
         for_alist(stmt, toBlockStmt(info->get(3))->body) {
           buildBasicBlocks(fn, stmt, mark);
         }
+
+      } else if (DoWhileStmt* doWhileStmt = toDoWhileStmt(stmt)) {
+        SymExpr* condExpr = doWhileStmt->condExprGet();
+
+        INT_ASSERT(condExpr);
+
+        append(condExpr, true);
       }
 
       BasicBlock* loopBottom = basicBlock;
