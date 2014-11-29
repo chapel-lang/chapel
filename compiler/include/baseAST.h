@@ -386,8 +386,8 @@ def_to_ast(CForLoop);
     BlockStmt* stmt = toBlockStmt(_a);                                      \
                                                                             \
     if (stmt->isWhileDoStmt() == true) {                                    \
-      AST_CALL_CHILD(stmt, WhileStmt, condExprGet(),  call, __VA_ARGS__);   \
       AST_CALL_LIST (stmt, WhileStmt, body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, WhileStmt, condExprGet(),  call, __VA_ARGS__);   \
                                                                             \
     } else if (stmt->isDoWhileStmt() == true) {                             \
       AST_CALL_LIST (stmt, WhileStmt, body,           call, __VA_ARGS__);   \
