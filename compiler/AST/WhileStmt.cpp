@@ -26,9 +26,7 @@
 WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* initBody) :
   BlockStmt(initBody)
 {
-  // NOAKES 2014/11/27 Transitional
-  if (var != 0)
-    mCondExpr = new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, var);
+  mCondExpr = (var != 0) ? new SymExpr(var) : 0;
 }
 
 WhileStmt::~WhileStmt()
@@ -42,7 +40,7 @@ void WhileStmt::copyShare(const WhileStmt& ref,
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*  condExpr  = ref.condExprGet();
+  SymExpr*   condExpr  = ref.condExprGet();
 
   astloc        = ref.astloc;
   blockTag      = ref.blockTag;
@@ -68,20 +66,14 @@ void WhileStmt::copyShare(const WhileStmt& ref,
 
 // Note that newAst can be NULL to reflect deletion
 void WhileStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  CallExpr* oldExpr = toCallExpr(oldAst);
-  CallExpr* newExpr = toCallExpr(newAst);
+  SymExpr* oldExpr = toSymExpr(oldAst);
+  SymExpr* newExpr = toSymExpr(newAst);
 
   if (oldExpr == NULL)
-    INT_FATAL(this, "WhileStmt::replaceChild. oldAst is not a CallExpr");
+    INT_FATAL(this, "WhileStmt::replaceChild. oldAst is not a SymExpr");
 
   else if (oldExpr == mCondExpr)
     mCondExpr = newExpr;
-
-  else if (oldExpr == modUses)
-    modUses   = newExpr;
-
-  else if (oldExpr == byrefVars)
-    byrefVars = newExpr;
 
   else
     INT_FATAL(this, "WhileStmt::replaceChild. Failed to match the oldAst ");
@@ -91,11 +83,11 @@ void WhileStmt::verify()
 {
   BlockStmt::verify();
 
-  if (condExprGet() == 0)
+  if (condExprGet()             == 0)
     INT_FATAL(this, "WhileStmt::verify. condExpr  is NULL");
 
   if (BlockStmt::blockInfoGet() != 0)
-    INT_FATAL(this, "WhileStmt::verify. condExpr  is not NULL");
+    INT_FATAL(this, "WhileStmt::verify. blockInfo is not NULL");
 
   if (modUses                   != 0)
     INT_FATAL(this, "WhileStmt::verify. modUses   is not NULL");
@@ -114,7 +106,7 @@ bool WhileStmt::isWhileStmt() const
   return true;
 }
 
-CallExpr* WhileStmt::condExprGet() const
+SymExpr* WhileStmt::condExprGet() const
 {
   return mCondExpr;
 }
@@ -137,7 +129,7 @@ bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (condExprGet() == 0 || condExprGet()->numActuals() == 0) {
+  if (condExprGet() == 0) {
     remove();
     retval = true;
   }
@@ -153,53 +145,47 @@ bool WhileStmt::deadBlockCleanup()
 
 void WhileStmt::checkConstLoops()
 {
-  CallExpr* info    = condExprGet();
-  bool      foundit = false;
+  bool foundit = false;
 
-  if (SymExpr* condSE = toSymExpr(info->get(1)))
+  if (VarSymbol* condSym = toVarSymbol(mCondExpr->var))
   {
-    if (VarSymbol* condSym = toVarSymbol(condSE->var))
+    if (SymExpr* condDef = getWhileCondDef(condSym))
     {
-      SymExpr* condDef = getWhileCondDef(info, condSym);
-
-      if (condDef)
+      // Parse the move expr.
+      if (CallExpr* outerCall = toCallExpr(condDef->parentExpr))
       {
-        // Parse the move expr.
-        if (CallExpr* outerCall = toCallExpr(condDef->parentExpr))
+        if (outerCall->get(1) == condDef)
         {
-          if (outerCall->get(1) == condDef)
+          if (outerCall->isPrimitive(PRIM_MOVE))
           {
-            if (outerCall->isPrimitive(PRIM_MOVE))
+            if (CallExpr* innerCall = toCallExpr(outerCall->get(2)))
             {
-              if (CallExpr* innerCall = toCallExpr(outerCall->get(2)))
+              if (innerCall->numActuals()          == 1 &&
+                  innerCall->isNamed("_cond_test") == true)
               {
-                if (innerCall->numActuals()          == 1 &&
-                    innerCall->isNamed("_cond_test") == true)
-                {
-                  foundit = true;
-                  checkWhileLoopCondition(innerCall->get(1));
-                }
+                foundit = true;
+                checkWhileLoopCondition(innerCall->get(1));
+              }
+            }
+
+            else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2)))
+            {
+              // Sometimes _cond_test resolves to a param version, so
+              // we get either true or false.
+              if (moveSrc->var == gTrue)
+              {
+                foundit = true;
               }
 
-              else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2)))
+              else if (moveSrc->var == gFalse)
               {
-                // Sometimes _cond_test resolves to a param version, so
-                // we get either true or false.
-                if (moveSrc->var == gTrue)
-                {
-                  foundit = true;
-                }
+                foundit = true;
+                // while false do ...; -- probably nothing to worry about
+              }
 
-                else if (moveSrc->var == gFalse)
-                {
-                  foundit = true;
-                  // while false do ...; -- probably nothing to worry about
-                }
-
-                else
-                {
-                  // What else can it be?
-                }
+              else
+              {
+                // What else can it be?
               }
             }
           }
@@ -215,7 +201,7 @@ void WhileStmt::checkConstLoops()
   INT_ASSERT(foundit);
 }
 
-SymExpr* WhileStmt::getWhileCondDef(CallExpr* info, VarSymbol* condSym)
+SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
 {
   std::vector<SymExpr*> symExprs;
   SymExpr*              condDef = NULL;
@@ -226,9 +212,9 @@ SymExpr* WhileStmt::getWhileCondDef(CallExpr* info, VarSymbol* condSym)
   {
     if (se->var == condSym)
     {
-      if (se->parentExpr == info)
+      if (se == mCondExpr)
       {
-        // The reference is in blockInfo - not interesting.
+        // The reference is the condition expression - not interesting.
       }
 
       else if (condDef)

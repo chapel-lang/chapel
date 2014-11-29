@@ -102,8 +102,6 @@ GenRet DoWhileStmt::codegen()
 
   if (outfile)
   {
-    CallExpr* condExpr = condExprGet();
-
     info->cStatements.push_back("do ");
 
     if (this != getFunction()->body)
@@ -111,7 +109,7 @@ GenRet DoWhileStmt::codegen()
 
     body.codegen("");
 
-    std::string ftr= "} while (" + codegenValue(condExpr->get(1)).c + ");\n";
+    std::string ftr= "} while (" + codegenValue(condExprGet()).c + ");\n";
 
     info->cStatements.push_back(ftr);
   }
@@ -124,8 +122,6 @@ GenRet DoWhileStmt::codegen()
     llvm::BasicBlock* blockStmtBody    = NULL;
     llvm::BasicBlock* blockStmtEnd     = NULL;
     llvm::BasicBlock* blockStmtEndCond = NULL;
-
-    CallExpr*         condExpr         = condExprGet();
 
     getFunction()->codegenUniqueNum++;
 
@@ -155,7 +151,7 @@ GenRet DoWhileStmt::codegen()
     // set insert point
     info->builder->SetInsertPoint(blockStmtEndCond);
 
-    GenRet       condValueRet = codegenValue(condExpr->get(1));
+    GenRet       condValueRet = codegenValue(condExprGet());
     llvm::Value* condValue    = condValueRet.val;
 
     if (condValue->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
