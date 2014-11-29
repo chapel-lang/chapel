@@ -5235,6 +5235,9 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_STRING_COPY:
     {
+      // TODO: Deprecate PRIM_STRING_COPY after the string_rec conversion.
+      // (Ensure that the string copy is local and then call string_copy
+      // directly.)
       GenRet cpyFrom = get(1)->codegen();
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         cpyFrom.isLVPtr = GEN_VAL; // Prevent &(char*) syntax.

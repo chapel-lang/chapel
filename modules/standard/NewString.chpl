@@ -99,6 +99,8 @@ module BaseStringType {
   pragma "insert line file info"
   extern proc stringMove(dest: c_string, src: c_string, len: int): void;
   pragma "insert line file info"
+  extern proc string_copy(src: c_string): c_string_copy;
+  pragma "insert line file info"
   extern proc string_copy_len(src: c_string, len: int): c_string_copy;
   pragma "insert line file info"
   extern proc remoteStringCopy(src_loc: int, src_addr: c_string, len: int): c_string_copy;
@@ -299,6 +301,7 @@ module NewString {
 
     inline proc isEmptyString() {
       if this.isAlias then return false;
+      if this.base == _nullString then return true;
       else return this.len==0; // this should be enough of a check
     }
 
@@ -618,7 +621,7 @@ module NewString {
       halt("Cannot cast a remote "+baseTypeString+" to string.");
     var ret: string_rec;
     ret.len = cs.length;
-    if ret.len != 0 then ret.base = __primitive("string_copy", cs);
+    if ret.len != 0 then ret.base = string_copy(cs);
     ret.incRefCntNoAlias();
     if debugStrings then writeln("leaving _cast() "+baseTypeString+"-string");
     return ret;
