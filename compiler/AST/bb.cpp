@@ -134,8 +134,8 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
       BasicBlock* loopTop = basicBlock;
 
-      for_alist(stmt, s->body) {
-        buildBasicBlocks(fn, stmt, mark);
+      for_alist(bodyStmt, s->body) {
+        buildBasicBlocks(fn, bodyStmt, mark);
       }
 
       // for c for loops, add the incr expr after the loop body
