@@ -55,7 +55,6 @@ public:
 
   virtual bool           isLoop()                                     const;
   virtual bool           isForLoop()                                  const;
-  virtual bool           isCForLoop()                                 const;
 
   virtual bool           deadBlockCleanup();
 
@@ -67,7 +66,8 @@ public:
 
   // NOAKES 2014/11/26 Transitional
   CallExpr*              forInfoGet()                                 const;
-  CallExpr*              forInfoSet(CallExpr* expr);
+  CallExpr*              forInfoSet(SymExpr* index,
+                                    SymExpr* iterator);
 
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);

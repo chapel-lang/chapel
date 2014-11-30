@@ -105,7 +105,7 @@ ForLoop::ForLoop(VarSymbol* index,
                  VarSymbol* iterator,
                  BlockStmt* initBody) : BlockStmt(initBody)
 {
-  forInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
+  forInfoSet(new SymExpr(index), new SymExpr(iterator));
 }
 
 ForLoop::~ForLoop()
@@ -117,7 +117,8 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*  blockInfo = forInfoGet();
+  SymExpr*   index     = indexGet();
+  SymExpr*   iterator  = iteratorGet();
   ForLoop*   retval    = new ForLoop();
 
   retval->astloc        = astloc;
@@ -126,8 +127,11 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   retval->breakLabel    = breakLabel;
   retval->continueLabel = continueLabel;
 
-  if (blockInfo != 0)
-    retval->forInfoSet(blockInfo->copy(map, true));
+  if (index == 0 || iterator == 0)
+    INT_FATAL(this, "ForLoop::copy with empty header info");
+
+  retval->forInfoSet(index->copy(map, true),
+                     iterator->copy(map, true));
 
   if (modUses   != 0)
     retval->modUses = modUses->copy(map, true);
@@ -177,26 +181,17 @@ BlockStmt* ForLoop::copyBody(SymbolMap* map)
 
 bool ForLoop::isLoop() const
 {
-  // Noakes 2014/10/23.
-  // There are operations can clear the blockInfo
-  // i.e. convert a ForLoop back to a BlockStmt.
-  return (forInfoGet() != 0) ? true : false;
+  return true;
 }
 
 bool ForLoop::isForLoop() const
 {
-  return forInfoGet() && forInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP);
-}
-
-// NOAKES 2014/11/18   This might be needed during transition
-bool ForLoop::isCForLoop() const
-{
-  return forInfoGet() && forInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+  return true;
 }
 
 SymExpr* ForLoop::indexGet() const
 {
-  CallExpr* callExpr = forInfoGet();
+  CallExpr* callExpr = BlockStmt::blockInfoGet();
   SymExpr*  retval   = toSymExpr(callExpr->get(1));
 
   if (retval == 0)
@@ -207,7 +202,7 @@ SymExpr* ForLoop::indexGet() const
 
 SymExpr* ForLoop::iteratorGet() const
 {
-  CallExpr* callExpr = forInfoGet();
+  CallExpr* callExpr = BlockStmt::blockInfoGet();
   SymExpr*  retval   = toSymExpr(callExpr->get(2));
 
   if (retval == 0)
@@ -222,8 +217,10 @@ CallExpr* ForLoop::forInfoGet() const
  return BlockStmt::blockInfoGet();
 }
 
-CallExpr* ForLoop::forInfoSet(CallExpr* info)
+CallExpr* ForLoop::forInfoSet(SymExpr* index, SymExpr* iterator)
 {
+  CallExpr* info = new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator);
+
   return BlockStmt::blockInfoSet(info);
 }
 
@@ -249,6 +246,8 @@ bool ForLoop::deadBlockCleanup()
   {
     if (BlockStmt* test = toBlockStmt(loop->get(2)))
     {
+      INT_ASSERT(false);
+
       if (test->body.length == 0)
       {
         remove();
@@ -273,6 +272,12 @@ void ForLoop::verify()
   if (forInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) == false)
     INT_FATAL(this, "ForLoop::verify. blockInfo type is not PRIM_BLOCK_FOR_LOOP");
 
+  if (indexGet()    == 0)
+    INT_FATAL(this, "ForLoop::verify. index    is NULL");
+
+  if (iteratorGet() == 0)
+    INT_FATAL(this, "ForLoop::verify. iterator is NULL");
+
   if (modUses   != 0)
     INT_FATAL(this, "ForLoop::verify. modUses   is not NULL");
 
@@ -293,13 +298,14 @@ void ForLoop::accept(AstVisitor* visitor)
 {
   if (visitor->enterForLoop(this) == true)
   {
-    CallExpr* blockInfo = forInfoGet();
-
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (blockInfo)
-      blockInfo->accept(visitor);
+    if (indexGet()    != 0)
+      indexGet()->accept(visitor);
+
+    if (iteratorGet() != 0)
+      iteratorGet()->accept(visitor);
 
     if (modUses)
       modUses->accept(visitor);
