@@ -1040,16 +1040,10 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
 {
   SET_LINENO(forLoop);
 
-  CallExpr*  callTmp           = forLoop->forInfoGet();
-  FnSymbol*  parent            = toFnSymbol(callTmp->parentSymbol);
+  FnSymbol*  parent            = toFnSymbol(forLoop->parentSymbol);
 
-  printf("expandRecursiveIteratorInline  call.Parent %12d forLoop.Parent %12d\n", callTmp->parentSymbol->id, forLoop->parentSymbol->id);
-
-  //
-  // create a nested function for the loop body (call->parentExpr),
-  // and then transform the iterator into a function that takes this
-  // nested function as an argument
-  //
+  // create a nested function for the loop body (call->parentExpr), and then transform
+  // the iterator into a function that takes this nested function as an argument
   FnSymbol*  loopBodyFn        = new FnSymbol(astr("_rec_iter_loop_", parent->name));
 
   // The index is passed to the loop body function as its first argument.
@@ -1158,21 +1152,20 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 /// \param call A for loop block primitive.
 static void
 expandIteratorInline(ForLoop* forLoop) {
-  CallExpr* callTmp  = forLoop->forInfoGet();
   Symbol*   ic       = forLoop->iteratorGet()->var;
   FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
-    printf("expandIteratorInline           call.Parent %12d forLoop.Parent %12d\n", callTmp->parentSymbol->id, forLoop->parentSymbol->id);
+    // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
 
     //
     // loops over recursive iterators in recursive iterators only need
     // to be handled in the recursive iterator function
     //
-    if (callTmp->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
+    if (forLoop->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
 
     // ditto for task functions called from recursive iterators
-    } else if (taskFunInRecursiveIteratorSet.set_in(callTmp->parentSymbol)) {
+    } else if (taskFunInRecursiveIteratorSet.set_in(forLoop->parentSymbol)) {
 
     } else {
       expandRecursiveIteratorInline(forLoop);

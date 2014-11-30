@@ -265,7 +265,7 @@ void ForLoop::verify()
   BlockStmt::verify();
 
   if (BlockStmt::blockInfoGet() == 0)
-    INT_FATAL(this, "ForLoop::verify. blockInfo is not NULL");
+    INT_FATAL(this, "ForLoop::verify. blockInfo is NULL");
 
   if (forInfoGet() == 0)
     INT_FATAL(this, "ForLoop::verify. forInfo is NULL");
