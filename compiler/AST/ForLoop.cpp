@@ -104,14 +104,14 @@ ForLoop::ForLoop()
 ForLoop::ForLoop(CallExpr*  cforInfo,
                  BlockStmt* initBody) : BlockStmt(initBody)
 {
-  BlockStmt::blockInfoSet(cforInfo);
+  forInfoSet(cforInfo);
 }
 
 ForLoop::ForLoop(BlockStmt* initBody,
                  VarSymbol* index,
                  VarSymbol* iterator) : BlockStmt(initBody)
 {
-  BlockStmt::blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
+  forInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
 }
 
 ForLoop::~ForLoop()
@@ -123,7 +123,7 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*  blockInfo = BlockStmt::blockInfoGet();
+  CallExpr*  blockInfo = forInfoGet();
   ForLoop*   retval    = new ForLoop();
 
   retval->astloc        = astloc;
@@ -133,7 +133,7 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   retval->continueLabel = continueLabel;
 
   if (blockInfo != 0)
-    retval->BlockStmt::blockInfoSet(blockInfo->copy(map, true));
+    retval->forInfoSet(blockInfo->copy(map, true));
 
   if (modUses   != 0)
     retval->modUses = modUses->copy(map, true);
@@ -186,18 +186,18 @@ bool ForLoop::isLoop() const
   // Noakes 2014/10/23.
   // There are operations can clear the blockInfo
   // i.e. convert a ForLoop back to a BlockStmt.
-  return (BlockStmt::blockInfoGet() != 0) ? true : false;
+  return (forInfoGet() != 0) ? true : false;
 }
 
 bool ForLoop::isForLoop() const
 {
-  return BlockStmt::blockInfoGet() && BlockStmt::blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP);
+  return forInfoGet() && forInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP);
 }
 
 // NOAKES 2014/11/18   This might be needed during transition
 bool ForLoop::isCForLoop() const
 {
-  return BlockStmt::blockInfoGet() && BlockStmt::blockInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+  return forInfoGet() && forInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
 }
 
 // NOAKES 2014/11/26   Transitional
@@ -215,21 +215,21 @@ CallExpr* ForLoop::blockInfoGet() const
 {
   printf("Migration: ForLoop   %12d Unexpected call to blockInfoGet()\n", id);
 
-  return BlockStmt::blockInfoGet();
+  return 0;
 }
 
 CallExpr* ForLoop::blockInfoSet(CallExpr* expr)
 {
   printf("Migration: ForLoop   %12d Unexpected call to blockInfoSet()\n", id);
 
-  return BlockStmt::blockInfoSet(expr);
+  return 0;
 }
 
 bool ForLoop::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (CallExpr* loop = BlockStmt::blockInfoGet()) {
+  if (CallExpr* loop = forInfoGet()) {
     if (BlockStmt* test = toBlockStmt(loop->get(2))) {
       if (test->body.length == 0) {
         remove();
@@ -246,9 +246,12 @@ void ForLoop::verify()
   BlockStmt::verify();
 
   if (BlockStmt::blockInfoGet() == 0)
-    INT_FATAL(this, "ForLoop::verify. blockInfo is NULL");
+    INT_FATAL(this, "ForLoop::verify. blockInfo is not NULL");
 
-  if (BlockStmt::blockInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) == false)
+  if (forInfoGet() == 0)
+    INT_FATAL(this, "ForLoop::verify. forInfo is NULL");
+
+  if (forInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) == false)
     INT_FATAL(this, "ForLoop::verify. blockInfo type is not PRIM_BLOCK_FOR_LOOP");
 
   if (modUses   != 0)
@@ -268,7 +271,7 @@ GenRet ForLoop::codegen()
 
   if (outfile)
   {
-    CallExpr*   blockInfo = BlockStmt::blockInfoGet();
+    CallExpr*   blockInfo = forInfoGet();
     BlockStmt*  initBlock = toBlockStmt(blockInfo->get(1));
 
     // These copy calls are needed or else values get code generated twice.
@@ -314,9 +317,9 @@ GenRet ForLoop::codegen()
     llvm::BasicBlock* blockStmtBody = NULL;
     llvm::BasicBlock* blockStmtEnd  = NULL;
 
-    BlockStmt*        initBlock     = toBlockStmt(BlockStmt::blockInfoGet()->get(1));
-    BlockStmt*        testBlock     = toBlockStmt(BlockStmt::blockInfoGet()->get(2));
-    BlockStmt*        incrBlock     = toBlockStmt(BlockStmt::blockInfoGet()->get(3));
+    BlockStmt*        initBlock     = toBlockStmt(forInfoGet()->get(1));
+    BlockStmt*        testBlock     = toBlockStmt(forInfoGet()->get(2));
+    BlockStmt*        incrBlock     = toBlockStmt(forInfoGet()->get(3));
 
     assert(initBlock && testBlock && incrBlock);
 
@@ -508,7 +511,7 @@ GenRet ForLoop::codegenCForLoopCondition(BlockStmt* block)
 
 void ForLoop::accept(AstVisitor* visitor) {
   if (visitor->enterForLoop(this) == true) {
-    CallExpr* blockInfo = BlockStmt::blockInfoGet();
+    CallExpr* blockInfo = forInfoGet();
 
     for_alist(next_ast, body)
       next_ast->accept(visitor);
@@ -529,8 +532,8 @@ void ForLoop::accept(AstVisitor* visitor) {
 Expr* ForLoop::getFirstExpr() {
   Expr* retval = 0;
 
-  if (BlockStmt::blockInfoGet() != 0)
-    retval = BlockStmt::blockInfoGet()->getFirstExpr();
+  if (forInfoGet() != 0)
+    retval = forInfoGet()->getFirstExpr();
 
   else if (body.head      != 0)
     retval = body.head->getFirstExpr();
@@ -544,7 +547,7 @@ Expr* ForLoop::getFirstExpr() {
 Expr* ForLoop::getNextExpr(Expr* expr) {
   Expr* retval = NULL;
 
-  if (expr == BlockStmt::blockInfoGet() && body.head != NULL)
+  if (expr == forInfoGet() && body.head != NULL)
     retval = body.head->getFirstExpr();
 
   return retval;
