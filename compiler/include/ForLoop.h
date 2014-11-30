@@ -71,9 +71,6 @@ public:
 
 private:
                          ForLoop();
-
-  std::string            codegenCForLoopHeader   (BlockStmt* block);
-  GenRet                 codegenCForLoopCondition(BlockStmt* block);
 };
 
 #endif
