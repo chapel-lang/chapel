@@ -15,7 +15,7 @@ tmptmp=`mktemp "tmp.XXXXXX"`
 
 command='
   \|CHPL_HOME/modules|s/:[0-9:]*:/:nnnn:/
-  s/chpl Version [0-9a-f.]*$/chpl Version mmmm/
+  s/chpl Version [0-9a-f.-]*$/chpl Version mmmm/
 '
 
 sed -e "$command" $badfile > $badtmp
