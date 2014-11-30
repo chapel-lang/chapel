@@ -62,6 +62,9 @@ public:
   BlockStmt*             copyBody();
   BlockStmt*             copyBody(SymbolMap* map);
 
+  SymExpr*               indexGet()                                   const;
+  SymExpr*               iteratorGet()                                const;
+
   // NOAKES 2014/11/26 Transitional
   CallExpr*              forInfoGet()                                 const;
   CallExpr*              forInfoSet(CallExpr* expr);

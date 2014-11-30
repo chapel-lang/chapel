@@ -194,6 +194,28 @@ bool ForLoop::isCForLoop() const
   return forInfoGet() && forInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
 }
 
+SymExpr* ForLoop::indexGet() const
+{
+  CallExpr* callExpr = forInfoGet();
+  SymExpr*  retval   = toSymExpr(callExpr->get(1));
+
+  if (retval == 0)
+    printf("ForLoop::index      Unexpected NULL result\n");
+
+  return retval;
+}
+
+SymExpr* ForLoop::iteratorGet() const
+{
+  CallExpr* callExpr = forInfoGet();
+  SymExpr*  retval   = toSymExpr(callExpr->get(2));
+
+  if (retval == 0)
+    printf("ForLoop::iterator   Unexpected NULL result\n");
+
+  return retval;
+}
+
 // NOAKES 2014/11/26   Transitional
 CallExpr* ForLoop::forInfoGet() const
 {
@@ -223,9 +245,12 @@ bool ForLoop::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (CallExpr* loop = forInfoGet()) {
-    if (BlockStmt* test = toBlockStmt(loop->get(2))) {
-      if (test->body.length == 0) {
+  if (CallExpr* loop = forInfoGet())
+  {
+    if (BlockStmt* test = toBlockStmt(loop->get(2)))
+    {
+      if (test->body.length == 0)
+      {
         remove();
         retval = true;
       }
@@ -264,8 +289,10 @@ GenRet ForLoop::codegen()
   return ret;
 }
 
-void ForLoop::accept(AstVisitor* visitor) {
-  if (visitor->enterForLoop(this) == true) {
+void ForLoop::accept(AstVisitor* visitor)
+{
+  if (visitor->enterForLoop(this) == true)
+  {
     CallExpr* blockInfo = forInfoGet();
 
     for_alist(next_ast, body)
@@ -284,7 +311,8 @@ void ForLoop::accept(AstVisitor* visitor) {
   }
 }
 
-Expr* ForLoop::getFirstExpr() {
+Expr* ForLoop::getFirstExpr()
+{
   Expr* retval = 0;
 
   if (forInfoGet() != 0)
@@ -299,7 +327,8 @@ Expr* ForLoop::getFirstExpr() {
   return retval;
 }
 
-Expr* ForLoop::getNextExpr(Expr* expr) {
+Expr* ForLoop::getNextExpr(Expr* expr)
+{
   Expr* retval = NULL;
 
   if (expr == forInfoGet() && body.head != NULL)
