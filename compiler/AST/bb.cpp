@@ -118,12 +118,12 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
         append(condExpr, true);
 
+      // wait to add the conditionExpr at the end of the block
       } else if (isDoWhileStmt(stmt) == true) {
 
       } else if (ForLoop* forLoop = toForLoop(stmt)) {
-        CallExpr* info = forLoop->forInfoGet();
-
-        append(info, true);
+        append(forLoop->indexGet(),    true);
+        append(forLoop->iteratorGet(), true);
 
       // PARAM_LOOP
       } else {
