@@ -42,7 +42,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   VarSymbol*   iterator      = newTemp("_iterator");
   CallExpr*    iterInit      = 0;
   CallExpr*    iterMove      = 0;
-  ForLoop*     loop          = new ForLoop(body, index, iterator);
+  ForLoop*     loop          = new ForLoop(index, iterator, body);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
@@ -101,15 +101,9 @@ ForLoop::ForLoop()
 
 }
 
-ForLoop::ForLoop(CallExpr*  cforInfo,
+ForLoop::ForLoop(VarSymbol* index,
+                 VarSymbol* iterator,
                  BlockStmt* initBody) : BlockStmt(initBody)
-{
-  forInfoSet(cforInfo);
-}
-
-ForLoop::ForLoop(BlockStmt* initBody,
-                 VarSymbol* index,
-                 VarSymbol* iterator) : BlockStmt(initBody)
 {
   forInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
 }

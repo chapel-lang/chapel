@@ -38,10 +38,13 @@ public:
   // Instance Interface
   //
 public:
-                         ForLoop(BlockStmt* initBody, VarSymbol* index, VarSymbol* iterator);
+                         ForLoop(VarSymbol* index,
+                                 VarSymbol* iterator,
+                                 BlockStmt* initBody);
   virtual               ~ForLoop();
 
-  virtual ForLoop*       copy(SymbolMap* map = NULL, bool internal = false);
+  virtual ForLoop*       copy(SymbolMap* map      = NULL,
+                              bool       internal = false);
 
   virtual GenRet         codegen();
   virtual void           verify();
@@ -68,9 +71,6 @@ public:
 
 private:
                          ForLoop();
-
-                         ForLoop(CallExpr*  cforInfo,
-                                 BlockStmt* body);
 
   std::string            codegenCForLoopHeader   (BlockStmt* block);
   GenRet                 codegenCForLoopCondition(BlockStmt* block);
