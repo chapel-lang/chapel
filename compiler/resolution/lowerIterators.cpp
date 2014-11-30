@@ -1158,7 +1158,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 static void
 expandIteratorInline(ForLoop* forLoop) {
   CallExpr* call     = forLoop->forInfoGet();
-  Symbol*   ic       = toSymExpr(call->get(2))->var;
+  Symbol*   ic       = forLoop->iteratorGet()->var;
   FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
@@ -1178,7 +1178,7 @@ expandIteratorInline(ForLoop* forLoop) {
   } else {
     SET_LINENO(forLoop);
 
-    Symbol*       index = toSymExpr(call->get(1))->var;
+    Symbol*       index = forLoop->indexGet()->var;
     BlockStmt*    ibody = iterator->body->copy();
     Vec<BaseAST*> asts;
 
@@ -1535,12 +1535,10 @@ static void
 inlineSingleYieldIterator(ForLoop* forLoop) {
   SET_LINENO(forLoop);
 
-  CallExpr*    call     = forLoop->forInfoGet();
-
-  SymExpr*     se1      = toSymExpr(call->get(1));
+  SymExpr*     se1      = forLoop->indexGet();
   VarSymbol*   index    = toVarSymbol(se1->var);
 
-  SymExpr*     se2      = toSymExpr(call->get(2));
+  SymExpr*     se2      = forLoop->iteratorGet();
   VarSymbol*   iterator = toVarSymbol(se2->var);
 
   CallExpr*    noop     = new CallExpr(PRIM_NOOP);
@@ -1617,7 +1615,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
 
 static void
 expandForLoop(ForLoop* forLoop) {
-  SymExpr*   se2      = toSymExpr(forLoop->forInfoGet()->get(2));
+  SymExpr*   se2      = forLoop->iteratorGet();
   VarSymbol* iterator = toVarSymbol(se2->var);
 
   if (!fNoInlineIterators &&
@@ -1639,7 +1637,7 @@ expandForLoop(ForLoop* forLoop) {
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
 
-    SymExpr*     se1       = toSymExpr(forLoop->forInfoGet()->get(1));
+    SymExpr*     se1       = toSymExpr(forLoop->indexGet());
     VarSymbol*   index     = toVarSymbol(se1->var);
 
     BlockStmt*   initBlock = new BlockStmt();
@@ -1764,7 +1762,7 @@ inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol) {
       if (ForLoop* forLoop = toForLoop(block)) {
-        Symbol*   iterator = toSymExpr(forLoop->forInfoGet()->get(2))->var;
+        Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
         FnSymbol* ifn      = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
         if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {

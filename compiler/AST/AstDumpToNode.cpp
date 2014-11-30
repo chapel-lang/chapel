@@ -497,18 +497,28 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
 
   write(false, heading, true);
 
-  if (node->forInfoGet())
+  if (node->indexGet() != 0 || node->iteratorGet() != 0)
   {
     mOffset = mOffset + 2;
-
     newline();
-    write(false, "ForInfo:", false);
-    mOffset = mOffset + 2;
-    node->forInfoGet()->accept(this);
-    mOffset = mOffset - 2;
+
+    if (node->indexGet() != 0)
+    {
+      write(false, "Index:", false);
+      mOffset = mOffset + 2;
+      node->indexGet()->accept(this);
+      mOffset = mOffset - 2;
+    }
+
+    if (node->iteratorGet() != 0)
+    {
+      write(false, "Iterator:", false);
+      mOffset = mOffset + 2;
+      node->iteratorGet()->accept(this);
+      mOffset = mOffset - 2;
+    }
 
     mOffset = mOffset - 2;
-
     newline();
   }
 
