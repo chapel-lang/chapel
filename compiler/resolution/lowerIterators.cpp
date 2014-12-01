@@ -1034,25 +1034,20 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
   return iteratorFn;
 }
 
-
 /// \param call A for loop block primitive.
 static void
 expandRecursiveIteratorInline(ForLoop* forLoop)
 {
   SET_LINENO(forLoop);
 
-  CallExpr*  call              = forLoop->forInfoGet();
-  FnSymbol*  parent            = toFnSymbol(call->parentSymbol);
+  FnSymbol*  parent            = toFnSymbol(forLoop->parentSymbol);
 
-  //
-  // create a nested function for the loop body (call->parentExpr),
-  // and then transform the iterator into a function that takes this
-  // nested function as an argument
-  //
+  // create a nested function for the loop body (call->parentExpr), and then transform
+  // the iterator into a function that takes this nested function as an argument
   FnSymbol*  loopBodyFn        = new FnSymbol(astr("_rec_iter_loop_", parent->name));
 
   // The index is passed to the loop body function as its first argument.
-  Symbol*    index             = toSymExpr(call->get(1))->var;
+  Symbol*    index             = forLoop->indexGet()->var;
   ArgSymbol* indexArg          = new ArgSymbol(blankIntentForType(index->type), "_index", index->type);
 
   // The recursive iterator loop wrapper is ... .
@@ -1074,7 +1069,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   // build this to capture the actual arguments that should be
   // passed to it when this function is flattened)
   //
-  Symbol*    ic             = toSymExpr(call->get(2))->var;
+  Symbol*    ic             = forLoop->iteratorGet()->var;
   FnSymbol*  iterator       = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
   CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
 
@@ -1157,19 +1152,20 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 /// \param call A for loop block primitive.
 static void
 expandIteratorInline(ForLoop* forLoop) {
-  CallExpr* call     = forLoop->forInfoGet();
-  Symbol*   ic       = toSymExpr(call->get(2))->var;
+  Symbol*   ic       = forLoop->iteratorGet()->var;
   FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
+    // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
+
     //
     // loops over recursive iterators in recursive iterators only need
     // to be handled in the recursive iterator function
     //
-    if (call->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
+    if (forLoop->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
 
     // ditto for task functions called from recursive iterators
-    } else if (taskFunInRecursiveIteratorSet.set_in(call->parentSymbol)) {
+    } else if (taskFunInRecursiveIteratorSet.set_in(forLoop->parentSymbol)) {
 
     } else {
       expandRecursiveIteratorInline(forLoop);
@@ -1178,12 +1174,13 @@ expandIteratorInline(ForLoop* forLoop) {
   } else {
     SET_LINENO(forLoop);
 
-    Symbol*       index = toSymExpr(call->get(1))->var;
+    Symbol*       index = forLoop->indexGet()->var;
     BlockStmt*    ibody = iterator->body->copy();
     Vec<BaseAST*> asts;
 
-    if (preserveInlinedLineNumbers == false)
-      reset_ast_loc(ibody, call);
+    if (preserveInlinedLineNumbers == false) {
+      reset_ast_loc(ibody, forLoop);
+    }
 
     // and the entire for loop block is replaced by the iterator body.
     forLoop->replace(ibody);
@@ -1535,12 +1532,10 @@ static void
 inlineSingleYieldIterator(ForLoop* forLoop) {
   SET_LINENO(forLoop);
 
-  CallExpr*    call     = forLoop->forInfoGet();
-
-  SymExpr*     se1      = toSymExpr(call->get(1));
+  SymExpr*     se1      = forLoop->indexGet();
   VarSymbol*   index    = toVarSymbol(se1->var);
 
-  SymExpr*     se2      = toSymExpr(call->get(2));
+  SymExpr*     se2      = forLoop->iteratorGet();
   VarSymbol*   iterator = toVarSymbol(se2->var);
 
   CallExpr*    noop     = new CallExpr(PRIM_NOOP);
@@ -1617,7 +1612,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
 
 static void
 expandForLoop(ForLoop* forLoop) {
-  SymExpr*   se2      = toSymExpr(forLoop->forInfoGet()->get(2));
+  SymExpr*   se2      = forLoop->iteratorGet();
   VarSymbol* iterator = toVarSymbol(se2->var);
 
   if (!fNoInlineIterators &&
@@ -1639,7 +1634,7 @@ expandForLoop(ForLoop* forLoop) {
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
 
-    SymExpr*     se1       = toSymExpr(forLoop->forInfoGet()->get(1));
+    SymExpr*     se1       = toSymExpr(forLoop->indexGet());
     VarSymbol*   index     = toVarSymbol(se1->var);
 
     BlockStmt*   initBlock = new BlockStmt();
@@ -1764,7 +1759,7 @@ inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol) {
       if (ForLoop* forLoop = toForLoop(block)) {
-        Symbol*   iterator = toSymExpr(forLoop->forInfoGet()->get(2))->var;
+        Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
         FnSymbol* ifn      = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
         if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {

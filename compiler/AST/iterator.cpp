@@ -423,9 +423,9 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 
 
   } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
-    CallExpr* info = forLoop->forInfoGet()->copy(&map);
+    SymExpr* index = forLoop->indexGet()->copy(&map);
 
-    zip1body->insertAtTail(new CondStmt(info->get(1)->remove(),
+    zip1body->insertAtTail(new CondStmt(index,
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
   }
@@ -513,9 +513,9 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
 
   } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
-    CallExpr* blockInfo = forLoop->forInfoGet()->copy(&map);
+    SymExpr* index = forLoop->indexGet()->copy(&map);
 
-    zip3body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
+    zip3body->insertAtTail(new CondStmt(index,
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
   }

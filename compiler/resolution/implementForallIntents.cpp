@@ -333,7 +333,7 @@ static BlockStmt* discoverFromFollowIter(DefExpr* defFollowIter)
 
   for (Expr* curr = defFollowIter->next; curr; curr = curr->next) {
     if (ForLoop* forLoop = toForLoop(curr)) {
-      if (SymExpr* seFollowIter = toSymExpr(forLoop->forInfoGet()->get(2))) {
+      if (SymExpr* seFollowIter = forLoop->iteratorGet()) {
         if (seFollowIter->var == defFollowIter->sym) {
           bFollowerLoop = forLoop;
           break;
