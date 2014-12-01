@@ -98,6 +98,8 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 
 ForLoop::ForLoop()
 {
+  mIndex    = 0;
+  mIterator = 0;
 
 }
 
@@ -105,7 +107,9 @@ ForLoop::ForLoop(VarSymbol* index,
                  VarSymbol* iterator,
                  BlockStmt* initBody) : BlockStmt(initBody)
 {
-  forInfoSet(new SymExpr(index), new SymExpr(iterator));
+  mIndex    = new SymExpr(index);
+  mIterator = new SymExpr(iterator);
+
 }
 
 ForLoop::~ForLoop()
@@ -117,8 +121,6 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  SymExpr*   index     = indexGet();
-  SymExpr*   iterator  = iteratorGet();
   ForLoop*   retval    = new ForLoop();
 
   retval->astloc        = astloc;
@@ -127,11 +129,8 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   retval->breakLabel    = breakLabel;
   retval->continueLabel = continueLabel;
 
-  if (index == 0 || iterator == 0)
-    INT_FATAL(this, "ForLoop::copy with empty header info");
-
-  retval->forInfoSet(index->copy(map, true),
-                     iterator->copy(map, true));
+  retval->mIndex        = mIndex->copy(map, true),
+  retval->mIterator     = mIterator->copy(map, true);
 
   if (modUses   != 0)
     retval->modUses = modUses->copy(map, true);
@@ -191,37 +190,12 @@ bool ForLoop::isForLoop() const
 
 SymExpr* ForLoop::indexGet() const
 {
-  CallExpr* callExpr = BlockStmt::blockInfoGet();
-  SymExpr*  retval   = toSymExpr(callExpr->get(1));
-
-  if (retval == 0)
-    printf("ForLoop::index      Unexpected NULL result\n");
-
-  return retval;
+  return mIndex;
 }
 
 SymExpr* ForLoop::iteratorGet() const
 {
-  CallExpr* callExpr = BlockStmt::blockInfoGet();
-  SymExpr*  retval   = toSymExpr(callExpr->get(2));
-
-  if (retval == 0)
-    printf("ForLoop::iterator   Unexpected NULL result\n");
-
-  return retval;
-}
-
-// NOAKES 2014/11/26   Transitional
-CallExpr* ForLoop::forInfoGet() const
-{
- return BlockStmt::blockInfoGet();
-}
-
-CallExpr* ForLoop::forInfoSet(SymExpr* index, SymExpr* iterator)
-{
-  CallExpr* info = new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator);
-
-  return BlockStmt::blockInfoSet(info);
+  return mIterator;
 }
 
 CallExpr* ForLoop::blockInfoGet() const
@@ -242,19 +216,7 @@ bool ForLoop::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (CallExpr* loop = forInfoGet())
-  {
-    if (BlockStmt* test = toBlockStmt(loop->get(2)))
-    {
-      INT_ASSERT(false);
-
-      if (test->body.length == 0)
-      {
-        remove();
-        retval = true;
-      }
-    }
-  }
+  INT_ASSERT(false);
 
   return retval;
 }
@@ -263,20 +225,14 @@ void ForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (BlockStmt::blockInfoGet() == 0)
-    INT_FATAL(this, "ForLoop::verify. blockInfo is NULL");
+  if (BlockStmt::blockInfoGet() != 0)
+    INT_FATAL(this, "ForLoop::verify. blockInfo is not NULL");
 
-  if (forInfoGet() == 0)
-    INT_FATAL(this, "ForLoop::verify. forInfo is NULL");
+  if (mIndex    == 0)
+    INT_FATAL(this, "ForLoop::verify. index     is NULL");
 
-  if (forInfoGet()->isPrimitive(PRIM_BLOCK_FOR_LOOP) == false)
-    INT_FATAL(this, "ForLoop::verify. blockInfo type is not PRIM_BLOCK_FOR_LOOP");
-
-  if (indexGet()    == 0)
-    INT_FATAL(this, "ForLoop::verify. index    is NULL");
-
-  if (iteratorGet() == 0)
-    INT_FATAL(this, "ForLoop::verify. iterator is NULL");
+  if (mIterator == 0)
+    INT_FATAL(this, "ForLoop::verify. iterator  is NULL");
 
   if (modUses   != 0)
     INT_FATAL(this, "ForLoop::verify. modUses   is not NULL");
@@ -321,10 +277,13 @@ Expr* ForLoop::getFirstExpr()
 {
   Expr* retval = 0;
 
-  if (forInfoGet() != 0)
-    retval = forInfoGet()->getFirstExpr();
+  if (mIndex         != 0)
+    retval = mIndex;
 
-  else if (body.head      != 0)
+  else if (mIterator != 0)
+    retval = mIterator;
+
+  else if (body.head != 0)
     retval = body.head->getFirstExpr();
 
   else
@@ -337,7 +296,13 @@ Expr* ForLoop::getNextExpr(Expr* expr)
 {
   Expr* retval = NULL;
 
-  if (expr == forInfoGet() && body.head != NULL)
+  if (expr == mIndex && mIterator != NULL)
+    retval = mIterator;
+
+  else if (expr == mIndex    && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  else if (expr == mIterator && body.head != NULL)
     retval = body.head->getFirstExpr();
 
   return retval;
