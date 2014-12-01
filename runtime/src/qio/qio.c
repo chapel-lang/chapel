@@ -520,7 +520,7 @@ qio_hint_t choose_io_method(qio_file_t* file, qio_hint_t hints, qio_hint_t defau
       method = QIO_METHOD_PREADPWRITE;
 
     // Read and write
-    if((fdflags & QIO_FDFLAG_WRITEABLE)  && 
+    if((fdflags & QIO_FDFLAG_READABLE)   &&
         (fdflags & QIO_FDFLAG_WRITEABLE) &&
         file->fsfns->preadv && file->fsfns->pwritev)
       method = QIO_METHOD_PREADPWRITE;
