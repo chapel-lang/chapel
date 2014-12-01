@@ -1148,12 +1148,12 @@ module ChapelRange {
   // Could be implemented for uint low/hi and uint stride as well, but it seems
   // unlikely a user will write a for loop over such an anonymous range
 
-  iter _direct_range_iter(param start: int(?w), param end: int(w), param stride: int(w)) {
+/*  iter _direct_range_iter(param start: int(?w), param end: int(w), param stride: int(w)) {
     for i in _direct_all_param_range_iter(start, end, stride) {
       yield i;
     }
   }
-
+*/
 
   // cases for when stride is a uint (we know the stride is positive)
 

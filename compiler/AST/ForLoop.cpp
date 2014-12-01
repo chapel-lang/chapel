@@ -57,6 +57,8 @@ static Expr* replaceWithRangeIterator(Expr* iteratorExpr) {
       if (range->numActuals() == 2) {              // bounded only for now
         Expr* low = range->get(1)->copy();
         Expr* high = range->get(2)->copy();
+        // TODO current check for bounded only fails, since numActuals is 2 for
+        // non_bounded too
         if (stride) {
           iteratorExpr = (new CallExpr("_direct_range_iter", low, high, stride));
         } else {
