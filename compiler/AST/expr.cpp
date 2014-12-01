@@ -25,7 +25,9 @@
 
 #include "alist.h"
 #include "astutil.h"
+#include "AstVisitor.h"
 #include "codegen.h"
+#include "ForLoop.h"
 #include "genret.h"
 #include "misc.h"
 #include "passes.h"
@@ -34,7 +36,6 @@
 #include "type.h"
 #include "WhileStmt.h"
 
-#include "AstVisitor.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -159,6 +160,11 @@ bool Expr::isStmtExpr() const {
   } else if (WhileStmt* parent = toWhileStmt(parentExpr)) {
     retval = (parent->condExprGet() != this) ? true : false;
 
+  // NOAKES 2014/11/30 A ForLoop is currently a BlockStmt
+  // but needs special handling
+  } else if (ForLoop* parent = toForLoop(parentExpr)) {
+    retval = (parent->indexGet() != this && parent->iteratorGet() != this) ? true : false;
+
   } else {
     retval = isBlockStmt(parentExpr);
   }
@@ -177,6 +183,12 @@ Expr* Expr::getStmtExpr() {
       if (parent->condExprGet() != expr) {
         return expr;
       }
+
+    // NOAKES 2014/11/30 A ForLoop is currently a BlockStmt
+    // but needs special handling
+    } else if (ForLoop* parent = toForLoop(parentExpr)) {
+      if (parent->indexGet() != this && parent->iteratorGet() != this)
+        return expr;
 
     } else if (isBlockStmt(expr->parentExpr) == true) {
       return expr;

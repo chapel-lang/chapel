@@ -64,16 +64,14 @@ public:
   SymExpr*               indexGet()                                   const;
   SymExpr*               iteratorGet()                                const;
 
-  // NOAKES 2014/11/26 Transitional
-  CallExpr*              forInfoGet()                                 const;
-  CallExpr*              forInfoSet(SymExpr* index,
-                                    SymExpr* iterator);
-
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);
 
 private:
                          ForLoop();
+
+  SymExpr*               mIndex;
+  SymExpr*               mIterator;
 };
 
 #endif
