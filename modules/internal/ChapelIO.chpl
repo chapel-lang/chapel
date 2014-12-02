@@ -552,8 +552,10 @@ module ChapelIO {
     proc writePrimitive(x) {
       // TODO: Implement += so it consumes a c_string_copy LHS.
       var aug = x:c_string_copy;
-      this.s = this.s + aug;      // The update frees this.s before overwriting it.
-      chpl_free_c_string_copy(aug);
+      // The update frees this.s before overwriting it.
+      // The concatenation consumes the right arg.
+      // The left arg is cast to a c_string to prevent double-deletion.
+      this.s = this.s:c_string + aug;
     }
     proc ~StringWriter() {
       chpl_free_c_string_copy(this.s);
