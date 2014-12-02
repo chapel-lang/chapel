@@ -290,7 +290,7 @@ void chpl_executable_init(void) {
 //
 // }
 //
-int chpl_library_init(int argc, char* argv[]) {
+void chpl_library_init(int argc, char* argv[]) {
     chpl_rt_init(argc, argv);                   // Initialize the runtime
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
 }

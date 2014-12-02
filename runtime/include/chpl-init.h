@@ -33,7 +33,7 @@ void chpl_rt_finalize(int return_value);
 void chpl_executable_init(void);
 //   chpl_executable_finalize(...) equivalent is done by main.c:main(...)
 
-int chpl_library_init(int argc, char* argv[]);
+void chpl_library_init(int argc, char* argv[]);
 void chpl_library_finalize(void);
 
 #endif // _CHPL_INIT_H_
