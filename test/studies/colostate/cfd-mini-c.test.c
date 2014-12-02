@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
   opterr = 0;
      
   while ((c = getopt (argc, argv, "tvb:c:k:p:")) != -1){
+
     switch (c)
       {
       case 't':
@@ -123,6 +124,11 @@ int main(int argc, char **argv) {
       default:
         abort ();
       } 
+  }
+  if(optind < (argc)){
+    fprintf(stderr,"Command Line Parsing Terminated Prematurely.\n");
+    fprintf(stderr,"Check that extra arguments were not passed in.\n");
+    abort();
   }
   // print out the parameters
   //printf("numComp    : %d\nnumCell    : %d\nnumBox     : %d\n",
