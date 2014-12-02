@@ -451,7 +451,8 @@ module GMP {
     {
       var ret:string;
       on this {
-        ret = toString(chpl_gmp_mpz_get_str(base, this.mpz));
+        var tmp = chpl_gmp_mpz_get_str(base, this.mpz);
+        ret = toString(tmp);
       }
       return ret;
     }

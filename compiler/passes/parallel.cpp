@@ -206,6 +206,8 @@ static Symbol* insertAutoCopyDestroyForTaskArg
 
     if (isRefCountedType(baseType))
     {
+      // TODO: Can we consolidate these two clauses?
+      // Does arg->typeInfo() != baseType mean that arg is passed by ref?
       if (arg->typeInfo() != baseType)
       {
         // For internally reference-counted types, this punches through
@@ -216,7 +218,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
                                          new CallExpr(PRIM_DEREF, var)));
         // The result of the autoCopy call is dropped on the floor.
         // It is only called to increment the ref count.
-        fcall->insertBefore(new CallExpr(autoCopyFn, derefTmp));
+        CallExpr* autoCopyCall = new CallExpr(autoCopyFn, derefTmp);
+        fcall->insertBefore(autoCopyCall);
+        insertReferenceTemps(autoCopyCall);
         // But the original var is passed through to the field assignment.
       }
       else
@@ -224,8 +228,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         VarSymbol* valTmp = newTemp(baseType);
         valTmp->addFlag(FLAG_NECESSARY_AUTO_COPY);
         fcall->insertBefore(new DefExpr(valTmp));
-        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp,
-                                         new CallExpr(autoCopyFn, var)));
+        CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
+        insertReferenceTemps(autoCopyCall);
         // If the arg is not passed by reference, the result of the autoCopy is
         // passed to the field assignment.
         var = valTmp;
@@ -244,7 +249,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
             new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF,  formal)));
           formal = derefTmp;
         }
-        fn->insertBeforeDownEndCount(new CallExpr(autoDestroyFn, formal));
+        CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn, formal);
+        fn->insertBeforeDownEndCount(autoDestroyCall);
+        insertReferenceTemps(autoDestroyCall);
       }
     }
     else if (isRecord(baseType))
@@ -261,6 +268,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         fcall->insertBefore(new DefExpr(valTmp));
         CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
         fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
+        insertReferenceTemps(autoCopyCall);
         var = valTmp;
 
         if (firstCall)
@@ -270,6 +278,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
           Symbol* formal = actual_to_formal(arg);
           CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
           fn->insertBeforeDownEndCount(autoDestroyCall);
+          insertReferenceTemps(autoDestroyCall);
         }
       }
     }
@@ -1224,7 +1233,7 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
   if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
-    wts->addFlag(FLAG_WIDE);
+    wts->addFlag(FLAG_WIDE_REF);
   else
     wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));

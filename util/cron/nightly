@@ -243,6 +243,12 @@ if ($make eq "") {
 if ($make eq "") {
     $make = "make";
 }
+
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+$num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`;
+chomp($num_procs);
+
 $cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
 
 $host = hostname;
@@ -262,11 +268,22 @@ unless(-d $cronlogdir) {
 $logdir = $ENV{'CHPL_NIGHTLY_LOGDIR'};
 if ($debug == 1 && $logdir eq "") {
     $logdir = getcwd()."/Log";
-    if (! -e $logdir) {
-        mysystem("mkdir $logdir > /dev/null", "creating log dir", 1, 1);
-    } elsif (! (-r $logdir and -w $logdir and -d $logdir)) {
-        print "Error: CHPL_NIGHTLY_LOGDIR ($logdir) not accessible\n";
-    }
+}
+
+# Raise error if logdir is not set by now.
+if ($logdir eq "") {
+    print "[Error: CHPL_NIGHTLY_LOGDIR must be set.]\n";
+    exit 1;
+}
+
+# Create the logdir if it does not exist.
+unless(-d $logdir) {
+    mkpath $logdir;
+}
+
+# Check that logdir is accessible.
+if (! (-r $logdir and -w $logdir and -d $logdir)) {
+    print "Error: CHPL_NIGHTLY_LOGDIR ($logdir) not accessible\n";
 }
 
 
@@ -386,7 +403,7 @@ if ($hostplatform eq "cygwin") {
 
 
 print "Making DEBUG=0 OPTIMIZE=1 WARNINGS=1 compiler\n";
-$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 WARNINGS=1 compiler", "making chapel compiler", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs DEBUG=0 OPTIMIZE=1 WARNINGS=1 compiler", "making chapel compiler", 0, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 WARNINGS=1 compiler\n";
     # Since the rest of the compiler is being built unoptimized, disable
@@ -394,13 +411,13 @@ if ($makestat != 0) {
     # the perf graphs.
     print "compiler performance testing will be disabled\n";
     $compperformance = 0;
-    mysystem("cd $chplhomedir && $make DEBUG=0 WARNINGS=1 compiler", "making chapel compiler", 1, 1);
+    mysystem("cd $chplhomedir && $make -j$num_procs DEBUG=0 WARNINGS=1 compiler", "making chapel compiler", 1, 1);
 }
 
 # Speculatively build a couple third-party libraries. This command should not
 # fail, even if it fails to build the libraries.
 print "Making DEBUG=0 OPTIMIZE=1 WARNINGS=1 third-party-try-opt\n";
-mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 WARNINGS=1 third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
+mysystem("cd $chplhomedir && $make -j$num_procs DEBUG=0 OPTIMIZE=1 WARNINGS=1 third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
 
 if ($buildruntime == 0) {
     $endtime = localtime;
@@ -423,14 +440,14 @@ if ($buildruntime == 0) {
 # optimizations is a fatal error.  Otherwise we could get hiccups in the
 # performance graphs that are difficult to track.
 print "Making DEBUG=0 OPTIMIZE=1 WARNINGS=1 $qthreadopts runtime\n";
-$makestat = mysystem("cd $chplhomedir && $make DEBUG=0 OPTIMIZE=1 WARNINGS=1 $qthreadopts runtime", "making chapel runtime", $performance, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs DEBUG=0 OPTIMIZE=1 WARNINGS=1 $qthreadopts runtime", "making chapel runtime", $performance, 1);
 if ($makestat != 0) {
     print "Making DEBUG=0 WARNINGS=1 $qthreadopts runtime\n";
-    mysystem("cd $chplhomedir && $make DEBUG=0 WARNINGS=1 $qthreadopts runtime", "making chapel runtime", 1, 1);
+    mysystem("cd $chplhomedir && $make -j$num_procs DEBUG=0 WARNINGS=1 $qthreadopts runtime", "making chapel runtime", 1, 1);
 }
 
 print "Making modules\n";
-$makestat = mysystem("cd $chplhomedir && $make WARNINGS=1 modules", "making chapel modules", 0, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs WARNINGS=1 modules", "making chapel modules", 0, 1);
 
 
 #
@@ -594,8 +611,12 @@ if ($runtests == 0) {
     close(MAIL);
     
 } else {
-    my $svnPerfBaseDir =  "/data/sea/chapel/NightlyPerformance/";
-    my $svnPerfDir = "$svnPerfBaseDir/$host";
+
+    my $svnPerfDir = $ENV{'CHPL_TEST_PERF_DIR'};
+    if ($compperformance == 1) {
+        $svnPerfDir = $ENV{'CHPL_TEST_COMP_PERF_DIR'};
+    }
+
     my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
     if ($performance == 1 || $compperformance == 1) {
 
@@ -667,13 +688,13 @@ if ($runtests == 0) {
         mysystem("cd $svnPerfDir && find . -name '*.dat' -print0 | xargs -0 svn add  --parents 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
         mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 0, 1);
 
-        # sync the performance graphs over to sourceforge 
-        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir/ $host --logFile $logdir/syncToSourceForge.errors";
+        # sync the performance graphs over to sourceforge
+        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/html/ $host --logFile $logdir/syncToSourceForge.errors";
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
-        
+
    }
-  
+
     if ($releasePerformance == 1) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
         mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 0, 1);
@@ -723,9 +744,9 @@ if ($runtests == 0) {
             $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chplhomedir/test/ -a \"$altTitle\" -n $host  -g $chplhomedir/test/GRAPHFILES -s $startdate";
             $genGraphsMessage = "Generating release over release performance graphs";
             mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
-            
-            # sync the perf graphs over to sourceforge 
-            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfBaseDir $host/releaseOverRelease/ --logFile $logdir/syncReleaseToSourceForge.errors";
+
+            # sync the perf graphs over to sourceforge
+            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $host/releaseOverRelease/ --logFile $logdir/syncReleaseToSourceForge.errors";
             $rsyncMessage = "syncing release performance graph to sourceforge -- log file at $logdir/syncReleaseToSourceForge.errors";
             mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
         }
@@ -872,21 +893,21 @@ sub mysystem {
 sub numsuccesses {
   $mystr = $_[0];
   $mystr =~ s/.* #Successes = //;
-  $mystr =~ s/ \|.*//;
+  $mystr =~ s/(\]| \|).*//;
   $mystr;
 }
 
 sub numfailures {
   $mystr = $_[0];
   $mystr =~ s/.* #Failures = //;
-  $mystr =~ s/ \|.*//;
+  $mystr =~ s/(\]| \|).*//;
   $mystr;
 }
 
 sub numfutures {
   $mystr = $_[0];
   $mystr =~ s/.* #Futures = //;
-  $mystr =~ s/ \|.*//;
+  $mystr =~ s/(\]| \|).*//;
   $mystr;
 }
 

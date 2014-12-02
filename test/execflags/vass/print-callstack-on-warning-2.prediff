@@ -2,5 +2,5 @@
 
 outfile=$2
 
-sed -e "/ChapelArray/ s/[0-9]*//g" $outfile > $outfile.tmp
+sed -e "/ChapelIteratorSupport/ s/[0-9]*//g" $outfile > $outfile.tmp
 mv $outfile.tmp $outfile

@@ -1,7 +1,7 @@
 Guidance for REGRESSIONS week
 =============================
 
-* Our goal is to get rid of as many failures as possible this week,
+> Our goal is to get rid of as many failures as possible this week,
   prioritizing those that affect users and developers (where a
   developer may be affected by...
 
@@ -16,16 +16,16 @@ Guidance for REGRESSIONS week
     that the world is as it should (whereas if every configuration had
     zero outstanding errors, this effort would be significantly lower)
 
-* As in any development context, raise any discussion topics to the
+> As in any development context, raise any discussion topics to the
   larger group (or a subset of it) before charging off in a direction
   that may be considered controversial, a change in the language or
   architecture, etc.
 
-* You may also want to check in with the group before heading off on a
+> You may also want to check in with the group before heading off on a
   particular story to see if there's any institutional knowledge that
   would be helpful.
 
-* Generally speaking, many of these issues could be dealt with by
+> Generally speaking, many of these issues could be dealt with by
   adding a .skipif, but that should be the course of last resort.
   Here are some earlier-than-last resorts:
 
@@ -51,7 +51,7 @@ Guidance for REGRESSIONS week
   - If it doesn't make sense in a given configuration and never will,
     a .skipif is reasonable.
 
-* In some cases, the same issue may be showing up in distinct forms in
+> In some cases, the same issue may be showing up in distinct forms in
   multiple configurations/tests.  As soon as you get a better
   diagnosis of one of the failure modes you're working on, it may be
   worthwhile broadcasting what you've learned so that if someone else
@@ -60,37 +60,37 @@ Guidance for REGRESSIONS week
   possibly baseline testing) where many of the failure modes have not
   been deeply diagnosed (at least, by me).
 
-* When looking for things to pick up, look for your name/email/obvious
+> When looking for things to pick up, look for your name/email/obvious
   variations on these. Some issues I've assigned to people for
   historical or ownership reasons; others might be reasonable for you
   to pick up because you created the test (according to the pathname).
 
-* Once you've cleared out anything with your name on it, look for
+> Once you've cleared out anything with your name on it, look for
   topics near and dear to your heart/current work area (qthreads,
   string, memory, prgenv-cray, ...)  and see where that takes you
   (prioritizing high things over medium and medium over low,
   obviously.  In particular, I'd prefer that nobody work on medium/low
   priority things until all high items are owned or resolved).
 
-* If I counted right, I've enumerated 90 stories below which, if all
+> If I counted right, I've enumerated 90 stories below which, if all
   resolved, would get us to a completely clean regressions suite.
   That suggests that if each person got through 7-8 stories, we'd have
   a clean slate (though of course, not all stories are created equally
   in terms of level of effort required to fix them or level of
   importance).
 
-* Each story has a title, a parenthetical indicating where it fails,
+> Each story has a title, a parenthetical indicating where it fails,
   and an owner if there is an obvious one, or "anyone" if not.  Each
   story correlates to one or more entries in the REGRESSIONS file --
   searching for the test name(s) in the REGRESSIONS file is the best
   way to correlate the two.
 
-* I've sorted stories into high, medium, and low categories along with
+> I've sorted stories into high, medium, and low categories along with
   some indication of why they're in that category (e.g., some are high
   because they're noisy; others are high because they're scary; others
   xsare high because they're so easy).
 
-* Helpful tip: When searching for a test in the
+> Helpful tip: When searching for a test in the
   chapel-test-results-all and/or -regressions mailing list archives
   (which can be a very useful tool to find recent past failures of a
   given kind), keep in mind that it uses a pretty naive "whole word
@@ -156,7 +156,7 @@ high priority (sources of noise)
   baseline testing.  What can we do about that?
 
 
-~ surprising cygwin timeouts (darwin): anyone
+* surprising cygwin timeouts (darwin): anyone
 
   The following tests time out frequently/sporadically on cygwin and
   nowhere else, which seems very surprising (and suggests, to me, a
@@ -192,7 +192,7 @@ o sporadic quicksort segfault/timeout (gasnet.numa): elliot/diten/gbt
   it?
 
 
-o sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
+~ sporadic invalid read/write of size 8 in dl_* (valgrind): anyone
 
   Under valgrind testing, these tests fail fairly frequently due to
   invalid reads/writes in routines starting with dl_*.  Why?
@@ -236,7 +236,7 @@ high priority (failing in one or more configurations)
   in these cases?
 
 
-~ test_10k_begins (darwin, memleaks on chap16): anyone
+~ test_10k_begins (darwin, memleaks on chap16, linux32): anyone
 
   This test hits a 'halt' on darwin, a sporadic segfault on memleaks
   testing, and frequently causes problems in parallel testing when a
@@ -262,7 +262,7 @@ high priority (failing in one or more configurations)
   What can we do about these?
 
 
-~ domains/sungeun/assoc/parSafeMember (gasnet-fast, valgrind, pgi): anyone/ben
+~ domains/sungeun/assoc/parSafeMember (gasnet-fast, valgrind, pgi, linux32): anyone/ben
 
   This test has a tendency to time out in several configurations.
   What can we do to help that?  (Note that PGI doesn't support native
@@ -295,7 +295,7 @@ high priority (failing in one or more configurations)
   them, Brad.
 
 
-o nbody* (memleaks): bradc
+* nbody* (memleaks): bradc
 
   These tests have been timing out ever since moving them to chap16.
   Why?  Do we still care about these tests?
@@ -363,7 +363,7 @@ high priority (mac quiettude)
   The referee's output is missing?  Why?
 
 
-o "unused value warning" (darwin): anyone
+* "unused value warning" (darwin): anyone
 
   These tests are getting an unused value warning in their generated
   code.  Does fixing this require a compiler change or a code change?
@@ -543,7 +543,7 @@ o conditional jump in re2 (valgrind): anyone
   Chapel?x
 
 
-o 21-capture-in-cobegin: vass
+~ 21-capture-in-cobegin: vass
 
   Is this still failing sporadically?  (I haven't seen it in awhile)
   Can we reproduce it?  Is there anything to do here?
@@ -553,7 +553,7 @@ o 21-capture-in-cobegin: vass
 medium priority (clutter)
 -------------------------
 
-o stack overflow (valgrind): anyone
+* stack overflow (valgrind): anyone
 
   The following test gets a stack overflow -- is there something we
   can/should do about this?  Should we skip if in valgrind testing?
@@ -668,7 +668,7 @@ o segfault in meteor-fast (prgenv-cray): tmac
   We've seen a segfault in meteor-fast for prgenv-cray since it was filed.
 
 
-o zippered iterations have non-equal lengths (prgenv-cray): elliot
+* zippered iterations have non-equal lengths (prgenv-cray): elliot
 
   statements/bradc/swaps/swapArrayDiffIndices has gotten an error about
   zippered iterations having different lengths since 9/17/14.  I think
@@ -741,7 +741,7 @@ o check_channel assertion failure (cygwin): anyone
   - ./regexp_channel_test
 
 
-o RLIMIT_NPROC undeclared (cygwin): anyone
+* RLIMIT_NPROC undeclared (cygwin): anyone
 
   The following test relies on RLIMIT_NPROC which cygwin doesn't support.
   What should we do?
@@ -749,7 +749,7 @@ o RLIMIT_NPROC undeclared (cygwin): anyone
   - parallel/taskPool/figueroa/TooManyThreads (compopts: 1)
 
 
-o CHPL_RT_CALL_STACK_SIZE too big (cygwin): anyone
+* CHPL_RT_CALL_STACK_SIZE too big (cygwin): anyone
 
   What should we do about the following tests?
 
@@ -783,7 +783,7 @@ o QIO assertion errors (cygwin): anyone
   - io/ferguson/ctests/qio_test (compopts: 1)
 
 
-o io/ferguson/utf8/widecols.chpl (cygwin): anyone
+* io/ferguson/utf8/widecols.chpl (cygwin): anyone
 
   This test gets an apparent whitespace difference on cygwin
   for some reason.
@@ -794,7 +794,7 @@ o io/ferguson/utf8/widecols.chpl (cygwin): anyone
   This test has had an output mismatch since added.
 
 
-o io/sungeun/ioerror (execopts: 5) (cygwin): anyone
+* io/sungeun/ioerror (execopts: 5) (cygwin): anyone
 
   This test gets the wrong result.
 
@@ -847,7 +847,7 @@ o io/sungeun/ioerror (execopts: 5) (cygwin): anyone
   This fails with --baseline and seems to be related to --inline vs. --no
 
 
-o extern/ferguson/crazyRecord (baseline): anyone
+* extern/ferguson/crazyRecord (baseline): anyone
 
   This fails on baseline with the wrong output -- why?
 
@@ -897,7 +897,7 @@ o release/examples/benchmarks/shootout/pidigits (llvm): anyone/thomas
 low priority (so infrequent as to be potentially not our issue)
 ---------------------------------------------------------------
 
-o multilocale/diten/localBlock/needMultiLocales/localBlock5 (gasnet-fast): anyone
+* multilocale/diten/localBlock/needMultiLocales/localBlock5 (gasnet-fast): anyone
 
   This got a 'slave got an unknown command on coord socket' once (and maybe
   once ever)
@@ -909,11 +909,11 @@ o users/jglewis/SSCA2_sync_array_initialization_bug (gasnet-fast): anyone
   once ever)
 
 
-o domains/johnk/capacityAssoc (cygwin): anyone
+* domains/johnk/capacityAssoc (cygwin): anyone
 
   This got a "CreateProcessW failed" error once (and maybe once ever)
 
 
-o distributions/robust/arithmetic/reindexing/test_strided_reindex2 (cyclic): anyone
+* distributions/robust/arithmetic/reindexing/test_strided_reindex2 (cyclic): anyone
 
   This got an "extent mismatch error" once (and maybe once ever

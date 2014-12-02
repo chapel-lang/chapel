@@ -106,11 +106,11 @@ proc compute(oddphase: bool, out delta: elType) {
   forall dat in Data {
 
     if oddphase {
-      forall (i,j) in dat.domCompute do
+      forall (i,j) in dat.domCompute with (ref dat) do
         dat.A[i,j] = (dat.B[i,j-1] + dat.B[i-1,j] + dat.B[i,j+1] + dat.B[i+1,j]) / 4;
 
     } else {
-      forall (i,j) in dat.domCompute do
+      forall (i,j) in dat.domCompute with (ref dat) do
         dat.B[i,j] = (dat.A[i,j-1] + dat.A[i-1,j] + dat.A[i,j+1] + dat.A[i+1,j]) / 4;
 
     } // if oddphase

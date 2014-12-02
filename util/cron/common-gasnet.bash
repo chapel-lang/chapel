@@ -10,6 +10,9 @@ export GASNET_SPAWNFN=L
 export GASNET_ROUTE_OUTPUT=0
 export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
 
+# Bump the timeout slightly just because we're oversubscribed
+export CHPL_TEST_TIMEOUT=500
+
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 if [ "${tasks}" == "qthreads" ] ; then
     # Set these to use oversubscription to help with timeouts
@@ -30,8 +33,6 @@ if [ "${tasks}" == "qthreads" ] ; then
     # hardware we get the performance we expect
     logicalCores=`python -c 'import multiprocessing ; print multiprocessing.cpu_count()'`
     if [ $logicalCores -le 8 ] ; then
-        export CHPL_TEST_TIMEOUT=900
+        export CHPL_TEST_TIMEOUT=1800
     fi
-
 fi
-

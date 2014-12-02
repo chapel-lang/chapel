@@ -526,7 +526,7 @@ module ChapelIO {
     var tmpstring: c_string_copy;
     tmpstring.write((...args));
     warning(tmpstring);
-    chpl_free_c_string(tmpstring);
+    chpl_free_c_string_copy(tmpstring);
   }
   
   proc _ddata.writeThis(f: Writer) {
@@ -551,12 +551,12 @@ module ChapelIO {
     }
     proc writePrimitive(x) {
       // TODO: Implement += so it consumes a c_string_copy LHS.
-      const aug = x:c_string_copy;
+      var aug = x:c_string_copy;
       this.s += aug;      // The update frees this.s before overwriting it.
-      chpl_free_c_string(aug);
+      chpl_free_c_string_copy(aug);
     }
     proc ~StringWriter() {
-      chpl_free_c_string(this.s);
+      chpl_free_c_string_copy(this.s);
       __primitive("=", this.s, _nullString);
     }
   }
@@ -633,10 +633,10 @@ module ChapelIO {
     var afterdot = false;
     var dplaces = 0;
     for i in 1..sn {
-      const ss = s.substring(i);
+      var ss = s.substring(i);
       if ((ss == '#') & afterdot) then dplaces += 1;
       if (ss == '.') then afterdot=true;
-      chpl_free_c_string(ss);
+      chpl_free_c_string_copy(ss);
     }
     // FIX ME: leak c_string due to concatenation
     return("%" + sn + "." + dplaces + "f");

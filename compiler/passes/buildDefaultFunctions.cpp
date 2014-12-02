@@ -893,6 +893,22 @@ static void build_record_copy_function(AggregateType* ct) {
     if (!strcmp(tmp->name, "outer"))
       call->insertAtHead(gMethodToken);
   }
+  if (ct->symbol->hasFlag(FLAG_EXTERN)) {
+    int actualsNeeded = ct->defaultInitializer->formals.length;
+    int actualsGiven = call->argList.length;
+    // This code assumes that in the case where an extern has not been fully
+    // specified in Chapel code, its default constructor will require one more
+    // actual than the fields specified: another object of that extern type
+    // whose contents can be used.
+    if (actualsNeeded == actualsGiven + 1) {
+      call->insertAtTail(arg);
+    } else if (actualsNeeded != actualsGiven) {
+      // The user didn't partially specify the type in Chapel code, but the
+      // number of actuals provided didn't match the expected number.  This is
+      // an internal error.
+      INT_FATAL(arg, "Extern type's constructor call didn't create expected # of actuals");
+    }
+  }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);

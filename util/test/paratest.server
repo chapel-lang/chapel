@@ -400,8 +400,15 @@ sub find_subdirs {
         # When attached to a directory name, skips it and all descendents if the condition is true.
         my $skipfilen = "$targetdir/$filen.skipif";
         if (-e "$skipfilen") {
-            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
-            next unless `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` == 0;
+            my $skip;
+            if (-x "$skipfilen") {
+                print "$skipfilen = " . `$skipfilen` if $debug;
+                $skip = `$skipfilen`;
+            } else {
+                print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+                $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
+            }
+            next if $skip > '0' or $skip =~ m/true/i;
         }
 	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
 	    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
@@ -569,6 +576,10 @@ sub main {
     }
 
     die "Error: CHPL_HOME must be set\n" unless defined $ENV{CHPL_HOME};
+
+# Set some more environment variables so they can be tested by skipif
+    $ENV{'COMPOPTS'} = $compopts;
+    $ENV{'EXECOPTS'} = $execopts;
 
     if (defined $nodefile) {
         open nodefile or die "Cannot open node file '$nodefile'\n";

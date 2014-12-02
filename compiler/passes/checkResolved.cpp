@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -69,7 +69,7 @@ checkResolved() {
           SymExpr* sym = toSymExpr(def->init);
           if (!sym || (!sym->var->hasFlag(FLAG_PARAM) &&
                        !toVarSymbol(sym->var)->immediate))
-            USR_FATAL_CONT(def, "enumerator '%s' is not an integer param value", 
+            USR_FATAL_CONT(def, "enumerator '%s' is not an integer param value",
                            def->sym->name);
         }
       }
@@ -165,9 +165,17 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 
   if (BlockStmt* block = toBlockStmt(expr))
   {
-    if (block->blockInfoGet()  == NULL ||
-        block->isDoWhileLoop() == true ||
-        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
+    // NOAKES 2014/11/25 Transitional.  Ensure we don't call blockInfoGet()
+    if (block->isWhileDoStmt() == true ||
+        block->isForLoop()     == true ||
+        block->isCForLoop()    == true)
+    {
+      return 0;
+    }
+
+    else if (block->isDoWhileStmt() == true ||
+             block->blockInfoGet()  == NULL ||
+             block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
     {
       int result = 0;
 
@@ -177,7 +185,10 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
       return result;
     }
 
-    return 0;
+    else
+    {
+      return 0;
+    }
   }
 
   if (isExternBlockStmt(expr))

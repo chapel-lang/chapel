@@ -1,2 +1,2 @@
 test_param_function_with_loop.chpl:1: In function 'foo':
-test_param_function_with_loop.chpl:3: error: param function cannot contain a non-param loop
+test_param_function_with_loop.chpl:3: error: param function cannot contain a non-param while loop
