@@ -1,2 +1,2 @@
 
-include Makefile.cygwin
+include $(CHPL_MAKE_HOME)/make/platform/Makefile.cygwin
