@@ -61,20 +61,8 @@ if (exists($ENV{"BUILD_URL"})) {
 }
 
 
-$platform = `uname -s`;
+$platform = `$ENV{'CHPL_HOME'}/util/chplenv/chpl_platform.py --host`;
 chomp($platform);
-$platform = lc($platform);
-if ($platform eq "linux") {
-    $machine = `uname -m`;
-    chomp($machine);
-    if ($machine eq "x86_64") {
-        $platform = "linux64";
-    } else {
-        $platform = "linux32";
-    }
-} elsif ($platform =~ /^cygwin/) {
-    $platform = "cygwin";
-}
 
 
 #
