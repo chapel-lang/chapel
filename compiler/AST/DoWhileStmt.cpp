@@ -48,9 +48,7 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
   body->insertAtTail(new DefExpr(continueLabel));
   body->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
 
-  loop = new DoWhileStmt(body);
-
-  loop->blockInfoSet(new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar));
+  loop = new DoWhileStmt(condVar, body);
 
   loop->continueLabel = continueLabel;
   loop->breakLabel    = breakLabel;
@@ -69,7 +67,8 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 *                                                                           *
 ************************************* | ************************************/
 
-DoWhileStmt::DoWhileStmt(BlockStmt* initBody) : WhileStmt(initBody)
+DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* initBody) :
+  WhileStmt(var, initBody)
 {
 
 }
@@ -81,24 +80,16 @@ DoWhileStmt::~DoWhileStmt()
 
 DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
 {
-  DoWhileStmt* retval = new DoWhileStmt(NULL);
+  DoWhileStmt* retval = new DoWhileStmt(NULL, NULL);
 
   retval->copyShare(*this, map, internal);
 
   return retval;
 }
 
-bool DoWhileStmt::isDoWhileLoop() const
+bool DoWhileStmt::isDoWhileStmt() const
 {
   return true;
-}
-
-void DoWhileStmt::verify()
-{
-  WhileStmt::verify();
-
-  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) == false)
-    INT_FATAL(this, "DoWhileStmt::verify. blockInfo type is not PRIM_BLOCK_DOWHILE_LOOP");
 }
 
 GenRet DoWhileStmt::codegen()
@@ -111,8 +102,6 @@ GenRet DoWhileStmt::codegen()
 
   if (outfile)
   {
-    CallExpr* blockInfo = blockInfoGet();
-
     info->cStatements.push_back("do ");
 
     if (this != getFunction()->body)
@@ -120,7 +109,7 @@ GenRet DoWhileStmt::codegen()
 
     body.codegen("");
 
-    std::string ftr= "} while (" + codegenValue(blockInfo->get(1)).c + ");\n";
+    std::string ftr= "} while (" + codegenValue(condExprGet()).c + ");\n";
 
     info->cStatements.push_back(ftr);
   }
@@ -133,8 +122,6 @@ GenRet DoWhileStmt::codegen()
     llvm::BasicBlock* blockStmtBody    = NULL;
     llvm::BasicBlock* blockStmtEnd     = NULL;
     llvm::BasicBlock* blockStmtEndCond = NULL;
-
-    CallExpr*         blockInfo        = blockInfoGet();
 
     getFunction()->codegenUniqueNum++;
 
@@ -164,7 +151,7 @@ GenRet DoWhileStmt::codegen()
     // set insert point
     info->builder->SetInsertPoint(blockStmtEndCond);
 
-    GenRet       condValueRet = codegenValue(blockInfo->get(1));
+    GenRet       condValueRet = codegenValue(condExprGet());
     llvm::Value* condValue    = condValueRet.val;
 
     if (condValue->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
@@ -193,13 +180,11 @@ GenRet DoWhileStmt::codegen()
 
 void DoWhileStmt::accept(AstVisitor* visitor) {
   if (visitor->enterDoWhileStmt(this) == true) {
-    CallExpr* blockInfo = blockInfoGet();
-
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (blockInfo)
-      blockInfo->accept(visitor);
+    if (condExprGet() != 0)
+      condExprGet()->accept(visitor);
 
     if (modUses)
       modUses->accept(visitor);
@@ -212,11 +197,25 @@ void DoWhileStmt::accept(AstVisitor* visitor) {
 }
 
 Expr* DoWhileStmt::getFirstExpr() {
-  if (blockInfoGet() != 0)
-    return blockInfoGet()->getFirstExpr();
+  Expr* retval = 0;
 
-  if (body.head      != 0)
-    return body.head->getFirstExpr();
+  if (condExprGet() != 0)
+    retval = condExprGet()->getFirstExpr();
 
-  return this;
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* DoWhileStmt::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == condExprGet() && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  return retval;
 }

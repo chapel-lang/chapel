@@ -211,27 +211,32 @@ static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
       return false;     // Yes, FAIL.
 
     // See if it is a yield or return statement.
-    CallExpr* call = toCallExpr(ast);
-    if (call &&
-        (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN)))
-      return false;     // Yes, FAIL.
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))
+        return false;     // Yes, FAIL.
 
-    // Check coforall et al. recursively.
-    if (call)
+      // Check coforall et al. recursively.
       if (FnSymbol* taskFn = resolvedToTaskFun(call))
         if (!leaveLocalBlockUnfragmented(taskFn->body))
           return false;
+    }
 
     // See if it is an unlocal block.
-    BlockStmt* block = toBlockStmt(ast);
-    if (block && block->blockInfoGet() &&
-        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
-      return false;     // Yes, FAIL.
-    
+    if (BlockStmt* block = toBlockStmt(ast)) {
+      // NOAKES 2014/11/25. Transitional.  Avoid calling blockInfoGet
+      if (block->isLoop() == true) {
+
+      } else if (block->blockInfoGet() &&
+                 block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL)) {
+        return false;     // Yes, FAIL.
+      }
+    }
+
     // See if it is a label.
-    DefExpr* def = toDefExpr(ast);
-    if (def && isLabelSymbol(def->sym))
-      return false;     // Yes, FAIL.
+    if (DefExpr* def = toDefExpr(ast)) {
+      if (def && isLabelSymbol(def->sym))
+        return false;     // Yes, FAIL.
+    }
   }
 
   // OK.  No undesirable statements found.
@@ -252,18 +257,24 @@ fragmentLocalBlocks() {
   // collect all local blocks which need to be fragmented
   //
   Vec<BlockStmt*> localBlocks; // old local blocks
+
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol &&
-        block->blockInfoGet() &&
-        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) &&
-        !leaveLocalBlockUnfragmented(block))
+    // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
+    if (block->isLoop() == true) {
+
+    } else if (block->parentSymbol &&
+               block->blockInfoGet() &&
+               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) &&
+               !leaveLocalBlockUnfragmented(block)) {
       localBlocks.add(block);
+    }
   }
 
   //
   // collect first statements of local blocks into queue vector
   //
   Vec<Expr*> queue;
+
   forv_Vec(BlockStmt, block, localBlocks) {
     if (block->body.head)
       queue.add(block->body.head);
@@ -271,10 +282,11 @@ fragmentLocalBlocks() {
 
   forv_Vec(Expr, expr, queue) {
     SET_LINENO(expr);
+
     for (Expr* current = expr; current; current = current->next) {
-      bool insertNewLocal = false;
-      CallExpr* call = toCallExpr(current);
-      DefExpr* def = toDefExpr(current);
+      bool      insertNewLocal = false;
+      CallExpr* call           = toCallExpr(current);
+      DefExpr*  def            = toDefExpr(current);
 
       //
       // If this statement is a yield, a return, a label definition, a
@@ -293,9 +305,14 @@ fragmentLocalBlocks() {
           isCondStmt(current) ||
           isBlockStmt(current)) {
         insertNewLocal = true;
+
         if (BlockStmt* block = toBlockStmt(current)) {
-          if (block->blockInfoGet() && block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
+          // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
+          if (block->isLoop()       == false &&
+              block->blockInfoGet() != NULL  &&
+              block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
             block->blockInfoGet()->remove(); // UNLOCAL applies to a single LOCAL
+
           else if (block->body.head)
             queue.add(block->body.head);
         } else if (CondStmt* cond = toCondStmt(current)) {
@@ -679,11 +696,12 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
         actual = new SymExpr(tmp);
       }
     }
-    
+
     iteratorFnCall->insertBefore(new CallExpr(PRIM_SET_MEMBER, argBundle, field, actual));
+
     VarSymbol* tmp = newTemp(field->name, field->type);
 
-    // In the wrapper function, moves the current arg bundle field into a temp 
+    // In the wrapper function, moves the current arg bundle field into a temp
     // (unbundles it) and adds it to the args used  to call the loop body function.
     loopBodyFnWrapper->insertAtTail(new DefExpr(tmp));
     loopBodyFnWrapper->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, wrapperArgsArg, field)));
@@ -709,12 +727,20 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
 static int
 countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
   int count = 0;
+
   for (Expr* tmp = expr; tmp && tmp != outer; tmp = tmp->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(tmp)) {
-      if (blk->blockInfoGet() && blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
+      // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
+      if (blk->isLoop() == true) {
+
+      } else if (blk->blockInfoGet() == NULL) {
+
+      } else if (blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
         count++;
-      if (blk->blockInfoGet() && blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
+
+      } else if (blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL)) {
         count--;
+      }
     }
   }
   return count;
@@ -1008,25 +1034,20 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
   return iteratorFn;
 }
 
-
 /// \param call A for loop block primitive.
 static void
 expandRecursiveIteratorInline(ForLoop* forLoop)
 {
   SET_LINENO(forLoop);
 
-  CallExpr*  call              = forLoop->blockInfoGet();
-  FnSymbol*  parent            = toFnSymbol(call->parentSymbol);
+  FnSymbol*  parent            = toFnSymbol(forLoop->parentSymbol);
 
-  //
-  // create a nested function for the loop body (call->parentExpr),
-  // and then transform the iterator into a function that takes this
-  // nested function as an argument
-  //
+  // create a nested function for the loop body (call->parentExpr), and then transform
+  // the iterator into a function that takes this nested function as an argument
   FnSymbol*  loopBodyFn        = new FnSymbol(astr("_rec_iter_loop_", parent->name));
 
   // The index is passed to the loop body function as its first argument.
-  Symbol*    index             = toSymExpr(call->get(1))->var;
+  Symbol*    index             = forLoop->indexGet()->var;
   ArgSymbol* indexArg          = new ArgSymbol(blankIntentForType(index->type), "_index", index->type);
 
   // The recursive iterator loop wrapper is ... .
@@ -1048,7 +1069,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   // build this to capture the actual arguments that should be
   // passed to it when this function is flattened)
   //
-  Symbol*    ic             = toSymExpr(call->get(2))->var;
+  Symbol*    ic             = forLoop->iteratorGet()->var;
   FnSymbol*  iterator       = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
   CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
 
@@ -1131,19 +1152,20 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 /// \param call A for loop block primitive.
 static void
 expandIteratorInline(ForLoop* forLoop) {
-  CallExpr* call     = forLoop->blockInfoGet();
-  Symbol*   ic       = toSymExpr(call->get(2))->var;
+  Symbol*   ic       = forLoop->iteratorGet()->var;
   FnSymbol* iterator = ic->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
   if (iterator->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
+    // NOAKES 2014/11/30  Only 6 tests, some with minor variations, use this path
+
     //
     // loops over recursive iterators in recursive iterators only need
     // to be handled in the recursive iterator function
     //
-    if (call->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
+    if (forLoop->parentSymbol->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
 
     // ditto for task functions called from recursive iterators
-    } else if (taskFunInRecursiveIteratorSet.set_in(call->parentSymbol)) {
+    } else if (taskFunInRecursiveIteratorSet.set_in(forLoop->parentSymbol)) {
 
     } else {
       expandRecursiveIteratorInline(forLoop);
@@ -1152,12 +1174,13 @@ expandIteratorInline(ForLoop* forLoop) {
   } else {
     SET_LINENO(forLoop);
 
-    Symbol*       index = toSymExpr(call->get(1))->var;
+    Symbol*       index = forLoop->indexGet()->var;
     BlockStmt*    ibody = iterator->body->copy();
     Vec<BaseAST*> asts;
 
-    if (preserveInlinedLineNumbers == false)
-      reset_ast_loc(ibody, call);
+    if (preserveInlinedLineNumbers == false) {
+      reset_ast_loc(ibody, forLoop);
+    }
 
     // and the entire for loop block is replaced by the iterator body.
     forLoop->replace(ibody);
@@ -1509,12 +1532,10 @@ static void
 inlineSingleYieldIterator(ForLoop* forLoop) {
   SET_LINENO(forLoop);
 
-  CallExpr*    call     = forLoop->blockInfoGet();
-
-  SymExpr*     se1      = toSymExpr(call->get(1));
+  SymExpr*     se1      = forLoop->indexGet();
   VarSymbol*   index    = toVarSymbol(se1->var);
 
-  SymExpr*     se2      = toSymExpr(call->get(2));
+  SymExpr*     se2      = forLoop->iteratorGet();
   VarSymbol*   iterator = toVarSymbol(se2->var);
 
   CallExpr*    noop     = new CallExpr(PRIM_NOOP);
@@ -1591,7 +1612,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
 
 static void
 expandForLoop(ForLoop* forLoop) {
-  SymExpr*   se2      = toSymExpr(forLoop->blockInfoGet()->get(2));
+  SymExpr*   se2      = forLoop->iteratorGet();
   VarSymbol* iterator = toVarSymbol(se2->var);
 
   if (!fNoInlineIterators &&
@@ -1613,7 +1634,7 @@ expandForLoop(ForLoop* forLoop) {
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
 
-    SymExpr*     se1       = toSymExpr(forLoop->blockInfoGet()->get(1));
+    SymExpr*     se1       = toSymExpr(forLoop->indexGet());
     VarSymbol*   index     = toVarSymbol(se1->var);
 
     BlockStmt*   initBlock = new BlockStmt();
@@ -1737,12 +1758,12 @@ static void
 inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->parentSymbol) {
-      if (block->isForLoop() == true) {
-        Symbol*   iterator = toSymExpr(block->blockInfoGet()->get(2))->var;
+      if (ForLoop* forLoop = toForLoop(block)) {
+        Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
         FnSymbol* ifn      = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
 
         if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
-          expandIteratorInline((ForLoop*) block);
+          expandIteratorInline(forLoop);
         }
       }
     }
@@ -2120,7 +2141,9 @@ void lowerIterators() {
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (isAlive(block) == true && block->isForLoop() == true) {
-      expandForLoop((ForLoop*) block);
+      if (ForLoop* loop = toForLoop(block)) {
+        expandForLoop(loop);
+      }
     }
   }
 

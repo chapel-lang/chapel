@@ -43,10 +43,9 @@ $COV_BUILD_PREFIX/cov-build --dir cov-int make
 tar --create --bzip2 --verbose --file chapel.tar.bz2 cov-int
 
 curl --verbose --silent \
-    --form project="chapel" \
     --form token="${COV_SCAN_TOKEN}" \
     --form email="${COV_SCAN_EMAIL}" \
     --form file=@chapel.tar.bz2 \
     --form version="${version}" \
     --form description="${description}" \
-    http://scan5.coverity.com/cgi-bin/upload.py
+    https://scan.coverity.com/builds?project=chapel

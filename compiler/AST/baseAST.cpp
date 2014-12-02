@@ -20,7 +20,9 @@
 #include "baseAST.h"
 
 #include "astutil.h"
+#include "CForLoop.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "log.h"
 #include "passes.h"
 #include "runpasses.h"
@@ -337,7 +339,7 @@ Type* BaseAST::getValType() {
   INT_ASSERT(type);
   if (type->symbol->hasFlag(FLAG_REF))
     return type->getField("_val")->type;
-  else if (type->symbol->hasFlag(FLAG_WIDE))
+  else if (type->symbol->hasFlag(FLAG_WIDE_REF))
     return type->getField("addr")->getValType();
   else
     return type;
@@ -348,7 +350,7 @@ Type* BaseAST::getRefType() {
   INT_ASSERT(type);
   if (type->symbol->hasFlag(FLAG_REF))
     return type;
-  else if (type->symbol->hasFlag(FLAG_WIDE))
+  else if (type->symbol->hasFlag(FLAG_WIDE_REF))
     return type->getField("addr")->type;
   else
     return type->refType;
@@ -359,7 +361,7 @@ Type* BaseAST::getWideRefType() {
   INT_ASSERT(type);
   if (type->symbol->hasFlag(FLAG_REF))
     return wideRefMap.get(type);
-  else if (type->symbol->hasFlag(FLAG_WIDE))
+  else if (type->symbol->hasFlag(FLAG_WIDE_REF))
     return type;
   else
     return wideRefMap.get(type->getRefType());
@@ -511,6 +513,7 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
   } else if (ArgSymbol* ps = toArgSymbol(ast)) {
     SUB_TYPE(ps->type);
   }
+
   AST_CHILDREN_CALL(ast, update_symbols, map);
 }
 
@@ -521,10 +524,12 @@ GenRet baseASTCodegen(BaseAST* ast)
   ret.isUnsigned = ! is_signed(ret.chplType);
   return ret;
 }
+
 GenRet baseASTCodegenInt(int x)
 {
   return baseASTCodegen(new_IntSymbol(x, INT_SIZE_64));
 }
+
 GenRet baseASTCodegenString(const char* str)
 {
   return baseASTCodegen(new_StringSymbol(str));
@@ -540,6 +545,34 @@ bool isWhileStmt(BaseAST* a)
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isWhileStmt()) ? true : false;
+}
+
+bool isWhileDoStmt(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isWhileDoStmt()) ? true : false;
+}
+
+bool isDoWhileStmt(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isDoWhileStmt()) ? true : false;
+}
+
+bool isForLoop(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isForLoop()) ? true : false;
+}
+
+bool isCForLoop(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isCForLoop()) ? true : false;
 }
 
 /************************************* | **************************************

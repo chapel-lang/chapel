@@ -31,7 +31,6 @@ public:
   static BlockStmt*      build(Expr* cond, BlockStmt* body);
 
 
-
   //
   // Instance interface
   //
@@ -40,17 +39,19 @@ public:
 
   virtual DoWhileStmt*   copy(SymbolMap* map = NULL, bool internal = false);
 
-  virtual bool           isDoWhileLoop()                              const;
+  virtual bool           isDoWhileStmt()                              const;
 
   virtual GenRet         codegen();
-  virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
 
   virtual Expr*          getFirstExpr();
+  virtual Expr*          getNextExpr(Expr* expr);
 
 private:
                          DoWhileStmt();
-                         DoWhileStmt(BlockStmt* initBody);
+
+                         DoWhileStmt(VarSymbol* var,
+                                     BlockStmt* initBody);
 };
 
 #endif

@@ -47,9 +47,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
     LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
     LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
 
-    WhileDoStmt* loop          = new WhileDoStmt(body);
-
-    loop->blockInfoSet(new CallExpr(PRIM_BLOCK_WHILEDO_LOOP, condVar));
+    WhileDoStmt* loop          = new WhileDoStmt(condVar, body);
 
     loop->continueLabel = continueLabel;
     loop->breakLabel    = breakLabel;
@@ -87,7 +85,8 @@ bool WhileDoStmt::isPrimitiveCForLoop(Expr* cond)
 *                                                                           *
 ************************************* | ************************************/
 
-WhileDoStmt::WhileDoStmt(BlockStmt* initBody) : WhileStmt(initBody)
+WhileDoStmt::WhileDoStmt(VarSymbol* var, BlockStmt* initBody) :
+  WhileStmt(var, initBody)
 {
 
 }
@@ -99,24 +98,16 @@ WhileDoStmt::~WhileDoStmt()
 
 WhileDoStmt* WhileDoStmt::copy(SymbolMap* map, bool internal)
 {
-  WhileDoStmt* retval = new WhileDoStmt(NULL);
+  WhileDoStmt* retval = new WhileDoStmt(NULL, NULL);
 
   retval->copyShare(*this, map, internal);
 
   return retval;
 }
 
-bool WhileDoStmt::isWhileDoLoop() const
+bool WhileDoStmt::isWhileDoStmt() const
 {
   return true;
-}
-
-void WhileDoStmt::verify()
-{
-  WhileStmt::verify();
-
-  if (blockInfoGet()->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) == false)
-    INT_FATAL(this, "WhileDoStmt::verify. blockInfo type is not PRIM_BLOCK_WHILEDO_LOOP");
 }
 
 GenRet WhileDoStmt::codegen()
@@ -129,9 +120,7 @@ GenRet WhileDoStmt::codegen()
 
   if (outfile)
   {
-    CallExpr* blockInfo = blockInfoGet();
-
-    std::string hdr = "while (" + codegenValue(blockInfo->get(1)).c + ") ";
+    std::string hdr = "while (" + codegenValue(condExprGet()).c + ") ";
 
     info->cStatements.push_back(hdr);
 
@@ -174,7 +163,7 @@ GenRet WhileDoStmt::codegen()
     // Now switch to the condition for code generation
     info->builder->SetInsertPoint(blockStmtCond);
 
-    GenRet            condValueRet     = codegenValue(blockInfoGet()->get(1));
+    GenRet            condValueRet     = codegenValue(condExprGet());
     llvm::Value*      condValue        = condValueRet.val;
 
     if (condValue->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
@@ -219,13 +208,11 @@ GenRet WhileDoStmt::codegen()
 
 void WhileDoStmt::accept(AstVisitor* visitor) {
   if (visitor->enterWhileDoStmt(this) == true) {
-    CallExpr* blockInfo = blockInfoGet();
-
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (blockInfo)
-      blockInfo->accept(visitor);
+    if (condExprGet() != 0)
+      condExprGet()->accept(visitor);
 
     if (modUses)
       modUses->accept(visitor);
@@ -238,11 +225,25 @@ void WhileDoStmt::accept(AstVisitor* visitor) {
 }
 
 Expr* WhileDoStmt::getFirstExpr() {
-  if (blockInfoGet() != 0)
-    return blockInfoGet()->getFirstExpr();
+  Expr* retval = 0;
 
-  if (body.head      != 0)
-    return body.head->getFirstExpr();
+  if (condExprGet() != 0)
+    retval = condExprGet()->getFirstExpr();
 
-  return this;
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* WhileDoStmt::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == condExprGet() && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  return retval;
 }

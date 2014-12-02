@@ -25,11 +25,12 @@
 class WhileStmt : public BlockStmt
 {
 public:
-  CallExpr*              condExprGet()                                const;
-  CallExpr*              condExprSet(CallExpr* info);
+  SymExpr*               condExprGet()                                const;
 
 protected:
-                         WhileStmt(BlockStmt* initBody);
+                         WhileStmt(VarSymbol* sym,
+                                   BlockStmt* initBody);
+
   virtual               ~WhileStmt();
 
   void                   copyShare(const WhileStmt& ref,
@@ -38,22 +39,29 @@ protected:
 
   virtual void           verify();
 
+  virtual void           replaceChild(Expr* old_ast, Expr* new_ast);
+
   virtual bool           isLoop()                                     const;
-  virtual bool           isWhileLoop()                                const;
+  virtual bool           isWhileStmt()                                const;
 
   virtual void           checkConstLoops();
 
   virtual bool           deadBlockCleanup();
 
+  virtual CallExpr*      blockInfoGet()                               const;
+  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+
 private:
                          WhileStmt();
 
+  // Helper functions for checkConstLoops()
+  SymExpr*               getWhileCondDef(VarSymbol* condSym);
   void                   checkWhileLoopCondition(Expr* condExp);
   bool                   symDeclaredInBlock(Symbol* condSym);
   void                   checkConstWhileLoop();
   bool                   loopBodyHasExits();
-  SymExpr*               getWhileCondDef(CallExpr* info, VarSymbol* condSym);
+
+  SymExpr*               mCondExpr;
 };
 
 #endif
-

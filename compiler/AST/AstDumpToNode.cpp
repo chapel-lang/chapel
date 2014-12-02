@@ -420,14 +420,14 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->cforInfoGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "BlockInfo: ", false);
+    write(false, "CForInfo:", false);
     mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
+    node->cforInfoGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
@@ -497,18 +497,28 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->indexGet() != 0 || node->iteratorGet() != 0)
   {
     mOffset = mOffset + 2;
-
     newline();
-    write(false, "BlockInfo: ", false);
-    mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
-    mOffset = mOffset - 2;
+
+    if (node->indexGet() != 0)
+    {
+      write(false, "Index:", false);
+      mOffset = mOffset + 2;
+      node->indexGet()->accept(this);
+      mOffset = mOffset - 2;
+    }
+
+    if (node->iteratorGet() != 0)
+    {
+      write(false, "Iterator:", false);
+      mOffset = mOffset + 2;
+      node->iteratorGet()->accept(this);
+      mOffset = mOffset - 2;
+    }
 
     mOffset = mOffset - 2;
-
     newline();
   }
 

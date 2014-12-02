@@ -23,9 +23,10 @@
 #include "expr.h"
 #include "stlUtil.h"
 
-WhileStmt::WhileStmt(BlockStmt* initBody) : BlockStmt(initBody)
+WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* initBody) :
+  BlockStmt(initBody)
 {
-
+  mCondExpr = (var != 0) ? new SymExpr(var) : 0;
 }
 
 WhileStmt::~WhileStmt()
@@ -39,7 +40,7 @@ void WhileStmt::copyShare(const WhileStmt& ref,
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*  blockInfo = ref.blockInfoGet();
+  SymExpr*   condExpr  = ref.condExprGet();
 
   astloc        = ref.astloc;
   blockTag      = ref.blockTag;
@@ -47,8 +48,8 @@ void WhileStmt::copyShare(const WhileStmt& ref,
   breakLabel    = ref.breakLabel;
   continueLabel = ref.continueLabel;
 
-  if (blockInfo != 0)
-    blockInfoSet(blockInfo->copy(map, true));
+  if (condExpr != 0)
+    mCondExpr = condExpr->copy(map, true);
 
   if (ref.modUses  != 0)
     modUses = ref.modUses->copy(map, true);
@@ -63,17 +64,35 @@ void WhileStmt::copyShare(const WhileStmt& ref,
     update_symbols(this, map);
 }
 
+// Note that newAst can be NULL to reflect deletion
+void WhileStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  SymExpr* oldExpr = toSymExpr(oldAst);
+  SymExpr* newExpr = toSymExpr(newAst);
+
+  if (oldExpr == NULL)
+    INT_FATAL(this, "WhileStmt::replaceChild. oldAst is not a SymExpr");
+
+  else if (oldExpr == mCondExpr)
+    mCondExpr = newExpr;
+
+  else
+    INT_FATAL(this, "WhileStmt::replaceChild. Failed to match the oldAst ");
+}
+
 void WhileStmt::verify()
 {
   BlockStmt::verify();
 
-  if (blockInfoGet() == 0)
-    INT_FATAL(this, "WhileStmt::verify. blockInfo is NULL");
+  if (condExprGet()             == 0)
+    INT_FATAL(this, "WhileStmt::verify. condExpr  is NULL");
 
-  if (modUses   != 0)
+  if (BlockStmt::blockInfoGet() != 0)
+    INT_FATAL(this, "WhileStmt::verify. blockInfo is not NULL");
+
+  if (modUses                   != 0)
     INT_FATAL(this, "WhileStmt::verify. modUses   is not NULL");
 
-  if (byrefVars != 0)
+  if (byrefVars                 != 0)
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");
 }
 
@@ -82,26 +101,35 @@ bool WhileStmt::isLoop() const
   return true;
 }
 
-bool WhileStmt::isWhileLoop() const
+bool WhileStmt::isWhileStmt() const
 {
   return true;
 }
 
-CallExpr* WhileStmt::condExprGet() const
+SymExpr* WhileStmt::condExprGet() const
 {
-  return BlockStmt::blockInfoGet();
+  return mCondExpr;
 }
 
-CallExpr* WhileStmt::condExprSet(CallExpr* info)
+CallExpr* WhileStmt::blockInfoGet() const
 {
-  return BlockStmt::blockInfoSet(info);
+  printf("Migration: WhileStmt %12d Unexpected call to blockInfoGet()\n", id);
+
+  return 0;
+}
+
+CallExpr* WhileStmt::blockInfoSet(CallExpr* expr)
+{
+  printf("Migration: WhileStmt %12d Unexpected call to blockInfoSet()\n", id);
+
+  return 0;
 }
 
 bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (blockInfoGet() == 0 || blockInfoGet()->numActuals() == 0) {
+  if (condExprGet() == 0) {
     remove();
     retval = true;
   }
@@ -109,55 +137,55 @@ bool WhileStmt::deadBlockCleanup()
   return retval;
 }
 
+/************************************ | *************************************
+*                                                                           *
+* Additional Validation                                                     *
+*                                                                           *
+************************************* | ************************************/
+
 void WhileStmt::checkConstLoops()
 {
-  CallExpr* info    = blockInfoGet();
-  bool      foundit = false;
+  bool foundit = false;
 
-  if (SymExpr* condSE = toSymExpr(info->get(1)))
+  if (VarSymbol* condSym = toVarSymbol(mCondExpr->var))
   {
-    if (VarSymbol* condSym = toVarSymbol(condSE->var))
+    if (SymExpr* condDef = getWhileCondDef(condSym))
     {
-      SymExpr* condDef = getWhileCondDef(info, condSym);
-
-      if (condDef)
+      // Parse the move expr.
+      if (CallExpr* outerCall = toCallExpr(condDef->parentExpr))
       {
-        // Parse the move expr.
-        if (CallExpr* outerCall = toCallExpr(condDef->parentExpr))
+        if (outerCall->get(1) == condDef)
         {
-          if (outerCall->get(1) == condDef)
+          if (outerCall->isPrimitive(PRIM_MOVE))
           {
-            if (outerCall->isPrimitive(PRIM_MOVE))
+            if (CallExpr* innerCall = toCallExpr(outerCall->get(2)))
             {
-              if (CallExpr* innerCall = toCallExpr(outerCall->get(2)))
+              if (innerCall->numActuals()          == 1 &&
+                  innerCall->isNamed("_cond_test") == true)
               {
-                if (innerCall->numActuals()          == 1 &&
-                    innerCall->isNamed("_cond_test") == true)
-                {
-                  foundit = true;
-                  checkWhileLoopCondition(innerCall->get(1));
-                }
+                foundit = true;
+                checkWhileLoopCondition(innerCall->get(1));
+              }
+            }
+
+            else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2)))
+            {
+              // Sometimes _cond_test resolves to a param version, so
+              // we get either true or false.
+              if (moveSrc->var == gTrue)
+              {
+                foundit = true;
               }
 
-              else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2)))
+              else if (moveSrc->var == gFalse)
               {
-                // Sometimes _cond_test resolves to a param version, so
-                // we get either true or false.
-                if (moveSrc->var == gTrue)
-                {
-                  foundit = true;
-                }
+                foundit = true;
+                // while false do ...; -- probably nothing to worry about
+              }
 
-                else if (moveSrc->var == gFalse)
-                {
-                  foundit = true;
-                  // while false do ...; -- probably nothing to worry about
-                }
-
-                else
-                {
-                  // What else can it be?
-                }
+              else
+              {
+                // What else can it be?
               }
             }
           }
@@ -171,6 +199,42 @@ void WhileStmt::checkConstLoops()
   // If desired, disable this assert - the only outcome of that may be
   // that the warning will not be issued in some cases.
   INT_ASSERT(foundit);
+}
+
+SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
+{
+  std::vector<SymExpr*> symExprs;
+  SymExpr*              condDef = NULL;
+
+  collectSymExprsSTL(this, symExprs);
+
+  for_vector(SymExpr, se, symExprs)
+  {
+    if (se->var == condSym)
+    {
+      if (se == mCondExpr)
+      {
+        // The reference is the condition expression - not interesting.
+      }
+
+      else if (condDef)
+      {
+        // There are >1 references to condSym. Let us notify ourselves
+        // so we can adjust the code to handle this case as well.
+        // If desired, disable this assert - the only outcome of that may be
+        // that the warning will not be issued in some cases.
+        INT_ASSERT(false);
+      }
+
+      else
+      {
+        // This is what we are looking for.
+        condDef = se;
+      }
+    }
+  }
+
+  return condDef;
 }
 
 void WhileStmt::checkWhileLoopCondition(Expr* condExp)
@@ -228,40 +292,4 @@ bool WhileStmt::loopBodyHasExits()
   }
 
   return false;
-}
-
-SymExpr* WhileStmt::getWhileCondDef(CallExpr* info, VarSymbol* condSym)
-{
-  std::vector<SymExpr*> symExprs;
-  SymExpr*              condDef = NULL;
-
-  collectSymExprsSTL(this, symExprs);
-
-  for_vector(SymExpr, se, symExprs)
-  {
-    if (se->var == condSym)
-    {
-      if (se->parentExpr == info)
-      {
-        // The reference is in blockInfo - not interesting.
-      }
-
-      else if (condDef)
-      {
-        // There are >1 references to condSym. Let us notify ourselves
-        // so we can adjust the code to handle this case as well.
-        // If desired, disable this assert - the only outcome of that may be
-        // that the warning will not be issued in some cases.
-        INT_ASSERT(false);
-      }
-
-      else
-      {
-        // This is what we are looking for.
-        condDef = se;
-      }
-    }
-  }
-
-  return condDef;
 }

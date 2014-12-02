@@ -421,7 +421,7 @@ static inline bool shouldCodegenAggregate(AggregateType* ct)
   //   we do visit.
   if( isClass(ct) ) { // is it actually a class?
     if( ct->symbol->hasFlag(FLAG_REF) ||
-        ct->symbol->hasFlag(FLAG_WIDE) ||
+        ct->symbol->hasFlag(FLAG_WIDE_REF) ||
         ct->symbol->hasFlag(FLAG_DATA_CLASS)) return true;
     else return false;
   }

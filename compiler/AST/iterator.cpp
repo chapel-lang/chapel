@@ -22,12 +22,15 @@
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
+#include "CForLoop.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "stmt.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "optimizations.h"
 #include "view.h"
+#include "WhileStmt.h"
 
 //
 // This file implements lowerIterator() called by the lowerIterators pass
@@ -91,7 +94,6 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   return rsym->type;
 }
 
-
 //
 // Determines that an iterator has a single loop with a single yield
 // in it by checking the following conditions:
@@ -128,32 +130,42 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
           return NULL;
         }
       }
-    } else if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->blockInfoGet() && !(block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) ||
-                                     block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))) {
-        if (singleFor) {
-          return NULL;
-        } else if ((block->isForLoop()     == true ||
-                    block->isCForLoop()    == true ||
-                    block->isWhileDoStmt() == true) &&
-                   block->parentExpr == fn->body) {
-          singleFor = block;
-        } else {
-          return NULL;
-        }
+
+    } else if (isWhileDoStmt(ast) ||
+               isForLoop(ast)     ||
+               isCForLoop(ast)) {
+      Expr*      expr  = toExpr(ast);
+      BlockStmt* block = toBlockStmt(ast);
+
+      if (singleFor == NULL && expr->parentExpr == fn->body) {
+        singleFor = block;
+
+      } else {
+        return NULL;
       }
+
+    // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
+    } else if (isDoWhileStmt(ast)) {
+      return NULL;
+
     } else if (isGotoStmt(ast)) {
       return NULL;
     }
   }
+
   if (singleFor && singleYield) {
     if (fReportOptimizedLoopIterators) {
       ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
+
       INT_ASSERT(mod);
+
       if (developer ||
           ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
         printf("Optimized single yield/loop iterator (%s) in module %s (%s:%d)\n",
-               fn->cname, mod->name, fn->fname(), fn->linenum());
+               fn->cname,
+               mod->name,
+               fn->fname(),
+               fn->linenum());
       }
     }
     return singleYield;
@@ -163,12 +175,16 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
 
 //  se -- A sym expression which accesses a live local variable.
 //  ic -- The iterator class containing the given field.
-static void replaceLocalWithFieldTemp(SymExpr* se, Symbol* ic, Symbol* field,
-                                      bool is_def, bool is_use, Vec<BaseAST*>& asts)
+static void replaceLocalWithFieldTemp(SymExpr*       se,
+                                      Symbol*        ic,
+                                      Symbol*        field,
+                                      bool           is_def,
+                                      bool           is_use,
+                                      Vec<BaseAST*>& asts)
 {
   // Get the expression that sets or uses the symexpr.
   CallExpr* call = toCallExpr(se->parentExpr);
-  
+
   // Create a new temp and load the field value into it.
   VarSymbol* tmp = newTemp(se->var->type);
   // Find the statement containing the symexpr access.
@@ -179,7 +195,7 @@ static void replaceLocalWithFieldTemp(SymExpr* se, Symbol* ic, Symbol* field,
     loop = toBlockStmt(se->parentExpr->parentExpr);
     INT_ASSERT(loop);   // Check our assumption.
 
-    // We use 'stmt' as the insertion point for declarations and loads 
+    // We use 'stmt' as the insertion point for declarations and loads
     // (initial loads if the access lies within a loop).
     // So if the access lies within a loop, we hoist the insertion point
     // to just before the loop.
@@ -187,7 +203,7 @@ static void replaceLocalWithFieldTemp(SymExpr* se, Symbol* ic, Symbol* field,
   }
 
   if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
-    // Get member returns the address of the member, so we convert the 
+    // Get member returns the address of the member, so we convert the
     // type of the corresponding temp to a reference type.
     INT_ASSERT(tmp->type->refType);
     tmp->type = tmp->type->refType;
@@ -398,10 +414,18 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
       zip1body->insertAtTail(expr->copy(&map));
   }
 
-  if (singleLoop->isCForLoop() == false) {
-    CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
+  if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
+    SymExpr* condExpr = stmt->condExprGet()->copy(&map);
 
-    zip1body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
+    zip1body->insertAtTail(new CondStmt(condExpr,
+                                        new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
+                                        new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+
+
+  } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
+    SymExpr* index = forLoop->indexGet()->copy(&map);
+
+    zip1body->insertAtTail(new CondStmt(index,
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
   }
@@ -481,10 +505,17 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
 
   // Check for more (only for non c for loops)
-  if (singleLoop->isCForLoop() == false) {
-    CallExpr* blockInfo = singleLoop->blockInfoGet()->copy(&map);
+  if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
+    SymExpr* condExpr = stmt->condExprGet()->copy(&map);
 
-    zip3body->insertAtTail(new CondStmt(blockInfo->get(1)->remove(),
+    zip3body->insertAtTail(new CondStmt(condExpr,
+                                        new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
+                                        new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
+
+  } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
+    SymExpr* index = forLoop->indexGet()->copy(&map);
+
+    zip3body->insertAtTail(new CondStmt(index,
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
                                         new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
   }
@@ -608,6 +639,7 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
   hasMoreBody->insertAtTail(new DefExpr(tmp));
 
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    CForLoop* cforLoop  = toCForLoop(singleLoop);
     CallExpr* blockInfo = NULL;
 
     Symbol*   ic        = ii->advance->getFormal(1);
@@ -616,7 +648,7 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with hasMore->_this .
     map.put(ic, ii->hasMore->_this);
 
-    blockInfo = singleLoop->blockInfoGet()->copy(&map);
+    blockInfo = cforLoop->cforInfoGet()->copy(&map);
 
     if (BlockStmt* testSeg = toBlockStmt(blockInfo->get(2))) {
       for_alist(expr, testSeg->body) {
@@ -659,6 +691,7 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* initBody = new BlockStmt();
 
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    CForLoop* cforLoop  = toCForLoop(singleLoop);
     CallExpr* blockInfo = NULL;
 
     Symbol*   ic        = ii->advance->getFormal(1);
@@ -667,7 +700,7 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with init->_this .
     map.put(ic, ii->init->_this);
 
-    blockInfo = singleLoop->blockInfoGet()->copy(&map);
+    blockInfo = cforLoop->cforInfoGet()->copy(&map);
 
     if (BlockStmt* initSeg = toBlockStmt(blockInfo->get(1))) {
       for_alist(expr, initSeg->body) {
@@ -686,6 +719,7 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* incrBody = new BlockStmt();
 
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
+    CForLoop* cforLoop  = toCForLoop(singleLoop);
     CallExpr* blockInfo = NULL;
 
     Symbol*   ic        = ii->advance->getFormal(1);
@@ -694,7 +728,7 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with incr->_this .
     map.put(ic, ii->incr->_this);
 
-    blockInfo = singleLoop->blockInfoGet()->copy(&map);
+    blockInfo = cforLoop->cforInfoGet()->copy(&map);
 
     if (BlockStmt* incrSeg = toBlockStmt(blockInfo->get(3))) {
       for_alist(expr, incrSeg->body) {
@@ -771,7 +805,8 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   // as a result of being inserted in to the body of the loop
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
     Vec<SymExpr*> symExprs;
-    Expr*         init = singleLoop->blockInfoGet()->get(1);
+    CForLoop*     cforLoop = toCForLoop(singleLoop);
+    Expr*         init     = cforLoop->cforInfoGet()->get(1);
 
     collectSymExprs(init, symExprs);
 

@@ -30,7 +30,9 @@
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "CForLoop.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "iterator.h"
 #include "passes.h"
 #include "scopeResolve.h"
@@ -5820,6 +5822,9 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr)) {
     if (block->isWhileStmt() == true) {
       USR_FATAL(expr, "param function cannot contain a non-param while loop");
+
+    } else if (block->isForLoop() == true) {
+      USR_FATAL(expr, "param function cannot contain a non-param for loop");
 
     } else if (block->blockInfoGet()) {
       USR_FATAL(expr, "param function cannot contain a non-param loop");

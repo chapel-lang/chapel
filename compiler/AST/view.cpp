@@ -23,7 +23,9 @@
 
 #include "view.h"
 
+#include "CForLoop.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "log.h"
 #include "stmt.h"
 #include "stringutil.h"

@@ -19,6 +19,8 @@
 
 #include "astutil.h"
 #include "baseAST.h"
+#include "CForLoop.h"
+#include "ForLoop.h"
 #include "expr.h"
 #include "passes.h"
 #include "stlUtil.h"

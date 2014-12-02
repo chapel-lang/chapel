@@ -35,6 +35,8 @@ public:
 
   static CForLoop*       buildWithBodyFrom(ForLoop* forLoop);
 
+  static CForLoop*       loopForClause(BlockStmt* clause);
+
   //
   // Instance Interface
   //
@@ -49,6 +51,7 @@ public:
   virtual void           accept(AstVisitor* visitor);
 
   virtual Expr*          getFirstExpr();
+  virtual Expr*          getNextExpr(Expr* expr);
 
   virtual bool           isLoop()                                     const;
   virtual bool           isCForLoop()                                 const;
@@ -58,6 +61,14 @@ public:
   void                   loopHeaderSet(BlockStmt* initBlock,
                                        BlockStmt* testBlock,
                                        BlockStmt* incrBlock);
+
+  // NOAKES 2014/11/26 Transitional
+  CallExpr*              cforInfoGet()                                const;
+  CallExpr*              cforInfoSet(CallExpr* expr);
+
+  virtual CallExpr*      blockInfoGet()                               const;
+  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+
 private:
                          CForLoop();
 
