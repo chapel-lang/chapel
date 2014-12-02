@@ -1194,7 +1194,7 @@ if (! $?CHPL_LAUNCHER_TIMEOUT && ! $?CHPL_TEST_DONT_SET_LAUNCHER_TIMEOUT) then
         setenv CHPL_LAUNCHER_TIMEOUT slurm
     endif
 
-    if ($launcher =~ *pbs* || $launcher =~ *qsub* || $launcher =~ *aprun* ) then
+    if ($launcher =~ *pbs* || $launcher =~ *qsub*) then
         setenv CHPL_LAUNCHER_TIMEOUT pbs
     endif
 endif
