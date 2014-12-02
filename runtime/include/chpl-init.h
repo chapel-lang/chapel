@@ -36,4 +36,6 @@ void chpl_executable_init(void);
 void chpl_library_init(int argc, char* argv[]);
 void chpl_library_finalize(void);
 
+void chpl_std_module_init(void);
+
 #endif // _CHPL_INIT_H_
