@@ -54,16 +54,17 @@ static Expr* replaceWithRangeIterator(Expr* iteratorExpr) {
       range = call;
     }
     if (range && range->isNamed("_build_range")) { // if we have a range
-      if (range->numActuals() == 2) {              // bounded only for now
+      if (range->numActuals() == 2) {
         Expr* low = range->get(1)->copy();
         Expr* high = range->get(2)->copy();
-        // TODO current check for bounded only fails, since numActuals is 2 for
-        // non_bounded too
-        if (stride) {
-          iteratorExpr = (new CallExpr("_direct_range_iter", low, high, stride));
-        } else {
-          SymExpr* noStr = new SymExpr( new_IntSymbol(1));
-          iteratorExpr = (new CallExpr("_direct_range_iter", low, high, noStr));
+        if ((isUnresolvedSymExpr(low) || isSymExpr(low)) &&
+            (isUnresolvedSymExpr(high) || isSymExpr(high))) {  // bounded only?
+          if (stride) {
+            iteratorExpr = (new CallExpr("_direct_range_iter", low, high, stride));
+          } else {
+            SymExpr* noStr = new SymExpr( new_IntSymbol(1));
+            iteratorExpr = (new CallExpr("_direct_range_iter", low, high, noStr));
+          }
         }
       }
     }
@@ -72,12 +73,14 @@ static Expr* replaceWithRangeIterator(Expr* iteratorExpr) {
 }
 
 
-static Expr* optimizeRangeIteration(Expr* iteratorExpr) {
+static Expr* optimizeRangeIteration(Expr* iteratorExpr, bool zippered) {
   iteratorExpr = replaceWithRangeIterator(iteratorExpr);
-  if (CallExpr* call = toCallExpr(iteratorExpr)) {
-    if (call->isNamed("_build_tuple")) {
-      for_actuals(actual, call) {
-        actual->replace(replaceWithRangeIterator(actual->copy()));
+  if (zippered) {
+    if (CallExpr* call = toCallExpr(iteratorExpr)) {
+      if (call->isNamed("_build_tuple")) {
+        for_actuals(actual, call) {
+          actual->replace(replaceWithRangeIterator(actual->copy()));
+        }
       }
     }
   }
@@ -100,7 +103,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
 
-  iteratorExpr = optimizeRangeIteration(iteratorExpr);
+  iteratorExpr = optimizeRangeIteration(iteratorExpr, zippered);
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
