@@ -145,6 +145,10 @@ cp $TESTS $TMP_TEST_DIR/
     # Run the tests.
     echo "Running the hello world tests found in: $TEST_DIR"
 
+    # Silence warning if running without stdin redirection support (should not
+    # matter for hello tests anyways)
+    export CHPL_TEST_NO_WARN_NO_STDIN_REDIRECT=true
+
     $CHPL_HOME/util/start_test --no-chpl-home-warn --progress $CHPL_START_TEST_ARGS *.chpl > $test_output_log
 
     test_status=$?
