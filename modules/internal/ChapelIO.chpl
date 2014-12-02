@@ -550,6 +550,7 @@ module ChapelIO {
       this.s = __primitive("string_copy", x);
     }
     proc writePrimitive(x) {
+      // TODO: Implement += so it consumes a c_string_copy LHS.
       var aug = x:c_string_copy;
       this.s = this.s + aug;      // The update frees this.s before overwriting it.
       chpl_free_c_string_copy(aug);
@@ -603,10 +604,8 @@ module ChapelIO {
   proc format(fmt: c_string, x:?t) where isIntegralType(t) || isFloatType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
-      if isImagType(t) {
-        var resb = chpl_format(fmt2, _i2r(x));
-        return (resb+"i");
-      }
+      if isImagType(t) then
+        return (chpl_format(fmt2, _i2r(x))+"i");
       else
         return chpl_format(fmt2, x:real);
     } else 
@@ -616,11 +615,7 @@ module ChapelIO {
   proc format(fmt: c_string, x:?t) where isComplexType(t) {
     if fmt.substring(1) == "#" {
       var fmt2 = _getoutputformat(fmt);
-      var fmt_r = chpl_format(fmt2, x.re);
-      var fmt_i = chpl_format(fmt2, x.im);
-      var fmt_i_i = fmt_i + "i";
-      var res1 = fmt_r + " + ";
-      return res1 + fmt_i_i;
+      return (chpl_format(fmt2, x.re)+" + "+ chpl_format(fmt2, x.im)+"i");
     } else 
       return chpl_format(fmt, x);
   }

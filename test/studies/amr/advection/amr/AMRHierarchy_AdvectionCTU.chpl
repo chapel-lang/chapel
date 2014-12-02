@@ -24,14 +24,10 @@ proc AMRHierarchy.advance_AdvectionCTU(
 {
 
   //---- Safety check ----
-  var timef = format("%8.4E",time);
-  var ptimef = "AMRHierarchy.time = " + timef;
-  var pptimef = "error: AMRHierarchy.advance_AdvectionCTU\n" + ptimef;
-  var timereqf = format("%8.4E",time_requested);
-  var ptimereqf = ", while time_requested = " + timereqf;
-  var msg = pptimef + ptimereqf;
-  assert(time < time_requested, msg);
-  chpl_free_c_string_copy(msg);
+  assert(time < time_requested,
+         "error: AMRHierarchy.advance_AdvectionCTU\n" +
+         "AMRHierarchy.time = " + format("%8.4E",time) + ", while time_requested = " +
+         format("%8.4E",time_requested));
   
   
   //---- Set dt_target ----

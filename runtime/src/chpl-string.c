@@ -196,27 +196,26 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
  */
 // Even if allocation is done here, the returned string is already owned
 // elsewhere.  So we return a c_string, not a c_string_copy.
-c_string_copy stringMove(c_string_copy* dest, c_string src, int64_t len,
+c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
                          int32_t lineno, c_string filename) {
   char *ret;
   if (src == NULL)
     return NULL;
 
-  if (dest == NULL || *dest == NULL ||
+  if (dest == NULL ||
       // TODO: Want to deprecate indicating an empty string by a string of zero
       // length.  This works OK if the string is unallocated (such as a string
       // literal), but does not work well with an allocated string.  An
       // allocated string of zero length still occupies memory (one byte for
       // the NUL, at least), so that leaves us with a dilemma.  Which is it?
-      strlen(*dest) == 0)
+      strlen(dest) == 0)
     ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
   else
   {
     // reuse the buffer
     // The cast is necessary so we can write into the buffer (which is declared
     // to be const).
-    ret = (char *) *dest;
-    *dest = NULL;
+    ret = (char *) dest;
   }
 
   snprintf(ret, len+1, "%s", src);

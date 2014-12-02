@@ -532,22 +532,26 @@ module CString {
   inline proc +(a: c_string, b: c_string)
     return __primitive("string_concat", a, b);
 
-  inline proc +(a: c_string, ref b: c_string_copy) {
+  inline proc +(a: c_string, /*ref*/ b: c_string_copy) {   // See Note #1.
     var result = __primitive("string_concat", a, b);
-    chpl_free_c_string_copy(b);
+    var my_b = b; // See Note #2.
+    chpl_free_c_string_copy(my_b);
     return result;
   }
 
-  inline proc +(ref a: c_string_copy, b: c_string) {
+  inline proc +(/*ref*/ a: c_string_copy, b: c_string) {   // See Note #1.
     var result = __primitive("string_concat", a, b);
-    chpl_free_c_string_copy(a);
+    var my_a = a; // See Note #2.
+    chpl_free_c_string_copy(my_a);
     return result;
   }
 
-  inline proc +(ref a: c_string_copy, ref b: c_string_copy) {
+  inline proc +(/*ref*/ a: c_string_copy, /*ref*/ b: c_string_copy) {   // See Note #1.
     var result = __primitive("string_concat", a, b);
-    chpl_free_c_string_copy(a);
-    chpl_free_c_string_copy(b);
+    var my_a = a; // See Note #2.
+    chpl_free_c_string_copy(my_a);
+    var my_b = b; // See Note #2.
+    chpl_free_c_string_copy(my_b);
     return result;
   }
 
@@ -601,3 +605,23 @@ module CString {
 
 }
 
+// Note #1:
+//  Binding a c_string_copy argument by reference would allow the called
+//  routine to set the c_string_copy (pointer) to NULL in the caller.
+//  That would prevent reuse of the c_string_copy after it has been
+//  "consumed".
+//  An important benefit of this is to prevent double-deletion: once consumed
+//  in the subroutine, there is no way for the caller to delete it redundantly.
+//
+//  ref intent is currently commented out because the compiler issues an error
+//  when an attempt is made to bind a plain "ref" to an rvalue.  When the
+//  compiler is revised to support three kinds of ref binding -- rvalues
+//  exclusively, lvalues exclusively, and both (don't care) -- then these can
+//  be turned into the ref intent that signals the "don't care" case.
+//
+// Note #2:
+//  Since the c_string_copy argument cannot be bound by reference, we create a
+//  dummy local variable that can be bound by reference to the argument of
+//  chpl_free_c_string_copy().  When there is a version of ref intent that can
+//  bind both rvalues and lvalues (See Note #1 above), then these local
+//  variables should be removed.

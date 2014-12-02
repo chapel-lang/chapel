@@ -80,9 +80,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   qio_regexp_create_compile(pattern.c_str(), pattern.length, opts, ret._regexp);
   if ! qio_regexp_ok(ret._regexp) {
     var err_str = qio_regexp_error(ret._regexp);
-    var err_str_p = "Error " + err_str;
-    var err_str_p_w = err_str_p + " when compiling regexp '";
-    __primitive("chpl_error", err_str_p_w + pattern + "'");
+    __primitive("chpl_error", "Error " + err_str + " when compiling regexp '" + pattern + "'");
   }
   return ret;
 }

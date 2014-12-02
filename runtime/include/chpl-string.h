@@ -48,7 +48,7 @@ void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_stri
 // accommodate the result.  
 // If non-NULL, The supplied c_string_copy is consumed, but the same value is
 // returned (as in realloc).
-c_string_copy stringMove(c_string_copy* dest, c_string src, int64_t len,
+c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
                          int32_t lineno, c_string filename);
 
 c_string_copy remoteStringCopy(c_nodeid_t src_locale,
