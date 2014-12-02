@@ -309,7 +309,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
     #
     if comm_val == 'none' and ('linux' in platform_val or
                                platform_val == 'darwin' or
-                               platform_val == 'cygwin'):
+                               platform_val.startswith('cygwin')):
         if arch:
             if arch != 'knc' and not location or location == 'host':
                 # when a user supplies an architecture, and it seems reasonable
