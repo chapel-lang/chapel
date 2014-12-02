@@ -173,11 +173,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     mypid = getpid();
   }
 
-  // TODO we have a bunch of similar commands to build up the interactive and
-  // batch versions. It would be nicer to build up the commands and postprocess
-  // depending on interactive vs batch. As in build up "--quiet --nodes ..."
-  // and afterwards split on ' ' and then add #SBATCH and a newline for batch
-  // mode and leave it as is for interactive"
+  // Elliot, 12/02/14: TODO we have a bunch of similar commands to build up the
+  // interactive and batch versions. It would be nicer to build up the commands
+  // and postprocess depending on interactive vs batch. As in build up "--quiet
+  // --nodes ..." and afterwards split on ' ' and then add #SBATCH and a
+  // newline for batch mode and leave it as is for interactive"
 
   // if were running a batch job 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL || generate_sbatch_script) {
@@ -402,9 +402,9 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
-  // TODO we should have a core binding option here similar to aprun's -cc to
-  // handle binding to cores / numa domains, etc
-  // For now you can just set the SLURM_CPU_BIND env var
+  // Elliot, 12/02/14: TODO we should have a core binding option here similar
+  // to aprun's -cc to handle binding to cores / numa domains, etc For now you
+  // can just set the SLURM_CPU_BIND env var
 
   return 0;
 }
