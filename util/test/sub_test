@@ -322,7 +322,7 @@ def ReadIntegerValue(f, localdir):
                 return string.atoi(l)
             else:
                 break
-    Fatal('Invalid integer value in '+f+' ('+localdir+')', clean_exit=True);
+    Fatal('Invalid integer value in '+f+' ('+localdir+')')
 
 # report an error message and exit
 def Fatal(message):
