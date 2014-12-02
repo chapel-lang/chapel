@@ -87,6 +87,13 @@ GMP_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.gmp-$(CHPL_MAKE_GMP)
 HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
 -include $(HWLOC_INCLUDE)
 
+#
+# For use with pyChapel / library-mode.
+# Position independent code is required to create shared objects.
+ifeq ($(CHPL_LIBMODE),shared)
+RUNTIME_DEFS += -fPIC
+endif
+
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
 RUNTIME_CXXFLAGS += $(RUNTIME_DEFS)
 

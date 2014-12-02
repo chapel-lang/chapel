@@ -17,23 +17,23 @@
  * limitations under the License.
  */
 
-#include "chplrt.h"
-#include "chpl_rt_utils_static.h"
-#include "chpl-init.h"
-#include "chplexit.h"
-#include "config.h"
+#ifndef _CHPL_INIT_H_
+#define _CHPL_INIT_H_
 
-int main(int argc, char* argv[]) {
+#ifndef LAUNCHER
 
-  // Initialize the runtime
-  chpl_rt_init(argc, argv);                 
+void chpl_rt_preUserCodeHook(void);
+void chpl_rt_postUserCodeHook(void);
 
-  // Run the main function for this node.
-  chpl_task_callMain(chpl_executable_init); 
+#endif // LAUNCHER
 
-  // have everyone exit, returning the value returned by the user written main
-  // or 0 if it didn't return anything
-  chpl_rt_finalize(chpl_gen_main_arg.return_value);
+void chpl_rt_init(int argc, char* argv[]);
+void chpl_rt_finalize(int return_value);
 
-  return 0; // should never get here
-}
+void chpl_executable_init(void);
+//   chpl_executable_finalize(...) equivalent is done by main.c:main(...)
+
+int chpl_library_init(int argc, char* argv[]);
+void chpl_library_finalize(void);
+
+#endif // _CHPL_INIT_H_
