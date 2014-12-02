@@ -1,7 +1,0 @@
---langdef=Chapel
---langmap=Chapel:.chpl
---regex-chapel=/^[ \t]*module[ \t]+([_a-zA-Z0-9$]+)/\1/m,modules,module names/
---regex-chapel=/^[ \t]*enum[ \t]+([_a-zA-Z0-9$]+)/\1/g,enums,enumeration names/
---regex-chapel=/^[ \t]*(extern[ \t]+)?class[ \t]+([_a-zA-Z0-9$]+)/\2/c,classes,class definitions/
---regex-chapel=/^[ \t]*(extern[ \t]+)?record[ \t]+([_a-zA-Z0-9$]+)/\2/r,records,record definitions/
---regex-chapel=/^[ \t]*((export [_a-zA-Z0-9$]+|inline|extern)[ \t]+)?(proc|iter)[ \t]+((param|ref)[ \t]+)?([_a-zA-Z0-9]+\.)?([_a-zA-Z0-9$]+)/\7/f,functions,function definitions/
