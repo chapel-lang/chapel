@@ -177,7 +177,7 @@ def SuckOutputWithTimeout(stream, timeout):
     return buffer
 
 def LauncherTimeoutArgs(timeout):
-    if useLauncherTimeout == 'pbs':
+    if useLauncherTimeout == 'pbs' or useLauncherTimeout == 'slurm':
         # --walltime=hh:mm:ss
         hours = 0
         minutes = timeout / 60  # might be OK even if over an hour
@@ -185,9 +185,6 @@ def LauncherTimeoutArgs(timeout):
         option = '--walltime=' + str(hours) + ':' + str(minutes) \
                  + ':' + str(seconds)
         return [option]
-    if useLauncherTimeout == 'slurm':
-        # slurm timeout is currently set with CHPL_LAUNCHER_WALLTIME
-        return []
     else:
         Fatal('LauncherTimeoutArgs encountered an unknown format spec: ' + \
               useLauncherTimeout)
@@ -1035,6 +1032,7 @@ for testname in testsrc:
         continue # on to next test
 
     clist = list()
+    curFileTestStart = time.time()
     # For all compopts + execopts combos..
     compoptsnum = 0
     for compopts in compoptslist:
@@ -1094,6 +1092,7 @@ for testname in testsrc:
         if lastcompopts:
             args += lastcompopts
 
+        compStart = time.time()
         #
         # Compile (with timeout)
         #
@@ -1137,6 +1136,15 @@ for testname in testsrc:
                 continue # on to next compopts
 
             status = p.returncode
+
+        elapsedCompTime = time.time() - compStart
+        test_name = os.path.join(localdir, test_filename)
+        if compoptsnum != 0:
+            test_name += ' (compopts: {0})'.format(compoptsnum)
+
+        print('[Elapsed compilation time for "{0}" - {1:.3f} '
+            'seconds]'.format(test_name, elapsedCompTime))
+
 
         if (status!=0 or not executebin):
             # Save original output
@@ -1430,7 +1438,7 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
                 sys.stdout.flush()
 
-                execstart = time.time()
+                execStart = time.time()
                 if useLauncherTimeout:
                     if redirectin == None:
                         my_stdin = None
@@ -1445,7 +1453,13 @@ for testname in testsrc:
                     output = p.communicate()[0]
                     status = p.returncode
 
-                    if re.search('PBS: job killed: walltime', output) != None:
+                    launcherTimeout = False
+                    if re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None:
+                        launcherTimeout = True
+                    if re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None:
+                        launcherTimeout = True
+
+                    if launcherTimeout:
                         exectimeout = True
                         sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                         (futuretest, localdir, test_filename))
@@ -1453,14 +1467,6 @@ for testname in testsrc:
                         sys.stdout.write(']\n')
                         sys.stdout.write('[Execution output was as follows:]\n')
                         sys.stdout.write(output)
-                    
-                    # so far as I can tell, an interactive slurm run doesn't tell 
-                    # you when walltime has been hit. If batch walltime is hit an 
-                    # error message is put in the output file but we don't have 
-                    # here. For slurm sub_test just queses up the job and then 
-                    # there is a slurm prediff that waits for the job to complete
-                    # or timeout so the timeout will be caught by the .good diff 
-                    # failures. The error message isn't very pretty though
 
                 elif useTimedExec:
                     wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
@@ -1508,8 +1514,20 @@ for testname in testsrc:
 
                     status = p.returncode
 
-                execend = time.time()
-                if execTimeWarnLimit and execend - execstart > execTimeWarnLimit:
+                elapsedExecTime = time.time() - execStart
+                test_name = os.path.join(localdir, test_filename)
+                compExecStr = ''
+                if compoptsnum != 0:
+                    compExecStr += 'compopts: {0} '.format(compoptsnum)
+                if execoptsnum != 0:
+                    compExecStr += 'execopts: {0}'.format(execoptsnum)
+                if compExecStr:
+                    test_name += ' ({0})'.format(compExecStr.strip())
+
+                print('[Elapsed execution time for "{0}" - {1:.3f} '
+                    'seconds]'.format(test_name, elapsedExecTime))
+
+                if execTimeWarnLimit and elapsedExcTime > execTimeWarnLimit:
                     sys.stdout.write('[Warning: %s/%s took over %.0f seconds to '
                         'execute]\n' %(localdir, test_filename, execTimeWarnLimit))
 
@@ -1666,5 +1684,11 @@ for testname in testsrc:
 
     del execoptslist
     del compoptslist
+
+    elapsedCurFileTestTime = time.time() - curFileTestStart
+    test_name = os.path.join(localdir, test_filename)
+    print('[Elapsed time to compile and execute all versions of "{0}" - '
+        '{1:.3f} seconds]'.format(test_name, elapsedCurFileTestTime))
+
 
 sys.exit(0)

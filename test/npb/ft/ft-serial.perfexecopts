@@ -1,6 +1,6 @@
 --problem_class=S # ft.S
 --problem_class=W # ft.W
 --problem_class=A # ft.A
-#--problem_class=B -ECHPL_RT_NUM_THREADS_PER_LOCALE=MAX_LOGICAL # ft.B
-#--problem_class=C -ECHPL_RT_NUM_THREADS_PER_LOCALE=MAX_LOGICAL # ft.C
-#--problem_class=D -ECHPL_RT_NUM_THREADS_PER_LOCALE=MAX_LOGICAL # ft.D
+#--problem_class=B # ft.B
+#--problem_class=C # ft.C
+#--problem_class=D # ft.D

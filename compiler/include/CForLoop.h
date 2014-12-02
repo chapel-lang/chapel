@@ -22,6 +22,8 @@
 
 #include "stmt.h"
 
+class ForLoop;
+
 class CForLoop : public BlockStmt
 {
   //
@@ -30,6 +32,10 @@ class CForLoop : public BlockStmt
 public:
   static BlockStmt*      buildCForLoop(CallExpr*  cforInfo,
                                        BlockStmt* body);
+
+  static CForLoop*       buildWithBodyFrom(ForLoop* forLoop);
+
+  static CForLoop*       loopForClause(BlockStmt* clause);
 
   //
   // Instance Interface
@@ -41,12 +47,27 @@ public:
   virtual CForLoop*      copy(SymbolMap* map = NULL, bool internal = false);
 
   virtual GenRet         codegen();
+  virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
+
+  virtual Expr*          getFirstExpr();
+  virtual Expr*          getNextExpr(Expr* expr);
 
   virtual bool           isLoop()                                     const;
   virtual bool           isCForLoop()                                 const;
 
   virtual bool           deadBlockCleanup();
+
+  void                   loopHeaderSet(BlockStmt* initBlock,
+                                       BlockStmt* testBlock,
+                                       BlockStmt* incrBlock);
+
+  // NOAKES 2014/11/26 Transitional
+  CallExpr*              cforInfoGet()                                const;
+  CallExpr*              cforInfoSet(CallExpr* expr);
+
+  virtual CallExpr*      blockInfoGet()                               const;
+  virtual CallExpr*      blockInfoSet(CallExpr* expr);
 
 private:
                          CForLoop();

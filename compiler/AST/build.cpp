@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -876,7 +876,7 @@ CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
 }
 
 static BlockStmt*
-buildFollowLoop(VarSymbol* iter, 
+buildFollowLoop(VarSymbol* iter,
                 VarSymbol* leadIdxCopy,
                 VarSymbol* followIter,
                 VarSymbol* followIdx,
@@ -885,14 +885,14 @@ buildFollowLoop(VarSymbol* iter,
                 bool       fast,
                 bool       zippered) {
   BlockStmt* followBlock = new BlockStmt();
-  ForLoop*   followBody  = new ForLoop(loopBody, followIdx, followIter);
+  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody);
 
   destructureIndices(followBody, indices, new SymExpr(followIdx), false);
 
   followBlock->insertAtTail(new DefExpr(followIter));
 
   if (fast) {
-    
+
     if (zippered) {
       followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFastFollowerZip(%S, %S)))", followIter, iter, leadIdxCopy);
     } else {
@@ -904,9 +904,9 @@ buildFollowLoop(VarSymbol* iter,
       followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFollowerZip(%S, %S)))",     followIter, iter, leadIdxCopy);
     } else {
       followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))",           followIter, iter, leadIdxCopy);
-    } 
+    }
   }
-  
+
   followBlock->insertAtTail(new DefExpr(followIdx));
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 
@@ -943,7 +943,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", idx, iter);
 
   //BlockStmt* SABody = new BlockStmt();
-  ForLoop* SABody = new ForLoop(NULL, idx, iter);
+  ForLoop* SABody = new ForLoop(idx, iter, NULL);
   SABody->insertAtTail(new DefExpr(idxCopy));
   SABody->insertAtTail("'move'(%S, %S)", idxCopy, idx);
   if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
@@ -974,10 +974,10 @@ buildStandaloneForallLoopStmt(Expr* indices,
 
 
 BlockStmt*
-buildForallLoopStmt(Expr*      indices, 
-                    Expr*      iterExpr, 
+buildForallLoopStmt(Expr*      indices,
+                    Expr*      iterExpr,
                     CallExpr*  byref_vars,
-                    BlockStmt* loopBody, 
+                    BlockStmt* loopBody,
                     bool       zippered) {
   BlockStmt* loopBodyCopy = loopBody->copy();
   checkControlFlow(loopBodyCopy, "forall statement");
@@ -1016,7 +1016,7 @@ buildForallLoopStmt(Expr*      indices,
   VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
   VarSymbol* leadIter        = newTemp("chpl__leadIter");
   VarSymbol* leadIdxCopy     = newTemp("chpl__leadIdxCopy");
-  ForLoop*   leadForLoop     = new ForLoop(NULL, leadIdx, leadIter);
+  ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL);
 
   VarSymbol* fastFollowIdx   = newTemp("chpl__fastFollowIdx");
   VarSymbol* fastFollowIter  = newTemp("chpl__fastFollowIter");
@@ -1136,13 +1136,13 @@ addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
 
   // Note: the UnresolvedSymExprs in byrefVars
   // will be automatically resolved in resolve().
-}    
+}
 
-BlockStmt* buildCoforallLoopStmt(Expr* indices, 
+BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  CallExpr* byref_vars,
                                  BlockStmt* body,
-                                 bool zippered ) 
+                                 bool zippered)
 {
   checkControlFlow(body, "coforall statement");
 
@@ -1462,7 +1462,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-  ForLoop* followBody = new ForLoop(NULL, followIdx, followIter);
+  ForLoop* followBody = new ForLoop(followIdx, followIter, NULL);
 
   followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
 
@@ -1485,7 +1485,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail("'delete'(%S)", localOp);
   followBlock->insertAtTail("_freeIterator(%S)", followIter);
 
-  ForLoop* leadBody = new ForLoop(NULL, leadIdx, leadIter);
+  ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL);
 
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);

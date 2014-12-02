@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,7 @@
 *                                                                           *
 ************************************* | ************************************/
 
-BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body) 
+BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 {
   VarSymbol*   condVar       = newTemp();
   CallExpr*    condTest      = new CallExpr("_cond_test", cond);
@@ -48,9 +48,7 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
   body->insertAtTail(new DefExpr(continueLabel));
   body->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
 
-  loop = new DoWhileStmt(body);
-
-  loop->blockInfoSet(new CallExpr(PRIM_BLOCK_DOWHILE_LOOP, condVar));
+  loop = new DoWhileStmt(condVar, body);
 
   loop->continueLabel = continueLabel;
   loop->breakLabel    = breakLabel;
@@ -69,7 +67,8 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 *                                                                           *
 ************************************* | ************************************/
 
-DoWhileStmt::DoWhileStmt(BlockStmt* initBody) : WhileStmt(initBody)
+DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* initBody) :
+  WhileStmt(var, initBody)
 {
 
 }
@@ -79,21 +78,21 @@ DoWhileStmt::~DoWhileStmt()
 
 }
 
-DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal) 
+DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
 {
-  DoWhileStmt* retval = new DoWhileStmt(NULL);
+  DoWhileStmt* retval = new DoWhileStmt(NULL, NULL);
 
   retval->copyShare(*this, map, internal);
 
   return retval;
 }
 
-bool DoWhileStmt::isDoWhileLoop() const
+bool DoWhileStmt::isDoWhileStmt() const
 {
   return true;
 }
 
-GenRet DoWhileStmt::codegen() 
+GenRet DoWhileStmt::codegen()
 {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -103,8 +102,6 @@ GenRet DoWhileStmt::codegen()
 
   if (outfile)
   {
-    CallExpr* blockInfo = blockInfoGet();
-
     info->cStatements.push_back("do ");
 
     if (this != getFunction()->body)
@@ -112,12 +109,12 @@ GenRet DoWhileStmt::codegen()
 
     body.codegen("");
 
-    std::string ftr= "} while (" + codegenValue(blockInfo->get(1)).c + ");\n";
+    std::string ftr= "} while (" + codegenValue(condExprGet()).c + ");\n";
 
     info->cStatements.push_back(ftr);
-  } 
+  }
 
-  else 
+  else
   {
 #ifdef HAVE_LLVM
     llvm::Function*   func             = info->builder->GetInsertBlock()->getParent();
@@ -125,8 +122,6 @@ GenRet DoWhileStmt::codegen()
     llvm::BasicBlock* blockStmtBody    = NULL;
     llvm::BasicBlock* blockStmtEnd     = NULL;
     llvm::BasicBlock* blockStmtEndCond = NULL;
-
-    CallExpr*         blockInfo        = blockInfoGet();
 
     getFunction()->codegenUniqueNum++;
 
@@ -144,7 +139,7 @@ GenRet DoWhileStmt::codegen()
     body.codegen("");
 
     info->lvt->removeLayer();
-    
+
     // Add the condition block.
     blockStmtEndCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end_cond"));
 
@@ -156,7 +151,7 @@ GenRet DoWhileStmt::codegen()
     // set insert point
     info->builder->SetInsertPoint(blockStmtEndCond);
 
-    GenRet       condValueRet = codegenValue(blockInfo->get(1));
+    GenRet       condValueRet = codegenValue(condExprGet());
     llvm::Value* condValue    = condValueRet.val;
 
     if (condValue->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
@@ -183,16 +178,13 @@ GenRet DoWhileStmt::codegen()
   return ret;
 }
 
-void 
-DoWhileStmt::accept(AstVisitor* visitor) {
+void DoWhileStmt::accept(AstVisitor* visitor) {
   if (visitor->enterDoWhileStmt(this) == true) {
-    CallExpr* blockInfo = blockInfoGet();
-
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (blockInfo)
-      blockInfo->accept(visitor);
+    if (condExprGet() != 0)
+      condExprGet()->accept(visitor);
 
     if (modUses)
       modUses->accept(visitor);
@@ -202,4 +194,28 @@ DoWhileStmt::accept(AstVisitor* visitor) {
 
     visitor->exitDoWhileStmt(this);
   }
+}
+
+Expr* DoWhileStmt::getFirstExpr() {
+  Expr* retval = 0;
+
+  if (condExprGet() != 0)
+    retval = condExprGet()->getFirstExpr();
+
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* DoWhileStmt::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == condExprGet() && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  return retval;
 }

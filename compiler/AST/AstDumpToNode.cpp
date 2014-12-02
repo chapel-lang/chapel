@@ -179,7 +179,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<BlockStmt   %12d ", node->id);
+  sprintf(heading, "#<BlockStmt   %12d", node->id);
 
   write(false, heading, true);
 
@@ -200,13 +200,16 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
-    write(false, "extern ", true);
+    write(true, "extern", true);
 
   if (node->blockTag & BLOCK_SCOPELESS)
-    write(false, "scopeless ", true);
+    write(true, "scopeless", true);
 
   if (node->blockTag & BLOCK_TYPE_ONLY)
-    write(false, "type_only ", true);
+    write(true, "type_only", true);
+
+  if (node->blockTag & BLOCK_C_FOR_LOOP)
+    write(true, "C_FOR_LOOP", true);
 
   mOffset = mOffset + 2;
 
@@ -257,18 +260,18 @@ bool AstDumpToNode::enterWhileDoStmt(WhileDoStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<WhileDoStmt %12d ", node->id);
+  sprintf(heading, "#<WhileDoStmt %12d", node->id);
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->condExprGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "BlockInfo: ", false);
+    write(false, "CondExpr:", false);
     mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
+    node->condExprGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
@@ -279,8 +282,10 @@ bool AstDumpToNode::enterWhileDoStmt(WhileDoStmt* node)
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
     write(false, "extern ", true);
+
   if (node->blockTag & BLOCK_SCOPELESS)
     write(false, "scopeless ", true);
+
   if (node->blockTag & BLOCK_TYPE_ONLY)
     write(false, "type_only ", true);
 
@@ -333,18 +338,18 @@ bool AstDumpToNode::enterDoWhileStmt(DoWhileStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<DoWhileStmt %12d ", node->id);
+  sprintf(heading, "#<DoWhileStmt %12d", node->id);
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->condExprGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "BlockInfo: ", false);
+    write(false, "CondExpr:", false);
     mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
+    node->condExprGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
@@ -355,8 +360,10 @@ bool AstDumpToNode::enterDoWhileStmt(DoWhileStmt* node)
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
     write(false, "extern ", true);
+
   if (node->blockTag & BLOCK_SCOPELESS)
     write(false, "scopeless ", true);
+
   if (node->blockTag & BLOCK_TYPE_ONLY)
     write(false, "type_only ", true);
 
@@ -409,18 +416,18 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<CForLoop    %12d ", node->id);
+  sprintf(heading, "#<CForLoop    %12d", node->id);
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->cforInfoGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "BlockInfo: ", false);
+    write(false, "CForInfo:", false);
     mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
+    node->cforInfoGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
@@ -486,32 +493,44 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<ForLoop     %12d ", node->id);
+  sprintf(heading, "#<ForLoop     %12d", node->id);
 
   write(false, heading, true);
 
-  if (node->blockInfoGet())
+  if (node->indexGet() != 0 || node->iteratorGet() != 0)
   {
     mOffset = mOffset + 2;
-
     newline();
-    write(false, "BlockInfo: ", false);
-    mOffset = mOffset + 2;
-    node->blockInfoGet()->accept(this);
-    mOffset = mOffset - 2;
+
+    if (node->indexGet() != 0)
+    {
+      write(false, "Index:", false);
+      mOffset = mOffset + 2;
+      node->indexGet()->accept(this);
+      mOffset = mOffset - 2;
+    }
+
+    if (node->iteratorGet() != 0)
+    {
+      write(false, "Iterator:", false);
+      mOffset = mOffset + 2;
+      node->iteratorGet()->accept(this);
+      mOffset = mOffset - 2;
+    }
 
     mOffset = mOffset - 2;
-
     newline();
   }
 
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
-    write(false, "extern ", true);
+    write(false, "extern", true);
+
   if (node->blockTag & BLOCK_SCOPELESS)
-    write(false, "scopeless ", true);
+    write(false, "scopeless", true);
+
   if (node->blockTag & BLOCK_TYPE_ONLY)
-    write(false, "type_only ", true);
+    write(false, "type_only", true);
 
   mOffset = mOffset + 2;
 

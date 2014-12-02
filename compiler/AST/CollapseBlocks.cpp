@@ -113,7 +113,7 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
     expr->remove();
 
     // If the expr is a BlockStmt, collapse during the copy
-    if (stmt != 0 && stmt->blockInfoGet() == 0)
+    if (stmt != 0 && stmt->isLoop() == false && stmt->blockInfoGet() == 0)
     {
       for_alist(subItem, stmt->body)
       {
@@ -142,16 +142,13 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
 //
 bool CollapseBlocks::enterCForLoop(CForLoop* node)
 {
-  CallExpr* call = node->blockInfoGet();
+  CallExpr* call = node->cforInfoGet();
 
   // Handle the init/test/incr fields specially
-  if (call != 0 && call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
+  for_alist(cForExprs, call->argList)
   {
-    for_alist(cForExprs, call->argList)
-    {
-      if (BlockStmt* block = toBlockStmt(cForExprs))
-        enterBlockStmt(block);
-    }
+    if (BlockStmt* block = toBlockStmt(cForExprs))
+      enterBlockStmt(block);
   }
 
   // Now simply forward to handle the body
@@ -160,19 +157,6 @@ bool CollapseBlocks::enterCForLoop(CForLoop* node)
 
 bool CollapseBlocks::enterForLoop(ForLoop* node)
 {
-  CallExpr* call = node->blockInfoGet();
-
-  // Handle the init/test/incr fields specially
-  if (call != 0 && call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
-  {
-    for_alist(cForExprs, call->argList)
-    {
-      if (BlockStmt* block = toBlockStmt(cForExprs))
-        enterBlockStmt(block);
-    }
-  }
-
-  // Now simply forward to handle the body
   return enterBlockStmt(node);
 }
 

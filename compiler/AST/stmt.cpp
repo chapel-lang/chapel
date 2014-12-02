@@ -287,6 +287,31 @@ BlockStmt::canFlattenChapelStmt(const BlockStmt* stmt) const {
   return retval;
 }
 
+Expr*
+BlockStmt::getFirstExpr() {
+  Expr* retval = 0;
+
+  if (blockInfoGet() != 0)
+    retval = blockInfoGet()->getFirstExpr();
+
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr*
+BlockStmt::getNextExpr(Expr* expr) {
+  Expr* retval = 0;
+
+  if (expr == blockInfoGet() && body.head != 0)
+    retval = body.head->getFirstExpr();
+
+  return retval;
+}
 
 void
 BlockStmt::insertAtHead(Expr* ast) {
@@ -340,17 +365,17 @@ BlockStmt::isLoop() const {
 }
 
 bool
-BlockStmt::isWhileLoop() const {
+BlockStmt::isWhileStmt() const {
   return false;
 }
 
 bool
-BlockStmt::isWhileDoLoop() const {
+BlockStmt::isWhileDoStmt() const {
   return false;
 }
 
 bool
-BlockStmt::isDoWhileLoop() const {
+BlockStmt::isDoWhileStmt() const {
   return false;
 }
 
@@ -704,6 +729,24 @@ CondStmt::accept(AstVisitor* visitor) {
   }
 }
 
+Expr*
+CondStmt::getFirstExpr() {
+  return (condExpr != 0) ? condExpr->getFirstExpr() : this;
+}
+
+Expr*
+CondStmt::getNextExpr(Expr* expr) {
+  Expr* retval = NULL;
+
+  if (expr == condExpr && thenStmt != NULL)
+    retval = thenStmt->getFirstExpr();
+
+  else if (expr == thenStmt && elseStmt != NULL)
+    retval = elseStmt->getFirstExpr();
+
+  return retval;
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -911,6 +954,10 @@ void GotoStmt::accept(AstVisitor* visitor) {
   }
 }
 
+Expr* GotoStmt::getFirstExpr() {
+  return (label != 0) ? label->getFirstExpr() : this;
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -956,3 +1003,7 @@ void ExternBlockStmt::accept(AstVisitor* visitor) {
   visitor->visitEblockStmt(this);
 }
 
+Expr* ExternBlockStmt::getFirstExpr() {
+  INT_FATAL(this, "unexpected ExternBlockStmt in getFirstExpr");
+  return NULL;
+}

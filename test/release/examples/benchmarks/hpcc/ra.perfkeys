@@ -1,4 +1,7 @@
 # file: hpcc-ra.dat
 Execution time =
 Performance (GUPS) =
+Problem size =
+Total memory required (GB) =
+Bytes per array =
 verify: Validation: SUCCESS
