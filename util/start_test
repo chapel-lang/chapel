@@ -1486,7 +1486,12 @@ foreach test ($testlist)
 
             $sub_test "$compiler" |& $tee -a $logfile
             set errcode = $status
-            if ($errcode != 0) then
+            # $errcode of 173 is special sub_test error code that
+            # indicates sub_test failed and already reported an
+            # error.
+            #
+            # 173 = reduce(operator.add, map(ord, 'CHAPEL')) % 256
+            if ($errcode != 0 && $errcode != 173) then
                 echo "[Error running sub_test for $test]" |& $tee -a $logfile
             endif
             if ($progress == 1) then
@@ -1656,7 +1661,12 @@ foreach testType ($testTypes)
                     
                         $sub_test "$compiler" |& $tee -a $logfile
                         set errcode = $status
-                        if ($errcode != 0) then
+                        # $errcode of 173 is special sub_test error code that
+                        # indicates sub_test failed and already reported an
+                        # error.
+                        #
+                        # 173 = reduce(operator.add, map(ord, 'CHAPEL')) % 256
+                        if ($errcode != 0 && $errcode != 173) then
                             echo "[Error running sub_test in $dir ($errcode)]" |& $tee -a $logfile
                         endif
                     endif

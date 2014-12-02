@@ -120,6 +120,7 @@
 from __future__ import with_statement
 
 import sys, os, subprocess, string, signal
+import operator
 import select, fcntl
 import fnmatch, time
 import re
@@ -321,12 +322,13 @@ def ReadIntegerValue(f, localdir):
                 return string.atoi(l)
             else:
                 break
-    Fatal('Invalid integer value in '+f+' ('+localdir+')');
+    Fatal('Invalid integer value in '+f+' ('+localdir+')')
 
 # report an error message and exit
 def Fatal(message):
     sys.stdout.write('[Error (sub_test): '+message+']\n')
-    sys.exit(-1)
+    magic_exit_code = reduce(operator.add, map(ord, 'CHAPEL')) % 256
+    sys.exit(magic_exit_code)
 
 # Attempts to find an appropriate timer to use. The timer must be in
 # util/test/timers/. Expects to be passed a file containing only the name of
