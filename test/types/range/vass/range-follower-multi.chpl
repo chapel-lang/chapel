@@ -6,11 +6,7 @@ var no_pfx = false;
 // to preserve coarse ordering ("phases") when sorting the output
 proc nextphase() {
   phase += 1;
-  if no_pfx then pfx = "";
-  else {
-    var fmt_p = format("####", phase);
-    pfx = fmt_p + "  ";
-  }
+  pfx = if no_pfx then "" else format("####", phase) + "  ";
 }
 
 // Force the next phase to be 'ph' - so that when phases are added earlier,

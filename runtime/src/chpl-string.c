@@ -211,12 +211,10 @@ c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
       strlen(dest) == 0)
     ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
   else
-  {
     // reuse the buffer
     // The cast is necessary so we can write into the buffer (which is declared
     // to be const).
     ret = (char *) dest;
-  }
 
   snprintf(ret, len+1, "%s", src);
   return (c_string) ret;

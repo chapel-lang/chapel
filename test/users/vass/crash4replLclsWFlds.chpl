@@ -1411,8 +1411,7 @@ var phase = 0;
 // to preserve coarse ordering ("phases") when sorting the output
 proc nextphase() {
   phase += 1;
-  var fmt_p = format("####", phase);
-  pfx = fmt_p + "  ";
+  pfx = format("####", phase) + "  ";
   traceDimensionalDistPrefix = pfx;
 }
 
