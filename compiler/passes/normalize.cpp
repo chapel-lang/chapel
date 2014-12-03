@@ -597,11 +597,15 @@ static void normalize_returns(FnSymbol* fn) {
     // and set the specified_return_type flag.
     if (fn->retExprType && fn->retTag != RET_REF) {
       BlockStmt* retExprType = fn->retExprType->copy();
+
+      // This check is a wart.  It should be moved into a separate check pass
+      // or something.
       if (isIterator)
         if (SymExpr* lastRTE = toSymExpr(retExprType->body.tail))
           if (TypeSymbol* retSym = toTypeSymbol(lastRTE->var))
             if (retSym->type == dtVoid)
               USR_FATAL_CONT(fn, "an iterator's return type cannot be 'void'; if specified, it must be the type of the expressions the iterator yields");
+
       fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
 // I recommend a rework of function representation in the AST.
 // Because we strip type information off of variable declarations and use 
@@ -619,22 +623,8 @@ static void normalize_returns(FnSymbol* fn) {
         fn->retTag = RET_REF;
       else
       {
-        CallExpr* initExpr;
-        // In most cases, we do not need to default initialize the return temps,
-        // as they will be assigned to before they are returned.  We cannot
-        // check against the specific types that do not allow the use of noinit
-        // here (that happens in function resolution), but we do know whether
-        // the function expects a param or type variable as its result and these
-        // cases would become confused if noinit was used with them (since
-        // noinit is not allowed on param or type variables).  So default
-        // initialize in those cases but in all others insert noinit and trust
-        // it will be handled correctly for types that do not allow it.
-        if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE) {
-          initExpr = new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
-        } else {
-          initExpr = new CallExpr(PRIM_NO_INIT,
-                                  retExprType->body.tail->remove());
-        }
+        // We need default initialization if the return type is specified.
+        CallExpr* initExpr = new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
         fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
       }
     }

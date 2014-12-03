@@ -46,7 +46,8 @@ static void cullAutoDestroyFlags()
       // autoCopy is typically defined in terms of initCopy, this would lead to
       // infinite recursion.  That is, the return value of initCopy must be
       // handled specially.
-      if (fn->hasFlag(FLAG_INIT_COPY_FN))
+      if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
+          fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 
       // This is just a workaround for memory management being handled specially

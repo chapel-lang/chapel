@@ -2,16 +2,18 @@ type inferred
 -------------
 in baz()
 in Zed(1)
-in =(Zed, Zed)
+in chpl__initCopy((x = {y = 1}):Zed)
 in ~Zed({y = 1})
-(x = {y = 2})
-in ~Zed({y = 2})
+(x = {y = 1})
+in ~Zed({y = 1})
 
 type specified
 --------------
+in chpl__initCopy((x = nil):Zed)
 in gob()
 in Zed(1)
 in =(Zed, Zed)
+in chpl__initCopy((x = {y = 2}):Zed)
 in ~Zed({y = 1})
 (x = {y = 2})
 in ~Zed({y = 2})
