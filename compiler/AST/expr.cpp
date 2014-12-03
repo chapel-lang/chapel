@@ -199,7 +199,7 @@ Expr* Expr::getStmtExpr() {
 }
 
 Expr* Expr::getNextExpr(Expr* expr) {
-  return NULL;
+  return this;
 }
 
 void Expr::verify() {
@@ -3487,7 +3487,7 @@ Expr* CallExpr::getFirstExpr() {
 }
 
 Expr* CallExpr::getNextExpr(Expr* expr) {
-  Expr* retval = NULL;
+  Expr* retval = this;
 
   if (expr == baseExpr && argList.head != NULL)
     retval = argList.head->getFirstExpr();
@@ -5878,14 +5878,9 @@ Expr* getNextExpr(Expr* expr) {
   if (expr->next) {
     retval = expr->next->getFirstExpr();
 
-  } else if (expr->parentExpr == NULL) {
-    retval = NULL;
+  } else if (Expr* parent = expr->parentExpr) {
+    retval = parent->getNextExpr(expr);
 
-  } else {
-    retval = expr->parentExpr->getNextExpr(expr);
-
-    if (retval == NULL)
-      retval = expr->parentExpr;
   }
 
   return retval;

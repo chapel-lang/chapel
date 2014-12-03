@@ -544,7 +544,7 @@ Expr* CForLoop::getFirstExpr() {
 }
 
 Expr* CForLoop::getNextExpr(Expr* expr) {
-  Expr* retval = NULL;
+  Expr* retval = this;
 
   if (expr == BlockStmt::blockInfoGet() && body.head != NULL)
     retval = body.head->getFirstExpr();
