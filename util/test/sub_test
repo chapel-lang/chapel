@@ -1336,8 +1336,16 @@ for testname in testsrc:
         if len(clist)!=0:
             if len(clist[0].split('#')) > 1:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
+        redirectin_set_in_loop = False
+        redirectin_original_value = redirectin
         for texecopts in execoptslist:
             sys.stdout.flush()
+
+            # Reset redirectin, in case execopts has multiple lines with
+            # different stdin files.
+            if redirectin_set_in_loop:
+                redirectin = redirectin_original_value
+                redirectin_set_in_loop = False
 
             if (len(compoptslist)==1) and (len(execoptslist)==1):
                 onlyone = True
@@ -1422,6 +1430,7 @@ for testname in testsrc:
               if redirectin == None or redirectin == "/dev/null":
                 if os.access(execOptRedirect, os.R_OK):
                   redirectin = execOptRedirect
+                  redirectin_set_in_loop = True
                 else:
                   sys.stdout.write('[Error: redirection file %s does not exist]\n'%(execOptRedirect))
                   break
