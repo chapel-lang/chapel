@@ -1393,6 +1393,8 @@ for testname in testsrc:
                 cmd=timer
                 args+=['./'+execname]
             elif launchcmd:
+                launchcmd_exec_time_file = 'chpl_launchcmd_exec_time.txt'
+                os.environ['CHPL_LAUNCHCMD_EXEC_TIME_FILE'] = launchcmd_exec_time_file
                 launch_cmd_list = shlex.split(launchcmd)
                 cmd = launch_cmd_list[0]
                 args += launch_cmd_list[1:]
@@ -1523,6 +1525,18 @@ for testname in testsrc:
                     compExecStr += 'execopts: {0}'.format(execoptsnum)
                 if compExecStr:
                     test_name += ' ({0})'.format(compExecStr.strip())
+               
+                if os.path.exists(launchcmd_exec_time_file):
+                    with open(launchcmd_exec_time_file, 'r') as fp:
+                        try:
+                            launchcmd_exec_time = float(fp.read())
+                            print('[launchcmd reports elapsed execution time '
+                                'for "{0}" - {1:.3f} seconds]'
+                                .format(test_name, launchcmd_exec_time))
+                        except ValueError:
+                            print('Could not parse launchcmd time file '
+                                '{0}'.format(launchcmd_exec_time_file))
+                    os.unlink(launchcmd_exec_time_file)
 
                 print('[Elapsed execution time for "{0}" - {1:.3f} '
                     'seconds]'.format(test_name, elapsedExecTime))

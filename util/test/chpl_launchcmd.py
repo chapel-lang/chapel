@@ -194,30 +194,51 @@ class AbstractJob(object):
             #
             #       (thomasvandoren, 2014-04-09)
 
-            def is_done(job_id, output_file):
-                """Returns True when one of two events occur:
+            def job_status(job_id, output_file):
+                """Returns the status of the job specified by job_id
 
-                 1) status(job_id) returns 'C' indicating the job is complete.
+                 The status is determined by calling status(job_id). If that
+                 call is successful the result is returned. The exact code
+                 returned is up to status(job_id) but it must support 'C' for
+                 complete, 'Q' for queued/waiting to run, and 'R' for running 
 
-                 2) status(job_id) raises a ValueError, which can indicate that the
-                    job has completed *and* been dequeued, AND the output file
-                    exists. If the output file exists and the job has been
-                    dequeued, it is safe to assume it completed.
+                 status(job_id) can raise a ValueError, which can indicate that
+                 the job has completed *and* been dequeued. If the output file
+                 exists and the job has been dequeued, it is safe to assume it
+                 completed. Otherwise we raise the error
                 """
                 try:
                     job_status = self.status(job_id)
-                    return job_status == 'C'
+                    return job_status
                 except ValueError as ex:
                     # ValueError may indicate that the job completed and was
                     # dequeued before we last checked the status. If the output
                     # file exists, assume success. Otherwise re raise error
                     # message.
                     if os.path.exists(output_file):
-                        return True
+                        return 'C'
                     raise
 
-            while not is_done(job_id, output_file):
-                time.sleep(1.0)
+            exec_start_time = time.time()
+            alreadyRunning = False
+            status = job_status(job_id, output_file)
+            while status != 'C':
+                if not alreadyRunning and status == 'R':
+                    alreadyRunning = True
+                    exec_start_time = time.time()
+                status = job_status(job_id, output_file)
+                time.sleep(.5)
+
+            exec_time = time.time() - exec_start_time
+            # Note that this time isn't very accurate as we don't get the exact
+            # start or end time, however this does give a better estimate than
+            # timing the whole binary for cases where the time in the queue is
+            # large. It tends to be a second or two larger than real exec time
+            exec_time_file = os.environ.get('CHPL_LAUNCHCMD_EXEC_TIME_FILE')
+            if exec_time_file != None:
+                with open(exec_time_file, 'w') as fp:
+                    fp.write('{0:3f}'.format(exec_time))
+
             logging.debug('{0} reports job {1} as complete.'.format(
                 self.status_bin, job_id))
 
@@ -412,10 +433,10 @@ class AbstractJob(object):
         method. It is the responsibility of the sub class.
 
         :type job_id: str
-        :arg job_id: pbs job id
+        :arg job_id: job id
 
         :rtype: str
-        :returns: qsub job status
+        :returns: job status
         """
         raise NotImplementedError('status class method is implemented by sub classes.')
 
@@ -735,10 +756,10 @@ class SlurmJob(AbstractJob):
         """Query job status using squeue.
 
         :type job_id: str
-        :arg job_id: pbs job id
+        :arg job_id: squeue job id
 
         :rtype: str
-        :returns: qsub job status
+        :returns: squeue job status
         """
         squeue_command = [
             'squeue',
@@ -769,6 +790,8 @@ class SlurmJob(AbstractJob):
         failure_statuses = ['CANCELLED', 'FAILED', 'TIMEOUT',
                             'BOOT_FAIL', 'NODE_FAIL', 'PREEMPTED']
 
+        queued_statuses = ['CONFIGURING', 'PENDING']
+
         status_parts = stdout.split(' ')
         if len(status_parts) == 2:
             status = status_parts[1].strip()
@@ -780,6 +803,8 @@ class SlurmJob(AbstractJob):
             elif status in failure_statuses:
                 logging.info('Job finished with status: {0}'.format(status))
                 return 'C'
+            elif status in queued_statuses:
+                return 'Q'
             else:
                 return 'R'  # running
         else:
