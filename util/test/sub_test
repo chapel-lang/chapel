@@ -1525,8 +1525,8 @@ for testname in testsrc:
                     compExecStr += 'execopts: {0}'.format(execoptsnum)
                 if compExecStr:
                     test_name += ' ({0})'.format(compExecStr.strip())
-               
-                if os.path.exists(launchcmd_exec_time_file):
+
+                if launchcmd and os.path.exists(launchcmd_exec_time_file):
                     with open(launchcmd_exec_time_file, 'r') as fp:
                         try:
                             launchcmd_exec_time = float(fp.read())
