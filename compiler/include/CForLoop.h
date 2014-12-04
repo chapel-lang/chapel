@@ -41,7 +41,6 @@ public:
   // Instance Interface
   //
 public:
-                         CForLoop(BlockStmt* initBody, VarSymbol* index, VarSymbol* iterator);
   virtual               ~CForLoop();
 
   virtual CForLoop*      copy(SymbolMap* map = NULL, bool internal = false);
@@ -64,7 +63,6 @@ public:
 
   // NOAKES 2014/11/26 Transitional
   CallExpr*              cforInfoGet()                                const;
-  CallExpr*              cforInfoSet(CallExpr* expr);
 
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);
@@ -72,8 +70,7 @@ public:
 private:
                          CForLoop();
 
-                         CForLoop(CallExpr*  cforInfo,
-                                  BlockStmt* body);
+                         CForLoop(BlockStmt* body);
 
   std::string            codegenCForLoopHeader   (BlockStmt* block);
   GenRet                 codegenCForLoopCondition(BlockStmt* block);
