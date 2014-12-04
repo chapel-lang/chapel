@@ -3478,7 +3478,7 @@ Expr* CallExpr::getFirstExpr() {
     retval = baseExpr->getFirstExpr();
 
   else if (argList.head != NULL)
-    retval = argList.head;
+    retval = argList.head->getFirstExpr();
 
   else
     retval = this;
