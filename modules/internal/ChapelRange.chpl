@@ -1036,9 +1036,7 @@ module ChapelRange {
       }
 
     } else {
-      for i in (start..end by stride).generalIterator() {
-        yield i;
-      }
+      for i in (start..end by stride).generalIterator() do yield i;
     }
   }
 
@@ -1074,9 +1072,7 @@ module ChapelRange {
         }
       }
     } else {
-      for i in (start..end by stride).generalIterator() {
-        yield i;
-      }
+      for i in (start..end by stride).generalIterator() do yield i;
     }
   }
 
@@ -1112,9 +1108,7 @@ module ChapelRange {
         }
       }
     } else {
-      for i in (start..end by stride).generalIterator() {
-        yield i;
-      }
+      for i in (start..end by stride).generalIterator() do yield i;
     }
   }
 
@@ -1123,39 +1117,27 @@ module ChapelRange {
 
   // cases for when stride is an int
 
-  iter _direct_range_iter(start: int(?w), end: int(w), stride: int(w))
-  {
+  iter _direct_range_iter(start: int(?w), end: int(w), stride: int(w)) {
     // don't want to deal with finding chpl__diffMod and the likes, just create
     // a non-anonymous range to iterate over
-    var r = start..end by stride;
-    for i in r {
-      yield i;
-    }
+    const r = start..end by stride;
+    for i in r do yield i;
   }
 
-  iter _direct_range_iter(start: uint(?w), end: uint(w), stride: int(w))
-  {
-    var r = start..end by stride;
-    for i in r {
-      yield i;
-    }
+  iter _direct_range_iter(start: uint(?w), end: uint(w), stride: int(w)) {
+    const r = start..end by stride;
+    for i in r do yield i;
   }
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride)
 
-  iter _direct_range_iter(start: int(?w), end: int(w), param stride : int(w))
-  {
-    for i in _direct_param_stride_range_iter(start, end, stride) {
-      yield i;
-    }
+  iter _direct_range_iter(start: int(?w), end: int(w), param stride : int(w)) {
+    for i in _direct_param_stride_range_iter(start, end, stride) do yield i;
   }
 
-  iter _direct_range_iter(start: uint(?w), end: uint(w), param stride: int(w))
-  {
-    for i in _direct_param_stride_range_iter(start, end, stride) {
-      yield i;
-    }
+  iter _direct_range_iter(start: uint(?w), end: uint(w), param stride: int(w)) {
+    for i in _direct_param_stride_range_iter(start, end, stride) do yield i;
   }
 
 
@@ -1166,55 +1148,44 @@ module ChapelRange {
   // unlikely a user will write a for loop over such an anonymous range
 
   iter _direct_range_iter(param start: int(?w), param end: int(w), param stride: int(w)) {
-    for i in _direct_all_param_range_iter(start, end, stride) {
-      yield i;
-    }
+    for i in _direct_all_param_range_iter(start, end, stride) do yield i;
   }
 
 
   // cases for when stride is a uint (we know the stride is positive)
 
-  iter _direct_range_iter(start: int(?w), end: int(w), stride: uint(w))
-  {
-    for i in _direct_uint_stride_range_iter(start, end, stride) {
-      yield i;
-    }
+  iter _direct_range_iter(start: int(?w), end: int(w), stride: uint(w)) {
+    for i in _direct_uint_stride_range_iter(start, end, stride) do yield i;
   }
 
 
-  iter _direct_range_iter(start: uint(?w), end: uint(w), stride: uint(w))
-  {
-    for i in _direct_uint_stride_range_iter(start, end, stride) {
-      yield i;
-    }
+  iter _direct_range_iter(start: uint(?w), end: uint(w), stride: uint(w)) {
+    for i in _direct_uint_stride_range_iter(start, end, stride) do yield i;
   }
 
 
   // cases for when stride isn't allowed
 
-  iter _direct_range_iter(start: int(?w), end: int(w), stride)
-  {
+  iter _direct_range_iter(start: int(?w), end: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   typeToString(int(w)), " using a step of type ",
                   typeToString(stride.type));
-    yield nil;
+    yield nil; // iters needs a yield in them
   }
 
-  iter _direct_range_iter(start: uint(?w), end: uint(w), stride)
-  {
+  iter _direct_range_iter(start: uint(?w), end: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   typeToString(uint(w)), " using a step of type ",
                   typeToString(stride.type));
-    yield nil;
+    yield nil; // iters needs a yield in them
   }
 
 
   // case for when low and high aren't compatible types and can't be coerced
 
-  iter _direct_range_iter(start, end, stride)
-  {
+  iter _direct_range_iter(start, end, stride) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
-    yield nil;
+    yield nil; // iters needs a yield in them
   }
 
   //################################################################################
@@ -1270,9 +1241,7 @@ module ChapelRange {
         yield i;
       }
     } else {
-      for i in this.generalIterator() {
-        yield i;
-      }
+      for i in this.generalIterator() do yield i;
     }
   }
 
@@ -1296,9 +1265,7 @@ module ChapelRange {
         yield i;
       }
     } else {
-      for i in this.generalIterator() {
-        yield i;
-      }
+      for i in this.generalIterator() yield i;
     }
   }
 
