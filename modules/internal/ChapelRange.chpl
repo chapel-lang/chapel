@@ -954,35 +954,37 @@ module ChapelRange {
     return r;
   }
 
+
   // This function checks if a bounded iterator will overflow. This is basic
   // signed/unsigned overflow checking for the last index + stride. Either
   // returns whether overflow will occur or not, or halts with an error
   // message.
-  proc range.checkIfIterWillOverflow(shouldHalt=true) {
+  proc checkIfRangeIterWillOverflow(type idxType, low, high, stride, first=low,
+      last=high, shouldHalt=true) {
     // iterator won't execute at all so it can't overflow
-    if (this.low > this.high) {
+    if (low > high) {
       return false;
     }
 
     var willOverFlow = false;
     if (isIntType(idxType)) {
-      if (this.last > 0 && stride > 0) {
-        if (stride > (max(idxType) - this.last)) {
+      if (last > 0 && stride > 0) {
+        if (stride > (max(idxType) - last)) {
           willOverFlow = true;
         }
-      } else if (this.last < 0 && stride < 0) {
-        if (stride < (min(idxType) - this.last)) {
+      } else if (last < 0 && stride < 0) {
+        if (stride < (min(idxType) - last)) {
           willOverFlow = true;
         }
       }
     }
     else if (isUintType(idxType)) {
       if (stride > 0) {
-          if (this.last + stride:idxType < this.last) {
+          if (last + stride:idxType < last) {
             willOverFlow = true;
           }
         } else if (stride < 0) {
-          if (this.last + stride:idxType > this.last) {
+          if (last + stride:idxType > last) {
             willOverFlow = true;
           }
         }
@@ -998,6 +1000,10 @@ module ChapelRange {
     return willOverFlow;
   }
 
+  proc range.checkIfIterWillOverflow(shouldHalt=true) {
+    return checkIfRangeIterWillOverflow(this.idxType, this.low, this.high,
+        this.stride, this.first, this.last, shouldHalt);
+  }
 
 
   //################################################################################
@@ -1016,8 +1022,7 @@ module ChapelRange {
     where isIntegral(t) && chpl__unsignedType(t) == strT {
     if (useOptimizedRangeIterators) {
       if boundsChecking {
-        var r = start..end by stride;
-        r.checkIfIterWillOverflow();
+        checkIfRangeIterWillOverflow(t, start, end, stride);
       }
       var i: t;
       while __primitive("C for loop",
@@ -1036,15 +1041,12 @@ module ChapelRange {
 
   iter _direct_param_stride_range_iter(const start: ?t, const end: t, param stride: ?strT)
     where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
-
     if (useOptimizedRangeIterators) {
-      if boundsChecking {
-        var r = start..end by stride;
-        r.checkIfIterWillOverflow();
-      }
-
       var i: t;
       if (stride > 0) {
+        if boundsChecking then
+          checkIfRangeIterWillOverflow(t, start, end, stride);
+
         while __primitive("C for loop",
                           __primitive( "=", i, start),
                           __primitive("<=", i, end),
@@ -1052,6 +1054,9 @@ module ChapelRange {
           yield i;
         }
       } else if (stride < 0) {
+        if boundsChecking then
+          checkIfRangeIterWillOverflow(t, start, end, stride, end, start);
+
         while __primitive("C for loop",
                           __primitive( "=", i, end),
                           __primitive(">=", i, start),
@@ -1071,13 +1076,11 @@ module ChapelRange {
   iter _direct_all_param_range_iter(param start: ?t, param end: t, param stride: ?strT)
     where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
     if (useOptimizedRangeIterators) {
-      if boundsChecking {
-        var r = start..end by stride;
-        r.checkIfIterWillOverflow();
-      }
-
       var i: t;
       if (stride > 0) {
+        if boundsChecking then
+          checkIfRangeIterWillOverflow(t, start, end, stride);
+
         while __primitive("C for loop",
                           __primitive( "=", i, start),
                           __primitive("<=", i, end),
@@ -1085,6 +1088,9 @@ module ChapelRange {
           yield i;
         }
       } else if (stride < 0) {
+        if boundsChecking then
+          checkIfRangeIterWillOverflow(t, start, end, stride, end, start);
+
         while __primitive("C for loop",
                           __primitive( "=", i, end),
                           __primitive(">=", i, start),
