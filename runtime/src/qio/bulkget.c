@@ -72,7 +72,7 @@ qioerr bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
   j = 0;
   for( i = 0; i < iovcnt; i++ ) {
     if( j + iov[i].iov_len > dst_len ) goto error_nospace;
-    //memcpy(PTR_ADDBYTES(ptr, j), iov[i].iov_base, iov[i].iov_len);
+    //chpl_memcpy(PTR_ADDBYTES(ptr, j), iov[i].iov_base, iov[i].iov_len);
 
     // TODO -- note -- technically, this should be gasnet_put_bulk,
     // since we don't want to require src/dst to have a particular alignment.

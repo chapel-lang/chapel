@@ -23,7 +23,7 @@
 
 // Marker for variables listed in the 'ref' clause and so not to be converted.
 // (Used instead of deleting SymbolMap elements, which does not work well.)
-static Symbol* markPruned;
+Symbol* markPruned;
 
 // Is 'sym' an index var in the coforall loop
 // for which the 'fn' was created?
@@ -111,8 +111,7 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
 }
 
 // Mark the variables listed in 'ref' clauses, if any, with 'markPruned'.
-static void
-pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
+void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
   if (!byrefVars) return;
   for_actuals(actual, byrefVars) {
     SymExpr* se = toSymExpr(actual);
@@ -130,12 +129,26 @@ pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
 // we want any updates to it in a task construct to be visible outside.
 // That includes the implicit 'this' in the constructor - see
 // the commit message for r21602. So we exclude those from consideration.
-static void
-pruneThisArg(Symbol* parent, SymbolMap* uses) {
+// While there, we prune other things for forall intents.
+void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore) {
   form_Map(SymbolMapElem, e, *uses) {
     if (Symbol* sym = e->key) {
       if (e->value != markPruned) {
-        if (sym->hasFlag(FLAG_ARG_THIS)) {
+        if (sym->hasFlag(FLAG_ARG_THIS) ||
+            // If we do not prune MT, _toLeader(..., _mt...) does not get
+            // resolved. E.g. parallel/taskPar/figueroa/taskParallel.chpl
+            (pruneMore && (
+              sym->type == dtMethodToken ||
+              // Prune sync vars, which would be passed by reference anyway.
+              // TODO: We shouldn't need to do this. Currently we need it
+              // because sync variables do not get tupled/detupled properly
+              // when threading through the leader iterator for forall intents.
+              // See e.g. test/distributions/dm/s7.chpl
+              isSyncType(sym->type)      ||
+              // ... and some other things while we are at it. Less AST.
+              isAtomicType(sym->type)    ||
+              sym->type->symbol->hasFlag(FLAG_ARRAY))))
+        {
           e->value = markPruned;
         }
       }
@@ -154,7 +167,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           if (symArg->hasFlag(FLAG_MARKED_GENERIC))
             arg->addFlag(FLAG_MARKED_GENERIC);
         fn->insertFormalAtTail(new DefExpr(arg));
-        vars->put(sym, arg);
+        vars->put(sym, arg); // todo: instead e->value = arg; ?? see also in implementForallIntents
       }
     }
   }
@@ -166,6 +179,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   Vec<BaseAST*> asts;
   collect_asts(fn->body, asts);
   form_Map(SymbolMapElem, e, *vars) {
+    INT_ASSERT(e->key); // todo: if this succeeds, remove such 'if' throughout
     if (Symbol* sym = e->key) {
       if (e->value != markPruned) {
         SET_LINENO(sym);
@@ -273,6 +287,7 @@ void createTaskFunctions(void) {
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
+    bool hasTaskIntentClause = false;  // this 'block' has task intent clause ?
     // Loops are not a parallel block construct
     if (block->isLoop() == true) {
 
@@ -414,6 +429,7 @@ void createTaskFunctions(void) {
         fn->retType = dtVoid;
 
         if (needsCapture(fn)) {
+          hasTaskIntentClause = true;
           // Convert referenced variables to explicit arguments.
           // Note: this collects only the variables, including globals,
           // that are referenced directly within in the task-parallel block.
@@ -425,7 +441,7 @@ void createTaskFunctions(void) {
           pruneOuterVars(uses, block->byrefVars);
           block->byrefVars->remove();
 
-          pruneThisArg(call->parentSymbol, uses);
+          pruneThisArg(call->parentSymbol, uses, false);
 
           // Cf. flattenNestedFunctions - here we don't (seem to) need:
           // (a) the 'while (change)' loop - as we are not flattenning 'fn';
@@ -442,7 +458,10 @@ void createTaskFunctions(void) {
 
     // 'byrefVars' should have been eliminated for those blocks where it is
     // syntactically allowed, and should be always empty for anything else.
-    INT_ASSERT(!block->byrefVars);
+    // Except where it marks a forall loop body.
+    INT_ASSERT(!block->byrefVars ||
+               (!hasTaskIntentClause &&
+                block->byrefVars->isPrimitive(PRIM_FORALL_LOOP)));
 
   } // for block
 

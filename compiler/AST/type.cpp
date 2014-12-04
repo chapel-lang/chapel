@@ -613,11 +613,13 @@ const char* AggregateType::classStructName(bool standalone) {
       if (symbol->hasFlag(FLAG_EXTERN)) {
         return astr("_", basename);
       } else {
+        // keep in sync with maxCNameAddedChars
         return astr(CLASS_STRUCT_PREFIX, basename, "_object");
       }
     } else
       return basename;
   } else {
+    // keep in sync with maxCNameAddedChars
     return astr(CLASS_STRUCT_PREFIX, symbol->cname, "_s");
   }
 }
@@ -699,7 +701,7 @@ void AggregateType::codegenDef() {
     }
   } else {
     if( outfile ) {
-      if( symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS) &&
+      if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
           (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
@@ -817,7 +819,7 @@ void AggregateType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       
-      if( symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS) &&
+      if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
           (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a

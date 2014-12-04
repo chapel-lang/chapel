@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,15 +28,20 @@
 #include "symbol.h"
 #include "type.h"
 
-void AstDumpToNode::view(const char* passName, int passNum) 
+#include "WhileDoStmt.h"
+#include "DoWhileStmt.h"
+#include "CForLoop.h"
+#include "ForLoop.h"
+
+void AstDumpToNode::view(const char* passName, int passNum)
 {
-  forv_Vec(ModuleSymbol, module, allModules) 
+  forv_Vec(ModuleSymbol, module, allModules)
   {
-    if (log_module[0] == '\0' || strcmp(log_module, module->name) == 0) 
+    if (log_module[0] == '\0' || strcmp(log_module, module->name) == 0)
     {
       AstDumpToNode logger;
 
-      if (logger.open(module, passName, passNum) == true) 
+      if (logger.open(module, passName, passNum) == true)
       {
         module->accept(&logger);
         logger.close();
@@ -66,7 +71,7 @@ AstDumpToNode::AstDumpToNode()
 
   mModule    = 0;
 }
- 
+
 AstDumpToNode::~AstDumpToNode()
 {
   if (mPath != 0 && mFP != 0)
@@ -131,7 +136,7 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
 
     retval = false;
 
-  } 
+  }
   else
   {
     fprintf(mFP, "#<ModuleSymbol %s", node->name);
@@ -174,7 +179,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     if (node == fn->where)
       write(false, "where ", false);
 
-  sprintf(heading, "#<BlockStmt   %12d ", node->id);
+  sprintf(heading, "#<BlockStmt   %12d", node->id);
 
   write(false, heading, true);
 
@@ -186,6 +191,243 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     write(false, "BlockInfo: ", false);
     mOffset = mOffset + 2;
     node->blockInfoGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(true, "extern", true);
+
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(true, "scopeless", true);
+
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(true, "type_only", true);
+
+  if (node->blockTag & BLOCK_C_FOR_LOOP)
+    write(true, "C_FOR_LOOP", true);
+
+  mOffset = mOffset + 2;
+
+  for_alist(next_ast, node->body)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      fprintf(mFP, "\n");
+
+    next_ast->accept(this);
+  }
+
+  if (node->modUses)
+  {
+    newline();
+    write(false, "ModUses: ", false);
+    node->modUses->accept(this);
+  }
+
+  if (node->byrefVars)
+  {
+    newline();
+    write(false, "ByRefVars: ", false);
+    node->byrefVars->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+
+  newline();
+  write(false, ">", true);
+
+  return false;
+}
+
+//
+//
+//
+
+bool AstDumpToNode::enterWhileDoStmt(WhileDoStmt* node)
+{
+  char heading[128] = { '\0' };
+  bool firstTime    = true;
+
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  sprintf(heading, "#<WhileDoStmt %12d", node->id);
+
+  write(false, heading, true);
+
+  if (node->condExprGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "CondExpr:", false);
+    mOffset = mOffset + 2;
+    node->condExprGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(false, "extern ", true);
+
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(false, "scopeless ", true);
+
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(false, "type_only ", true);
+
+  mOffset = mOffset + 2;
+
+  for_alist(next_ast, node->body)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      fprintf(mFP, "\n");
+
+    next_ast->accept(this);
+  }
+
+  if (node->modUses)
+  {
+    newline();
+    write(false, "ModUses: ", false);
+    node->modUses->accept(this);
+  }
+
+  if (node->byrefVars)
+  {
+    newline();
+    write(false, "ByRefVars: ", false);
+    node->byrefVars->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+
+  newline();
+  write(false, ">", true);
+
+  return false;
+}
+
+//
+//
+//
+
+bool AstDumpToNode::enterDoWhileStmt(DoWhileStmt* node)
+{
+  char heading[128] = { '\0' };
+  bool firstTime    = true;
+
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  sprintf(heading, "#<DoWhileStmt %12d", node->id);
+
+  write(false, heading, true);
+
+  if (node->condExprGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "CondExpr:", false);
+    mOffset = mOffset + 2;
+    node->condExprGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(false, "extern ", true);
+
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(false, "scopeless ", true);
+
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(false, "type_only ", true);
+
+  mOffset = mOffset + 2;
+
+  for_alist(next_ast, node->body)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      fprintf(mFP, "\n");
+
+    next_ast->accept(this);
+  }
+
+  if (node->modUses)
+  {
+    newline();
+    write(false, "ModUses: ", false);
+    node->modUses->accept(this);
+  }
+
+  if (node->byrefVars)
+  {
+    newline();
+    write(false, "ByRefVars: ", false);
+    node->byrefVars->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+
+  newline();
+  write(false, ">", true);
+
+  return false;
+}
+
+//
+//
+//
+
+bool AstDumpToNode::enterCForLoop(CForLoop* node)
+{
+  char heading[128] = { '\0' };
+  bool firstTime    = true;
+
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  sprintf(heading, "#<CForLoop    %12d", node->id);
+
+  write(false, heading, true);
+
+  if (node->cforInfoGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "CForInfo:", false);
+    mOffset = mOffset + 2;
+    node->cforInfoGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
@@ -235,6 +477,96 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
   return false;
 }
 
+
+//
+//
+//
+
+bool AstDumpToNode::enterForLoop(ForLoop* node)
+{
+  char heading[128] = { '\0' };
+  bool firstTime    = true;
+
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  sprintf(heading, "#<ForLoop     %12d", node->id);
+
+  write(false, heading, true);
+
+  if (node->indexGet() != 0 || node->iteratorGet() != 0)
+  {
+    mOffset = mOffset + 2;
+    newline();
+
+    if (node->indexGet() != 0)
+    {
+      write(false, "Index:", false);
+      mOffset = mOffset + 2;
+      node->indexGet()->accept(this);
+      mOffset = mOffset - 2;
+    }
+
+    if (node->iteratorGet() != 0)
+    {
+      write(false, "Iterator:", false);
+      mOffset = mOffset + 2;
+      node->iteratorGet()->accept(this);
+      mOffset = mOffset - 2;
+    }
+
+    mOffset = mOffset - 2;
+    newline();
+  }
+
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(false, "extern", true);
+
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(false, "scopeless", true);
+
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(false, "type_only", true);
+
+  mOffset = mOffset + 2;
+
+  for_alist(next_ast, node->body)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      fprintf(mFP, "\n");
+
+    next_ast->accept(this);
+  }
+
+  if (node->modUses)
+  {
+    newline();
+    write(false, "ModUses: ", false);
+    node->modUses->accept(this);
+  }
+
+  if (node->byrefVars)
+  {
+    newline();
+    write(false, "ByRefVars: ", false);
+    node->byrefVars->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+
+  newline();
+  write(false, ">", true);
+
+  return false;
+}
+
+
 //
 //
 //
@@ -249,7 +581,7 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
   if (false)
   {
 
-  } 
+  }
 
   else if (node->sym == 0)
   {
@@ -259,29 +591,29 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
   else if (toArgSymbol(node->sym))
   {
 
-  } 
+  }
 
   else if (toEnumSymbol(node->sym))
   {
     ast_symbol("def", node->sym, true);
-  } 
+  }
 
   else if (toFnSymbol(node->sym))
   {
 
-  } 
-  
+  }
+
   else if (toLabelSymbol(node->sym))
   {
 
   }
-  
+
   else if (toModuleSymbol(node->sym) != 0)
   {
 
   }
 
-  else if (toTypeSymbol(node->sym)) 
+  else if (toTypeSymbol(node->sym))
   {
     if (toAggregateType(node->sym->type))
     {
@@ -356,7 +688,7 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
     ast_symbol(node->_this->type->symbol, false);
     mOffset = mOffset - 2;
   }
-  
+
   newline();
   fprintf(mFP, "Name:     %s ", node->name);
 
@@ -482,12 +814,12 @@ bool AstDumpToNode::enterCallExpr(CallExpr* node)
   {
     write("return");
   }
-  
+
   else if (node->isPrimitive(PRIM_YIELD))
   {
     write("yield ");
   }
-  
+
   else
   {
     write(node->primitive->name);
@@ -838,7 +1170,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     else if (sym == 0)
       sprintf(name, "??:NULL");
-  
+
     else if (mod->name == 0 && sym->name == 0)
       sprintf(name, "??:??");
 
@@ -866,7 +1198,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   {
 
   }
-  
+
   else if (isArgSymbol(sym) == true)
   {
     fprintf(mFP, "#<ArgSymbol    %12d name: %-36s", sym->id, name);
@@ -942,7 +1274,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
 
   }
-  
+
   else if (isTypeSymbol(sym) == true)
   {
     fprintf(mFP, "#<TypeSymbol   %12d name: %-36s", sym->id, name);
@@ -956,7 +1288,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
     writeFlags(mFP, sym);
     fprintf(mFP, ">");
 
-  } 
+  }
 
   else if (VarSymbol* var = toVarSymbol(sym))
   {
@@ -977,7 +1309,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
       fprintf(mFP, "#<VarSymbol    %12d imm:  %-36s", var->id, imm);
 
-      if (sym->type) 
+      if (sym->type)
       {
         fprintf(mFP, " type:   ");
         writeType(sym->type);
@@ -993,7 +1325,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
     {
       fprintf(mFP, "#<VarSymbol    %12d name: %-36s", var->id, name);
 
-      if (sym->type) 
+      if (sym->type)
       {
         fprintf(mFP, " type:   ");
         writeType(sym->type);
@@ -1094,7 +1426,7 @@ void AstDumpToNode::writeType(Type* type) const
 
   else if (type == 0)
     ;
-  
+
   else if (PrimitiveType* t = toPrimitiveType(type))
     fprintf(mFP, "#<PrimitiveType %s>", t->symbol->name);
 
@@ -1103,7 +1435,7 @@ void AstDumpToNode::writeType(Type* type) const
 
   else if (EnumType*      t = toEnumType(type))
     fprintf(mFP, "#<EnumType      %s>", t->symbol->name);
-  
+
   else
     USR_FATAL("This cannot happen");
 }

@@ -111,6 +111,7 @@ Miscellaneous Options:
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value
+      --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions
       --[no-]warn-special             Enable [disable] special warnings

@@ -129,8 +129,9 @@ static void cullExplicitAutoDestroyFlags()
     {
       if (VarSymbol* var = toVarSymbol(def->sym))
       {
-        // Examine only those bearing the explicit autodestroy flag.
-        if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
+        // Examine only those bearing an autodestroy flag.
+        if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+            ! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
           continue;
 
         // Look for the specific breaking case and amend that.
@@ -139,7 +140,10 @@ static void cullExplicitAutoDestroyFlags()
           CallExpr* call = toCallExpr(se->parentExpr);
           if (call->isPrimitive(PRIM_MOVE) &&
               toSymExpr(call->get(1))->var == retVar)
+          {
+            var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
             var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+          }
         }
       }
     }
@@ -871,24 +875,31 @@ static void insertYieldTemps()
 }
 
 
+//
+// Insert reference temps for function arguments that expect them.
+//
+void insertReferenceTemps(CallExpr* call)
+{
+  for_formals_actuals(formal, actual, call) {
+    if (formal->type == actual->typeInfo()->refType) {
+      SET_LINENO(call);
+      Expr* stmt = call->getStmtExpr();
+      VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
+      tmp->addFlag(FLAG_REF_TEMP);
+      stmt->insertBefore(new DefExpr(tmp));
+      actual->replace(new SymExpr(tmp));
+      stmt->insertBefore(
+        new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+    }
+  }
+}
+
+
 static void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if ((call->parentSymbol && call->isResolved()) ||
         call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      //
-      // Insert reference temps for function arguments that expect them.
-      //
-      for_formals_actuals(formal, actual, call) {
-        if (formal->type == actual->typeInfo()->refType) {
-          SET_LINENO(call);
-          VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
-          tmp->addFlag(FLAG_REF_TEMP);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          actual->replace(new SymExpr(tmp));
-          call->getStmtExpr()->insertBefore(
-              new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
-        }
-      }
+      insertReferenceTemps(call);
     }
   }
 }

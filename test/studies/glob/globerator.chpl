@@ -3,7 +3,7 @@ use SysBasic;
 extern type glob_t;
 extern type wordexp_t;
 
-extern proc chpl_glob(pattern:c_string, flags:c_int, ref ret_glob:glob_t):c_int;
+extern proc chpl_study_glob(pattern:c_string, flags:c_int, ref ret_glob:glob_t):c_int;
 extern proc chpl_wordexp(pattern:c_string, flags:c_int, ref ret_glob:wordexp_t):c_int;
 extern proc chpl_isdir(path:c_string):c_int;
 extern proc glob_num(x:glob_t): size_t;
@@ -30,7 +30,7 @@ iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false
         }
     } else { // else, use glob
         var glb:glob_t;
-        err = chpl_glob((extension + pattern).c_str(), flags:c_int, glb);
+        err = chpl_study_glob((extension + pattern).c_str(), flags:c_int, glb);
         for i in 0..glob_num(glb) - 1 {
             tx = glob_index(glb, i);
             if recursive {
@@ -58,7 +58,7 @@ where tag == iterKind.leader {
     } else { // else, use glob
         var glb:glob_t;
         // Make this spawn a task if we encounter a dir, else yield in parallel
-        err = chpl_glob(pattern.c_str(), flags:c_int, glb);
+        err = chpl_study_glob(pattern.c_str(), flags:c_int, glb);
         for i in 0..glob_num(glb) - 1 do 
             yield toString(glob_index(glb, i));
     }

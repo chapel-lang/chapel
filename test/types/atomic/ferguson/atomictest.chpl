@@ -15,7 +15,7 @@ proc test(param width, n_max:int ) {
   if showRace {
     var x:uint(width);
     x = zero;
-    forall i in one..n {
+    forall i in one..n with (ref x) { // race is intentional
       x += one;
     }
     writeln("X is ", x," (vs. ", n, ")");

@@ -9,31 +9,31 @@ Reconstructing F1 ...
 F1.norm2() = 1.0
 Evaluating F1 on [0, 1]:
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.10:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.30:  F_numeric()= 0.00000001  f_analytic()= 0.00000001
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.40:  F_numeric()= 0.02845992  f_analytic()= 0.02846034
  -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934
  -- 0.60:  F_numeric()= 0.02845992  f_analytic()= 0.02846034
- -- 0.70:  F_numeric()= 0.00000001  f_analytic()= 0.00000001
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.90:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 1.00:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
 
 Differentiating F1 ...
 
 Evaluating dF1 on [0, 1]:
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.10:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.30:  F_numeric()= 0.00000064  f_analytic()= 0.00000174
  -- 0.40:  F_numeric()= 2.84605633  f_analytic()= 2.84603425 err > thresh
- -- 0.50:  F_numeric()= 0.00046752  f_analytic()=-0.00000000 err > thresh
+ -- 0.50:  F_numeric()= 0.00046752  f_analytic()= 0.00000000 err > thresh
  -- 0.60:  F_numeric()=-2.84605633  f_analytic()=-2.84603425 err > thresh
  -- 0.70:  F_numeric()=-0.00000064  f_analytic()=-0.00000174
- -- 0.80:  F_numeric()= 0.00000000  f_analytic()=-0.00000000
- -- 0.90:  F_numeric()= 0.00000000  f_analytic()=-0.00000000
- -- 1.00:  F_numeric()=-0.00000000  f_analytic()=-0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
 
 ======================================================================
 
@@ -43,7 +43,7 @@ Compressing F2 ...
 Reconstructing F2 ...
 F2.norm2() = 1.73205
 Evaluating F2 on [0, 1]:
- -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001
+ -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000
  -- 0.10:  F_numeric()= 0.02846071  f_analytic()= 0.02846034
  -- 0.20:  F_numeric()= 4.22388933  f_analytic()= 4.22388934
  -- 0.30:  F_numeric()= 0.02846057  f_analytic()= 0.02846035
@@ -53,7 +53,7 @@ Evaluating F2 on [0, 1]:
  -- 0.70:  F_numeric()= 0.02846057  f_analytic()= 0.02846035
  -- 0.80:  F_numeric()= 4.22388933  f_analytic()= 4.22388934
  -- 0.90:  F_numeric()= 0.02846071  f_analytic()= 0.02846034
- -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001
+ -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000
 
 Differentiating F2 ...
 
@@ -66,7 +66,7 @@ Evaluating dF2 on [0, 1]:
  -- 0.50:  F_numeric()= 0.00046752  f_analytic()= 0.00000000 err > thresh
  -- 0.60:  F_numeric()=-2.84605452  f_analytic()=-2.84603251 err > thresh
  -- 0.70:  F_numeric()= 2.84620888  f_analytic()= 2.84603251 err > thresh
- -- 0.80:  F_numeric()=-0.00008198  f_analytic()=-0.00000000 err > thresh
+ -- 0.80:  F_numeric()=-0.00008198  f_analytic()= 0.00000000 err > thresh
  -- 0.90:  F_numeric()=-2.84579819  f_analytic()=-2.84603425 err > thresh
  -- 1.00:  F_numeric()=-0.00010988  f_analytic()=-0.00000174 err > thresh
 
@@ -132,9 +132,9 @@ Evaluating dF4 on [0, 1]:
  -- 0.10:  F_numeric()=-7.00800000  f_analytic()= 0.00000000 err > thresh
  -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.40:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.40:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.50:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.60:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.60:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.90:  F_numeric()= 7.00800000  f_analytic()= 0.00000000 err > thresh

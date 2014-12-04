@@ -253,7 +253,7 @@ qio_style_t qio_style_default(void)
 static inline
 void qio_style_copy(qio_style_t* dst, const qio_style_t* src)
 {
-  memcpy(dst, src, sizeof(qio_style_t));
+  qio_memcpy(dst, src, sizeof(qio_style_t));
 }
 
 static inline

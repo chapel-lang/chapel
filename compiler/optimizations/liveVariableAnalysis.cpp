@@ -48,10 +48,10 @@ liveVariableAnalysis(FnSymbol* fn,
                      Vec<SymExpr*>& useSet,
                      Vec<SymExpr*>& defSet,
                      std::vector<BitVec*>& OUT) {
-  buildLocalsVectorMap(fn, locals, localMap);
+  BasicBlock::buildLocalsVectorMap(fn, locals, localMap);
 
 #ifdef DEBUG_LIVE
-  printLocalsVector(locals, localMap);
+  BasicBlock::printLocalsVector(locals, localMap);
 #endif
 
   buildDefUseSets(locals, fn, defSet, useSet);
@@ -102,11 +102,11 @@ liveVariableAnalysis(FnSymbol* fn,
   }
 
 #ifdef DEBUG_LIVE
-  printf("DEF\n"); printLocalsVectorSets(DEF, locals);
-  printf("USE\n"); printLocalsVectorSets(USE, locals);
+  printf("DEF\n"); BasicBlock::printLocalsVectorSets(DEF, locals);
+  printf("USE\n"); BasicBlock::printLocalsVectorSets(USE, locals);
 #endif
 
-  backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
+  BasicBlock::backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
 
   for_vector(BitVec, use, USE)
     delete use, use = 0;

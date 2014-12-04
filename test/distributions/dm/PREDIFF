@@ -17,15 +17,19 @@ case $testname in
      # special handling
      mv $outputfile $outputfile.orig
 
+     #
      # There is no consistent failing output.
-     # These filters are an attempt to distinguish failure reliably
-     # (the absense of the 'start...finish' line) plus guard against
-     # other failures like syntax errors.
+     # Using greps and .bad, the intention is to detect the expected failure,
+     # i.e. the absense of the 'start...finish' line,
+     # and distinguish it from other failures like syntax errors.
+     #
      # The error "ReplicatedDist.chpl:272: error: attempt to dereference nil"
      # or similar is sometimes reported in a failed run, sometimes not.
-
+     # Ditto "FATAL ERROR: recursive failure in AMUDP_SPMDShutdown".
+     #
      egrep -i '^start...finish$|error|warning' $outputfile.orig \
        | grep -v 'error: attempt to dereference nil' \
+       | grep -v 'FATAL ERROR: recursive failure in AMUDP_SPMDShutdown' \
        > $outputfile
 
      # preserve $outputfile.orig

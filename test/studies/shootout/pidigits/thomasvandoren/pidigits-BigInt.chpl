@@ -26,7 +26,7 @@ iter genDigits(numDigits) {
     tmp1 = new BigInt(),
     tmp2 = new BigInt();
 
-  var k: c_ulong;
+  var k: uint(64);
 
   for i in 1..numDigits {
     do {
@@ -35,7 +35,7 @@ iter genDigits(numDigits) {
         const y2 = 2 * k + 1;
 
         // Compute the next term.
-        tmp1.mul_ui(numer, 2: c_ulong);
+        tmp1.mul_ui(numer, 2);
         accum.add(accum, tmp1);
         accum.mul_ui(accum, y2);
         numer.mul_ui(numer, k);
@@ -45,7 +45,7 @@ iter genDigits(numDigits) {
       } while numer.cmp(accum) > 0; // numer > accum
 
       // Compute: numer * 3 + accum
-      tmp1.mul_ui(numer, 3: c_ulong);
+      tmp1.mul_ui(numer, 3);
       tmp1.add(tmp1, accum);
 
       // tmp1 = tmp1 / denom; tmp2 = tmp1 % denom
@@ -63,8 +63,8 @@ iter genDigits(numDigits) {
 
     // Eliminate digit.
     accum.submul_ui(denom, digit);
-    accum.mul_ui(accum, 10: c_ulong);
-    numer.mul_ui(numer, 10: c_ulong);
+    accum.mul_ui(accum, 10);
+    numer.mul_ui(numer, 10);
   }
 
   // Free the memory associated with these.

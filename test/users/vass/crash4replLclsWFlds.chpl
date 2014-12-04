@@ -325,7 +325,9 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
   var result: targetLocales.rank * locIdT;
   // guard updates to 'result' to ensure atomicity of updates
   var gotresult$: sync bool = false;
-  forall (lls, loc) in zip(targetLocales.domain, targetLocales) do
+  forall (lls, loc) in zip(targetLocales.domain, targetLocales)
+    with (ref result)
+  do
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()

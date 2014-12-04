@@ -61,6 +61,18 @@ dgemm.64:
   09/06/13:
     - LICM bug fixes
 
+ep:
+  11/18/14:
+    - added -E to tests which would benefit from it
+  11/22/14:
+    - revert -E use for nightly on 21st (which failed, unrelatedly)
+
+ep-b:
+  11/18/14:
+    - added -E to tests which would benefit from it
+  11/22/14:
+    - revert -E use for nightly on 21st (which failed, unrelatedly)
+
 fannkuch-redux:
   07/22/14:
     - Error due to cleaning up file incompletely
@@ -80,6 +92,10 @@ ft-a:
 is:
   09/05/14:
     - switched uses of locale.numCores to locale.maxTaskPar
+  11/18/14:
+    - added -E to tests which would benefit from it
+  11/22/14:
+    - revert -E use for nightly on 21st (which failed, unrelatedly)
 
 lulesh:
   03/15/14:

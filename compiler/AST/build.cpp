@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -876,7 +876,7 @@ CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
 }
 
 static BlockStmt*
-buildFollowLoop(VarSymbol* iter, 
+buildFollowLoop(VarSymbol* iter,
                 VarSymbol* leadIdxCopy,
                 VarSymbol* followIter,
                 VarSymbol* followIdx,
@@ -885,14 +885,14 @@ buildFollowLoop(VarSymbol* iter,
                 bool       fast,
                 bool       zippered) {
   BlockStmt* followBlock = new BlockStmt();
-  ForLoop*   followBody  = new ForLoop(loopBody, followIdx, followIter);
+  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody);
 
   destructureIndices(followBody, indices, new SymExpr(followIdx), false);
 
   followBlock->insertAtTail(new DefExpr(followIter));
 
   if (fast) {
-    
+
     if (zippered) {
       followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFastFollowerZip(%S, %S)))", followIter, iter, leadIdxCopy);
     } else {
@@ -904,9 +904,9 @@ buildFollowLoop(VarSymbol* iter,
       followBlock->insertAtTail("'move'(%S, _getIteratorZip(_toFollowerZip(%S, %S)))",     followIter, iter, leadIdxCopy);
     } else {
       followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))",           followIter, iter, leadIdxCopy);
-    } 
+    }
   }
-  
+
   followBlock->insertAtTail(new DefExpr(followIdx));
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 
@@ -917,9 +917,10 @@ buildFollowLoop(VarSymbol* iter,
 }
 
 BlockStmt*
-buildForallLoopStmt(Expr*      indices, 
-                    Expr*      iterExpr, 
-                    BlockStmt* loopBody, 
+buildForallLoopStmt(Expr*      indices,
+                    Expr*      iterExpr,
+                    CallExpr*  byref_vars,
+                    BlockStmt* loopBody,
                     bool       zippered) {
   checkControlFlow(loopBody, "forall statement");
 
@@ -933,6 +934,23 @@ buildForallLoopStmt(Expr*      indices,
 
   checkIndices(indices);
 
+  //
+  // 'byrefVars' will contain a PRIM_FORALL_LOOP, whose "arguments"
+  // are variables listed in the forall's with(ref...) clause.
+  // This list is processed during implementForallIntents1().
+  //
+  INT_ASSERT(!loopBody->byrefVars);
+  if (byref_vars) {
+    INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
+    byref_vars->primitive = primitives[PRIM_FORALL_LOOP];
+  } else {
+    byref_vars = new CallExpr(PRIM_FORALL_LOOP);
+  }
+  loopBody->byrefVars = byref_vars;
+
+  // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
+  loopBody->blockTag = BLOCK_NORMAL;
+
   BlockStmt* resultBlock     = new BlockStmt();
 
   VarSymbol* iter            = newTemp("chpl__iter");
@@ -940,7 +958,7 @@ buildForallLoopStmt(Expr*      indices,
   VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
   VarSymbol* leadIter        = newTemp("chpl__leadIter");
   VarSymbol* leadIdxCopy     = newTemp("chpl__leadIdxCopy");
-  ForLoop*   leadForLoop     = new ForLoop(NULL, leadIdx, leadIter);
+  ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL);
 
   VarSymbol* fastFollowIdx   = newTemp("chpl__fastFollowIdx");
   VarSymbol* fastFollowIter  = newTemp("chpl__fastFollowIter");
@@ -951,11 +969,18 @@ buildForallLoopStmt(Expr*      indices,
   BlockStmt* followBlock     = NULL;
 
   iter->addFlag(FLAG_EXPR_TEMP);
+  iter->addFlag(FLAG_CHPL__ITER);
 
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+
+  // ForallLeaderArgs: stash references so we know where things are.
+  byref_vars->insertAtHead(leadIdxCopy); // 3rd arg
+  byref_vars->insertAtHead(leadIdx);     // 2nd arg
+  byref_vars->insertAtHead(iter);        // 1st arg
 
   resultBlock->insertAtTail(new DefExpr(iter));
   resultBlock->insertAtTail(new DefExpr(leadIdx));
@@ -979,7 +1004,7 @@ buildForallLoopStmt(Expr*      indices,
                                 followIdx,
                                 indices,
                                 loopBody->copy(),
-                                false, 
+                                false,
                                 zippered);
 
   if (fNoFastFollowers == false) {
@@ -1032,18 +1057,24 @@ addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
   // nothing to do if there is no 'ref' clause
   if (!byrefVarsSource) return;
 
+  //
+  // 'byrefVars' will contain a CallExpr, whose "arguments"
+  // are variables listed in the with(ref...) clause
+  // of the enclosing begin/cobegin/coforall.
+  // This list is processed during createTaskFunctions().
+  //
   // Could set byrefVars->parentExpr/Symbol right here.
   target->byrefVars = byrefVarsSource;
 
   // Note: the UnresolvedSymExprs in byrefVars
   // will be automatically resolved in resolve().
-}    
+}
 
-BlockStmt* buildCoforallLoopStmt(Expr* indices, 
+BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  CallExpr* byref_vars,
                                  BlockStmt* body,
-                                 bool zippered ) 
+                                 bool zippered)
 {
   checkControlFlow(body, "coforall statement");
 
@@ -1166,23 +1197,26 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
   return buildChapelStmt(new CallExpr(op, lhs, rhs));
 }
 
-
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = buildChapelStmt();
+  BlockStmt* stmt = new BlockStmt();
   VarSymbol* ltmp = newTemp();
+
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
-  stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalAndExpr(ltmp, rhs)));
+  stmt->insertAtTail(new CallExpr("=",       ltmp, buildLogicalAndExpr(ltmp, rhs)));
+
   return stmt;
 }
 
 
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
-  BlockStmt* stmt = buildChapelStmt();
+  BlockStmt* stmt = new BlockStmt();
   VarSymbol* ltmp = newTemp();
+
   stmt->insertAtTail(new DefExpr(ltmp));
   stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
-  stmt->insertAtTail(new CallExpr("=", ltmp, buildLogicalOrExpr(ltmp, rhs)));
+  stmt->insertAtTail(new CallExpr("=",       ltmp, buildLogicalOrExpr(ltmp, rhs)));
+
   return stmt;
 }
 
@@ -1360,7 +1394,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-  ForLoop* followBody = new ForLoop(NULL, followIdx, followIter);
+  ForLoop* followBody = new ForLoop(followIdx, followIter, NULL);
 
   followBody->insertAtTail(".(%S, 'accumulate')(%S)", localOp, followIdx);
 
@@ -1383,7 +1417,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail("'delete'(%S)", localOp);
   followBlock->insertAtTail("_freeIterator(%S)", followIter);
 
-  ForLoop* leadBody = new ForLoop(NULL, leadIdx, leadIter);
+  ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL);
 
   leadBody->insertAtTail(new DefExpr(leadIdxCopy));
   leadBody->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
@@ -1471,21 +1505,18 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 }
 
 
-BlockStmt*
-buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, Flag ref, char* docs) {
+BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, char* docs) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        if (externconfig == FLAG_EXTERN && varconst == FLAG_PARAM)
+        if (flags.count(FLAG_EXTERN) && flags.count(FLAG_PARAM))
           USR_FATAL(var, "external params are not supported");
 
-        //TODO: Ideally we would just pass in a list of Flag's to apply
-        if (externconfig != FLAG_UNKNOWN)
-          var->addFlag(externconfig);
-        if (varconst != FLAG_UNKNOWN)
-          var->addFlag(varconst);
-        if (ref != FLAG_UNKNOWN)
-          var->addFlag(ref);
+        for (std::set<Flag>::iterator it = flags.begin(); it != flags.end(); ++it) {
+          if (*it != FLAG_UNKNOWN) {
+            var->addFlag(*it);
+          }
+        }
 
         if (var->hasFlag(FLAG_CONFIG)) {
           if (Expr *configInit = getCmdLineConfig(var->name)) {
