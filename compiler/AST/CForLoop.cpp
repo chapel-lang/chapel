@@ -25,42 +25,46 @@
 #include "codegen.h"
 #include "ForLoop.h"
 
-#include <algorithm>
-
 /************************************ | *************************************
 *                                                                           *
 * Factory methods for the Parser                                            *
 *                                                                           *
 ************************************* | ************************************/
 
+// A WhileDo loop may have a C_FOR_LOOP prim as the termination condition
 BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
 {
-  // Regular loop setup
-  CForLoop*    loop          = new CForLoop(call, body);
-  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
+  BlockStmt* retval = buildChapelStmt();
 
-  Expr*        initClause    = call->get(1)->copy();
-  Expr*        termClause    = call->get(2)->copy();
-  Expr*        incrClause    = call->get(3)->copy();
+  if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) == true)
+  {
+    CForLoop*    loop          = new CForLoop(body);
 
-  BlockStmt*   initBlock     = new BlockStmt(initClause, BLOCK_C_FOR_LOOP);
-  BlockStmt*   termBlock     = new BlockStmt(termClause, BLOCK_C_FOR_LOOP);
-  BlockStmt*   incrBlock     = new BlockStmt(incrClause, BLOCK_C_FOR_LOOP);
+    Expr*        initClause    = call->get(1)->copy();
+    Expr*        termClause    = call->get(2)->copy();
+    Expr*        incrClause    = call->get(3)->copy();
 
-  BlockStmt*   retval        = buildChapelStmt();
+    BlockStmt*   initBlock     = new BlockStmt(initClause, BLOCK_C_FOR_LOOP);
+    BlockStmt*   termBlock     = new BlockStmt(termClause, BLOCK_C_FOR_LOOP);
+    BlockStmt*   incrBlock     = new BlockStmt(incrClause, BLOCK_C_FOR_LOOP);
 
-  call->get(1)->replace(initBlock);
-  call->get(2)->replace(termBlock);
-  call->get(3)->replace(incrBlock);
+    LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
+    LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
 
-  loop->continueLabel = continueLabel;
-  loop->breakLabel    = breakLabel;
+    loop->continueLabel = continueLabel;
+    loop->breakLabel    = breakLabel;
 
-  loop->insertAtTail(new DefExpr(continueLabel));
+    loop->loopHeaderSet(initBlock, termBlock, incrBlock);
 
-  retval->insertAtTail(loop);
-  retval->insertAtTail(new DefExpr(breakLabel));
+    loop->insertAtTail(new DefExpr(continueLabel));
+
+    retval->insertAtTail(loop);
+    retval->insertAtTail(new DefExpr(breakLabel));
+  }
+  else
+  {
+    INT_ASSERT(false);
+  }
 
   return retval;
 }
@@ -119,17 +123,9 @@ CForLoop::CForLoop()
 
 }
 
-CForLoop::CForLoop(CallExpr*  cforInfo,
-                   BlockStmt* initBody) : BlockStmt(initBody)
+CForLoop::CForLoop(BlockStmt* initBody) : BlockStmt(initBody)
 {
-  cforInfoSet(cforInfo);
-}
 
-CForLoop::CForLoop(BlockStmt* initBody,
-                   VarSymbol* index,
-                   VarSymbol* iterator) : BlockStmt(initBody)
-{
-  cforInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
 }
 
 CForLoop::~CForLoop()
@@ -201,7 +197,7 @@ CallExpr* CForLoop::cforInfoGet() const
 
 CallExpr* CForLoop::cforInfoSet(CallExpr* info)
 {
-  return cforInfoSet(info);
+  return BlockStmt::blockInfoSet(info);
 }
 
 CallExpr* CForLoop::blockInfoGet() const
