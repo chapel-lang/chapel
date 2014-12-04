@@ -5,9 +5,9 @@ from optparse import OptionParser
 
 import fileReadHelp
 try:
-  import annotate
+    import annotate
 except ImportError:
-  annotate = None
+    annotate = None
 
 usage =  '%prog [options] <graphfiles>'
 parser = OptionParser(usage=usage)
@@ -562,48 +562,52 @@ class GraphClass:
             for i in range(numKeys):
                 if not self.datfilenames[i] in datfiles:
                     continue
-                df = datfiles[self.datfilenames[i]]
-                if currLines[i] < len(df.lines):
-                    fields = zip(*df.lines[currLines[i]])
-                    myDate = fields[0][0]
-                    if myDate == minDate:
-                        # consume this line
-                        line_to_write += ','
-                        if len(fields)>df.mykeys[i] and '-' not in fields[df.mykeys[i]]:
-                            fieldId = df.mykeys[i]
-                            value = fields[fieldId][0]
-                            if self.generate:
-                                method = self.generate[i]
-                            else:
-                                method = self._reduce
-
-                            if method == 'avg':
-                                value = math.fsum(fields[fieldId])/len(fields[fieldId])
-                            elif method == 'med':
-                                slist = sorted(fields[fieldId])
-                                if len(fields[fieldId]) % 2 == 0:
-                                    value = (slist[len(slist)/2]+slist[len(slist)/2-1])/2
+                try:
+                    df = datfiles[self.datfilenames[i]]
+                    if currLines[i] < len(df.lines):
+                        fields = zip(*df.lines[currLines[i]])
+                        myDate = fields[0][0]
+                        if myDate == minDate:
+                            # consume this line
+                            line_to_write += ','
+                            if len(fields)>df.mykeys[i] and '-' not in fields[df.mykeys[i]]:
+                                fieldId = df.mykeys[i]
+                                value = fields[fieldId][0]
+                                if self.generate:
+                                    method = self.generate[i]
                                 else:
-                                    value = slist[len(slist)/2]
-                            elif method == 'min':
-                                value = min(fields[fieldId])
-                            elif method == 'max':
-                                value = max(fields[fieldId])
+                                    method = self._reduce
 
-                            if self.displayrange:
-                                minval = min(fields[fieldId])
-                                maxval = max(fields[fieldId])
-                                line_to_write += "{0};{1};{2}".format(minval, value, maxval)
-                            else:
-                                line_to_write += "{0}".format(value)
-                            found_data = True
-                        currLines[i] += 1
+                                if method == 'avg':
+                                    value = math.fsum(fields[fieldId])/len(fields[fieldId])
+                                elif method == 'med':
+                                    slist = sorted(fields[fieldId])
+                                    if len(fields[fieldId]) % 2 == 0:
+                                        value = (slist[len(slist)/2]+slist[len(slist)/2-1])/2
+                                    else:
+                                        value = slist[len(slist)/2]
+                                elif method == 'min':
+                                    value = min(fields[fieldId])
+                                elif method == 'max':
+                                    value = max(fields[fieldId])
+
+                                if self.displayrange:
+                                    minval = min(fields[fieldId])
+                                    maxval = max(fields[fieldId])
+                                    line_to_write += "{0};{1};{2}".format(minval, value, maxval)
+                                else:
+                                    line_to_write += "{0}".format(value)
+                                found_data = True
+                            currLines[i] += 1
+                        else:
+                            # no data for this date
+                            line_to_write += ','
                     else:
                         # no data for this date
                         line_to_write += ','
-                else:
-                    # no data for this date
-                    line_to_write += ','
+                except:
+                    print('[Error parsing .dat file: {0}'.format(self.datfilenames[i]))
+                    raise
 
             if found_data:
               f.write(line_to_write)
