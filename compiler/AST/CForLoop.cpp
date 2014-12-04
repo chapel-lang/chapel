@@ -41,17 +41,17 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
 
   Expr*        initClause    = call->get(1)->copy();
-  Expr*        testClause    = call->get(2)->copy();
+  Expr*        termClause    = call->get(2)->copy();
   Expr*        incrClause    = call->get(3)->copy();
 
   BlockStmt*   initBlock     = new BlockStmt(initClause, BLOCK_C_FOR_LOOP);
-  BlockStmt*   testBlock     = new BlockStmt(testClause, BLOCK_C_FOR_LOOP);
+  BlockStmt*   termBlock     = new BlockStmt(termClause, BLOCK_C_FOR_LOOP);
   BlockStmt*   incrBlock     = new BlockStmt(incrClause, BLOCK_C_FOR_LOOP);
 
   BlockStmt*   retval        = buildChapelStmt();
 
   call->get(1)->replace(initBlock);
-  call->get(2)->replace(testBlock);
+  call->get(2)->replace(termBlock);
   call->get(3)->replace(incrBlock);
 
   loop->continueLabel = continueLabel;
@@ -179,17 +179,17 @@ bool CForLoop::isCForLoop() const
 }
 
 void CForLoop::loopHeaderSet(BlockStmt* initBlock,
-                             BlockStmt* testBlock,
+                             BlockStmt* termBlock,
                              BlockStmt* incrBlock)
 {
   initBlock->blockTag = BLOCK_C_FOR_LOOP;
-  testBlock->blockTag = BLOCK_C_FOR_LOOP;
+  termBlock->blockTag = BLOCK_C_FOR_LOOP;
   incrBlock->blockTag = BLOCK_C_FOR_LOOP;
 
   cforInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
-                                       initBlock,
-                                       testBlock,
-                                       incrBlock));
+                           initBlock,
+                           termBlock,
+                           incrBlock));
 }
 
 
@@ -223,8 +223,8 @@ bool CForLoop::deadBlockCleanup()
   bool retval = false;
 
   if (CallExpr* loop = cforInfoGet()) {
-    if (BlockStmt* test = toBlockStmt(loop->get(2))) {
-      if (test->body.length == 0) {
+    if (BlockStmt* term = toBlockStmt(loop->get(2))) {
+      if (term->body.length == 0) {
         remove();
         retval = true;
       }
@@ -251,7 +251,7 @@ void CForLoop::verify()
     INT_FATAL(this, "CForLoop::verify. initBlock is not BLOCK_C_FOR_LOOP");
 
   if (toBlockStmt(cforInfoGet()->get(2))->blockTag != BLOCK_C_FOR_LOOP)
-    INT_FATAL(this, "CForLoop::verify. testBlock is not BLOCK_C_FOR_LOOP");
+    INT_FATAL(this, "CForLoop::verify. termBlock is not BLOCK_C_FOR_LOOP");
 
   if (toBlockStmt(cforInfoGet()->get(3))->blockTag != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. incrBlock is not BLOCK_C_FOR_LOOP");
@@ -279,17 +279,17 @@ GenRet CForLoop::codegen()
     // These copy calls are needed or else values get code generated twice.
     std::string init      = codegenCForLoopHeader(initBlock->copy());
 
-    BlockStmt*  testBlock = toBlockStmt(blockInfo->get(2));
-    std::string test      = codegenCForLoopHeader(testBlock->copy());
+    BlockStmt*  termBlock = toBlockStmt(blockInfo->get(2));
+    std::string term      = codegenCForLoopHeader(termBlock->copy());
 
-    // wrap the test with paren. Could probably check if it already has
+    // wrap the term with paren. Could probably check if it already has
     // outer paren to make the code a little cleaner.
-    if (test != "")
-      test = "(" + test + ")";
+    if (term != "")
+      term = "(" + term + ")";
 
     BlockStmt*  incrBlock = toBlockStmt(blockInfo->get(3));
     std::string incr      = codegenCForLoopHeader(incrBlock->copy());
-    std::string hdr       = "for (" + init + "; " + test + "; " + incr + ") ";
+    std::string hdr       = "for (" + init + "; " + term + "; " + incr + ") ";
 
     info->cStatements.push_back(hdr);
 
@@ -320,10 +320,10 @@ GenRet CForLoop::codegen()
     llvm::BasicBlock* blockStmtEnd  = NULL;
 
     BlockStmt*        initBlock     = toBlockStmt(cforInfoGet()->get(1));
-    BlockStmt*        testBlock     = toBlockStmt(cforInfoGet()->get(2));
+    BlockStmt*        termBlock     = toBlockStmt(cforInfoGet()->get(2));
     BlockStmt*        incrBlock     = toBlockStmt(cforInfoGet()->get(3));
 
-    assert(initBlock && testBlock && incrBlock);
+    assert(initBlock && termBlock && incrBlock);
 
     getFunction()->codegenUniqueNum++;
 
@@ -349,8 +349,8 @@ GenRet CForLoop::codegen()
     initBlock->body.codegen("");
 
     // Add the loop condition to figure out if we run the loop at all.
-    GenRet       test0      = codegenCForLoopCondition(testBlock);
-    llvm::Value* condValue0 = test0.val;
+    GenRet       term0      = codegenCForLoopCondition(termBlock);
+    llvm::Value* condValue0 = term0.val;
 
     // Normalize it to boolean
     if (condValue0->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
@@ -373,8 +373,8 @@ GenRet CForLoop::codegen()
 
     incrBlock->body.codegen("");
 
-    GenRet       test1      = codegenCForLoopCondition(testBlock);
-    llvm::Value* condValue1 = test1.val;
+    GenRet       term1      = codegenCForLoopCondition(termBlock);
+    llvm::Value* condValue1 = term1.val;
 
     // Normalize it to boolean
     if (condValue1->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
@@ -399,7 +399,7 @@ GenRet CForLoop::codegen()
   return ret;
 }
 
-// This function is used to codegen the init, test, and incr segments of c for
+// This function is used to codegen the init, term, and incr segments of c for
 // loops. In c for loops instead of using statements comma operators must be
 // used. So for the init instead of generating something like:
 //   i = 4;
@@ -423,13 +423,13 @@ std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
       defExpr->codegen();
     }
 
-    // If inlining is off, the init, test, and incr are just functions and we
+    // If inlining is off, the init, term, and incr are just functions and we
     // need to generate them inline so we use codegenValue. The semicolon is
     // added so it can be replaced with the comma later. If inlinining is on
-    // the test will be a <= and it also needs to be codegenned with
+    // the term will be a <= and it also needs to be codegenned with
     // codegenValue.
     //
-    // TODO when the test operator is user specifiable and not just <= this
+    // TODO when the term operator is user specifiable and not just <= this
     // will need to be updated to include all possible conditionals. (I'm
     // imagining we'll want a separate function that can check if a primitive
     // is a conditional as I think we'll need that info elsewhere.)
