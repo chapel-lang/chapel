@@ -30,7 +30,6 @@
 #include "error.h"
 
 #define baseSBATCHFilename ".chpl-slurm-sbatch-"
-#define baseExpectFilename ".chpl-expect-"
 #define baseSysFilename ".chpl-sys-"
 
 #define CHPL_WALLTIME_FLAG "--walltime"
@@ -43,7 +42,6 @@ static int generate_sbatch_script = 0;
 static char* nodelist = NULL;
 
 char slurmFilename[FILENAME_MAX];
-char expectFilename[FILENAME_MAX];
 char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
@@ -142,9 +140,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                                         int32_t numLocales) {
   int i;
   int size;
-  char baseCommand[256];
+  char baseCommand[2048];
   char* command;
-  FILE* slurmFile, *expectFile;
+  FILE* slurmFile;
   char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
@@ -166,6 +164,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
       basenamePtr++;
   }
+  
   chpl_compute_real_binary_name(argv[0]);
 
   if (debug) {
@@ -174,12 +173,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     mypid = getpid();
   }
 
-  // set the filenames
-  sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
-  sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
+  // Elliot, 12/02/14: TODO we have a bunch of similar commands to build up the
+  // interactive and batch versions. It would be nicer to build up the commands
+  // and postprocess depending on interactive vs batch. As in build up "--quiet
+  // --nodes ..." and afterwards split on ' ' and then add #SBATCH and a
+  // newline for batch mode and leave it as is for interactive"
 
   // if were running a batch job 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL || generate_sbatch_script) {
+    // set the sbatch filename
+    sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
+
     // open the batch file and create the header 
     slurmFile = fopen(slurmFilename, "w");
     fprintf(slurmFile, "#!/bin/sh\n\n");
@@ -230,7 +234,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --output=%s.%%j.out\n", argv[0]);
     }
 
-    // add the srun command 
+    // add the srun command and the binary name
     fprintf(slurmFile, "srun %s ", chpl_get_real_binary_name());
     
     // add any arguments passed to the launcher to the binary 
@@ -253,67 +257,58 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   }
   // else we're running an interactive job 
   else {
-    // expect is used to launch an interactive job 
-    // create the file and set some things for expect 
-    expectFile = fopen(expectFilename, "w");
-    fprintf(expectFile, "set timeout -1\n");
-    fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
-    
-    // create a silent salloc command
-    fprintf(expectFile, "spawn -noecho srun ");
+    char iCom[1024];
+    int len;
+
+    len = 0;
 
     // set the job name 
-    fprintf(expectFile, "--job-name=CHPL-%.10s ",basenamePtr);  
+    len += sprintf(iCom+len, "--job-name=CHPL-%.10s ",basenamePtr);
     
     // suppress informational messages, will still display errors 
-    fprintf(expectFile, "--quiet ");
+    len += sprintf(iCom+len, "--quiet ");
 
     // request the number of locales, with 1 task per node, and number of cores
     // cpus-per-task. We probably don't need --nodes and --ntasks specified
     // since 1 task-per-node with n --tasks implies -n nodes
-    fprintf(expectFile, "--nodes=%d ",numLocales); 
-    fprintf(expectFile, "--ntasks=%d ", numLocales); 
-    fprintf(expectFile, "--ntasks-per-node=%d ", procsPerNode); 
-    fprintf(expectFile, "--cpus-per-task=%d ", getCoresPerLocale()); 
+    len += sprintf(iCom+len, "--nodes=%d ",numLocales);
+    len += sprintf(iCom+len, "--ntasks=%d ", numLocales);
+    len += sprintf(iCom+len, "--ntasks-per-node=%d ", procsPerNode);
+    len += sprintf(iCom+len, "--cpus-per-task=%d ", getCoresPerLocale());
     
     // request exclusive access
-    fprintf(expectFile, "--exclusive ");
+    len += sprintf(iCom+len, "--exclusive ");
     
-    // Set the walltime if i was specified 
+    // Set the walltime if it was specified 
     if (walltime) {
-      fprintf(expectFile, "--time=%s ", walltime); 
+      len += sprintf(iCom+len, "--time=%s ",walltime);
     }
 
-    // Set the walltime if it was specified
+    // Set the nodelist if it was specified
     if (nodelist) {
-      fprintf(expectFile, "--nodelist=%s ", nodelist);
+      len += sprintf(iCom+len, "--nodelist=%s ", nodelist);
     }
 
     // set any constraints 
     if (constraint) {
-      fprintf(expectFile, " --constraint=%s ", constraint);
+      len += sprintf(iCom+len, " --constraint=%s ", constraint);
     }
     
     // set the account name if one was provided  
     if (account && strlen(account) > 0) {
-      fprintf(expectFile, "--account=%s ", account);
+      len += sprintf(iCom+len, "--account=%s ", account);
     }
 
-    // the actual srun command 
-    fprintf(expectFile, "%s", chpl_get_real_binary_name());
+    // add the binary name 
+    len += sprintf(iCom+len, "%s", chpl_get_real_binary_name());
     
     // add any arguments passed to the launcher to the binary 
     for (i=1; i<argc; i++) {
-      fprintf(expectFile, " %s", argv[i]);
+      len += sprintf(iCom+len, " %s", argv[i]);
     }
-    fprintf(expectFile, "\n\n");
    
-    // do some things required for expect and close the file 
-    fprintf(expectFile, "interact -o -re $prompt {return}\n");
-    fclose(expectFile);
-    
-    // the baseCommand is what will call the expect file 
-    sprintf(baseCommand, "expect %s", expectFilename);
+    // launch the job using srun
+    sprintf(baseCommand, "srun %s", iCom);
   }
 
   // copy baseCommand into command and return it 
@@ -333,24 +328,19 @@ static void genSBatchScript(int argc, char *argv[], int numLocales) {
 }
 
 
-// clean up the batch file or expect file in an interactive job 
+// clean up the batch file
 static void chpl_launch_cleanup(void) {
   // leave file around if we're debugging 
   if (!debug) {
-    // check if this is interactive or batch
     char* fileToRemove = NULL;
-    if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
-      fileToRemove = expectFilename;
-    } else {
-      fileToRemove = slurmFilename; 
-    }
-    
-    // actually remove file 
-    if (unlink(fileToRemove)) {
-      char msg[1024];
-      snprintf(msg, 1024, "Error removing temporary file '%s': %s",
-               fileToRemove, strerror(errno));
-      chpl_warning(msg, 0, 0);
+    // remove sbatch file unless it was explicitly generated by the user
+    if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL && !generate_sbatch_script) {
+      if (unlink(slurmFilename)) {
+        char msg[1024];
+        snprintf(msg, 1024, "Error removing temporary file '%s': %s",
+                 fileToRemove, strerror(errno));
+        chpl_warning(msg, 0, 0);
+      }
     }
   }
 }
@@ -374,14 +364,13 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
     genSBatchScript(argc, argv, numLocales);
     retcode = 0;
   }
-  // otherwise generate the batch file or expect script and execute it
+  // otherwise generate the batch file or srun command and execute it
   else {
-    retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv, 
-              numLocales), argv[0]);
-    
+    retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv,
+          numLocales), argv[0]);
+  
     chpl_launch_cleanup();
   }
-
   return retcode;
 }
 
@@ -413,9 +402,9 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
-  // TODO we should have a core binding option here similar to aprun's -cc to
-  // handle binding to cores / numa domains, etc
-  // For now you can just set the SLURM_CPU_BIND env var
+  // Elliot, 12/02/14: TODO we should have a core binding option here similar
+  // to aprun's -cc to handle binding to cores / numa domains, etc For now you
+  // can just set the SLURM_CPU_BIND env var
 
   return 0;
 }

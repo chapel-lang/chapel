@@ -120,6 +120,7 @@
 from __future__ import with_statement
 
 import sys, os, subprocess, string, signal
+import operator
 import select, fcntl
 import fnmatch, time
 import re
@@ -321,12 +322,13 @@ def ReadIntegerValue(f, localdir):
                 return string.atoi(l)
             else:
                 break
-    Fatal('Invalid integer value in '+f+' ('+localdir+')');
+    Fatal('Invalid integer value in '+f+' ('+localdir+')')
 
 # report an error message and exit
 def Fatal(message):
     sys.stdout.write('[Error (sub_test): '+message+']\n')
-    sys.exit(-1)
+    magic_exit_code = reduce(operator.add, map(ord, 'CHAPEL')) % 256
+    sys.exit(magic_exit_code)
 
 # Attempts to find an appropriate timer to use. The timer must be in
 # util/test/timers/. Expects to be passed a file containing only the name of
@@ -1334,8 +1336,16 @@ for testname in testsrc:
         if len(clist)!=0:
             if len(clist[0].split('#')) > 1:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
+        redirectin_set_in_loop = False
+        redirectin_original_value = redirectin
         for texecopts in execoptslist:
             sys.stdout.flush()
+
+            # Reset redirectin, in case execopts has multiple lines with
+            # different stdin files.
+            if redirectin_set_in_loop:
+                redirectin = redirectin_original_value
+                redirectin_set_in_loop = False
 
             if (len(compoptslist)==1) and (len(execoptslist)==1):
                 onlyone = True
@@ -1420,6 +1430,7 @@ for testname in testsrc:
               if redirectin == None or redirectin == "/dev/null":
                 if os.access(execOptRedirect, os.R_OK):
                   redirectin = execOptRedirect
+                  redirectin_set_in_loop = True
                 else:
                   sys.stdout.write('[Error: redirection file %s does not exist]\n'%(execOptRedirect))
                   break

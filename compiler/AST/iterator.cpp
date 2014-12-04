@@ -187,20 +187,14 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
 
   // Create a new temp and load the field value into it.
   VarSymbol* tmp = newTemp(se->var->type);
+
   // Find the statement containing the symexpr access.
   Expr* stmt = se->getStmtExpr();
-  // It's either a block statment or a loop.
-  BlockStmt* loop = NULL;
-  if (!stmt->list) {    // If a loop, we assume the statment list is null.
-    loop = toBlockStmt(se->parentExpr->parentExpr);
-    INT_ASSERT(loop);   // Check our assumption.
 
-    // We use 'stmt' as the insertion point for declarations and loads
-    // (initial loads if the access lies within a loop).
-    // So if the access lies within a loop, we hoist the insertion point
-    // to just before the loop.
-    stmt = loop;
-  }
+  // NOAKES 2014/12/02 This is a brittle way to determine if the
+  // SymExpr is in a loop header.  Revisit
+  BlockStmt* block = toBlockStmt(stmt);
+  BlockStmt* loop  = (block != 0 && block->isLoop()) ? block : 0;
 
   if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
     // Get member returns the address of the member, so we convert the
@@ -220,6 +214,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, field)));
     else
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, field)));
+
     // If in a loop, we also have to reload this temp at the bottom of the loop.
     if (loop) {
       if (tmp->type == field->type->refType)
@@ -239,6 +234,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
        call->get(1) == se))
   {
     ArgSymbol* arg = toArgSymbol(se->var);
+
     if (arg)
     {
       if (arg->intent == INTENT_INOUT ||
@@ -255,7 +251,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
         // (move tmp1 (.v ic field_x))
         // (move tmp2 (.v ic field_formal_tmp_x))
         // (move tmp0 (= tmp1 tmp2))
-        // which is sufficient.  
+        // which is sufficient.
         // The normal code below adds a writeback of the temp result of a call:
         // (= ic field_x tmp0)
         // but that is trivial, since ic->field_x and tmp0 are already equal.
@@ -277,6 +273,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
       }
     }
   }
+
   // After all of that, the local variable is bridged out and the temp used instead.
   se->var = tmp;
 }
