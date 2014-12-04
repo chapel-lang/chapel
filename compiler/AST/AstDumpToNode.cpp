@@ -420,26 +420,58 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
 
   write(false, heading, true);
 
-  if (node->cforInfoGet())
+  if (node->initBlockGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "CForInfo:", false);
+    write(false, "Init:", false);
     mOffset = mOffset + 2;
-    node->cforInfoGet()->accept(this);
+    node->initBlockGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
+
+    fprintf(mFP, "\n");
+  }
+
+  if (node->testBlockGet())
+  {
+    mOffset = mOffset + 2;
 
     newline();
+    write(false, "Test:", false);
+    mOffset = mOffset + 2;
+    node->testBlockGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    fprintf(mFP, "\n");
+  }
+
+  if (node->incrBlockGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "Incr:", false);
+    mOffset = mOffset + 2;
+    node->incrBlockGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    fprintf(mFP, "\n");
   }
 
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
     write(false, "extern ", true);
+
   if (node->blockTag & BLOCK_SCOPELESS)
     write(false, "scopeless ", true);
+
   if (node->blockTag & BLOCK_TYPE_ONLY)
     write(false, "type_only ", true);
 
