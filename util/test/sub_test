@@ -1393,7 +1393,7 @@ for testname in testsrc:
                 cmd=timer
                 args+=['./'+execname]
             elif launchcmd:
-                launchcmd_exec_time_file = 'chpl_launchcmd_exec_time.txt'
+                launchcmd_exec_time_file = execname + '_launchcmd_exec_time.txt'
                 os.environ['CHPL_LAUNCHCMD_EXEC_TIME_FILE'] = launchcmd_exec_time_file
                 launch_cmd_list = shlex.split(launchcmd)
                 cmd = launch_cmd_list[0]
