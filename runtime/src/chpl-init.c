@@ -26,7 +26,6 @@
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
-#include "chpl-main.h"
 #include "chpl-init.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
