@@ -1023,6 +1023,9 @@ module ChapelRange {
     if (useOptimizedRangeIterators) {
       if boundsChecking {
         checkIfRangeIterWillOverflow(t, start, end, stride);
+
+        if stride == 0 then
+          __primitive("chpl_error", "the step argument of the 'by' operator is zero");
       }
       var i: t;
       while __primitive("C for loop",
@@ -1042,6 +1045,12 @@ module ChapelRange {
   iter _direct_param_stride_range_iter(const start: ?t, const end: t, param stride: ?strT)
     where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
     if (useOptimizedRangeIterators) {
+      if stride == 0 then
+        compilerError("the 'by' operator cannot take a value of zero");
+
+      if ((stride > 0) && (stride:chpl__unsignedType(t) < 0)) then
+        compilerError("the step argument of the 'by' operator is too large");
+
       var i: t;
       if (stride > 0) {
         if boundsChecking then
@@ -1063,8 +1072,6 @@ module ChapelRange {
                           __primitive("+=", i, stride:t)) {
           yield i;
         }
-      } else {
-        compilerError("the 'by' operator cannot take a value of zero");
       }
     } else {
       for i in (start..end by stride).generalIterator() {
@@ -1076,6 +1083,12 @@ module ChapelRange {
   iter _direct_all_param_range_iter(param start: ?t, param end: t, param stride: ?strT)
     where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
     if (useOptimizedRangeIterators) {
+      if stride == 0 then
+        compilerError("the 'by' operator cannot take a value of zero");
+
+      if ((stride > 0) && (stride:chpl__unsignedType(t) < 0)) then
+        compilerError("the step argument of the 'by' operator is too large");
+
       var i: t;
       if (stride > 0) {
         if boundsChecking then
@@ -1097,8 +1110,6 @@ module ChapelRange {
                           __primitive("+=", i, stride:t)) {
           yield i;
         }
-      } else {
-        compilerError("the 'by' operator cannot take a value of zero");
       }
     } else {
       for i in (start..end by stride).generalIterator() {
