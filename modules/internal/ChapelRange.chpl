@@ -1265,7 +1265,7 @@ module ChapelRange {
         yield i;
       }
     } else {
-      for i in this.generalIterator() yield i;
+      for i in this.generalIterator() do yield i;
     }
   }
 
