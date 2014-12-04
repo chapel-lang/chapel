@@ -204,6 +204,38 @@ void CForLoop::loopHeaderSet(BlockStmt* initBlock,
                                        incrBlock));
 }
 
+BlockStmt* CForLoop::initBlockGet() const
+{
+  CallExpr*  info   = BlockStmt::blockInfoGet();
+  Expr*      slot   = (info != 0) ? info->get(1) : 0;
+  BlockStmt* retval = toBlockStmt(slot);
+
+  if (info != 0) INT_ASSERT(retval);
+
+  return retval;
+}
+
+BlockStmt* CForLoop::testBlockGet() const
+{
+  CallExpr*  info   = BlockStmt::blockInfoGet();
+  Expr*      slot   = (info != 0) ? info->get(2) : 0;
+  BlockStmt* retval = toBlockStmt(slot);
+
+  if (info != 0) INT_ASSERT(retval);
+
+  return retval;
+}
+
+BlockStmt* CForLoop::incrBlockGet() const
+{
+  CallExpr*  info   = BlockStmt::blockInfoGet();
+  Expr*      slot   = (info != 0) ? info->get(3) : 0;
+  BlockStmt* retval = toBlockStmt(slot);
+
+  if (info != 0) INT_ASSERT(retval);
+
+  return retval;
+}
 
 // NOAKES 2014/11/26   Transitional
 CallExpr* CForLoop::cforInfoGet() const

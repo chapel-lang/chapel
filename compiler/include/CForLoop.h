@@ -61,6 +61,10 @@ public:
                                        BlockStmt* testBlock,
                                        BlockStmt* incrBlock);
 
+  BlockStmt*             initBlockGet()                               const;
+  BlockStmt*             testBlockGet()                               const;
+  BlockStmt*             incrBlockGet()                               const;
+
   // NOAKES 2014/11/26 Transitional
   CallExpr*              cforInfoGet()                                const;
 
