@@ -90,9 +90,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
       // for c for loops, add the init expr before the loop body
       if (CForLoop* cforLoop = toCForLoop(s)) {
-        CallExpr* info = cforLoop->cforInfoGet();
-
-        for_alist(stmt, toBlockStmt(info->get(1))->body) {
+        for_alist(stmt, cforLoop->initBlockGet()->body) {
           buildBasicBlocks(fn, stmt, mark);
         }
       }
@@ -104,9 +102,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
       // Mark and add the test expr at the loop top
       if (CForLoop* cforLoop = toCForLoop(s)) {
-        CallExpr* info = cforLoop->cforInfoGet();
-
-        for_alist(stmt, toBlockStmt(info->get(2))->body) {
+        for_alist(stmt, cforLoop->testBlockGet()->body) {
           buildBasicBlocks(fn, stmt, true);
         }
 
@@ -140,9 +136,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
       // for c for loops, add the incr expr after the loop body
       if (CForLoop* cforLoop = toCForLoop(s)) {
-        CallExpr* info = cforLoop->cforInfoGet();
-
-        for_alist(stmt, toBlockStmt(info->get(3))->body) {
+        for_alist(stmt, cforLoop->incrBlockGet()->body) {
           buildBasicBlocks(fn, stmt, mark);
         }
 
