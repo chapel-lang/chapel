@@ -257,6 +257,21 @@ Forall intents affect those tasks in the same way that task intents
 affect the behavior of a task construct such as a \chpl{coforall} loop.
 \end{rationale}
 
+% The following documents the email thread re "blank intent for domains"
+% on the internal mailing list in October 2014.
+\begin{rationale}
+We considered making the \chpl{ref} intent be the default forall intent
+for domains.  The motivation was to allow users to modify domains
+within \chpl{forall} loops more easily.  We chose to preserve the
+\chpl{const ref} intent, which is the blank intent for domains
+(\rsec{The_Blank_Intent}).  This is to protect the users from
+unintentional concurrent modification of domains, analogously to the
+primitive types. As with the primitive types, the \chpl{ref} intent
+can be specified explicitly in the \sntx{task-intent-clause} when desired.
+%
+We are open to user feedback on this decision.
+\end{rationale}
+
 \begin{future}
 We would like to introduce "reduction" intents
 that will let us implement reductions using forall intents.
