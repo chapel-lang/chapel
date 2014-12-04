@@ -50,7 +50,7 @@
 #include "chplio.h"
 #include "chplisdir.h"
 #include "chplmath.h"
-#include "chpl-main.h"
+#include "chpl-init.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpl-prefetch.h"
