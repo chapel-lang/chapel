@@ -10,7 +10,7 @@ def get():
     if not tasks_val:
         arch_val = chpl_arch.get('target', get_lcd=True)
         platform_val = chpl_platform.get()
-        if arch_val == 'knc' or platform_val == 'cygwin':
+        if arch_val == 'knc' or platform_val.startswith('cygwin'):
             tasks_val = 'fifo'
         else:
             tasks_val = 'qthreads'

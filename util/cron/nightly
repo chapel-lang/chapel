@@ -397,7 +397,7 @@ $revision = "Revision: $revision";
 # if on cygwin, blow away FILES files because they wreak havoc on stuff
 #
 $hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
-if ($hostplatform eq "cygwin") {
+if ($hostplatform =~ "cygwin") {
     mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
 }
 
