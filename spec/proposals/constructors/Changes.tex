@@ -1,0 +1,117 @@
+\section{List of Proposed Changes}
+\label{Changes}
+
+This appendix contains a list of the proposed changes to the Chapel specification,
+gleaned from the body of the proposal.  This is followed by a prioritized list of tasks to
+be pursued in their implementation.
+
+\subsection{Proposed Implementation Changes}
+Here is a synopsis of the proposed changes, in approximate priority order.
+\begin{itemize}[leftmargin=2.5cm]
+\item[\bf Use Copy-Constructors] -- in place of assignment in initialization.  This is a UMM requirement.
+\item[\bf Rename initCopy] -- For consistency, mostly.
+\item[\bf Simplify defaultOf] -- Rework the implementation of \chpl{_defaultOf()} so it takes
+  precedence over the user-defined default constructor (and calls it unless overridden).
+\item[\bf Unify Initialization] -- Reduce the initialization logic to a single conditional:
+  Use the explicit initializer if present; otherwise, call \chpl{_defaultOf()}.
+\item[\bf Separate Allocation] -- Pull allocation out of class constructors and get rid of the
+  \chpl{meme} argument passed to the all-fields constructor.
+\item[\bf Constructors as Methods] -- To support in-place initialization.
+\item[\bf Add Initializer Clause] -- To control field initialization in the context of a
+  constructor.
+\item[\bf Remove Zero-Initialization] -- Assuming the rest of the model is implemented as
+  specified, this is just dead code.
+\item[\bf Collapse Copy-Constructors] -- Where the argument is a new-expression containing
+  an object of the same type.  This is just an optimization.
+\item[\bf Move RTTV to Modules] -- Compiler creation of runtime type values is hidden and hard
+  to understand.  This would move those functions out to module code verbatim, to aid
+  maintainability.
+\item[\bf Normalize Type Inference] -- Separate type inference in initializations and function
+  return value construction from the creation of initialization values.  Type information
+  would be carried through to resolution rather than being squashed out of the AST during
+  normalization.  Advantages: Simplify type inference and separate type inference from
+  initialization.  Disadvantages: Major implementation change.
+\item[\bf Add ctor keyword] -- and optional naming, to better support generic
+  programming.
+\item[\bf Field Extraction] -- Some AST could be simplified if a field-extraction primitive
+  were supported.
+\end{itemize}
+
+\subsection{Proposed Changes to the Specification}
+Proposed changes to the specification are listed below:
+\begin{itemize}[itemsep=0pt]
+\item Review initialization story w.r.t. fundamental types to ensure that it is accurate
+  under the new mode.
+\item Add description of the initializer list to Classes and Records chapters.
+\item Describe visibility of the all-fields constructor (hidden if any user-defined
+  constructors are present.
+\item Revise the description of initialization of Classes and Records in terms of a call to
+  either \chpl{_defaultOf()} or the copy-constructor.
+\item Describe in an implementor's note that copy-construction can be collapsed out when
+  the initializer expression is a constructor call.
+\item Review the description of allocation w.r.t. class object construction, and revise if
+  necessary.  It should allow the implementation to pull allocation outside of class
+  constructors (including the all-fields constructor).
+\item Review the initialization story for Classes and Records and ensure that it does not
+  require default- or zero-initialization to be applied before field initialization.
+\item Deprecate the \chpl{initialize} method.
+\end{itemize}
+
+\subsection{Open Questions}
+
+\begin{itemize}[itemsep=0pt]
+\item Should we keep the \chpl{with} keyword and parentheses?
+\item Provide syntax for unnamed constructor introduced with a qualifier.
+\item Syntactic sugar for piping constructor args through to like-named fields.
+\item Add syntax to explicitly take field default (just the field name).
+\end{itemize}
+
+
+\newpage
+\subsection{Implementation Priorities}
+This section presents the implementation tasks in tabular form.
+
+\begin{tabular}{|r|c|c|l|}
+\hline
+Task & Need & Cost & Explanation \\ \hline\hline
+Use Copy-Constructors & High & Low & Required for UMM. Change AST generation and chase \\
+ & & & down and eliminate internal dependencies. \\ \hline
+Rename initCopy & Med & Med & More consistent object model increases usability, chances \\
+ & & & for adoption.  Cost here is in understanding the distinction between \\
+ & & & initCopy and autoCopy and coming up with a constructor model that \\
+ & & & accommodates both.  Plus the usual internal dependencies.  Additional\\
+ & & & benefit is removing special-case code (pragma "init copy fn", etc.). \\ \hline
+Simplify defaultOf & Med & Low & Rewrite \chpl{_defaultOf()} implementation to \\
+ & & & give it priority over the user-defined zero-args constructor \\
+ & & & for consistency and simplicity in the code.\\ \hline
+Unify Initialization & Med & Low & Mostly in place and a clean-up task suggested to \\
+ & & & Lydia.  Enables the removal of zero-initialization. \\ \hline
+Separate Allocation & Med & Low & Means getting rid of the \chpl{meme} argument. \\
+ & & & Makes all constructors uniform and enables the \\
+ & & & Constructors as Methods task. \\ \hline
+Constructors as Methods & Med & High & More consistent object model. Simplifies \\
+ & & & initialization. Supports in-place initialization (performance). \\
+ & & & Major change in how initialization is done. \\
+ & & & May depend on normalized type inference. \\ \hline
+Add Initializer Clause & High & Med & Supports UMM, object model, ref fields in \\
+ & & & objects. New code, so relatively easy compared to rework. \\
+ & & & Waiting until after constructors are methods will save having \\
+ & & & to revise this part. Guaranteed initialization in the new \\
+ & & & model depends on it, but can be worked around in the current impl. \\ \hline
+Remove Zero-Initialization & Low & Low & Compiler perf. Redundant zero-init should be \\
+ & & & removed by CVP, but the extra code bloats the AST, slows the compiler. \\ \hline
+Collapse Copy-Constructors & Low & Med & Optimization. Faster construction of some complex \\
+ & & & types e.g. arrays. Can let need drive the priority on this one. \\ \hline
+Move RTTV to Modules & Med & Low & Maintainability. Current init path for arrays/domains \\
+ & & & is obscured by compiler generation of the RTTV function. \\
+ & & & Exposing in module code will simplify both compiler and impl. of \\
+ & & & those types, make impl of optimizations and noinit simpler. \\ \hline
+Normalize Type Inference & High & High & Reverse very bad design decision. Complicates \\
+ & & & much of initialization and resolution. Big change, but probably \\
+ & & & smaller than Constructors as Methods. Low priority due to risks \\
+ & & & involved, but may be bumped based on need. \\ \hline
+Field Extraction & Low & Low & Enable further optimization of the AST using in-place \\
+ & & & updates of record fields. \\ \hline
+Add \chpl{ctor} Keyword & Low & Med & Better support for generic programming.  Low current need. \\ \hline
+\end{tabular}
+
