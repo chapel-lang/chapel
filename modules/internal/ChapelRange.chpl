@@ -954,7 +954,6 @@ module ChapelRange {
     return r;
   }
 
-
   // This function checks if a bounded iterator will overflow. This is basic
   // signed/unsigned overflow checking for the last index + stride. Either
   // returns whether overflow will occur or not, or halts with an error
@@ -1006,6 +1005,7 @@ module ChapelRange {
   }
 
 
+
   //################################################################################
   //# Optimized iterators that users should not call
   //#
@@ -1014,33 +1014,31 @@ module ChapelRange {
   //# strides that are known at compile time.
   //#
 
-  // TODO need to do overflow checking in a better way?
   // TODO move these into a seperate file?
 
 
-  iter _direct_uint_stride_range_iter(const start: ?t, const end: t, const stride: ?strT)
+  iter _direct_uint_stride_range_iter(const low: ?t, const high: t, const stride: ?strT)
     where isIntegral(t) && chpl__unsignedType(t) == strT {
     if (useOptimizedRangeIterators) {
       if boundsChecking {
-        checkIfRangeIterWillOverflow(t, start, end, stride);
+        checkIfRangeIterWillOverflow(t, low, high, stride);
 
         if stride == 0 then
           __primitive("chpl_error", "the step argument of the 'by' operator is zero");
       }
       var i: t;
       while __primitive("C for loop",
-                        __primitive( "=", i, start),
-                        __primitive("<=", i, end),
+                        __primitive( "=", i, low),
+                        __primitive("<=", i, high),
                         __primitive("+=", i, stride:t)) {
         yield i;
       }
-
     } else {
-      for i in (start..end by stride).generalIterator() do yield i;
+      for i in (low..high by stride).generalIterator() do yield i;
     }
   }
 
-  iter _direct_param_stride_range_iter(const start: ?t, const end: t, param stride: ?strT)
+  iter _direct_param_stride_range_iter(const low: ?t, const high: t, param stride: ?strT)
     where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
     if (useOptimizedRangeIterators) {
       if stride == 0 then
@@ -1052,31 +1050,31 @@ module ChapelRange {
       var i: t;
       if (stride > 0) {
         if boundsChecking then
-          checkIfRangeIterWillOverflow(t, start, end, stride);
+          checkIfRangeIterWillOverflow(t, low, high, stride);
 
         while __primitive("C for loop",
-                          __primitive( "=", i, start),
-                          __primitive("<=", i, end),
+                          __primitive( "=", i, low),
+                          __primitive("<=", i, high),
                           __primitive("+=", i, stride:t)) {
           yield i;
         }
       } else if (stride < 0) {
         if boundsChecking then
-          checkIfRangeIterWillOverflow(t, start, end, stride, end, start);
+          checkIfRangeIterWillOverflow(t, low, high, stride, high, low);
 
         while __primitive("C for loop",
-                          __primitive( "=", i, end),
-                          __primitive(">=", i, start),
+                          __primitive( "=", i, high),
+                          __primitive(">=", i, low),
                           __primitive("+=", i, stride:t)) {
           yield i;
         }
       }
     } else {
-      for i in (start..end by stride).generalIterator() do yield i;
+      for i in (low..high by stride).generalIterator() do yield i;
     }
   }
 
-  iter _direct_all_param_range_iter(param start: ?t, param end: t, param stride: ?strT)
+  iter _direct_all_param_range_iter(param low: ?t, param high: t, param stride: ?strT)
     where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
     if (useOptimizedRangeIterators) {
       if stride == 0 then
@@ -1088,92 +1086,93 @@ module ChapelRange {
       var i: t;
       if (stride > 0) {
         if boundsChecking then
-          checkIfRangeIterWillOverflow(t, start, end, stride);
+          checkIfRangeIterWillOverflow(t, low, high, stride);
 
         while __primitive("C for loop",
-                          __primitive( "=", i, start),
-                          __primitive("<=", i, end),
+                          __primitive( "=", i, low),
+                          __primitive("<=", i, high),
                           __primitive("+=", i, stride:t)) {
           yield i;
         }
       } else if (stride < 0) {
         if boundsChecking then
-          checkIfRangeIterWillOverflow(t, start, end, stride, end, start);
+          checkIfRangeIterWillOverflow(t, low, high, stride, high, low);
 
         while __primitive("C for loop",
-                          __primitive( "=", i, end),
-                          __primitive(">=", i, start),
+                          __primitive( "=", i, high),
+                          __primitive(">=", i, low),
                           __primitive("+=", i, stride:t)) {
           yield i;
         }
       }
     } else {
-      for i in (start..end by stride).generalIterator() do yield i;
+      for i in (low..high by stride).generalIterator() do yield i;
     }
   }
 
 
-  // TODO need to do checks on stride to make sure it's != and <= max of
+  // cases for when stride is a non-param int (don't want to deal with finding
+  // chpl__diffMod and the likes, just create a non-anonymous range to iterate
+  // over.)
 
-  // cases for when stride is an int
-
-  iter _direct_range_iter(start: int(?w), end: int(w), stride: int(w)) {
-    // don't want to deal with finding chpl__diffMod and the likes, just create
-    // a non-anonymous range to iterate over
-    const r = start..end by stride;
+  iter _direct_range_iter(low: int(?w), high: int(w), stride: int(w)) {
+    const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter _direct_range_iter(start: uint(?w), end: uint(w), stride: int(w)) {
-    const r = start..end by stride;
+  iter _direct_range_iter(low: uint(?w), high: uint(w), stride: int(w)) {
+    const r = low..high by stride;
     for i in r do yield i;
   }
+
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride)
 
-  iter _direct_range_iter(start: int(?w), end: int(w), param stride : int(w)) {
-    for i in _direct_param_stride_range_iter(start, end, stride) do yield i;
+  iter _direct_range_iter(low: int(?w), high: int(w), param stride : int(w)) {
+    for i in _direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter _direct_range_iter(start: uint(?w), end: uint(w), param stride: int(w)) {
-    for i in _direct_param_stride_range_iter(start, end, stride) do yield i;
+  iter _direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
+    for i in _direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
 
-  // cases where all arguments are params? Not strictly needed but creates a
+  // case where all arguments are params. Not strictly needed but creates a
   // cleaner loop. 'for i in 1..10' generates for (i=1; i<=10; i+=1) with no
   // temp variables. Only implemented all int version (most likely iterator.)
   // Could be implemented for uint low/hi and uint stride as well, but it seems
-  // unlikely a user will write a for loop over such an anonymous range
+  // unlikely a user will write a for loop over such an anonymous range (might
+  // be even more unnessary if we copy propagation is improved and we
+  // de-normalize the IR.)
 
-  iter _direct_range_iter(param start: int(?w), param end: int(w), param stride: int(w)) {
-    for i in _direct_all_param_range_iter(start, end, stride) do yield i;
+
+  iter _direct_range_iter(param low: int(?w), param high: int(w), param stride: int(w)) {
+    for i in _direct_all_param_range_iter(low, high, stride) do yield i;
   }
 
 
-  // cases for when stride is a uint (we know the stride is positive)
+  // cases for when stride is a uint (we know the stride is must be positive)
 
-  iter _direct_range_iter(start: int(?w), end: int(w), stride: uint(w)) {
-    for i in _direct_uint_stride_range_iter(start, end, stride) do yield i;
+  iter _direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
+    for i in _direct_uint_stride_range_iter(low, high, stride) do yield i;
   }
 
-
-  iter _direct_range_iter(start: uint(?w), end: uint(w), stride: uint(w)) {
-    for i in _direct_uint_stride_range_iter(start, end, stride) do yield i;
+  iter _direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
+    for i in _direct_uint_stride_range_iter(low, high, stride) do yield i;
   }
 
 
   // cases for when stride isn't allowed
 
-  iter _direct_range_iter(start: int(?w), end: int(w), stride) {
+  iter _direct_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   typeToString(int(w)), " using a step of type ",
                   typeToString(stride.type));
     yield nil; // iters needs a yield in them
   }
 
-  iter _direct_range_iter(start: uint(?w), end: uint(w), stride) {
+  iter _direct_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   typeToString(uint(w)), " using a step of type ",
                   typeToString(stride.type));
@@ -1183,10 +1182,11 @@ module ChapelRange {
 
   // case for when low and high aren't compatible types and can't be coerced
 
-  iter _direct_range_iter(start, end, stride) {
+  iter _direct_range_iter(low, high, stride) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
     yield nil; // iters needs a yield in them
   }
+
 
   //################################################################################
   //# Serial Iterators
