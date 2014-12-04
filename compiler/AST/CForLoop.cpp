@@ -25,6 +25,8 @@
 #include "codegen.h"
 #include "ForLoop.h"
 
+#include <algorithm>
+
 /************************************ | *************************************
 *                                                                           *
 * Factory methods for the Parser                                            *
