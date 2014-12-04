@@ -305,7 +305,7 @@ BlockStmt::getFirstExpr() {
 
 Expr*
 BlockStmt::getNextExpr(Expr* expr) {
-  Expr* retval = 0;
+  Expr* retval = this;
 
   if (expr == blockInfoGet() && body.head != 0)
     retval = body.head->getFirstExpr();
@@ -736,7 +736,7 @@ CondStmt::getFirstExpr() {
 
 Expr*
 CondStmt::getNextExpr(Expr* expr) {
-  Expr* retval = NULL;
+  Expr* retval = this;
 
   if (expr == condExpr && thenStmt != NULL)
     retval = thenStmt->getFirstExpr();

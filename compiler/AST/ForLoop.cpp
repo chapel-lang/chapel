@@ -294,7 +294,7 @@ Expr* ForLoop::getFirstExpr()
 
 Expr* ForLoop::getNextExpr(Expr* expr)
 {
-  Expr* retval = NULL;
+  Expr* retval = this;
 
   if (expr == mIndex && mIterator != NULL)
     retval = mIterator;

@@ -240,7 +240,7 @@ Expr* WhileDoStmt::getFirstExpr() {
 }
 
 Expr* WhileDoStmt::getNextExpr(Expr* expr) {
-  Expr* retval = NULL;
+  Expr* retval = this;
 
   if (expr == condExprGet() && body.head != NULL)
     retval = body.head->getFirstExpr();
