@@ -147,7 +147,21 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
   retval->continueLabel = continueLabel;
 
   if (blockInfo != 0)
-    retval->cforInfoSet(blockInfo->copy(map, true));
+  {
+    Expr*      initClause = blockInfo->get(1)->copy(map, true);
+    Expr*      termClause = blockInfo->get(2)->copy(map, true);
+    Expr*      incrClause = blockInfo->get(3)->copy(map, true);
+
+    BlockStmt* initBlock  = toBlockStmt(initClause);
+    BlockStmt* termBlock  = toBlockStmt(termClause);
+    BlockStmt* incrBlock  = toBlockStmt(incrClause);
+
+    INT_ASSERT(initBlock);
+    INT_ASSERT(termBlock);
+    INT_ASSERT(incrBlock);
+
+    retval->loopHeaderSet(initBlock, termBlock, incrBlock);
+  }
 
   if (modUses   != 0)
     retval->modUses = modUses->copy(map, true);
@@ -182,10 +196,10 @@ void CForLoop::loopHeaderSet(BlockStmt* initBlock,
   termBlock->blockTag = BLOCK_C_FOR_LOOP;
   incrBlock->blockTag = BLOCK_C_FOR_LOOP;
 
-  cforInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
-                           initBlock,
-                           termBlock,
-                           incrBlock));
+  BlockStmt::blockInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
+                                       initBlock,
+                                       termBlock,
+                                       incrBlock));
 }
 
 
@@ -193,11 +207,6 @@ void CForLoop::loopHeaderSet(BlockStmt* initBlock,
 CallExpr* CForLoop::cforInfoGet() const
 {
  return BlockStmt::blockInfoGet();
-}
-
-CallExpr* CForLoop::cforInfoSet(CallExpr* info)
-{
-  return BlockStmt::blockInfoSet(info);
 }
 
 CallExpr* CForLoop::blockInfoGet() const
