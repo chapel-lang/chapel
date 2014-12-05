@@ -1007,10 +1007,8 @@ for testname in testsrc:
     else:
         execenv = list()
 
-    if len(globalExecenv)==0 and len(execenv)==0:
-        testenv = os.environ
-    else:
-        testenv = os.environ.copy()
+    testenv = {}
+    if len(globalExecenv)!=0 or len(execenv)!=0:
         for tev in globalExecenv:
             testenv[tev.split('=')[0].strip()] = tev.split('=')[1].strip()
         for tev in execenv:
@@ -1459,7 +1457,7 @@ for testname in testsrc:
                         my_stdin=file(redirectin, 'r')
                     test_command = [cmd] + LauncherTimeoutArgs(timeout) + args
                     p = subprocess.Popen(test_command,
-                                        env=testenv,
+                                        env=dict(os.environ.items() + testenv.items()),
                                         stdin=my_stdin,
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT)
@@ -1489,7 +1487,7 @@ for testname in testsrc:
                     else:
                         my_stdin = file(redirectin, 'r')
                     p = subprocess.Popen([timedexec, str(timeout), wholecmd],
-                                        env=testenv,
+                                        env=dict(os.environ.items() + testenv.items()),
                                         stdin=my_stdin,
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT)
@@ -1511,7 +1509,7 @@ for testname in testsrc:
                     else:
                         my_stdin=file(redirectin, 'r')
                     p = subprocess.Popen([cmd]+args,
-                                        env=testenv,
+                                        env=dict(os.environ.items() + testenv.items()),
                                         stdin=my_stdin,
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT)
