@@ -5,4 +5,4 @@ CHPL_TEST_VGRND_EXE == on
 # depends on lseek and lseek on Cygwin breaks
 # assumptions about bytes read as an indicator
 # of your position in the file.
-CHPL_HOST_PLATFORM == cygwin
+CHPL_HOST_PLATFORM <= cygwin
