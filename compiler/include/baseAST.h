@@ -400,7 +400,9 @@ def_to_ast(CForLoop);
                                                                             \
     } else if (stmt->isCForLoop()    == true) {                             \
       AST_CALL_LIST (stmt, CForLoop,  body,           call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, CForLoop,  cforInfoGet(),  call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, CForLoop,  initBlockGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, CForLoop,  testBlockGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, CForLoop,  incrBlockGet(), call, __VA_ARGS__);   \
                                                                             \
     } else  {                                                               \
       AST_CALL_LIST (stmt, BlockStmt, body,           call, __VA_ARGS__);   \

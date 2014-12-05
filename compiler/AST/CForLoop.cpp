@@ -103,8 +103,10 @@ CForLoop* CForLoop::loopForClause(BlockStmt* clause)
 
   INT_ASSERT(clause->blockTag == BLOCK_C_FOR_LOOP);
 
-  if (CallExpr* call = toCallExpr(clause->parentExpr)) {
-    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
+  if (CallExpr* call = toCallExpr(clause->parentExpr))
+  {
+    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
+    {
       retval = toCForLoop(call->parentExpr);
 
       INT_ASSERT(retval != 0);
@@ -122,12 +124,16 @@ CForLoop* CForLoop::loopForClause(BlockStmt* clause)
 
 CForLoop::CForLoop()
 {
-
+  mInitClause = 0;
+  mTestClause = 0;
+  mIncrClause = 0;
 }
 
 CForLoop::CForLoop(BlockStmt* initBody) : BlockStmt(initBody)
 {
-
+  mInitClause = 0;
+  mTestClause = 0;
+  mIncrClause = 0;
 }
 
 CForLoop::~CForLoop()
@@ -182,49 +188,24 @@ void CForLoop::loopHeaderSet(BlockStmt* initBlock,
   testBlock->blockTag = BLOCK_C_FOR_LOOP;
   incrBlock->blockTag = BLOCK_C_FOR_LOOP;
 
-  BlockStmt::blockInfoSet(new CallExpr(primitives[PRIM_BLOCK_C_FOR_LOOP],
-                                       initBlock,
-                                       testBlock,
-                                       incrBlock));
+  mInitClause = initBlock;
+  mTestClause = testBlock;
+  mIncrClause = incrBlock;
 }
 
 BlockStmt* CForLoop::initBlockGet() const
 {
-  CallExpr*  info   = BlockStmt::blockInfoGet();
-  Expr*      slot   = (info != 0) ? info->get(1) : 0;
-  BlockStmt* retval = toBlockStmt(slot);
-
-  if (info != 0) INT_ASSERT(retval);
-
-  return retval;
+  return mInitClause;
 }
 
 BlockStmt* CForLoop::testBlockGet() const
 {
-  CallExpr*  info   = BlockStmt::blockInfoGet();
-  Expr*      slot   = (info != 0) ? info->get(2) : 0;
-  BlockStmt* retval = toBlockStmt(slot);
-
-  if (info != 0) INT_ASSERT(retval);
-
-  return retval;
+  return mTestClause;
 }
 
 BlockStmt* CForLoop::incrBlockGet() const
 {
-  CallExpr*  info   = BlockStmt::blockInfoGet();
-  Expr*      slot   = (info != 0) ? info->get(3) : 0;
-  BlockStmt* retval = toBlockStmt(slot);
-
-  if (info != 0) INT_ASSERT(retval);
-
-  return retval;
-}
-
-// NOAKES 2014/11/26   Transitional
-CallExpr* CForLoop::cforInfoGet() const
-{
- return BlockStmt::blockInfoGet();
+  return mIncrClause;
 }
 
 CallExpr* CForLoop::blockInfoGet() const
@@ -245,8 +226,10 @@ bool CForLoop::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (BlockStmt* test = testBlockGet()) {
-    if (test->body.length == 0) {
+  if (BlockStmt* test = testBlockGet())
+  {
+    if (test->body.length == 0)
+    {
       remove();
       retval = true;
     }
@@ -259,37 +242,31 @@ void CForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (BlockStmt::blockInfoGet() == 0)
+  if (BlockStmt::blockInfoGet() != 0)
     INT_FATAL(this, "CForLoop::verify. blockInfo is NULL");
 
-  if (cforInfoGet() == 0)
-    INT_FATAL(this, "CForLoop::verify. blockInfo is NULL");
-
-  if (cforInfoGet()->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) == false)
-    INT_FATAL(this, "CForLoop::verify. blockInfo type is not PRIM_BLOCK_C_FOR_LOOP");
-
-  if (initBlockGet() == 0)
+  if (initBlockGet()            == 0)
     INT_FATAL(this, "CForLoop::verify. initBlock is NULL");
 
-  if (testBlockGet() == 0)
+  if (testBlockGet()            == 0)
     INT_FATAL(this, "CForLoop::verify. testBlock is NULL");
 
-  if (incrBlockGet() == 0)
+  if (incrBlockGet()            == 0)
     INT_FATAL(this, "CForLoop::verify. incrBlock is NULL");
 
-  if (initBlockGet()->blockTag != BLOCK_C_FOR_LOOP)
+  if (initBlockGet()->blockTag  != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. initBlock is not BLOCK_C_FOR_LOOP");
 
-  if (testBlockGet()->blockTag != BLOCK_C_FOR_LOOP)
+  if (testBlockGet()->blockTag  != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. testBlock is not BLOCK_C_FOR_LOOP");
 
-  if (incrBlockGet()->blockTag != BLOCK_C_FOR_LOOP)
+  if (incrBlockGet()->blockTag  != BLOCK_C_FOR_LOOP)
     INT_FATAL(this, "CForLoop::verify. incrBlock is not BLOCK_C_FOR_LOOP");
 
-  if (modUses   != 0)
+  if (modUses                   != 0)
     INT_FATAL(this, "CForLoop::verify. modUses   is not NULL");
 
-  if (byrefVars != 0)
+  if (byrefVars                 != 0)
     INT_FATAL(this, "CForLoop::verify. byrefVars is not NULL");
 }
 
@@ -540,8 +517,10 @@ GenRet CForLoop::codegenCForLoopCondition(BlockStmt* block)
 #endif
 }
 
-void CForLoop::accept(AstVisitor* visitor) {
-  if (visitor->enterCForLoop(this) == true) {
+void CForLoop::accept(AstVisitor* visitor)
+{
+  if (visitor->enterCForLoop(this) == true)
+  {
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
@@ -558,14 +537,25 @@ void CForLoop::accept(AstVisitor* visitor) {
   }
 }
 
-Expr* CForLoop::getFirstExpr() {
+Expr* CForLoop::getFirstExpr()
+{
   Expr* retval = 0;
 
-  if (cforInfoGet() != 0)
-    retval = cforInfoGet()->getFirstExpr();
+  if (mInitClause != 0)
+  {
+    INT_ASSERT(mTestClause != 0);
+    INT_ASSERT(mIncrClause != 0);
 
-  else if (body.head      != 0)
+    retval = mInitClause->getFirstExpr();
+  }
+
+  else if (body.head != 0)
+  {
+    INT_ASSERT(mTestClause == 0);
+    INT_ASSERT(mIncrClause == 0);
+
     retval = body.head->getFirstExpr();
+  }
 
   else
     retval = this;
@@ -573,11 +563,26 @@ Expr* CForLoop::getFirstExpr() {
   return retval;
 }
 
-Expr* CForLoop::getNextExpr(Expr* expr) {
-  Expr* retval = this;
+Expr* CForLoop::getNextExpr(Expr* expr)
+{
+  Expr* retval = 0;
 
-  if (expr == cforInfoGet() && body.head != NULL)
+  if (expr == mInitClause)
+  {
+    INT_ASSERT(mTestClause != 0);
+    INT_ASSERT(mIncrClause != 0);
+
+    retval = mTestClause->getFirstExpr();
+  }
+
+  else if (expr == mTestClause)
+    retval = mIncrClause->getFirstExpr();
+
+  else if (expr == mIncrClause && body.head != NULL)
     retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
 
   return retval;
 }

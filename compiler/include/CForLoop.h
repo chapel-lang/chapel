@@ -65,9 +65,6 @@ public:
   BlockStmt*             testBlockGet()                               const;
   BlockStmt*             incrBlockGet()                               const;
 
-  // NOAKES 2014/11/26 Transitional
-  CallExpr*              cforInfoGet()                                const;
-
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);
 
@@ -78,6 +75,10 @@ private:
 
   std::string            codegenCForLoopHeader   (BlockStmt* block);
   GenRet                 codegenCForLoopCondition(BlockStmt* block);
+
+  BlockStmt*             mInitClause;
+  BlockStmt*             mTestClause;
+  BlockStmt*             mIncrClause;
 };
 
 #endif
