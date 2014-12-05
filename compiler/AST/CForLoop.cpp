@@ -99,19 +99,10 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
 // a BlockStmt that is presumed to be one of the header claiuses
 CForLoop* CForLoop::loopForClause(BlockStmt* clause)
 {
-  CForLoop* retval = 0;
+  CForLoop* retval = toCForLoop(clause->parentExpr);
 
   INT_ASSERT(clause->blockTag == BLOCK_C_FOR_LOOP);
-
-  if (CallExpr* call = toCallExpr(clause->parentExpr))
-  {
-    if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
-    {
-      retval = toCForLoop(call->parentExpr);
-
-      INT_ASSERT(retval != 0);
-    }
-  }
+  INT_ASSERT(retval);
 
   return retval;
 }
