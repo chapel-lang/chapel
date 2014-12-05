@@ -142,14 +142,15 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
 //
 bool CollapseBlocks::enterCForLoop(CForLoop* node)
 {
-  CallExpr* call = node->cforInfoGet();
-
   // Handle the init/test/incr fields specially
-  for_alist(cForExprs, call->argList)
-  {
-    if (BlockStmt* block = toBlockStmt(cForExprs))
-      enterBlockStmt(block);
-  }
+  if (BlockStmt* init = node->initBlockGet())
+    enterBlockStmt(init);
+
+  if (BlockStmt* test = node->testBlockGet())
+    enterBlockStmt(test);
+
+  if (BlockStmt* incr = node->incrBlockGet())
+    enterBlockStmt(incr);
 
   // Now simply forward to handle the body
   return enterBlockStmt(node);
