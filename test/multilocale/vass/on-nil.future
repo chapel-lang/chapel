@@ -94,7 +94,13 @@ Vass thinks that implementing the "value"-type semantics
 for a class-typed EXPR would add complexity in the compiler
 and the generated code. It should be doable though.
 
-The .good file reflects the agreeable alternative that
+Tom feels that the simplest definition of "on EXPR", where
+EXPR is of a class type, is "go to the locale of the object
+that EXPR references". Since 'nil' does not reference
+any objects, this locale is undefined, so it should result
+in a run-time error.
+
+The .good file reflects the view that
 STMT executes on the current locale whenever EXPR==nil.
 
 We should also check our definitions and implementation
