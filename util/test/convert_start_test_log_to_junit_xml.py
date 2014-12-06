@@ -21,12 +21,19 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 import chpl_platform
 
 
+DEBUG = False
+
+
 def main():
     """Parse cli arguments and convert a start_test log file to jUnit xml
     format.
     """
     args = _parse_args()
     _setup_logging(args.verbose)
+
+    global DEBUG
+    if args.debug:
+        DEBUG = True
 
     test_cases = _parse_start_test_log(args.start_test_log)
     _create_junit_report(test_cases, args.junit_xml)
@@ -301,6 +308,9 @@ def _parse_args():
                       help='start_test log file. (default: %default)')
     parser.add_option('-o', '--junit-xml', default=_junit_xml_default(),
                       help='jUnit XML output file. (default: %default)')
+    parser.add_option('--debug', action='store_true',
+                      help=('Throw exceptions when invalid data is '
+                            'encountered. (default: %default)'))
     opts, _ = parser.parse_args()
     return opts
 
