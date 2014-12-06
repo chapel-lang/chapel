@@ -96,7 +96,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 *                                                                           *
 ************************************* | ************************************/
 
-ForLoop::ForLoop()
+ForLoop::ForLoop() : LoopStmt(0)
 {
   mIndex    = 0;
   mIterator = 0;
@@ -105,7 +105,7 @@ ForLoop::ForLoop()
 
 ForLoop::ForLoop(VarSymbol* index,
                  VarSymbol* iterator,
-                 BlockStmt* initBody) : BlockStmt(initBody)
+                 BlockStmt* initBody) : LoopStmt(initBody)
 {
   mIndex    = new SymExpr(index);
   mIterator = new SymExpr(iterator);

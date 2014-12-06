@@ -20,9 +20,9 @@
 #ifndef _WHILE_STMT_H_
 #define _WHILE_STMT_H_
 
-#include "stmt.h"
+#include "LoopStmt.h"
 
-class WhileStmt : public BlockStmt
+class WhileStmt : public LoopStmt
 {
 public:
   SymExpr*               condExprGet()                                const;

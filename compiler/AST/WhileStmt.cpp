@@ -24,7 +24,7 @@
 #include "stlUtil.h"
 
 WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* initBody) :
-  BlockStmt(initBody)
+  LoopStmt(initBody)
 {
   mCondExpr = (var != 0) ? new SymExpr(var) : 0;
 }

@@ -113,14 +113,14 @@ CForLoop* CForLoop::loopForClause(BlockStmt* clause)
 *                                                                           *
 ************************************* | ************************************/
 
-CForLoop::CForLoop()
+CForLoop::CForLoop() : LoopStmt(0)
 {
   mInitClause = 0;
   mTestClause = 0;
   mIncrClause = 0;
 }
 
-CForLoop::CForLoop(BlockStmt* initBody) : BlockStmt(initBody)
+CForLoop::CForLoop(BlockStmt* initBody) : LoopStmt(initBody)
 {
   mInitClause = 0;
   mTestClause = 0;
