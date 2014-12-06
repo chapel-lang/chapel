@@ -684,6 +684,15 @@ QIO qio_err_to_int() == EEOF assertion error
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
 
 
+The expected output changed from "Success" to "No error" 2014-12-05
+-------------------------------------------------------------------
+[Error matching program output for io/sungeun/ioerror (execopts: 5)]
+
+This test relies on a call to the platform's function for converting error codes
+to error strings.  It's not clear why this failed today.  Need to develop a fix.
+(Mike)
+
+
 === sporadic failures below ===
 
 sporadic timeouts (frequent)
