@@ -121,6 +121,17 @@ def _parse_start_test_log(start_test_log):
                 test_start, test_end = test_start_skip, test_end_skip
                 test_skipped = True
 
+            # If test_end is still -1 (i.e. not found), look for end of subtest
+            # call (usually means subtest failed and did not tests).
+            if test_start != -1 and test_end == -1:
+                test_start, test_end = _get_block(
+                    sub_test_lines,
+                    '[test: ',
+                    '[Finished subtest "')
+                if test_end == -1:
+                    raise ValueError('Failed to parse test case from: {0}'.format(
+                        sub_test_lines))
+
             # No more test cases; delete remaining lines and finish up.
             if test_start == -1:
                 del sub_test_lines[:]
@@ -223,6 +234,7 @@ def _get_test_name(test_case_lines):
 
 
 def _get_test_time(test_case_lines):
+
     """Return the total compile and execution time in seconds for single test
     case. Finds the "[Elapsed time to compile and execute all versions of ..." line
     and extracts the time from it.
@@ -237,14 +249,21 @@ def _get_test_time(test_case_lines):
         test_case_lines,
         '[Elapsed time to compile and execute all versions of "')
     if time_line_idx == -1:
-        raise ValueError('Could not find elapsed time line in: {0}'.format(
-            test_case_lines))
+        msg = 'Could not find elapsed time line in: {0}'.format(
+            test_case_lines)
+        logging.warn(msg)
+        if DEBUG:
+            raise ValueError(msg)
     time_line = test_case_lines[time_line_idx]
 
     pattern = re.compile(' - (?P<time>\d+\.\d+) seconds\]$')
     match = pattern.search(time_line)
     if match is None:
-        raise ValueError('Could not find time in: {0}'.format(time_line))
+        msg = 'Could not find time in: {0}'.format(time_line)
+        logging.warn(msg)
+        if DEBUG:
+            raise ValueError(msg)
+
     time = match.group('time')
     return float(time)
 
