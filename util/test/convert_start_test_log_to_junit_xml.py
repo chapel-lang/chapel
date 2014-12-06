@@ -5,9 +5,9 @@
 
 from __future__ import print_function, unicode_literals
 
-import argparse
 import getpass
 import logging
+import optparse
 import os.path
 import re
 import sys
@@ -272,18 +272,18 @@ def _get_test_error(test_case_lines):
 
 
 def _parse_args():
-
     """Parse and return cli arguments."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Enable verbose output.')
-    parser.add_argument('-l', '--start-test-log', default=_start_test_default_log(),
-                        help='start_test log file.')
-    parser.add_argument('-o', '--junit-xml', default=_junit_xml_default(),
-                        help='jUnit XML output file.')
-    return parser.parse_args()
+    parser = optparse.OptionParser(
+        usage='usage: %prog [options] args',
+        description=__doc__)
+    parser.add_option('-v', '--verbose', action='store_true',
+                      help='Enable verbose output. (default: %default)')
+    parser.add_option('-l', '--start-test-log', default=_start_test_default_log(),
+                      help='start_test log file. (default: %default)')
+    parser.add_option('-o', '--junit-xml', default=_junit_xml_default(),
+                      help='jUnit XML output file. (default: %default)')
+    opts, _ = parser.parse_args()
+    return opts
 
 
 def _chpl_home():
