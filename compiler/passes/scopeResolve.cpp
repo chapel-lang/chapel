@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -1091,15 +1091,17 @@ static void resolveGotoLabels() {
           USR_FATAL(gs, "break or continue is not in a loop");
 
         if (gs->gotoTag == GOTO_BREAK) {
-          Symbol* breakLabel = loop->breakLabel;
+          Symbol* breakLabel = loop->breakLabelGet();
 
           INT_ASSERT(breakLabel);
           gs->label->replace(new SymExpr(breakLabel));
+
         } else if (gs->gotoTag == GOTO_CONTINUE) {
-          Symbol* continueLabel = loop->continueLabel;
+          Symbol* continueLabel = loop->continueLabelGet();
           INT_ASSERT(continueLabel);
 
           gs->label->replace(new SymExpr(continueLabel));
+
         } else
           INT_FATAL(gs, "unexpected goto type");
       }
@@ -1117,10 +1119,10 @@ static void resolveGotoLabels() {
       }
 
       if (gs->gotoTag == GOTO_BREAK)
-        label->replace(new SymExpr(loop->breakLabel));
+        label->replace(new SymExpr(loop->breakLabelGet()));
 
       else if (gs->gotoTag == GOTO_CONTINUE)
-        label->replace(new SymExpr(loop->continueLabel));
+        label->replace(new SymExpr(loop->continueLabelGet()));
 
       else
         INT_FATAL(gs, "unexpected goto type");
@@ -1130,7 +1132,7 @@ static void resolveGotoLabels() {
 
 static BlockStmt* find_outer_loop(Expr* stmt) {
   if (BlockStmt* block = toBlockStmt(stmt))
-    if (block->isLoop())
+    if (block->isLoopStmt())
       return block;
 
   if (stmt->parentExpr)

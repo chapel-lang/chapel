@@ -32,6 +32,8 @@ AST_SRCS = \
 	type.cpp \
 	view.cpp \
                              \
+        LoopStmt.cpp         \
+                             \
         WhileStmt.cpp        \
         WhileDoStmt.cpp      \
         DoWhileStmt.cpp      \

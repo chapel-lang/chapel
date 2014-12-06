@@ -89,10 +89,10 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   Stmt(E_BlockStmt),
   blockTag(initBlockTag),
   modUses(NULL),
-  breakLabel(NULL),
-  continueLabel(NULL),
   userLabel(NULL),
   byrefVars(NULL),
+  breakLabel(NULL),
+  continueLabel(NULL),
   blockInfo(NULL) {
   body.parent = this;
 
@@ -187,6 +187,22 @@ CallExpr* BlockStmt::blockInfoSet(CallExpr* expr) {
   blockInfo = expr;
 
   return blockInfo;
+}
+
+LabelSymbol* BlockStmt::breakLabelGet() const {
+  return breakLabel;
+}
+
+void BlockStmt::breakLabelSet(LabelSymbol* sym) {
+  breakLabel = sym;
+}
+
+LabelSymbol* BlockStmt::continueLabelGet() const {
+  return continueLabel;
+}
+
+void BlockStmt::continueLabelSet(LabelSymbol* sym) {
+  continueLabel = sym;
 }
 
 GenRet BlockStmt::codegen() {
@@ -360,7 +376,7 @@ BlockStmt::isScopeless() const {
 }
 
 bool
-BlockStmt::isLoop() const {
+BlockStmt::isLoopStmt() const {
   return blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP);
 }
 

@@ -24,7 +24,7 @@
 #include "stlUtil.h"
 
 WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* initBody) :
-  BlockStmt(initBody)
+  LoopStmt(initBody)
 {
   mCondExpr = (var != 0) ? new SymExpr(var) : 0;
 }
@@ -94,11 +94,6 @@ void WhileStmt::verify()
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");
-}
-
-bool WhileStmt::isLoop() const
-{
-  return true;
 }
 
 bool WhileStmt::isWhileStmt() const

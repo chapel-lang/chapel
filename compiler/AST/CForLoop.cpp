@@ -78,8 +78,8 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
 
   retval->astloc        = forLoop->astloc;
   retval->blockTag      = forLoop->blockTag;
-  retval->breakLabel    = forLoop->breakLabel;
-  retval->continueLabel = forLoop->continueLabel;
+  retval->breakLabel    = forLoop->breakLabelGet();
+  retval->continueLabel = forLoop->continueLabelGet();
 
   if (forLoop->modUses   != 0)
     retval->modUses = forLoop->modUses->copy(&map, true);
@@ -113,14 +113,14 @@ CForLoop* CForLoop::loopForClause(BlockStmt* clause)
 *                                                                           *
 ************************************* | ************************************/
 
-CForLoop::CForLoop()
+CForLoop::CForLoop() : LoopStmt(0)
 {
   mInitClause = 0;
   mTestClause = 0;
   mIncrClause = 0;
 }
 
-CForLoop::CForLoop(BlockStmt* initBody) : BlockStmt(initBody)
+CForLoop::CForLoop(BlockStmt* initBody) : LoopStmt(initBody)
 {
   mInitClause = 0;
   mTestClause = 0;
@@ -159,11 +159,6 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
     update_symbols(retval, map);
 
   return retval;
-}
-
-bool CForLoop::isLoop() const
-{
-  return true;
 }
 
 bool CForLoop::isCForLoop() const
