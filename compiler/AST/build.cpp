@@ -414,15 +414,19 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
 BlockStmt*
 buildLabelStmt(const char* name, Expr* stmt) {
   BlockStmt* block = toBlockStmt(stmt);
+
   if (block) {
     Expr* breakLabelStmt = block->body.tail;
+
     if (!isDefExpr(breakLabelStmt) && isDefExpr(breakLabelStmt->prev)) {
       // the last statement in the block could be a call to _freeIterator()
       breakLabelStmt = breakLabelStmt->prev;
     }
+
     BlockStmt* loop = toBlockStmt(breakLabelStmt->prev);
+
     if (loop && loop->isLoop()) {
-      if (!loop->breakLabel || !loop->continueLabel) {
+      if (loop->breakLabelGet() == 0 || loop->continueLabelGet() == 0) {
         USR_FATAL(stmt, "cannot label parallel loop");
       } else {
         loop->userLabel = astr(name);
@@ -430,9 +434,11 @@ buildLabelStmt(const char* name, Expr* stmt) {
     } else {
       USR_FATAL(stmt, "cannot label non-loop statement");
     }
+
   } else {
     USR_FATAL(stmt, "cannot label non-loop statement");
   }
+
   return block;
 }
 
@@ -1180,7 +1186,9 @@ BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmt
     USR_FATAL(range, "iterators for param-for-loops must be literal ranges");
 
   LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-  block->breakLabel = breakLabel;
+
+  block->breakLabelSet(breakLabel);
+
   outer->insertAtTail(new DefExpr(breakLabel));
 
   Symbol* lowVar = insertBeforeCompilerTemp(block, low);

@@ -78,8 +78,8 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
 
   retval->astloc        = forLoop->astloc;
   retval->blockTag      = forLoop->blockTag;
-  retval->breakLabel    = forLoop->breakLabel;
-  retval->continueLabel = forLoop->continueLabel;
+  retval->breakLabel    = forLoop->breakLabelGet();
+  retval->continueLabel = forLoop->continueLabelGet();
 
   if (forLoop->modUses   != 0)
     retval->modUses = forLoop->modUses->copy(&map, true);

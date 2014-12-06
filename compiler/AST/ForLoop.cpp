@@ -161,8 +161,8 @@ BlockStmt* ForLoop::copyBody(SymbolMap* map)
   retval->astloc        = astloc;
   retval->blockTag      = blockTag;
 
-  retval->breakLabel    = breakLabel;
-  retval->continueLabel = continueLabel;
+  retval->breakLabelSet   (breakLabel);
+  retval->continueLabelSet(continueLabel);
 
   if (modUses   != 0)
     retval->modUses = modUses->copy(map, true);

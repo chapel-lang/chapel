@@ -481,13 +481,6 @@ void registerModule(ModuleSymbol* mod) {
         x = y;                                          \
   } while (0)
 
-#define SUB_LABEL(x)                                    \
-  do {                                                  \
-    if (x)                                              \
-      if (LabelSymbol* y = toLabelSymbol(map->get(x)))  \
-        x = y;                                          \
-  } while (0)
-
 #define SUB_TYPE(x)                                     \
   do {                                                  \
     if (x)                                              \
@@ -498,18 +491,35 @@ void registerModule(ModuleSymbol* mod) {
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
     SUB_SYMBOL(sym_expr->var);
+
   } else if (DefExpr* defExpr = toDefExpr(ast)) {
     SUB_TYPE(defExpr->sym->type);
+
   } else if (BlockStmt* bs = toBlockStmt(ast)) {
-    SUB_LABEL(bs->breakLabel);
-    SUB_LABEL(bs->continueLabel);
+    LabelSymbol* breakLabel    = bs->breakLabelGet();
+    LabelSymbol* continueLabel = bs->continueLabelGet();
+
+    if (breakLabel != 0) {
+      if (LabelSymbol* y = toLabelSymbol(map->get(breakLabel))) {
+        bs->breakLabelSet(y);
+      }
+    }
+
+    if (continueLabel != 0) {
+      if (LabelSymbol* y = toLabelSymbol(map->get(continueLabel))) {
+        bs->continueLabelSet(y);
+      }
+    }
+
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
     SUB_TYPE(ps->type);
+
   } else if (FnSymbol* ps = toFnSymbol(ast)) {
     SUB_TYPE(ps->type);
     SUB_TYPE(ps->retType);
     SUB_SYMBOL(ps->_this);
     SUB_SYMBOL(ps->_outer);
+
   } else if (ArgSymbol* ps = toArgSymbol(ast)) {
     SUB_TYPE(ps->type);
   }
