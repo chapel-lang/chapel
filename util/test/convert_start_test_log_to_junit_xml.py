@@ -62,8 +62,10 @@ def _create_junit_report(test_cases, junit_file):
         system_out = XML.SubElement(case_elem, 'system-out')
         system_out.text = test_case['system-out']
 
+    xml_content = XML.tostring(test_suite)
+    xml_content = _clean_xml(xml_content)
     with open(junit_file, 'w') as fp:
-        fp.write(XML.tostring(test_suite))
+        fp.write(xml_content)
     logging.info('Wrote jUnit report to: {0}'.format(junit_file))
 
 
@@ -273,6 +275,19 @@ def _get_test_error(test_case_lines):
         'message': message,
         'content': content,
     }
+
+
+def _clean_xml(xml_string):
+    """Replace invalid characters with "?".
+
+    :type xml_string: str
+    :arg xml_string: XML string
+
+    :rtype: str
+    :returns: valid XML string
+    """
+    invalid_chars = re.compile(r'[\000-\010\013\014\016-\037]')
+    return invalid_chars.sub('?', xml_string)
 
 
 def _parse_args():
