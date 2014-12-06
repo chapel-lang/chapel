@@ -108,7 +108,7 @@ def _parse_start_test_log(start_test_log):
                 '[Skipping')
 
             test_skipped = False
-            if test_end_skip != -1 and test_end_skip < test_end:
+            if test_end_skip != -1 and (test_end == -1 or test_end_skip < test_end):
                 test_start, test_end = test_start_skip, test_end_skip
                 test_skipped = True
 
@@ -181,7 +181,10 @@ def _get_block(lines, start_prefix, end_prefix):
         return -1, -1
 
     end = _find_line(lines[start:], end_prefix)
-    return start, start + end
+    if end == -1:
+        return start, end
+    else:
+        return start, start + end
 
 
 def _get_test_name(test_case_lines):
