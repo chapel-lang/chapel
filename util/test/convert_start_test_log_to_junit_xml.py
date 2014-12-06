@@ -1,0 +1,324 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""Convert start_test log to jUnit XML report."""
+
+from __future__ import print_function, unicode_literals
+
+import argparse
+import getpass
+import logging
+import os.path
+import re
+import sys
+import xml.etree.ElementTree as XML
+
+# Add the chplenv dir to the python path.
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_platform
+
+
+def main():
+    """Parse cli arguments and convert a start_test log file to jUnit xml
+    format.
+    """
+    args = _parse_args()
+    _setup_logging(args.verbose)
+
+    test_cases = _parse_start_test_log(args.start_test_log)
+    _create_junit_report(test_cases, args.junit_xml)
+
+
+def _create_junit_report(test_cases, junit_file):
+    """Create jUnit XML report from test info.
+
+    :type test_cases: list of dicts
+    :arg test_cases: list of dicts; each dict contains info about a single test case
+
+    :type junit_file: str
+    :arg junit_file: filename to write the jUnit XML report
+    """
+    logging.debug('Creating jUnit XML report at: {0}'.format(junit_file))
+    test_suite = XML.Element('testsuite')
+
+    for test_case in test_cases:
+        case_elem = XML.SubElement(test_suite, 'testcase')
+        case_elem.set('name', test_case['name'])
+        case_elem.set('classname', test_case['classname'])
+        case_elem.set('time', str(test_case['time']))
+
+        test_error = test_case['error']
+
+        if test_case['skipped']:
+            skip_elem = XML.SubElement(case_elem, 'skipped')
+        elif test_error is not None:
+            error_elem = XML.SubElement(case_elem, 'error')
+            error_elem.set('message', test_error['message'])
+            error_elem.text = test_error['content']
+
+        system_out = XML.SubElement(case_elem, 'system-out')
+        system_out.text = test_case['system-out']
+
+    with open(junit_file, 'w') as fp:
+        fp.write(XML.tostring(test_suite))
+    logging.info('Wrote jUnit report to: {0}'.format(junit_file))
+
+
+def _parse_start_test_log(start_test_log):
+    """Parse start_test logfile and return results in python data structure.
+
+    :type start_test_log: str
+    :arg start_test_log: start_test log filename
+
+    :rtype: list of dicts
+    :returns: list of dicts; each dict contains info about a single test case
+    """
+    logging.debug('Parsing start_test log: {0}'.format(start_test_log))
+    with open(start_test_log, 'r') as fp:
+        start_test_lines = fp.readlines()
+    logging.debug('Read {0} lines from "{1}".'.format(
+        len(start_test_lines), start_test_log))
+
+    test_cases = []
+    while len(start_test_lines) > 0:
+        subtest_start, subtest_end = _get_block(
+            start_test_lines, '[Starting subtest - ', '[Finished subtest ')
+
+        # No more sub_tests; delete the remaining lines and finish up.
+        if subtest_start == -1:
+            del start_test_lines[:]
+            continue
+
+        # Copy subtest lines into new list for further processing and delete
+        # them from start_test_lines.
+        sub_test_lines = start_test_lines[subtest_start:subtest_end+1:1]
+        del start_test_lines[:subtest_end+1]
+
+        while len(sub_test_lines) > 0:
+            test_start, test_end = _get_block(
+                sub_test_lines,
+                '[test: ',
+                '[Elapsed time to compile and execute all versions of "')
+            test_start_skip, test_end_skip = _get_block(
+                sub_test_lines,
+                '[test: ',
+                '[Skipping')
+
+            test_skipped = False
+            if test_end_skip != -1 and test_end_skip < test_end:
+                test_start, test_end = test_start_skip, test_end_skip
+                test_skipped = True
+
+            # No more test cases; delete remaining lines and finish up.
+            if test_start == -1:
+                del sub_test_lines[:]
+                continue
+
+            # Copy test lines into new list for further processing and delete
+            # from sub_test_lines.
+            test_case_lines = sub_test_lines[test_start:test_end+1:1]
+            del sub_test_lines[:test_end+1]
+
+            # Extract test name from "[test: <path to .chpl file>]" line.
+            classname, test_name = _get_test_name(test_case_lines)
+            if test_skipped:
+                test_time = 0.0
+                error = None
+            else:
+                test_time = _get_test_time(test_case_lines)
+                error = _get_test_error(test_case_lines)
+            test_content = ''.join(test_case_lines)
+
+            test_case = {
+                'name': test_name,
+                'classname': classname,
+                'time': test_time,
+                'error': error,
+                'skipped': test_skipped,
+                'system-out': test_content,
+            }
+
+            test_cases.append(test_case)
+
+    logging.info('Parsed {0} test cases from "{1}".'.format(
+        len(test_cases), start_test_log))
+    return test_cases
+
+def _find_line(lines, prefix):
+    """Find a line that starts with prefix in lines list.
+
+    :type lines: list
+    :arg lines: list of strings
+
+    :type prefix: str
+    :arg prefix: search prefix
+
+    :rtype: int
+    :returns: index of string that starts with 'prefix'; -1 if not found
+    """
+    for i, line in enumerate(lines):
+        if line.startswith(prefix):
+            return i
+    return -1
+
+
+def _get_block(lines, start_prefix, end_prefix):
+    """Find the lines in the list between a given start point and end point.
+
+    :type lines: list
+    :arg lines: list of lines from start_test logfile.
+
+    :rtype: (int, int)
+    :returns: tuple for range of line numbers
+    """
+    start = _find_line(lines, start_prefix)
+
+    # No more subtests in log file.
+    if start == -1:
+        return -1, -1
+
+    end = _find_line(lines[start:], end_prefix)
+    return start, start + end
+
+
+def _get_test_name(test_case_lines):
+    """Return test name and classname from single test case lines. Extract from
+    "[test: <path to .chpl file>]" line. Use the directory path as the
+    classname and the filename, without extension, as the test name. For
+    example, in the example below, "release/examples" would be the classname
+    and "hello" would be the test name.
+
+    :type test_case_lines: list
+    :arg test_case_lines: lines for a single test case from start_test logfile
+
+    :rtype: (str, str)
+    :returns: tuple with classname and test name
+    """
+    pattern = re.compile('\[test: (?P<test_name>[^\]]+)\]')
+    match = pattern.search(test_case_lines[0])
+    if match is None:
+        raise ValueError('Could not find test name in: {0}'.format(
+            test_case_lines[0].strip()))
+
+    test_file = match.group('test_name')
+    classname = os.path.dirname(test_file)
+    base_file = os.path.basename(test_file)
+    test_name, _ = os.path.splitext(base_file)
+    return classname, test_name
+
+
+def _get_test_time(test_case_lines):
+    """Return the total compile and execution time in seconds for single test
+    case. Finds the "[Elapsed time to compile and execute all versions of ..." line
+    and extracts the time from it.
+
+    :type test_case_lines: list
+    :arg test_case_lines: lines for a single test case from start_test logfile
+
+    :rtype: float
+    :returns: time to run test
+    """
+    time_line_idx = _find_line(
+        test_case_lines,
+        '[Elapsed time to compile and execute all versions of "')
+    if time_line_idx == -1:
+        raise ValueError('Could not find elapsed time line in: {0}'.format(
+            test_case_lines))
+    time_line = test_case_lines[time_line_idx]
+
+    pattern = re.compile(' - (?P<time>\d+\.\d+) seconds\]$')
+    match = pattern.search(time_line)
+    if match is None:
+        raise ValueError('Could not find time in: {0}'.format(time_line))
+    time = match.group('time')
+    return float(time)
+
+
+def _get_test_error(test_case_lines):
+    """Find errors and warnings. If any exist, return error dict with message and
+    content. If no errors or warnings, return None.
+
+    :type test_case_lines: list
+    :arg test_case_lines: lines for a single test case from start_test logfile
+
+    :rtype: dict
+    :returns: error dict with 'message' and 'content' keys, None if no errors
+    """
+    error_pattern = re.compile('^\[Error.*$', re.IGNORECASE | re.MULTILINE)
+    warn_pattern = re.compile('^\[Warning.*$', re.IGNORECASE | re.MULTILINE)
+
+    whole_test = ''.join(test_case_lines)
+    errors = error_pattern.findall(whole_test)
+    warnings = warn_pattern.findall(whole_test)
+
+    # No errors or warnings!
+    if not (errors or warnings):
+        return None
+
+    # Use the first error or warning line as the message. The full test output
+    # will be included in system-out.
+    if errors:
+        message = errors[0].strip().strip('[]')
+    else:
+        message = warnings[0].strip().strip('[]')
+    content = '\n'.join(errors) + '\n'.join(warnings)
+
+    return {
+        'message': message,
+        'content': content,
+    }
+
+
+def _parse_args():
+
+    """Parse and return cli arguments."""
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Enable verbose output.')
+    parser.add_argument('-l', '--start-test-log', default=_start_test_default_log(),
+                        help='start_test log file.')
+    parser.add_argument('-o', '--junit-xml', default=_junit_xml_default(),
+                        help='jUnit XML output file.')
+    return parser.parse_args()
+
+
+def _chpl_home():
+    """Calculate and return $CHPL_HOME defaulting to root of repo/install."""
+    repo_root = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), '../..'))
+    return os.environ.get('CHPL_HOME', repo_root)
+
+
+def _start_test_default_log():
+    """Calculate default Logs/ dir (just like start_test)."""
+    test_dir = os.path.join(_chpl_home(), 'test')
+    logs_dir = os.path.join(test_dir, 'Logs')
+    log_filename = '{user}.{target_platform}.log'.format(
+        user=getpass.getuser(), target_platform=chpl_platform.get('target'))
+    log_file = os.path.join(logs_dir, log_filename)
+    return log_file
+
+
+def _junit_xml_default():
+    """Calculate default jUnit XML output file as $CHPL_HOME/chapel-tests.xml."""
+    return os.path.join(_chpl_home(), 'chapel-tests.xml')
+
+
+def _setup_logging(verbose):
+    """Initialize logging and set level based on verbose.
+
+    :type verbose: bool
+    :arg verbose: When True, set log level to DEBUG.
+    """
+    log_level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
+                        level=log_level)
+    logging.debug('Verbose output enabled.')
+
+
+if __name__ == '__main__':
+    main()
