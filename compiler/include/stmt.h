@@ -81,7 +81,7 @@ public:
   virtual Expr*       getNextExpr(Expr* expr);
 
   // New interface
-  virtual bool        isLoop()                                     const;
+  virtual bool        isLoopStmt()                                 const;
 
   virtual bool        isWhileStmt()                                const;
   virtual bool        isWhileDoStmt()                              const;

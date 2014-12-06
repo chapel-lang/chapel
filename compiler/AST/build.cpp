@@ -55,7 +55,7 @@ checkControlFlow(Expr* expr, const char* context) {
         }
       }
     } else if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->isLoop() && !loopSet.set_in(block)) {
+      if (block->isLoopStmt() && !loopSet.set_in(block)) {
         if (block->userLabel != NULL) {
           labelSet.set_add(block->userLabel);
         }
@@ -425,7 +425,7 @@ buildLabelStmt(const char* name, Expr* stmt) {
 
     BlockStmt* loop = toBlockStmt(breakLabelStmt->prev);
 
-    if (loop && loop->isLoop()) {
+    if (loop && loop->isLoopStmt()) {
       if (loop->breakLabelGet() == 0 || loop->continueLabelGet() == 0) {
         USR_FATAL(stmt, "cannot label parallel loop");
       } else {

@@ -53,7 +53,6 @@ public:
   virtual Expr*          getFirstExpr();
   virtual Expr*          getNextExpr(Expr* expr);
 
-  virtual bool           isLoop()                                     const;
   virtual bool           isForLoop()                                  const;
 
   virtual bool           deadBlockCleanup();

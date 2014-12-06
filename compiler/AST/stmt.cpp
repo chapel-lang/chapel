@@ -376,7 +376,7 @@ BlockStmt::isScopeless() const {
 }
 
 bool
-BlockStmt::isLoop() const {
+BlockStmt::isLoopStmt() const {
   return blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP);
 }
 

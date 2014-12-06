@@ -71,6 +71,8 @@ class Expr;
 class GenRet;
 class Symbol;
 class Type;
+
+class LoopStmt;
 class WhileStmt;
 class WhileDoStmt;
 class DoWhileStmt;
@@ -305,6 +307,7 @@ def_is_ast(EnumType)
 def_is_ast(AggregateType)
 #undef def_is_ast
 
+bool isLoopStmt(BaseAST* a);
 bool isWhileStmt(BaseAST* a);
 bool isWhileDoStmt(BaseAST* a);
 bool isDoWhileStmt(BaseAST* a);
@@ -340,6 +343,7 @@ def_to_ast(EnumType)
 def_to_ast(AggregateType)
 def_to_ast(Type)
 
+def_to_ast(LoopStmt);
 def_to_ast(WhileStmt);
 def_to_ast(WhileDoStmt);
 def_to_ast(DoWhileStmt);

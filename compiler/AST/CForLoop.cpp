@@ -161,11 +161,6 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
   return retval;
 }
 
-bool CForLoop::isLoop() const
-{
-  return true;
-}
-
 bool CForLoop::isCForLoop() const
 {
   return true;

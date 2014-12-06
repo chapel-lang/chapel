@@ -1132,7 +1132,7 @@ static void resolveGotoLabels() {
 
 static BlockStmt* find_outer_loop(Expr* stmt) {
   if (BlockStmt* block = toBlockStmt(stmt))
-    if (block->isLoop())
+    if (block->isLoopStmt())
       return block;
 
   if (stmt->parentExpr)

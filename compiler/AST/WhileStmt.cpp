@@ -96,11 +96,6 @@ void WhileStmt::verify()
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");
 }
 
-bool WhileStmt::isLoop() const
-{
-  return true;
-}
-
 bool WhileStmt::isWhileStmt() const
 {
   return true;

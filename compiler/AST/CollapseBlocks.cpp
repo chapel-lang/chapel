@@ -113,7 +113,7 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
     expr->remove();
 
     // If the expr is a BlockStmt, collapse during the copy
-    if (stmt != 0 && stmt->isLoop() == false && stmt->blockInfoGet() == 0)
+    if (stmt != 0 && stmt->isLoopStmt() == false && stmt->blockInfoGet() == 0)
     {
       for_alist(subItem, stmt->body)
       {

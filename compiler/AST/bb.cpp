@@ -86,7 +86,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
   if (stmt == 0) {
 
   } else if (BlockStmt* s = toBlockStmt(stmt)) {
-    if (s->isLoop() == true) {
+    if (s->isLoopStmt() == true) {
 
       // for c for loops, add the init expr before the loop body
       if (CForLoop* cforLoop = toCForLoop(s)) {

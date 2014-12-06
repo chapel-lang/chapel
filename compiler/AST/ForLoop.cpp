@@ -178,11 +178,6 @@ BlockStmt* ForLoop::copyBody(SymbolMap* map)
   return retval;
 }
 
-bool ForLoop::isLoop() const
-{
-  return true;
-}
-
 bool ForLoop::isForLoop() const
 {
   return true;

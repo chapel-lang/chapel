@@ -194,7 +194,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
   // NOAKES 2014/12/02 This is a brittle way to determine if the
   // SymExpr is in a loop header.  Revisit
   BlockStmt* block = toBlockStmt(stmt);
-  BlockStmt* loop  = (block != 0 && block->isLoop()) ? block : 0;
+  BlockStmt* loop  = (block != 0 && block->isLoopStmt()) ? block : 0;
 
   if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
     // Get member returns the address of the member, so we convert the

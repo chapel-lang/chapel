@@ -28,7 +28,7 @@ protected:
                          LoopStmt(BlockStmt* initBody);
   virtual               ~LoopStmt();
 
-  virtual bool           isLoop()                                     const;
+  virtual bool           isLoopStmt()                                 const;
 
 private:
                          LoopStmt();

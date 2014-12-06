@@ -29,7 +29,7 @@ LoopStmt::~LoopStmt()
 
 }
 
-bool LoopStmt::isLoop() const
+bool LoopStmt::isLoopStmt() const
 {
   return true;
 }

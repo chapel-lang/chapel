@@ -550,6 +550,13 @@ GenRet baseASTCodegenString(const char* str)
 *                                                                             *
 ************************************** | *************************************/
 
+bool isLoopStmt(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isLoopStmt()) ? true : false;
+}
+
 bool isWhileStmt(BaseAST* a)
 {
   BlockStmt* stmt = toBlockStmt(a);
