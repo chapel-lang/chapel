@@ -39,8 +39,6 @@ protected:
 
   virtual void           verify();
 
-  virtual void           replaceChild(Expr* old_ast, Expr* new_ast);
-
   virtual bool           isWhileStmt()                                const;
 
   virtual void           checkConstLoops();
