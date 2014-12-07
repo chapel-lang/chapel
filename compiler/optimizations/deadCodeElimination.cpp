@@ -26,6 +26,7 @@
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
+#include "WhileStmt.h"
 
 #include <queue>
 #include <set>
@@ -385,6 +386,7 @@ static void deadBlockElimination(FnSymbol* fn)
   {
     // Fetch and remove the next block.
     BasicBlock* bb = work_queue.front();
+
     work_queue.pop();
 
     // Ignore it if we've already seen it.
@@ -394,12 +396,12 @@ static void deadBlockElimination(FnSymbol* fn)
     // Otherwise, mark it as reachable, and append all of its successors to the
     // work queue.
     reachable.insert(bb);
+
     for_vector(BasicBlock, out, bb->outs)
       work_queue.push(out);
   }
 
-  // Now we simply visit all the blocks, deleting all those that are not
-  // rechable.
+  // Visit all the blocks, deleting all those that are not reachable
   for_vector(BasicBlock, bb, *fn->basicBlocks)
   {
     if (reachable.count(bb))
@@ -422,11 +424,19 @@ static void deadBlockElimination(FnSymbol* fn)
       if (toDefExpr(expr))
         continue;
 
-      CondStmt* cond = toCondStmt(expr->parentExpr);
-      if (cond && cond->condExpr == expr)
-        // If expr is the condition expression in an if statement,
+      CondStmt*  condStmt  = toCondStmt(expr->parentExpr);
+      WhileStmt* whileStmt = toWhileStmt(expr->parentExpr);
+
+      if (condStmt && condStmt->condExpr == expr)
+        // If the expr is the condition expression of an if statement,
         // then remove the entire if.
-        cond->remove();
+        condStmt->remove();
+
+      else if (whileStmt && whileStmt->condExprGet() == expr)
+        // If the expr is the condition expression of a while statement,
+        // then remove the entire While.
+        whileStmt->remove();
+
       else
         expr->remove();
     }
