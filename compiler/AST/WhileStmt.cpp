@@ -64,21 +64,6 @@ void WhileStmt::copyShare(const WhileStmt& ref,
     update_symbols(this, map);
 }
 
-// Note that newAst can be NULL to reflect deletion
-void WhileStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  SymExpr* oldExpr = toSymExpr(oldAst);
-  SymExpr* newExpr = toSymExpr(newAst);
-
-  if (oldExpr == NULL)
-    INT_FATAL(this, "WhileStmt::replaceChild. oldAst is not a SymExpr");
-
-  else if (oldExpr == mCondExpr)
-    mCondExpr = newExpr;
-
-  else
-    INT_FATAL(this, "WhileStmt::replaceChild. Failed to match the oldAst ");
-}
-
 void WhileStmt::verify()
 {
   BlockStmt::verify();
@@ -124,7 +109,8 @@ bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (condExprGet() == 0) {
+  if (condExprGet() == 0)
+  {
     remove();
     retval = true;
   }
