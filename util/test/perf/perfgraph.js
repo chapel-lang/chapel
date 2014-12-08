@@ -152,8 +152,16 @@ function genDygraph(graphInfo, expandInfo) {
   var graphOptions = {
     title: graphInfo.title,
     ylabel: graphInfo.ylabel,
-    drawXGrid: false,
-    drawYGrid: true,
+    axes: {
+      x: {
+        drawGrid: false
+      },
+      y: {
+        drawGrid: true,
+        // So y values don't overlap with the y label
+        axisLabelWidth: 80
+      }
+    },
     includeZero: true,
     showRoller: true,
     legend: 'always',
@@ -167,8 +175,6 @@ function genDygraph(graphInfo, expandInfo) {
     highlightSeriesBackgroundAlpha: 1,
     // So it's easier to zoom in on the right side
     rightGap: 15,
-    // So y values don't overlap with the y label
-    yAxisLabelWidth: 80,
     labelsDiv: ldiv,
     labelsSeparateLines: true,
     dateWindow: [startdate, enddate],
