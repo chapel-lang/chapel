@@ -49,7 +49,7 @@
 
 ===================
 general
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
@@ -62,14 +62,14 @@ failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
 ===================
 linux64
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 linux32
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 tasking #include didn't get a filename (since first run, 2014-11-12)
@@ -151,27 +151,27 @@ sporadic tasks not being created
 ===================
 darwin
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 gnu.darwin
 Inherits 'darwin'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 perf*
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -182,7 +182,7 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -193,14 +193,14 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ====================
 perf.chapel-shootout
 Inherits 'perf*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ====================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -211,21 +211,21 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 fast
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ============================
 
 
@@ -240,14 +240,14 @@ sporadic segfault (infrequent)
 ===================
 verify
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
@@ -272,7 +272,7 @@ read of size 8 in dl_name_match_p
 ===================
 llvm
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
@@ -283,28 +283,28 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 ===================
 fifo
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 numa
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 no-local
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 =================================
 no-local.linux32
 Inherits 'linux32' and 'no-local'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =================================
 
 
@@ -312,14 +312,14 @@ Reviewed 2014-12-05
 ===================
 gasnet* regressions
 Inherits 'no-local'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 === sporadic failures below ===
@@ -332,7 +332,7 @@ sporadic execution timeout (regularly)
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
@@ -346,7 +346,7 @@ sporadic execution timeout (regularly)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===============================
 
 sporadic execution timeout (2014-11-27)
@@ -356,7 +356,7 @@ sporadic execution timeout (2014-11-27)
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =============================
 
 
@@ -370,7 +370,7 @@ sporadic segfault
 =============================
 gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =============================
 
 consistent timeouts
@@ -382,7 +382,7 @@ consistent timeouts
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30,2014-12-06)
 
 sporadic timeouts (frequent)
 ----------------------------
@@ -406,28 +406,28 @@ sporadic "Caught a fatal signal: SIGSEGV(11) on node 1/2" (tom/kyle)
 =============================
 gasnet.llvm
 Inherits 'gasnet*' and 'llvm'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =============================
 
 
 ===================
 x?-wb.*
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ==================
 *prgenv-*
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ====================
 
 infinite loop warning (since filed?)
@@ -534,7 +534,7 @@ sporadic dropping/mangling of output (due to bad qthreads fence?)
 ======================================
 x?-wb.prgenv-cray
 Inherits 'x?-wb.*' and '*prgenv-cray*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ======================================
 
 [Error matching program output for release/examples/benchmarks/shootout/meteor-fast]  (Before 2014-11-16)
@@ -542,7 +542,7 @@ Reviewed 2014-12-05
 ============================
 xc-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ============================
 
 === sporadic failures below ===
@@ -555,7 +555,7 @@ sporadic? unresolved call list(BaseArr) (2014-10-23 -- mike)  Currently fixed ag
 ===================
 *intel*
 Inherits 'general'
-Reviewed 2014-12-01
+Reviewed 2014-12-08
 ===================
 
 test assertion failures (2014-09-21-2014-09-23)
@@ -572,49 +572,49 @@ binary files differ (2014-09-21-2014-09-23)
 ===============================
 x?-wb.intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2014-12-01
+Reviewed 2014-12-08
 ===============================
 
 
 ===============================
 x?-wb.prgenv-intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===============================
 
 
 =============================
 xc-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =============================
 
 
 =======================
 *gnu*
 Inherits from 'linux64'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =======================
 
 
 =============================
 x?-wb.gnu
 Inherits 'x?-wb*' and '*gnu*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =============================
 
 
 =============================
 x?-wb.prgenv-gnu
 Inherits 'x?-wb*' and '*gnu*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =============================
 
 
 ===========================
 xc-wb.host.prgenv-gnu
 Inherits 'x?-wb.prgenv-gnu'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===========================
 
 
@@ -622,7 +622,7 @@ Reviewed 2014-12-05
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 undefined reference to chpl_bitops_debruijn64 (2014-07-14)
@@ -647,28 +647,28 @@ target program died with signal 11, without coredump
 =============================
 x?-wb.pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =============================
 
 
 =============================
 x?-wb.prgenv-pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 =============================
 
 
 ===========================
 xc-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===========================
 
 
 ===================
 cygwin
-Inherits 'linux64'
-Reviewed 2014-12-05
+Inherits 'general'
+Reviewed 2014-12-08
 ===================
 
 check_channel assertion failure
@@ -683,21 +683,47 @@ QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
 
-
-The expected output changed from "Success" to "No error" 2014-12-05
+Unexpected result
 -------------------------------------------------------------------
-[Error matching program output for io/sungeun/ioerror (execopts: 5)]
+[Error matching program output for io/sungeun/ioerror (execopts: 5)] (2014-12-05)
 
-This test relies on a call to the platform's function for converting error codes
-to error strings.  It's not clear why this failed today.  Need to develop a fix.
-(Mike)
-
+This test relies on the underlying platform to generate a string for an internal
+error code.  The custom cygwin.good file failed to trigger after the introduction
+of cygwin64 and cygwin32. Thomas submitted a fix on 2014-12-08
 
 === sporadic failures below ===
 
 sporadic timeouts (frequent)
 ----------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (..., 2014-12-01)
+
+===================
+cygwin32
+Inherits 'cygwin' and 'linux32'
+Reviewed 2014-12-08
+===================
+
+Seg fault First run 2014-12-07
+------------------------------
+[Error matching compiler output for users/vass/type-tests.isSubtype]
+
+Generated output "FAILED": First run 2014-12-07
+-----------------------------------------------
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
+
+Error tolerance exceeded?: First run 2014-12-07
+-----------------------------------------------
+[Error matching program output for studies/hpcc/PTRANS/PTRANS]
+[Error matching program output for studies/hpcc/PTRANS/jglewis/ptrans_2011]
+
+===================
+cygwin64
+Inherits 'cygwin' and 'linux64'
+Reviewed 2014-12-08
+===================
+
+=== sporadic failures below ===
 
 sporadic pthread_cond_init() failed (infrequent)
 ------------------------------------------------
@@ -713,23 +739,23 @@ sporadic data read copy failed
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 dist-block
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 dist-cyclic
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
 
 
 ===================
 dist-replicated
-Reviewed 2014-12-05
+Reviewed 2014-12-08
 ===================
