@@ -1005,27 +1005,22 @@ module ChapelRange {
   }
 
 
-
   //################################################################################
-  //# Optimized iterators that users should not call
+  //# Direct range iterators that take low, high and stride as arguments. They
+  //# are not iterators over ranges, but instead take the components of the range
+  //# as arguments. This allows us to avoid range construction and provide
+  //# optimized iterators when stride is known at compile time.
   //#
-  //# These iterators exist to optimize anonymous range iteration by eliminate
-  //# the cost of range construction and to provide optimized iterators for
-  //# strides that are known at compile time.
-  //#
-
-  // TODO move these into a seperate file?
-
 
   iter _direct_uint_stride_range_iter(const low: ?t, const high: t, const stride: ?strT)
     where isIntegral(t) && chpl__unsignedType(t) == strT {
     if (useOptimizedRangeIterators) {
-      if boundsChecking {
+      if boundsChecking then
         checkIfRangeIterWillOverflow(t, low, high, stride);
 
-        if stride == 0 then
+      if stride == 0 then
           __primitive("chpl_error", "the step argument of the 'by' operator is zero");
-      }
+
       var i: t;
       while __primitive("C for loop",
                         __primitive( "=", i, low),
@@ -1110,6 +1105,10 @@ module ChapelRange {
     }
   }
 
+  //
+  // these iterators exist so that argument coercion happens like it does for
+  // _build_range and the by operator. They just call the iterators above.
+  //
 
   // cases for when stride is a non-param int (don't want to deal with finding
   // chpl__diffMod and the likes, just create a non-anonymous range to iterate
@@ -1139,13 +1138,12 @@ module ChapelRange {
 
 
   // case where all arguments are params. Not strictly needed but creates a
-  // cleaner loop. 'for i in 1..10' generates for (i=1; i<=10; i+=1) with no
+  // cleaner loop. 'for i in 1..10' generates 'for (i=1; i<=10; i+=1)' with no
   // temp variables. Only implemented all int version (most likely iterator.)
   // Could be implemented for uint low/hi and uint stride as well, but it seems
   // unlikely a user will write a for loop over such an anonymous range (might
-  // be even more unnessary if we copy propagation is improved and we
+  // be even more unnecessary if copy propagation is improved and we
   // de-normalize the IR.)
-
 
   iter _direct_range_iter(param low: int(?w), param high: int(w), param stride: int(w)) {
     for i in _direct_all_param_range_iter(low, high, stride) do yield i;
@@ -1163,7 +1161,7 @@ module ChapelRange {
   }
 
 
-  // cases for when stride isn't allowed
+  // cases for when stride isn't valid
 
   iter _direct_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",

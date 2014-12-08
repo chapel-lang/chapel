@@ -28,41 +28,75 @@
 
 /************************************ | *************************************
 *                                                                           *
-* Factory methods for the Parser                                            *
+* Helper functions to optimize anonymous range iteration                    *
 *                                                                           *
 ************************************* | ************************************/
 
-
-
-
-
-
-
 /*
- * Attempts to replace iteration of simple anonymous ranges with calls to
- * direct iterators over low, high and possible stride to avoid cost of
- * constructing the range.
+ * Attempts to replace iteration over simple anonymous ranges with calls to
+ * direct iterators that take low, high and stride as arguments. This is to
+ * avoid the cost of constructing ranges, and if the stride is known at compile
+ * time, provide a more optimized iterator that uses "<, <=, >, or >=" as the
+ * relational operator.
+ *
+ * This is only meant to replace anonymous range iteration for "simple" bounded
+ * ranges. Simple means it's a range of the form "low..high" or "low..high by
+ * stride". Anything more complex is ignored with the thinking that this should
+ * optimize the most common range iterators, but it could be expanded to handle
+ * more cases.
+ *
+ * An alternative is to update scalar replacement of aggregates to work on
+ * ranges, which should be able to achieve similar results as this optimization
+ * while handling all ranges, including non-anonymous ranges.
+ *
+ * Will optimize things like:
+ * - "for i in 1..10"
+ * - "for i in 1..10 by 2"
+ * - "for (i, j) in zip(1..10 by 2, 1..10 by -2)"
+ * - "for (i, j) in zip(A, 1..10 by 2)" // will optimize range iter still
+ * - "coforall i in 1..10 by 2"         // works for coforalls as well
+ *
+ * Will not optimize ranges like:
+ * - "for in in (1..)"             // doesn't handle unbounded ranges
+ * - "for i in 1..10 by 2 by 2"    // doesn't handle more than one by operator
+ * - "for i in 1..10 align 2"      // doesn't handle align operator
+ * - "for i in 1..#10"             // doesn't handle # operator
+ * - "var r = 1..10"; for i in r"  // not an anonymous range
+ * - "forall i in 1..10"           // does not get applied to foralls
+ *
+ * Note that this function is pretty fragile because it relies on names of
+ * functions/iterators as well as the arguments and order of those
+ * functions/iterators but there's not really a way around it this early in
+ * compilation. If the iterator can't be replaced the original, unchanged
+ * iteratorExpr is returned.
  */
-static Expr* replaceWithRangeIterator(Expr* iteratorExpr) {
+static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr) {
   CallExpr* range = NULL;
   Expr* stride = NULL;
   if (CallExpr* call = toCallExpr(iteratorExpr)) {
-   if (call->isNamed("by")) {
+    // grab the stride if we have a strided ranges
+    if (call->isNamed("by")) {
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
     } else {
       range = call;
     }
-    if (range && range->isNamed("_build_range")) { // if we have a range
+    // see if we're looking at a _build_range for an anonymous range
+    if (range && range->isNamed("_build_range")) {
+      // just a sanity check, this should always be true
       if (range->numActuals() == 2) {
         Expr* low = range->get(1)->copy();
         Expr* high = range->get(2)->copy();
+        // only get bounded ranges, unbounded takes a BoundedRangeType as the
+        // first argument, which turns into a CallExpr. This is probably the
+        // best way to check for bounded ranges this early in compilation
         if ((isUnresolvedSymExpr(low) || isSymExpr(low)) &&
-            (isUnresolvedSymExpr(high) || isSymExpr(high))) {  // bounded only?
+           (isUnresolvedSymExpr(high) || isSymExpr(high))) {
+          // replace the range construction with a direct range iterator
           if (stride) {
             iteratorExpr = (new CallExpr("_direct_range_iter", low, high, stride));
           } else {
-            SymExpr* noStr = new SymExpr( new_IntSymbol(1));
+            SymExpr* noStr = new SymExpr(new_IntSymbol(1));
             iteratorExpr = (new CallExpr("_direct_range_iter", low, high, noStr));
           }
         }
@@ -72,14 +106,14 @@ static Expr* replaceWithRangeIterator(Expr* iteratorExpr) {
   return iteratorExpr;
 }
 
-
 static Expr* optimizeRangeIteration(Expr* iteratorExpr, bool zippered) {
-  iteratorExpr = replaceWithRangeIterator(iteratorExpr);
+  iteratorExpr = tryToUseDirectRangeIterator(iteratorExpr);
+  // for zippered iterators, try to replace each iterator of the tuple
   if (zippered) {
     if (CallExpr* call = toCallExpr(iteratorExpr)) {
       if (call->isNamed("_build_tuple")) {
         for_actuals(actual, call) {
-          actual->replace(replaceWithRangeIterator(actual->copy()));
+          actual->replace(tryToUseDirectRangeIterator(actual->copy()));
         }
       }
     }
@@ -87,6 +121,11 @@ static Expr* optimizeRangeIteration(Expr* iteratorExpr, bool zippered) {
   return iteratorExpr;
 }
 
+/************************************ | *************************************
+*                                                                           *
+* Factory methods for the Parser                                            *
+*                                                                           *
+************************************* | ************************************/
 
 BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  Expr*      iteratorExpr,
