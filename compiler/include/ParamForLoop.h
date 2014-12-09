@@ -20,9 +20,9 @@
 #ifndef _PARAM_FOR_LOOP_H_
 #define _PARAM_FOR_LOOP_H_
 
-#include "stmt.h"
+#include "LoopStmt.h"
 
-class ParamForLoop : public BlockStmt
+class ParamForLoop : public LoopStmt
 {
   //
   // Class interface

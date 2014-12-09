@@ -107,7 +107,7 @@ ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
                            VarSymbol*   highVar,
                            VarSymbol*   strideVar,
                            LabelSymbol* breakLabel,
-                           BlockStmt*   initBody) : BlockStmt(initBody)
+                           BlockStmt*   initBody) : LoopStmt(initBody)
 {
   mIndexVariable  = indexVar;
   mLowVariable    = lowVar;
