@@ -48,6 +48,9 @@ public:
                                       BlockStmt*   initBody);
   virtual               ~ParamForLoop();
 
+  virtual GenRet         codegen();
+  virtual void           verify();
+
   virtual Expr*          getFirstExpr();
   virtual Expr*          getNextExpr(Expr* expr);
 

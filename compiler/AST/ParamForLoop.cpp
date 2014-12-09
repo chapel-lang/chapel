@@ -152,6 +152,29 @@ CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
   return BlockStmt::blockInfoSet(expr);
 }
 
+void ParamForLoop::verify()
+{
+  BlockStmt::verify();
+
+  if (BlockStmt::blockInfoGet() == 0)
+    INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
+
+  if (modUses   != 0)
+    INT_FATAL(this, "ParamForLoop::verify. modUses   is not NULL");
+
+  if (byrefVars != 0)
+    INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
+}
+
+GenRet ParamForLoop::codegen()
+{
+  GenRet ret;
+
+  INT_FATAL(this, "ParamForLoop::codegen This should be unreachable");
+
+  return ret;
+}
+
 Expr* ParamForLoop::getFirstExpr()
 {
   Expr* retval = 0;
