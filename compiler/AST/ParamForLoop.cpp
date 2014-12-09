@@ -19,6 +19,7 @@
 
 #include "ParamForLoop.h"
 
+#include "AstVisitor.h"
 #include "build.h"
 
 /************************************ | *************************************
@@ -150,6 +151,25 @@ CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
   printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoSet()\n", id);
 
   return BlockStmt::blockInfoSet(expr);
+}
+
+void ParamForLoop::accept(AstVisitor* visitor)
+{
+  if (visitor->enterParamForLoop(this) == true) {
+    for_alist(next_ast, body)
+      next_ast->accept(visitor);
+
+    if (paramInfoGet() != 0)
+      paramInfoGet()->accept(visitor);
+
+    if (modUses)
+      modUses->accept(visitor);
+
+    if (byrefVars)
+      byrefVars->accept(visitor);
+
+    visitor->exitParamForLoop(this);
+  }
 }
 
 void ParamForLoop::verify()

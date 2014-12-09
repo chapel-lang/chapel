@@ -34,6 +34,7 @@
 #include "DoWhileStmt.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
+#include "ParamForLoop.h"
 
 #include <cstdio>
 #include <inttypes.h>
@@ -496,6 +497,30 @@ bool AstDumpToHtml::enterCForLoop(CForLoop* node) {
 }
 
 void AstDumpToHtml::exitCForLoop(CForLoop* node) {
+  fprintf(mFP, "}");
+  printBlockID(node);
+  fprintf(mFP, "</DL>\n");
+}
+
+
+//
+// ParamForLoop
+//
+bool AstDumpToHtml::enterParamForLoop(ParamForLoop* node) {
+  fprintf(mFP, "<DL>\n");
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      fprintf(mFP, "<B>where</B>\n");
+
+  fprintf(mFP, "<B>ParamForLoop<B> {");
+
+  printBlockID(node);
+
+  return true;
+}
+
+void AstDumpToHtml::exitParamForLoop(ParamForLoop* node) {
   fprintf(mFP, "}");
   printBlockID(node);
   fprintf(mFP, "</DL>\n");
