@@ -128,7 +128,8 @@ ParamForLoop::~ParamForLoop()
 
 }
 
-bool ParamForLoop::isParamForLoop() const {
+bool ParamForLoop::isParamForLoop() const
+{
   return true;
 }
 
@@ -139,7 +140,7 @@ CallExpr* ParamForLoop::paramInfoGet() const
 
 CallExpr* ParamForLoop::blockInfoGet() const
 {
-  //  printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoGet()\n", id);
+  printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoGet()\n", id);
 
   return BlockStmt::blockInfoGet();
 }
@@ -149,4 +150,30 @@ CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
   printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoSet()\n", id);
 
   return BlockStmt::blockInfoSet(expr);
+}
+
+Expr* ParamForLoop::getFirstExpr()
+{
+  Expr* retval = 0;
+
+  if (paramInfoGet() != 0)
+    retval = paramInfoGet()->getFirstExpr();
+
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* ParamForLoop::getNextExpr(Expr* expr)
+{
+  Expr* retval = this;
+
+  if (expr == paramInfoGet() && body.head != 0)
+    retval = body.head->getFirstExpr();
+
+  return retval;
 }

@@ -48,7 +48,10 @@ public:
                                       BlockStmt*   initBody);
   virtual               ~ParamForLoop();
 
-  virtual bool          isParamForLoop()                              const;
+  virtual Expr*          getFirstExpr();
+  virtual Expr*          getNextExpr(Expr* expr);
+
+  virtual bool           isParamForLoop()                             const;
 
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);
