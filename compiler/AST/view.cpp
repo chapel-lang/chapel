@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "log.h"
+#include "ParamForLoop.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"

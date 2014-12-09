@@ -128,6 +128,10 @@ ParamForLoop::~ParamForLoop()
 
 }
 
+bool ParamForLoop::isParamForLoop() const {
+  return true;
+}
+
 CallExpr* ParamForLoop::paramInfoGet() const
 {
   return BlockStmt::blockInfoGet();

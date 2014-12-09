@@ -78,6 +78,7 @@ class WhileDoStmt;
 class DoWhileStmt;
 class ForLoop;
 class CForLoop;
+class ParamForLoop;
 
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
@@ -311,6 +312,7 @@ bool isLoopStmt(BaseAST* a);
 bool isWhileStmt(BaseAST* a);
 bool isWhileDoStmt(BaseAST* a);
 bool isDoWhileStmt(BaseAST* a);
+bool isParamForLoop(BaseAST* a);
 bool isForLoop(BaseAST* a);
 bool isCForLoop(BaseAST* a);
 
@@ -385,38 +387,42 @@ def_to_ast(CForLoop);
     AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
     AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                \
     break;                                                              \
-                                                                            \
-  case E_BlockStmt: {                                                       \
-    BlockStmt* stmt = toBlockStmt(_a);                                      \
-                                                                            \
-    if (stmt->isWhileDoStmt() == true) {                                    \
-      AST_CALL_LIST (stmt, WhileStmt, body,           call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, WhileStmt, condExprGet(),  call, __VA_ARGS__);   \
-                                                                            \
-    } else if (stmt->isDoWhileStmt() == true) {                             \
-      AST_CALL_LIST (stmt, WhileStmt, body,           call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, WhileStmt, condExprGet(),  call, __VA_ARGS__);   \
-                                                                            \
-    } else if (stmt->isForLoop()     == true) {                             \
-      AST_CALL_LIST (stmt, ForLoop,   body,           call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, ForLoop,   indexGet(),     call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, ForLoop,   iteratorGet(),  call, __VA_ARGS__);   \
-                                                                            \
-    } else if (stmt->isCForLoop()    == true) {                             \
-      AST_CALL_LIST (stmt, CForLoop,  body,           call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, CForLoop,  initBlockGet(), call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, CForLoop,  testBlockGet(), call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, CForLoop,  incrBlockGet(), call, __VA_ARGS__);   \
-                                                                            \
-    } else  {                                                               \
-      AST_CALL_LIST (stmt, BlockStmt, body,           call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, BlockStmt, blockInfoGet(), call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, BlockStmt, modUses,        call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, BlockStmt, byrefVars,      call, __VA_ARGS__);   \
-    }                                                                       \
-    break;                                                                  \
-  }                                                                         \
-                                                                            \
+                                                                               \
+  case E_BlockStmt: {                                                          \
+    BlockStmt* stmt = toBlockStmt(_a);                                         \
+                                                                               \
+    if (stmt->isWhileDoStmt() == true) {                                       \
+      AST_CALL_LIST (stmt, WhileStmt,    body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, WhileStmt,    condExprGet(),  call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isDoWhileStmt()  == true) {                               \
+      AST_CALL_LIST (stmt, WhileStmt,    body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, WhileStmt,    condExprGet(),  call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isForLoop()      == true) {                               \
+      AST_CALL_LIST (stmt, ForLoop,      body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ForLoop,      indexGet(),     call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ForLoop,      iteratorGet(),  call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isCForLoop()     == true) {                               \
+      AST_CALL_LIST (stmt, CForLoop,     body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, CForLoop,     initBlockGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, CForLoop,     testBlockGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, CForLoop,     incrBlockGet(), call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isParamForLoop() == true) {                               \
+      AST_CALL_LIST (stmt, ParamForLoop, body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ParamForLoop, paramInfoGet(), call, __VA_ARGS__);   \
+                                                                               \
+    } else  {                                                                  \
+      AST_CALL_LIST (stmt, BlockStmt,    body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt,    blockInfoGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt,    modUses,        call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt,    byrefVars,      call, __VA_ARGS__);   \
+    }                                                                          \
+    break;                                                                     \
+  }                                                                            \
+                                                                               \
   case E_CondStmt:                                                      \
     AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);          \
     AST_CALL_CHILD(_a, CondStmt, thenStmt, call, __VA_ARGS__);          \
