@@ -39,6 +39,7 @@ AST_SRCS = \
         DoWhileStmt.cpp      \
         CForLoop.cpp         \
         ForLoop.cpp          \
+        ParamForLoop.cpp     \
                              \
         AstLogger.cpp        \
         AstVisitor.cpp       \

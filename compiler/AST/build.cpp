@@ -24,6 +24,7 @@
 #include "config.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "ParamForLoop.h"
 #include "parser.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -1156,48 +1157,11 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   }
 }
 
-
-static Symbol*
-insertBeforeCompilerTemp(Expr* stmt, Expr* expr) {
-  Symbol* expr_var = newTemp();
-  expr_var->addFlag(FLAG_MAYBE_PARAM);
-  stmt->insertBefore(new DefExpr(expr_var));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, expr_var, expr));
-  return expr_var;
-}
-
 BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* stmts) {
-  BlockStmt* block = new BlockStmt(stmts);
-  BlockStmt* outer = new BlockStmt(block);
   VarSymbol* indexVar = new VarSymbol(index);
-  block->insertBefore(new DefExpr(indexVar, new_IntSymbol((int64_t)0)));
-  Expr *low = NULL, *high = NULL, *stride;
-  CallExpr* call = toCallExpr(range);
-  if (call && call->isNamed("by")) {
-    stride = call->get(2)->remove();
-    call = toCallExpr(call->get(1));
-  } else {
-    stride = new SymExpr(new_IntSymbol(1));
-  }
-  if (call && call->isNamed("_build_range")) {
-    low = call->get(1)->remove();
-    high = call->get(1)->remove();
-  } else
-    USR_FATAL(range, "iterators for param-for-loops must be literal ranges");
 
-  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
-
-  block->breakLabelSet(breakLabel);
-
-  outer->insertAtTail(new DefExpr(breakLabel));
-
-  Symbol* lowVar = insertBeforeCompilerTemp(block, low);
-  Symbol* highVar = insertBeforeCompilerTemp(block, high);
-  Symbol* strideVar = insertBeforeCompilerTemp(block, stride);
-  block->blockInfoSet(new CallExpr(PRIM_BLOCK_PARAM_LOOP, indexVar, lowVar, highVar, strideVar));
-  return buildChapelStmt(outer);
+  return ParamForLoop::buildParamForLoop(indexVar, range, stmts);
 }
-
 
 BlockStmt*
 buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
