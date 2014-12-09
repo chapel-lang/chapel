@@ -116,14 +116,33 @@ ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
 
   breakLabelSet(breakLabel);
 
-  blockInfoSet(new CallExpr(PRIM_BLOCK_PARAM_LOOP,
-                            indexVar,
-                            lowVar,
-                            highVar,
-                            strideVar));
+  BlockStmt::blockInfoSet(new CallExpr(PRIM_BLOCK_PARAM_LOOP,
+                                       indexVar,
+                                       lowVar,
+                                       highVar,
+                                       strideVar));
 }
 
 ParamForLoop::~ParamForLoop()
 {
 
+}
+
+CallExpr* ParamForLoop::paramInfoGet() const
+{
+  return BlockStmt::blockInfoGet();
+}
+
+CallExpr* ParamForLoop::blockInfoGet() const
+{
+  //  printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoGet()\n", id);
+
+  return BlockStmt::blockInfoGet();
+}
+
+CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
+{
+  printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoSet()\n", id);
+
+  return BlockStmt::blockInfoSet(expr);
 }
