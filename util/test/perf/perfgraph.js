@@ -147,98 +147,103 @@ function genDygraph(graphInfo, expandInfo) {
   var enddate = getOption(OptionsEnum.ENDDATE) || graphInfo.enddate;
   startdate = parseDate(startdate);
   enddate = parseDate(enddate);
-
-  // setup our options
-  var graphOptions = {
-    title: graphInfo.title,
-    ylabel: graphInfo.ylabel,
-    axes: {
-      x: {
-        drawGrid: false
+  $.getJSON('CSVfiles/'+graphInfo.datfname, function (data) {
+//    console.log(data);
+    for (var i = 0; i < data.length; i++) {
+      data[i][0] = new Date(parseDate(data[i][0]));
+    }
+    // setup our options
+    var graphOptions = {
+      title: graphInfo.title,
+      ylabel: graphInfo.ylabel,
+      axes: {
+        x: {
+          drawGrid: false
+        },
+        y: {
+          drawGrid: true,
+          // So y values don't overlap with the y label
+          axisLabelWidth: 80
+        }
       },
-      y: {
-        drawGrid: true,
-        // So y values don't overlap with the y label
-        axisLabelWidth: 80
+      includeZero: true,
+      showRoller: true,
+      legend: 'always',
+      customBars: graphInfo.displayrange,
+      highlightSeriesOpts: {
+        strokeWidth: 2,
+        strokeBorderWidth: 0,
+        highlightCircleSize: 4
+      },
+      // don't "dim" the  series when one is highlighted
+      highlightSeriesBackgroundAlpha: 1,
+      // So it's easier to zoom in on the right side
+      rightGap: 15,
+      labels: graphInfo.labels,
+      labelsDiv: ldiv,
+      labelsSeparateLines: true,
+      dateWindow: [startdate, enddate],
+      // sync graphs anytime we pan, zoom, or at initial draw
+      drawCallback: customDrawCallback,
+      // mark the release dates on the graph before the chart gets drawn
+      underlayCallback: markReleaseDates
+    }
+
+    if (expandInfo) {
+      graphOptions.visibility = expandInfo.visibility;
+      graphOptions.colors = expandInfo.colors;
+    }
+
+    // actually create the dygraph
+    var g = new Dygraph(div, data, graphOptions);
+    g.isReady = false;
+    setupSeriesLocking(g);
+
+    // The dygraph is now setting up and rendering. Once the graph is fully
+    // drawn this ready state gets fired. We don't want to synchronize this
+    // grpahs x-axis until it has been fully rendered, or we will be modifying
+    // properties that don't exist yet. We use the isReady state to handle
+    // that. We also make our buttons visible here that way they don't show up
+    // before the graph does.
+    g.ready(function() {
+      // we use options in graphinfo in dygraph callbacks that we can't pass
+      // arguments to so we add it to the graph to be able to pass it around
+      g.divs = divs;
+      g.graphInfo = graphInfo;
+
+
+      setupLogToggle(g, graphInfo, logToggle);
+      setupAnnToggle(g, graphInfo, annToggle);
+      g.isReady = true;
+
+
+      // We let dygraphs handle reading the data and parsing it into an array. We
+      // then sort that data on the first draw. This is a little weird because
+      // we're creating a graph, and while it's rendering we sort it but having
+      // to parse the data ourselves would be a real pain. Since the series
+      // colors don't get sorted with the data we save the original and then
+      // reset so that multiple series that are next to each other don't have the
+      // same color. After sorting is done, we may expand the graph.
+
+      var expandNum = graphInfo.expand;
+
+      // if we're expanding a graph, or we have multiple configs, set new colors
+      if ((expandNum !== undefined && expandNum !== 0) || descriptions.length > 0) {
+        setColors(g, g.getColors().slice(), true);
+        g.setAnnotations(g.annotations());
       }
-    },
-    includeZero: true,
-    showRoller: true,
-    legend: 'always',
-    customBars: graphInfo.displayrange,
-    highlightSeriesOpts: {
-      strokeWidth: 2,
-      strokeBorderWidth: 0,
-      highlightCircleSize: 4
-    },
-    // don't "dim" the  series when one is highlighted
-    highlightSeriesBackgroundAlpha: 1,
-    // So it's easier to zoom in on the right side
-    rightGap: 15,
-    labelsDiv: ldiv,
-    labelsSeparateLines: true,
-    dateWindow: [startdate, enddate],
-    // sync graphs anytime we pan, zoom, or at initial draw
-    drawCallback: customDrawCallback,
-    // mark the release dates on the graph before the chart gets drawn
-    underlayCallback: markReleaseDates
-  }
 
-  if (expandInfo) {
-    graphOptions.visibility = expandInfo.visibility;
-    graphOptions.colors = expandInfo.colors;
-  }
+      if (descriptions.length > 0) {
+        setConfigurationVisibility(g, true);
+        g.setAnnotations(g.annotations());
+      }
 
-  // actually create the dygraph
-  var g = new Dygraph(div, 'CSVfiles/'+graphInfo.datfname, graphOptions);
-  g.isReady = false;
-  setupSeriesLocking(g);
+      expandGraphs(g);
 
+    });
 
-  // The dygraph is now setting up and rendering. Once the graph is fully
-  // drawn this ready state gets fired. We don't want to synchronize this
-  // grpahs x-axis until it has been fully rendered, or we will be modifying
-  // properties that don't exist yet. We use the isReady state to handle
-  // that. We also make our buttons visible here that way they don't show up
-  // before the graph does.
-  g.ready(function() {
-    // we use options in graphinfo in dygraph callbacks that we can't pass
-    // arguments to so we add it to the graph to be able to pass it around
-    g.divs = divs;
-    g.graphInfo = graphInfo;
-
-
-    setupLogToggle(g, graphInfo, logToggle);
-    setupAnnToggle(g, graphInfo, annToggle);
-    g.isReady = true;
-
-
-    // We let dygraphs handle reading the data and parsing it into an array. We
-    // then sort that data on the first draw. This is a little weird because
-    // we're creating a graph, and while it's rendering we sort it but having
-    // to parse the data ourselves would be a real pain. Since the series
-    // colors don't get sorted with the data we save the original and then
-    // reset so that multiple series that are next to each other don't have the
-    // same color. After sorting is done, we may expand the graph.
-
-    var expandNum = graphInfo.expand;
-
-    // if we're expanding a graph, or we have multiple configs, set new colors
-    if ((expandNum !== undefined && expandNum !== 0) || descriptions.length > 0) {
-      setColors(g, g.getColors().slice(), true);
-      g.setAnnotations(g.annotations());
-    }
-
-    if (descriptions.length > 0) {
-      setConfigurationVisibility(g, true);
-      g.setAnnotations(g.annotations());
-    }
-
-    expandGraphs(g);
-
+    gs.push(g);
   });
-
-  gs.push(g);
 }
 
 

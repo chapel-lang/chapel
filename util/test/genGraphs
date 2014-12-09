@@ -4,6 +4,7 @@ import sys, os, shutil, time, math, re
 from optparse import OptionParser
 
 import fileReadHelp
+import json
 try:
     import annotate
 except ImportError:
@@ -77,6 +78,38 @@ def show_date(value):
     else:
         return time.strftime('%Y-%m-%d', value)
 
+# converts a csv file to json. sets ginfo.labels as labels must be explicitly
+# set in dygraphs when you pass in a native array instead of csv. parses the
+# csv, cleans up the parsed representation and writes out using json.dumps
+def csv_to_json(csvFile, ginfo):
+    data = parse_csv(csvFile)
+    labels = data[0]
+    data = data[1:]
+
+    # each label is stored in a single element array because of how it is
+    # parsed, get rid of that array so labels is no a simple array of strings
+    labels = [a[0] for a in labels]
+    ginfo.labels = json.dumps(labels)
+
+    lines = []
+    for line in data:
+        # like for the labels, strip the array surrounding the date
+        curDate = line[0][0]
+        dataForCurDate = line[1:]
+        curLine = [curDate]
+        # the data for a series on the current date is stored as ['val'],
+        # ['low', 'med', 'high'], or ['']. Need to parse as floats, and turn
+        # [''] (no data for this series on this date) into None so json.dumps
+        # turns it into null.
+        for seriesArr in dataForCurDate:
+            if len(seriesArr) == 1 and seriesArr[0] == '':
+                curLine.append(None)
+            else:
+                curLine.append([try_parse_float(x) for x in seriesArr])
+        lines.append(curLine)
+
+    with open(csvFile, 'w') as f:
+        f.write(json.dumps(lines))
 
 # Helper functions to parse/write/sort a dygraphs compatible csv file.
 #
@@ -166,7 +199,6 @@ def sort_csv(csvFile):
     data = zip(*data)
 
     data_to_csv(data, csvFile)
-
 
 ############
 
@@ -299,6 +331,7 @@ class GraphStuff:
         suites =  (', '.join('"' + s + '"' for s in ginfo.suites if s))
         self.gfile.write('   "suites" : [%s],\n'%(suites))
         self.gfile.write('   "datfname" : "%s",\n'%(ginfo.datfname))
+        self.gfile.write('   "labels"   : %s,\n'%(ginfo.labels))
         self.gfile.write('   "ylabel" : "%s",\n'%(ginfo.ylabel))
         self.gfile.write('   "startdate" : "%s",\n'%(ginfo.startdate))
         self.gfile.write('   "enddate" : "%s",\n'%(ginfo.enddate))
@@ -409,6 +442,7 @@ class GraphClass:
         self.title = ''
         self.suites = _suites
         self.graphname = ''
+        self.labels = '[]'
         self.ylabel = ''
         self.startdate = _startdate
         self.enddate = _enddate
@@ -628,6 +662,8 @@ class GraphClass:
         # functions section above, you can eliminate the intermediate step.
         if self.sort:
             sort_csv(fname)
+
+        csv_to_json(fname, self)
 
         if startdate == None:
             startdate = time.localtime()
