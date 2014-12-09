@@ -28,16 +28,33 @@ class ParamForLoop : public BlockStmt
   // Class interface
   //
 public:
+  static BlockStmt*      buildParamForLoop(VarSymbol* indexVar,
+                                           Expr*      range,
+                                           BlockStmt* stmts);
+
+private:
+  static VarSymbol*      newParamVar();
+
 
   //
   // Instance Interface
   //
 public:
-                         ParamForLoop(BlockStmt* initBody);
+                         ParamForLoop(VarSymbol*   indexVar,
+                                      VarSymbol*   low,
+                                      VarSymbol*   high,
+                                      VarSymbol*   stride,
+                                      LabelSymbol* breakLabel,
+                                      BlockStmt*   initBody);
   virtual               ~ParamForLoop();
 
 private:
                          ParamForLoop();
+
+  VarSymbol*             mIndexVariable;
+  VarSymbol*             mLowVariable;
+  VarSymbol*             mHighVariable;
+  VarSymbol*             mStrideVariable;
 };
 
 #endif
