@@ -26,6 +26,7 @@
 #include "dominator.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"

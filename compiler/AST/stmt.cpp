@@ -396,6 +396,11 @@ BlockStmt::isDoWhileStmt() const {
 }
 
 bool
+BlockStmt::isParamForLoop() const {
+  return false;
+}
+
+bool
 BlockStmt::isForLoop() const {
   return false;
 }

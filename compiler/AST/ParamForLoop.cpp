@@ -19,6 +19,7 @@
 
 #include "ParamForLoop.h"
 
+#include "AstVisitor.h"
 #include "build.h"
 
 /************************************ | *************************************
@@ -116,14 +117,106 @@ ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
 
   breakLabelSet(breakLabel);
 
-  blockInfoSet(new CallExpr(PRIM_BLOCK_PARAM_LOOP,
-                            indexVar,
-                            lowVar,
-                            highVar,
-                            strideVar));
+  BlockStmt::blockInfoSet(new CallExpr(PRIM_BLOCK_PARAM_LOOP,
+                                       indexVar,
+                                       lowVar,
+                                       highVar,
+                                       strideVar));
 }
 
 ParamForLoop::~ParamForLoop()
 {
 
+}
+
+bool ParamForLoop::isParamForLoop() const
+{
+  return true;
+}
+
+CallExpr* ParamForLoop::paramInfoGet() const
+{
+  return BlockStmt::blockInfoGet();
+}
+
+CallExpr* ParamForLoop::blockInfoGet() const
+{
+  printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoGet()\n", id);
+
+  return BlockStmt::blockInfoGet();
+}
+
+CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
+{
+  printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoSet()\n", id);
+
+  return BlockStmt::blockInfoSet(expr);
+}
+
+void ParamForLoop::accept(AstVisitor* visitor)
+{
+  if (visitor->enterParamForLoop(this) == true) {
+    for_alist(next_ast, body)
+      next_ast->accept(visitor);
+
+    if (paramInfoGet() != 0)
+      paramInfoGet()->accept(visitor);
+
+    if (modUses)
+      modUses->accept(visitor);
+
+    if (byrefVars)
+      byrefVars->accept(visitor);
+
+    visitor->exitParamForLoop(this);
+  }
+}
+
+void ParamForLoop::verify()
+{
+  BlockStmt::verify();
+
+  if (BlockStmt::blockInfoGet() == 0)
+    INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
+
+  if (modUses   != 0)
+    INT_FATAL(this, "ParamForLoop::verify. modUses   is not NULL");
+
+  if (byrefVars != 0)
+    INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
+}
+
+GenRet ParamForLoop::codegen()
+{
+  GenRet ret;
+
+  INT_FATAL(this, "ParamForLoop::codegen This should be unreachable");
+
+  return ret;
+}
+
+Expr* ParamForLoop::getFirstExpr()
+{
+  Expr* retval = 0;
+
+  if (paramInfoGet() != 0)
+    retval = paramInfoGet()->getFirstExpr();
+
+  else if (body.head      != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* ParamForLoop::getNextExpr(Expr* expr)
+{
+  Expr* retval = this;
+
+  if (expr == paramInfoGet() && body.head != 0)
+    retval = body.head->getFirstExpr();
+
+  return retval;
 }

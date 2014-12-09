@@ -24,6 +24,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "log.h"
+#include "ParamForLoop.h"
 #include "passes.h"
 #include "runpasses.h"
 #include "stmt.h"
@@ -576,6 +577,13 @@ bool isDoWhileStmt(BaseAST* a)
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isDoWhileStmt()) ? true : false;
+}
+
+bool isParamForLoop(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isParamForLoop()) ? true : false;
 }
 
 bool isForLoop(BaseAST* a)

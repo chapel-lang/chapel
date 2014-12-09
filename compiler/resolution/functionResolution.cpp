@@ -34,6 +34,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "ParamForLoop.h"
 #include "passes.h"
 #include "scopeResolve.h"
 #include "stmt.h"

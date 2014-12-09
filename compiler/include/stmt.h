@@ -87,6 +87,7 @@ public:
   virtual bool        isWhileDoStmt()                              const;
   virtual bool        isDoWhileStmt()                              const;
 
+  virtual bool        isParamForLoop()                             const;
   virtual bool        isForLoop()                                  const;
   virtual bool        isCForLoop()                                 const;
 

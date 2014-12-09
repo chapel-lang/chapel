@@ -144,6 +144,13 @@ bool AstLogger::enterForLoop(ForLoop* node) {
 void AstLogger::exitForLoop(ForLoop* node) {
 }
 
+bool AstLogger::enterParamForLoop(ParamForLoop* node) {
+  return true;
+}
+
+void AstLogger::exitParamForLoop(ParamForLoop* node) {
+}
+
 bool AstLogger::enterCondStmt(CondStmt* node) {
   return true;
 }

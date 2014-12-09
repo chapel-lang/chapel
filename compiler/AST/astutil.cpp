@@ -23,6 +23,7 @@
 #include "ForLoop.h"
 #include "expr.h"
 #include "passes.h"
+#include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"

@@ -76,6 +76,7 @@
 #include "DoWhileStmt.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
+#include "ParamForLoop.h"
 
 #include "alist.h"
 #include "stmt.h"
@@ -157,6 +158,11 @@ bool CollapseBlocks::enterCForLoop(CForLoop* node)
 }
 
 bool CollapseBlocks::enterForLoop(ForLoop* node)
+{
+  return enterBlockStmt(node);
+}
+
+bool CollapseBlocks::enterParamForLoop(ParamForLoop* node)
 {
   return enterBlockStmt(node);
 }
@@ -326,6 +332,11 @@ void CollapseBlocks::exitCForLoop(CForLoop* node)
 }
 
 void CollapseBlocks::exitForLoop(ForLoop* node)
+{
+
+}
+
+void CollapseBlocks::exitParamForLoop(ParamForLoop* node)
 {
 
 }
