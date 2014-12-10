@@ -3922,11 +3922,11 @@ static Type* param_for_index_type(CallExpr* loop) {
 
 
 static void fold_param_for(CallExpr* loop) {
-  BlockStmt* block = toBlockStmt(loop->parentExpr);
+  ParamForLoop* paramLoop = toParamForLoop(loop->parentExpr);
   SymExpr* lse = toSymExpr(loop->get(2));
   SymExpr* hse = toSymExpr(loop->get(3));
   SymExpr* sse = toSymExpr(loop->get(4));
-  if (!block || !lse || !hse || !sse)
+  if (!paramLoop || !lse || !hse || !sse)
     USR_FATAL(loop, "param for loop must be defined over a param range");
   VarSymbol* lvar = toVarSymbol(lse->var);
   VarSymbol* hvar = toVarSymbol(hse->var);
@@ -3943,11 +3943,11 @@ static void fold_param_for(CallExpr* loop) {
   } else {
     idx_size = INT_SIZE_64;
   }
-  if (block->blockTag != BLOCK_NORMAL)
+  if (paramLoop->blockTag != BLOCK_NORMAL)
     INT_FATAL("ha");
   loop->remove();
   CallExpr* noop = new CallExpr(PRIM_NOOP);
-  block->insertAfter(noop);
+  paramLoop->insertAfter(noop);
   Symbol* index = toSymExpr(index_expr)->var;
 
   if (is_int_type(formalType)) {
@@ -3958,13 +3958,13 @@ static void fold_param_for(CallExpr* loop) {
       for (int64_t i = high; i >= low; i += stride) {
         SymbolMap map;
         map.put(index, new_IntSymbol(i, idx_size));
-        noop->insertBefore(block->copy(&map));
+        noop->insertBefore(paramLoop->copyBody(&map));
       }
     } else {
       for (int64_t i = low; i <= high; i += stride) {
         SymbolMap map;
         map.put(index, new_IntSymbol(i, idx_size));
-        noop->insertBefore(block->copy(&map));
+        noop->insertBefore(paramLoop->copyBody(&map));
       }
     }
   } else {
@@ -3976,17 +3976,17 @@ static void fold_param_for(CallExpr* loop) {
       for (uint64_t i = high; i >= low; i += stride) {
         SymbolMap map;
         map.put(index, new_UIntSymbol(i, idx_size));
-        noop->insertBefore(block->copy(&map));
+        noop->insertBefore(paramLoop->copyBody(&map));
       }
     } else {
       for (uint64_t i = low; i <= high; i += stride) {
         SymbolMap map;
         map.put(index, new_UIntSymbol(i, idx_size));
-        noop->insertBefore(block->copy(&map));
+        noop->insertBefore(paramLoop->copyBody(&map));
       }
     }
   }
-  block->replace(loop);
+  paramLoop->replace(loop);
   makeNoop(loop);
 }
 
