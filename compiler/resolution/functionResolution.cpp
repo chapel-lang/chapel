@@ -319,8 +319,8 @@ static bool formalRequiresTemp(ArgSymbol* formal);
 static void insertFormalTemps(FnSymbol* fn);
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
 
-static void  fold_param_for(ParamForLoop* paramLoop);
-static Type* param_for_index_type(ParamForLoop* paramLoop);
+static CallExpr* fold_param_for(ParamForLoop* paramLoop);
+static Type*     param_for_index_type(ParamForLoop* paramLoop);
 
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name);
@@ -3898,7 +3898,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
 // Unroll ParamForLoop and then remove the loop from the tree
 //
 
-static void fold_param_for(ParamForLoop* paramLoop) {
+static CallExpr* fold_param_for(ParamForLoop* paramLoop) {
   CallExpr* loop = paramLoop->paramInfoGet();
   SymExpr* lse = toSymExpr(loop->get(2));
   SymExpr* hse = toSymExpr(loop->get(3));
@@ -3963,8 +3963,11 @@ static void fold_param_for(ParamForLoop* paramLoop) {
       }
     }
   }
-  paramLoop->replace(loop);
-  makeNoop(loop);
+
+  noop->remove();
+  paramLoop->replace(noop);
+
+  return noop;
 }
 
 
@@ -4951,7 +4954,7 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_BLOCK_PARAM_LOOP)) {
       ParamForLoop* paramLoop = toParamForLoop(call->parentExpr);
 
-      fold_param_for(paramLoop);
+      result = fold_param_for(paramLoop);
     } else if (call->isPrimitive(PRIM_LOGICAL_FOLDER)) {
       bool removed = false;
       SymExpr* sym1 = toSymExpr(call->get(1));
