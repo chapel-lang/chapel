@@ -5827,7 +5827,7 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
     } else if (block->isForLoop() == true) {
       USR_FATAL(expr, "param function cannot contain a non-param for loop");
 
-    } else if (block->blockInfoGet()) {
+    } else if (block->isLoopStmt() == true) {
       USR_FATAL(expr, "param function cannot contain a non-param loop");
     }
   }
