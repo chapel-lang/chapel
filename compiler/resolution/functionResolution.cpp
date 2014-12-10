@@ -852,7 +852,7 @@ okToConvertFormalToRefType(Type* type) {
 
 static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
-  resolveBlock(fn->retExprType);
+  resolveBlockStmt(fn->retExprType);
   fn->retType = fn->retExprType->body.tail->typeInfo();
   if (fn->retType != dtUnknown) {
     if (fn->retTag == RET_REF) {
@@ -920,7 +920,7 @@ resolveFormals(FnSymbol* fn) {
         if (!formal->typeExpr) {
           formal->type = dtObject;
         } else {
-          resolveBlock(formal->typeExpr);
+          resolveBlockStmt(formal->typeExpr);
           formal->type = formal->typeExpr->body.tail->getValType();
         }
       }
@@ -1410,7 +1410,7 @@ computeGenericSubs(SymbolMap &subs,
         if (subs.n)
           break;
 
-        resolveBlock(formal->defaultExpr);
+        resolveBlockStmt(formal->defaultExpr);
         SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
         if (se && se->var->isParameter() &&
             (!formal->type->symbol->hasFlag(FLAG_GENERIC) || canInstantiate(se->var->type, formal->type)))
@@ -1453,7 +1453,7 @@ computeGenericSubs(SymbolMap &subs,
         if (subs.n)
           break;
 
-        resolveBlock(formal->defaultExpr);
+        resolveBlockStmt(formal->defaultExpr);
         Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
         if (defaultType == dtTypeDefaultToken)
           subs.put(formal, dtTypeDefaultToken->symbol);
@@ -1574,7 +1574,7 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
     }
 
     if (!genericArgSeen && formal->variableExpr && !isDefExpr(formal->variableExpr->body.tail)) {
-      resolveBlock(formal->variableExpr);
+      resolveBlockStmt(formal->variableExpr);
     }
 
     /*
@@ -5987,9 +5987,9 @@ resolveExpr(Expr* expr)
 
 
 void
-resolveBlock(Expr* body)
+resolveBlockStmt(BlockStmt* blockStmt)
 {
-  for_exprs_postorder(expr, body)
+  for_exprs_postorder(expr, blockStmt)
   {
     expr = resolveExpr(expr);
 
@@ -6209,7 +6209,7 @@ resolveFns(FnSymbol* fn) {
   fn->addFlag(FLAG_RESOLVED);
 
   if (fn->hasFlag(FLAG_EXTERN)) {
-    resolveBlock(fn->body);
+    resolveBlockStmt(fn->body);
     resolveReturnType(fn);
     return;
   }
@@ -6238,7 +6238,7 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
-  resolveBlock(fn->body);
+  resolveBlockStmt(fn->body);
 
   if (tryFailure) {
     fn->removeFlag(FLAG_RESOLVED);
@@ -6655,7 +6655,7 @@ static void resolveExternVarSymbols()
     // type block that initializes the variable.
     BlockStmt* block = toBlockStmt(init);
     if (block)
-      resolveBlock(block);
+      resolveBlockStmt(block);
   }
 }
 
