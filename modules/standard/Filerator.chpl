@@ -49,12 +49,21 @@ use Sort;
 
 iter listdir(path: string, dotfiles=false, dirs=true, files=true, 
              listlinks=true): string {
+  {
+    //
+    // make Chapel aware of the FileSystem module name without
+    // infecting the rest of this code; ultimately, this code should
+    // go into the same module (or a submodule) so this is a temporary
+    // measure.
+    //
+    use FileSystem;  
+  }
+
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
-  extern proc chpl_rt_isDir(pathname: c_string, followLinks: bool): c_int;
 
   proc direntptr.d_name(): c_string {
     extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
@@ -72,17 +81,11 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
       if (dotfiles || filename.substring(1) != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
-          //
-          // chpl_rt_isDir() returns 'true' if 'fullpath' is a
-          // directory.  If we are listing symbolic links
-          // (listlinks==true), it will also return symbolic links to
-          // directories.
-          //
-          if (chpl_rt_isDir(fullpath:c_string, listlinks)) {
-            if (dirs) then
+
+          if (listlinks || !FileSystem.isLink(fullpath)) {
+            if (dirs && FileSystem.isDir(fullpath)) then
               yield filename;
-          } else {
-            if (files) then
+            else if (files && FileSystem.isFile(fullpath)) then
               yield filename;
           }
         }
