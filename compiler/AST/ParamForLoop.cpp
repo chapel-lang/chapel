@@ -182,6 +182,30 @@ CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
   return BlockStmt::blockInfoSet(expr);
 }
 
+BlockStmt* ParamForLoop::copyBody(SymbolMap* map)
+{
+  BlockStmt* retval = new BlockStmt();
+
+  retval->astloc        = astloc;
+  retval->blockTag      = blockTag;
+
+  retval->breakLabelSet   (breakLabel);
+   retval->continueLabelSet(continueLabel);
+
+   if (modUses   != 0)
+     retval->modUses = modUses->copy(map, true);
+
+   if (byrefVars != 0)
+     retval->byrefVars = byrefVars->copy(map, true);
+
+   for_alist(expr, body)
+     retval->insertAtTail(expr->copy(map, true));
+
+   update_symbols(retval, map);
+
+   return retval;
+}
+
 void ParamForLoop::accept(AstVisitor* visitor)
 {
   if (visitor->enterParamForLoop(this) == true) {

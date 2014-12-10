@@ -65,6 +65,8 @@ public:
 
   CallExpr*              paramInfoGet()                               const;
 
+  BlockStmt*             copyBody(SymbolMap* map);
+
 private:
                          ParamForLoop();
 
