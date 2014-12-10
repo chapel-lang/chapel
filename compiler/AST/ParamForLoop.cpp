@@ -317,21 +317,16 @@ CallExpr* ParamForLoop::foldForResolve()
   // Insert an "insertion marker" for loop unrolling
   insertAfter(noop);
 
-  if (is_int_type(idxType)) {
+  if (is_int_type(idxType))
+  {
     int64_t low    = lvar->immediate->int_value();
     int64_t high   = hvar->immediate->int_value();
     int64_t stride = svar->immediate->int_value();
 
-    if (stride <= 0) {
-      for (int64_t i = high; i >= low; i += stride) {
-        SymbolMap map;
-
-        map.put(idxSym, new_IntSymbol(i, idxSize));
-
-        noop->insertBefore(copyBody(&map));
-      }
-    } else {
-      for (int64_t i = low; i <= high; i += stride) {
+    if (stride <= 0)
+    {
+      for (int64_t i = high; i >= low; i += stride)
+      {
         SymbolMap map;
 
         map.put(idxSym, new_IntSymbol(i, idxSize));
@@ -339,23 +334,41 @@ CallExpr* ParamForLoop::foldForResolve()
         noop->insertBefore(copyBody(&map));
       }
     }
-  } else {
+    else
+    {
+      for (int64_t i = low; i <= high; i += stride)
+      {
+        SymbolMap map;
+
+        map.put(idxSym, new_IntSymbol(i, idxSize));
+
+        noop->insertBefore(copyBody(&map));
+      }
+    }
+  }
+  else
+  {
     INT_ASSERT(is_uint_type(idxType) || is_bool_type(idxType));
 
     uint64_t low    = lvar->immediate->uint_value();
     uint64_t high   = hvar->immediate->uint_value();
     int64_t  stride = svar->immediate->int_value();
 
-    if (stride <= 0) {
-      for (uint64_t i = high; i >= low; i += stride) {
+    if (stride <= 0)
+    {
+      for (uint64_t i = high; i >= low; i += stride)
+      {
         SymbolMap map;
 
         map.put(idxSym, new_UIntSymbol(i, idxSize));
 
         noop->insertBefore(copyBody(&map));
       }
-    } else {
-      for (uint64_t i = low; i <= high; i += stride) {
+    }
+    else
+    {
+      for (uint64_t i = low; i <= high; i += stride)
+      {
         SymbolMap map;
 
         map.put(idxSym, new_UIntSymbol(i, idxSize));
@@ -380,7 +393,8 @@ CallExpr* ParamForLoop::foldForResolve()
 // This implementation creates a range with low/high values and then
 // asks for its type.
 //
-Type* ParamForLoop::indexType() {
+Type* ParamForLoop::indexType()
+{
   CallExpr* loopInfo = paramInfoGet();
   SymExpr*  lse      = toSymExpr(loopInfo->get(2));
   SymExpr*  hse      = toSymExpr(loopInfo->get(3));
@@ -391,31 +405,23 @@ Type* ParamForLoop::indexType() {
 
   resolveCall(range);
 
-  if (FnSymbol* sym = range->isResolved()) {
-
+  if (FnSymbol* sym = range->isResolved())
+  {
     resolveFormals(sym);
 
     DefExpr* formal = toDefExpr(sym->formals.get(1));
 
-    if (toArgSymbol(formal->sym)->typeExpr) {
+    if (toArgSymbol(formal->sym)->typeExpr)
       idxType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
-    } else {
+    else
       idxType = formal->sym->type;
-    }
 
     range->remove();
-
-  } else {
+  }
+  else
+  {
     INT_FATAL("unresolved range");
   }
 
   return idxType;
 }
-
-
-
-
-
-
-
-
