@@ -103,6 +103,11 @@ VarSymbol* ParamForLoop::newParamVar()
 *                                                                           *
 ************************************* | ************************************/
 
+ParamForLoop::ParamForLoop() : LoopStmt(0)
+{
+
+}
+
 ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
                            VarSymbol*   lowVar,
                            VarSymbol*   highVar,
@@ -127,6 +132,30 @@ ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
 ParamForLoop::~ParamForLoop()
 {
 
+}
+
+ParamForLoop* ParamForLoop::copy(SymbolMap* mapRef, bool internal)
+{
+  SymbolMap     localMap;
+  SymbolMap*    map       = (mapRef != 0) ? mapRef : &localMap;
+  CallExpr*     blockInfo = paramInfoGet();
+  ParamForLoop* retval    = new ParamForLoop();
+
+  retval->astloc        = astloc;
+  retval->blockTag      = blockTag;
+  retval->breakLabel    = breakLabel;
+  retval->continueLabel = continueLabel;
+
+  if (blockInfo != 0)
+    retval->BlockStmt::blockInfoSet(blockInfo->copy(map, true));
+
+  for_alist(expr, body)
+    retval->insertAtTail(expr->copy(map, true));
+
+  if (internal == false)
+    update_symbols(retval, map);
+
+  return retval;
 }
 
 bool ParamForLoop::isParamForLoop() const
@@ -177,7 +206,7 @@ void ParamForLoop::verify()
   BlockStmt::verify();
 
   if (BlockStmt::blockInfoGet() == 0)
-    INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
+    INT_FATAL(this, "ParamForLoop::verify. blockInfo is NULL");
 
   if (modUses   != 0)
     INT_FATAL(this, "ParamForLoop::verify. modUses   is not NULL");

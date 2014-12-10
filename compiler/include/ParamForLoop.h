@@ -48,6 +48,9 @@ public:
                                       BlockStmt*   initBody);
   virtual               ~ParamForLoop();
 
+  virtual ParamForLoop*  copy(SymbolMap* map      = NULL,
+                              bool       internal = false);
+
   virtual GenRet         codegen();
   virtual void           verify();
   virtual void           accept(AstVisitor* visitor);
