@@ -319,8 +319,8 @@ static bool formalRequiresTemp(ArgSymbol* formal);
 static void insertFormalTemps(FnSymbol* fn);
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
 
-static void  fold_param_for(CallExpr* loop);
-static Type* param_for_index_type(CallExpr* loop);
+static void  fold_param_for(ParamForLoop* paramLoop);
+static Type* param_for_index_type(ParamForLoop* paramLoop);
 
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name);
@@ -3898,9 +3898,8 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
 // Unroll ParamForLoop and then remove the loop from the tree
 //
 
-
-static void fold_param_for(CallExpr* loop) {
-  ParamForLoop* paramLoop = toParamForLoop(loop->parentExpr);
+static void fold_param_for(ParamForLoop* paramLoop) {
+  CallExpr* loop = paramLoop->paramInfoGet();
   SymExpr* lse = toSymExpr(loop->get(2));
   SymExpr* hse = toSymExpr(loop->get(3));
   SymExpr* sse = toSymExpr(loop->get(4));
@@ -3914,7 +3913,7 @@ static void fold_param_for(CallExpr* loop) {
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
     USR_FATAL(loop, "param for loop must be defined over a param range");
   Expr* index_expr = loop->get(1);
-  Type* formalType = param_for_index_type(loop);
+  Type* formalType = param_for_index_type(paramLoop);
   IF1_int_type idx_size;
   if (get_width(formalType) == 32) {
     idx_size = INT_SIZE_32;
@@ -3973,12 +3972,12 @@ static void fold_param_for(CallExpr* loop) {
 // Calculate the index type for a param for loop by checking the type of
 // the range that would be built using the same low and high values.
 //
-static Type* param_for_index_type(CallExpr* loop) {
-  BlockStmt* block = toBlockStmt(loop->parentExpr);
+static Type* param_for_index_type(ParamForLoop* paramLoop) {
+  CallExpr* loop = paramLoop->paramInfoGet();
   SymExpr* lse = toSymExpr(loop->get(2));
   SymExpr* hse = toSymExpr(loop->get(3));
   CallExpr* range = new CallExpr("_build_range", lse->copy(), hse->copy());
-  block->insertBefore(range);
+  paramLoop->insertBefore(range);
   resolveCall(range);
   if (!range->isResolved()) {
     INT_FATAL("unresolved range");
@@ -4950,7 +4949,9 @@ preFold(Expr* expr) {
         }
       }
     } else if (call->isPrimitive(PRIM_BLOCK_PARAM_LOOP)) {
-      fold_param_for(call);
+      ParamForLoop* paramLoop = toParamForLoop(call->parentExpr);
+
+      fold_param_for(paramLoop);
     } else if (call->isPrimitive(PRIM_LOGICAL_FOLDER)) {
       bool removed = false;
       SymExpr* sym1 = toSymExpr(call->get(1));
