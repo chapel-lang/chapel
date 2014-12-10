@@ -195,177 +195,6 @@ static void computeRecursiveIteratorSet() {
 }
 
 
-//
-// If a local block has no yields, returns, gotos or labels
-// then it can safely be left unfragmented.
-// A block whose blockInfo is PRIM_BLOCK_UNLOCAL must also be fragmented.
-//
-static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
-  Vec<BaseAST*> asts;
-  collect_asts(block, asts);
-
-  forv_Vec(BaseAST, ast, asts) {
-
-    // Check if the AST element is a GOTO.
-    if (isGotoStmt(ast))
-      return false;     // Yes, FAIL.
-
-    // See if it is a yield or return statement.
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))
-        return false;     // Yes, FAIL.
-
-      // Check coforall et al. recursively.
-      if (FnSymbol* taskFn = resolvedToTaskFun(call))
-        if (!leaveLocalBlockUnfragmented(taskFn->body))
-          return false;
-    }
-
-    // See if it is an unlocal block.
-    if (BlockStmt* block = toBlockStmt(ast)) {
-      // NOAKES 2014/11/25. Transitional.  Avoid calling blockInfoGet
-      if (block->isLoopStmt() == true) {
-
-      } else if (block->blockInfoGet() &&
-                 block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL)) {
-        return false;     // Yes, FAIL.
-      }
-    }
-
-    // See if it is a label.
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (def && isLabelSymbol(def->sym))
-        return false;     // Yes, FAIL.
-    }
-  }
-
-  // OK.  No undesirable statements found.
-  return true;
-}
-
-
-//
-// replace a local block by smaller local blocks that do not contain
-// goto statements, yields, returns labels or unlocal blocks.
-//
-static void
-fragmentLocalBlocks() {
-  Vec<Expr*> preVec; // stmts to be inserted before new local blocks
-  Vec<Expr*> inVec;  // stmts to be inserted in new local blocks
-
-  //
-  // collect all local blocks which need to be fragmented
-  //
-  Vec<BlockStmt*> localBlocks; // old local blocks
-
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
-    if (block->isLoopStmt() == true) {
-
-    } else if (block->parentSymbol &&
-               block->blockInfoGet() &&
-               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) &&
-               !leaveLocalBlockUnfragmented(block)) {
-      localBlocks.add(block);
-    }
-  }
-
-  //
-  // collect first statements of local blocks into queue vector
-  //
-  Vec<Expr*> queue;
-
-  forv_Vec(BlockStmt, block, localBlocks) {
-    if (block->body.head)
-      queue.add(block->body.head);
-  }
-
-  forv_Vec(Expr, expr, queue) {
-    SET_LINENO(expr);
-
-    for (Expr* current = expr; current; current = current->next) {
-      bool      insertNewLocal = false;
-      CallExpr* call           = toCallExpr(current);
-      DefExpr*  def            = toDefExpr(current);
-
-      //
-      // If this statement is a yield, a return, a label definition, a
-      // goto, a conditional, or a block, insert a new local block
-      // that contains all the statements seen to this point (by
-      // setting insertNewLocal to true) and add the first statements
-      // of blocks and conditional blocks to the queue; otherwise, if
-      // this statement is a definition, add it to preVec; otherwise,
-      // add this statement to inVec.
-      // Blocks and conditionals are visited in turn (breadth-first).
-      //
-      if ((call && (call->isPrimitive(PRIM_YIELD) ||
-                    call->isPrimitive(PRIM_RETURN))) ||
-          (def && isLabelSymbol(def->sym)) ||
-          isGotoStmt(current) ||
-          isCondStmt(current) ||
-          isBlockStmt(current)) {
-        insertNewLocal = true;
-
-        if (BlockStmt* block = toBlockStmt(current)) {
-          // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
-          if (block->isLoopStmt()   == false &&
-              block->blockInfoGet() != NULL  &&
-              block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
-            block->blockInfoGet()->remove(); // UNLOCAL applies to a single LOCAL
-
-          else if (block->body.head)
-            queue.add(block->body.head);
-        } else if (CondStmt* cond = toCondStmt(current)) {
-          if (cond->thenStmt && cond->thenStmt->body.head)
-            queue.add(cond->thenStmt->body.head);
-          if (cond->elseStmt && cond->elseStmt->body.head)
-            queue.add(cond->elseStmt->body.head);
-        }
-      } else if (call && resolvedToTaskFun(call)) {
-        // Do what the above would have done to a coforall/etc. block.
-        insertNewLocal = true;
-        Expr* taskfnBodyHead = call->isResolved()->body->body.head;
-        if (taskfnBodyHead)
-          queue.add(taskfnBodyHead);
-      } else if (isDefExpr(current)) {
-        preVec.add(current);
-      } else {
-        inVec.add(current);
-      }
-
-      //
-      // If ready to insert a new local block or we are on the last
-      // statement in a block, insert a new local block containing all
-      // the statements in inVec; move all the statements in preVec to
-      // a point just before this new local block.
-      //
-      if (insertNewLocal || !current->next) {
-        if (preVec.n || inVec.n) {
-          BlockStmt* newLocalBlock = new BlockStmt();
-          newLocalBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
-          current->insertBefore(newLocalBlock);
-          forv_Vec(Expr, expr, preVec) {
-            newLocalBlock->insertBefore(expr->remove());
-          }
-          preVec.clear();
-          forv_Vec(Expr, expr, inVec) {
-            newLocalBlock->insertAtTail(expr->remove());
-          }
-          inVec.clear();
-        }
-      }
-    }
-  }
-
-  //
-  // remove old local blocks
-  //
-  forv_Vec(BlockStmt, block, localBlocks) {
-    block->blockInfoGet()->remove();
-  }
-}
-
-
 // In the body of the iterator, replace references to the iterator formals
 // with references to fields in the iterator class.
 //
@@ -2130,6 +1959,30 @@ void lowerIterators() {
 
   computeRecursiveIteratorSet();
 
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+      fn->collapseBlocks();
+
+      removeUnnecessaryGotos(fn);
+
+#if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
+      // Run localCopyPropagation to remove any fields we can so they will not
+      // be added to the iterator class
+      if (!fNoCopyPropagation)
+        localCopyPropagation(fn);
+
+      if (!fNoDeadCodeElimination)
+        deadCodeElimination(fn);
+#endif
+    }
+  }
+
+
+  // TODO: The AST is not valid between inlineIterators and
+  // fixNumericalGetMemberPrims because of
+  // replaceIteratorFormalsWithIteratorFields.
+  // We should look at creating the iterator class before here so we don't have
+  // this problem.
   inlineIterators();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -2147,26 +2000,11 @@ void lowerIterators() {
     }
   }
 
-  fragmentLocalBlocks();
-
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+      // This collapseBlocks call is required for lowerIterator to inline
+      // advance() into zip[1-4]
       fn->collapseBlocks();
-
-      removeUnnecessaryGotos(fn);
-
-#if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
-      if (!fNoCopyPropagation)
-        localCopyPropagation(fn);
-
-      if (!fNoDeadCodeElimination)
-        deadCodeElimination(fn);
-#endif
-    }
-  }
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       lowerIterator(fn);
     }
   }
