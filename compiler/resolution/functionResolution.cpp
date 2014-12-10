@@ -3899,72 +3899,87 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
 //
 
 static CallExpr* fold_param_for(ParamForLoop* paramLoop) {
-  CallExpr* loop = paramLoop->paramInfoGet();
-  SymExpr* lse = toSymExpr(loop->get(2));
-  SymExpr* hse = toSymExpr(loop->get(3));
-  SymExpr* sse = toSymExpr(loop->get(4));
-  if (!paramLoop || !lse || !hse || !sse)
+  CallExpr*  loop    = paramLoop->paramInfoGet();
+
+  SymExpr*   idxExpr = toSymExpr(loop->get(1));
+  SymExpr*   lse     = toSymExpr(loop->get(2));
+  SymExpr*   hse     = toSymExpr(loop->get(3));
+  SymExpr*   sse     = toSymExpr(loop->get(4));
+
+  if (!lse || !hse || !sse)
     USR_FATAL(loop, "param for loop must be defined over a param range");
-  VarSymbol* lvar = toVarSymbol(lse->var);
-  VarSymbol* hvar = toVarSymbol(hse->var);
-  VarSymbol* svar = toVarSymbol(sse->var);
-  if (!lvar || !hvar || !svar)
+
+  VarSymbol* lvar    = toVarSymbol(lse->var);
+  VarSymbol* hvar    = toVarSymbol(hse->var);
+  VarSymbol* svar    = toVarSymbol(sse->var);
+
+  CallExpr*  noop    = new CallExpr(PRIM_NOOP);
+
+  if (!lvar            || !hvar            || !svar)
     USR_FATAL(loop, "param for loop must be defined over a param range");
+
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
     USR_FATAL(loop, "param for loop must be defined over a param range");
-  Expr* index_expr = loop->get(1);
-  Type* formalType = param_for_index_type(paramLoop);
-  IF1_int_type idx_size;
-  if (get_width(formalType) == 32) {
-    idx_size = INT_SIZE_32;
-  } else {
-    idx_size = INT_SIZE_64;
-  }
-  if (paramLoop->blockTag != BLOCK_NORMAL)
-    INT_FATAL("ha");
-  loop->remove();
-  CallExpr* noop = new CallExpr(PRIM_NOOP);
-  paramLoop->insertAfter(noop);
-  Symbol* index = toSymExpr(index_expr)->var;
 
-  if (is_int_type(formalType)) {
-    int64_t low = lvar->immediate->int_value();
-    int64_t high = hvar->immediate->int_value();
+  Symbol*      idxSym  = idxExpr->var;
+  Type*        idxType = param_for_index_type(paramLoop);
+  IF1_int_type idxSize = (get_width(idxType) == 32) ? INT_SIZE_32 : INT_SIZE_64;
+
+  // Insert an "insertion marker" for loop unrolling
+  paramLoop->insertAfter(noop);
+
+  if (is_int_type(idxType)) {
+    int64_t low    = lvar->immediate->int_value();
+    int64_t high   = hvar->immediate->int_value();
     int64_t stride = svar->immediate->int_value();
+
     if (stride <= 0) {
       for (int64_t i = high; i >= low; i += stride) {
         SymbolMap map;
-        map.put(index, new_IntSymbol(i, idx_size));
+
+        map.put(idxSym, new_IntSymbol(i, idxSize));
+
         noop->insertBefore(paramLoop->copyBody(&map));
       }
     } else {
       for (int64_t i = low; i <= high; i += stride) {
         SymbolMap map;
-        map.put(index, new_IntSymbol(i, idx_size));
+
+        map.put(idxSym, new_IntSymbol(i, idxSize));
+
         noop->insertBefore(paramLoop->copyBody(&map));
       }
     }
   } else {
-    INT_ASSERT(is_uint_type(formalType) || is_bool_type(formalType));
-    uint64_t low = lvar->immediate->uint_value();
-    uint64_t high = hvar->immediate->uint_value();
-    int64_t stride = svar->immediate->int_value();
+    INT_ASSERT(is_uint_type(idxType) || is_bool_type(idxType));
+
+    uint64_t low    = lvar->immediate->uint_value();
+    uint64_t high   = hvar->immediate->uint_value();
+    int64_t  stride = svar->immediate->int_value();
+
     if (stride <= 0) {
       for (uint64_t i = high; i >= low; i += stride) {
         SymbolMap map;
-        map.put(index, new_UIntSymbol(i, idx_size));
+
+        map.put(idxSym, new_UIntSymbol(i, idxSize));
+
         noop->insertBefore(paramLoop->copyBody(&map));
       }
     } else {
       for (uint64_t i = low; i <= high; i += stride) {
         SymbolMap map;
-        map.put(index, new_UIntSymbol(i, idx_size));
+
+        map.put(idxSym, new_UIntSymbol(i, idxSize));
+
         noop->insertBefore(paramLoop->copyBody(&map));
       }
     }
   }
 
+  // Remove the "insertion marker"
   noop->remove();
+
+  // Replace the paramLoop with the NO-OP
   paramLoop->replace(noop);
 
   return noop;
@@ -3972,30 +3987,41 @@ static CallExpr* fold_param_for(ParamForLoop* paramLoop) {
 
 
 //
-// Calculate the index type for a param for loop by checking the type of
-// the range that would be built using the same low and high values.
+// Determine the index type for a ParamForLoop.
+//
+// This implementation creates a range with low/high values and then
+// asks for its type.
 //
 static Type* param_for_index_type(ParamForLoop* paramLoop) {
-  CallExpr* loop = paramLoop->paramInfoGet();
-  SymExpr* lse = toSymExpr(loop->get(2));
-  SymExpr* hse = toSymExpr(loop->get(3));
-  CallExpr* range = new CallExpr("_build_range", lse->copy(), hse->copy());
+  CallExpr* loop    = paramLoop->paramInfoGet();
+  SymExpr*  lse     = toSymExpr(loop->get(2));
+  SymExpr*  hse     = toSymExpr(loop->get(3));
+  CallExpr* range   = new CallExpr("_build_range", lse->copy(), hse->copy());
+  Type*     idxType = 0;
+
   paramLoop->insertBefore(range);
+
   resolveCall(range);
-  if (!range->isResolved()) {
+
+  if (FnSymbol* sym = range->isResolved()) {
+
+    resolveFormals(sym);
+
+    DefExpr* formal = toDefExpr(sym->formals.get(1));
+
+    if (toArgSymbol(formal->sym)->typeExpr) {
+      idxType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
+    } else {
+      idxType = formal->sym->type;
+    }
+
+    range->remove();
+
+  } else {
     INT_FATAL("unresolved range");
   }
-  resolveFormals(range->isResolved());
-  DefExpr* formal = toDefExpr(range->isResolved()->formals.get(1));
-  Type* formalType;
-  if (toArgSymbol(formal->sym)->typeExpr) {
-    // range->isResolved() is the coercion wrapper for _build_range
-    formalType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
-  } else {
-    formalType = formal->sym->type;
-  }
-  range->remove();
-  return formalType;
+
+  return idxType;
 }
 
 
