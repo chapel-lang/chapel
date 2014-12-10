@@ -22,6 +22,8 @@
 #include "AstVisitor.h"
 #include "build.h"
 
+#include "../resolution/resolution.h"
+
 /************************************ | *************************************
 *                                                                           *
 * Factory methods for the Parser                                            *
@@ -248,6 +250,17 @@ GenRet ParamForLoop::codegen()
   return ret;
 }
 
+//
+// The following functions support function resolution.
+
+// The first two functions support a post-order iteration over the AST.
+// It is important that the "loop header" is traversed before the body
+// could be visited.
+//
+// The second two functions are used to unroll the body of the loop
+// and then replace the loop with a NOP.
+//
+
 Expr* ParamForLoop::getFirstExpr()
 {
   Expr* retval = 0;
@@ -273,3 +286,137 @@ Expr* ParamForLoop::getNextExpr(Expr* expr)
 
   return retval;
 }
+
+CallExpr* ParamForLoop::foldForResolve()
+{
+  CallExpr*  loopInfo = paramInfoGet();
+
+  SymExpr*   idxExpr  = toSymExpr(loopInfo->get(1));
+  SymExpr*   lse      = toSymExpr(loopInfo->get(2));
+  SymExpr*   hse      = toSymExpr(loopInfo->get(3));
+  SymExpr*   sse      = toSymExpr(loopInfo->get(4));
+
+  if (!lse || !hse || !sse)
+    USR_FATAL(loopInfo, "param for loop must be defined over a param range");
+
+  VarSymbol* lvar    = toVarSymbol(lse->var);
+  VarSymbol* hvar    = toVarSymbol(hse->var);
+  VarSymbol* svar    = toVarSymbol(sse->var);
+
+  CallExpr*  noop    = new CallExpr(PRIM_NOOP);
+
+  if (!lvar            || !hvar            || !svar)
+    USR_FATAL(loopInfo, "param for loop must be defined over a param range");
+
+  if (!lvar->immediate || !hvar->immediate || !svar->immediate)
+    USR_FATAL(loopInfo, "param for loop must be defined over a param range");
+
+  Symbol*      idxSym  = idxExpr->var;
+  Type*        idxType = indexType();
+  IF1_int_type idxSize = (get_width(idxType) == 32) ? INT_SIZE_32 : INT_SIZE_64;
+
+  // Insert an "insertion marker" for loop unrolling
+  insertAfter(noop);
+
+  if (is_int_type(idxType)) {
+    int64_t low    = lvar->immediate->int_value();
+    int64_t high   = hvar->immediate->int_value();
+    int64_t stride = svar->immediate->int_value();
+
+    if (stride <= 0) {
+      for (int64_t i = high; i >= low; i += stride) {
+        SymbolMap map;
+
+        map.put(idxSym, new_IntSymbol(i, idxSize));
+
+        noop->insertBefore(copyBody(&map));
+      }
+    } else {
+      for (int64_t i = low; i <= high; i += stride) {
+        SymbolMap map;
+
+        map.put(idxSym, new_IntSymbol(i, idxSize));
+
+        noop->insertBefore(copyBody(&map));
+      }
+    }
+  } else {
+    INT_ASSERT(is_uint_type(idxType) || is_bool_type(idxType));
+
+    uint64_t low    = lvar->immediate->uint_value();
+    uint64_t high   = hvar->immediate->uint_value();
+    int64_t  stride = svar->immediate->int_value();
+
+    if (stride <= 0) {
+      for (uint64_t i = high; i >= low; i += stride) {
+        SymbolMap map;
+
+        map.put(idxSym, new_UIntSymbol(i, idxSize));
+
+        noop->insertBefore(copyBody(&map));
+      }
+    } else {
+      for (uint64_t i = low; i <= high; i += stride) {
+        SymbolMap map;
+
+        map.put(idxSym, new_UIntSymbol(i, idxSize));
+
+        noop->insertBefore(copyBody(&map));
+      }
+    }
+  }
+
+  // Remove the "insertion marker"
+  noop->remove();
+
+  // Replace the paramLoop with the NO-OP
+  replace(noop);
+
+  return noop;
+}
+
+//
+// Determine the index type for a ParamForLoop.
+//
+// This implementation creates a range with low/high values and then
+// asks for its type.
+//
+Type* ParamForLoop::indexType() {
+  CallExpr* loopInfo = paramInfoGet();
+  SymExpr*  lse      = toSymExpr(loopInfo->get(2));
+  SymExpr*  hse      = toSymExpr(loopInfo->get(3));
+  CallExpr* range    = new CallExpr("_build_range", lse->copy(), hse->copy());
+  Type*     idxType  = 0;
+
+  insertBefore(range);
+
+  resolveCall(range);
+
+  if (FnSymbol* sym = range->isResolved()) {
+
+    resolveFormals(sym);
+
+    DefExpr* formal = toDefExpr(sym->formals.get(1));
+
+    if (toArgSymbol(formal->sym)->typeExpr) {
+      idxType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
+    } else {
+      idxType = formal->sym->type;
+    }
+
+    range->remove();
+
+  } else {
+    INT_FATAL("unresolved range");
+  }
+
+  return idxType;
+}
+
+
+
+
+
+
+
+
