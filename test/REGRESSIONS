@@ -140,7 +140,7 @@ sporadic timeout
 
 sporadic signal 11
 ------------------
-[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-01)
+[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-09)
 [Error matching program output for parallel/begin/dinan/mvm_coforall] (2014-11-21, 2014-11-27)
 
 sporadic tasks not being created
@@ -682,14 +682,6 @@ QIO strcmp(got, expect) assertion error
 QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
-
-Unexpected result
--------------------------------------------------------------------
-[Error matching program output for io/sungeun/ioerror (execopts: 5)] (2014-12-05)
-
-This test relies on the underlying platform to generate a string for an internal
-error code.  The custom cygwin.good file failed to trigger after the introduction
-of cygwin64 and cygwin32. Thomas submitted a fix on 2014-12-08
 
 === sporadic failures below ===
 
