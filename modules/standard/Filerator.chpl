@@ -51,9 +51,12 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
              listlinks=true): string {
   {
     //
-    // make Chapel aware of the FileSystem module name without
-    // infecting the rest of this code; ultimately, this code should
-    // go into the same module (or a submodule) so this is a temporary
+    // Make Chapel aware of the FileSystem module name without
+    // injecting its symbols into this scope (in particular, doing
+    // so seemed to break operations on 'path' even though I couldn't
+    // find any conflicting 'path' symbols in the standard/internal
+    // modules); ultimately, this code should itself go into
+    // FileSystem.chpl (or a submodule of it), so this is a temporary
     // measure.
     //
     use FileSystem;  
