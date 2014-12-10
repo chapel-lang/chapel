@@ -318,8 +318,10 @@ static void resolveNew(CallExpr* call);
 static bool formalRequiresTemp(ArgSymbol* formal);
 static void insertFormalTemps(FnSymbol* fn);
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
+
+static void  fold_param_for(CallExpr* loop);
 static Type* param_for_index_type(CallExpr* loop);
-static void fold_param_for(CallExpr* loop);
+
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name);
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *parent, AList &arg_list, bool isFormal, Type *retType);
@@ -3892,33 +3894,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
   }
 }
 
-
 //
-// Calculate the index type for a param for loop by checking the type of
-// the range that would be built using the same low and high values.
+// Unroll ParamForLoop and then remove the loop from the tree
 //
-static Type* param_for_index_type(CallExpr* loop) {
-  BlockStmt* block = toBlockStmt(loop->parentExpr);
-  SymExpr* lse = toSymExpr(loop->get(2));
-  SymExpr* hse = toSymExpr(loop->get(3));
-  CallExpr* range = new CallExpr("_build_range", lse->copy(), hse->copy());
-  block->insertBefore(range);
-  resolveCall(range);
-  if (!range->isResolved()) {
-    INT_FATAL("unresolved range");
-  }
-  resolveFormals(range->isResolved());
-  DefExpr* formal = toDefExpr(range->isResolved()->formals.get(1));
-  Type* formalType;
-  if (toArgSymbol(formal->sym)->typeExpr) {
-    // range->isResolved() is the coercion wrapper for _build_range
-    formalType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
-  } else {
-    formalType = formal->sym->type;
-  }
-  range->remove();
-  return formalType;
-}
 
 
 static void fold_param_for(CallExpr* loop) {
@@ -3990,6 +3968,39 @@ static void fold_param_for(CallExpr* loop) {
   makeNoop(loop);
 }
 
+
+//
+// Calculate the index type for a param for loop by checking the type of
+// the range that would be built using the same low and high values.
+//
+static Type* param_for_index_type(CallExpr* loop) {
+  BlockStmt* block = toBlockStmt(loop->parentExpr);
+  SymExpr* lse = toSymExpr(loop->get(2));
+  SymExpr* hse = toSymExpr(loop->get(3));
+  CallExpr* range = new CallExpr("_build_range", lse->copy(), hse->copy());
+  block->insertBefore(range);
+  resolveCall(range);
+  if (!range->isResolved()) {
+    INT_FATAL("unresolved range");
+  }
+  resolveFormals(range->isResolved());
+  DefExpr* formal = toDefExpr(range->isResolved()->formals.get(1));
+  Type* formalType;
+  if (toArgSymbol(formal->sym)->typeExpr) {
+    // range->isResolved() is the coercion wrapper for _build_range
+    formalType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
+  } else {
+    formalType = formal->sym->type;
+  }
+  range->remove();
+  return formalType;
+}
+
+
+
+//
+//
+//
 
 static Expr* dropUnnecessaryCast(CallExpr* call) {
   // Check for and remove casts to the original type and size
