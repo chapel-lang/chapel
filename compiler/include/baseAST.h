@@ -351,6 +351,7 @@ def_to_ast(WhileDoStmt);
 def_to_ast(DoWhileStmt);
 def_to_ast(ForLoop);
 def_to_ast(CForLoop);
+def_to_ast(ParamForLoop);
 
 #undef def_to_ast
 
