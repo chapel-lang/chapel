@@ -28,9 +28,8 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "version.h"
 #include "yy.h"
-
-#include "../main/version.h"
 
 #include <csignal>
 #include <fcntl.h>
