@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,17 +21,18 @@
 // Transformations for begin, cobegin, and on statements
 //
 
-#include "astutil.h"
-#include "expr.h"
-#include "optimizations.h"
 #include "passes.h"
-#include "../resolution/resolution.h"
-#include "stmt.h"
-#include "symbol.h"
-#include "stringutil.h"
+
+#include "astutil.h"
 #include "driver.h"
+#include "expr.h"
 #include "files.h"
+#include "optimizations.h"
+#include "resolution.h"
 #include "stlUtil.h"
+#include "stmt.h"
+#include "stringutil.h"
+#include "symbol.h"
 
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()

@@ -21,8 +21,7 @@
 
 #include "AstVisitor.h"
 #include "build.h"
-
-#include "../resolution/resolution.h"
+#include "resolution.h"
 
 /************************************ | *************************************
 *                                                                           *
