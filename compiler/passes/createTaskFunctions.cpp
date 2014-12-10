@@ -132,7 +132,7 @@ void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
 // While there, we prune other things for forall intents.
 void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore) {
   form_Map(SymbolMapElem, e, *uses) {
-    if (Symbol* sym = e->key) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         if (sym->hasFlag(FLAG_ARG_THIS) ||
             // If we do not prune MT, _toLeader(..., _mt...) does not get
@@ -152,14 +152,13 @@ void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore) {
           e->value = markPruned;
         }
       }
-    }
   }
 }
 
 static void
 addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
   form_Map(SymbolMapElem, e, *vars) {
-    if (Symbol* sym = e->key) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, sym->type);
@@ -167,9 +166,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           if (symArg->hasFlag(FLAG_MARKED_GENERIC))
             arg->addFlag(FLAG_MARKED_GENERIC);
         fn->insertFormalAtTail(new DefExpr(arg));
-        vars->put(sym, arg); // todo: instead e->value = arg; ?? see also in implementForallIntents
+        e->value = arg;  // aka vars->put(sym, arg);
       }
-    }
   }
 }
 
@@ -179,8 +177,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   Vec<BaseAST*> asts;
   collect_asts(fn->body, asts);
   form_Map(SymbolMapElem, e, *vars) {
-    INT_ASSERT(e->key); // todo: if this succeeds, remove such 'if' throughout
-    if (Symbol* sym = e->key) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
         ArgSymbol* arg = toArgSymbol(e->value);
@@ -192,19 +189,17 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
           }
         }
       }
-    }
   }
 }
 
 static void
 addVarsToActuals(CallExpr* call, SymbolMap* vars) {
   form_Map(SymbolMapElem, e, *vars) {
-    if (Symbol* sym = e->key) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
         call->insertAtTail(sym);
       }
-    }
   }
 }
 
