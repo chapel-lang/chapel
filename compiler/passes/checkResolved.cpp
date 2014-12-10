@@ -20,12 +20,12 @@
 // checkResolved.cpp
 
 #include "passes.h"
-#include "driver.h"
 
-#include "stmt.h"
-#include "expr.h"
-#include "stlUtil.h"
 #include "astutil.h"
+#include "driver.h"
+#include "expr.h"
+#include "stmt.h"
+#include "stlUtil.h"
 
 #include <set>
 
@@ -83,7 +83,7 @@ checkResolved() {
 // Returns the smallest number of definitions of ret on any path through the
 // given expression.
 static int
-isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) 
+isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 {
   if (!expr)
     return 0;
@@ -94,7 +94,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   if (isSymExpr(expr))
     return 0;
 
-  if (CallExpr* call = toCallExpr(expr)) 
+  if (CallExpr* call = toCallExpr(expr))
   {
     // Maybe add a "no return" pragma and use that instead.
     if (call->isNamed("halt"))
@@ -151,6 +151,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
         }
       }
     }
+
     return 0;
   }
 
@@ -166,9 +167,10 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   if (BlockStmt* block = toBlockStmt(expr))
   {
     // NOAKES 2014/11/25 Transitional.  Ensure we don't call blockInfoGet()
-    if (block->isWhileDoStmt() == true ||
-        block->isForLoop()     == true ||
-        block->isCForLoop()    == true)
+    if (block->isWhileDoStmt()  == true ||
+        block->isForLoop()      == true ||
+        block->isCForLoop()     == true ||
+        block->isParamForLoop() == true)
     {
       return 0;
     }
@@ -260,7 +262,7 @@ checkNoRecordDeletes()
   forv_Vec(CallExpr, call, gCallExprs)
   {
     FnSymbol* fn = call->isResolved();
-  
+
     // Note that fn can (legally) be null if the call is primitive.
     if (fn && fn->hasFlag(FLAG_DESTRUCTOR)) {
       // Statements of the form 'delete x' (PRIM_DELETE) are replaced

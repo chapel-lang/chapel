@@ -103,6 +103,11 @@ VarSymbol* ParamForLoop::newParamVar()
 *                                                                           *
 ************************************* | ************************************/
 
+ParamForLoop::ParamForLoop() : LoopStmt(0)
+{
+
+}
+
 ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
                            VarSymbol*   lowVar,
                            VarSymbol*   highVar,
@@ -129,6 +134,30 @@ ParamForLoop::~ParamForLoop()
 
 }
 
+ParamForLoop* ParamForLoop::copy(SymbolMap* mapRef, bool internal)
+{
+  SymbolMap     localMap;
+  SymbolMap*    map       = (mapRef != 0) ? mapRef : &localMap;
+  CallExpr*     blockInfo = paramInfoGet();
+  ParamForLoop* retval    = new ParamForLoop();
+
+  retval->astloc        = astloc;
+  retval->blockTag      = blockTag;
+  retval->breakLabel    = breakLabel;
+  retval->continueLabel = continueLabel;
+
+  if (blockInfo != 0)
+    retval->BlockStmt::blockInfoSet(blockInfo->copy(map, true));
+
+  for_alist(expr, body)
+    retval->insertAtTail(expr->copy(map, true));
+
+  if (internal == false)
+    update_symbols(retval, map);
+
+  return retval;
+}
+
 bool ParamForLoop::isParamForLoop() const
 {
   return true;
@@ -151,6 +180,30 @@ CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
   printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoSet()\n", id);
 
   return BlockStmt::blockInfoSet(expr);
+}
+
+BlockStmt* ParamForLoop::copyBody(SymbolMap* map)
+{
+  BlockStmt* retval = new BlockStmt();
+
+  retval->astloc        = astloc;
+  retval->blockTag      = blockTag;
+
+  retval->breakLabelSet   (breakLabel);
+   retval->continueLabelSet(continueLabel);
+
+   if (modUses   != 0)
+     retval->modUses = modUses->copy(map, true);
+
+   if (byrefVars != 0)
+     retval->byrefVars = byrefVars->copy(map, true);
+
+   for_alist(expr, body)
+     retval->insertAtTail(expr->copy(map, true));
+
+   update_symbols(retval, map);
+
+   return retval;
 }
 
 void ParamForLoop::accept(AstVisitor* visitor)
@@ -177,7 +230,7 @@ void ParamForLoop::verify()
   BlockStmt::verify();
 
   if (BlockStmt::blockInfoGet() == 0)
-    INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
+    INT_FATAL(this, "ParamForLoop::verify. blockInfo is NULL");
 
   if (modUses   != 0)
     INT_FATAL(this, "ParamForLoop::verify. modUses   is not NULL");

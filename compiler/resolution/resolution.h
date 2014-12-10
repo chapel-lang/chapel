@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -50,11 +50,11 @@ void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
 void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignore_isResolved);
 
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
-FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call); 
+FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void      instantiateBody(FnSymbol* fn);
 
 void resolveFormals(FnSymbol* fn);
-void resolveBlock(Expr* body);
+void resolveBlockStmt(BlockStmt* blockStmt);
 void resolveCall(CallExpr* call);
 void resolveFns(FnSymbol* fn);
 
