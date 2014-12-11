@@ -660,6 +660,10 @@ class GraphClass:
             for i in range(start,nperfkeys):
                 self.graphkeys.append(self.perfkeys[i])
 
+        # strip trailing colons, equals, spaces, and dashes so graphkeys are
+        # cleaner. We have a lot of them when graph keys come from perfkeys
+        self.graphkeys = [key.rstrip(':= -') for key in self.graphkeys]
+
         for i in range(nperfkeys):
             for j in range(nperfkeys):
                 if (i != j) and (self.graphkeys[i]==self.graphkeys[j]):
@@ -703,10 +707,6 @@ class GraphClass:
                     datfile = os.path.basename(dat)
                     self.datfilenames.append(os.path.join(datpath, desc, datfile))
                     self.perfkeys.append(perf)
-                    # strip trailing colons, equals and spaces, we seem to have
-                    # a lot of these coming from our perfkeys
-                    while graph.endswith((':', '=', ' ')):
-                        graph = graph[:-1]
                     # append description
                     self.graphkeys.append(graph + graphdesc)
 
