@@ -404,8 +404,8 @@ class GraphClass:
                  _expand=0, _sort=True):
         self.id = GraphClass.gid
         GraphClass.gid += 1
-        self.name = str(GraphClass.gid) + _name.strip()
-        self.srcdatfname = self.name+'.dat'
+        self.name = _name.strip() + '-' + str(GraphClass.gid)
+        self.srcdatfname = _name.strip()+'.dat'
         self.title = ''
         self.suites = _suites
         self.graphname = ''
