@@ -128,7 +128,7 @@ function getNextDivs(afterDiv, afterLDiv) {
 
 // Gen a new dygraph, if an existing graph is being expanded then expandInfo
 // will contain the expansion information, else it is null
-function genDygraph(graphInfo, graphDivs, graphData, expandInfo) {
+function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
 
   var div = graphDivs.div;
   var ldiv = graphDivs.ldiv;
@@ -167,7 +167,7 @@ function genDygraph(graphInfo, graphDivs, graphData, expandInfo) {
     highlightSeriesBackgroundAlpha: 1,
     // So it's easier to zoom in on the right side
     rightGap: 15,
-    labels: graphInfo.labels,
+    labels: graphLabels,
     labelsDiv: ldiv,
     labelsSeparateLines: true,
     dateWindow: [startdate, enddate],
@@ -225,7 +225,7 @@ function genDygraph(graphInfo, graphDivs, graphData, expandInfo) {
       g.setAnnotations(g.annotations());
     }
 
-    expandGraphs(g, graphInfo, graphDivs, graphData);
+    expandGraphs(g, graphInfo, graphDivs, graphData, graphLabels);
 
   });
 
@@ -241,11 +241,11 @@ function genDygraph(graphInfo, graphDivs, graphData, expandInfo) {
 // series that have the same name but one ends with ' (examples)' and the other
 // ' (all') They will both be shown on the expanded graph but the examples one
 // will not be shown on the graph containing all of them.
-function expandGraphs(graph, graphInfo, graphDivs, graphData) {
+function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
 
   var expandAllSentinel = -1;
   var expandNum = graphInfo.expand;
-  var labels = graphInfo.labels;
+  var labels = graphLabels;
 
   // if we don't need to expand just return
   if (!expandNum || expandNum === 0) {
@@ -306,7 +306,6 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData) {
     var newLabels = labels.slice(0,1);
     newLabels.push(labels[j]);
     newLabels.push(labels[exampleIndex]);
-    newInfo.labels = newLabels;
 
     var newData = transposedData.slice(0,1);
     newData = newData.concat(transposedData.slice(j, j+1), transposedData.slice(exampleIndex, exampleIndex+1));
@@ -322,7 +321,7 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData) {
     expandInfo = {
       colors: colors
     }
-    genDygraph(newInfo, newDivs, newData, expandInfo);
+    genDygraph(newInfo, newDivs, newData, newLabels, expandInfo);
     i++;
   }
 }
@@ -800,14 +799,16 @@ function getDataAndGenGraph(graphInfo) {
   // displayed in the order they are listed, regardless of the order they are
   // loaded.
   var graphDivs = getNextDivs();
-  $.getJSON(dataFile)
-    .done( function(graphData) {
+  var json = $.getJSON(dataFile)
+    .done( function(json) {
+      var graphData = json.data;
+      var graphLabels = json.labels;
       for (var j = 0; j < graphData.length; j++) {
         graphData[j][0] = new Date(parseDate(graphData[j][0]));
       }
-      genDygraph(graphInfo, graphDivs, graphData);
+      genDygraph(graphInfo, graphDivs, graphData, graphLabels);
     })
-    .fail( function( jqxhr, textStatus, error ) {
+    .fail( function(jqxhr, textStatus, error) {
       var err = textStatus + ', ' + error;
       console.log( 'Request for ' + dataFile + ' Failed: ' + err );
     });

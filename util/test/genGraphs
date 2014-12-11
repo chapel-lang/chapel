@@ -78,18 +78,15 @@ def show_date(value):
     else:
         return time.strftime('%Y-%m-%d', value)
 
-# converts a csv file to json. sets ginfo.labels as labels must be explicitly
-# set in dygraphs when you pass in a native array instead of csv. parses the
-# csv, cleans up the parsed representation and writes out using json.dumps
+# converts a csv file to json. Converts the csv file to json where the json
+# object has two members: the lables and the actual data formatted as required
+# by dygraphs
 def csv_to_json(csvFile, ginfo):
     data = parse_csv(csvFile)
-    labels = data[0]
-    data = data[1:]
-
     # each label is stored in a single element array because of how it is
     # parsed, get rid of that array so labels is no a simple array of strings
-    labels = [a[0] for a in labels]
-    ginfo.labels = json.dumps(labels)
+    labels = [a[0] for a in data[0]]
+    data = data[1:]
 
     lines = []
     for line in data:
@@ -108,8 +105,9 @@ def csv_to_json(csvFile, ginfo):
                 curLine.append([try_parse_float(x) for x in seriesArr])
         lines.append(curLine)
 
+    jsonObj = {'labels': labels, 'data': lines}
     with open(csvFile, 'w') as f:
-        f.write(json.dumps(lines))
+        f.write(json.dumps(jsonObj))
 
 # Helper functions to parse/write/sort a dygraphs compatible csv file.
 #
@@ -331,7 +329,6 @@ class GraphStuff:
         suites =  (', '.join('"' + s + '"' for s in ginfo.suites if s))
         self.gfile.write('   "suites" : [%s],\n'%(suites))
         self.gfile.write('   "datfname" : "%s",\n'%(ginfo.datfname))
-        self.gfile.write('   "labels"   : %s,\n'%(ginfo.labels))
         self.gfile.write('   "ylabel" : "%s",\n'%(ginfo.ylabel))
         self.gfile.write('   "startdate" : "%s",\n'%(ginfo.startdate))
         self.gfile.write('   "enddate" : "%s",\n'%(ginfo.enddate))
@@ -442,7 +439,6 @@ class GraphClass:
         self.title = ''
         self.suites = _suites
         self.graphname = ''
-        self.labels = '[]'
         self.ylabel = ''
         self.startdate = _startdate
         self.enddate = _enddate
