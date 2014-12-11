@@ -424,9 +424,7 @@ buildLabelStmt(const char* name, Expr* stmt) {
       breakLabelStmt = breakLabelStmt->prev;
     }
 
-    BlockStmt* loop = toBlockStmt(breakLabelStmt->prev);
-
-    if (loop && loop->isLoopStmt()) {
+    if (LoopStmt* loop = toLoopStmt(breakLabelStmt->prev)) {
       if (loop->breakLabelGet() == 0 || loop->continueLabelGet() == 0) {
         USR_FATAL(stmt, "cannot label parallel loop");
       } else {

@@ -496,19 +496,19 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
   } else if (DefExpr* defExpr = toDefExpr(ast)) {
     SUB_TYPE(defExpr->sym->type);
 
-  } else if (BlockStmt* bs = toBlockStmt(ast)) {
-    LabelSymbol* breakLabel    = bs->breakLabelGet();
-    LabelSymbol* continueLabel = bs->continueLabelGet();
+  } else if (LoopStmt* ls = toLoopStmt(ast)) {
+    LabelSymbol* breakLabel    = ls->breakLabelGet();
+    LabelSymbol* continueLabel = ls->continueLabelGet();
 
     if (breakLabel != 0) {
       if (LabelSymbol* y = toLabelSymbol(map->get(breakLabel))) {
-        bs->breakLabelSet(y);
+        ls->breakLabelSet(y);
       }
     }
 
     if (continueLabel != 0) {
       if (LabelSymbol* y = toLabelSymbol(map->get(continueLabel))) {
-        bs->continueLabelSet(y);
+        ls->continueLabelSet(y);
       }
     }
 
