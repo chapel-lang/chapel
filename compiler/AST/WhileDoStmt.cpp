@@ -49,8 +49,8 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
 
     WhileDoStmt* loop          = new WhileDoStmt(condVar, body);
 
-    loop->continueLabel = continueLabel;
-    loop->breakLabel    = breakLabel;
+    loop->mContinueLabel = continueLabel;
+    loop->mBreakLabel    = breakLabel;
 
     loop->insertAtTail(new DefExpr(continueLabel));
     loop->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
@@ -206,8 +206,10 @@ GenRet WhileDoStmt::codegen()
   return ret;
 }
 
-void WhileDoStmt::accept(AstVisitor* visitor) {
-  if (visitor->enterWhileDoStmt(this) == true) {
+void WhileDoStmt::accept(AstVisitor* visitor)
+{
+  if (visitor->enterWhileDoStmt(this) == true)
+  {
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
@@ -224,7 +226,8 @@ void WhileDoStmt::accept(AstVisitor* visitor) {
   }
 }
 
-Expr* WhileDoStmt::getFirstExpr() {
+Expr* WhileDoStmt::getFirstExpr()
+{
   Expr* retval = 0;
 
   if (condExprGet() != 0)
@@ -239,7 +242,8 @@ Expr* WhileDoStmt::getFirstExpr() {
   return retval;
 }
 
-Expr* WhileDoStmt::getNextExpr(Expr* expr) {
+Expr* WhileDoStmt::getNextExpr(Expr* expr)
+{
   Expr* retval = this;
 
   if (expr == condExprGet() && body.head != NULL)

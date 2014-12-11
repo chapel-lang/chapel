@@ -53,8 +53,8 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
     LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
     LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
 
-    loop->continueLabel = continueLabel;
-    loop->breakLabel    = breakLabel;
+    loop->mContinueLabel = continueLabel;
+    loop->mBreakLabel    = breakLabel;
 
     loop->loopHeaderSet(initBlock, testBlock, incrBlock);
 
@@ -76,16 +76,10 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
   SymbolMap map;
   CForLoop* retval = new CForLoop();
 
-  retval->astloc        = forLoop->astloc;
-  retval->blockTag      = forLoop->blockTag;
-  retval->breakLabel    = forLoop->breakLabelGet();
-  retval->continueLabel = forLoop->continueLabelGet();
-
-  if (forLoop->modUses   != 0)
-    retval->modUses = forLoop->modUses->copy(&map, true);
-
-  if (forLoop->byrefVars != 0)
-    retval->byrefVars = forLoop->byrefVars->copy(&map, true);
+  retval->astloc         = forLoop->astloc;
+  retval->blockTag       = forLoop->blockTag;
+  retval->mBreakLabel    = forLoop->breakLabelGet();
+  retval->mContinueLabel = forLoop->continueLabelGet();
 
   for_alist(expr, forLoop->body)
     retval->insertAtTail(expr->copy(&map, true));
@@ -138,11 +132,11 @@ CForLoop* CForLoop::copy(SymbolMap* mapRef, bool internal)
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
   CForLoop*  retval    = new CForLoop();
 
-  retval->astloc        = astloc;
-  retval->blockTag      = blockTag;
+  retval->astloc         = astloc;
+  retval->blockTag       = blockTag;
 
-  retval->breakLabel    = breakLabel;
-  retval->continueLabel = continueLabel;
+  retval->mBreakLabel    = mBreakLabel;
+  retval->mContinueLabel = mContinueLabel;
 
   if (initBlockGet() != 0 && testBlockGet() != 0 && incrBlockGet() != 0)
     retval->loopHeaderSet(initBlockGet()->copy(map, true),

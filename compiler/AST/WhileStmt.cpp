@@ -42,20 +42,14 @@ void WhileStmt::copyShare(const WhileStmt& ref,
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
   SymExpr*   condExpr  = ref.condExprGet();
 
-  astloc        = ref.astloc;
-  blockTag      = ref.blockTag;
+  astloc         = ref.astloc;
+  blockTag       = ref.blockTag;
 
-  breakLabel    = ref.breakLabel;
-  continueLabel = ref.continueLabel;
+  mBreakLabel    = ref.mBreakLabel;
+  mContinueLabel = ref.mContinueLabel;
 
   if (condExpr != 0)
     mCondExpr = condExpr->copy(map, true);
-
-  if (ref.modUses  != 0)
-    modUses = ref.modUses->copy(map, true);
-
-  if (ref.byrefVars != 0)
-    byrefVars = ref.byrefVars->copy(map, true);
 
   for_alist(expr, ref.body)
     insertAtTail(expr->copy(map, true));

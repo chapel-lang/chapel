@@ -142,10 +142,10 @@ ParamForLoop* ParamForLoop::copy(SymbolMap* mapRef, bool internal)
   CallExpr*     blockInfo = paramInfoGet();
   ParamForLoop* retval    = new ParamForLoop();
 
-  retval->astloc        = astloc;
-  retval->blockTag      = blockTag;
-  retval->breakLabel    = breakLabel;
-  retval->continueLabel = continueLabel;
+  retval->astloc         = astloc;
+  retval->blockTag       = blockTag;
+  retval->mBreakLabel    = mBreakLabel;
+  retval->mContinueLabel = mContinueLabel;
 
   if (blockInfo != 0)
     retval->BlockStmt::blockInfoSet(blockInfo->copy(map, true));
@@ -190,26 +190,18 @@ BlockStmt* ParamForLoop::copyBody(SymbolMap* map)
   retval->astloc        = astloc;
   retval->blockTag      = blockTag;
 
-  retval->breakLabelSet   (breakLabel);
-   retval->continueLabelSet(continueLabel);
+  for_alist(expr, body)
+    retval->insertAtTail(expr->copy(map, true));
 
-   if (modUses   != 0)
-     retval->modUses = modUses->copy(map, true);
+  update_symbols(retval, map);
 
-   if (byrefVars != 0)
-     retval->byrefVars = byrefVars->copy(map, true);
-
-   for_alist(expr, body)
-     retval->insertAtTail(expr->copy(map, true));
-
-   update_symbols(retval, map);
-
-   return retval;
+  return retval;
 }
 
 void ParamForLoop::accept(AstVisitor* visitor)
 {
-  if (visitor->enterParamForLoop(this) == true) {
+  if (visitor->enterParamForLoop(this) == true)
+  {
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 

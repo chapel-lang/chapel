@@ -91,8 +91,6 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   modUses(NULL),
   userLabel(NULL),
   byrefVars(NULL),
-  breakLabel(NULL),
-  continueLabel(NULL),
   blockInfo(NULL) {
   body.parent = this;
 
@@ -144,12 +142,10 @@ BlockStmt*
 BlockStmt::copyInner(SymbolMap* map) {
   BlockStmt* _this = new BlockStmt();
 
-  _this->blockTag      = blockTag;
-  _this->blockInfo     = COPY_INT(blockInfo);
-  _this->modUses       = COPY_INT(modUses);
-  _this->breakLabel    = breakLabel;
-  _this->continueLabel = continueLabel;
-  _this->byrefVars     = COPY_INT(byrefVars);
+  _this->blockTag  = blockTag;
+  _this->blockInfo = COPY_INT(blockInfo);
+  _this->modUses   = COPY_INT(modUses);
+  _this->byrefVars = COPY_INT(byrefVars);
 
   for_alist(expr, body)
     _this->insertAtTail(COPY_INT(expr));
@@ -187,22 +183,6 @@ CallExpr* BlockStmt::blockInfoSet(CallExpr* expr) {
   blockInfo = expr;
 
   return blockInfo;
-}
-
-LabelSymbol* BlockStmt::breakLabelGet() const {
-  return breakLabel;
-}
-
-void BlockStmt::breakLabelSet(LabelSymbol* sym) {
-  breakLabel = sym;
-}
-
-LabelSymbol* BlockStmt::continueLabelGet() const {
-  return continueLabel;
-}
-
-void BlockStmt::continueLabelSet(LabelSymbol* sym) {
-  continueLabel = sym;
 }
 
 GenRet BlockStmt::codegen() {

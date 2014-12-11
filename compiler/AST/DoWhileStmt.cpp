@@ -40,7 +40,8 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 
   // make variables declared in the scope of the body visible to
   // expressions in the condition of a do..while block
-  if (body->length() == 1 && toBlockStmt(body->body.only())) {
+  if (body->length() == 1 && toBlockStmt(body->body.only()))
+  {
     body = toBlockStmt(body->body.only());
     body->remove();
   }
@@ -50,8 +51,8 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 
   loop = new DoWhileStmt(condVar, body);
 
-  loop->continueLabel = continueLabel;
-  loop->breakLabel    = breakLabel;
+  loop->mContinueLabel = continueLabel;
+  loop->mBreakLabel    = breakLabel;
 
   retval->insertAtTail(new DefExpr(condVar));
 
@@ -178,8 +179,10 @@ GenRet DoWhileStmt::codegen()
   return ret;
 }
 
-void DoWhileStmt::accept(AstVisitor* visitor) {
-  if (visitor->enterDoWhileStmt(this) == true) {
+void DoWhileStmt::accept(AstVisitor* visitor)
+{
+  if (visitor->enterDoWhileStmt(this) == true)
+  {
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
@@ -196,7 +199,8 @@ void DoWhileStmt::accept(AstVisitor* visitor) {
   }
 }
 
-Expr* DoWhileStmt::getFirstExpr() {
+Expr* DoWhileStmt::getFirstExpr()
+{
   Expr* retval = 0;
 
   if (condExprGet() != 0)
@@ -211,7 +215,8 @@ Expr* DoWhileStmt::getFirstExpr() {
   return retval;
 }
 
-Expr* DoWhileStmt::getNextExpr(Expr* expr) {
+Expr* DoWhileStmt::getNextExpr(Expr* expr)
+{
   Expr* retval = this;
 
   if (expr == condExprGet() && body.head != NULL)
