@@ -67,8 +67,12 @@ public:
 
   BlockStmt*             copyBody(SymbolMap* map);
 
+  CallExpr*              foldForResolve();
+
 private:
                          ParamForLoop();
+
+  Type*                  indexType();
 
   VarSymbol*             mIndexVariable;
   VarSymbol*             mLowVariable;
