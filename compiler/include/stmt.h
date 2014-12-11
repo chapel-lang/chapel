@@ -114,21 +114,11 @@ public:
   virtual CallExpr*   blockInfoGet()                               const;
   virtual CallExpr*   blockInfoSet(CallExpr* expr);
 
-  virtual LabelSymbol*  breakLabelGet()                            const;
-  virtual void          breakLabelSet(LabelSymbol* sym);
-
-  virtual LabelSymbol*  continueLabelGet()                         const;
-  virtual void          continueLabelSet(LabelSymbol* sym);
-
   BlockTag            blockTag;
   AList               body;
   CallExpr*           modUses;       // module uses via PRIM_USE
   const char*         userLabel;
   CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
-
-protected:
-  LabelSymbol*        breakLabel;
-  LabelSymbol*        continueLabel;
 
 private:
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;

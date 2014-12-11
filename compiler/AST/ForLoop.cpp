@@ -71,8 +71,8 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   if (coforall)
     index->addFlag(FLAG_COFORALL_INDEX_VAR);
 
-  loop->continueLabel = continueLabel;
-  loop->breakLabel    = breakLabel;
+  loop->mContinueLabel = continueLabel;
+  loop->mBreakLabel    = breakLabel;
 
   loop->insertAtTail(new DefExpr(continueLabel));
 
@@ -100,7 +100,6 @@ ForLoop::ForLoop() : LoopStmt(0)
 {
   mIndex    = 0;
   mIterator = 0;
-
 }
 
 ForLoop::ForLoop(VarSymbol* index,
@@ -109,7 +108,6 @@ ForLoop::ForLoop(VarSymbol* index,
 {
   mIndex    = new SymExpr(index);
   mIterator = new SymExpr(iterator);
-
 }
 
 ForLoop::~ForLoop()
@@ -123,20 +121,14 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
   ForLoop*   retval    = new ForLoop();
 
-  retval->astloc        = astloc;
-  retval->blockTag      = blockTag;
+  retval->astloc         = astloc;
+  retval->blockTag       = blockTag;
 
-  retval->breakLabel    = breakLabel;
-  retval->continueLabel = continueLabel;
+  retval->mBreakLabel    = mBreakLabel;
+  retval->mContinueLabel = mContinueLabel;
 
-  retval->mIndex        = mIndex->copy(map, true),
-  retval->mIterator     = mIterator->copy(map, true);
-
-  if (modUses   != 0)
-    retval->modUses = modUses->copy(map, true);
-
-  if (byrefVars != 0)
-    retval->byrefVars = byrefVars->copy(map, true);
+  retval->mIndex         = mIndex->copy(map, true),
+  retval->mIterator      = mIterator->copy(map, true);
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -158,17 +150,8 @@ BlockStmt* ForLoop::copyBody(SymbolMap* map)
 {
   BlockStmt* retval = new BlockStmt();
 
-  retval->astloc        = astloc;
-  retval->blockTag      = blockTag;
-
-  retval->breakLabelSet   (breakLabel);
-  retval->continueLabelSet(continueLabel);
-
-  if (modUses   != 0)
-    retval->modUses = modUses->copy(map, true);
-
-  if (byrefVars != 0)
-    retval->byrefVars = byrefVars->copy(map, true);
+  retval->astloc   = astloc;
+  retval->blockTag = blockTag;
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
