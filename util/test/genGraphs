@@ -404,7 +404,7 @@ class GraphClass:
                  _expand=0, _sort=True):
         self.id = GraphClass.gid
         GraphClass.gid += 1
-        self.name = _name.strip()
+        self.name = str(GraphClass.gid) + _name.strip()
         self.srcdatfname = self.name+'.dat'
         self.title = ''
         self.suites = _suites
@@ -420,7 +420,7 @@ class GraphClass:
         self.displayrange = _displayrange
         self._reduce = _reduce
         self.expand = _expand
-        self.sort = _sort 
+        self.sort = _sort
         self.annotations = []
 
     def __str__(self):
