@@ -8,6 +8,8 @@ gen
 *.o
 *.pyc
 *.tmp
+TAGS
+tags
 
 # Top level ignores.
 /BUILD_VERSION
@@ -22,7 +24,6 @@ gen
 
 # Compiler ignores.
 /compiler/BROWSE
-/compiler/TAGS
 /compiler/chpl
 /compiler/ifa/prim_data.cpp
 /compiler/ifa/prim_data.h
@@ -41,7 +42,6 @@ gen
 /compiler/parser/lex.yy.h
 /compiler/parser/modulefinder
 /compiler/passes/reservedSymbolNames.h
-/compiler/tags
 
 # Doc ignores.
 /doc/**/*.aux
@@ -71,7 +71,6 @@ gen
 /modules/internal/threads/soft-threads
 
 # Runtime ignores.
-/runtime/TAGS
 /runtime/etc/Makefile.comm-ugni
 /runtime/etc/Makefile.threads-soft-threads
 /runtime/include/chpl_rt_utils.h
@@ -83,7 +82,6 @@ gen
 /runtime/src/tasks/muxed
 /runtime/src/threads/soft-threads
 /runtime/src/timers/
-/runtime/tags
 
 # Spec ignores.
 /spec/*.aux
