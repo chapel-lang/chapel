@@ -255,8 +255,17 @@ void ParamForLoop::accept(AstVisitor* visitor)
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (paramInfoGet() != 0)
-      paramInfoGet()->accept(visitor);
+    if (indexExprGet() != 0)
+      indexExprGet()->accept(visitor);
+
+    if (lowExprGet() != 0)
+      lowExprGet()->accept(visitor);
+
+    if (highExprGet() != 0)
+      highExprGet()->accept(visitor);
+
+    if (strideExprGet() != 0)
+      strideExprGet()->accept(visitor);
 
     if (modUses)
       modUses->accept(visitor);
@@ -333,27 +342,25 @@ Expr* ParamForLoop::getNextExpr(Expr* expr)
 
 CallExpr* ParamForLoop::foldForResolve()
 {
-  CallExpr*  loopInfo = paramInfoGet();
+  SymExpr*   idxExpr   = indexExprGet();
+  SymExpr*   lse       = lowExprGet();
+  SymExpr*   hse       = highExprGet();
+  SymExpr*   sse       = strideExprGet();
 
-  SymExpr*   idxExpr  = toSymExpr(loopInfo->get(1));
-  SymExpr*   lse      = toSymExpr(loopInfo->get(2));
-  SymExpr*   hse      = toSymExpr(loopInfo->get(3));
-  SymExpr*   sse      = toSymExpr(loopInfo->get(4));
+  if (!lse             || !hse             || !sse)
+    USR_FATAL(this, "param for loop must be defined over a param range");
 
-  if (!lse || !hse || !sse)
-    USR_FATAL(loopInfo, "param for loop must be defined over a param range");
+  VarSymbol* lvar      = toVarSymbol(lse->var);
+  VarSymbol* hvar      = toVarSymbol(hse->var);
+  VarSymbol* svar      = toVarSymbol(sse->var);
 
-  VarSymbol* lvar    = toVarSymbol(lse->var);
-  VarSymbol* hvar    = toVarSymbol(hse->var);
-  VarSymbol* svar    = toVarSymbol(sse->var);
-
-  CallExpr*  noop    = new CallExpr(PRIM_NOOP);
+  CallExpr*  noop      = new CallExpr(PRIM_NOOP);
 
   if (!lvar            || !hvar            || !svar)
-    USR_FATAL(loopInfo, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a param range");
 
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
-    USR_FATAL(loopInfo, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a param range");
 
   Symbol*      idxSym  = idxExpr->var;
   Type*        idxType = indexType();
@@ -440,11 +447,10 @@ CallExpr* ParamForLoop::foldForResolve()
 //
 Type* ParamForLoop::indexType()
 {
-  CallExpr* loopInfo = paramInfoGet();
-  SymExpr*  lse      = toSymExpr(loopInfo->get(2));
-  SymExpr*  hse      = toSymExpr(loopInfo->get(3));
-  CallExpr* range    = new CallExpr("_build_range", lse->copy(), hse->copy());
-  Type*     idxType  = 0;
+  SymExpr*  lse     = lowExprGet();
+  SymExpr*  hse     = highExprGet();
+  CallExpr* range   = new CallExpr("_build_range", lse->copy(), hse->copy());
+  Type*     idxType = 0;
 
   insertBefore(range);
 
