@@ -119,12 +119,12 @@ module ChapelRange {
             " : ", low, ",", high, ",", stride, ",",
             if aligned then alignment:string else "?", ")");
   }
-   
-  
+
   //////////////////////////////////////////////////////////////////////////////////
-  // Range builders for bounded ranges
-  // Range builders are used by the parser to create literal ranges.
+  // Range builders:  used by the parser to create literal ranges
   //
+
+  // Range builders for fully bounded ranges
   proc chpl_build_bounded_range(low: int(?w), high: int(w))
     return new range(idxType = int(w), _low = low, _high = high);
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
@@ -132,19 +132,17 @@ module ChapelRange {
   proc chpl_build_bounded_range(low, high) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
   }
-  
-  
-  //////////////////////////////////////////////////////////////////////////////////
-  // Range builders for unbounded ranges
-  //
-  proc chpl_build_unbounded_range(param bt: BoundedRangeType, bound: int(?w))
+
+  // Range builders for partially bounded ranges
+  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: int(?w))
     return new range(int(w), bt, false, bound, bound);
-  proc chpl_build_unbounded_range(param bt: BoundedRangeType, bound: uint(?w))
+  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: uint(?w))
     return new range(uint(w), bt, false, bound, bound);
-  proc chpl_build_unbounded_range(param bt: BoundedRangeType, bound) {
+  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
   }
 
+  // Range builder for unbounded ranges
   proc chpl_build_unbounded_range(param bt: BoundedRangeType)
     return new range(int, bt);
   

@@ -3667,6 +3667,7 @@ void CallExpr::prettyPrint(std::ostream *o) {
         argList.last()->prettyPrint(o);
         *o << ")";
       } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0 ||
+                 strcmp(expr->unresolved, "chpl_build_partially_bounded_range") == 0 ||
                  strcmp(expr->unresolved, "chpl_build_unbounded_range") == 0) {
         argList.first()->prettyPrint(o);
         *o << "..";
