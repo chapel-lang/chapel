@@ -619,14 +619,59 @@ bool AstDumpToNode::enterParamForLoop(ParamForLoop* node)
 
   write(false, heading, true);
 
-  if (node->paramInfoGet())
+  if (node->indexExprGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "ParamInfo: ", false);
+    write(false, "Index Expr:", false);
     mOffset = mOffset + 2;
-    node->paramInfoGet()->accept(this);
+    node->indexExprGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  if (node->lowExprGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "Low Expr:", false);
+    mOffset = mOffset + 2;
+    node->lowExprGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  if (node->highExprGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "High Expr:", false);
+    mOffset = mOffset + 2;
+    node->highExprGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  if (node->strideExprGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "Stride Expr:", false);
+    mOffset = mOffset + 2;
+    node->strideExprGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
