@@ -916,15 +916,12 @@ buildFollowLoop(VarSymbol* iter,
   return followBlock;
 }
 
-BlockStmt* buildStandaloneForallLoopStmt(Expr* indices,
-                                         Expr* iterExpr,
-                                         BlockStmt* loopBody);
 /*
  * Build a forall loop that has only one level instead of a nested leader
  * follower loop. This single level loop will be handled similarily to
  * the leader loop in a leader/follower based forall.
  */
-BlockStmt*
+static BlockStmt*
 buildStandaloneForallLoopStmt(Expr* indices,
                               Expr* iterExpr,
                               BlockStmt* loopBody) {
