@@ -336,7 +336,7 @@ CallExpr* ParamForLoop::foldForResolve()
   SymExpr*   sse       = strideExprGet();
 
   if (!lse             || !hse             || !sse)
-    USR_FATAL(this, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
   VarSymbol* lvar      = toVarSymbol(lse->var);
   VarSymbol* hvar      = toVarSymbol(hse->var);
@@ -345,10 +345,10 @@ CallExpr* ParamForLoop::foldForResolve()
   CallExpr*  noop      = new CallExpr(PRIM_NOOP);
 
   if (!lvar            || !hvar            || !svar)
-    USR_FATAL(this, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
-    USR_FATAL(this, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
   Symbol*      idxSym  = idxExpr->var;
   Type*        idxType = indexType();
