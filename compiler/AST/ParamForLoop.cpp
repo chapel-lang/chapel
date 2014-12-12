@@ -56,14 +56,14 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
     stride = new SymExpr(new_IntSymbol(1));
   }
 
-  if (call && call->isNamed("_build_range"))
+  if (call && call->isNamed("chpl_build_bounded_range"))
   {
     low    = call->get(1)->remove();
     high   = call->get(1)->remove();
   }
   else
   {
-    USR_FATAL(range, "iterators for param-for-loops must be literal ranges");
+    USR_FATAL(range, "iterators for param-for-loops must be bounded literal ranges");
   }
 
   outer->insertAtTail(new DefExpr(indexVar, new_IntSymbol((int64_t) 0)));
@@ -437,7 +437,8 @@ Type* ParamForLoop::indexType()
 {
   SymExpr*  lse     = lowExprGet();
   SymExpr*  hse     = highExprGet();
-  CallExpr* range   = new CallExpr("_build_range", lse->copy(), hse->copy());
+  CallExpr* range    = new CallExpr("chpl_build_bounded_range",
+                                    lse->copy(), hse->copy());
   Type*     idxType = 0;
 
   insertBefore(range);
