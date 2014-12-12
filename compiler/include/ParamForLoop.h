@@ -68,7 +68,7 @@ public:
   SymExpr*               highExprGet()                                const;
   SymExpr*               strideExprGet()                              const;
 
-  CallExpr*              paramInfoGet()                               const;
+  CallExpr*              resolveInfo()                                const;
 
   BlockStmt*             copyBody(SymbolMap* map);
 

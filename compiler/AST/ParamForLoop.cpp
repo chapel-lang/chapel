@@ -214,7 +214,7 @@ SymExpr* ParamForLoop::strideExprGet() const
   return retval;
 }
 
-CallExpr* ParamForLoop::paramInfoGet() const
+CallExpr* ParamForLoop::resolveInfo() const
 {
   return mResolveInfo;
 }
@@ -318,8 +318,8 @@ Expr* ParamForLoop::getFirstExpr()
 {
   Expr* retval = 0;
 
-  if (paramInfoGet() != 0)
-    retval = paramInfoGet()->getFirstExpr();
+  if (mResolveInfo != 0)
+    retval = mResolveInfo->getFirstExpr();
 
   else if (body.head      != 0)
     retval = body.head->getFirstExpr();
@@ -334,7 +334,7 @@ Expr* ParamForLoop::getNextExpr(Expr* expr)
 {
   Expr* retval = this;
 
-  if (expr == paramInfoGet() && body.head != 0)
+  if (expr == mResolveInfo && body.head != 0)
     retval = body.head->getFirstExpr();
 
   return retval;
