@@ -106,7 +106,7 @@ VarSymbol* ParamForLoop::newParamVar()
 
 ParamForLoop::ParamForLoop() : LoopStmt(0)
 {
-
+  mResolveInfo = 0;
 }
 
 ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
@@ -116,18 +116,13 @@ ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
                            LabelSymbol* breakLabel,
                            BlockStmt*   initBody) : LoopStmt(initBody)
 {
-  mIndexVariable  = indexVar;
-  mLowVariable    = lowVar;
-  mHighVariable   = highVar;
-  mStrideVariable = strideVar;
-
   breakLabelSet(breakLabel);
 
-  BlockStmt::blockInfoSet(new CallExpr(PRIM_BLOCK_PARAM_LOOP,
-                                       indexVar,
-                                       lowVar,
-                                       highVar,
-                                       strideVar));
+  mResolveInfo = new CallExpr(PRIM_BLOCK_PARAM_LOOP,
+                              indexVar,
+                              lowVar,
+                              highVar,
+                              strideVar);
 }
 
 ParamForLoop::~ParamForLoop()
@@ -139,7 +134,6 @@ ParamForLoop* ParamForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap     localMap;
   SymbolMap*    map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*     blockInfo = paramInfoGet();
   ParamForLoop* retval    = new ParamForLoop();
 
   retval->astloc         = astloc;
@@ -147,8 +141,8 @@ ParamForLoop* ParamForLoop::copy(SymbolMap* mapRef, bool internal)
   retval->mBreakLabel    = mBreakLabel;
   retval->mContinueLabel = mContinueLabel;
 
-  if (blockInfo != 0)
-    retval->BlockStmt::blockInfoSet(blockInfo->copy(map, true));
+  if (mResolveInfo != 0)
+    retval->mResolveInfo = mResolveInfo->copy(map, true);
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -166,21 +160,21 @@ bool ParamForLoop::isParamForLoop() const
 
 CallExpr* ParamForLoop::paramInfoGet() const
 {
-  return BlockStmt::blockInfoGet();
+  return mResolveInfo;
 }
 
 CallExpr* ParamForLoop::blockInfoGet() const
 {
   printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoGet()\n", id);
 
-  return BlockStmt::blockInfoGet();
+  return 0;
 }
 
 CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
 {
   printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoSet()\n", id);
 
-  return BlockStmt::blockInfoSet(expr);
+  return 0;
 }
 
 BlockStmt* ParamForLoop::copyBody(SymbolMap* map)
@@ -222,13 +216,16 @@ void ParamForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (BlockStmt::blockInfoGet() == 0)
-    INT_FATAL(this, "ParamForLoop::verify. blockInfo is NULL");
+  if (mResolveInfo              == 0)
+    INT_FATAL(this, "ParamForLoop::verify. mResolveInfo is NULL");
 
-  if (modUses   != 0)
+  if (BlockStmt::blockInfoGet() != 0)
+    INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
+
+  if (modUses                   != 0)
     INT_FATAL(this, "ParamForLoop::verify. modUses   is not NULL");
 
-  if (byrefVars != 0)
+  if (byrefVars                 != 0)
     INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
 }
 
