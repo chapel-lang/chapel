@@ -63,6 +63,11 @@ public:
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);
 
+  SymExpr*               indexExprGet()                               const;
+  SymExpr*               lowExprGet()                                 const;
+  SymExpr*               highExprGet()                                const;
+  SymExpr*               strideExprGet()                              const;
+
   CallExpr*              paramInfoGet()                               const;
 
   BlockStmt*             copyBody(SymbolMap* map);

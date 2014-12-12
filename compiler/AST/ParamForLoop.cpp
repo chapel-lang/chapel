@@ -158,6 +158,62 @@ bool ParamForLoop::isParamForLoop() const
   return true;
 }
 
+SymExpr* ParamForLoop::indexExprGet() const
+{
+  SymExpr* retval = 0;
+
+  if (mResolveInfo != 0)
+  {
+    retval = toSymExpr(mResolveInfo->get(1));
+
+    INT_ASSERT(retval);
+  }
+
+  return retval;
+}
+
+SymExpr* ParamForLoop::lowExprGet() const
+{
+  SymExpr* retval = 0;
+
+  if (mResolveInfo != 0)
+  {
+    retval = toSymExpr(mResolveInfo->get(2));
+
+    INT_ASSERT(retval);
+  }
+
+  return retval;
+}
+
+SymExpr* ParamForLoop::highExprGet() const
+{
+  SymExpr* retval = 0;
+
+  if (mResolveInfo != 0)
+  {
+    retval = toSymExpr(mResolveInfo->get(3));
+
+    INT_ASSERT(retval);
+  }
+
+  return retval;
+}
+
+SymExpr* ParamForLoop::strideExprGet() const
+{
+  SymExpr* retval = 0;
+
+  if (mResolveInfo != 0)
+  {
+    retval = toSymExpr(mResolveInfo->get(4));
+
+    INT_ASSERT(retval);
+  }
+
+  return retval;
+}
+
 CallExpr* ParamForLoop::paramInfoGet() const
 {
   return mResolveInfo;
