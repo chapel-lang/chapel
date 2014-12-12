@@ -316,28 +316,16 @@ GenRet ParamForLoop::codegen()
 
 Expr* ParamForLoop::getFirstExpr()
 {
-  Expr* retval = 0;
+  INT_ASSERT(mResolveInfo != 0);
 
-  if (mResolveInfo != 0)
-    retval = mResolveInfo->getFirstExpr();
-
-  else if (body.head      != 0)
-    retval = body.head->getFirstExpr();
-
-  else
-    retval = this;
-
-  return retval;
+  return indexExprGet();
 }
 
 Expr* ParamForLoop::getNextExpr(Expr* expr)
 {
-  Expr* retval = this;
+  INT_ASSERT(expr == mResolveInfo);
 
-  if (expr == mResolveInfo && body.head != 0)
-    retval = body.head->getFirstExpr();
-
-  return retval;
+  return (body.head != 0) ? body.head->getFirstExpr() : this;
 }
 
 CallExpr* ParamForLoop::foldForResolve()
