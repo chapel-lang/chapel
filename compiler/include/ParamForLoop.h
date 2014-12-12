@@ -63,7 +63,12 @@ public:
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);
 
-  CallExpr*              paramInfoGet()                               const;
+  SymExpr*               indexExprGet()                               const;
+  SymExpr*               lowExprGet()                                 const;
+  SymExpr*               highExprGet()                                const;
+  SymExpr*               strideExprGet()                              const;
+
+  CallExpr*              resolveInfo()                                const;
 
   BlockStmt*             copyBody(SymbolMap* map);
 
@@ -74,10 +79,17 @@ private:
 
   Type*                  indexType();
 
-  VarSymbol*             mIndexVariable;
-  VarSymbol*             mLowVariable;
-  VarSymbol*             mHighVariable;
-  VarSymbol*             mStrideVariable;
+  //
+  // NOAKES 2014/12/11
+  //
+  // Function resolution depends on the header information being captured as
+  // a CallExpr in a complex way; function resolution relies on tracing the
+  // 4 header fields and then seeing a "marker", the CallExpr, so that it can
+  // unroll the loop rather than applying resolution to the body.
+  //
+  // Migrate the blockInfo directly in to ParamForLoop to enable a path to
+  // decoupling ParamForLoop from BlockStmt.
+  CallExpr*              mResolveInfo;
 };
 
 #endif

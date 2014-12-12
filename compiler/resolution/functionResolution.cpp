@@ -5766,141 +5766,139 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
 // is true in this case, so the search for a matching elseStmt continue in the
 // surrounding block or call.
 static Expr*
-resolveExpr(Expr* expr)
-{
-    FnSymbol* fn = toFnSymbol(expr->parentSymbol);
+resolveExpr(Expr* expr) {
+  Expr* const origExpr = expr;
+  FnSymbol*   fn       = toFnSymbol(expr->parentSymbol);
 
-    SET_LINENO(expr);
-    if (SymExpr* se = toSymExpr(expr)) {
-      if (se->var) {
-        makeRefType(se->var->type);
-      }
+  SET_LINENO(expr);
+
+  if (SymExpr* se = toSymExpr(expr)) {
+    if (se->var) {
+      makeRefType(se->var->type);
+    }
+  }
+
+  expr = preFold(expr);
+
+  if (fn && fn->retTag == RET_PARAM) {
+    if (is_param_resolved(fn, expr)) {
+      return expr;
+    }
+  }
+
+  if (DefExpr* def = toDefExpr(expr)) {
+    if (def->init) {
+      Expr* init = preFold(def->init);
+      init = resolveExpr(init);
+      // expr is unchanged, so is treated as "resolved".
     }
 
-    Expr* const origExpr = expr;
+    if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
+      implementForallIntents1(def);
+    }
+  }
 
-    expr = preFold(expr);
-
-    if (fn && fn->retTag == RET_PARAM) {
-      if (is_param_resolved(fn, expr)) {
-        return expr;
-      }
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_ERROR) ||
+        call->isPrimitive(PRIM_WARNING)) {
+      issueCompilerError(call);
     }
 
-    if (DefExpr* def = toDefExpr(expr))
-    {
-      if (def->init)
-      {
-        Expr* init = preFold(def->init);
-        init = resolveExpr(init);
-        // expr is unchanged, so is treated as "resolved".
-      }
-      if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
-        implementForallIntents1(def);
-      }
-    }
+    // Resolve expressions of the form:  <type> ( args )
+    // These will be constructor calls (or type constructor calls) that slipped
+    // past normalization due to the use of typedefs.
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (TypeSymbol* ts = toTypeSymbol(se->var)) {
+        if (call->numActuals() == 0 ||
+            (call->numActuals() == 2 && isSymExpr(call->get(1)) &&
+             toSymExpr(call->get(1))->var == gMethodToken)) {
+          // This looks like a typedef, so ignore it.
 
-    if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isPrimitive(PRIM_ERROR) ||
-          call->isPrimitive(PRIM_WARNING)) {
-        issueCompilerError(call);
-      }
-
-      // Resolve expressions of the form:  <type> ( args )
-      // These will be constructor calls (or type constructor calls) that slipped
-      // past normalization due to the use of typedefs.
-      if (SymExpr* se = toSymExpr(call->baseExpr))
-      {
-        if (TypeSymbol* ts = toTypeSymbol(se->var))
-        {
-          if (call->numActuals() == 0 ||
-              (call->numActuals() == 2 && isSymExpr(call->get(1)) &&
-               toSymExpr(call->get(1))->var == gMethodToken))
-          {
-            // This looks like a typedef, so ignore it.
-          }
-          else
-          {
-            // More needed here ... .
-            INT_FATAL(ts, "not yet implemented.");
-          }
-        }
-      }
-
-      callStack.add(call);
-      resolveCall(call);
-
-      if (!tryFailure && call->isResolved()) {
-        if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
-          // ForallLeaderArgs: process the leader that 'call' invokes.
-          implementForallIntents2(call, origToLeaderCall);
-        resolveFns(call->isResolved());
-      }
-
-      if (tryFailure) {
-        if (tryStack.tail()->parentSymbol == fn) {
-          // The code in the 'true' branch of a tryToken conditional has failed
-          // to resolve fully. Roll the callStack back to the function where
-          // the nearest tryToken conditional is and replace the entire
-          // conditional with the 'false' branch then continue resolution on
-          // it.  If the 'true' branch did fully resolve, we would replace the
-          // conditional with the 'true' branch instead.
-          while (callStack.n > 0 &&
-                 callStack.tail()->isResolved() !=
-                 tryStack.tail()->elseStmt->parentSymbol) {
-            callStack.pop();
-          }
-          BlockStmt* block = tryStack.tail()->elseStmt;
-          tryStack.tail()->replace(block->remove());
-          tryStack.pop();
-          if (!block->prev)
-            block->insertBefore(new CallExpr(PRIM_NOOP));
-          expr = block->prev;
-          return expr;
         } else {
-          return NULL;
+          // More needed here ... .
+          INT_FATAL(ts, "not yet implemented.");
         }
       }
-      callStack.pop();
     }
 
-    if (SymExpr* sym = toSymExpr(expr)) {
-      // Avoid record constructors via cast
-      // should be fixed by out-of-order resolution
-      CallExpr* parent = toCallExpr(sym->parentExpr);
-      if (!parent ||
-          !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
-          !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
+    callStack.add(call);
 
-        if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
-          if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
-              !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-              !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-            resolveFormals(ct->defaultTypeConstructor);
-            if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-              if (ct->defaultTypeConstructor->hasFlag(FLAG_PARTIAL_COPY))
-                instantiateBody(ct->defaultTypeConstructor);
-              resolveFns(ct->defaultTypeConstructor);
-            }
+    resolveCall(call);
+
+    if (!tryFailure && call->isResolved()) {
+      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
+        // ForallLeaderArgs: process the leader that 'call' invokes.
+        implementForallIntents2(call, origToLeaderCall);
+
+      resolveFns(call->isResolved());
+    }
+
+    if (tryFailure) {
+      if (tryStack.tail()->parentSymbol == fn) {
+        // The code in the 'true' branch of a tryToken conditional has failed
+        // to resolve fully. Roll the callStack back to the function where
+        // the nearest tryToken conditional is and replace the entire
+        // conditional with the 'false' branch then continue resolution on
+        // it.  If the 'true' branch did fully resolve, we would replace the
+        // conditional with the 'true' branch instead.
+        while (callStack.n > 0 &&
+               callStack.tail()->isResolved() !=
+               tryStack.tail()->elseStmt->parentSymbol) {
+          callStack.pop();
+        }
+
+        BlockStmt* block = tryStack.tail()->elseStmt;
+
+        tryStack.tail()->replace(block->remove());
+        tryStack.pop();
+
+        if (!block->prev)
+          block->insertBefore(new CallExpr(PRIM_NOOP));
+
+        return block->prev;
+      } else {
+        return NULL;
+      }
+
+    }
+
+    callStack.pop();
+  }
+
+  if (SymExpr* sym = toSymExpr(expr)) {
+    // Avoid record constructors via cast
+    // should be fixed by out-of-order resolution
+    CallExpr* parent = toCallExpr(sym->parentExpr);
+
+    if (!parent ||
+        !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
+        !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
+
+      if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
+        if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
+            !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+            !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+          resolveFormals(ct->defaultTypeConstructor);
+          if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
+            if (ct->defaultTypeConstructor->hasFlag(FLAG_PARTIAL_COPY))
+              instantiateBody(ct->defaultTypeConstructor);
+            resolveFns(ct->defaultTypeConstructor);
           }
         }
       }
     }
+  }
 
-    expr = postFold(expr);
-    return expr;
+  return postFold(expr);
 }
 
 
 void
-resolveBlockStmt(BlockStmt* blockStmt)
-{
-  for_exprs_postorder(expr, blockStmt)
-  {
+resolveBlockStmt(BlockStmt* blockStmt) {
+  for_exprs_postorder(expr, blockStmt) {
     expr = resolveExpr(expr);
 
-    if (tryFailure)
-    {
+    if (tryFailure) {
       if (expr == NULL)
         return;
 
@@ -5928,6 +5926,7 @@ computeReturnTypeParamVectors(BaseAST* ast,
       }
     }
   }
+
   AST_CHILDREN_CALL(ast, computeReturnTypeParamVectors, retSymbol, retTypes, retParams);
 }
 

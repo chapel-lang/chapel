@@ -413,7 +413,7 @@ def_to_ast(ParamForLoop);
                                                                                \
     } else if (stmt->isParamForLoop() == true) {                               \
       AST_CALL_LIST (stmt, ParamForLoop, body,           call, __VA_ARGS__);   \
-      AST_CALL_CHILD(stmt, ParamForLoop, paramInfoGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ParamForLoop, resolveInfo(),  call, __VA_ARGS__);   \
                                                                                \
     } else  {                                                                  \
       AST_CALL_LIST (stmt, BlockStmt,    body,           call, __VA_ARGS__);   \

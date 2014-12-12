@@ -106,7 +106,7 @@ VarSymbol* ParamForLoop::newParamVar()
 
 ParamForLoop::ParamForLoop() : LoopStmt(0)
 {
-
+  mResolveInfo = 0;
 }
 
 ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
@@ -116,18 +116,13 @@ ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
                            LabelSymbol* breakLabel,
                            BlockStmt*   initBody) : LoopStmt(initBody)
 {
-  mIndexVariable  = indexVar;
-  mLowVariable    = lowVar;
-  mHighVariable   = highVar;
-  mStrideVariable = strideVar;
-
   breakLabelSet(breakLabel);
 
-  BlockStmt::blockInfoSet(new CallExpr(PRIM_BLOCK_PARAM_LOOP,
-                                       indexVar,
-                                       lowVar,
-                                       highVar,
-                                       strideVar));
+  mResolveInfo = new CallExpr(PRIM_BLOCK_PARAM_LOOP,
+                              indexVar,
+                              lowVar,
+                              highVar,
+                              strideVar);
 }
 
 ParamForLoop::~ParamForLoop()
@@ -139,7 +134,6 @@ ParamForLoop* ParamForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap     localMap;
   SymbolMap*    map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*     blockInfo = paramInfoGet();
   ParamForLoop* retval    = new ParamForLoop();
 
   retval->astloc         = astloc;
@@ -147,8 +141,8 @@ ParamForLoop* ParamForLoop::copy(SymbolMap* mapRef, bool internal)
   retval->mBreakLabel    = mBreakLabel;
   retval->mContinueLabel = mContinueLabel;
 
-  if (blockInfo != 0)
-    retval->BlockStmt::blockInfoSet(blockInfo->copy(map, true));
+  if (mResolveInfo != 0)
+    retval->mResolveInfo = mResolveInfo->copy(map, true);
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -164,23 +158,79 @@ bool ParamForLoop::isParamForLoop() const
   return true;
 }
 
-CallExpr* ParamForLoop::paramInfoGet() const
+SymExpr* ParamForLoop::indexExprGet() const
 {
-  return BlockStmt::blockInfoGet();
+  SymExpr* retval = 0;
+
+  if (mResolveInfo != 0)
+  {
+    retval = toSymExpr(mResolveInfo->get(1));
+
+    INT_ASSERT(retval);
+  }
+
+  return retval;
+}
+
+SymExpr* ParamForLoop::lowExprGet() const
+{
+  SymExpr* retval = 0;
+
+  if (mResolveInfo != 0)
+  {
+    retval = toSymExpr(mResolveInfo->get(2));
+
+    INT_ASSERT(retval);
+  }
+
+  return retval;
+}
+
+SymExpr* ParamForLoop::highExprGet() const
+{
+  SymExpr* retval = 0;
+
+  if (mResolveInfo != 0)
+  {
+    retval = toSymExpr(mResolveInfo->get(3));
+
+    INT_ASSERT(retval);
+  }
+
+  return retval;
+}
+
+SymExpr* ParamForLoop::strideExprGet() const
+{
+  SymExpr* retval = 0;
+
+  if (mResolveInfo != 0)
+  {
+    retval = toSymExpr(mResolveInfo->get(4));
+
+    INT_ASSERT(retval);
+  }
+
+  return retval;
+}
+
+CallExpr* ParamForLoop::resolveInfo() const
+{
+  return mResolveInfo;
 }
 
 CallExpr* ParamForLoop::blockInfoGet() const
 {
   printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoGet()\n", id);
 
-  return BlockStmt::blockInfoGet();
+  return 0;
 }
 
 CallExpr* ParamForLoop::blockInfoSet(CallExpr* expr)
 {
   printf("Migration: ParamForLoop   %12d Unexpected call to blockInfoSet()\n", id);
 
-  return BlockStmt::blockInfoSet(expr);
+  return 0;
 }
 
 BlockStmt* ParamForLoop::copyBody(SymbolMap* map)
@@ -205,8 +255,17 @@ void ParamForLoop::accept(AstVisitor* visitor)
     for_alist(next_ast, body)
       next_ast->accept(visitor);
 
-    if (paramInfoGet() != 0)
-      paramInfoGet()->accept(visitor);
+    if (indexExprGet() != 0)
+      indexExprGet()->accept(visitor);
+
+    if (lowExprGet() != 0)
+      lowExprGet()->accept(visitor);
+
+    if (highExprGet() != 0)
+      highExprGet()->accept(visitor);
+
+    if (strideExprGet() != 0)
+      strideExprGet()->accept(visitor);
 
     if (modUses)
       modUses->accept(visitor);
@@ -222,13 +281,16 @@ void ParamForLoop::verify()
 {
   BlockStmt::verify();
 
-  if (BlockStmt::blockInfoGet() == 0)
-    INT_FATAL(this, "ParamForLoop::verify. blockInfo is NULL");
+  if (mResolveInfo              == 0)
+    INT_FATAL(this, "ParamForLoop::verify. mResolveInfo is NULL");
 
-  if (modUses   != 0)
+  if (BlockStmt::blockInfoGet() != 0)
+    INT_FATAL(this, "ParamForLoop::verify. blockInfo is not NULL");
+
+  if (modUses                   != 0)
     INT_FATAL(this, "ParamForLoop::verify. modUses   is not NULL");
 
-  if (byrefVars != 0)
+  if (byrefVars                 != 0)
     INT_FATAL(this, "ParamForLoop::verify. byrefVars is not NULL");
 }
 
@@ -254,53 +316,39 @@ GenRet ParamForLoop::codegen()
 
 Expr* ParamForLoop::getFirstExpr()
 {
-  Expr* retval = 0;
+  INT_ASSERT(mResolveInfo != 0);
 
-  if (paramInfoGet() != 0)
-    retval = paramInfoGet()->getFirstExpr();
-
-  else if (body.head      != 0)
-    retval = body.head->getFirstExpr();
-
-  else
-    retval = this;
-
-  return retval;
+  return indexExprGet();
 }
 
 Expr* ParamForLoop::getNextExpr(Expr* expr)
 {
-  Expr* retval = this;
+  INT_ASSERT(expr == mResolveInfo);
 
-  if (expr == paramInfoGet() && body.head != 0)
-    retval = body.head->getFirstExpr();
-
-  return retval;
+  return (body.head != 0) ? body.head->getFirstExpr() : this;
 }
 
 CallExpr* ParamForLoop::foldForResolve()
 {
-  CallExpr*  loopInfo = paramInfoGet();
+  SymExpr*   idxExpr   = indexExprGet();
+  SymExpr*   lse       = lowExprGet();
+  SymExpr*   hse       = highExprGet();
+  SymExpr*   sse       = strideExprGet();
 
-  SymExpr*   idxExpr  = toSymExpr(loopInfo->get(1));
-  SymExpr*   lse      = toSymExpr(loopInfo->get(2));
-  SymExpr*   hse      = toSymExpr(loopInfo->get(3));
-  SymExpr*   sse      = toSymExpr(loopInfo->get(4));
+  if (!lse             || !hse             || !sse)
+    USR_FATAL(this, "param for loop must be defined over a param range");
 
-  if (!lse || !hse || !sse)
-    USR_FATAL(loopInfo, "param for loop must be defined over a param range");
+  VarSymbol* lvar      = toVarSymbol(lse->var);
+  VarSymbol* hvar      = toVarSymbol(hse->var);
+  VarSymbol* svar      = toVarSymbol(sse->var);
 
-  VarSymbol* lvar    = toVarSymbol(lse->var);
-  VarSymbol* hvar    = toVarSymbol(hse->var);
-  VarSymbol* svar    = toVarSymbol(sse->var);
-
-  CallExpr*  noop    = new CallExpr(PRIM_NOOP);
+  CallExpr*  noop      = new CallExpr(PRIM_NOOP);
 
   if (!lvar            || !hvar            || !svar)
-    USR_FATAL(loopInfo, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a param range");
 
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
-    USR_FATAL(loopInfo, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a param range");
 
   Symbol*      idxSym  = idxExpr->var;
   Type*        idxType = indexType();
@@ -387,11 +435,10 @@ CallExpr* ParamForLoop::foldForResolve()
 //
 Type* ParamForLoop::indexType()
 {
-  CallExpr* loopInfo = paramInfoGet();
-  SymExpr*  lse      = toSymExpr(loopInfo->get(2));
-  SymExpr*  hse      = toSymExpr(loopInfo->get(3));
-  CallExpr* range    = new CallExpr("_build_range", lse->copy(), hse->copy());
-  Type*     idxType  = 0;
+  SymExpr*  lse     = lowExprGet();
+  SymExpr*  hse     = highExprGet();
+  CallExpr* range   = new CallExpr("_build_range", lse->copy(), hse->copy());
+  Type*     idxType = 0;
 
   insertBefore(range);
 
