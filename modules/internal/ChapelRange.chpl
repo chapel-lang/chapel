@@ -141,6 +141,10 @@ module ChapelRange {
     return new range(int(w), bt, false, bound, bound);
   proc chpl_build_unbounded_range(param bt: BoundedRangeType, bound: uint(?w))
     return new range(uint(w), bt, false, bound, bound);
+  proc chpl_build_unbounded_range(param bt: BoundedRangeType, bound) {
+    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+  }
+
   proc chpl_build_unbounded_range(param bt: BoundedRangeType)
     return new range(int, bt);
   
