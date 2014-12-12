@@ -2591,6 +2591,9 @@ static int nVisibleFunctions = 0; // for incremental build
 static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
 static Vec<BlockStmt*> standardModuleSet;
 
+//
+// return true if expr is a CondStmt with chpl__tryToken as its condition 
+//
 static bool isTryTokenCond(Expr* expr) {
   CondStmt* cond = toCondStmt(expr);
   if (!cond) return false;
@@ -2608,9 +2611,17 @@ getVisibilityBlock(Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
     if (block->blockTag == BLOCK_SCOPELESS)
       return getVisibilityBlock(block);
-    else if (block->parentExpr && isTryTokenCond(block->parentExpr))
+    else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
+      // Make the visibility block of the then and else blocks of a
+      // conditional using chpl__tryToken be the block containing the
+      // conditional statement.  Without this, there were some cases where
+      // a function gets instantiated into one side of the conditional but
+      // used in both sides, then the side with the instantiation gets
+      // folded out leaving expressions with no visibility block.
+      // test/functions/iterators/angeles/dynamic.chpl is an example that
+      // currently fails without this.
       return getVisibilityBlock(block->parentExpr);
-    else
+    } else
       return block;
   } else if (expr->parentExpr) {
     return getVisibilityBlock(expr->parentExpr);
