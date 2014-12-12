@@ -374,6 +374,7 @@ static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
+static void removeCompilerWarnings();
 static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
@@ -2557,6 +2558,7 @@ static void issueCompilerError(CallExpr* call) {
 }
 
 static void reissueCompilerWarning(const char* str, int offset) {
+  printf("compiler warning\n");
   //
   // Disable compiler warnings in internal modules that are triggered
   // within a dynamic dispatch context because of potential user
@@ -6658,6 +6660,8 @@ resolve() {
 
   pruneResolvedTree();
 
+  removeCompilerWarnings();
+
   freeCache(ordersCache);
   freeCache(defaultsCache);
   freeCache(genericsCache);
@@ -7276,6 +7280,15 @@ static void removeUnusedFunctions() {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (! fn->isResolved() || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
+    }
+  }
+}
+
+static void removeCompilerWarnings() {
+  typedef MapElem<FnSymbol*, const char*> FnSymbolElem;
+  form_Map(FnSymbolElem, el, innerCompilerWarningMap) {
+    forv_Vec(CallExpr, call, *(el->key->calledBy)) {
+      call->remove();
     }
   }
 }
