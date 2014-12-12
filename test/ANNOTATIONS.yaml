@@ -63,15 +63,15 @@ dgemm.64:
 
 ep:
   11/18/14:
-    - added -E to tests which would benefit from it
+    - added E option to tests which would benefit from it
   11/22/14:
-    - revert -E use for nightly on 21st (which failed, unrelatedly)
+    - revert E option use for nightly on 21st (which failed, unrelatedly)
 
 ep-b:
   11/18/14:
-    - added -E to tests which would benefit from it
+    - added E option to tests which would benefit from it
   11/22/14:
-    - revert -E use for nightly on 21st (which failed, unrelatedly)
+    - revert E option use for nightly on 21st (which failed, unrelatedly)
 
 fannkuch-redux:
   07/22/14:
@@ -93,9 +93,9 @@ is:
   09/05/14:
     - switched uses of locale.numCores to locale.maxTaskPar
   11/18/14:
-    - added -E to tests which would benefit from it
+    - added E option to tests which would benefit from it
   11/22/14:
-    - revert -E use for nightly on 21st (which failed, unrelatedly)
+    - revert E option use for nightly on 21st (which failed, unrelatedly)
 
 lulesh:
   03/15/14:
