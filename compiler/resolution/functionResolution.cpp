@@ -4690,8 +4690,6 @@ preFold(Expr* expr) {
           result = call;
           inits.add(call);
         }
-
-        inits.add(call);
       }
 
     } else if (call->isPrimitive(PRIM_TYPEOF)) {
