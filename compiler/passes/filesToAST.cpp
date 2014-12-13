@@ -68,6 +68,8 @@ static void setIteratorTags(void) {
               gLeaderTag = def->sym;
             else if (!strcmp(def->sym->name, iterKindFollowerTagname))
               gFollowerTag = def->sym;
+            else if (!strcmp(def->sym->name, iterKindStandaloneTagname))
+              gStandaloneTag = def->sym;
           }
         }
       }

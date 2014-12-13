@@ -2592,6 +2592,18 @@ static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
 static Vec<BlockStmt*> standardModuleSet;
 
 //
+// return true if expr is a CondStmt with chpl__tryToken as its condition 
+//
+static bool isTryTokenCond(Expr* expr) {
+  CondStmt* cond = toCondStmt(expr);
+  if (!cond) return false;
+  SymExpr* sym = toSymExpr(cond->condExpr);
+  if (!sym) return false;
+  return sym->var == gTryToken;
+}
+
+
+//
 // return the innermost block for searching for visible functions
 //
 BlockStmt*
@@ -2599,7 +2611,17 @@ getVisibilityBlock(Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
     if (block->blockTag == BLOCK_SCOPELESS)
       return getVisibilityBlock(block);
-    else
+    else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
+      // Make the visibility block of the then and else blocks of a
+      // conditional using chpl__tryToken be the block containing the
+      // conditional statement.  Without this, there were some cases where
+      // a function gets instantiated into one side of the conditional but
+      // used in both sides, then the side with the instantiation gets
+      // folded out leaving expressions with no visibility block.
+      // test/functions/iterators/angeles/dynamic.chpl is an example that
+      // currently fails without this.
+      return getVisibilityBlock(block->parentExpr);
+    } else
       return block;
   } else if (expr->parentExpr) {
     return getVisibilityBlock(expr->parentExpr);
@@ -4949,6 +4971,17 @@ preFold(Expr* expr) {
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, result));
         call->insertAtTail(tmp);
       }
+    } else if (call->isPrimitive(PRIM_TO_STANDALONE)) {
+      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+     CallExpr* standaloneCall = new CallExpr(iterator->name);
+      for_formals(formal, iterator) {
+        standaloneCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+      }
+      // "tag" should be placed at the end of the formals in the source code as
+      // well, to avoid insertion of an order wrapper.
+      standaloneCall->insertAtTail(new NamedExpr("tag", new SymExpr(gStandaloneTag)));
+      call->replace(standaloneCall);
+      result = standaloneCall;
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
       FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
       CallExpr* leaderCall;
@@ -6173,7 +6206,7 @@ resolveFns(FnSymbol* fn) {
   }
 
   //
-  // mark leaders for inlining
+  // mark leaders and standalone parallel iterators for inlining
   //
   // The original computation used to be here, now we do it earlier,
   // here we only verify that we did not miss a leader.
@@ -6188,6 +6221,10 @@ resolveFns(FnSymbol* fn) {
           paramMap.get(formal) == gLeaderTag) {
         // oops
         INT_ASSERT(false);
+      }
+      if (formal->type == gStandaloneTag->type &&
+          paramMap.get(formal) == gStandaloneTag) {
+        fn->addFlag(FLAG_INLINE_ITERATOR);
       }
     }
   }
@@ -7286,6 +7323,10 @@ isUnusedClass(AggregateType *ct) {
 
   // Runtime types are assumed to be always used.
   if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+    return false;
+
+  // Uses of iterator records get inserted in lowerIterators
+  if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     return false;
 
   // FALSE if initializers are used

@@ -921,15 +921,88 @@ buildFollowLoop(VarSymbol* iter,
   return followBlock;
 }
 
+/*
+ * Build a forall loop that has only one level instead of a nested leader
+ * follower loop. This single level loop will be handled similarily to
+ * the leader loop in a leader/follower based forall.
+ */
+static BlockStmt*
+buildStandaloneForallLoopStmt(Expr* indices,
+                              Expr* iterExpr,
+                              BlockStmt* loopBody) {
+  VarSymbol* iterRec = newTemp("chpl__iter");
+  VarSymbol* idx  = newTemp("chpl__idx");
+  VarSymbol* idxCopy = newTemp("chpl__idxCopy");
+  VarSymbol* iter = newTemp("chpl__standaloneIter");
+  iter->addFlag(FLAG_EXPR_TEMP);
+  idx->addFlag(FLAG_INDEX_OF_INTEREST);
+  idx->addFlag(FLAG_INDEX_VAR);
+  idxCopy->addFlag(FLAG_INDEX_VAR);
+
+  BlockStmt* SABlock = buildChapelStmt();
+
+  SABlock->insertAtTail(new DefExpr(iter));
+  SABlock->insertAtTail(new DefExpr(idx));
+  SABlock->insertAtTail(new DefExpr(iterRec));
+  SABlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr);
+  SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", iter, iterRec);
+  SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", idx, iter);
+
+  ForLoop* SABody = new ForLoop(idx, iter, NULL);
+  SABody->insertAtTail(new DefExpr(idxCopy));
+  SABody->insertAtTail("'move'(%S, %S)", idxCopy, idx);
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
+    Symbol* var = new VarSymbol(sym->unresolved);
+    SABody->insertAtTail(new DefExpr(var));
+    SABody->insertAtTail("'move'(%S, %S)", var, idx);
+    var->addFlag(FLAG_INDEX_VAR);
+    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  } else if (SymExpr* sym = toSymExpr(indices)) {
+    SABody->insertAtTail("'move'(%S, %S)", sym->var, idx);
+    sym->var->addFlag(FLAG_INDEX_VAR);
+    sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  } else if (CallExpr* call = toCallExpr(indices)) {
+    if (call->isNamed("_build_tuple")) {
+      destructureIndices(SABody, indices, new SymExpr(idx), false);
+    } else {
+      INT_FATAL("Unexpected call type");
+    }
+  } else {
+    INT_FATAL("Unexpected");
+  }
+  SABody->insertAtTail(loopBody->copy());
+  SABlock->insertAtTail(SABody);
+  SABlock->insertAtTail("_freeIterator(%S)", iter);
+  return SABlock;
+}
+
+
+/*
+ * Build a leader-follower forall loop.  If this is not a zipper iteration,
+ * also build a standalone forall loop. Use the chpl__tryToken to run the
+ * standalone version when a standalone parallel iterator exists, and otherwise
+ * use the leader-follower version.
+ *
+ * When both versions are created, it will end up as a normalized form of:
+ *
+ * if (chpl__tryToken)
+ *   for idx in iter(standalone)
+ *     do body(idx);
+ * else
+ *   for block in iter(leader) do
+ *     for idx in iter(follower, block) do
+ *       body(idx);
+ */
 BlockStmt*
 buildForallLoopStmt(Expr*      indices,
                     Expr*      iterExpr,
                     CallExpr*  byref_vars,
                     BlockStmt* loopBody,
                     bool       zippered) {
-  checkControlFlow(loopBody, "forall statement");
+  BlockStmt* loopBodyCopy = loopBody->copy();
+  checkControlFlow(loopBodyCopy, "forall statement");
 
-  SET_LINENO(loopBody);
+  SET_LINENO(loopBodyCopy);
 
   //
   // insert temporary index when elided by user
@@ -944,17 +1017,17 @@ buildForallLoopStmt(Expr*      indices,
   // are variables listed in the forall's with(ref...) clause.
   // This list is processed during implementForallIntents1().
   //
-  INT_ASSERT(!loopBody->byrefVars);
+  INT_ASSERT(!loopBodyCopy->byrefVars);
   if (byref_vars) {
     INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
     byref_vars->primitive = primitives[PRIM_FORALL_LOOP];
   } else {
     byref_vars = new CallExpr(PRIM_FORALL_LOOP);
   }
-  loopBody->byrefVars = byref_vars;
+  loopBodyCopy->byrefVars = byref_vars;
 
   // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
-  loopBody->blockTag = BLOCK_NORMAL;
+  loopBodyCopy->blockTag = BLOCK_NORMAL;
 
   BlockStmt* resultBlock     = new BlockStmt();
 
@@ -964,10 +1037,6 @@ buildForallLoopStmt(Expr*      indices,
   VarSymbol* leadIter        = newTemp("chpl__leadIter");
   VarSymbol* leadIdxCopy     = newTemp("chpl__leadIdxCopy");
   ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL);
-
-  VarSymbol* fastFollowIdx   = newTemp("chpl__fastFollowIdx");
-  VarSymbol* fastFollowIter  = newTemp("chpl__fastFollowIter");
-  BlockStmt* fastFollowBlock = NULL;
 
   VarSymbol* followIdx       = newTemp("chpl__followIdx");
   VarSymbol* followIter      = newTemp("chpl__followIter");
@@ -991,7 +1060,7 @@ buildForallLoopStmt(Expr*      indices,
   resultBlock->insertAtTail(new DefExpr(leadIdx));
   resultBlock->insertAtTail(new DefExpr(leadIter));
 
-  resultBlock->insertAtTail("'move'(%S, _checkIterator(%E))", iter, iterExpr);
+  resultBlock->insertAtTail("'move'(%S, _checkIterator(%E))", iter, iterExpr->copy());
 
   if (zippered == false)
     resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))",    leadIter, iter);
@@ -1008,13 +1077,18 @@ buildForallLoopStmt(Expr*      indices,
                                 followIter,
                                 followIdx,
                                 indices,
-                                loopBody->copy(),
+                                loopBodyCopy->copy(),
                                 false,
                                 zippered);
 
   if (fNoFastFollowers == false) {
     Symbol* T1 = newTemp();
     Symbol* T2 = newTemp();
+
+    VarSymbol* fastFollowIdx   = newTemp("chpl__fastFollowIdx");
+    VarSymbol* fastFollowIter  = newTemp("chpl__fastFollowIter");
+    BlockStmt* fastFollowBlock = NULL;
+
 
     T1->addFlag(FLAG_EXPR_TEMP);
     T1->addFlag(FLAG_MAYBE_PARAM);
@@ -1042,7 +1116,7 @@ buildForallLoopStmt(Expr*      indices,
                                       fastFollowIter,
                                       fastFollowIdx,
                                       indices,
-                                      loopBody,
+                                      loopBodyCopy->copy(),
                                       true,
                                       zippered);
 
@@ -1053,6 +1127,16 @@ buildForallLoopStmt(Expr*      indices,
 
   resultBlock->insertAtTail(leadForLoop);
   resultBlock->insertAtTail("_freeIterator(%S)", leadIter);
+
+  if (!zippered) {
+    BlockStmt* SALoop = buildStandaloneForallLoopStmt(indices,
+                                                      iterExpr,
+                                                      loopBody->copy());
+    BlockStmt* result = new BlockStmt();
+    result->insertAtTail(
+      new CondStmt(new SymExpr(gTryToken), SALoop, resultBlock));
+    return result;
+  }
 
   return resultBlock;
 }
