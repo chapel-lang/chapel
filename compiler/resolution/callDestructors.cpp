@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#define HILDE_MM 1
+
 #include "passes.h"
 
 #include "astutil.h"
@@ -28,6 +30,7 @@
 #include "symbol.h"
 
 
+#ifndef HILDE_MM
 // Clear autoDestroy flags on variables that get assigned to the return value of
 // certain functions.
 //
@@ -663,7 +666,7 @@ returnRecordsByReferenceArguments() {
   }
   freeDefUseMaps(defMap, useMap);
 }
-
+#endif
 
 static void
 fixupDestructors() {
@@ -758,7 +761,7 @@ fixupDestructors() {
   }
 }
 
-
+#ifndef HILDE_MM
 static void insertGlobalAutoDestroyCalls() {
   // --ipe does not build chpl_gen_main
   if (chpl_gen_main == NULL)
@@ -783,7 +786,7 @@ static void insertGlobalAutoDestroyCalls() {
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
-
+#endif
 
 static void insertDestructorCalls()
 {
@@ -800,7 +803,7 @@ static void insertDestructorCalls()
   }
 }
 
-
+#ifndef HILDE_MM
 static void insertAutoCopyTemps()
 {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
@@ -831,7 +834,7 @@ static void insertAutoCopyTemps()
 
   freeDefUseMaps(defMap, useMap);
 }
-
+#endif
 
 // This routine inserts autoCopy calls ahead of yield statements as necessary,
 // so the calling routine "owns" the returned value.
@@ -913,12 +916,16 @@ void
 callDestructors() {
   fixupDestructors();
   insertDestructorCalls();
+#ifndef HILDE_MM
   insertAutoCopyTemps();
   cullAutoDestroyFlags();
   cullExplicitAutoDestroyFlags();
   insertAutoDestroyCalls();
   returnRecordsByReferenceArguments();
+#endif
   insertYieldTemps();
+#ifndef HILDE_MM
   insertGlobalAutoDestroyCalls();
+#endif
   insertReferenceTemps();
 }

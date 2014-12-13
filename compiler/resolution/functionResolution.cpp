@@ -233,7 +233,9 @@ Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promot
 //# Static Function Declarations
 //#
 static bool hasRefField(Type *type);
+#ifndef HILDE_MM
 static bool typeHasRefField(Type *type);
+#endif
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static void makeRefType(Type* type);
 static void resolveAutoCopy(Type* type);
@@ -426,6 +428,7 @@ static bool hasRefField(Type *type) {
   return true;
 }
 
+#ifndef HILDE_MM
 static bool typeHasRefField(Type *type) {
   if (AggregateType *ct = toAggregateType(type)) {
     for_fields(field, ct) {
@@ -434,6 +437,7 @@ static bool typeHasRefField(Type *type) {
   }
   return false;
 }
+#endif
 
 //
 // build reference type
@@ -3781,7 +3785,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
         !isRefCountedType(formalType))
     {
       tmp->addFlag(FLAG_CONST);
+#ifndef HILDE_MM
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
     }
 
     // This switch adds the extra code inside the current function necessary
@@ -3825,7 +3831,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
       // If the compiler verifies in a separate pass that it is never written,
       // we don't have to copy it.
       fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
+#ifndef HILDE_MM
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
       break;
 
      case INTENT_BLANK:
@@ -3850,6 +3858,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
            // intentional: It gives tuple-wrapped record-wrapped types different
            // behavior from bare record-wrapped types.
            fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__autoCopy", formal)));
+#ifndef HILDE_MM
            // WORKAROUND:
            // This is a temporary bug fix that results in leaked memory.
            //
@@ -3878,6 +3887,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
                  (formal->type->getModule()->modTag==MOD_STANDARD))) ||
                !typeHasRefField(formal->type))
              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
          }
        } else
        {
@@ -5498,6 +5508,7 @@ postFold(Expr* expr) {
           }
         }
         if (!set) {
+#ifndef HILDE_MM
           if (lhs->var->hasFlag(FLAG_EXPR_TEMP) &&
               !lhs->var->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
@@ -5507,7 +5518,7 @@ postFold(Expr* expr) {
               }
             }
           }
-
+#endif
           if (isReferenceType(lhs->var->type) ||
               lhs->var->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
               lhs->var->type->symbol->hasFlag(FLAG_ARRAY))

@@ -109,10 +109,15 @@ void cullOverReferences() {
             base->var = copy;
             VarSymbol* tmp = newTemp(copy->retType);
             move->insertBefore(new DefExpr(tmp));
+#ifndef HILDE_MM
+            // Why is this here?
+            // Marking variables for autocopy/autodestroy ought to be done in
+            // one place once and for all.  Is this that place?
             if (requiresImplicitDestroy(call)) {
               tmp->addFlag(FLAG_INSERT_AUTO_COPY);
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
             }
+#endif
             if (useMap.get(se->var) && useMap.get(se->var)->n > 0) {
               move->insertAfter(new CallExpr(PRIM_MOVE, se->var,
                                   new CallExpr(PRIM_ADDR_OF, tmp)));

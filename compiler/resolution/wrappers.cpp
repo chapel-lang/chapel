@@ -225,9 +225,11 @@ buildDefaultWrapper(FnSymbol* fn,
                  isRefCountedType(wrapper_formal->type)) {
         // Formal has a type expression attached and is reference counted (?).
         temp = newTemp("wrap_type_arg");
+#ifndef HILDE_MM
         if (Symbol* field = fn->_this->type->getField(formal->name, false))
           if (field->defPoint->parentSymbol == fn->_this->type->symbol)
             temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
         wrapper->insertAtTail(new DefExpr(temp));
 
         // Give the formal its own copy of the type expression.
