@@ -887,8 +887,9 @@ static void build_constructor(AggregateType* ct) {
       if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
         // init && !exprType
         VarSymbol* tmp = newTemp();
-
+#ifndef HILDE_MM
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
         tmp->addFlag(FLAG_MAYBE_PARAM);
         tmp->addFlag(FLAG_MAYBE_TYPE);
 

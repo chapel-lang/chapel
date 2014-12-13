@@ -585,13 +585,17 @@ destructureIndices(BlockStmt* block,
     var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
       var->addFlag(FLAG_COFORALL_INDEX_VAR);
+#ifndef HILDE_MM
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
   } else if (SymExpr* sym = toSymExpr(indices)) {
     block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
     sym->var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
       sym->var->addFlag(FLAG_COFORALL_INDEX_VAR);
+#ifndef HILDE_MM
     sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
   }
 }
 
@@ -979,7 +983,9 @@ buildForallLoopStmt(Expr*      indices,
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
+#ifndef HILDE_MM
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
   // ForallLeaderArgs: stash references so we know where things are.
@@ -1362,7 +1368,9 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   VarSymbol* localOp     = newTemp();
 
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
+#ifndef HILDE_MM
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
 
   ForLoop* followBody = new ForLoop(followIdx, followIter, NULL);
 

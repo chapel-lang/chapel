@@ -274,7 +274,9 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
   for_vector(Symbol, svar, shadowVars) {
     lcCall->insertBefore(new DefExpr(svar));
     extractFromLeaderYield(lcCall, ++ix, svar, leadIdxSym);
+#ifndef HILDE_MM
     svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
   }
 
   // Finally, remove the original assignment.
