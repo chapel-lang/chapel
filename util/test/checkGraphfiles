@@ -7,7 +7,9 @@
 import sys, os, fnmatch
 import fileReadHelp
 
-chpl_home = os.getenv('CHPL_HOME', '.')
+# find chpl_home. default based on this file's current location from chpl_home
+def_home = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+chpl_home = os.getenv('CHPL_HOME', def_home)
 testdir=os.path.join(chpl_home, 'test')
 
 # find all the GRAPHFILES
