@@ -72,14 +72,14 @@ def parse_date(value, dateformat='%m/%d/%y'):
     else:
         return time.strptime(value.strip(), dateformat)
 
-def show_date(value):
+def show_date(value=time.localtime()):
     if numericX:
         return value
     else:
         return time.strftime('%Y-%m-%d', value)
 
 # converts a csv file to json. Converts the csv file to json where the json
-# object has two members: the lables and the actual data formatted as required
+# object has two members: the labels and the actual data formatted as required
 # by dygraphs
 def csv_to_json(csvFile, ginfo):
     data = parse_csv(csvFile)
@@ -104,6 +104,14 @@ def csv_to_json(csvFile, ginfo):
             else:
                 curLine.append([try_parse_float(x) for x in seriesArr])
         lines.append(curLine)
+
+    # if there was no data in the csvFile, create an empty entry for todays
+    # date. Dygraphs does not accept a zero length array for the data so we add
+    # a single entry for today's date with null data for each series
+    if len(lines) == 0:
+        line = [None for label in labels]
+        line[0] = show_date()
+        lines.append(line)
 
     jsonObj = {'labels': labels, 'data': lines}
     with open(csvFile, 'w') as f:
@@ -132,16 +140,17 @@ def csv_to_json(csvFile, ginfo):
 # that date
 
 def parse_csv(csvFile):
-    with open(csvFile, 'r') as f:
-        lines = f.readlines();
+    lines = fileReadHelp.ReadFileWithComments(csvFile)
 
     data = []
     for line in lines:
-        valuesString = line.strip('\n').split(',')
-        values = []
-        for valueString in valuesString:
-             values.append(valueString.split(';'))
-        data.append(values)
+        line = line.rstrip()
+        if len(line) > 0:
+            valuesString = line.split(',')
+            values = []
+            for valueString in valuesString:
+                 values.append(valueString.split(';'))
+            data.append(values)
 
     return data
 
