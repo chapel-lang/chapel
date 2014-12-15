@@ -134,7 +134,7 @@ timeout (2014-11-12, first run)
 sporadic timeout
 ----------------
 [Error: Timed out executing program stress/deitz/test_10k_begins] (2014-11-12..2014-11-29)
-[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12..2014-12-01)
+[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12..2014-12-14)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6] (2014-11-24)
 [Error: Timed out executing program statements/lydia/forVersusWhilePerf (compopts: 1)] (2014-11-29)
 
@@ -382,7 +382,7 @@ consistent timeouts
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30,2014-12-06)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30,2014-12-14)
 
 sporadic timeouts (frequent)
 ----------------------------
@@ -702,6 +702,7 @@ Seg fault First run 2014-12-07
 Generated output "FAILED": First run 2014-12-07
 -----------------------------------------------
 [Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
 [Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
 
 Error tolerance exceeded?: First run 2014-12-07
@@ -731,9 +732,12 @@ sporadic data read copy failed
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-12-08
+Reviewed 2014-12-15
 ===================
 
+Dies with signal 6
+------------------
+[Error matching program output for studies/glob/test_glob (compopts: 1)] (Brad)
 
 ===================
 dist-block
