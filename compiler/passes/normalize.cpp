@@ -1030,7 +1030,13 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
     // the initialization expression if it exists
     //
     bool isNoinit = init && init->isNoInitExpr();
-    if (isNoinit) {
+
+    // Lydia note:  I'm adding fUseNoinit here because utilizing noinit with
+    // return temps is necessary, so the only instances that should be
+    // controlled by the flag are generated here
+    if (isNoinit && fUseNoinit) {
+      // Only perform this action if noinit has been specified and the flag
+      // --no-use-noinit has not been thrown
       var->defPoint->init->remove();
       CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
@@ -1038,7 +1044,13 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
       // its def expression after all), insert the move after the defPoint
       stmt->insertAfter(initCall);
     } else {
-      // Is not noInit
+      if (!fUseNoinit && isNoinit) {
+        // The instance would be initialized to noinit, but we aren't allowing
+        // noinit, so remove the initialization expression, allowing  it to
+        // default initialize.
+        init->remove();
+        init = NULL;
+      }
 
       // Create an empty type block.
       BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
