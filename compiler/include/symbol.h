@@ -495,7 +495,7 @@ extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
 extern Symbol *gTypeDefaultToken;
-extern Symbol *gLeaderTag, *gFollowerTag;
+extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gVoid;

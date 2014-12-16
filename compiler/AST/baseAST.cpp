@@ -24,6 +24,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "log.h"
+#include "ParamForLoop.h"
 #include "passes.h"
 #include "runpasses.h"
 #include "stmt.h"
@@ -481,13 +482,6 @@ void registerModule(ModuleSymbol* mod) {
         x = y;                                          \
   } while (0)
 
-#define SUB_LABEL(x)                                    \
-  do {                                                  \
-    if (x)                                              \
-      if (LabelSymbol* y = toLabelSymbol(map->get(x)))  \
-        x = y;                                          \
-  } while (0)
-
 #define SUB_TYPE(x)                                     \
   do {                                                  \
     if (x)                                              \
@@ -498,18 +492,35 @@ void registerModule(ModuleSymbol* mod) {
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
     SUB_SYMBOL(sym_expr->var);
+
   } else if (DefExpr* defExpr = toDefExpr(ast)) {
     SUB_TYPE(defExpr->sym->type);
-  } else if (BlockStmt* bs = toBlockStmt(ast)) {
-    SUB_LABEL(bs->breakLabel);
-    SUB_LABEL(bs->continueLabel);
+
+  } else if (LoopStmt* ls = toLoopStmt(ast)) {
+    LabelSymbol* breakLabel    = ls->breakLabelGet();
+    LabelSymbol* continueLabel = ls->continueLabelGet();
+
+    if (breakLabel != 0) {
+      if (LabelSymbol* y = toLabelSymbol(map->get(breakLabel))) {
+        ls->breakLabelSet(y);
+      }
+    }
+
+    if (continueLabel != 0) {
+      if (LabelSymbol* y = toLabelSymbol(map->get(continueLabel))) {
+        ls->continueLabelSet(y);
+      }
+    }
+
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
     SUB_TYPE(ps->type);
+
   } else if (FnSymbol* ps = toFnSymbol(ast)) {
     SUB_TYPE(ps->type);
     SUB_TYPE(ps->retType);
     SUB_SYMBOL(ps->_this);
     SUB_SYMBOL(ps->_outer);
+
   } else if (ArgSymbol* ps = toArgSymbol(ast)) {
     SUB_TYPE(ps->type);
   }
@@ -540,6 +551,13 @@ GenRet baseASTCodegenString(const char* str)
 *                                                                             *
 ************************************** | *************************************/
 
+bool isLoopStmt(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isLoopStmt()) ? true : false;
+}
+
 bool isWhileStmt(BaseAST* a)
 {
   BlockStmt* stmt = toBlockStmt(a);
@@ -559,6 +577,13 @@ bool isDoWhileStmt(BaseAST* a)
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isDoWhileStmt()) ? true : false;
+}
+
+bool isParamForLoop(BaseAST* a)
+{
+  BlockStmt* stmt = toBlockStmt(a);
+
+  return (stmt != 0 && stmt->isParamForLoop()) ? true : false;
 }
 
 bool isForLoop(BaseAST* a)

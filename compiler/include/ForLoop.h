@@ -20,9 +20,9 @@
 #ifndef _FOR_LOOP_H_
 #define _FOR_LOOP_H_
 
-#include "stmt.h"
+#include "LoopStmt.h"
 
-class ForLoop : public BlockStmt
+class ForLoop : public LoopStmt
 {
   //
   // Class interface
@@ -53,7 +53,6 @@ public:
   virtual Expr*          getFirstExpr();
   virtual Expr*          getNextExpr(Expr* expr);
 
-  virtual bool           isLoop()                                     const;
   virtual bool           isForLoop()                                  const;
 
   virtual bool           deadBlockCleanup();

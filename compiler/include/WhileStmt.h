@@ -20,9 +20,9 @@
 #ifndef _WHILE_STMT_H_
 #define _WHILE_STMT_H_
 
-#include "stmt.h"
+#include "LoopStmt.h"
 
-class WhileStmt : public BlockStmt
+class WhileStmt : public LoopStmt
 {
 public:
   SymExpr*               condExprGet()                                const;
@@ -39,9 +39,6 @@ protected:
 
   virtual void           verify();
 
-  virtual void           replaceChild(Expr* old_ast, Expr* new_ast);
-
-  virtual bool           isLoop()                                     const;
   virtual bool           isWhileStmt()                                const;
 
   virtual void           checkConstLoops();

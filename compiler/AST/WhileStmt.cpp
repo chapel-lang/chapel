@@ -24,7 +24,7 @@
 #include "stlUtil.h"
 
 WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* initBody) :
-  BlockStmt(initBody)
+  LoopStmt(initBody)
 {
   mCondExpr = (var != 0) ? new SymExpr(var) : 0;
 }
@@ -42,41 +42,20 @@ void WhileStmt::copyShare(const WhileStmt& ref,
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
   SymExpr*   condExpr  = ref.condExprGet();
 
-  astloc        = ref.astloc;
-  blockTag      = ref.blockTag;
+  astloc         = ref.astloc;
+  blockTag       = ref.blockTag;
 
-  breakLabel    = ref.breakLabel;
-  continueLabel = ref.continueLabel;
+  mBreakLabel    = ref.mBreakLabel;
+  mContinueLabel = ref.mContinueLabel;
 
   if (condExpr != 0)
     mCondExpr = condExpr->copy(map, true);
-
-  if (ref.modUses  != 0)
-    modUses = ref.modUses->copy(map, true);
-
-  if (ref.byrefVars != 0)
-    byrefVars = ref.byrefVars->copy(map, true);
 
   for_alist(expr, ref.body)
     insertAtTail(expr->copy(map, true));
 
   if (internal == false)
     update_symbols(this, map);
-}
-
-// Note that newAst can be NULL to reflect deletion
-void WhileStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  SymExpr* oldExpr = toSymExpr(oldAst);
-  SymExpr* newExpr = toSymExpr(newAst);
-
-  if (oldExpr == NULL)
-    INT_FATAL(this, "WhileStmt::replaceChild. oldAst is not a SymExpr");
-
-  else if (oldExpr == mCondExpr)
-    mCondExpr = newExpr;
-
-  else
-    INT_FATAL(this, "WhileStmt::replaceChild. Failed to match the oldAst ");
 }
 
 void WhileStmt::verify()
@@ -94,11 +73,6 @@ void WhileStmt::verify()
 
   if (byrefVars                 != 0)
     INT_FATAL(this, "WhileStmt::verify. byrefVars is not NULL");
-}
-
-bool WhileStmt::isLoop() const
-{
-  return true;
 }
 
 bool WhileStmt::isWhileStmt() const
@@ -129,7 +103,8 @@ bool WhileStmt::deadBlockCleanup()
 {
   bool retval = false;
 
-  if (condExprGet() == 0) {
+  if (condExprGet() == 0)
+  {
     remove();
     retval = true;
   }

@@ -44,10 +44,16 @@ all:
     - switch default memory allocator from cstdlib to tcmalloc
   09/12/14:
     - switch default memory allocator back to cstdlib
+  11/09/14:
+    - disable the task table by default
 
 bfs:
   09/25/14:
     - addition of octal to, reformatting of format printing.
+
+binary-trees:
+  12/05/14:
+    - introduce "library mode"
 
 chameneos-redux:
   07/08/13:
@@ -100,6 +106,8 @@ is:
 lulesh:
   03/15/14:
     - improved constness of de-nested functions, improved remove value forwarding
+  12/05/14:
+    - introduce "library mode"
 
 lulesh-dense:
   03/15/14:

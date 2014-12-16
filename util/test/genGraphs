@@ -304,7 +304,6 @@ class GraphStuff:
         self.gfile.write('   "enddate" : "%s",\n'%(ginfo.enddate))
         self.gfile.write('   "displayrange" : %s,\n'%(str(ginfo.displayrange).lower()))
         self.gfile.write('   "expand" : %d,\n'%(ginfo.expand))
-        self.gfile.write('   "sort" : false,\n')
         self.gfile.write('   "annotations" : [')
         if ginfo.annotations:
           self.gfile.write('\n      ')
@@ -421,7 +420,7 @@ class GraphClass:
         self.displayrange = _displayrange
         self._reduce = _reduce
         self.expand = _expand
-        self.sort = _sort 
+        self.sort = _sort
         self.annotations = []
 
     def __str__(self):
@@ -661,6 +660,10 @@ class GraphClass:
             for i in range(start,nperfkeys):
                 self.graphkeys.append(self.perfkeys[i])
 
+        # strip trailing colons, equals, spaces, and dashes so graphkeys are
+        # cleaner. We have a lot of them when graph keys come from perfkeys
+        self.graphkeys = [key.rstrip(':= -') for key in self.graphkeys]
+
         for i in range(nperfkeys):
             for j in range(nperfkeys):
                 if (i != j) and (self.graphkeys[i]==self.graphkeys[j]):
@@ -704,10 +707,6 @@ class GraphClass:
                     datfile = os.path.basename(dat)
                     self.datfilenames.append(os.path.join(datpath, desc, datfile))
                     self.perfkeys.append(perf)
-                    # strip trailing colons, equals and spaces, we seem to have
-                    # a lot of these coming from our perfkeys
-                    while graph.endswith((':', '=', ' ')):
-                        graph = graph[:-1]
                     # append description
                     self.graphkeys.append(graph + graphdesc)
 

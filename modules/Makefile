@@ -29,6 +29,7 @@ SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 default: all
 
 all: $(SYS_CTYPES_MODULE)
+	-@($(CHPL_MAKE_HOME)/util/chpltags -r . > /dev/null 2>&1 && echo "Updating TAGS...")
 
 clean: FORCE
 

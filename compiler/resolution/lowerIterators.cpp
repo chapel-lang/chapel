@@ -224,7 +224,7 @@ static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
     // See if it is an unlocal block.
     if (BlockStmt* block = toBlockStmt(ast)) {
       // NOAKES 2014/11/25. Transitional.  Avoid calling blockInfoGet
-      if (block->isLoop() == true) {
+      if (block->isLoopStmt() == true) {
 
       } else if (block->blockInfoGet() &&
                  block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL)) {
@@ -260,7 +260,7 @@ fragmentLocalBlocks() {
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
     // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
-    if (block->isLoop() == true) {
+    if (block->isLoopStmt() == true) {
 
     } else if (block->parentSymbol &&
                block->blockInfoGet() &&
@@ -308,7 +308,7 @@ fragmentLocalBlocks() {
 
         if (BlockStmt* block = toBlockStmt(current)) {
           // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
-          if (block->isLoop()       == false &&
+          if (block->isLoopStmt()   == false &&
               block->blockInfoGet() != NULL  &&
               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_UNLOCAL))
             block->blockInfoGet()->remove(); // UNLOCAL applies to a single LOCAL
@@ -731,7 +731,7 @@ countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
   for (Expr* tmp = expr; tmp && tmp != outer; tmp = tmp->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(tmp)) {
       // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
-      if (blk->isLoop() == true) {
+      if (blk->isLoopStmt() == true) {
 
       } else if (blk->blockInfoGet() == NULL) {
 
@@ -2130,6 +2130,29 @@ void lowerIterators() {
 
   computeRecursiveIteratorSet();
 
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+      fn->collapseBlocks();
+
+      removeUnnecessaryGotos(fn);
+
+#if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
+      // Run localCopyPropagation to remove any fields we can so they will not
+      // be added to the iterator class
+      if (!fNoCopyPropagation)
+        localCopyPropagation(fn);
+
+      if (!fNoDeadCodeElimination)
+        deadCodeElimination(fn);
+#endif
+    }
+  }
+
+  // TODO: The AST is not valid between inlineIterators and
+  // fixNumericalGetMemberPrims because of
+  // replaceIteratorFormalsWithIteratorFields.
+  // We should look at creating the iterator class before here so we don't have
+  // this problem.
   inlineIterators();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -2151,22 +2174,9 @@ void lowerIterators() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+      // This collapseBlocks call is required for lowerIterator to inline
+      // advance() into zip[1-4]
       fn->collapseBlocks();
-
-      removeUnnecessaryGotos(fn);
-
-#if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
-      if (!fNoCopyPropagation)
-        localCopyPropagation(fn);
-
-      if (!fNoDeadCodeElimination)
-        deadCodeElimination(fn);
-#endif
-    }
-  }
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
       lowerIterator(fn);
     }
   }

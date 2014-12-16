@@ -152,8 +152,16 @@ function genDygraph(graphInfo, expandInfo) {
   var graphOptions = {
     title: graphInfo.title,
     ylabel: graphInfo.ylabel,
-    drawXGrid: false,
-    drawYGrid: true,
+    axes: {
+      x: {
+        drawGrid: false
+      },
+      y: {
+        drawGrid: true,
+        // So y values don't overlap with the y label
+        axisLabelWidth: 80
+      }
+    },
     includeZero: true,
     showRoller: true,
     legend: 'always',
@@ -167,8 +175,6 @@ function genDygraph(graphInfo, expandInfo) {
     highlightSeriesBackgroundAlpha: 1,
     // So it's easier to zoom in on the right side
     rightGap: 15,
-    // So y values don't overlap with the y label
-    yAxisLabelWidth: 80,
     labelsDiv: ldiv,
     labelsSeparateLines: true,
     dateWindow: [startdate, enddate],
@@ -187,10 +193,7 @@ function genDygraph(graphInfo, expandInfo) {
   var g = new Dygraph(div, 'CSVfiles/'+graphInfo.datfname, graphOptions);
   g.isReady = false;
   setupSeriesLocking(g);
-  // we use options in graphinfo in dygraph callbacks that we can't pass
-  // arguments to so we add it to the graph to be able to pass it around
-  g.divs = divs;
-  g.graphInfo = graphInfo;
+
 
   // The dygraph is now setting up and rendering. Once the graph is fully
   // drawn this ready state gets fired. We don't want to synchronize this
@@ -199,9 +202,40 @@ function genDygraph(graphInfo, expandInfo) {
   // that. We also make our buttons visible here that way they don't show up
   // before the graph does.
   g.ready(function() {
+    // we use options in graphinfo in dygraph callbacks that we can't pass
+    // arguments to so we add it to the graph to be able to pass it around
+    g.divs = divs;
+    g.graphInfo = graphInfo;
+
+
     setupLogToggle(g, graphInfo, logToggle);
     setupAnnToggle(g, graphInfo, annToggle);
     g.isReady = true;
+
+
+    // We let dygraphs handle reading the data and parsing it into an array. We
+    // then sort that data on the first draw. This is a little weird because
+    // we're creating a graph, and while it's rendering we sort it but having
+    // to parse the data ourselves would be a real pain. Since the series
+    // colors don't get sorted with the data we save the original and then
+    // reset so that multiple series that are next to each other don't have the
+    // same color. After sorting is done, we may expand the graph.
+
+    var expandNum = graphInfo.expand;
+
+    // if we're expanding a graph, or we have multiple configs, set new colors
+    if ((expandNum !== undefined && expandNum !== 0) || descriptions.length > 0) {
+      setColors(g, g.getColors().slice(), true);
+      g.setAnnotations(g.annotations());
+    }
+
+    if (descriptions.length > 0) {
+      setConfigurationVisibility(g, true);
+      g.setAnnotations(g.annotations());
+    }
+
+    expandGraphs(g);
+
   });
 
   gs.push(g);
@@ -383,109 +417,11 @@ function setColors(g, origColors, blockRedraw) {
 }
 
 
-// Function to sort the data after it has been converted to an array
-// Note that this sorts based on the most recent day available of all
-// data. The sort order does not change based on zoom or anything.
-function sortData(g) {
-
-  var customBars = g.getOption('customBars');
-  var myLabels = g.getLabels();
-  var dataAsArray = g.rawData_;
-
-  // if there is no data or if we only have the date and a
-  // single key, the data is already "sorted"
-  if (!dataAsArray || !dataAsArray[0] || dataAsArray[0].length <= 2) {
-    return dataAsArray;
-  }
-
-  // transpose the data so that was can take advantage of built in sorting
-  var transposedData = transpose(dataAsArray);
-
-  // add the labels to the array so that the labels get sorted too
-  for (var i = 0; i < transposedData.length; i++) {
-    transposedData[i].splice(0, 0, myLabels[i].slice());
-  }
-
-  // the first row is now all the dates (and the date label.) They will
-  // screw up sorting, but we need to save them so that we can add them
-  // back in after sorting
-  var firstRow = transposedData.shift();
-
-  // sort our data based on value of the most recent day (we could also
-  // easily sort based on the average of the last x days or something too.)
-  transposedData.sort(function(a, b) {
-    if (customBars) {
-      return b[b.length-1][1] - a[a.length-1][1];
-    } else {
-      return b[b.length-1] - a[a.length-1];
-    }
-  });
-
-  //add the dates and date label back in
-  transposedData.splice(0, 0, firstRow);
-
-  // take the labels out and store them in the myLabels array
-  for (var i = 0; i < transposedData.length; i++) {
-    myLabels[i] = transposedData[i].shift();
-  }
-
-  // update or labels with the now sorted ones
-  g.updateOptions({labels: myLabels}, true);
-
-  // undo our original transpose and return the sorted data
-  dataAsArray  = transpose(transposedData);
-  return dataAsArray;
-}
-
-
-// helper function to transpose a 2 dim array (to make sorting a lot easier.)
-// assumes array is a non-empty rows x cols array
-function transpose(array) {
-  var temp = [];
-  var cols = array.length;
-  var rows = array[0].length;
-  if (cols === 0 || rows === 0) { return temp; }
-
-  for (var r = 0; r < rows; r++) {
-    temp[r] = [];
-    for (var c = 0; c < cols; c++) {
-      temp[r][c] = array[c][r];
-    }
-  }
-  return temp;
-}
-
-
 // synchronize our graphs along the x-axis and update the number of decimals
 // being displayed per graph based on the range of data being displayed
 function customDrawCallback(g, initial) {
   if (blockRedraw) return;
   blockRedraw = true;
-
-  // We let dygraphs handle reading the data and parsing it into an array. We
-  // then sort that data on the first draw. This is a little weird because
-  // we're creating a graph, and while it's rendering we sort it but having
-  // to parse the data ourselves would be a real pain. Since the series
-  // colors don't get sorted with the data we save the original and then
-  // reset so that multiple series that are next to each other don't have the
-  // same color. After sorting is done, we may expand the graph.
-  if (initial) {
-    var graphInfo = g.graphInfo;
-    var expandNum = graphInfo.expand;
-
-    // if we're expanding a graph, or we have multiple configs, set new colors
-    if ((expandNum !== undefined && expandNum !== 0) || descriptions.length > 0) {
-      setColors(g, g.getColors().slice(), true);
-      g.setAnnotations(g.annotations());
-    }
-
-    if (descriptions.length > 0) {
-      setConfigurationVisibility(g, true);
-      g.setAnnotations(g.annotations());
-    }
-
-    expandGraphs(g);
-  }
 
   // Find the range we're displaying and adjust the number of decimals
   // accordingly. setAnnotations() is used to redraw the graph. Normally
@@ -517,10 +453,12 @@ function customDrawCallback(g, initial) {
   // automatically adjust the y display range, but if they have explicitly
   // requested a range, it will keep the same range for the log scale and
   // will attempt to take the log of zero.
-  if (yRange[0] <= 0 && g.isZoomed('y')) {
-    g.divs.logToggle.style.color = 'red';
-  } else {
-    g.divs.logToggle.style.color = 'black';
+  if (!initial) {
+    if (yRange[0] <= 0 && g.isZoomed('y')) {
+      g.divs.logToggle.style.color = 'red';
+    } else {
+      g.divs.logToggle.style.color = 'black';
+    }
   }
 
   // if this isn't the initial draw, and this graph is fully rendered then
@@ -779,13 +717,7 @@ function clearDates() {
   // Reset the display range for each graph, blocking extra redraws
   blockRedraw = true;
   for (var i = 0; i < gs.length; i++) {
-    var curGraph = gs[i];
-    var start = parseDate(curGraph.graphInfo.startdate);
-    var end = parseDate(curGraph.graphInfo.enddate);
-    var range = [start, end];
-    if (range.toString() !== curGraph.xAxisRange().toString()) {
-      curGraph.updateOptions({ dateWindow: range });
-    }
+    gs[i].resetZoom();
   }
   blockRedraw = false;
 }

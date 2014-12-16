@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "LoopStmt.h"
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -73,7 +74,7 @@ static bool enableModuleUsesCache = false;
 
 //
 // The aliasFieldSet is a set of names of fields for which arrays may
-// be passed in by named argument as aliases, as in new C(A=>GA) (see 
+// be passed in by named argument as aliases, as in new C(A=>GA) (see
 // test/arrays/deitz/test_array_alias_field.chpl).
 //
 static Vec<const char*> aliasFieldSet;
@@ -172,7 +173,7 @@ void scopeResolve() {
         SET_LINENO(fn->_this);
 
         TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
-        
+
         if (!ts) {
           USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
         }
@@ -240,7 +241,7 @@ static void addToSymbolTable(Vec<DefExpr*>& defs) {
             (!newFn || (!newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
           USR_FATAL(sym,
                     "'%s' has multiple definitions, redefined at:\n  %s",
-                    sym->name, 
+                    sym->name,
                     def->sym->stringLoc());
         }
       }
@@ -370,7 +371,7 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
 *                                                                           *
 ************************************* | ************************************/
 
-static void addClassToHierarchy(AggregateType*       ct, 
+static void addClassToHierarchy(AggregateType*       ct,
                                 Vec<AggregateType*>* localSeen);
 
 static void addClassToHierarchy(AggregateType* ct) {
@@ -379,7 +380,7 @@ static void addClassToHierarchy(AggregateType* ct) {
   return addClassToHierarchy(ct, &localSeen);
 }
 
-static void addClassToHierarchy(AggregateType*       ct, 
+static void addClassToHierarchy(AggregateType*       ct,
                                 Vec<AggregateType*>* localSeen) {
   static Vec<AggregateType*> globalSeen; // classes already in hierarchy
 
@@ -526,7 +527,7 @@ static void addRecordDefaultConstruction()
     }
   }
 }
- 
+
 
 /************************************ | *************************************
 *                                                                           *
@@ -538,7 +539,7 @@ static void       build_constructor(AggregateType* ct);
 static ArgSymbol* create_generic_arg(VarSymbol* field);
 static void       insert_implicit_this(FnSymbol*         fn,
                                        Vec<const char*>& fieldNamesSet);
-static void       move_constructor_to_outer(FnSymbol*      fn, 
+static void       move_constructor_to_outer(FnSymbol*      fn,
                                             AggregateType* outerType);
 
 void build_constructors(AggregateType* ct)
@@ -1077,7 +1078,7 @@ static void move_constructor_to_outer(FnSymbol* fn, AggregateType* outerType)
 *                                                                           *
 ************************************* | ************************************/
 
-static BlockStmt* find_outer_loop(Expr* stmt);
+static LoopStmt* findOuterLoop(Expr* stmt);
 
 static void resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
@@ -1085,31 +1086,33 @@ static void resolveGotoLabels() {
 
     if (SymExpr* label = toSymExpr(gs->label)) {
       if (label->var == gNil) {
-        BlockStmt* loop = find_outer_loop(gs);
+        LoopStmt* loop = findOuterLoop(gs);
 
         if (!loop)
           USR_FATAL(gs, "break or continue is not in a loop");
 
         if (gs->gotoTag == GOTO_BREAK) {
-          Symbol* breakLabel = loop->breakLabel;
+          Symbol* breakLabel = loop->breakLabelGet();
 
           INT_ASSERT(breakLabel);
           gs->label->replace(new SymExpr(breakLabel));
+
         } else if (gs->gotoTag == GOTO_CONTINUE) {
-          Symbol* continueLabel = loop->continueLabel;
+          Symbol* continueLabel = loop->continueLabelGet();
           INT_ASSERT(continueLabel);
 
           gs->label->replace(new SymExpr(continueLabel));
+
         } else
           INT_FATAL(gs, "unexpected goto type");
       }
 
     } else if (UnresolvedSymExpr* label = toUnresolvedSymExpr(gs->label)) {
       const char* name = label->unresolved;
-      BlockStmt*  loop = find_outer_loop(gs);
+      LoopStmt*   loop = findOuterLoop(gs);
 
       while (loop && (!loop->userLabel || strcmp(loop->userLabel, name))) {
-        loop = find_outer_loop(loop->parentExpr);
+        loop = findOuterLoop(loop->parentExpr);
       }
 
       if (!loop) {
@@ -1117,10 +1120,10 @@ static void resolveGotoLabels() {
       }
 
       if (gs->gotoTag == GOTO_BREAK)
-        label->replace(new SymExpr(loop->breakLabel));
+        label->replace(new SymExpr(loop->breakLabelGet()));
 
       else if (gs->gotoTag == GOTO_CONTINUE)
-        label->replace(new SymExpr(loop->continueLabel));
+        label->replace(new SymExpr(loop->continueLabelGet()));
 
       else
         INT_FATAL(gs, "unexpected goto type");
@@ -1128,17 +1131,20 @@ static void resolveGotoLabels() {
   }
 }
 
-static BlockStmt* find_outer_loop(Expr* stmt) {
-  if (BlockStmt* block = toBlockStmt(stmt))
-    if (block->isLoop())
-      return block;
+static LoopStmt* findOuterLoop(Expr* stmt) {
+  LoopStmt* retval = 0;
 
-  if (stmt->parentExpr)
-    return find_outer_loop(stmt->parentExpr);
+  if (LoopStmt* loop = toLoopStmt(stmt))
+    retval = loop;
 
-  return NULL;
+  else if (stmt->parentExpr)
+    retval = findOuterLoop(stmt->parentExpr);
+
+  else
+    retval = 0;
+
+  return retval;
 }
-
 
 /************************************ | *************************************
 *                                                                           *

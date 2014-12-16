@@ -32,11 +32,14 @@ AST_SRCS = \
 	type.cpp \
 	view.cpp \
                              \
+        LoopStmt.cpp         \
+                             \
         WhileStmt.cpp        \
         WhileDoStmt.cpp      \
         DoWhileStmt.cpp      \
         CForLoop.cpp         \
         ForLoop.cpp          \
+        ParamForLoop.cpp     \
                              \
         AstLogger.cpp        \
         AstVisitor.cpp       \

@@ -20,11 +20,11 @@
 #ifndef _CFOR_LOOP_H_
 #define _CFOR_LOOP_H_
 
-#include "stmt.h"
+#include "LoopStmt.h"
 
 class ForLoop;
 
-class CForLoop : public BlockStmt
+class CForLoop : public LoopStmt
 {
   //
   // Class interface
@@ -52,7 +52,6 @@ public:
   virtual Expr*          getFirstExpr();
   virtual Expr*          getNextExpr(Expr* expr);
 
-  virtual bool           isLoop()                                     const;
   virtual bool           isCForLoop()                                 const;
 
   virtual bool           deadBlockCleanup();
@@ -61,8 +60,9 @@ public:
                                        BlockStmt* testBlock,
                                        BlockStmt* incrBlock);
 
-  // NOAKES 2014/11/26 Transitional
-  CallExpr*              cforInfoGet()                                const;
+  BlockStmt*             initBlockGet()                               const;
+  BlockStmt*             testBlockGet()                               const;
+  BlockStmt*             incrBlockGet()                               const;
 
   virtual CallExpr*      blockInfoGet()                               const;
   virtual CallExpr*      blockInfoSet(CallExpr* expr);
@@ -74,6 +74,10 @@ private:
 
   std::string            codegenCForLoopHeader   (BlockStmt* block);
   GenRet                 codegenCForLoopCondition(BlockStmt* block);
+
+  BlockStmt*             mInitClause;
+  BlockStmt*             mTestClause;
+  BlockStmt*             mIncrClause;
 };
 
 #endif

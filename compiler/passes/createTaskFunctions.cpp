@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -132,7 +132,7 @@ void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
 // While there, we prune other things for forall intents.
 void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore) {
   form_Map(SymbolMapElem, e, *uses) {
-    if (Symbol* sym = e->key) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         if (sym->hasFlag(FLAG_ARG_THIS) ||
             // If we do not prune MT, _toLeader(..., _mt...) does not get
@@ -152,14 +152,13 @@ void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore) {
           e->value = markPruned;
         }
       }
-    }
   }
 }
 
 static void
 addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
   form_Map(SymbolMapElem, e, *vars) {
-    if (Symbol* sym = e->key) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, sym->type);
@@ -167,9 +166,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           if (symArg->hasFlag(FLAG_MARKED_GENERIC))
             arg->addFlag(FLAG_MARKED_GENERIC);
         fn->insertFormalAtTail(new DefExpr(arg));
-        vars->put(sym, arg); // todo: instead e->value = arg; ?? see also in implementForallIntents
+        e->value = arg;  // aka vars->put(sym, arg);
       }
-    }
   }
 }
 
@@ -179,8 +177,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   Vec<BaseAST*> asts;
   collect_asts(fn->body, asts);
   form_Map(SymbolMapElem, e, *vars) {
-    INT_ASSERT(e->key); // todo: if this succeeds, remove such 'if' throughout
-    if (Symbol* sym = e->key) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
         ArgSymbol* arg = toArgSymbol(e->value);
@@ -192,19 +189,17 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
           }
         }
       }
-    }
   }
 }
 
 static void
 addVarsToActuals(CallExpr* call, SymbolMap* vars) {
   form_Map(SymbolMapElem, e, *vars) {
-    if (Symbol* sym = e->key) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
         call->insertAtTail(sym);
       }
-    }
   }
 }
 
@@ -283,13 +278,13 @@ void createTaskFunctions(void) {
       }
     }
   }
- 
+
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
     bool hasTaskIntentClause = false;  // this 'block' has task intent clause ?
     // Loops are not a parallel block construct
-    if (block->isLoop() == true) {
+    if (block->isLoopStmt() == true) {
 
     } else if (CallExpr* info = block->blockInfoGet()) {
       SET_LINENO(block);

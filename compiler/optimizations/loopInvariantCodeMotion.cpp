@@ -26,6 +26,7 @@
 #include "dominator.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -115,7 +116,7 @@ public:
         // find the first expr in the header, and get it's parent expr (for
         // most cases it will be the surrounding block statement of the loop)
         if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
-          if (blockStmt->isLoop()) {
+          if (blockStmt->isLoopStmt()) {
             blockStmt->insertBefore(expr->remove());
 
           } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {

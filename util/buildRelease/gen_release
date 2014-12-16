@@ -120,6 +120,7 @@ if ($no_clone == 0) {
        "util/setchplenv.fish",
        "util/setchplenv.sh",
        "util/start_test",
+       "util/chpltags",
 );
 
 

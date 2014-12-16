@@ -46,6 +46,7 @@
 #define iterKindTypename          "iterKind"
 #define iterKindLeaderTagname     "leader"
 #define iterKindFollowerTagname   "follower"
+#define iterKindStandaloneTagname "standalone"
 #define iterFollowthisArgname     "followThis"
 
 class BaseAST;

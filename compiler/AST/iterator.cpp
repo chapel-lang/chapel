@@ -194,7 +194,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
   // NOAKES 2014/12/02 This is a brittle way to determine if the
   // SymExpr is in a loop header.  Revisit
   BlockStmt* block = toBlockStmt(stmt);
-  BlockStmt* loop  = (block != 0 && block->isLoop()) ? block : 0;
+  BlockStmt* loop  = (block != 0 && block->isLoopStmt()) ? block : 0;
 
   if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
     // Get member returns the address of the member, so we convert the
@@ -636,26 +636,25 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
   hasMoreBody->insertAtTail(new DefExpr(tmp));
 
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
-    CForLoop* cforLoop  = toCForLoop(singleLoop);
-    CallExpr* blockInfo = NULL;
+    CForLoop*  cforLoop  = toCForLoop(singleLoop);
+    BlockStmt* testBlock = NULL;
 
-    Symbol*   ic        = ii->advance->getFormal(1);
-    SymbolMap map;
+    Symbol*    ic        = ii->advance->getFormal(1);
+    SymbolMap  map;
 
     // In copied expressions, replace _ic with hasMore->_this .
     map.put(ic, ii->hasMore->_this);
 
-    blockInfo = cforLoop->cforInfoGet()->copy(&map);
+    // NOAKES 2014/12/04 Why is this copy here?
+    testBlock = cforLoop->testBlockGet()->copy(&map);
 
-    if (BlockStmt* testSeg = toBlockStmt(blockInfo->get(2))) {
-      for_alist(expr, testSeg->body) {
-        if (expr != testSeg->body.tail) {
-          hasMoreBody->insertAtTail(expr->copy(&map));
-        }
+    for_alist(expr, testBlock->body) {
+      if (expr != testBlock->body.tail) {
+        hasMoreBody->insertAtTail(expr->copy(&map));
       }
-
-      hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, testSeg->body.tail->copy(&map)));
     }
+
+    hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp, testBlock->body.tail->copy(&map)));
 
   } else {
     hasMoreBody->insertAtTail(new CallExpr(PRIM_MOVE,
@@ -688,21 +687,19 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* initBody = new BlockStmt();
 
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
-    CForLoop* cforLoop  = toCForLoop(singleLoop);
-    CallExpr* blockInfo = NULL;
+    CForLoop*  cforLoop  = toCForLoop(singleLoop);
+    BlockStmt* initBlock = NULL;
 
-    Symbol*   ic        = ii->advance->getFormal(1);
-    SymbolMap map;
+    Symbol*    ic        = ii->advance->getFormal(1);
+    SymbolMap  map;
 
     // In copied expressions, replace _ic with init->_this .
     map.put(ic, ii->init->_this);
 
-    blockInfo = cforLoop->cforInfoGet()->copy(&map);
+    initBlock = cforLoop->initBlockGet()->copy(&map);
 
-    if (BlockStmt* initSeg = toBlockStmt(blockInfo->get(1))) {
-      for_alist(expr, initSeg->body) {
-        initBody->insertAtTail(expr->copy(&map));
-      }
+    for_alist(expr, initBlock->body) {
+      initBody->insertAtTail(expr->copy(&map));
     }
   }
 
@@ -716,21 +713,19 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
   BlockStmt* incrBody = new BlockStmt();
 
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
-    CForLoop* cforLoop  = toCForLoop(singleLoop);
-    CallExpr* blockInfo = NULL;
+    CForLoop*  cforLoop  = toCForLoop(singleLoop);
+    BlockStmt* incrBlock = NULL;
 
-    Symbol*   ic        = ii->advance->getFormal(1);
-    SymbolMap map;
+    Symbol*    ic        = ii->advance->getFormal(1);
+    SymbolMap  map;
 
     // In copied expressions, replace _ic with incr->_this .
     map.put(ic, ii->incr->_this);
 
-    blockInfo = cforLoop->cforInfoGet()->copy(&map);
+    incrBlock = cforLoop->incrBlockGet()->copy(&map);
 
-    if (BlockStmt* incrSeg = toBlockStmt(blockInfo->get(3))) {
-      for_alist(expr, incrSeg->body) {
-        incrBody->insertAtTail(expr->copy(&map));
-      }
+    for_alist(expr, incrBlock->body) {
+      incrBody->insertAtTail(expr->copy(&map));
     }
   }
 
@@ -803,9 +798,8 @@ static void collectLiveLocalVariables(Vec<Symbol*>& syms, FnSymbol* fn, BlockStm
   if (singleLoop != NULL && singleLoop->isCForLoop() == true) {
     Vec<SymExpr*> symExprs;
     CForLoop*     cforLoop = toCForLoop(singleLoop);
-    Expr*         init     = cforLoop->cforInfoGet()->get(1);
 
-    collectSymExprs(init, symExprs);
+    collectSymExprs(cforLoop->initBlockGet(), symExprs);
 
     forv_Vec(SymExpr, se, symExprs) {
       if (useSet.set_in(se)) {

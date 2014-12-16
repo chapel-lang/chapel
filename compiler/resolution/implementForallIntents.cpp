@@ -125,7 +125,6 @@ static void createShadowVars(SymbolMap* uses, int& numOuterVars,
   numOuterVars = 0;
 
   form_Map(SymbolMapElem, e, *uses) {
-    INT_ASSERT(e->key); // todo: if holds, remove 'if' throughout
     if (e->value != markPruned) {
       Symbol* ovar = e->key;
       // If ovar is a reference, e.g. an index variable of
@@ -296,7 +295,6 @@ replaceVarUsesWithFormals(Expr* block, SymbolMap* vars) {
   collectSymExprsSTL(block, symExprs);
   form_Map(SymbolMapElem, e, *vars) {
     Symbol* sym = e->key;
-    INT_ASSERT(sym); // todo: if this succeeds, remove such 'if' elsewhere
     if (e->value != markPruned) {
       SET_LINENO(sym);
       Symbol* arg = e->value;

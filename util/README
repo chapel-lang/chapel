@@ -14,6 +14,7 @@ for details):
 The following are for more experienced users:
 
    ./
+     chpltags       : a script to generate tags files for Chapel source code
      printchplenv   : a script to print your set/inferred Chapel environment
      setchplenv.*   : commands for setting up a production Chapel environment
      start_test     : the script for invoking the Chapel testing system

@@ -81,12 +81,13 @@ public:
   virtual Expr*       getNextExpr(Expr* expr);
 
   // New interface
-  virtual bool        isLoop()                                     const;
+  virtual bool        isLoopStmt()                                 const;
 
   virtual bool        isWhileStmt()                                const;
   virtual bool        isWhileDoStmt()                              const;
   virtual bool        isDoWhileStmt()                              const;
 
+  virtual bool        isParamForLoop()                             const;
   virtual bool        isForLoop()                                  const;
   virtual bool        isCForLoop()                                 const;
 
@@ -116,8 +117,6 @@ public:
   BlockTag            blockTag;
   AList               body;
   CallExpr*           modUses;       // module uses via PRIM_USE
-  LabelSymbol*        breakLabel;
-  LabelSymbol*        continueLabel;
   const char*         userLabel;
   CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
 

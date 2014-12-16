@@ -55,7 +55,7 @@ void codegenStmt(Expr* stmt) {
     }
 
     if (fGenIDS)
-      info->cStatements.push_back("/* " + numToString(stmt->id) + "*/ ");
+      info->cStatements.push_back("/* " + numToString(stmt->id) + " */ ");
   }
 
   ++gStmtCount;
@@ -89,8 +89,6 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   Stmt(E_BlockStmt),
   blockTag(initBlockTag),
   modUses(NULL),
-  breakLabel(NULL),
-  continueLabel(NULL),
   userLabel(NULL),
   byrefVars(NULL),
   blockInfo(NULL) {
@@ -144,12 +142,10 @@ BlockStmt*
 BlockStmt::copyInner(SymbolMap* map) {
   BlockStmt* _this = new BlockStmt();
 
-  _this->blockTag      = blockTag;
-  _this->blockInfo     = COPY_INT(blockInfo);
-  _this->modUses       = COPY_INT(modUses);
-  _this->breakLabel    = breakLabel;
-  _this->continueLabel = continueLabel;
-  _this->byrefVars     = COPY_INT(byrefVars);
+  _this->blockTag  = blockTag;
+  _this->blockInfo = COPY_INT(blockInfo);
+  _this->modUses   = COPY_INT(modUses);
+  _this->byrefVars = COPY_INT(byrefVars);
 
   for_alist(expr, body)
     _this->insertAtTail(COPY_INT(expr));
@@ -360,8 +356,8 @@ BlockStmt::isScopeless() const {
 }
 
 bool
-BlockStmt::isLoop() const {
-  return blockInfo && blockInfo->isPrimitive(PRIM_BLOCK_PARAM_LOOP);
+BlockStmt::isLoopStmt() const {
+  return false;
 }
 
 bool
@@ -376,6 +372,11 @@ BlockStmt::isWhileDoStmt() const {
 
 bool
 BlockStmt::isDoWhileStmt() const {
+  return false;
+}
+
+bool
+BlockStmt::isParamForLoop() const {
   return false;
 }
 

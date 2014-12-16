@@ -34,6 +34,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "ParamForLoop.h"
 #include "passes.h"
 #include "scopeResolve.h"
 #include "stmt.h"
@@ -317,8 +318,7 @@ static void resolveNew(CallExpr* call);
 static bool formalRequiresTemp(ArgSymbol* formal);
 static void insertFormalTemps(FnSymbol* fn);
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
-static Type* param_for_index_type(CallExpr* loop);
-static void fold_param_for(CallExpr* loop);
+
 static Expr* dropUnnecessaryCast(CallExpr* call);
 static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name);
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *parent, AList &arg_list, bool isFormal, Type *retType);
@@ -851,7 +851,7 @@ okToConvertFormalToRefType(Type* type) {
 
 static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
-  resolveBlock(fn->retExprType);
+  resolveBlockStmt(fn->retExprType);
   fn->retType = fn->retExprType->body.tail->typeInfo();
   if (fn->retType != dtUnknown) {
     if (fn->retTag == RET_REF) {
@@ -919,7 +919,7 @@ resolveFormals(FnSymbol* fn) {
         if (!formal->typeExpr) {
           formal->type = dtObject;
         } else {
-          resolveBlock(formal->typeExpr);
+          resolveBlockStmt(formal->typeExpr);
           formal->type = formal->typeExpr->body.tail->getValType();
         }
       }
@@ -1409,7 +1409,7 @@ computeGenericSubs(SymbolMap &subs,
         if (subs.n)
           break;
 
-        resolveBlock(formal->defaultExpr);
+        resolveBlockStmt(formal->defaultExpr);
         SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
         if (se && se->var->isParameter() &&
             (!formal->type->symbol->hasFlag(FLAG_GENERIC) || canInstantiate(se->var->type, formal->type)))
@@ -1452,7 +1452,7 @@ computeGenericSubs(SymbolMap &subs,
         if (subs.n)
           break;
 
-        resolveBlock(formal->defaultExpr);
+        resolveBlockStmt(formal->defaultExpr);
         Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
         if (defaultType == dtTypeDefaultToken)
           subs.put(formal, dtTypeDefaultToken->symbol);
@@ -1573,7 +1573,7 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
     }
 
     if (!genericArgSeen && formal->variableExpr && !isDefExpr(formal->variableExpr->body.tail)) {
-      resolveBlock(formal->variableExpr);
+      resolveBlockStmt(formal->variableExpr);
     }
 
     /*
@@ -2592,6 +2592,18 @@ static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
 static Vec<BlockStmt*> standardModuleSet;
 
 //
+// return true if expr is a CondStmt with chpl__tryToken as its condition 
+//
+static bool isTryTokenCond(Expr* expr) {
+  CondStmt* cond = toCondStmt(expr);
+  if (!cond) return false;
+  SymExpr* sym = toSymExpr(cond->condExpr);
+  if (!sym) return false;
+  return sym->var == gTryToken;
+}
+
+
+//
 // return the innermost block for searching for visible functions
 //
 BlockStmt*
@@ -2599,7 +2611,17 @@ getVisibilityBlock(Expr* expr) {
   if (BlockStmt* block = toBlockStmt(expr->parentExpr)) {
     if (block->blockTag == BLOCK_SCOPELESS)
       return getVisibilityBlock(block);
-    else
+    else if (block->parentExpr && isTryTokenCond(block->parentExpr)) {
+      // Make the visibility block of the then and else blocks of a
+      // conditional using chpl__tryToken be the block containing the
+      // conditional statement.  Without this, there were some cases where
+      // a function gets instantiated into one side of the conditional but
+      // used in both sides, then the side with the instantiation gets
+      // folded out leaving expressions with no visibility block.
+      // test/functions/iterators/angeles/dynamic.chpl is an example that
+      // currently fails without this.
+      return getVisibilityBlock(block->parentExpr);
+    } else
       return block;
   } else if (expr->parentExpr) {
     return getVisibilityBlock(expr->parentExpr);
@@ -3891,104 +3913,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
   }
 }
 
-
 //
-// Calculate the index type for a param for loop by checking the type of
-// the range that would be built using the same low and high values.
 //
-static Type* param_for_index_type(CallExpr* loop) {
-  BlockStmt* block = toBlockStmt(loop->parentExpr);
-  SymExpr* lse = toSymExpr(loop->get(2));
-  SymExpr* hse = toSymExpr(loop->get(3));
-  CallExpr* range = new CallExpr("_build_range", lse->copy(), hse->copy());
-  block->insertBefore(range);
-  resolveCall(range);
-  if (!range->isResolved()) {
-    INT_FATAL("unresolved range");
-  }
-  resolveFormals(range->isResolved());
-  DefExpr* formal = toDefExpr(range->isResolved()->formals.get(1));
-  Type* formalType;
-  if (toArgSymbol(formal->sym)->typeExpr) {
-    // range->isResolved() is the coercion wrapper for _build_range
-    formalType = toArgSymbol(formal->sym)->typeExpr->body.tail->typeInfo();
-  } else {
-    formalType = formal->sym->type;
-  }
-  range->remove();
-  return formalType;
-}
-
-
-static void fold_param_for(CallExpr* loop) {
-  BlockStmt* block = toBlockStmt(loop->parentExpr);
-  SymExpr* lse = toSymExpr(loop->get(2));
-  SymExpr* hse = toSymExpr(loop->get(3));
-  SymExpr* sse = toSymExpr(loop->get(4));
-  if (!block || !lse || !hse || !sse)
-    USR_FATAL(loop, "param for loop must be defined over a param range");
-  VarSymbol* lvar = toVarSymbol(lse->var);
-  VarSymbol* hvar = toVarSymbol(hse->var);
-  VarSymbol* svar = toVarSymbol(sse->var);
-  if (!lvar || !hvar || !svar)
-    USR_FATAL(loop, "param for loop must be defined over a param range");
-  if (!lvar->immediate || !hvar->immediate || !svar->immediate)
-    USR_FATAL(loop, "param for loop must be defined over a param range");
-  Expr* index_expr = loop->get(1);
-  Type* formalType = param_for_index_type(loop);
-  IF1_int_type idx_size;
-  if (get_width(formalType) == 32) {
-    idx_size = INT_SIZE_32;
-  } else {
-    idx_size = INT_SIZE_64;
-  }
-  if (block->blockTag != BLOCK_NORMAL)
-    INT_FATAL("ha");
-  loop->remove();
-  CallExpr* noop = new CallExpr(PRIM_NOOP);
-  block->insertAfter(noop);
-  Symbol* index = toSymExpr(index_expr)->var;
-
-  if (is_int_type(formalType)) {
-    int64_t low = lvar->immediate->int_value();
-    int64_t high = hvar->immediate->int_value();
-    int64_t stride = svar->immediate->int_value();
-    if (stride <= 0) {
-      for (int64_t i = high; i >= low; i += stride) {
-        SymbolMap map;
-        map.put(index, new_IntSymbol(i, idx_size));
-        noop->insertBefore(block->copy(&map));
-      }
-    } else {
-      for (int64_t i = low; i <= high; i += stride) {
-        SymbolMap map;
-        map.put(index, new_IntSymbol(i, idx_size));
-        noop->insertBefore(block->copy(&map));
-      }
-    }
-  } else {
-    INT_ASSERT(is_uint_type(formalType) || is_bool_type(formalType));
-    uint64_t low = lvar->immediate->uint_value();
-    uint64_t high = hvar->immediate->uint_value();
-    int64_t stride = svar->immediate->int_value();
-    if (stride <= 0) {
-      for (uint64_t i = high; i >= low; i += stride) {
-        SymbolMap map;
-        map.put(index, new_UIntSymbol(i, idx_size));
-        noop->insertBefore(block->copy(&map));
-      }
-    } else {
-      for (uint64_t i = low; i <= high; i += stride) {
-        SymbolMap map;
-        map.put(index, new_UIntSymbol(i, idx_size));
-        noop->insertBefore(block->copy(&map));
-      }
-    }
-  }
-  block->replace(loop);
-  makeNoop(loop);
-}
-
+//
 
 static Expr* dropUnnecessaryCast(CallExpr* call) {
   // Check for and remove casts to the original type and size
@@ -4785,8 +4712,6 @@ preFold(Expr* expr) {
           result = call;
           inits.add(call);
         }
-
-        inits.add(call);
       }
 
     } else if (call->isPrimitive(PRIM_TYPEOF)) {
@@ -4938,7 +4863,9 @@ preFold(Expr* expr) {
         }
       }
     } else if (call->isPrimitive(PRIM_BLOCK_PARAM_LOOP)) {
-      fold_param_for(call);
+      ParamForLoop* paramLoop = toParamForLoop(call->parentExpr);
+
+      result = paramLoop->foldForResolve();
     } else if (call->isPrimitive(PRIM_LOGICAL_FOLDER)) {
       bool removed = false;
       SymExpr* sym1 = toSymExpr(call->get(1));
@@ -5044,6 +4971,17 @@ preFold(Expr* expr) {
         call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, result));
         call->insertAtTail(tmp);
       }
+    } else if (call->isPrimitive(PRIM_TO_STANDALONE)) {
+      FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
+     CallExpr* standaloneCall = new CallExpr(iterator->name);
+      for_formals(formal, iterator) {
+        standaloneCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+      }
+      // "tag" should be placed at the end of the formals in the source code as
+      // well, to avoid insertion of an order wrapper.
+      standaloneCall->insertAtTail(new NamedExpr("tag", new SymExpr(gStandaloneTag)));
+      call->replace(standaloneCall);
+      result = standaloneCall;
     } else if (call->isPrimitive(PRIM_TO_LEADER)) {
       FnSymbol* iterator = call->get(1)->typeInfo()->defaultInitializer->getFormal(1)->type->defaultInitializer;
       CallExpr* leaderCall;
@@ -5826,7 +5764,7 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
     } else if (block->isForLoop() == true) {
       USR_FATAL(expr, "param function cannot contain a non-param for loop");
 
-    } else if (block->blockInfoGet()) {
+    } else if (block->isLoopStmt() == true) {
       USR_FATAL(expr, "param function cannot contain a non-param loop");
     }
   }
@@ -5859,141 +5797,139 @@ static bool is_param_resolved(FnSymbol* fn, Expr* expr) {
 // is true in this case, so the search for a matching elseStmt continue in the
 // surrounding block or call.
 static Expr*
-resolveExpr(Expr* expr)
-{
-    FnSymbol* fn = toFnSymbol(expr->parentSymbol);
+resolveExpr(Expr* expr) {
+  Expr* const origExpr = expr;
+  FnSymbol*   fn       = toFnSymbol(expr->parentSymbol);
 
-    SET_LINENO(expr);
-    if (SymExpr* se = toSymExpr(expr)) {
-      if (se->var) {
-        makeRefType(se->var->type);
-      }
+  SET_LINENO(expr);
+
+  if (SymExpr* se = toSymExpr(expr)) {
+    if (se->var) {
+      makeRefType(se->var->type);
+    }
+  }
+
+  expr = preFold(expr);
+
+  if (fn && fn->retTag == RET_PARAM) {
+    if (is_param_resolved(fn, expr)) {
+      return expr;
+    }
+  }
+
+  if (DefExpr* def = toDefExpr(expr)) {
+    if (def->init) {
+      Expr* init = preFold(def->init);
+      init = resolveExpr(init);
+      // expr is unchanged, so is treated as "resolved".
     }
 
-    Expr* const origExpr = expr;
+    if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
+      implementForallIntents1(def);
+    }
+  }
 
-    expr = preFold(expr);
-
-    if (fn && fn->retTag == RET_PARAM) {
-      if (is_param_resolved(fn, expr)) {
-        return expr;
-      }
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_ERROR) ||
+        call->isPrimitive(PRIM_WARNING)) {
+      issueCompilerError(call);
     }
 
-    if (DefExpr* def = toDefExpr(expr))
-    {
-      if (def->init)
-      {
-        Expr* init = preFold(def->init);
-        init = resolveExpr(init);
-        // expr is unchanged, so is treated as "resolved".
-      }
-      if (def->sym->hasFlag(FLAG_CHPL__ITER)) {
-        implementForallIntents1(def);
-      }
-    }
+    // Resolve expressions of the form:  <type> ( args )
+    // These will be constructor calls (or type constructor calls) that slipped
+    // past normalization due to the use of typedefs.
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (TypeSymbol* ts = toTypeSymbol(se->var)) {
+        if (call->numActuals() == 0 ||
+            (call->numActuals() == 2 && isSymExpr(call->get(1)) &&
+             toSymExpr(call->get(1))->var == gMethodToken)) {
+          // This looks like a typedef, so ignore it.
 
-    if (CallExpr* call = toCallExpr(expr)) {
-      if (call->isPrimitive(PRIM_ERROR) ||
-          call->isPrimitive(PRIM_WARNING)) {
-        issueCompilerError(call);
-      }
-
-      // Resolve expressions of the form:  <type> ( args )
-      // These will be constructor calls (or type constructor calls) that slipped
-      // past normalization due to the use of typedefs.
-      if (SymExpr* se = toSymExpr(call->baseExpr))
-      {
-        if (TypeSymbol* ts = toTypeSymbol(se->var))
-        {
-          if (call->numActuals() == 0 ||
-              (call->numActuals() == 2 && isSymExpr(call->get(1)) &&
-               toSymExpr(call->get(1))->var == gMethodToken))
-          {
-            // This looks like a typedef, so ignore it.
-          }
-          else
-          {
-            // More needed here ... .
-            INT_FATAL(ts, "not yet implemented.");
-          }
-        }
-      }
-
-      callStack.add(call);
-      resolveCall(call);
-
-      if (!tryFailure && call->isResolved()) {
-        if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
-          // ForallLeaderArgs: process the leader that 'call' invokes.
-          implementForallIntents2(call, origToLeaderCall);
-        resolveFns(call->isResolved());
-      }
-
-      if (tryFailure) {
-        if (tryStack.tail()->parentSymbol == fn) {
-          // The code in the 'true' branch of a tryToken conditional has failed
-          // to resolve fully. Roll the callStack back to the function where
-          // the nearest tryToken conditional is and replace the entire
-          // conditional with the 'false' branch then continue resolution on
-          // it.  If the 'true' branch did fully resolve, we would replace the
-          // conditional with the 'true' branch instead.
-          while (callStack.n > 0 &&
-                 callStack.tail()->isResolved() !=
-                 tryStack.tail()->elseStmt->parentSymbol) {
-            callStack.pop();
-          }
-          BlockStmt* block = tryStack.tail()->elseStmt;
-          tryStack.tail()->replace(block->remove());
-          tryStack.pop();
-          if (!block->prev)
-            block->insertBefore(new CallExpr(PRIM_NOOP));
-          expr = block->prev;
-          return expr;
         } else {
-          return NULL;
+          // More needed here ... .
+          INT_FATAL(ts, "not yet implemented.");
         }
       }
-      callStack.pop();
     }
 
-    if (SymExpr* sym = toSymExpr(expr)) {
-      // Avoid record constructors via cast
-      // should be fixed by out-of-order resolution
-      CallExpr* parent = toCallExpr(sym->parentExpr);
-      if (!parent ||
-          !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
-          !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
+    callStack.add(call);
 
-        if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
-          if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
-              !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-              !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-            resolveFormals(ct->defaultTypeConstructor);
-            if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-              if (ct->defaultTypeConstructor->hasFlag(FLAG_PARTIAL_COPY))
-                instantiateBody(ct->defaultTypeConstructor);
-              resolveFns(ct->defaultTypeConstructor);
-            }
+    resolveCall(call);
+
+    if (!tryFailure && call->isResolved()) {
+      if (CallExpr* origToLeaderCall = toPrimToLeaderCall(origExpr))
+        // ForallLeaderArgs: process the leader that 'call' invokes.
+        implementForallIntents2(call, origToLeaderCall);
+
+      resolveFns(call->isResolved());
+    }
+
+    if (tryFailure) {
+      if (tryStack.tail()->parentSymbol == fn) {
+        // The code in the 'true' branch of a tryToken conditional has failed
+        // to resolve fully. Roll the callStack back to the function where
+        // the nearest tryToken conditional is and replace the entire
+        // conditional with the 'false' branch then continue resolution on
+        // it.  If the 'true' branch did fully resolve, we would replace the
+        // conditional with the 'true' branch instead.
+        while (callStack.n > 0 &&
+               callStack.tail()->isResolved() !=
+               tryStack.tail()->elseStmt->parentSymbol) {
+          callStack.pop();
+        }
+
+        BlockStmt* block = tryStack.tail()->elseStmt;
+
+        tryStack.tail()->replace(block->remove());
+        tryStack.pop();
+
+        if (!block->prev)
+          block->insertBefore(new CallExpr(PRIM_NOOP));
+
+        return block->prev;
+      } else {
+        return NULL;
+      }
+
+    }
+
+    callStack.pop();
+  }
+
+  if (SymExpr* sym = toSymExpr(expr)) {
+    // Avoid record constructors via cast
+    // should be fixed by out-of-order resolution
+    CallExpr* parent = toCallExpr(sym->parentExpr);
+
+    if (!parent ||
+        !parent->isPrimitive(PRIM_IS_SUBTYPE) ||
+        !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
+
+      if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
+        if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
+            !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+            !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+          resolveFormals(ct->defaultTypeConstructor);
+          if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
+            if (ct->defaultTypeConstructor->hasFlag(FLAG_PARTIAL_COPY))
+              instantiateBody(ct->defaultTypeConstructor);
+            resolveFns(ct->defaultTypeConstructor);
           }
         }
       }
     }
+  }
 
-    expr = postFold(expr);
-    return expr;
+  return postFold(expr);
 }
 
 
 void
-resolveBlock(Expr* body)
-{
-  for_exprs_postorder(expr, body)
-  {
+resolveBlockStmt(BlockStmt* blockStmt) {
+  for_exprs_postorder(expr, blockStmt) {
     expr = resolveExpr(expr);
 
-    if (tryFailure)
-    {
+    if (tryFailure) {
       if (expr == NULL)
         return;
 
@@ -6021,6 +5957,7 @@ computeReturnTypeParamVectors(BaseAST* ast,
       }
     }
   }
+
   AST_CHILDREN_CALL(ast, computeReturnTypeParamVectors, retSymbol, retTypes, retParams);
 }
 
@@ -6208,7 +6145,7 @@ resolveFns(FnSymbol* fn) {
   fn->addFlag(FLAG_RESOLVED);
 
   if (fn->hasFlag(FLAG_EXTERN)) {
-    resolveBlock(fn->body);
+    resolveBlockStmt(fn->body);
     resolveReturnType(fn);
     return;
   }
@@ -6237,7 +6174,7 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
-  resolveBlock(fn->body);
+  resolveBlockStmt(fn->body);
 
   if (tryFailure) {
     fn->removeFlag(FLAG_RESOLVED);
@@ -6269,7 +6206,7 @@ resolveFns(FnSymbol* fn) {
   }
 
   //
-  // mark leaders for inlining
+  // mark leaders and standalone parallel iterators for inlining
   //
   // The original computation used to be here, now we do it earlier,
   // here we only verify that we did not miss a leader.
@@ -6284,6 +6221,10 @@ resolveFns(FnSymbol* fn) {
           paramMap.get(formal) == gLeaderTag) {
         // oops
         INT_ASSERT(false);
+      }
+      if (formal->type == gStandaloneTag->type &&
+          paramMap.get(formal) == gStandaloneTag) {
+        fn->addFlag(FLAG_INLINE_ITERATOR);
       }
     }
   }
@@ -6654,7 +6595,7 @@ static void resolveExternVarSymbols()
     // type block that initializes the variable.
     BlockStmt* block = toBlockStmt(init);
     if (block)
-      resolveBlock(block);
+      resolveBlockStmt(block);
   }
 }
 
@@ -7382,6 +7323,10 @@ isUnusedClass(AggregateType *ct) {
 
   // Runtime types are assumed to be always used.
   if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+    return false;
+
+  // Uses of iterator records get inserted in lowerIterators
+  if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     return false;
 
   // FALSE if initializers are used

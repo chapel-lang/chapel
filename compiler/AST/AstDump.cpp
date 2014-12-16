@@ -33,6 +33,7 @@
 #include "DoWhileStmt.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
+#include "ParamForLoop.h"
 
 AstDump::AstDump() {
   mName      =     0;
@@ -381,6 +382,33 @@ bool AstDump::enterCForLoop(CForLoop* node) {
 }
 
 void AstDump::exitCForLoop(CForLoop* node) {
+  --mIndent;
+  newline();
+  write(false, "}", true);
+  printBlockID(node);
+}
+
+
+//
+// ParamForLoop
+//
+bool AstDump::enterParamForLoop(ParamForLoop* node) {
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  write("ParamForLoop");
+  newline();
+  write("{");
+  printBlockID(node);
+  ++mIndent;
+
+  return true;
+}
+
+void AstDump::exitParamForLoop(ParamForLoop* node) {
   --mIndent;
   newline();
   write(false, "}", true);

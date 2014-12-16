@@ -191,6 +191,7 @@ enum PrimitiveTag {
   PRIM_FORALL_LOOP,             // BlockStmt::byrefVars - forall loop body
   PRIM_TO_LEADER,
   PRIM_TO_FOLLOWER,
+  PRIM_TO_STANDALONE,
 
   PRIM_DELETE,
 

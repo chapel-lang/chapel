@@ -54,7 +54,6 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
-  extern proc chpl_rt_isDir(pathname: c_string, followLinks: bool): c_int;
 
   proc direntptr.d_name(): c_string {
     extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
@@ -71,19 +70,31 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
       const filename = ent.d_name();
       if (dotfiles || filename.substring(1) != '.') {
         if (filename != "." && filename != "..") {
+          //
+          // use FileSystem;  // Doesn't work, see comment below
+          //
           const fullpath = path + "/" + filename;
-          //
-          // chpl_rt_isDir() returns 'true' if 'fullpath' is a
-          // directory.  If we are listing symbolic links
-          // (listlinks==true), it will also return symbolic links to
-          // directories.
-          //
-          if (chpl_rt_isDir(fullpath:c_string, listlinks)) {
-            if (dirs) then
-              yield filename;
-          } else {
-            if (files) then
-              yield filename;
+          {
+            //
+            // The use of this compound statement to restrict the
+            // impact of the 'use' of FileSystem is unfortunate
+            // (compared to placing it in the more logical place
+            // above), yet seemingly required at present; otherwise
+            // the 'path' argument gets shadowed by a
+            // (compiler-introduced?) method coming from one of the
+            // standard or internal modules.  See
+            // test/modules/bradc/useFileSystemShadowsPath.chpl for
+            // a smaller standalone test exhibiting the issue (or
+            // uncomment the 'use' above to see it here).
+            //
+            use FileSystem;
+
+            if (listlinks || !isLink(fullpath)) {
+              if (dirs && isDir(fullpath)) then
+                yield filename;
+              else if (files && isFile(fullpath)) then
+                yield filename;
+            }
           }
         }
       }

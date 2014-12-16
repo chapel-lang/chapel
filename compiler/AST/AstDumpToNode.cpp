@@ -32,6 +32,7 @@
 #include "DoWhileStmt.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
+#include "ParamForLoop.h"
 
 void AstDumpToNode::view(const char* passName, int passNum)
 {
@@ -420,26 +421,58 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
 
   write(false, heading, true);
 
-  if (node->cforInfoGet())
+  if (node->initBlockGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "CForInfo:", false);
+    write(false, "Init:", false);
     mOffset = mOffset + 2;
-    node->cforInfoGet()->accept(this);
+    node->initBlockGet()->accept(this);
     mOffset = mOffset - 2;
 
     mOffset = mOffset - 2;
+
+    fprintf(mFP, "\n");
+  }
+
+  if (node->testBlockGet())
+  {
+    mOffset = mOffset + 2;
 
     newline();
+    write(false, "Test:", false);
+    mOffset = mOffset + 2;
+    node->testBlockGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    fprintf(mFP, "\n");
+  }
+
+  if (node->incrBlockGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "Incr:", false);
+    mOffset = mOffset + 2;
+    node->incrBlockGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    fprintf(mFP, "\n");
   }
 
   // Show blockTag bits.
   if (node->blockTag & BLOCK_EXTERN)
     write(false, "extern ", true);
+
   if (node->blockTag & BLOCK_SCOPELESS)
     write(false, "scopeless ", true);
+
   if (node->blockTag & BLOCK_TYPE_ONLY)
     write(false, "type_only ", true);
 
@@ -519,6 +552,130 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
     }
 
     mOffset = mOffset - 2;
+    newline();
+  }
+
+  // Show blockTag bits.
+  if (node->blockTag & BLOCK_EXTERN)
+    write(false, "extern", true);
+
+  if (node->blockTag & BLOCK_SCOPELESS)
+    write(false, "scopeless", true);
+
+  if (node->blockTag & BLOCK_TYPE_ONLY)
+    write(false, "type_only", true);
+
+  mOffset = mOffset + 2;
+
+  for_alist(next_ast, node->body)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      fprintf(mFP, "\n");
+
+    next_ast->accept(this);
+  }
+
+  if (node->modUses)
+  {
+    newline();
+    write(false, "ModUses: ", false);
+    node->modUses->accept(this);
+  }
+
+  if (node->byrefVars)
+  {
+    newline();
+    write(false, "ByRefVars: ", false);
+    node->byrefVars->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+
+  newline();
+  write(false, ">", true);
+
+  return false;
+}
+
+
+//
+//
+//
+
+bool AstDumpToNode::enterParamForLoop(ParamForLoop* node)
+{
+  char heading[128] = { '\0' };
+  bool firstTime    = true;
+
+  newline();
+
+  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
+    if (node == fn->where)
+      write(false, "where ", false);
+
+  sprintf(heading, "#<ParamForLoop %12d", node->id);
+
+  write(false, heading, true);
+
+  if (node->indexExprGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "Index Expr:", false);
+    mOffset = mOffset + 2;
+    node->indexExprGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  if (node->lowExprGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "Low Expr:", false);
+    mOffset = mOffset + 2;
+    node->lowExprGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  if (node->highExprGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "High Expr:", false);
+    mOffset = mOffset + 2;
+    node->highExprGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
+    newline();
+  }
+
+  if (node->strideExprGet())
+  {
+    mOffset = mOffset + 2;
+
+    newline();
+    write(false, "Stride Expr:", false);
+    mOffset = mOffset + 2;
+    node->strideExprGet()->accept(this);
+    mOffset = mOffset - 2;
+
+    mOffset = mOffset - 2;
+
     newline();
   }
 

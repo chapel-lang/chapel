@@ -1438,9 +1438,9 @@ endif
 # maybe start_test should just be re-written in a more modern
 # scripting language.
 #
-if ($gengraphs) then
+if ($gengraphs || $compperformance) then
     echo ""
-    echo "[Checking that all .graph files appear in $CHPL_HOME/test/GRAPHFILES and $CHPL_HOME/test/COMPGRAPHFILES]" |& $tee -a $logfile
+    echo "[Checking for duplicate .graph files and that all .graph files appear in $CHPL_HOME/test/.*GRAPHFILES]" |& $tee -a $logfile
     $utildir/test/checkGraphfiles |& tee -a $logfile
 endif
 

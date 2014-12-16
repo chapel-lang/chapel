@@ -76,6 +76,7 @@
 #include "DoWhileStmt.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
+#include "ParamForLoop.h"
 
 #include "alist.h"
 #include "stmt.h"
@@ -113,7 +114,7 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
     expr->remove();
 
     // If the expr is a BlockStmt, collapse during the copy
-    if (stmt != 0 && stmt->isLoop() == false && stmt->blockInfoGet() == 0)
+    if (stmt != 0 && stmt->isLoopStmt() == false && stmt->blockInfoGet() == 0)
     {
       for_alist(subItem, stmt->body)
       {
@@ -142,20 +143,26 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
 //
 bool CollapseBlocks::enterCForLoop(CForLoop* node)
 {
-  CallExpr* call = node->cforInfoGet();
-
   // Handle the init/test/incr fields specially
-  for_alist(cForExprs, call->argList)
-  {
-    if (BlockStmt* block = toBlockStmt(cForExprs))
-      enterBlockStmt(block);
-  }
+  if (BlockStmt* init = node->initBlockGet())
+    enterBlockStmt(init);
+
+  if (BlockStmt* test = node->testBlockGet())
+    enterBlockStmt(test);
+
+  if (BlockStmt* incr = node->incrBlockGet())
+    enterBlockStmt(incr);
 
   // Now simply forward to handle the body
   return enterBlockStmt(node);
 }
 
 bool CollapseBlocks::enterForLoop(ForLoop* node)
+{
+  return enterBlockStmt(node);
+}
+
+bool CollapseBlocks::enterParamForLoop(ParamForLoop* node)
 {
   return enterBlockStmt(node);
 }
@@ -325,6 +332,11 @@ void CollapseBlocks::exitCForLoop(CForLoop* node)
 }
 
 void CollapseBlocks::exitForLoop(ForLoop* node)
+{
+
+}
+
+void CollapseBlocks::exitParamForLoop(ParamForLoop* node)
 {
 
 }
