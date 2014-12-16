@@ -51,6 +51,8 @@
  *
  * Will optimize things like:
  * - "for i in 1..10"
+ * - "for i in 1..10+1"
+ * - "var lo=1, hi=10;for i in lo..hi"
  * - "for i in 1..10 by 2"
  * - "for (i, j) in zip(1..10 by 2, 1..10 by -2)"
  * - "for (i, j) in zip(A, 1..10 by 2)" // will optimize range iter still
@@ -67,28 +69,37 @@
  * Note that this function is pretty fragile because it relies on names of
  * functions/iterators as well as the arguments and order of those
  * functions/iterators but there's not really a way around it this early in
- * compilation. If the iterator can't be replaced the original, unchanged
+ * compilation. If the iterator can't be replaced, the original, unchanged
  * iteratorExpr is returned.
  */
-static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr) {
+static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr)
+{
   CallExpr* range = NULL;
   Expr* stride = NULL;
-  if (CallExpr* call = toCallExpr(iteratorExpr)) {
-    // grab the stride if we have a strided ranges
-    if (call->isNamed("by")) {
+  if (CallExpr* call = toCallExpr(iteratorExpr))
+  {
+    // grab the stride if we have a strided range
+    if (call->isNamed("by"))
+    {
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
-    } else {
+    }
+    else
+    {
       range = call;
     }
-    // see if we're looking at a _build_range for an anonymous range
-    if (range && range->isNamed("chpl_build_bounded_range")) {
+    // see if we're looking at an anonymous iter for a bounded range
+    if (range && range->isNamed("chpl_build_bounded_range"))
+    {
       Expr* low = range->get(1)->copy();
       Expr* high = range->get(2)->copy();
       // replace the range construction with a direct range iterator
-      if (stride) {
+      if (stride)
+      {
         iteratorExpr = (new CallExpr("_direct_range_iter", low, high, stride));
-      } else {
+      }
+      else
+      {
         SymExpr* noStr = new SymExpr(new_IntSymbol(1));
         iteratorExpr = (new CallExpr("_direct_range_iter", low, high, noStr));
       }
@@ -97,13 +108,18 @@ static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr) {
   return iteratorExpr;
 }
 
-static Expr* optimizeRangeIteration(Expr* iteratorExpr, bool zippered) {
+static Expr* optimizeRangeIteration(Expr* iteratorExpr, bool zippered)
+{
   iteratorExpr = tryToUseDirectRangeIterator(iteratorExpr);
   // for zippered iterators, try to replace each iterator of the tuple
-  if (zippered) {
-    if (CallExpr* call = toCallExpr(iteratorExpr)) {
-      if (call->isNamed("_build_tuple")) {
-        for_actuals(actual, call) {
+  if (zippered)
+  {
+    if (CallExpr* call = toCallExpr(iteratorExpr))
+    {
+      if (call->isNamed("_build_tuple"))
+      {
+        for_actuals(actual, call)
+        {
           actual->replace(tryToUseDirectRangeIterator(actual->copy()));
         }
       }
