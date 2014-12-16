@@ -210,7 +210,7 @@ module ChapelBase {
   proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
   { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
 
-  enum iterKind {leader, follower};
+  enum iterKind {leader, follower, standalone};
   
   //
   // assignment on primitive types

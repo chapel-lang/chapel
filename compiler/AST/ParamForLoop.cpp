@@ -56,14 +56,14 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
     stride = new SymExpr(new_IntSymbol(1));
   }
 
-  if (call && call->isNamed("_build_range"))
+  if (call && call->isNamed("chpl_build_bounded_range"))
   {
     low    = call->get(1)->remove();
     high   = call->get(1)->remove();
   }
   else
   {
-    USR_FATAL(range, "iterators for param-for-loops must be literal ranges");
+    USR_FATAL(range, "iterators for param-for-loops must be bounded literal ranges");
   }
 
   outer->insertAtTail(new DefExpr(indexVar, new_IntSymbol((int64_t) 0)));
@@ -336,7 +336,7 @@ CallExpr* ParamForLoop::foldForResolve()
   SymExpr*   sse       = strideExprGet();
 
   if (!lse             || !hse             || !sse)
-    USR_FATAL(this, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
   VarSymbol* lvar      = toVarSymbol(lse->var);
   VarSymbol* hvar      = toVarSymbol(hse->var);
@@ -345,10 +345,10 @@ CallExpr* ParamForLoop::foldForResolve()
   CallExpr*  noop      = new CallExpr(PRIM_NOOP);
 
   if (!lvar            || !hvar            || !svar)
-    USR_FATAL(this, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
-    USR_FATAL(this, "param for loop must be defined over a param range");
+    USR_FATAL(this, "param for loop must be defined over a bounded param range");
 
   Symbol*      idxSym  = idxExpr->var;
   Type*        idxType = indexType();
@@ -437,7 +437,8 @@ Type* ParamForLoop::indexType()
 {
   SymExpr*  lse     = lowExprGet();
   SymExpr*  hse     = highExprGet();
-  CallExpr* range   = new CallExpr("_build_range", lse->copy(), hse->copy());
+  CallExpr* range    = new CallExpr("chpl_build_bounded_range",
+                                    lse->copy(), hse->copy());
   Type*     idxType = 0;
 
   insertBefore(range);

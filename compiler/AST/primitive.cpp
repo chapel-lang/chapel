@@ -544,6 +544,7 @@ initPrimitive() {
   prim_def(PRIM_FORALL_LOOP, "forall loop", returnInfoVoid);
   prim_def(PRIM_TO_LEADER, "to leader", returnInfoVoid);
   prim_def(PRIM_TO_FOLLOWER, "to follower", returnInfoVoid);
+  prim_def(PRIM_TO_STANDALONE, "to standalone", returnInfoVoid);
 
   prim_def(PRIM_DELETE, "delete", returnInfoVoid);
 

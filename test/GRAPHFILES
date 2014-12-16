@@ -22,8 +22,8 @@ studies/shootout/meteor/kbrady/meteor.graph
 release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
-studies/hpcc/STREAM.graph
-studies/hpcc/STREAM_fragmented.graph
+studies/hpcc/STREAM_study.graph
+studies/hpcc/STREAM_study_fragmented.graph
 release/examples/benchmarks/hpcc/ra.graph
 release/examples/benchmarks/hpcc/hpl.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
@@ -66,9 +66,9 @@ memleaks.graph
 studies/jacobi/jacobi.graph
 performance/elliot/no-op.graph
 # suite: HPC Challenge
-studies/hpcc/STREAM_fragmented.graph
-studies/hpcc/STREAM.graph
-studies/hpcc/STREAM_promote.graph
+studies/hpcc/STREAM_study_fragmented.graph
+studies/hpcc/STREAM_study.graph
+studies/hpcc/STREAM_study_promote.graph
 # suite: Performance Graphs (TEPS, GB/s, etc.)
 release/examples/benchmarks/hpcc/stream_performance.graph
 release/examples/benchmarks/hpcc/ra_performance.graph
@@ -76,7 +76,7 @@ release/examples/benchmarks/hpcc/stream-ep_performance.graph
 release/examples/benchmarks/hpcc/ptrans_performance.graph
 release/examples/benchmarks/hpcc/fft_performance.graph
 release/examples/benchmarks/hpcc/hpl_performance.graph
-studies/hpcc/STREAM_performance.graph
+studies/hpcc/STREAM_study_performance.graph
 release/examples/benchmarks/ssca2/performance.graph
 # suite: DOE proxy apps
 studies/lulesh/bradc/lulesh-dense.graph

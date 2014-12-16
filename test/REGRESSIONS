@@ -52,11 +52,17 @@ general
 Reviewed 2014-12-08
 ===================
 
+
+Should now be fixed, but still working its way out of testing
+(gasnet-everything, gasnet-fast, gasnet.fifo, numa, xe-wb.*)
+-------------------------------------------------------------
+[Error matching .bad file for functions/iterators/tvandoren/enumerate]
+
+
 failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
 (linux32, x?-wb.*)
 --------------------------------------------------------------------------
-[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)] (passed on 2014-11-16, 2014-11-18)
-[Error running sub_test in /.../test/studies/lsms/shemmy (255)] (passed for xe-wb.gnu on 2014-11-16, 2014-11-18)
+[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)]
 [Error matching program output for studies/filerator/walk (execopts: 9)]
 
 ===================
@@ -134,14 +140,14 @@ timeout (2014-11-12, first run)
 sporadic timeout
 ----------------
 [Error: Timed out executing program stress/deitz/test_10k_begins] (2014-11-12..2014-11-29)
-[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12..2014-12-01)
+[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12..2014-12-14)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6] (2014-11-24)
 [Error: Timed out executing program statements/lydia/forVersusWhilePerf (compopts: 1)] (2014-11-29)
 
 sporadic signal 11
 ------------------
-[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-01)
-[Error matching program output for parallel/begin/dinan/mvm_coforall] (2014-11-21, 2014-11-27)
+[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-09, 2014-12-15)
+[Error matching program output for parallel/begin/dinan/mvm_coforall] (2014-11-21, 2014-11-27, 2014-12-15)
 
 sporadic tasks not being created
 --------------------------------
@@ -247,8 +253,21 @@ Reviewed 2014-12-08
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2014-12-08
+Reviewed 2014-12-16
 ===================
+
+invalid read in compiler (2014-12-13 -- diten, presumed due to standalone par)
+------------------------------------------------------------------------------
+[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader1]
+[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader2]
+[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader3]
+[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader4]
+[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader]
+[Error matching program output for functions/iterators/sungeun/iterInClass]
+[Error matching program output for multilocale/vass/recursive-iterator-twice-multiloc]
+[Error matching program output for studies/colostate/Jacobi-1D-Diamond-Tiling]
+[Error matching program output for studies/colostate/Jacobi-1D-Sliced-Diamond-Tiling]
+[Error matching program output for studies/glob/test_glob (compopts: 1)]
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
@@ -382,11 +401,11 @@ consistent timeouts
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30,2014-12-06)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30,2014-12-14)
 
 sporadic timeouts (frequent)
 ----------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-14)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15)
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (2014-10-23, 2014-10-28, 2014-10-31, 2014-11-02, 2014-11-04, 2014-11-08, 2014-11-10)
 
 sporadic timeouts (infrequent)
@@ -683,14 +702,6 @@ QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
 
-Unexpected result
--------------------------------------------------------------------
-[Error matching program output for io/sungeun/ioerror (execopts: 5)] (2014-12-05)
-
-This test relies on the underlying platform to generate a string for an internal
-error code.  The custom cygwin.good file failed to trigger after the introduction
-of cygwin64 and cygwin32. Thomas submitted a fix on 2014-12-08
-
 === sporadic failures below ===
 
 sporadic timeouts (frequent)
@@ -710,12 +721,20 @@ Seg fault First run 2014-12-07
 Generated output "FAILED": First run 2014-12-07
 -----------------------------------------------
 [Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
 [Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
 
 Error tolerance exceeded?: First run 2014-12-07
 -----------------------------------------------
 [Error matching program output for studies/hpcc/PTRANS/PTRANS]
 [Error matching program output for studies/hpcc/PTRANS/jglewis/ptrans_2011]
+
+=== sporadic failures below ===
+
+sporadic os.unlink calls in sub_test failing due to resource being busy
+=======================================================================
+[Error running sub_test in *] (2014-12-11, 2014-12-12, 2014-12-15)
+
 
 ===================
 cygwin64
@@ -739,9 +758,12 @@ sporadic data read copy failed
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-12-08
+Reviewed 2014-12-15
 ===================
 
+Dies with signal 6
+------------------
+[Error matching program output for studies/glob/test_glob (compopts: 1)] (Brad)
 
 ===================
 dist-block
