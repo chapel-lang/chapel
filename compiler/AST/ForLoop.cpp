@@ -82,24 +82,15 @@ static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr) {
       range = call;
     }
     // see if we're looking at a _build_range for an anonymous range
-    if (range && range->isNamed("_build_range")) {
-      // just a sanity check, this should always be true
-      if (range->numActuals() == 2) {
-        Expr* low = range->get(1)->copy();
-        Expr* high = range->get(2)->copy();
-        // only get bounded ranges, unbounded takes a BoundedRangeType as the
-        // first argument, which turns into a CallExpr. This is probably the
-        // best way to check for bounded ranges this early in compilation
-        if ((isUnresolvedSymExpr(low) || isSymExpr(low)) &&
-           (isUnresolvedSymExpr(high) || isSymExpr(high))) {
-          // replace the range construction with a direct range iterator
-          if (stride) {
-            iteratorExpr = (new CallExpr("_direct_range_iter", low, high, stride));
-          } else {
-            SymExpr* noStr = new SymExpr(new_IntSymbol(1));
-            iteratorExpr = (new CallExpr("_direct_range_iter", low, high, noStr));
-          }
-        }
+    if (range && range->isNamed("chpl_build_bounded_range")) {
+      Expr* low = range->get(1)->copy();
+      Expr* high = range->get(2)->copy();
+      // replace the range construction with a direct range iterator
+      if (stride) {
+        iteratorExpr = (new CallExpr("_direct_range_iter", low, high, stride));
+      } else {
+        SymExpr* noStr = new SymExpr(new_IntSymbol(1));
+        iteratorExpr = (new CallExpr("_direct_range_iter", low, high, noStr));
       }
     }
   }
