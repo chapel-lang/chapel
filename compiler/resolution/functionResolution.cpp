@@ -2558,7 +2558,6 @@ static void issueCompilerError(CallExpr* call) {
 }
 
 static void reissueCompilerWarning(const char* str, int offset) {
-  printf("compiler warning\n");
   //
   // Disable compiler warnings in internal modules that are triggered
   // within a dynamic dispatch context because of potential user
@@ -7320,6 +7319,9 @@ static void removeUnusedFunctions() {
 }
 
 static void removeCompilerWarnings() {
+  // Warnings have now been issued, no need to keep the function around.
+  // Remove calls to compilerWarning and let dead code elimination handle
+  // the rest.
   typedef MapElem<FnSymbol*, const char*> FnSymbolElem;
   form_Map(FnSymbolElem, el, innerCompilerWarningMap) {
     forv_Vec(CallExpr, call, *(el->key->calledBy)) {
