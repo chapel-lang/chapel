@@ -5,16 +5,6 @@ endif
 CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-#
-# set up the directories
-#
-LLVM_ABS_DIR = $(shell pwd)
-LLVM_SRC_DIR = $(LLVM_ABS_DIR)/$(LLVM_SUBDIR)
-LLVM_INSTALL_DIR = $(LLVM_ABS_DIR)/$(LLVM_INSTALL_SUBDIR)
-LLVM_BUILD_DIR = $(LLVM_ABS_DIR)/$(LLVM_BUILD_SUBDIR)
-LLVM_DIR = $(LLVM_ABS_DIR)
-BINUTILS_GOLD_DIR = $(LLVM_ABS_DIR)/binutils
-
 # decide whether to do a debug or no-debug build
 ifdef CHPL_DEVELOPER
 CHPL_LLVM_DEBUG = --enable-debug-runtime --enable-debug-symbols

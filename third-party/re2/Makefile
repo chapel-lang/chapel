@@ -6,14 +6,6 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 #include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
-#
-# set up the directories
-#
-RE2_ABS_DIR = $(shell pwd)
-RE2_INSTALL_DIR = $(RE2_ABS_DIR)/$(RE2_INSTALL_SUBDIR)
-RE2_BUILD_DIR = $(RE2_ABS_DIR)/$(RE2_BUILD_SUBDIR)
-RE2_DIR = $(RE2_ABS_DIR)
-
 ifeq ($(DEBUG), 1)
   RE_DEBUG_CXX += $(DEBUG_CFLAGS)
 else
