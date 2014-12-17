@@ -1078,12 +1078,12 @@ module ChapelRange {
   // chpl__diffMod and the likes, just create a non-anonymous range to iterate
   // over.)
 
-  iter _direct_range_iter(low: int(?w), high: int(w), stride: int(w)) {
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: int(w)) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter _direct_range_iter(low: uint(?w), high: uint(w), stride: int(w)) {
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: int(w)) {
     const r = low..high by stride;
     for i in r do yield i;
   }
@@ -1092,35 +1092,35 @@ module ChapelRange {
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride)
 
-  iter _direct_range_iter(low: int(?w), high: int(w), param stride : int(w)) {
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride : int(w)) {
     for i in _direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter _direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
     for i in _direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
   // cases for when stride is a uint (we know the stride is must be positive)
 
-  iter _direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
     for i in _direct_uint_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter _direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
     for i in _direct_uint_stride_range_iter(low, high, stride) do yield i;
   }
 
 
   // cases for when stride isn't valid
 
-  iter _direct_range_iter(low: int(?w), high: int(w), stride) {
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   typeToString(int(w)), " using a step of type ",
                   typeToString(stride.type));
     yield nil; // iters needs a yield in them
   }
 
-  iter _direct_range_iter(low: uint(?w), high: uint(w), stride) {
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   typeToString(uint(w)), " using a step of type ",
                   typeToString(stride.type));
@@ -1130,7 +1130,7 @@ module ChapelRange {
 
   // case for when low and high aren't compatible types and can't be coerced
 
-  iter _direct_range_iter(low, high, stride) {
+  iter chpl_direct_range_iter(low, high, stride) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
     yield nil; // iters needs a yield in them
   }
