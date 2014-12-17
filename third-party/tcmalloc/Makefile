@@ -5,11 +5,6 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-TCMALLOC_ABS_DIR = $(shell pwd)
-TCMALLOC_INSTALL_DIR=$(TCMALLOC_ABS_DIR)/$(TCMALLOC_INSTALL_SUBDIR)
-TCMALLOC_BUILD_DIR = $(TCMALLOC_ABS_DIR)/$(TCMALLOC_BUILD_SUBDIR)
-TCMALLOC_DIR = $(TCMALLOC_ABS_DIR)
-
 # enable minimal and frame pointers??
 CONFIG_FLAGS = --config-cache \
                --enable-shared=no \

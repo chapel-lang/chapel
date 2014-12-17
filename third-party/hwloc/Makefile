@@ -5,14 +5,6 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-#
-# set up the directories
-#
-HWLOC_ABS_DIR = $(shell pwd)
-HWLOC_INSTALL_DIR = $(HWLOC_ABS_DIR)/$(HWLOC_INSTALL_SUBDIR)
-HWLOC_BUILD_DIR = $(HWLOC_ABS_DIR)/$(HWLOC_BUILD_SUBDIR)
-HWLOC_DIR = $(HWLOC_ABS_DIR)
-
 CHPL_HWLOC_CFG_OPTIONS += --enable-static --disable-shared --disable-libxml2 --disable-pci
 
 ifneq ($(CHPL_MAKE_PLATFORM), darwin)
