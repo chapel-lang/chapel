@@ -3,15 +3,6 @@
 
 """Convert start_test log to jUnit XML report."""
 
-# TODO: Collate multiple trials of a perf test into a single test case. If any
-#       of the trials fail, mark the test as failed.
-
-# TODO: Support suppression files. Add flag to this script that takes the
-#       suppression file. For each test in that file, swap the result in the
-#       report (i.e. if the test has status=ERROR and is in suppression file,
-#       swap to status=SUCCESS -- and vice versa). Pipe the flag through
-#       start_test.
-
 from __future__ import print_function, unicode_literals
 
 import codecs
