@@ -45,7 +45,50 @@ def main():
         DEBUG = True
 
     test_cases = _parse_start_test_log(args.start_test_log)
+    _apply_suppressions(test_cases, args.suppress)
     _create_junit_report(test_cases, args.junit_xml)
+
+
+def _apply_suppressions(test_cases, suppressions_file):
+    """Swap ERROR/SUCCESS results for tests listed in suppressions file. The
+    suppressions file acts as an expected failure list. When a test fails and is
+    listed in the suppressions file, mark it as SUCCESS. When a test succeeds and
+    is listed in the suppressions file, mark it as ERROR and include a helpful
+    error message.
+
+    If suppressions_file does not exist (and is non-None), raises ValueError.
+
+    :type test_cases: list of dicts
+    :arg test_cases: list of dicts; each dict contains info about a single test case
+
+    :type suppressions_file: str
+    :arg suppressions_file: filename for suppressions
+    """
+    if suppressions_file is None:
+        return
+    elif not os.path.exists(suppressions_file):
+        raise ValueError('Suppressions file does not exist: {0}'.format(
+            suppressions_file))
+
+    with open(suppressions_file, 'r') as fp:
+        suppressions = fp.readlines()
+    suppressions = map(lambda l: l.strip(), suppressions)
+
+    # Remove comments.
+    suppressions = filter(lambda l: l.startswith('#'), suppressions)
+    logging.debug('{0} suppressions in {1}'.format(
+        len(suppressions), suppressions_file))
+
+    # Iterate through each test case. If it matches something in suppressions,
+    # swap the status value.
+    suppressed_test_count = 0
+    for i, test_case in enumerate(test_cases):
+        full_name = os.path.join(test_case['classname'], test_case['name'])
+        if full_name in suppressions:
+            test_cases[i] = _suppress_test_case(test_case, suppressions_file)
+            logging.debug('Suppressing test: {0}'.format(full_name))
+            suppressed_test_count += 1
+    logging.info('Suppressed {0} tests.'.format(suppressed_test_count))
 
 
 def _create_junit_report(test_cases, junit_file):
@@ -325,7 +368,31 @@ def _get_test_error(test_case_lines):
     }
 
 
+def _suppress_test_case(test_case, suppressions_file):
+    """If test status is ERROR, mark as SUCCESS and drop error message. If test
+    status is SUCCESS, mark as ERROR and include message noting that test was
+    expected to fail.
+
+    :type test_case: dict
+    :arg test_case: info about a test case
+
+    :rtype: dict
+    :returns: updated info about test case
+    """
+    if test_case['error'] is None:
+        test_case['error'] = {
+            'message': 'Unexpected success (see to suppressions).',
+            'content': ('Unexpected success for this test. Expected to fail '
+                        'due to suppressions file: {0}').format(
+                            suppressions_file),
+        }
+    elif test_case['error'] is not None:
+        test_case['error'] = None
+    return test_case
+
+
 def _clean_xml(xml_string):
+
     """Replace invalid characters with "?".
 
     :type xml_string: str
@@ -349,6 +416,8 @@ def _parse_args():
                       help='start_test log file. (default: %default)')
     parser.add_option('-o', '--junit-xml', default=_junit_xml_default(),
                       help='jUnit XML output file. (default: %default)')
+    parser.add_option('-s', '--suppress',
+                      help='Suppressions file. (default %default)')
     parser.add_option('--debug', action='store_true',
                       help=('Throw exceptions when invalid data is '
                             'encountered. (default: %default)'))
