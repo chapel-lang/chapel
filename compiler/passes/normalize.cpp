@@ -1030,7 +1030,41 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
     // the initialization expression if it exists
     //
     bool isNoinit = init && init->isNoInitExpr();
-    if (isNoinit) {
+
+    bool moduleNoinit = false;
+    if (isNoinit && !fUseNoinit) {
+      // In the case where --no-use-noinit is thrown, we want to still use
+      // noinit in the module code (as the correct operation of strings and
+      // complexes depends on it).
+
+      // Lydia note: The requirement for strings is expected to go away when
+      // our new string implementation is the default.  The requirement for
+      // complexes is expected to go away when we transition to constructors for
+      // all types instead of the _defaultOf function
+      Symbol* moduleSource = var;
+      while (!isModuleSymbol(moduleSource) && moduleSource != NULL &&
+             moduleSource->defPoint != NULL) {
+        // This will go up the definition tree until it reaches a module symbol
+        // Or until it encounters a null field.
+        moduleSource = moduleSource->defPoint->parentSymbol;
+      }
+      ModuleSymbol* mod = toModuleSymbol(moduleSource);
+      if (mod != NULL && moduleSource->defPoint != NULL) {
+        // As these are the only other cases that would have caused the prior
+        // while loop to exit, the moduleSource must be a module
+        moduleNoinit = (mod->modTag == MOD_INTERNAL) || (mod->modTag == MOD_STANDARD);
+        // Check if the parent module of this variable is a standard or
+        // internal module, and store the result of this check in moduleNoinit
+      }
+    }
+
+    // Lydia note:  I'm adding fUseNoinit here because utilizing noinit with
+    // return temps is necessary, so the only instances that should be
+    // controlled by the flag are generated here
+    if (isNoinit && (fUseNoinit || moduleNoinit)) {
+      // Only perform this action if noinit has been specified and the flag
+      // --no-use-noinit has not been thrown (or if the noinit is found in
+      // module code)
       var->defPoint->init->remove();
       CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
@@ -1038,7 +1072,13 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
       // its def expression after all), insert the move after the defPoint
       stmt->insertAfter(initCall);
     } else {
-      // Is not noInit
+      if (!fUseNoinit && isNoinit) {
+        // The instance would be initialized to noinit, but we aren't allowing
+        // noinit, so remove the initialization expression, allowing  it to
+        // default initialize.
+        init->remove();
+        init = NULL;
+      }
 
       // Create an empty type block.
       BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);

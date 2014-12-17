@@ -173,6 +173,10 @@ OPTIONS
   --tuple-copy-limit  Limit on the size of tuples considered for the
                       tuple copy optimization. The default value is 8.
 
+  --[no-]use-noinit               Enable [disable] ability to skip default
+                                  initialization through the keyword
+                                  noinit
+
   Run-time Semantic Check Options
 
   --no-checks       Turns off many run-time checks, equivalent to:

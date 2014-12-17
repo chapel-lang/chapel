@@ -4673,6 +4673,18 @@ preFold(Expr* expr) {
       // No default value yet, so defer resolution of this init
       // primitive until record initializer resolution.
     } else if (call->isPrimitive(PRIM_NO_INIT)) {
+      // Lydia note: fUseNoinit does not control this section.  This was
+      // necessary because with the definition of type defaults in the module
+      // code, return temporary variables would cause an infinite loop by
+      // trying to default initialize within the default initialization
+      // definition.  (It is safe for these temporaries to skip default
+      // initialization, as they will always be assigned a value before they
+      // are returned.)  Thus noinit must remain attached to these temporaries,
+      // even if --no-use-noinit is thrown.  This is an implementation detail
+      // that the user does not need to care about.
+
+      // fUseNoinit controls the insertion of PRIM_NO_INIT statements in the
+      // normalize pass.
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
