@@ -97,7 +97,7 @@ static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr)
       // replace the range construction with a direct range iterator
       Expr* low = range->get(1)->copy();
       Expr* high = range->get(2)->copy();
-      iteratorExpr = new CallExpr("_direct_range_iter", low, high, stride);
+      iteratorExpr = new CallExpr("chpl_direct_range_iter", low, high, stride);
     }
   }
   return iteratorExpr;
