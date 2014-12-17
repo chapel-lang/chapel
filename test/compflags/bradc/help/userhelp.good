@@ -48,6 +48,9 @@ Optimization Control Options:
                                       optimization
       --tuple-copy-limit <limit>      Limit on the size of tuples considered
                                       for optimization
+      --[no-]use-noinit               Enable [disable] ability to skip default
+                                      initialization through the keyword
+                                      noinit
 
 Run-time Semantic Check Options:
       --no-checks                     Disable all following run-time checks
