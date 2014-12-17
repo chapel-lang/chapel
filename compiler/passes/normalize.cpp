@@ -1035,7 +1035,12 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
     if (isNoinit && !fUseNoinit) {
       // In the case where --no-use-noinit is thrown, we want to still use
       // noinit in the module code (as the correct operation of strings and
-      // complexes depends on it at the moment).
+      // complexes depends on it).
+
+      // Lydia note: The requirement for strings is expected to go away when
+      // our new string implementation is the default.  The requirement for
+      // complexes is expected to go away when we transition to constructors for
+      // all types instead of the _defaultOf function
       Symbol* moduleSource = var;
       while (!isModuleSymbol(moduleSource) && moduleSource != NULL &&
              moduleSource->defPoint != NULL) {
@@ -1058,7 +1063,8 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
     // controlled by the flag are generated here
     if (isNoinit && (fUseNoinit || moduleNoinit)) {
       // Only perform this action if noinit has been specified and the flag
-      // --no-use-noinit has not been thrown
+      // --no-use-noinit has not been thrown (or if the noinit is found in
+      // module code)
       var->defPoint->init->remove();
       CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
