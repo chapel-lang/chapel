@@ -1069,42 +1069,6 @@ module ChapelRange {
     }
   }
 
-  iter _direct_all_param_range_iter(param low: ?t, param high: t, param stride: ?strT)
-    where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
-    if (useOptimizedRangeIterators) {
-      if stride == 0 then
-        compilerError("the 'by' operator cannot take a value of zero");
-
-      if ((stride > 0) && (stride:chpl__unsignedType(t) < 0)) then
-        compilerError("the step argument of the 'by' operator is too large");
-
-      var i: t;
-      if (stride > 0) {
-        if boundsChecking then
-          checkIfRangeIterWillOverflow(t, low, high, stride);
-
-        while __primitive("C for loop",
-                          __primitive( "=", i, low),
-                          __primitive("<=", i, high),
-                          __primitive("+=", i, stride:t)) {
-          yield i;
-        }
-      } else if (stride < 0) {
-        if boundsChecking then
-          checkIfRangeIterWillOverflow(t, low, high, stride, high, low);
-
-        while __primitive("C for loop",
-                          __primitive( "=", i, high),
-                          __primitive(">=", i, low),
-                          __primitive("+=", i, stride:t)) {
-          yield i;
-        }
-      }
-    } else {
-      for i in (low..high by stride).generalIterator() do yield i;
-    }
-  }
-
   //
   // these iterators exist so that argument coercion happens like it does for
   // _build_range and the by operator. They just call the iterators above.
@@ -1135,20 +1099,6 @@ module ChapelRange {
   iter _direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
     for i in _direct_param_stride_range_iter(low, high, stride) do yield i;
   }
-
-
-  // case where all arguments are params. Not strictly needed but creates a
-  // cleaner loop. 'for i in 1..10' generates 'for (i=1; i<=10; i+=1)' with no
-  // temp variables. Only implemented all int version (most likely iterator.)
-  // Could be implemented for uint low/hi and uint stride as well, but it seems
-  // unlikely a user will write a for loop over such an anonymous range (might
-  // be even more unnecessary if copy propagation is improved and we
-  // de-normalize the IR.)
-
-  iter _direct_range_iter(param low: int(?w), param high: int(w), param stride: int(w)) {
-    for i in _direct_all_param_range_iter(low, high, stride) do yield i;
-  }
-
 
   // cases for when stride is a uint (we know the stride is must be positive)
 
