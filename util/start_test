@@ -1835,6 +1835,9 @@ set junit_args = "--start-test-log=$logfile"
 if ($junit_xml_file != 0) then
     set junit_args = "$junit_args --junit-xml=$junit_xml_file"
 endif
+if ($suppressions != "") then
+    set junit_args = "$junit_args --suppress=$suppressions"
+endif
 if ($junit_xml == 1) then
     echo "[Generating jUnit XML report]"
     $utildir/test/convert_start_test_log_to_junit_xml.py $junit_args
