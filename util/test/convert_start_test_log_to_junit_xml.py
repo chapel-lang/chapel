@@ -6,12 +6,6 @@
 # TODO: Collate multiple trials of a perf test into a single test case. If any
 #       of the trials fail, mark the test as failed.
 
-# TODO: If test is skipped during perf run because it does not include the
-#       .perf configs, drop the test case. Otherwise, there are hundreds of
-#       "skipped" tests, which we don't care to record. We only want to report
-#       on the tests that were skipped because the environment, not because
-#       they are missing performance config files.
-
 # TODO: Support suppression files. Add flag to this script that takes the
 #       suppression file. For each test in that file, swap the result in the
 #       report (i.e. if the test has status=ERROR and is in suppression file,
@@ -135,6 +129,19 @@ def _parse_start_test_log(start_test_log):
             if test_end_skip != -1 and (test_end == -1 or test_end_skip < test_end):
                 test_start, test_end = test_start_skip, test_end_skip
                 test_skipped = True
+
+                noperf_start, noperf_end = _get_block(
+                    sub_test_lines,
+                    '[test: ',
+                    '[Skipping noperf test:')
+
+                # If the test was skipped because it did not have performance
+                # configuration files, drop the lines and continue. We don't
+                # care about these for performance tests (as opposed to real
+                # perf tests that are skipped due to environment/etc).
+                if noperf_end != -1:
+                    del sub_test_lines[noperf_start:noperf_end+1]
+                    continue
 
             # If test_end is still -1 (i.e. not found), look for end of subtest
             # call (usually means subtest failed and did not tests).
