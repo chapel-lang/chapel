@@ -36,6 +36,7 @@
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
+#include "resolveIntents.h"
 #include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -2729,21 +2730,6 @@ getVisibleFunctions(BlockStmt* block,
   return NULL;
 }
 
-static void replaceActualWithDeref(CallExpr* call, Type* derefType,
-                                   SymExpr* actualExpr, Symbol* actualSym,
-                                   CallInfo* info, int argNum)
-{
-  SET_LINENO(call);
-  Expr* stmt = call->getStmtExpr();
-  VarSymbol* derefTmp = newTemp("derefTmp", derefType);
-  stmt->insertBefore(new DefExpr(derefTmp));
-  stmt->insertBefore(new_Expr("'move'(%S, 'deref'(%S))", derefTmp, actualSym));
-  actualExpr->var = derefTmp;
-  INT_ASSERT(info->actuals.v[argNum] == actualSym);
-  info->actuals.v[argNum] = derefTmp;
-}
-
-
 static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) {
   INT_ASSERT(taskFn);
   if (!needsCapture(taskFn)) {
@@ -2782,10 +2768,11 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
       Type* deref = varActual->type->getValType();
       if (needsCapture(deref)) {
         formal->type = deref;
-        replaceActualWithDeref(call, deref, symexpActual, varActual,
-                               info, argNum);
-      } else {
-        // Probably OK to leave as-is.
+        // If the formal has a ref intent, DO need a ref type => restore it.
+        resolveArgIntent(formal);
+        if (formal->intent & INTENT_FLAG_REF) {
+          formal->type = varActual->type;
+        }
       }
     }
 
