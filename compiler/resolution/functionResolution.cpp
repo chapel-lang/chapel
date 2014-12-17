@@ -4719,6 +4719,13 @@ preFold(Expr* expr) {
       if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         result = new CallExpr("chpl__convertValueToRuntimeType", call->get(1)->remove());
         call->replace(result);
+
+        // If this call is inside a BLOCK_TYPE, it will be removed and the
+        // runtime type will not be initialized. Change the parent block
+        // to a BLOCK_NORMAL to fix this.
+        if (BlockStmt* blk = toBlockStmt(result->parentExpr->parentExpr))
+          if (blk->blockTag == BLOCK_TYPE)
+            blk->blockTag = BLOCK_NORMAL;
       }
     } else if (call->isPrimitive(PRIM_QUERY)) {
       Symbol* field = determineQueriedField(call);
