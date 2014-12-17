@@ -105,13 +105,28 @@ static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr)
 
 static Expr* optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
 {
-  iteratorExpr = tryToUseDirectRangeIterator(iteratorExpr);
   // for zippered iterators, try to replace each iterator of the tuple
   if (zippered)
+  {
     if (CallExpr* call = toCallExpr(iteratorExpr))
+    {
       if (call->isNamed("_build_tuple"))
+      {
         for_actuals(actual, call)
-          actual->replace(tryToUseDirectRangeIterator(actual->copy()));
+        {
+          Expr* newActual = tryToUseDirectRangeIterator(actual);
+          if (newActual != actual)
+          {
+            actual->replace(newActual);
+          }
+        }
+      }
+    }
+  }
+  else
+  {
+    iteratorExpr = tryToUseDirectRangeIterator(iteratorExpr);
+  }
   return iteratorExpr;
 }
 
