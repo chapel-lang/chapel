@@ -1014,13 +1014,12 @@ module ChapelRange {
 
   //
   // These iterators exist so that argument coercion happens like it does for
-  // _build_range and the by operator. They just foward to the "actual"
-  // iterators below which do not do any type checking on the arguments
-  //
-  // They are only inteneded to be used for bounded ranges. There must be
-  // versions for the cross product of 'chpl_build_bounded_range' and 'by'. The
-  // low and high types must be the same, and the stride can be the same sized
-  // signed or unsigned version of low/high
+  // chpl_build_bounded_range and the by operator. They just foward to the
+  // "actual" iterators below which do not do any type checking on the
+  // arguments. They are only inteneded to be used for bounded ranges. There
+  // must be versions for the cross product of 'chpl_build_bounded_range' and
+  // the 'by' operator. The low and high types must be the same, and the stride
+  // can be the same sized signed or unsigned version of low/high
   //
 
 
@@ -1047,6 +1046,7 @@ module ChapelRange {
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
+
 
   // cases for when stride is a uint (we know the stride is must be positive)
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
