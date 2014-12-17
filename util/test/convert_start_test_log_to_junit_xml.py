@@ -3,6 +3,21 @@
 
 """Convert start_test log to jUnit XML report."""
 
+# TODO: Collate multiple trials of a perf test into a single test case. If any
+#       of the trials fail, mark the test as failed.
+
+# TODO: If test is skipped during perf run because it does not include the
+#       .perf configs, drop the test case. Otherwise, there are hundreds of
+#       "skipped" tests, which we don't care to record. We only want to report
+#       on the tests that were skipped because the environment, not because
+#       they are missing performance config files.
+
+# TODO: Support suppression files. Add flag to this script that takes the
+#       suppression file. For each test in that file, swap the result in the
+#       report (i.e. if the test has status=ERROR and is in suppression file,
+#       swap to status=SUCCESS -- and vice versa). Pipe the flag through
+#       start_test.
+
 from __future__ import print_function, unicode_literals
 
 import codecs
