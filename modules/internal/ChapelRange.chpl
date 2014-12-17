@@ -1014,19 +1014,19 @@ module ChapelRange {
 
   //
   // These iterators exist so that argument coercion happens like it does for
-  // _build_range and the by operator. They just foward to the actual iterators
-  // below which do not do any type checking on the arguments
+  // _build_range and the by operator. They just foward to the "actual"
+  // iterators below which do not do any type checking on the arguments
   //
-  // These iterators are only inteneded to be used for bounded ranges. There
-  // must be versions for the cross product of 'chpl_build_bounded_range' and
-  // 'by'. The low and high types must be the same, and the stride can be the
-  // same sized signed or unsigned version of low/high
+  // They are only inteneded to be used for bounded ranges. There must be
+  // versions for the cross product of 'chpl_build_bounded_range' and 'by'. The
+  // low and high types must be the same, and the stride can be the same sized
+  // signed or unsigned version of low/high
   //
+
 
   // cases for when stride is a non-param int (don't want to deal with finding
   // chpl__diffMod and the likes, just create a non-anonymous range to iterate
   // over.)
-
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: int(w)) {
     const r = low..high by stride;
     for i in r do yield i;
@@ -1040,7 +1040,6 @@ module ChapelRange {
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
-
   iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride : int(w)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
@@ -1050,7 +1049,6 @@ module ChapelRange {
   }
 
   // cases for when stride is a uint (we know the stride is must be positive)
-
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
     for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
   }
@@ -1061,7 +1059,6 @@ module ChapelRange {
 
 
   // cases for when stride isn't valid
-
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   typeToString(int(w)), " using a step of type ",
@@ -1078,19 +1075,18 @@ module ChapelRange {
 
 
   // case for when low and high aren't compatible types and can't be coerced
-
   iter chpl_direct_range_iter(low, high, stride) {
     compilerError("Bounds of '..' must be integers of compatible types, when specified.");
     yield nil; // iters needs a yield in them
   }
 
 
-  // These are the actual direct range iterators. Note that they do not do any
-  // checks on the arguments, and rely on the above functions to check/coerce
-  // types
+  // These are the "actual" direct range iterators. Note that they do not do
+  // any checks on the arguments, and rely on the above functions to
+  // check/coerce types (assumes args are of legal types, low/high are the same
+  // same type, and stride is valid.)
 
-  iter chpl_direct_uint_stride_range_iter(const low: ?t, const high: t, const stride: ?strT)
-    where isIntegral(t) && chpl__unsignedType(t) == strT {
+  iter chpl_direct_uint_stride_range_iter(low: ?t, high, stride) {
     if (useOptimizedRangeIterators) {
       if boundsChecking then
         chpl_checkIfRangeIterWillOverflow(t, low, high, stride);
@@ -1110,8 +1106,7 @@ module ChapelRange {
     }
   }
 
-  iter chpl_direct_param_stride_range_iter(const low: ?t, const high: t, param stride: ?strT)
-    where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
+  iter chpl_direct_param_stride_range_iter(low: ?t, high, param stride) {
     if (useOptimizedRangeIterators) {
       if stride == 0 then
         compilerError("the 'by' operator cannot take a value of zero");
