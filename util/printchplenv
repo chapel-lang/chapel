@@ -21,7 +21,7 @@ def print_mode(mode='list'):
     chpl_home = os.environ.get('CHPL_HOME', '')
     chpl_module_home = os.environ.get('CHPL_MODULE_HOME', '')
 
-    if m == 'list':
+    if m == 'list' or mode == 'debug':
         stdout.write("machine info: {0} {1} {2} {3} {4}\n".format(*os.uname()))
         stdout.write("CHPL_HOME: {0}\n".format(chpl_home))
         this_dir = os.path.realpath(os.path.dirname(__file__))
