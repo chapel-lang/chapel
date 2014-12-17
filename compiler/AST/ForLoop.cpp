@@ -84,47 +84,34 @@ static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr)
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
     }
+    // assume the call is the range (checked below) and set default stride
     else
     {
       range = call;
+      stride = new SymExpr(new_IntSymbol(1));
     }
-    // see if we're looking at an anonymous iter for a bounded range
+    // see if we're looking at a builder for a bounded range. the builder is
+    // iteratable since range has these() iterators
     if (range && range->isNamed("chpl_build_bounded_range"))
     {
+      // replace the range construction with a direct range iterator
       Expr* low = range->get(1)->copy();
       Expr* high = range->get(2)->copy();
-      // replace the range construction with a direct range iterator
-      if (stride)
-      {
-        iteratorExpr = (new CallExpr("_direct_range_iter", low, high, stride));
-      }
-      else
-      {
-        SymExpr* noStr = new SymExpr(new_IntSymbol(1));
-        iteratorExpr = (new CallExpr("_direct_range_iter", low, high, noStr));
-      }
+      iteratorExpr = new CallExpr("_direct_range_iter", low, high, stride);
     }
   }
   return iteratorExpr;
 }
 
-static Expr* optimizeRangeIteration(Expr* iteratorExpr, bool zippered)
+static Expr* optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
 {
   iteratorExpr = tryToUseDirectRangeIterator(iteratorExpr);
   // for zippered iterators, try to replace each iterator of the tuple
   if (zippered)
-  {
     if (CallExpr* call = toCallExpr(iteratorExpr))
-    {
       if (call->isNamed("_build_tuple"))
-      {
         for_actuals(actual, call)
-        {
           actual->replace(tryToUseDirectRangeIterator(actual->copy()));
-        }
-      }
-    }
-  }
   return iteratorExpr;
 }
 
@@ -149,7 +136,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
 
-  iteratorExpr = optimizeRangeIteration(iteratorExpr, zippered);
+  iteratorExpr = optimizeAnonymousRangeIteration(iteratorExpr, zippered);
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
