@@ -701,32 +701,7 @@ module ChapelRange {
   {
     return chpl_by_help(r, step);
   }
-  
-  proc by(r : range(?i,?b,?s), param step:chpl__unsignedType(i))
-  {
-    if (step == 0) then
-      compilerError("the 'by' operator cannot take a value of zero");
-  
-  // This should work, but doesn't correctly -- test/types/range/hilde/by.chpl
-  // is max(step.type) not correctly a param in some way?
-  /*
-    if (step == max(step.type)) then
-      compilerError("the 'by' operator cannot take a value this large");
-  */
-  
-    return chpl_by_help(r, step);
-  }
-  
-  
-  proc by(r : range(?i,?b,?s), param step:chpl__signedType(i))
-  {
-    if (step == 0) then
-      compilerError("the 'by' operator cannot take a value of zero");
-  
-    return chpl_by_help(r, step);
-  }
-  
-  
+
   proc by(r : range(?i,?b,?s), step)
   {
     compilerError("can't apply 'by' to a range with idxType ", 
@@ -983,31 +958,32 @@ module ChapelRange {
   // signed/unsigned overflow checking for the last index + stride. Either
   // returns whether overflow will occur or not, or halts with an error
   // message.
-  proc range.checkIfIterWillOverflow(shouldHalt=true) {
+  proc chpl_checkIfRangeIterWillOverflow(type idxType, low, high, stride, first=low,
+      last=high, shouldHalt=true) {
     // iterator won't execute at all so it can't overflow
-    if (this.low > this.high) {
+    if (low > high) {
       return false;
     }
 
     var willOverFlow = false;
     if (isIntType(idxType)) {
-      if (this.last > 0 && stride > 0) {
-        if (stride > (max(idxType) - this.last)) {
+      if (last > 0 && stride > 0) {
+        if (stride > (max(idxType) - last)) {
           willOverFlow = true;
         }
-      } else if (this.last < 0 && stride < 0) {
-        if (stride < (min(idxType) - this.last)) {
+      } else if (last < 0 && stride < 0) {
+        if (stride < (min(idxType) - last)) {
           willOverFlow = true;
         }
       }
     }
     else if (isUintType(idxType)) {
       if (stride > 0) {
-          if (this.last + stride:idxType < this.last) {
+          if (last + stride:idxType < last) {
             willOverFlow = true;
           }
         } else if (stride < 0) {
-          if (this.last + stride:idxType > this.last) {
+          if (last + stride:idxType > last) {
             willOverFlow = true;
           }
         }
@@ -1022,6 +998,154 @@ module ChapelRange {
     }
     return willOverFlow;
   }
+
+  proc range.checkIfIterWillOverflow(shouldHalt=true) {
+    return chpl_checkIfRangeIterWillOverflow(this.idxType, this.low, this.high,
+        this.stride, this.first, this.last, shouldHalt);
+  }
+
+
+  //################################################################################
+  //# Direct range iterators that take low, high and stride as arguments. They
+  //# are not iterators over ranges, but instead take the components of the range
+  //# as arguments. This allows us to avoid range construction and provide
+  //# optimized iterators when stride is known at compile time.
+  //#
+
+  //
+  // These iterators exist so that argument coercion happens like it does for
+  // _build_range and the by operator. They just foward to the actual iterators
+  // below which do not do any type checking on the arguments
+  //
+  // These iterators are only inteneded to be used for bounded ranges. There
+  // must be versions for the cross product of 'chpl_build_bounded_range' and
+  // 'by'. The low and high types must be the same, and the stride can be the
+  // same sized signed or unsigned version of low/high
+  //
+
+  // cases for when stride is a non-param int (don't want to deal with finding
+  // chpl__diffMod and the likes, just create a non-anonymous range to iterate
+  // over.)
+
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: int(w)) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: int(w)) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+
+
+  // cases for when stride is a param int (underlying iter can figure out sign
+  // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
+
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride : int(w)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+
+  // cases for when stride is a uint (we know the stride is must be positive)
+
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
+    for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
+  }
+
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
+    for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
+  }
+
+
+  // cases for when stride isn't valid
+
+  iter chpl_direct_range_iter(low: int(?w), high: int(w), stride) {
+    compilerError("can't apply 'by' to a range with idxType ",
+                  typeToString(int(w)), " using a step of type ",
+                  typeToString(stride.type));
+    yield nil; // iters needs a yield in them
+  }
+
+  iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride) {
+    compilerError("can't apply 'by' to a range with idxType ",
+                  typeToString(uint(w)), " using a step of type ",
+                  typeToString(stride.type));
+    yield nil; // iters needs a yield in them
+  }
+
+
+  // case for when low and high aren't compatible types and can't be coerced
+
+  iter chpl_direct_range_iter(low, high, stride) {
+    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+    yield nil; // iters needs a yield in them
+  }
+
+
+  // These are the actual direct range iterators. Note that they do not do any
+  // checks on the arguments, and rely on the above functions to check/coerce
+  // types
+
+  iter chpl_direct_uint_stride_range_iter(const low: ?t, const high: t, const stride: ?strT)
+    where isIntegral(t) && chpl__unsignedType(t) == strT {
+    if (useOptimizedRangeIterators) {
+      if boundsChecking then
+        chpl_checkIfRangeIterWillOverflow(t, low, high, stride);
+
+      if stride == 0 then
+          __primitive("chpl_error", "the step argument of the 'by' operator is zero");
+
+      var i: t;
+      while __primitive("C for loop",
+                        __primitive( "=", i, low),
+                        __primitive("<=", i, high),
+                        __primitive("+=", i, stride:t)) {
+        yield i;
+      }
+    } else {
+      for i in (low..high by stride).generalIterator() do yield i;
+    }
+  }
+
+  iter chpl_direct_param_stride_range_iter(const low: ?t, const high: t, param stride: ?strT)
+    where isIntegral(t) && isIntegral(strT) && numBits(t) == numBits(strT) {
+    if (useOptimizedRangeIterators) {
+      if stride == 0 then
+        compilerError("the 'by' operator cannot take a value of zero");
+
+      if ((stride > 0) && (stride:chpl__unsignedType(t) < 0)) then
+        compilerError("the step argument of the 'by' operator is too large");
+
+      var i: t;
+      if (stride > 0) {
+        if boundsChecking then
+          chpl_checkIfRangeIterWillOverflow(t, low, high, stride);
+
+        while __primitive("C for loop",
+                          __primitive( "=", i, low),
+                          __primitive("<=", i, high),
+                          __primitive("+=", i, stride:t)) {
+          yield i;
+        }
+      } else if (stride < 0) {
+        if boundsChecking then
+          chpl_checkIfRangeIterWillOverflow(t, low, high, stride, high, low);
+
+        while __primitive("C for loop",
+                          __primitive( "=", i, high),
+                          __primitive(">=", i, low),
+                          __primitive("+=", i, stride:t)) {
+          yield i;
+        }
+      }
+    } else {
+      for i in (low..high by stride).generalIterator() do yield i;
+    }
+  }
+
 
   //################################################################################
   //# Serial Iterators
@@ -1076,9 +1200,7 @@ module ChapelRange {
         yield i;
       }
     } else {
-      for i in this.generalIterator() {
-        yield i;
-      }
+      for i in this.generalIterator() do yield i;
     }
   }
 
@@ -1102,9 +1224,7 @@ module ChapelRange {
         yield i;
       }
     } else {
-      for i in this.generalIterator() {
-        yield i;
-      }
+      for i in this.generalIterator() do yield i;
     }
   }
 
