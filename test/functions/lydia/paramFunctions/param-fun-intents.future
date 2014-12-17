@@ -7,4 +7,4 @@ variables sent to the function as one would expect when using an out intent.
 Do we expect out, inout, and ref intents to be valid for param functions?  If
 not, we should generate an error or warning for this test.  If we do expect them
 to be valid, then the param function should give the same result as the version
-that is not param.
+that is not param.  The .good file reflects the latter scenario.
