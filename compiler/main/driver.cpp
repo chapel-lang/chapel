@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -139,6 +139,8 @@ bool fNoPrivatization = false;
 bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fMinimalModules = false;
+bool fUseIPE         = false;
+
 int optimize_on_clause_limit = 20;
 int scalar_replace_limit = 8;
 int tuple_copy_limit = scalar_replace_limit;
@@ -228,10 +230,11 @@ llvm::sys::Path GetExecutablePath(const char *Argv0) {
 
 static bool isMaybeChplHome(const char* path)
 {
-  bool ret = false;
+  bool  ret  = false;
   char* real = dirHasFile(path, "util/chplenv");
-  
-  if( real ) ret = true;
+
+  if (real)
+    ret = true;
 
   free(real);
 
@@ -240,11 +243,11 @@ static bool isMaybeChplHome(const char* path)
 
 static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
-  char* guess = NULL;
-
+  char*       guess     = NULL;
 
   // Get the executable path.
   guess = findProgramPath(argv0);
+
   if (guess) {
     // Determine CHPL_HOME based on the exe path.
     // Determined exe path, but don't have a env var set
@@ -299,7 +302,7 @@ static void setupChplHome(const char* argv0) {
       USR_FATAL("$CHPL_HOME must be set to run chpl");
     } else {
       int rc;
-      
+
       if( strlen(guess) > FILENAME_MAX )
         USR_FATAL("chpl guessed home %s too long", guess);
 
@@ -317,7 +320,8 @@ static void setupChplHome(const char* argv0) {
     USR_WARN("CHPL_HOME=%s is not a Chapel distribution", CHPL_HOME);
   }
 
-  if( guess ) free(guess);
+  if( guess )
+    free(guess);
 
   parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
 }
@@ -488,7 +492,7 @@ static void handleIncDir(const ArgumentState* state, const char* arg_unused) {
 }
 
 static void compute_program_name_loc(const char*  orig_argv0,
-                                     const char** name, 
+                                     const char** name,
                                      const char** loc) {
   char* argv0     = strdup(orig_argv0);
   char* lastslash = strrchr(argv0, '/');
@@ -852,6 +856,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules", "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
+ {"ipe",             ' ', NULL, "Enable the Interactive Programming Environment (IPE)", "F", &fUseIPE, NULL, NULL },
  {"timers", ' ', NULL, "Enable [disable] general timers one to five", "N", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome, NULL, NULL},
  {0}
@@ -859,9 +864,9 @@ static ArgumentDescription arg_desc[] = {
 
 
 static ArgumentState arg_state = {
-  0, 
   0,
-  "program", 
+  0,
+  "program",
   "path",
   arg_desc
 };
@@ -948,7 +953,7 @@ int main(int argc, char* argv[]) {
 
     setupOrderedGlobals(argv[0]);
 
-    compute_program_name_loc(argv[0], 
+    compute_program_name_loc(argv[0],
                              &(arg_state.program_name),
                              &(arg_state.program_loc));
 

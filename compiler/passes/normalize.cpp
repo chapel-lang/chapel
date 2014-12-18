@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,7 +39,7 @@ bool normalized = false;
 
 //
 // Static functions: forward declaration
-// 
+//
 static void insertModuleInit();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
@@ -62,11 +62,11 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                                       DefExpr* def,
                                                       int width);
-static void replace_query_uses(ArgSymbol* formal, 
-                               DefExpr*   def, 
+static void replace_query_uses(ArgSymbol* formal,
+                               DefExpr*   def,
                                CallExpr*  query,
                                Vec<SymExpr*>& symExprs);
-static void add_to_where_clause(ArgSymbol* formal, 
+static void add_to_where_clause(ArgSymbol* formal,
                                 Expr*      expr,
                                 CallExpr*  query);
 static void fixup_query_formals(FnSymbol* fn);
@@ -1488,15 +1488,20 @@ fixup_query_formals(FnSymbol* fn) {
 
 static void
 find_printModuleInit_stuff() {
-  std::vector<Symbol*> symbols;
-  collectSymbolsSTL(printModuleInitModule, symbols);
-  for_vector(Symbol, symbol, symbols) {
-    if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
-      gModuleInitIndentLevel = toVarSymbol(symbol);
-      INT_ASSERT(gModuleInitIndentLevel);
-    } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
-      gPrintModuleInitFn = toFnSymbol(symbol);
-      INT_ASSERT(gPrintModuleInitFn);
+  if (fUseIPE == false) {
+    std::vector<Symbol*> symbols;
+
+    collectSymbolsSTL(printModuleInitModule, symbols);
+
+    for_vector(Symbol, symbol, symbols) {
+      if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+        gModuleInitIndentLevel = toVarSymbol(symbol);
+        INT_ASSERT(gModuleInitIndentLevel);
+
+      } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
+        gPrintModuleInitFn = toFnSymbol(symbol);
+        INT_ASSERT(gPrintModuleInitFn);
+      }
     }
   }
 }

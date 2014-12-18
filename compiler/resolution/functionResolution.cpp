@@ -6670,7 +6670,9 @@ resolve() {
   resolveExternVarSymbols();
 
   resolveUses(mainModule);
-  resolveUses(printModuleInitModule);
+
+  if (fUseIPE == false)
+    resolveUses(printModuleInitModule);
 
   resolveFns(chpl_gen_main);
   USR_STOP();
