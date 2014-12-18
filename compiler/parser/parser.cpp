@@ -60,7 +60,8 @@ void addModuleToParseList(const char* name, CallExpr* useExpr) {
   }
 }
 
-static void addModuleToDoneList(const char* name) {
+static void addModuleToDoneList(ModuleSymbol* module) {
+  const char* name       = module->name;
   const char* uniqueName = astr(name);
 
   modDoneSet.set_add(uniqueName);
@@ -68,16 +69,14 @@ static void addModuleToDoneList(const char* name) {
 
 
 static const char* filenameToModulename(const char* filename) {
-  const char* modulename = astr(filename);
-  const char* firstSlash = strrchr(modulename, '/');
+  const char* moduleName = astr(filename);
+  const char* firstSlash = strrchr(moduleName, '/');
 
   if (firstSlash) {
-    modulename = firstSlash + 1;
+    moduleName = firstSlash + 1;
   }
 
-  const char* firstDot = strrchr(modulename, '.');
-
-  return asubstr(modulename, firstDot);
+  return asubstr(moduleName, strrchr(moduleName, '.'));
 }
 
 static bool
@@ -174,16 +173,16 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
 
   closeInputFile(yyin);
 
-  if (!yyblock->body.head || !containsOnlyModules(yyblock, filename)) {
+  if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
     const char* modulename = filenameToModulename(filename);
 
     newModule      = buildModule(modulename, yyblock, yyfilename, NULL);
-    yylloc.comment = NULL;
-  }
 
-  if (newModule) {
+    yylloc.comment = NULL;
+
     theProgram->block->insertAtTail(new DefExpr(newModule));
-    addModuleToDoneList(newModule->name);
+
+    addModuleToDoneList(newModule);
 
   } else {
     ModuleSymbol* moduleLast  = 0;
@@ -195,9 +194,10 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
 
       if (DefExpr* defExpr = toDefExpr(stmt)) {
         if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
-          addModuleToDoneList(modSym->name);
 
           theProgram->block->insertAtTail(defExpr->remove());
+
+          addModuleToDoneList(modSym);
 
           moduleLast  = modSym;
           moduleCount = moduleCount + 1;
@@ -300,8 +300,11 @@ void parseDependentModules(ModTag modtype) {
           // rename the standard module and the use of it
           if (foundUsr) {
             SET_LINENO(oldModNameExpr);
+
             mod->name = astr("chpl_", modName);
+
             UnresolvedSymExpr* newModNameExpr = new UnresolvedSymExpr(mod->name);
+
             oldModNameExpr->replace(newModNameExpr);
           }
         }
