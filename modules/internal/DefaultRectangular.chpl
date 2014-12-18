@@ -701,8 +701,10 @@ module DefaultRectangular {
         return sum;
       } else {
         var sum = if earlyShiftData then 0:idxType else origin;
-        for param i in 1..rank do
-          sum += ind(i) * blk(i);
+        for param i in 1..rank {
+          if blk(i) == 1 then sum += ind(i);
+          else sum += ind(i) * blk(i);
+        }
         if !earlyShiftData then sum -= factoredOffs;
         return sum;
       }
