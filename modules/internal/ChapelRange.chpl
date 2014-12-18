@@ -689,27 +689,42 @@ module ChapelRange {
   
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
-  
-  
+
+
   proc by(r : range(?i,?b,?s), step:chpl__unsignedType(i))
   {
     return chpl_by_help(r, step);
   }
-  
-  
+
   proc by(r : range(?i,?b,?s), step:chpl__signedType(i))
   {
     return chpl_by_help(r, step);
   }
 
+  // We want to warn the user at compiler time if they had an invalid param
+  // stride rather than waiting until runtime. However, we don't want to stamp
+  // out a by function for every valid param stride, so these only handle
+  // invalid cases, and let the non-param cases above handle values known at
+  // compile time that are non-zero
+  proc by(r : range(?i,?b,?s), param step:chpl__unsignedType(i)) where step == 0
+  {
+    compilerError("the 'by' operator cannot take a value of zero");
+  }
+
+  proc by(r : range(?i,?b,?s), param step:chpl__signedType(i)) where step == 0
+  {
+    compilerError("the 'by' operator cannot take a value of zero");
+  }
+
   proc by(r : range(?i,?b,?s), step)
   {
-    compilerError("can't apply 'by' to a range with idxType ", 
-                  typeToString(i), " using a step of type ", 
+    compilerError("can't apply 'by' to a range with idxType ",
+                  typeToString(i), " using a step of type ",
                   typeToString(step.type));
     return r;
   }
-  
+
+
   // This is the syntax processing routine for the "align" keyword.
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
