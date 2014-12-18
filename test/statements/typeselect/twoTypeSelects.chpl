@@ -17,7 +17,7 @@ type select x {
 }
 
 write("y is ");
-type select x {
+type select y {
   when int do writeln("int!");
   when real do writeln("real!");
   otherwise writeln("confused!");
