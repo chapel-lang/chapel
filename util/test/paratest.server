@@ -49,6 +49,8 @@ $memleaks = "/dev/null";
 $memleaksflag = 0;
 $show_all_errors = 0;
 $suppressions = "";
+$junit_xml = 0;
+$junit_xml_file = "";
 # Once a node has timed out, we don't send it any more work, so this timeout 
 # should be set higher than the time needed to process the largest directory.
 # -1 means "never time out".
@@ -333,6 +335,21 @@ sub feed_nodes {
 }
 
 
+sub generate_junit_xml {
+    $junit_args = "--start-test-log=$fin_logfile";
+    if (!($junit_xml_file eq "")) {
+        $junit_args = "$junit_args --junit-xml=$junit_xml_file"
+    }
+    if (!($suppressions eq "")) {
+        $junit_args = "$junit_args --suppress=$suppressions";
+    }
+    if ($junit_xml == 1) {
+        print "[Generating jUnit XML report]\n";
+        systemd("$pwd/../util/test/convert_start_test_log_to_junit_xml.py $junit_args");
+    }
+}
+
+
 # Signal that all nodes are free to do some work by writing their
 # synchronization files for them initially.
 sub nodes_free {
@@ -468,6 +485,8 @@ sub print_help {
     print "    -suppress f: f is a file with the tests to suppress using filterSuppressions.\n";  
     print "    -valgrind  : pass -valgrind to start_test.\n";
     print "    -timeout  t: t is the max time to wait after last directory is served.\n";
+    print "    -junit-xml : Create jUnit test report.\n";
+    print "    -junit-xml-file f: Put jUnit test report at location 'f' (implies -junit-xml).\n";
 }
 
 
@@ -564,7 +583,18 @@ sub main {
         } elsif (/^-valgrind/) {
             $valgrind = 1;
         } elsif (/^-show-all-errors/) {
-	   $show_all_errors = 1;
+            $show_all_errors = 1;
+        } elsif (/^-junit-xml$/) {
+            $junit_xml = 1;
+        } elsif (/^-junit-xml-file/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $junit_xml_file = $ARGV[0];
+                $junit_xml = 1;
+            } else {
+                print "missing -junit-xml-file arg\n";
+                exit (8);
+            }
         } elsif (/^-help|^-h/) {
             print_help;
             exit (9);
@@ -670,6 +700,9 @@ sub main {
         unlink $synchfile if (-e $synchfile);
     }
     rmdir $synchdir;
+
+    # generate jUnit report
+    generate_junit_xml();
 }
 
 
