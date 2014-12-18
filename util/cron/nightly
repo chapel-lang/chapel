@@ -52,6 +52,7 @@ $execopts = "";
 $startdate = "-1";
 $numtrials = "";
 $cronrecipient = "";
+$junit_xml = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -130,6 +131,8 @@ while (@ARGV) {
         $cronrecipient = shift @ARGV;
     } elsif ($flag eq "-llvm") {
         $llvm = 1;
+    } elsif ($flag eq "-junit-xml") {
+        $junit_xml = 1;
     } else {
         $printusage = 1;
         last;
@@ -191,6 +194,7 @@ if ($printusage == 1) {
     print "\t-no-futures  : do not run future tests\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
     print "\t-cron-recipient : send -cron emails to this address instead of SourceForge mailing list(s)\n";
+    print "\t-junit-xml   : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
     exit 1;
 }
 
@@ -200,6 +204,13 @@ system("printenv");
 $modulecmd = "/sw/modules/bin/linux/modulecmd"; # heuristic
 if (-x $modulecmd) { system("$modulecmd bash list"); }
 print "\n";
+
+# When JENKINS_URL is set in environment, assume running in jenkins job and
+# default to generating jUnit XML report.
+if (exists($ENV{"JENKINS_URL"})) {
+    $junit_xml = 1;
+}
+
 
 #
 # get uniquifiers
@@ -587,6 +598,10 @@ $testflags = "$testflags -compopts '$compopts'";
 }
 if ($execopts ne "") {
 $testflags = "$testflags -execopts '$execopts'";
+}
+
+if ($junit_xml == 1) {
+    $testflags = "$testflags -junit-xml";
 }
 
 if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
