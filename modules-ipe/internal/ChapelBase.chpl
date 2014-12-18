@@ -1,0 +1,6 @@
+// ChapelBase.chpl
+//
+
+module ChapelBase {
+
+}
