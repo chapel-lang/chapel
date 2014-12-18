@@ -69,10 +69,9 @@
  * Note that this function is pretty fragile because it relies on names of
  * functions/iterators as well as the arguments and order of those
  * functions/iterators but there's not really a way around it this early in
- * compilation. If the iterator can't be replaced, the original, unchanged
- * iteratorExpr is returned.
+ * compilation. If the iterator can't be replaced, it is left unchanged.
  */
-static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr)
+static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 {
   CallExpr* range = NULL;
   Expr* stride = NULL;
@@ -97,37 +96,21 @@ static Expr* tryToUseDirectRangeIterator(Expr* iteratorExpr)
       // replace the range construction with a direct range iterator
       Expr* low = range->get(1)->copy();
       Expr* high = range->get(2)->copy();
-      iteratorExpr = new CallExpr("chpl_direct_range_iter", low, high, stride);
+      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high, stride));
     }
   }
-  return iteratorExpr;
 }
 
-static Expr* optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
+static void optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
 {
+  if (!zippered)
+    tryToReplaceWithDirectRangeIterator(iteratorExpr);
   // for zippered iterators, try to replace each iterator of the tuple
-  if (zippered)
-  {
-    if (CallExpr* call = toCallExpr(iteratorExpr))
-    {
-      if (call->isNamed("_build_tuple"))
-      {
-        for_actuals(actual, call)
-        {
-          Expr* newActual = tryToUseDirectRangeIterator(actual);
-          if (newActual != actual)
-          {
-            actual->replace(newActual);
-          }
-        }
-      }
-    }
-  }
   else
-  {
-    iteratorExpr = tryToUseDirectRangeIterator(iteratorExpr);
-  }
-  return iteratorExpr;
+    if (CallExpr* call = toCallExpr(iteratorExpr))
+      if (call->isNamed("_build_tuple"))
+        for_actuals(actual, call)
+          tryToReplaceWithDirectRangeIterator(actual);
 }
 
 /************************************ | *************************************
@@ -151,8 +134,6 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
 
-  iteratorExpr = optimizeAnonymousRangeIteration(iteratorExpr, zippered);
-
   iterator->addFlag(FLAG_EXPR_TEMP);
 
   // Unzippered loop, treat all objects (including tuples) the same
@@ -162,6 +143,9 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   // Expand tuple to a tuple containing appropriate iterators for each value.
   else
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
+
+  // try to optimize anonymous range iteration, replaces iterExpr in place
+  optimizeAnonymousRangeIteration(iteratorExpr, zippered);
 
   index->addFlag(FLAG_INDEX_OF_INTEREST);
 
