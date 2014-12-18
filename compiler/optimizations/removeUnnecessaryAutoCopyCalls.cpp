@@ -439,7 +439,7 @@ static void removePODinitDestroy()
 
 
 void removeUnnecessaryAutoCopyCalls() {
-  if (fNoRemoveCopyCalls)
+  if (fNoRemoveCopyCalls || 1) // Disable this pass for a test.
     return;
 
   //
