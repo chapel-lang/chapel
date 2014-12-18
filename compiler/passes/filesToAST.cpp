@@ -74,8 +74,10 @@ void parse() {
   standardModule        = ParseMod("ChapelStandard",       MOD_INTERNAL);
   INT_ASSERT(standardModule);
 
-  printModuleInitModule = ParseMod("PrintModuleInitOrder", MOD_INTERNAL);
-  INT_ASSERT(printModuleInitModule);
+  if (fUseIPE == false) {
+    printModuleInitModule = ParseMod("PrintModuleInitOrder", MOD_INTERNAL);
+    INT_ASSERT(printModuleInitModule);
+  }
 
   parseDependentModules(MOD_INTERNAL);
 
