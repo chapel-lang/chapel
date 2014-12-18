@@ -1168,7 +1168,7 @@ void AstDumpToNode::exitGotoStmt(GotoStmt* node)
 bool AstDumpToNode::enterAggrType(AggregateType* node)
 {
   newline();
-  fprintf(mFP, "#<AggregateType %s ", node->symbol->name);
+  fprintf(mFP, "#<AggregateType %12d %s", node->id, (node->symbol) ? node->symbol->name : "SymbolUnbound");
   mOffset = mOffset + 2;
 
   return true;
