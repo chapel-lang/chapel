@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+// Chapel Strings
 pragma "no use ChapelStandard"
 
-// Chapel Strings
 module String {
   use CString;
 
@@ -318,6 +318,8 @@ module String {
 // interpreted.  (The new record-based string implementation has different
 // rules, but still makes use of the distinction between unowned c_strings and
 // owned c_string_copies.
+pragma "no use ChapelStandard"
+
 module CString {
 
   // The following method is called by the compiler to determine the default
