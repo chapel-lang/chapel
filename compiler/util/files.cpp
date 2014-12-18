@@ -666,7 +666,16 @@ void addDashMsToUserPath(void) {
 
 
 void setupModulePaths(void) {
-  const char* modulesRoot = (fMinimalModules ? "modules-minimal" : "modules");
+  const char* modulesRoot = 0;
+
+  if (fMinimalModules == true)
+    modulesRoot = "modules-minimal";
+
+  else if (fUseIPE == true)
+    modulesRoot = "modules-ipe";
+
+  else
+    modulesRoot = "modules";
 
   intModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/internal/localeModels/",
                       CHPL_LOCALE_MODEL));

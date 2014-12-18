@@ -31,29 +31,22 @@ static Vec<const char*>        usedConfigParams;
 bool                           mainHasArgs;
 
 void checkConfigs() {
-  //
-  // Minimal module compilation doesn't support the standard CHPL_*
-  // variables, and therefore shouldn't check for them.
-  //
-  if (fMinimalModules) {
-    return;
-  }
+  if (fMinimalModules == false && fUseIPE == false) {
+    bool             anyBadConfigParams = false;
+    Vec<const char*> configParamSetNames;
 
-  bool             anyBadConfigParams = false;
-  Vec<const char*> configParamSetNames;
+    configMap.get_keys(configParamSetNames);
 
-  // configParamMap.get_keys(configParamSetNames);
-  configMap.get_keys(configParamSetNames);
-
-  forv_Vec(const char, name, configParamSetNames) {
-    if (!usedConfigParams.in(name)) {
-      USR_FATAL_CONT("Trying to set unrecognized config param '%s' via -s flag", name);
-      anyBadConfigParams = true;
+    forv_Vec(const char, name, configParamSetNames) {
+      if (!usedConfigParams.in(name)) {
+        USR_FATAL_CONT("Trying to set unrecognized config param '%s' via -s flag", name);
+        anyBadConfigParams = true;
+      }
     }
-  }
 
-  if (anyBadConfigParams) {
-    USR_STOP();
+    if (anyBadConfigParams) {
+      USR_STOP();
+    }
   }
 }
 
