@@ -74,6 +74,7 @@
   Flag flag;
   ProcIter procIter;
   FlagSet* flagSet;
+  struct { ArgSymbol* first; Expr* second; } pIntentExpr;
 };
 
 //
@@ -198,7 +199,7 @@
 %type <pexpr> parenthesized_expr expr actual_expr
 %type <pexpr> literal_expr opt_where_part
 %type <pexpr> stmt_level_expr type_level_expr
-%type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr intent_expr
+%type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr opt_init_type var_arg_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
@@ -211,6 +212,7 @@
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <procIter> proc_or_iter
 %type <pfnsymbol> linkage_spec
+%type <pIntentExpr> intent_expr
 
 %% 
 
@@ -1139,18 +1141,23 @@ task_intent_clause:
 ;
 
 task_intent_ls:
-  intent_expr                       { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
-| task_intent_ls TCOMMA intent_expr { $1->insertAtTail($3); }
+  intent_expr
+    { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1.first, $1.second); }
+| task_intent_ls TCOMMA intent_expr
+    {
+      $1->insertAtTail($3.first);
+      $1->insertAtTail($3.second);
+    }
 ;
 
 intent_expr:
   opt_intent_tag ident_expr
     {
-      if ($1 != INTENT_REF) {
-        USR_FATAL($2, "Only 'ref' intents are currently supported in with clauses");
-      } else {
-        $$ = $2;
-      }
+      ArgSymbol* tiMark = tiMarkForIntent($1);
+      if (!tiMark)
+        USR_FATAL_CONT($2, "Unsupported intent in with clause");
+      $$.first = tiMark;
+      $$.second = $2;
     }
 ;
 

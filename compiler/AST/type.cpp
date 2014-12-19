@@ -1431,6 +1431,7 @@ void initCompilerGlobals(void) {
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
 
+  initForTaskIntents();
 }
 
 bool is_void_type(Type* t) {
