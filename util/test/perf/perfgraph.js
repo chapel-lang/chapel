@@ -795,6 +795,16 @@ function displaySelectedGraphs() {
 // Load the data, and create a new dygraphs
 function getDataAndGenGraph(graphInfo) {
   var dataFile = 'CSVfiles/'+graphInfo.datfname;
+
+  // convert annotations to millis since epoch since we're using a native
+  // array. We could do this in genGraphs, but then we have to think about
+  // timezones and all that stuff, it's fast enough and far easier to just let
+  // dygraphs do it
+  var ann = graphInfo.annotations;
+  for (var i=0; i<ann.length; i++) {
+    ann[i].x = parseDate(ann[i].x);
+  }
+
   // need to get the divs before the async call to get the json so graphs are
   // displayed in the order they are listed, regardless of the order they are
   // loaded.

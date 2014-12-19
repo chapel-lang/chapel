@@ -83,6 +83,12 @@ def show_date(value=time.localtime()):
 # by dygraphs
 def csv_to_json(csvFile, ginfo):
     data = parse_csv(csvFile)
+    os.unlink(csvFile)
+
+    # rename the csv file to indicate that it's a json file
+    jsonFile = os.path.splitext(csvFile)[0]+'.json'
+    ginfo.datfname = os.path.splitext(ginfo.datfname)[0]+'.json'
+
     # each label is stored in a single element array because of how it is
     # parsed, get rid of that array so labels is no a simple array of strings
     labels = [a[0] for a in data[0]]
@@ -114,7 +120,7 @@ def csv_to_json(csvFile, ginfo):
         lines.append(line)
 
     jsonObj = {'labels': labels, 'data': lines}
-    with open(csvFile, 'w') as f:
+    with open(jsonFile, 'w') as f:
         f.write(json.dumps(jsonObj))
 
 # Helper functions to parse/write/sort a dygraphs compatible csv file.
