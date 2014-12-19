@@ -1,2 +1,2 @@
 --fast
---fast -sassertNoSlicing # 1D-Inlined-Sliced-fast-indexing.perfkeys
+--fast -sassertNoSlicing # 1D-Inlined-Diamond-fast-indexing.perfkeys
