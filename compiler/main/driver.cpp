@@ -45,8 +45,6 @@
 #include <string>
 #include <sstream>
 
-const char* chplBinaryName = NULL;
-
 char CHPL_HOME[FILENAME_MAX+1] = "";
 
 const char* CHPL_HOST_PLATFORM = NULL;
@@ -80,6 +78,8 @@ const char *chpl_env_vars[MAX_CHPL_ENV_VARS];
 const char *chpl_env_var_names[MAX_CHPL_ENV_VARS];
 
 bool widePointersStruct;
+
+static const char* chplBinaryName = NULL;
 
 static char makeArgument[256] = "";
 
@@ -977,11 +977,11 @@ int main(int argc, char* argv[]) {
 
   testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
 
-  if (strcmp(chplBinaryName, "chpldoc") == 0)
+  if (fDocs == false && strcmp(chplBinaryName, "chpldoc") == 0)
     fDocs = true;
 
 
-  runPasses(tracker);
+  runPasses(tracker, strcmp(chplBinaryName, "chpldoc") == 0);
 
   tracker.StartPhase("driverCleanup");
 
