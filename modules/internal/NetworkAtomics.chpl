@@ -18,7 +18,6 @@
  */
 
 pragma "atomic module"
-pragma "no use ChapelStandard"
 module NetworkAtomics {
   const LINENO = -1:int(32); // it'd be nice if we had something like __LINENO__
 

@@ -48,7 +48,6 @@
    */
 
 pragma "atomic module"
-pragma "no use ChapelStandard"
 module Atomics {
 
   use MemConsistency;

@@ -28,6 +28,93 @@
 
 /************************************ | *************************************
 *                                                                           *
+* Helper functions to optimize anonymous range iteration                    *
+*                                                                           *
+************************************* | ************************************/
+
+/*
+ * Attempts to replace iteration over simple anonymous ranges with calls to
+ * direct iterators that take low, high and stride as arguments. This is to
+ * avoid the cost of constructing ranges, and if the stride is known at compile
+ * time, provide a more optimized iterator that uses "<, <=, >, or >=" as the
+ * relational operator.
+ *
+ * This is only meant to replace anonymous range iteration for "simple" bounded
+ * ranges. Simple means it's a range of the form "low..high" or "low..high by
+ * stride". Anything more complex is ignored with the thinking that this should
+ * optimize the most common range iterators, but it could be expanded to handle
+ * more cases.
+ *
+ * An alternative is to update scalar replacement of aggregates to work on
+ * ranges, which should be able to achieve similar results as this optimization
+ * while handling all ranges, including non-anonymous ranges.
+ *
+ * Will optimize things like:
+ * - "for i in 1..10"
+ * - "for i in 1..10+1"
+ * - "var lo=1, hi=10;for i in lo..hi"
+ * - "for i in 1..10 by 2"
+ * - "for (i, j) in zip(1..10 by 2, 1..10 by -2)"
+ * - "for (i, j) in zip(A, 1..10 by 2)" // will optimize range iter still
+ * - "coforall i in 1..10 by 2"         // works for coforalls as well
+ *
+ * Will not optimize ranges like:
+ * - "for in in (1..)"             // doesn't handle unbounded ranges
+ * - "for i in 1..10 by 2 by 2"    // doesn't handle more than one by operator
+ * - "for i in 1..10 align 2"      // doesn't handle align operator
+ * - "for i in 1..#10"             // doesn't handle # operator
+ * - "var r = 1..10"; for i in r"  // not an anonymous range
+ * - "forall i in 1..10"           // does not get applied to foralls
+ *
+ * Note that this function is pretty fragile because it relies on names of
+ * functions/iterators as well as the arguments and order of those
+ * functions/iterators but there's not really a way around it this early in
+ * compilation. If the iterator can't be replaced, it is left unchanged.
+ */
+static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
+{
+  CallExpr* range = NULL;
+  Expr* stride = NULL;
+  if (CallExpr* call = toCallExpr(iteratorExpr))
+  {
+    // grab the stride if we have a strided range
+    if (call->isNamed("by"))
+    {
+      range = toCallExpr(call->get(1)->copy());
+      stride = toExpr(call->get(2)->copy());
+    }
+    // assume the call is the range (checked below) and set default stride
+    else
+    {
+      range = call;
+      stride = new SymExpr(new_IntSymbol(1));
+    }
+    // see if we're looking at a builder for a bounded range. the builder is
+    // iteratable since range has these() iterators
+    if (range && range->isNamed("chpl_build_bounded_range"))
+    {
+      // replace the range construction with a direct range iterator
+      Expr* low = range->get(1)->copy();
+      Expr* high = range->get(2)->copy();
+      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high, stride));
+    }
+  }
+}
+
+static void optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
+{
+  if (!zippered)
+    tryToReplaceWithDirectRangeIterator(iteratorExpr);
+  // for zippered iterators, try to replace each iterator of the tuple
+  else
+    if (CallExpr* call = toCallExpr(iteratorExpr))
+      if (call->isNamed("_build_tuple"))
+        for_actuals(actual, call)
+          tryToReplaceWithDirectRangeIterator(actual);
+}
+
+/************************************ | *************************************
+*                                                                           *
 * Factory methods for the Parser                                            *
 *                                                                           *
 ************************************* | ************************************/
@@ -56,6 +143,9 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   // Expand tuple to a tuple containing appropriate iterators for each value.
   else
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
+
+  // try to optimize anonymous range iteration, replaces iterExpr in place
+  optimizeAnonymousRangeIteration(iteratorExpr, zippered);
 
   index->addFlag(FLAG_INDEX_OF_INTEREST);
 

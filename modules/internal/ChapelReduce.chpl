@@ -19,7 +19,6 @@
 
 // ChapelReduce.chpl
 //
-pragma "no use ChapelStandard"
 module ChapelReduce {
   
   iter chpl__scanIteratorZip(op, data) {

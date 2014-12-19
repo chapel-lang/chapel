@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-pragma "no use ChapelStandard"
 module AtomicsCommon {
   record atomic_refcnt {
     // The common case seems to be local access to this class, so we
