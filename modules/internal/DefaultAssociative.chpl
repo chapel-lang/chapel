@@ -19,7 +19,6 @@
 
 // DefaultAssociative.chpl
 //
-pragma "no use ChapelStandard"
 module DefaultAssociative {
   
   use DSIUtil;

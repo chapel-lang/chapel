@@ -19,7 +19,6 @@
 
 // ChapelIO.chpl
 //
-pragma "no use ChapelStandard"
 module ChapelIO {
   use ChapelBase; // for uint().
   use SysBasic;

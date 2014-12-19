@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-pragma "no use ChapelStandard"
 module ChapelDistribution {
   
   use List;

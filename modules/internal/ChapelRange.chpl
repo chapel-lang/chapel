@@ -19,7 +19,6 @@
 
 // ChapelRange.chpl
 //
-pragma "no use ChapelStandard"
 module ChapelRange {
   
   use Math; // for abs().
