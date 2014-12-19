@@ -21,7 +21,6 @@
 //
 // tuple data implementation as a record
 //
-pragma "no use ChapelStandard"
 module ChapelTuple {
   
   pragma "tuple" record _tuple {

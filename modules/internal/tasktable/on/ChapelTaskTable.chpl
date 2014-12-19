@@ -19,7 +19,6 @@
 
 // ChapelTaskTable.chpl
 //
-pragma "no use ChapelStandard"
 module ChapelTaskTable {
   
   use ChapelBase;

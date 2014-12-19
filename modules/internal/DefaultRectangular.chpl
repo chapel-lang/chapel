@@ -19,7 +19,6 @@
 
 // DefaultRectangular.chpl
 //
-pragma "no use ChapelStandard"
 module DefaultRectangular {
 
   config const dataParTasksPerLocale = 0;

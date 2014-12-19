@@ -19,7 +19,6 @@
 
 // DefaultOpaque.chpl
 //
-pragma "no use ChapelStandard"
 module DefaultOpaque {
   
   class DefaultOpaqueDom: BaseOpaqueDom {
