@@ -760,6 +760,10 @@ fixupDestructors() {
 
 
 static void insertGlobalAutoDestroyCalls() {
+  // --ipe does not build chpl_gen_main
+  if (chpl_gen_main == NULL)
+    return;
+
   const char* name = "chpl__autoDestroyGlobals";
   SET_LINENO(baseModule);
   FnSymbol* fn = new FnSymbol(name);
