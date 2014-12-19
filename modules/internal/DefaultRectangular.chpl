@@ -39,6 +39,7 @@ module DefaultRectangular {
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
+  config param assertNoSlicing = false;
   
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -701,9 +702,20 @@ module DefaultRectangular {
         return sum;
       } else {
         var sum = if earlyShiftData then 0:idxType else origin;
-        for param i in 1..rank {
-          if blk(i) == 1 then sum += ind(i);
-          else sum += ind(i) * blk(i);
+
+        // If the user asserts that there is no slicing in their program,
+        // then blk(rank) == 1. Knowing this, we need not multiply the final
+        // ind(...) by anything. This may lead to performance improvements for
+        // array accesses.
+        if assertNoSlicing {
+          for param i in 1..rank-1 {
+            sum += ind(i) * blk(i);
+          }
+          sum += ind(rank);
+        } else {
+          for param i in 1..rank {
+            sum += ind(i) * blk(i);
+          }
         }
         if !earlyShiftData then sum -= factoredOffs;
         return sum;
