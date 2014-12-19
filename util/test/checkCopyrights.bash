@@ -55,5 +55,6 @@ if [ -n "${files_wo_copy}" -o -n "${root_files_wo_copy}" ] ; then
     echo "[ERROR] The following files have missing or incorrect copyrights:"
     echo "${files_wo_copy}"
     echo "${root_files_wo_copy}"
+    echo "Add the copyright with: \$CHPL_HOME/util/buildRelease/add_license_to_sources.py <files>"
     exit 1
 fi
