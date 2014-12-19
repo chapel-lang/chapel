@@ -22,7 +22,7 @@ CHPL_HOME=${CHPL_HOME:-$CWD/../..}
 
 this_year=$(date '+%Y')
 copyright_pattern="copyright .*${this_year}.* Cray Inc"
-source_dirs="compiler runtime make modules"
+source_dirs="compiler runtime make modules*"
 
 echo "[INFO] Moving to CHPL_HOME: ${CHPL_HOME}"
 cd $CHPL_HOME
