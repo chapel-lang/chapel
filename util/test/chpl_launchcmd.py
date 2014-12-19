@@ -540,7 +540,9 @@ class AbstractJob(object):
             description=__doc__,
             formatter_class=OurFormatter)
         parser.add_argument('-v', '--verbose', action='store_true',
-                            help='Verbose output.')
+                            default=('CHPL_LAUNCHCMD_DEBUG' in os.environ),
+                            help=('Verbose output. Setting CHPL_LAUNCHCMD_DEBUG '
+                                  'in environment also enables verbose output.'))
         parser.add_argument('-nl', '--numLocales', type=int, default=-1,
                             help='Number locales.')
         parser.add_argument('--n', help='Placeholder')
