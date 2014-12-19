@@ -161,6 +161,41 @@ class AbstractJob(object):
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
+    @property
+    def _qsub_command(self):
+        """Returns qsub command list. This implementation is the default that works for
+        standard mpp* options. Subclasses can implement versions that meet their needs.
+
+        :rtype: list
+        :returns: qsub command as list of strings
+        """
+        submit_command = [self.submit_bin, '-V', '-N', self.job_name, '-j', 'oe',
+                          '-o', output_file]
+
+        if self.num_locales >= 0:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_nodes_resource, self.num_locales))
+        if self.walltime is not None:
+            submit_command.append('-l')
+            submit_command.append('walltime={0}'.format(self.walltime))
+        if self.hostlist is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.hostlist_resource, self.hostlist))
+        if self.num_cpus_resource is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_cpus_resource, self.num_cpus))
+        if self.processing_elems_per_node_resource is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.processing_elems_per_node_resource, 1))
+
+        logging.debug('qsub command: {0}'.format(submit_command))
+        return submit_command
+
+
     def run(self):
         """Run batch job in subprocess and wait for job to complete. When finished,
         returns output as string.
@@ -352,34 +387,9 @@ class AbstractJob(object):
                 self.submit_bin, self.job_name, self.num_locales,
                 self.walltime, output_file))
 
-        # TODO: create self._qsub_command property. (thomasvandoren, 2014-07-23)
-        submit_command = [self.submit_bin, '-V', '-N', self.job_name, '-j', 'oe',
-                          '-o', output_file]
-        if self.num_locales >= 0:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.num_nodes_resource, self.num_locales))
-        if self.walltime is not None:
-            submit_command.append('-l')
-            submit_command.append('walltime={0}'.format(self.walltime))
-        if self.hostlist is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.hostlist_resource, self.hostlist))
-        if self.num_cpus_resource is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.num_cpus_resource, self.num_cpus))
-        if self.processing_elems_per_node_resource is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.processing_elems_per_node_resource, 1))
-
-        logging.debug('submit command to run: {0}'.format(submit_command))
-
         logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
         submit_proc = subprocess.Popen(
-            submit_command,
+            self._qsub_command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
