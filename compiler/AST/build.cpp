@@ -1027,6 +1027,7 @@ buildForallLoopStmt(Expr*      indices,
   //
   INT_ASSERT(!loopBodyCopy->byrefVars);
   if (byref_vars) {
+    // todo: push this check downstream, e.g. into checkParsed()
     checkForNonRefIntents(byref_vars);
     INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
     byref_vars->primitive = primitives[PRIM_FORALL_LOOP];
