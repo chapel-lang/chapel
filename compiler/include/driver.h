@@ -42,8 +42,6 @@ struct YYLTYPE {
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL  1
 
-extern const char *chplBinaryName;
-
 extern int  instantiation_limit;
 
 // optimization control flags

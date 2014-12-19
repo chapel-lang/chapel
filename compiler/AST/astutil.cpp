@@ -682,7 +682,9 @@ static void
 visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 {
   // chpl_gen_main is always visible (if it exists).
-  pruneVisit(chpl_gen_main, fns, types);
+  // --ipe does not build chpl_gen_main
+  if (chpl_gen_main)
+    pruneVisit(chpl_gen_main, fns, types);
 
   // When present, the printModuleInitOrder function is always visible;
   // it will be NULL for --minimal-modules compilations

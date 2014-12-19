@@ -6669,12 +6669,18 @@ resolve() {
 
   resolveExternVarSymbols();
 
-  resolveUses(mainModule);
+  // --ipe does not build a mainModule
+  if (mainModule)
+    resolveUses(mainModule);
 
-  if (fUseIPE == false)
+  // --ipe does not build printModuleInitModule
+  if (printModuleInitModule)
     resolveUses(printModuleInitModule);
 
-  resolveFns(chpl_gen_main);
+  // --ipe does not build chpl_gen_main
+  if (chpl_gen_main)
+    resolveFns(chpl_gen_main);
+
   USR_STOP();
 
   resolveExports();
