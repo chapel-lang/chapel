@@ -2483,17 +2483,26 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
   }
 }
 
-void ModuleSymbol::moduleUseAddChapelStandard() {
-  UnresolvedSymExpr* modRef = 0;
+void ModuleSymbol::addDefaultUses() {
+  if (modTag != MOD_INTERNAL && hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
+    UnresolvedSymExpr* modRef = 0;
 
-  SET_LINENO(this);
+    SET_LINENO(this);
 
-  modRef = new UnresolvedSymExpr("ChapelStandard");
-  block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+    modRef = new UnresolvedSymExpr("ChapelStandard");
+    block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+
+  // We don't currently have a good way to fetch the root module by name.
+  // Insert it directly rather than by name
+  } else if (this == baseModule) {
+    SET_LINENO(this);
+
+    block->moduleUseAdd(rootModule);
+  }
 }
 
 //
-// MDN 2014/07/22
+// NOAKES 2014/07/22
 //
 // There is currently a problem in functionResolve that this function
 // has a "temporary" work around for.
