@@ -6694,8 +6694,6 @@ resolve() {
 
   pruneResolvedTree();
 
-  removeCompilerWarnings();
-
   freeCache(ordersCache);
   freeCache(defaultsCache);
   freeCache(genericsCache);
@@ -7305,6 +7303,7 @@ pruneResolvedTree() {
   removeWhereClauses();
   removeMootFields();
   expandInitFieldPrims();
+  removeCompilerWarnings();
 }
 
 static void removeUnusedFunctions() {
