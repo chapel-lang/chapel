@@ -171,9 +171,6 @@ Statements and Expressions
   local execution.
   # multilocale/local/sungeun/local_privatization.future
   # users/jglewis/locClassSegFault.future
-- Query expressions for primitive type bit-sizes results in an
-  internal compiler error.
-  # users/vass/crash5insertAfter.future
 
 
 Modules
