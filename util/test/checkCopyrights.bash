@@ -22,7 +22,7 @@ CHPL_HOME=${CHPL_HOME:-$CWD/../..}
 
 this_year=$(date '+%Y')
 copyright_pattern="copyright .*${this_year}.* Cray Inc"
-source_dirs="compiler runtime make modules"
+source_dirs="compiler runtime make modules*"
 
 echo "[INFO] Moving to CHPL_HOME: ${CHPL_HOME}"
 cd $CHPL_HOME
@@ -55,5 +55,6 @@ if [ -n "${files_wo_copy}" -o -n "${root_files_wo_copy}" ] ; then
     echo "[ERROR] The following files have missing or incorrect copyrights:"
     echo "${files_wo_copy}"
     echo "${root_files_wo_copy}"
+    echo "Add the copyright with: \$CHPL_HOME/util/buildRelease/add_license_to_sources.py <files>"
     exit 1
 fi
