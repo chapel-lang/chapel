@@ -114,20 +114,10 @@ void parse() {
   parseDependentModules(MOD_USER);
 
   forv_Vec(ModuleSymbol, mod, allModules) {
-    // Filter out modules that don't want to include ChapelStandard by default.
-    if (mod->hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
-      mod->moduleUseAddChapelStandard();
-    }
+    mod->addDefaultUses();
   }
 
   checkConfigs();
-
-  // Block is necessary because SET_LINENO declares a local variable.
-  {
-    SET_LINENO(baseModule);
-
-    baseModule->block->moduleUseAdd(rootModule);
-  }
 
   finishCountingTokens();
 
