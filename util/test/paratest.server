@@ -51,6 +51,7 @@ $show_all_errors = 0;
 $suppressions = "";
 $junit_xml = 0;
 $junit_xml_file = "";
+$junit_remove_prefix = "";
 # Once a node has timed out, we don't send it any more work, so this timeout 
 # should be set higher than the time needed to process the largest directory.
 # -1 means "never time out".
@@ -340,6 +341,9 @@ sub generate_junit_xml {
     if (!($junit_xml_file eq "")) {
         $junit_args = "$junit_args --junit-xml=$junit_xml_file"
     }
+    if (!($junit_remove_prefix eq "")) {
+        $junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
+    }
     if (!($suppressions eq "")) {
         $junit_args = "$junit_args --suppress=$suppressions";
     }
@@ -487,6 +491,7 @@ sub print_help {
     print "    -timeout  t: t is the max time to wait after last directory is served.\n";
     print "    -junit-xml : Create jUnit test report.\n";
     print "    -junit-xml-file f: Put jUnit test report at location 'f' (implies -junit-xml).\n";
+    print "    -junit-remove-prefix p: Remove prefix 'p' from all tests in junit report.\n";
 }
 
 
@@ -593,6 +598,14 @@ sub main {
                 $junit_xml = 1;
             } else {
                 print "missing -junit-xml-file arg\n";
+                exit (8);
+            }
+        } elsif (/^-junit-remove-prefix/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $junit_remove_prefix = $ARGV[0];
+            } else {
+                print "missing -junit-remove-prefix arg\n";
                 exit (8);
             }
         } elsif (/^-help|^-h/) {

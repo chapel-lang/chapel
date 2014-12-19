@@ -90,7 +90,8 @@
 #   -no-chpl-home-warn                Do not show warning when start_test invoked outside CHPL_HOME
 #   -progress                         Print pass/fail to stderr for each test. Does not work for directories.
 #   -junit-xml                        Create jUnit XML style report.
-#   -junit-xml-file                   Path to store jUnit XML report. When set, -junit-xml is implied.
+#   -junit-xml-file <file>            Path to store jUnit XML report. When set, -junit-xml is implied.
+#   -junit-remove-prefix <prefix>     Remove <prefix> from all tests in jUnit report.
 #
 # All options can be used with a double-dash format as well 
 # (e.g. --compopts).
@@ -734,6 +735,7 @@ set chplHomeWarn = 1
 set progress = 0
 set junit_xml = 0
 set junit_xml_file = 0
+set junit_remove_prefix = 0
 
 while ( $#argv > 0 )
     switch ( "$argv[1]" )
@@ -977,6 +979,12 @@ while ( $#argv > 0 )
         set junit_xml_file = $argv[1]
         shift
         breaksw
+    case -junit-remove-prefix
+    case -junit-remove-prefix
+        shift
+        set junit_remove_prefix = $argv[1]
+        shift
+        breaksw
     case -h:
     case -help:
     case --help:
@@ -1015,7 +1023,8 @@ while ( $#argv > 0 )
         echo "          -no-chpl-home-warn"
         echo "          -progress"
         echo "          -junit-xml"
-        echo "          -junit-xml-file (implies -junit-xml)"
+        echo "          -junit-xml-file <file>  (implies -junit-xml)"
+        echo "          -junit-remove-prefix <prefix>"
         echo "          -h, -help"
         exit 0
         breaksw
@@ -1834,6 +1843,9 @@ echo ''
 set junit_args = "--start-test-log=$logfile"
 if ($junit_xml_file != 0) then
     set junit_args = "$junit_args --junit-xml=$junit_xml_file"
+endif
+if ($junit_remove_prefix != 0) then
+    set junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
 endif
 if ($suppressions != "") then
     set junit_args = "$junit_args --suppress=$suppressions"
