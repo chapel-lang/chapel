@@ -56,7 +56,9 @@ static void buildFieldAccessorFunctions(AggregateType* at);
 
 
 void buildDefaultFunctions(void) {
-  build_chpl_entry_points();
+  if (fUseIPE == false)
+    build_chpl_entry_points();
+
   SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
 
   Vec<BaseAST*> asts;
@@ -427,7 +429,9 @@ static void build_chpl_entry_points(void) {
   // parallelism, so no need for end counts (or atomic/sync types to
   // support them).
   //
-  if (!fMinimalModules) {
+  // The initial version of --ipe also lacks parallelism
+  //
+  if (fMinimalModules == false && fUseIPE == false) {
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
   }
@@ -476,12 +480,10 @@ static void build_chpl_entry_points(void) {
   // In --minimal-modules compilation mode, we won't be waiting on an
   // endcount (see comment above)
   //
-  if (!fMinimalModules) {
-
+  if (fMinimalModules == false && fUseIPE == false) {
     chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
-    //chpl_gen_main->insertAtTail(new CallExpr("_endCountFree", endCount));
-
   }
+
   chpl_gen_main->insertAtTail(new CallExpr(PRIM_RETURN, main_ret));
 
   normalize(chpl_gen_main);
@@ -1067,7 +1069,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   // We have no QIO when compiling with --minimal-modules, so no need
   // to build default R/W functions.
   //
-  if (fMinimalModules) {
+  if (fMinimalModules == true || fUseIPE == true) {
     return;
   }
 
