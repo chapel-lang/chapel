@@ -80,6 +80,9 @@ enum ModTag {
 
 typedef std::bitset<NUM_FLAGS> FlagSet;
 
+// for task intents and forall intents, in createTaskFunctions.cpp
+ArgSymbol* tiMarkForIntent(IntentTag intent);
+
 
 /******************************** | *********************************
 *                                                                   *

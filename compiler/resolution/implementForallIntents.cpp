@@ -95,6 +95,16 @@ static bool isOuterVar(Symbol* sym, BlockStmt* block) {
 }
 
 
+// Do not count variables in 'with' clauses as "outer".
+static bool isInWithClause(SymExpr* se) {
+  if (Expr* parentExpr = se->parentExpr)
+    if (CallExpr* parentCall = toCallExpr(parentExpr))
+      if (parentCall->isPrimitive(PRIM_FORALL_LOOP))
+        return true;
+  return false;
+}
+
+
 //
 // A forall-intents variation on findOuterVars() in createTaskFunctions.cpp:
 // Find all symbols used in 'block' and defined outside of it.
@@ -105,8 +115,10 @@ static void findOuterVars(BlockStmt* block, SymbolMap* uses) {
   for_vector(SymExpr, symExpr, symExprs) {
     Symbol* sym = symExpr->var;
     if (toVarSymbol(sym) || toArgSymbol(sym))
-      if (!isCorrespIndexVar(block, sym) && isOuterVar(sym, block))
-        uses->put(sym,gNil);
+      if (!isCorrespIndexVar(block, sym) &&
+          !isInWithClause(symExpr)       &&
+          isOuterVar(sym, block))
+        uses->put(sym, markUnspecified);
   }
 }
 
@@ -136,7 +148,7 @@ static void createShadowVars(SymbolMap* uses, int& numOuterVars,
       svar->addFlag(FLAG_CONST); // todo: replace with arg intents
       outerVars.push_back(ovar);
       shadowVars.push_back(svar);
-      INT_ASSERT(e->value == gNil); // meaning e->value is not set, yet
+      INT_ASSERT(e->value == markUnspecified); // meaning e->value is not set, yet
       e->value = svar;
       numOuterVars++;
     }
@@ -453,7 +465,7 @@ static void getOuterVars(BlockStmt* body, Symbol*& serIterSym,
   // do the same as in 'if (needsCapture(fn))' below
   uses = new SymbolMap();
   findOuterVars(body, uses);
-  pruneOuterVars(uses, byrefVars);
+  pruneOuterVars(uses, byrefVars, true);
   pruneThisArg(body->parentSymbol, uses, true);
 }
 
