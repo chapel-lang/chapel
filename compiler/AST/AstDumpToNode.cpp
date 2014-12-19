@@ -1289,10 +1289,20 @@ bool AstDumpToNode::enterTypeSym(TypeSymbol* node)
 {
   newline();
 
-  fprintf(mFP, "#<TypeSymbol name: %s type: ", node->name);
+  fprintf(mFP, "#<TypeSymbol %12d", node->id);
   mOffset = mOffset + 2;
+
+  newline();
+  fprintf(mFP, "name: %s", node->name);
+  newline();
+  fprintf(mFP, "type:");
+
+  mOffset = mOffset + 6;
   node->type->accept(this);
+  mOffset = mOffset - 6;
+
   mOffset = mOffset - 2;
+
   newline();
   fprintf(mFP, ">");
 
