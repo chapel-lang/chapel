@@ -161,16 +161,29 @@ class AbstractJob(object):
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
-    @property
-    def _qsub_command(self):
-        """Returns qsub command list. This implementation is the default that works for
-        standard mpp* options. Subclasses can implement versions that meet their needs.
+    def _qsub_command_base(self, output_file):
+        """Returns base qsub command, without any resource listing.
+
+        :type output_file: str
+        :arg output_file: combined stdout/stderr output file location
 
         :rtype: list
         :returns: qsub command as list of strings
         """
-        submit_command = [self.submit_bin, '-V', '-N', self.job_name, '-j', 'oe',
-                          '-o', output_file]
+        return [self.submit_bin, '-V', '-N', self.job_name,
+                '-j', 'oe', '-o', output_file]
+
+    def _qsub_command(self, output_file):
+        """Returns qsub command list. This implementation is the default that works for
+        standard mpp* options. Subclasses can implement versions that meet their needs.
+
+        :type output_file: str
+        :arg output_file: combined stdout/stderr output file location
+
+        :rtype: list
+        :returns: qsub command as list of strings
+        """
+        submit_command = self._qsub_command_base(output_file)
 
         if self.num_locales >= 0:
             submit_command.append('-l')
@@ -389,7 +402,7 @@ class AbstractJob(object):
 
         logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
         submit_proc = subprocess.Popen(
-            self._qsub_command,
+            self._qsub_command(output_file),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
