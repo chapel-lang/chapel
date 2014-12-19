@@ -175,6 +175,8 @@ studies/jacobi/jacobi.graph
 # suite: Startup tracking
 performance/elliot/no-op.graph
 # suite: MAX_LOGICAL comparison
+npb/ep/ep.graph
+npb/ep/ep-b.graph
 release/examples/benchmarks/hpcc/hpl.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
