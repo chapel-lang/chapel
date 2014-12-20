@@ -167,8 +167,13 @@ class AbstractJob(object):
         :rtype: list
         :returns: qsub command as list of strings
         """
-        return [self.submit_bin, '-V', '-N', self.job_name,
-                '-j', 'oe', '-o', output_file]
+        submit_command =  [self.submit_bin, '-V', '-N', self.job_name,
+                           '-j', 'oe', '-o', output_file]
+        if self.walltime is not None:
+            submit_command.append('-l')
+            submit_command.append('walltime={0}'.format(self.walltime))
+
+        return submit_command
 
     def _qsub_command(self, output_file):
         """Returns qsub command list. This implementation is the default that works for
@@ -186,9 +191,6 @@ class AbstractJob(object):
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
                 self.num_nodes_resource, self.num_locales))
-        if self.walltime is not None:
-            submit_command.append('-l')
-            submit_command.append('walltime={0}'.format(self.walltime))
         if self.hostlist is not None:
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
@@ -754,22 +756,19 @@ class PbsProJob(AbstractJob):
         """
         submit_command = self._qsub_command_base(output_file)
 
+        # Always use place=scatter to get 1 PE per node (mostly). Equivalent
+        # to mppnppn=1.
+        select_stmt = 'place=scatter'
 
-        if self.num_locales >= 0:
-            # Always use place=scatter to get 1 PE per node
-            # (mostly). Equivalent to mppnppn=1.
-            select_stmt = 'place=scatter'
+        if self.hostlist is not None:
+            # This relies on the caller to use the correct select syntax.
+            select_stmt += ',select={0}'.format(self.hostlist)
+        elif self.num_locales >= 0:
             select_stmt += ',select={0}'.format(self.num_locales)
             if self.num_cpus_resource is not None:
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
-            if self.hostlist is not None:
-                # This relies on the caller to use the correct select syntax.
-                select_stmt += ':{0}'.format(self.hostlist)
-            submit_command += ['-l', select_stmt]
-        if self.walltime is not None:
-            submit_command.append('-l')
-            submit_command.append('walltime={0}'.format(self.walltime))
+        submit_command += ['-l', select_stmt]
 
         logging.debug('qsub command: {0}'.format(submit_command))
         return submit_command
