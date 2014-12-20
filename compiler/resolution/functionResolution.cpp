@@ -375,6 +375,7 @@ static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
+static void removeCompilerWarnings();
 static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
@@ -7309,6 +7310,7 @@ pruneResolvedTree() {
   removeWhereClauses();
   removeMootFields();
   expandInitFieldPrims();
+  removeCompilerWarnings();
 }
 
 static void removeUnusedFunctions() {
@@ -7318,6 +7320,18 @@ static void removeUnusedFunctions() {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (! fn->isResolved() || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
+    }
+  }
+}
+
+static void removeCompilerWarnings() {
+  // Warnings have now been issued, no need to keep the function around.
+  // Remove calls to compilerWarning and let dead code elimination handle
+  // the rest.
+  typedef MapElem<FnSymbol*, const char*> FnSymbolElem;
+  form_Map(FnSymbolElem, el, innerCompilerWarningMap) {
+    forv_Vec(CallExpr, call, *(el->key->calledBy)) {
+      call->remove();
     }
   }
 }
