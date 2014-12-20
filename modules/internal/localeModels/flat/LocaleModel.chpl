@@ -28,9 +28,6 @@
 //
 module LocaleModel {
 
-  // This should eventually be unified with
-  // CHPL_LOCALE_MODEL_NUM_SUBLOCALES which is currently defined in the
-  // runtime for any locale model that doesn't use sub locales
   param localeModelHasSublocales = false;
 
   use ChapelLocale;
@@ -51,6 +48,9 @@ module LocaleModel {
 
   type chpl_nodeID_t = int(32);
   type chpl_sublocID_t = int(32);
+
+  extern const c_sublocid_none: chpl_sublocID_t;
+  extern const c_sublocid_any: chpl_sublocID_t;
 
   extern record chpl_localeID_t {
     // We need to know that this is a record type in order to pass it to and
@@ -121,8 +121,7 @@ module LocaleModel {
 
     proc chpl_id() return _node_id; // top-level node number
     proc chpl_localeid() {
-      extern const c_sublocid_any: chpl_sublocID_t;
-      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any); 
+      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
     proc chpl_name() return local_name;
 
@@ -227,7 +226,6 @@ module LocaleModel {
     // -1 is used in the abstract locale class to specify an invalid node ID.
     proc chpl_id() return numLocales;
     proc chpl_localeid() {
-      extern const c_sublocid_none: chpl_sublocID_t;
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
     proc chpl_name() return local_name();

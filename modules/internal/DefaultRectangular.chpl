@@ -191,10 +191,9 @@ module DefaultRectangular {
           coforall chunk in 0..#numChunks { // make sure coforall on can trigger
             on here.getChild(chunk) {
               if debugDataParNuma {
-                extern proc chpl_task_getSubloc(): chpl_sublocID_t;
-                if chunk!=chpl_task_getSubloc() then
+                if chunk!=chpl_getSubloc() then
                   writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
-                          ", on "+chpl_task_getSubloc()+") ***");
+                          ", on "+chpl_getSubloc()+") ***");
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales

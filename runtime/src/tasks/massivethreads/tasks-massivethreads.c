@@ -515,11 +515,7 @@ uint32_t chpl_task_getMaxPar(void) {
 
 c_sublocid_t chpl_task_getNumSublocales(void)
 {
-#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
-  return CHPL_LOCALE_MODEL_NUM_SUBLOCALES;
-#else
   return 0;
-#endif
 }
 
 chpl_task_prvData_t* chpl_task_getPrvData(void) {

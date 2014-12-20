@@ -268,23 +268,14 @@ volatile int chpl_qthread_done_initializing;
 #endif
 
 typedef struct {
-#if !(defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
-  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0)
   c_sublocid_t requestedSubloc;  // requested sublocal for task
-#endif
   chpl_task_prvData_t prvdata;
 } chpl_task_prvDataImpl_t;
 
 // Define PRV_DATA_IMPL_VAL to set up a chpl_task_prvData_t.
-#if !(defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
-  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0)
 #define PRV_DATA_IMPL_VAL(subloc, serial) \
         { .requestedSubloc = subloc, \
           .prvdata = { .serial_state = serial } }
-#else
-#define PRV_DATA_IMPL_VAL(subloc, serial) \
-        { .prvdata = { .serial_state = serial } }
-#endif
 
 typedef struct {
     void                     *fn;
@@ -355,12 +346,7 @@ static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
 static inline
 c_sublocid_t chpl_task_getSubloc(void)
 {
-#if defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
-  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0
-    return 0;
-#else
     return (c_sublocid_t) qthread_shep();
-#endif
 }
 
 #ifdef CHPL_TASK_SETSUBLOC_IMPL_DECL
@@ -371,8 +357,6 @@ c_sublocid_t chpl_task_getSubloc(void)
 static inline
 void chpl_task_setSubloc(c_sublocid_t subloc)
 {
-#if !(defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
-  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0)
     qthread_shepherd_id_t curr_shep;
 
     assert(subloc != c_sublocid_none);
@@ -399,7 +383,6 @@ void chpl_task_setSubloc(c_sublocid_t subloc)
             qthread_migrate_to((qthread_shepherd_id_t) subloc);
         }
     }
-#endif
 }
 
 #ifdef CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL
@@ -410,18 +393,11 @@ void chpl_task_setSubloc(c_sublocid_t subloc)
 static inline
 c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
-#if defined(CHPL_LOCALE_MODEL_NUM_SUBLOCALES) &&  \
-  CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0
-    return 0;
-#else
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     if (data) {
         return data->chpl_data.requestedSubloc;
     }
-    else {
-        return c_sublocid_any;
-    }
-#endif
+    return c_sublocid_any;
 }
 
 #endif // ifndef _tasks_qthreads_h_
