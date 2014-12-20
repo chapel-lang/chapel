@@ -71,9 +71,6 @@ class AbstractJob(object):
     # argument name for specifying number of nodes (i.e. nodes, mppwidth)
     num_nodes_resource = None
 
-    # arugment name for specifying number of processing elements per node (i.e. mppnppn)
-    processing_elems_per_node_resource = None
-
     # argument name for specifying number of cpus (i.e. mppdepth)
     num_cpus_resource = None
 
@@ -200,10 +197,6 @@ class AbstractJob(object):
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
                 self.num_cpus_resource, self.num_cpus))
-        if self.processing_elems_per_node_resource is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.processing_elems_per_node_resource, 1))
 
         logging.debug('qsub command: {0}'.format(submit_command))
         return submit_command
@@ -641,7 +634,6 @@ class MoabJob(AbstractJob):
     status_bin = 'qstat'
     hostlist_resource = 'hostlist'
     num_nodes_resource = 'nodes'
-    processing_elems_per_node_resource = None
     num_cpus_resource = None
 
     @classmethod
@@ -689,14 +681,13 @@ class PbsProJob(AbstractJob):
     status_bin = 'qstat'
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
-    processing_elems_per_node_resource = 'mppnppn'
 
     # If CHPL_PBSPRO_NO_MPPDEPTH is set in the environment, set class attribute
     # to None. Otherwise, default to mppdepth.
     #
     # This allows callers to optionally disable this particular setting, which
     # can conflict with the hostlist/mppnodes setting.
-    num_cpus_resource = 'mppdepth' if 'CHPL_PBSPRO_NO_MPPDEPTH' not in os.environ else None
+    num_cpus_resource = 'ncpus' if 'CHPL_PBSPRO_NO_MPPDEPTH' not in os.environ else None
 
     @property
     def job_name(self):
@@ -751,6 +742,38 @@ class PbsProJob(AbstractJob):
             raise ValueError('Could not find {0} pattern in header line: {1}'.format(
                 pattern.pattern, header_line))
 
+    def _qsub_command(self, output_file):
+        """Returns qsub command list using select/place syntax for resource
+        lists (as opposed to the deprecated and often disabled mpp* options).
+
+        :type output_file: str
+        :arg output_file: combined stdout/stderr output file location
+
+        :rtype: list
+        :returns: qsub command as list of strings
+        """
+        submit_command = self._qsub_command_base(output_file)
+
+
+        if self.num_locales >= 0:
+            # Always use place=scatter to get 1 PE per node
+            # (mostly). Equivalent to mppnppn=1.
+            select_stmt = 'place=scatter'
+            select_stmt += ',select={0}'.format(self.num_locales)
+            if self.num_cpus_resource is not None:
+                select_stmt += ':{0}={1}'.format(
+                    self.num_cpus_resource, self.num_cpus)
+            if self.hostlist is not None:
+                # This relies on the caller to use the correct select syntax.
+                select_stmt += ':{0}'.format(self.hostlist)
+            submit_command += ['-l', select_stmt]
+        if self.walltime is not None:
+            submit_command.append('-l')
+            submit_command.append('walltime={0}'.format(self.walltime))
+
+        logging.debug('qsub command: {0}'.format(submit_command))
+        return submit_command
+
     def submit_job(self, testing_dir, output_file):
         """Launch job using qsub and return job id.
 
@@ -773,7 +796,6 @@ class SlurmJob(AbstractJob):
     status_bin = 'squeue'
     hostlist_resource = 'nodelist'
     num_nodes_resource = None
-    processing_elems_per_node_resource = None
     num_cpus_resource = None
 
     @classmethod
