@@ -79,7 +79,6 @@ public:
   virtual void     visitVarSym      (VarSymbol*         node);
 
   virtual bool     enterCallExpr    (CallExpr*          node);
-  virtual void     exitCallExpr     (CallExpr*          node);
 
   virtual bool     enterDefExpr     (DefExpr*           node);
 
