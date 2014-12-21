@@ -491,23 +491,16 @@ static void handleIncDir(const ArgumentState* state, const char* arg_unused) {
   addIncInfo(incFilename);
 }
 
-static void compute_program_name_loc(const char*  orig_argv0,
-                                     const char** name,
-                                     const char** loc) {
-  char* argv0     = strdup(orig_argv0);
-  char* lastslash = strrchr(argv0, '/');
+void compute_program_name_loc(ArgumentState* state, const char* argv0) {
+  char* name = strdup(argv0);
 
-  if (lastslash == NULL) {
-    *name = argv0;
-    *loc = findProgramPath(orig_argv0);
-  } else {
-    *lastslash = '\0';
-    *name = lastslash+1;
-    *loc = findProgramPath(orig_argv0);
+  if (char* firstSlash = strrchr(name, '/')) {
+    name  = firstSlash + 1;
   }
-  chplBinaryName = *name;
-}
 
+  state->program_name = name;
+  state->program_loc  = findProgramPath(argv0);
+}
 
 static void runCompilerInGDB(int argc, char* argv[]) {
   const char* gdbCommandFilename = createDebuggerFile("gdb", argc, argv);
@@ -953,9 +946,7 @@ int main(int argc, char* argv[]) {
 
     setupOrderedGlobals(argv[0]);
 
-    compute_program_name_loc(argv[0],
-                             &(arg_state.program_name),
-                             &(arg_state.program_loc));
+    compute_program_name_loc(&arg_state, argv[0]);
 
     process_args(&arg_state, argc, argv);
 
