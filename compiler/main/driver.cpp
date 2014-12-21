@@ -489,17 +489,6 @@ static void handleIncDir(const ArgumentState* state, const char* arg_unused) {
   addIncInfo(incFilename);
 }
 
-void compute_program_name_loc(ArgumentState* state, const char* argv0) {
-  char* name = strdup(argv0);
-
-  if (char* firstSlash = strrchr(name, '/')) {
-    name  = firstSlash + 1;
-  }
-
-  state->program_name = name;
-  state->program_loc  = findProgramPath(argv0);
-}
-
 static void runCompilerInGDB(int argc, char* argv[]) {
   const char* gdbCommandFilename = createDebuggerFile("gdb", argc, argv);
   const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
@@ -936,6 +925,8 @@ int main(int argc, char* argv[]) {
 
     tracker.StartPhase("init");
 
+    init_args(&sArgState, argv[0]);
+
     initFlags();
     initChplProgram();
     initPrimitive();
@@ -943,8 +934,6 @@ int main(int argc, char* argv[]) {
     initTheProgram();
 
     setupOrderedGlobals(argv[0]);
-
-    compute_program_name_loc(&sArgState, argv[0]);
 
     process_args(&sArgState, argc, argv);
 

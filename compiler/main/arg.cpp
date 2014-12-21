@@ -299,6 +299,22 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
   fprintf(stdout, "\n");
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Initialize program_name and program_loc                                     *
+*                                                                             *
+************************************** | *************************************/
+
+void init_args(ArgumentState* state, const char* argv0) {
+  char* name = strdup(argv0);
+
+  if (char* firstSlash = strrchr(name, '/')) {
+    name  = firstSlash + 1;
+  }
+
+  state->program_name = name;
+  state->program_loc  = findProgramPath(argv0);
+}
 
 /************************************* | **************************************
 *                                                                             *
