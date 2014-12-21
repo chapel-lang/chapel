@@ -856,7 +856,7 @@ static ArgumentDescription arg_desc[] = {
 };
 
 
-static ArgumentState arg_state = {
+static ArgumentState sArgState = {
   0,
   0,
   "program",
@@ -887,7 +887,7 @@ static void printStuff(const char* argv0) {
   bool printedSomething = false;
 
   if (printVersion) {
-    fprintf(stdout, "%s Version %s\n", arg_state.program_name, compileVersion);
+    fprintf(stdout, "%s Version %s\n", sArgState.program_name, compileVersion);
     printCopyright = true;
     printedSomething = true;
     shouldExit = true;
@@ -913,13 +913,13 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
 
-  if (printHelp || (!printedSomething && arg_state.nfile_arguments < 1)) {
+  if (printHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
-    usage(&arg_state, (!printHelp), printEnvHelp, printSettingsHelp);
+    usage(&sArgState, (!printHelp), printEnvHelp, printSettingsHelp);
     shouldExit = true;
     printedSomething = true;
   }
-  if (printedSomething && arg_state.nfile_arguments < 1) {
+  if (printedSomething && sArgState.nfile_arguments < 1) {
     shouldExit = true;
   }
   if (shouldExit) {
@@ -946,9 +946,9 @@ int main(int argc, char* argv[]) {
 
     setupOrderedGlobals(argv[0]);
 
-    compute_program_name_loc(&arg_state, argv[0]);
+    compute_program_name_loc(&sArgState, argv[0]);
 
-    process_args(&arg_state, argc, argv);
+    process_args(&sArgState, argc, argv);
 
     initCompilerGlobals(); // must follow argument parsing
 
@@ -966,11 +966,10 @@ int main(int argc, char* argv[]) {
   if (runlldb)
     runCompilerInLLDB(argc, argv);
 
-  testInputFiles(arg_state.nfile_arguments, arg_state.file_argument);
+  testInputFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
   if (fDocs == false && strcmp(chplBinaryName, "chpldoc") == 0)
     fDocs = true;
-
 
   runPasses(tracker, strcmp(chplBinaryName, "chpldoc") == 0);
 
@@ -984,7 +983,7 @@ int main(int argc, char* argv[]) {
     printf("timer 5: %8.3lf\n", timer5.elapsedSecs());
   }
 
-  free_args(&arg_state);
+  free_args(&sArgState);
 
   tracker.Stop();
 
