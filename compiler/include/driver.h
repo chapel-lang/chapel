@@ -182,13 +182,6 @@ extern bool debugCCode;
 extern bool optimizeCCode;
 extern bool specializeCCode;
 
-extern bool fEnableTimers;
-extern Timer timer1;
-extern Timer timer2;
-extern Timer timer3;
-extern Timer timer4;
-extern Timer timer5;
-
 extern bool fNoMemoryFrees;
 extern int  numGlobalsOnHeap;
 extern bool preserveInlinedLineNumbers;
