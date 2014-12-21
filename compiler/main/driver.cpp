@@ -928,16 +928,24 @@ int main(int argc, char* argv[]) {
 
   {
     astlocMarker markAstLoc(0, "<internal>");
+    DefExpr*     objectClass = 0;
 
     tracker.StartPhase("init");
 
     init_args(&sArgState, argv[0]);
 
+    for (int i = 1; i < argc; i++)
+      if (strcmp(argv[i], "--ipe") == 0)
+        fUseIPE = true;
+
     initFlags();
-    initChplProgram();
+    initRootModule();
     initPrimitive();
     initPrimitiveTypes();
-    initTheProgram();
+
+    objectClass = defineObjectClass();
+
+    initChplProgram(objectClass);
 
     setupOrderedGlobals(argv[0]);
 
