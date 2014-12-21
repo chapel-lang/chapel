@@ -79,8 +79,6 @@ const char *chpl_env_var_names[MAX_CHPL_ENV_VARS];
 
 bool widePointersStruct;
 
-static const char* chplBinaryName = NULL;
-
 static char makeArgument[256] = "";
 
 static char libraryFilename[FILENAME_MAX] = "";
@@ -968,10 +966,10 @@ int main(int argc, char* argv[]) {
 
   testInputFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
-  if (fDocs == false && strcmp(chplBinaryName, "chpldoc") == 0)
+  if (fDocs == false && strcmp(sArgState.program_name, "chpldoc") == 0)
     fDocs = true;
 
-  runPasses(tracker, strcmp(chplBinaryName, "chpldoc") == 0);
+  runPasses(tracker, strcmp(sArgState.program_name, "chpldoc") == 0);
 
   tracker.StartPhase("driverCleanup");
 
