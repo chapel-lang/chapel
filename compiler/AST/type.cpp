@@ -1209,16 +1209,6 @@ void initRootModule() {
   rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
 }
 
-void initChplProgram() {
-  theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
-  theProgram->filename = astr("<internal>");
-
-  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
-  theProgram->addFlag(FLAG_NO_CODEGEN);
-
-  rootModule->block->insertAtTail(new DefExpr(theProgram));
-}
-
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
@@ -1386,16 +1376,28 @@ DefExpr* defineObjectClass() {
   return retval;
 }
 
-void initTheProgram(DefExpr* objectDef) {
-  theProgram->block->insertAtTail(
-    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
+void initChplProgram(DefExpr* objectDef) {
+  CallExpr* base = 0;
+  CallExpr* std  = 0;
+
+  theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
+  theProgram->filename = astr("<internal>");
+
+  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
+  theProgram->addFlag(FLAG_NO_CODEGEN);
+
+  base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
+  std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+
+  theProgram->block->insertAtTail(base);
 
   // it may be better to add the following use after parsing
   // to simplify insertion of module guard sync var defs
-  theProgram->block->insertAtTail(
-    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard")));
+  theProgram->block->insertAtTail(std);
 
   theProgram->block->insertAtHead(objectDef);
+
+  rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
 
 void initCompilerGlobals() {

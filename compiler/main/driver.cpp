@@ -934,15 +934,18 @@ int main(int argc, char* argv[]) {
 
     init_args(&sArgState, argv[0]);
 
+    for (int i = 1; i < argc; i++)
+      if (strcmp(argv[i], "--ipe") == 0)
+        fUseIPE = true;
+
     initFlags();
     initRootModule();
-    initChplProgram();
     initPrimitive();
     initPrimitiveTypes();
 
     objectClass = defineObjectClass();
 
-    initTheProgram(objectClass);
+    initChplProgram(objectClass);
 
     setupOrderedGlobals(argv[0]);
 
