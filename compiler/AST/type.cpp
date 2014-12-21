@@ -1202,23 +1202,26 @@ createInternalType(const char *name, const char *cname) {
   primType->defaultValue = gSym
 
 
-void initChplProgram(void) {
-  // Inititalize the outermost module
-  rootModule = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
+void initRootModule() {
+  rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");
-  rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
 
-  theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
-  theProgram->addFlag(FLAG_NO_CODEGEN);
+  rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
+}
+
+void initChplProgram() {
+  theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
+
   theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
+  theProgram->addFlag(FLAG_NO_CODEGEN);
 
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
 
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
-void initPrimitiveTypes(void) {
+void initPrimitiveTypes() {
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
@@ -1391,7 +1394,7 @@ void initTheProgram() {
   theProgram->block->insertAtHead(objectDef);
 }
 
-void initCompilerGlobals(void) {
+void initCompilerGlobals() {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
   gBoundsChecking->addFlag(FLAG_CONST);

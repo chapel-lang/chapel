@@ -250,10 +250,11 @@ TYPE_EXTERN Type* dtObject;
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
 
-void initChplProgram(void);
-void initPrimitiveTypes(void);
-void initTheProgram(void);
-void initCompilerGlobals(void);
+void initRootModule();
+void initChplProgram();
+void initPrimitiveTypes();
+void initTheProgram();
+void initCompilerGlobals();
 
 bool is_void_type(Type*);
 bool is_bool_type(Type*);

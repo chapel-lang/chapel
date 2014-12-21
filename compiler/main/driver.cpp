@@ -934,6 +934,7 @@ int main(int argc, char* argv[]) {
     init_args(&sArgState, argv[0]);
 
     initFlags();
+    initRootModule();
     initChplProgram();
     initPrimitive();
     initPrimitiveTypes();
