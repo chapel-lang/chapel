@@ -131,14 +131,14 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
       strcmp(mModule->name, "chpl__Program") == 0  &&
       strcmp(node->name,    "chpl__Program") != 0)
   {
-    fprintf(mFP, "#<ModuleSymbol %s>", node->name);
+    fprintf(mFP, "#<ModuleSymbol %12d %s>", node->id, node->name);
 
     retval  = false;
 
   }
   else
   {
-    fprintf(mFP, "#<ModuleSymbol %s", node->name);
+    fprintf(mFP, "#<ModuleSymbol %12d %s", node->id, node->name);
 
     mOffset = mOffset + 2;
 
