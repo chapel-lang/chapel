@@ -190,13 +190,6 @@ bool debugCCode = false;
 bool optimizeCCode = false;
 bool specializeCCode = false;
 
-bool fEnableTimers = false;
-Timer timer1;
-Timer timer2;
-Timer timer3;
-Timer timer4;
-Timer timer5;
-
 bool fNoMemoryFrees = false;
 int numGlobalsOnHeap = 0;
 bool preserveInlinedLineNumbers = false;
@@ -717,7 +710,7 @@ static ArgumentDescription arg_desc[] = {
  {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
  {"use-noinit", ' ', NULL, "Enable [disable] ability to skip default initialization through the keyword noinit", "N", &fUseNoinit, NULL, NULL},
- 
+
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
@@ -835,10 +828,10 @@ static ArgumentDescription arg_desc[] = {
  {"preserve-inlined-line-numbers", ' ', NULL, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", NULL},
  {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
- {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules", "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
- {"ipe",             ' ', NULL, "Enable the Interactive Programming Environment (IPE)", "F", &fUseIPE, NULL, NULL },
- {"timers", ' ', NULL, "Enable [disable] general timers one to five", "N", &fEnableTimers, "CHPL_ENABLE_TIMERS", NULL},
- {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome, NULL, NULL},
+
+ {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
+ {"ipe",             ' ', NULL, "Enable the Interactive Programming Environment (IPE)", "F", &fUseIPE,         NULL,                   NULL },
+ {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome,   NULL,                   NULL},
  {0}
 };
 
@@ -852,10 +845,11 @@ static ArgumentState sArgState = {
 };
 
 
-static void setupDependentVars(void) {
+static void setupDependentVars() {
   if (developer && !userSetCppLineno) {
     printCppLineno = false;
   }
+
 #ifndef HAVE_LLVM
   if (llvmCodegen)
     USR_FATAL("This compiler was built without LLVM support");
@@ -870,45 +864,57 @@ static void setupDependentVars(void) {
 
 
 static void printStuff(const char* argv0) {
-  bool shouldExit = false;
+  bool shouldExit       = false;
   bool printedSomething = false;
 
   if (printVersion) {
     fprintf(stdout, "%s Version %s\n", sArgState.program_name, compileVersion);
-    printCopyright = true;
+
+    printCopyright   = true;
     printedSomething = true;
-    shouldExit = true;
+    shouldExit       = true;
   }
+
   if (printLicense) {
     fprintf(stdout,
 #include "LICENSE"
             );
-    printCopyright = false;
-    shouldExit = true;
+
+    printCopyright   = false;
+    shouldExit       = true;
     printedSomething = true;
   }
+
   if (printCopyright) {
     fprintf(stdout,
 #include "COPYRIGHT"
             );
+
     printedSomething = true;
   }
   if( printChplHome ) {
     char* guess = findProgramPath(argv0);
+
     printf("%s\t%s\n", CHPL_HOME, guess);
+
     free(guess);
+
     printedSomething = true;
   }
 
   if (printHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
+
     usage(&sArgState, (!printHelp), printEnvHelp, printSettingsHelp);
-    shouldExit = true;
+
+    shouldExit       = true;
     printedSomething = true;
   }
+
   if (printedSomething && sArgState.nfile_arguments < 1) {
-    shouldExit = true;
+    shouldExit       = true;
   }
+
   if (shouldExit) {
     clean_exit(0);
   }
@@ -961,14 +967,6 @@ int main(int argc, char* argv[]) {
   runPasses(tracker, strcmp(sArgState.program_name, "chpldoc") == 0);
 
   tracker.StartPhase("driverCleanup");
-
-  if (fEnableTimers) {
-    printf("timer 1: %8.3lf\n", timer1.elapsedSecs());
-    printf("timer 2: %8.3lf\n", timer2.elapsedSecs());
-    printf("timer 3: %8.3lf\n", timer3.elapsedSecs());
-    printf("timer 4: %8.3lf\n", timer4.elapsedSecs());
-    printf("timer 5: %8.3lf\n", timer5.elapsedSecs());
-  }
 
   free_args(&sArgState);
 
