@@ -928,6 +928,7 @@ int main(int argc, char* argv[]) {
 
   {
     astlocMarker markAstLoc(0, "<internal>");
+    DefExpr*     objectClass = 0;
 
     tracker.StartPhase("init");
 
@@ -938,7 +939,10 @@ int main(int argc, char* argv[]) {
     initChplProgram();
     initPrimitive();
     initPrimitiveTypes();
-    initTheProgram();
+
+    objectClass = defineObjectClass();
+
+    initTheProgram(objectClass);
 
     setupOrderedGlobals(argv[0]);
 

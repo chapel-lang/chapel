@@ -1357,15 +1357,7 @@ void initPrimitiveTypes() {
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
 
-void initTheProgram() {
-  theProgram->block->insertAtTail(
-    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
-
-  // it may be better to add the following use after parsing
-  // to simplify insertion of module guard sync var defs
-  theProgram->block->insertAtTail(
-    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard")));
-  
+DefExpr* defineObjectClass() {
   // The base object class looks like this:
   //
   //   class object {
@@ -1380,16 +1372,28 @@ void initTheProgram() {
   //  throughout compilation, and it seemed to me that the it might result
   //  in possibly more special case code.
   //
-  DefExpr* objectDef = buildClassDefExpr("object",
-                                         dtObject,
-                                         NULL,
-                                         new BlockStmt(),
-                                         FLAG_UNKNOWN,
-                                         NULL);
+  DefExpr* retval = buildClassDefExpr("object",
+                                      dtObject,
+                                      NULL,
+                                      new BlockStmt(),
+                                      FLAG_UNKNOWN,
+                                      NULL);
 
-  objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
-  objectDef->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
-  objectDef->sym->addFlag(FLAG_NO_OBJECT);
+  retval->sym->addFlag(FLAG_OBJECT_CLASS);
+  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
+  retval->sym->addFlag(FLAG_NO_OBJECT);
+
+  return retval;
+}
+
+void initTheProgram(DefExpr* objectDef) {
+  theProgram->block->insertAtTail(
+    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
+
+  // it may be better to add the following use after parsing
+  // to simplify insertion of module guard sync var defs
+  theProgram->block->insertAtTail(
+    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard")));
 
   theProgram->block->insertAtHead(objectDef);
 }
