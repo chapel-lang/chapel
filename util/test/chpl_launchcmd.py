@@ -683,13 +683,7 @@ class PbsProJob(AbstractJob):
     status_bin = 'qstat'
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
-
-    # If CHPL_PBSPRO_NO_MPPDEPTH is set in the environment, set class attribute
-    # to None. Otherwise, default to mppdepth.
-    #
-    # This allows callers to optionally disable this particular setting, which
-    # can conflict with the hostlist/mppnodes setting.
-    num_cpus_resource = 'ncpus' if 'CHPL_PBSPRO_NO_MPPDEPTH' not in os.environ else None
+    num_cpus_resource = 'ncpus'
 
     @property
     def job_name(self):
