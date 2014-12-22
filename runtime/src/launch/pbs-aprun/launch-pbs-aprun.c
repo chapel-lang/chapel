@@ -173,10 +173,10 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
     }
     break;
   case pbspro:
-    if (generate_qsub_script) { 
+    if (generate_qsub_script) {
       // We always want to use scatter since we use one PE per node
       fprintf(qsubScript, "#PBS -l place=scatter\n");
-      fprintf(qsubScript, "#PBS -lselect=%d:ncpus=%d\n", numLocales, numCoresPerLocale);
+      fprintf(qsubScript, "#PBS -l select=%d:ncpus=%d\n", numLocales, numCoresPerLocale);
     } else {
       // We always want to use scatter since we use one PE per node
       length += snprintf(optionString + length, maxOptLength - length,
