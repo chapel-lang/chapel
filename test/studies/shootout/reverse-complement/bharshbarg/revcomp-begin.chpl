@@ -1,11 +1,5 @@
 extern proc memcpy(a:[], b, len);
 
-// For consistency with the other shootouts, a value is passed to this
-// benchmark in the Computer Language Benchmarks Game test suite, even though
-// the input set provided is used to determine the problem size.  Store that
-// passed value here.
-config const n = 0;
-
 proc string.toBytes() {
    var b : [1..this.length] uint(8);
    memcpy(b, this, this.length);
@@ -15,7 +9,7 @@ proc string.toBytes() {
 const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".toBytes();
 var table : [1..128] uint(8);
 
-proc main() {
+proc main(args: [] string) {
   param newLineChar = 0x0A;
   param greaterThan = 0x3E;
   var inFile = openfd(0); // stdin

@@ -3,12 +3,6 @@ use AdvancedIters;
 
 extern proc memcpy(x : [], b, len:int);
 
-// For consistency with the other shootouts, a value is passed to this
-// benchmark in the Computer Language Benchmarks Game test suite, even though
-// the input set provided is used to determine the problem size.  Store that
-// passed value here.
-config const n = 0;
-
 config const tableSize = 1 << 16;
 config const lineSize = 61;
 
@@ -95,7 +89,7 @@ inline proc startsWithThree(data : []) {
   return data[1] == 0x3E && data[2] == 0x54 && data[3] == 0x48;
 }
 
-proc main() {
+proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const inFile = openfd(0);
   const fileLen = inFile.length();
