@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-
-import os
-
-compopts =  os.getenv('COMPOPTS', '')
-# skips if we aren't running a performance test (which utilize --fast and
-# --static)
-print('--fast' not in compopts and '--static' not in compopts)
+# These tests are copies of other tests
+# we only want them for performance comparisons
+CHPL_TEST_PERF != on

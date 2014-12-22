@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2014 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -63,7 +63,7 @@ void Type::addSymbol(TypeSymbol* newsymbol) {
 }
 
 
-bool Type::inTree(void) {
+bool Type::inTree() {
   if (symbol)
     return symbol->inTree();
   else
@@ -71,7 +71,7 @@ bool Type::inTree(void) {
 }
 
 
-Type* Type::typeInfo(void) {
+Type* Type::typeInfo() {
   return this;
 }
 
@@ -194,7 +194,7 @@ void EnumType::codegenDef() {
   FILE* outfile = info->cfile;
 
 
-  if( outfile ) { 
+  if( outfile ) {
     fprintf(outfile, "typedef enum {");
     bool first = true;
     for_enums(constant, this) {
@@ -219,10 +219,10 @@ void EnumType::codegenDef() {
     if(!(type = info->lvt->getType(symbol->cname))) {
       type = ty->codegen().type;
       info->lvt->addGlobalType(symbol->cname, type);
-      
+
       for_enums(constant, this) {
         //llvm::Constant *initConstant;
-        
+
         if(constant->init == NULL) INT_FATAL(this, "no constant->init");
 
         VarSymbol* s = toVarSymbol(toSymExpr(constant->init)->var);
@@ -244,7 +244,6 @@ int EnumType::codegenStructure(FILE* outfile, const char* baseoffset) {
   fprintf(outfile, "{CHPL_TYPE_enum, %s},\n", baseoffset);
   return 1;
 }
- 
 
 
 void EnumType::sizeAndNormalize() {
@@ -274,10 +273,13 @@ void EnumType::sizeAndNormalize() {
         // If we get here, then the initializer does not have an immediate
         // value associated with it....
         SymExpr* sym = toSymExpr(constant->init);
+
         // We think that all params should have init values by now.
         INT_ASSERT(sym && !sym->var->hasFlag(FLAG_PARAM));
+
         // So we're going to blame this on the user.
-        USR_FATAL(constant, "enumerator '%s' is not an integer param value", 
+        USR_FATAL(constant,
+                  "enumerator '%s' is not an integer param value",
                   constant->sym->name);
         // And unfortunately, if we get here, we don't know how to proceed,
         // which is why no USR_FATAL_CONT().
@@ -708,7 +710,7 @@ void AggregateType::codegenDef() {
         // global pointer!
         Type* baseType = this->getField("addr")->type;
         GenRet c = baseType;
- 
+
         // could use __attribute__(address_space(101))
         //  if we wanted to emit packed pointers in a different AS with clang.
         fprintf(outfile, "typedef %s * %s;\n",
@@ -818,15 +820,15 @@ void AggregateType::codegenDef() {
       // Is it a class or a record?
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
-      
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
           (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
         unsigned globalAddressSpace = 0;
+
         if( fLLVMWideOpt )
-          globalAddressSpace = info->globalToWideInfo.globalSpace; 
+          globalAddressSpace = info->globalToWideInfo.globalSpace;
 
         Type* baseType = this->getField("addr")->type;
         llvm::Type* llBaseType = baseType->symbol->codegen().type;
@@ -870,7 +872,7 @@ void AggregateType::codegenDef() {
 
         llvm::StructType* stype = llvm::cast<llvm::StructType>(type);
         stype->setBody(params);
-  
+
         if (aggregateTag == AGGREGATE_CLASS) {
           type = stype->getPointerTo();
         }
@@ -897,13 +899,13 @@ void AggregateType::codegenPrototype() {
   // not a record or wide pointer)
   if (aggregateTag == AGGREGATE_CLASS) {
     if( info->cfile ) {
-      fprintf(info->cfile, "typedef struct %s* %s;\n", 
+      fprintf(info->cfile, "typedef struct %s* %s;\n",
               this->classStructName(false), symbol->cname);
     } else {
 #ifdef HAVE_LLVM
       // ie _AggregateType
       const char* struct_name = this->classStructName(true);
- 
+
       llvm::StructType* st;
       st = llvm::StructType::create(info->module->getContext(), struct_name);
       info->lvt->addGlobalType(struct_name, st);
@@ -976,20 +978,28 @@ static const char* genNewBaseOffsetString(TypeSymbol* typesym, int fieldnum,
                                           AggregateType* classtype) {
   if (classtype->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     char fieldnumstr[64];
+
     sprintf(fieldnumstr, "%d", fieldnum);
-    return astr(baseoffset, " + (", fieldnumstr, "* ", 
-                genSizeofStr(field->type->symbol), ")");
+
+    return astr(baseoffset,
+                " + (",
+                fieldnumstr, "* ",
+                genSizeofStr(field->type->symbol),
+                ")");
   } else {
-    return astr(baseoffset, " + offsetof(", 
+    return astr(baseoffset,
+                " + offsetof(",
                 genUnderscore(classtype->symbol),
-                classtype->symbol->cname, ", ", 
+                classtype->symbol->cname,
+                ", ",
                 classtype->isUnion() ? "_u." : "",
                 field->cname, ")");
   }
 }
 
-int AggregateType::codegenFieldStructure(FILE* outfile, bool nested, 
-                                     const char* baseoffset) {
+int AggregateType::codegenFieldStructure(FILE*       outfile,
+                                         bool        nested,
+                                         const char* baseoffset) {
   // Handle ref types as pointers
   if (symbol->hasFlag(FLAG_REF)) {
     fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, 0},\n");
@@ -999,11 +1009,15 @@ int AggregateType::codegenFieldStructure(FILE* outfile, bool nested,
 
   int totfields = 0;
   int locfieldnum = 0;
+
   for_fields(field, this) {
-    const char* newbaseoffset = genNewBaseOffsetString(symbol, locfieldnum,
-                                                       baseoffset, field,
+    const char* newbaseoffset = genNewBaseOffsetString(symbol,
+                                                       locfieldnum,
+                                                       baseoffset,
+                                                       field,
                                                        this);
-    int numfields = field->type->codegenStructure(outfile, newbaseoffset);
+    int         numfields = field->type->codegenStructure(outfile, newbaseoffset);
+
     fprintf(outfile, " /* %s */\n", field->name);
     totfields += numfields;
     locfieldnum++;
@@ -1068,9 +1082,11 @@ int AggregateType::getMemberGEP(const char *name) {
 int AggregateType::getFieldPosition(const char* name, bool fatal) {
   Vec<Type*> next, current;
   Vec<Type*>* next_p = &next, *current_p = &current;
+
   current_p->set_add(this);
-  
+
   int fieldPos = 0;
+
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
       if (AggregateType* ct = toAggregateType(t)) {
@@ -1078,7 +1094,7 @@ int AggregateType::getFieldPosition(const char* name, bool fatal) {
           if (!strcmp(sym->name, name)) {
             return fieldPos;
           }
-          
+
           fieldPos++;
         }
         forv_Vec(Type, parent, ct->dispatchParents) {
@@ -1092,17 +1108,19 @@ int AggregateType::getFieldPosition(const char* name, bool fatal) {
     current_p = temp;
     next_p->clear();
   }
-  
+
   if (fatal) {
     const char *className = "<no name>";
     if (this->symbol) { // this is always true?
       className = this->symbol->name;
     }
     // TODO: report as a user error in certain cases
-    INT_FATAL(this, "no field '%s' in class '%s' in getField()",
-              name, className);
+    INT_FATAL(this,
+              "no field '%s' in class '%s' in getField()",
+              name,
+              className);
   }
-  
+
   return -1;
 }
 
@@ -1147,7 +1165,7 @@ Symbol* AggregateType::getField(int i) {
 }
 
 
-static PrimitiveType* 
+static PrimitiveType*
 createPrimitiveType(const char *name, const char *cname, bool internalType=false) {
   PrimitiveType* pt = new PrimitiveType(NULL, internalType);
   TypeSymbol* ts = new TypeSymbol(name, pt);
@@ -1164,7 +1182,7 @@ createInternalType(const char *name, const char *cname) {
 }
 
 
-// Create new primitive type for integers. Specify name for now. Though it will 
+// Create new primitive type for integers. Specify name for now. Though it will
 // probably be something like int1, int8, etc. in the end. In that case
 // we can just specify the width (i.e., size).
 #define INIT_PRIM_BOOL(name, width)                                \
@@ -1182,11 +1200,11 @@ createInternalType(const char *name, const char *cname) {
 #define INIT_PRIM_REAL( name, width)                                     \
   dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width); \
   dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
-  
+
 #define INIT_PRIM_IMAG( name, width)                               \
   dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width); \
   dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
-  
+
 #define INIT_PRIM_COMPLEX( name, width)                                   \
   dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
   dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
@@ -1202,23 +1220,16 @@ createInternalType(const char *name, const char *cname) {
   primType->defaultValue = gSym
 
 
-void initChplProgram(void) {
-  // Inititalize the outermost module
-  rootModule = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
+void initRootModule() {
+  rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");
+
   rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
-
-  theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
-  theProgram->addFlag(FLAG_NO_CODEGEN);
-  theProgram->filename = astr("<internal>");
-  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
-
-  rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
 
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
-void initPrimitiveTypes(void) {
+void initPrimitiveTypes() {
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
@@ -1301,7 +1312,7 @@ void initPrimitiveTypes(void) {
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = NULL;
 
-  dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
+  dtSymbol = createPrimitiveType( "symbol", "_symbol");
 
   dtFile = createPrimitiveType ("_file", "_cfile");
   dtFile->symbol->addFlag(FLAG_EXTERN);
@@ -1354,15 +1365,7 @@ void initPrimitiveTypes(void) {
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
 
-void initTheProgram() {
-  theProgram->block->insertAtTail(
-    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
-
-  // it may be better to add the following use after parsing
-  // to simplify insertion of module guard sync var defs
-  theProgram->block->insertAtTail(
-    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard")));
-  
+DefExpr* defineObjectClass() {
   // The base object class looks like this:
   //
   //   class object {
@@ -1377,21 +1380,45 @@ void initTheProgram() {
   //  throughout compilation, and it seemed to me that the it might result
   //  in possibly more special case code.
   //
-  DefExpr* objectDef = buildClassDefExpr("object",
-                                         dtObject,
-                                         NULL,
-                                         new BlockStmt(),
-                                         FLAG_UNKNOWN,
-                                         NULL);
+  DefExpr* retval = buildClassDefExpr("object",
+                                      dtObject,
+                                      NULL,
+                                      new BlockStmt(),
+                                      FLAG_UNKNOWN,
+                                      NULL);
 
-  objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
-  objectDef->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
-  objectDef->sym->addFlag(FLAG_NO_OBJECT);
+  retval->sym->addFlag(FLAG_OBJECT_CLASS);
+  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
+  retval->sym->addFlag(FLAG_NO_OBJECT);
 
-  theProgram->block->insertAtHead(objectDef);
+  return retval;
 }
 
-void initCompilerGlobals(void) {
+void initChplProgram(DefExpr* objectDef) {
+  CallExpr* base = 0;
+  CallExpr* std  = 0;
+
+  theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
+  theProgram->filename = astr("<internal>");
+
+  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
+  theProgram->addFlag(FLAG_NO_CODEGEN);
+
+  base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
+  std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+
+  theProgram->block->insertAtTail(base);
+
+  // it may be better to add the following use after parsing
+  // to simplify insertion of module guard sync var defs
+  theProgram->block->insertAtTail(std);
+
+  theProgram->block->insertAtHead(objectDef);
+
+  rootModule->block->insertAtTail(new DefExpr(theProgram));
+}
+
+void initCompilerGlobals() {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
   gBoundsChecking->addFlag(FLAG_CONST);
@@ -1439,7 +1466,7 @@ bool is_void_type(Type* t) {
 }
 
 bool is_bool_type(Type* t) {
-  return 
+  return
     t == dtBools[BOOL_SIZE_SYS] ||
     t == dtBools[BOOL_SIZE_8] ||
     t == dtBools[BOOL_SIZE_16] ||
@@ -1508,26 +1535,26 @@ bool is_string_type(Type *t) {
 
 int get_width(Type *t) {
   if (t == dtBools[BOOL_SIZE_SYS]) {
-    return 1; 
+    return 1;
     // BLC: This is a lie, but one I'm hoping we can get away with
     // based on how this function is used
   }
-  if (t == dtBools[BOOL_SIZE_8] || 
-      t == dtInt[INT_SIZE_8] || 
+  if (t == dtBools[BOOL_SIZE_8] ||
+      t == dtInt[INT_SIZE_8] ||
       t == dtUInt[INT_SIZE_8])
     return 8;
-  if (t == dtBools[BOOL_SIZE_16] || 
-      t == dtInt[INT_SIZE_16] || 
+  if (t == dtBools[BOOL_SIZE_16] ||
+      t == dtInt[INT_SIZE_16] ||
       t == dtUInt[INT_SIZE_16])
     return 16;
   if (t == dtBools[BOOL_SIZE_32] ||
-      t == dtInt[INT_SIZE_32] || 
+      t == dtInt[INT_SIZE_32] ||
       t == dtUInt[INT_SIZE_32] ||
       t == dtReal[FLOAT_SIZE_32] ||
       t == dtImag[FLOAT_SIZE_32])
     return 32;
   if (t == dtBools[BOOL_SIZE_64] ||
-      t == dtInt[INT_SIZE_64] || 
+      t == dtInt[INT_SIZE_64] ||
       t == dtUInt[INT_SIZE_64] ||
       t == dtReal[FLOAT_SIZE_64] ||
       t == dtImag[FLOAT_SIZE_64] ||
@@ -1569,7 +1596,7 @@ bool isRefCountedType(Type* t) {
   //  be "automatically" reference counted when needed
 
   // The set of reference counted types currently coincides with the set
-  // of record-wrapped types, so we can reuse the flag set. 
+  // of record-wrapped types, so we can reuse the flag set.
   return getRecordWrappedFlags(t->symbol).any();
 }
 
@@ -1658,7 +1685,7 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
       }
     }
   } else {
-    if( info->cfile ) 
+    if( info->cfile )
       ret.c = "-1";
     else {
 #ifdef HAVE_LLVM
@@ -1701,13 +1728,15 @@ void codegenTypeStructures(FILE* hdrfile) {
   fprintf(outfile, "} chpl_rt_types;\n\n");
 
   fprintf(outfile,
-      "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
-            
+          "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
+
   qsort(typesToStructurallyCodegenList.v,
         typesToStructurallyCodegenList.n,
         sizeof(typesToStructurallyCodegenList.v[0]),
         compareCnames);
+
   int num = 0;
+
   forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
     if (num) {
       fprintf(outfile, ",\n");

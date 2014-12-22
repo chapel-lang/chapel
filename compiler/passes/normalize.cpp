@@ -1335,7 +1335,6 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
       se->var = new_IntSymbol(width);
   }
   fn->defPoint->insertAfter(new DefExpr(newfn));
-  fixup_query_formals(newfn);
 }
 
 static void

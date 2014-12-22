@@ -1,1 +1,1 @@
-/users/lydia/Documents/git-trunk/chapel/test/studies/hpcc/STREAMS/diten/stream-fragmented-local.chpl
+../diten/stream-fragmented-local.chpl

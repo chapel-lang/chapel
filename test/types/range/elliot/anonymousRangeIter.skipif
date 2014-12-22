@@ -4,3 +4,6 @@ CHPL_COMM != none
 # baseline will leave the generated code without iterator optimizations and
 # inlining turned on so the output will be drastically different
 COMPOPTS <= --baseline
+
+# test greps generated c code, will fail for llvm
+COMPOPTS <= --llvm
