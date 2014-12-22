@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 #
-# Configure environment for a particular configuration for whitebox testing.
+# Configure environment for a particular configuration for whitebox testing. To
+# use this outside of nightly testing, set these two variables in the
+# environment:
+#
+# Variable   Values
+# ------------------------------------------------------
+# COMPILER    cray, intel, pgi, gnu
+# COMP_TYPE   TARGET, HOST-TARGET, HOST-TARGET-no-PrgEnv
+#
+# Optionally, the platform can be set with:
+#
+# CRAY_PLATFORM_FROM_JENKINS
+#
+# The default is cray-xc. cray-xe is the other valid option.
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash
