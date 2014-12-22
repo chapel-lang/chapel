@@ -800,9 +800,12 @@ function getDataAndGenGraph(graphInfo) {
   // array. We could do this in genGraphs, but then we have to think about
   // timezones and all that stuff, it's fast enough and far easier to just let
   // dygraphs do it
-  var ann = graphInfo.annotations;
-  for (var i=0; i<ann.length; i++) {
-    ann[i].x = parseDate(ann[i].x);
+  if (!graphInfo.loadedAnnotations) {
+    var ann = graphInfo.annotations;
+    for (var i=0; i<ann.length; i++) {
+      ann[i].x = parseDate(ann[i].x);
+    }
+    graphInfo.loadedAnnotations = true;
   }
 
   // need to get the divs before the async call to get the json so graphs are
