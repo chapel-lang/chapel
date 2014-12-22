@@ -1,1 +1,1 @@
-/users/lydia/Documents/git-trunk/chapel/test/release/examples/benchmarks/shootout/spectralnorm.chpl
+../../../../release/examples/benchmarks/shootout/spectralnorm.chpl
