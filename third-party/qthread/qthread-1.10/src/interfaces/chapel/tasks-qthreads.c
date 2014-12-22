@@ -845,22 +845,7 @@ c_sublocid_t chpl_task_getNumSublocales(void)
     // FIXME: What we really want here is the number of NUMA
     // sublocales we are supporting.  For now we use the number of
     // shepherds as a proxy for that.
-
-#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
-#if CHPL_LOCALE_MODEL_NUM_SUBLOCALES < 0
-#error Forced number of sublocales cannot be negative.
-#endif
-    if (CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0) {
-        return 0;
-    } else {
-        c_sublocid_t num_sublocs = (c_sublocid_t) qthread_num_shepherds();
-        return ((num_sublocs < CHPL_LOCALE_MODEL_NUM_SUBLOCALES)
-                ? num_sublocs
-                : CHPL_LOCALE_MODEL_NUM_SUBLOCALES);
-    }
-#else
     return (c_sublocid_t) qthread_num_shepherds();
-#endif
 }
 
 size_t chpl_task_getCallStackSize(void)

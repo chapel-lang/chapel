@@ -1317,10 +1317,9 @@ module ChapelRange {
         coforall chunk in 0..#numChunks {
           on here.getChild(chunk) {
             if debugDataParNuma {
-              extern proc chpl_task_getSubloc(): chpl_sublocID_t;
-              if chunk!=chpl_task_getSubloc() then
+              if chunk!=chpl_getSubloc() then
                 writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
-                        ", on "+chpl_task_getSubloc()+") ***");
+                        ", on "+chpl_getSubloc()+") ***");
             }
             const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
             const locRange = lo..hi;
