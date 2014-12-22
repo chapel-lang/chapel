@@ -282,6 +282,9 @@ buildDefaultWrapper(FnSymbol* fn,
             {
               Symbol* copyTemp = newTemp("wrap_arg");
               wrapper->insertAtTail(new DefExpr(copyTemp));
+              // TODO AMM: Insertion of this autocopy can probably be left to
+              // ownership flow analysis.  Since the LHS is a structure member,
+              // the copy is required, but only if the RHS object is not owned.
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,

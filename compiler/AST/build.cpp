@@ -664,6 +664,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   thenStmt->insertAtTail(new DefExpr(domain));
   // note that we need the below autoCopy until we start reference
   // counting domains within runtime array types
+  // TODO AMM: Check if the explicit insertion of an autoCopy is necessary here.
   thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, domain,
                            new CallExpr("chpl__autoCopy",
                              new CallExpr("chpl__ensureDomainExpr",

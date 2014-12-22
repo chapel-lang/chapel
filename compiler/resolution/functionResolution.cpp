@@ -2955,6 +2955,8 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
 
 // Report an error when storing a sync or single variable into a tuple.
 // This is because currently we deallocate memory excessively in this case.
+// TODO AMM: Review and see if this is still needed after comprehensive automatic
+// memory management is in place.
 static void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 {
   // Do not perform the checks if:
@@ -3761,8 +3763,9 @@ insertFormalTemps(FnSymbol* fn) {
 // The copy in is needed for "inout", "in" and "const in" intents.
 // The copy out is needed for "inout" and "out" intents.
 // Blank intent is treated like "const", and normally copies the formal through
-// chpl__autoCopy.
+// chpl__autoCopy.  (Check that this is still true.)
 // Note that autoCopy is called in this case, but not for "inout", "in" and "const in".
+// TODO AMM: Check that this special behavior is correct and necessary.
 // Either record-wrapped types are always passed by ref, or some unexpected
 // behavior will result by applying "in" intents to them.
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
@@ -3845,6 +3848,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
            !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
            !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
            !getSyncFlags(ts).any()) {
+         // TODO AMM: Remove this special case and let parallel handle it.
          if (fn->hasFlag(FLAG_BEGIN)) {
            // autoCopy/autoDestroy will be added later, in parallel pass
            // by insertAutoCopyDestroyForTaskArg()
@@ -5344,6 +5348,8 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
 // Currently, FLAG_DONOR_FN is only relevant when placed on
 // chpl__autoCopy().
 //
+// TODO AMM: Would like to simplify this, so it returns true if the function
+// returns a record or tuple and false otherwise.
 FnSymbol*
 requiresImplicitDestroy(CallExpr* call) {
   if (FnSymbol* fn = call->isResolved()) {
@@ -7916,8 +7922,9 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
           VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
-          INT_ASSERT(autoCopyMap.get(tmp->type));
-          call->replace(new CallExpr(autoCopyMap.get(tmp->type), tmp));
+          FnSymbol* autoCopy = autoCopyMap.get(tmp->type);
+          INT_ASSERT(autoCopy);
+          call->replace(new CallExpr(autoCopy, tmp));
         } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           //
           // This is probably related to a comment that used to handle
