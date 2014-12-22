@@ -48,12 +48,6 @@ module LocaleModel {
   // module then provides the interface the compiler-emitted code uses to do
   // the same.
 
-  type chpl_nodeID_t = int(32);
-  type chpl_sublocID_t = int(32);
-
-  extern const c_sublocid_none: chpl_sublocID_t;
-  extern const c_sublocid_any: chpl_sublocID_t;
-
   extern record chpl_localeID_t {
     // We need to know that this is a record type in order to pass it to and
     // return it from runtime functions properly, but we don't need or want

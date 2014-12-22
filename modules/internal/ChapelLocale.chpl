@@ -24,6 +24,15 @@ module ChapelLocale {
   use LocaleModel;
 
   //
+  // Node and sublocale types and special sublocale values.
+  //
+  type chpl_nodeID_t = int(32);
+  type chpl_sublocID_t = int(32);
+
+  extern const c_sublocid_none: chpl_sublocID_t;
+  extern const c_sublocid_any: chpl_sublocID_t;
+
+  //
   // An abstract class. Specifies the required locale interface.
   // Each locale implementation must inherit from this class.
   //
@@ -96,7 +105,6 @@ module ChapelLocale {
 
     proc chpl_localeid() : chpl_localeID_t {
       _throwPVFCError();
-      extern const c_sublocid_none: chpl_sublocID_t;
       return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
 
@@ -218,7 +226,6 @@ module ChapelLocale {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
       var flags: [1..#numLocales-1] localesSignal;
-      extern const c_sublocid_any: chpl_sublocID_t;
       coforall locIdx in 0..#numLocales /*ref(b)*/ {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
