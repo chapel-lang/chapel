@@ -1,1 +1,1 @@
-/users/lydia/Documents/git-trunk/chapel/test/release/examples/benchmarks/hpcc/hpl.chpl
+../../../../release/examples/benchmarks/hpcc/hpl.chpl

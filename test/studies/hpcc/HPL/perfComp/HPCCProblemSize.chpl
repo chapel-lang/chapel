@@ -1,1 +1,1 @@
-/users/lydia/Documents/git-trunk/chapel/test/release/examples/benchmarks/hpcc/HPCCProblemSize.chpl
+../../../../release/examples/benchmarks/hpcc/HPCCProblemSize.chpl
