@@ -157,7 +157,11 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
           // to create it.
           exitStatus = mkdir(tmp, mode);
         }
-        if (exitStatus) {
+        // EEXIST could occur from the mkdir call above if the directory came
+        // into existence between when we checked and when we tried to create
+        // it.  There's really nothing to be done about it, so skip it and
+        // continue on.
+        if (exitStatus && errno != EEXIST) {
           // We encountered an error making a parent directory or during the
           // stat call to determine if we need to make a directory.  We will
           // encounter errors for every step after this, so return this one
@@ -169,6 +173,11 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
     }
     tmp[len] = '\0';
     exitStatus = mkdir(tmp, mode);
+    if (exitStatus && errno == EEXIST) {
+      // If we encounted EEXIST when creating the last directory, ignore it.
+      // This behavior is consistent with the command line mkdir -p behavior.
+      exitStatus = 0;
+    }
   }
   if (exitStatus) {
     err = qio_mkerror_errno();
