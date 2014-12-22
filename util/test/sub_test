@@ -177,15 +177,13 @@ def SuckOutputWithTimeout(stream, timeout):
             # to timeout  which doesn't seem quite right either.
     return buffer
 
-def LauncherTimeoutArgs(timeout):
+def LauncherTimeoutArgs(seconds):
     if useLauncherTimeout == 'pbs' or useLauncherTimeout == 'slurm':
         # --walltime=hh:mm:ss
-        hours = 0
-        minutes = timeout / 60  # might be OK even if over an hour
-        seconds = timeout % 60
-        option = '--walltime=' + str(hours) + ':' + str(minutes) \
-                 + ':' + str(seconds)
-        return [option]
+        m, s = divmod(seconds, 60)
+        h, m = divmod(m, 60)
+        fmttime = '--walltime={0:02d}:{1:02d}:{2:02d}'.format(h, m, s)
+        return [fmttime]
     else:
         Fatal('LauncherTimeoutArgs encountered an unknown format spec: ' + \
               useLauncherTimeout)
