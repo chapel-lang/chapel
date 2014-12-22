@@ -71,9 +71,6 @@ class AbstractJob(object):
     # argument name for specifying number of nodes (i.e. nodes, mppwidth)
     num_nodes_resource = None
 
-    # arugment name for specifying number of processing elements per node (i.e. mppnppn)
-    processing_elems_per_node_resource = None
-
     # argument name for specifying number of cpus (i.e. mppdepth)
     num_cpus_resource = None
 
@@ -160,6 +157,52 @@ class AbstractJob(object):
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
+
+    def _qsub_command_base(self, output_file):
+        """Returns base qsub command, without any resource listing.
+
+        :type output_file: str
+        :arg output_file: combined stdout/stderr output file location
+
+        :rtype: list
+        :returns: qsub command as list of strings
+        """
+        submit_command =  [self.submit_bin, '-V', '-N', self.job_name,
+                           '-j', 'oe', '-o', output_file]
+        if self.walltime is not None:
+            submit_command.append('-l')
+            submit_command.append('walltime={0}'.format(self.walltime))
+
+        return submit_command
+
+    def _qsub_command(self, output_file):
+        """Returns qsub command list. This implementation is the default that works for
+        standard mpp* options. Subclasses can implement versions that meet their needs.
+
+        :type output_file: str
+        :arg output_file: combined stdout/stderr output file location
+
+        :rtype: list
+        :returns: qsub command as list of strings
+        """
+        submit_command = self._qsub_command_base(output_file)
+
+        if self.num_locales >= 0:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_nodes_resource, self.num_locales))
+        if self.hostlist is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.hostlist_resource, self.hostlist))
+        if self.num_cpus_resource is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_cpus_resource, self.num_cpus))
+
+        logging.debug('qsub command: {0}'.format(submit_command))
+        return submit_command
+
 
     def run(self):
         """Run batch job in subprocess and wait for job to complete. When finished,
@@ -352,34 +395,9 @@ class AbstractJob(object):
                 self.submit_bin, self.job_name, self.num_locales,
                 self.walltime, output_file))
 
-        # TODO: create self._qsub_command property. (thomasvandoren, 2014-07-23)
-        submit_command = [self.submit_bin, '-V', '-N', self.job_name, '-j', 'oe',
-                          '-o', output_file]
-        if self.num_locales >= 0:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.num_nodes_resource, self.num_locales))
-        if self.walltime is not None:
-            submit_command.append('-l')
-            submit_command.append('walltime={0}'.format(self.walltime))
-        if self.hostlist is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.hostlist_resource, self.hostlist))
-        if self.num_cpus_resource is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.num_cpus_resource, self.num_cpus))
-        if self.processing_elems_per_node_resource is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.processing_elems_per_node_resource, 1))
-
-        logging.debug('submit command to run: {0}'.format(submit_command))
-
         logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
         submit_proc = subprocess.Popen(
-            submit_command,
+            self._qsub_command(output_file),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -517,7 +535,9 @@ class AbstractJob(object):
             description=__doc__,
             formatter_class=OurFormatter)
         parser.add_argument('-v', '--verbose', action='store_true',
-                            help='Verbose output.')
+                            default=('CHPL_LAUNCHCMD_DEBUG' in os.environ),
+                            help=('Verbose output. Setting CHPL_LAUNCHCMD_DEBUG '
+                                  'in environment also enables verbose output.'))
         parser.add_argument('-nl', '--numLocales', type=int, default=-1,
                             help='Number locales.')
         parser.add_argument('--n', help='Placeholder')
@@ -616,7 +636,6 @@ class MoabJob(AbstractJob):
     status_bin = 'qstat'
     hostlist_resource = 'hostlist'
     num_nodes_resource = 'nodes'
-    processing_elems_per_node_resource = None
     num_cpus_resource = None
 
     @classmethod
@@ -664,14 +683,7 @@ class PbsProJob(AbstractJob):
     status_bin = 'qstat'
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
-    processing_elems_per_node_resource = 'mppnppn'
-
-    # If CHPL_PBSPRO_NO_MPPDEPTH is set in the environment, set class attribute
-    # to None. Otherwise, default to mppdepth.
-    #
-    # This allows callers to optionally disable this particular setting, which
-    # can conflict with the hostlist/mppnodes setting.
-    num_cpus_resource = 'mppdepth' if 'CHPL_PBSPRO_NO_MPPDEPTH' not in os.environ else None
+    num_cpus_resource = 'ncpus'
 
     @property
     def job_name(self):
@@ -726,6 +738,35 @@ class PbsProJob(AbstractJob):
             raise ValueError('Could not find {0} pattern in header line: {1}'.format(
                 pattern.pattern, header_line))
 
+    def _qsub_command(self, output_file):
+        """Returns qsub command list using select/place syntax for resource
+        lists (as opposed to the deprecated and often disabled mpp* options).
+
+        :type output_file: str
+        :arg output_file: combined stdout/stderr output file location
+
+        :rtype: list
+        :returns: qsub command as list of strings
+        """
+        submit_command = self._qsub_command_base(output_file)
+
+        # Always use place=scatter to get 1 PE per node (mostly). Equivalent
+        # to mppnppn=1.
+        select_stmt = 'place=scatter'
+
+        if self.hostlist is not None:
+            # This relies on the caller to use the correct select syntax.
+            select_stmt += ',select={0}'.format(self.hostlist)
+        elif self.num_locales >= 0:
+            select_stmt += ',select={0}'.format(self.num_locales)
+            if self.num_cpus_resource is not None:
+                select_stmt += ':{0}={1}'.format(
+                    self.num_cpus_resource, self.num_cpus)
+        submit_command += ['-l', select_stmt]
+
+        logging.debug('qsub command: {0}'.format(submit_command))
+        return submit_command
+
     def submit_job(self, testing_dir, output_file):
         """Launch job using qsub and return job id.
 
@@ -748,7 +789,6 @@ class SlurmJob(AbstractJob):
     status_bin = 'squeue'
     hostlist_resource = 'nodelist'
     num_nodes_resource = None
-    processing_elems_per_node_resource = None
     num_cpus_resource = None
 
     @classmethod
