@@ -161,7 +161,6 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
     }
   }
   switch (qsub) {
-  case pbspro:
   case unknown:
     if (generate_qsub_script) {
       fprintf(qsubScript, "#PBS -l mppwidth=%d\n", numLocales);
@@ -171,6 +170,19 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
       length += snprintf(optionString + length, maxOptLength - length,
                          " -l mppwidth=%d -l mppnppn=%d -l mppdepth=%d",
                          numLocales, procsPerNode, numCoresPerLocale);
+    }
+    break;
+  case pbspro:
+    if (generate_qsub_script) {
+      // We always want to use scatter since we use one PE per node
+      fprintf(qsubScript, "#PBS -l place=scatter\n");
+      fprintf(qsubScript, "#PBS -l select=%d:ncpus=%d\n", numLocales, numCoresPerLocale);
+    } else {
+      // We always want to use scatter since we use one PE per node
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -l place=scatter");
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -l select=%d:ncpus=%d", numLocales, numCoresPerLocale);
     }
     break;
   case moab:
