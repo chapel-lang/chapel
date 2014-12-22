@@ -1,2 +1,0 @@
-# Does not run reliably on gasnet. See crash-memory-module-1.future.
-CHPL_COMM!=none
