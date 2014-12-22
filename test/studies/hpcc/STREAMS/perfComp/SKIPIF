@@ -5,4 +5,4 @@ import os
 compopts =  os.getenv('COMPOPTS', '')
 # skips if we aren't running a performance test (which utilize --fast and
 # --static)
-print('--fast' not in compopts and '--static' not in compopts)
+print('--fast' not in compopts or '--static' not in compopts)
