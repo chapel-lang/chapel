@@ -1,16 +1,9 @@
-//
-// The point of this test is that 'type select' is an unnecessary
-// concept.  We should just use select on type expressions.  I was
-// going to make this a feature request future, but it turns out
-// that it already works.  Nice!
-//
-
 config param useInt = true;
 
 proc pickType() type {
-  if useInt then 
+  if useInt then
     return int;
-  else 
+  else
     return real;
 }
 
