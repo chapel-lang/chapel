@@ -50,7 +50,7 @@ echocompilerdir:
 # pattern-based rules
 #
 
-$(OBJ_SUBDIR)/%.o: %.cpp $(OBJ_SUBDIR_MADE)
+$(OBJ_SUBDIR)/%.o: %.cpp $(OBJ_SUBDIR_MADE) $(OBJ_PREREQS)
 	$(CXX) -c $(COMP_CXXFLAGS) -o $@ $<
 
 FORCE:
