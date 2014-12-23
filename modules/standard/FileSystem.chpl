@@ -269,11 +269,11 @@ extern const S_ISVTX: int;
             occur.
 
    Important note: In the case where parents is true, there is a potential
-   security vulnerability.  The existence of each parent directory is checked
-   before attempting to create it, and it is possible for an attacker to create
-   the directory in between the check and the intentional creation.  If this
-   should occur, an error about creating a directory that already exists will
-   be stored in err.
+   security vulnerability.  Checking whether parent directories exist and
+   creating them if not are separate events. So even if parents==true and a
+   parent directory didn't exist before this function is called but does exist
+   afterward, it's still not necessarily true that this function created that
+   parent. Some other concurrent operation could have done so.
 */
 proc mkdir(out err: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
@@ -292,11 +292,11 @@ proc mkdir(out err: syserr, name: string, mode: int = 0o777,
             occur.
 
    Important note: In the case where parents is true, there is a potential
-   security vulnerability.  The existence of each parent directory is checked
-   before attempting to create it, and it is possible for an attacker to create
-   the directory in between the check and the intentional creation.  If this
-   should occur, an error message about creating a directory that already exists
-   will be generated.
+   security vulnerability.  Checking whether parent directories exist and
+   creating them if not are separate events. So even if parents==true and a
+   parent directory didn't exist before this function is called but does exist
+   afterward, it's still not necessarily true that this function created that
+   parent. Some other concurrent operation could have done so.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   var err: syserr = ENOERR;
