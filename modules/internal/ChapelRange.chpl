@@ -671,9 +671,6 @@ module ChapelRange {
     if step == 0 then
       __primitive("chpl_error", "the step argument of the 'by' operator is zero");
   
-    if ((step > 0) && (step:r.strType < 0)) then
-      __primitive("chpl_error", "the step argument of the 'by' operator is too large");
-  
     const lw: i = r.low,
           hh: i = r.high,
           st: r.strType = r.stride * step:r.strType;
@@ -692,11 +689,16 @@ module ChapelRange {
 
   proc by(r : range(?i,?b,?s), step:chpl__unsignedType(i))
   {
+    // Ensure 'step' fits within r.strType.
+    if boundsChecking && step > (max(r.strType):step.type) then
+      __primitive("chpl_error", "the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(r.strType));
+
     return chpl_by_help(r, step);
   }
 
   proc by(r : range(?i,?b,?s), step:chpl__signedType(i))
   {
+    compilerAssert(r.strType == step.type);
     return chpl_by_help(r, step);
   }
 
@@ -1008,7 +1010,7 @@ module ChapelRange {
     }
 
     if (willOverFlow && shouldHalt) {
-      halt("Overflow detected for iteration over a bounded range.");
+      halt("Iteration over a bounded range may be incorrect due to overflow.");
     }
     return willOverFlow;
   }
