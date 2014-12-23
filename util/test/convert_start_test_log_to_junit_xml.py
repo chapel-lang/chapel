@@ -36,8 +36,8 @@ def main():
         DEBUG = True
 
     test_cases = _parse_start_test_log(args.start_test_log)
-    _apply_suppressions(test_cases, args.suppress)
     _remove_prefixes(test_cases, args.remove_prefix)
+    _apply_suppressions(test_cases, args.suppress)
     _create_junit_report(test_cases, args.junit_xml)
 
 
@@ -67,7 +67,7 @@ def _apply_suppressions(test_cases, suppressions_file):
     suppressions = map(lambda l: l.strip(), suppressions)
 
     # Remove comments.
-    suppressions = filter(lambda l: l.startswith('#'), suppressions)
+    suppressions = filter(lambda l: not l.startswith('#'), suppressions)
     logging.debug('{0} suppressions in {1}'.format(
         len(suppressions), suppressions_file))
 
@@ -394,9 +394,9 @@ def _get_test_error(test_case_lines):
 
 
 def _suppress_test_case(test_case, suppressions_file):
-    """If test status is ERROR, mark as SUCCESS and drop error message. If test
-    status is SUCCESS, mark as ERROR and include message noting that test was
-    expected to fail.
+    """If test status is ERROR, mark as SUCCESS, drop error message, and add note
+    to end of system-out stating it was suppressed. If test status is SUCCESS,
+    mark as ERROR and include message noting that test was expected to fail.
 
     :type test_case: dict
     :arg test_case: info about a test case
@@ -413,11 +413,12 @@ def _suppress_test_case(test_case, suppressions_file):
         }
     elif test_case['error'] is not None:
         test_case['error'] = None
+        test_case['system-out'] += '[This test was suppressed due to: {0}]\n'.format(
+            suppressions_file)
     return test_case
 
 
 def _clean_xml(xml_string):
-
     """Replace invalid characters with "?".
 
     :type xml_string: str
