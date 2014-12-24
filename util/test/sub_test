@@ -282,8 +282,8 @@ def cleanup(execname):
                 os.unlink(execname)
             if os.path.isfile(execname+'_real'):
                 os.unlink(execname+'_real')
-    except IOError:
-        sys.stdout.write('[Warning: could not remove {0} ]\n'.format(execname))
+    except (IOError, OSError) as ex:
+        sys.stdout.write('[Warning: could not remove {0}: {1}]\n'.format(execname, ex))
     return
 
 # print (compopts: XX, execopts: XX) for later decoding of failed tests
