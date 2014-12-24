@@ -749,20 +749,30 @@ class PbsProJob(AbstractJob):
         :returns: qsub command as list of strings
         """
         submit_command = self._qsub_command_base(output_file)
+        select_stmt = None
 
         # Always use place=scatter to get 1 PE per node (mostly). Equivalent
         # to mppnppn=1.
-        select_stmt = 'place=scatter'
+        select_pattern = 'place=scatter,select={0}'
+
+        # When comm=none sub_test/start_test passes -nl -1 (i.e. num locales
+        # is -1). For the tests to work, reserve one node and the regular
+        # ncpus (this does not happen by default).
+        num_locales = self.num_locales
+        if num_locales == -1:
+            num_locales = 1
 
         if self.hostlist is not None:
             # This relies on the caller to use the correct select syntax.
-            select_stmt += ',select={0}'.format(self.hostlist)
-        elif self.num_locales >= 0:
-            select_stmt += ',select={0}'.format(self.num_locales)
+            select_stmt = select_pattern.format(self.hostlist)
+        elif num_locales > 0:
+            select_stmt = select_pattern.format(num_locales)
             if self.num_cpus_resource is not None:
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
-        submit_command += ['-l', select_stmt]
+
+        if select_stmt is not None:
+            submit_command += ['-l', select_stmt]
 
         logging.debug('qsub command: {0}'.format(submit_command))
         return submit_command
