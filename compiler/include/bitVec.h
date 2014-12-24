@@ -23,14 +23,16 @@
 class BitVec {
  public:
   unsigned* data;
-  int in_size;
-  int ndata;
+  size_t in_size;
+  size_t ndata;
 
-  BitVec(int in_size);
+  BitVec(size_t in_size);
+  BitVec(const BitVec& rhs);
   ~BitVec();
   void clear();
-  bool get(int i);
-  void unset(int i);
+  bool get(size_t i);
+  bool operator[](size_t i) { return get(i); }
+  void unset(size_t i);
   void disjunction(BitVec& other);
   void intersection(BitVec& other);
   
@@ -39,16 +41,51 @@ class BitVec {
   // boosts dynamic bitset if that gets into the STL, or we start using boost
   bool equals(BitVec& other);
   void set();
-  void set(int i);
+  void set(size_t i);
   void reset();
-  void reset(int i);
+  void reset(size_t i);
+  void copy(const BitVec& other);
+  void copy(size_t i, bool value);
   void flip();
-  void flip(int i);
-  int count();
-  int size();
-  bool test(int i);
+  void flip(size_t i);
+  size_t count();
+  size_t size();
+  bool test(size_t i);
   bool any();
   bool none();
 };
+
+inline BitVec* operator+(BitVec& a, BitVec& b)
+{
+  BitVec* result = new BitVec(a);
+  result->disjunction(b);
+  return result;
+}
+
+// Usurps its left argument according to the optional adoption pattern.
+inline BitVec* operator+(BitVec* a, BitVec& b)
+{
+  BitVec* result = a;
+  result->disjunction(b);
+  return result;
+}
+
+inline BitVec* operator-(BitVec& a, BitVec& b)
+{
+  BitVec* result = new BitVec(b);
+  result->flip();
+  result->intersection(a);
+  return result;
+}
+
+inline BitVec* operator-(BitVec* a, BitVec& b)
+{
+  BitVec* result = a;
+  BitVec* temp = new BitVec(b);
+  temp->flip();
+  result->intersection(*temp);
+  delete temp; temp = 0;
+  return result;
+}
 
 #endif

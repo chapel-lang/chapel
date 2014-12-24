@@ -377,7 +377,7 @@ void BasicBlock::backwardFlowAnalysis(FnSymbol*             fn,
     iterate = false;
 
     for_vector(BasicBlock, bb, *fn->basicBlocks) {
-      for (int j = 0; j < IN[i]->ndata; j++) {
+      for (size_t j = 0; j < IN[i]->ndata; j++) {
         unsigned int new_in  = (OUT[i]->data[j] & ~KILL[i]->data[j]) | GEN[i]->data[j];
         unsigned int new_out = 0;
 
@@ -440,7 +440,7 @@ void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
     BasicBlock* bb     = (*fn->basicBlocks)[i];
     bool        change = false;
 
-    for (int j = 0; j < IN[i]->ndata; j++) {
+    for (size_t j = 0; j < IN[i]->ndata; j++) {
       if (bb->ins.size() > 0) {
         unsigned int new_in = (intersect) ? (unsigned int) (-1) : 0;
 
@@ -535,7 +535,7 @@ void BasicBlock::printLocalsVectorSets(std::vector<BitVec*>& sets, Vec<Symbol*> 
   for_vector(BitVec, set, sets) {
     printf("%2d: ", i);
 
-    for (int j = 0; j < set->size(); j++) {
+    for (size_t j = 0; j < set->size(); j++) {
       if (set->get(j))
         printf("%s[%d] ", locals.v[j]->name, locals.v[j]->id);
     }
@@ -554,7 +554,7 @@ void BasicBlock::printBitVectorSets(std::vector<BitVec*>& sets) {
   for_vector(BitVec, set, sets) {
     printf("%2d: ", i);
 
-    for (int j = 0; j < set->size(); j++) {
+    for (size_t j = 0; j < set->size(); j++) {
       printf("%d", (set->get(j)) ? 1 : 0);
       if ((j+1) % 10 == 0) printf(" ");
     }
