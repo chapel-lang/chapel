@@ -858,3 +858,17 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
       break;
   }
 }
+
+const char* istrFromUserUint(long long unsigned int i) {
+  char s[64];
+  if (sprintf(s, "%llu", i) > 63)
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}
+
+const char* istrFromUserInt(long long int i) {
+  char s[64];
+  if (sprintf(s, "%lld", i) > 63)
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}

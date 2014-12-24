@@ -491,26 +491,26 @@ switch (to->const_kind) {
    case NUM_KIND_UINT:
      switch (from->num_index) {
      case INT_SIZE_8:
-       to->v_string = istr(from->v_uint8); break;
+       to->v_string = istrFromUserUint(from->v_uint8); break;
      case INT_SIZE_16:
-       to->v_string = istr(from->v_uint16); break;
+       to->v_string = istrFromUserUint(from->v_uint16); break;
      case INT_SIZE_32:
-       to->v_string = istr(from->v_uint32); break;
+       to->v_string = istrFromUserUint(from->v_uint32); break;
      case INT_SIZE_64:
-       to->v_string = istr(from->uint_value()); break;
+       to->v_string = istrFromUserUint(from->uint_value()); break;
      default:
        INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
      } break;
    case NUM_KIND_INT:
      switch (from->num_index) {
      case INT_SIZE_8:
-       to->v_string = istr(from->v_int8); break;
+       to->v_string = istrFromUserInt(from->v_int8); break;
      case INT_SIZE_16:
-       to->v_string = istr(from->v_int16); break;
+       to->v_string = istrFromUserInt(from->v_int16); break;
      case INT_SIZE_32:
-       to->v_string = istr(from->v_int32); break;
+       to->v_string = istrFromUserInt(from->v_int32); break;
      case INT_SIZE_64:
-       to->v_string = istr(from->int_value()); break;
+       to->v_string = istrFromUserInt(from->int_value()); break;
      default:
        INT_FATAL("Illegal case in coerce_immediate switch statement"); break;
      } break;
