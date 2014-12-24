@@ -924,4 +924,5 @@ callDestructors() {
   insertGlobalAutoDestroyCalls();
 #endif
   insertReferenceTemps();
+//  insertAutoCopyAutoDestroy();
 }

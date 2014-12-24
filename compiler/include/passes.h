@@ -50,6 +50,7 @@ void expandExternArrayCalls();
 void flattenClasses();
 void flattenFunctions();
 void inlineFunctions();
+void insertAutoCopyAutoDestroy();
 void insertLineNumbers();
 void insertWideReferences();
 void narrowWideReferences();
