@@ -954,7 +954,7 @@ static void computeKillSets(FnSymbol* fn,
     // Use killSet to initialize the KILL set for this block.
     // It's OK if we include the pairs from this block in KILL[i] because we
     // put them back when we add in the COPY set.
-    for (int j = 0; j < KILL[i]->size(); ++j)
+    for (size_t j = 0; j < KILL[i]->size(); ++j)
       if (killSet.find(availablePairs[j].first) != killSet.end() ||
           killSet.find(availablePairs[j].second) != killSet.end())
         KILL[i]->set(j);

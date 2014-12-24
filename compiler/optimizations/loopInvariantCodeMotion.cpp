@@ -1010,7 +1010,7 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
   
   BitVec* bitExits = loop->getBitExits();
    
-  for(int i = 0; i < bitExits->size(); i++) {
+  for(size_t i = 0; i < bitExits->size(); i++) {
     if(bitExits->test(i)) {
       if(dominates(defBlock, i, dominators) == false) {
         return false;
