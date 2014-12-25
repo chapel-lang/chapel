@@ -281,7 +281,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
             case INT_SIZE_64: \
-              imm->v_uint64 = im1.uint_value() _op im2.uint_value(); break; \
+              imm->v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -295,7 +295,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_int32 = im1.v_int32 _op im2.v_int32; break; \
           case INT_SIZE_64: {                                            \
-              imm->v_int64 = im1.int_value() _op im2.int_value(); \
+              imm->v_int64 = im1.v_int64 _op im2.v_int64; \
               break; \
           } \
             default: INT_FATAL("Unhandled case in switch statement"); \
@@ -376,7 +376,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
               }                                                         \
             case INT_SIZE_64: \
               {                                                         \
-                COMPUTE_UINT_POW(uint64_t, im1.uint_value(), im2.uint_value()); \
+                COMPUTE_UINT_POW(uint64_t, im1.v_uint64, im2.v_uint64); \
                 imm->v_uint64 = res;                                     \
                 break;                                                  \
               }                                                         \
@@ -406,7 +406,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
               }                                                         \
             case INT_SIZE_64: \
               {                                                         \
-                COMPUTE_INT_POW(int64_t, im1.int_value(), im2.int_value()); \
+                COMPUTE_INT_POW(int64_t, im1.v_int64, im2.v_int64); \
                 imm->v_int64 = res;                                     \
                 break;                                                  \
               }                                                         \
@@ -435,7 +435,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_bool = im1.v_uint32 _op im2.v_uint32; break; \
             case INT_SIZE_64: \
-              imm->v_bool = im1.uint_value() _op im2.uint_value(); break; \
+              imm->v_bool = im1.v_uint64 _op im2.v_uint64; break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -449,7 +449,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_bool = im1.v_int32 _op im2.v_int32; break; \
             case INT_SIZE_64: \
-              imm->v_bool = im1.int_value() _op im2.int_value(); break; \
+              imm->v_bool = im1.v_int64 _op im2.v_int64; break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -481,7 +481,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
             case INT_SIZE_64: \
-              imm->v_uint64 = im1.uint_value() _op im2.uint_value(); break; \
+              imm->v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -495,7 +495,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_int32 = im1.v_int32 _op im2.v_int32; break; \
             case INT_SIZE_64: \
-              imm->v_int64 = im1.int_value() _op im2.int_value(); break; \
+              imm->v_int64 = im1.v_int64 _op im2.v_int64; break; \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -537,7 +537,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_int32 = _op im1.v_int32; break; \
             case INT_SIZE_64: \
-              imm->v_int64 = _op im1.int_value(); break;        \
+              imm->v_int64 = _op im1.v_int64; break;        \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -583,7 +583,7 @@ coerce_immediate(Immediate *from, Immediate *to) {
             case INT_SIZE_32: \
               imm->v_int32 = _op im1.v_int32; break; \
             case INT_SIZE_64: \
-              imm->v_int64 = _op im1.int_value(); break;        \
+              imm->v_int64 = _op im1.v_int64; break;        \
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
@@ -857,4 +857,18 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
       }
       break;
   }
+}
+
+const char* istrFromUserUint(long long unsigned int i) {
+  char s[64];
+  if (sprintf(s, "%llu", i) > 63)
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
+}
+
+const char* istrFromUserInt(long long int i) {
+  char s[64];
+  if (sprintf(s, "%lld", i) > 63)
+    INT_FATAL("istr buffer overflow");
+  return astr(s);
 }

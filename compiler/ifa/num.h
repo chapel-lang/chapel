@@ -213,6 +213,8 @@ void coerce_immediate(Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
 void fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);
 void convert_string_to_immediate(const char *str, Immediate *imm);
+const char* istrFromUserUint(long long unsigned int i);
+const char* istrFromUserInt(long long int i);
 
 #endif
 
