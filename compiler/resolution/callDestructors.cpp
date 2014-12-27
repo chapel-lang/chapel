@@ -761,7 +761,7 @@ fixupDestructors() {
   }
 }
 
-#ifndef HILDE_MM
+
 static void insertGlobalAutoDestroyCalls() {
   const char* name = "chpl__autoDestroyGlobals";
   SET_LINENO(baseModule);
@@ -782,7 +782,7 @@ static void insertGlobalAutoDestroyCalls() {
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
-#endif
+
 
 static void insertDestructorCalls()
 {
@@ -918,11 +918,10 @@ callDestructors() {
   cullExplicitAutoDestroyFlags();
   insertAutoDestroyCalls();
   returnRecordsByReferenceArguments();
+#else
+  insertAutoCopyAutoDestroy();
 #endif
   insertYieldTemps();
-#ifndef HILDE_MM
   insertGlobalAutoDestroyCalls();
-#endif
   insertReferenceTemps();
-//  insertAutoCopyAutoDestroy();
 }
