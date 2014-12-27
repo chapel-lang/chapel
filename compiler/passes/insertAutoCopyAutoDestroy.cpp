@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+// TODO: This should be moved to symbol.cpp
+bool fWarnOwnership = false;
+
 // insertAutoCopyAutoDestroy
 //
 // Inserts copy-constructor and destructor calls as needed, by tracking the
@@ -184,13 +187,18 @@ static void destroyAliasVectorMap(AliasVectorMap& aliases)
 
 
 // Scans the body of the given function and inserts all of the variable and
-// argument symbols it finds into the vector of symbols.  Bits in the flow
+// argument symbols defined in it into the vector of symbols.  Bits in the flow
 // analysis bit-vectors correspond to the entries in this vector.
 // Also constructs an index map, to make it easier to find the index of a
 // symbol in the vector.  (Otherwise, a linear search is required.)
+// The alias map can also be populated at the same time.  
+// TODO: Split the alias list off as a separate class, mostly to make it easy
+// to document the data structure it implements.
 static void
 extractSymbols(FnSymbol* fn,
-               SymbolVector& symbols, SymbolIndexMap& symbolIndex)
+               SymbolVector& symbols,
+               SymbolIndexMap& symbolIndex,
+               AliasVectorMap& aliases)
 {
   DefExprVector defExprs;
   collectDefExprsSTL(fn, defExprs);
@@ -198,18 +206,80 @@ extractSymbols(FnSymbol* fn,
   for_vector(DefExpr, def, defExprs)
   {
     Symbol* sym = def->sym;
+
+    // We are interested only in arguments and variables.
+    if (! (toArgSymbol(sym) || toVarSymbol(sym)))
+      continue;
+
+    Type* type = sym->type;
+
+    // TODO: Extern record types also do not have constructors and
+    // destructors.  To treat them uniformly, we would have to enforce that
+    // extern types supply constructors and destructors and/or supply them
+    // internally.
+    TypeSymbol* ts = type->symbol;
+    if (ts->hasFlag(FLAG_EXTERN))
+      continue;
+
+    // We are concerned only with record types.
+    // TODO: This is too bad, because it would be nice to be able to treat all
+    // value types uniformly.  But for that to work, arguments of fundamental
+    // type must be constructed by having their values piped through a copy
+    // constructor.  Currently, that is not the case.
+
+    // We are interested only in records passed by value.  Records passed by
+    // ref appear be a class in the current AST because _ref(T) is a class type.
+    AggregateType* at = toAggregateType(type);
+    if (at == NULL)
+      // Not an aggregate type, so not a record.
+      continue;
+    if (!at->isRecord())
+      // Not a record.
+      continue;
+
     symbolIndex.insert(SymbolIndexElement(sym, symbols.size()));
     symbols.push_back(sym);
 
     // We expect the symbolIndex to return the index of that symbol in the
     // symbols vector.
     INT_ASSERT(symbols[symbolIndex[sym]] == sym);
+
+    // Initialize each entry in the alias map with a list of symbols
+    // containingh the symbol itself.
+    SymbolVector* aliasList = new SymbolVector();
+    aliasList->push_back(sym);
+    aliases.insert(AliasMapElement(sym, aliasList));
   }
 }
 
 
+// Returns true if this function returns a fully-constructed value; false otherwise.
+static bool isConstructor(CallExpr* call)
+{
+  if (FnSymbol* fn = call->isResolved())
+  {
+    // A "normal" function.
+
+    // Return values of class type are ruled out.
+    Type* retType = fn->retType;
+    if (AggregateType* at = toAggregateType(retType))
+      if (at->isClass())
+        return false;
+  }
+  else
+  {
+    // A primitive.
+    if (AggregateType* at = toAggregateType(call->typeInfo()))
+      if (at->isClass())
+        return false;
+  }
+
+  return true;
+}
+
+
 static void processConstructor(CallExpr* call, SymExpr* se, 
-                               BitVec* gen, AliasVectorMap& aliases,
+                               BitVec* gen,
                                const SymbolIndexMap& symbolIndex)
 {
   // In the current incarnation, we expect construction to look like:
@@ -220,42 +290,37 @@ static void processConstructor(CallExpr* call, SymExpr* se,
   {
     if (CallExpr* rhsCall = toCallExpr(call->get(2)))
     {
-      if (FnSymbol* fn = rhsCall->isResolved())
+      if (isConstructor(rhsCall))
       {
-        if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
-            fn->hasFlag(FLAG_INIT_COPY_FN) ||
-            fn->hasFlag(FLAG_AUTO_COPY_FN))
-        {
-          Symbol* sym = se->var;
-          size_t index = symbolIndex.at(sym);
-          // We expect that each symbol gets constructed only once, so if we are
-          // about to set a bit in the gen set, it cannot already be true.
-          INT_ASSERT(gen->get(index) == false);
-          // If this assumption turns out to be false, it means we are reusing
-          // symbols.  That case can be accommodated, but it means we have to
-          // insert a destructor call ahead of the symbol's reinitialization.
-          gen->set(index);
-          // If we start the alias list with the first entry, then we can process
-          // it unequivocally.
-          SymbolVector* aliasList = new SymbolVector();
-          aliasList->push_back(sym);
-          aliases.insert(AliasMapElement(sym, aliasList));
-        }
+        // Any function returning a value is considered to be a constructor.
+        Symbol* sym = se->var;
+        size_t index = symbolIndex.at(sym);
+        // We expect that each symbol gets constructed only once, so if we are
+        // about to set a bit in the gen set, it cannot already be true.
+        INT_ASSERT(gen->get(index) == false);
+        // If this assumption turns out to be false, it means we are reusing
+        // symbols.  That case can be accommodated, but it means we have to
+        // insert a destructor call ahead of the symbol's reinitialization.
+        gen->set(index);
       }
     }
   }
 }
 
 
-// Add the alias to the end of the alias list accessible through the original
-// symbol, and then share the alias list withs the alias.
-static void addAlias(Symbol* orig, Symbol* alias,
-                     AliasVectorMap& aliases)
+// Merge the alias lists of two symbols that have become aliases.
+static void mergeAliases(Symbol* orig, Symbol* alias,
+                         AliasVectorMap& aliases)
 {
-  SymbolVector* aliasList = aliases[orig];
-  // Implicit assertion that aliasList is non-NULL.
-  aliasList->push_back(alias);
-  aliases.insert(AliasMapElement(alias, aliasList));
+  SymbolVector* origList = aliases[orig];
+  SymbolVector* aliasList = aliases[alias];
+  for (size_t i = 0; i < aliasList->size(); ++i)
+  {
+    Symbol* sym = aliasList->at(i);
+    origList->push_back(sym);
+  }
+  delete aliasList;
+  aliases[alias] = origList;
 }
 
 
@@ -282,8 +347,17 @@ static void processMove(CallExpr* call, SymExpr* se, BitVec* gen, AliasVectorMap
           size_t rindex = symbolIndex.at(rsym);
           // Copy ownership state from RHS.
           INT_ASSERT(gen->get(lindex) == false);
-          gen->copy(lindex, gen->get(rindex));
-          addAlias(lsym, rsym, aliases);
+          if (!gen->get(rindex))
+          {
+            if (fWarnOwnership)
+              USR_WARN(rsym, "Uninitialized symbol is copied here");
+          }
+          else
+          {
+            gen->set(lindex);
+          }
+          // Merge aliases whether or not they are live.
+          mergeAliases(rsym, lsym, aliases);
         }
       }
     }
@@ -299,8 +373,9 @@ static void processDestructor(SymExpr* se,
   // All members of an alias clique point to the same SymbolVector, so we only
   // need to look up one arbitrarily and then run the list.
   Symbol* sym = se->var;
-  SymbolVector& aliasList = *aliases[sym];
-  for_vector(Symbol, alias, aliasList)
+  SymbolVector* aliasList = aliases[sym];
+
+  for_vector(Symbol, alias, *aliasList)
   {
     size_t index = symbolIndex.at(alias);
     // We expect a symbol to be live when it is killed.
@@ -352,10 +427,16 @@ static void computeTransitions(SymExprVector& symExprs,
 {
   for_vector(SymExpr, se, symExprs)
   {
+    // We are only interested in local symbols, so if this one does not appear
+    // in our map, move on.
+    Symbol* sym = se->var;
+    if (symbolIndex.find(sym) == symbolIndex.end())
+      continue;
+
     // We are only interested in call expressions involving the SymExpr.
     if (CallExpr* call = toCallExpr(se->parentExpr))
     {
-      processConstructor(call, se, gen, aliases, symbolIndex);
+      processConstructor(call, se, gen, symbolIndex);
       processMove(call, se, gen, aliases, symbolIndex);
       processDestructor(call, se, kill, aliases, symbolIndex);
     }
@@ -420,6 +501,10 @@ static bool isJump(Expr* stmt)
 static void insertAutoDestroy(BasicBlock& bb, BitVec* to_kill, 
                               const SymbolVector& symbols)
 {
+  // Skip degenerate basic blocks.
+  if (bb.exprs.size() == 0)
+    return;
+
   // Find the last statement in the block.
   Expr*& last = bb.exprs.back();
   Expr* stmt = last->getStmtExpr();
@@ -464,7 +549,8 @@ static void insertAutoDestroy(FnSymbol* fn)
 
   SymbolVector symbols;
   SymbolIndexMap symbolIndex;
-  extractSymbols(fn, symbols, symbolIndex);
+  AliasVectorMap aliases;
+  extractSymbols(fn, symbols, symbolIndex, aliases);
 
   size_t size = symbols.size();
 
@@ -488,8 +574,6 @@ static void insertAutoDestroy(FnSymbol* fn)
   createFlowSet(IN,   nbbs, size);
   createFlowSet(OUT,  nbbs, size);
 
-  AliasVectorMap aliases;
-
   computeTransitions(fn, GEN, KILL, aliases, symbolIndex);
 
   BasicBlock::forwardFlowAnalysis(fn, GEN, KILL, IN, OUT, true);
@@ -509,6 +593,10 @@ static void insertAutoDestroy()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
+    // Function prototypes have no body, so we skip them.
+    if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
+      continue;
+
     insertAutoDestroy(fn);
   }
 }

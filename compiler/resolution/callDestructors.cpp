@@ -761,7 +761,7 @@ fixupDestructors() {
   }
 }
 
-#ifndef HILDE_MM
+
 static void insertGlobalAutoDestroyCalls() {
   // --ipe does not build chpl_gen_main
   if (chpl_gen_main == NULL)
@@ -786,7 +786,7 @@ static void insertGlobalAutoDestroyCalls() {
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 }
-#endif
+
 
 static void insertDestructorCalls()
 {
@@ -922,11 +922,10 @@ callDestructors() {
   cullExplicitAutoDestroyFlags();
   insertAutoDestroyCalls();
   returnRecordsByReferenceArguments();
+#else
+  insertAutoCopyAutoDestroy();
 #endif
   insertYieldTemps();
-#ifndef HILDE_MM
   insertGlobalAutoDestroyCalls();
-#endif
   insertReferenceTemps();
-//  insertAutoCopyAutoDestroy();
 }
