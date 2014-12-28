@@ -318,9 +318,9 @@ static void mergeAliases(Symbol* orig, Symbol* alias,
   {
     Symbol* sym = aliasList->at(i);
     origList->push_back(sym);
+    aliases[sym] = origList;
   }
   delete aliasList;
-  aliases[alias] = origList;
 }
 
 
