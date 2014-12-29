@@ -297,7 +297,9 @@ static void processConstructor(CallExpr* call, SymExpr* se,
         size_t index = symbolIndex.at(sym);
         // We expect that each symbol gets constructed only once, so if we are
         // about to set a bit in the gen set, it cannot already be true.
-        INT_ASSERT(gen->get(index) == false);
+        if (gen->get(index))
+          if (fWarnOwnership)
+            USR_WARN(sym, "Reinitialization of sym");
         // If this assumption turns out to be false, it means we are reusing
         // symbols.  That case can be accommodated, but it means we have to
         // insert a destructor call ahead of the symbol's reinitialization.

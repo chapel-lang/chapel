@@ -2195,5 +2195,9 @@ void lowerIterators() {
   reconstructIRautoCopyAutoDestroy();
 
   cleanupTemporaryVectors();
+
+#ifdef HILDE_MM
+  insertAutoCopyAutoDestroy();
+#endif
 }
 
