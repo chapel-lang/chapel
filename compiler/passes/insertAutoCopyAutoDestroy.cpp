@@ -314,6 +314,13 @@ static void mergeAliases(Symbol* orig, Symbol* alias,
 {
   SymbolVector* origList = aliases[orig];
   SymbolVector* aliasList = aliases[alias];
+
+  if (aliasList == origList)
+  {
+    // These two symbols are already aliases.
+    return;
+  }
+
   for (size_t i = 0; i < aliasList->size(); ++i)
   {
     Symbol* sym = aliasList->at(i);
@@ -344,7 +351,16 @@ static void processMove(CallExpr* call, SymExpr* se, BitVec* gen, AliasVectorMap
           Symbol* lsym = lhs->var;
           Symbol* rsym = rhs->var;
           size_t lindex = symbolIndex.at(lsym);
-          size_t rindex = symbolIndex.at(rsym);
+          SymbolIndexMap::const_iterator rsymPair = symbolIndex.find(rsym);
+          if (rsymPair == symbolIndex.end())
+          {
+            // TODO:  A move from a global or extern symbol without a copy-constructor
+            // call is probably an AST consistency or codegen error, given that
+            // we have already weeded out fundamental, extern and class types.
+            return;
+          }
+          size_t rindex = rsymPair->second;
+
           // Copy ownership state from RHS.
           INT_ASSERT(gen->get(lindex) == false);
           if (!gen->get(rindex))
