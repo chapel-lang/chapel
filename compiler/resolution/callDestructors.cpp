@@ -918,8 +918,6 @@ callDestructors() {
   cullExplicitAutoDestroyFlags();
   insertAutoDestroyCalls();
   returnRecordsByReferenceArguments();
-#else
-  insertAutoCopyAutoDestroy();
 #endif
   insertYieldTemps();
   insertGlobalAutoDestroyCalls();
