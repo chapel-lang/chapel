@@ -842,7 +842,7 @@ proc CyclicArr.dsiDynamicFastFollowCheck(lead: [])
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
-iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
+/*iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
 
@@ -875,9 +875,9 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
       yield accessHelper(i);
     }
   }
-}
+}*/
 
-/*iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
+iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   extern proc sizeof(type t): size_t;
   extern proc memcmp(ref a, ref b, n:size_t):c_int;  
   if testFastFollowerOptimization then
@@ -988,7 +988,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
 	}
 	//Aroon's code ends here
   }
-}*/
+}
 
 proc CyclicArr.dsiSerialWrite(f: Writer) {
   if verboseCyclicDistWriters {
