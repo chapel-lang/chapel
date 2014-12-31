@@ -36,7 +36,10 @@ class BitVec {
   void disjunction(BitVec& other);
   void intersection(BitVec& other);
   
-  
+  // Synonyms for disjunction (union) and (conjunction) intersection above.
+  void operator|=(BitVec& other) { this->disjunction(other); }
+  void operator&=(BitVec& other) { this->intersection(other); }
+
   // Added functionality to make this compatible with std::bitset and thus 
   // boosts dynamic bitset if that gets into the STL, or we start using boost
   bool equals(BitVec& other);
