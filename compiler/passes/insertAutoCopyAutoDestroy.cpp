@@ -20,6 +20,10 @@
 // TODO: This should be moved to symbol.cpp
 bool fWarnOwnership = false;
 
+// TODO: Remove this #define for normal compilation
+#define DEBUG_AMM 1
+static int debug = 0;
+
 // insertAutoCopyAutoDestroy
 //
 // Inserts copy-constructor and destructor calls as needed, by tracking the
@@ -67,14 +71,15 @@ bool fWarnOwnership = false;
 //#  - A record field in a record.
 //# If ownership of any of these is false when they (or their container) is
 //# about to go out of scope, a copy must be made to bring ownership to the
-//# expected state.  Otherwise, ownership can be shared and a copy potentially saved.
+//# expected state.  Otherwise, ownership can be shared and a copy potentially
+//# avoided. 
 //#
 //# After copy-constructor calls have been added, the routine has its full
 //# complement of construcotr calls.  Correct AMM is then just a matter of
 //# inserting the minimum number of destructor calls to drive the ownership of
 //# all local variables to false before the routine ends.  Dataflow analysis is
 //# used to propagate this constraint backwards, in case ownership is
-//# transferred out of a variable along one path but not another.
+//# transferred out of a block along one path but not another.
 //#
 //#############################################################################
 
@@ -118,8 +123,8 @@ bool fWarnOwnership = false;
 // all successors of block i.  (No information is propagated backward through
 // the blocks, so this can be done in one iteration.)  Then, in the local
 // traversal the follows, for any symbol that remains owned at the end of block
-// i where its OUT[i] is false, we add a destructor call to make that condition
-// true.
+// i where its OUT[i] is false, we add a destructor call so that the results of
+// forward and backward flow agree.
 //
 
 #include "passes.h" // The main routine is declared here.
@@ -130,6 +135,7 @@ bool fWarnOwnership = false;
 #include "bitVec.h"
 #include "stlUtil.h"
 #include "astutil.h"
+#include "view.h" // For list_view (debugging).
 #include "resolution.h" // For AutoDestroyMap.
 
 #include <map>
@@ -391,7 +397,7 @@ static void processDestructor(SymExpr* se,
   // All members of an alias clique point to the same SymbolVector, so we only
   // need to look up one arbitrarily and then run the list.
   Symbol* sym = se->var;
-  SymbolVector* aliasList = aliases[sym];
+  SymbolVector* aliasList = aliases.at(sym);
 
   for_vector(Symbol, alias, *aliasList)
   {
@@ -498,6 +504,34 @@ static void computeTransitions(FnSymbol* fn,
 }
 
 
+// In backward flow, we adjust the out set so it is the intersection of the IN
+// sets of its successors.  If the block is a terminal block (a block with no
+// successors), however, we set its OUT to all zeroes.  This forces ownership to
+// be driven to zero before the function is exited.
+// This analysis will work correctly even if the function has multiple exits.
+static void backwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
+                                  FlowSet& IN, FlowSet& OUT)
+{
+  size_t nbbs = bbs.size();
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    if (bbs[i]->outs.size() == 0)
+    {
+      // This is a terminal block because it has no successors.
+      // Its OUT set must be empty.
+      OUT[i]->clear();
+    }
+    else
+    {
+      BitVec* out = OUT[i];
+      out->set();
+      for_vector(BasicBlock, succ, bbs[i]->outs)
+        *out &= *IN[succ->id];
+    }
+  }
+}
+
+
 // This predicate determines if the given statement is a jump.
 static bool isJump(Expr* stmt)
 {
@@ -517,7 +551,9 @@ static bool isJump(Expr* stmt)
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
 static void insertAutoDestroy(BasicBlock& bb, BitVec* to_kill, 
-                              const SymbolVector& symbols)
+                              const SymbolVector& symbols,
+                              const SymbolIndexMap& symbolIndex,
+                              const AliasVectorMap& aliases)
 {
   // Skip degenerate basic blocks.
   if (bb.exprs.size() == 0)
@@ -529,24 +565,52 @@ static void insertAutoDestroy(BasicBlock& bb, BitVec* to_kill,
   bool isjump = isJump(stmt);
 
   // For each true bit in the bit vector, add an autodestroy call.
+  // But destroying one member of an alias list destroys them all.
+  SET_LINENO(stmt);
   for (size_t j = 0; j < to_kill->size(); ++j)
   {
     if (to_kill->get(j))
     {
       Symbol* sym = symbols[j];
-      CallExpr* autoDestroyCall = new CallExpr(autoDestroyMap.get(sym->type), sym);
+
+      // Remove this symbol and all its aliases from the kill set.
+      SymbolVector* aliasList = aliases.at(sym);
+      for_vector(Symbol, alias, *aliasList)
+      {
+        size_t index = symbolIndex.at(alias);
+        to_kill->reset(index);
+      }
+
+      FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
+      if (autoDestroy == NULL)
+        // This type does not have a destructor, so we don't have a add an
+        // autoDestroy call for it.
+        continue;
+
+      // For now, we ignore internally reference-counted types.  We'll add the
+      // code to manage those later.
+      if (isRefCountedType(sym->type))
+        continue;
+
+      CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
+
       if (isjump)
         stmt->insertBefore(autoDestroyCall);
       else
         stmt->insertAfter(autoDestroyCall);
+
+      insertReferenceTemps(autoDestroyCall);
     }
   }
 }
 
+
 static void insertAutoDestroy(FnSymbol* fn,
                               FlowSet& GEN, FlowSet& KILL,
                               FlowSet& IN, FlowSet& OUT,
-                              const SymbolVector& symbols)
+                              const SymbolVector& symbols,
+                              const SymbolIndexMap& symbolIndex,
+                              const AliasVectorMap& aliases)
 {
   size_t nbbs = fn->basicBlocks->size();
   for (size_t i = 0; i < nbbs; i++)
@@ -555,11 +619,13 @@ static void insertAutoDestroy(FnSymbol* fn,
     // (live) at the end of the block but is unowned (dead) in the OUT set.
     BasicBlock& bb = *(*fn->basicBlocks)[i];
     BitVec* to_kill = *IN[i] + *GEN[i] - *KILL[i] - *OUT[i];
-    insertAutoDestroy(bb, to_kill, symbols);
+    insertAutoDestroy(bb, to_kill, symbols, symbolIndex, aliases);
     delete to_kill; to_kill = 0;
   }
 }
 
+
+// Insert autoDestroy calls in a function as needed.                                  
 static void insertAutoDestroy(FnSymbol* fn)
 {
   BasicBlock::buildBasicBlocks(fn);
@@ -594,9 +660,19 @@ static void insertAutoDestroy(FnSymbol* fn)
 
   computeTransitions(fn, GEN, KILL, aliases, symbolIndex);
 
+  // We can reuse the existing forward flow analysis to compute how ownership
+  // flows through the basic blocks.
   BasicBlock::forwardFlowAnalysis(fn, GEN, KILL, IN, OUT, true);
 
-  insertAutoDestroy(fn, GEN, KILL, IN, OUT, symbols);
+  // We need our own equation for backward flow.
+  // Backward flow determines where ownership must be given up through a
+  // delete, by making the OUT set the AND of all its successor INs and the IN
+  // be no greater than OUT | KILL (that is, every symbol owned at the
+  // beginning of the block (IN) must either appear in OUT or be killed in the
+  // block.
+  backwardFlowOwnership(*fn->basicBlocks, IN, OUT);
+
+  insertAutoDestroy(fn, GEN, KILL, IN, OUT, symbols, symbolIndex, aliases);
 
   destroyAliasVectorMap(aliases);
 
