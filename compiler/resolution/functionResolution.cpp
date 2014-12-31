@@ -5483,17 +5483,17 @@ postFold(Expr* expr) {
           }
         }
         if (!set) {
-#ifndef HILDE_MM
           if (lhs->var->hasFlag(FLAG_EXPR_TEMP) &&
               !lhs->var->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
               if (requiresImplicitDestroy(rhsCall)) {
                 lhs->var->addFlag(FLAG_INSERT_AUTO_COPY);
+#ifndef HILDE_MM
                 lhs->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
               }
             }
           }
-#endif
           if (isReferenceType(lhs->var->type) ||
               lhs->var->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
               lhs->var->type->symbol->hasFlag(FLAG_ARRAY))
