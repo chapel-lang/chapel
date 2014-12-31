@@ -1100,6 +1100,18 @@ reprivatizeIterators() {
 
 void
 parallel(void) {
+
+#ifdef HILDE_MM
+  // This is here just because it depends on the cleanup after lowerIterators
+  // having been performed, and it depends on lower iterators to get the basic
+  // block structure of iterator functions right.
+  // In other words, it could be moved back to the end of callDestructors.cpp
+  // if basic block analysis were modified to treat a PRIM_YIELD as an
+  // end-of-block and treat all blocks within an iterator function as
+  // successors of a faked-in start block.
+  insertAutoCopyAutoDestroy();
+#endif
+
   Vec<FnSymbol*> taskFunctions;
 
   // Collect the task functions for processing.
