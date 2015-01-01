@@ -278,6 +278,16 @@ static bool isConstructor(CallExpr* call)
     if (AggregateType* at = toAggregateType(call->typeInfo()))
       if (at->isClass())
         return false;
+
+    switch (call->primitive->tag)
+    {
+     default:
+      break; // Fall through and return true.
+     case PRIM_DEREF:
+      // Because the operand is a reference, its contents are "unowned" by the
+      // result.  An autoCopy needs to be inserted where an owned copy is required.
+      return false;
+    }
   }
 
   return true;
