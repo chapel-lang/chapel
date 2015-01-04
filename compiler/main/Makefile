@@ -34,6 +34,11 @@ TARGETS = COPYRIGHT \
 	LICENSE \
 	$(MAIN_OBJS)
 
+# Ensure LICENSE and COPYRIGHT are complete before building driver.o (from
+# driver.cpp). Otherwise, compiling driver.o can fail with a #include error
+# (i.e. the file is not yet available).
+OBJ_PREREQS = LICENSE COPYRIGHT
+
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
 FORCE:
