@@ -297,9 +297,9 @@ def cleanup(execname):
                 sys.stdout.write('[Inspecting open file handles with: {0}\n'.format(' '.join(cmd)))
                 subprocess.Popen(cmd).communicate()
 
-            # For non-cygwin32 platforms, also print a warning.
-            if platform != 'cygwin32':
-                sys.stdout.write('[Warning: could not remove {0}: {1}]\n'.format(execname, ex))
+        # Do not print the warning for cygwin32 when errno is 16 (Device or resource busy).
+        if not (getattr(ex, 'errno', 0) == 16 and platform == 'cygwin32'):
+            sys.stdout.write('[Warning: could not remove {0}: {1}]\n'.format(execname, ex))
 
 def which(program):
     """Returns absolute path to program, if it exists in $PATH. If not found,
