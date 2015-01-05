@@ -26,10 +26,10 @@ static int debug = 0;
 
 // insertAutoCopyAutoDestroy
 //
-// Inserts copy-constructor and destructor calls as needed, by tracking the
-// "ownership" of record objects.
-//
 //#############################################################################
+//#
+//# Inserts copy-constructor and destructor calls as needed, by tracking the
+//# "ownership" of record objects.
 //#
 //# Ownership represents the "liveness" of a record object in the sense that it
 //# may contain heap-allocated data.  After a record object is constructed, any
@@ -39,9 +39,6 @@ static int debug = 0;
 //# clean up any contained class fields and thereby avoid leaking memory.  After
 //# the destructor is called, the record variable no longer owns any
 //# heap-allocated data, so that data is "unowned".
-//#
-//# In the simplest view, ownership is a binary state: construction changes the
-//# state from false to true; destruction changes the state from true to false.
 //#
 //# Ownership of a record can also be transferred by a bit-wise copy.  When a
 //# bit-wise copy of a record is made, class fields (which are implemented as
@@ -65,9 +62,10 @@ static int debug = 0;
 //# We assume that the input AST contains the minimum number of
 //# copy-constructor calls required to provide the specified semantics.  That
 //# is, record values passed by in intent must be copied.  We do not yet
-//# attempt to pass ownership of an object into a called routine.  Two kinds of
-//# variable whose ownersihp must be true before exiting a routine are:
+//# attempt to pass ownership of an object into a called routine.
+//# Variables whose ownersihp must be true before exiting a routine are:
 //#  - The return value variable
+//#  - A module-level variable.
 //#  - A record field in a record.
 //# If ownership of any of these is false when they (or their container) is
 //# about to go out of scope, a copy must be made to bring ownership to the
@@ -77,54 +75,75 @@ static int debug = 0;
 //# After copy-constructor calls have been added, the routine has its full
 //# complement of construcotr calls.  Correct AMM is then just a matter of
 //# inserting the minimum number of destructor calls to drive the ownership of
-//# all local variables to false before the routine ends.  Dataflow analysis is
-//# used to propagate this constraint backwards, in case ownership is
-//# transferred out of a block along one path but not another.
+//# all local variables to false before the routine ends.  
 //#
 //#############################################################################
 
+// This pass is applied to each function in turn.  The algorithm has four main
+// steps:
+// 1. Gather local (argument and variable) symbols and build a vector and index
+//    of these.
+// 2. Traverse each block to populate the GEN and KILL sets and the alias map.
+// 3. Perform forward flow analysis to determine which symbols are owned at the
+//    beginning of each block.  Traverse each block again and add autoCopy
+//    calls so symbols passed to receptor arguments are always owned.
+// 4. Perform backward flow analysis to determine which symbols must be unowned
+//    by the end of each block.  Add autoDestroy calls at the end of each block
+//    for symbols that are owned at the end of the block but must be unowned
+//    before the block is exited.
+//
+// Dataflow analysis is used to propagate this constraint backwards, in case
+// ownership is transferred out of a block along one path but not another.
 // The sets used for flow analysis are:
-//  GEN --  The set of symbols whose ownership transitions to true by the end of
+//  GEN  -- The set of symbols whose ownership transitions to true by the end of
 //          the block.
-//  KILL -- The set of symbols whose ownership transitions to false by the end
-//          of the block.
-//  IN --   The set of symbols that are owned at the beginning of the block.
-//  OUT --  The set of symbols that are owned at the end of the block.
+//  KILL -- The set of symbols whose ownership transitions to false anywhere in
+//          the block.
+//  IN   -- The set of symbols that are owned at the beginning of the block
+//          (after forward flow analysis).
+//  OUT  -- The set of symbols that are owned at the end of the block (after
+//          forward flow analysis); the set of symbols that must not be owned
+//          at the end of the block (after backward flow analysis).
 //
 // GEN[i] contains a true bit corresponding to each symbol that is constructed
 // in that block.  We expect that symbol is constructed only once, so if IN[i]
 // and GEN[i] have a true bit in the same position, we can flag an internal
 // error.  This condition is unlikely, so at best it should be added as a
-// verify check.
+// verify check.  After forward flow analysis, GEN[i] is initialized to IN[i]
+// to show that ownership has reached this block from another 
 //
-// KILL[i] contains a true bit corresponding to each symbol that is destroyed
-// or whose ownership is usurped in that block.  We keep a separate list of
-// aliases.  When a bitwise copy is made, we treat the new copy as if it has
-// been constructed without changing the state of the original.  When any
-// member of that set of aliases is destroyed or usurped, all members of the
-// set are added to KILL[i].
+// KILL[i] contains a true bit corresponding to each symbol whose ownership is
+// consumed in that block.  We keep a separate list of aliases.  When any
+// member of that set of aliases is consumed, all members of the set are added
+// to KILL[i].
 //
-// We start by performing forward flow analysis to establish the value of IN.  
+// We start by performing forward flow analysis to establish the value of IN.
+// Within each block, OUT[i] <- IN[i] - KILL[i] + GEN[i].
 // IN[i] is the intersection of OUT[pred(i)] for all predecessors of block i.
-// It is desirable to allow ownership to flow through to the end of the
-// function (to a final block with many predecessors).  That way, we can
-// consume liveness with a minimum of destructor calls.  However, if we cannot
-// depend on a given symbol being owned at the beginning of a block, then its
-// destructor must be pushed back up the flow graph.  For example, we might
-// pass ownership to a field or global variable on one path; then we need a
-// destructor call to get rid of ownership on the other path(s).
 //
-// For a block that contains a constructor followed by a destructor, both
-// GEN[i] and KILL[i] will be zero.  If they are both true, that represents a
-// symbol being destroyed and then reused, so GEN takes precedence over KILL
-// in forward flow: OUT[i] = IN[i] - KILL[i] + GEN[i].
+// For a block that contains a constructor followed by a destructor for the
+// same symbol j, GEN[i,j] will be false and KILL[i,j] will be true.
+// For a block that contains a destructor followed by a constructor for the
+// same symbol j, GEN[i,j] and KILL[i,j] will both be true.
 //
 // For backward flow, we compute OUT[i] as the intersection of IN[succ(i)] for
 // all successors of block i.  (No information is propagated backward through
-// the blocks, so this can be done in one iteration.)  Then, in the local
-// traversal the follows, for any symbol that remains owned at the end of block
-// i where its OUT[i] is false, we add a destructor call so that the results of
-// forward and backward flow agree.
+// the blocks, so this can be done in one iteration.)  
+//
+// After forward flow analysis, we traverse blocks again and add autoCopy calls
+// where a symexpr is unowned (at that point in the flow) but being passed to
+// an argument that consumes it.  (Consumers expect the corresonding operand to
+// be owned; the autoCopy call adds the required ownership.)  Note that adding
+// an autoCopy to an operand does not change GEN[i] or KILL[i], so the results
+// of forward flow do not have to be recomputed after this pass.
+//
+// For any symbol that remains owned at the end of block i where its OUT[i] is
+// false, we add a destructor call so that the results of forward and backward
+// flow agree.  Each added destructor call effectively sets the corresponding
+// KILL[i,j] and clears the corresponding GEN[i,j].  If we update these flow
+// sets during this pass, then we could check IN[i] - KILL[i] + GEN[i] ==
+// OUT[i].  But since we are iterating on the difference between these two
+// bitsets (i.e. OUT - (IN - KILL + GEN)), the test becomes a tautology.
 //
 
 #include "passes.h" // The main routine is declared here.
@@ -145,8 +164,6 @@ typedef std::vector<BitVec*> FlowSet;
 typedef std::vector<Symbol*> SymbolVector;
 typedef std::map<Symbol*, size_t> SymbolIndexMap;
 typedef SymbolIndexMap::value_type SymbolIndexElement;
-typedef std::map<Symbol*, SymbolVector*> AliasVectorMap;
-typedef AliasVectorMap::value_type AliasMapElement;
 typedef std::vector<SymExpr*> SymExprVector;
 typedef std::vector<DefExpr*> DefExprVector;
 
@@ -164,32 +181,105 @@ static void createFlowSet(std::vector<BitVec*>& set,
 static void destroyFlowSet(std::vector<BitVec*> set)
 {
   for_vector(BitVec, vec, set)
-    delete vec, vec = 0;
+    delete vec; vec = 0;
 }
 
 
-// An alias vector map is map from symbols to lists of symbols, but all of the
-// symbols in the same clique share the same list.  So, to destroy all the
-// lists in the map, we find the list through the first member of the clique,
-// then set the map element for each member in the list to NULL.  (The list
-// contains the element though which the list is accessed, so this detaches the
-// list from all map elements.)  Then we delete the list.  (The symbols
-// contained in the list are owned elsewhere.)
-static void destroyAliasVectorMap(AliasVectorMap& aliases)
+//############################## AliasVectorMap ##############################
+//#
+//# A utility class derived from std::map<Symbol*, SymbolVector*>.
+//# An element in this map can contain dynamically-allocated memory through its
+//# SymbolVector (second) field.  So the main point of the class is to provide
+//# a destructor that will clean up an instance properly.
+//# The insert and merge utilities manipulate the data structure while
+//# maintaining its main invariants:
+//#  1. Each member maps a symbol to a vector of symbols.
+//#  2. The vector of symbols contains at least the same symbol and also other
+//#     symbols with which it is an alias.
+//#  3. The set of mutual aliases forms a clique.  Since this set is common to
+//#     all its members, the symbol vector representing a clique is shared among all
+//#     members belonging to that clique.
+//#
+//########################################################################
+
+class AliasVectorMap : public std::map<Symbol*, SymbolVector*>
 {
-  for (AliasVectorMap::iterator it = aliases.begin();
-       it != aliases.end(); ++it)
+ public:
+  typedef value_type AliasMapElement;
+
+ private:
+  // Copying an alias vector map involves copying the symbol vector -- which we
+  // don't want to do, so we just disallow copying instead.
+  AliasVectorMap(const AliasVectorMap& rhs);
+  void operator=(const AliasVectorMap& rhs);
+
+ public:
+  ~AliasVectorMap();
+  AliasVectorMap() : std::map<Symbol*, SymbolVector*>() {}
+
+  void insert(Symbol* sym);
+  void merge(Symbol* orig, Symbol* alias);
+};
+
+// To destroy all the lists in the map, we find the list through the first
+// member of the clique, then set the map element for each member in the list
+// to NULL.  Then we delete the list.
+AliasVectorMap::~AliasVectorMap()
+{
+  for (iterator it = begin();
+       it != end(); ++it)
   {
     if (it->second == NULL)
+      // This entry is part of a clique that was already deleted.
       continue;
 
     SymbolVector* aliasList = it->second;
     for_vector(Symbol, sym, *aliasList)
-      aliases[sym] = NULL;
+      at(sym) = NULL;
       
     delete aliasList;
   }
 }
+
+// Insert a symbol into the alias vector map.
+// When a symbol is first inserted it is associated with an alias vector that
+// contains only itself.
+void
+AliasVectorMap::insert(Symbol* sym)
+{
+  SymbolVector* aliasList = new SymbolVector();
+  aliasList->push_back(sym);
+  operator[](sym) = aliasList;
+}
+
+// Merge the alias lists of two symbols that have become aliases.
+void
+AliasVectorMap::merge(Symbol* orig, Symbol* alias)
+{
+  SymbolVector* origList = at(orig);
+  SymbolVector* aliasList = at(alias);
+
+  if (aliasList == origList)
+  {
+    // These two symbols are already aliases.
+    return;
+  }
+
+  // Copy elements from the alias's list into the original symbol's list and
+  // set each entry in the map corresponding to those elements to point to the
+  // updated original list.
+  for (size_t i = 0; i < aliasList->size(); ++i)
+  {
+    Symbol* sym = aliasList->at(i);
+    origList->push_back(sym);
+    operator[](sym) = origList;
+  }
+
+  // After that, no elements point to this aliasList, so it is deleted.
+  delete aliasList;
+}
+
+//######################### End of AliasVectorMap #########################
 
 
 // Scans the body of the given function and inserts all of the variable and
@@ -198,8 +288,6 @@ static void destroyAliasVectorMap(AliasVectorMap& aliases)
 // Also constructs an index map, to make it easier to find the index of a
 // symbol in the vector.  (Otherwise, a linear search is required.)
 // The alias map can also be populated at the same time.  
-// TODO: Split the alias list off as a separate class, mostly to make it easy
-// to document the data structure it implements.
 static void
 extractSymbols(FnSymbol* fn,
                SymbolVector& symbols,
@@ -251,159 +339,253 @@ extractSymbols(FnSymbol* fn,
     INT_ASSERT(symbols[symbolIndex[sym]] == sym);
 
     // Initialize each entry in the alias map with a list of symbols
-    // containingh the symbol itself.
-    SymbolVector* aliasList = new SymbolVector();
-    aliasList->push_back(sym);
-    aliases.insert(AliasMapElement(sym, aliasList));
+    // containing just the symbol itself.
+    aliases.insert(sym);
   }
 }
 
 
-// Returns true if this function returns a fully-constructed value; false otherwise.
-static bool isConstructor(CallExpr* call)
+//############################## Predicates ##############################
+//#
+
+// Returns true if the given SymExpr is contructed by the expression in which it
+// appears; false otherwise.
+static bool isCreated(SymExpr* se)
 {
-  if (FnSymbol* fn = call->isResolved())
+  if (CallExpr* call = toCallExpr(se->parentExpr))
   {
-    // A "normal" function.
-
-    // Return values of class type are ruled out.
-    Type* retType = fn->retType;
-    if (AggregateType* at = toAggregateType(retType))
-      if (at->isClass())
-        return false;
-  }
-  else
-  {
-    // A primitive.
-    if (AggregateType* at = toAggregateType(call->typeInfo()))
-      if (at->isClass())
+    // In the current incarnation, we expect construction to look like:
+    //  ('move' lhs (construct <args>))
+    // When constructors turn into methods, this will look a bit different.
+    if (call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN))
+    {
+      // We expect the target symbol to appear as the first operand.
+      if (call->get(1) != se)
         return false;
 
-    switch (call->primitive->tag)
-    {
-     default:
-      break; // Fall through and return true.
-     case PRIM_DEREF:
-      // Because the operand is a reference, its contents are "unowned" by the
-      // result.  An autoCopy needs to be inserted where an owned copy is required.
-      return false;
-    }
-  }
-
-  return true;
-}
-
-
-static void processConstructor(CallExpr* call, SymExpr* se, 
-                               BitVec* gen,
-                               const SymbolIndexMap& symbolIndex)
-{
-  // In the current incarnation, we expect construction to look like:
-  //  ('move' lhs (construct <args>))
-  // When constructors turn into methods, this will look a bit different.
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN))
-  {
-    if (CallExpr* rhsCall = toCallExpr(call->get(2)))
-    {
-      if (isConstructor(rhsCall))
+      if (CallExpr* rhsCall = toCallExpr(call->get(2)))
       {
-        // Any function returning a value is considered to be a constructor.
-        Symbol* sym = se->var;
-        size_t index = symbolIndex.at(sym);
-        // We expect that each symbol gets constructed only once, so if we are
-        // about to set a bit in the gen set, it cannot already be true.
-        if (gen->get(index))
-          if (fWarnOwnership)
-            USR_WARN(sym, "Reinitialization of sym");
-        // If this assumption turns out to be false, it means we are reusing
-        // symbols.  That case can be accommodated, but it means we have to
-        // insert a destructor call ahead of the symbol's reinitialization.
-        gen->set(index);
+        if (FnSymbol* fn = rhsCall->isResolved())
+        {
+          // A "normal" function.
+
+          // Return values of class type are ruled out.
+          Type* retType = fn->retType;
+          if (AggregateType* at = toAggregateType(retType))
+            if (at->isClass())
+              return false;
+        }
+        else
+        {
+          // A primitive.
+
+          // We are only interested in record types, so if the RHS is not of
+          // aggregate type, we can skip it.
+          if (AggregateType* at = toAggregateType(rhsCall->typeInfo()))
+            if (at->isClass())
+              return false;
+
+          switch (rhsCall->primitive->tag)
+          {
+           default:
+            break; // Fall through and return true.
+           case PRIM_DEREF:
+            // Because the operand is a reference, its contents are "unowned" by the
+            // result.  An autoCopy needs to be inserted where an owned copy is required.
+            return false;
+          }
+        }
+        return true;
       }
     }
   }
+
+  // Return false by default.
+  return false;
 }
 
 
-// Merge the alias lists of two symbols that have become aliases.
-static void mergeAliases(Symbol* orig, Symbol* alias,
-                         AliasVectorMap& aliases)
+// Returns true if the expression in which the given SymExpr appears makes it a
+// bitwise copy of some other symbol; false otherwise.
+static bool isBitwiseCopy(SymExpr* se)
 {
-  SymbolVector* origList = aliases[orig];
-  SymbolVector* aliasList = aliases[alias];
-
-  if (aliasList == origList)
+  // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
+  if (CallExpr* call = toCallExpr(se->parentExpr))
   {
-    // These two symbols are already aliases.
-    return;
-  }
-
-  for (size_t i = 0; i < aliasList->size(); ++i)
-  {
-    Symbol* sym = aliasList->at(i);
-    origList->push_back(sym);
-    aliases[sym] = origList;
-  }
-  delete aliasList;
-}
-
-
-static void processMove(CallExpr* call, SymExpr* se, BitVec* gen, AliasVectorMap& aliases, 
-                        const SymbolIndexMap& symbolIndex)
-{
-  // We only care about bitwise copies here.
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN))
-  {
-    // We'll key off the LHS.
-    // Meaning that we will only pay attention to the expression if the SymExpr
-    // is in the LHS position in the primitive.
-    if (SymExpr* lhs = toSymExpr(call->get(1)))
+    // Call must be a move or assignment
+    if (call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN))
     {
-      if (lhs == se)
+      // se must be the first argument.
+      if (call->get(1) == se)
       {
-        // We only care about bitwise copies from one symbol to another.
-        if (SymExpr* rhs = toSymExpr(call->get(2)))
-        {
-          Symbol* lsym = lhs->var;
-          Symbol* rsym = rhs->var;
-          size_t lindex = symbolIndex.at(lsym);
-          SymbolIndexMap::const_iterator rsymPair = symbolIndex.find(rsym);
-          if (rsymPair == symbolIndex.end())
-          {
-            // TODO:  A move from a global or extern symbol without a copy-constructor
-            // call is probably an AST consistency or codegen error, given that
-            // we have already weeded out fundamental, extern and class types.
-            return;
-          }
-          size_t rindex = rsymPair->second;
+        // The second argument must also be a symexpr.
+        if (isSymExpr(call->get(2)))
+          return true;
+      }
+    }
+  }
+  return false;
+}
 
-          // Copy ownership state from RHS.
-          INT_ASSERT(gen->get(lindex) == false);
-          if (!gen->get(rindex))
-          {
-            if (fWarnOwnership)
-              USR_WARN(rsym, "Uninitialized symbol is copied here");
-          }
-          else
-          {
-            gen->set(lindex);
-          }
-          // Merge aliases whether or not they are live.
-          mergeAliases(rsym, lsym, aliases);
+
+// Returns true if the expression in which the given SymExpr appears causes
+// its ownership to be consumed; false otherwise.
+static bool isConsumed(SymExpr* se)
+{
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+  {
+    if (FnSymbol* fn = call->isResolved())
+    {
+      // This is a function call.
+
+      // The only one we're interested in right now is a destructor call.
+      if (fn->hasFlag(FLAG_DESTRUCTOR))
+      {
+        // Paranoid check: This SymExpr is the thing being destroyed, right?
+        INT_ASSERT(call->get(1) == se);
+        return true;
+      }
+    }
+    else
+    {
+      // This is a primitive.
+      if (call->isPrimitive(PRIM_RETURN))
+      {
+        // Returns act like destructors.
+        return true;
+      }
+#if 0
+      // Not yet.
+      if (call->isPrimitive(PRIM_MOVE))
+      {
+        // If the left side of a move is a global, it assumes ownership from the
+        // RHS.  We can assume that the RHS is local.
+        Expr* lhs = call->get(1);
+        if (SymExpr* lhse = toSymExpr(lhs))
+        {
+          if (lhse->var->type->symbol->hasFlag(FLAG_REF) ||
+              lhse->var->defPoint->parentSymbol->hasFlag(FLAG_MODULE_INIT))
+            return true;
         }
       }
+#endif
     }
   }
+
+  return false;
 }
   
 
-static void processDestructor(SymExpr* se,
-                              BitVec* kill, AliasVectorMap& aliases,
-                              const SymbolIndexMap& symbolIndex)
+// This predicate determines if the given statement is a jump.
+static bool isJump(Expr* stmt)
 {
-  // Add all members of an alias clique to the kill set.
+  // A goto is definitely a jump.
+  if (isGotoStmt(stmt))
+    return true;
+
+  // A return primitive works like a jump. (Nothing should appear after it.)
+  if (CallExpr* call = toCallExpr(stmt))
+    if (call->isPrimitive(PRIM_RETURN))
+      return true;
+
+  return false;
+}
+
+
+static void processCreator(SymExpr* se, 
+                               BitVec* gen,
+                               const SymbolIndexMap& symbolIndex)
+{
+  // Any function returning a value is considered to be a constructor.
+  Symbol* sym = se->var;
+  size_t index = symbolIndex.at(sym);
+
+  // We expect that each symbol gets constructed only once, so if we are
+  // about to set a bit in the gen set, it cannot already be true.
+  // If this assumption turns out to be false, it means we are reusing
+  // symbols.  That case can be accommodated, but it means we should
+  // insert a destructor call ahead of the symbol's reinitialization.
+  if (gen->get(index))
+    if (fWarnOwnership)
+      USR_WARN(sym, "Reinitialization of sym");
+
+  gen->set(index);
+}
+
+
+static void processBitwiseCopy(SymExpr* se, BitVec* gen,
+                               const SymbolIndexMap& symbolIndex)
+{
+  CallExpr* call = toCallExpr(se->parentExpr);
+
+  SymExpr* lhs = toSymExpr(call->get(1));
+  SymExpr* rhs = toSymExpr(call->get(2));
+
+  Symbol* lsym = lhs->var;
+  Symbol* rsym = rhs->var;
+
+  size_t lindex = symbolIndex.at(lsym);
+  SymbolIndexMap::const_iterator rsymPair = symbolIndex.find(rsym);
+  if (rsymPair == symbolIndex.end())
+  {
+    // TODO:  A move from a global or extern symbol without a copy-constructor
+    // call is probably an AST consistency or codegen error, given that
+    // we have already weeded out fundamental, extern and class types.
+    return;
+  }
+  size_t rindex = rsymPair->second;
+
+  // Copy ownership state from RHS.
+  INT_ASSERT(gen->get(lindex) == false);
+  if (!gen->get(rindex))
+  {
+    if (fWarnOwnership)
+      USR_WARN(rsym, "Uninitialized symbol is copied here");
+    // This can be a problem because the way we track aliases assumes that the
+    // ownership state of every member of the alias clique is the same.
+    // If this assumption turns out to be untrue, then we have to track aliases
+    // statement by statement, which will be more expensive.
+    // This assumption would be violated if for example we have:
+    //  var a
+    //  var b
+    //  (move b a)
+    //  (move a _defaultOf(type_tmp))
+    // Now b is an alias of a (they way we currently track aliases), but the
+    // value of a is owned while the value of b is not.
+  }
+  else
+  {
+    gen->set(lindex);
+  }
+}
+
+
+static void createAlias(SymExpr* se, AliasVectorMap& aliases)
+{
+  CallExpr* call = toCallExpr(se->parentExpr);
+
+  SymExpr* lhs = toSymExpr(call->get(1));
+  SymExpr* rhs = toSymExpr(call->get(2));
+
+  Symbol* lsym = lhs->var;
+  Symbol* rsym = rhs->var;
+
+  // Merge aliases whether or not they are live.
+  aliases.merge(rsym, lsym);
+}
+
+
+// If this call acts like a destructor, then add the symbols it affects to the
+// kill set and remove them from the gen set.
+static void processConsumer(SymExpr* se, BitVec* gen, BitVec* kill,
+                            const AliasVectorMap& aliases,
+                            const SymbolIndexMap& symbolIndex)
+{
+  // Add all members of an alias clique to the kill set and remove them from
+  // the gen set.
+
   // All members of an alias clique point to the same SymbolVector, so we only
   // need to look up one arbitrarily and then run the list.
   Symbol* sym = se->var;
@@ -412,45 +594,9 @@ static void processDestructor(SymExpr* se,
   for_vector(Symbol, alias, *aliasList)
   {
     size_t index = symbolIndex.at(alias);
-    // We expect a symbol to be live when it is killed.
-    INT_ASSERT(kill->get(index) == false);
+    gen->reset(index);
     kill->set(index);
   }
-
-  // We don't bother updating the alias list under the assumption that
-  // symbols are not reused.  If that turns out to be false, we have to
-  // remove the alias clique from aliases here.
-}
-
-
-// If this call acts like a destructor, then add the symbols it affects to the
-// kill set.
-static void processDestructor(CallExpr* call, SymExpr* se, BitVec* kill,
-                               AliasVectorMap& aliases,
-                               const SymbolIndexMap& symbolIndex)
-{
-  if (FnSymbol* fn = call->isResolved())
-  {
-    // This is a function call.
-
-    // The only one we're interested in right now is a destructor call.
-    if (fn->hasFlag(FLAG_DESTRUCTOR))
-    {
-      // Paranoid check: This SymExpr is the thing being destroyed, right?
-      INT_ASSERT(call->get(1) == se);
-
-      processDestructor(se, kill, aliases, symbolIndex);
-    }
-  }
-  else
-  {
-    // This is a primitive.
-    if (call->isPrimitive(PRIM_RETURN))
-    {
-      // Returns act like destructors.
-      processDestructor(se, kill, aliases, symbolIndex);
-    }
-  }      
 }
 
 
@@ -467,13 +613,17 @@ static void computeTransitions(SymExprVector& symExprs,
     if (symbolIndex.find(sym) == symbolIndex.end())
       continue;
 
-    // We are only interested in call expressions involving the SymExpr.
-    if (CallExpr* call = toCallExpr(se->parentExpr))
+    if (isCreated(se))
+      processCreator(se, gen, symbolIndex);
+
+    if (isBitwiseCopy(se))
     {
-      processConstructor(call, se, gen, symbolIndex);
-      processMove(call, se, gen, aliases, symbolIndex);
-      processDestructor(call, se, kill, aliases, symbolIndex);
+      processBitwiseCopy(se, gen, symbolIndex);
+      createAlias(se, aliases);
     }
+
+    if (isConsumed(se))
+      processConsumer(se, gen, kill, aliases, symbolIndex);
   }
 }
 
@@ -514,47 +664,117 @@ static void computeTransitions(FnSymbol* fn,
 }
 
 
-// In backward flow, we adjust the out set so it is the intersection of the IN
-// sets of its successors.  If the block is a terminal block (a block with no
-// successors), however, we set its OUT to all zeroes.  This forces ownership to
-// be driven to zero before the function is exited.
-// This analysis will work correctly even if the function has multiple exits.
-static void backwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
-                                  FlowSet& IN, FlowSet& OUT)
+static bool isRetVarInReturn(SymExpr* se)
 {
-  size_t nbbs = bbs.size();
-  for (size_t i = 0; i < nbbs; ++i)
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+    if (call->isPrimitive(PRIM_RETURN))
+      // We just assume that that call->get(1) == se.
+      // What else could it be?
+      return true;
+
+  return false;
+}
+
+
+// Insert an autoCopy because this symbol is unowned and
+// a receptor formal expects is operand to be owned.
+static void insertAutoCopy(SymExpr* se)
+{
+  SET_LINENO(se);
+  Symbol* sym = se->var;
+  FnSymbol* autoCopyFn = autoCopyMap.get(sym->type);
+
+  if (autoCopyFn == NULL)
+    return;
+
+  // For now, we ignore internally reference-counted types.  We'll add the
+  // code to manage those later.
+  if (isRefCountedType(sym->type))
+    return;
+
+  // Prevent autoCopy functions from calling themselves recursively.
+  // TODO: Remove this clause after the autoCopy function becomes a copy constructor
+  // method.
+  if (isRetVarInReturn(se))
+    return;
+
+  CallExpr* autoCopyCall = new CallExpr(autoCopyFn, se->copy());
+  se->replace(autoCopyCall);
+}
+
+
+static void insertAutoCopy(SymExprVector& symExprs, BitVec* gen, BitVec* kill,
+                           const AliasVectorMap& aliases,
+                           const SymbolIndexMap& symbolIndex)
+{
+  for_vector(SymExpr, se, symExprs)
   {
-    if (bbs[i]->outs.size() == 0)
+    // We are only interested in local symbols, so if this one does not appear
+    // in our map, move on.
+    Symbol* sym = se->var;
+    if (symbolIndex.find(sym) == symbolIndex.end())
+      continue;
+
+    // Set a bit in the gen set if this is a constructor.
+    if (isCreated(se))
+      processCreator(se, gen, symbolIndex);
+
+    // Pass ownership to this symbol if it is the result of a bitwise copy.
+    if (isBitwiseCopy(se))
+      processBitwiseCopy(se, gen, symbolIndex);
+
+    if (isConsumed(se))
     {
-      // This is a terminal block because it has no successors.
-      // Its OUT set must be empty.
-      OUT[i]->clear();
-    }
-    else
-    {
-      BitVec* out = OUT[i];
-      out->set();
-      for_vector(BasicBlock, succ, bbs[i]->outs)
-        *out &= *IN[succ->id];
+      // If the gen bit is set for this symbol, we can leave it as a move and
+      // transfer ownership.  Otherwise, we need to insert an autoCopy.
+      size_t index = symbolIndex.at(sym);
+      if (!gen->get(index))
+        insertAutoCopy(se);
+
+      processConsumer(se, gen, kill, aliases, symbolIndex);
     }
   }
 }
 
 
-// This predicate determines if the given statement is a jump.
-static bool isJump(Expr* stmt)
+static void insertAutoCopy(BasicBlock& bb,
+                           BitVec* gen, BitVec* kill,
+                           const SymbolVector& symbols,
+                           const SymbolIndexMap& symbolIndex,
+                              const AliasVectorMap& aliases)
 {
-  // A goto is definitely a jump.
-  if (isGotoStmt(stmt))
-    return true;
+  for_vector(Expr, expr, bb.exprs)
+  {
+    SymExprVector symExprs;
+    collectSymExprsSTL(expr, symExprs);
 
-  // A return primitive works like a jump. (Nothing should appear after it.)
-  if (CallExpr* call = toCallExpr(stmt))
-    if (call->isPrimitive(PRIM_RETURN))
-      return true;
+    insertAutoCopy(symExprs, gen, kill, aliases, symbolIndex);
+  }
+}                          
 
-  return false;
+
+static void insertAutoCopy(FnSymbol* fn,
+                              FlowSet& GEN, FlowSet& KILL,
+                              FlowSet& IN, FlowSet& OUT,
+                              const SymbolVector& symbols,
+                              const SymbolIndexMap& symbolIndex,
+                              const AliasVectorMap& aliases)
+{
+  size_t nbbs = fn->basicBlocks->size();
+  for (size_t i = 0; i < nbbs; i++)
+  {
+    // We need to insert an autodestroy call for each symbol that is owned
+    // (live) at the end of the block but is unowned (dead) in the OUT set.
+    BasicBlock& bb = *(*fn->basicBlocks)[i];
+    // For this block traversal, we initialize GEN[i] = IN[i].
+    // We don't care about the local kill, so we just use a new one.
+    // (We could compare new with old as a sanity check following the traversal.)
+    BitVec* local_gen = new BitVec(*IN[i]);
+    BitVec* local_kill = new BitVec(KILL[i]->size());
+    insertAutoCopy(bb, local_gen, local_kill, symbols, symbolIndex, aliases);
+    delete local_kill; local_kill = 0;
+    delete local_gen; local_gen = 0;
+  }
 }
 
 
@@ -635,8 +855,36 @@ static void insertAutoDestroy(FnSymbol* fn,
 }
 
 
+// In backward flow, we adjust the out set so it is the intersection of the IN
+// sets of its successors.  If the block is a terminal block (a block with no
+// successors), however, we set its OUT to all zeroes.  This forces ownership to
+// be driven to zero before the function is exited.
+// This analysis will work correctly even if the function has multiple exits.
+static void backwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
+                                  FlowSet& IN, FlowSet& OUT)
+{
+  size_t nbbs = bbs.size();
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    if (bbs[i]->outs.size() == 0)
+    {
+      // This is a terminal block because it has no successors.
+      // Its OUT set must be empty.
+      OUT[i]->clear();
+    }
+    else
+    {
+      BitVec* out = OUT[i];
+      out->set();
+      for_vector(BasicBlock, succ, bbs[i]->outs)
+        *out &= *IN[succ->id];
+    }
+  }
+}
+
+
 // Insert autoDestroy calls in a function as needed.                                  
-static void insertAutoDestroy(FnSymbol* fn)
+static void insertAutoCopyAutoDestroy(FnSymbol* fn)
 {
   BasicBlock::buildBasicBlocks(fn);
   size_t nbbs = fn->basicBlocks->size();
@@ -674,6 +922,8 @@ static void insertAutoDestroy(FnSymbol* fn)
   // flows through the basic blocks.
   BasicBlock::forwardFlowAnalysis(fn, GEN, KILL, IN, OUT, true);
 
+  insertAutoCopy(fn, GEN, KILL, IN, OUT, symbols, symbolIndex, aliases);
+
   // We need our own equation for backward flow.
   // Backward flow determines where ownership must be given up through a
   // delete, by making the OUT set the AND of all its successor INs and the IN
@@ -684,8 +934,6 @@ static void insertAutoDestroy(FnSymbol* fn)
 
   insertAutoDestroy(fn, GEN, KILL, IN, OUT, symbols, symbolIndex, aliases);
 
-  destroyAliasVectorMap(aliases);
-
   destroyFlowSet(GEN);
   destroyFlowSet(KILL);
   destroyFlowSet(IN);
@@ -693,7 +941,7 @@ static void insertAutoDestroy(FnSymbol* fn)
 }
 
 
-static void insertAutoDestroy()
+void insertAutoCopyAutoDestroy()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
@@ -701,16 +949,6 @@ static void insertAutoDestroy()
     if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
       continue;
 
-    insertAutoDestroy(fn);
+    insertAutoCopyAutoDestroy(fn);
   }
-}
-
-
-void insertAutoCopyAutoDestroy()
-{
-  // First of all, just insert autoDestroy calls.
-  // We assume that all necessary autoCopy calls have been added.
-  // As an enhancement/optimization, we'll add a separate pass to compute and
-  // add the minimum number of autoCopy calls required.
-  insertAutoDestroy();
 }
