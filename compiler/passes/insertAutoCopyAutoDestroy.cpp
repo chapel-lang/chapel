@@ -451,26 +451,35 @@ static bool isConsumed(SymExpr* se)
     else
     {
       // This is a primitive.
-      if (call->isPrimitive(PRIM_RETURN))
+      switch(call->primitive->tag)
       {
+       default:
+        // Assume that, generally speaking, a primitive does not consume its argument.
+        return false;
+
+       case PRIM_RETURN:
         // Returns act like destructors.
         return true;
-      }
-#if 0
-      // Not yet.
-      if (call->isPrimitive(PRIM_MOVE))
-      {
-        // If the left side of a move is a global, it assumes ownership from the
-        // RHS.  We can assume that the RHS is local.
-        Expr* lhs = call->get(1);
-        if (SymExpr* lhse = toSymExpr(lhs))
+
+       case PRIM_MOVE:
         {
-          if (lhse->var->type->symbol->hasFlag(FLAG_REF) ||
-              lhse->var->defPoint->parentSymbol->hasFlag(FLAG_MODULE_INIT))
-            return true;
+          // If the left side of a move is a global, it assumes ownership from the
+          // RHS.  We can assume that the RHS is local.
+          Expr* lhs = call->get(1);
+          if (SymExpr* lhse = toSymExpr(lhs))
+          {
+            if (//lhse->var->type->symbol->hasFlag(FLAG_REF) ||
+              isModuleSymbol(lhse->var->defPoint->parentSymbol))
+              return true;
+          }
         }
+        break;
+
+       case PRIM_SET_MEMBER:
+        if (call->get(3) == se)
+          return true;
+        break;
       }
-#endif
     }
   }
 
@@ -698,8 +707,13 @@ static void insertAutoCopy(SymExpr* se)
   if (isRetVarInReturn(se))
     return;
 
+  Expr* stmt = se->getStmtExpr();
+  VarSymbol* tmp = newTemp("auto_copy_tmp", sym->type);
   CallExpr* autoCopyCall = new CallExpr(autoCopyFn, se->copy());
-  se->replace(autoCopyCall);
+  stmt->insertBefore(new DefExpr(tmp));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
+  se->replace(new SymExpr(tmp));
+  insertReferenceTemps(autoCopyCall);
 }
 
 
