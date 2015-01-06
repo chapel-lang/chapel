@@ -49,7 +49,7 @@
 
 ===================
 general
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
@@ -62,14 +62,14 @@ failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
 ===================
 linux64
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ===================
 *32
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 memmax/memthreshold flags are C types; should be Chapel types (2014-11-12)
@@ -87,6 +87,15 @@ memmax/memthreshold flags are C types; should be Chapel types (2014-11-12)
 [Error matching program output for execflags/shannon/help]
 [Error matching program output for memory/shannon/memmaxIntOnly]
 
+tasking #include didn't get a filename (since first run, 2014-11-12)
+--------------------------------------------------------------------
+[Error matching compiler output for io/ferguson/ctests/qbuffer_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_bits_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_mark_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_memfile_test (compopts: 1)]
+[Error matching compiler output for io/ferguson/ctests/qio_test (compopts: 1)]
+
 different amounts of memory leakedon 32-bit platforms (2014-11-12, first run)
 -----------------------------------------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
@@ -103,17 +112,8 @@ some sort of 64-bit assertion fails (2014-11-12, first run)
 ===================
 linux32
 Inherits '*32'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
-
-tasking #include didn't get a filename (since first run, 2014-11-12)
---------------------------------------------------------------------
-[Error matching compiler output for io/ferguson/ctests/qbuffer_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_bits_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_mark_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_memfile_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_test (compopts: 1)]
 
 GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
 ------------------------------------------------------------------------
@@ -147,7 +147,7 @@ sporadic timeout
 
 sporadic signal 11
 ------------------
-[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-09, 2014-12-15, 2014-12-19)
+[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-09, 2014-12-15, 2014-12-19, 2015-01-04)
 [Error matching program output for parallel/begin/dinan/mvm_coforall] (2014-11-21, 2014-11-27, 2014-12-15)
 
 sporadic tasks not being created
@@ -158,27 +158,27 @@ sporadic tasks not being created
 ===================
 darwin
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ===================
 gnu.darwin
 Inherits 'darwin'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ===================
 perf*
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -190,7 +190,7 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -201,14 +201,14 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ====================
 perf.chapel-shootout
 Inherits 'perf*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ====================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -219,36 +219,40 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 fast
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ============================
 
 
 ===================
 verify
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
+
+invalid read in compiler (2014-12-16 -- diten, presumed due to standalone par)
+------------------------------------------------------------------------------
+[Error matching program output for functions/iterators/sungeun/iterInClass]
 
 invalid read in compiler (2014-12-13 -- diten, presumed due to standalone par)
 ------------------------------------------------------------------------------
@@ -257,7 +261,6 @@ invalid read in compiler (2014-12-13 -- diten, presumed due to standalone par)
 [Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader3]
 [Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader4]
 [Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader]
-[Error matching program output for functions/iterators/sungeun/iterInClass]
 [Error matching program output for multilocale/vass/recursive-iterator-twice-multiloc]
 [Error matching program output for studies/colostate/Jacobi-1D-Diamond-Tiling]
 [Error matching program output for studies/colostate/Jacobi-1D-Sliced-Diamond-Tiling]
@@ -278,13 +281,13 @@ continual compilation timeouts
 sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
-[Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2014-12-05)
+[Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-05)
 
 
 ===================
 llvm
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
@@ -295,28 +298,28 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 ===================
 fifo
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ===================
 numa
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ===================
 no-local
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 =================================
 no-local.linux32
 Inherits 'linux32' and 'no-local'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 =================================
 
 
@@ -324,22 +327,28 @@ Reviewed 2014-12-19
 ===================
 gasnet* regressions
 Inherits 'no-local'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
+common but inconsistent SIGABRT(6)  2014/12/??
+----------------------------------------------
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1 (compopts: 1)]
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block2 (compopts: 1)]
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3 (compopts: 1)]
 
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ===================
+
 
 
 === sporadic failures below ===
@@ -352,7 +361,7 @@ sporadic execution timeout (regularly)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===============================
 
 sporadic execution timeout (2014-11-27)
@@ -363,14 +372,14 @@ sporadic execution timeout (2014-11-27)
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 =============================
 
 
 =============================
 gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 =============================
 
 consistent timeouts
@@ -396,28 +405,28 @@ sporadic timeouts (infrequent)
 =============================
 gasnet.llvm
 Inherits 'gasnet*' and 'llvm'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 =============================
 
 
 ===================
 x?-wb.*
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ==================
 *prgenv-*
 Inherits 'general'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ====================
 
 infinite loop warning (since filed?)
@@ -468,16 +477,6 @@ error differs but within acceptable margin; should squash error printing
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
-compilation timeouts (since at least 2014-07-16)
-------------------------------------------------
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
-
-compilation timeouts (since at least 2014-02-23)
-------------------------------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
-
 === sporadic failures below ===
 
 sporadic dropping/mangling of output
@@ -497,21 +496,24 @@ sporadic dropping/mangling of output
 ======================================
 x?-wb.prgenv-cray
 Inherits 'x?-wb.*' and '*prgenv-cray*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ======================================
+
+consistent dropping of range separator {1..3} -> {13}
+----------------------------------------------------
+[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] 2014-12-25
 
 
 ============================
 xc-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ============================
-
 
 ===================
 *intel*
 Inherits 'general'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ===================
 
 test assertion failures (2014-09-21-2014-09-23)
@@ -528,56 +530,56 @@ binary files differ (2014-09-21-2014-09-23)
 ===============================
 x?-wb.intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ===============================
 
 
 ===============================
 x?-wb.prgenv-intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ===============================
 
 
 =============================
 xc-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 =============================
 
 
 =======================
 *gnu*
 Inherits from 'linux64'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 =======================
 
 
 =============================
 x?-wb.gnu
 Inherits 'x?-wb*' and '*gnu*'
-Reviewed 2014-12-17
+Reviewed 2015-01-05
 =============================
 
 
 =============================
 x?-wb.prgenv-gnu
 Inherits 'x?-wb*' and '*gnu*'
-Reviewed 2014-12-17
+Reviewed 2015-01-05
 =============================
 
 
 ===========================
 xc-wb.host.prgenv-gnu
 Inherits 'x?-wb.prgenv-gnu'
-Reviewed 2014-12-08
+Reviewed 2015-01-05
 ===========================
 
 
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ===================
 
 undefined reference to chpl_bitops_debruijn64 (2014-07-14)
@@ -605,28 +607,28 @@ target program died with signal 11, without coredump
 =============================
 x?-wb.pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 =============================
 
 
 =============================
 x?-wb.prgenv-pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 =============================
 
 
 ===========================
 xc-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ===========================
 
 
 ===================
 cygwin
 Inherits 'general'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ===================
 
 check_channel assertion failure
@@ -652,17 +654,12 @@ sporadic timeouts (frequent)
 ===========================
 cygwin32
 Inherits 'cygwin' and '*32'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ===========================
 
 Seg fault First run 2014-12-07
 ------------------------------
 [Error matching compiler output for users/vass/type-tests.isSubtype]
-
-assertion failures (since first run?)
--------------------------------------
-[Error matching program output for io/ferguson/ctests/qio_bits_test (compopts: 1)]
-[Error matching program output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
 
 Generated output "FAILED": First run 2014-12-07
 -----------------------------------------------
@@ -690,7 +687,7 @@ sporadic os.unlink calls in sub_test failing due to resource being busy
 ===================
 cygwin64
 Inherits 'cygwin' and 'linux64'
-Reviewed 2014-12-18
+Reviewed 2015-01-05
 ===================
 
 
@@ -708,8 +705,15 @@ sporadic python fork CreateProcessW failed for python2.7.exe', errno 12...
 ===================
 baseline
 Inherits 'general'
-Reviewed 2014-12-15
+Reviewed 2015-01-05
 ===================
+
+
+new memory leaks  2014-12-20  Elliot has claimed these
+------------------------------------------------------
+[Error matching program output for memory/vass/memleak-array-of-records-1]          (2014-12-20)
+[Error matching program output for types/string/StringImpl/memLeaks/promotion]      (2014-12-20)
+
 
 Dies with signal 6
 ------------------
@@ -718,19 +722,19 @@ Dies with signal 6
 ===================
 dist-block
 Inherits 'gasnet*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ===================
 dist-cyclic
 Inherits 'gasnet*'
-Reviewed 2014-12-19
+Reviewed 2015-01-05
 ===================
 
 
 ===================
 dist-replicated
 Inherits 'gasnet*'
-Reviewed 2014-12-08
+Reviewed 2015-01-05
 ===================
