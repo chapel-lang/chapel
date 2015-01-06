@@ -42,6 +42,13 @@ import tempfile
 import time
 import xml.etree.ElementTree
 
+# Add the chplenv dir to the python path.
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_arch
+
+
 __all__ = ('main')
 
 
@@ -157,6 +164,15 @@ class AbstractJob(object):
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
+
+    @property
+    def knc(self):
+        """Returns True when testing KNC (Xeon Phi).
+
+        :rtype: bool
+        :returns: True when testing KNC
+        """
+        return chpl_arch.get('target') == 'knc'
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.
@@ -700,17 +716,17 @@ class PbsProJob(AbstractJob):
 
     @property
     def select_suffix(self):
-        """Returns suffix for select expression based on CHPL_LAUNCHCMD_SELECT_SUFFIX
-        environment variable.
-
-        This allows testing to add additional parameters. For example, to test
-        on Phi nodes, one might set CHPL_LAUNCHCMD_SELECT_SUFFIX to
-        ":accelerator_model=Xeon_Phi".
+        """Returns suffix for select expression based instance attributes. For example,
+        if self.knc is True, returns `:accelerator_model=Xeon_Phi` so reservation will
+        target KNC nodes. Returns empty string when self.knc is False.
 
         :rtype: str
         :returns: select expression suffix, or empty string
         """
-        return os.environ.get('CHPL_LAUNCHCMD_SELECT_SUFFIX', '')
+        if self.knc:
+            return ':accelerator_model=Xeon_Phi'
+        else:
+            return ''
 
     @classmethod
     def status(cls, job_id):
