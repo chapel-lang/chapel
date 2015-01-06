@@ -14,8 +14,16 @@ module foo {
 
     proc ~Zed() {
       writeln("in ~Zed(",x,")");
-      delete this.x;
+      delete this.x; this.x = nil;
     }
+  }
+
+  pragma "init copy fn"
+    proc chpl__initCopy(const ref rhs: Zed) {
+    writeln("in chpl__initCopy(", rhs.x, ":Zed)");
+    var result: Zed;
+    result.x = if rhs.x then new helper(rhs.x.y) else nil;
+    return result;
   }
 
   proc =(ref lhs: Zed, rhs: Zed) {
