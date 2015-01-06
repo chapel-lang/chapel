@@ -1,0 +1,4 @@
+#
+# We turn off guard pages for this test as it creates many little tasks
+#
+QT_GUARD_PAGES=false

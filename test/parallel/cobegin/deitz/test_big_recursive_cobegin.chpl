@@ -1,4 +1,4 @@
-config const n: int = 1024;
+config const n: int = 768;
 
 extern proc printf(x...);
 
