@@ -696,10 +696,15 @@ static void insertAutoCopy(SymExpr* se)
   if (autoCopyFn == NULL)
     return;
 
+// This clause is commented out, because when arrays were inserted into tuples,
+// their refcounts were not getting bumped, but when the tuple is deleted, the
+// array is deleted and that decrements the reference count.
+#if 0
   // For now, we ignore internally reference-counted types.  We'll add the
   // code to manage those later.
   if (isRefCountedType(sym->type))
     return;
+#endif
 
   // Prevent autoCopy functions from calling themselves recursively.
   // TODO: Remove this clause after the autoCopy function becomes a copy constructor

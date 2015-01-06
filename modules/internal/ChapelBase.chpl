@@ -1009,7 +1009,9 @@ module ChapelBase {
   pragma "removable auto copy"
   pragma "donor fn"
   pragma "auto copy fn" proc chpl__autoCopy(x: _distribution) {
-    if !noRefCount then x._value.incRefCount();
+    if !noRefCount then
+      if x._value != nil then
+        x._value.incRefCount();
     return x;
   }
   
@@ -1017,7 +1019,9 @@ module ChapelBase {
   pragma "removable auto copy"
   pragma "donor fn"
   pragma "auto copy fn"  proc chpl__autoCopy(x: domain) {
-    if !noRefCount then x._value.incRefCount();
+    if !noRefCount then
+      if x._value != nil then
+        x._value.incRefCount();
     return x;
   }
   
@@ -1025,7 +1029,9 @@ module ChapelBase {
   pragma "removable auto copy"
   pragma "donor fn"
   pragma "auto copy fn" proc chpl__autoCopy(x: []) {
-    if !noRefCount then x._value.incRefCount();
+    if !noRefCount then
+      if x._value != nil then
+        x._value.incRefCount();
     return x;
   }
   
