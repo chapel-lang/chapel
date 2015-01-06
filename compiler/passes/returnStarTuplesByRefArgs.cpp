@@ -85,6 +85,9 @@ void returnStarTuplesByRefArgs() {
   // SET/GET_SVEC_MEMBER primitives
   //
   forv_Vec(CallExpr, call, gCallExprs) {
+    if (! call->inTree())
+      continue;
+
     if (call->isPrimitive(PRIM_SET_MEMBER) ||
         call->isPrimitive(PRIM_GET_MEMBER) ||
         call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
