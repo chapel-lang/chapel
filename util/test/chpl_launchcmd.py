@@ -797,6 +797,11 @@ class PbsProJob(AbstractJob):
             select_stmt = select_pattern.format(self.hostlist)
         elif num_locales > 0:
             select_stmt = select_pattern.format(num_locales)
+
+            # Do not set ncpus for knc. If running on knc, cpus are not needed
+            # on the system. Someday support for heterogeneous applications may
+            # exist, in which case ncpus will need to be set. For now, assume
+            # program will be launched onto knc.
             if self.num_cpus_resource is not None and not self.knc:
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
