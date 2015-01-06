@@ -42,6 +42,13 @@ import tempfile
 import time
 import xml.etree.ElementTree
 
+# Add the chplenv dir to the python path.
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_arch
+
+
 __all__ = ('main')
 
 
@@ -157,6 +164,15 @@ class AbstractJob(object):
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
+
+    @property
+    def knc(self):
+        """Returns True when testing KNC (Xeon Phi).
+
+        :rtype: bool
+        :returns: True when testing KNC
+        """
+        return chpl_arch.get('target') == 'knc'
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.
@@ -698,6 +714,20 @@ class PbsProJob(AbstractJob):
         logging.info('PBSPro job name is: {0}'.format(job_name))
         return job_name
 
+    @property
+    def select_suffix(self):
+        """Returns suffix for select expression based instance attributes. For example,
+        if self.knc is True, returns `:accelerator_model=Xeon_Phi` so reservation will
+        target KNC nodes. Returns empty string when self.knc is False.
+
+        :rtype: str
+        :returns: select expression suffix, or empty string
+        """
+        if self.knc:
+            return ':accelerator_model=Xeon_Phi'
+        else:
+            return ''
+
     @classmethod
     def status(cls, job_id):
         """Query job status using qstat.
@@ -767,11 +797,17 @@ class PbsProJob(AbstractJob):
             select_stmt = select_pattern.format(self.hostlist)
         elif num_locales > 0:
             select_stmt = select_pattern.format(num_locales)
-            if self.num_cpus_resource is not None:
+
+            # Do not set ncpus for knc. If running on knc, cpus are not needed
+            # on the system. Someday support for heterogeneous applications may
+            # exist, in which case ncpus will need to be set. For now, assume
+            # program will be launched onto knc only.
+            if self.num_cpus_resource is not None and not self.knc:
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
 
         if select_stmt is not None:
+            select_stmt += self.select_suffix
             submit_command += ['-l', select_stmt]
 
         logging.debug('qsub command: {0}'.format(submit_command))
