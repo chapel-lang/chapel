@@ -1914,7 +1914,8 @@ static void cleanupLeaderFollowerIteratorCalls()
              toDefExpr(fn->formals.tail)->sym->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD))) {
           if (!strcmp(call->parentSymbol->name, "_toLeader") ||
               !strcmp(call->parentSymbol->name, "_toFollower") ||
-              !strcmp(call->parentSymbol->name, "_toFastFollower")) {
+              !strcmp(call->parentSymbol->name, "_toFastFollower") ||
+              !strcmp(call->parentSymbol->name, "_toStandalone")) {
             ArgSymbol* iterator = toFnSymbol(call->parentSymbol)->getFormal(1);
             Type* iteratorType = iterator->getValType();
             int i = 2; // first field is super
