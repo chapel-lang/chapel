@@ -801,7 +801,7 @@ class PbsProJob(AbstractJob):
             # Do not set ncpus for knc. If running on knc, cpus are not needed
             # on the system. Someday support for heterogeneous applications may
             # exist, in which case ncpus will need to be set. For now, assume
-            # program will be launched onto knc.
+            # program will be launched onto knc only.
             if self.num_cpus_resource is not None and not self.knc:
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
