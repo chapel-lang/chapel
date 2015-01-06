@@ -698,6 +698,20 @@ class PbsProJob(AbstractJob):
         logging.info('PBSPro job name is: {0}'.format(job_name))
         return job_name
 
+    @property
+    def select_suffix(self):
+        """Returns suffix for select expression based on CHPL_LAUNCHCMD_SELECT_SUFFIX
+        environment variable.
+
+        This allows testing to add additional parameters. For example, to test
+        on Phi nodes, one might set CHPL_LAUNCHCMD_SELECT_SUFFIX to
+        ":accelerator_model=Xeon_Phi".
+
+        :rtype: str
+        :returns: select expression suffix, or empty string
+        """
+        return os.environ.get('CHPL_LAUNCHCMD_SELECT_SUFFIX', '')
+
     @classmethod
     def status(cls, job_id):
         """Query job status using qstat.
@@ -772,6 +786,7 @@ class PbsProJob(AbstractJob):
                     self.num_cpus_resource, self.num_cpus)
 
         if select_stmt is not None:
+            select_stmt += self.select_suffix
             submit_command += ['-l', select_stmt]
 
         logging.debug('qsub command: {0}'.format(submit_command))
