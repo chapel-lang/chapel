@@ -503,6 +503,11 @@ consistent dropping of range separator {1..3} -> {13}
 ----------------------------------------------------
 [Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] 2014-12-25
 
+timeout
+-------
+[Error: Timed out compilation for arrays/claridge/arraySizeMismatch] (2015-01-07 ..)
+
+
 
 ============================
 xc-wb.host.prgenv-cray
