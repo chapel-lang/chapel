@@ -330,11 +330,11 @@ Inherits 'no-local'
 Reviewed 2015-01-05
 ===================
 
-common but inconsistent SIGABRT(6)  2014/12/??
-----------------------------------------------
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1 (compopts: 1)]
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block2 (compopts: 1)]
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3 (compopts: 1)]
+common but inconsistent SIGABRT(6)
+----------------------------------
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1 (compopts: 1)] (2014-12-24 .. 2014-12-29, 2015-01-03 ..
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block2 (compopts: 1)] (2014-12-24, 2014-12-30 .. 2015-01-02, 2015-01-06 ..
+[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3 (compopts: 1)] (2014-12-24 .. 2015-12-05)
 
 ===================
 gasnet-everything
