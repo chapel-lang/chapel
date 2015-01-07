@@ -30,7 +30,7 @@ module ChapelRange {
 
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
-  proc idx2strType(type idxType) type  return chpl__signedType(idxType);
+  proc indexToStrideType(type idxType) type  return chpl__signedType(idxType);
   
   //
   // range type
@@ -68,7 +68,7 @@ module ChapelRange {
     var _alignment: idxType = 0;                   // alignment
     var _aligned : bool = false;
 
-    proc strType type  return idx2strType(idxType);
+    proc strType type  return indexToStrideType(idxType);
     inline proc low  return _low;
     inline proc high return _high;
     inline proc stride       where stridable  return _stride;
@@ -96,7 +96,7 @@ module ChapelRange {
                    param stridable : bool = false,
                    _low : idxType = 1,
                    _high : idxType = 0,
-                   _stride : idx2strType(idxType) = 1,
+                   _stride : indexToStrideType(idxType) = 1,
                    _alignment : idxType = 0,
                    _aligned : bool = false)
   {
@@ -648,7 +648,7 @@ module ChapelRange {
   inline proc +(r: range(?e, ?b, ?s), i: integral)
   {
     type resultType = (r._low+i).type;
-    type strType = idx2strType(resultType);
+    type strType = indexToStrideType(resultType);
 
     return new range(resultType, b, s,
                      r._low + i, r._high + i,
@@ -661,7 +661,7 @@ module ChapelRange {
   inline proc -(r: range(?e,?b,?s), i: integral)
   {
     type resultType = (r._low+i).type;
-    type strType = idx2strType(resultType);
+    type strType = indexToStrideType(resultType);
   
     return new range(resultType, b, s,
                      r._low - i, r._high - i,
@@ -686,7 +686,7 @@ module ChapelRange {
   
   inline proc chpl_range_check_stride(step, type idxType) {
     chpl_check_step_integral(step);
-    type strType = idx2strType(idxType);
+    type strType = indexToStrideType(idxType);
 
     // At present, step must coerce to range's idxType or strType.
     if numBits(step.type) > numBits(strType) then
@@ -707,23 +707,20 @@ module ChapelRange {
   
   proc chpl_range_check_stride(param step, type idxType)  {
     chpl_check_step_integral(step);
-    type strType = idx2strType(idxType);
+    type strType = indexToStrideType(idxType);
 
     if step == 0 then
       compilerError("the step argument of the 'by' operator is zero");
 
     // do not check e.g. when step and strType are both int(64)
     if chpl_need_to_check_step(step, strType) &&
-       step > (param_max(strType):step.type)
+       step > (max(strType):step.type)
     then
       compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
   }
   
   
-  proc chpl_by(r: range(?i,?b,?s), step, param checkStep) {
-    if checkStep then
-      chpl_range_check_stride(step, r.idxType);
-
+  proc chpl_by(r: range(?i,?b,?s), step) {
     const lw: i = r.low,
           hh: i = r.high,
           st: r.strType = r.stride * step:r.strType;
@@ -742,14 +739,15 @@ module ChapelRange {
   inline proc by(r, step) {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
-    return chpl_by(r, step, true);
+    chpl_range_check_stride(step, r.idxType);
+    return chpl_by(r, step);
   }
   
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
   inline proc by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
-    return chpl_by(r, step:r.strType, false);
+    return chpl_by(r, step:r.strType);
   }
   
   
@@ -915,7 +913,7 @@ module ChapelRange {
       __primitive("chpl_error", "count -- Cannot count off elements from a range which is ambiguously aligned.");
 
     type resultType = r.idxType;
-    type strType = idx2strType(resultType);
+    type strType = indexToStrideType(resultType);
   
     if (count == 0) then
       // Return a degenerate range.

@@ -424,18 +424,6 @@ proc max(type t) where isComplexType(t) {
   return x;
 }
 
-proc param_max(type t) param where t == int(8)
-  return 0x7f;
-
-proc param_max(type t) param where t == int(16)
-  return 0x7fff;
-
-proc param_max(type t) param where t == int(32)
-  return 0x7fffffff;
-
-proc param_max(type t) param where t == int(64)
-  return 0x7fffffffffffffff;
-
 iter chpl_enumerate(type t: enumerated) {
   const enumTuple = chpl_enum_enumerate(t);
   for i in 1..enumTuple.size do
