@@ -669,7 +669,7 @@ module ChapelRange {
   }
   
   
-  proc chpl_check_step_integral(step) {
+  inline proc chpl_check_step_integral(step) {
     if !isIntegral(step.type) then
       compilerError("can't apply 'by' using step of a non-integral type ",
                     typeToString(step.type));
@@ -705,7 +705,7 @@ module ChapelRange {
     }
   }
   
-  proc chpl_range_check_stride(param step, type idxType)  {
+  inline proc chpl_range_check_stride(param step, type idxType)  {
     chpl_check_step_integral(step);
     type strType = indexToStrideType(idxType);
 
