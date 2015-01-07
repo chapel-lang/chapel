@@ -57,7 +57,11 @@ void BitVec::clear() {
 }
 
 
-bool BitVec::get(size_t i) {
+bool BitVec::get(size_t i) const {
+#if DEBUG
+  if (i >= in_size) 
+    INT_FATAL("BitVec::get -- operand out of range.");
+#endif
   size_t j = i / (sizeof(TYPE)<<3);
   size_t k = i - j*(sizeof(TYPE)<<3);
   return data[j] & (1 << k);
@@ -71,13 +75,21 @@ void BitVec::unset(size_t i) {
 }
 
 
-void BitVec::disjunction(BitVec& other) {
+void BitVec::disjunction(const BitVec& other) {
+#if DEBUG
+  if (other.in_size != in_size)
+    INT_FATAL("BitVec::disjunction -- operand lengths must be equal.");
+#endif
   for (size_t i = 0; i < ndata; i++)
     data[i] |= other.data[i];
 }
 
 
-void BitVec::intersection(BitVec& other) {
+void BitVec::intersection(const BitVec& other) {
+#if DEBUG
+  if (other.in_size != in_size)
+    INT_FATAL("BitVec::intersection -- operand lengths must be equal.");
+#endif
   for (size_t i = 0; i < ndata; i++)
     data[i] &= other.data[i];
 }
@@ -93,7 +105,11 @@ void BitVec::intersection(BitVec& other) {
  */ 
 
 
-bool BitVec::equals(BitVec& other) {
+bool BitVec::equals(const BitVec& other) const {
+#if DEBUG
+  if (other.in_size != in_size)
+    INT_FATAL("BitVec::disjunction -- operand lengths must be equal.");
+#endif
   for(size_t i = 0; i < ndata; i++) {
     if(data[i] != other.data[i]) {
       return false;
@@ -164,7 +180,7 @@ void BitVec::flip(size_t i) {
  * hex manipulation (I have no idea what the name of that bit counting 
  * algorithm is called)
  */
-size_t BitVec::count() {
+size_t BitVec::count() const {
   size_t count = 0;
   for (size_t i = 0; i < ndata; i++) {
     size_t localCount ;
@@ -178,19 +194,19 @@ size_t BitVec::count() {
 }
 
 
-size_t BitVec::size() {
+size_t BitVec::size() const {
   return in_size; 
 }
 
 
-bool BitVec::test(size_t i) {
+bool BitVec::test(size_t i) const {
   size_t j = i / (sizeof(TYPE)<<3);
   size_t k = i - j*(sizeof(TYPE)<<3);
   return data[j] & (1 << k);
 }
 
 
-bool BitVec::any() {
+bool BitVec::any() const {
   for (size_t i = 0; i < ndata; i++) {
     if(data[i] > 0) {
       return true;
@@ -200,7 +216,7 @@ bool BitVec::any() {
 }
 
 
-bool BitVec::none() {
+bool BitVec::none() const {
   return !any();
 }
 

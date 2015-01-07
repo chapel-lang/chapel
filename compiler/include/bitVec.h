@@ -30,16 +30,16 @@ class BitVec {
   BitVec(const BitVec& rhs);
   ~BitVec();
   void clear();
-  bool get(size_t i);
-  bool operator[](size_t i) { return get(i); }
+  bool get(size_t i) const;
+  bool operator[](size_t i) const { return get(i); }
   void unset(size_t i);
-  void disjunction(BitVec& other);
-  void intersection(BitVec& other);
+  void disjunction(const BitVec& other);
+  void intersection(const BitVec& other);
   
   
   // Added functionality to make this compatible with std::bitset and thus 
   // boosts dynamic bitset if that gets into the STL, or we start using boost
-  bool equals(BitVec& other);
+  bool equals(const BitVec& other) const;
   void set();
   void set(size_t i);
   void reset();
@@ -48,43 +48,25 @@ class BitVec {
   void copy(size_t i, bool value);
   void flip();
   void flip(size_t i);
-  size_t count();
-  size_t size();
-  bool test(size_t i);
-  bool any();
-  bool none();
+  size_t count() const;
+  size_t size() const;
+  bool test(size_t i) const;
+  bool any() const;
+  bool none() const;
 };
 
-inline BitVec* operator+(BitVec& a, BitVec& b)
+inline BitVec operator+(const BitVec& a, const BitVec& b)
 {
-  BitVec* result = new BitVec(a);
-  result->disjunction(b);
+  BitVec result(a);
+  result.disjunction(b);
   return result;
 }
 
-// Usurps its left argument according to the optional adoption pattern.
-inline BitVec* operator+(BitVec* a, BitVec& b)
+inline BitVec operator-(const BitVec& a, const BitVec& b)
 {
-  BitVec* result = a;
-  result->disjunction(b);
-  return result;
-}
-
-inline BitVec* operator-(BitVec& a, BitVec& b)
-{
-  BitVec* result = new BitVec(b);
-  result->flip();
-  result->intersection(a);
-  return result;
-}
-
-inline BitVec* operator-(BitVec* a, BitVec& b)
-{
-  BitVec* result = a;
-  BitVec* temp = new BitVec(b);
-  temp->flip();
-  result->intersection(*temp);
-  delete temp; temp = 0;
+  BitVec result(b);
+  result.flip();
+  result.intersection(a);
   return result;
 }
 
