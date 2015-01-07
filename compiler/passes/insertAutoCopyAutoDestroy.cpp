@@ -408,7 +408,8 @@ static bool isCreated(SymExpr* se)
 
 // Returns true if the expression in which the given SymExpr appears makes it a
 // bitwise copy of some other symbol; false otherwise.
-static bool isBitwiseCopy(SymExpr* se)
+static bool isBitwiseCopy(SymExpr* se,
+                          const SymbolIndexMap& symbolIndex)
 {
   // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
   if (CallExpr* call = toCallExpr(se->parentExpr))
@@ -421,8 +422,17 @@ static bool isBitwiseCopy(SymExpr* se)
       if (call->get(1) == se)
       {
         // The second argument must also be a symexpr.
-        if (isSymExpr(call->get(2)))
+        if (SymExpr* rhse = toSymExpr(call->get(2)))
+        {
+          // And it must contain a local symbol.
+          Symbol* rhs = rhse->var;
+          if (symbolIndex.find(rhs) == symbolIndex.end())
+            // Not found, so skip this move.
+            // The lhs will be considered unowned, which is correct because it
+            // is just a bitwise copy of the value of the global.
+            return false;
           return true;
+        }
       }
     }
   }
@@ -536,15 +546,7 @@ static void processBitwiseCopy(SymExpr* se, BitVec* gen,
   Symbol* rsym = rhs->var;
 
   size_t lindex = symbolIndex.at(lsym);
-  SymbolIndexMap::const_iterator rsymPair = symbolIndex.find(rsym);
-  if (rsymPair == symbolIndex.end())
-  {
-    // TODO:  A move from a global or extern symbol without a copy-constructor
-    // call is probably an AST consistency or codegen error, given that
-    // we have already weeded out fundamental, extern and class types.
-    return;
-  }
-  size_t rindex = rsymPair->second;
+  size_t rindex = symbolIndex.at(rsym);
 
   // Copy ownership state from RHS.
   INT_ASSERT(gen->get(lindex) == false);
@@ -625,7 +627,7 @@ static void computeTransitions(SymExprVector& symExprs,
     if (isCreated(se))
       processCreator(se, gen, symbolIndex);
 
-    if (isBitwiseCopy(se))
+    if (isBitwiseCopy(se, symbolIndex))
     {
       processBitwiseCopy(se, gen, symbolIndex);
       createAlias(se, aliases);
@@ -696,16 +698,6 @@ static void insertAutoCopy(SymExpr* se)
   if (autoCopyFn == NULL)
     return;
 
-// This clause is commented out, because when arrays were inserted into tuples,
-// their refcounts were not getting bumped, but when the tuple is deleted, the
-// array is deleted and that decrements the reference count.
-#if 0
-  // For now, we ignore internally reference-counted types.  We'll add the
-  // code to manage those later.
-  if (isRefCountedType(sym->type))
-    return;
-#endif
-
   // Prevent autoCopy functions from calling themselves recursively.
   // TODO: Remove this clause after the autoCopy function becomes a copy constructor
   // method.
@@ -739,7 +731,7 @@ static void insertAutoCopy(SymExprVector& symExprs, BitVec* gen, BitVec* kill,
       processCreator(se, gen, symbolIndex);
 
     // Pass ownership to this symbol if it is the result of a bitwise copy.
-    if (isBitwiseCopy(se))
+    if (isBitwiseCopy(se, symbolIndex))
       processBitwiseCopy(se, gen, symbolIndex);
 
     if (isConsumed(se))
