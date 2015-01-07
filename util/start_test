@@ -980,7 +980,7 @@ while ( $#argv > 0 )
         shift
         breaksw
     case -junit-remove-prefix
-    case -junit-remove-prefix
+    case --junit-remove-prefix
         shift
         set junit_remove_prefix = $argv[1]
         shift

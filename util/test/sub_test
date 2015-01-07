@@ -282,9 +282,46 @@ def cleanup(execname):
                 os.unlink(execname)
             if os.path.isfile(execname+'_real'):
                 os.unlink(execname+'_real')
-    except IOError:
-        sys.stdout.write('[Warning: could not remove {0} ]\n'.format(execname))
-    return
+    except (IOError, OSError) as ex:
+        # If the error is "Device or resource busy", call lsof on the file (or
+        # handle for windows) to see what is holding the file handle, to help
+        # debug the issue.
+        if isinstance(ex, OSError) and ex.errno == 16:
+            handle = which('handle')
+            lsof = which('lsof')
+            if handle is not None:
+                sys.stdout.write('[Inspecting open file handles with: {0}\n'.format(handle))
+                subprocess.Popen([handle]).communicate()
+            elif lsof is not None:
+                cmd = [lsof, execname]
+                sys.stdout.write('[Inspecting open file handles with: {0}\n'.format(' '.join(cmd)))
+                subprocess.Popen(cmd).communicate()
+
+        # Do not print the warning for cygwin32 when errno is 16 (Device or resource busy).
+        if not (getattr(ex, 'errno', 0) == 16 and platform == 'cygwin32'):
+            sys.stdout.write('[Warning: could not remove {0}: {1}]\n'.format(execname, ex))
+
+def which(program):
+    """Returns absolute path to program, if it exists in $PATH. If not found,
+    returns None.
+
+    From: http://stackoverflow.com/a/377028
+    """
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ.get('PATH', '').split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+
 
 # print (compopts: XX, execopts: XX) for later decoding of failed tests
 def printTestVariation(compoptsnum, execoptsnum=0):
