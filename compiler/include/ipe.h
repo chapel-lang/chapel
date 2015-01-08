@@ -20,6 +20,7 @@
 #ifndef _IPE_H_
 #define _IPE_H_
 
-void runIPE();
+void ipeRootInit();
+void ipeRun();
 
 #endif
