@@ -1,5 +1,5 @@
-TestMini.chpl:9: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
-TestMini.chpl:9: error: unresolved call 'mini(2*int(64)).accumulate((_ref(int(64)),int(64)))'
+TestMini.chpl:12: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+TestMini.chpl:12: error: unresolved call 'mini(2*int(64)).accumulate((_ref(int(64)),int(64)))'
 ../mini.chpl:11: note: candidates are: mini.accumulate(t: (eltType, int))
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:67: note:                 SumReduceScanOp.accumulate(x)
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:80: note:                 ProductReduceScanOp.accumulate(x)
