@@ -218,6 +218,7 @@ class AliasVectorMap : public std::map<Symbol*, SymbolVector*>
   AliasVectorMap() : std::map<Symbol*, SymbolVector*>() {}
 
   void insert(Symbol* sym);
+  SymbolVector* at(Symbol* sym) const;
   void merge(Symbol* orig, Symbol* alias);
 };
 
@@ -235,7 +236,7 @@ AliasVectorMap::~AliasVectorMap()
 
     SymbolVector* aliasList = it->second;
     for_vector(Symbol, sym, *aliasList)
-      at(sym) = NULL;
+      operator[](sym) = NULL;
       
     delete aliasList;
   }
@@ -252,12 +253,22 @@ AliasVectorMap::insert(Symbol* sym)
   operator[](sym) = aliasList;
 }
 
+// Retrieves the SymbolVector* store in the selected element if it exists;
+// returns null otherwise.
+SymbolVector* AliasVectorMap::at(Symbol* sym) const
+{
+  const_iterator e = find(sym);
+  if (e == end())
+    return NULL;
+  return e->second;
+}
+
 // Merge the alias lists of two symbols that have become aliases.
 void
 AliasVectorMap::merge(Symbol* orig, Symbol* alias)
 {
-  SymbolVector* origList = at(orig);
-  SymbolVector* aliasList = at(alias);
+  SymbolVector* origList = operator[](orig);
+  SymbolVector* aliasList = operator[](alias);
 
   if (aliasList == origList)
   {
@@ -409,7 +420,7 @@ static bool isCreated(SymExpr* se)
 // Returns true if the expression in which the given SymExpr appears makes it a
 // bitwise copy of some other symbol; false otherwise.
 static bool isBitwiseCopy(SymExpr* se,
-                          const SymbolIndexMap& symbolIndex)
+                          SymbolIndexMap& symbolIndex)
 {
   // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
   if (CallExpr* call = toCallExpr(se->parentExpr))
@@ -515,11 +526,11 @@ static bool isJump(Expr* stmt)
 
 static void processCreator(SymExpr* se, 
                                BitVec* gen,
-                               const SymbolIndexMap& symbolIndex)
+                               SymbolIndexMap& symbolIndex)
 {
   // Any function returning a value is considered to be a constructor.
   Symbol* sym = se->var;
-  size_t index = symbolIndex.at(sym);
+  size_t index = symbolIndex[sym];
 
   // We expect that each symbol gets constructed only once, so if we are
   // about to set a bit in the gen set, it cannot already be true.
@@ -535,7 +546,7 @@ static void processCreator(SymExpr* se,
 
 
 static void processBitwiseCopy(SymExpr* se, BitVec* gen,
-                               const SymbolIndexMap& symbolIndex)
+                               SymbolIndexMap& symbolIndex)
 {
   CallExpr* call = toCallExpr(se->parentExpr);
 
@@ -545,8 +556,8 @@ static void processBitwiseCopy(SymExpr* se, BitVec* gen,
   Symbol* lsym = lhs->var;
   Symbol* rsym = rhs->var;
 
-  size_t lindex = symbolIndex.at(lsym);
-  size_t rindex = symbolIndex.at(rsym);
+  size_t lindex = symbolIndex[lsym];
+  size_t rindex = symbolIndex[rsym];
 
   // Copy ownership state from RHS.
   INT_ASSERT(gen->get(lindex) == false);
@@ -592,7 +603,7 @@ static void createAlias(SymExpr* se, AliasVectorMap& aliases)
 // kill set and remove them from the gen set.
 static void processConsumer(SymExpr* se, BitVec* gen, BitVec* kill,
                             const AliasVectorMap& aliases,
-                            const SymbolIndexMap& symbolIndex)
+                            SymbolIndexMap& symbolIndex)
 {
   // Add all members of an alias clique to the kill set and remove them from
   // the gen set.
@@ -604,7 +615,7 @@ static void processConsumer(SymExpr* se, BitVec* gen, BitVec* kill,
 
   for_vector(Symbol, alias, *aliasList)
   {
-    size_t index = symbolIndex.at(alias);
+    size_t index = symbolIndex[alias];
     gen->reset(index);
     kill->set(index);
   }
@@ -614,7 +625,7 @@ static void processConsumer(SymExpr* se, BitVec* gen, BitVec* kill,
 static void computeTransitions(SymExprVector& symExprs,
                                BitVec* gen, BitVec* kill,
                                AliasVectorMap& aliases,
-                               const SymbolIndexMap& symbolIndex)
+                               SymbolIndexMap& symbolIndex)
 {
   for_vector(SymExpr, se, symExprs)
   {
@@ -647,7 +658,7 @@ static void computeTransitions(SymExprVector& symExprs,
 // the first (receiver) argument.
 static void computeTransitions(BasicBlock& bb, BitVec* gen, BitVec* kill,
                                AliasVectorMap& aliases,
-                               const SymbolIndexMap& symbolIndex)
+                               SymbolIndexMap& symbolIndex)
 {
   for_vector(Expr, expr, bb.exprs)
   {
@@ -665,7 +676,7 @@ static void computeTransitions(BasicBlock& bb, BitVec* gen, BitVec* kill,
 static void computeTransitions(FnSymbol* fn,
                                FlowSet& GEN, FlowSet& KILL,
                                AliasVectorMap& aliases,
-                               const SymbolIndexMap& symbolIndex)
+                               SymbolIndexMap& symbolIndex)
 {
   size_t nbbs = fn->basicBlocks->size();
   for (size_t i = 0; i < nbbs; ++i)
@@ -716,7 +727,7 @@ static void insertAutoCopy(SymExpr* se)
 
 static void insertAutoCopy(SymExprVector& symExprs, BitVec* gen, BitVec* kill,
                            const AliasVectorMap& aliases,
-                           const SymbolIndexMap& symbolIndex)
+                           SymbolIndexMap& symbolIndex)
 {
   for_vector(SymExpr, se, symExprs)
   {
@@ -738,7 +749,7 @@ static void insertAutoCopy(SymExprVector& symExprs, BitVec* gen, BitVec* kill,
     {
       // If the gen bit is set for this symbol, we can leave it as a move and
       // transfer ownership.  Otherwise, we need to insert an autoCopy.
-      size_t index = symbolIndex.at(sym);
+      size_t index = symbolIndex[sym];
       if (!gen->get(index))
         insertAutoCopy(se);
 
@@ -751,7 +762,7 @@ static void insertAutoCopy(SymExprVector& symExprs, BitVec* gen, BitVec* kill,
 static void insertAutoCopy(BasicBlock& bb,
                            BitVec* gen, BitVec* kill,
                            const SymbolVector& symbols,
-                           const SymbolIndexMap& symbolIndex,
+                           SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
 {
   for_vector(Expr, expr, bb.exprs)
@@ -768,7 +779,7 @@ static void insertAutoCopy(FnSymbol* fn,
                               FlowSet& GEN, FlowSet& KILL,
                               FlowSet& IN, FlowSet& OUT,
                               const SymbolVector& symbols,
-                              const SymbolIndexMap& symbolIndex,
+                              SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
 {
   size_t nbbs = fn->basicBlocks->size();
@@ -793,7 +804,7 @@ static void insertAutoCopy(FnSymbol* fn,
 // specified by the given bit-vector.
 static void insertAutoDestroy(BasicBlock& bb, BitVec* to_kill, 
                               const SymbolVector& symbols,
-                              const SymbolIndexMap& symbolIndex,
+                              SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
 {
   // Skip degenerate basic blocks.
@@ -818,7 +829,7 @@ static void insertAutoDestroy(BasicBlock& bb, BitVec* to_kill,
       SymbolVector* aliasList = aliases.at(sym);
       for_vector(Symbol, alias, *aliasList)
       {
-        size_t index = symbolIndex.at(alias);
+        size_t index = symbolIndex[alias];
         to_kill->reset(index);
       }
 
@@ -850,7 +861,7 @@ static void insertAutoDestroy(FnSymbol* fn,
                               FlowSet& GEN, FlowSet& KILL,
                               FlowSet& IN, FlowSet& OUT,
                               const SymbolVector& symbols,
-                              const SymbolIndexMap& symbolIndex,
+                              SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
 {
   size_t nbbs = fn->basicBlocks->size();
@@ -859,9 +870,8 @@ static void insertAutoDestroy(FnSymbol* fn,
     // We need to insert an autodestroy call for each symbol that is owned
     // (live) at the end of the block but is unowned (dead) in the OUT set.
     BasicBlock& bb = *(*fn->basicBlocks)[i];
-    BitVec* to_kill = *IN[i] + *GEN[i] - *KILL[i] - *OUT[i];
-    insertAutoDestroy(bb, to_kill, symbols, symbolIndex, aliases);
-    delete to_kill; to_kill = 0;
+    BitVec to_kill = *IN[i] + *GEN[i] - *KILL[i] - *OUT[i];
+    insertAutoDestroy(bb, &to_kill, symbols, symbolIndex, aliases);
   }
 }
 
@@ -989,3 +999,17 @@ void insertAutoCopyAutoDestroy()
     insertAutoCopyAutoDestroy(fn);
   }
 }
+
+
+// TODO: In several places, we use std::map<,>::operator[]() where we would
+// really like to use std::map<>::at().  The latter contains an assertion that
+// the element being accessed is already a member of the map while the former
+// just inserts a new element if none is present.  However, at() is only
+// available in the C++11 version of the STL and PGI does not support that
+// version (as of this writing).  Using find() and then [] is a bit wordy, so
+// we just use [] with fingers crossed for now.  
+
+// TODO: In several places, we would like to pass SymbolIndex& with a const
+// qualifier, but since operator[] in the C++98 STL is not a const member
+// function, we are prevented from doing so until we adopt the C++11 STL
+// uniformly.
