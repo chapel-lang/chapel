@@ -21,11 +21,6 @@
 // FIFO implementation of Chapel tasking interface
 //
 
-#ifdef __OPTIMIZE__
-// Turn assert() into a no op if the C compiler defines the macro above.
-#define NDEBUG
-#endif
-
 #include "chplrt.h"
 #include "chpl_rt_utils_static.h"
 #include "chplcgfns.h"
