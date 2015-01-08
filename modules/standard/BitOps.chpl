@@ -147,6 +147,44 @@ module BitOps {
     return popcount(x:uint(bits)):int(bits);
   }
 
+  /*
+    parity
+
+    x: unsigned integer of size `bits`
+    bits: 8, 16, 32, 64
+
+    returns: 0 (as `x.type`) if an even number of bits are set in `x`
+             1 (as `x.type`) if an odd number of bits are set in `x`
+  */
+  inline proc parity(x: uint(?bits)) {
+    // the select will be folded out at compile time.
+    select bits {
+      when 64 do
+        return BitOps_internal.chpl_bitops_parity_64(x);
+      when 32 do
+        return BitOps_internal.chpl_bitops_parity_32(x);
+      when 16 do
+        return BitOps_internal.chpl_bitops_parity_32(x):uint(16);
+      when 8 do
+        return BitOps_internal.chpl_bitops_parity_32(x):uint(8);
+      otherwise
+        compilerError("parity is not supported for that bit width.");
+    }
+  }
+
+  /*
+    parity
+
+    x: signed integer of size `bits`
+    bits: 8, 16, 32, 64
+
+    returns: 0 (as `x.type`) if an even number of bits are set in `x`
+             1 (as `x.type`) if an odd number of bits are set in `x`
+  */
+  inline proc parity(x: int(?bits)) {
+    return parity(x:uint(bits)):int(bits);
+  }
+
   // Legacy operations
   // -----------------
   // kyleb: a few tests use these, but I'm not sure if there too much value
@@ -234,4 +272,7 @@ module BitOps_internal {
 
   extern proc chpl_bitops_ctz_32(x: c_uint) : uint(32);
   extern proc chpl_bitops_ctz_64(x: c_ulonglong) : uint(64);
+
+  extern proc chpl_bitops_parity_32(x: c_uint) : uint(32);
+  extern proc chpl_bitops_parity_64(x: c_ulonglong) : uint(64);
 }

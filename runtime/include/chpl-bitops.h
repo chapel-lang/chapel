@@ -33,11 +33,11 @@
 
 #include "chpl-comp-detect-macros.h"
 
-// chpl_bitopts_popcount_*
+// chpl_bitops_popcount_*
 // -----------------------
 // C implementations from Bithacks: 'Couting bits set, in parallel'
 // With -O3 and no support for the popcount instruction, the C versions produce
-// the same asmembly as the builtin under clang
+// the same assembly as the builtin under clang
 // Returns: number of bits set in the provided integer
 
 static inline uint32_t chpl_bitops_popcount_32(unsigned int x) {
@@ -70,7 +70,7 @@ static inline uint64_t chpl_bitops_popcount_64(unsigned long long x) {
 }
 
 
-// chpl_bitopts_clz_*
+// chpl_bitops_clz_*
 // ------------------
 // C implementation from http://aggregate.org/MAGIC/#Leading%20Zero%20Count
 // Returns: number of leading zeros in the provided integer
@@ -119,7 +119,7 @@ static inline uint64_t chpl_bitops_clz_64(unsigned long long x) {
 }
 
 
-// chpl_bitopts_ctz_*
+// chpl_bitops_ctz_*
 // ------------------
 // C implementation from Bithacks: 'Count the consecutive zero bits (trailing)
 //                                   on the right with multiply and lookup'
@@ -156,6 +156,46 @@ static inline uint64_t chpl_bitops_ctz_64(unsigned long long x) {
   // - This works the same as the 32bit version, only with a de Bruijn sequence
   //   for 64 bits.
   return chpl_bitops_debruijn64[((uint64_t)((x & -x) * 0x0218A392CD3D5DBFU)) >> 58];
+#endif
+}
+
+
+// chpl_bitops_parity_*
+// -----------------------
+// C implementations from Bithacks: 'Compute parity of word with a multiply'
+// Returns: 0 if an even number of bits are set
+//          1 if an odd number of bits are set
+
+static inline uint32_t chpl_bitops_parity_32(unsigned int x) {
+#if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
+  // This will expand to (confirmed w/ GCC):
+  // When`popcnt` is supported:    Otherwise:
+  // asm {                         asm {
+  //   popcnt eax, edi               mov   eax, edi
+  //   and    eax, 1                 shr   edi, 16
+  //   ret                           xor   eax, edi
+  // }                               xor   al,  ah
+  //                                 setnp al
+  //                                 movzx eax, al
+  //                                 ret
+  //                               }
+  return __builtin_parity(x);
+#else
+  x ^= x >> 1;
+  x ^= x >> 2;
+  x = (x & 0x11111111U) * 0x11111111U;
+  return (x >> 28) & 1;
+#endif
+}
+
+static inline uint64_t chpl_bitops_parity_64(unsigned long long x) {
+#if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
+  return __builtin_parityll(x);
+#else
+  x ^= x >> 1;
+  x ^= x >> 2;
+  x = (x & 0x1111111111111111UL) * 0x1111111111111111UL;
+  return (x >> 60) & 1;
 #endif
 }
 
