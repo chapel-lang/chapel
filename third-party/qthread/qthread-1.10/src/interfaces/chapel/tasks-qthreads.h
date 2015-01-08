@@ -297,8 +297,10 @@ typedef struct chpl_qthread_tls_s {
     size_t      task_lineno;
 } chpl_qthread_tls_t;
 
+extern pthread_t chpl_qthread_process_pthread;
 extern pthread_t chpl_qthread_comm_pthread;
 
+extern chpl_qthread_tls_t chpl_qthread_process_tls;
 extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
 
 #define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
@@ -307,14 +309,17 @@ void chpl_task_stdModulesInitialized(void);
 // Wrap qthread_get_tasklocal() and assert that it is always available.
 static inline chpl_qthread_tls_t * chpl_qthread_get_tasklocal(void)
 {
-    chpl_qthread_tls_t * tls;
+    chpl_qthread_tls_t* tls;
 
     if (chpl_qthread_done_initializing) {
         tls = (chpl_qthread_tls_t *)
               qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
         if (tls == NULL &&
             pthread_equal(pthread_self(), chpl_qthread_comm_pthread))
-          tls = &chpl_qthread_comm_task_tls;
+            tls = &chpl_qthread_comm_task_tls;
+        if (tls == NULL &&
+            pthread_equal(pthread_self(), chpl_qthread_process_pthread))
+            tls = &chpl_qthread_process_tls;
         assert(tls);
     }
     else
