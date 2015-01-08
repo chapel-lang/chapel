@@ -2,10 +2,11 @@
  * Verify user defined mink reduction works with arguments.
  */
 
-use TestMinkCommon;
+use mink;
+use Common;
 
-var intResult = mink(k=100) reduce B,
-  realResult = mink(k=100) reduce A;
+var intResult = mink(k=15) reduce intArray,
+  realResult = mink(k=15) reduce realArray;
 
-writeln("mink(100) int result: ", intResult);
-writeln("mink(100) real result: ", realResult);
+writeln("mink(15) int result: ", intResult);
+writeln("mink(15) real result: ", realResult);
