@@ -1,3 +1,8 @@
+/*
+ * 'mink' reduction implementation. Returns vector of k elements of type
+ * eltType.
+ */
+
 class mink : ReduceScanOp {
   type eltType;
   const k: int = 10;
@@ -6,11 +11,9 @@ class mink : ReduceScanOp {
   proc accumulate(value: eltType) {
     if value <= v[1] {
       v[1] = value;
-      for i in 2..k {
-        if v[i-1] < v[i] {
+      for i in 2..k do
+        if v[i-1] < v[i] then
           v[i-1] <=> v[i];
-        }
-      }
     }
   }
 
