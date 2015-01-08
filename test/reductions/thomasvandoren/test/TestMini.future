@@ -1,0 +1,5 @@
+bug: user defined reduction accumulate() with tuple arg fails to resolve
+
+When accumulate() accepts a tuple, e.g. accumulate(t: (eltType, int)), the
+compiler fails to resolve it. The compiler does not appear to be realizing the
+first item in the tuple is a type.
