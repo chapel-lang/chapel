@@ -929,9 +929,27 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
 
   computeTransitions(fn, GEN, KILL, aliases, symbolIndex);
 
+#if DEBUG_AMM
+  if (debug > 0)
+  {
+    printf("GEN:\n"); BasicBlock::printBitVectorSets(GEN);
+    printf("KILL:\n"); BasicBlock::printBitVectorSets(KILL);
+  }
+#endif
+
   // We can reuse the existing forward flow analysis to compute how ownership
   // flows through the basic blocks.
+  // The OUT sets are initially all ones.
+  for(size_t i = 0; i < nbbs; ++i) OUT[i]->set();
   BasicBlock::forwardFlowAnalysis(fn, GEN, KILL, IN, OUT, true);
+
+#if DEBUG_AMM
+  if (debug > 0)
+  {
+    printf("IN:\n");  BasicBlock::printBitVectorSets(IN);
+    printf("OUT:\n"); BasicBlock::printBitVectorSets(OUT);
+  }
+#endif
 
   insertAutoCopy(fn, GEN, KILL, IN, OUT, symbols, symbolIndex, aliases);
 
@@ -942,6 +960,14 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   // beginning of the block (IN) must either appear in OUT or be killed in the
   // block.
   backwardFlowOwnership(*fn->basicBlocks, IN, OUT);
+
+#if DEBUG_AMM
+  if (debug > 0)
+  {
+    printf("IN:\n");  BasicBlock::printBitVectorSets(IN);
+    printf("OUT:\n"); BasicBlock::printBitVectorSets(OUT);
+  }
+#endif
 
   insertAutoDestroy(fn, GEN, KILL, IN, OUT, symbols, symbolIndex, aliases);
 
