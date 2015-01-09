@@ -314,12 +314,13 @@ static inline chpl_qthread_tls_t * chpl_qthread_get_tasklocal(void)
     if (chpl_qthread_done_initializing) {
         tls = (chpl_qthread_tls_t *)
               qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
-        if (tls == NULL &&
-            pthread_equal(pthread_self(), chpl_qthread_comm_pthread))
-            tls = &chpl_qthread_comm_task_tls;
-        if (tls == NULL &&
-            pthread_equal(pthread_self(), chpl_qthread_process_pthread))
-            tls = &chpl_qthread_process_tls;
+        if (tls == NULL) {
+            pthread_t me = pthread_self();
+            if (pthread_equal(me, chpl_qthread_comm_pthread))
+                tls = &chpl_qthread_comm_task_tls;
+            else if (pthread_equal(me, chpl_qthread_process_pthread))
+                tls = &chpl_qthread_process_tls;
+        }
         assert(tls);
     }
     else
