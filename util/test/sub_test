@@ -438,7 +438,13 @@ def runSkipIf(skipifName):
     name = './' + skipifName
     # Already a file because os.R_OK is true?
     if os.access(name, os.X_OK):
-        skiptest = subprocess.Popen(name, stdout=subprocess.PIPE).communicate()[0]
+        env_cmd = [os.path.join(utildir, 'printchplenv'), '--simple']
+        chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
+        chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
+
+        skipif_env = os.environ.copy()
+        skipif_env.update(chpl_env)
+        skiptest = subprocess.Popen([name], stdout=subprocess.PIPE, env=skipif_env).communicate()[0]
     else:
         skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
     return skiptest
