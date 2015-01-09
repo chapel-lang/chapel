@@ -405,6 +405,10 @@ static bool isCreated(SymExpr* se)
             // Because the operand is a reference, its contents are "unowned" by the
             // result.  An autoCopy needs to be inserted where an owned copy is required.
             return false;
+           case PRIM_GET_MEMBER_VALUE:
+            // Returns a bitwise copy of the referenced field which is, as a
+            // consequence, unowned.
+            return false;
           }
         }
         return true;
