@@ -15,18 +15,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MAIN_SRCS =                  \
-            arg.cpp          \
-            checks.cpp       \
-            config.cpp       \
-            driver.cpp       \
-            log.cpp          \
-            runpasses.cpp    \
-            version.cpp      \
-            PhaseTracker.cpp
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
 
-SVN_SRCS = $(MAIN_SRCS)
-SRCS = $(SVN_SRCS)
+COMPILER_ROOT = ..
+COMPILER_SUBDIR = ipe
 
-MAIN_OBJS = \
-	$(MAIN_SRCS:%.cpp=$(MAIN_OBJDIR)/%.$(OBJ_SUFFIX))
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
+
+
+IPE_OBJDIR = $(OBJ_SUBDIR)
+include Makefile.share
+
+
+TARGETS = $(IPE_OBJS)
+
+
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
+
+MAKE_PRIMS = ./make_prims/$(CHPL_MAKE_PLATFORM)/make_prims$(EXE_SUFFIX)
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot
