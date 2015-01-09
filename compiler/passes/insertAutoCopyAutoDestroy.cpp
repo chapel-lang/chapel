@@ -506,10 +506,25 @@ static bool isConsumed(SymExpr* se)
 
   return false;
 }
-  
 
-// This predicate determines if the given statement is a jump.
-static bool isJump(Expr* stmt)
+#if 0
+static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
+{
+  Expr*& first = bb->exprs.front();
+  Expr*& last = bb->exprs.back();
+  if (Expr* parent = getCommonParentExpr(first, last))
+  {
+    if (CForLoop* cfl = dynamic_cast<CForLoop*>(parent->parentExpr))
+    {
+      if (cfl->incrBlockGet() == parent)
+        return true;
+    }
+  }
+  return false;
+}
+#endif
+  
+static bool isFlowStmt(Expr* stmt)
 {
   // A goto is definitely a jump.
   if (isGotoStmt(stmt))
@@ -517,10 +532,64 @@ static bool isJump(Expr* stmt)
 
   // A return primitive works like a jump. (Nothing should appear after it.)
   if (CallExpr* call = toCallExpr(stmt))
+  {
     if (call->isPrimitive(PRIM_RETURN))
       return true;
 
+    // _downEndCount is treated like a flow statement because we do not want to
+    // insert autoDestroys after the task says "I'm done."  This can result in
+    // false-positive memory allocation errors because the waiting (parent
+    // task) can then proceed to test that the subtask has not leaked before
+    // the subtask release locally-(dynamically-)allocated memory.
+    if (FnSymbol* fn = call->isResolved())
+      if (!strcmp(fn->name, "_downEndCount"))
+        return true;
+  }
   return false;
+}
+
+
+// Finds the last "normal" statement in a basic block and returns it.
+// A non-normal statement is a flow-altering statement, like a jump or return.
+//
+// If the block contains no "normal" statements, then NULL is returned.
+// Then, new code can be inserted ahead of the first statement in the block.
+static Expr* getLastNonflowStatement(BasicBlock* bb)
+{
+#if 0
+  // As a slight code cleanup, autoDestroys that appear at the end of a loop
+  // body (after the increment expression) in a C-style for loop are pushed
+  // back into the preceding block.  
+  // Without this clause, we get C-sytle for loops that look like:
+  // /* 980641 */ for (i3 = start2; ((i3 <= end2)); i3 += INT64(1),chpl__autoDestroy23(&_yieldedIndex2),chpl__autoDestroy23(&_yieldedIndex),chpl__autoDestroy23(&call_tmp13)) {
+  // which is arguably correct, but not very pretty.
+  // This code depends on the increment expression in a C-style for loop being
+  // set off in a block by itself in basic block analysis.  (Look for clauses
+  // related to CForLoop blocks in BasicBlock::buildLoopStmt().)
+  if (isCStyleForLoopUpdateBlock(bb))
+  {
+    // Back up to the predecessor of the C-style for loop update block and use
+    // its last statement as the insertion point instead.
+
+    // We assume that the update expression of a C-style for loop has only one
+    // predecessor.  (This would not be true if we supported continue
+    // statements in C-sytle for loops.)
+    INT_ASSERT(bb->ins.size() == 1);
+    bb = bb->ins.at(0);
+  }
+#endif
+
+  size_t i = bb->exprs.size();
+  while (i-- > 0)
+  {
+    Expr*& expr = bb->exprs[i];
+    // TODO: It might be good to insert only statements into the bb expr list.
+    Expr* stmt = expr->getStmtExpr(); // Is this necessary?
+    if (! isFlowStmt(stmt))
+      return stmt;
+  }
+
+  return NULL;
 }
 
 
@@ -802,19 +871,26 @@ static void insertAutoCopy(FnSymbol* fn,
 
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
-static void insertAutoDestroy(BasicBlock& bb, BitVec* to_kill, 
+static void insertAutoDestroy(BasicBlock* bb, BitVec* to_kill, 
                               const SymbolVector& symbols,
                               SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
 {
   // Skip degenerate basic blocks.
-  if (bb.exprs.size() == 0)
+  if (bb->exprs.size() == 0)
     return;
 
   // Find the last statement in the block.
-  Expr*& last = bb.exprs.back();
-  Expr* stmt = last->getStmtExpr();
-  bool isjump = isJump(stmt);
+  Expr* stmt = getLastNonflowStatement(bb);
+
+  // If we didn't find one, use the first statement in the block, and insert
+  // autoDestroy calls in front of it.
+  bool isJump = false;
+  if (stmt == NULL)
+  {
+    stmt = bb->exprs[0];
+    isJump = true;
+  }
 
   // For each true bit in the bit vector, add an autodestroy call.
   // But destroying one member of an alias list destroys them all.
@@ -846,7 +922,7 @@ static void insertAutoDestroy(BasicBlock& bb, BitVec* to_kill,
 
       CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
 
-      if (isjump)
+      if (isJump)
         stmt->insertBefore(autoDestroyCall);
       else
         stmt->insertAfter(autoDestroyCall);
@@ -869,7 +945,7 @@ static void insertAutoDestroy(FnSymbol* fn,
   {
     // We need to insert an autodestroy call for each symbol that is owned
     // (live) at the end of the block but is unowned (dead) in the OUT set.
-    BasicBlock& bb = *(*fn->basicBlocks)[i];
+    BasicBlock* bb = (*fn->basicBlocks)[i];
     BitVec to_kill = *IN[i] + *GEN[i] - *KILL[i] - *OUT[i];
     insertAutoDestroy(bb, &to_kill, symbols, symbolIndex, aliases);
   }
