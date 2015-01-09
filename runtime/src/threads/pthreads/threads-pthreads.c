@@ -21,11 +21,6 @@
 // Pthread implementation of Chapel threading interface
 //
 
-#ifdef __OPTIMIZE__
-// Turn assert() into a no op if the C compiler defines the macro above.
-#define NDEBUG
-#endif
-
 #include "chplrt.h"
 #include "chpl-comm.h"
 #include "chpl-mem.h"

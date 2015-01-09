@@ -15,18 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MAIN_SRCS =                  \
-            arg.cpp          \
-            checks.cpp       \
-            config.cpp       \
-            driver.cpp       \
-            log.cpp          \
-            runpasses.cpp    \
-            version.cpp      \
-            PhaseTracker.cpp
+IPE_SRCS = \
+        ipe-driver.cpp
 
-SVN_SRCS = $(MAIN_SRCS)
+
+SVN_SRCS = $(IPE_SRCS)
 SRCS = $(SVN_SRCS)
 
-MAIN_OBJS = \
-	$(MAIN_SRCS:%.cpp=$(MAIN_OBJDIR)/%.$(OBJ_SUFFIX))
+IPE_OBJS = \
+	$(IPE_SRCS:%.cpp=$(IPE_OBJDIR)/%.$(OBJ_SUFFIX))

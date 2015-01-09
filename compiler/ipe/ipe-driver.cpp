@@ -19,55 +19,45 @@
 
 #include "ipe.h"
 
-#include "checks.h"
+#include "expr.h"
 #include "log.h"
 #include "passes.h"
-
-#include "AstDumpToNode.h"
+#include "stmt.h"
 
 struct PassInfo
 {
-  void        (*function)();
   const char* name;
-  char        logTag;
+  void        (*function)();
 };
 
-// passlist: contains passes in the order that they are called
 static PassInfo sPassList[] =
 {
-  { parse,          "parse",            'p' },
-  { scopeResolve,   "scopeResolve",     'S' },
-  { resolve,        "resolve",          'R' },
-  { resolveIntents, "resolveIntents",   'i' },
-  { checkResolved,  "checkResolved",    NUL }
+  { "parse",    parse       }
 };
 
-void runIPE()
+static int sRootModuleIndex = 0;
+
+// Invoked by Root Init when count for IPE core primitives is known
+void ipeRootInit()
 {
-  AstDumpToNode logger(stdout);
+  sRootModuleIndex = rootModule->block->body.length;
+}
 
+void ipeRun()
+{
   size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
-
-  printf("runIPE    00100\n");
-
-  if (rootModule) {
-    rootModule->accept(&logger);
-    printf("\n\n\n\n\n\n\n\n\n");
-  }
 
   setupLogfiles();
 
   for (size_t i = 0; i < passListSize; i++)
   {
-    printf("RunIPE %s\n", sPassList[i].name);
-
     sPassList[i].function();
 
-    log_writeLog(sPassList[i].name, i + 1, sPassList[i].logTag);
+    log_writeLog(sPassList[i].name, i + 1, 'p');
 
     cleanAst();
 
-    USR_STOP(); // quit if fatal errors were encountered in pass
+    USR_STOP();
   }
 
   destroyAst();

@@ -519,7 +519,7 @@ Classes, Records, and Unions
   in a back-end C compiler error.
   # types/records/bharshbarger/recordArrCmp.future
   # types/records/bharshbarger/recordDomArrCmp.future
-- Type select on unions is not implemented.
+- There's no way to determine which field of a union is "active".
 
 
 Domain Maps, Domains and Arrays
