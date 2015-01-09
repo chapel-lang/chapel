@@ -25,6 +25,8 @@
 
 #include "qbuffer.h"
 
+#include "error.h"
+
 #include "sys.h"
 
 #include <limits.h>
@@ -70,7 +72,10 @@ void qbytes_free_munmap(qbytes_t* b) {
   */
 
   err = sys_munmap(b->data, b->len);
-  assert( !err );
+
+  if (err) {
+    chpl_internal_error("sys_munmap() failed");
+  }
 
   _qbytes_free_qbytes(b);
 }
