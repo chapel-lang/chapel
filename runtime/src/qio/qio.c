@@ -38,6 +38,8 @@
 #include "qio.h"
 #include "qbuffer.h"
 
+#include "error.h"
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <sys/uio.h>
@@ -1509,7 +1511,9 @@ qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
   // adding to the qbuffer the file data.
   // We do not check cached_start since we might have moved
   // the mark_stack along with changing cached_start
-  assert( ch->cached_end == expect_end );
+  if ( ch->cached_end != expect_end ) {
+    chpl_internal_error("_qio_channel_makebuffer_unlocked() failed");
+  }
 
   ch->mark_stack[0] = qbuffer_start_offset(&ch->buf);
 
