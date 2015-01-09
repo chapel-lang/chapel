@@ -928,7 +928,6 @@ int main(int argc, char* argv[]) {
 
   {
     astlocMarker markAstLoc(0, "<internal>");
-    DefExpr*     objectClass = 0;
 
     tracker.StartPhase("init");
 
@@ -941,15 +940,19 @@ int main(int argc, char* argv[]) {
     initPrimitive();
     initPrimitiveTypes();
 
-    objectClass = defineObjectClass();
+    if (fUseIPE == false) {
+      DefExpr* objectClass = defineObjectClass();
 
-    initChplProgram(objectClass);
+      initChplProgram(objectClass);
+    }
 
     setupOrderedGlobals(argv[0]);
 
     process_args(&sArgState, argc, argv);
 
-    initCompilerGlobals(); // must follow argument parsing
+    if (fUseIPE == false) {
+      initCompilerGlobals(); // must follow argument parsing
+    }
 
     setupDependentVars();
     setupModulePaths();
