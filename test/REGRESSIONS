@@ -243,6 +243,11 @@ Inherits 'general'
 Reviewed 2015-01-05
 ===================
 
+=== sporadic failures below ===
+
+sporadic timeout
+----------------
+[Error: Timed out executing program stress/deitz/test_10k_begins] (2015-01-08 ..)
 
 ==================
 valgrind
@@ -395,7 +400,7 @@ sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 
 sporadic timeouts (frequent)
 ----------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15, 2015-01-07 ..)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15, 2015-01-07)
 
 sporadic timeouts (infrequent)
 ------------------------------
@@ -631,7 +636,7 @@ Reviewed 2015-01-05
 
 
 ===================
-cygwin
+cygwin*
 Inherits 'general'
 Reviewed 2015-01-05
 ===================
@@ -658,7 +663,7 @@ sporadic timeouts (frequent)
 
 ===========================
 cygwin32
-Inherits 'cygwin' and '*32'
+Inherits 'cygwin*' and '*32'
 Reviewed 2015-01-05
 ===========================
 
@@ -691,7 +696,7 @@ sporadic os.unlink calls in sub_test failing due to resource being busy
 
 ===================
 cygwin64
-Inherits 'cygwin' and 'linux64'
+Inherits 'cygwin*' and 'linux64'
 Reviewed 2015-01-05
 ===================
 
