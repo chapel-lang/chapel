@@ -43,8 +43,10 @@ public:
   //
   static  void     view(const char* passName, int passNum);
 
-                   AstDumpToNode(FILE* fp);
+                   AstDumpToNode(FILE* fp, int offset = 0);
   virtual         ~AstDumpToNode();
+
+  void             offsetSet(int offset);
 
   //
   // These functions are the "implementation" interface for the
