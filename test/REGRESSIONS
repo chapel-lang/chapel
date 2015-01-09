@@ -286,7 +286,7 @@ continual compilation timeouts
 sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
-[Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-05)
+[Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-08)
 
 
 ===================
@@ -335,11 +335,6 @@ Inherits 'no-local'
 Reviewed 2015-01-05
 ===================
 
-These generate a SIGABRT about 1/4 - 1/3 times.  Greg has accepted it
----------------------------------------------------------------------
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block1 (compopts: 1)] (2014-12-24 .. 2014-12-29, 2015-01-03 ..
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block2 (compopts: 1)] (2014-12-24, 2014-12-30 .. 2015-01-02, 2015-01-06 ..
-[Error matching program output for optimizations/sungeun/optimized-on/test_OptimizedOn_Block3 (compopts: 1)] (2014-12-24 .. 2015-12-05)
 
 ===================
 gasnet-everything
@@ -496,7 +491,8 @@ sporadic dropping/mangling of output
 [Error matching program output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember] (2014-12-16)
 [Error matching program output for studies/shootout/nbody/sidelnik/nbody_orig_1] (2014-12-16)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)] (2014-12-19)
-
+[Error matching program output for distributions/deitz/exBlockExample/block2D]   (2015-01-09 ..
+[Error matching program output for modules/sungeun/test_safeSub]                 (2015-01-09 ..
 
 ======================================
 x?-wb.prgenv-cray
@@ -506,11 +502,11 @@ Reviewed 2015-01-05
 
 consistent dropping of range separator {1..3} -> {13}
 ----------------------------------------------------
-[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] 2014-12-25
+[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] (2014-12-25 .. 2015-01-08)
 
 timeout
 -------
-[Error: Timed out compilation for arrays/claridge/arraySizeMismatch] (2015-01-07 ..)
+[Error: Timed out compilation for arrays/claridge/arraySizeMismatch] (2015-01-07 .. 2015-01-08)
 
 
 
