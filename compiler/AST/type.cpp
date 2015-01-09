@@ -1246,7 +1246,6 @@ void initPrimitiveTypes() {
 
   dtBool = createPrimitiveType ("bool", "chpl_bool");
 
-  dtObject = new AggregateType(AGGREGATE_CLASS);
   dtValue = createInternalType("value", "_chpl_value");
 
   CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
@@ -1366,6 +1365,8 @@ void initPrimitiveTypes() {
 }
 
 DefExpr* defineObjectClass() {
+  DefExpr* retval = 0;
+
   // The base object class looks like this:
   //
   //   class object {
@@ -1380,12 +1381,14 @@ DefExpr* defineObjectClass() {
   //  throughout compilation, and it seemed to me that the it might result
   //  in possibly more special case code.
   //
-  DefExpr* retval = buildClassDefExpr("object",
-                                      dtObject,
-                                      NULL,
-                                      new BlockStmt(),
-                                      FLAG_UNKNOWN,
-                                      NULL);
+  dtObject = new AggregateType(AGGREGATE_CLASS);
+
+  retval   = buildClassDefExpr("object",
+                               dtObject,
+                               NULL,
+                               new BlockStmt(),
+                               FLAG_UNKNOWN,
+                               NULL);
 
   retval->sym->addFlag(FLAG_OBJECT_CLASS);
   retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
