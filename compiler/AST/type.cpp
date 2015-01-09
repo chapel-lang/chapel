@@ -1168,8 +1168,6 @@ Symbol* AggregateType::getField(int i) {
 void initRootModule() {
   rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");
-
-  rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
 }
 
 /************************************ | *************************************
