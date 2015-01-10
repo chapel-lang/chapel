@@ -1,28 +1,28 @@
 Git "cheat sheet" (with comparisons to svn)
 ===========================================
 
-See ContributorInfo.txt for more information about the process of contributing
+See ContributorInfo.rst for more information about the process of contributing
 code to Chapel. The basic workflow is:
 
- - (A) Let the Chapel community know about any long-term or big efforts
- - (B) Use GitHub to fork the Chapel project
- - (C) Create and switch to a feature branch
- - (D) Develop your contribution locally
- - (E) Update your feature branch with changes from the main Chapel project
- - (F) Read commit messages for changes from the main Chapel project
- - (G) Test your feature
- - (H) Push your work to your feature branch
- - (I) Create a pull request and work with your reviewers
- - (J) Once your reviewers are satisfied, merge in your pull request
+A) `Let the Chapel community know about any long-term or big efforts`_
+B) `Use GitHub to fork the Chapel project`_
+C) `Create and switch to a feature branch`_
+D) `Develop your contribution locally`_
+E) `Update your feature branch with changes from the main Chapel project`_
+F) `Read commit messages for changes from the main Chapel project`_
+G) `Test your feature`_
+H) `Push your work to your feature branch`_
+I) `Create a pull request and work with your reviewers`_
+J) `Once your reviewers are satisfied, merge in your pull request`_
 
 
-(A) Let the Chapel community know about long-term or big efforts
+Let the Chapel community know about any long-term or big efforts
 ----------------------------------------------------------------
 
-Email chapel-developers@lists.sourceforge.net -- see ContributorInfo.txt
+Email chapel-developers@lists.sourceforge.net -- see ContributorInfo.rst
 
-(B) Use GitHub to fork the Chapel project
------------------------------------------
+Use GitHub to fork the Chapel project
+-------------------------------------
 
 See Initial Git Setup below for information on getting a GitHub account and
 setting up Git.
@@ -59,15 +59,15 @@ your fork:
     # Make sure it works, get up-to-date without modifying your files
     git fetch upstream
 
-(C) Create and switch to a feature branch
------------------------------------------
+Create and switch to a feature branch
+-------------------------------------
 
 .. code-block:: bash
 
     git checkout -b <branch_name>
 
-(D) Develop your contribution locally
--------------------------------------
+Develop your contribution locally
+---------------------------------
 
 Your contribution will take the form of a series of commits.  While including
 sensible commit messages is a good idea, it is more important to have a good
@@ -165,8 +165,8 @@ Fixing a commit message:
     This should only every be done to commits that **have not been pushed** to
     a remote repository.
 
-(E) Update your feature branch with changes from the main Chapel project
-------------------------------------------------------------------------
+Update your feature branch with changes from the main Chapel project
+--------------------------------------------------------------------
 Bring in changes from the main Chapel project to your feature branch:
 
 .. code-block:: bash
@@ -185,8 +185,8 @@ files have been fixed, stage them with ``git add``, and then call ``git
 commit`` to finish the merge process.
 
 
-(F) Read commit messages for changes from the main Chapel project
------------------------------------------------------------------
+Read commit messages for changes from the main Chapel project
+-------------------------------------------------------------
 
 To view only the commits that happened on master (in other words, the old svn
 commits and the merge commits for pull requests):
@@ -206,11 +206,11 @@ commits and the merge commits for pull requests):
 
 More logging commands are described in "Other Logging Commands" below.
 
-(G) Test your feature
----------------------
+Test your feature
+-----------------
 
 You will probably need to create new tests for your feature. See
-ContributorInfo.txt and TestSystem.txt for more information on this process.
+ContributorInfo.rst and TestSystem.txt for more information on this process.
 To do the most basic testing, you'd do:
 
 .. code-block:: bash
@@ -225,8 +225,8 @@ To do the most basic testing, you'd do:
     start_test test/
 
 
-(H) Push your work to your feature branch
------------------------------------------
+Push your work to your feature branch
+-------------------------------------
 
 Push your changes to your feature branch on GitHub
 
@@ -243,8 +243,8 @@ Note that if you have already created a pull request from a
 feature branch, pushing your work to that feature branch will
 update the pull request.
 
-(I) Create a pull request and work with your reviewers
-------------------------------------------------------
+Create a pull request and work with your reviewers
+--------------------------------------------------
 
 After pushing your changes to your feature branch on GitHub, use the GitHub web
 interface to create a pull request.  Visit
@@ -260,7 +260,7 @@ and give the pull request a useful title. It's a good time to draft the commit
 message that you will need when merging the pull request in step (J).
 
 Your contribution will need to be tested and reviewed, and you will have to
-have signed a contributors agreement. See ContributorInfo.txt for more
+have signed a contributors agreement. See ContributorInfo.rst for more
 information.
 
 Your pull request will be available at a URL like:
@@ -272,8 +272,8 @@ In working with your reviewers, you will no doubt change your pull request.
 Just do your local development and then update your feature branch as in (H)
 and the pull request will change.
 
-(J) Once your reviewers are satisfied, merge in your pull request
------------------------------------------------------------------
+Once your reviewers are satisfied, merge in your pull request
+-------------------------------------------------------------
 
 After you and your reviewers agree upon the final version of your change,
 navigate to the pull request you created:

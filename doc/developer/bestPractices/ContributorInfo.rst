@@ -13,6 +13,19 @@ account, signing the contributor agreement, and submitting pull requests.
 Developer Workflow
 ------------------
 
+Overview:
+
+#. `Fork repo on github`_
+#. `Create new branch`_
+#. `Submit pull request`_
+#. `Test changes`_ (can be done by team at Cray)
+#. `Mail chapel-developers@ for review and merge`_
+
+.. _Fork repo on github:
+
+Fork repo on github
+~~~~~~~~~~~~~~~~~~~
+
 These are expected to evolve over time as the governance of Chapel is migrated
 from Cray to an external/community body (the major elements are likely to be
 similar, though the specific people involved are likely to change and grow).
@@ -52,7 +65,18 @@ similar, though the specific people involved are likely to change and grow).
 
 * `Fork the repo`_.
 
-* Develop your feature, bug fix, etc on your fork.
+.. _Create new branch:
+
+Create new branch
+~~~~~~~~~~~~~~~~~
+
+* Develop your feature, bug fix, etc on your fork. Using a concisely named
+  branch is encouraged.
+
+.. _Submit pull request:
+
+Submit pull request
+~~~~~~~~~~~~~~~~~~~
 
 * `Submit a pull request`_ with your changes (make sure you have `synced with
   the main repo`_).
@@ -60,6 +84,11 @@ similar, though the specific people involved are likely to change and grow).
 * In order for a pull request to be accepted and merged, it should a) pass
   testing and b) be reviewed by a member of the core Chapel team (currently, a
   member of the Cray Chapel team).
+
+.. _Test changes:
+
+Test changes
+~~~~~~~~~~~~
 
 * Testing your patch:
 
@@ -98,6 +127,11 @@ similar, though the specific people involved are likely to change and grow).
     system across a large number of workstations.  If you have limited testing
     resources available to you, you can request that a member of the core
     Chapel team help.
+
+.. _Mail chapel-developers@ for review and merge:
+
+Mail chapel-developers@ for review and merge
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * When you believe your pull request is ready for review, send it to a member
   of the core Chapel team (or chapel-developers_ if there isn't an obvious
