@@ -15,7 +15,7 @@ The high-level steps for contributing code are:
 5. Mail chapel-developers@ for review/merge
 
 For more detailed instructions on committing code to Chapel, please refer to
-[ContributorInfo.txt][1].
+[ContributorInfo.rst][1].
 
 [0]: https://github.com/chapel-lang/chapel/tree/master/doc/developer/contributorAgreements/
-[1]: https://github.com/chapel-lang/chapel/tree/master/doc/developer/bestPractices/ContributorInfo.txt
+[1]: https://github.com/chapel-lang/chapel/tree/master/doc/developer/bestPractices/ContributorInfo.rst

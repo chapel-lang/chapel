@@ -9,7 +9,7 @@ developers.  A possible reading order is roughly as follows:
 GettingStarted.txt
   A list of suggested "first steps" for new developers.
 
-ContributorInfo.txt
+ContributorInfo.rst
   Information for contributors about setting up github accounts, the
   developer workflow, and testing changes.
 

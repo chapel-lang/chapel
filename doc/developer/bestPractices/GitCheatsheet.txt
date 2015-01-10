@@ -1,7 +1,7 @@
 Git "cheat sheet" (with comparisons to svn)
 ===========================================
 
-See ContributorInfo.txt for more information about the process of contributing
+See ContributorInfo.rst for more information about the process of contributing
 code to Chapel. The basic workflow is:
 
  - (A) Let the Chapel community know about any long-term or big efforts
@@ -19,7 +19,7 @@ code to Chapel. The basic workflow is:
 (A) Let the Chapel community know about long-term or big efforts
 ----------------------------------------------------------------
 
-Email chapel-developers@lists.sourceforge.net -- see ContributorInfo.txt
+Email chapel-developers@lists.sourceforge.net -- see ContributorInfo.rst
 
 (B) Use GitHub to fork the Chapel project
 -----------------------------------------
@@ -210,7 +210,7 @@ More logging commands are described in "Other Logging Commands" below.
 ---------------------
 
 You will probably need to create new tests for your feature. See
-ContributorInfo.txt and TestSystem.txt for more information on this process.
+ContributorInfo.rst and TestSystem.txt for more information on this process.
 To do the most basic testing, you'd do:
 
 .. code-block:: bash
@@ -260,7 +260,7 @@ and give the pull request a useful title. It's a good time to draft the commit
 message that you will need when merging the pull request in step (J).
 
 Your contribution will need to be tested and reviewed, and you will have to
-have signed a contributors agreement. See ContributorInfo.txt for more
+have signed a contributors agreement. See ContributorInfo.rst for more
 information.
 
 Your pull request will be available at a URL like:
