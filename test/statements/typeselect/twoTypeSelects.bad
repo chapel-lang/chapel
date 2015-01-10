@@ -1,7 +1,0 @@
-twoTypeSelects.chpl:13: error: ambiguous call '_typeselect1(int(64))'
-twoTypeSelects.chpl:13: note: candidates are: _typeselect1(_t1: int(64))
-twoTypeSelects.chpl:13: note:                 _typeselect1(_t1: real(64))
-twoTypeSelects.chpl:13: note:                 _typeselect1(_t1)
-twoTypeSelects.chpl:20: note:                 _typeselect1(_t1: int(64))
-twoTypeSelects.chpl:20: note:                 _typeselect1(_t1: real(64))
-twoTypeSelects.chpl:20: note:                 _typeselect1(_t1)

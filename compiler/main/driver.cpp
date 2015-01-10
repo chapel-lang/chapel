@@ -29,6 +29,7 @@
 #include "config.h"
 #include "countTokens.h"
 #include "files.h"
+#include "ipe.h"
 #include "log.h"
 #include "misc.h"
 #include "mysystem.h"
@@ -830,7 +831,6 @@ static ArgumentDescription arg_desc[] = {
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
 
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
- {"ipe",             ' ', NULL, "Enable the Interactive Programming Environment (IPE)", "F", &fUseIPE,         NULL,                   NULL },
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome,   NULL,                   NULL},
  {0}
 };
@@ -928,30 +928,31 @@ int main(int argc, char* argv[]) {
 
   {
     astlocMarker markAstLoc(0, "<internal>");
-    DefExpr*     objectClass = 0;
 
     tracker.StartPhase("init");
 
     init_args(&sArgState, argv[0]);
 
-    for (int i = 1; i < argc; i++)
-      if (strcmp(argv[i], "--ipe") == 0)
-        fUseIPE = true;
+    fUseIPE = (strcmp(sArgState.program_name, "chpl-ipe") == 0) ? true : false;
 
     initFlags();
     initRootModule();
     initPrimitive();
     initPrimitiveTypes();
 
-    objectClass = defineObjectClass();
+    if (fUseIPE == false) {
+      DefExpr* objectClass = defineObjectClass();
 
-    initChplProgram(objectClass);
+      initChplProgram(objectClass);
+    }
 
     setupOrderedGlobals(argv[0]);
 
     process_args(&sArgState, argc, argv);
 
-    initCompilerGlobals(); // must follow argument parsing
+    if (fUseIPE == false) {
+      initCompilerGlobals(); // must follow argument parsing
+    }
 
     setupDependentVars();
     setupModulePaths();
@@ -969,10 +970,14 @@ int main(int argc, char* argv[]) {
 
   testInputFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
-  if (fDocs == false && strcmp(sArgState.program_name, "chpldoc") == 0)
-    fDocs = true;
+  if (fUseIPE == false) {
+    if (fDocs == false && strcmp(sArgState.program_name, "chpldoc") == 0)
+      fDocs = true;
 
-  runPasses(tracker, strcmp(sArgState.program_name, "chpldoc") == 0);
+    runPasses(tracker, strcmp(sArgState.program_name, "chpldoc") == 0);
+  } else {
+    ipeRun();
+  }
 
   tracker.StartPhase("driverCleanup");
 

@@ -15,18 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MAIN_SRCS =                  \
-            arg.cpp          \
-            checks.cpp       \
-            config.cpp       \
-            driver.cpp       \
-            log.cpp          \
-            runpasses.cpp    \
-            version.cpp      \
-            PhaseTracker.cpp
+IPE_OBJDIR = $(COMPILER_ROOT)/ipe/$(OBJ_SUBDIR)
 
-SVN_SRCS = $(MAIN_SRCS)
-SRCS = $(SVN_SRCS)
+ALL_SRCS += ipe/*.cpp
 
-MAIN_OBJS = \
-	$(MAIN_SRCS:%.cpp=$(MAIN_OBJDIR)/%.$(OBJ_SUFFIX))
+include $(COMPILER_ROOT)/ipe/Makefile.share

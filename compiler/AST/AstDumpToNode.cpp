@@ -51,12 +51,12 @@ void AstDumpToNode::view(const char* passName, int passNum)
   }
 }
 
-AstDumpToNode::AstDumpToNode(FILE* fp)
+AstDumpToNode::AstDumpToNode(FILE* fp, int offset)
 {
   mPath      = 0;
   mFP        = fp;
 
-  mOffset    = 0;
+  mOffset    = offset;
   mNeedSpace = false;
 
   mModule    = 0;
@@ -79,6 +79,11 @@ AstDumpToNode::~AstDumpToNode()
   {
     close();
   }
+}
+
+void AstDumpToNode::offsetSet(int offset)
+{
+  mOffset = offset;
 }
 
 bool AstDumpToNode::open(ModuleSymbol* mod, const char* passName, int passNum)
@@ -138,10 +143,35 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
   }
   else
   {
+    const char* tag = "???";
+
+    switch (node->modTag)
+    {
+      case MOD_INTERNAL:
+        tag = "Internal";
+        break;
+
+      case MOD_STANDARD:
+        tag = "Standard";
+        break;
+
+      case MOD_USER:
+        tag = "User";
+        break;
+
+      case MOD_MAIN:
+        tag = "Main";
+        break;
+
+    }
+
     fprintf(mFP, "#<ModuleSymbol %12d %s", node->id, node->name);
 
     mOffset = mOffset + 2;
 
+    newline();
+
+    fprintf(mFP, "ModTag: %s\n", tag);
     newline();
 
     retval  = true;
@@ -154,7 +184,10 @@ void AstDumpToNode::exitModSym(ModuleSymbol* node)
 {
   if (node->modUseList.n > 0)
   {
+    fprintf(mFP, "\n");
+
     newline();
+
     fprintf(mFP, "ModUseList:");
 
     forv_Vec(ModuleSymbol, mod, node->modUseList)
@@ -217,18 +250,19 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 
   for_alist(next_ast, node->body)
   {
-    newline();
-
     if (firstTime == true)
       firstTime = false;
     else
-      newline();
+      fprintf(mFP, "\n");
 
+    newline();
     next_ast->accept(this);
   }
 
   if (node->modUses)
   {
+    fprintf(mFP, "\n");
+
     newline();
 
     write(false, "ModUses: ", false);
@@ -803,17 +837,17 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
 
     case RET_REF:
       newline();
-      write("RetTag:   ref");
+      write("RetTag:      ref");
       break;
 
     case RET_PARAM:
       newline();
-      write("RetTag:   param");
+      write("RetTag:      param");
       break;
 
     case RET_TYPE:
       newline();
-      write("RetTag:   type");
+      write("RetTag:      type");
       break;
   }
 
@@ -827,21 +861,26 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
   }
 
   newline();
-  write(false, "Formals:     ", false);
+  write(false, "Formals:", false);
 
-  mOffset = mOffset + 13;
-
-  for_alist(next_ast, node->formals)
+  if (node->formals.length > 0)
   {
-    if (firstFormal == true)
-      firstFormal = false;
-    else
-      newline();
+    fprintf(mFP, "     ");
 
-    next_ast->accept(this);
+    mOffset = mOffset + 13;
+
+    for_alist(next_ast, node->formals)
+    {
+      if (firstFormal == true)
+        firstFormal = false;
+      else
+        newline();
+
+      next_ast->accept(this);
+    }
+
+    mOffset = mOffset - 13;
   }
-
-  mOffset = mOffset - 13;
 
   if (node->setter)
   {
@@ -918,7 +957,11 @@ bool AstDumpToNode::enterCallExpr(CallExpr* node)
     write("yield ");
 
   else
+  {
+    fprintf(mFP, "PrimOp: \"");
     write(node->primitive->name);
+    fprintf(mFP, "\"");
+  }
 
   if (node->partialTag)
     write("(partial)");
@@ -1107,17 +1150,47 @@ void AstDumpToNode::exitGotoStmt(GotoStmt* node)
 
 bool AstDumpToNode::enterAggrType(AggregateType* node)
 {
-  fprintf(mFP, "#<AggregateType %12d %s", node->id, (node->symbol) ? node->symbol->name : "SymbolUnbound");
-  mOffset = mOffset + 2;
+  const char* tagName   = 0;
+  bool        firstTime = true;
 
-  return true;
+  switch (node->aggregateTag)
+  {
+    case AGGREGATE_CLASS:
+      tagName = "Class";
+      break;
+
+    case AGGREGATE_RECORD:
+      tagName = "Record";
+      break;
+
+    case AGGREGATE_UNION:
+      tagName = "Union";
+      break;
+  }
+
+  fprintf(mFP, "#<AggregateType %12d %-6s %s", node->id, tagName, (node->symbol) ? node->symbol->name : "SymbolUnbound");
+  mOffset = mOffset + 2;
+  newline();
+
+  for_alist(field, node->fields)
+  {
+    if (firstTime == true)
+      firstTime = false;
+    else
+      newline();
+
+    field->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+  newline();
+  fprintf(mFP, ">");
+
+  return false;
 }
 
 void AstDumpToNode::exitAggrType(AggregateType* node)
 {
-  mOffset = mOffset - 2;
-  newline();
-  fprintf(mFP, ">");
 }
 
 //
@@ -1144,7 +1217,7 @@ void AstDumpToNode::exitEnumType(EnumType* node)
 
 void AstDumpToNode::visitPrimType(PrimitiveType* node)
 {
-  fprintf(mFP, "#<PrimitiveType %s>", node->symbol->name);
+  fprintf(mFP, "#<PrimitiveType %12d %s>", node->id, node->symbol->name);
 }
 
 //
@@ -1153,9 +1226,10 @@ void AstDumpToNode::visitPrimType(PrimitiveType* node)
 
 bool AstDumpToNode::enterArgSym(ArgSymbol* node)
 {
-  fprintf(mFP, "#<ArgSymbol  ");
+  fprintf(mFP, "#<ArgSymbol     %12d", node->id);
 
   mOffset = mOffset + 2;
+
   ast_symbol(node, true);
 
   if (node->typeExpr)
@@ -1220,7 +1294,7 @@ void AstDumpToNode::visitLabelSym(LabelSymbol* node)
 
 bool AstDumpToNode::enterTypeSym(TypeSymbol* node)
 {
-  fprintf(mFP, "#<TypeSymbol %12d", node->id);
+  fprintf(mFP, "#<TypeSymbol      %12d", node->id);
   mOffset = mOffset + 2;
 
   newline();
@@ -1298,10 +1372,11 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isArgSymbol(sym) == true)
   {
-    fprintf(mFP, "#<ArgSymbol    %12d name: %-36s", sym->id, name);
+    fprintf(mFP, "#<ArgSymbol         %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
+      fprintf(mFP, "%-42s", "");
       fprintf(mFP, " type:   ");
       writeType(sym->type);
     }
@@ -1313,7 +1388,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isEnumSymbol(sym) == true)
   {
-    fprintf(mFP, "#<EnumSymbol   %12d name: %-36s", sym->id, name);
+    fprintf(mFP, "#<EnumSymbol        %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
@@ -1328,10 +1403,11 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isFnSymbol(sym) == true)
   {
-    fprintf(mFP, "#<FnSymbol     %12d name: %-36s", sym->id, name);
+    fprintf(mFP, "#<FnSymbol          %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
+      fprintf(mFP, "%-42s", "");
       fprintf(mFP, " type:   ");
       writeType(sym->type);
     }
@@ -1343,7 +1419,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isLabelSymbol(sym) == true)
   {
-    fprintf(mFP, "#<LabelSymbol  %12d name: %-36s", sym->id, name);
+    fprintf(mFP, "#<LabelSymbol       %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
@@ -1358,7 +1434,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isModuleSymbol(sym) == true)
   {
-    fprintf(mFP, "#<ModuleSymbol %12d name: %-36s", sym->id, name);
+    fprintf(mFP, "#<ModuleSymbol      %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
@@ -1374,10 +1450,11 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (isTypeSymbol(sym) == true)
   {
-    fprintf(mFP, "#<TypeSymbol   %12d name: %-36s", sym->id, name);
+    fprintf(mFP, "#<TypeSymbol        %12d name: %-36s", sym->id, name);
 
     if (sym->type != 0)
     {
+      fprintf(mFP, "%-42s", "");
       fprintf(mFP, " type:   ");
       writeType(sym->type);
     }
@@ -1389,6 +1466,8 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   else if (VarSymbol* var = toVarSymbol(sym))
   {
+    fprintf(mFP, "#<VarSymbol         %12d name: %-36s", var->id, name);
+
     if (var->immediate != 0)
     {
       const size_t bufSize = 128;
@@ -1396,7 +1475,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
       snprint_imm(imm, bufSize, *var->immediate);
 
-      if (is_imag_type(var->type) == true)
+      if (var->type != 0 && is_imag_type(var->type) == true)
       {
         char* tail = strchr(imm, '\0');
 
@@ -1404,33 +1483,21 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
         *tail   = '\0';
       }
 
-      fprintf(mFP, "#<VarSymbol         %12d imm:  %-36s", var->id, imm);
-
-      if (sym->type)
-      {
-        fprintf(mFP, " type:   ");
-        writeType(sym->type);
-      }
-
-      writeFlags(mFP, sym);
-
-      fprintf(mFP, ">");
-
+      fprintf(mFP, "imm:  %-36s", imm);
     }
-
     else
     {
-      fprintf(mFP, "#<VarSymbol         %12d name: %-36s", var->id, name);
-
-      if (sym->type)
-      {
-        fprintf(mFP, " type:   ");
-        writeType(sym->type);
-      }
-
-      writeFlags(mFP, sym);
-      fprintf(mFP, ">");
+      fprintf(mFP, "%-42s", "");
     }
+
+    if (sym->type)
+    {
+      fprintf(mFP, " type:   ");
+      writeType(sym->type);
+    }
+
+    writeFlags(mFP, sym);
+    fprintf(mFP, ">");
   }
 }
 
@@ -1524,11 +1591,12 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
     writeType(sym->type);
   }
 
-  if (def                &&
-      !toTypeSymbol(sym) &&
-      sym->type          &&
-      sym->type->symbol  &&
-      sym->type != dtUnknown)
+#if 0
+  if (def                == true      &&
+      isTypeSymbol(sym)  == false     &&
+      sym->type          != 0         &&
+      sym->type          != dtUnknown &&
+      sym->type->symbol  != 0)
   {
     newline();
     write(false, "type->symbol: ", false);
@@ -1536,9 +1604,10 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
     ast_symbol(sym->type->symbol, false);
     mOffset = mOffset - 14;
   }
+#endif
 
   if (sym->hasFlag(FLAG_GENERIC))
-    write(false, "?", false);
+    write(false, " \"generic\" ", false);
 
   mNeedSpace = true;
 }
@@ -1552,13 +1621,32 @@ void AstDumpToNode::writeType(Type* type) const
     ;
 
   else if (PrimitiveType* t = toPrimitiveType(type))
-    fprintf(mFP, "#<PrimitiveType %s>", t->symbol->name);
+    fprintf(mFP, "#<PrimitiveType %12d %s>", t->id, t->symbol->name);
 
   else if (AggregateType* t = toAggregateType(type))
-    fprintf(mFP, "#<AggregateType %s>", t->symbol->name);
+  {
+    const char* tagName   = 0;
+
+    switch (t->aggregateTag)
+    {
+      case AGGREGATE_CLASS:
+        tagName = "Class";
+        break;
+
+      case AGGREGATE_RECORD:
+        tagName = "Record";
+        break;
+
+      case AGGREGATE_UNION:
+        tagName = "Union";
+        break;
+    }
+
+    fprintf(mFP, "#<AggregateType %12d %-6s %s>", t->id, tagName, t->symbol->name);
+  }
 
   else if (EnumType*      t = toEnumType(type))
-    fprintf(mFP, "#<EnumType      %s>", t->symbol->name);
+    fprintf(mFP, "#<EnumType      %12d %s>", t->id, t->symbol->name);
 
   else
     USR_FATAL("This cannot happen");

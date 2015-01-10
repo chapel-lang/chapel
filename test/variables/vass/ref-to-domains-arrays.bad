@@ -1,0 +1,2 @@
+{1..4}
+ref-to-domains-arrays.chpl:3: error: halt reached - domain reference count is negative!
