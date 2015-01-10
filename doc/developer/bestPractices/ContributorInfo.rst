@@ -19,7 +19,7 @@ Overview:
 #. `Create new branch`_
 #. `Submit pull request`_
 #. `Test changes`_ (can be done by team at Cray)
-#. `Mail chapel-developers@ for review/merge`_
+#. `Mail chapel-developers for review/merge`_
 
 .. _Fork repo on github:
 
@@ -128,7 +128,7 @@ Test changes
     resources available to you, you can request that a member of the core
     Chapel team help.
 
-.. _Mail chapel-developers@ for review/merge:
+.. _Mail chapel-developers for review/merge:
 
 Mail chapel-developers@ for review/merge
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
