@@ -23,7 +23,7 @@
 #endif
 #define _POSIX_C_SOURCE 20112L
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
