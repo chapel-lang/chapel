@@ -23,6 +23,9 @@ Overview:
 
 .. _Fork repo on github:
 
+Fork repo on github
+~~~~~~~~~~~~~~~~~~~
+
 These are expected to evolve over time as the governance of Chapel is migrated
 from Cray to an external/community body (the major elements are likely to be
 similar, though the specific people involved are likely to change and grow).
@@ -64,10 +67,16 @@ similar, though the specific people involved are likely to change and grow).
 
 .. _Create new branch:
 
+Create new branch
+~~~~~~~~~~~~~~~~~
+
 * Develop your feature, bug fix, etc on your fork. Using a concisely named
   branch is encouraged.
 
 .. _Submit pull request:
+
+Submit pull request
+~~~~~~~~~~~~~~~~~~~
 
 * `Submit a pull request`_ with your changes (make sure you have `synced with
   the main repo`_).
@@ -77,6 +86,9 @@ similar, though the specific people involved are likely to change and grow).
   member of the Cray Chapel team).
 
 .. _Test changes:
+
+Test changes
+~~~~~~~~~~~~
 
 * Testing your patch:
 
@@ -117,6 +129,9 @@ similar, though the specific people involved are likely to change and grow).
     Chapel team help.
 
 .. _Mail chapel-developers@ for review/merge:
+
+Mail chapel-developers@ for review/merge
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * When you believe your pull request is ready for review, send it to a member
   of the core Chapel team (or chapel-developers_ if there isn't an obvious
