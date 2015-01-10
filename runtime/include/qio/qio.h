@@ -226,8 +226,8 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 
 #else
 
-#ifndef SIMPLE_TEST
-#error Chapel runtime should be included before QIO or SIMPLE_TEST should be set
+#ifndef CHPL_RT_UNIT_TEST
+#error Chapel runtime should be included before QIO or CHPL_RT_UNIT_TEST should be set
 #endif
 
 #include <pthread.h>
