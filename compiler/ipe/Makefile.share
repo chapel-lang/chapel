@@ -15,9 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IPE_SRCS = \
-        ipe-driver.cpp
-
+IPE_SRCS =                           \
+           ipeDriver.cpp             \
+           ipeResolve.cpp            \
+           ipeInlinePrimitives.cpp   \
+           ipeEvaluate.cpp
 
 SVN_SRCS = $(IPE_SRCS)
 SRCS = $(SVN_SRCS)
