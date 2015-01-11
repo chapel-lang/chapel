@@ -76,14 +76,10 @@ private:
 
 
 class DefExpr : public Expr {
- public:
-  Symbol* sym;
-  Expr* init;
-  Expr* exprType;
-
-  DefExpr(Symbol* initSym = NULL,
-          BaseAST* initInit = NULL,
-          BaseAST* initExprType = NULL);
+public:
+                  DefExpr(Symbol*  initSym      = NULL,
+                          BaseAST* initInit     = NULL,
+                          BaseAST* initExprType = NULL);
 
   virtual void    verify();
 
@@ -93,11 +89,17 @@ class DefExpr : public Expr {
   virtual void    accept(AstVisitor* visitor);
 
   virtual Type*   typeInfo();
-  virtual void    prettyPrint(std::ostream *o);
+  virtual void    prettyPrint(std::ostream* o);
 
   virtual GenRet  codegen();
 
   virtual Expr*   getFirstExpr();
+
+  const char*     name()                               const;
+
+  Symbol*         sym;
+  Expr*           init;
+  Expr*           exprType;
 };
 
 
