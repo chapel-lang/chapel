@@ -167,7 +167,7 @@ static void ipeInline(CallExpr* expr)
           int        index   = -1;
           Expr*      expr    =  0;
 
-          for (int j = 0; j < bindings.size() && index == -1; j++)
+          for (size_t j = 0; j < bindings.size() && index == -1; j++)
           {
             index = (bindings[j].arg == argSym) ? j : -1;
           }

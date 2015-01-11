@@ -605,7 +605,7 @@ static bool ipeFunctionExactMatch(FnSymbol*           fn,
 {
   bool retval = false;
 
-  if (fn->formals.length == actualsTypes.size())
+  if (fn->formals.length == (int) actualsTypes.size())
   {
     bool match = true;
 
