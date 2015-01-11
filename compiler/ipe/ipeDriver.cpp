@@ -19,7 +19,11 @@
 
 #include "ipe.h"
 
-#include "expr.h"
+#include "ipeResolve.h"
+#include "ipeInlinePrimitives.h"
+#include "ipeEvaluate.h"
+
+#include "AstDumpToNode.h"
 #include "log.h"
 #include "passes.h"
 #include "stmt.h"
@@ -32,34 +36,71 @@ struct PassInfo
 
 static PassInfo sPassList[] =
 {
-  { "parse",    parse       }
+  { "inlinePrimitives", ipeInlinePrimitives },
+  { "evaluate",         ipeEvaluate         }
 };
 
-static int sRootModuleIndex = 0;
-
-// Invoked by Root Init when count for IPE core primitives is known
-void ipeRootInit()
-{
-  sRootModuleIndex = rootModule->block->body.length;
-}
+static ModuleSymbol* findApplicationModule();
 
 void ipeRun()
 {
-  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
+  size_t        passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
+  ModuleSymbol* applModule   = 0;
 
   setupLogfiles();
 
+  // Run the parser
+  parse();
+  AstDumpToNode::view("parse", 1);
+
+  // Select the application module
+  applModule = findApplicationModule();
+
+  // Resolution is applied to base module and application module
+  ipeResolve();
+  AstDumpToNode::view("resolve", 2, baseModule);
+  AstDumpToNode::view("resolve", 2, applModule);
+
+  // Remaining passes run only on application module
   for (size_t i = 0; i < passListSize; i++)
   {
     sPassList[i].function();
 
-    log_writeLog(sPassList[i].name, i + 1, 'p');
-
-    cleanAst();
-
-    USR_STOP();
+    AstDumpToNode::view(sPassList[i].name, i + 3, applModule);
   }
 
+  cleanAst();
   destroyAst();
   teardownLogfiles();
+}
+
+// Scan the Root Module Declaration
+//   Every expression should be a DefExpr.
+//   Find the single Application Module
+static ModuleSymbol* findApplicationModule()
+{
+  int           count  = 0;
+  ModuleSymbol* retval = 0;
+
+  for_alist(stmt, rootModule->block->body)
+  {
+    if (DefExpr* defExpr = toDefExpr(stmt))
+    {
+      if (ModuleSymbol* module = toModuleSymbol(defExpr->sym))
+      {
+        if (module != baseModule)
+        {
+          retval = module;
+          count  = count + 1;
+        }
+      }
+    }
+    else
+      INT_ASSERT(false);
+  }
+
+  // There should be just one application module
+  INT_ASSERT(count == 1);
+
+  return retval;
 }
