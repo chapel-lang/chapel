@@ -19,7 +19,11 @@ IPE_SRCS =                           \
            ipeDriver.cpp             \
            ipeResolve.cpp            \
            ipeInlinePrimitives.cpp   \
-           ipeEvaluate.cpp
+           ipeEvaluate.cpp           \
+                                     \
+           DefScope.cpp              \
+           VisibleSymbol.cpp
+
 
 SVN_SRCS = $(IPE_SRCS)
 SRCS = $(SVN_SRCS)
