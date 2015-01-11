@@ -101,6 +101,7 @@ private:
 
   static BasicBlock*        steal();
 
+  static void removeEmptyBlocks(FnSymbol* fn);
   static bool               verifyBasicBlocks(FnSymbol* fn);
 
   static int                nextID;
