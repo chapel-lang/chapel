@@ -2110,7 +2110,14 @@ module ChapelArray {
   }
   
   proc =(ref a: domain, b: domain) {
-    if !isIrregularDom(a) && !isIrregularDom(b) {
+    if (b._value == nil) {
+      // In some places, we use assignment where we should be using initialization.
+      // When the RHS is nil (uninitialized), it is permissible to do nothing
+      // if the left side is also nil.
+      if (a._value != nil) then
+        halt("Cannot overwrite a valid domain with 'nil'.");
+    }
+    else if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
         on e do e.dsiReallocate(b);
       }
