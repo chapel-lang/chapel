@@ -17,49 +17,32 @@
  * limitations under the License.
  */
 
-#include "ipe.h"
+#include "VisibleSymbol.h"
 
-#include "expr.h"
-#include "log.h"
-#include "passes.h"
-#include "stmt.h"
+#include "DefScope.h"
 
-struct PassInfo
+VisibleSymbol::VisibleSymbol(Symbol* sym, const DefScope* scope)
 {
-  const char* name;
-  void        (*function)();
-};
-
-static PassInfo sPassList[] =
-{
-  { "parse",    parse       }
-};
-
-static int sRootModuleIndex = 0;
-
-// Invoked by Root Init when count for IPE core primitives is known
-void ipeRootInit()
-{
-  sRootModuleIndex = rootModule->block->body.length;
+  mSymbol = sym;
+  mScope  = scope;
 }
 
-void ipeRun()
+VisibleSymbol::~VisibleSymbol()
 {
-  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
 
-  setupLogfiles();
+}
 
-  for (size_t i = 0; i < passListSize; i++)
-  {
-    sPassList[i].function();
+Symbol* VisibleSymbol::symbol() const
+{
+  return mSymbol;
+}
 
-    log_writeLog(sPassList[i].name, i + 1, 'p');
+const DefScope* VisibleSymbol::scope() const
+{
+  return mScope;
+}
 
-    cleanAst();
-
-    USR_STOP();
-  }
-
-  destroyAst();
-  teardownLogfiles();
+int VisibleSymbol::depth() const
+{
+  return mScope->depthGet();
 }
