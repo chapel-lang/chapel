@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
-
-function err_exit()
-{
-    echo '[Error found checking setchplenv.* scripts.]'
-}
-trap err_exit ERR
-
 python verify_setchplenv_scripts.py --verbose && \
-    echo '[Success matching setchplenv.* scripts check.]'
+    echo '[Success matching setchplenv.* scripts check.]' || \
+        echo '[Error found checking setchplenv.* scripts.]'
