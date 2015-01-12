@@ -1,0 +1,4 @@
+# This test is interesting only for multilocale performance.
+# Which will double as correctness test as well.
+CHPL_TEST_PERF != on
+CHPL_COMM == none
