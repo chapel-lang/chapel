@@ -101,7 +101,7 @@ private:
 
   static BasicBlock*        steal();
 
-  static void removeEmptyBlocks(FnSymbol* fn);
+  static void               removeEmptyBlocks(FnSymbol* fn);
   static bool               verifyBasicBlocks(FnSymbol* fn);
 
   static int                nextID;
@@ -117,8 +117,8 @@ public:
   std::vector<Expr*>        exprs;
   std::vector<bool>         marks;
 
-  BasicBlockVector  ins;
-  BasicBlockVector  outs;
+  BasicBlockVector          ins;
+  BasicBlockVector          outs;
 
 private:
   bool                      isOK();
