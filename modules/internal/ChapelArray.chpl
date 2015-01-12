@@ -873,6 +873,11 @@ module ChapelArray {
       return member(i);
     }
 
+    proc newAlias() {
+      var x = _value;
+      return _newDomain(x);
+    }
+
     /*
        Returns true if this domain is a subset of 'super'
     */
