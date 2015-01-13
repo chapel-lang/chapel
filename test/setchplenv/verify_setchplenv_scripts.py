@@ -9,6 +9,7 @@ show up without updating this test.
 
 from __future__ import print_function
 
+import distutils.spawn
 import glob
 import os
 import os.path
@@ -22,6 +23,27 @@ chplenv_dir = os.path.join(os.path.dirname(__file__), '../../util/chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_platform
+
+
+def _skip_if(condition, reason):
+    """Wrapper around unittest.skipIf, if available. If not, do not run test
+    when condition is True.
+    """
+    if hasattr(unittest, 'skipIf'):
+        return unittest.skipIf(condition, reason)
+    elif condition:
+        # Skip the test by instead running a noop function that just print a
+        # message.
+        def skip_it(func):
+            def noop(*args, **kwargs):
+                print('Skipping "{0}" because: {1}'.format(func.__name__, reason))
+            return noop
+        return skip_it
+    else:
+        # Run the test by simply returning the original test function.
+        def pass_thru(func):
+            return func
+        return pass_thru
 
 
 class SetChplEnvTests(unittest.TestCase):
@@ -156,6 +178,8 @@ class SetChplEnvTests(unittest.TestCase):
         """Verify csh versions of setchplenv.* work as expected."""
         self.check_scripts('csh', 'source', ':', post_source_cmd='rehash', shell_cmd='tcsh')
 
+    @_skip_if(distutils.spawn.find_executable('fish') is None,
+              'fish is not installed on system.')
     def test_setchplenv__fish(self):
         """Verify fish versions of setchplenv.* work as expected."""
         self.check_scripts('fish', '.', ' ')
