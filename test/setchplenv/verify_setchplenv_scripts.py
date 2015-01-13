@@ -112,11 +112,11 @@ class SetChplEnvTests(unittest.TestCase):
             shell_cmd = shell
 
         def get_cmd(cmd):
-            prefix = '{source_cmd} {setchplenv_script} ;\n'.format(
+            prefix = '{source_cmd} {setchplenv_script}\n'.format(
                 source_cmd=source_cmd, setchplenv_script=setchplenv_script)
             if post_source_cmd is not None:
-                prefix = '{0}{1} ;\n'.format(prefix, post_source_cmd)
-            return '{0}{1}'.format(prefix, cmd)
+                prefix = '{0}{1}\n'.format(prefix, post_source_cmd)
+            return '{0}{1}\n'.format(prefix, cmd)
 
         def get_var(var_name):
             """Get and return a var from setchplenv.* env."""
