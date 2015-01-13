@@ -374,7 +374,7 @@ static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
-static void initializeClass(Expr* stmt, Symbol* sym);
+// static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
 static void removeCompilerWarnings();
@@ -7266,6 +7266,7 @@ static void insertReturnTemps() {
 }
 
 
+#if 0
 //
 // insert code to initialize a class or record
 //
@@ -7287,6 +7288,7 @@ initializeClass(Expr* stmt, Symbol* sym) {
     }
   }
 }
+#endif
 
 
 static void handleRuntimeTypes()
@@ -8041,7 +8043,7 @@ static void expandInitFieldPrims()
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_INIT_FIELDS))
     {
-      initializeClass(call, toSymExpr(call->get(1))->var);
+//      initializeClass(call, toSymExpr(call->get(1))->var);
       call->remove();
     }
   }
