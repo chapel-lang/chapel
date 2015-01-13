@@ -27,7 +27,8 @@ import chpl_platform
 
 def _skip_if(condition, reason):
     """Wrapper around unittest.skipIf, if available. If not, do not run test
-    when condition is True.
+    when condition is True. unittest.skipIf was not added until python
+    2.7. Chapel testing requires python 2.6 support.
     """
     if hasattr(unittest, 'skipIf'):
         return unittest.skipIf(condition, reason)
