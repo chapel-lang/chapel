@@ -96,10 +96,19 @@ class SetChplEnvTests(unittest.TestCase):
                 prefix = '{0}{1} ;\n'.format(prefix, post_source_cmd)
             return '{0}{1}'.format(prefix, cmd)
 
-        path_out = self.run_cmd(shell_cmd, get_cmd('echo $PATH'))
-        path = path_out.splitlines()[-1]
+        def get_var(var_name):
+            """Get and return a var from setchplenv.* env."""
+            out = self.run_cmd(shell_cmd, get_cmd('echo ${0}'.format(var_name)))
+            value = out.splitlines()[-1]
+            return value
 
-        path_parts = path.split(path_sep)
+        def get_path_var(var_name):
+            """Gets the path-like var and returns a list of its parts."""
+            path = get_var(var_name)
+            path_parts = path.split(path_sep)
+            return path_parts
+
+        path_parts = get_path_var('PATH')
         self.assertTrue(len(path_parts) >= 2)
 
         path_chpl = path_parts[0].replace(self.chpl_home, 'CHPL_HOME').replace(
@@ -109,14 +118,27 @@ class SetChplEnvTests(unittest.TestCase):
         self.assertEqual('CHPL_HOME/bin/CHPL_PLATFORM', path_chpl)
         self.assertEqual('CHPL_HOME/util', path_util)
 
-        manpath_out = self.run_cmd(shell_cmd, get_cmd('echo $MANPATH'))
-        manpath = manpath_out.splitlines()[-1]
-
-        manpath_parts = manpath.split(path_sep)
+        manpath_parts = get_path_var('MANPATH')
         self.assertTrue(len(manpath_parts) >= 1)
 
         manpath_chpl = manpath_parts[0].replace(self.chpl_home, 'CHPL_HOME')
         self.assertEqual('CHPL_HOME/man', manpath_chpl)
+
+        actual_chpl_home = get_var('CHPL_HOME')
+        self.assertEqual(self.chpl_home, actual_chpl_home)
+
+        actual_platform = get_var('CHPL_HOST_PLATFORM')
+        self.assertEqual(self.chpl_platform, actual_platform)
+
+        if 'quickstart' in setchplenv_script:
+            self.assertEqual('none', get_var('CHPL_COMM'))
+            self.assertEqual('fifo', get_var('CHPL_TASKS'))
+            self.assertEqual('none', get_var('CHPL_GMP'))
+            self.assertEqual('none', get_var('CHPL_REGEXP'))
+
+            # TODO: Re-add this check when/if tcmalloc becomes
+            #       default. (thomasvandoren, 2015-01-13)
+            # self.assertEqual('cstdlib', get_var('CHPL_MEM'))
 
     def check_scripts(self, shell, source_cmd, path_sep,
                       post_source_cmd=None, shell_cmd=None):
