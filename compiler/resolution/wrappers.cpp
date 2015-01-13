@@ -187,6 +187,7 @@ buildDefaultWrapper(FnSymbol* fn,
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }
+    // This call is required to establish the type of _this.
     wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
   }
   CallExpr* call = new CallExpr(fn);
