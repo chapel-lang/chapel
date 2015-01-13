@@ -99,8 +99,8 @@ tasking #include didn't get a filename (since first run, 2014-11-12)
 [Error matching compiler output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
 [Error matching compiler output for io/ferguson/ctests/qio_test (compopts: 1)]
 
-different amounts of memory leakedon 32-bit platforms (2014-11-12, first run)
------------------------------------------------------------------------------
+different amounts of memory leaked on 32-bit platforms (2014-11-12, first run)
+------------------------------------------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
 
 prefetch instruction not found (2014-11-12, first run)
@@ -316,7 +316,7 @@ Reviewed 2015-01-12
 
 leaked: 16 -> leaked: 96. Running this test manually gets different leaks for
 different runs with 16 being the most common.  However the test was introduced
-in mid-Nov so it's unclear why this is the first report
+in mid-Nov so it's unclear why this is the first report. Assigned to Vass
 -----------------------------------------------------------------------------------
 [Error matching .bad file for parallel/forall/vass/memleaks1-minimal (compopts: 1)] (2015-01-12 ..
 
