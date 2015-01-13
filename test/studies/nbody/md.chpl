@@ -2,6 +2,9 @@
 This test is inspired by an example from Michael Dietrich.
 It bears similarity to n-body.
 
+Since computeOne() is very simple, the test currently emphasizes
+communication costs and array/iteration overhead.
+
 A potential improvement is to change data movements so that each locale
 receives only from its "left" neighbor and sends only to its "right" neighbor.
 */
@@ -31,10 +34,12 @@ proc try1() {
   tm.start();
 
   // "forall": parallel, distributed over D_distrib
+  // compute all A[i] in parallel
   forall i in D_distrib {
 
-    // "for": sequential, local
-    for j in D_dr {
+    // "for": sequential, local; over a privitized copy of D_distrib
+    // accumulate into A[i] sequentially
+    for j in D_distrib {
 
       // some computation
       A[i] += computeOne(B[i], B[j]);
