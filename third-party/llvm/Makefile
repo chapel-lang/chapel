@@ -35,7 +35,7 @@ $(LLVM_FILE):
 	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(LLVM_INSTALL_DIR) --enable-optimized --disable-clang-arcmt --disable-clang-static-analyzer --disable-clang-rewriter --disable-docs --enable-targets=host,x86,x86_64 $(CHPL_LLVM_DEBUG)
 	cd $(LLVM_BUILD_DIR) && $(MAKE)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) install
-	cd $(LLVM_BUILD_DIR) && cd test && make lit.site.cfg
+	cd $(LLVM_BUILD_DIR) && cd test && $(MAKE) lit.site.cfg
 
 llvm: $(LLVM_FILE)
 
