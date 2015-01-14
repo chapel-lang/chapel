@@ -444,10 +444,7 @@ def runSkipIf(skipifName):
 
         skipif_env = os.environ.copy()
         skipif_env.update(chpl_env)
-
-        global testenv
         skipif_env.update(testenv)
-
         skiptest = subprocess.Popen([name], stdout=subprocess.PIPE, env=skipif_env).communicate()[0]
     else:
         skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
@@ -850,8 +847,6 @@ if onetestsrc==None:
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
-
-testenv = {}
 
 for testname in testsrc:
     sys.stdout.flush()
