@@ -530,6 +530,16 @@ static void codegen_header_compilation_config() {
 }
 
 
+static void protectNameFromC(Symbol* sym) {
+  if (!sym->hasFlag(FLAG_EXTERN)) {
+    const char* oldName = sym->cname;
+    const char* newName = astr("chpl_usr_", oldName);
+    sym->cname = newName;
+    //  free(oldName);
+  }
+}
+
+
 // TODO: Split this into a number of smaller routines.<hilde>
 static void codegen_header() {
   GenInfo* info = gGenInfo;
@@ -572,6 +582,33 @@ static void codegen_header() {
     functions.add(fn);
   }
   qsort(functions.v, functions.n, sizeof(functions.v[0]), compareSymbol);
+
+
+  //
+  // by default, mangle all Chapel symbols to avoid clashing with C
+  // identifiers.  This can be disabled via the --min-mangle flag.
+  //
+  forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
+    protectNameFromC(sym);
+  }
+  forv_Vec(VarSymbol, sym, gVarSymbols) {
+    protectNameFromC(sym);
+  }
+  forv_Vec(ArgSymbol, sym, gArgSymbols) {
+    protectNameFromC(sym);
+  }
+  forv_Vec(TypeSymbol, sym, gTypeSymbols) {
+    protectNameFromC(sym);
+  }
+  forv_Vec(FnSymbol, sym, gFnSymbols) {
+    protectNameFromC(sym);
+  }
+  forv_Vec(EnumSymbol, sym, gEnumSymbols) {
+    protectNameFromC(sym);
+  }
+  forv_Vec(LabelSymbol, sym, gLabelSymbols) {
+    protectNameFromC(sym);
+  }
 
 
   //
