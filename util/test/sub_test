@@ -918,9 +918,7 @@ for testname in testsrc:
             skipif_i = i
             break
     if skipif_i >= 0:
-        print('inserting .skipif at head of test_filename_files: {0}'.format(test_filename_files))
         test_filename_files.insert(0, test_filename_files.pop(skipif_i))
-        print('inserting .skipif at head of test_filename_files: {0}'.format(test_filename_files))
 
     # Deal with these files
     do_not_test=False
