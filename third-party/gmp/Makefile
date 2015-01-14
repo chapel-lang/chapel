@@ -29,7 +29,9 @@ endif
 
 CHPL_GMP_ABI_ARG =
 ifeq (linux32, $(CHPL_MAKE_TARGET_PLATFORM))
+ifeq (cygwin32, $(CHPL_MAKE_TARGET_PLATFORM))
 CHPL_GMP_ABI_ARG = ABI=32
+endif
 endif
 
 GMP_MAKEFILE = $(GMP_BUILD_SUBDIR)/Makefile
