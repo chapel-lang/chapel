@@ -293,69 +293,6 @@ AliasVectorMap::merge(Symbol* orig, Symbol* alias)
 //######################### End of AliasVectorMap #########################
 
 
-// Scans the body of the given function and inserts all of the variable and
-// argument symbols defined in it into the vector of symbols.  Bits in the flow
-// analysis bit-vectors correspond to the entries in this vector.
-// Also constructs an index map, to make it easier to find the index of a
-// symbol in the vector.  (Otherwise, a linear search is required.)
-// The alias map can also be populated at the same time.  
-static void
-extractSymbols(FnSymbol* fn,
-               SymbolVector& symbols,
-               SymbolIndexMap& symbolIndex,
-               AliasVectorMap& aliases)
-{
-  DefExprVector defExprs;
-  collectDefExprsSTL(fn, defExprs);
-
-  for_vector(DefExpr, def, defExprs)
-  {
-    Symbol* sym = def->sym;
-
-    // We are interested only in arguments and variables.
-    if (! (toArgSymbol(sym) || toVarSymbol(sym)))
-      continue;
-
-    Type* type = sym->type;
-
-    // TODO: Extern record types also do not have constructors and
-    // destructors.  To treat them uniformly, we would have to enforce that
-    // extern types supply constructors and destructors and/or supply them
-    // internally.
-    TypeSymbol* ts = type->symbol;
-    if (ts->hasFlag(FLAG_EXTERN))
-      continue;
-
-    // We are concerned only with record types.
-    // TODO: This is too bad, because it would be nice to be able to treat all
-    // value types uniformly.  But for that to work, arguments of fundamental
-    // type must be constructed by having their values piped through a copy
-    // constructor.  Currently, that is not the case.
-
-    // We are interested only in records passed by value.  Records passed by
-    // ref appear be a class in the current AST because _ref(T) is a class type.
-    AggregateType* at = toAggregateType(type);
-    if (at == NULL)
-      // Not an aggregate type, so not a record.
-      continue;
-    if (!at->isRecord())
-      // Not a record.
-      continue;
-
-    symbolIndex.insert(SymbolIndexElement(sym, symbols.size()));
-    symbols.push_back(sym);
-
-    // We expect the symbolIndex to return the index of that symbol in the
-    // symbols vector.
-    INT_ASSERT(symbols[symbolIndex[sym]] == sym);
-
-    // Initialize each entry in the alias map with a list of symbols
-    // containing just the symbol itself.
-    aliases.insert(sym);
-  }
-}
-
-
 //############################## Predicates ##############################
 //#
 
@@ -487,6 +424,7 @@ static bool isConsumed(SymExpr* se)
         return true;
 
        case PRIM_MOVE:
+       case PRIM_ASSIGN:
         {
           // If the left side of a move is a global, it assumes ownership from the
           // RHS.  We can assume that the RHS is local.
@@ -511,6 +449,7 @@ static bool isConsumed(SymExpr* se)
   return false;
 }
 
+
 #if 0
 static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
 {
@@ -528,6 +467,7 @@ static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
 }
 #endif
   
+
 static bool isFlowStmt(Expr* stmt)
 {
   // A goto is definitely a jump.
@@ -551,6 +491,138 @@ static bool isFlowStmt(Expr* stmt)
   }
   return false;
 }
+
+//#
+//# End of predicates
+//########################################################################
+
+
+//#
+//# extractSymbols
+//#
+
+// Scans the body of the given function and inserts all of the variable and
+// argument symbols defined in it into the vector of symbols.  Bits in the flow
+// analysis bit-vectors correspond to the entries in this vector.
+// Also constructs an index map, to make it easier to find the index of a
+// symbol in the vector.  (Otherwise, a linear search is required.)
+// The alias map can also be populated at the same time.  
+static void
+extractSymbols(FnSymbol* fn,
+               SymbolVector& symbols,
+               AliasVectorMap& aliases,
+               SymbolIndexMap& symbolIndex)
+{
+  DefExprVector defExprs;
+  collectDefExprsSTL(fn, defExprs);
+
+  for_vector(DefExpr, def, defExprs)
+  {
+    Symbol* sym = def->sym;
+
+    // We are interested only in arguments and variables.
+    if (! (toArgSymbol(sym) || toVarSymbol(sym)))
+      continue;
+
+    Type* type = sym->type;
+
+    // TODO: Extern record types also do not have constructors and
+    // destructors.  To treat them uniformly, we would have to enforce that
+    // extern types supply constructors and destructors and/or supply them
+    // internally.
+    TypeSymbol* ts = type->symbol;
+    if (ts->hasFlag(FLAG_EXTERN))
+      continue;
+
+    // We are concerned only with record types.
+    // TODO: This is too bad, because it would be nice to be able to treat all
+    // value types uniformly.  But for that to work, arguments of fundamental
+    // type must be constructed by having their values piped through a copy
+    // constructor.  Currently, that is not the case.
+
+    // We are interested only in records passed by value.  Records passed by
+    // ref appear be a class in the current AST because _ref(T) is a class type.
+    AggregateType* at = toAggregateType(type);
+    if (at == NULL)
+      // Not an aggregate type, so not a record.
+      continue;
+    if (!at->isRecord())
+      // Not a record.
+      continue;
+
+    symbolIndex.insert(SymbolIndexElement(sym, symbols.size()));
+    symbols.push_back(sym);
+
+    // We expect the symbolIndex to return the index of that symbol in the
+    // symbols vector.
+    INT_ASSERT(symbols[symbolIndex[sym]] == sym);
+
+    // Initialize each entry in the alias map with a list of symbols
+    // containing just the symbol itself.
+    aliases.insert(sym);
+  }
+}
+
+
+//
+// populateAliases
+//
+
+static void createAlias(SymExpr* se, AliasVectorMap& aliases)
+{
+  CallExpr* call = toCallExpr(se->parentExpr);
+
+  SymExpr* lhs = toSymExpr(call->get(1));
+  SymExpr* rhs = toSymExpr(call->get(2));
+
+  Symbol* lsym = lhs->var;
+  Symbol* rsym = rhs->var;
+
+  // Merge aliases whether or not they are live.
+  aliases.merge(rsym, lsym);
+}
+
+
+static void populateAliases(SymExprVector& symExprs,
+                            const SymbolVector& symbols,
+                            AliasVectorMap& aliases,
+                            SymbolIndexMap& symbolIndex)
+{
+  for_vector(SymExpr, se, symExprs)
+  {
+    // We are only interested in local symbols, so if this one does not appear
+    // in our map, move on.
+    Symbol* sym = se->var;
+    if (symbolIndex.find(sym) == symbolIndex.end())
+      continue;
+
+    // Pass ownership to this symbol if it is the result of a bitwise copy.
+    if (isBitwiseCopy(se, symbolIndex))
+      createAlias(se, aliases);
+  }
+}
+
+
+static void populateAliases(FnSymbol* fn,
+                            const SymbolVector& symbols,
+                            AliasVectorMap& aliases,
+                            SymbolIndexMap& symbolIndex)
+{
+  for_vector(BasicBlock, bb, *fn->basicBlocks)
+  {
+    for_vector(Expr, expr, bb->exprs)
+    {
+      SymExprVector symExprs;
+      collectSymExprsSTL(expr, symExprs);
+      populateAliases(symExprs, symbols, aliases, symbolIndex);
+    }
+  }
+}
+
+
+//
+// computeTransitions
+//
 
 
 // Finds the last "normal" statement in a basic block and returns it.
@@ -598,8 +670,9 @@ static Expr* getLastNonflowStatement(BasicBlock* bb)
 
 
 static void processCreator(SymExpr* se, 
-                               BitVec* gen,
-                               SymbolIndexMap& symbolIndex)
+                           BitVec* gen,
+                           const AliasVectorMap& aliases,
+                           SymbolIndexMap& symbolIndex)
 {
   // Any function returning a value is considered to be a constructor.
   Symbol* sym = se->var;
@@ -614,11 +687,41 @@ static void processCreator(SymExpr* se,
     if (fWarnOwnership)
       USR_WARN(sym, "Reinitialization of sym");
 
-  gen->set(index);
+  // When one member of an alias set is defined, we treat them all as being
+  // defined.
+  // Otherwise, backward flow will lead to premature deletion:
+  //  1:  0  >  5 
+  // move( call_tmp call( fn newAlias arg this ) ) 
+  // move( ret call_tmp ) 
+  // goto 806806   _end_reindex 
+  //  4:  2 3  >  5 
+  // move( call_tmp call( fn _newArray x ) ) 
+  // move( ret call_tmp ) 
+  //  5:  4 1  >  
+  // def _end_reindex 
+  // return( ret ) 
+  // In blocks 1 and 4, the respective call_tmp becomes live and is aliased
+  // with ret.  But only the first call_tmp is live at the end of block 1 and
+  // only the second call_tmp is live at the end of block 4: they will not flow
+  // through to block 5.  After flow analysis (unless we treat the members of a
+  // clique equivalently), each call_tmp will be destroyed within its
+  // respective block, making ret unowned on exit -- an error.
+  // TODO: Compute aliases in a separate traversal, so it is obvious that
+  // aliases are aliases across the entire function.
+  // TODO: I think we can represent all members of an alias set with one bit in
+  // the flow sets -- either all are owned or none are.  This will save time
+  // and space.
+  SymbolVector* aliasList = aliases.at(sym);
+  for_vector(Symbol, alias, *aliasList)
+  {
+    size_t index = symbolIndex[alias];
+    gen->set(index);
+  }
 }
 
 
 static void processBitwiseCopy(SymExpr* se, BitVec* gen,
+                               const AliasVectorMap& aliases,
                                SymbolIndexMap& symbolIndex)
 {
   CallExpr* call = toCallExpr(se->parentExpr);
@@ -629,11 +732,8 @@ static void processBitwiseCopy(SymExpr* se, BitVec* gen,
   Symbol* lsym = lhs->var;
   Symbol* rsym = rhs->var;
 
-  size_t lindex = symbolIndex[lsym];
-  size_t rindex = symbolIndex[rsym];
-
   // Copy ownership state from RHS.
-  INT_ASSERT(gen->get(lindex) == false);
+  size_t rindex = symbolIndex[rsym];
   if (!gen->get(rindex))
   {
     if (fWarnOwnership)
@@ -652,23 +752,13 @@ static void processBitwiseCopy(SymExpr* se, BitVec* gen,
   }
   else
   {
-    gen->set(lindex);
+    SymbolVector* aliasList = aliases.at(lsym);
+    for_vector(Symbol, alias, *aliasList)
+    {
+      size_t index = symbolIndex[alias];
+      gen->set(index);
+    }
   }
-}
-
-
-static void createAlias(SymExpr* se, AliasVectorMap& aliases)
-{
-  CallExpr* call = toCallExpr(se->parentExpr);
-
-  SymExpr* lhs = toSymExpr(call->get(1));
-  SymExpr* rhs = toSymExpr(call->get(2));
-
-  Symbol* lsym = lhs->var;
-  Symbol* rsym = rhs->var;
-
-  // Merge aliases whether or not they are live.
-  aliases.merge(rsym, lsym);
 }
 
 
@@ -685,7 +775,6 @@ static void processConsumer(SymExpr* se, BitVec* gen, BitVec* kill,
   // need to look up one arbitrarily and then run the list.
   Symbol* sym = se->var;
   SymbolVector* aliasList = aliases.at(sym);
-
   for_vector(Symbol, alias, *aliasList)
   {
     size_t index = symbolIndex[alias];
@@ -709,13 +798,10 @@ static void computeTransitions(SymExprVector& symExprs,
       continue;
 
     if (isCreated(se))
-      processCreator(se, gen, symbolIndex);
+      processCreator(se, gen, aliases, symbolIndex);
 
     if (isBitwiseCopy(se, symbolIndex))
-    {
-      processBitwiseCopy(se, gen, symbolIndex);
-      createAlias(se, aliases);
-    }
+      processBitwiseCopy(se, gen, aliases, symbolIndex);
 
     if (isConsumed(se))
       processConsumer(se, gen, kill, aliases, symbolIndex);
@@ -765,14 +851,18 @@ static bool isRetVarInReturn(SymExpr* se)
     if (call->isPrimitive(PRIM_RETURN))
       // We just assume that that call->get(1) == se.
       // What else could it be?
-      return true;
+      if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
+        if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
+            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+            fn->hasFlag(FLAG_INIT_COPY_FN))
+        return true;
 
   return false;
 }
 
 
 // Insert an autoCopy because this symbol is unowned and
-// a receptor formal expects is operand to be owned.
+// a receptor formal expects its operand to be owned.
 static void insertAutoCopy(SymExpr* se)
 {
   SET_LINENO(se);
@@ -812,11 +902,11 @@ static void insertAutoCopy(SymExprVector& symExprs, BitVec* gen, BitVec* kill,
 
     // Set a bit in the gen set if this is a constructor.
     if (isCreated(se))
-      processCreator(se, gen, symbolIndex);
+      processCreator(se, gen, aliases, symbolIndex);
 
     // Pass ownership to this symbol if it is the result of a bitwise copy.
     if (isBitwiseCopy(se, symbolIndex))
-      processBitwiseCopy(se, gen, symbolIndex);
+      processBitwiseCopy(se, gen, aliases, symbolIndex);
 
     if (isConsumed(se))
     {
@@ -919,10 +1009,12 @@ static void insertAutoDestroy(BasicBlock* bb, BitVec* to_kill,
         // autoDestroy call for it.
         continue;
 
+#if 0
       // For now, we ignore internally reference-counted types.  We'll add the
       // code to manage those later.
       if (isRefCountedType(sym->type))
         continue;
+#endif
 
       CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
 
@@ -988,14 +1080,6 @@ static void backwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
 static void insertAutoCopyAutoDestroy(FnSymbol* fn)
 {
   BasicBlock::buildBasicBlocks(fn);
-  size_t nbbs = fn->basicBlocks->size();
-
-  SymbolVector symbols;
-  SymbolIndexMap symbolIndex;
-  AliasVectorMap aliases;
-  extractSymbols(fn, symbols, symbolIndex, aliases);
-
-  size_t size = symbols.size();
 
 #if DEBUG_AMM
   if (debug > 0)
@@ -1007,6 +1091,14 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   }
 #endif
 
+  SymbolVector symbols;
+  SymbolIndexMap symbolIndex;
+  AliasVectorMap aliases;
+  extractSymbols(fn, symbols, aliases, symbolIndex);
+  populateAliases(fn, symbols, aliases, symbolIndex);
+
+  size_t nbbs = fn->basicBlocks->size();
+  size_t size = symbols.size();
   FlowSet GEN;
   FlowSet KILL;
   FlowSet IN;
