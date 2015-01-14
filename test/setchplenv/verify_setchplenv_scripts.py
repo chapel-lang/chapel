@@ -189,6 +189,8 @@ class SetChplEnvTests(unittest.TestCase):
         """Verify sh versions of setchplenv.* work as expected."""
         self.check_scripts('sh', '.', ':')
 
+    @_skip_if(distutils.spawn.find_executable('zsh') is None,
+              'zsh is not installed on system.')
     def test_setchplenv__zsh(self):
         """Verify bash versions of setchplenv.* work as expected with zsh."""
         self.check_scripts('bash', 'source', ':', shell_cmd='zsh')
