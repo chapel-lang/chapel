@@ -632,15 +632,6 @@ if ($runtests == 0) {
         $svnPerfDir = $ENV{'CHPL_TEST_COMP_PERF_DIR'};
     }
 
-    my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
-    if ($performance == 1 || $compperformance == 1) {
-
-        # FIXME: Update this logic to work with git repo that manages perf
-        #        data. (thomasvandoren, 2014-07-10)
-
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 0, 1);
-    }
-
     $ENV{'CHPL_HOME'} = $chplhomedir;
     if ($parnodefile eq "") {
         $testcommand = "cd $testdir && ../util/start_test $testflags";
@@ -699,20 +690,14 @@ if ($runtests == 0) {
 
 
     if ($performance == 1 or $compperformance == 1) {
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 0, 1);
-        mysystem("cd $svnPerfDir && find . -name '*.dat' -print0 | xargs -0 svn add  --parents 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
-        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 0, 1);
-
         # sync the performance graphs over to sourceforge
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/html/ $host --logFile $logdir/syncToSourceForge.errors";
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
-
    }
 
     if ($releasePerformance == 1) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
-        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 0, 1);
 
         # check to make sure there is a release over release directory
         if (not -e "$svnReleasePerfDir") {
