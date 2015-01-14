@@ -917,7 +917,7 @@ for testname in testsrc:
         if test_filename_file.endswith('.skipif'):
             skipif_i = i
             break
-    if skipif_i >= 0:
+    if skipif_i > 0:
         test_filename_files.insert(0, test_filename_files.pop(skipif_i))
 
     # Deal with these files
