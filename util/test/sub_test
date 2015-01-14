@@ -444,10 +444,6 @@ def runSkipIf(skipifName):
 
         skipif_env = os.environ.copy()
         skipif_env.update(chpl_env)
-
-        global testenv
-        skipif_env.update(testenv)
-
         skiptest = subprocess.Popen([name], stdout=subprocess.PIPE, env=skipif_env).communicate()[0]
     else:
         skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
@@ -851,8 +847,6 @@ else:
     testsrc=list()
     testsrc.append(onetestsrc)
 
-testenv = {}
-
 for testname in testsrc:
     sys.stdout.flush()
 
@@ -910,6 +904,15 @@ for testname in testsrc:
         redirectin = '/dev/null'
     else:
         redirectin = None
+
+    # If there is a .skipif file, put it at front of list.
+    skipif_i = -1
+    for i, test_filename_file in enumerate(test_filename_files):
+        if test_filename_file.endswith('.skipif'):
+            skipif_i = i
+            break
+    if skipif_i > 0:
+        test_filename_files.insert(0, test_filename_files.pop(skipif_i))
 
     # Deal with these files
     do_not_test=False
