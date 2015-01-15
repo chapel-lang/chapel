@@ -28,7 +28,7 @@
 qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
 {
   qbytes_t* ret;
-  int64_t src_len;
+  int64_t src_len = 0; // init prevents "may be used uninited" with gcc 4.4.*
   qioerr err;
 
   // First, get the length of the bytes.

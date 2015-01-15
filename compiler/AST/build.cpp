@@ -938,40 +938,42 @@ static BlockStmt*
 buildStandaloneForallLoopStmt(Expr* indices,
                               Expr* iterExpr,
                               BlockStmt* loopBody) {
-  VarSymbol* iterRec = newTemp("chpl__iter");
-  VarSymbol* idx  = newTemp("chpl__idx");
-  VarSymbol* idxCopy = newTemp("chpl__idxCopy");
-  VarSymbol* iter = newTemp("chpl__standaloneIter");
-  iter->addFlag(FLAG_EXPR_TEMP);
-  idx->addFlag(FLAG_INDEX_OF_INTEREST);
-  idx->addFlag(FLAG_INDEX_VAR);
-  idxCopy->addFlag(FLAG_INDEX_VAR);
+  VarSymbol* iterRec   = newTemp("chpl__iterSA"); // serial iter, SA case
+  // these variables correspond to leadXXX vars in buildForallLoopStmt()
+  VarSymbol* saIter    = newTemp("chpl__saIter");
+  VarSymbol* saIdx     = newTemp("chpl__saIdx");
+  VarSymbol* saIdxCopy = newTemp("chpl__saIdxcopy");
+
+  saIter->addFlag(FLAG_EXPR_TEMP);
+  saIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  saIdx->addFlag(FLAG_INDEX_VAR);
+  saIdxCopy->addFlag(FLAG_INDEX_VAR);
 
   BlockStmt* SABlock = buildChapelStmt();
 
-  SABlock->insertAtTail(new DefExpr(iter));
-  SABlock->insertAtTail(new DefExpr(idx));
+  SABlock->insertAtTail(new DefExpr(saIter));
+  SABlock->insertAtTail(new DefExpr(saIdx));
   SABlock->insertAtTail(new DefExpr(iterRec));
   SABlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr);
-  SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", iter, iterRec);
-  SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", idx, iter);
+  SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", saIter, iterRec);
+  SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
 
-  ForLoop* SABody = new ForLoop(idx, iter, NULL);
-  SABody->insertAtTail(new DefExpr(idxCopy));
-  SABody->insertAtTail("'move'(%S, %S)", idxCopy, idx);
+  ForLoop* SABody = new ForLoop(saIdx, saIter, NULL);
+  SABody->insertAtTail(new DefExpr(saIdxCopy));
+  SABody->insertAtTail("'move'(%S, %S)", saIdxCopy, saIdx);
   if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
     Symbol* var = new VarSymbol(sym->unresolved);
     SABody->insertAtTail(new DefExpr(var));
-    SABody->insertAtTail("'move'(%S, %S)", var, idx);
+    SABody->insertAtTail("'move'(%S, %S)", var, saIdx);
     var->addFlag(FLAG_INDEX_VAR);
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else if (SymExpr* sym = toSymExpr(indices)) {
-    SABody->insertAtTail("'move'(%S, %S)", sym->var, idx);
+    SABody->insertAtTail("'move'(%S, %S)", sym->var, saIdx);
     sym->var->addFlag(FLAG_INDEX_VAR);
     sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else if (CallExpr* call = toCallExpr(indices)) {
     if (call->isNamed("_build_tuple")) {
-      destructureIndices(SABody, indices, new SymExpr(idx), false);
+      destructureIndices(SABody, indices, new SymExpr(saIdx), false);
     } else {
       INT_FATAL("Unexpected call type");
     }
@@ -980,7 +982,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   }
   SABody->insertAtTail(loopBody->copy());
   SABlock->insertAtTail(SABody);
-  SABlock->insertAtTail("_freeIterator(%S)", iter);
+  SABlock->insertAtTail("_freeIterator(%S)", saIter);
   return SABlock;
 }
 
@@ -1041,10 +1043,10 @@ buildForallLoopStmt(Expr*      indices,
 
   BlockStmt* resultBlock     = new BlockStmt();
 
-  VarSymbol* iter            = newTemp("chpl__iter");
+  VarSymbol* iterRec         = newTemp("chpl__iterLF"); // serial iter, LF case
 
-  VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
   VarSymbol* leadIter        = newTemp("chpl__leadIter");
+  VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
   VarSymbol* leadIdxCopy     = newTemp("chpl__leadIdxCopy");
   ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL);
 
@@ -1052,8 +1054,8 @@ buildForallLoopStmt(Expr*      indices,
   VarSymbol* followIter      = newTemp("chpl__followIter");
   BlockStmt* followBlock     = NULL;
 
-  iter->addFlag(FLAG_EXPR_TEMP);
-  iter->addFlag(FLAG_CHPL__ITER);
+  iterRec->addFlag(FLAG_EXPR_TEMP);
+  iterRec->addFlag(FLAG_CHPL__ITER);
 
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
@@ -1064,25 +1066,25 @@ buildForallLoopStmt(Expr*      indices,
   // ForallLeaderArgs: stash references so we know where things are.
   byref_vars->insertAtHead(leadIdxCopy); // 3rd arg
   byref_vars->insertAtHead(leadIdx);     // 2nd arg
-  byref_vars->insertAtHead(iter);        // 1st arg
+  byref_vars->insertAtHead(iterRec);     // 1st arg
 
-  resultBlock->insertAtTail(new DefExpr(iter));
+  resultBlock->insertAtTail(new DefExpr(iterRec));
   resultBlock->insertAtTail(new DefExpr(leadIdx));
   resultBlock->insertAtTail(new DefExpr(leadIter));
 
-  resultBlock->insertAtTail("'move'(%S, _checkIterator(%E))", iter, iterExpr->copy());
+  resultBlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr->copy());
 
   if (zippered == false)
-    resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))",    leadIter, iter);
+    resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))",    leadIter, iterRec);
   else
-    resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeaderZip(%S)))", leadIter, iter);
+    resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeaderZip(%S)))", leadIter, iterRec);
 
   resultBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", leadIdx, leadIter);
 
   leadForLoop->insertAtTail(new DefExpr(leadIdxCopy));
   leadForLoop->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
 
-  followBlock = buildFollowLoop(iter,
+  followBlock = buildFollowLoop(iterRec,
                                 leadIdxCopy,
                                 followIter,
                                 followIdx,
@@ -1110,18 +1112,18 @@ buildForallLoopStmt(Expr*      indices,
     leadForLoop->insertAtTail(new DefExpr(T2));
 
     if (zippered == false) {
-      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",    T1, iter);
+      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",    T1, iterRec);
       leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))",    T2, iter),
+                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))",    T2, iterRec),
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     } else {
-      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iter);
+      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
       leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iter),
+                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     }
 
-    fastFollowBlock = buildFollowLoop(iter,
+    fastFollowBlock = buildFollowLoop(iterRec,
                                       leadIdxCopy,
                                       fastFollowIter,
                                       fastFollowIdx,
@@ -1328,71 +1330,6 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
     condStmt->elseStmt = otherwise->thenStmt;
   }
   return buildChapelStmt(top);
-}
-
-
-BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
-  static int uid = 1;
-  int caseId = 1;
-  FnSymbol* fn = NULL;
-  BlockStmt* stmts = buildChapelStmt();
-  BlockStmt* newWhenStmts = buildChapelStmt();
-  bool has_otherwise = false;
-
-  INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
-
-  for_alist(stmt, whenstmts->body) {
-    CondStmt* when = toCondStmt(stmt);
-    if (!when)
-      INT_FATAL("error in buildSelectStmt");
-    CallExpr* conds = toCallExpr(when->condExpr);
-    if (!conds || !conds->isPrimitive(PRIM_WHEN))
-      INT_FATAL("error in buildSelectStmt");
-    if (conds->numActuals() == 0) {
-      if (has_otherwise)
-        USR_FATAL(conds, "Type select statement has multiple otherwise clauses");
-      has_otherwise = true;
-      fn = new FnSymbol(astr("_typeselect", istr(uid)));
-      int lid = 1;
-      for_actuals(expr, exprs) {
-        fn->insertFormalAtTail(
-          new DefExpr(
-            new ArgSymbol(INTENT_BLANK,
-                          astr("_t", istr(lid++)),
-                          dtAny)));
-      }
-      fn->retTag = RET_PARAM;
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(caseId)));
-      newWhenStmts->insertAtTail(
-        new CondStmt(new CallExpr(PRIM_WHEN, new_IntSymbol(caseId++)),
-        when->thenStmt->copy()));
-      stmts->insertAtTail(new DefExpr(fn));
-    } else {
-      if (conds->numActuals() != exprs->argList.length)
-        USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
-      fn = new FnSymbol(astr("_typeselect", istr(uid)));
-      int lid = 1;
-      for_actuals(expr, conds) {
-        fn->insertFormalAtTail(
-          new DefExpr(new ArgSymbol(INTENT_BLANK, astr("_t", istr(lid++)),
-                                    dtUnknown, expr->copy())));
-      }
-      fn->retTag = RET_PARAM;
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(caseId)));
-      newWhenStmts->insertAtTail(
-        new CondStmt(new CallExpr(PRIM_WHEN, new_IntSymbol(caseId++)),
-        when->thenStmt->copy()));
-      stmts->insertAtTail(new DefExpr(fn));
-    }
-  }
-  VarSymbol* tmp = newTemp();
-  tmp->addFlag(FLAG_MAYBE_PARAM);
-  stmts->insertAtHead(new DefExpr(tmp));
-  stmts->insertAtTail(new CallExpr(PRIM_MOVE,
-                                   tmp,
-                                   new CallExpr(fn->name, exprs)));
-  stmts->insertAtTail(buildSelectStmt(new SymExpr(tmp), newWhenStmts));
-  return stmts;
 }
 
 
