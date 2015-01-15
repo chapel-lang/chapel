@@ -6,6 +6,8 @@
 class mink : ReduceScanOp {
   type eltType;
   const k: int = 10;
+
+  // Store minimum k items as vector in descending order.
   var v: [1..k] eltType = max(eltType);
 
   proc accumulate(value: eltType) {
