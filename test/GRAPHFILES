@@ -65,6 +65,7 @@ performance/compiler/bradc/AllCompTime.graph
 memleaks.graph
 studies/jacobi/jacobi.graph
 performance/elliot/no-op.graph
+performance/bharshbarg/forall-dom-range.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
