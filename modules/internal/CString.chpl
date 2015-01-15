@@ -383,8 +383,10 @@ module CString {
   inline proc ascii(a: c_string) return __primitive("ascii", a);
   inline proc c_string.length return __primitive("string_length", this);
   inline proc c_string.size return this.length;
+
   inline proc c_string.substring(i: int)
     return __primitive("string_index", this, i);
+
   inline proc c_string.substring(r: range(?)) {
     var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
     var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;

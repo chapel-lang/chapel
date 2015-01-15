@@ -107,13 +107,6 @@ module BaseStringType {
 module String {
   use BaseStringType;
 
-  class string_refcnt {
-    var val: atomic_refcnt;
-    inline proc inc(cnt=1) { val.inc(); }
-    inline proc dec(cnt=1) return val.dec();
-    inline proc read(cnt=1) return val._cnt.read();
-  }
-
   inline proc chpl_debug_string_print(s: c_string) {
     if debugStrings {
       extern proc printf(format: c_string, x...);
@@ -128,15 +121,13 @@ module String {
     var base: baseType;
     var len: int;
     var home: locale; // this does not change through assignment
-    var refCnt: string_refcnt;
-    var aliasRefCnt: string_refcnt;
 
     proc string() {
       if debugStrings then
         chpl_debug_string_print("in string()");
+
       this.home = here;
-      this.refCnt = new string_refcnt();
-      this.aliasRefCnt = this.refCnt;
+
       if debugStrings then
         chpl_debug_string_print("leaving string()");
     }
@@ -144,24 +135,15 @@ module String {
     proc ref ~string() {
       if debugStrings then
         chpl_debug_string_print("in ~string()");
-      if this.isEmptyString() {
-        delete this.refCnt;
-      } else {
-        const refs =  decRefCnt();
-        if refs < 0 then halt("string reference count is negative!");
-        if refs == 0 then {
-          if debugStrings then
-            chpl_debug_string_print("  freeing base: "+this.base);
-          on this.home {
-            free_baseType(this.base);
-            freeRefCnt();
-          }
-        } else {
-          if debugStrings then
-            chpl_debug_string_print("  not freeing base: "+this.base);
-          if isAlias then delete this.refCnt;
+
+      if !this.isEmptyString() {
+        if debugStrings then
+          chpl_debug_string_print("  freeing base: "+this.base);
+        on this.home {
+          free_baseType(this.base);
         }
       }
+
       if debugStrings then
         chpl_debug_string_print("leaving ~string()");
     }
@@ -172,10 +154,11 @@ module String {
       assert(this.home.id == here.id);
       if debugStrings then
         chpl_debug_string_print("in string.reinitString()");
+
       if this.isEmptyString() {
-        if slen==0 || s==_defaultOf(baseType) then return; // nothing to do
-        else this.incRefCntNoAlias(); // update my own ref count
+        if (slen == 0) || (s == _defaultOf(baseType)) then return; // nothing to do
       }
+
       const new_len = if slen == -1 then s.length else slen;
       // If the this.base is longer than s, then reuse the buffer
       if new_len != 0 {
@@ -195,6 +178,7 @@ module String {
         this.base = _defaultOf(baseType); // empty string are always literals
       }
       this.len = new_len;
+
       if debugStrings then
         chpl_debug_string_print("leaving string.reinitString()");
     }
@@ -202,10 +186,13 @@ module String {
     inline proc c_str() {
       if debugStrings then
         chpl_debug_string_print("in .c_str()");
+
       if this.home.id != here.id then
         halt("Cannot call .c_str() on a remote string");
+
       if debugStrings then
         chpl_debug_string_print("leaving .c_str()");
+
       return this.base;
     }
 
@@ -225,16 +212,15 @@ module String {
     // the string, or an empty string if the index is out of bounds.
     inline proc substring(i: int) {
       var ret: string;
-      if !this.isEmptyString() && i>0 {
+      if i > 0 && i <= this.len {
         const sremote = this.home.id != here.id;
         var   sbase = if sremote
                       then remoteStringCopy(this.home.id, this.base, this.len)
                       else this.base;
-        const cs = sbase.substring(i);
+        const cs = sbase.substring(i); // substring returns a new buffer
         if cs != _defaultOf(baseType) {
           ret.base = cs;
           ret.len = 1;
-          ret.incRefCntNoAlias();
         }
         if sremote then free_baseType(sbase);
       }
@@ -250,11 +236,10 @@ module String {
         var   sbase = if sremote
                       then remoteStringCopy(this.home.id, this.base, this.len)
                       else this.base;
-        const cs = sbase.substring(r);
+        const cs = sbase.substring(r); // substring returns a new buffer
         if cs != _defaultOf(baseType) {
           ret.base = cs;
           ret.len = cs.length;
-          ret.incRefCntNoAlias();
         }
         if sremote then free_baseType(sbase);
       }
@@ -294,35 +279,8 @@ module String {
       return ret;
     }
 
-    // ref count functions
-    inline proc isAlias return this.refCnt != this.aliasRefCnt;
-
-    inline proc incRefCnt() {
-      if !this.isAlias then this.refCnt.inc();
-                       else this.aliasRefCnt.inc();
-    }
-
-    inline proc incRefCntNoAlias() {
-      this.refCnt.inc();
-    }
-
-    inline proc decRefCnt() {
-      if !this.isAlias then return this.refCnt.dec();
-                       else return this.aliasRefCnt.dec();
-    }
-
-    inline proc decRefCntNoAlias() {
-      return this.refCnt.dec();
-    }
-
-    inline proc freeRefCnt() {
-      delete this.refCnt;
-      if this.isAlias then delete this.aliasRefCnt;
-    }
-
     inline proc isEmptyString() {
-      if this.isAlias then return false;
-      else return this.len==0; // this should be enough of a check
+      return this.len == 0; // this should be enough of a check
     }
 
     proc writeThis(f: Writer) {
@@ -346,16 +304,15 @@ module String {
     /*inline*/ proc chpl__autoCopy(/*ref*/ s: string) {
     if debugStrings then
       chpl_debug_string_print("in autoCopy()");
+
     pragma "no auto destroy"
     var ret: string;
     if !s.isEmptyString() {
       ret.home = s.home;
-      ret.base = s.base;
+      ret.base = stringMove(ret.base, s.base, s.len);
       ret.len = s.len;
-      if !s.isAlias then ret.aliasRefCnt = s.refCnt;
-                    else ret.aliasRefCnt = s.aliasRefCnt;
-      ret.incRefCnt();
     }
+
     if debugStrings then
       chpl_debug_string_print("leaving autoCopy()");
     return ret;
@@ -375,6 +332,7 @@ module String {
   /*inline*/ proc chpl__initCopy(ref s: string) {
     if debugStrings then
       chpl_debug_string_print("in initCopy()");
+
     var ret: string;
     if !s.isEmptyString() {
       const slen = s.len; // cache the remote copy of len
@@ -388,8 +346,8 @@ module String {
         ret.base = remoteStringCopy(s.home.id, s.base, slen);
       }
       ret.len = slen;
-      ret.incRefCntNoAlias();
     }
+
     if debugStrings then
         chpl_debug_string_print("leaving initCopy()");
     return ret;
@@ -401,6 +359,7 @@ module String {
   proc =(ref lhs: string, rhs: string) {
     if debugStrings then
       chpl_debug_string_print("in proc =()");
+
     inline proc helpMe(ref lhs: string, rhs: string) {
       if rhs.home.id == here.id {
         if debugStrings then
@@ -417,6 +376,7 @@ module String {
         if len!=0 then free_baseType(rs);
       }
     }
+
     if lhs.home.id == here.id then {
       if debugStrings then
         chpl_debug_string_print("  lhs local");
@@ -427,6 +387,7 @@ module String {
         chpl_debug_string_print("  lhs remote: "+lhs.home.id:c_string);
       on lhs do helpMe(lhs, rhs);
     }
+
     if debugStrings then
       chpl_debug_string_print("leaving proc =()");
   }
@@ -434,12 +395,14 @@ module String {
   proc =(ref lhs: string, rhs_c: baseType) {
     if debugStrings then
       chpl_debug_string_print("in proc =() "+baseTypeString);
+
     const hereId = here.id;
     // Make this some sort of local check once we have local types/vars
     if (rhs_c.locale.id != hereId) || (lhs.home.id != hereId) then
       halt("Cannot assign a remote "+baseTypeString+" to a string.");
     const len = rhs_c.length;
     lhs.reinitString(rhs_c, len);
+
     if debugStrings then
       chpl_debug_string_print("leaving proc =() "+baseTypeString);
   }
@@ -450,8 +413,10 @@ module String {
   proc +(s0: string, s1: string) {
     if debugStrings then
       chpl_debug_string_print("in proc +()");
+
     if s0.isEmptyString() then return s1;
     if s1.isEmptyString() then return s0;
+
     var ret: string;
     const s0len = s0.len;
     const s1len = s1.len;
@@ -465,21 +430,25 @@ module String {
                    then remoteStringCopy(s1.home.id, s1.base, s1len)
                    else s1.base;
     ret.base = s0base+s1base;
-    ret.incRefCntNoAlias();
+
     if s0remote then free_baseType(s0base);
     if s1remote then free_baseType(s1base);
+
     if debugStrings then
       chpl_debug_string_print("leaving proc +()");
     return ret;
   }
 
   proc +(s: string, cs: baseType) {
-    if cs.locale.id != here.id then
-      halt("Cannot concatenate a remote "+baseTypeString+".");
     if debugStrings then
       chpl_debug_string_print("in proc +() string+"+baseTypeString);
+
+    if cs.locale.id != here.id then
+      halt("Cannot concatenate a remote "+baseTypeString+".");
+
     if cs == _defaultOf(baseType) then return s;
     if s.isEmptyString() then return cs:string;
+
     var ret: string;
     const slen = s.len;
     ret.len = slen + cs.length;
@@ -488,20 +457,23 @@ module String {
                   then remoteStringCopy(s.home.id, s.base, slen)
                   else s.base;
     ret.base = sbase+cs;
-    ret.incRefCntNoAlias();
     if sremote then free_baseType(sbase);
+
     if debugStrings then
       chpl_debug_string_print("leaving proc +() string+"+baseTypeString);
     return ret;
   }
 
   proc +(s: string, ref cs: c_string_copy) {
-    if cs.locale.id != here.id then
-      halt("Cannot concatenate a remote "+baseTypeString+"_copy.");
     if debugStrings then
       chpl_debug_string_print("in proc +() string+"+baseTypeString+"_copy");
+
+    if cs.locale.id != here.id then
+      halt("Cannot concatenate a remote "+baseTypeString+"_copy.");
+
     if cs == _defaultOf(c_string_copy) then return s;
     if s.isEmptyString() then return cs:string;
+
     var ret: string;
     const slen = s.len;
     ret.len = slen + cs.length;
@@ -510,21 +482,25 @@ module String {
                   then remoteStringCopy(s.home.id, s.base, slen)
                   else s.base;
     ret.base = sbase+cs;
-    ret.incRefCntNoAlias();
+
     if sremote then free_baseType(sbase);
     free_baseType(cs);
+
     if debugStrings then
       chpl_debug_string_print("leaving proc +() string+"+baseTypeString+"_copy");
     return ret;
   }
 
   proc +(cs: baseType, s: string) {
-    if cs.locale.id != here.id then
-      halt("Cannot concatenate a remote "+baseTypeString+".");
     if debugStrings then
       chpl_debug_string_print("in proc +() "+baseTypeString+"+string");
+
+    if cs.locale.id != here.id then
+      halt("Cannot concatenate a remote "+baseTypeString+".");
+
     if cs == _defaultOf(baseType) then return s;
     if s.isEmptyString() then return cs:string;
+
     var ret: string;
     const slen = s.len;
     ret.len = cs.length + slen;
@@ -533,20 +509,24 @@ module String {
                   then remoteStringCopy(s.home.id, s.base, slen)
                   else s.base;
     ret.base = cs+sbase;
-    ret.incRefCntNoAlias();
+
     if sremote then free_baseType(sbase);
+
     if debugStrings then
       chpl_debug_string_print("leaving proc +() "+baseTypeString+"+string");
     return ret;
   }
 
   proc +(ref cs: c_string_copy, s: string) {
-    if cs.locale.id != here.id then
-      halt("Cannot concatenate a remote "+baseTypeString+"_copy.");
     if debugStrings then
       chpl_debug_string_print("in proc +() "+baseTypeString+"_copy+string");
+
+    if cs.locale.id != here.id then
+      halt("Cannot concatenate a remote "+baseTypeString+"_copy.");
+
     if cs == _defaultOf(c_string_copy) then return s;
     if s.isEmptyString() then return cs:string;
+
     var ret: string;
     const slen = s.len;
     ret.len = cs.length + slen;
@@ -555,9 +535,10 @@ module String {
                   then remoteStringCopy(s.home.id, s.base, slen)
                   else s.base;
     ret.base = cs+sbase;
-    ret.incRefCntNoAlias();
+
     if sremote then free_baseType(sbase);
     free_baseType(cs);
+
     if debugStrings then
       chpl_debug_string_print("leaving proc +() "+baseTypeString+"+string");
     return ret;
@@ -594,12 +575,12 @@ module String {
                              param op: relType) {
     inline proc doOp(a: baseType, b: baseType, param op: relType) {
       select op {
-        when relType.eq do return a==b;
-        when relType.neq do return a!=b;
-        when relType.lt do return a<b;
-        when relType.lte do return a<=b;
-        when relType.gt do return a>b;
-        when relType.gte do return a>=b;
+        when relType.eq  do return a == b;
+        when relType.neq do return a != b;
+        when relType.lt  do return a < b;
+        when relType.lte do return a <= b;
+        when relType.gt  do return a > b;
+        when relType.gte do return a >= b;
         otherwise compilerError("op not supported (", op:baseType, ")");
       }
     }
@@ -615,6 +596,7 @@ module String {
       if aremote then abase = remoteStringCopy(a.home.id, a.base, alen);
       else if !aIsEmpty then abase = a.base;
       else abase = _defaultOf(baseType);
+
       // Ditto for b
       var bbase: baseType;
       const blen = b.len;
@@ -662,12 +644,14 @@ module String {
   inline proc _cast(type t, cs: baseType) where t==string {
     if debugStrings then
       chpl_debug_string_print("in _cast() "+baseTypeString+"->string");
+
     if cs.locale.id != here.id then
       halt("Cannot cast a remote "+baseTypeString+" to string.");
+
     var ret: string;
     ret.len = cs.length;
     if ret.len != 0 then ret.base = __primitive("string_copy", cs);
-    ret.incRefCntNoAlias();
+
     if debugStrings then
       chpl_debug_string_print("leaving _cast() "+baseTypeString+"->string");
     return ret;
@@ -677,12 +661,13 @@ module String {
   inline proc _cast(type t, x) where t==string && x.type != baseType {
     if debugStrings then
       chpl_debug_string_print("in _cast() "+typeToString(t)+"->string");
+
     const cs = x:c_string_copy;
     var ret: string;
     ret.len = cs.length;
     assert(ret.len != 0);
     ret.base = cs;
-    ret.incRefCntNoAlias();
+
     if debugStrings then
       chpl_debug_string_print("leaving _cast() "+typeToString(t)+"->string");
     return ret;
@@ -705,6 +690,7 @@ module String {
   inline proc _cast(type t, s: string) : t where t!=baseType {
     if debugStrings then
       chpl_debug_string_print("in _cast() string->"+typeToString(t));
+
     const sremote = s.home.id != here.id;
     var sbase = if sremote
                   then remoteStringCopy(s.home.id, s.base, s.len)
@@ -712,6 +698,7 @@ module String {
     // Note that any error checking on the string is done in the runtime
     const ret = sbase:t;
     if sremote then free_baseType(sbase);
+
     if debugStrings then
       chpl_debug_string_print("leaving _cast() string->"+typeToString(t));
     return ret;
