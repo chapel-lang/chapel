@@ -372,7 +372,7 @@ static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
 static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
-static Type* buildRuntimeTypeInfo(FnSymbol* fn);
+static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
 // static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
@@ -382,6 +382,8 @@ static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
+static void resolveRuntimeTypeDestructor(Type* type);
+static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct);
 static void removeUnusedGlobals();
 static void removeParamArgs();
 static void removeRandomPrimitives();
@@ -5925,6 +5927,7 @@ resolveExpr(Expr* expr) {
       if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
         if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+            !ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           resolveFormals(ct->defaultTypeConstructor);
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
@@ -7202,7 +7205,7 @@ static void insertDynamicDispatchCalls() {
   }
 }
 
-static Type*
+static AggregateType*
 buildRuntimeTypeInfo(FnSymbol* fn) {
   SET_LINENO(fn);
   AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
@@ -7687,15 +7690,22 @@ static void buildRuntimeTypeInitFns() {
         SET_LINENO(fn);
 
         // Build a new runtime type for this function
-        Type* runtimeType = buildRuntimeTypeInfo(fn);
+        AggregateType* runtimeType = buildRuntimeTypeInfo(fn);
         runtimeTypeMap.put(fn->retType, runtimeType);
 
         // Build chpl__convertRuntimeTypeToValue() instance.
         buildRuntimeTypeInitFn(fn, runtimeType);
+
+        // Build destructor functions.
+        buildDefaultDestructor(runtimeType);
+        resolveRuntimeTypeDestructor(runtimeType);
+        buildRuntimeTypeAutoDestroyFn(runtimeType);
+        resolveAutoDestroy(runtimeType);
       }
     }
   }
 }
+
 
 // Build a function to return the runtime type by modifying
 // the original function.
@@ -7762,6 +7772,43 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
   // Replace the body of the orignal chpl__buildRuntime...Type() function.
   fn->body->replace(block);
 }
+
+
+static void
+resolveRuntimeTypeDestructor(Type* type) {
+  SET_LINENO(type->symbol);
+  Symbol* tmp = newTemp(type);
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+  CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
+  FnSymbol* fn = resolveUninsertedCall(type, call);
+  resolveFns(fn);
+  type->destructor = fn;
+  tmp->defPoint->remove();
+}
+
+
+// Build an autoDestroy function for the given runtime type, and insert it into
+// the autoDestroyMap.
+static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct)
+{
+  SET_LINENO(ct->symbol);
+
+  FnSymbol* fn = new FnSymbol("chpl__autoDestroy");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_AUTO_DESTROY_FN);
+  fn->addFlag(FLAG_INLINE);
+  fn->cname = fn->name;
+  fn->retType = dtVoid;
+
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  fn->insertFormalAtTail(arg);
+
+  fn->insertAtTail(new CallExpr(PRIM_CALL_DESTRUCTOR, arg));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+}
+
 
 static void removeFormalTypeAndInitBlocks()
 {

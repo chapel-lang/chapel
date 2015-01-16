@@ -119,39 +119,75 @@ module ChapelArray {
     }
   }
   
+  // This works like a constructor, and should probably be converted into one.
   proc _newArray(value) {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _array, which contains a new reference to this
+        // array representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _array(value, value);
+    }
   }
   
   proc _newDomain(value) {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _domain, which contains a new reference to this
+        // domain representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _domain(value, value);
+    }
   }
   
   proc _getDomain(value) {
     if _isPrivatized(value) then
       return new _domain(value.pid, value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _domain record, which contains a new reference to this
+        // domain representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _domain(value, value);
+    }
   }
   
   proc _newDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _distribution, which contains a new reference to this
+        // distribution representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _distribution(value, value);
+    }
   }
   
   proc _getDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(value.pid, value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _distribution, which contains a new reference to this
+        // distribution representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _distribution(value, value);
+    }
   }
   
   

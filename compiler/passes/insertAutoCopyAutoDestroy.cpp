@@ -402,8 +402,10 @@ static bool isConsumed(SymExpr* se)
     {
       // This is a function call.
 
-      // The only one we're interested in right now is a destructor call.
-      if (fn->hasFlag(FLAG_DESTRUCTOR))
+      // The only ones we're interested in right now are destructor calls and
+      // autodestroy calls.
+      if (fn->hasFlag(FLAG_DESTRUCTOR) ||
+          fn->hasFlag(FLAG_AUTO_DESTROY_FN))
       {
         // Paranoid check: This SymExpr is the thing being destroyed, right?
         INT_ASSERT(call->get(1) == se);
@@ -861,6 +863,34 @@ static bool isRetVarInReturn(SymExpr* se)
 }
 
 
+static bool isDestructorFormal(SymExpr* se)
+{
+  if (ArgSymbol* arg = toArgSymbol(se->var))
+    if (FnSymbol* fn = toFnSymbol(se->parentSymbol))
+      if (fn->hasFlag(FLAG_DESTRUCTOR) ||
+          fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+      {
+        // We presume this is the first (and only) argument.
+        INT_ASSERT(fn->getFormal(1) == arg);
+        return true;
+      }
+
+  return false;
+}
+
+
+static bool isDestructorArg(SymExpr* se)
+{
+  if (FnSymbol* parent = toFnSymbol(se->parentSymbol))
+    if (parent->hasFlag(FLAG_DESTRUCTOR))
+      if (CallExpr* call = toCallExpr(se->parentExpr))
+        if (FnSymbol* fn = call->isResolved())
+          if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+            return true;
+  return false;
+}
+
+
 // Insert an autoCopy because this symbol is unowned and
 // a receptor formal expects its operand to be owned.
 static void insertAutoCopy(SymExpr* se)
@@ -876,6 +906,24 @@ static void insertAutoCopy(SymExpr* se)
   // TODO: Remove this clause after the autoCopy function becomes a copy constructor
   // method.
   if (isRetVarInReturn(se))
+    return;
+
+  // The argument to a destructor function is known to be live, so we do not
+  // need to insert an autoCopy even if one is called for.
+  // (Alternatively, we could pre-initialize the IN[0] set so the bit
+  // corresponding to the argument is true, but heading off the insertion of a
+  // called-for autoCopy seems simpler.)
+  if (isDestructorFormal(se))
+    return;
+
+  // Record destructors call the autoDestroy function recursively, loading up
+  // each field in turn (in reverse order).  We don't want to call autoCopy on
+  // these arguments, because that just undoes the effect of the field-wise
+  // destructor call.
+  // TODO: This problem only occurs for sync and referencecounted types.  If we
+  // can remove the useRefType predicate on line 687 of callDestructors.cpp and
+  // always use ref types (PRIM_GET_MEMBER), then this test can be removed.
+  if (isDestructorArg(se))
     return;
 
   Expr* stmt = se->getStmtExpr();
