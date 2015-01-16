@@ -392,6 +392,8 @@ static void discoverForallBodies(DefExpr* defChplIter,
   if (sa) {
     // standalone case - get the first (and only) block that follows
 
+    firstForallBody  = NULL;
+    secondForallBody = NULL;
     for (Expr* curr = defLeadIdxCopy->next; curr; curr = curr->next)
       if (BlockStmt* block = toBlockStmt(curr)) {
         INT_ASSERT(block->byrefVars->isPrimitive(PRIM_FORALL_LOOP));
@@ -401,7 +403,7 @@ static void discoverForallBodies(DefExpr* defChplIter,
           INT_ASSERT(!isBlockStmt(check));
         break;
       }
-    secondForallBody = NULL;
+    INT_ASSERT(firstForallBody);
 
   } else if (fNoFastFollowers) {
     // no fast followers
