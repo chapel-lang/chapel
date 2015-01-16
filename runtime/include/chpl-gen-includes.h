@@ -56,7 +56,7 @@ chpl_localeID_t id_rt2pub(c_localeid_t i)
 {
   return chpl_rt_buildLocaleID(i >> 32, i & 0xffffffff);
 }
-extern void chpl_getLocaleID (chpl_localeID_t* localdID,  int64_t _ln, c_string _fn);
+extern void chpl_getLocaleID (chpl_localeID_t* localeID,  int64_t _ln, c_string _fn);
 static ___always_inline
 chpl_localeID_t chpl_gen_getLocaleID(void)
 {
