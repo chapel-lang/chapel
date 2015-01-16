@@ -577,6 +577,8 @@ destructureIndices(BlockStmt* block,
                            coforall);
         i++;
       }
+    } else {
+      INT_FATAL("Unexpected call type");
     }
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
     VarSymbol* var = new VarSymbol(sym->unresolved);
@@ -592,6 +594,8 @@ destructureIndices(BlockStmt* block,
     if (coforall)
       sym->var->addFlag(FLAG_COFORALL_INDEX_VAR);
     sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  } else {
+    INT_FATAL("Unexpected");
   }
 }
 
@@ -942,45 +946,36 @@ buildStandaloneForallLoopStmt(Expr* indices,
   // these variables correspond to leadXXX vars in buildForallLoopStmt()
   VarSymbol* saIter    = newTemp("chpl__saIter");
   VarSymbol* saIdx     = newTemp("chpl__saIdx");
-  VarSymbol* saIdxCopy = newTemp("chpl__saIdxcopy");
+  VarSymbol* saIdxCopy = newTemp("chpl__saIdxCopy");
 
+  iterRec->addFlag(FLAG_CHPL__ITER);
   saIter->addFlag(FLAG_EXPR_TEMP);
   saIdx->addFlag(FLAG_INDEX_OF_INTEREST);
   saIdx->addFlag(FLAG_INDEX_VAR);
   saIdxCopy->addFlag(FLAG_INDEX_VAR);
 
+  // ForallLeaderArgs: stash references so we know where things are.
+  CallExpr* byref_vars = loopBody->byrefVars;
+  INT_ASSERT(byref_vars->isPrimitive(PRIM_FORALL_LOOP));
+  byref_vars->insertAtHead(saIdxCopy); // 3rd arg
+  byref_vars->insertAtHead(saIdx);     // 2nd arg
+  byref_vars->insertAtHead(iterRec);   // 1st arg
+
   BlockStmt* SABlock = buildChapelStmt();
 
+  SABlock->insertAtTail(new DefExpr(iterRec));
   SABlock->insertAtTail(new DefExpr(saIter));
   SABlock->insertAtTail(new DefExpr(saIdx));
-  SABlock->insertAtTail(new DefExpr(iterRec));
   SABlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr);
   SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", saIter, iterRec);
   SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
 
   ForLoop* SABody = new ForLoop(saIdx, saIter, NULL);
-  SABody->insertAtTail(new DefExpr(saIdxCopy));
-  SABody->insertAtTail("'move'(%S, %S)", saIdxCopy, saIdx);
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
-    Symbol* var = new VarSymbol(sym->unresolved);
-    SABody->insertAtTail(new DefExpr(var));
-    SABody->insertAtTail("'move'(%S, %S)", var, saIdx);
-    var->addFlag(FLAG_INDEX_VAR);
-    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  } else if (SymExpr* sym = toSymExpr(indices)) {
-    SABody->insertAtTail("'move'(%S, %S)", sym->var, saIdx);
-    sym->var->addFlag(FLAG_INDEX_VAR);
-    sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  } else if (CallExpr* call = toCallExpr(indices)) {
-    if (call->isNamed("_build_tuple")) {
-      destructureIndices(SABody, indices, new SymExpr(saIdx), false);
-    } else {
-      INT_FATAL("Unexpected call type");
-    }
-  } else {
-    INT_FATAL("Unexpected");
-  }
-  SABody->insertAtTail(loopBody->copy());
+  destructureIndices(SABody, indices, new SymExpr(saIdxCopy), false);
+  SABody->insertAtHead("'move'(%S, %S)", saIdxCopy, saIdx);
+  SABody->insertAtHead(new DefExpr(saIdxCopy));
+
+  SABody->insertAtTail(loopBody);
   SABlock->insertAtTail(SABody);
   SABlock->insertAtTail("_freeIterator(%S)", saIter);
   return SABlock;
@@ -1009,10 +1004,9 @@ buildForallLoopStmt(Expr*      indices,
                     CallExpr*  byref_vars,
                     BlockStmt* loopBody,
                     bool       zippered) {
-  BlockStmt* loopBodyCopy = loopBody->copy();
-  checkControlFlow(loopBodyCopy, "forall statement");
+  checkControlFlow(loopBody, "forall statement");
 
-  SET_LINENO(loopBodyCopy);
+  SET_LINENO(loopBody);
 
   //
   // insert temporary index when elided by user
@@ -1027,7 +1021,7 @@ buildForallLoopStmt(Expr*      indices,
   // are variables listed in the forall's with(ref...) clause.
   // This list is processed during implementForallIntents1().
   //
-  INT_ASSERT(!loopBodyCopy->byrefVars);
+  INT_ASSERT(!loopBody->byrefVars);
   if (byref_vars) {
     // todo: push this check downstream, e.g. into checkParsed()
     checkForNonRefIntents(byref_vars);
@@ -1036,10 +1030,15 @@ buildForallLoopStmt(Expr*      indices,
   } else {
     byref_vars = new CallExpr(PRIM_FORALL_LOOP);
   }
-  loopBodyCopy->byrefVars = byref_vars;
+  loopBody->byrefVars = byref_vars;
 
   // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
-  loopBodyCopy->blockTag = BLOCK_NORMAL;
+  loopBody->blockTag = BLOCK_NORMAL;
+
+  // NB these copies do not get byref_vars updates below.
+  BlockStmt* loopBodyForFast =
+                     (fNoFastFollowers == false) ? loopBody->copy() : NULL;
+  BlockStmt* loopBodyForStandalone = (!zippered) ? loopBody->copy() : NULL;
 
   BlockStmt* resultBlock     = new BlockStmt();
 
@@ -1069,8 +1068,8 @@ buildForallLoopStmt(Expr*      indices,
   byref_vars->insertAtHead(iterRec);     // 1st arg
 
   resultBlock->insertAtTail(new DefExpr(iterRec));
-  resultBlock->insertAtTail(new DefExpr(leadIdx));
   resultBlock->insertAtTail(new DefExpr(leadIter));
+  resultBlock->insertAtTail(new DefExpr(leadIdx));
 
   resultBlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr->copy());
 
@@ -1089,7 +1088,7 @@ buildForallLoopStmt(Expr*      indices,
                                 followIter,
                                 followIdx,
                                 indices,
-                                loopBodyCopy->copy(),
+                                loopBody,
                                 false,
                                 zippered);
 
@@ -1128,7 +1127,7 @@ buildForallLoopStmt(Expr*      indices,
                                       fastFollowIter,
                                       fastFollowIdx,
                                       indices,
-                                      loopBodyCopy->copy(),
+                                      loopBodyForFast,
                                       true,
                                       zippered);
 
@@ -1143,7 +1142,7 @@ buildForallLoopStmt(Expr*      indices,
   if (!zippered) {
     BlockStmt* SALoop = buildStandaloneForallLoopStmt(indices,
                                                       iterExpr,
-                                                      loopBody->copy());
+                                                      loopBodyForStandalone);
     BlockStmt* result = new BlockStmt();
     result->insertAtTail(
       new CondStmt(new SymExpr(gTryToken), SALoop, resultBlock));
