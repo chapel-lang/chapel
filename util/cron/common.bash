@@ -104,7 +104,7 @@ export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 if [ -z "$CHPL_TEST_PERF_DIR" ]; then
     export CHPL_TEST_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
 fi
-if [ -z "$CHPL_TEST_COMP_PERF_DIR"]; then
+if [ -z "$CHPL_TEST_COMP_PERF_DIR" ]; then
     export CHPL_TEST_COMP_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
 fi
 
