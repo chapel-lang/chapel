@@ -19,20 +19,20 @@
 
 #include "AstDumpToNode.h"
 
+#include "CForLoop.h"
+#include "DoWhileStmt.h"
 #include "driver.h"
 #include "expr.h"
 #include "flags.h"
+#include "ForLoop.h"
+#include "IpeSymbol.h"
 #include "log.h"
+#include "ParamForLoop.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
-
 #include "WhileDoStmt.h"
-#include "DoWhileStmt.h"
-#include "CForLoop.h"
-#include "ForLoop.h"
-#include "ParamForLoop.h"
 
 void AstDumpToNode::view(const char* passName, int passNum)
 {
@@ -1117,6 +1117,15 @@ bool AstDumpToNode::enterArgSym(ArgSymbol* node)
 //
 //
 
+void AstDumpToNode::visitIpeSym(IpeSymbol* node)
+{
+  writeSymbol(node);
+}
+
+//
+//
+//
+
 void AstDumpToNode::visitEnumSym(EnumSymbol* node)
 {
   fprintf(mFP, "#<EnumSymbol>\n");
@@ -1255,6 +1264,24 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
     writeFlags(mFP, sym);
     fprintf(mFP, ">");
 
+  }
+
+  else if (IpeSymbol* var = toIpeSymbol(sym))
+  {
+    fprintf(mFP, "#<IpeSymbol         %8d ", var->id);
+
+    fprintf(mFP, "name: %-36s", name);
+
+    if (sym->type)
+    {
+      fprintf(mFP, " type:   ");
+      writeType(sym->type);
+    }
+
+    fprintf(mFP, " depth: %3d offset: %4d ", var->depth(), var->offset());
+
+    writeFlags(mFP, sym);
+    fprintf(mFP, ">");
   }
 
   else if (isLabelSymbol(sym) == true)
