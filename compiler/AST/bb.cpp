@@ -111,9 +111,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
       // add the condition expr at the loop top
       } else if (WhileDoStmt* whileDoStmt = toWhileDoStmt(stmt)) {
-        SymExpr* condExpr = whileDoStmt->condExprGet();
-
-        INT_ASSERT(condExpr);
+        SymExpr* condExpr = whileDoStmt->condExprForTmpVariableGet();
 
         append(condExpr, true);
 
@@ -144,9 +142,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
         }
 
       } else if (DoWhileStmt* doWhileStmt = toDoWhileStmt(stmt)) {
-        SymExpr* condExpr = doWhileStmt->condExprGet();
-
-        INT_ASSERT(condExpr);
+        SymExpr* condExpr = doWhileStmt->condExprForTmpVariableGet();
 
         append(condExpr, true);
       }

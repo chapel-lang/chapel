@@ -50,8 +50,8 @@ public:
 private:
                          DoWhileStmt();
 
-                         DoWhileStmt(VarSymbol* var,
-                                     BlockStmt* initBody);
+                         DoWhileStmt(Expr*      cond, BlockStmt* body);
+                         DoWhileStmt(VarSymbol* var,  BlockStmt* body);
 };
 
 #endif
