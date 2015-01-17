@@ -22,6 +22,7 @@ IPE_SRCS =                           \
            ipeEvaluate.cpp           \
                                      \
            DefScope.cpp              \
+           IpeEnvironment.cpp        \
            IpeSymbol.cpp             \
            VisibleSymbol.cpp
 
