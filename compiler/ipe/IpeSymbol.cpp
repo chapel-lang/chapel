@@ -82,9 +82,7 @@ bool IpeSymbol::isParameter() const
 
 void IpeSymbol::accept(AstVisitor* visitor)
 {
-#if 0
   visitor->visitIpeSym(this);
-#endif
 }
 
 int IpeSymbol::depth() const
