@@ -79,10 +79,10 @@ static void ipeInline(FnSymbol* fn)
 
 static void ipeInline(WhileDoStmt* whileDoStmt)
 {
-#if 0
   ipeInline(whileDoStmt->condExprGet());
-  ipeInline(whileDoStmt->bodyGet());
-#endif
+
+  for_alist(expr, whileDoStmt->body)
+    ipeInline(expr);
 }
 
 static void ipeInline(BlockStmt* blockStmt)

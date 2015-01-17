@@ -187,10 +187,10 @@ static void replaceVariables(FnSymbol* fn)
 
 static void replaceVariables(WhileDoStmt* whileDoStmt)
 {
-#if 0
   replaceVariables(whileDoStmt->condExprGet());
-  replaceVariables(whileDoStmt->bodyGet());
-#endif
+
+  for_alist(expr, whileDoStmt->body)
+    replaceVariables(expr);
 }
 
 static void replaceVariables(BlockStmt* blockStmt)

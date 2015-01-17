@@ -292,10 +292,17 @@ static Expr* resolve(CondStmt* stmt, const DefScope* scope)
 
 static Expr* resolve(WhileDoStmt* expr, const DefScope* scope)
 {
-#if 0
   resolve(expr->condExprGet(), scope);
-  resolve(expr->bodyGet(),     scope);
-#endif
+
+  for_alist(stmt, expr->body)
+  {
+    Expr* resolvedExpr = resolve(stmt, scope);
+
+    INT_ASSERT(resolvedExpr);
+
+    if (resolvedExpr != stmt)
+      stmt->replace(resolvedExpr);
+  }
 
   return expr;
 }
