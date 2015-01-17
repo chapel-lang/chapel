@@ -301,72 +301,40 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 
 bool AstDumpToNode::enterWhileDoStmt(WhileDoStmt* node)
 {
-  char heading[128] = { '\0' };
-  bool firstTime    = true;
+  bool firstTime = true;
 
-  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
-
-  sprintf(heading, "#<WhileDoStmt %8d", node->id);
-
-  write(false, heading, true);
+  fprintf(mFP, "#<WhileDoStmt %8d", node->id);
 
   if (node->condExprGet())
   {
-    mOffset = mOffset + 2;
+    mOffset = mOffset +  2;
 
     newline();
-    write(false, "CondExpr:", false);
-    mOffset = mOffset + 2;
+    fputs("CondExpr: ", mFP);
+    mOffset = mOffset + 10;
     node->condExprGet()->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 10;
 
-    mOffset = mOffset - 2;
-
-    newline();
+    mOffset = mOffset -  2;
+    fputc('\n', mFP);
   }
 
-  // Show blockTag bits.
-  if (node->blockTag & BLOCK_EXTERN)
-    write(false, "extern ", true);
-
-  if (node->blockTag & BLOCK_SCOPELESS)
-    write(false, "scopeless ", true);
-
-  if (node->blockTag & BLOCK_TYPE_ONLY)
-    write(false, "type_only ", true);
-
   mOffset = mOffset + 2;
+  newline();
 
   for_alist(next_ast, node->body)
   {
     if (firstTime == true)
       firstTime = false;
     else
-      fprintf(mFP, "\n");
+      newline();
 
     next_ast->accept(this);
   }
 
-  if (node->modUses)
-  {
-    newline();
-    write(false, "ModUses: ", false);
-    node->modUses->accept(this);
-  }
-
-  if (node->byrefVars)
-  {
-    newline();
-    write(false, "ByRefVars: ", false);
-    node->byrefVars->accept(this);
-  }
-
   mOffset = mOffset - 2;
-
   newline();
-  write(false, ">", true);
+  fputc('>', mFP);
 
   return false;
 }
@@ -377,72 +345,40 @@ bool AstDumpToNode::enterWhileDoStmt(WhileDoStmt* node)
 
 bool AstDumpToNode::enterDoWhileStmt(DoWhileStmt* node)
 {
-  char heading[128] = { '\0' };
-  bool firstTime    = true;
+  bool firstTime = true;
 
-  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
-
-  sprintf(heading, "#<DoWhileStmt %8d", node->id);
-
-  write(false, heading, true);
+  fprintf(mFP, "#<DoWhileStmt %8d", node->id);
 
   if (node->condExprGet())
   {
-    mOffset = mOffset + 2;
+    mOffset = mOffset +  2;
 
     newline();
-    write(false, "CondExpr:", false);
-    mOffset = mOffset + 2;
+    fputs("CondExpr: ", mFP);
+    mOffset = mOffset + 10;
     node->condExprGet()->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 10;
 
-    mOffset = mOffset - 2;
-
-    newline();
+    mOffset = mOffset -  2;
+    fputc('\n', mFP);
   }
 
-  // Show blockTag bits.
-  if (node->blockTag & BLOCK_EXTERN)
-    write(false, "extern ", true);
-
-  if (node->blockTag & BLOCK_SCOPELESS)
-    write(false, "scopeless ", true);
-
-  if (node->blockTag & BLOCK_TYPE_ONLY)
-    write(false, "type_only ", true);
-
   mOffset = mOffset + 2;
+  newline();
 
   for_alist(next_ast, node->body)
   {
     if (firstTime == true)
       firstTime = false;
     else
-      fprintf(mFP, "\n");
+      newline();
 
     next_ast->accept(this);
   }
 
-  if (node->modUses)
-  {
-    newline();
-    write(false, "ModUses: ", false);
-    node->modUses->accept(this);
-  }
-
-  if (node->byrefVars)
-  {
-    newline();
-    write(false, "ByRefVars: ", false);
-    node->byrefVars->accept(this);
-  }
-
   mOffset = mOffset - 2;
-
   newline();
-  write(false, ">", true);
+  fputc('>', mFP);
 
   return false;
 }
@@ -453,30 +389,22 @@ bool AstDumpToNode::enterDoWhileStmt(DoWhileStmt* node)
 
 bool AstDumpToNode::enterCForLoop(CForLoop* node)
 {
-  char heading[128] = { '\0' };
-  bool firstTime    = true;
+  bool firstTime = true;
 
-  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
-
-  sprintf(heading, "#<CForLoop    %8d", node->id);
-
-  write(false, heading, true);
+  fprintf(mFP, "#<CForLoop    %8d", node->id);
 
   if (node->initBlockGet())
   {
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "Init:", false);
-    mOffset = mOffset + 2;
+    fputs("Init: ", mFP);
+    mOffset = mOffset + 5;
     node->initBlockGet()->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 5;
 
     mOffset = mOffset - 2;
-
-    fprintf(mFP, "\n");
+    fputc('\n', mFP);
   }
 
   if (node->testBlockGet())
@@ -484,14 +412,13 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "Test:", false);
-    mOffset = mOffset + 2;
+    fputs("Test: ", mFP);
+    mOffset = mOffset + 5;
     node->testBlockGet()->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 5;
 
     mOffset = mOffset - 2;
-
-    fprintf(mFP, "\n");
+    fputc('\n', mFP);
   }
 
   if (node->incrBlockGet())
@@ -499,56 +426,32 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
     mOffset = mOffset + 2;
 
     newline();
-    write(false, "Incr:", false);
-    mOffset = mOffset + 2;
+    fputs("Incr: ", mFP);
+    mOffset = mOffset + 5;
     node->incrBlockGet()->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 5;
 
     mOffset = mOffset - 2;
-
-    fprintf(mFP, "\n");
+    fputc('\n', mFP);
   }
 
-  // Show blockTag bits.
-  if (node->blockTag & BLOCK_EXTERN)
-    write(false, "extern ", true);
-
-  if (node->blockTag & BLOCK_SCOPELESS)
-    write(false, "scopeless ", true);
-
-  if (node->blockTag & BLOCK_TYPE_ONLY)
-    write(false, "type_only ", true);
-
   mOffset = mOffset + 2;
+  newline();
 
   for_alist(next_ast, node->body)
   {
     if (firstTime == true)
       firstTime = false;
     else
-      fprintf(mFP, "\n");
+      newline();
 
     next_ast->accept(this);
-  }
-
-  if (node->modUses)
-  {
-    newline();
-    write(false, "ModUses: ", false);
-    node->modUses->accept(this);
-  }
-
-  if (node->byrefVars)
-  {
-    newline();
-    write(false, "ByRefVars: ", false);
-    node->byrefVars->accept(this);
   }
 
   mOffset = mOffset - 2;
 
   newline();
-  write(false, ">", true);
+  fputc('>', mFP);
 
   return false;
 }
@@ -560,16 +463,9 @@ bool AstDumpToNode::enterCForLoop(CForLoop* node)
 
 bool AstDumpToNode::enterForLoop(ForLoop* node)
 {
-  char heading[128] = { '\0' };
-  bool firstTime    = true;
+  bool firstTime = true;
 
-  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
-
-  sprintf(heading, "#<ForLoop     %8d", node->id);
-
-  write(false, heading, true);
+  fprintf(mFP, "#<ForLoop     %8d", node->id);
 
   if (node->indexGet() != 0 || node->iteratorGet() != 0)
   {
@@ -578,68 +474,52 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
 
     if (node->indexGet() != 0)
     {
-      write(false, "Index:", false);
-      mOffset = mOffset + 2;
+      fputs("Index:    ", mFP);
+      mOffset = mOffset + 10;
       node->indexGet()->accept(this);
-      mOffset = mOffset - 2;
+      mOffset = mOffset - 10;
+
+      if (node->iteratorGet() != 0)
+        newline();
     }
 
     if (node->iteratorGet() != 0)
     {
-      write(false, "Iterator:", false);
-      mOffset = mOffset + 2;
+      fputs("Iterator: ", mFP);
+      mOffset = mOffset + 10;
       node->iteratorGet()->accept(this);
-      mOffset = mOffset - 2;
+      mOffset = mOffset - 10;
     }
 
     mOffset = mOffset - 2;
-    newline();
+    fputc('\n', mFP);
   }
 
-  // Show blockTag bits.
-  if (node->blockTag & BLOCK_EXTERN)
-    write(false, "extern", true);
-
-  if (node->blockTag & BLOCK_SCOPELESS)
-    write(false, "scopeless", true);
-
-  if (node->blockTag & BLOCK_TYPE_ONLY)
-    write(false, "type_only", true);
-
   mOffset = mOffset + 2;
+  newline();
 
   for_alist(next_ast, node->body)
   {
     if (firstTime == true)
       firstTime = false;
     else
-      fprintf(mFP, "\n");
+      newline();
 
     next_ast->accept(this);
-  }
-
-  if (node->modUses)
-  {
-    newline();
-    write(false, "ModUses: ", false);
-    node->modUses->accept(this);
-  }
-
-  if (node->byrefVars)
-  {
-    newline();
-    write(false, "ByRefVars: ", false);
-    node->byrefVars->accept(this);
   }
 
   mOffset = mOffset - 2;
 
   newline();
-  write(false, ">", true);
+  fputc('>', mFP);
 
   return false;
 }
 
+
+//
+//
+//
 
 //
 //
@@ -647,121 +527,82 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
 
 bool AstDumpToNode::enterParamForLoop(ParamForLoop* node)
 {
-  char heading[128] = { '\0' };
-  bool firstTime    = true;
+  bool firstTime = true;
 
-  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
-
-  sprintf(heading, "#<ParamForLoop %8d", node->id);
-
-  write(false, heading, true);
+  fprintf(mFP, "#<ParamForLoop %8d", node->id);
 
   if (node->indexExprGet())
   {
-    mOffset = mOffset + 2;
+    mOffset = mOffset +  2;
 
     newline();
-    write(false, "Index Expr:", false);
-    mOffset = mOffset + 2;
+    fputs("Index Expr:  ", mFP);
+    mOffset = mOffset + 13;
     node->indexExprGet()->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 13;
 
-    mOffset = mOffset - 2;
-
-    newline();
+    mOffset = mOffset -  2;
   }
 
   if (node->lowExprGet())
   {
-    mOffset = mOffset + 2;
+    mOffset = mOffset +  2;
 
     newline();
-    write(false, "Low Expr:", false);
-    mOffset = mOffset + 2;
+    fputs("Low Expr:    ", mFP);
+    mOffset = mOffset + 13;
     node->lowExprGet()->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 13;
 
-    mOffset = mOffset - 2;
-
-    newline();
+    mOffset = mOffset -  2;
   }
 
   if (node->highExprGet())
   {
-    mOffset = mOffset + 2;
+    mOffset = mOffset +  2;
 
     newline();
-    write(false, "High Expr:", false);
-    mOffset = mOffset + 2;
+    fputs("High Expr:   ", mFP);
+    mOffset = mOffset + 13;
     node->highExprGet()->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 13;
 
-    mOffset = mOffset - 2;
-
-    newline();
+    mOffset = mOffset -  2;
   }
 
   if (node->strideExprGet())
   {
-    mOffset = mOffset + 2;
+    mOffset = mOffset +  2;
 
     newline();
-    write(false, "Stride Expr:", false);
-    mOffset = mOffset + 2;
+    fputs("Stride Expr: ", mFP);
+    mOffset = mOffset + 13;
     node->strideExprGet()->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 13;
 
-    mOffset = mOffset - 2;
-
-    newline();
+    mOffset = mOffset -  2;
   }
 
-  // Show blockTag bits.
-  if (node->blockTag & BLOCK_EXTERN)
-    write(false, "extern", true);
-
-  if (node->blockTag & BLOCK_SCOPELESS)
-    write(false, "scopeless", true);
-
-  if (node->blockTag & BLOCK_TYPE_ONLY)
-    write(false, "type_only", true);
-
   mOffset = mOffset + 2;
+  newline();
 
   for_alist(next_ast, node->body)
   {
     if (firstTime == true)
       firstTime = false;
     else
-      fprintf(mFP, "\n");
+      newline();
 
     next_ast->accept(this);
-  }
-
-  if (node->modUses)
-  {
-    newline();
-    write(false, "ModUses: ", false);
-    node->modUses->accept(this);
-  }
-
-  if (node->byrefVars)
-  {
-    newline();
-    write(false, "ByRefVars: ", false);
-    node->byrefVars->accept(this);
   }
 
   mOffset = mOffset - 2;
 
   newline();
-  write(false, ">", true);
+  fputc('>', mFP);
 
   return false;
 }
-
 
 //
 //
@@ -1037,40 +878,41 @@ void AstDumpToNode::visitUsymExpr(UnresolvedSymExpr* node)
 
 bool AstDumpToNode::enterCondStmt(CondStmt* node)
 {
-  fprintf(mFP, "#<CondStmt");
+  fprintf(mFP, "#<CondStmt    %8d", node->id);
 
   mOffset = mOffset + 2;
   newline();
-  fprintf(mFP, "cond:");
+  fputs("cond: ", mFP);
 
-  mOffset = mOffset + 2;
+  mOffset = mOffset + 6;
   node->condExpr->accept(this);
-  mOffset = mOffset - 2;
+  mOffset = mOffset - 6;
 
+  fputc('\n', mFP);
   newline();
-  fprintf(mFP, "consequent:");
+  fputs("cons: ", mFP);
 
-  mOffset = mOffset + 2;
+  mOffset = mOffset + 6;
   node->thenStmt->accept(this);
-  mOffset = mOffset - 2;
+  mOffset = mOffset - 6;
 
   if (node->elseStmt)
   {
+    fputc('\n', mFP);
     newline();
-    fprintf(mFP, "alternative:");
+    fputs("alt:  ", mFP);
 
-    mOffset = mOffset + 2;
+    mOffset = mOffset + 5;
     node->elseStmt->accept(this);
-    mOffset = mOffset - 2;
+    mOffset = mOffset - 5;
   }
 
   mOffset = mOffset - 2;
   newline();
-  fprintf(mFP, ">");
+  fputc('>', mFP);
 
   return false;
 }
-
 
 //
 //

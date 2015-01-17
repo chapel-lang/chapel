@@ -351,8 +351,18 @@ BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
 
 
 bool
+BlockStmt::isRealBlockStmt() const {
+  return blockInfo == 0;
+}
+
+bool
 BlockStmt::isScopeless() const {
   return blockTag == BLOCK_SCOPELESS;
+}
+
+bool
+BlockStmt::isBlockType(PrimitiveTag tag) const {
+  return blockInfo != 0 && blockInfo->isPrimitive(tag) == true;
 }
 
 bool
