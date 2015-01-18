@@ -215,7 +215,6 @@ static IpeValue evaluate(ModuleSymbol* module, IpeEnvironment* env)
 
 static IpeValue evaluate(WhileDoStmt* whileDoStmt, IpeEnvironment* env)
 {
-#if 0
   bool     proceed = true;
   IpeValue retval;
 
@@ -226,28 +225,23 @@ static IpeValue evaluate(WhileDoStmt* whileDoStmt, IpeEnvironment* env)
     proceed = cond.bValue;
 
     if (proceed == true)
-      evaluate(whileDoStmt->bodyGet(), env);
+    {
+      for_alist(expr, whileDoStmt->body)
+        evaluate(expr, env);
+    }
   }
 
   retval.iValue = 0;
 
   return retval;
-#else
-  IpeValue retval;
-
-
-  retval.iValue = 0;
-
-  return retval;
-#endif
 }
 
 static IpeValue evaluate(BlockStmt* blockStmt, IpeEnvironment* env)
 {
   IpeValue retval;
 
-  for_alist(stmt, blockStmt->body)
-    evaluate(stmt, env);
+  for_alist(expr, blockStmt->body)
+    evaluate(expr, env);
 
   retval.iValue = 0;
 
