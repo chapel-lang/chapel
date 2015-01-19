@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sed 's@internal error: FUN[0-9][0-9][0-9][0-9]@internal error: FUNnnnn@' \
+  $2 > $2.tmp
+mv $2.tmp $2
