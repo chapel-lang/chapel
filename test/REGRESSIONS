@@ -49,33 +49,21 @@
 
 ===================
 general
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
-
-failure due to lack of symbolic link support in jgit (vass, bradc, thomas)
-(linux32, x?-wb.*)
---------------------------------------------------------------------------
-[Error (sub_test): Invalid integer value in m-lsms.par-forall.numlocales (studies/lsms/shemmy)]
-[Error matching program output for studies/filerator/walk (execopts: 9)]
-
-
-.bad file includes line number for error.  noakes updated on Jan 12 expect to resolve Jan 13
---------------------------------------------------------------------------------------------
-[Error matching .bad file for types/scalar/bradc/index-int]
-
 
 
 ===================
 linux64
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
 
 ===================
 *32
 Inherits 'general'
-Reviewed 2015-01-05
+Reviewed 2015-01-19
 ===================
 
 memmax/memthreshold flags are C types; should be Chapel types (2014-11-12)
@@ -112,12 +100,6 @@ some sort of 64-bit assertion fails (2014-11-12, first run)
 [Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
 
 
-===================
-linux32
-Inherits '*32'
-Reviewed 2015-01-11
-===================
-
 GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
 ------------------------------------------------------------------------
 [Error matching compiler output for modules/standard/gmp/ferguson/gmp_dist_array]
@@ -128,6 +110,12 @@ GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
 [Error matching compiler output for studies/shootout/pidigits/hilde/pidigits-hilde]
 [Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-BigInt]
 [Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt]
+
+===================
+linux32
+Inherits '*32'
+Reviewed 2015-01-19
+===================
 
 seg fault (2014-11-12, first run)
 ---------------------------------
@@ -161,27 +149,27 @@ sporadic tasks not being created
 ===================
 darwin
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
 
 ===================
 gnu.darwin
 Inherits 'darwin'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
 
 ===================
 perf*
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -190,10 +178,15 @@ consistent failure due to insane memory usage (should get better with strings)
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
+execution time out (2014-01-16.. )
+----------------------------------
+[Error: Timed out executing program performance/bharshbarg/range-forall]
+
+
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -204,14 +197,14 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
 
 ====================
 perf.chapel-shootout
 Inherits 'perf*'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ====================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -222,29 +215,30 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 fast
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
 
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ============================
 
 
 ===================
 verify
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
+
 
 === sporadic failures below ===
 
@@ -255,7 +249,7 @@ sporadic timeout
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 System I/O error.  Thomas has escalated to sys-ops
@@ -300,7 +294,7 @@ read of size 8 in dl_name_match_p
 ===================
 llvm
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
@@ -311,29 +305,24 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 ===================
 fifo
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
-leaked: 16 -> leaked: 96. Running this test manually gets different leaks for
-different runs with 16 being the most common.  However the test was introduced
-in mid-Nov so it's unclear why this is the first report. Assigned to Vass
------------------------------------------------------------------------------------
-[Error matching .bad file for parallel/forall/vass/memleaks1-minimal (compopts: 1)] (2015-01-12 ..
 
 ===================
 numa
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 malloc memory corruption. New test by Vass and error might be sporadic
 ----------------------------------------------------------------------
-[Error matching .bad file for variables/vass/ref-to-domains-arrays] (2015-01-12 ..)
+[Error matching .bad file for variables/vass/ref-to-domains-arrays] (2015-01-12)
 
 ===================
 no-local
 Inherits 'general'
-Reviewed 2015-01-10
+Reviewed 2015-01-16
 ===================
 
 malloc memory corruption. New test by Vass and error might be sporadic
@@ -344,32 +333,35 @@ malloc memory corruption. New test by Vass and error might be sporadic
 =================================
 no-local.linux32
 Inherits 'linux32' and 'no-local'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 =================================
-
 
 
 ===================
 gasnet* regressions
 Inherits 'no-local'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
 
-Failing to build due to a compiler error for an unused function. Kyle assigned (2015-01-11 ..
-Update: Kyle has submitted a fix that is expected to fix this for 2015-01-13
----------------------------------------------------------------------------------------------
+
+sporadic execution timeout (2014-01-18)
+---------------------------------------
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
+
 
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed 2015-01-09
+Reviewed 2015-01-16
 ===================
 
 
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2015-01-10
+Reviewed 2015-01-13
 ===================
 
 
@@ -384,14 +376,14 @@ sporadic execution timeout (regularly)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===============================
 
 
 =============================
 gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 =============================
 
 consistent timeouts
@@ -403,11 +395,11 @@ consistent timeouts
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, 2014-12-14, 2012-12-17)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, 2014-12-14, 2014-12-17)
 
 sporadic timeouts (frequent)
 ----------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15, 2015-01-07)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15, 2015-01-07, 2015-01-09)
 
 sporadic timeouts (infrequent)
 ------------------------------
@@ -417,35 +409,35 @@ sporadic timeouts (infrequent)
 =============================
 gasnet.llvm
 Inherits 'gasnet*' and 'llvm'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 =============================
 
 
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 =============================
 
 
 ===================
 x?-wb.*
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 
 ==================
 *prgenv-*
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ====================
 
 infinite loop warning (since filed?)
@@ -509,8 +501,14 @@ sporadic dropping/mangling of output
 [Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014-10-10)
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (2014-10-03)
 [Error matching program output for release/examples/primers/arrays] (2014-10-03)
+[Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky] (2015-01-14)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)] (2014-12-19)
 [Error matching program output for studies/shootout/nbody/sidelnik/nbody_orig_1] (2014-12-16)
+
+
+Sporadic compilation timeout
+----------------------------
+[Error: Timed out compilation for arrays/bradc/intuintarr] (2014-01-16)
 
 
 ======================================
@@ -535,10 +533,11 @@ Inherits 'x?-wb.prgenv-cray'
 Reviewed 2015-01-12
 ============================
 
+
 ===================
 *intel*
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 test assertion failures (2014-09-21-2014-09-23)
@@ -555,56 +554,60 @@ binary files differ (2014-09-21-2014-09-23)
 ===============================
 x?-wb.intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2015-01-12
+Reviewed 2015-01-15
 ===============================
 
 
 ===============================
 x?-wb.prgenv-intel
 Inherits 'x?-wb*' and '*intel*'
-Reviewed 2015-01-12
+Reviewed 2015-01-15
 ===============================
+
+Sporadic compilation timeout
+----------------------------
+[Error: Timed out compilation for arrays/bradc/localSlices/nonlocalslice] (2014-01-15)
 
 
 =============================
 xc-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2015-01-12
+Reviewed 2015-01-15
 =============================
 
 
 =======================
 *gnu*
 Inherits from 'linux64'
-Reviewed 2015-01-12
+Reviewed 2015-01-15
 =======================
 
 
 =============================
 x?-wb.gnu
 Inherits 'x?-wb*' and '*gnu*'
-Reviewed 2015-01-12
+Reviewed 2015-01-15
 =============================
 
 
 =============================
 x?-wb.prgenv-gnu
 Inherits 'x?-wb*' and '*gnu*'
-Reviewed 2015-01-12
+Reviewed 2015-01-15
 =============================
 
 
 ===========================
 xc-wb.host.prgenv-gnu
 Inherits 'x?-wb.prgenv-gnu'
-Reviewed 2015-01-12
+Reviewed 2015-01-15
 ===========================
 
 
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-15
 ===================
 
 undefined reference to chpl_bitops_debruijn64 (2014-07-14)
@@ -632,15 +635,25 @@ target program died with signal 11, without coredump
 =============================
 x?-wb.pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2015-01-12
+Reviewed 2015-01-15
 =============================
 
 
 =============================
 x?-wb.prgenv-pgi
 Inherits 'x?-wb*' and '*pgi*'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 =============================
+
+
+something going wrong with reservedSymbolNames causes reserved names to show up in generated code.
+--------------------------------------------------------------------------------------------------
+All tests fail when this happens (2014-01-08, 2014-01-16)
+
+
+Sporadic compilation timeout
+----------------------------
+[Error: Timed out compilation for arrays/bradc/slices/outOfBoundsSlice] (2014-01-15)
 
 
 ===========================
@@ -653,7 +666,7 @@ Reviewed 2015-01-12
 ===================
 cygwin*
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 check_channel assertion failure
@@ -677,7 +690,7 @@ consistent timeout (frequent)
 ===========================
 cygwin32
 Inherits 'cygwin*' and '*32'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===========================
 
 Seg fault First run 2014-12-07
@@ -700,6 +713,11 @@ Consistent execution timouts
 [Error: Timed out executing program io/ferguson/ctests/qio_test (compopts: 1)]
 
 
+"got == expect[i]" assertion error
+----------------------------------
+[Error matching program output for io/ferguson/ctests/qio_bits_test (compopts: 1)]
+
+
 === sporadic failures below ===
 
 sporadic os.unlink calls in sub_test failing due to resource being busy
@@ -710,7 +728,7 @@ sporadic os.unlink calls in sub_test failing due to resource being busy
 ===================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 
@@ -724,7 +742,7 @@ sporadic pthread_cond_init() failed (infrequent)
 ===================
 baseline
 Inherits 'general'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 
@@ -741,19 +759,25 @@ Dies with signal 6
 ===================
 dist-block
 Inherits 'gasnet*'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
 
 
 ===================
 dist-cyclic
 Inherits 'gasnet*'
-Reviewed 2015-01-12
+Reviewed 2015-01-19
 ===================
+
+
+sporadic execution timeout (2014-01-18)
+---------------------------------------
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
+[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
 
 
 ===================
 dist-replicated
 Inherits 'gasnet*'
-Reviewed 2015-01-12
+Reviewed 2015-01-16
 ===================
