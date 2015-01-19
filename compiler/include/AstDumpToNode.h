@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,10 +41,17 @@ public:
   // are written.  The name of each file includes the name of the
   // Module, the number for the pass, and the name for the pass.
   //
-  static  void     view(const char* passName, int passNum);
+  static  void     view(const char*   passName,
+                        int           passNum);
 
-                   AstDumpToNode(FILE* fp);
+  static  void     view(const char*   passName,
+                        int           passNum,
+                        ModuleSymbol* module);
+
+                   AstDumpToNode(FILE* fp, int offset = 0);
   virtual         ~AstDumpToNode();
+
+  void             offsetSet(int offset);
 
   //
   // These functions are the "implementation" interface for the
@@ -69,6 +76,8 @@ public:
 
   virtual bool     enterFnSym       (FnSymbol*          node);
 
+  virtual void     visitIpeSym      (IpeSymbol*         node);
+
   virtual void     visitLabelSym    (LabelSymbol*       node);
 
   virtual bool     enterModSym      (ModuleSymbol*      node);
@@ -79,7 +88,6 @@ public:
   virtual void     visitVarSym      (VarSymbol*         node);
 
   virtual bool     enterCallExpr    (CallExpr*          node);
-  virtual void     exitCallExpr     (CallExpr*          node);
 
   virtual bool     enterDefExpr     (DefExpr*           node);
 

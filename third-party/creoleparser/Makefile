@@ -5,11 +5,6 @@ endif
 CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-#
-# set up the directories
-#
-CREOLEPARSER_ABS_DIR = $(shell pwd)
-CREOLEPARSER_INSTALL_DIR = $(CREOLEPARSER_ABS_DIR)/$(CREOLEPARSER_INSTALL_SUBDIR)
 default: all
 
 all: $(CREOLEPARSER_INSTALL_DIR)

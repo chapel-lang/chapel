@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,7 +39,7 @@ bool normalized = false;
 
 //
 // Static functions: forward declaration
-// 
+//
 static void insertModuleInit();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
@@ -62,11 +62,11 @@ static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                                       DefExpr* def,
                                                       int width);
-static void replace_query_uses(ArgSymbol* formal, 
-                               DefExpr*   def, 
+static void replace_query_uses(ArgSymbol* formal,
+                               DefExpr*   def,
                                CallExpr*  query,
                                Vec<SymExpr*>& symExprs);
-static void add_to_where_clause(ArgSymbol* formal, 
+static void add_to_where_clause(ArgSymbol* formal,
                                 Expr*      expr,
                                 CallExpr*  query);
 static void fixup_query_formals(FnSymbol* fn);
@@ -1030,7 +1030,41 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
     // the initialization expression if it exists
     //
     bool isNoinit = init && init->isNoInitExpr();
-    if (isNoinit) {
+
+    bool moduleNoinit = false;
+    if (isNoinit && !fUseNoinit) {
+      // In the case where --no-use-noinit is thrown, we want to still use
+      // noinit in the module code (as the correct operation of strings and
+      // complexes depends on it).
+
+      // Lydia note: The requirement for strings is expected to go away when
+      // our new string implementation is the default.  The requirement for
+      // complexes is expected to go away when we transition to constructors for
+      // all types instead of the _defaultOf function
+      Symbol* moduleSource = var;
+      while (!isModuleSymbol(moduleSource) && moduleSource != NULL &&
+             moduleSource->defPoint != NULL) {
+        // This will go up the definition tree until it reaches a module symbol
+        // Or until it encounters a null field.
+        moduleSource = moduleSource->defPoint->parentSymbol;
+      }
+      ModuleSymbol* mod = toModuleSymbol(moduleSource);
+      if (mod != NULL && moduleSource->defPoint != NULL) {
+        // As these are the only other cases that would have caused the prior
+        // while loop to exit, the moduleSource must be a module
+        moduleNoinit = (mod->modTag == MOD_INTERNAL) || (mod->modTag == MOD_STANDARD);
+        // Check if the parent module of this variable is a standard or
+        // internal module, and store the result of this check in moduleNoinit
+      }
+    }
+
+    // Lydia note:  I'm adding fUseNoinit here because utilizing noinit with
+    // return temps is necessary, so the only instances that should be
+    // controlled by the flag are generated here
+    if (isNoinit && (fUseNoinit || moduleNoinit)) {
+      // Only perform this action if noinit has been specified and the flag
+      // --no-use-noinit has not been thrown (or if the noinit is found in
+      // module code)
       var->defPoint->init->remove();
       CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
@@ -1038,7 +1072,13 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
       // its def expression after all), insert the move after the defPoint
       stmt->insertAfter(initCall);
     } else {
-      // Is not noInit
+      if (!fUseNoinit && isNoinit) {
+        // The instance would be initialized to noinit, but we aren't allowing
+        // noinit, so remove the initialization expression, allowing  it to
+        // default initialize.
+        init->remove();
+        init = NULL;
+      }
 
       // Create an empty type block.
       BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
@@ -1295,7 +1335,6 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
       se->var = new_IntSymbol(width);
   }
   fn->defPoint->insertAfter(new DefExpr(newfn));
-  fixup_query_formals(newfn);
 }
 
 static void
@@ -1448,15 +1487,20 @@ fixup_query_formals(FnSymbol* fn) {
 
 static void
 find_printModuleInit_stuff() {
-  std::vector<Symbol*> symbols;
-  collectSymbolsSTL(printModuleInitModule, symbols);
-  for_vector(Symbol, symbol, symbols) {
-    if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
-      gModuleInitIndentLevel = toVarSymbol(symbol);
-      INT_ASSERT(gModuleInitIndentLevel);
-    } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
-      gPrintModuleInitFn = toFnSymbol(symbol);
-      INT_ASSERT(gPrintModuleInitFn);
+  if (fUseIPE == false) {
+    std::vector<Symbol*> symbols;
+
+    collectSymbolsSTL(printModuleInitModule, symbols);
+
+    for_vector(Symbol, symbol, symbols) {
+      if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+        gModuleInitIndentLevel = toVarSymbol(symbol);
+        INT_ASSERT(gModuleInitIndentLevel);
+
+      } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
+        gPrintModuleInitFn = toFnSymbol(symbol);
+        INT_ASSERT(gPrintModuleInitFn);
+      }
     }
   }
 }

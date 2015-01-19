@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -954,7 +954,7 @@ static void computeKillSets(FnSymbol* fn,
     // Use killSet to initialize the KILL set for this block.
     // It's OK if we include the pairs from this block in KILL[i] because we
     // put them back when we add in the COPY set.
-    for (int j = 0; j < KILL[i]->size(); ++j)
+    for (size_t j = 0; j < KILL[i]->size(); ++j)
       if (killSet.find(availablePairs[j].first) != killSet.end() ||
           killSet.find(availablePairs[j].second) != killSet.end())
         KILL[i]->set(j);
@@ -992,8 +992,10 @@ static void initCopySets(std::vector<BitVec*>& COPY, std::vector<size_t>& ends,
 // When these are corrected and the test becomes true, then we can drop back
 // to the simpler form given here:
 #ifdef INLINING_DOES_NOT_LEAVE_INTERNAL_BASIC_BLOCKS_WITHOUT_PREDECESSORS
-static void initInSets(std::vector<BitVec*>& IN, size_t nbbs)
+static void initInSets(std::vector<BitVec*>& IN, FnSymbol* fn)
 {
+  size_t nbbs = fn->basicBlocks->size();
+
   // Note that we start with i = 1, so that IN[0] is left as all zeroes.
   for (size_t i = 1; i < nbbs; i++)
     IN[i]->set();

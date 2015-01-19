@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,8 +23,14 @@
 #include "expr.h"
 #include "stlUtil.h"
 
-WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* initBody) :
-  LoopStmt(initBody)
+WhileStmt::WhileStmt(Expr* condExpr, BlockStmt* body) :
+  LoopStmt(body)
+{
+  mCondExpr = condExpr;
+}
+
+WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* body) :
+  LoopStmt(body)
 {
   mCondExpr = (var != 0) ? new SymExpr(var) : 0;
 }
@@ -40,7 +46,7 @@ void WhileStmt::copyShare(const WhileStmt& ref,
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  SymExpr*   condExpr  = ref.condExprGet();
+  Expr*      condExpr  = ref.condExprGet();
 
   astloc         = ref.astloc;
   blockTag       = ref.blockTag;
@@ -80,9 +86,28 @@ bool WhileStmt::isWhileStmt() const
   return true;
 }
 
-SymExpr* WhileStmt::condExprGet() const
+Expr* WhileStmt::condExprGet() const
 {
   return mCondExpr;
+}
+
+// Much of the compiler expects the condExpr to be a
+// SymExpr that references a tmpVariable for the loop.
+SymExpr* WhileStmt::condExprForTmpVariableGet() const
+{
+  SymExpr* retval = toSymExpr(mCondExpr);
+
+  INT_ASSERT(retval != 0);
+
+  return retval;
+}
+
+void WhileStmt::replaceChild(Expr* oldAst, Expr* newAst)
+{
+  if (oldAst == mCondExpr)
+    mCondExpr = newAst;
+  else
+    BlockStmt::replaceChild(oldAst, newAst);
 }
 
 CallExpr* WhileStmt::blockInfoGet() const
@@ -120,9 +145,10 @@ bool WhileStmt::deadBlockCleanup()
 
 void WhileStmt::checkConstLoops()
 {
-  bool foundit = false;
+  SymExpr* tmpVar  = condExprForTmpVariableGet();
+  bool     foundit = false;
 
-  if (VarSymbol* condSym = toVarSymbol(mCondExpr->var))
+  if (VarSymbol* condSym = toVarSymbol(tmpVar->var))
   {
     if (SymExpr* condDef = getWhileCondDef(condSym))
     {

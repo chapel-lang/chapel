@@ -52,6 +52,7 @@ $execopts = "";
 $startdate = "-1";
 $numtrials = "";
 $cronrecipient = "";
+$junit_xml = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -130,6 +131,8 @@ while (@ARGV) {
         $cronrecipient = shift @ARGV;
     } elsif ($flag eq "-llvm") {
         $llvm = 1;
+    } elsif ($flag eq "-junit-xml") {
+        $junit_xml = 1;
     } else {
         $printusage = 1;
         last;
@@ -191,6 +194,7 @@ if ($printusage == 1) {
     print "\t-no-futures  : do not run future tests\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
     print "\t-cron-recipient : send -cron emails to this address instead of SourceForge mailing list(s)\n";
+    print "\t-junit-xml   : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
     exit 1;
 }
 
@@ -200,6 +204,13 @@ system("printenv");
 $modulecmd = "/sw/modules/bin/linux/modulecmd"; # heuristic
 if (-x $modulecmd) { system("$modulecmd bash list"); }
 print "\n";
+
+# When JENKINS_URL is set in environment, assume running in jenkins job and
+# default to generating jUnit XML report.
+if (exists($ENV{"JENKINS_URL"})) {
+    $junit_xml = 1;
+}
+
 
 #
 # get uniquifiers
@@ -589,6 +600,10 @@ if ($execopts ne "") {
 $testflags = "$testflags -execopts '$execopts'";
 }
 
+if ($junit_xml == 1) {
+    $testflags = "$testflags -junit-xml";
+}
+
 if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
     $starttestargs = $ENV{"CHPL_START_TEST_ARGS"};
     $testflags = "$testflags $starttestargs";
@@ -615,15 +630,6 @@ if ($runtests == 0) {
     my $svnPerfDir = $ENV{'CHPL_TEST_PERF_DIR'};
     if ($compperformance == 1) {
         $svnPerfDir = $ENV{'CHPL_TEST_COMP_PERF_DIR'};
-    }
-
-    my $svnPerfMsgXtra = ".\nData dir: $svnPerfDir\n(Testing continues despite failure.) Error code";
-    if ($performance == 1 || $compperformance == 1) {
-
-        # FIXME: Update this logic to work with git repo that manages perf
-        #        data. (thomasvandoren, 2014-07-10)
-
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data before running tests" . $svnPerfMsgXtra, 0, 0, 1);
     }
 
     $ENV{'CHPL_HOME'} = $chplhomedir;
@@ -684,20 +690,14 @@ if ($runtests == 0) {
 
 
     if ($performance == 1 or $compperformance == 1) {
-        mysystem("cd $svnPerfDir && svn update", "svn-updating perf data after running tests" . $svnPerfMsgXtra, 0, 0, 1);
-        mysystem("cd $svnPerfDir && find . -name '*.dat' -print0 | xargs -0 svn add  --parents 2>&1 | grep -v '^svn: warning: .* is already under version control\$'", "svn-adding perf data files", 0, 0, 1);  # can fail easily - ignore failures
-        mysystem("cd $svnPerfDir && svn commit -m \"Subject: Perf data update $host  `date '+%F %T'`  $revision\n\nDescription: <empty>\n\"", "svn-committing perf data" . $svnPerfMsgXtra, 0, 0, 1);
-
         # sync the performance graphs over to sourceforge
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/html/ $host --logFile $logdir/syncToSourceForge.errors";
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
-
    }
 
     if ($releasePerformance == 1) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
-        mysystem("cd $svnReleasePerfDir && svn update", "svn-updating release over release perf data after running tests" , 0, 0, 1);
 
         # check to make sure there is a release over release directory
         if (not -e "$svnReleasePerfDir") {

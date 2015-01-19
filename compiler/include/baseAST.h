@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,18 +46,22 @@
   macro(PrimitiveType) sep                         \
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
+                                                   \
   macro(ModuleSymbol) sep                          \
-  macro(VarSymbol) sep                             \
-  macro(ArgSymbol) sep                             \
-  macro(TypeSymbol) sep                            \
-  macro(FnSymbol) sep                              \
-  macro(EnumSymbol) sep                            \
-  macro(LabelSymbol) sep                           \
+  macro(VarSymbol)    sep                          \
+  macro(ArgSymbol)    sep                          \
+  macro(IpeSymbol)    sep                          \
+  macro(TypeSymbol)   sep                          \
+  macro(FnSymbol)     sep                          \
+  macro(EnumSymbol)   sep                          \
+  macro(LabelSymbol)  sep                          \
+                                                   \
   macro(SymExpr) sep                               \
   macro(UnresolvedSymExpr) sep                     \
   macro(DefExpr) sep                               \
   macro(CallExpr) sep                              \
   macro(NamedExpr) sep                             \
+                                                   \
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
@@ -131,6 +135,7 @@ enum AstTag {
   E_ModuleSymbol,
   E_VarSymbol,
   E_ArgSymbol,
+  E_IpeSymbol,
   E_TypeSymbol,
   E_FnSymbol,
   E_EnumSymbol,
@@ -299,6 +304,7 @@ def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
 def_is_ast(VarSymbol)
 def_is_ast(ArgSymbol)
+def_is_ast(IpeSymbol)
 def_is_ast(TypeSymbol)
 def_is_ast(FnSymbol)
 def_is_ast(EnumSymbol)
@@ -335,6 +341,7 @@ def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
 def_to_ast(VarSymbol)
 def_to_ast(ArgSymbol)
+def_to_ast(IpeSymbol)
 def_to_ast(TypeSymbol)
 def_to_ast(FnSymbol)
 def_to_ast(EnumSymbol)

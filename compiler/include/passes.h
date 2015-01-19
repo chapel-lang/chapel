@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -96,7 +96,8 @@ void buildDefaultDestructor(AggregateType* ct);
 
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;
-void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars);
+extern Symbol* markUnspecified;
+void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars, bool usePrune);
 void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore);
 
 // flattenFunctions.cpp
@@ -110,5 +111,8 @@ bool isRefWideString(Type* t);
 bool isWideString(Type* t);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
+
+// type.cpp
+void initForTaskIntents();
 
 #endif

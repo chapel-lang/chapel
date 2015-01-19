@@ -34,6 +34,13 @@ for g in actual_dot_graph_files:
     if graphfilename not in graphfiles_dot_graph_files:
         print('[Warning: {0} is missing from GRAPHFILES]'.format(graphfilename))
 
+# check that all the .graph files listed in one of the GRAPHFILES exist
+for g in graphfiles_dot_graph_files:
+    # get the abs path for the .graph files listed in GRAPHFILES
+    graphfilename = os.path.join(testdir, g)
+    if graphfilename not in actual_dot_graph_files:
+        print('[Warning: {0} listed in GRAPHFILES does not exist]'.format(graphfilename))
+
 # check that no are no .graph files with duplicate names
 graphset = {}
 for g in actual_dot_graph_files:

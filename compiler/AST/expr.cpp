@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -123,6 +123,21 @@ Expr::~Expr() {
 
 bool Expr::isStmt() const {
   return false;
+}
+
+// IPE: Provide the name of the symbol/variable being defined
+const char* DefExpr::name() const {
+  const char* retval = 0;
+
+  if (isVarSymbol(sym)    == true ||
+      isArgSymbol(sym)    == true ||
+      isTypeSymbol(sym)   == true ||
+      isFnSymbol(sym)     == true ||
+      isModuleSymbol(sym) == true) {
+    retval = sym->name;
+  }
+
+  return retval;
 }
 
 // Return true if this expression is a ModuleDefinition i.e. it

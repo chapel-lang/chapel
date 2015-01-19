@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,6 @@
 
 // DefaultRectangular.chpl
 //
-pragma "no use ChapelStandard"
 module DefaultRectangular {
 
   config const dataParTasksPerLocale = 0;
@@ -39,6 +38,7 @@ module DefaultRectangular {
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
+  config param assertNoSlicing = false;
   
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -191,10 +191,9 @@ module DefaultRectangular {
           coforall chunk in 0..#numChunks { // make sure coforall on can trigger
             on here.getChild(chunk) {
               if debugDataParNuma {
-                extern proc chpl_task_getSubloc(): chpl_sublocID_t;
-                if chunk!=chpl_task_getSubloc() then
+                if chunk!=chpl_getSubloc() then
                   writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
-                          ", on "+chpl_task_getSubloc()+") ***");
+                          ", on "+chpl_getSubloc()+") ***");
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales
@@ -701,8 +700,21 @@ module DefaultRectangular {
         return sum;
       } else {
         var sum = if earlyShiftData then 0:idxType else origin;
-        for param i in 1..rank do
-          sum += ind(i) * blk(i);
+
+        // If the user asserts that there is no slicing in their program,
+        // then blk(rank) == 1. Knowing this, we need not multiply the final
+        // ind(...) by anything. This may lead to performance improvements for
+        // array accesses.
+        if assertNoSlicing {
+          for param i in 1..rank-1 {
+            sum += ind(i) * blk(i);
+          }
+          sum += ind(rank);
+        } else {
+          for param i in 1..rank {
+            sum += ind(i) * blk(i);
+          }
+        }
         if !earlyShiftData then sum -= factoredOffs;
         return sum;
       }

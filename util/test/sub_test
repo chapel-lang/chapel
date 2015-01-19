@@ -177,15 +177,13 @@ def SuckOutputWithTimeout(stream, timeout):
             # to timeout  which doesn't seem quite right either.
     return buffer
 
-def LauncherTimeoutArgs(timeout):
+def LauncherTimeoutArgs(seconds):
     if useLauncherTimeout == 'pbs' or useLauncherTimeout == 'slurm':
         # --walltime=hh:mm:ss
-        hours = 0
-        minutes = timeout / 60  # might be OK even if over an hour
-        seconds = timeout % 60
-        option = '--walltime=' + str(hours) + ':' + str(minutes) \
-                 + ':' + str(seconds)
-        return [option]
+        m, s = divmod(seconds, 60)
+        h, m = divmod(m, 60)
+        fmttime = '--walltime={0:02d}:{1:02d}:{2:02d}'.format(h, m, s)
+        return [fmttime]
     else:
         Fatal('LauncherTimeoutArgs encountered an unknown format spec: ' + \
               useLauncherTimeout)
@@ -284,9 +282,46 @@ def cleanup(execname):
                 os.unlink(execname)
             if os.path.isfile(execname+'_real'):
                 os.unlink(execname+'_real')
-    except IOError:
-        sys.stdout.write('[Warning: could not remove {0} ]\n'.format(execname))
-    return
+    except (IOError, OSError) as ex:
+        # If the error is "Device or resource busy", call lsof on the file (or
+        # handle for windows) to see what is holding the file handle, to help
+        # debug the issue.
+        if isinstance(ex, OSError) and ex.errno == 16:
+            handle = which('handle')
+            lsof = which('lsof')
+            if handle is not None:
+                sys.stdout.write('[Inspecting open file handles with: {0}\n'.format(handle))
+                subprocess.Popen([handle]).communicate()
+            elif lsof is not None:
+                cmd = [lsof, execname]
+                sys.stdout.write('[Inspecting open file handles with: {0}\n'.format(' '.join(cmd)))
+                subprocess.Popen(cmd).communicate()
+
+        # Do not print the warning for cygwin32 when errno is 16 (Device or resource busy).
+        if not (getattr(ex, 'errno', 0) == 16 and platform == 'cygwin32'):
+            sys.stdout.write('[Warning: could not remove {0}: {1}]\n'.format(execname, ex))
+
+def which(program):
+    """Returns absolute path to program, if it exists in $PATH. If not found,
+    returns None.
+
+    From: http://stackoverflow.com/a/377028
+    """
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ.get('PATH', '').split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+
 
 # print (compopts: XX, execopts: XX) for later decoding of failed tests
 def printTestVariation(compoptsnum, execoptsnum=0):
@@ -403,7 +438,13 @@ def runSkipIf(skipifName):
     name = './' + skipifName
     # Already a file because os.R_OK is true?
     if os.access(name, os.X_OK):
-        skiptest = subprocess.Popen(name, stdout=subprocess.PIPE).communicate()[0]
+        env_cmd = [os.path.join(utildir, 'printchplenv'), '--simple']
+        chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
+        chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
+
+        skipif_env = os.environ.copy()
+        skipif_env.update(chpl_env)
+        skiptest = subprocess.Popen([name], stdout=subprocess.PIPE, env=skipif_env).communicate()[0]
     else:
         skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
     return skiptest
@@ -863,6 +904,15 @@ for testname in testsrc:
         redirectin = '/dev/null'
     else:
         redirectin = None
+
+    # If there is a .skipif file, put it at front of list.
+    skipif_i = -1
+    for i, test_filename_file in enumerate(test_filename_files):
+        if test_filename_file.endswith('.skipif'):
+            skipif_i = i
+            break
+    if skipif_i > 0:
+        test_filename_files.insert(0, test_filename_files.pop(skipif_i))
 
     # Deal with these files
     do_not_test=False

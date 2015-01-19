@@ -1,2 +1,0 @@
-warning: type Foo does not currently support noinit, using default initialization
-{bar = 4, baz = true}

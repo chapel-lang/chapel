@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -287,8 +287,8 @@ Expr*
 BlockStmt::getFirstExpr() {
   Expr* retval = 0;
 
-  if (blockInfoGet() != 0)
-    retval = blockInfoGet()->getFirstExpr();
+  if (blockInfo != 0)
+    retval = blockInfo->getFirstExpr();
 
   else if (body.head      != 0)
     retval = body.head->getFirstExpr();
@@ -303,7 +303,7 @@ Expr*
 BlockStmt::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
-  if (expr == blockInfoGet() && body.head != 0)
+  if (expr == blockInfo && body.head != 0)
     retval = body.head->getFirstExpr();
 
   return retval;
@@ -351,8 +351,18 @@ BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
 
 
 bool
+BlockStmt::isRealBlockStmt() const {
+  return blockInfo == 0;
+}
+
+bool
 BlockStmt::isScopeless() const {
   return blockTag == BLOCK_SCOPELESS;
+}
+
+bool
+BlockStmt::isBlockType(PrimitiveTag tag) const {
+  return blockInfo != 0 && blockInfo->isPrimitive(tag) == true;
 }
 
 bool
@@ -492,7 +502,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
 
-    if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
+    if (bs && bs->blockTag == BLOCK_NORMAL && bs->isRealBlockStmt())
       thenStmt = bs;
     else
       thenStmt = new BlockStmt(s);
@@ -504,7 +514,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
     if (Expr* s = toExpr(iElseStmt)) {
       BlockStmt* bs = toBlockStmt(s);
 
-      if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
+      if (bs && bs->blockTag == BLOCK_NORMAL && bs->isRealBlockStmt())
         elseStmt = bs;
       else
         elseStmt = new BlockStmt(s);

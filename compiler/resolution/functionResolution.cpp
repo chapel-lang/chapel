@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,7 @@
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
+#include "resolveIntents.h"
 #include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -374,6 +375,7 @@ static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
+static void removeCompilerWarnings();
 static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
@@ -2729,21 +2731,6 @@ getVisibleFunctions(BlockStmt* block,
   return NULL;
 }
 
-static void replaceActualWithDeref(CallExpr* call, Type* derefType,
-                                   SymExpr* actualExpr, Symbol* actualSym,
-                                   CallInfo* info, int argNum)
-{
-  SET_LINENO(call);
-  Expr* stmt = call->getStmtExpr();
-  VarSymbol* derefTmp = newTemp("derefTmp", derefType);
-  stmt->insertBefore(new DefExpr(derefTmp));
-  stmt->insertBefore(new_Expr("'move'(%S, 'deref'(%S))", derefTmp, actualSym));
-  actualExpr->var = derefTmp;
-  INT_ASSERT(info->actuals.v[argNum] == actualSym);
-  info->actuals.v[argNum] = derefTmp;
-}
-
-
 static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) {
   INT_ASSERT(taskFn);
   if (!needsCapture(taskFn)) {
@@ -2782,10 +2769,11 @@ static void handleCaptureArgs(CallExpr* call, FnSymbol* taskFn, CallInfo* info) 
       Type* deref = varActual->type->getValType();
       if (needsCapture(deref)) {
         formal->type = deref;
-        replaceActualWithDeref(call, deref, symexpActual, varActual,
-                               info, argNum);
-      } else {
-        // Probably OK to leave as-is.
+        // If the formal has a ref intent, DO need a ref type => restore it.
+        resolveArgIntent(formal);
+        if (formal->intent & INTENT_FLAG_REF) {
+          formal->type = varActual->type;
+        }
       }
     }
 
@@ -4338,7 +4326,8 @@ isNormalField(Symbol* field)
 
 static CallExpr* toPrimToLeaderCall(Expr* expr) {
   if (CallExpr* call = toCallExpr(expr))
-    if (call->isPrimitive(PRIM_TO_LEADER))
+    if (call->isPrimitive(PRIM_TO_LEADER) ||
+        call->isPrimitive(PRIM_TO_STANDALONE))
       return call;
   return NULL;
 }
@@ -4673,6 +4662,18 @@ preFold(Expr* expr) {
       // No default value yet, so defer resolution of this init
       // primitive until record initializer resolution.
     } else if (call->isPrimitive(PRIM_NO_INIT)) {
+      // Lydia note: fUseNoinit does not control this section.  This was
+      // necessary because with the definition of type defaults in the module
+      // code, return temporary variables would cause an infinite loop by
+      // trying to default initialize within the default initialization
+      // definition.  (It is safe for these temporaries to skip default
+      // initialization, as they will always be assigned a value before they
+      // are returned.)  Thus noinit must remain attached to these temporaries,
+      // even if --no-use-noinit is thrown.  This is an implementation detail
+      // that the user does not need to care about.
+
+      // fUseNoinit controls the insertion of PRIM_NO_INIT statements in the
+      // normalize pass.
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       if (!se->var->hasFlag(FLAG_TYPE_VARIABLE))
@@ -6677,10 +6678,18 @@ resolve() {
 
   resolveExternVarSymbols();
 
-  resolveUses(mainModule);
-  resolveUses(printModuleInitModule);
+  // --ipe does not build a mainModule
+  if (mainModule)
+    resolveUses(mainModule);
 
-  resolveFns(chpl_gen_main);
+  // --ipe does not build printModuleInitModule
+  if (printModuleInitModule)
+    resolveUses(printModuleInitModule);
+
+  // --ipe does not build chpl_gen_main
+  if (chpl_gen_main)
+    resolveFns(chpl_gen_main);
+
   USR_STOP();
 
   resolveExports();
@@ -7309,6 +7318,7 @@ pruneResolvedTree() {
   removeWhereClauses();
   removeMootFields();
   expandInitFieldPrims();
+  removeCompilerWarnings();
 }
 
 static void removeUnusedFunctions() {
@@ -7318,6 +7328,18 @@ static void removeUnusedFunctions() {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (! fn->isResolved() || fn->retTag == RET_PARAM)
         fn->defPoint->remove();
+    }
+  }
+}
+
+static void removeCompilerWarnings() {
+  // Warnings have now been issued, no need to keep the function around.
+  // Remove calls to compilerWarning and let dead code elimination handle
+  // the rest.
+  typedef MapElem<FnSymbol*, const char*> FnSymbolElem;
+  form_Map(FnSymbolElem, el, innerCompilerWarningMap) {
+    forv_Vec(CallExpr, call, *(el->key->calledBy)) {
+      call->remove();
     }
   }
 }

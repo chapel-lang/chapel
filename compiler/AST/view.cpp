@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,7 @@
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "IpeSymbol.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "stmt.h"

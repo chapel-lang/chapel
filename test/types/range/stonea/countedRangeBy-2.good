@@ -1,1 +1,1 @@
-countedRangeBy-2.chpl:1: error: unresolved call 'by(4, 2)'
+countedRangeBy-2.chpl:1: error: the first argument of the 'by' operator is not a range

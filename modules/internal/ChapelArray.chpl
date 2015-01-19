@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,6 @@
 
 // ChapelArray.chpl
 //
-pragma "no use ChapelStandard"
 module ChapelArray {
 
   use ChapelBase; // For opaque type.
@@ -872,6 +871,11 @@ module ChapelArray {
 
     proc member(i: _value.idxType ...rank) {
       return member(i);
+    }
+
+    proc newAlias() {
+      var x = _value;
+      return _newDomain(x);
     }
 
     /*
