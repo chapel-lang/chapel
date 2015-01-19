@@ -109,7 +109,7 @@ static bool isInWithClause(SymExpr* se) {
 // A forall-intents variation on findOuterVars() in createTaskFunctions.cpp:
 // Find all symbols used in 'block' and defined outside of it.
 //
-static void findOuterVars(BlockStmt* block, SymbolMap* uses) {
+static void findOuterVars(BlockStmt* block, SymbolMap& uses) {
   std::vector<SymExpr*> symExprs;
   collectSymExprsSTL(block, symExprs);
   for_vector(SymExpr, symExpr, symExprs) {
@@ -118,7 +118,7 @@ static void findOuterVars(BlockStmt* block, SymbolMap* uses) {
       if (!isCorrespIndexVar(block, sym) &&
           !isInWithClause(symExpr)       &&
           isOuterVar(sym, block))
-        uses->put(sym, markUnspecified);
+        uses.put(sym, markUnspecified);
   }
 }
 
@@ -130,13 +130,13 @@ static void findOuterVars(BlockStmt* block, SymbolMap* uses) {
 // so an ordered traversal of the two lists gives matching pairs.
 // Count the number of these variables into 'numOuterVars'.
 //
-static void createShadowVars(SymbolMap* uses, int& numOuterVars,
+static void createShadowVars(SymbolMap& uses, int& numOuterVars,
                              std::vector<Symbol*>& outerVars,
                              std::vector<Symbol*>& shadowVars)
 {
   numOuterVars = 0;
 
-  form_Map(SymbolMapElem, e, *uses) {
+  form_Map(SymbolMapElem, e, uses) {
     if (e->value != markPruned) {
       Symbol* ovar = e->key;
       // If ovar is a reference, e.g. an index variable of
@@ -302,11 +302,11 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
 //   if (e->key) --> INT_ASSERT
 //
 static void
-replaceVarUsesWithFormals(Expr* block, SymbolMap* vars) {
-  if (vars->n == 0) return;
+replaceVarUsesWithFormals(Expr* block, SymbolMap& vars) {
+  if (vars.n == 0) return;
   std::vector<SymExpr*> symExprs;
   collectSymExprsSTL(block, symExprs);
-  form_Map(SymbolMapElem, e, *vars) {
+  form_Map(SymbolMapElem, e, vars) {
     Symbol* sym = e->key;
     if (e->value != markPruned) {
       SET_LINENO(sym);
@@ -483,30 +483,29 @@ static void getIterSymbols(BlockStmt* body, Symbol*& serIterSym,
   leadIdxCopySym = leadIdxCopySE->var;
 }
 
-static void getOuterVars(BlockStmt* body, SymbolMap*& uses)
+static void getOuterVars(BlockStmt* body, SymbolMap& uses)
 {
   CallExpr* const byrefVars = body->byrefVars;
   INT_ASSERT(byrefVars->isPrimitive(PRIM_FORALL_LOOP));
 
   // do the same as in 'if (needsCapture(fn))' createTaskFunctions()
-  uses = new SymbolMap();
   findOuterVars(body, uses);
-  pruneOuterVars(uses, byrefVars, true);
-  pruneThisArg(body->parentSymbol, uses, true);
+  pruneOuterVars(&uses, byrefVars, true);
+  pruneThisArg(body->parentSymbol, &uses, true);
 }
 
 static void verifyOuterVars(BlockStmt* body2,
-                            SymbolMap* uses1, int numOuterVars1)
+                            SymbolMap& uses1, int numOuterVars1)
 {
-  SymbolMap* uses2;
+  SymbolMap uses2;
   getOuterVars(body2, uses2);
 
   int numOuterVars2 = 0;
-  form_Map(SymbolMapElem, e, *uses2) {
+  form_Map(SymbolMapElem, e, uses2) {
     if (e->value != markPruned) {
       numOuterVars2++;
       Symbol* var2 = e->key;
-      SymbolMapElem* elem1 = uses1->get_record(var2);
+      SymbolMapElem* elem1 = uses1.get_record(var2);
       INT_ASSERT(elem1 && elem1->key == var2);
     }
   }
@@ -556,7 +555,7 @@ void implementForallIntents1(DefExpr* defChplIter)
   // Stash away misc things for comparison with the second one.
 
   Symbol *serIterSym, *leadIdxSym, *leadIdxCopySym;
-  SymbolMap* uses1;
+  SymbolMap uses1;
 
   if (forallBody2)
     getIterSymbols(forallBody2, serIterSym, leadIdxSym, leadIdxCopySym);
