@@ -361,17 +361,15 @@ module ChapelLocale {
   pragma "insert line file info"
   export
   proc chpl_getLocaleID(ref localeID: chpl_localeID_t) {
-    if localeModelHasSublocales then
-      localeID = chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
-    else
-      localeID = chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
+    localeID = here_id;
   }
 
   // Return the locale ID of the current locale
   inline proc here_id {
-    var localeID: chpl_localeID_t;
-    chpl_getLocaleID(localeID);
-    return localeID;
+     if localeModelHasSublocales then
+      return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
+    else
+      return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
   }
   // Return the current locale
   inline proc here {
