@@ -287,8 +287,8 @@ Expr*
 BlockStmt::getFirstExpr() {
   Expr* retval = 0;
 
-  if (blockInfoGet() != 0)
-    retval = blockInfoGet()->getFirstExpr();
+  if (blockInfo != 0)
+    retval = blockInfo->getFirstExpr();
 
   else if (body.head      != 0)
     retval = body.head->getFirstExpr();
@@ -303,7 +303,7 @@ Expr*
 BlockStmt::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
-  if (expr == blockInfoGet() && body.head != 0)
+  if (expr == blockInfo && body.head != 0)
     retval = body.head->getFirstExpr();
 
   return retval;
@@ -502,7 +502,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
 
-    if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
+    if (bs && bs->blockTag == BLOCK_NORMAL && bs->isRealBlockStmt())
       thenStmt = bs;
     else
       thenStmt = new BlockStmt(s);
@@ -514,7 +514,7 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
     if (Expr* s = toExpr(iElseStmt)) {
       BlockStmt* bs = toBlockStmt(s);
 
-      if (bs && bs->blockTag == BLOCK_NORMAL && !bs->blockInfoGet())
+      if (bs && bs->blockTag == BLOCK_NORMAL && bs->isRealBlockStmt())
         elseStmt = bs;
       else
         elseStmt = new BlockStmt(s);
