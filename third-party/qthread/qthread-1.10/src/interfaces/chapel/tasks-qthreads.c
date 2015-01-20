@@ -173,7 +173,7 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
     // uncontested locks do not have to be consecutive. Also note that
     // the number of uncontested locks is a lossy counter. Currently a
     // "lot" is defined as ~100 uncontested locks, with care taken to
-    // note yield on the first uncontested lock.
+    // not yield on the first uncontested lock.
     //
 
     l = qthread_incr(&s->lockers_in, 1);
