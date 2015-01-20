@@ -167,13 +167,15 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
     PROFILE_INCR(profile_sync_lock, 1);
 
     //
-    // To prevent starvation due to never switching away from a task
-    // that is spinning while doing readXX() on a sync variable, yield
-    // if this sync var has a "lot" of uncontested locks. Note that the
-    // uncontested locks do not have to be consecutive. Also note that
-    // the number of uncontested locks is a lossy counter. Currently a
-    // "lot" is defined as ~100 uncontested locks, with care taken to
-    // not yield on the first uncontested lock.
+    // To prevent starvation due to never switching away from a task that is
+    // spinning while doing readXX() on a sync variable, yield if this sync var
+    // has a "lot" of uncontested locks. Note that the uncontested locks do not
+    // have to be consecutive. Also note that the number of uncontested locks
+    // is a lossy counter. Currently a "lot" is defined as ~100 uncontested
+    // locks, with care taken to not yield on the first uncontested lock.
+    //
+    // If real qthreads sync vars were used, it's possible this wouldn't be
+    // needed.
     //
 
     l = qthread_incr(&s->lockers_in, 1);
