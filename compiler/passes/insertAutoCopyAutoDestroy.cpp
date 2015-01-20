@@ -345,6 +345,9 @@ static bool isCreated(SymExpr* se)
            case PRIM_GET_MEMBER_VALUE:
             // Returns a bitwise copy of the referenced field which is, as a
             // consequence, unowned.
+           case PRIM_ARRAY_GET_VALUE:
+            // Returns a bitwise copy of the selected array element which is, as a
+            // consequence, unowned.
             return false;
           }
         }
@@ -441,6 +444,7 @@ static bool isConsumed(SymExpr* se)
         break;
 
        case PRIM_SET_MEMBER:
+       case PRIM_ARRAY_SET_FIRST:
         if (call->get(3) == se)
           return true;
         break;
