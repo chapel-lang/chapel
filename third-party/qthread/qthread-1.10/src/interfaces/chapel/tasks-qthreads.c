@@ -169,48 +169,25 @@ void chpl_sync_lock(chpl_sync_aux_t *s)
     //
     // To prevent starvation due to never switching away from a task
     // that is spinning while doing readXX() on a sync variable, yield
-    // if this sync var has a "lot" of uncontested locks in a row. Note that
-    // the number of uncontested locks is a lossy counter.
+    // if this sync var has a "lot" of uncontested locks. Note that the
+    // uncontested locks do not have to be consecutive. Also note that
+    // the number of uncontested locks is a lossy counter. Currently a
+    // "lot" is defined as ~100 uncontested locks, with care taken to
+    // note yield on the first uncontested lock.
     //
 
     l = qthread_incr(&s->lockers_in, 1);
 
     while (l != s->lockers_out) {
-      uncontested_lock = false;
-      qthread_yield();
+        uncontested_lock = false;
+        qthread_yield();
     }
 
     if (uncontested_lock) {
-      if ((s->uncontested_locks++ & 0x5F) == 0x5F) {
-        qthread_yield();
-      }
+        if ((++s->uncontested_locks & 0x5F) == 0) {
+            qthread_yield();
+        }
     }
-
-// TODO does it make sense to be doing a qthread_yield above? Should it be a
-// chpl_task_yield()? The recent issue greg ran into with code being called
-// from the main process on non-zero locales is making me wonder. I'm pretty
-// sure it should be a qthread_yield and that a non-qthread would never call
-// this function since I think the fast-on optimization will be thwarted by
-// anything calling a sync var lock. This is mostly a note to double check this
-// with Greg.
-
-// TODO test the performance implications of this change (and see if it
-// hurts to use the version below.)
-
-// This version is probably a little clearer about the intent, and I
-// doubt if there'll be any real performance difference between this and
-// the above version. I went with the above version because it is sort
-// of how we checked for when we needed to do yield in the unlock
-// before, but we were forced to do that since we we're using
-// s->lockers_out to key the yield, and we couldn't reset that.
-/*
-   if (uncontested_lock) {
-      if (s->uncontested_locks++ > 100) {
-        s->uncontested_locks = 0;
-        qthread_yield();
-      }
-    }
-*/
 }
 
 void chpl_sync_unlock(chpl_sync_aux_t *s)
