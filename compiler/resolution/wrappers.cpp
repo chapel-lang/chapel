@@ -289,7 +289,7 @@ buildDefaultWrapper(FnSymbol* fn,
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), copyTemp));
+                             new_StringSymbol(field->name), copyTemp));
               copy_map.put(formal, copyTemp);
               call->argList.tail->replace(new SymExpr(copyTemp));
             }

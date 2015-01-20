@@ -382,8 +382,9 @@ static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
-static void resolveRuntimeTypeDestructor(Type* type);
-static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct);
+// static void resolveRuntimeTypeDestructor(Type* type);
+// static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct);
+static void buildRuntimeTypeInitCopyFn(AggregateType* ct);
 static void removeUnusedGlobals();
 static void removeParamArgs();
 static void removeRandomPrimitives();
@@ -1673,6 +1674,19 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
             typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(paramMap.get(formal))));
           }
         }
+      }
+    }
+    if (fn->getReturnSymbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+    {
+      // This happens only with runtime types.
+      // Just pass along the type arguments if there are any.
+      for_actuals(actual, info.call)
+      {
+        if (NamedExpr* ne = toNamedExpr(actual))
+          actual = ne->actual;
+        if (SymExpr* se = toSymExpr(actual))
+          if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
+            typeConstructorCall->insertAtTail(se->var);
       }
     }
     info.call->insertBefore(typeConstructorCall);
@@ -7209,7 +7223,6 @@ static AggregateType*
 buildRuntimeTypeInfo(FnSymbol* fn) {
   SET_LINENO(fn);
   AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
-  TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
     if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
       continue;
@@ -7220,9 +7233,30 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
     if (formal->hasFlag(FLAG_TYPE_VARIABLE))
       field->addFlag(FLAG_TYPE_VARIABLE);
   }
-  theProgram->block->insertAtTail(new DefExpr(ts));
+
+  // We expect the function name to start with "chpl__build" and then be
+  // followed by one of:
+  //  DomainRuntimeType
+  //  ArrayRuntimeType
+  const char prefix[] = "chpl__build";
+  const size_t prefix_len = sizeof(prefix) - 1; // Compile-time constant.  Trim
+                                                // off trailing NUL.
+  static size_t rtt_index = 0;  // Total kludge.  Would prefer to push the
+                                // definition of RTTs in to module code.
+  const size_t bufsiz = 24; // More than enough for 64 bits worth of decimal number,
+                   // terminating NUL included
+  char buffer[bufsiz]; 
+  // This probably has to be adjusted for 32-bit platforms.
+  snprintf(buffer, bufsiz, "%ld", ++rtt_index);
+  const char* name = astr(strstr(fn->name, prefix) + prefix_len, buffer);
+  TypeSymbol* ts = new TypeSymbol(name, ct);
+//  ts->addFlag(FLAG_NO_CODEGEN);
+  INT_ASSERT(ct->symbol == ts); // If so, we can just say "ts" here.
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
+  theProgram->block->insertAtTail(new DefExpr(ts));
+
   makeRefType(ts->type); // make sure the new type has a ref type.
+
   return ct;
 }
 
@@ -7496,7 +7530,8 @@ static void removeRandomPrimitive(CallExpr* call)
       // Replace string literals with field symbols in member primitives
       Type* baseType = call->get(1)->typeInfo();
       if (baseType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-        break;
+        if (call->parentSymbol->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+          break;
 
       if (!call->parentSymbol->hasFlag(FLAG_REF) &&
           baseType->symbol->hasFlag(FLAG_REF))
@@ -7696,10 +7731,12 @@ static void buildRuntimeTypeInitFns() {
         // Build chpl__convertRuntimeTypeToValue() instance.
         buildRuntimeTypeInitFn(fn, runtimeType);
 
-        // Build destructor functions.
+        // Build special functions for this runtime type, resolve them and add
+        // them to their respective maps for use in AMM.
+        build_constructors(runtimeType);
         buildDefaultDestructor(runtimeType);
-        resolveRuntimeTypeDestructor(runtimeType);
-        buildRuntimeTypeAutoDestroyFn(runtimeType);
+        buildRuntimeTypeInitCopyFn(runtimeType);
+        resolveAutoCopy(runtimeType);
         resolveAutoDestroy(runtimeType);
       }
     }
@@ -7764,7 +7801,8 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
         ! field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
       continue;
 
-    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, formal));
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var,
+                                     new_StringSymbol(field->name), formal));
   }
 
   block->insertAtTail(new CallExpr(PRIM_RETURN, var));
@@ -7774,6 +7812,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
 }
 
 
+#if 0 // Needed?
 static void
 resolveRuntimeTypeDestructor(Type* type) {
   SET_LINENO(type->symbol);
@@ -7785,8 +7824,10 @@ resolveRuntimeTypeDestructor(Type* type) {
   type->destructor = fn;
   tmp->defPoint->remove();
 }
+#endif
 
 
+#if 0 // Needed?
 // Build an autoDestroy function for the given runtime type, and insert it into
 // the autoDestroyMap.
 static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct)
@@ -7807,6 +7848,43 @@ static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct)
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
   ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+}
+#endif
+
+
+static void buildRuntimeTypeInitCopyFn(AggregateType* ct)
+{
+  SET_LINENO(ct->symbol->defPoint);
+
+  FnSymbol* fn = new FnSymbol("chpl__initCopy");
+  fn->addFlag(FLAG_INIT_COPY_FN);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->retType = ct;
+
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  arg->addFlag(FLAG_MARKED_GENERIC);
+  fn->insertFormalAtTail(arg);
+
+  CallExpr* call = new CallExpr(ct->defaultInitializer);
+  for_fields(field, ct)
+  {
+    VarSymbol* tmp = newTemp(field->type);
+    if (field->hasFlag(FLAG_TYPE_VARIABLE))
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
+    fn->insertAtTail(new DefExpr(tmp));
+    Symbol* fieldName = new_StringSymbol(field->name);
+    CallExpr* rhs = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fieldName);
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, rhs));
+    call->insertAtTail(new NamedExpr(field->name, new SymExpr(tmp)));
+  }
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+
+  reset_ast_loc(def, ct->symbol);
+  normalize(fn);
 }
 
 
@@ -7963,7 +8041,7 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
             VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, field)));
+                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, new_StringSymbol(field->name))));
             if (formal->hasFlag(FLAG_TYPE_VARIABLE))
               tmp->addFlag(FLAG_TYPE_VARIABLE);
             runtimeTypeToValueCall->insertAtTail(tmp);

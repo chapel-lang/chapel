@@ -612,7 +612,9 @@ static void build_type_constructor(AggregateType* ct) {
         //
         if (field->hasFlag(FLAG_TYPE_VARIABLE) || 
             field->hasFlag(FLAG_PARAM)         || 
-            (!exprType && !init)) {
+            (!exprType && !init &&
+             // This clause was added to handle runtime types.
+             field->type == dtUnknown)) {
 
           ArgSymbol* arg = create_generic_arg(field);
 
