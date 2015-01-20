@@ -90,7 +90,7 @@ def csv_to_json(csvFile, ginfo):
     ginfo.datfname = os.path.splitext(ginfo.datfname)[0]+'.json'
 
     # each label is stored in a single element array because of how it is
-    # parsed, get rid of that array so labels is no a simple array of strings
+    # parsed, get rid of that array so labels is now a simple array of strings
     labels = [a[0] for a in data[0]]
     data = data[1:]
 
