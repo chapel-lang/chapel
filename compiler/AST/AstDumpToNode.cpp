@@ -584,6 +584,7 @@ bool AstDumpToNode::enterParamForLoop(ParamForLoop* node)
   }
 
   mOffset = mOffset + 2;
+  fprintf(mFP, "\n");
   newline();
 
   for_alist(next_ast, node->body)
