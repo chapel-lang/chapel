@@ -17,9 +17,14 @@
  * limitations under the License.
  */
 
-// ChapelStandard.chpl
-//
+#ifndef _IPE_VALUE_H_
+#define _IPE_VALUE_H_
 
-module ChapelStandard {
-  use ChapelBase;
-}
+union IpeValue
+{
+  bool   bValue;
+  long   iValue;
+  double rValue;
+};
+
+#endif

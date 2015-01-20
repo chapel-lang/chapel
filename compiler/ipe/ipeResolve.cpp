@@ -26,33 +26,30 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "VisibleSymbol.h"
-
-class BlockStmt;
-class CallExpr;
-class Expr;
-class FnSymbol;
-class SymExpr;
+#include "WhileDoStmt.h"
 
 static void  rootScopeInit(DefScope* scope);
 
-static Expr* resolve(const DefScope* scope, ModuleSymbol*      module);
-static Expr* resolve(const DefScope* scope, FnSymbol*          fn);
+static Expr* resolve(ModuleSymbol*      module, const DefScope* scope);
+static Expr* resolve(FnSymbol*          fn,     const DefScope* scope);
 
-static Expr* resolve(const DefScope* scope, BlockStmt*         expr);
+static Expr* resolve(BlockStmt*         expr,   const DefScope* scope);
+static Expr* resolve(CondStmt*          expr,   const DefScope* scope);
+static Expr* resolve(WhileDoStmt*       expr,   const DefScope* scope);
 
-static Expr* resolve(const DefScope* scope, Expr*              expr);
-static Expr* resolve(const DefScope* scope, DefExpr*           expr);
-static Expr* resolve(const DefScope* scope, SymExpr*           expr);
-static Expr* resolve(const DefScope* scope, UnresolvedSymExpr* expr);
-static Expr* resolve(const DefScope* scope, CallExpr*          expr);
+static Expr* resolve(Expr*              expr,   const DefScope* scope);
+static Expr* resolve(DefExpr*           expr,   const DefScope* scope);
+static Expr* resolve(SymExpr*           expr,   const DefScope* scope);
+static Expr* resolve(UnresolvedSymExpr* expr,   const DefScope* scope);
+static Expr* resolve(CallExpr*          expr,   const DefScope* scope);
 
-static void  coerceActualToFormal(Expr* actual, Expr* formal);
-static Type* exprType(Expr* expr);
+static Type* typeForExpr(Expr* expr);
 
 static bool  blockCreatesScope(BlockStmt* block);
-static Expr* selectFunc(const DefScope*     scope,
-                        Expr*               funName,
-                        std::vector<Type*>& actualTypes);
+
+static Expr* selectFunc(Expr*               funName,
+                        std::vector<Type*>& actualTypes,
+                        const DefScope*     scope);
 
 static int   sRootModuleIndex = 0;
 
@@ -91,7 +88,7 @@ void ipeResolve()
     {
       if (ModuleSymbol* module = toModuleSymbol(defExpr->sym))
       {
-        resolve(scopeBase, module);
+        resolve(module, scopeBase);
       }
     }
     else
@@ -136,7 +133,48 @@ static void rootScopeInit(DefScope* scope)
 *                                                                           *
 ************************************* | ************************************/
 
-static Expr* resolve(const DefScope* parent, ModuleSymbol* module)
+static Expr* resolve(Expr* expr, const DefScope* scope)
+{
+  Expr* retval = 0;
+
+  if (DefExpr* sel = toDefExpr(expr))
+  {
+    resolve(sel, scope);
+    retval = 0;
+  }
+
+  else if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
+    retval = resolve(sel, scope);
+
+  else if (SymExpr*           sel = toSymExpr(expr))
+    retval = resolve(sel, scope);
+
+  else if (CallExpr*          sel = toCallExpr(expr))
+    retval = resolve(sel, scope);
+
+  else if (WhileDoStmt*       sel = toWhileDoStmt(expr))
+    retval = resolve(sel, scope);
+
+  else if (BlockStmt*         sel = toBlockStmt(expr))
+    retval = resolve(sel, scope);
+
+  else if (CondStmt*          sel = toCondStmt(expr))
+    retval = resolve(sel, scope);
+
+  else
+  {
+    AstDumpToNode logger(stdout);
+
+    printf("resolve Unhandled expr\n");
+    expr->accept(&logger);
+    printf("\n\n\n");
+    INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
+static Expr* resolve(ModuleSymbol* module, const DefScope* parent)
 {
   BlockStmt*      moduleBody = module->block;
   const DefScope* scope      = 0;
@@ -162,13 +200,13 @@ static Expr* resolve(const DefScope* parent, ModuleSymbol* module)
   // Resolve every statement in the block
   for_alist(stmt, moduleBody->body)
   {
-    resolve(scope, stmt);
+    resolve(stmt, scope);
   }
 
   return 0;
 }
 
-static Expr* resolve(const DefScope* parent, FnSymbol* fn)
+static Expr* resolve(FnSymbol* fn, const DefScope* parent)
 {
   const DefScope* scope = 0;
 
@@ -198,89 +236,106 @@ static Expr* resolve(const DefScope* parent, FnSymbol* fn)
     scope = parent;
   }
 
-  resolve(scope, fn->body);
+  if (fn->body)
+    resolve(fn->body,        scope);
+
+  if (fn->retExprType)
+    resolve(fn->retExprType, scope);
 
   return 0;
 }
 
-static Expr* resolve(const DefScope* parent, BlockStmt* bs)
+static Expr* resolve(BlockStmt* blockStmt, const DefScope* parent)
 {
-  DefScope* bodyScope = DefScope::extend(parent);
+  const DefScope* scope = 0;
 
-  for_alist(stmt, bs->body)
+  if ((blockStmt->blockTag & BLOCK_SCOPELESS) == 0)
   {
-    if (DefExpr* defExpr = toDefExpr(stmt))
-      bodyScope->addDefinition(defExpr);
+    DefScope* newScope = DefScope::extend(parent);
+
+    for_alist(stmt, blockStmt->body)
+    {
+      if (DefExpr* defExpr = toDefExpr(stmt))
+        newScope->addDefinition(defExpr);
+    }
+
+    scope = newScope;
   }
-
-  for_alist(expr, bs->body)
-  {
-    resolve(bodyScope, expr);
-  }
-
-  return 0;
-}
-
-static Expr* resolve(const DefScope* scope, Expr* expr)
-{
-  Expr* retval = 0;
-
-  if (DefExpr* sel = toDefExpr(expr))
-  {
-    resolve(scope, sel);
-    retval = 0;
-  }
-
-  else if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
-    retval = resolve(scope, sel);
-
-  else if (SymExpr*           sel = toSymExpr(expr))
-    retval = resolve(scope, sel);
-
-  else if (CallExpr*          sel = toCallExpr(expr))
-    retval = resolve(scope, sel);
-
   else
   {
-    AstDumpToNode logger(stdout);
-
-    printf("resolve Unhandled expr\n");
-    expr->accept(&logger);
-    printf("\n\n\n");
+    scope = parent;
   }
 
-  return retval;
+  for_alist(stmt, blockStmt->body)
+  {
+    Expr* resolvedExpr = resolve(stmt, scope);
+
+    INT_ASSERT(resolvedExpr);
+
+    if (resolvedExpr != stmt)
+      stmt->replace(resolvedExpr);
+  }
+
+  return blockStmt;
 }
 
-static Expr* resolve(const DefScope* scope, DefExpr* defExpr)
+static Expr* resolve(CondStmt* stmt, const DefScope* scope)
+{
+  resolve(stmt->condExpr, scope);
+  resolve(stmt->thenStmt, scope);
+
+  if (stmt->elseStmt != 0)
+    resolve(stmt->elseStmt, scope);
+
+  return stmt;
+}
+
+static Expr* resolve(WhileDoStmt* expr, const DefScope* scope)
+{
+  resolve(expr->condExprGet(), scope);
+
+  for_alist(stmt, expr->body)
+  {
+    Expr* resolvedExpr = resolve(stmt, scope);
+
+    INT_ASSERT(resolvedExpr);
+
+    if (resolvedExpr != stmt)
+      stmt->replace(resolvedExpr);
+  }
+
+  return expr;
+}
+
+static Expr* resolve(DefExpr* defExpr, const DefScope* scope)
 {
   Type* typeType = 0;
   Type* initType = 0;
 
   if (defExpr->exprType != 0)
   {
-    Expr* resolvedExpr = resolve(scope, defExpr->exprType);
+    Expr* resolvedExpr = resolve(defExpr->exprType, scope);
 
     INT_ASSERT(resolvedExpr);
 
     if (resolvedExpr != defExpr->exprType)
       defExpr->exprType->replace(resolvedExpr);
 
-    typeType = exprType(defExpr->exprType);
+    typeType = typeForExpr(defExpr->exprType);
 
     INT_ASSERT(typeType);
   }
 
   if (defExpr->init     != 0)
   {
-    Expr* resolvedExpr = resolve(scope, defExpr->init);
+    Expr* resolvedExpr = resolve(defExpr->init, scope);
 
     INT_ASSERT(resolvedExpr);
 
     if (resolvedExpr != defExpr->init)
       defExpr->init->replace(resolvedExpr);
 
-    initType = exprType(defExpr->init);
+    initType = typeForExpr(defExpr->init);
 
     INT_ASSERT(initType);
   }
@@ -289,7 +344,15 @@ static Expr* resolve(const DefScope* scope, DefExpr* defExpr)
   {
     // It would be a surprise if the parser generated this case
     if (isFnSymbol(defExpr->sym) == false)
+    {
+      AstDumpToNode logger(stdout, 3);
+
+      printf("resolve DefExpr.  Unexpected\n   ");
+      defExpr->accept(&logger);
+      printf("\n\n");
+
       INT_ASSERT(false);
+    }
   }
 
   else if (typeType == 0 && initType != 0)
@@ -312,12 +375,12 @@ static Expr* resolve(const DefScope* scope, DefExpr* defExpr)
   return 0;
 }
 
-static Expr* resolve(const DefScope* scope, SymExpr* expr)
+static Expr* resolve(SymExpr* expr, const DefScope* scope)
 {
   return expr;
 }
 
-static Expr* resolve(const DefScope* scope, UnresolvedSymExpr* expr)
+static Expr* resolve(UnresolvedSymExpr* expr, const DefScope* scope)
 {
   std::vector<VisibleSymbol> symbols;
   Expr*                      retval = 0;
@@ -343,7 +406,7 @@ static Expr* resolve(const DefScope* scope, UnresolvedSymExpr* expr)
   return retval;
 }
 
-static Expr* resolve(const DefScope* scope, CallExpr* expr)
+static Expr* resolve(CallExpr* expr, const DefScope* scope)
 {
   int                count = expr->numActuals();
   std::vector<Type*> actualTypes;
@@ -352,11 +415,27 @@ static Expr* resolve(const DefScope* scope, CallExpr* expr)
   for (int i = 1; i <= count; i++)
   {
     Expr* actual = expr->get(i);
-    Expr* res    = resolve(scope, actual);
-    Type* type   = exprType(res);
+    Expr* res    = resolve(actual, scope);
+    Type* type   = typeForExpr(res);
 
-    INT_ASSERT(res);
-    INT_ASSERT(type);
+    if (res == 0 || type == 0)
+    {
+      AstDumpToNode logger(stdout, 3);
+
+      printf("Failed to handle actual %2d\n   ", i);
+      actual->accept(&logger);
+      printf("\n\n");
+
+      printf("in\n\n   ");
+      expr->accept(&logger);
+      printf("\n\n\n");
+
+      printf("expr->typeInfo()\n\n   ");
+      expr->typeInfo()->accept(&logger);
+      printf("\n\n\n");
+
+      INT_ASSERT(false);
+    }
 
     actualTypes.push_back(type);
 
@@ -367,7 +446,7 @@ static Expr* resolve(const DefScope* scope, CallExpr* expr)
   // Select the function
   if (expr->baseExpr)
   {
-    Expr*     funcRef = selectFunc(scope, expr->baseExpr, actualTypes);
+    Expr*     funcRef = selectFunc(expr->baseExpr, actualTypes, scope);
     FnSymbol* func    = 0;
 
     INT_ASSERT(funcRef);
@@ -378,15 +457,6 @@ static Expr* resolve(const DefScope* scope, CallExpr* expr)
 
     INT_ASSERT(func);
     INT_ASSERT(func->formals.length == count);
-
-    // Coerce, as required, the actual to match the formal
-    for (int i = 1; i <= count; i++)
-    {
-      Expr* actual = expr->get(i);
-      Expr* formal = func->formals.get(i);
-
-      coerceActualToFormal(actual, formal);
-    }
   }
 
   return expr;
@@ -394,38 +464,11 @@ static Expr* resolve(const DefScope* scope, CallExpr* expr)
 
 /************************************ | *************************************
 *                                                                           *
-* 2015-01-06 Preliminary/Simplified                                         *
-*                                                                           *
-************************************* | ************************************/
-
-static void coerceActualToFormal(Expr* actual, Expr* formal)
-{
-  DefExpr*   formalDef = toDefExpr(formal);
-
-  INT_ASSERT(formalDef);
-
-  ArgSymbol* formalSym = toArgSymbol(formalDef->sym);
-
-  INT_ASSERT(formalSym);
-
-  if ((formalSym->intent & INTENT_REF) != 0)
-  {
-    SET_LINENO(actual);
-
-    CallExpr* addrOf = new CallExpr(PRIM_ADDR_OF);
-
-    actual->replace(addrOf);
-    addrOf->insertAtTail(actual);
-  }
-}
-
-/************************************ | *************************************
-*                                                                           *
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
 
-static Type* exprType(Expr* expr)
+static Type* typeForExpr(Expr* expr)
 {
   Type* retval = 0;
 
@@ -446,19 +489,28 @@ static Type* exprType(Expr* expr)
       retval = arg->type;
   }
 
+  else if (CallExpr* callExpr = toCallExpr(expr))
+  {
+    if (callExpr->primitive)
+      retval = callExpr->primitive->returnInfo(callExpr);
+    else
+    {
+      SymExpr* funExpr = toSymExpr(callExpr->baseExpr);
+      INT_ASSERT(funExpr);
+
+      FnSymbol*  fnSym = toFnSymbol(funExpr->var);
+      INT_ASSERT(fnSym);
+
+      BlockStmt* bs    = fnSym->retExprType;
+      INT_ASSERT(bs);
+      INT_ASSERT(bs->length() == 1);
+
+      retval = typeForExpr(bs->body.only());
+    }
+  }
+
   else
     retval = 0;
-
-  if (retval == 0)
-  {
-    AstDumpToNode logger(stdout);
-
-    printf("exprType  Failed to find type for\n   ");
-    expr->accept(&logger);
-    printf("\n\n");
-
-    INT_ASSERT(false);
-  }
 
   return retval;
 }
@@ -490,14 +542,16 @@ static bool blockCreatesScope(BlockStmt* block)
 *                                                                           *
 ************************************* | ************************************/
 
-static void resolveFuncFormals(const DefScope* scope, FnSymbol*  fn);
-static void resolveFormalType (const DefScope* scope, ArgSymbol* formal);
+static void resolveFuncFormals(FnSymbol*  fn,     const DefScope* scope);
+
+static void resolveFormalType (ArgSymbol* formal, const DefScope* scope);
+
 static bool ipeFunctionExactMatch(FnSymbol*           fn,
                                   std::vector<Type*>& actualTypes);
 
-static Expr* selectFunc(const DefScope*     scope,
-                        Expr*               funName,
-                        std::vector<Type*>& actualTypes)
+static Expr* selectFunc(Expr*               funName,
+                        std::vector<Type*>& actualTypes,
+                        const DefScope*     scope)
 {
   Expr* retval = 0;
 
@@ -512,11 +566,11 @@ static Expr* selectFunc(const DefScope*     scope,
     {
       if (FnSymbol* fn = toFnSymbol(visibleSymbols[i].symbol()))
       {
-        resolveFuncFormals(scope, fn);
+        resolveFuncFormals(fn, scope);
       }
     }
 
-    // Determine if there is an exact match
+    // Select a function if there is an exact match
     for (size_t i = 0; i < visibleSymbols.size() && retval == 0; i++)
     {
       if (FnSymbol* fn = toFnSymbol(visibleSymbols[i].symbol()))
@@ -527,12 +581,22 @@ static Expr* selectFunc(const DefScope*     scope,
 
           retval = new SymExpr(fn);
 
-          resolve(visibleSymbols[i].scope(), fn);
+          resolve(fn, visibleSymbols[i].scope());
         }
       }
     }
 
-    INT_ASSERT(retval);
+    if (retval == 0)
+    {
+      AstDumpToNode logger(stdout, 3);
+
+      printf("resolve.selectFunc.  Failed to find a function\n");
+      printf("   ");
+      funName->accept(&logger);
+      printf("\n\n\n");
+
+      INT_ASSERT(false);
+    }
   }
 
   else
@@ -547,7 +611,7 @@ static Expr* selectFunc(const DefScope*     scope,
   return retval;
 }
 
-static void resolveFuncFormals(const DefScope* scope, FnSymbol* fn)
+static void resolveFuncFormals(FnSymbol* fn, const DefScope* scope)
 {
   for_alist(formal, fn->formals)
   {
@@ -558,14 +622,14 @@ static void resolveFuncFormals(const DefScope* scope, FnSymbol* fn)
 
     if (arg->type == 0)
     {
-      resolveFormalType(scope, arg);
+      resolveFormalType(arg, scope);
 
       INT_ASSERT(arg->type);
     }
   }
 }
 
-static void resolveFormalType(const DefScope* scope, ArgSymbol* formal)
+static void resolveFormalType(ArgSymbol* formal, const DefScope* scope)
 {
   BlockStmt*                 bs    = formal->typeExpr;
 

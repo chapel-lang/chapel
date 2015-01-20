@@ -23,6 +23,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "WhileDoStmt.h"
 
 struct Binding
 {
@@ -30,29 +31,32 @@ struct Binding
   Expr*      expr;
 };
 
-static void ipeInline(ModuleSymbol* module);
-static void ipeInline(FnSymbol*     fn);
+static void  ipeInline(ModuleSymbol* module);
+static void  ipeInline(FnSymbol*     fn);
 
-static void ipeInline(BlockStmt*    bs);
+static void  ipeInline(WhileDoStmt*  blockStmt);
+static void  ipeInline(BlockStmt*    blockStmt);
+static void  ipeInline(CondStmt*     condStmt);
 
-static void ipeInline(Expr*         expr);
-static void ipeInline(DefExpr*      defExpr);
-static void ipeInline(CallExpr*     callExpr);
+static void  ipeInline(Expr*         expr);
+static void  ipeInline(DefExpr*      defExpr);
+static void  ipeInline(CallExpr*     callExpr);
+
+static Expr* theInlineableExpr(FnSymbol*  func);
+static Expr* theInlineableExpr(BlockStmt* body);
 
 void ipeInlinePrimitives()
 {
   // Scan the Root Module Declaration
   //   Every expression should be a DefExpr.
-  //   Process every Top Level Module Declaration
+  //   Process every top level module
   for_alist(stmt, rootModule->block->body)
   {
     if (DefExpr* defExpr = toDefExpr(stmt))
     {
       if (ModuleSymbol* module = toModuleSymbol(defExpr->sym))
       {
-        // ChapelBase currently contains only functions to define Chapel
-        if (module != baseModule)
-          ipeInline(module);
+        ipeInline(module);
       }
     }
     else
@@ -73,10 +77,27 @@ static void ipeInline(FnSymbol* fn)
   ipeInline(fn->body);
 }
 
-static void ipeInline(BlockStmt* bs)
+static void ipeInline(WhileDoStmt* whileDoStmt)
 {
-  for_alist(expr, bs->body)
+  ipeInline(whileDoStmt->condExprGet());
+
+  for_alist(expr, whileDoStmt->body)
     ipeInline(expr);
+}
+
+static void ipeInline(BlockStmt* blockStmt)
+{
+  for_alist(expr, blockStmt->body)
+    ipeInline(expr);
+}
+
+static void ipeInline(CondStmt* condStmt)
+{
+  ipeInline(condStmt->condExpr);
+  ipeInline(condStmt->thenStmt);
+
+  if (condStmt->elseStmt != 0)
+    ipeInline(condStmt->elseStmt);
 }
 
 static void ipeInline(Expr* genExpr)
@@ -86,16 +107,22 @@ static void ipeInline(Expr* genExpr)
 
   }
 
-  else if (FnSymbol*  expr = toFnSymbol(genExpr))
+  else if (FnSymbol*    expr = toFnSymbol(genExpr))
     ipeInline(expr);
 
-  else if (BlockStmt* expr = toBlockStmt(genExpr))
+  else if (WhileDoStmt* expr = toWhileDoStmt(genExpr))
     ipeInline(expr);
 
-  else if (DefExpr*   expr = toDefExpr(genExpr))
+  else if (BlockStmt*   expr = toBlockStmt(genExpr))
     ipeInline(expr);
 
-  else if (CallExpr*  expr = toCallExpr(genExpr))
+  else if (CondStmt*    expr = toCondStmt(genExpr))
+    ipeInline(expr);
+
+  else if (DefExpr*     expr = toDefExpr(genExpr))
+    ipeInline(expr);
+
+  else if (CallExpr*    expr = toCallExpr(genExpr))
     ipeInline(expr);
 
   else
@@ -105,6 +132,8 @@ static void ipeInline(Expr* genExpr)
     printf("ipeInline unhandled expr\n");
     genExpr->accept(&logger);
     printf("\n\n\n");
+
+    INT_ASSERT(false);
   }
 }
 
@@ -117,55 +146,49 @@ static void ipeInline(DefExpr* defExpr)
 // NOAKES 2015-01-07: This handles only the simplest possible
 // cases required for the simplest primitives currently in IPE
 // ChapelBase. Currently extremely fragile.
-static void ipeInline(CallExpr* expr)
+static void ipeInline(CallExpr* callExpr)
 {
-  if (expr->baseExpr)
+  if (callExpr->baseExpr)
   {
-    SymExpr* funExpr = toSymExpr(expr->baseExpr);
+    SymExpr* funExpr = toSymExpr(callExpr->baseExpr);
     INT_ASSERT(funExpr);
 
     FnSymbol* func   = toFnSymbol(funExpr->var);
     INT_ASSERT(func);
 
-    if (func->hasFlag(FLAG_INLINE)                     == true &&
-        func->body->length()                           == 1    &&
-        isCallExpr(func->body->body.only())            == true &&
-        toCallExpr(func->body->body.only())->baseExpr  == 0    &&
-        toCallExpr(func->body->body.only())->primitive != 0)
+    // Inline the formals
+    for (int i = 1; i <= func->formals.length; i++)
     {
-      std::vector<Binding> bindings;
+      ipeInline(callExpr->get(i));
+    }
 
-      for (int i = 1; i <= func->formals.length; i++)
+    if (func->hasFlag(FLAG_INLINE) == true)
+    {
+      if (Expr* inlineExpr = theInlineableExpr(func))
       {
-        DefExpr*   defExpr = toDefExpr(func->formals.get(i));
-        ArgSymbol* formal  = toArgSymbol(defExpr->sym);
-        Expr*      actual  = expr->get(i);
+        std::vector<Binding> bindings;
 
-        Binding    binding;
-
-        binding.arg  = formal;
-        binding.expr = actual;
-
-        bindings.push_back(binding);
-      }
-
-      {
-        CallExpr* body = toCallExpr(func->body->body.only());
-
-        SET_LINENO(body);
-
-        CallExpr* copy = new CallExpr(body->primitive);
-
-        for (int i = 1; i <= body->argList.length; i++)
+        for (int i = 1; i <= func->formals.length; i++)
         {
-          SymExpr*   symExpr = toSymExpr(body->argList.get(i));
-          INT_ASSERT(symExpr);
+          DefExpr*   defExpr = toDefExpr(func->formals.get(i));
+          ArgSymbol* formal  = toArgSymbol(defExpr->sym);
+          Expr*      actual  = callExpr->get(i);
 
-          ArgSymbol* argSym  = toArgSymbol(symExpr->var);
+          Binding    binding;
+
+          binding.arg  = formal;
+          binding.expr = actual;
+
+          bindings.push_back(binding);
+        }
+
+        if (SymExpr* symExpr = toSymExpr(inlineExpr))
+        {
+          ArgSymbol* argSym = toArgSymbol(symExpr->var);
           INT_ASSERT(argSym);
 
-          int        index   = -1;
-          Expr*      expr    =  0;
+          int        index  = -1;
+          Expr*      expr   =  0;
 
           for (size_t j = 0; j < bindings.size() && index == -1; j++)
           {
@@ -177,14 +200,98 @@ static void ipeInline(CallExpr* expr)
           expr = bindings[index].expr;
           INT_ASSERT(expr);
 
+          // NOAKES 2015/01/15 Note that we are consuming the actual, not copying it
           bindings[index].expr = 0;
           expr->remove();
 
-          copy->insertAtTail(expr);
+          callExpr->replace(expr);
         }
 
-        expr->replace(copy);
+        else if (CallExpr* body = toCallExpr(inlineExpr))
+        {
+          SET_LINENO(body);
+
+          CallExpr* copy = new CallExpr(body->primitive);
+
+          for (int i = 1; i <= body->argList.length; i++)
+          {
+            SymExpr*   symExpr = toSymExpr(body->argList.get(i));
+            INT_ASSERT(symExpr);
+
+            ArgSymbol* argSym  = toArgSymbol(symExpr->var);
+            INT_ASSERT(argSym);
+
+            int        index   = -1;
+            Expr*      expr    =  0;
+
+            for (size_t j = 0; j < bindings.size() && index == -1; j++)
+            {
+              index = (bindings[j].arg == argSym) ? j : -1;
+            }
+
+            INT_ASSERT(index != -1);
+
+            expr = bindings[index].expr;
+            INT_ASSERT(expr);
+
+            // NOAKES 2015/01/15 Note that we are consuming the actual, not copying
+            bindings[index].expr = 0;
+            expr->remove();
+
+            copy->insertAtTail(expr);
+          }
+
+          callExpr->replace(copy);
+        }
+
+        else
+        {
+          AstDumpToNode logger(stdout, 3);
+
+          printf("ipeInline CallExpr.  No support for\n   ");
+          inlineExpr->accept(&logger);
+          printf("\n\n");
+          printf("in\n\n");
+          printf("   ");
+          func->accept(&logger);
+          printf("\n\n");
+
+          INT_ASSERT(false);
+        }
       }
     }
   }
+}
+
+static Expr* theInlineableExpr(FnSymbol* func)
+{
+  return theInlineableExpr(func->body);
+}
+
+static Expr* theInlineableExpr(BlockStmt* body)
+{
+  Expr* retval = 0;
+
+  if (body->length() == 1)
+  {
+    Expr* stmt = body->body.only();
+
+    if (CallExpr* callExpr = toCallExpr(stmt))
+    {
+      if (callExpr->primitive != 0)
+      {
+        if (callExpr->isPrimitive(PRIM_RETURN) == true)
+          retval = callExpr->get(1);
+        else
+          retval = callExpr;
+      }
+    }
+
+    else if (BlockStmt* bs = toBlockStmt(stmt))
+    {
+      retval = theInlineableExpr(bs);
+    }
+  }
+
+  return retval;
 }

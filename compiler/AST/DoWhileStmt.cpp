@@ -68,8 +68,14 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 *                                                                           *
 ************************************* | ************************************/
 
-DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* initBody) :
-  WhileStmt(var, initBody)
+DoWhileStmt::DoWhileStmt(Expr* expr, BlockStmt* body) :
+  WhileStmt(expr, body)
+{
+
+}
+
+DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* body) :
+  WhileStmt(var, body)
 {
 
 }
@@ -81,7 +87,9 @@ DoWhileStmt::~DoWhileStmt()
 
 DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
 {
-  DoWhileStmt* retval = new DoWhileStmt(NULL, NULL);
+  Expr*        cond   = NULL;
+  BlockStmt*   body   = NULL;
+  DoWhileStmt* retval = new DoWhileStmt(cond, body);
 
   retval->copyShare(*this, map, internal);
 

@@ -26,6 +26,7 @@
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "IpeSymbol.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "stmt.h"
