@@ -4,6 +4,7 @@ import sys, os, shutil, time, math, re
 from optparse import OptionParser
 
 import fileReadHelp
+import json
 try:
     import annotate
 except ImportError:
@@ -71,12 +72,56 @@ def parse_date(value, dateformat='%m/%d/%y'):
     else:
         return time.strptime(value.strip(), dateformat)
 
-def show_date(value):
+def show_date(value=time.localtime()):
     if numericX:
         return value
     else:
         return time.strftime('%Y-%m-%d', value)
 
+# converts a csv file to json. Converts the csv file to json where the json
+# object has two members: the labels and the actual data formatted as required
+# by dygraphs
+def csv_to_json(csvFile, ginfo):
+    data = parse_csv(csvFile)
+    os.unlink(csvFile)
+
+    # rename the csv file to indicate that it's a json file
+    jsonFile = os.path.splitext(csvFile)[0]+'.json'
+    ginfo.datfname = os.path.splitext(ginfo.datfname)[0]+'.json'
+
+    # each label is stored in a single element array because of how it is
+    # parsed, get rid of that array so labels is now a simple array of strings
+    labels = [a[0] for a in data[0]]
+    data = data[1:]
+
+    lines = []
+    for line in data:
+        # like for the labels, strip the array surrounding the date
+        curDate = line[0][0]
+        dataForCurDate = line[1:]
+        curLine = [curDate]
+        # the data for a series on the current date is stored as ['val'],
+        # ['low', 'med', 'high'], or ['']. Need to parse as floats, and turn
+        # [''] (no data for this series on this date) into None so json.dumps
+        # turns it into null.
+        for seriesArr in dataForCurDate:
+            if len(seriesArr) == 1 and seriesArr[0] == '':
+                curLine.append(None)
+            else:
+                curLine.append([try_parse_float(x) for x in seriesArr])
+        lines.append(curLine)
+
+    # if there was no data in the csvFile, create an empty entry for todays
+    # date. Dygraphs does not accept a zero length array for the data so we add
+    # a single entry for today's date with null data for each series
+    if len(lines) == 0:
+        line = [None for label in labels]
+        line[0] = show_date()
+        lines.append(line)
+
+    jsonObj = {'labels': labels, 'data': lines}
+    with open(jsonFile, 'w') as f:
+        f.write(json.dumps(jsonObj))
 
 # Helper functions to parse/write/sort a dygraphs compatible csv file.
 #
@@ -101,16 +146,17 @@ def show_date(value):
 # that date
 
 def parse_csv(csvFile):
-    with open(csvFile, 'r') as f:
-        lines = f.readlines();
+    lines = fileReadHelp.ReadFileWithComments(csvFile)
 
     data = []
     for line in lines:
-        valuesString = line.strip('\n').split(',')
-        values = []
-        for valueString in valuesString:
-             values.append(valueString.split(';'))
-        data.append(values)
+        line = line.rstrip()
+        if len(line) > 0:
+            valuesString = line.split(',')
+            values = []
+            for valueString in valuesString:
+                 values.append(valueString.split(';'))
+            data.append(values)
 
     return data
 
@@ -166,7 +212,6 @@ def sort_csv(csvFile):
     data = zip(*data)
 
     data_to_csv(data, csvFile)
-
 
 ############
 
@@ -628,6 +673,8 @@ class GraphClass:
         # functions section above, you can eliminate the intermediate step.
         if self.sort:
             sort_csv(fname)
+
+        csv_to_json(fname, self)
 
         if startdate == None:
             startdate = time.localtime()
