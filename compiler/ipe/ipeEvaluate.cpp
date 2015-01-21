@@ -210,6 +210,8 @@ static IpeValue evaluate(ModuleSymbol* module, IpeEnvironment* env)
   for_alist(stmt, module->block->body)
     evaluate(stmt, env);
 
+  retval.iValue = 0;
+
   return retval;
 }
 
@@ -255,8 +257,10 @@ static IpeValue evaluate(CondStmt* expr, IpeEnvironment* env)
 
   if (condValue.bValue == 1)
     retval = evaluate(expr->thenStmt, env);
+
   else if (expr->elseStmt != 0)
     retval = evaluate(expr->elseStmt, env);
+
   else
     retval.iValue = 0;
 
@@ -557,22 +561,6 @@ static IpeValue evaluate(CallExpr* callExpr, IpeEnvironment* env)
 
     handled = true;
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   else
   {
