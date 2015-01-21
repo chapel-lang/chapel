@@ -45,24 +45,39 @@ void XformLogicalShortCircuit::exitCallExpr(CallExpr* call)
   {
     if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr))
     {
-      if (strcmp(expr->unresolved, "&&") == 0)
+      bool isLogicalAnd = strcmp(expr->unresolved, "&&") == 0;
+      bool isLogicalOr  = strcmp(expr->unresolved, "||") == 0;
+
+      if (isLogicalAnd || isLogicalOr)
       {
         SET_LINENO(call);
 
         Expr*      left  = call->get(1);
         Expr*      right = call->get(2);
+        VarSymbol* lvar  = newTemp();
+
+        VarSymbol* eMsg  = NULL;
+        FnSymbol*  ifFn  = NULL;
 
         left->remove();
         right->remove();
 
-        VarSymbol* lvar  = newTemp();
-        VarSymbol* eMsg  = new_StringSymbol("cannot promote short-circuiting && operator");
-        FnSymbol*  ifFn  = buildIfExpr(new CallExpr("isTrue", lvar),
-                                       new CallExpr("isTrue", right),
-                                       new SymExpr(gFalse));
-        DefExpr*   fnDef = new DefExpr(ifFn);
-
         lvar->addFlag(FLAG_MAYBE_PARAM);
+
+        if (isLogicalAnd)
+        {
+          eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
+          ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
+                             new CallExpr("isTrue", right),
+                             new SymExpr(gFalse));
+        }
+        else
+        {
+          eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
+          ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
+                             new SymExpr(gTrue),
+                             new CallExpr("isTrue", right));
+        }
 
         ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
                                         new CallExpr("compilerError", eMsg)));
@@ -71,36 +86,7 @@ void XformLogicalShortCircuit::exitCallExpr(CallExpr* call)
 
         call->baseExpr->replace(new UnresolvedSymExpr(ifFn->name));
 
-        mInsertionPoint->insertBefore(fnDef);
-      }
-
-      if (strcmp(expr->unresolved, "||") == 0)
-      {
-        SET_LINENO(call);
-
-        Expr*      left  = call->get(1);
-        Expr*      right = call->get(2);
-
-        left->remove();
-        right->remove();
-
-        VarSymbol* lvar  = newTemp();
-        VarSymbol* eMsg  = new_StringSymbol("cannot promote short-circuiting || operator");
-        FnSymbol*  ifFn  = buildIfExpr(new CallExpr("isTrue", lvar),
-                                       new SymExpr(gTrue),
-                                       new CallExpr("isTrue", right));
-        DefExpr*   fnDef = new DefExpr(ifFn);
-
-        lvar->addFlag(FLAG_MAYBE_PARAM);
-
-        ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
-                                        new CallExpr("compilerError", eMsg)));
-        ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
-        ifFn->insertAtHead(new DefExpr(lvar));
-
-        call->baseExpr->replace(new UnresolvedSymExpr(ifFn->name));
-
-        mInsertionPoint->insertBefore(fnDef);
+        mInsertionPoint->insertBefore(new DefExpr(ifFn));
       }
     }
   }
