@@ -109,7 +109,7 @@ static bool isInWithClause(SymExpr* se) {
 // A forall-intents variation on findOuterVars() in createTaskFunctions.cpp:
 // Find all symbols used in 'block' and defined outside of it.
 //
-static void findOuterVars(BlockStmt* block, SymbolMap* uses) {
+static void findOuterVars(BlockStmt* block, SymbolMap& uses) {
   std::vector<SymExpr*> symExprs;
   collectSymExprsSTL(block, symExprs);
   for_vector(SymExpr, symExpr, symExprs) {
@@ -118,7 +118,7 @@ static void findOuterVars(BlockStmt* block, SymbolMap* uses) {
       if (!isCorrespIndexVar(block, sym) &&
           !isInWithClause(symExpr)       &&
           isOuterVar(sym, block))
-        uses->put(sym, markUnspecified);
+        uses.put(sym, markUnspecified);
   }
 }
 
@@ -130,13 +130,13 @@ static void findOuterVars(BlockStmt* block, SymbolMap* uses) {
 // so an ordered traversal of the two lists gives matching pairs.
 // Count the number of these variables into 'numOuterVars'.
 //
-static void createShadowVars(SymbolMap* uses, int& numOuterVars,
+static void createShadowVars(SymbolMap& uses, int& numOuterVars,
                              std::vector<Symbol*>& outerVars,
                              std::vector<Symbol*>& shadowVars)
 {
   numOuterVars = 0;
 
-  form_Map(SymbolMapElem, e, *uses) {
+  form_Map(SymbolMapElem, e, uses) {
     if (e->value != markPruned) {
       Symbol* ovar = e->key;
       // If ovar is a reference, e.g. an index variable of
@@ -196,7 +196,7 @@ checkForRecordsWithArrayFields(Expr* ref, std::vector<Symbol*>& outerVars) {
 }
 
 
-// ForallLeaderArgs: add actuals to _toLeader/Zip()
+// ForallLeaderArgs: add actuals to _toLeader/_toLeaderZip()/_toStandalone().
 // (The leader will be converted to accept them during resolution.)
 static void addActualsTo_toLeader(Symbol* serIterSym,
                                   std::vector<Symbol*>& outerVars)
@@ -210,7 +210,8 @@ static void addActualsTo_toLeader(Symbol* serIterSym,
       if (seekCall->isPrimitive(PRIM_MOVE))
         if (CallExpr* seekSubCall = toCallExpr(seekCall->get(2)))
           if (seekSubCall->isNamed("_toLeader") ||
-              seekSubCall->isNamed("_toLeaderZip")) {
+              seekSubCall->isNamed("_toLeaderZip") ||
+              seekSubCall->isNamed("_toStandalone")) {
             tlCall = seekSubCall;
             break;
           }
@@ -301,11 +302,11 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
 //   if (e->key) --> INT_ASSERT
 //
 static void
-replaceVarUsesWithFormals(Expr* block, SymbolMap* vars) {
-  if (vars->n == 0) return;
+replaceVarUsesWithFormals(Expr* block, SymbolMap& vars) {
+  if (vars.n == 0) return;
   std::vector<SymExpr*> symExprs;
   collectSymExprsSTL(block, symExprs);
-  form_Map(SymbolMapElem, e, *vars) {
+  form_Map(SymbolMapElem, e, vars) {
     Symbol* sym = e->key;
     if (e->value != markPruned) {
       SET_LINENO(sym);
@@ -382,10 +383,29 @@ static void discoverForallBodies(DefExpr* defChplIter,
 
   BlockStmt* b1;
   DefExpr*   defLeadIdxCopy;
-  findBlockWithDefOf(defChplIter->next, "chpl__leadIdxCopy",
+  bool       sa = !strcmp(defChplIter->sym->name, "chpl__iterSA");
+
+  findBlockWithDefOf(defChplIter->next,
+                     sa ? "chpl__saIdxCopy" : "chpl__leadIdxCopy",
                      b1, defLeadIdxCopy);
 
-  if (fNoFastFollowers) {
+  if (sa) {
+    // standalone case - get the first (and only) block that follows
+
+    firstForallBody  = NULL;
+    secondForallBody = NULL;
+    for (Expr* curr = defLeadIdxCopy->next; curr; curr = curr->next)
+      if (BlockStmt* block = toBlockStmt(curr)) {
+        INT_ASSERT(block->byrefVars->isPrimitive(PRIM_FORALL_LOOP));
+        firstForallBody = block;
+        // this loop is for asserts only
+        for (Expr* check = firstForallBody->next; check; check = check->next)
+          INT_ASSERT(!isBlockStmt(check));
+        break;
+      }
+    INT_ASSERT(firstForallBody);
+
+  } else if (fNoFastFollowers) {
     // no fast followers
 
     BlockStmt* b2;
@@ -445,14 +465,14 @@ static void discoverForallBodies(DefExpr* defChplIter,
   }
 }
 
-static void getOuterVars(BlockStmt* body, Symbol*& serIterSym,
-                         Symbol*& leadIdxSym, Symbol*& leadIdxCopySym,
-                         SymbolMap*& uses)
+static void getIterSymbols(BlockStmt* body, Symbol*& serIterSym,
+                           Symbol*& leadIdxSym, Symbol*& leadIdxCopySym)
 {
   CallExpr* const byrefVars = body->byrefVars;
   INT_ASSERT(byrefVars->isPrimitive(PRIM_FORALL_LOOP));
 
-  // Extract  chpl__iter,  chpl__leadIdx,  chpl__leadIdxCopy.
+  // Extract  chpl__iterLF,  chpl__leadIdx,  chpl__leadIdxCopy
+  // or       chpl__iterSA,  chpl__saIdx,    chpl__saIdxCopy
   SymExpr* serIterSE     = toSymExpr(byrefVars->get(1)->remove());
   SymExpr* leadIdxSE     = toSymExpr(byrefVars->get(1)->remove());
   SymExpr* leadIdxCopySE = toSymExpr(byrefVars->get(1)->remove());
@@ -461,32 +481,31 @@ static void getOuterVars(BlockStmt* body, Symbol*& serIterSym,
   serIterSym     = serIterSE->var;
   leadIdxSym     = leadIdxSE->var;
   leadIdxCopySym = leadIdxCopySE->var;
-
-  // do the same as in 'if (needsCapture(fn))' below
-  uses = new SymbolMap();
-  findOuterVars(body, uses);
-  pruneOuterVars(uses, byrefVars, true);
-  pruneThisArg(body->parentSymbol, uses, true);
 }
 
-static void verifyOuterVars(BlockStmt* body2, Symbol* serIterSym1,
-                            Symbol* leadIdxSym1, Symbol* leadIdxCopySym1,
-                            SymbolMap* uses1, int numOuterVars1)
+static void getOuterVars(BlockStmt* body, SymbolMap& uses)
 {
-  Symbol *serIterSym2, *leadIdxSym2, *leadIdxCopySym2;
-  SymbolMap* uses2;
-  getOuterVars(body2, serIterSym2, leadIdxSym2, leadIdxCopySym2, uses2);
+  CallExpr* const byrefVars = body->byrefVars;
+  INT_ASSERT(byrefVars->isPrimitive(PRIM_FORALL_LOOP));
 
-  INT_ASSERT(serIterSym1     == serIterSym2);
-  INT_ASSERT(leadIdxSym1     == leadIdxSym2);
-  INT_ASSERT(leadIdxCopySym1 == leadIdxCopySym2);
+  // do the same as in 'if (needsCapture(fn))' createTaskFunctions()
+  findOuterVars(body, uses);
+  pruneOuterVars(&uses, byrefVars, true);
+  pruneThisArg(body->parentSymbol, &uses, true);
+}
+
+static void verifyOuterVars(BlockStmt* body2,
+                            SymbolMap& uses1, int numOuterVars1)
+{
+  SymbolMap uses2;
+  getOuterVars(body2, uses2);
 
   int numOuterVars2 = 0;
-  form_Map(SymbolMapElem, e, *uses2) {
+  form_Map(SymbolMapElem, e, uses2) {
     if (e->value != markPruned) {
       numOuterVars2++;
       Symbol* var2 = e->key;
-      SymbolMapElem* elem1 = uses1->get_record(var2);
+      SymbolMapElem* elem1 = uses1.get_record(var2);
       INT_ASSERT(elem1 && elem1->key == var2);
     }
   }
@@ -501,25 +520,49 @@ static void verifyOuterVars(BlockStmt* body2, Symbol* serIterSym1,
 //
 void implementForallIntents1(DefExpr* defChplIter)
 {
-  // Find the corresponding forall loop body,
-  // or two bodies if fast followers are enabled.
+  //
+  // Find the corresponding forall loop body(s).
+  //
+  // The following scenarios are defined in build.cpp
+  // and matched against in the following:
+  //
+  // - Leader-follower case, when fast followers are enabled:
+  //  - forallBody1 and forallBody2 are non-NULL
+  //  - forallBody2->byrefVars is a PRIM_FORALL_LOOP whose first arguments are:
+  //      chpl__iterLF, chpl__leadIdx, chpl__leadIdxCopy
+  //
+  // - Leader-follower case, when fast followers are disabled:
+  //  - forallBody2 == NULL
+  //  - forallBody1->byrefVars is what forallBody2->byrefVars is above
+  //
+  // - In all three cases, the user-speicified contents of the 'with' clause
+  //   are appended to forallBody1/2->byrefVars specified above
+  //
+  // - Standalone case:
+  //  - forallBody2 == NULL
+  //  - forallBody1->byrefVars is a PRIM_FORALL_LOOP whose first arguments are:
+  //      chpl__iterSA, chpl__saIdx, chpl__saIdxCopy
+  //
   BlockStmt* forallBody1;
   BlockStmt* forallBody2;
   discoverForallBodies(defChplIter, forallBody1, forallBody2);
 
-  // If both bodies are present, I expect them to be copies of one another.
+  // If both bodies are present, I expect them to be copies of one another,
+  // except for byrefVars field (see above).
   // So we discover everything for the first one and verify
   // that it's the same for the second one.
-  // I think swapping the first and the second in the below
-  // would be equivalent, when both are present.
-
   // Once we found it/them, process the first forall body clone.
   // Stash away misc things for comparison with the second one.
 
-  Symbol *serIterSym1, *leadIdxSym1, *leadIdxCopySym1;
-  SymbolMap* uses1;
+  Symbol *serIterSym, *leadIdxSym, *leadIdxCopySym;
+  SymbolMap uses1;
 
-  getOuterVars(forallBody1, serIterSym1, leadIdxSym1, leadIdxCopySym1, uses1);
+  if (forallBody2)
+    getIterSymbols(forallBody2, serIterSym, leadIdxSym, leadIdxCopySym);
+  else
+    getIterSymbols(forallBody1, serIterSym, leadIdxSym, leadIdxCopySym);
+
+  getOuterVars(forallBody1, uses1);
 
   // Create shadow variables. We keep the vectors to ensure consistent
   // iteration order in for_vector(outerVars) vs. for_vector(shadowVars).
@@ -534,9 +577,9 @@ void implementForallIntents1(DefExpr* defChplIter)
 
     checkForRecordsWithArrayFields(defChplIter, outerVars);
 
-    addActualsTo_toLeader(serIterSym1, outerVars);
+    addActualsTo_toLeader(serIterSym, outerVars);
 
-    detupleLeadIdx(leadIdxSym1, leadIdxCopySym1, shadowVars);
+    detupleLeadIdx(leadIdxSym, leadIdxCopySym, shadowVars);
 
     // replace outer vars with shadows in the loop body
     replaceVarUsesWithFormals(forallBody1, uses1);
@@ -550,8 +593,7 @@ void implementForallIntents1(DefExpr* defChplIter)
   {
     // for assertions only
     if (fVerify)
-      verifyOuterVars(forallBody2, serIterSym1, leadIdxSym1, leadIdxCopySym1,
-                      uses1, numOuterVars1);
+      verifyOuterVars(forallBody2, uses1, numOuterVars1);
 
     // Threading through the leader call was done for forallBody1.
 
@@ -571,7 +613,11 @@ void implementForallIntents1(DefExpr* defChplIter)
 //  implementForallIntents2()
 //-----------------------------------------------------------------------------
 //
-// This is Part 2 - it processes each call to _toLeader() or _toLeaderZip().
+// This is Part 2 - it processes each call to _toLeader() or _toLeaderZip()
+// or _toStandalone().
+//
+// Throughout this file, for historical reasons, terms/identifiers with
+// "leader" relate to both leader and standalone iterators.
 //
 
 

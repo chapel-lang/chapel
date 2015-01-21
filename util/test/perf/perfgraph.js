@@ -128,20 +128,12 @@ function getNextDivs(afterDiv, afterLDiv) {
 
 // Gen a new dygraph, if an existing graph is being expanded then expandInfo
 // will contain the expansion information, else it is null
-function genDygraph(graphInfo, expandInfo) {
+function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
 
-  // setup the divs
-  var afterDiv = null;
-  var afterLDiv = null;
-  if (expandInfo) {
-    afterDiv = expandInfo.afterDiv;
-    afterLDiv = expandInfo.afterLDiv;
-  }
-  var divs = getNextDivs(afterDiv, afterLDiv);
-  var div = divs.div;
-  var ldiv = divs.ldiv;
-  var logToggle = divs.logToggle;
-  var annToggle = divs.annToggle;
+  var div = graphDivs.div;
+  var ldiv = graphDivs.ldiv;
+  var logToggle = graphDivs.logToggle;
+  var annToggle = graphDivs.annToggle;
 
   var startdate = getOption(OptionsEnum.STARTDATE) || graphInfo.startdate;
   var enddate = getOption(OptionsEnum.ENDDATE) || graphInfo.enddate;
@@ -175,6 +167,7 @@ function genDygraph(graphInfo, expandInfo) {
     highlightSeriesBackgroundAlpha: 1,
     // So it's easier to zoom in on the right side
     rightGap: 15,
+    labels: graphLabels,
     labelsDiv: ldiv,
     labelsSeparateLines: true,
     dateWindow: [startdate, enddate],
@@ -185,15 +178,13 @@ function genDygraph(graphInfo, expandInfo) {
   }
 
   if (expandInfo) {
-    graphOptions.visibility = expandInfo.visibility;
     graphOptions.colors = expandInfo.colors;
   }
 
   // actually create the dygraph
-  var g = new Dygraph(div, 'CSVfiles/'+graphInfo.datfname, graphOptions);
+  var g = new Dygraph(div, graphData, graphOptions);
   g.isReady = false;
   setupSeriesLocking(g);
-
 
   // The dygraph is now setting up and rendering. Once the graph is fully
   // drawn this ready state gets fired. We don't want to synchronize this
@@ -204,7 +195,7 @@ function genDygraph(graphInfo, expandInfo) {
   g.ready(function() {
     // we use options in graphinfo in dygraph callbacks that we can't pass
     // arguments to so we add it to the graph to be able to pass it around
-    g.divs = divs;
+    g.divs = graphDivs;
     g.graphInfo = graphInfo;
 
 
@@ -234,7 +225,7 @@ function genDygraph(graphInfo, expandInfo) {
       g.setAnnotations(g.annotations());
     }
 
-    expandGraphs(g);
+    expandGraphs(g, graphInfo, graphDivs, graphData, graphLabels);
 
   });
 
@@ -250,12 +241,11 @@ function genDygraph(graphInfo, expandInfo) {
 // series that have the same name but one ends with ' (examples)' and the other
 // ' (all') They will both be shown on the expanded graph but the examples one
 // will not be shown on the graph containing all of them.
-function expandGraphs(graph) {
+function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
 
-  var graphInfo = graph.graphInfo;
   var expandAllSentinel = -1;
   var expandNum = graphInfo.expand;
-  var labels = graph.getLabels();
+  var labels = graphLabels;
 
   // if we don't need to expand just return
   if (!expandNum || expandNum === 0) {
@@ -294,7 +284,7 @@ function expandGraphs(graph) {
     }
     j++;
   }
-
+  var transposedData = transpose(graphData);
   // for each expanded graph
   var i = 0;
   while (i < expandNum && j > 1 ) {
@@ -311,27 +301,27 @@ function expandGraphs(graph) {
     newInfo.title = newInfo.title + ": " + labels[j].replace(' (all)', '');
     newInfo.expand = 0;
 
-    // gen the expanded graph with visibility set for the current series
-    for (var k = 0; k < visibility.length; k++) { visibility[k] = false; }
     var exampleLabel = labels[j].replace(primaryString, secondaryString);
-    var exampleIndex = graph.getPropertiesForSeries(exampleLabel).column;
-    visibility[j-1] = true;
-    visibility[exampleIndex-1] = true;
+    var exampleIndex = labels.indexOf(exampleLabel);
+    var newLabels = labels.slice(0,1);
+    newLabels.push(labels[j]);
+    newLabels.push(labels[exampleIndex]);
 
+    var newData = transposedData.slice(0,1);
+    newData = newData.concat(transposedData.slice(j, j+1), transposedData.slice(exampleIndex, exampleIndex+1));
+    newData = transpose(newData);
     // make sure the colors for the series in the expanded graph match the
     // colors for the series in the original graph
-    var colors = graph.getColors().slice();
-    for ( var k = 0; k < colors.length; k++) {
+    var colors = [];
+    for ( var k = 0; k < 2; k++) {
       colors[k] = graph.getPropertiesForSeries(labels[j]).color;
     }
 
+    var newDivs = getNextDivs(graphDivs.div, graphDivs.ldiv);
     expandInfo = {
-      afterDiv: graph.divs.div,
-      afterLDiv: graph.divs.ldiv,
-      visibility: visibility.slice(),
       colors: colors
     }
-    genDygraph(newInfo, expandInfo);
+    genDygraph(newInfo, newDivs, newData, newLabels, expandInfo);
     i++;
   }
 }
@@ -791,7 +781,7 @@ function displaySelectedGraphs() {
   for (var i = 0; i < allGraphs.length; i++) {
     var checkbox = document.getElementById('graph' + i);
     if (checkbox.checked) {
-      genDygraph(allGraphs[i]);
+      getDataAndGenGraph(allGraphs[i]);
     }
   }
 
@@ -799,6 +789,42 @@ function displaySelectedGraphs() {
   setURLFromGraphs(normalizeForURL(findSelectedSuite()));
   // set the dropdown box selection
   document.getElementsByName('jumpmenu')[0].value = findSelectedSuite();
+}
+
+
+// Load the data, and create a new dygraphs
+function getDataAndGenGraph(graphInfo) {
+  var dataFile = 'CSVfiles/'+graphInfo.datfname;
+
+  // convert annotations to millis since epoch since we're using a native
+  // array. We could do this in genGraphs, but then we have to think about
+  // timezones and all that stuff, it's fast enough and far easier to just let
+  // dygraphs do it
+  if (!graphInfo.loadedAnnotations) {
+    var ann = graphInfo.annotations;
+    for (var i=0; i<ann.length; i++) {
+      ann[i].x = parseDate(ann[i].x);
+    }
+    graphInfo.loadedAnnotations = true;
+  }
+
+  // need to get the divs before the async call to get the json so graphs are
+  // displayed in the order they are listed, regardless of the order they are
+  // loaded.
+  var graphDivs = getNextDivs();
+  var json = $.getJSON(dataFile)
+    .done( function(json) {
+      var graphData = json.data;
+      var graphLabels = json.labels;
+      for (var j = 0; j < graphData.length; j++) {
+        graphData[j][0] = new Date(parseDate(graphData[j][0]));
+      }
+      genDygraph(graphInfo, graphDivs, graphData, graphLabels);
+    })
+    .fail( function(jqxhr, textStatus, error) {
+      var err = textStatus + ', ' + error;
+      console.log( 'Request for ' + dataFile + ' Failed: ' + err );
+    });
 }
 
 
@@ -916,6 +942,23 @@ function setQueryStringFromOption(option, optionValue) {
 //////////////////////
 // Helper functions //
 //////////////////////
+
+
+// Transpose a 2 dimensional array
+function transpose(array) {
+  var temp = [];
+  var cols = array.length;
+  var rows = array[0].length;
+  if (cols === 0 || rows === 0) { return temp; }
+
+  for (var r = 0; r < rows; r++) {
+    temp[r] = [];
+    for (var c = 0; c < cols; c++) {
+      temp[r][c] = array[c][r];
+    }
+  }
+  return temp;
+}
 
 
 // Remove a trailing character from a string. Removes any character by default,
