@@ -31,8 +31,10 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "XformLogicalShortCircuit.h"
 
 #include <cctype>
+#include <set>
 #include <vector>
 
 bool normalized = false;
@@ -41,6 +43,7 @@ bool normalized = false;
 // Static functions: forward declaration
 //
 static void insertModuleInit();
+static void transformLogicalShortCircuit();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
@@ -75,6 +78,7 @@ static void find_printModuleInit_stuff();
 
 void normalize() {
   insertModuleInit();
+  transformLogicalShortCircuit();
 
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -221,6 +225,60 @@ static void insertModuleInit() {
       mod->initFn->addFlag(FLAG_EXPORT);
       mod->initFn->addFlag(FLAG_LOCAL_ARGS);
     }
+  }
+}
+
+
+
+/************************************ | *************************************
+*                                                                           *
+* Historically, parser/build converted                                      *
+*                                                                           *
+*    <expr1> && <expr2>                                                     *
+*    <expr1> || <expr2>                                                     *
+*                                                                           *
+* into an IfExpr (which itself currently has a complex implementation).     *
+*                                                                           *
+* Now we allow the parser to generate a simple unresolvable call to either  *
+* && or || and then replace it with the original IF/THEN/ELSE expansion.    *
+*                                                                           *
+************************************* | ************************************/
+
+static void transformLogicalShortCircuit()
+{
+  std::set<Expr*>           stmts;
+  std::set<Expr*>::iterator iter;
+
+  // Collect the distinct stmts that contain logical AND/OR expressions
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (call->primitive == 0)
+    {
+      if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr))
+      {
+        if (strcmp(expr->unresolved, "&&") == 0 ||
+            strcmp(expr->unresolved, "||") == 0)
+        {
+          stmts.insert(call->getStmtExpr());
+        }
+      }
+    }
+  }
+
+  // Transform each expression.
+  //
+  // In general this will insert new IF-expressions immediately before the
+  // current statement.  This approach interacts with Chapel's scoping
+  // rule for do-while stmts.  We need to ensure that the additional
+  // scope has been wrapped around the do-while before we perform this
+  // transform.
+  //
+  for (iter = stmts.begin(); iter != stmts.end(); iter++)
+  {
+    Expr*                    stmt = *iter;
+    XformLogicalShortCircuit transform(stmt);
+
+    stmt->accept(&transform);
   }
 }
 
