@@ -31,7 +31,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "XformLogicalShortCircuit.h"
+#include "TransformLogicalShortCircuit.h"
 
 #include <cctype>
 #include <set>
@@ -275,8 +275,8 @@ static void transformLogicalShortCircuit()
   //
   for (iter = stmts.begin(); iter != stmts.end(); iter++)
   {
-    Expr*                    stmt = *iter;
-    XformLogicalShortCircuit transform(stmt);
+    Expr*                        stmt = *iter;
+    TransformLogicalShortCircuit transform(stmt);
 
     stmt->accept(&transform);
   }

@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _XFORM_LOGICAL_SHORT_CIRCUIT_H_
-#define _XFORM_LOGICAL_SHORT_CIRCUIT_H_
+#ifndef _TRANSFORM_LOGICAL_SHORT_CIRCUIT_H_
+#define _TRANSFORM_LOGICAL_SHORT_CIRCUIT_H_
 
 /************************************ | *************************************
 *                                                                           *
@@ -41,17 +41,17 @@
 
 class Expr;
 
-class XformLogicalShortCircuit : public AstVisitorTraverse
+class TransformLogicalShortCircuit : public AstVisitorTraverse
 {
 public:
-                 XformLogicalShortCircuit(Expr* insertionPoint);
-  virtual       ~XformLogicalShortCircuit();
+                 TransformLogicalShortCircuit(Expr* insertionPoint);
+  virtual       ~TransformLogicalShortCircuit();
 
   // Transform performed post-order
   virtual void   exitCallExpr (CallExpr* node);
 
 private:
-                 XformLogicalShortCircuit();
+                 TransformLogicalShortCircuit();
 
   Expr*          mInsertionPoint;
 };

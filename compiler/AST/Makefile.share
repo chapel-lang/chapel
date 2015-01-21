@@ -49,7 +49,7 @@ AST_SRCS =                                          \
            AstDumpToNode.cpp                        \
                                                     \
            CollapseBlocks.cpp                       \
-           XformLogicalShortCircuit.cpp
+           TransformLogicalShortCircuit.cpp
 
 
 SVN_SRCS = $(AST_SRCS)

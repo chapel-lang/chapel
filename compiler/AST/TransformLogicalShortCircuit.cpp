@@ -23,23 +23,23 @@
 *                                                                           *
 ************************************* | ************************************/
 
-#include "XformLogicalShortCircuit.h"
+#include "TransformLogicalShortCircuit.h"
 
 #include "build.h"
 #include "expr.h"
 #include "stmt.h"
 
-XformLogicalShortCircuit::XformLogicalShortCircuit(Expr* insertionPoint)
+TransformLogicalShortCircuit::TransformLogicalShortCircuit(Expr* insertionPoint)
 {
   mInsertionPoint = insertionPoint;
 }
 
-XformLogicalShortCircuit::~XformLogicalShortCircuit()
+TransformLogicalShortCircuit::~TransformLogicalShortCircuit()
 {
 
 }
 
-void XformLogicalShortCircuit::exitCallExpr(CallExpr* call)
+void TransformLogicalShortCircuit::exitCallExpr(CallExpr* call)
 {
   if (call->primitive == 0)
   {
