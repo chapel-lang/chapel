@@ -173,6 +173,10 @@ void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
 
   else
     INT_FATAL(this, "BlockStmt::replaceChild. Failed to match the oldAst ");
+
+  // TODO: Handle the above special cases uniformly by specializing the
+  // traversal of the children by block statement type.  I think blockInfo is
+  // being deprecated anyway....
 }
 
 CallExpr* BlockStmt::blockInfoGet() const {

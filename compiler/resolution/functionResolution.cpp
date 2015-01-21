@@ -7298,6 +7298,7 @@ static void
 pruneResolvedTree() {
 
   removeUnusedFunctions();
+  deadBlockElimination();
   removeRandomPrimitives();
   replaceTypeArgsWithFormalTypeTemps();
   removeParamArgs();

@@ -31,12 +31,18 @@
 #include <queue>
 #include <set>
 
+typedef std::set<BasicBlock*> BasicBlockSet;
+
+static void deadBlockElimination(FnSymbol* fn);
+static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
+static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
 static bool         isInCForLoopHeader(Expr* expr);
-static void         deadBlockElimination(FnSymbol* fn);
 static void         cleanupLoopBlocks(FnSymbol* fn);
 
 static unsigned int deadBlockCount;
 static unsigned int deadModuleCount;
+
+
 
 //
 //
@@ -329,12 +335,11 @@ static void deadModuleElimination() {
 
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
+    deadBlockElimination();
 
-    deadBlockCount  = 0;
     deadModuleCount = 0;
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      deadBlockElimination(fn);
 
       // 2014/10/17   Noakes and Elliot
       // Dead Block Elimination may convert valid loops to "malformed" loops.
@@ -356,26 +361,45 @@ void deadCodeElimination() {
 
     deadModuleElimination();
 
-    if (fReportDeadBlocks)
-      printf("\tRemoved %d dead blocks.\n", deadBlockCount);
-
     if (fReportDeadModules)
       printf("Removed %d dead modules.\n", deadModuleCount);
   }
 }
 
+void deadBlockElimination()
+{
+  deadBlockCount = 0;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    if (!isAlive(fn))
+      continue;
+    deadBlockElimination(fn);
+  }
+
+  if (fReportDeadBlocks)
+    printf("\tRemoved %d dead blocks.\n", deadBlockCount);
+
+}
+
 // Look for and remove unreachable blocks.
-// Muchnick says we can enumerate the unreachable blocks first and then just
-// remove them.  We only need to do this once, because removal of an
-// unreachable block cannot possibly make any reachable block unreachable.
 static void deadBlockElimination(FnSymbol* fn)
 {
   // We need the basic block information to be correct, so recompute it.
   BasicBlock::buildBasicBlocks(fn);
 
   // Find the reachable basic blocks within this function.
-  std::set<BasicBlock*> reachable;
+  BasicBlockSet reachable;
 
+  findReachableBlocks(fn, reachable);
+  deleteUnreachableBlocks(fn, reachable);
+}
+
+// Muchnick says we can enumerate the unreachable blocks first and then just
+// remove them.  We only need to do this once, because removal of an
+// unreachable block cannot possibly make any reachable block unreachable.
+static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
+{
   // We set up a work queue to perform a BFS on reachable blocks, and seed it
   // with the first block in the function.
   std::queue<BasicBlock*> work_queue;
@@ -400,7 +424,10 @@ static void deadBlockElimination(FnSymbol* fn)
     for_vector(BasicBlock, out, bb->outs)
       work_queue.push(out);
   }
+}
 
+static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
+{
   // Visit all the blocks, deleting all those that are not reachable
   for_vector(BasicBlock, bb, *fn->basicBlocks)
   {
@@ -436,6 +463,16 @@ static void deadBlockElimination(FnSymbol* fn)
         // If the expr is the condition expression of a while statement,
         // then remove the entire While.
         whileStmt->remove();
+
+      else if (isSymExpr(expr))
+        // This case was recently added, because SymExprs appear in ForLoop
+        // objects.  Up to that point, the subfields of statements were all
+        // CallExprs.  Expr::remove() chokes on SymEpxrs because they are
+        // unexpected.  Basic block analysis should not be adding these
+        // SymExprs to the list of exprs appended to a block.  So apparently,
+        // the traversal of ForLoop statements for the purposes of BB analysis
+        // is currently incorrect....
+        /* do nothing. */ ;
 
       else
         expr->remove();
