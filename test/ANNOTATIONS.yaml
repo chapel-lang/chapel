@@ -92,6 +92,8 @@ ep-b:
 fannkuch-redux:
   07/22/14:
     - Error due to cleaning up file incompletely
+  09/04/14:
+    - LICM no longer hoisting globals (bug fix related to hoisting wide things)
 
 fasta:
   01/14/14:
@@ -174,12 +176,28 @@ mandelbrot:
     - Chapel level improvement by using a nonlocking writer
   03/19/14:
     - Bulk IO optimization
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
+
+mandelbrot-extras:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
 
 parOpEquals:
   09/06/13:
     - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+spectralnorm:
+  01/21/15:
+    - qthreads updated to yield every ~100 uncontested sync var locks
+
+spectral-norm-specify-step:
+  01/21/15:
+    - qthreads updated to yield every ~100 uncontested sync var locks
 
 SSCA2_main:
   06/12/13:
