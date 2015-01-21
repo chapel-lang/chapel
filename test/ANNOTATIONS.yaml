@@ -44,6 +44,16 @@ all:
     - switch default memory allocator from cstdlib to tcmalloc
   09/12/14:
     - switch default memory allocator back to cstdlib
+  11/05/14:
+    - fix overlapping memcpy() reported by valgrind
+  12/18/14:
+    - change mult in array indexing to conditional, then revert
+  12/22/14:
+    - simplify some locale model interactions with the runtime
+  01/16/15:
+    - move chpl_getLocaleID into the modules
+
+AllCompTime:
   11/09/14:
     - disable the task table by default
 
@@ -103,6 +113,18 @@ is:
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
 
+jacobi:
+  03/07/14:
+    - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
+  08/19/14:
+    - C for loops initial commit
+  08/20/14:
+    - Tom's use of user-defined default constructors
+  08/26/14:
+    - Kyle's ref temp peephole optimization
+  11/09/14:
+    - disable the task table by default
+
 lulesh:
   03/15/14:
     - improved constness of de-nested functions, improved remove value forwarding
@@ -152,16 +174,6 @@ mandelbrot:
     - Chapel level improvement by using a nonlocking writer
   03/19/14:
     - Bulk IO optimization
-
-jacobi:
-  03/07/14:
-    - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
-  08/19/14:
-    - C for loops initial commit
-  08/20/14:
-    - Tom's use of user-defined default constructors
-  08/26/14:
-    - Kyle's ref temp peephole optimization
 
 parOpEquals:
   09/06/13:
