@@ -1,0 +1,3 @@
+InheritGenericClass.chpl:5: error: unresolved type specifier 'B(eltType=type int(64))'
+InheritGenericClass.chpl:5: note: candidates are: B
+InheritGenericClass.chpl:5: note: did you forget the 'new' keyword?
