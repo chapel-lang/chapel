@@ -74,18 +74,28 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   return NULL;
 }
 
-int chpl_comm_nb_handle_is_complete(chpl_comm_nb_handle_t h)
+int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 {
-  return ((void*)h) == NULL;
+  return ((void*) h) == NULL;
 }
 
-void chpl_comm_nb_wait_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
   size_t i;
   for( i = 0; i < nhandles; i++ ) {
     assert(h[i] == NULL);
   }
 }
+
+int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+{
+  size_t i;
+  for( i = 0; i < nhandles; i++ ) {
+    assert(h[i] == NULL);
+  }
+  return 0;
+}
+
 int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
 {
   return 0;
