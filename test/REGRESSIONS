@@ -5,7 +5,7 @@
 # to chapel-test-results-all (and chapel-test-results-regressions if
 # anything unusual happened).  The label for each category should
 # match the unique ID for that testing configuration.  In some cases,
-# categories will have a wildcard name such as 'gasnet*' or 'x?-wb...'
+# categories will have a wildcard name such as 'gasnet*' or 'x?-wb.*'
 # implying that they are an abstract category for all configurations
 # that match that pattern.  In the past we have used specific testing
 # instances (like 'gasnet-everything') for such purposes, but in
@@ -551,18 +551,18 @@ binary files differ (2014-09-21-2014-09-23)
 [Error matching program output for studies/parboil/SAD/sadSerial]
 
 
-===============================
+================================
 x?-wb.intel
-Inherits 'x?-wb*' and '*intel*'
+Inherits 'x?-wb.*' and '*intel*'
 Reviewed 2015-01-15
-===============================
+================================
 
 
-===============================
+================================
 x?-wb.prgenv-intel
-Inherits 'x?-wb*' and '*intel*'
+Inherits 'x?-wb.*' and '*intel*'
 Reviewed 2015-01-15
-===============================
+================================
 
 Sporadic compilation timeout
 ----------------------------
@@ -583,18 +583,18 @@ Reviewed 2015-01-15
 =======================
 
 
-=============================
+==============================
 x?-wb.gnu
-Inherits 'x?-wb*' and '*gnu*'
+Inherits 'x?-wb.*' and '*gnu*'
 Reviewed 2015-01-15
-=============================
+==============================
 
 
-=============================
+==============================
 x?-wb.prgenv-gnu
-Inherits 'x?-wb*' and '*gnu*'
+Inherits 'x?-wb.*' and '*gnu*'
 Reviewed 2015-01-15
-=============================
+==============================
 
 
 ===========================
@@ -632,18 +632,18 @@ target program died with signal 11, without coredump
 [Error matching program output for stress/deitz/test_10k_begins] (xe-wb.prgenv-pgi  2014-11-16, xe-wb.pgi 2014-11-18, 2014-11-28)
 
 
-=============================
+==============================
 x?-wb.pgi
-Inherits 'x?-wb*' and '*pgi*'
+Inherits 'x?-wb.*' and '*pgi*'
 Reviewed 2015-01-15
-=============================
+==============================
 
 
-=============================
+==============================
 x?-wb.prgenv-pgi
-Inherits 'x?-wb*' and '*pgi*'
+Inherits 'x?-wb.*' and '*pgi*'
 Reviewed 2015-01-16
-=============================
+==============================
 
 
 something going wrong with reservedSymbolNames causes reserved names to show up in generated code.
