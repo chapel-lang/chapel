@@ -81,12 +81,6 @@ memmax/memthreshold flags are C types; should be Chapel types (2014-11-12)
 [Error matching program output for execflags/shannon/help]
 [Error matching program output for memory/shannon/memmaxIntOnly]
 
-tasking #include didn't get a filename (since first run, 2014-11-12)
---------------------------------------------------------------------
-[Error matching compiler output for io/ferguson/ctests/qio_bits_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
-[Error matching compiler output for io/ferguson/ctests/qio_test (compopts: 1)]
-
 different amounts of memory leaked on 32-bit platforms (2014-11-12, first run)
 ------------------------------------------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
@@ -98,7 +92,6 @@ prefetch instruction not found (2014-11-12, first run)
 some sort of 64-bit assertion fails (2014-11-12, first run)
 -----------------------------------------------------------
 [Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
-
 
 GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
 ------------------------------------------------------------------------
@@ -117,33 +110,17 @@ Inherits '*32'
 Reviewed 2015-01-19
 ===================
 
-seg fault (2014-11-12, first run)
----------------------------------
-[Error matching program output for parallel/cobegin/deitz/test_big_recursive_cobegin]
-
 timeout (2014-11-12, first run)
 -------------------------------
-[Error matching program output for parallel/cobegin/diten/cobeginRace]
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
 
 
 === sporadic failures below ===
 
-sporadic timeout
-----------------
-[Error: Timed out executing program stress/deitz/test_10k_begins] (2014-11-12..2014-11-29, 2014-12-16)
-[Error: Timed out executing program parallel/coforall/bradc/manyThreads-inorder] (2014-11-12..2014-12-14, 2014-12-16, 2014-12-18)
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_reductions_6] (2014-11-24)
-[Error: Timed out executing program statements/lydia/forVersusWhilePerf (compopts: 1)] (2014-11-29)
-
 sporadic signal 11
 ------------------
 [Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-09, 2014-12-15, 2014-12-19, 2015-01-04)
 [Error matching program output for parallel/begin/dinan/mvm_coforall] (2014-11-21, 2014-11-27, 2014-12-15)
-
-sporadic tasks not being created
---------------------------------
-[Error matching program output for parallel/coforall/bradc/manyThreads-inorder] (2014-11-14..2014-11-30)
 
 
 ===================
@@ -327,7 +304,7 @@ Reviewed 2015-01-16
 
 malloc memory corruption. New test by Vass and error might be sporadic
 ----------------------------------------------------------------------
-[Error matching .bad file for variables/vass/ref-to-domains-arrays] (2015-01-10 .. 2015-01-11)
+[Error matching .bad file for variables/vass/ref-to-domains-arrays] (2015-01-10..2015-01-11)
 
 
 =================================
@@ -365,7 +342,6 @@ Reviewed 2015-01-13
 ===================
 
 
-
 === sporadic failures below ===
 
 sporadic execution timeout (regularly)
@@ -388,7 +364,7 @@ Reviewed 2015-01-16
 
 consistent timeouts
 -------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (2014-11-28..)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (2014-11-28.. )
 
 
 === sporadic failures below ===
@@ -488,11 +464,12 @@ error differs but within acceptable margin; should squash error printing
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
+
 === sporadic failures below ===
 
 sporadic dropping/mangling of output
 ------------------------------------
-[Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass]                      (2015-01-12..)
+[Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass] (2015-01-12..)
 [Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (2014-10-24)
 [Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)] (2014-11-13)
 [Error matching program output for functions/diten/refIntents] (2014-09-30)
@@ -526,7 +503,6 @@ timeout
 [Error: Timed out compilation for arrays/claridge/arraySizeMismatch] (2015-01-07.. )
 
 
-
 ============================
 xc-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
@@ -541,12 +517,12 @@ Reviewed 2015-01-16
 ===================
 
 test assertion failures (2014-09-21..2014-09-23)
------------------------------------------------
+------------------------------------------------
 [Error matching program output for io/ferguson/io_test]
 [Error matching program output for io/ferguson/writef_readf]
 
 binary files differ (2014-09-21..2014-09-23)
--------------------------------------------
+--------------------------------------------
 [Error matching program output for io/ferguson/writefbinary]
 [Error matching program output for studies/parboil/SAD/sadSerial]
 
@@ -744,13 +720,6 @@ baseline
 Inherits 'general'
 Reviewed 2015-01-16
 ===================
-
-
-new memory leaks  2014-12-20  Elliot has claimed these
-------------------------------------------------------
-[Error matching program output for memory/vass/memleak-array-of-records-1]          (2014-12-20)
-[Error matching program output for types/string/StringImpl/memLeaks/promotion]      (2014-12-20)
-
 
 Dies with signal 6
 ------------------
