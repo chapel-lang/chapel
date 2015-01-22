@@ -70,35 +70,42 @@ pragma "no use ChapelStandard"
 
 module BaseStringType {
   use CString;
-  // This type must support the c_string interface
-  // TODO: It should really be c_string_copy.
-  type baseType = c_string;
-  param baseTypeString = "c_string":c_string;
-  // This used to be defined in terms of chpl_free_c_string_copy, but that one wants
-  // the argument to be a c_string_copy.  Here, we lie about the interface to
-  // chpl_rt_free_c_string(), so we can get around having to coerce the wrong
-  // baseType (c_string) to the right one (c_string_copy).  The coercion will
-  // allocate more memory, which is not what we want.  When baseType is
-  // replaced by c_string_copy, this workaround can be removed.
-  inline proc free_baseType(ref s) {
-    pragma "insert line file info"
-    extern proc chpl_rt_free_c_string(ref cs: c_string);
-    pragma "insert line file info"
-    extern proc chpl_rt_free_c_string_copy(ref csc: c_string_copy);
 
-    if (s == _nullString) then return;
+  type bufferType = c_ptr(uint(8));
+  param bufferTypeString = "c_ptr(uint(8))":c_string;
 
-    select s.type {
-      when c_string do chpl_rt_free_c_string(s);
-      when c_string_copy do chpl_rt_free_c_string_copy(s);
-      otherwise halt("operand of free_baseType must be c_string or c_string_copy.");
-    }
+  extern type chpl_mem_descInt_t;
+
+  // TODO: hook into chpl_here_alloc and friends somehow
+  // The runtime exits on errors for these
+  pragma "insert line file info"
+  extern proc chpl_mem_alloc(size: size_t, description: chpl_mem_descInt_t): c_void_ptr;
+
+  pragma "insert line file info"
+  extern proc chpl_mem_calloc(number: size_t, size: size_t, description: chpl_mem_descInt_t) : c_void_ptr;
+
+  pragma "insert line file info"
+  extern proc chpl_mem_realloc(ptr: c_ptr, size: size_t, description: chpl_mem_descInt_t) : c_void_ptr;
+
+  pragma "insert line file info"
+  extern proc chpl_mem_free(ptr: c_ptr): void;
+
+  extern const CHPL_RT_MD_STRING_COPY_REMOTE: chpl_mem_descInt_t;
+  extern const CHPL_RT_MD_STRING_COPY_DATA: chpl_mem_descInt_t;
+
+  proc remoteStringCopy(src_loc: locale,
+                        src_addr: bufferType,
+                        len: size_t): bufferType {
+      const dest = chpl_mem_alloc(len, CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
+      __primitive("chpl_comm_get", dest, src_loc.id, src_addr, len);
+      return dest;
   }
 
-  pragma "insert line file info"
-  extern proc stringMove(dest: c_string, src: c_string, len: int): c_string;
-  pragma "insert line file info"
-  extern proc remoteStringCopy(src_loc: int, src_addr: c_string, len: int): c_string_copy;
+  extern proc memmove(destination: c_ptr, const source: c_ptr, num: size_t);
+
+  // pointer arithmatic used for strings
+  inline proc +(a: c_ptr, b: int(?w)) return __primitive("+", a, b);
+  inline proc +(a: c_ptr, b: uint(?w)) return __primitive("+", a, b);
 
   config param debugStrings = false;
 }
@@ -118,8 +125,9 @@ module String {
   pragma "ignore noinit"
   pragma "no default functions"
   record string {
-    var base: baseType;
-    var len: int;
+    var base: bufferType;
+    var len: uint; // length of string in bytes
+    var _size: uint; // size of the buffer we own
     var home: locale; // this does not change through assignment
 
     proc string() {
@@ -140,7 +148,7 @@ module String {
         if debugStrings then
           chpl_debug_string_print("  freeing base: "+this.base);
         on this.home {
-          free_baseType(this.base);
+          chpl_mem_free(this.base);
         }
       }
 
@@ -149,41 +157,42 @@ module String {
     }
 
     // This is assumed to be called from this.home
-    proc ref reinitString(s: baseType, slen:int =-1) {
-      assert(s.locale.id == here.id);
+    proc ref reinitString(buf: bufferType, s_len:uint) {
+      assert(buf.locale.id == here.id);
       assert(this.home.id == here.id);
       if debugStrings then
         chpl_debug_string_print("in string.reinitString()");
 
       if this.isEmptyString() {
-        if (slen == 0) || (s == _defaultOf(baseType)) then return; // nothing to do
+        if (s_len == 0) || (buf == nil) then return; // nothing to do
       }
 
-      const new_len = if slen == -1 then s.length else slen;
-      // If the this.base is longer than s, then reuse the buffer
-      if new_len != 0 {
-        if new_len < this.len {
-          // reuse the buffer
-          this.base = stringMove(this.base, s, new_len);
-        } else {
+      // If the this.base is longer than buf, then reuse the buffer
+      if s_len != 0 {
+        if s_len > this._size {
           // free the old buffer
           if this.len != 0 then
-            on home do free_baseType(this.base);
+            on home do chpl_mem_free(this.base);
           // allocate a new buffer
-          this.base = stringMove(_defaultOf(baseType), s, new_len);
+          this.base = chpl_mem_alloc(s_len, CHPL_RT_MD_STRING_COPY_DATA):bufferType;
         }
+        memmove(this.base, buf, s_len);
       } else {
         // free the old buffer
-        if this.len != 0 then free_baseType(this.base);
-        this.base = _defaultOf(baseType); // empty string are always literals
+        if this.len != 0 then chpl_mem_free(this.base);
+        this.base = nil;
       }
-      this.len = new_len;
+
+      this.len = s_len;
 
       if debugStrings then
         chpl_debug_string_print("leaving string.reinitString()");
     }
 
-    inline proc c_str() {
+    inline proc c_str(): c_string {
+      inline proc _cast(type t, x) where t:c_string && x.type:c_ptr(uint(8)) {
+        return __primitive("cast", t, x);
+      }
       if debugStrings then
         chpl_debug_string_print("in .c_str()");
 
@@ -193,17 +202,17 @@ module String {
       if debugStrings then
         chpl_debug_string_print("leaving .c_str()");
 
-      return this.base;
+      return this.base:c_string;
     }
 
     inline proc length return len;
-    inline proc size return len;
+    //inline proc size return len;
 
     // Steals ownership of string.base. This is unsafe and you probably don't
     // want to use it. I'd like to figure out how to get rid of it entirely.
-    proc _steal_base() : baseType {
+    proc _steal_base() : bufferType {
       const ret = this.base;
-      this.base = _defaultOf(baseType);
+      this.base = nil;
       this.len = 0;
       return ret;
     }
@@ -211,11 +220,14 @@ module String {
     // Returns a string containing the character at the given index of
     // the string, or an empty string if the index is out of bounds.
     inline proc substring(i: int) {
+      compilerWarning("not implemented: substring");
+      return "X";
+      /*
       var ret: string;
       if i > 0 && i <= this.len {
         const sremote = this.home.id != here.id;
         var   sbase = if sremote
-                      then remoteStringCopy(this.home.id, this.base, this.len)
+                      then remoteStringCopy(this.home, this.base, this.len)
                       else this.base;
         const cs = sbase.substring(i); // substring returns a new buffer
         if cs != _defaultOf(baseType) {
@@ -225,16 +237,20 @@ module String {
         if sremote then free_baseType(sbase);
       }
       return ret;
+      */
     }
 
     // Returns a string containing the string sliced by the given
     // range, or an empty string if the range does not overlap.
     inline proc substring(r: range) {
+      compilerWarning("not implemented: substring");
+      return "X";
+      /*
       var ret: string;
       if !this.isEmptyString() && r.size>0 {
         const sremote = this.home.id != here.id;
         var   sbase = if sremote
-                      then remoteStringCopy(this.home.id, this.base, this.len)
+                      then remoteStringCopy(this.home, this.base, this.len)
                       else this.base;
         const cs = sbase.substring(r); // substring returns a new buffer
         if cs != _defaultOf(baseType) {
@@ -244,11 +260,15 @@ module String {
         if sremote then free_baseType(sbase);
       }
       return ret;
+      */
     }
 
     // Returns the index of the first occurrence of a substring within a
     // string or 0 if the substring is not in the string.
     inline proc find(s: string):int {
+      compilerWarning("not implemented: find");
+      return 0;
+      /*
       var ret: int;
       if this.isEmptyString() then return 0;
       if s.isEmptyString() then return 0;
@@ -256,27 +276,13 @@ module String {
       on this.home {
         const sremote = s.home.id != here.id;
         var   sbase = if sremote
-                      then remoteStringCopy(s.home.id, s.base, s.len)
+                      then remoteStringCopy(s.home, s.base, s.len)
                       else s.base;
         ret = this.base.indexOf(sbase);
         if sremote then free_baseType(sbase);
       }
       return ret;
-    }
-
-    inline proc find(s: baseType):int {
-      if s.locale.id != here.id then
-        halt("Cannot search a string with a remote "+baseTypeString);
-      if this.isEmptyString() then return 0;
-      if s==_defaultOf(baseType) then return 0;
-      // We don't support remote c_string, so for this version, copy this.base
-      const sremote = this.home.id != here.id;
-      var   sbase = if sremote
-                    then remoteStringCopy(this.home.id, this.base, this.len)
-                    else this.base;
-      const ret = sbase.indexOf(s);
-      if sremote then free_baseType(sbase);
-      return ret;
+      */
     }
 
     inline proc isEmptyString() {
@@ -284,15 +290,18 @@ module String {
     }
 
     proc writeThis(f: Writer) {
+      compilerWarning("not implemented: writeThis");
+      /*
       if !this.isEmptyString() {
         if (this.home.id != here.id) {
-          var tcs = remoteStringCopy(this.home.id, this.base, this.len);
+          var tcs = remoteStringCopy(this.home, this.base, this.len);
           f.write(tcs);
           free_baseType(tcs);
         } else {
           f.write(this.base);
         }
       }
+      */
     }
   }
 
@@ -309,8 +318,10 @@ module String {
     var ret: string;
     if !s.isEmptyString() {
       ret.home = s.home;
-      ret.base = stringMove(ret.base, s.base, s.len);
+      ret.base = chpl_mem_alloc(s.len, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+      memmove(ret.base, s.base, s.len);
       ret.len = s.len;
+      ret._size = s.len;
     }
 
     if debugStrings then
@@ -339,13 +350,15 @@ module String {
       if s.home.id == here.id {
         if debugStrings then
           chpl_debug_string_print("  local initCopy");
-        ret.base = stringMove(_defaultOf(baseType), s.base, slen);
+        ret.base = chpl_mem_alloc(s.len, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+        memmove(ret.base, s.base, s.len);
       } else {
         if debugStrings then
           chpl_debug_string_print("  remote initCopy: "+s.home.id:c_string);
-        ret.base = remoteStringCopy(s.home.id, s.base, slen);
+        ret.base = remoteStringCopy(s.home, s.base, slen);
       }
       ret.len = slen;
+      ret._size = slen;
     }
 
     if debugStrings then
@@ -370,10 +383,11 @@ module String {
           chpl_debug_string_print("  rhs remote: "+rhs.home.id:c_string);
         const len = rhs.len; // cache the remote copy of len
         // TODO: reuse the base from remoteStringCopy()
-        var rs = if len!=0 then remoteStringCopy(rhs.home.id, rhs.base, len)
-                   else _defaultOf(baseType);
-        lhs.reinitString(rs, len);
-        if len!=0 then free_baseType(rs);
+        var remote_buf:bufferType = nil;
+        if len != 0 then
+          remote_buf = remoteStringCopy(rhs.home, rhs.base, len);
+        lhs.reinitString(remote_buf, len);
+        if len != 0 then chpl_mem_free(remote_buf);
       }
     }
 
@@ -392,19 +406,22 @@ module String {
       chpl_debug_string_print("leaving proc =()");
   }
 
-  proc =(ref lhs: string, rhs_c: baseType) {
+  proc =(ref lhs: string, rhs_c: c_string) {
+    compilerWarning("not implemented: = string c_string");
+    /*
     if debugStrings then
-      chpl_debug_string_print("in proc =() "+baseTypeString);
+      chpl_debug_string_print("in proc =() c_string");
 
     const hereId = here.id;
     // Make this some sort of local check once we have local types/vars
     if (rhs_c.locale.id != hereId) || (lhs.home.id != hereId) then
-      halt("Cannot assign a remote "+baseTypeString+" to a string.");
+      halt("Cannot assign a remote c_string to a string.");
     const len = rhs_c.length;
     lhs.reinitString(rhs_c, len);
 
     if debugStrings then
-      chpl_debug_string_print("leaving proc =() "+baseTypeString);
+      chpl_debug_string_print("leaving proc =() c_string");
+    */
   }
 
   //
@@ -422,31 +439,37 @@ module String {
     const s1len = s1.len;
     ret.len = s0len + s1len;
     const s0remote = s0.home.id != here.id;
+    //TODO: optimize to resue remote buffer / copy straight into output buffer
     var s0base = if s0remote
-                   then remoteStringCopy(s0.home.id, s0.base, s0len)
+                   then remoteStringCopy(s0.home, s0.base, s0len)
                    else s0.base;
     const s1remote = s1.home.id != here.id;
     var s1base = if s1remote
-                   then remoteStringCopy(s1.home.id, s1.base, s1len)
+                   then remoteStringCopy(s1.home, s1.base, s1len)
                    else s1.base;
-    ret.base = s0base+s1base;
+    ret.base = chpl_mem_alloc(ret.len, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+    memmove(ret.base, s0base, s0len);
+    memmove(ret.base+s0len, s1base, s1len);
 
-    if s0remote then free_baseType(s0base);
-    if s1remote then free_baseType(s1base);
+    if s0remote then chpl_mem_free(s0base);
+    if s1remote then chpl_mem_free(s1base);
 
     if debugStrings then
       chpl_debug_string_print("leaving proc +()");
     return ret;
   }
 
-  proc +(s: string, cs: baseType) {
+  proc +(s: string, cs: c_string) {
+    compilerWarning("not implemented: + string c_string");
+    return "x":string;
+    /*
     if debugStrings then
-      chpl_debug_string_print("in proc +() string+"+baseTypeString);
+      chpl_debug_string_print("in proc +() string+c_string");
 
     if cs.locale.id != here.id then
-      halt("Cannot concatenate a remote "+baseTypeString+".");
+      halt("Cannot concatenate a remote c_string.");
 
-    if cs == _defaultOf(baseType) then return s;
+    if cs == _defaultOf(c_string) then return s;
     if s.isEmptyString() then return cs:string;
 
     var ret: string;
@@ -460,16 +483,20 @@ module String {
     if sremote then free_baseType(sbase);
 
     if debugStrings then
-      chpl_debug_string_print("leaving proc +() string+"+baseTypeString);
+      chpl_debug_string_print("leaving proc +() string+c_string");
     return ret;
+    */
   }
 
   proc +(s: string, ref cs: c_string_copy) {
+    compilerWarning("not implemented: + string c_string_copy");
+    return "x":string;
+    /*
     if debugStrings then
-      chpl_debug_string_print("in proc +() string+"+baseTypeString+"_copy");
+      chpl_debug_string_print("in proc +() string+c_string_copy");
 
     if cs.locale.id != here.id then
-      halt("Cannot concatenate a remote "+baseTypeString+"_copy.");
+      halt("Cannot concatenate a remote c_string_copy.");
 
     if cs == _defaultOf(c_string_copy) then return s;
     if s.isEmptyString() then return cs:string;
@@ -487,11 +514,15 @@ module String {
     free_baseType(cs);
 
     if debugStrings then
-      chpl_debug_string_print("leaving proc +() string+"+baseTypeString+"_copy");
+      chpl_debug_string_print("leaving proc +() string+c_string_copy");
     return ret;
+    */
   }
 
-  proc +(cs: baseType, s: string) {
+  proc +(cs: c_string, s: string) {
+    compilerWarning("not implemented: + c_string string");
+    return "x":string;
+    /*
     if debugStrings then
       chpl_debug_string_print("in proc +() "+baseTypeString+"+string");
 
@@ -515,9 +546,13 @@ module String {
     if debugStrings then
       chpl_debug_string_print("leaving proc +() "+baseTypeString+"+string");
     return ret;
+    */
   }
 
   proc +(ref cs: c_string_copy, s: string) {
+    compilerWarning("not implemented: + c_string_copy string");
+    return "x";
+    /*
     if debugStrings then
       chpl_debug_string_print("in proc +() "+baseTypeString+"_copy+string");
 
@@ -542,21 +577,30 @@ module String {
     if debugStrings then
       chpl_debug_string_print("leaving proc +() "+baseTypeString+"+string");
     return ret;
+    */
   }
 
   //
   // Concatenation with other types is done by casting to the baseType
   //
   inline proc concatHelp(s: string, x:?t) where t != string {
+    compilerWarning("concatHelp :(");
+    return "X";
+    /*
     var cs = x:c_string_copy;
     const ret = s + cs;
     return ret;
+    */
   }
 
   inline proc concatHelp(x:?t, s: string) where t != string  {
+    compilerWarning("concatHelp :(");
+    return "X";
+    /*
     var cs = x:c_string_copy;
     const ret = cs + s;
     return ret;
+    */
   }
 
   inline proc +(s: string, x: numeric) return concatHelp(s, x);
@@ -573,7 +617,7 @@ module String {
   enum relType {eq=1, neq, lt, lte, gt, gte};
   inline proc relationalHelp(a: string, b: string,
                              param op: relType) {
-    inline proc doOp(a: baseType, b: baseType, param op: relType) {
+    inline proc doOp(a: c_string, b: c_string, param op: relType) {
       select op {
         when relType.eq  do return a == b;
         when relType.neq do return a != b;
@@ -581,9 +625,12 @@ module String {
         when relType.lte do return a <= b;
         when relType.gt  do return a > b;
         when relType.gte do return a >= b;
-        otherwise compilerError("op not supported (", op:baseType, ")");
+        otherwise compilerError("op not supported (", op:c_string, ")");
       }
     }
+    compilerWarning("not implemented: relational ops");
+    return false;
+    /*
     var ret: bool;
     if a.home.id == b.home.id {
       on a.home do ret = doOp(a.base, b.base, op);
@@ -612,6 +659,7 @@ module String {
       if bremote then free_baseType(bbase);
     }
     return ret;
+    */
   }
 
   inline proc ==(a: string, b: string)
@@ -628,37 +676,38 @@ module String {
     return relationalHelp(a, b, relType.gte);
 
   //
-  // Primitive string functions and methods
-  //
-  inline proc ascii(s: string) {
-    var ret: int(32); // return type of ascii primitive
-    on s.home do ret = ascii(s.base);
-    return ret;
-  }
-
-  //
   // Casts
   //
 
   // Cast from baseType to string
-  inline proc _cast(type t, cs: baseType) where t==string {
+  // TODO: I dont like this
+  inline proc _cast(type t, cs: c_string) where t==string {
+    var ret: string;
+    return ret;
+    /*
     if debugStrings then
-      chpl_debug_string_print("in _cast() "+baseTypeString+"->string");
+      chpl_debug_string_print("in _cast() c_string->string");
 
     if cs.locale.id != here.id then
-      halt("Cannot cast a remote "+baseTypeString+" to string.");
+      halt("Cannot cast a remote c_string to string.");
 
     var ret: string;
     ret.len = cs.length;
+    ret._size = ret.len;
     if ret.len != 0 then ret.base = __primitive("string_copy", cs);
 
     if debugStrings then
-      chpl_debug_string_print("leaving _cast() "+baseTypeString+"->string");
+      chpl_debug_string_print("leaving _cast() c_string->string");
     return ret;
+    */
   }
 
+  // TODO: I *really* dont like this
   // Other casts to strings use the baseType
-  inline proc _cast(type t, x) where t==string && x.type != baseType {
+  inline proc _cast(type t, x) where t == string && x.type != c_string {
+    compilerWarning("not implemented: _cast c_string");
+    return "X";
+    /*
     if debugStrings then
       chpl_debug_string_print("in _cast() "+typeToString(t)+"->string");
 
@@ -671,6 +720,7 @@ module String {
     if debugStrings then
       chpl_debug_string_print("leaving _cast() "+typeToString(t)+"->string");
     return ret;
+    */
   }
 
   // Cast from string to the baseType
@@ -687,7 +737,11 @@ module String {
   //}
 
   // Other casts from strings use the baseType
-  inline proc _cast(type t, s: string) : t where t!=baseType {
+  inline proc _cast(type t, s: string) : t where t != c_string {
+    compilerWarning("not implemented: cast from type via c_string");
+    var x: t;
+    return x;
+    /*
     if debugStrings then
       chpl_debug_string_print("in _cast() string->"+typeToString(t));
 
@@ -702,5 +756,6 @@ module String {
     if debugStrings then
       chpl_debug_string_print("leaving _cast() string->"+typeToString(t));
     return ret;
+    */
   }
 }

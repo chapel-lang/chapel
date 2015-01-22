@@ -169,6 +169,9 @@ pragma "no doc"
 inline proc _cast(type t, x) where t:c_void_ptr && x.type:c_ptr {
   return __primitive("cast", t, x);
 }
+inline proc _cast(type t, x) where t:c_ptr && x.type:c_void_ptr {
+  return __primitive("cast", t, x);
+}
 
 
 pragma "compiler generated"
