@@ -66,6 +66,10 @@ Inherits 'general'
 Reviewed 2015-01-19
 ===================
 
+Seg fault First run 2014-12-07
+------------------------------
+[Error matching compiler output for users/vass/type-tests.isSubtype]
+
 memmax/memthreshold flags are C types; should be Chapel types (2014-11-12)
 --------------------------------------------------------------------------
 [Error matching program output for execflags/ferguson/help2]
@@ -107,12 +111,16 @@ GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
 ===================
 linux32
 Inherits '*32'
-Reviewed 2015-01-19
+Reviewed 2015-01-22
 ===================
 
 timeout (2014-11-12, first run)
 -------------------------------
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
+
+gcc 4.9.1 "error: assuming signed overflow does not occur when assuming that (X + c) >= X is always true [-Werror=strict-overflow]" (2015-01-22, eronagha)
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+[Error matching compiler output for npb/ft/ft-serial (compopts: 1)]
 
 
 === sporadic failures below ===
@@ -120,7 +128,7 @@ timeout (2014-11-12, first run)
 sporadic signal 11
 ------------------
 [Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-09, 2014-12-15, 2014-12-19, 2015-01-04)
-[Error matching program output for parallel/begin/dinan/mvm_coforall] (2014-11-21, 2014-11-27, 2014-12-15)
+[Error matching program output for parallel/begin/dinan/mvm_coforall] (2014-11-21, 2014-11-27, 2014-12-15, 2015-01-22)
 
 
 ===================
@@ -666,17 +674,12 @@ consistent timeout (frequent)
 ===========================
 cygwin32
 Inherits 'cygwin*' and '*32'
-Reviewed 2015-01-16
+Reviewed 2015-01-21
 ===========================
 
-Seg fault First run 2014-12-07
-------------------------------
-[Error matching compiler output for users/vass/type-tests.isSubtype]
-
-Generated output "FAILED": First run 2014-12-07
------------------------------------------------
+Generated output "FAILED" (see below for sporadic): First run 2014-12-07
+------------------------------------------------------------------------
 [Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
 [Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
 
 Error tolerance exceeded?: First run 2014-12-07
@@ -695,6 +698,10 @@ Consistent execution timouts
 
 
 === sporadic failures below ===
+
+sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
+------------------------------------------------------------------------------
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21)
 
 sporadic os.unlink calls in sub_test failing due to resource being busy
 =======================================================================
