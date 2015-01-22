@@ -178,7 +178,7 @@ consistent failure due to insane memory usage (should get better with strings)
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
-execution time out (2014-01-16.. )
+execution time out (2015-01-16.. )
 ----------------------------------
 [Error: Timed out executing program performance/bharshbarg/range-forall]
 
@@ -344,7 +344,7 @@ Reviewed 2015-01-19
 ===================
 
 
-sporadic execution timeout (2014-01-18)
+sporadic execution timeout (2015-01-18)
 ---------------------------------------
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
 [Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
@@ -508,7 +508,7 @@ sporadic dropping/mangling of output
 
 Sporadic compilation timeout
 ----------------------------
-[Error: Timed out compilation for arrays/bradc/intuintarr] (2014-01-16)
+[Error: Timed out compilation for arrays/bradc/intuintarr] (2015-01-16)
 
 
 ======================================
@@ -566,7 +566,7 @@ Reviewed 2015-01-15
 
 Sporadic compilation timeout
 ----------------------------
-[Error: Timed out compilation for arrays/bradc/localSlices/nonlocalslice] (2014-01-15)
+[Error: Timed out compilation for arrays/bradc/localSlices/nonlocalslice] (2015-01-15)
 
 
 =============================
@@ -648,12 +648,12 @@ Reviewed 2015-01-16
 
 something going wrong with reservedSymbolNames causes reserved names to show up in generated code.
 --------------------------------------------------------------------------------------------------
-All tests fail when this happens (2014-01-08, 2014-01-16)
+All tests fail when this happens (2015-01-08, 2015-01-16)
 
 
 Sporadic compilation timeout
 ----------------------------
-[Error: Timed out compilation for arrays/bradc/slices/outOfBoundsSlice] (2014-01-15)
+[Error: Timed out compilation for arrays/bradc/slices/outOfBoundsSlice] (2015-01-15)
 
 
 ===========================
@@ -770,7 +770,7 @@ Reviewed 2015-01-19
 ===================
 
 
-sporadic execution timeout (2014-01-18)
+sporadic execution timeout (2015-01-18)
 ---------------------------------------
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
