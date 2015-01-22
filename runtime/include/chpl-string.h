@@ -48,11 +48,13 @@ void c_string_from_wide_string(c_string* ret, struct chpl_chpl____wide_chpl_stri
 // accommodate the result.  
 // TODO:  This interface is weird.  It would be better to always allocate.  Is
 // it ever called with a non-NULL dest?
+/*
 c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
                          int32_t lineno, c_string filename);
 
 c_string_copy remoteStringCopy(c_nodeid_t src_locale,
                                c_string src_addr, int64_t src_len,
                                int32_t lineno, c_string filename);
+*/
 
 #endif

@@ -21,6 +21,7 @@
 //
 module MemTracking
 {
+  //TODO strings: super broken now
   config const
     memTrack: bool = false,
     memStats: bool = false,
@@ -28,19 +29,21 @@ module MemTracking
     memLeaksTable: bool = false,
     memMax: uint = 0,
     memThreshold: uint = 0,
-    memLog: c_string = "";
+    memLog: c_ptr(uint(8)) = nil;
 
   pragma "no auto destroy"
   config const
-    memLeaksLog: c_string = "";
+    memLeaksLog: c_ptr(uint(8)) = nil;
 
   // Safely cast to size_t instances of memMax and memThreshold.
   const cMemMax = safe_cast(size_t, memMax),
     cMemThreshold = safe_cast(size_t, memThreshold);
 
   // Globally accessible copy of the corresponding c_string consts
-  const s_memLog: string = memLog;
-  const s_memLeaksLog: string = memLeaksLog;
+  //const s_memLog: string = memLog;
+  //const s_memLeaksLog: string = memLeaksLog;
+  const s_memLog: string;
+  const s_memLeaksLog: string;
 
   //
   // This communicates the settings of the various memory tracking
@@ -61,8 +64,8 @@ module MemTracking
                                          ref ret_memLeaksTable: bool,
                                          ref ret_memMax: size_t,
                                          ref ret_memThreshold: size_t,
-                                         ref ret_memLog: c_string,
-                                         ref ret_memLeaksLog: c_string) {
+                                         ref ret_memLog: c_ptr(uint(8)),
+                                         ref ret_memLeaksLog: c_ptr(uint(8))) {
     ret_memTrack = memTrack;
     ret_memStats = memStats;
     ret_memLeaks = memLeaks;
@@ -73,15 +76,15 @@ module MemTracking
     if (here.id != 0) {
       // These c_strings are going to be leaked
       if s_memLog.len != 0 then
-        ret_memLog = remoteStringCopy(s_memLog.home.id,
+        ret_memLog = remoteStringCopy(s_memLog.home,
                                       s_memLog.base,
                                       s_memLog.len);
-      else ret_memLog = "";
+      else ret_memLog = nil;
       if s_memLeaksLog.len != 0 then
-        ret_memLeaksLog = remoteStringCopy(s_memLeaksLog.home.id,
+        ret_memLeaksLog = remoteStringCopy(s_memLeaksLog.home,
                                            s_memLeaksLog.base,
                                            s_memLeaksLog.len);
-      else ret_memLeaksLog = "";
+      else ret_memLeaksLog = nil;
     } else {
       ret_memLog = memLog;
       ret_memLeaksLog = memLeaksLog;

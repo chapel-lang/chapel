@@ -552,10 +552,13 @@ module ChapelIO {
   
   pragma "dont disable remote value forwarding"
   proc ref c_string.write(args ...?n) {
+    //TODO strings: something...
+    /*
     var sc = new StringWriter(this:string);
     sc.write((...args));
     this = sc.s._steal_base();
     delete sc;
+    */
   }
   
   pragma "dont disable remote value forwarding"
