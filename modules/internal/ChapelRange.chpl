@@ -1448,18 +1448,10 @@ module ChapelRange {
       }    
   
       // same as undensifyBounded(this, myFollowThis), but on a rangeBase
-      var low: idxType  = this.orderToIndex(myFollowThis.first);
-      if flwlen == 1
-      {
-        if debugChapelRange then
-          writeln("Expanded range = ", low..low);
-        yield low;
-        return;
-      }
-  
       const stride = this.stride * myFollowThis.stride;
-  
+      var low: idxType  = this.orderToIndex(myFollowThis.first);
       var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
+
       assert(high == this.orderToIndex(myFollowThis.last));
       if stride < 0 then low <=> high;
       assert(low <= high);
