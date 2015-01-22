@@ -1454,7 +1454,6 @@ module ChapelRange {
 
       assert(high == this.orderToIndex(myFollowThis.last));
       if stride < 0 then low <=> high;
-      assert(low <= high);
   
       const r = low .. high by stride:strType;
       if debugChapelRange then
