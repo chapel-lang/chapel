@@ -27,6 +27,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "WhileStmt.h"
+#include "ForLoop.h"
 
 #include <queue>
 #include <set>
@@ -453,6 +454,7 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
 
       CondStmt*  condStmt  = toCondStmt(expr->parentExpr);
       WhileStmt* whileStmt = toWhileStmt(expr->parentExpr);
+      ForLoop* forLoop = toForLoop(expr->parentExpr);
 
       if (condStmt && condStmt->condExpr == expr)
         // If the expr is the condition expression of an if statement,
@@ -463,17 +465,14 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
         // If the expr is the condition expression of a while statement,
         // then remove the entire While.
         whileStmt->remove();
-
-      else if (isSymExpr(expr))
-        // This case was recently added, because SymExprs appear in ForLoop
-        // objects.  Up to that point, the subfields of statements were all
-        // CallExprs.  Expr::remove() chokes on SymEpxrs because they are
-        // unexpected.  Basic block analysis should not be adding these
-        // SymExprs to the list of exprs appended to a block.  So apparently,
-        // the traversal of ForLoop statements for the purposes of BB analysis
-        // is currently incorrect....
-        /* do nothing. */ ;
-
+      
+      else if (forLoop &&
+               (forLoop->indexGet() == expr || forLoop->iteratorGet() == expr))
+      {
+        // Do nothing.
+        // The mIndex and mIterator fields are references to symbols declared
+        // elsewhere, so just leave them in place.
+      }   
       else
         expr->remove();
     }
