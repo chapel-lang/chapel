@@ -56,6 +56,12 @@ with gcc version >= 4.8.0: "error: assuming signed overflow does not occur when 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 [Error matching compiler output for npb/ft/ft-serial (compopts: 1)]
 
+erroneous used-before-defined gripe from chpl compiler (2015-01-22, darwin, xe-wb.pgi, xe-wb.intel, mnoakes)
+------------------------------------------------------------------------------------------------------------
+[Error matching compiler output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
+[Error matching compiler output for studies/graph500/v2/main (compopts: 1)]
+[Error matching compiler output for studies/graph500/v3/main (compopts: 1)]
+
 
 ===================
 linux64
@@ -277,6 +283,10 @@ read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-05)
 
+sporadic (?) compilation timeout
+--------------------------------
+[Error: Timed out compilation for functions/iterators/vass/standaloneForallIntents] (2015-01-20)
+
 
 ===================
 llvm
@@ -381,7 +391,7 @@ consistent execution timeouts
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, 2014-12-14, 2014-12-17)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, 2014-12-14, 2014-12-17, 2015-01-21)
 
 sporadic execution timeouts (frequent)
 --------------------------------------
