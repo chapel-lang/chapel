@@ -531,12 +531,18 @@ static void codegen_header_compilation_config() {
 
 
 static void protectNameFromC(Symbol* sym) {
-  if (!sym->hasFlag(FLAG_EXTERN)) {
-    const char* oldName = sym->cname;
-    const char* newName = astr("chpl_usr_", oldName);
-    sym->cname = newName;
-    //  free(oldName);
+  if (sym->hasFlag(FLAG_EXPORT)) {
+    return;
   }
+  if (sym->getModule()->modTag != MOD_USER && 
+      sym->getModule()->modTag != MOD_MAIN) {
+    return;
+  }
+    
+  const char* oldName = sym->cname;
+  const char* newName = astr("chpl_usr_", oldName);
+  sym->cname = newName;
+  free(oldName);
 }
 
 
