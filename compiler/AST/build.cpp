@@ -902,14 +902,6 @@ CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
   }
 }
 
-static void
-checkForNonRefIntents(CallExpr* byrefVars) {
-  for_actuals(actual, byrefVars)
-    if (ArgSymbol* arg = toArgSymbol(actual))
-      if (arg->intent != INTENT_REF)
-        USR_FATAL_CONT(byrefVars, "intents other than 'ref' are not allowed in a 'with' clause of a 'forall' loop or expression");
-}
-
 static BlockStmt*
 buildFollowLoop(VarSymbol* iter,
                 VarSymbol* leadIdxCopy,
@@ -1041,8 +1033,6 @@ buildForallLoopStmt(Expr*      indices,
   //
   INT_ASSERT(!loopBody->byrefVars);
   if (byref_vars) {
-    // todo: push this check downstream, e.g. into checkParsed()
-    checkForNonRefIntents(byref_vars);
     INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
     byref_vars->primitive = primitives[PRIM_FORALL_LOOP];
   } else {

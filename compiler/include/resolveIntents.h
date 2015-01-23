@@ -24,6 +24,7 @@
 #include "type.h"
 
 IntentTag blankIntentForType(Type* t);
+IntentTag concreteIntent(IntentTag existingIntent, Type* t);
 void resolveArgIntent(ArgSymbol* arg);
 
 #endif
