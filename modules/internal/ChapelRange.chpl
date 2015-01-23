@@ -1447,7 +1447,7 @@ module ChapelRange {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }    
       if this.stridable || myFollowThis.stridable {
-        // same as undensifyBounded(this, myFollowThis), but on a rangeBase
+        // same as undensifyBounded(this, myFollowThis)
         const stride = this.stride * myFollowThis.stride;
         var low: idxType  = this.orderToIndex(myFollowThis.first);
         var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
@@ -1463,7 +1463,7 @@ module ChapelRange {
         for i in r do
           yield i;
       } else {
-        // same as undensifyBounded(this, myFollowThis), but on a rangeBase
+        // same as undensifyBounded(this, myFollowThis)
         const low: idxType  = this.orderToIndex(myFollowThis.first);
         const high: idxType = ( low: strType + (flwlen - 1):strType ):idxType;
         assert(high == this.orderToIndex(myFollowThis.last));
