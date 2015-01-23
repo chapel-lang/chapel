@@ -1446,22 +1446,36 @@ module ChapelRange {
         } else
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }    
-  
-      // same as undensifyBounded(this, myFollowThis), but on a rangeBase
-      const stride = this.stride * myFollowThis.stride;
-      var low: idxType  = this.orderToIndex(myFollowThis.first);
-      var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
+      if this.stridable || myFollowThis.stridable {
+        // same as undensifyBounded(this, myFollowThis)
+        const stride = this.stride * myFollowThis.stride;
+        var low: idxType  = this.orderToIndex(myFollowThis.first);
+        var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
+        assert(high == this.orderToIndex(myFollowThis.last));
 
-      assert(high == this.orderToIndex(myFollowThis.last));
-      if stride < 0 then low <=> high;
-  
-      const r = low .. high by stride:strType;
-      if debugChapelRange then
-        writeln("Expanded range = ",r);
-  
-      // todo: factor out this loop (and the above writeln) into a function?
-      for i in r do
-        yield i;
+        if stride < 0 then low <=> high;
+
+        const r = low .. high by stride:strType;
+        if debugChapelRange then
+          writeln("Expanded range = ",r);
+
+        // todo: factor out this loop (and the above writeln) into a function?
+        for i in r do
+          yield i;
+      } else {
+        // same as undensifyBounded(this, myFollowThis)
+        const low: idxType  = this.orderToIndex(myFollowThis.first);
+        const high: idxType = ( low: strType + (flwlen - 1):strType ):idxType;
+        assert(high == this.orderToIndex(myFollowThis.last));
+
+        const r = low .. high;
+        if debugChapelRange then
+          writeln("Expanded range = ",r);
+
+        // todo: factor out this loop (and the above writeln) into a function?
+        for i in r do
+          yield i;
+      }
     }
     else // ! myFollowThis.hasLast()
     {
