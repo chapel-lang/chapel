@@ -229,8 +229,8 @@ Reviewed 2015-01-19
 
 === sporadic failures below ===
 
-sporadic timeout
-----------------
+sporadic execution timeout
+--------------------------
 [Error: Timed out executing program stress/deitz/test_10k_begins] (2015-01-08)
 
 ==================
@@ -372,8 +372,8 @@ Inherits 'gasnet*' and 'fifo'
 Reviewed 2015-01-16
 =============================
 
-consistent timeouts
--------------------
+consistent execution timeouts
+-----------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (2014-11-28.. )
 
 
@@ -383,12 +383,12 @@ sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, 2014-12-14, 2014-12-17)
 
-sporadic timeouts (frequent)
-----------------------------
+sporadic execution timeouts (frequent)
+--------------------------------------
 [Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15, 2015-01-07, 2015-01-09)
 
-sporadic timeouts (infrequent)
-------------------------------
+sporadic execution timeouts (infrequent)
+----------------------------------------
 [Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest] (2014-10-21, 2014-11-23)
 
 
@@ -623,8 +623,8 @@ negative floating point 0.0 not supported
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral]
 [Error matching program output for types/file/bradc/scalar/floatcomplexexceptions]
 
-consistent timeout
-------------------
+consistent execution timeout
+----------------------------
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
 
 
@@ -674,8 +674,8 @@ QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
 
-consistent timeout (frequent)
-----------------------------
+consistent execution timeout (frequent)
+---------------------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (..., 2014-12-01, 2015-01-05.. )
 
 
