@@ -8,6 +8,7 @@ module HPCC_PTRANS {
 
 
   config param printTimings = true;
+  config const printPassFailOnly = false;
 
   //  default dimensions (overridable from command line)
 
@@ -388,12 +389,18 @@ module HPCC_PTRANS {
     //  break;
     //    }
       
-    if ( error > error_tolerance ) then 
-      writeln ( "    *** FAILURE *** error     : ", error );
-    else if ( error != zero ) then
-      writeln ( "    *** SUCCESS ***  error    : ", error );
-    else
-      writeln ( "    *** SUCCESS***  exact match" );
+    if printPassFailOnly then
+      writeln ( if error > error_tolerance
+                then "    *** FAILURE ***"
+                else "    *** SUCCESS ***" );
+    else {
+      if ( error > error_tolerance ) then
+        writeln ( "    *** FAILURE *** error     : ", error );
+      else if ( error != zero ) then
+        writeln ( "    *** SUCCESS ***  error    : ", error );
+      else
+        writeln ( "    *** SUCCESS ***  exact match" );
+    }
 
     const elapsed_time = PTRANS_time.elapsed (TimeUnits.seconds);
     

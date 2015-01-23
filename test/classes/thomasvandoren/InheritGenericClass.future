@@ -1,0 +1,3 @@
+feature request: Subclassing uninstantiated generic classes should be prohibited but is not.
+
+Instantiating a generic subclass does not work.
