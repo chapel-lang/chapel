@@ -411,6 +411,29 @@ Reviewed 2015-01-16
 ===================
 
 
+=== sporadic failures below ===
+
+something going wrong with reservedSymbolNames causes reserved names to show up in generated code.
+--------------------------------------------------------------------------------------------------
+All tests fail when this happens (xc-wb.host.prgenv-pgi 2015-01-08, xc-wb.prgenv-pgi 2015-01-16, xc-wb.prgenv-pgi 2015-01-21, xc-wb.prgenv-gnu 2015-01-22)
+
+Sporadic compilation timeouts
+-----------------------------
+[Error: Timed out compilation for arrays/bradc/arrOfDom/arrOfDom2] (xe-wb.gnu 2015-01-20)
+[Error: Timed out compilation for arrays/bradc/intuintarr] (xe-wb.prgenv-cray 2015-01-16)
+[Error: Timed out compilation for arrays/bradc/localSlices/nonlocalslice] (xe-wb.prgenv-intel 2015-01-15)
+[Error: Timed out compilation for arrays/bradc/paulslice] (xe-wb.pgi 2015-01-20)
+[Error: Timed out compilation for arrays/bradc/slices/outOfBoundsSlice] (xe-wb.prgenv-pgi 2015-01-15)
+[Error: Timed out compilation for arrays/bradc/sliceViaSingleton3d] (xe-wb.intel 2015-01-20)
+[Error: Timed out compilation for arrays/claridge/arraySizeMismatch] (xe-wb.prgenv-cray 2015-01-07)
+
+sporadic execution timeouts
+---------------------------
+[Error matching program output for studies/590o/alaska/graph] (xe-wb.prgenv-cray ..2015-01-18, 2015-01-21.. )
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (xe-wb.pgi 2015-01-22)
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4] (xe-wb.prgenv-pgi 2015-01-22)
+
+
 ==================
 *prgenv-*
 Inherits 'general'
@@ -478,6 +501,8 @@ error differs but within acceptable margin; should squash error printing
 sporadic dropping/mangling of output
 ------------------------------------
 [Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass] (2015-01-12..)
+[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] (2014-12-25..2015-01-08)
+[Error matching program output for distributions/deitz/exBlockExample/block2D] (2015-01-21)
 [Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (2014-10-24)
 [Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)] (2014-11-13)
 [Error matching program output for functions/diten/refIntents] (2014-09-30)
@@ -490,10 +515,14 @@ sporadic dropping/mangling of output
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)] (2014-12-19)
 [Error matching program output for studies/shootout/nbody/sidelnik/nbody_orig_1] (2014-12-16)
 
-
-Sporadic compilation timeout
-----------------------------
-[Error: Timed out compilation for arrays/bradc/intuintarr] (2015-01-16)
+sporadic "error: attempt to dereference nil" (xe-wb.prgenv-cray 2015-01-18)
+---------------------------------------------------------------------------
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_dist_array]
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_random]
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_test]
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_writeln]
+[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-BigInt]
+[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt]
 
 
 ======================================
@@ -501,14 +530,6 @@ x?-wb.prgenv-cray
 Inherits 'x?-wb.*' and '*prgenv-cray*'
 Reviewed 2015-01-12
 ======================================
-
-sporadic dropping of range separator {1..3} -> {13}
----------------------------------------------------
-[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] (2014-12-25..2015-01-08)
-
-timeout
--------
-[Error: Timed out compilation for arrays/claridge/arraySizeMismatch] (2015-01-07.. )
 
 
 ============================
@@ -547,10 +568,6 @@ x?-wb.prgenv-intel
 Inherits 'x?-wb.*' and '*intel*'
 Reviewed 2015-01-15
 ================================
-
-Sporadic compilation timeout
-----------------------------
-[Error: Timed out compilation for arrays/bradc/localSlices/nonlocalslice] (2015-01-15)
 
 
 =============================
@@ -630,16 +647,6 @@ Reviewed 2015-01-16
 ==============================
 
 
-something going wrong with reservedSymbolNames causes reserved names to show up in generated code.
---------------------------------------------------------------------------------------------------
-All tests fail when this happens (2015-01-08, 2015-01-16)
-
-
-Sporadic compilation timeout
-----------------------------
-[Error: Timed out compilation for arrays/bradc/slices/outOfBoundsSlice] (2015-01-15)
-
-
 ===========================
 xc-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
@@ -664,7 +671,6 @@ QIO strcmp(got, expect) assertion error
 QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
-
 
 consistent timeout (frequent)
 ----------------------------
