@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
+#include "ipe.h"
 #include "misc.h"
 #include "passes.h" // for isWideString
 #include "stringutil.h"
@@ -1164,52 +1165,55 @@ Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
 }
 
-
-static PrimitiveType*
-createPrimitiveType(const char *name, const char *cname, bool internalType=false) {
-  PrimitiveType* pt = new PrimitiveType(NULL, internalType);
-  TypeSymbol* ts = new TypeSymbol(name, pt);
-  ts->cname = cname;
-  ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Is attached to a global variable;
-                                        // should not be deleted!
-  rootModule->block->insertAtTail(new DefExpr(ts));
-  return pt;
+void initRootModule() {
+  rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
+  rootModule->filename = astr("<internal>");
 }
 
-static PrimitiveType*
-createInternalType(const char *name, const char *cname) {
-  return createPrimitiveType(name, cname, true /* internalType */);
-}
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
+static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
+static PrimitiveType* createInternalType (const char* name, const char* cname);
 
-// Create new primitive type for integers. Specify name for now. Though it will
-// probably be something like int1, int8, etc. in the end. In that case
-// we can just specify the width (i.e., size).
-#define INIT_PRIM_BOOL(name, width)                                \
+static PrimitiveType* createType(const char* name,
+                                 const char* cname,
+                                 bool        internalType);
+
+static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
+
+// Create new primitive type for integers.
+// Specify name for now.
+// Though it will probably be something like int1, int8, etc. in the end.
+// In that case we can just specify the width (i.e., size).
+#define INIT_PRIM_BOOL(name, width)                                             \
   dtBools[BOOL_SIZE_ ## width] = createPrimitiveType(name, "chpl_bool" #width); \
   dtBools[BOOL_SIZE_ ## width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_ ## width)
 
-#define INIT_PRIM_INT( name, width)                                 \
-  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t"); \
+#define INIT_PRIM_INT( name, width)                                             \
+  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t");    \
   dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width)
 
-#define INIT_PRIM_UINT( name, width)                                  \
-  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t"); \
+#define INIT_PRIM_UINT( name, width)                                            \
+  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t");  \
   dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width)
 
-#define INIT_PRIM_REAL( name, width)                                     \
-  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width); \
+#define INIT_PRIM_REAL( name, width)                                            \
+  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width);    \
   dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
 
-#define INIT_PRIM_IMAG( name, width)                               \
-  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width); \
+#define INIT_PRIM_IMAG( name, width)                                            \
+  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width);    \
   dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
 
-#define INIT_PRIM_COMPLEX( name, width)                                   \
-  dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
-  dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
-                                  "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width);          \
+#define INIT_PRIM_COMPLEX( name, width)                                                   \
+  dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width);       \
+  dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(                    \
+                                  "_chpl_complex" #width "(0.0, 0.0)",                    \
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width);                     \
   dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::pair<std::string, int>("re", 0)); \
   dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::pair<std::string, int>("im", 1));
 
@@ -1221,20 +1225,58 @@ createInternalType(const char *name, const char *cname) {
   primType->defaultValue = gSym
 
 
-void initRootModule() {
-  rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
-  rootModule->filename = astr("<internal>");
-
-  rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
-}
-
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
+  dtVoid                               = createInternalType ("void", "void");
+
+  dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool", "chpl_bool");
+  dtInt[INT_SIZE_64]                   = createPrimitiveType("int",  "int64_t");
+  dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real", "_real64");
+
+  gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
+  gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
+
+  gFalse->immediate                    = new Immediate;
+  gFalse->immediate->v_bool            = false;
+  gFalse->immediate->const_kind        = NUM_KIND_BOOL;
+  gFalse->immediate->num_index         = BOOL_SIZE_SYS;
+
+  gTrue->immediate                     = new Immediate;
+  gTrue->immediate->v_bool             = true;
+  gTrue->immediate->const_kind         = NUM_KIND_BOOL;
+  gTrue->immediate->num_index          = BOOL_SIZE_SYS;
+
+  dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
+  dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
+  dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", 0.0, FLOAT_SIZE_64);
+
+  dtBool                               = dtBools[BOOL_SIZE_SYS];
+
+  uniqueConstantsHash.put(gFalse->immediate, gFalse);
+  uniqueConstantsHash.put(gTrue->immediate,  gTrue);
+
+  //
+  // Mark the "high water mark" for types that IPE relies on directly
+  //
+  if (fUseIPE == true) {
+    ipeRootInit();
+  }
+
+  gTryToken = new VarSymbol("chpl__tryToken", dtBool);
+
+  gTryToken->addFlag(FLAG_CONST);
+  rootModule->block->insertAtTail(new DefExpr(gTryToken));
+
+  //
+  // IPE tries to run without the rest of the types
+  //
+  if (fUseIPE == true) {
+    return;
+  }
+
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
-
-  dtVoid = createInternalType ("void", "void");
 
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
@@ -1245,44 +1287,17 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  dtBool = createPrimitiveType ("bool", "chpl_bool");
-
-  dtObject = new AggregateType(AGGREGATE_CLASS);
   dtValue = createInternalType("value", "_chpl_value");
-
-  CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
-  gFalse->immediate = new Immediate;
-  gFalse->immediate->v_bool = false;
-  gFalse->immediate->const_kind = NUM_KIND_BOOL;
-  gFalse->immediate->num_index = BOOL_SIZE_SYS;
-  uniqueConstantsHash.put(gFalse->immediate, gFalse);
-  dtBool->defaultValue = gFalse;
-
-  gTrue = new VarSymbol("true", dtBool);
-  gTrue->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gTrue));
-  gTrue->immediate = new Immediate;
-  gTrue->immediate->v_bool = true;
-  gTrue->immediate->const_kind = NUM_KIND_BOOL;
-  gTrue->immediate->num_index = BOOL_SIZE_SYS;
-  uniqueConstantsHash.put(gTrue->immediate, gTrue);
-
-  gTryToken = new VarSymbol("chpl__tryToken", dtBool);
-  gTryToken->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gTryToken));
 
   INIT_PRIM_BOOL("bool(1)", 1);
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);
   INIT_PRIM_BOOL("bool(32)", 32);
   INIT_PRIM_BOOL("bool(64)", 64);
-  dtBools[BOOL_SIZE_SYS] = dtBool;
 
-  // WAW: could have a loop, but the following unrolling is more explicit.
   INIT_PRIM_INT( "int(8)", 8);
   INIT_PRIM_INT( "int(16)", 16);
   INIT_PRIM_INT( "int(32)", 32);
-  INIT_PRIM_INT( "int", 64);            // default size
 
   INIT_PRIM_UINT( "uint(8)", 8);
   INIT_PRIM_UINT( "uint(16)", 16);
@@ -1290,7 +1305,6 @@ void initPrimitiveTypes() {
   INIT_PRIM_UINT( "uint", 64);          // default size
 
   INIT_PRIM_REAL( "real(32)", 32);
-  INIT_PRIM_REAL( "real", 64);            // default size
 
   INIT_PRIM_IMAG( "imag(32)", 32);
   INIT_PRIM_IMAG( "imag", 64);            // default size
@@ -1305,9 +1319,9 @@ void initPrimitiveTypes() {
   dtStringCopy = createPrimitiveType( "c_string_copy", "c_string_copy" );
   dtStringCopy->defaultValue = gOpaque;
   dtStringCopy->symbol->addFlag(FLAG_NO_CODEGEN);
+
   CREATE_DEFAULT_SYMBOL(dtStringCopy, gStringCopy, "_nullString");
   gStringCopy->cname = "NULL";
-  // In codegen, this prevents the "&NULL" absurdity.
   gStringCopy->addFlag(FLAG_EXTERN);
 
   dtString = createPrimitiveType( "string", "chpl_string");
@@ -1317,56 +1331,113 @@ void initPrimitiveTypes() {
 
   dtFile = createPrimitiveType ("_file", "_cfile");
   dtFile->symbol->addFlag(FLAG_EXTERN);
+
   CREATE_DEFAULT_SYMBOL(dtFile, gFile, "NULL");
-  // In codegen, this prevents the "&NULL" absurdity.
   gFile->addFlag(FLAG_EXTERN);
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
+
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
   gOpaque->cname = "NULL";
-  // In codegen, this prevents the "&NULL" absurdity.
   gOpaque->addFlag(FLAG_EXTERN);
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
   dtTaskID->symbol->addFlag(FLAG_NO_CODEGEN);
+
   CREATE_DEFAULT_SYMBOL(dtTaskID, gTaskID, "chpl_nullTaskID");
 
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
+
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
   gSyncVarAuxFields->cname = "NULL";
+
   dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
+
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
   gSingleVarAuxFields->cname = "NULL";
 
   dtTaskList = createPrimitiveType( "_task_list", "chpl_task_list_p");
   dtTaskList->symbol->addFlag(FLAG_EXTERN);
+
   CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "_nullTaskList");
   gTaskList->cname = "NULL";
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
+
   dtIntegral = createInternalType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
+
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
+
   dtNumeric = createInternalType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
+
   dtIteratorRecord = createInternalType("_iteratorRecord", "_iteratorRecord");
   dtIteratorRecord->symbol->addFlag(FLAG_GENERIC);
+
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
+
   dtMethodToken = createInternalType ("_MT", "_MT");
+
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
+
   dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
+
   CREATE_DEFAULT_SYMBOL(dtTypeDefaultToken, gTypeDefaultToken, "_typeDefaultT");
+
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
+
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
 
   dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
 
+static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
+  return createType(name, cname, false);
+}
+
+static PrimitiveType* createInternalType(const char* name, const char* cname) {
+  return createType(name, cname,  true);
+}
+
+static PrimitiveType*
+createType(const char* name, const char* cname, bool internalType) {
+  PrimitiveType* pt = new PrimitiveType(NULL, internalType);
+  TypeSymbol*    ts = new TypeSymbol(name, pt);
+
+  ts->cname = cname;
+
+  // This prevents cleanAST() from sweeping these
+  ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
+
+  rootModule->block->insertAtTail(new DefExpr(ts));
+
+  return pt;
+}
+
+static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
+  VarSymbol* retval = new VarSymbol(name, primType);
+
+  retval->addFlag(FLAG_CONST);
+
+  rootModule->block->insertAtTail(new DefExpr(retval));
+
+  return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 DefExpr* defineObjectClass() {
+  DefExpr* retval = 0;
+
   // The base object class looks like this:
   //
   //   class object {
@@ -1381,12 +1452,14 @@ DefExpr* defineObjectClass() {
   //  throughout compilation, and it seemed to me that the it might result
   //  in possibly more special case code.
   //
-  DefExpr* retval = buildClassDefExpr("object",
-                                      dtObject,
-                                      NULL,
-                                      new BlockStmt(),
-                                      FLAG_UNKNOWN,
-                                      NULL);
+  dtObject = new AggregateType(AGGREGATE_CLASS);
+
+  retval   = buildClassDefExpr("object",
+                               dtObject,
+                               NULL,
+                               new BlockStmt(),
+                               FLAG_UNKNOWN,
+                               NULL);
 
   retval->sym->addFlag(FLAG_OBJECT_CLASS);
   retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().

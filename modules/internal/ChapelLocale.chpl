@@ -358,9 +358,18 @@ module ChapelLocale {
 
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
 
+  pragma "insert line file info"
+  export
+  proc chpl_getLocaleID(ref localeID: chpl_localeID_t) {
+    localeID = here_id;
+  }
+
   // Return the locale ID of the current locale
   inline proc here_id {
-    return chpl_buildLocaleID(chpl_nodeID,chpl_task_getRequestedSubloc());
+     if localeModelHasSublocales then
+      return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
+    else
+      return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
   }
   // Return the current locale
   inline proc here {

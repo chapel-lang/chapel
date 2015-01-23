@@ -455,7 +455,7 @@ when_stmt:
 
 type_select_stmt:
   TTYPE TSELECT expr_ls TLCBR when_stmt_ls TRCBR
-    { $$ = buildTypeSelectStmt($3, $5); }
+    { USR_FATAL($3, "'type select' is no longer supported. Use 'select'"); }
 ;
 
 /** DECLARATION STATEMENTS ***************************************************/

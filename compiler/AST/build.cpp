@@ -31,6 +31,8 @@
 #include "symbol.h"
 #include "type.h"
 
+static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt);
+
 static void
 checkControlFlow(Expr* expr, const char* context) {
   Vec<const char*> labelSet; // all labels in expr argument
@@ -577,6 +579,8 @@ destructureIndices(BlockStmt* block,
                            coforall);
         i++;
       }
+    } else {
+      INT_FATAL("Unexpected call type");
     }
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
     VarSymbol* var = new VarSymbol(sym->unresolved);
@@ -592,6 +596,8 @@ destructureIndices(BlockStmt* block,
     if (coforall)
       sym->var->addFlag(FLAG_COFORALL_INDEX_VAR);
     sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  } else {
+    INT_FATAL("Unexpected");
   }
 }
 
@@ -938,49 +944,42 @@ static BlockStmt*
 buildStandaloneForallLoopStmt(Expr* indices,
                               Expr* iterExpr,
                               BlockStmt* loopBody) {
-  VarSymbol* iterRec = newTemp("chpl__iter");
-  VarSymbol* idx  = newTemp("chpl__idx");
-  VarSymbol* idxCopy = newTemp("chpl__idxCopy");
-  VarSymbol* iter = newTemp("chpl__standaloneIter");
-  iter->addFlag(FLAG_EXPR_TEMP);
-  idx->addFlag(FLAG_INDEX_OF_INTEREST);
-  idx->addFlag(FLAG_INDEX_VAR);
-  idxCopy->addFlag(FLAG_INDEX_VAR);
+  VarSymbol* iterRec   = newTemp("chpl__iterSA"); // serial iter, SA case
+  // these variables correspond to leadXXX vars in buildForallLoopStmt()
+  VarSymbol* saIter    = newTemp("chpl__saIter");
+  VarSymbol* saIdx     = newTemp("chpl__saIdx");
+  VarSymbol* saIdxCopy = newTemp("chpl__saIdxCopy");
+
+  iterRec->addFlag(FLAG_CHPL__ITER);
+  saIter->addFlag(FLAG_EXPR_TEMP);
+  saIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  saIdx->addFlag(FLAG_INDEX_VAR);
+  saIdxCopy->addFlag(FLAG_INDEX_VAR);
+
+  // ForallLeaderArgs: stash references so we know where things are.
+  CallExpr* byref_vars = loopBody->byrefVars;
+  INT_ASSERT(byref_vars->isPrimitive(PRIM_FORALL_LOOP));
+  byref_vars->insertAtHead(saIdxCopy); // 3rd arg
+  byref_vars->insertAtHead(saIdx);     // 2nd arg
+  byref_vars->insertAtHead(iterRec);   // 1st arg
 
   BlockStmt* SABlock = buildChapelStmt();
 
-  SABlock->insertAtTail(new DefExpr(iter));
-  SABlock->insertAtTail(new DefExpr(idx));
   SABlock->insertAtTail(new DefExpr(iterRec));
+  SABlock->insertAtTail(new DefExpr(saIter));
+  SABlock->insertAtTail(new DefExpr(saIdx));
   SABlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr);
-  SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", iter, iterRec);
-  SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", idx, iter);
+  SABlock->insertAtTail("'move'(%S, _getIterator(_toStandalone(%S)))", saIter, iterRec);
+  SABlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", saIdx, saIter);
 
-  ForLoop* SABody = new ForLoop(idx, iter, NULL);
-  SABody->insertAtTail(new DefExpr(idxCopy));
-  SABody->insertAtTail("'move'(%S, %S)", idxCopy, idx);
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(indices)) {
-    Symbol* var = new VarSymbol(sym->unresolved);
-    SABody->insertAtTail(new DefExpr(var));
-    SABody->insertAtTail("'move'(%S, %S)", var, idx);
-    var->addFlag(FLAG_INDEX_VAR);
-    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  } else if (SymExpr* sym = toSymExpr(indices)) {
-    SABody->insertAtTail("'move'(%S, %S)", sym->var, idx);
-    sym->var->addFlag(FLAG_INDEX_VAR);
-    sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  } else if (CallExpr* call = toCallExpr(indices)) {
-    if (call->isNamed("_build_tuple")) {
-      destructureIndices(SABody, indices, new SymExpr(idx), false);
-    } else {
-      INT_FATAL("Unexpected call type");
-    }
-  } else {
-    INT_FATAL("Unexpected");
-  }
-  SABody->insertAtTail(loopBody->copy());
+  ForLoop* SABody = new ForLoop(saIdx, saIter, NULL);
+  destructureIndices(SABody, indices, new SymExpr(saIdxCopy), false);
+  SABody->insertAtHead("'move'(%S, %S)", saIdxCopy, saIdx);
+  SABody->insertAtHead(new DefExpr(saIdxCopy));
+
+  SABody->insertAtTail(loopBody);
   SABlock->insertAtTail(SABody);
-  SABlock->insertAtTail("_freeIterator(%S)", iter);
+  SABlock->insertAtTail("_freeIterator(%S)", saIter);
   return SABlock;
 }
 
@@ -1007,10 +1006,9 @@ buildForallLoopStmt(Expr*      indices,
                     CallExpr*  byref_vars,
                     BlockStmt* loopBody,
                     bool       zippered) {
-  BlockStmt* loopBodyCopy = loopBody->copy();
-  checkControlFlow(loopBodyCopy, "forall statement");
+  checkControlFlow(loopBody, "forall statement");
 
-  SET_LINENO(loopBodyCopy);
+  SET_LINENO(loopBody);
 
   //
   // insert temporary index when elided by user
@@ -1025,7 +1023,7 @@ buildForallLoopStmt(Expr*      indices,
   // are variables listed in the forall's with(ref...) clause.
   // This list is processed during implementForallIntents1().
   //
-  INT_ASSERT(!loopBodyCopy->byrefVars);
+  INT_ASSERT(!loopBody->byrefVars);
   if (byref_vars) {
     // todo: push this check downstream, e.g. into checkParsed()
     checkForNonRefIntents(byref_vars);
@@ -1034,17 +1032,22 @@ buildForallLoopStmt(Expr*      indices,
   } else {
     byref_vars = new CallExpr(PRIM_FORALL_LOOP);
   }
-  loopBodyCopy->byrefVars = byref_vars;
+  loopBody->byrefVars = byref_vars;
 
   // ensure it's normal; prevent flatten_scopeless_block() in cleanup.cpp
-  loopBodyCopy->blockTag = BLOCK_NORMAL;
+  loopBody->blockTag = BLOCK_NORMAL;
+
+  // NB these copies do not get byref_vars updates below.
+  BlockStmt* loopBodyForFast =
+                     (fNoFastFollowers == false) ? loopBody->copy() : NULL;
+  BlockStmt* loopBodyForStandalone = (!zippered) ? loopBody->copy() : NULL;
 
   BlockStmt* resultBlock     = new BlockStmt();
 
-  VarSymbol* iter            = newTemp("chpl__iter");
+  VarSymbol* iterRec         = newTemp("chpl__iterLF"); // serial iter, LF case
 
-  VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
   VarSymbol* leadIter        = newTemp("chpl__leadIter");
+  VarSymbol* leadIdx         = newTemp("chpl__leadIdx");
   VarSymbol* leadIdxCopy     = newTemp("chpl__leadIdxCopy");
   ForLoop*   leadForLoop     = new ForLoop(leadIdx, leadIter, NULL);
 
@@ -1052,8 +1055,8 @@ buildForallLoopStmt(Expr*      indices,
   VarSymbol* followIter      = newTemp("chpl__followIter");
   BlockStmt* followBlock     = NULL;
 
-  iter->addFlag(FLAG_EXPR_TEMP);
-  iter->addFlag(FLAG_CHPL__ITER);
+  iterRec->addFlag(FLAG_EXPR_TEMP);
+  iterRec->addFlag(FLAG_CHPL__ITER);
 
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
@@ -1064,30 +1067,30 @@ buildForallLoopStmt(Expr*      indices,
   // ForallLeaderArgs: stash references so we know where things are.
   byref_vars->insertAtHead(leadIdxCopy); // 3rd arg
   byref_vars->insertAtHead(leadIdx);     // 2nd arg
-  byref_vars->insertAtHead(iter);        // 1st arg
+  byref_vars->insertAtHead(iterRec);     // 1st arg
 
-  resultBlock->insertAtTail(new DefExpr(iter));
-  resultBlock->insertAtTail(new DefExpr(leadIdx));
+  resultBlock->insertAtTail(new DefExpr(iterRec));
   resultBlock->insertAtTail(new DefExpr(leadIter));
+  resultBlock->insertAtTail(new DefExpr(leadIdx));
 
-  resultBlock->insertAtTail("'move'(%S, _checkIterator(%E))", iter, iterExpr->copy());
+  resultBlock->insertAtTail("'move'(%S, _checkIterator(%E))", iterRec, iterExpr->copy());
 
   if (zippered == false)
-    resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))",    leadIter, iter);
+    resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))",    leadIter, iterRec);
   else
-    resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeaderZip(%S)))", leadIter, iter);
+    resultBlock->insertAtTail("'move'(%S, _getIterator(_toLeaderZip(%S)))", leadIter, iterRec);
 
   resultBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", leadIdx, leadIter);
 
   leadForLoop->insertAtTail(new DefExpr(leadIdxCopy));
   leadForLoop->insertAtTail("'move'(%S, %S)", leadIdxCopy, leadIdx);
 
-  followBlock = buildFollowLoop(iter,
+  followBlock = buildFollowLoop(iterRec,
                                 leadIdxCopy,
                                 followIter,
                                 followIdx,
                                 indices,
-                                loopBodyCopy->copy(),
+                                loopBody,
                                 false,
                                 zippered);
 
@@ -1110,23 +1113,23 @@ buildForallLoopStmt(Expr*      indices,
     leadForLoop->insertAtTail(new DefExpr(T2));
 
     if (zippered == false) {
-      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",    T1, iter);
+      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheck(%S))",    T1, iterRec);
       leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))",    T2, iter),
+                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))",    T2, iterRec),
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     } else {
-      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iter);
+      leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
       leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iter),
+                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     }
 
-    fastFollowBlock = buildFollowLoop(iter,
+    fastFollowBlock = buildFollowLoop(iterRec,
                                       leadIdxCopy,
                                       fastFollowIter,
                                       fastFollowIdx,
                                       indices,
-                                      loopBodyCopy->copy(),
+                                      loopBodyForFast,
                                       true,
                                       zippered);
 
@@ -1141,7 +1144,7 @@ buildForallLoopStmt(Expr*      indices,
   if (!zippered) {
     BlockStmt* SALoop = buildStandaloneForallLoopStmt(indices,
                                                       iterExpr,
-                                                      loopBody->copy());
+                                                      loopBodyForStandalone);
     BlockStmt* result = new BlockStmt();
     result->insertAtTail(
       new CondStmt(new SymExpr(gTryToken), SALoop, resultBlock));
@@ -1188,24 +1191,10 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   //
   // detect on-statement directly inside coforall-loop
   //
-  BlockStmt* onBlock = NULL;
-  BlockStmt* tmp = body;
-  while (tmp) {
-    if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfoGet() && b->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON)) {
-        onBlock = b;
-        break;
-      }
-    }
-    if (tmp->body.tail == tmp->body.head) {
-      tmp = toBlockStmt(tmp->body.tail);
-      if (tmp && tmp->blockInfoGet())
-        tmp = NULL;
-    } else
-      tmp = NULL;
-  }
+  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
 
   SET_LINENO(body);
+
   if (onBlock) {
     //
     // optimization of on-statements directly inside coforall-loops
@@ -1328,71 +1317,6 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
     condStmt->elseStmt = otherwise->thenStmt;
   }
   return buildChapelStmt(top);
-}
-
-
-BlockStmt* buildTypeSelectStmt(CallExpr* exprs, BlockStmt* whenstmts) {
-  static int uid = 1;
-  int caseId = 1;
-  FnSymbol* fn = NULL;
-  BlockStmt* stmts = buildChapelStmt();
-  BlockStmt* newWhenStmts = buildChapelStmt();
-  bool has_otherwise = false;
-
-  INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
-
-  for_alist(stmt, whenstmts->body) {
-    CondStmt* when = toCondStmt(stmt);
-    if (!when)
-      INT_FATAL("error in buildSelectStmt");
-    CallExpr* conds = toCallExpr(when->condExpr);
-    if (!conds || !conds->isPrimitive(PRIM_WHEN))
-      INT_FATAL("error in buildSelectStmt");
-    if (conds->numActuals() == 0) {
-      if (has_otherwise)
-        USR_FATAL(conds, "Type select statement has multiple otherwise clauses");
-      has_otherwise = true;
-      fn = new FnSymbol(astr("_typeselect", istr(uid)));
-      int lid = 1;
-      for_actuals(expr, exprs) {
-        fn->insertFormalAtTail(
-          new DefExpr(
-            new ArgSymbol(INTENT_BLANK,
-                          astr("_t", istr(lid++)),
-                          dtAny)));
-      }
-      fn->retTag = RET_PARAM;
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(caseId)));
-      newWhenStmts->insertAtTail(
-        new CondStmt(new CallExpr(PRIM_WHEN, new_IntSymbol(caseId++)),
-        when->thenStmt->copy()));
-      stmts->insertAtTail(new DefExpr(fn));
-    } else {
-      if (conds->numActuals() != exprs->argList.length)
-        USR_FATAL(when, "Type select statement requires number of selectors to be equal to number of when conditions");
-      fn = new FnSymbol(astr("_typeselect", istr(uid)));
-      int lid = 1;
-      for_actuals(expr, conds) {
-        fn->insertFormalAtTail(
-          new DefExpr(new ArgSymbol(INTENT_BLANK, astr("_t", istr(lid++)),
-                                    dtUnknown, expr->copy())));
-      }
-      fn->retTag = RET_PARAM;
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(caseId)));
-      newWhenStmts->insertAtTail(
-        new CondStmt(new CallExpr(PRIM_WHEN, new_IntSymbol(caseId++)),
-        when->thenStmt->copy()));
-      stmts->insertAtTail(new DefExpr(fn));
-    }
-  }
-  VarSymbol* tmp = newTemp();
-  tmp->addFlag(FLAG_MAYBE_PARAM);
-  stmts->insertAtHead(new DefExpr(tmp));
-  stmts->insertAtTail(new CallExpr(PRIM_MOVE,
-                                   tmp,
-                                   new CallExpr(fn->name, exprs)));
-  stmts->insertAtTail(buildSelectStmt(new SymExpr(tmp), newWhenStmts));
-  return stmts;
 }
 
 
@@ -1881,7 +1805,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 
 
 static Expr* extractLocaleID(Expr* expr) {
-  // If the on <x> expression is a primitive_on_locale_num, we just 
+  // If the on <x> expression is a primitive_on_locale_num, we just
   // return the primitive.
   // PRIM_ON_LOCAL_NUM is now passed through to codegen,
   // but we don't want to wrap it in PRIM_WIDE_GET_LOCALE.
@@ -1914,22 +1838,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   //
   // detect begin statement directly inside on-statement
   //
-  BlockStmt* beginBlock = NULL;
-  BlockStmt* tmp = body;
-  while (tmp) {
-    if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfoGet() && b->blockInfoGet()->isPrimitive(PRIM_BLOCK_BEGIN)) {
-        beginBlock = b;
-        break;
-      }
-    }
-    if (tmp->body.tail == tmp->body.head) {
-      tmp = toBlockStmt(tmp->body.tail);
-      if (tmp && tmp->blockInfoGet())
-        tmp = NULL;
-    } else
-      tmp = NULL;
-  }
+  BlockStmt* beginBlock = findStmtWithTag(PRIM_BLOCK_BEGIN, body);
 
   // If the locale model doesn't require outlined on functions and this is a
   // --local compile, then we take the on-expression, execute it to evaluate
@@ -1945,7 +1854,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     // remote_fork (node) {
     //   branch /*local*/ { foo(); }
     // } wait;
-    // to 
+    // to
     // remote_fork (node) { foo(); } // no wait();
 
     // Execute the construct "on x begin ..." asynchronously.
@@ -1974,26 +1883,11 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   checkControlFlow(stmt, "begin statement");
 
   BlockStmt* body = toBlockStmt(stmt);
-  
+
   //
   // detect on-statement directly inside begin statement
   //
-  BlockStmt* onBlock = NULL;
-  BlockStmt* tmp = body;
-  while (tmp) {
-    if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfoGet() && b->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON)) {
-        onBlock = b;
-        break;
-      }
-    }
-    if (tmp->body.tail == tmp->body.head) {
-      tmp = toBlockStmt(tmp->body.tail);
-      if (tmp && tmp->blockInfoGet())
-        tmp = NULL;
-    } else
-      tmp = NULL;
-  }
+  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
 
   if (onBlock) {
     body->insertAtHead(new CallExpr("_upEndCount"));
@@ -2116,7 +2010,7 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
         DefExpr* newde = new DefExpr(new TypeSymbol(vs->name, pt));
         de->replace(newde);
         de = newde;
-      }           
+      }
       de->sym->addFlag(FLAG_EXTERN);
     } else {
       INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
@@ -2152,4 +2046,51 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
     }
   }
   return blk;
+}
+
+// Attempt to find a stmt with a specific PrimitiveTag in a blockStmt
+//
+// For the case we're interested in we anticipate that the parser
+// has constructed the following structure
+//
+//   BlockStmt
+//     Scopeless BlockStmt
+//       DefExpr  to define a tmp var
+//       CallExpr to implement a move to the tmp var
+//       BlockStmt with blockInfo
+//
+// So
+//   1) We're trying to test the tail position of a blockStmt
+//   2) We may need to step down one or more levels of blockStmt
+//
+// Finally BlockStmt is currently overloaded to represent a number of
+// Stmts e.g. Loops, OnStmts, LocalStmts etc.
+// We need to take care to discriminate among these
+
+static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
+  BlockStmt* retval = NULL;
+
+  while (blockStmt != NULL && retval == NULL) {
+    BlockStmt* tail = toBlockStmt(blockStmt->body.tail);
+
+    // This is the stmt we're looking for
+    if (tail != NULL && tail->isBlockType(tag)) {
+      retval    = tail;
+
+    // Stop if the current blockStmt is not of length 1
+    } else if (blockStmt->length() != 1) {
+      blockStmt = NULL;
+
+    // Stop if the tail is not a "real" BlockStmt (e.g. a Loop etc)
+    } else if (tail == NULL || tail->isRealBlockStmt() == false) {
+      blockStmt = NULL;
+
+    // Step in to the block and try again
+    } else {
+      blockStmt = tail;
+
+    }
+  }
+
+  return retval;
 }

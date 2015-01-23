@@ -27,8 +27,13 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_CFG_OPTIONS += --enable-static --disable-shared
 endif
 
+#
+# On 32bit platforms (i.e. when CHPL_TARGET_PLATFORM ends with 32), set
+# ABI=32. Because we are setting CFLAGS in the ./configure step, it will not
+# auto-detect ABI=32.
+#
 CHPL_GMP_ABI_ARG =
-ifeq (linux32, $(CHPL_MAKE_TARGET_PLATFORM))
+ifneq (, $(filter %32,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_ABI_ARG = ABI=32
 endif
 
