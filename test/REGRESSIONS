@@ -739,7 +739,7 @@ sporadic pthread_cond_init() failed (infrequent)
 ===================
 baseline
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-22
 ===================
 
 Dies with signal 6
