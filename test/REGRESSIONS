@@ -73,7 +73,7 @@ Reviewed 2015-01-19
 ===================
 *32
 Inherits 'general'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 Seg fault First run 2014-12-07
@@ -118,10 +118,11 @@ GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
 [Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-BigInt]
 [Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt]
 
+
 ===================
 linux32
 Inherits '*32'
-Reviewed 2015-01-22
+Reviewed 2015-01-23
 ===================
 
 timeout (2014-11-12, first run)
@@ -419,7 +420,7 @@ Reviewed 2015-01-16
 ===================
 x?-wb.*
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
 
 
@@ -442,7 +443,6 @@ Sporadic compilation timeouts
 
 sporadic execution timeouts
 ---------------------------
-[Error matching program output for studies/590o/alaska/graph] (xe-wb.prgenv-cray ..2015-01-18, 2015-01-21.. )
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (xe-wb.pgi 2015-01-22)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4] (xe-wb.prgenv-pgi 2015-01-22)
 
@@ -450,14 +450,14 @@ sporadic execution timeouts
 ==================
 *prgenv-*
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
 
 
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ====================
 
 infinite loop warning (since filed?)
@@ -500,14 +500,14 @@ signal 11 (first seen 2014-03-02)
 [Error matching compiler output for release/examples/benchmarks/shootout/meteor-fast]
 [Error matching program output for studies/shootout/meteor/kbrady/meteor-parallel-alt]
 
-signal 11 (first seen ????-??-??)
----------------------------------
-[Error matching program output for studies/590o/alaska/graph]
-
 error differs but within acceptable margin; should squash error printing
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
+output mismatch (first seen 2015-01-09, vass)
+---------------------------------------------
+[Error matching program output for modules/sungeun/test_safeSub]
+bisect
 
 === sporadic failures below ===
 
@@ -515,6 +515,7 @@ sporadic dropping/mangling of output
 ------------------------------------
 [Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass] (2015-01-12..)
 [Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] (2014-12-25..2015-01-08)
+[Error matching program output for distributions/dm/t5a] (2015-01-23)
 [Error matching program output for distributions/deitz/exBlockExample/block2D] (2015-01-21)
 [Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (2014-10-24)
 [Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)] (2014-11-13)
@@ -527,6 +528,11 @@ sporadic dropping/mangling of output
 [Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky] (2015-01-14)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)] (2014-12-19)
 [Error matching program output for studies/shootout/nbody/sidelnik/nbody_orig_1] (2014-12-16)
+
+signal 11 (first seen ????-??-??)
+---------------------------------
+[Error matching program output for studies/590o/alaska/graph] ( ..2015-01-18, 2015-01-21.. )
+[Error matching program output for reductions/thomasvandoren/test/TestCounts] (2015-01-23)
 
 sporadic "error: attempt to dereference nil" (xe-wb.prgenv-cray 2015-01-18)
 ---------------------------------------------------------------------------
@@ -541,21 +547,28 @@ sporadic "error: attempt to dereference nil" (xe-wb.prgenv-cray 2015-01-18)
 ======================================
 x?-wb.prgenv-cray
 Inherits 'x?-wb.*' and '*prgenv-cray*'
-Reviewed 2015-01-12
+Reviewed 2015-01-23
 ======================================
 
 
 ============================
 xc-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2015-01-12
+Reviewed 2015-01-23
 ============================
+
+
+=== sporadic failures below ===
+
+all tests fail compilation with "$CHPL_HOME/modules/internal/ChapelDistribution.chpl:65: error: unresolved call '(bool)'"
+-------------------------------------------------------------------------------------------------------------------------
+(2015-01-19.. )
 
 
 ===================
 *intel*
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
 
 test assertion failures (2014-09-21..2014-09-23)
@@ -572,56 +585,56 @@ binary files differ (2014-09-21..2014-09-23)
 ================================
 x?-wb.intel
 Inherits 'x?-wb.*' and '*intel*'
-Reviewed 2015-01-15
+Reviewed 2015-01-23
 ================================
 
 
 ================================
 x?-wb.prgenv-intel
 Inherits 'x?-wb.*' and '*intel*'
-Reviewed 2015-01-15
+Reviewed 2015-01-23
 ================================
 
 
 =============================
 xc-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2015-01-15
+Reviewed 2015-01-23
 =============================
 
 
 =======================
 *gnu*
 Inherits from 'linux64'
-Reviewed 2015-01-15
+Reviewed 2015-01-23
 =======================
 
 
 ==============================
 x?-wb.gnu
 Inherits 'x?-wb.*' and '*gnu*'
-Reviewed 2015-01-15
+Reviewed 2015-01-23
 ==============================
 
 
 ==============================
 x?-wb.prgenv-gnu
 Inherits 'x?-wb.*' and '*gnu*'
-Reviewed 2015-01-15
+Reviewed 2015-01-23
 ==============================
 
 
 ===========================
 xc-wb.host.prgenv-gnu
 Inherits 'x?-wb.prgenv-gnu'
-Reviewed 2015-01-15
+Reviewed 2015-01-23
 ===========================
 
 
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2015-01-15
+Reviewed 2015-01-23
 ===================
 
 undefined reference to chpl_bitops_debruijn64 (2014-07-14)
@@ -649,28 +662,28 @@ target program died with signal 11, without coredump
 ==============================
 x?-wb.pgi
 Inherits 'x?-wb.*' and '*pgi*'
-Reviewed 2015-01-15
+Reviewed 2015-01-23
 ==============================
 
 
 ==============================
 x?-wb.prgenv-pgi
 Inherits 'x?-wb.*' and '*pgi*'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ==============================
 
 
 ===========================
 xc-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
-Reviewed 2015-01-12
+Reviewed 2015-01-23
 ===========================
 
 
 ===================
 cygwin*
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
 
 check_channel assertion failure
@@ -689,7 +702,7 @@ consistent execution timeout (frequent)
 ===========================
 cygwin32
 Inherits 'cygwin*' and '*32'
-Reviewed 2015-01-21
+Reviewed 2015-01-23
 ===========================
 
 Generated output "FAILED" (see below for sporadic): First run 2014-12-07
@@ -721,7 +734,7 @@ sporadic os.unlink calls in sub_test failing due to resource being busy
 ===================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
-Reviewed 2015-01-21
+Reviewed 2015-01-23
 ===================
 
 QIO qio_err_to_int() == EEOF assertion error
@@ -739,26 +752,29 @@ sporadic pthread_cond_init() failed (infrequent)
 ===================
 baseline
 Inherits 'general'
-Reviewed 2015-01-22
+Reviewed 2015-01-23
 ===================
 
 Dies with signal 6
 ------------------
 [Error matching program output for studies/glob/test_glob (compopts: 1)] (Brad)
 
+
 ===================
 dist-block
 Inherits 'gasnet*'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
 
 
 ===================
 dist-cyclic
 Inherits 'gasnet*'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
+
+=== sporadic failures below ===
 
 sporadic execution timeout (2015-01-18)
 ---------------------------------------
@@ -769,5 +785,5 @@ sporadic execution timeout (2015-01-18)
 ===================
 dist-replicated
 Inherits 'gasnet*'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
