@@ -163,9 +163,11 @@ consistent failure due to insane memory usage (should get better with strings)
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
-execution time out (2015-01-16.. )
-----------------------------------
-[Error: Timed out executing program performance/bharshbarg/range-forall]
+=== sporadic failures below ===
+
+sporadic execution timeout
+--------------------------
+[Error: Timed out executing program performance/bharshbarg/range-forall] (2015-01-16..2015-01-21)
 
 
 ===================
