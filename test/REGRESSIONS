@@ -56,7 +56,7 @@ with gcc version >= 4.8.0: "error: assuming signed overflow does not occur when 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 [Error matching compiler output for npb/ft/ft-serial (compopts: 1)]
 
-erroneous used-before-defined gripe from chpl compiler (2015-01-22, darwin, xe-wb.pgi, xe-wb.intel, mnoakes)
+erroneous used-before-defined gripe from chpl compiler (2015-01-22, darwin, xe-wb.pgi, xe-wb.intel, xe-wb.intel, mnoakes)
 ------------------------------------------------------------------------------------------------------------
 [Error matching compiler output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
 [Error matching compiler output for studies/graph500/v2/main (compopts: 1)]
@@ -438,6 +438,7 @@ Sporadic compilation timeouts
 [Error: Timed out compilation for arrays/bradc/slices/outOfBoundsSlice] (xe-wb.prgenv-pgi 2015-01-15)
 [Error: Timed out compilation for arrays/bradc/sliceViaSingleton3d] (xe-wb.intel 2015-01-20)
 [Error: Timed out compilation for arrays/claridge/arraySizeMismatch] (xe-wb.prgenv-cray 2015-01-07)
+[Error: Timed out compilation for arrays/marybeth/CMO_array] (xe-wb.intel 2015-01-22)
 
 sporadic execution timeouts
 ---------------------------
@@ -695,11 +696,6 @@ Generated output "FAILED" (see below for sporadic): First run 2014-12-07
 ------------------------------------------------------------------------
 [Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
 [Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
-
-Error tolerance exceeded?: First run 2014-12-07
------------------------------------------------
-[Error matching program output for studies/hpcc/PTRANS/PTRANS]
-[Error matching program output for studies/hpcc/PTRANS/jglewis/ptrans_2011]
 
 Consistent execution timouts
 ----------------------------
