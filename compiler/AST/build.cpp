@@ -303,28 +303,44 @@ Expr* buildDotExpr(const char* base, const char* member) {
 }
 
 
-Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
+static Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = newTemp();
+
   lvar->addFlag(FLAG_MAYBE_PARAM);
-  FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                                 new CallExpr("isTrue", right),
-                                 new SymExpr(gFalse));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr("compilerError", new_StringSymbol("cannot promote short-circuiting && operator"))));
+
+  FnSymbol*  ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
+                                new CallExpr("isTrue", right),
+                                new SymExpr(gFalse));
+
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
+
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
+                                  new CallExpr("compilerError", eMsg)));
+
   ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
+
   return new CallExpr(new DefExpr(ifFn));
 }
 
 
-Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
+static Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = newTemp();
+
   lvar->addFlag(FLAG_MAYBE_PARAM);
-  FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                                 new SymExpr(gTrue),
-                                 new CallExpr("isTrue", right));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr("compilerError", new_StringSymbol("cannot promote short-circuiting || operator"))));
+
+  FnSymbol*  ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
+                               new SymExpr(gTrue),
+                               new CallExpr("isTrue", right));
+
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
+
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
+                                  new CallExpr("compilerError", eMsg)));
+
   ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
+
   return new CallExpr(new DefExpr(ifFn));
 }
 

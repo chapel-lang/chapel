@@ -1210,14 +1210,14 @@ lhs_expr:
 | parenthesized_expr
 ;
 
-/* Representations of values which can be invoked as functions. 
+/* Representations of values which can be invoked as functions.
  * Rather than allowing any value these values were deliberately restricted
- * to valid lhs_values and anonymous lambda function declarations. 
- * 
+ * to valid lhs_values and anonymous lambda function declarations.
+ *
  * NOTE:  In order to allow expr to be invoked as a function
  *        opt_actual_ls, and every production it relies on, would need to be
  *        reworked to not permit the empty production. */
-fun_expr: 
+fun_expr:
   lhs_expr
 | lambda_decl_expr
 ;
@@ -1245,7 +1245,7 @@ parenthesized_expr:
 ;
 
 literal_expr:
-  INTLITERAL            { $$ = buildIntLiteral(yytext); }          
+  INTLITERAL            { $$ = buildIntLiteral(yytext);  }
 | REALLITERAL           { $$ = buildRealLiteral(yytext); }
 | IMAGLITERAL           { $$ = buildImagLiteral(yytext); }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
@@ -1256,7 +1256,7 @@ literal_expr:
       $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
     }
 ;
-  
+
 assoc_expr_ls:
   expr TALIAS expr                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1, $3); }
 | assoc_expr_ls TCOMMA expr TALIAS expr { $1->insertAtTail($3); $1->insertAtTail($5); }
@@ -1279,8 +1279,8 @@ binary_op_expr:
 | expr TBAND expr          { $$ = new CallExpr("&", $1, $3); }
 | expr TBOR expr           { $$ = new CallExpr("|", $1, $3); }
 | expr TBXOR expr          { $$ = new CallExpr("^", $1, $3); }
-| expr TAND expr           { $$ = buildLogicalAndExpr($1, $3); }
-| expr TOR expr            { $$ = buildLogicalOrExpr($1, $3); }
+| expr TAND expr           { $$ = new CallExpr("&&", $1, $3); }
+| expr TOR  expr           { $$ = new CallExpr("||", $1, $3); }
 | expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
 | expr TBY expr            { $$ = new CallExpr("by", $1, $3); }
 | expr TALIGN expr         { $$ = new CallExpr("align", $1, $3); }
