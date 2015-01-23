@@ -670,10 +670,6 @@ QIO strcmp(got, expect) assertion error
 ---------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
 
-QIO qio_err_to_int() == EEOF assertion error
---------------------------------------------
-[Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
-
 consistent execution timeout (frequent)
 ---------------------------------------
 [Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (..., 2014-12-01, 2015-01-05.. )
@@ -719,8 +715,12 @@ sporadic os.unlink calls in sub_test failing due to resource being busy
 ===================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
-Reviewed 2015-01-16
+Reviewed 2015-01-21
 ===================
+
+QIO qio_err_to_int() == EEOF assertion error
+--------------------------------------------
+[Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
 
 
 === sporadic failures below ===
