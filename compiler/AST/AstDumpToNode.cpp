@@ -270,7 +270,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 
     newline();
 
-    write(false, "ModUses: ", false);
+    write(false, "ModUses:", false);
     mOffset = mOffset + 2;
     newline();
     node->modUses->accept(this);
@@ -280,7 +280,7 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
   if (node->byrefVars)
   {
     newline();
-    write(false, "ByRefVars: ", false);
+    write(false, "ByRefVars:", false);
     mOffset = mOffset + 2;
     newline();
     node->byrefVars->accept(this);
@@ -503,7 +503,10 @@ bool AstDumpToNode::enterForLoop(ForLoop* node)
     if (firstTime == true)
       firstTime = false;
     else
+    {
+      fprintf(mFP, "\n");
       newline();
+    }
 
     next_ast->accept(this);
   }
@@ -1016,7 +1019,12 @@ bool AstDumpToNode::enterAggrType(AggregateType* node)
       break;
   }
 
-  fprintf(mFP, "#<AggregateType %8d %-6s %s", node->id, tagName, (node->symbol) ? node->symbol->name : "SymbolUnbound");
+  fprintf(mFP,
+          "#<AggregateType %8d %-6s %s",
+          node->id,
+          tagName,
+          (node->symbol) ? node->symbol->name : "SymbolUnbound");
+
   mOffset = mOffset + 2;
   newline();
 
@@ -1320,7 +1328,6 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     if (sym->type != 0)
     {
-      fprintf(mFP, "%-42s", "");
       fprintf(mFP, " type:   ");
       writeType(sym->type);
     }
