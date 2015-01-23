@@ -52,12 +52,12 @@ general
 Reviewed 2015-01-19
 ===================
 
-with gcc version >= 4.8.0: "error: assuming signed overflow does not occur when assuming that (X + c) >= X is always true [-Werror=strict-overflow]" (2015-01-22, eronagha)
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+with gcc version >= 4.8.0: "error: assuming signed overflow does not occur when assuming that (X + c) >= X is always true [-Werror=strict-overflow]" (2015-01-22, xe-wb.gnu, cygwin32, cygwin64, eronagha)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 [Error matching compiler output for npb/ft/ft-serial (compopts: 1)]
 
-erroneous used-before-defined gripe from chpl compiler (2015-01-22, darwin, xe-wb.pgi, xe-wb.intel, xe-wb.intel, mnoakes)
-------------------------------------------------------------------------------------------------------------
+erroneous used-before-defined gripe from chpl compiler (2015-01-22, xe-wb.pgi, xe-wb.intel, mnoakes)
+----------------------------------------------------------------------------------------------------
 [Error matching compiler output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
 [Error matching compiler output for studies/graph500/v2/main (compopts: 1)]
 [Error matching compiler output for studies/graph500/v3/main (compopts: 1)]
