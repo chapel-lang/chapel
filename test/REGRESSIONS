@@ -52,6 +52,10 @@ general
 Reviewed 2015-01-19
 ===================
 
+with gcc version >= 4.8.0: "error: assuming signed overflow does not occur when assuming that (X + c) >= X is always true [-Werror=strict-overflow]" (2015-01-22, eronagha)
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[Error matching compiler output for npb/ft/ft-serial (compopts: 1)]
+
 
 ===================
 linux64
@@ -117,10 +121,6 @@ Reviewed 2015-01-22
 timeout (2014-11-12, first run)
 -------------------------------
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
-
-gcc 4.9.1 "error: assuming signed overflow does not occur when assuming that (X + c) >= X is always true [-Werror=strict-overflow]" (2015-01-22, eronagha)
-----------------------------------------------------------------------------------------------------------------------------------------------------------
-[Error matching compiler output for npb/ft/ft-serial (compopts: 1)]
 
 
 === sporadic failures below ===
