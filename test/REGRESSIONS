@@ -49,15 +49,15 @@
 
 ===================
 general
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
-with gcc version >= 4.8.0: "error: assuming signed overflow does not occur when assuming that (X + c) >= X is always true [-Werror=strict-overflow]" (2015-01-22, xe-wb.gnu, cygwin32, cygwin64, eronagha)
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+with gcc version >= 4.8.0: "error: assuming signed overflow ... [-Werror=strict-overflow]" (2015-01-22, xe-wb.gnu, cygwin32, cygwin64, eronagha)
+------------------------------------------------------------------------------------------------------------------------------------------------
 [Error matching compiler output for npb/ft/ft-serial (compopts: 1)]
 
-erroneous used-before-defined gripe from chpl compiler (2015-01-22, xe-wb.pgi, xe-wb.intel, mnoakes)
-----------------------------------------------------------------------------------------------------
+erroneous used-before-defined msg from chpl compiler (2015-01-22, xe-wb.pgi, xe-wb.intel, mnoakes)
+--------------------------------------------------------------------------------------------------
 [Error matching compiler output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
 [Error matching compiler output for studies/graph500/v2/main (compopts: 1)]
 [Error matching compiler output for studies/graph500/v3/main (compopts: 1)]
@@ -66,7 +66,7 @@ erroneous used-before-defined gripe from chpl compiler (2015-01-22, xe-wb.pgi, x
 ===================
 linux64
 Inherits 'general'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 
@@ -141,27 +141,28 @@ sporadic signal 11
 ===================
 darwin
 Inherits 'general'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 
 ===================
 gnu.darwin
 Inherits 'darwin'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 
 ===================
 perf*
 Inherits 'general'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
+
 
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -180,7 +181,7 @@ sporadic execution timeout
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -191,14 +192,14 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 
 ====================
 perf.chapel-shootout
 Inherits 'perf*'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ====================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -209,28 +210,28 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 fast
 Inherits 'general'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ============================
 
 
 ===================
 verify
 Inherits 'general'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 
@@ -240,16 +241,16 @@ sporadic execution timeout
 --------------------------
 [Error: Timed out executing program stress/deitz/test_10k_begins] (2015-01-08)
 
+
 ==================
 valgrind
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
 
 System I/O error.  Thomas has escalated to sys-ops
 --------------------------------------------------
 [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/correctness-test-valgrind/test/release/examples/spec/Variables (1)]
-
 
 invalid read in compiler (2014-12-16 -- diten, presumed due to standalone par)
 ------------------------------------------------------------------------------
@@ -286,13 +287,13 @@ read of size 8 in dl_name_match_p
 
 sporadic (?) compilation timeout
 --------------------------------
-[Error: Timed out compilation for functions/iterators/vass/standaloneForallIntents] (2015-01-20)
+[Error: Timed out compilation for functions/iterators/vass/standaloneForallIntents] (2015-01-20.. )
 
 
 ===================
 llvm
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
@@ -303,42 +304,35 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 ===================
 fifo
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
 
 
 ===================
 numa
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
 
-malloc memory corruption. New test by Vass and error might be sporadic
-----------------------------------------------------------------------
-[Error matching .bad file for variables/vass/ref-to-domains-arrays] (2015-01-12)
 
 ===================
 no-local
 Inherits 'general'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
-
-malloc memory corruption. New test by Vass and error might be sporadic
-----------------------------------------------------------------------
-[Error matching .bad file for variables/vass/ref-to-domains-arrays] (2015-01-10..2015-01-11)
 
 
 =================================
 no-local.linux32
 Inherits 'linux32' and 'no-local'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 =================================
 
 
 ===================
-gasnet* regressions
+gasnet*
 Inherits 'no-local'
-Reviewed 2015-01-19
+Reviewed 2015-01-23
 ===================
 
 
@@ -352,14 +346,21 @@ sporadic execution timeout (2015-01-18)
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===================
+
+
+=== sporadic failures below ===
+
+sporadic execution timeout
+--------------------------
+[Error: Timed out executing program performance/ferguson/remote-tuple-write] (2015-01-23)
 
 
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2015-01-13
+Reviewed 2015-01-23
 ===================
 
 
@@ -373,14 +374,14 @@ sporadic execution timeout (regularly)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 ===============================
 
 
 =============================
 gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 =============================
 
 consistent execution timeouts
@@ -406,14 +407,14 @@ sporadic execution timeouts (infrequent)
 =============================
 gasnet.llvm
 Inherits 'gasnet*' and 'llvm'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 =============================
 
 
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2015-01-16
+Reviewed 2015-01-23
 =============================
 
 
@@ -731,11 +732,11 @@ sporadic os.unlink calls in sub_test failing due to resource being busy
 [Error running sub_test in *] (2014-12-11, 2014-12-12, 2014-12-15, 2014-12-16, 2014-12-17, 2014-12-18)
 
 
-===================
+================================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
 Reviewed 2015-01-23
-===================
+================================
 
 QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
