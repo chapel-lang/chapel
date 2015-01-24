@@ -349,7 +349,8 @@ static FnSymbol* chpl_gen_main_exists() {
 
         ModuleSymbol* fnMod = fn->getModule();
 
-        if ((module == NULL && fnMod->modTag == MOD_MAIN) ||
+        if ((module == NULL && 
+             fnMod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) ||
             fnMod == module) {
           if (!match) {
             match = fn;
@@ -386,8 +387,8 @@ static void build_chpl_entry_points() {
   if (fLibraryCompile) {
     if (chpl_user_main)
       INT_FATAL(chpl_user_main, "'main' found when compiling a library");
-    if (mainModules.n != 1)
-      INT_FATAL("expected one module when compiling a library");
+    //    if (mainModules.n != 1)
+    //      INT_FATAL("expected one module when compiling a library");
   }
 
   if (!chpl_user_main) {
@@ -402,8 +403,9 @@ static void build_chpl_entry_points() {
       for_alist(expr, theProgram->block->body) {
         if (DefExpr* def = toDefExpr(expr)) {
           if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
-            if (mod->modTag == MOD_MAIN) {
+            if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
               if (mainModule) {
+                printf("%s %s\n", mainModule->name, mod->name);
                 USR_FATAL_CONT("a program with multiple user modules requires a main function");
                 USR_PRINT("alternatively, specify a main module with --main-module");
                 USR_STOP();

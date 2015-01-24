@@ -24,8 +24,10 @@
 
 extern ModTag currentModuleType;
 
-ModuleSymbol* ParseFile(const char* filename, ModTag modtype);
-ModuleSymbol* ParseMod(const char* modname, ModTag modtype);
+ModuleSymbol* ParseFile(const char* filename, ModTag modtype, 
+                        bool namedOnCommandLine);
+ModuleSymbol* ParseMod(const char* modname, ModTag modtype,
+                       bool namedOnCommandLine);
 
 void addModuleToParseList(const char* name, CallExpr* newUse);
 void parseDependentModules(ModTag modtype);
