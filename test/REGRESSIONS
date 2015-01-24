@@ -52,8 +52,8 @@ general
 Reviewed 2015-01-23
 ===================
 
-with gcc version >= 4.8.0: "error: assuming signed overflow ... [-Werror=strict-overflow]" (2015-01-22, xe-wb.gnu, cygwin32, cygwin64, eronagha)
-------------------------------------------------------------------------------------------------------------------------------------------------
+with gcc version >= 4.8.0: "error: assuming signed overflow ... [-Werror=strict-overflow]" (2015-01-22, xe-wb.gnu, eronagha)
+----------------------------------------------------------------------------------------------------------------------------
 [Error matching compiler output for npb/ft/ft-serial (compopts: 1)]
 
 erroneous used-before-defined msg from chpl compiler (2015-01-22, xe-wb.pgi, xe-wb.intel, mnoakes)
