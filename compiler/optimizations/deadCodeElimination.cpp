@@ -375,31 +375,7 @@ static void deadBlockElimination(FnSymbol* fn)
 
   // Find the reachable basic blocks within this function.
   std::set<BasicBlock*> reachable;
-
-  // We set up a work queue to perform a BFS on reachable blocks, and seed it
-  // with the first block in the function.
-  std::queue<BasicBlock*> work_queue;
-  work_queue.push((*fn->basicBlocks)[0]);
-
-  // Then we iterate until there are no more blocks to visit.
-  while (!work_queue.empty())
-  {
-    // Fetch and remove the next block.
-    BasicBlock* bb = work_queue.front();
-
-    work_queue.pop();
-
-    // Ignore it if we've already seen it.
-    if (reachable.count(bb))
-      continue;
-
-    // Otherwise, mark it as reachable, and append all of its successors to the
-    // work queue.
-    reachable.insert(bb);
-
-    for_vector(BasicBlock, out, bb->outs)
-      work_queue.push(out);
-  }
+  BasicBlock::getReachableBlocks(fn, reachable);
 
   // Visit all the blocks, deleting all those that are not reachable
   for_vector(BasicBlock, bb, *fn->basicBlocks)

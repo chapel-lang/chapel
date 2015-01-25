@@ -1133,6 +1133,11 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
 {
   BasicBlock::buildBasicBlocks(fn);
 
+  // This is a workaround for the presence of non-empty blocks with no
+  // predecessors in the interior of the flow graph.  When dead block removal
+  // works completely and runs before this pass, then this workaround may be removed.
+  BasicBlock::ignoreUnreachableBlocks(fn);
+
 #if DEBUG_AMM
   if (debug > 0)
   {
