@@ -52,16 +52,6 @@ general
 Reviewed 2015-01-23
 ===================
 
-with gcc version >= 4.8.0: "error: assuming signed overflow ... [-Werror=strict-overflow]" (2015-01-22, xe-wb.gnu, eronagha)
-----------------------------------------------------------------------------------------------------------------------------
-[Error matching compiler output for npb/ft/ft-serial (compopts: 1)]
-
-erroneous used-before-defined msg from chpl compiler (2015-01-22, xe-wb.pgi, xe-wb.intel, mnoakes)
---------------------------------------------------------------------------------------------------
-[Error matching compiler output for studies/graph500/kristyn/Graph500_1D_onV/main (compopts: 1)]
-[Error matching compiler output for studies/graph500/v2/main (compopts: 1)]
-[Error matching compiler output for studies/graph500/v3/main (compopts: 1)]
-
 
 ===================
 linux64
@@ -314,6 +304,10 @@ Inherits 'general'
 Reviewed 2015-01-23
 ===================
 
+expected memory leak no longer occurs (first seen 2015-01-24, vass)
+-------------------------------------------------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/promotion]
+
 
 ===================
 no-local
@@ -393,15 +387,15 @@ consistent execution timeouts
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, 2014-12-14, 2014-12-17, 2015-01-21)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, 2014-12-14, 2014-12-17, 2015-01-21, 2015-01-26)
 
 sporadic execution timeouts (frequent)
 --------------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15, 2015-01-07, 2015-01-09)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15, 2015-01-07, 2015-01-09, 2015-01-25)
 
 sporadic execution timeouts (infrequent)
 ----------------------------------------
-[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest] (2014-10-21, 2014-11-23)
+[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest] (2014-10-21, 2014-11-23, 2015-01-26)
 
 
 =============================
@@ -508,7 +502,12 @@ error differs but within acceptable margin; should squash error printing
 output mismatch (first seen 2015-01-09, vass)
 ---------------------------------------------
 [Error matching program output for modules/sungeun/test_safeSub]
-bisect
+
+signal 11 (first seen 2015-01-26, vass)
+---------------------------------------
+[Error matching program output for studies/590o/kfm/solver-blc]
+[Error matching program output for studies/590o/kfm/solver]
+
 
 === sporadic failures below ===
 
@@ -528,6 +527,7 @@ sporadic dropping/mangling of output
 [Error matching program output for release/examples/primers/arrays] (2014-10-03)
 [Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky] (2015-01-14)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)] (2014-12-19)
+[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local (compopts: 1)] (2015-01-26)
 [Error matching program output for studies/shootout/nbody/sidelnik/nbody_orig_1] (2014-12-16)
 
 signal 11 (first seen ????-??-??)
@@ -725,7 +725,7 @@ Consistent execution timouts
 
 sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21)
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25)
 
 sporadic os.unlink calls in sub_test failing due to resource being busy
 =======================================================================
