@@ -43,7 +43,6 @@ sync serial doSerial || (!doSerial && !parSafe) {
         begin totalRemoved = totalRemoved + 1;
       }
     }
-    chpl_task_yield();
   }
 }
 
