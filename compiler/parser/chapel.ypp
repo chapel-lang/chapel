@@ -271,9 +271,9 @@ stmt:
 
 module_decl_stmt:
   module ident TLCBR TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($2, new BlockStmt(), yyfilename, @1.comment, currentFileNamedOnCommandLine))); }
+    { $$ = buildChapelStmt(new DefExpr(buildModule($2, new BlockStmt(), yyfilename, @1.comment))); }
 | module ident TLCBR stmt_ls TRCBR
-    { $$ = buildChapelStmt(new DefExpr(buildModule($2, $4, yyfilename, @1.comment, currentFileNamedOnCommandLine))); }
+    { $$ = buildChapelStmt(new DefExpr(buildModule($2, $4, yyfilename, @1.comment))); }
 ;
 
 module:

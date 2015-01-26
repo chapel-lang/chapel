@@ -179,8 +179,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType,
   if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
     const char* modulename = filenameToModulename(filename);
 
-    newModule      = buildModule(modulename, yyblock, yyfilename, NULL, 
-                                 namedOnCommandLine);
+    newModule      = buildModule(modulename, yyblock, yyfilename, NULL);
 
     yylloc.comment = NULL;
 
