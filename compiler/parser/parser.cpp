@@ -247,7 +247,7 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
       modType = MOD_STANDARD;
     }
 
-    retval = ParseFile(filename, modType, false);
+    retval = ParseFile(filename, modType);
   }
 
   return retval;
@@ -308,7 +308,7 @@ void parseDependentModules(ModTag modtype) {
         // need to parse it
         if (!foundInt) {
           ModuleSymbol* mod = ParseFile(stdModNameToFilename(modName),
-                                        MOD_STANDARD, false);
+                                        MOD_STANDARD);
 
           // if we also found a user module by the same name, we need to
           // rename the standard module and the use of it

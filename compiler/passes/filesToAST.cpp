@@ -106,6 +106,7 @@ void parse() {
 
     while ((inputFilename = nthFilename(filenum++))) {
       if (isChplSource(inputFilename)) {
+        //        ParseFile(inputFilename, MOD_USER, true);
         ParseFile(inputFilename, MOD_USER, true);
       }
     }
@@ -130,6 +131,7 @@ static void countTokensInCmdLineFiles() {
 
   while ((inputFilename = nthFilename(filenum++))) {
     if (isChplSource(inputFilename)) {
+      //      ParseFile(inputFilename, MOD_USER, true);
       ParseFile(inputFilename, MOD_USER, true);
     }
   }
