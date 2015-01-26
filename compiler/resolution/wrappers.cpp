@@ -188,7 +188,7 @@ buildDefaultWrapper(FnSymbol* fn,
       }
     }
     // This call is required to establish the type of _this.
-    wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
+//    wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
   }
   CallExpr* call = new CallExpr(fn);
   call->square = info->call->square;    // Copy square brackets call flag.
