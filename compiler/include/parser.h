@@ -23,6 +23,7 @@
 #include "symbol.h"
 
 extern ModTag currentModuleType;
+extern bool currentFileNamedOnCommandLine;
 
 ModuleSymbol* ParseFile(const char* filename, ModTag modtype, 
                         bool namedOnCommandLine);

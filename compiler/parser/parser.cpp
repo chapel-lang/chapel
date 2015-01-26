@@ -131,10 +131,12 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
 
 
 static bool firstFile = true;
+bool currentFileNamedOnCommandLine=false;
 
 ModuleSymbol* ParseFile(const char* filename, ModTag modType, 
                         bool namedOnCommandLine) {
   ModuleSymbol* newModule = NULL;
+  currentFileNamedOnCommandLine = namedOnCommandLine;
 
   currentModuleType   = modType;
 
@@ -177,10 +179,8 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType,
   if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
     const char* modulename = filenameToModulename(filename);
 
-    newModule      = buildModule(modulename, yyblock, yyfilename, NULL);
-    if (namedOnCommandLine) {
-      newModule->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-    }
+    newModule      = buildModule(modulename, yyblock, yyfilename, NULL, 
+                                 namedOnCommandLine);
 
     yylloc.comment = NULL;
 
@@ -201,9 +201,9 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType,
 
       if (DefExpr* defExpr = toDefExpr(stmt)) {
         if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
-          if (namedOnCommandLine) {
+          /*          if (namedOnCommandLine) {
             modSym->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-          }
+            }*/
 
           if (fUseIPE == false)
             theProgram->block->insertAtTail(defExpr->remove());
@@ -231,6 +231,8 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType,
 
   yystartlineno       =   -1;
   chplLineno          =   -1;
+
+  currentFileNamedOnCommandLine = false;
 
   return newModule;
 }

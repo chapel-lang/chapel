@@ -405,7 +405,6 @@ static void build_chpl_entry_points() {
           if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
             if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
               if (mainModule) {
-                printf("%s %s\n", mainModule->name, mod->name);
                 USR_FATAL_CONT("a program with multiple user modules requires a main function");
                 USR_PRINT("alternatively, specify a main module with --main-module");
                 USR_STOP();
