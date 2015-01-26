@@ -374,7 +374,7 @@ static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
 static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
-// static void initializeClass(Expr* stmt, Symbol* sym);
+ static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
 static void removeCompilerWarnings();
@@ -7303,7 +7303,6 @@ static void insertReturnTemps() {
 }
 
 
-#if 0
 //
 // insert code to initialize a class or record
 //
@@ -7325,7 +7324,6 @@ initializeClass(Expr* stmt, Symbol* sym) {
     }
   }
 }
-#endif
 
 
 static void handleRuntimeTypes()
@@ -8163,12 +8161,19 @@ static void removeMootFields() {
   }
 }
 
+
+// Calls to initializeClass are needed for now, because at least "record-wrapped
+// types" depend on the class fields being initialized to nil.  Otherwise,
+// assignments to such types end up reading uninitialized memory, which is "undesirable".
+// This zero-initialization should not be needed after
+// initialization-is-construction.  The need for this zero initialization is
+// currently created by the use of assignment in initialization....
 static void expandInitFieldPrims()
 {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_INIT_FIELDS))
     {
-//      initializeClass(call, toSymExpr(call->get(1))->var);
+      initializeClass(call, toSymExpr(call->get(1))->var);
       call->remove();
     }
   }
