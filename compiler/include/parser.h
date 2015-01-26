@@ -27,8 +27,7 @@ extern bool currentFileNamedOnCommandLine;
 
 ModuleSymbol* ParseFile(const char* filename, ModTag modtype, 
                         bool namedOnCommandLine);
-ModuleSymbol* ParseMod(const char* modname, ModTag modtype,
-                       bool namedOnCommandLine);
+ModuleSymbol* ParseMod(const char* modname, ModTag modtype);
 
 void addModuleToParseList(const char* name, CallExpr* newUse);
 void parseDependentModules(ModTag modtype);

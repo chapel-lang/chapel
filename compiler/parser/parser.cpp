@@ -237,8 +237,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType,
 }
 
 
-ModuleSymbol* ParseMod(const char* modname, ModTag modType, 
-                       bool namedOnCommandLine) {
+ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
   bool          isInternal = (modType == MOD_INTERNAL) ? true : false;
   bool          isStandard = false;
   ModuleSymbol* retval     = NULL;
@@ -248,7 +247,7 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType,
       modType = MOD_STANDARD;
     }
 
-    retval = ParseFile(filename, modType, namedOnCommandLine);
+    retval = ParseFile(filename, modType, false);
   }
 
   return retval;
@@ -258,7 +257,7 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType,
 void parseDependentModules(ModTag modtype) {
   forv_Vec(const char*, modName, modNameList) {
     if (!modDoneSet.set_in(modName)) {
-      if (ParseMod(modName, modtype, false)) {
+      if (ParseMod(modName, modtype)) {
         modDoneSet.set_add(modName);
       }
     }

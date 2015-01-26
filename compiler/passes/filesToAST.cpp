@@ -66,16 +66,16 @@ void parse() {
   if (countTokens)
     countTokensInCmdLineFiles();
 
-  baseModule            = ParseMod("ChapelBase",           MOD_INTERNAL, false);
+  baseModule            = ParseMod("ChapelBase",           MOD_INTERNAL);
   INT_ASSERT(baseModule);
 
   setIteratorTags();
 
   if (fUseIPE == false) {
-    standardModule        = ParseMod("ChapelStandard",       MOD_INTERNAL, false);
+    standardModule        = ParseMod("ChapelStandard",       MOD_INTERNAL);
     INT_ASSERT(standardModule);
 
-    printModuleInitModule = ParseMod("PrintModuleInitOrder", MOD_INTERNAL, false);
+    printModuleInitModule = ParseMod("PrintModuleInitOrder", MOD_INTERNAL);
     INT_ASSERT(printModuleInitModule);
   }
 
