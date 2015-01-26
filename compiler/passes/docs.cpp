@@ -314,7 +314,11 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   printTabs(file);
   *file << "Module: " << name << std::endl;
   if (!fDocsTextOnly) {
-    *file << "=============" << std::endl;
+    int length = strlen("Module: ") + strlen(name.c_str());
+    for (int i = 0; i < length; i++) {
+      *file << "=";
+    }
+    *file << std::endl;
     // Make the length of this equal to "Module: " + name.length
   }
   NUMTABS++;
