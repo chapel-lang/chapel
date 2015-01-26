@@ -97,7 +97,10 @@ void docs(void) {
         
         if (isNotSubmodule(mod)) {
           // Creates files for each top level module
-          filename = filename + mod->name + ".txt";
+          if (!fDocsTextOnly)
+            filename = filename + mod->name + ".rst";
+          else
+            filename = filename + mod->name + ".txt";
           std::ofstream file(filename.c_str(), std::ios::out);
           if (!fDocsTextOnly) {
             file << ".. default-domain:: chpl" << std::endl << std::endl;
