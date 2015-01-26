@@ -200,9 +200,6 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType,
 
       if (DefExpr* defExpr = toDefExpr(stmt)) {
         if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
-          /*          if (namedOnCommandLine) {
-            modSym->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-            }*/
 
           if (fUseIPE == false)
             theProgram->block->insertAtTail(defExpr->remove());

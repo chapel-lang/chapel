@@ -387,8 +387,6 @@ static void build_chpl_entry_points() {
   if (fLibraryCompile) {
     if (chpl_user_main)
       INT_FATAL(chpl_user_main, "'main' found when compiling a library");
-    //    if (mainModules.n != 1)
-    //      INT_FATAL("expected one module when compiling a library");
   }
 
   if (!chpl_user_main) {
