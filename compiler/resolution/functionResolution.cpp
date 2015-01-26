@@ -4721,12 +4721,24 @@ preFold(Expr* expr) {
         result = new CallExpr("chpl__convertValueToRuntimeType", call->get(1)->remove());
         call->replace(result);
 
-        // If this call is inside a BLOCK_TYPE, it will be removed and the
-        // runtime type will not be initialized. Change the parent block
-        // to a BLOCK_NORMAL to fix this.
-        if (BlockStmt* blk = toBlockStmt(result->parentExpr->parentExpr))
-          if (blk->blockTag == BLOCK_TYPE)
-            blk->blockTag = BLOCK_NORMAL;
+        // If this call is inside a BLOCK_TYPE_ONLY, it will be removed and the
+        // runtime type will not be initialized. Unset this bit to fix.
+        //
+        // Assumption: The block we need to modify is either the parent or
+        // grandparent expression of the call.
+        BlockStmt* blk = NULL;
+        if ((blk = toBlockStmt(result->parentExpr))) {
+          // If the call's parent expression is a block, we assume it to
+          // be a scopeless type_only block.
+          INT_ASSERT(blk->blockTag & BLOCK_TYPE);
+        } else {
+          // The grandparent block doesn't necessarily have the BLOCK_TYPE_ONLY
+          // flag.
+          blk = toBlockStmt(result->parentExpr->parentExpr);
+        }
+        if (blk) {
+          (unsigned&)(blk->blockTag) &= !(unsigned)BLOCK_TYPE_ONLY;
+        }
       }
     } else if (call->isPrimitive(PRIM_QUERY)) {
       Symbol* field = determineQueriedField(call);
