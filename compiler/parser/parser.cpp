@@ -131,9 +131,12 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
 
 
 static bool firstFile = true;
+bool currentFileNamedOnCommandLine=false;
 
-ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
+ModuleSymbol* ParseFile(const char* filename, ModTag modType, 
+                        bool namedOnCommandLine) {
   ModuleSymbol* newModule = NULL;
+  currentFileNamedOnCommandLine = namedOnCommandLine;
 
   currentModuleType   = modType;
 
@@ -161,13 +164,13 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
 
   yyblock = NULL;
 
-  if (modType == MOD_MAIN) {
+  if (namedOnCommandLine) {
     startCountingFileTokens(filename);
   }
 
   yyparse();
 
-  if (modType == MOD_MAIN) {
+  if (namedOnCommandLine) {
     stopCountingFileTokens();
   }
 
@@ -224,6 +227,8 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType) {
 
   yystartlineno       =   -1;
   chplLineno          =   -1;
+
+  currentFileNamedOnCommandLine = false;
 
   return newModule;
 }

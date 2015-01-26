@@ -86,7 +86,6 @@ void AstDumpToHtml::view(const char* passName) {
 
   forv_Vec(ModuleSymbol, module, allModules) {
     if (fdump_html_include_system_modules == true      ||
-        module->modTag                    == MOD_MAIN  ||
         module->modTag                    == MOD_USER) {
       AstDumpToHtml logger;
 
