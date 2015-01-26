@@ -32,6 +32,9 @@ $ENV{"CHPL_MAKE_HOME"} = $chpl_home_dir;
 $make = `$chpl_home_dir/util/chplenv/chpl_make.py`;
 chomp($make);
 
+# Do not print directory changes.
+$make = "$make --no-print-directory";
+
 sub mysystem {
   my $cmd = shift;
   # Run $cmd but filter out e.g. make[2]: lines
