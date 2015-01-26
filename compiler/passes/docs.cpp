@@ -34,6 +34,9 @@
 
 int NUMTABS = 0;
 
+static std::map<std::string, std::string> outputMap;
+// If we were using C++11 then this could be an unordered_map
+
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
   Symbol* s2 = *(Symbol* const *)v2;
@@ -49,6 +52,25 @@ static int compareClasses(const void *v1, const void* v2) {
 void docs(void) {
 
   if (fDocs) {
+    // Create a map of structural names to their expected chpldoc output
+    if (fDocsTextOnly) {
+      outputMap["class"] = "Class: ";
+      outputMap["record"] = "Record: ";
+      outputMap["config"] = "config ";
+    } else {
+      outputMap["class"] = ".. class:: ";
+      outputMap["record"] = ".. record:: ";
+      outputMap["module"] = ".. module:: ";
+      outputMap["module comment prefix"] = ":synopsis: ";
+      outputMap["iter func"] = ".. iterfunction:: ";
+      outputMap["iter method"] = ".. itermethod:: ";
+      outputMap["func"] = ".. function:: ";
+      outputMap["method"] = ".. method:: ";
+      outputMap["config"] = ".. data:: ";
+      outputMap["field"] = ".. attribute:: ";
+    }
+
+    // Open the directory to store the docs
     std::string folderName = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
 
 
@@ -77,19 +99,12 @@ void docs(void) {
           // Creates files for each top level module
           filename = filename + mod->name + ".txt";
           std::ofstream file(filename.c_str(), std::ios::out);
+          if (!fDocsTextOnly) {
+            file << ".. default-domain:: chpl" << std::endl << std::endl;
+          }
           printModule(&file, mod, mod->name);
           file.close();
         }
-      }
-    }
-    if (!fDocsTextOnly) {
-      char command[1024];
-      sprintf(command, "export PYTHONPATH=%s/third-party/creoleparser/install:$PYTHONPATH && python %s/util/docs/chpldoc2html %s", CHPL_HOME, CHPL_HOME, folderName.c_str());
-      if (mysystem(command, "converting creole docs to html", true) != 0) {
-        fprintf(stderr, "\n");
-        USR_FATAL("chpldoc2html failed when creating your --docs output.\n"
-                  "       Make sure the Creoleparser and Genshi Python packages are in your path.\n"
-                  "       One way to do so is: '%s -C $CHPL_HOME/third-party creoleparser'\n", CHPL_MAKE);
       }
     }
   }
@@ -147,6 +162,9 @@ void printFields(std::ofstream *file, AggregateType *cl) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
       if (!var->hasFlag(FLAG_SUPER_CLASS)) {
         printTabs(file);
+        *file << outputMap["field"];
+        // For rst, this will insert '.. attribute:: ' here
+        // For plain text, nothing will be inserted
         printVarStart(file, var);
         Expr *expr;
         if (cl->isClass()) {
@@ -159,16 +177,13 @@ void printFields(std::ofstream *file, AggregateType *cl) {
             if (end->primitive != NULL) {
               *file << ": ";
               end->prettyPrint(file);
+              // TODO: prettify type output
             } else if (SymExpr* sym = toSymExpr(end->argList.tail)) {
               *file << " = ";
               sym->prettyPrint(file);
             }
           }
         } 
-        if (!fDocsTextOnly)
-          *file << "\\\\"; 
-        // The set of '\' is only when using creoleparser instead of 
-        // python-creole    
   
         *file << std::endl;
         printVarDocs(file, var);
@@ -189,12 +204,12 @@ void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
 void printClass(std::ofstream *file, AggregateType *cl) {
   if (! cl->isUnion()) {
     printTabs(file);
-    if (!fDocsTextOnly)
-      *file << "===";
+
+    // TODO: for rst, change convert to '.. class:: ' and '.. record:: '
     if (cl->isClass()) {
-      *file << "Class: " ;
+      *file << outputMap["class"];
     } else if (cl->isRecord()) {
-      *file << "Record: ";
+      *file << outputMap["record"];
     }
   
     NUMTABS++;
@@ -204,13 +219,13 @@ void printClass(std::ofstream *file, AggregateType *cl) {
       *file << cl->doc << std::endl;
     }
     printFields(file, cl);
-        // If alphabetical option passed, alphabetizes the output 
+    // If alphabetical option passed, alphabetizes the output
     if (fDocsAlphabetize) 
       qsort(cl->methods.v, cl->methods.n, sizeof(cl->methods.v[0]), 
         compareNames);
     
     forv_Vec(FnSymbol, fn, cl->methods){
-      printFunction(file, fn);
+      printFunction(file, fn, true);
     }
     
     Vec<AggregateType*> list;
@@ -221,18 +236,13 @@ void printClass(std::ofstream *file, AggregateType *cl) {
     
     forv_Vec(AggregateType, c, list) {
       printTabs(file);
-      if (!fDocsTextOnly)
-        *file << "//";
       *file << "inherited from " << c->symbol->name;
-      if (!fDocsTextOnly)
-        *file << "//" << "\\\\\\\\"; 
-      // The set of '\' is only when using creoleparser instead of python-creole
       *file << std::endl;
       NUMTABS++;
       printFields(file, c);
     
       forv_Vec(FnSymbol, fn, c->methods) {
-        printFunction(file, fn);
+        printFunction(file, fn, true);
        
       }
       NUMTABS--;
@@ -243,9 +253,8 @@ void printClass(std::ofstream *file, AggregateType *cl) {
 }
 
 void printVarStart(std::ofstream *file, VarSymbol *var) {
-  if (!fDocsTextOnly)
-    *file << "**";
-
+  // TODO: I need to get this to print type fields as type fields instead of
+  // vars.
   if (var->isConstant())
     *file << "const ";
   else if (var->isParameter())
@@ -253,41 +262,32 @@ void printVarStart(std::ofstream *file, VarSymbol *var) {
   else 
     *file << "var ";
   
-  if (!fDocsTextOnly)
-    *file << "**";
-  
   *file << var->name;
 }
 
 void printVarType(std::ofstream *file, VarSymbol *var) {  
   if (var->defPoint->exprType != NULL) {
     *file << ": ";
-    var->defPoint->exprType->prettyPrint(file); 
+    var->defPoint->exprType->prettyPrint(file);
+    // TODO: Make type output prettier
   }
-  if (!fDocsTextOnly)
-    *file << "\\\\"; 
-  // The set of '\' is only when using creoleparser instead of python-creole    
   *file << std::endl;
 }
 
 void printVarDocs(std::ofstream *file, VarSymbol *var) {
+  // TODO: Do we want to parse the output here to make it indent nicely?
   NUMTABS++;
   if (var->doc != NULL) {
     printTabs(file);
     *file << var->doc;
-    if (!fDocsTextOnly)
-      *file << "\\\\"; 
-    // The set of '\' is only when using creoleparser instead of python-creole  
     *file << std::endl;
   }
   NUMTABS--;
 }
 
 void printTabs(std::ofstream *file) {
-  if (fDocsTextOnly) {
-    for (int i = 1; i <= NUMTABS; i++) {
-      *file << "   ";
-    }
+  for (int i = 1; i <= NUMTABS; i++) {
+    *file << "   ";
   }
 }
 
@@ -308,26 +308,35 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
-  if (!fDocsTextOnly)
-    *file << "----" << std::endl;
   printTabs(file);
-  if (!fDocsTextOnly)
-    *file << "==";
   *file << "Module: " << name << std::endl;
+  if (!fDocsTextOnly) {
+    *file << "=============" << std::endl;
+    // Make the length of this equal to "Module: " + name.length
+  }
   NUMTABS++;
   if (mod->doc != NULL) {
     printTabs(file);
     *file << mod->doc << std::endl;
   }
+  if(!fDocsTextOnly) {
+    NUMTABS--;
+    *file << outputMap["module"] << name << std::endl;
+    NUMTABS++;
+    if (mod->doc != NULL) {
+      printTabs(file);
+      *file << outputMap["module comment prefix"];
+      *file << mod->doc << std::endl;
+      *file << std::endl;
+    }
+  }
+
   Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
   if (fDocsAlphabetize)
     qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
   forv_Vec(VarSymbol, var, configs) {
     printTabs(file);
-    if (!fDocsTextOnly)
-      *file << "**config** ";
-    else 
-      *file << "config ";
+    *file << outputMap["config"];
     printVarStart(file, var);
     printVarType(file, var);
     printVarDocs(file, var);
@@ -340,7 +349,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   
   forv_Vec(FnSymbol, fn, fns) {
     if (!devOnlyFunction(fn) || developer) {
-      printFunction(file, fn);
+      printFunction(file, fn, false);
     }
   }
 
@@ -363,11 +372,23 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   NUMTABS--;
 }
 
-void printFunction(std::ofstream *file, FnSymbol *fn) {
+void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
   printTabs(file);
   NUMTABS++;
-  if (!fDocsTextOnly)
-    *file << "====";
+  bool iterator = fn->hasFlag(FLAG_ITERATOR_FN);
+  if (method) {
+    if (iterator) {
+      *file << outputMap["iter method"];
+    } else {
+      *file << outputMap["method"];
+    }
+  } else {
+    if (iterator) {
+      *file << outputMap["iter func"];
+    } else {
+      *file << outputMap["func"];
+    }
+  }
   if (fn->hasFlag(FLAG_INLINE)) {
     *file << "inline ";
   } else if (fn->hasFlag(FLAG_EXPORT)) {
@@ -376,7 +397,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn) {
     *file << "extern ";
   }
   
-  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+  if (iterator) {
     *file << "iter ";
   } else {
     *file << "proc ";
@@ -417,6 +438,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn) {
   if (fn->retExprType != NULL) {
     *file << ": ";
     fn->retExprType->body.tail->prettyPrint(file);
+    // TODO: better type output
   }
   *file << std::endl;
 
