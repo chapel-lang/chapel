@@ -538,10 +538,11 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) { }
 
 uint64_t chpl_numCommGets(void) { return 0; }
 uint64_t chpl_numCommNBGets(void) { return 0; }
-uint64_t chpl_numCommTestNBGets(void) { return 0; }
-uint64_t chpl_numCommWaitNBGets(void) { return 0; }
 uint64_t chpl_numCommPuts(void) { return 0; }
 uint64_t chpl_numCommNBPuts(void) { return 0; }
+uint64_t chpl_numCommTestNB(void) { return 0; }
+uint64_t chpl_numCommWaitNB(void) { return 0; }
+uint64_t chpl_numCommTryNB(void) { return 0; }
 uint64_t chpl_numCommForks(void) { return 0; }
 uint64_t chpl_numCommFastForks(void) { return 0; }
 uint64_t chpl_numCommNBForks(void) { return 0; }

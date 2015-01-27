@@ -356,10 +356,11 @@ void chpl_comm_make_progress(void);
 typedef struct _chpl_commDiagnostics {
   uint64_t get;
   uint64_t get_nb;
-  uint64_t get_nb_test;
-  uint64_t get_nb_wait;
   uint64_t put;
   uint64_t put_nb;
+  uint64_t test_nb;
+  uint64_t wait_nb;
+  uint64_t try_nb;
   uint64_t fork;
   uint64_t fork_fast;
   uint64_t fork_nb;
@@ -387,10 +388,11 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 //
 uint64_t chpl_numCommGets(void);
 uint64_t chpl_numCommNBGets(void);
-uint64_t chpl_numCommTestNBGets(void);
-uint64_t chpl_numCommWaitNBGets(void);
 uint64_t chpl_numCommPuts(void);
 uint64_t chpl_numCommNBPuts(void);
+uint64_t chpl_numCommTestNB(void);
+uint64_t chpl_numCommWaitNB(void);
+uint64_t chpl_numCommTryNB(void);
 uint64_t chpl_numCommForks(void);
 uint64_t chpl_numCommFastForks(void);
 uint64_t chpl_numCommNBForks(void);

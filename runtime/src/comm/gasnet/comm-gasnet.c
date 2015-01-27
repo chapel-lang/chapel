@@ -1185,20 +1185,24 @@ uint64_t chpl_numCommNBGets(void) {
   return chpl_comm_commDiagnostics.get_nb;
 }
 
-uint64_t chpl_numCommTestNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb_test;
-}
-
-uint64_t chpl_numCommWaitNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb_wait;
-}
-
 uint64_t chpl_numCommPuts(void) {
   return chpl_comm_commDiagnostics.put;
 }
 
 uint64_t chpl_numCommNBPuts(void) {
   return chpl_comm_commDiagnostics.put_nb;
+}
+
+uint64_t chpl_numCommTestNB(void) {
+  return chpl_comm_commDiagnostics.test_nb;
+}
+
+uint64_t chpl_numCommWaitNB(void) {
+  return chpl_comm_commDiagnostics.wait_nb;
+}
+
+uint64_t chpl_numCommTryNB(void) {
+  return chpl_comm_commDiagnostics.try_nb;
 }
 
 uint64_t chpl_numCommFastForks(void) {
