@@ -531,16 +531,44 @@ static void codegen_header_compilation_config() {
 
 
 static void protectNameFromC(Symbol* sym) {
+  //
+  // If this symbol is exported of an extern symbol then someone
+  // outside of Chapel is relying on it to have a certain name and we
+  // need to respect that.
+  //
   if (sym->hasFlag(FLAG_EXPORT) || sym->hasFlag(FLAG_EXTERN)) {
     return;
   }
-  if (sym->getModule()->modTag != MOD_USER && 
-      sym->getModule()->modTag != MOD_MAIN) {
+  //
+  // Let's assume we only have to rename user symbols and that we've
+  // done a good job of protecting our internal and standard module
+  // symbols.  This has the advantage of not having to take special
+  // pains to keep from renaming things like chpl_string and uint64_t
+  // (which perhaps should arguably also have FLAG_EXTERN, but don't
+  // consistently seem to today; and adding FLAG_EXTERN to them seems
+  // to result in it getting propagated to type aliases and such in
+  // ways that caused headaches for me).
+  //
+  ModuleSymbol* symMod = sym->getModule();
+  if (symMod->modTag != MOD_USER && symMod->modTag != MOD_MAIN) {
     return;
   }
-    
+  //
+  // If the symbol is a member of an extern or exported type, we
+  // should similarly protect its name
+  //
+  if (sym != symMod) {
+    Symbol* parentSym = sym->defPoint->parentSymbol;
+    while (parentSym != symMod) {
+      if (parentSym->hasFlag(FLAG_EXTERN) || parentSym->hasFlag(FLAG_EXPORT)) {
+        return;
+      }
+      parentSym = parentSym->defPoint->parentSymbol;
+    }
+  }
+
   const char* oldName = sym->cname;
-  const char* newName = astr("chpl_usr_", oldName);
+  const char* newName = astr(oldName, "_chpl");
   sym->cname = newName;
   //  free(oldName);
 }
@@ -592,28 +620,31 @@ static void codegen_header() {
 
   //
   // by default, mangle all Chapel symbols to avoid clashing with C
-  // identifiers.  This can be disabled via the --min-mangle flag.
+  // identifiers.  This can be disabled via the --munge-user-idents
+  // flag.
   //
-  forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
-    protectNameFromC(sym);
-  }
-  forv_Vec(VarSymbol, sym, gVarSymbols) {
-    protectNameFromC(sym);
-  }
-  forv_Vec(ArgSymbol, sym, gArgSymbols) {
-    protectNameFromC(sym);
-  }
-  forv_Vec(TypeSymbol, sym, gTypeSymbols) {
-    protectNameFromC(sym);
-  }
-  forv_Vec(FnSymbol, sym, gFnSymbols) {
-    protectNameFromC(sym);
-  }
-  forv_Vec(EnumSymbol, sym, gEnumSymbols) {
-    protectNameFromC(sym);
-  }
-  forv_Vec(LabelSymbol, sym, gLabelSymbols) {
-    protectNameFromC(sym);
+  if (fMungeUserIdents) {
+    forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(VarSymbol, sym, gVarSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(ArgSymbol, sym, gArgSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(TypeSymbol, sym, gTypeSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(FnSymbol, sym, gFnSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(EnumSymbol, sym, gEnumSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(LabelSymbol, sym, gLabelSymbols) {
+      protectNameFromC(sym);
+    }
   }
 
 
@@ -716,8 +747,8 @@ static void codegen_header() {
           if (!strncmp(def->sym->cname, "_t", 2))
             def->sym->cname = astr("T", def->sym->cname + 2);
         } else {
-          // temp name is _tmp
-          if (!strcmp(def->sym->cname, "_tmp"))
+          // temp name is tmp
+          if (!strcmp(def->sym->cname, "tmp"))
             def->sym->cname = astr("T");
         }
       }

@@ -2878,7 +2878,7 @@ VarSymbol* newTemp(const char* name, Type* type) {
     if (localTempNames)
       name = astr("_t", istr(tempID++), "_");
     else
-      name = "_tmp";
+      name = "tmp";
   }
   VarSymbol* vs = new VarSymbol(name, type);
   vs->addFlag(FLAG_TEMP);
