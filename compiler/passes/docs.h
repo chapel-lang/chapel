@@ -29,7 +29,7 @@ void createDocsFileFolders(std::string filename);
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name);
 
-void printFunction(std::ofstream *file, FnSymbol *fn);
+void printFunction(std::ofstream *file, FnSymbol *fn, bool method);
 
 void printVarStart(std::ofstream *file, VarSymbol *var);
 
