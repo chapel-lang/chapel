@@ -83,6 +83,12 @@ third-party-try-gmp: FORCE
 	cd third-party && $(MAKE) try-gmp; \
 	fi
 
+third-party-chpldoc-venv: FORCE
+	cd third-party && $(MAKE) chpldoc-venv
+
+chpldoc: compiler third-party-chpldoc-venv
+	cd compiler && $(MAKE) chpldoc
+
 clean: FORCE
 	cd compiler && $(MAKE) clean
 	cd modules && $(MAKE) clean
