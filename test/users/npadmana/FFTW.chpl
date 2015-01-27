@@ -45,15 +45,19 @@ module FFTW {
 		extern proc fftw_execute(const plan : fftw_plan);
 		fftw_execute(plan);
 	}
-
 	proc destroy_plan(plan : fftw_plan) {
 		extern proc fftw_destroy_plan(plan : fftw_plan);
 		fftw_destroy_plan(plan);
 	}
-
 	proc cleanup() {
 		extern proc fftw_cleanup();
 		cleanup();
+	}
+
+
+	// Utilities -- not in FFTW
+	proc abs((r,c) : fftw_complex) : real {
+		return sqrt(r*r + c*c);
 	}
 
 
