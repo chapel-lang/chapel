@@ -575,6 +575,7 @@ function perfGraphInit() {
     toggleConf.textContent = '';
   }
 
+
   // generate the suite menu
   var suiteMenu = document.getElementById('suiteMenu');
   var f = document.createElement('form');
@@ -604,8 +605,61 @@ function perfGraphInit() {
     graphlist.appendChild(elem);
   }
 
+  setupGraphSelectionPane();
+
   setGraphsFromURL();
   displaySelectedGraphs();
+}
+
+
+// We want the graph selection pane to scroll with the page vertically so it's
+// always visible. In order to do that we have to calculate the height of the
+// graphlist so it fits within the page, and scroll the entire graph selection
+// pane when the window scrolls. This sets up the initial dimensions and
+// listens for scrolling and resizing.
+function setupGraphSelectionPane() {
+  $(window).scroll(function(){
+    setGraphSelectionPanePos();
+  });
+
+  $(window).ready(function(){
+    setGraphListHeight();
+    setGraphSelectionPanePos();
+
+    // The width of the selection pane depends on the length of the graph
+    // names, it doesn't change after the graphlist is loaded, but can be
+    // different for different graphs (e.g. perf vs compperf)
+    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
+    $('#graphdisplay').css({ 'margin-left': selectPaneWidth + 10 });
+  });
+
+  $(window).resize(function(){
+    setGraphListHeight();
+    setGraphSelectionPanePos();
+  });
+
+  // set the selection pane pos based based on the top of the graph display
+  // area (so it's aligned with the top graph) and the current scrolling
+  function setGraphSelectionPanePos() {
+    var graphListTop = parseInt($("#graphdisplay").offset().top);
+    var newTop = $(this).scrollTop() + graphListTop;
+    $('#graphSelectionPane').css({ 'top': newTop });
+  }
+
+  // determine the height to use for the graphlist. We want it to use most of
+  // the rest of the page. We realign the entire selection pane, then figure
+  // out the top of the graphlist and use 90% of the height between the top of
+  // the graphlist and the page bottom, with a minimum of 100 pixels.
+  function setGraphListHeight() {
+    var graphListTop = parseInt($("#graphdisplay").offset().top);
+    $('#graphSelectionPane').css({ 'top': graphListTop });
+
+    var topPos = parseInt($("#graphlist").offset().top);
+    var w = $(window).height();
+    var height = (w-topPos)*.9;
+    if (height < 100) { height = 100;}
+    $('#graphlist').css({ 'height': height });
+  }
 }
 
 
