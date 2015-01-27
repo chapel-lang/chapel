@@ -1,0 +1,104 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 10.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      2899,         95]
+NotebookOptionsPosition[      2605,         80]
+NotebookOutlinePosition[      2964,         96]
+CellTagsIndexPosition[      2921,         93]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{
+   "Code", " ", "to", " ", "generate", " ", "tests", " ", "for", " ", "the", 
+    " ", "FFTW", " ", "wrapper", " ", "routines"}], " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"SetDirectory", "[", 
+    RowBox[{"NotebookDirectory", "[", "]"}], "]"}], ";"}]}]], "Input",
+ CellChangeTimes->{{3.631380318636713*^9, 3.631380353051236*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"Do", " ", "the", " ", "1", "D", " ", "case", " ", "first"}], " ", 
+   "*)"}], "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"dim", " ", "=", " ", 
+     RowBox[{"{", "100", "}"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"a", " ", "=", " ", 
+     RowBox[{"RandomReal", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"0", ",", "1"}], "}"}], ",", "dim"}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"b", " ", "=", " ", 
+     RowBox[{"Fourier", "[", 
+      RowBox[{"a", ",", 
+       RowBox[{"FourierParameters", "\[Rule]", 
+        RowBox[{"{", 
+         RowBox[{"1", ",", "1"}], "}"}]}]}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"fs", " ", "=", " ", 
+     RowBox[{"OpenWrite", "[", 
+      RowBox[{"\"\<arr1d.dat\>\"", ",", 
+       RowBox[{"BinaryFormat", "\[Rule]", "True"}]}], "]"}]}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"BinaryWrite", "[", 
+     RowBox[{"fs", ",", "dim", ",", "\"\<Integer32\>\""}], "]"}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"BinaryWrite", "[", 
+     RowBox[{"fs", ",", "a", ",", " ", "\"\<Real64\>\""}], "]"}], ";"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"BinaryWrite", "[", 
+     RowBox[{"fs", ",", "b", ",", " ", "\"\<Complex128\>\""}], "]"}], ";"}], 
+   "\n", 
+   RowBox[{
+    RowBox[{"Close", "[", "fs", "]"}], ";"}]}]}]], "Input",
+ CellChangeTimes->{{3.63138035587591*^9, 3.631380473383889*^9}, {
+  3.6313805422790413`*^9, 3.631380569161026*^9}, {3.6313806075965*^9, 
+  3.6313806864208307`*^9}}]
+},
+WindowSize->{808, 751},
+WindowMargins->{{237, Automatic}, {Automatic, 46}},
+FrontEndVersion->"10.0 for Mac OS X x86 (32-bit, 64-bit Kernel) (September 9, \
+2014)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 408, 10, 46, "Input"],
+Cell[969, 32, 1632, 46, 223, "Input"]
+}
+]
+*)
+
+(* End of internal cache information *)
