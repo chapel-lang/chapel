@@ -1220,7 +1220,6 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
   gSym->addFlag(FLAG_CONST);                            \
-  gSym->addFlag(FLAG_EXTERN);                           \
   rootModule->block->insertAtTail(new DefExpr(gSym));   \
   primType->defaultValue = gSym
 
