@@ -1,8 +1,3 @@
-# * verify that virtualenv stuff is available
-#   * if not attempt to download it...
-# * create virtualenv
-# * pip install requirements.txt
-# * use install dir based on platform value
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/../..
 endif
