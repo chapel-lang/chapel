@@ -34,7 +34,7 @@ div.lspacer {
 .graphSelectionPane {
     padding-left: 20px;
     padding-right: 20px;
-    position:absolute;
+    position:fixed;
     vertical-align: top;
     border-right: 1px solid black;
 }

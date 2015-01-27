@@ -612,25 +612,28 @@ function perfGraphInit() {
 }
 
 
-// We want the graph selection pane to scroll with the page vertically so it's
-// always visible. In order to do that we have to calculate the height of the
-// graphlist so it fits within the page, and scroll the entire graph selection
-// pane when the window scrolls. This sets up the initial dimensions and
-// listens for scrolling and resizing.
+// We use 'fixed' css positioning to keep the graph selection pane always
+// visible (scrolls when the page scrolls.) However we don't want it to scroll
+// horizontally to so we move it when horizontal scross occur. Since it scrolls
+// veritcally we also need to make sure it fits in the page height. This sets
+// the initial dimensions and then listens for scrolling and resizes
 function setupGraphSelectionPane() {
   $(window).scroll(function(){
     setGraphSelectionPanePos();
   });
 
   $(window).ready(function(){
+    // we don't know the width of the graph selection pane until the graphs are
+    // added ot the graphlist. Once that is done figure out where to position
+    // the graph display. This is needed since the graph selection pane is
+    // 'fixed' meaning it's outside the normal flow and other elements act like
+    // it doesn't exist so we have to manualy move the graph display to avoid
+    // overlap. This doesn't change after page load.
+    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
+    $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
+
     setGraphListHeight();
     setGraphSelectionPanePos();
-
-    // The width of the selection pane depends on the length of the graph
-    // names, it doesn't change after the graphlist is loaded, but can be
-    // different for different graphs (e.g. perf vs compperf)
-    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
-    $('#graphdisplay').css({ 'margin-left': selectPaneWidth + 10 });
   });
 
   $(window).resize(function(){
@@ -638,23 +641,17 @@ function setupGraphSelectionPane() {
     setGraphSelectionPanePos();
   });
 
-  // set the selection pane pos based based on the top of the graph display
-  // area (so it's aligned with the top graph) and the current scrolling
+  // set the selection panes horizontal positional based on the scroll so the
+  // selection pane isn't always visible when scrolling horizontally
   function setGraphSelectionPanePos() {
-    var graphListTop = parseInt($("#graphdisplay").offset().top);
-    var newTop = $(this).scrollTop() + graphListTop;
-    $('#graphSelectionPane').css({ 'top': newTop });
+    $('#graphSelectionPane').css({ 'left': -$(window).scrollLeft() });
   }
 
   // determine the height to use for the graphlist. We want it to use most of
-  // the rest of the page. We realign the entire selection pane, then figure
-  // out the top of the graphlist and use 90% of the height between the top of
-  // the graphlist and the page bottom, with a minimum of 100 pixels.
+  // the rest of the page. We use 90% of the height between the top of the
+  // graphlist and the bottom of the page (with a min of 100 pixels.)
   function setGraphListHeight() {
-    var graphListTop = parseInt($("#graphdisplay").offset().top);
-    $('#graphSelectionPane').css({ 'top': graphListTop });
-
-    var topPos = parseInt($("#graphlist").offset().top);
+    var topPos = parseInt($("#graphlist").offset().top) - $(window).scrollTop();
     var w = $(window).height();
     var height = (w-topPos)*.9;
     if (height < 100) { height = 100;}
