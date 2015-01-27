@@ -329,7 +329,6 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   if(!fDocsTextOnly) {
     NUMTABS--;
     *file << outputMap["module"] << name << std::endl;
-    NUMTABS++;
     if (mod->doc != NULL) {
       printTabs(file);
       *file << outputMap["module comment prefix"];
@@ -376,7 +375,8 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     if (!devOnlyModule(md) || developer) 
       printModule(file, md, name + "." +  md->name);
   }
-  NUMTABS--;
+  if (fDocsTextOnly)
+    NUMTABS--;
 }
 
 void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
