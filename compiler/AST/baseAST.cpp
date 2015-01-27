@@ -202,7 +202,6 @@ void cleanAst() {
   // will be deleted with the clean_gvec call for ModuleSymbols.) 
   clean_modvec(allModules);
   clean_modvec(userModules);
-  clean_modvec(mainModules);
  
   //
   // clean global vectors and delete dead ast instances
@@ -460,14 +459,11 @@ const char* BaseAST::astTagAsString() const {
 
 astlocT currentAstLoc(0,NULL);
 
-Vec<ModuleSymbol*> mainModules; // Contains main modules
 Vec<ModuleSymbol*> userModules; // Contains user + main modules
 Vec<ModuleSymbol*> allModules;  // Contains all modules
 
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {
-  case MOD_MAIN:
-    mainModules.add(mod);
   case MOD_USER:
     userModules.add(mod);
   case MOD_STANDARD:

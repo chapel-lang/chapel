@@ -3328,7 +3328,7 @@ static void lvalueCheck(CallExpr* call)
         char cn1 = calleeFn->name[0];
         const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
         // Should this be the same condition as in insertLineNumber() ?
-        if (developer || mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) {
+        if (developer || mod->modTag == MOD_USER) {
           USR_FATAL_CONT(actual, "non-lvalue actual is passed to %s formal '%s'"
                          " of %s%s", formal->intentDescrString(), formal->name,
                          calleeFn->name, calleeParens);
