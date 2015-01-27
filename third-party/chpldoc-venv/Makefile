@@ -61,7 +61,7 @@ create-virtualenv: $(CHPLDOC_VENV_VIRTUALENV_DIR)
 $(CHPLDOC_VENV_SPHINX_BUILD): $(CHPLDOC_VENV_VIRTUALENV_DIR)
 	export PATH=$(CHPLDOC_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPLDOC_VENV_VIRTUALENV_DIR) && \
-	pip install -r requirements.txt
+	pip install -U --force-reinstall -r requirements.txt
 
 # Phony convenience target for install python packages.
 install-requirements: $(CHPLDOC_VENV_SPHINX_BUILD)
