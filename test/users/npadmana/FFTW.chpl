@@ -20,19 +20,41 @@ module FFTW {
 	// Also note that if one used complex types, then one would need to include complex.h at the command line
 	extern type fftw_complex = 2*real(64); // 4.1.1
 	extern type fftw_plan; // opaque type
+	type _cxptr = c_ptr(2*c_double);
 
 	// Planner functions
 	// Complex : 4.3.1
-	// NOTE : We pass in arrays using ref since we can't pass in multidimensional arrays.
-	extern proc fftw_plan_dft_1d(n0 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags : c_uint) : fftw_plan;
-	extern proc fftw_plan_dft_2d(n0 : c_int, n1 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags : c_uint) : fftw_plan;
-	extern proc fftw_plan_dft_3d(n0 : c_int, n1 : c_int, n2 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags : c_uint) : fftw_plan;
+	// NOTE : We pass in arrays using ref 
+	proc plan_dft_1d(n0 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan {
+		extern proc fftw_plan_dft_1d(n0 : c_int, in1 : _cxptr, out1 : _cxptr, sign : c_int, flags : c_uint) : fftw_plan;
+		return fftw_plan_dft_1d(n0,c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
+	}
+	proc plan_dft_2d(n0 : c_int, n1 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan {
+		extern proc fftw_plan_dft_2d(n0 : c_int, n1 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags : c_uint) : fftw_plan;
+		return fftw_plan_dft_2d(n0,n1,c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
+	}
+	proc plan_dft_3d(n0 : c_int, n1 : c_int, n2 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan {
+		extern proc fftw_plan_dft_3d(n0 : c_int, n1 : c_int, n2 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags : c_uint) : fftw_plan;
+		return fftw_plan_dft_3d(n0,n1,n2,c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
+	}
+
 
 
 	// Using plans 
-	extern proc fftw_execute(const plan : fftw_plan);
-	extern proc fftw_destroy_plan(plan : fftw_plan);
-	extern proc fftw_cleanup();
+	proc execute(const plan : fftw_plan) {
+		extern proc fftw_execute(const plan : fftw_plan);
+		fftw_execute(plan);
+	}
+
+	proc destroy_plan(plan : fftw_plan) {
+		extern proc fftw_destroy_plan(plan : fftw_plan);
+		fftw_destroy_plan(plan);
+	}
+
+	proc cleanup() {
+		extern proc fftw_cleanup();
+		cleanup();
+	}
 
 
 }
