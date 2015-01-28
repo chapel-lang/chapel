@@ -1,0 +1,5 @@
+In foo!
+(foo = 4.2)
+4.2
+(foo = 1.2)
+Success!

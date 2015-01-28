@@ -532,14 +532,6 @@ static void codegen_header_compilation_config() {
 
 static void protectNameFromC(Symbol* sym) {
   //
-  // If this symbol is exported of an extern symbol then someone
-  // outside of Chapel is relying on it to have a certain name and we
-  // need to respect that.
-  //
-  if (sym->hasFlag(FLAG_EXPORT) || sym->hasFlag(FLAG_EXTERN)) {
-    return;
-  }
-  //
   // Let's assume we only have to rename user symbols and that we've
   // done a good job of protecting our internal and standard module
   // symbols.  This has the advantage of not having to take special
@@ -553,20 +545,45 @@ static void protectNameFromC(Symbol* sym) {
   if (symMod->modTag != MOD_USER) {
     return;
   }
+
   //
-  // If the symbol is a member of an extern or exported type, we
-  // should similarly protect its name
+  // If this symbol is exported of an extern symbol then someone
+  // outside of Chapel is relying on it to have a certain name and we
+  // need to respect that.
+  //
+  if (sym->hasFlag(FLAG_EXPORT) || sym->hasFlag(FLAG_EXTERN)) {
+    return;
+  }
+
+  //
+  // Walk from the symbol up to its enclosing module.  If the symbol
+  // is declared within an extern declaration, we should preserve its
+  // name for similar reasons.
   //
   if (sym != symMod) {
     Symbol* parentSym = sym->defPoint->parentSymbol;
     while (parentSym != symMod) {
-      if (parentSym->hasFlag(FLAG_EXTERN) || parentSym->hasFlag(FLAG_EXPORT)) {
+      if (parentSym->hasFlag(FLAG_EXTERN)) {
         return;
       }
       parentSym = parentSym->defPoint->parentSymbol;
     }
   }
 
+  //
+  // For the sake of clarity, let's also avoid renaming arguments of
+  // exported functions.
+  //
+  if (toArgSymbol(sym)) {
+    Symbol* parentSym = sym->defPoint->parentSymbol;
+    if (parentSym->hasFlag(FLAG_EXPORT)) {
+      return;
+    }
+  }
+
+  //
+  // Rename the symbol
+  //
   const char* oldName = sym->cname;
   const char* newName = astr(oldName, "_chpl");
   sym->cname = newName;
