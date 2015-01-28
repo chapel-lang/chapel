@@ -4737,7 +4737,7 @@ preFold(Expr* expr) {
           blk = toBlockStmt(result->parentExpr->parentExpr);
         }
         if (blk) {
-          (unsigned&)(blk->blockTag) &= !(unsigned)BLOCK_TYPE_ONLY;
+          (unsigned&)(blk->blockTag) &= ~(unsigned)BLOCK_TYPE_ONLY;
         }
       }
     } else if (call->isPrimitive(PRIM_QUERY)) {
