@@ -411,36 +411,39 @@ static Expr* resolve(CallExpr* expr, const DefScope* scope)
   int                count = expr->numActuals();
   std::vector<Type*> actualTypes;
 
-  // Resolve the actuals
-  for (int i = 1; i <= count; i++)
+  if (expr->isPrimitive(PRIM_USE) == false)
   {
-    Expr* actual = expr->get(i);
-    Expr* res    = resolve(actual, scope);
-    Type* type   = typeForExpr(res);
-
-    if (res == 0 || type == 0)
+    // Resolve the actuals
+    for (int i = 1; i <= count; i++)
     {
-      AstDumpToNode logger(stdout, 3);
+      Expr* actual = expr->get(i);
+      Expr* res    = resolve(actual, scope);
+      Type* type   = typeForExpr(res);
 
-      printf("Failed to handle actual %2d\n   ", i);
-      actual->accept(&logger);
-      printf("\n\n");
+      if (res == 0 || type == 0)
+      {
+        AstDumpToNode logger(stdout, 3);
 
-      printf("in\n\n   ");
-      expr->accept(&logger);
-      printf("\n\n\n");
+        printf("Failed to handle actual %2d\n   ", i);
+        actual->accept(&logger);
+        printf("\n\n");
 
-      printf("expr->typeInfo()\n\n   ");
-      expr->typeInfo()->accept(&logger);
-      printf("\n\n\n");
+        printf("in\n\n   ");
+        expr->accept(&logger);
+        printf("\n\n\n");
 
-      INT_ASSERT(false);
+        printf("expr->typeInfo()\n\n   ");
+        expr->typeInfo()->accept(&logger);
+        printf("\n\n\n");
+
+        INT_ASSERT(false);
+      }
+
+      actualTypes.push_back(type);
+
+      if (res != actual)
+        actual->replace(res);
     }
-
-    actualTypes.push_back(type);
-
-    if (res != actual)
-      actual->replace(res);
   }
 
   // Select the function

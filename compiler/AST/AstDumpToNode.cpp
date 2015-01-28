@@ -163,7 +163,6 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
       case MOD_USER:
         tag = "User";
         break;
-
     }
 
     fprintf(mFP, "#<ModuleSymbol      %12d %s", node->id, node->name);
@@ -210,10 +209,6 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
 {
   char heading[128] = { '\0' };
   bool firstTime    = true;
-
-  if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
 
   sprintf(heading, "#<BlockStmt         %12d", node->id);
 
@@ -752,7 +747,10 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
   {
     newline();
     write(false, "Where:       ", false);
+
+    mOffset = mOffset + 13;
     node->where->accept(this);
+    mOffset = mOffset - 13;
   }
 
   if (node->retExprType)
@@ -1274,15 +1272,23 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   {
     fprintf(mFP, "#<IpeSymbol         %12d ", var->id);
 
-    fprintf(mFP, "name: %-36s", name);
-
-    if (sym->type)
+    if (sym->type != 0 || var->depth() >= 0 || var->offset() >= 0)
     {
-      fprintf(mFP, " type:   ");
-      writeType(sym->type);
-    }
+      fprintf(mFP, "name: %-36s", name);
 
-    fprintf(mFP, " depth: %3d offset: %4d ", var->depth(), var->offset());
+      if (var->type)
+      {
+        fprintf(mFP, " type:   ");
+        writeType(sym->type);
+      }
+
+      if (var->depth() >= 0 || var->offset() >= 0)
+        fprintf(mFP, " depth: %3d offset: %4d ", var->depth(), var->offset());
+    }
+    else
+    {
+      fprintf(mFP, "name: %s", name);
+    }
 
     writeFlags(mFP, sym);
     fprintf(mFP, ">");
@@ -1337,7 +1343,15 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     if (var->immediate == 0)
     {
-      fprintf(mFP, "name: %-36s", name);
+      if (sym->type == 0)
+      {
+        fprintf(mFP, "name: %s", name);
+      }
+      else
+      {
+        fprintf(mFP, "name: %-36s type:   ", name);
+        writeType(sym->type);
+      }
     }
     else
     {
@@ -1365,12 +1379,12 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       }
 
       fprintf(mFP, "imm:  %-36s", imm);
-    }
 
-    if (sym->type)
-    {
-      fprintf(mFP, " type:   ");
-      writeType(sym->type);
+      if (sym->type)
+      {
+        fprintf(mFP, " type:   ");
+        writeType(sym->type);
+      }
     }
 
     writeFlags(mFP, sym);
@@ -1398,43 +1412,43 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
       switch (arg->intent)
       {
         case INTENT_IN:
-          fprintf(mFP, "intent:       in arg");
+          fprintf(mFP, "intent:       in");
           newline();
           break;
         case INTENT_INOUT:
-          fprintf(mFP, "intent:       inout arg");
+          fprintf(mFP, "intent:       inout");
           newline();
           break;
         case INTENT_OUT:
-          fprintf(mFP, "intent:       out arg");
+          fprintf(mFP, "intent:       out");
           newline();
           break;
         case INTENT_CONST:
-          fprintf(mFP, "intent:       const arg");
+          fprintf(mFP, "intent:       const");
           newline();
           break;
         case INTENT_CONST_IN:
-          fprintf(mFP, "intent:       const in arg");
+          fprintf(mFP, "intent:       const in");
           newline();
           break;
         case INTENT_CONST_REF:
-          fprintf(mFP, "intent:       const ref arg");
+          fprintf(mFP, "intent:       const ref");
           newline();
           break;
         case INTENT_REF:
-          fprintf(mFP, "intent:       ref arg");
+          fprintf(mFP, "intent:       ref");
           newline();
           break;
         case INTENT_PARAM:
-          fprintf(mFP, "intent:       param arg");
+          fprintf(mFP, "intent:       param");
           newline();
           break;
         case INTENT_TYPE:
-          fprintf(mFP, "intent:       type arg");
+          fprintf(mFP, "intent:       type");
           newline();
           break;
         case INTENT_BLANK:
-          fprintf(mFP, "intent:       arg");
+          fprintf(mFP, "intent:       blank");
           newline();
           break;
       }
