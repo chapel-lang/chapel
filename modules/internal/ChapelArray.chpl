@@ -1342,10 +1342,10 @@ module ChapelArray {
     //
     proc ~_array() {
      if !noRefCount {
-       if _valueType == nil then
-         // This happens e.g. for delete on an array field whose default
-         // initializer is a forall expr. [arrayInClassRecord.chpl]
-         return;
+       // removeWrapRecords replaces the following conditional with "true",
+       // which is not what we want.
+       //       if _valueType == nil then
+       //         return;
       if !_isPrivatized(_valueType) {
         if _value == nil then
          // This happens e.g. for delete on an array field whose default
