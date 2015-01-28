@@ -575,6 +575,7 @@ function perfGraphInit() {
     toggleConf.textContent = '';
   }
 
+
   // generate the suite menu
   var suiteMenu = document.getElementById('suiteMenu');
   var f = document.createElement('form');
@@ -604,8 +605,58 @@ function perfGraphInit() {
     graphlist.appendChild(elem);
   }
 
+  setupGraphSelectionPane();
+
   setGraphsFromURL();
   displaySelectedGraphs();
+}
+
+
+// We use 'fixed' css positioning to keep the graph selection pane always
+// visible (scrolls when the page scrolls.) However we don't want it to scroll
+// horizontally to so we move it when horizontal scross occur. Since it scrolls
+// veritcally we also need to make sure it fits in the page height. This sets
+// the initial dimensions and then listens for scrolling and resizes
+function setupGraphSelectionPane() {
+  $(window).scroll(function(){
+    setGraphSelectionPanePos();
+  });
+
+  $(window).ready(function(){
+    // we don't know the width of the graph selection pane until the graphs are
+    // added ot the graphlist. Once that is done figure out where to position
+    // the graph display. This is needed since the graph selection pane is
+    // 'fixed' meaning it's outside the normal flow and other elements act like
+    // it doesn't exist so we have to manualy move the graph display to avoid
+    // overlap. This doesn't change after page load.
+    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
+    $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
+
+    setGraphListHeight();
+    setGraphSelectionPanePos();
+  });
+
+  $(window).resize(function(){
+    setGraphListHeight();
+    setGraphSelectionPanePos();
+  });
+
+  // set the selection panes horizontal positional based on the scroll so the
+  // selection pane isn't always visible when scrolling horizontally
+  function setGraphSelectionPanePos() {
+    $('#graphSelectionPane').css({ 'left': -$(window).scrollLeft() });
+  }
+
+  // determine the height to use for the graphlist. We want it to use most of
+  // the rest of the page. We use 90% of the height between the top of the
+  // graphlist and the bottom of the page (with a min of 100 pixels.)
+  function setGraphListHeight() {
+    var topPos = parseInt($("#graphlist").offset().top) - $(window).scrollTop();
+    var w = $(window).height();
+    var height = (w-topPos)*.9;
+    if (height < 100) { height = 100;}
+    $('#graphlist').css({ 'height': height });
+  }
 }
 
 
