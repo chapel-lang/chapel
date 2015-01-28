@@ -330,10 +330,12 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     NUMTABS--;
     *file << outputMap["module"] << name << std::endl;
     if (mod->doc != NULL) {
+      NUMTABS++;
       printTabs(file);
       *file << outputMap["module comment prefix"];
       *file << mod->doc << std::endl;
       *file << std::endl;
+      NUMTABS--;
     }
   }
 
