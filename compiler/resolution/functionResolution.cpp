@@ -7315,13 +7315,12 @@ pruneResolvedTree() {
 }
 
 static void clearDefaultInitFns(FnSymbol* unusedFn) {
-  // Before removing an unused function, check if it is the default initializer
-  // for any type.  If it is, set the defaultInitializer field for the type
-  // to NULL so the removed function doesn't leave behind a garbage pointer.
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->type->defaultInitializer == unusedFn) {
-      ts->type->defaultInitializer = NULL;
-    }
+  // Before removing an unused function, check if it is a defaultInitializer.
+  // If unusedFn is a defaultInitializer, its retType's defaultInitializer
+  // field will be unusedFn. Set the defaultInitializer field to NULL so the
+  // removed function doesn't leave behind a garbage pointer.
+  if (unusedFn->retType->defaultInitializer == unusedFn) {
+    unusedFn->retType->defaultInitializer = NULL;
   }
 }
 
