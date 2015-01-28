@@ -7314,13 +7314,26 @@ pruneResolvedTree() {
   removeCompilerWarnings();
 }
 
+static void clearDefaultInitFns(FnSymbol* unusedFn) {
+  // Before removing an unused function, check if it is the default initializer
+  // for any type.  If it is, set the defaultInitializer field for the type
+  // to NULL so the removed function doesn't leave behind a garbage pointer.
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->type->defaultInitializer == unusedFn) {
+      ts->type->defaultInitializer = NULL;
+    }
+  }
+}
+
 static void removeUnusedFunctions() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (! fn->isResolved() || fn->retTag == RET_PARAM)
+      if (! fn->isResolved() || fn->retTag == RET_PARAM) {
+        clearDefaultInitFns(fn);
         fn->defPoint->remove();
+      }
     }
   }
 }
