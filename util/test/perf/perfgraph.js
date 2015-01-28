@@ -135,8 +135,8 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   var logToggle = graphDivs.logToggle;
   var annToggle = graphDivs.annToggle;
 
-  var startdate = getOption(OptionsEnum.STARTDATE) || graphInfo.startdate;
-  var enddate = getOption(OptionsEnum.ENDDATE) || graphInfo.enddate;
+  var startdate = getDateFromURL(OptionsEnum.STARTDATE, graphInfo.startdate);
+  var enddate = getDateFromURL(OptionsEnum.ENDDATE, graphInfo.enddate);
   startdate = parseDate(startdate);
   enddate = parseDate(enddate);
 
@@ -475,14 +475,17 @@ function customDrawCallback(g, initial) {
     range[0] = roundDate(range[0], false);
     range[1] = roundDate(range[1], true);
 
-    setQueryStringFromOption(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
-    setQueryStringFromOption(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
-
+    var changedXAxis = false;
     for (var j = 0; j < gs.length; j++) {
-      if (gs[j].isReady && (g === gs[j] ||
-            range.toString() !== gs[j].xAxisRange().toString())) {
-              gs[j].updateOptions({ dateWindow: range });
-            }
+      if (gs[j].isReady && differentDateRanges(range, gs[j].xAxisRange())) {
+        gs[j].updateOptions({ dateWindow: range });
+        changedXAxis = true;
+      }
+    }
+
+    if (changedXAxis) {
+      setURLFromDate(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
+      setURLFromDate(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
     }
 
   }
@@ -533,8 +536,7 @@ function perfGraphInit() {
   var titleElem = document.getElementById('titleElem');
   titleElem.innerHTML = document.title;
 
-  var d = new Date();
-  var todayDate = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+  var todayDate = getTodaysDate();
 
   // if the graphs weren't synced today let the user know
   var dateElem= document.getElementById('dateElem');
@@ -692,6 +694,44 @@ function setConfigurationVisibility(graph, blockRedraw) {
 }
 
 
+// simple wrapper to set the date in the URL from a supplied date.
+function setURLFromDate(whichDate, date) {
+  date = defaultFor(date, '');
+  if (whichDate !== OptionsEnum.STARTDATE && whichDate !== OptionsEnum.ENDDATE) {
+    console.log('setURLFromDate can only take STARTDATE and ENDDATE');
+  }
+
+  // If the date was the current date, use the sentinel 'today' instead.
+  // NOTE: Currently disabled, we're not sure if we like this policy
+  /*if (date && (parseDate(date) == parseDate(getTodaysDate()))) {
+    date = 'today';
+  }*/
+
+  setQueryStringFromOption(whichDate, date);
+}
+
+
+// simple wrapper to get the date from the URL. Accepts a defaultDate if the
+// date isn't in the URL. Also looks for sentinel dates such as 'today'
+function getDateFromURL(whichDate, defaultDate) {
+  defaultDate = defaultFor(defaultDate, '');
+  if (whichDate !== OptionsEnum.STARTDATE && whichDate !== OptionsEnum.ENDDATE) {
+    console.log('getDateFromURL can only be asked for STARTDATE and ENDDATE');
+    return '';
+  }
+
+  var dateString = getOption(whichDate);
+
+  if (dateString === '')
+    return defaultDate;
+
+  if (dateString === normalizeForURL('today'))
+    return getTodaysDate();
+
+  return dateString
+}
+
+
 // This function parses the query string of the URL and finds out which graphs
 // to check. It handles individual graphs, all graphs, and suites
 function setGraphsFromURL() {
@@ -769,13 +809,19 @@ function setURLFromGraphs(suite) {
 // reset the date range
 function clearDates() {
   // clear the query string
-  setQueryStringFromOption(OptionsEnum.STARTDATE, '');
-  setQueryStringFromOption(OptionsEnum.ENDDATE, '');
+  setURLFromDate(OptionsEnum.STARTDATE, '');
+  setURLFromDate(OptionsEnum.ENDDATE, '');
 
   // Reset the display range for each graph, blocking extra redraws
   blockRedraw = true;
   for (var i = 0; i < gs.length; i++) {
-    gs[i].resetZoom();
+    var curGraph = gs[i];
+    var start = parseDate(curGraph.graphInfo.startdate);
+    var end = parseDate(curGraph.graphInfo.enddate);
+    var range = [start, end];
+    if (differentDateRanges(range, curGraph.xAxisRange)) {
+      curGraph.updateOptions({ dateWindow: range });
+    }
   }
   blockRedraw = false;
 }
@@ -1080,6 +1126,21 @@ function parseDate(date) {
   } else {
     return Dygraph.dateParser(date);
   }
+}
+
+
+// returns todays date formatted as 'YYYY<delimiter>MM<delimiter>DD'. Defaults
+// to 'YYYY-MM-DD' if a delimiter isn't specified.
+function getTodaysDate(delimiter) {
+  delimiter = defaultFor(delimiter, '-');
+  var d = new Date();
+  return  d.getFullYear() + delimiter + (d.getMonth()+1) + delimiter + d.getDate();
+}
+
+
+// simple wrapper to check if two date ranges are different
+function differentDateRanges(rangeOne, rangeTwo) {
+  return rangeOne.toString() !== rangeTwo.toString();
 }
 
 
