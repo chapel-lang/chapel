@@ -475,6 +475,9 @@ buildExternBlockStmt(const char* c_code) {
 
 ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
+  if (currentFileNamedOnCommandLine) {
+    mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+  }
 
   mod->filename = astr(filename);
   mod->doc      = docs;

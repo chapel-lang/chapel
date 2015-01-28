@@ -274,8 +274,7 @@ public:
 // vectors of modules
 //
 extern Vec<ModuleSymbol*> allModules;  // contains all modules
-extern Vec<ModuleSymbol*> userModules; // contains main + user modules
-extern Vec<ModuleSymbol*> mainModules; // contains main modules
+extern Vec<ModuleSymbol*> userModules; // contains user modules
 
 //
 // class test inlines: determine the dynamic type of a BaseAST*
