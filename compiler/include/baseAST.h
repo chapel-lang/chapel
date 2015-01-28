@@ -274,8 +274,7 @@ public:
 // vectors of modules
 //
 extern Vec<ModuleSymbol*> allModules;  // contains all modules
-extern Vec<ModuleSymbol*> userModules; // contains main + user modules
-extern Vec<ModuleSymbol*> mainModules; // contains main modules
+extern Vec<ModuleSymbol*> userModules; // contains user modules
 
 //
 // class test inlines: determine the dynamic type of a BaseAST*
@@ -289,8 +288,11 @@ static inline bool isSymbol(const BaseAST* a)
 static inline bool isType(const BaseAST* a)
 { return a && isType(a->astTag); }
 
-#define def_is_ast(Type) \
-  static inline bool is##Type(BaseAST* a) { return a && a->astTag == E_##Type; }
+#define def_is_ast(Type)                          \
+  static inline bool is##Type(const BaseAST* a)   \
+  {                                               \
+    return a && a->astTag == E_##Type;            \
+  }
 
 def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
@@ -328,6 +330,7 @@ bool isCForLoop(BaseAST* a);
 //
 #define def_to_ast(Type) \
   static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; }
+
 def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)

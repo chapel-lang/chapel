@@ -351,6 +351,12 @@ static IpeValue evaluate(CallExpr* callExpr, IpeEnvironment* env)
     retval.iValue = 0;
   }
 
+  else if (callExpr->isPrimitive(PRIM_USE) == true)
+  {
+    retval.iValue = 0;
+    handled       = true;
+  }
+
   else if (callExpr->isPrimitive(PRIM_ASSIGN) == true)
   {
     SymExpr*   dstSymExpr = toSymExpr(callExpr->get(1));
@@ -358,7 +364,9 @@ static IpeValue evaluate(CallExpr* callExpr, IpeEnvironment* env)
     IpeValue   value      = evaluate(callExpr->get(2), env);
 
     env->assign(variable, value);
+
     retval.iValue = 0;
+
     handled       = true;
   }
 

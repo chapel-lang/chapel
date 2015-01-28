@@ -280,8 +280,11 @@ static void replaceVariables(SymExpr* symExpr)
 
 static void replaceVariables(CallExpr* expr)
 {
-  int count = expr->numActuals();
+  if (expr->isPrimitive(PRIM_USE) == false)
+  {
+    int count = expr->numActuals();
 
-  for (int i = 1; i <= count; i++)
-    replaceVariables(expr->get(i));
+    for (int i = 1; i <= count; i++)
+      replaceVariables(expr->get(i));
+  }
 }
