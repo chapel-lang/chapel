@@ -22,11 +22,11 @@ if len(sys.argv) < 3:
 #
 # Latest approximate communication counts
 #
-commTypes = ['get', 'get_nb', 'get_nb_test', 'get_nb_wait', 'put', 'fork', 'fork_fast', 'fork_nb']
-l0 = [0, 0, 0, 0, 5120, 0, 0, 0]
-l1 = [0, 0, 0, 0, 5171, 0, 0, 0]
-l2 = [0, 0, 0, 0, 4980, 0, 0, 0]
-l3 = [0, 0, 0, 0, 5130, 0, 0, 0]
+commTypes = ['get', 'get_nb', 'put', 'put_nb', 'test_nb', 'wait_nb', 'try_nb', 'fork', 'fork_fast', 'fork_nb']
+l0 = [0, 0, 5120, 0, 0, 0, 0, 0, 0, 0]
+l1 = [0, 0, 5171, 0, 0, 0, 0, 0, 0, 0]
+l2 = [0, 0, 4980, 0, 0, 0, 0, 0, 0, 0]
+l3 = [0, 0, 5130, 0, 0, 0, 0, 0, 0, 0]
 counts = [l0, l1, l2, l3]
 
 logfile = sys.argv[2]
@@ -44,13 +44,13 @@ for l in lines:
         # for each locale's data
         for i in range(4):
             commDiags=ldata[i][1:].split(',')
-            for d in range(8):
+            for d in range(10):
                 target = counts[i][d]
                 curr=int(commDiags[d].split('=')[1].strip())
-                if d==0 or d==5:
+                if d==0 or d==7:
                     # gets and forks
                     f.write('%d: %s: N/A\n'%(i, commTypes[d]))
-                elif d==4:
+                elif d==2:
                     # puts
                     maxCnt=int(1.05*float(target)) # truncates
                     if (curr<=maxCnt):
