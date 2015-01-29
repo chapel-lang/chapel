@@ -208,7 +208,6 @@ void printClass(std::ofstream *file, AggregateType *cl) {
   if (! cl->isUnion()) {
     printTabs(file);
 
-    // TODO: for rst, change convert to '.. class:: ' and '.. record:: '
     if (cl->isClass()) {
       *file << outputMap["class"];
     } else if (cl->isRecord()) {
