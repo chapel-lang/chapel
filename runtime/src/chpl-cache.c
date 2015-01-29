@@ -1648,11 +1648,11 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
       while( cache->pending[index] ) {
         DEBUG_PRINT(("wait_for waiting %i..%i\n", index, last));
         // Wait for some requests to complete.
-        chpl_comm_nb_wait_some(&cache->pending[index], last - index + 1);
+        chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
       }
       // cache->pending[index] == NULL now
     }
-    if( chpl_comm_nb_handle_is_complete(cache->pending[index]) ) {
+    if( chpl_comm_test_nb_complete(cache->pending[index]) ) {
       // we completed cache->pending[index], so remove the entry from the queue.
       DEBUG_PRINT(("wait_for removing %i\n", index));
       fifo_circleb_pop( &cache->pending_first_entry, &cache->pending_last_entry, cache->pending_len);
@@ -2558,7 +2558,7 @@ void cache_get(struct rdcache_s* cache,
       clock_gettime(CLOCK_REALTIME, &wait1);
 #endif
 
-      chpl_comm_nb_wait_some(&handle, 1);
+      chpl_comm_wait_nb_some(&handle, 1);
 
 #ifdef TIME
       clock_gettime(CLOCK_REALTIME, &wait2);

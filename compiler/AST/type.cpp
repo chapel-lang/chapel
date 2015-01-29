@@ -1246,6 +1246,13 @@ void initPrimitiveTypes() {
   gTrue->immediate->const_kind         = NUM_KIND_BOOL;
   gTrue->immediate->num_index          = BOOL_SIZE_SYS;
 
+  //
+  // Mark the "high water mark" for types that IPE relies on directly
+  //
+  if (fUseIPE == true) {
+    ipeRootInit();
+  }
+
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", 0.0, FLOAT_SIZE_64);
@@ -1254,13 +1261,6 @@ void initPrimitiveTypes() {
 
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
-
-  //
-  // Mark the "high water mark" for types that IPE relies on directly
-  //
-  if (fUseIPE == true) {
-    ipeRootInit();
-  }
 
   gTryToken = new VarSymbol("chpl__tryToken", dtBool);
 

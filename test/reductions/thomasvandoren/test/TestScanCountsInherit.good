@@ -1,0 +1,2 @@
+TestScanCounts.chpl:8: warning: scan has been serialized (see note in $CHPL_HOME/STATUS)
+octant rankings: 1 1 2 1 1 1 2 1 3 2

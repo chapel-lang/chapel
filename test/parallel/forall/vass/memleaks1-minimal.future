@@ -2,7 +2,7 @@ memory: leak in 'forall' that engages forall intents, with certain leaders
 
 Forall intents (PR #614 aka f015d56) introduced an (additional) memory leak
 when a forall loop engages the (const in) forall intent on a variable.
-For details see Commit df8e3b0.
+For details see Commit df8e3b03.
 
 These tests extract this behavior:
 
