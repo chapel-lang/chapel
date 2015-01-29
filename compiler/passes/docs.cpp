@@ -212,7 +212,6 @@ void printClass(std::ofstream *file, AggregateType *cl) {
   if (! cl->isUnion() && !cl->symbol->hasFlag(FLAG_NO_DOC)) {
     printTabs(file);
 
-    // TODO: for rst, change convert to '.. class:: ' and '.. record:: '
     if (cl->isClass()) {
       *file << outputMap["class"];
     } else if (cl->isRecord()) {
