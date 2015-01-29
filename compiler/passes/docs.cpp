@@ -71,8 +71,12 @@ void docs(void) {
     }
 
     // Open the directory to store the docs
-    std::string folderName = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
+    std::string docsDir = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
+    std::string folderName = docsDir;
 
+    if (!fDocsTextOnly) {
+      folderName = generateSphinxProject(docsDir);
+    }
 
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     
@@ -109,6 +113,10 @@ void docs(void) {
           file.close();
         }
       }
+    }
+
+    if (!fDocsTextOnly) {
+      generateSphinxOutput(docsDir);
     }
   }
 }
@@ -471,4 +479,35 @@ void createDocsFileFolders(std::string filename) {
     total = dirCutoff + 1;
     dirCutoff = shorter.find("/");
   }
+}
+
+/* 
+ * Create new sphinx project at given location and return path where .rst files
+ * should be placed.
+ */
+std::string generateSphinxProject(std::string dirpath) {
+  // FIXME: This ought to be done in a TMPDIR, unless --save-rst is
+  //        provided... (thomasvandoren, 2015-01-29)
+
+  // Create the output dir under the docs output dir.
+  std::string htmldir = dirpath + std::string("/html");
+
+  // Ensure output directory exists.
+  std::string mkdirCmd = std::string("mkdir -p ") + htmldir;
+  mysystem(mkdirCmd.c_str(), "creating docs output dir");
+
+  // Copy the sphinx template into the output dir.
+  std::string sphinxTemplate = std::string(CHPL_HOME) + std::string("/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
+  std::string cmd = std::string("cp -r ") + sphinxTemplate + std::string(" ") + htmldir + "/";
+  mysystem(cmd.c_str(), "copying chpldoc sphinx template");
+
+  std::string moddir = htmldir + "/source/modules";
+  return moddir;
+}
+
+/* Call `make html` from inside sphinx project. */
+void generateSphinxOutput(std::string dirpath) {
+  std::string htmldir = dirpath + std::string("/html");
+  std::string cmd = std::string("cd ") + htmldir + std::string(" && ") + std::string(CHPL_MAKE) + std::string(" html");
+  mysystem(cmd.c_str(), "building html output from chpldoc sphinx project");
 }

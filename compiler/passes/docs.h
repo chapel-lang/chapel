@@ -48,3 +48,7 @@ bool devOnlyFunction(FnSymbol *fn);
 bool devOnlyModule(ModuleSymbol *mod);
 
 bool isNotSubmodule(ModuleSymbol *mod);
+
+std::string generateSphinxProject(std::string dirpath);
+
+void generateSphinxOutput(std::string dirpath);
