@@ -440,12 +440,12 @@ static void deadBlockElimination(FnSymbol* fn)
         whileStmt->remove();
 
       else if (forLoop   && forLoop->indexGet()      == expr)
-        // If the expr is the indexVariable of ForLoop statement,
+        // If the expr is the indexVariable of a ForLoop statement,
         // then remove the entire ForLoop statement
         forLoop->remove();
 
       else if (forLoop   && forLoop->iteratorGet()   == expr)
-        // If the expr is the indexVariable of ForLoop statement,
+        // If the expr is the iterator of a ForLoop statement,
         // then remove the entire ForLoop statement
         forLoop->remove();
 

@@ -17,35 +17,8 @@
  * limitations under the License.
  */
 
-#include "VisibleSymbol.h"
-
-#include "ScopeBase.h"
-
-VisibleSymbol::VisibleSymbol(Symbol*          sym,
-                             const ScopeBase* scope,
-                             int              distance)
+// ChapelStandard.chpl
+module ChapelStandard
 {
-  mSymbol   = sym;
-  mScope    = scope;
-  mDistance = distance;
-}
-
-VisibleSymbol::~VisibleSymbol()
-{
-
-}
-
-Symbol* VisibleSymbol::symbol() const
-{
-  return mSymbol;
-}
-
-const ScopeBase* VisibleSymbol::scope() const
-{
-  return mScope;
-}
-
-int VisibleSymbol::distance() const
-{
-  return mDistance;
+  use ChapelBase;
 }

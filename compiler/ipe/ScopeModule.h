@@ -17,35 +17,29 @@
  * limitations under the License.
  */
 
-#include "VisibleSymbol.h"
+#ifndef _SCOPE_MODULE_H_
+#define _SCOPE_MODULE_H_
 
 #include "ScopeBase.h"
 
-VisibleSymbol::VisibleSymbol(Symbol*          sym,
-                             const ScopeBase* scope,
-                             int              distance)
-{
-  mSymbol   = sym;
-  mScope    = scope;
-  mDistance = distance;
-}
+class ModuleSymbol;
 
-VisibleSymbol::~VisibleSymbol()
+class ScopeModule : public ScopeBase
 {
+public:
+                        ScopeModule(ModuleSymbol* module);
+                       ~ScopeModule();
 
-}
+  const char*           name()                                      const;
 
-Symbol* VisibleSymbol::symbol() const
-{
-  return mSymbol;
-}
+  bool                  isScopeForModule(const ModuleSymbol* mod)   const;
 
-const ScopeBase* VisibleSymbol::scope() const
-{
-  return mScope;
-}
+private:
+                        ScopeModule();
 
-int VisibleSymbol::distance() const
-{
-  return mDistance;
-}
+  virtual void          describeHeader(FILE* fp)                    const;
+
+  ModuleSymbol*         mModule;
+};
+
+#endif

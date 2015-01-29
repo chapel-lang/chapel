@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-#ifndef _IPE_INSERT_VARIABLES_H_
-#define _IPE_INSERT_VARIABLES_H_
+#ifndef _IPE_ASSIGN_LOCATIONS_H_
+#define _IPE_ASSIGN_LOCATIONS_H_
 
-void ipeInsertVariables();
+void ipeAssignLocations();
 
 #endif
