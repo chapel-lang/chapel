@@ -153,7 +153,7 @@ bool ScopeBase::isVisited(ModuleSymbol*               module,
 
 // A scope can have many definitions for a function but
 // only one definition for other symbols
-bool ScopeBase::isConflicted(const Symbol* sym) const
+bool ScopeBase::isConflicted(Symbol* sym) const
 {
   bool retval = false;
 
@@ -167,7 +167,7 @@ bool ScopeBase::isConflicted(const Symbol* sym) const
 
         printf("Error: Symbol is redefined\n");
         printf("   ");
-        ((Symbol*) sym)->accept(&logger);
+        sym->accept(&logger);
         printf("\n");
 
         retval = true;
@@ -180,7 +180,7 @@ bool ScopeBase::isConflicted(const Symbol* sym) const
 
 // It would be surprising if a module were 'used' more than
 // once in a single scope
-bool ScopeBase::isConflicted(const ModuleSymbol* mod) const
+bool ScopeBase::isConflicted(ModuleSymbol* mod) const
 {
   bool retval = false;
 
@@ -192,7 +192,7 @@ bool ScopeBase::isConflicted(const ModuleSymbol* mod) const
 
       printf("Warning: Module is 'used' more than once in one scope\n");
       printf("   ");
-      ((ModuleSymbol*) mod)->accept(&logger);
+      mod->accept(&logger);
       printf("\n");
 
       retval = true;
