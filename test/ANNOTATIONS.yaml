@@ -190,6 +190,8 @@ meteor:
 miniMD:
   12/21/13:
     - clean up of noRefCount related code in modules/internal (22473)
+  11/04/14:
+    - surprising regression from cast in DefaultRectangular (df8c3172cc9c)
 
 nbody:
   03/17/14:
