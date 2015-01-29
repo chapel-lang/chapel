@@ -772,6 +772,10 @@ module ChapelArray {
     }
   
     inline proc these() {
+      // This should be pushed up to the caller of these().
+      // Otherwise, we will leak memory.
+      if !noRefCount then
+        _value.incRefCount();
       return _value.these();
     }
   
@@ -1491,7 +1495,14 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
   
+    // Note: Clients of this routine must update the ref count "manually".
+    // Specifically, if the return value of this routine is copied into a field
+    // or outer variable, then its ref count must be incremented.  The ref
+    // count must be decremented when the containing location or structure is
+    // deleted.
     inline proc these() ref {
+      if !noRefCount then
+        _value.incRefCount();
       return _value.these();
     }
   
