@@ -52,10 +52,8 @@ void ipeAssignLocations()
     {
       if (ModuleSymbol* module = toModuleSymbol(defExpr->sym))
       {
-        if (module->modTag == MOD_USER || module->modTag == MOD_MAIN)
-        {
+        if (module->modTag == MOD_USER)
           offset = assignLocations(module, 0, offset);
-        }
       }
     }
     else
