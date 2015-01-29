@@ -66,7 +66,7 @@ void docs(void) {
       outputMap["iter method"] = ".. itermethod:: ";
       outputMap["func"] = ".. function:: ";
       outputMap["method"] = ".. method:: ";
-      outputMap["config"] = ".. data:: ";
+      outputMap["config"] = ".. data:: config ";
       outputMap["field"] = ".. attribute:: ";
     }
 
