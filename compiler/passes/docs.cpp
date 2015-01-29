@@ -331,7 +331,11 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   }
   NUMTABS++;
   if (mod->doc != NULL) {
-    printTabs(file);
+    // Only print tabs for text only mode. The .rst prefers not to have the
+    // tabs for module level comments.
+    if (fDocsTextOnly) {
+      printTabs(file);
+    }
     *file << mod->doc << std::endl;
   }
   if(!fDocsTextOnly) {
