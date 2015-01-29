@@ -15,10 +15,11 @@ endif
 
 default: all
 
-all: creoleparser dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
+all: creoleparser chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
 
 clean: FORCE
 	cd creoleparser && $(MAKE) clean
+	cd chpldoc-venv && $(MAKE) clean
 	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
@@ -31,6 +32,7 @@ clean: FORCE
 
 cleanall: FORCE
 	cd creoleparser && $(MAKE) cleanall
+	cd chpldoc-venv && $(MAKE) cleanall
 	cd dlmalloc && $(MAKE) cleanall
 	cd gasnet && $(MAKE) cleanall
 	cd gmp && $(MAKE) cleanall
@@ -43,6 +45,7 @@ cleanall: FORCE
 
 clobber: FORCE
 	cd creoleparser && $(MAKE) clobber
+	cd chpldoc-venv && $(MAKE) clobber
 	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
@@ -58,6 +61,10 @@ depend:
 creoleparser: $(CREOLEPARSER_INSTALL_DIR)
 $(CREOLEPARSER_INSTALL_DIR):
 	cd creoleparser && $(MAKE)
+
+chpldoc-venv: $(CHPLDOC_VENV_SPHINX_BUILD)
+$(CHPLDOC_VENV_SPHINX_BUILD):
+	cd chpldoc-venv && $(MAKE)
 
 dlmalloc: $(DLMALLOC_INSTALL_DIR)
 $(DLMALLOC_INSTALL_DIR):
