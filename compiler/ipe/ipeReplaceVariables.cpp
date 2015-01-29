@@ -47,10 +47,8 @@ void ipeReplaceVariables()
     {
       if (ModuleSymbol* module = toModuleSymbol(defExpr->sym))
       {
-        if (module->modTag == MOD_USER || module->modTag == MOD_MAIN)
-        {
+        if (module->modTag == MOD_USER)
           replaceVariables(module);
-        }
       }
     }
     else
