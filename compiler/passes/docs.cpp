@@ -20,6 +20,7 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <iterator>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -340,8 +341,13 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       NUMTABS++;
       printTabs(file);
       *file << outputMap["module comment prefix"];
-      *file << std::endl;
-      *file << mod->doc << std::endl;
+
+      // Grab first line of comment for synopsis.
+      std::stringstream synopsisStream(mod->doc);
+      std::string firstLine;
+      std::getline(synopsisStream, firstLine);
+
+      *file << firstLine << std::endl;
       *file << std::endl;
       NUMTABS--;
     }
