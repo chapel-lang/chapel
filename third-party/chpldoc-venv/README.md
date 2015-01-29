@@ -42,7 +42,7 @@ ReadTheDocs.org theme for Sphinx
 Use with Sphinx as theme for html documentation.
 
 **License**: MIT
-**Website**: https://pypi.python.org/pypi/sphinx_rtd_theme/0.1.6
+**Website**: https://pypi.python.org/pypi/sphinx_rtd_theme
 
 ### virtualenv
 
