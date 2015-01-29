@@ -34,26 +34,27 @@
 #ifndef _VISIBLE_SYMBOL_H_
 #define _VISIBLE_SYMBOL_H_
 
-class DefScope;
+class ScopeBase;
 class Symbol;
 
 class VisibleSymbol
 {
 public:
-                               VisibleSymbol(Symbol*         sym,
-                                             const DefScope* scope);
+                               VisibleSymbol(Symbol*          sym,
+                                             const ScopeBase* scope,
+                                             int              distance);
                               ~VisibleSymbol();
 
   Symbol*                      symbol()                           const;
-
-  const DefScope*              scope()                            const;
-  int                          depth()                            const;
+  const ScopeBase*             scope()                            const;
+  int                          distance()                         const;
 
 private:
                                VisibleSymbol();
 
   Symbol*                      mSymbol;
-  const DefScope*              mScope;
+  const ScopeBase*             mScope;
+  int                          mDistance;
 };
 
 #endif

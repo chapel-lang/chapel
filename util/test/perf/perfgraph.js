@@ -135,8 +135,8 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   var logToggle = graphDivs.logToggle;
   var annToggle = graphDivs.annToggle;
 
-  var startdate = getOption(OptionsEnum.STARTDATE) || graphInfo.startdate;
-  var enddate = getOption(OptionsEnum.ENDDATE) || graphInfo.enddate;
+  var startdate = getDateFromURL(OptionsEnum.STARTDATE, graphInfo.startdate);
+  var enddate = getDateFromURL(OptionsEnum.ENDDATE, graphInfo.enddate);
   startdate = parseDate(startdate);
   enddate = parseDate(enddate);
 
@@ -475,14 +475,17 @@ function customDrawCallback(g, initial) {
     range[0] = roundDate(range[0], false);
     range[1] = roundDate(range[1], true);
 
-    setQueryStringFromOption(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
-    setQueryStringFromOption(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
-
+    var changedXAxis = false;
     for (var j = 0; j < gs.length; j++) {
-      if (gs[j].isReady && (g === gs[j] ||
-            range.toString() !== gs[j].xAxisRange().toString())) {
-              gs[j].updateOptions({ dateWindow: range });
-            }
+      if (gs[j].isReady && differentDateRanges(range, gs[j].xAxisRange())) {
+        gs[j].updateOptions({ dateWindow: range });
+        changedXAxis = true;
+      }
+    }
+
+    if (changedXAxis) {
+      setURLFromDate(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
+      setURLFromDate(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
     }
 
   }
@@ -533,8 +536,7 @@ function perfGraphInit() {
   var titleElem = document.getElementById('titleElem');
   titleElem.innerHTML = document.title;
 
-  var d = new Date();
-  var todayDate = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+  var todayDate = getTodaysDate();
 
   // if the graphs weren't synced today let the user know
   var dateElem= document.getElementById('dateElem');
@@ -575,6 +577,7 @@ function perfGraphInit() {
     toggleConf.textContent = '';
   }
 
+
   // generate the suite menu
   var suiteMenu = document.getElementById('suiteMenu');
   var f = document.createElement('form');
@@ -604,8 +607,58 @@ function perfGraphInit() {
     graphlist.appendChild(elem);
   }
 
+  setupGraphSelectionPane();
+
   setGraphsFromURL();
   displaySelectedGraphs();
+}
+
+
+// We use 'fixed' css positioning to keep the graph selection pane always
+// visible (scrolls when the page scrolls.) However we don't want it to scroll
+// horizontally to so we move it when horizontal scross occur. Since it scrolls
+// veritcally we also need to make sure it fits in the page height. This sets
+// the initial dimensions and then listens for scrolling and resizes
+function setupGraphSelectionPane() {
+  $(window).scroll(function(){
+    setGraphSelectionPanePos();
+  });
+
+  $(window).ready(function(){
+    // we don't know the width of the graph selection pane until the graphs are
+    // added ot the graphlist. Once that is done figure out where to position
+    // the graph display. This is needed since the graph selection pane is
+    // 'fixed' meaning it's outside the normal flow and other elements act like
+    // it doesn't exist so we have to manualy move the graph display to avoid
+    // overlap. This doesn't change after page load.
+    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
+    $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
+
+    setGraphListHeight();
+    setGraphSelectionPanePos();
+  });
+
+  $(window).resize(function(){
+    setGraphListHeight();
+    setGraphSelectionPanePos();
+  });
+
+  // set the selection panes horizontal positional based on the scroll so the
+  // selection pane isn't always visible when scrolling horizontally
+  function setGraphSelectionPanePos() {
+    $('#graphSelectionPane').css({ 'left': -$(window).scrollLeft() });
+  }
+
+  // determine the height to use for the graphlist. We want it to use most of
+  // the rest of the page. We use 90% of the height between the top of the
+  // graphlist and the bottom of the page (with a min of 100 pixels.)
+  function setGraphListHeight() {
+    var topPos = parseInt($("#graphlist").offset().top) - $(window).scrollTop();
+    var w = $(window).height();
+    var height = (w-topPos)*.9;
+    if (height < 100) { height = 100;}
+    $('#graphlist').css({ 'height': height });
+  }
 }
 
 
@@ -638,6 +691,44 @@ function setConfigurationVisibility(graph, blockRedraw) {
     }
     graph.updateOptions({visibility: visibility}, blockRedraw);
   }
+}
+
+
+// simple wrapper to set the date in the URL from a supplied date.
+function setURLFromDate(whichDate, date) {
+  date = defaultFor(date, '');
+  if (whichDate !== OptionsEnum.STARTDATE && whichDate !== OptionsEnum.ENDDATE) {
+    console.log('setURLFromDate can only take STARTDATE and ENDDATE');
+  }
+
+  // If the date was the current date, use the sentinel 'today' instead.
+  // NOTE: Currently disabled, we're not sure if we like this policy
+  /*if (date && (parseDate(date) == parseDate(getTodaysDate()))) {
+    date = 'today';
+  }*/
+
+  setQueryStringFromOption(whichDate, date);
+}
+
+
+// simple wrapper to get the date from the URL. Accepts a defaultDate if the
+// date isn't in the URL. Also looks for sentinel dates such as 'today'
+function getDateFromURL(whichDate, defaultDate) {
+  defaultDate = defaultFor(defaultDate, '');
+  if (whichDate !== OptionsEnum.STARTDATE && whichDate !== OptionsEnum.ENDDATE) {
+    console.log('getDateFromURL can only be asked for STARTDATE and ENDDATE');
+    return '';
+  }
+
+  var dateString = getOption(whichDate);
+
+  if (dateString === '')
+    return defaultDate;
+
+  if (dateString === normalizeForURL('today'))
+    return getTodaysDate();
+
+  return dateString
 }
 
 
@@ -718,13 +809,19 @@ function setURLFromGraphs(suite) {
 // reset the date range
 function clearDates() {
   // clear the query string
-  setQueryStringFromOption(OptionsEnum.STARTDATE, '');
-  setQueryStringFromOption(OptionsEnum.ENDDATE, '');
+  setURLFromDate(OptionsEnum.STARTDATE, '');
+  setURLFromDate(OptionsEnum.ENDDATE, '');
 
   // Reset the display range for each graph, blocking extra redraws
   blockRedraw = true;
   for (var i = 0; i < gs.length; i++) {
-    gs[i].resetZoom();
+    var curGraph = gs[i];
+    var start = parseDate(curGraph.graphInfo.startdate);
+    var end = parseDate(curGraph.graphInfo.enddate);
+    var range = [start, end];
+    if (differentDateRanges(range, curGraph.xAxisRange)) {
+      curGraph.updateOptions({ dateWindow: range });
+    }
   }
   blockRedraw = false;
 }
@@ -1029,6 +1126,21 @@ function parseDate(date) {
   } else {
     return Dygraph.dateParser(date);
   }
+}
+
+
+// returns todays date formatted as 'YYYY<delimiter>MM<delimiter>DD'. Defaults
+// to 'YYYY-MM-DD' if a delimiter isn't specified.
+function getTodaysDate(delimiter) {
+  delimiter = defaultFor(delimiter, '-');
+  var d = new Date();
+  return  d.getFullYear() + delimiter + (d.getMonth()+1) + delimiter + d.getDate();
+}
+
+
+// simple wrapper to check if two date ranges are different
+function differentDateRanges(rangeOne, rangeTwo) {
+  return rangeOne.toString() !== rangeTwo.toString();
 }
 
 

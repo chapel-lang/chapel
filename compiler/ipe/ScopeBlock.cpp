@@ -17,35 +17,24 @@
  * limitations under the License.
  */
 
-#include "VisibleSymbol.h"
+#include "ScopeBlock.h"
 
-#include "ScopeBase.h"
+#include "stmt.h"
 
-VisibleSymbol::VisibleSymbol(Symbol*          sym,
-                             const ScopeBase* scope,
-                             int              distance)
+ScopeBlock::ScopeBlock(BlockStmt* block, const ScopeBase* parent) : ScopeBase(parent)
 {
-  mSymbol   = sym;
-  mScope    = scope;
-  mDistance = distance;
+  mBlock = block;
+
+  extend(block);
 }
 
-VisibleSymbol::~VisibleSymbol()
+ScopeBlock::~ScopeBlock()
 {
 
 }
 
-Symbol* VisibleSymbol::symbol() const
+void ScopeBlock::describeHeader(FILE* fp) const
 {
-  return mSymbol;
+  fprintf(fp, "Block %12d", mBlock->id);
 }
 
-const ScopeBase* VisibleSymbol::scope() const
-{
-  return mScope;
-}
-
-int VisibleSymbol::distance() const
-{
-  return mDistance;
-}

@@ -17,35 +17,9 @@
  * limitations under the License.
  */
 
-#include "VisibleSymbol.h"
+#ifndef _IPE_REPLACE_VARIABLES_H_
+#define _IPE_REPLACE_VARIABLES_H_
 
-#include "ScopeBase.h"
+void ipeReplaceVariables();
 
-VisibleSymbol::VisibleSymbol(Symbol*          sym,
-                             const ScopeBase* scope,
-                             int              distance)
-{
-  mSymbol   = sym;
-  mScope    = scope;
-  mDistance = distance;
-}
-
-VisibleSymbol::~VisibleSymbol()
-{
-
-}
-
-Symbol* VisibleSymbol::symbol() const
-{
-  return mSymbol;
-}
-
-const ScopeBase* VisibleSymbol::scope() const
-{
-  return mScope;
-}
-
-int VisibleSymbol::distance() const
-{
-  return mDistance;
-}
+#endif
