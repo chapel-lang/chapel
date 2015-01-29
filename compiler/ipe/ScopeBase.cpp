@@ -257,7 +257,7 @@ void ScopeBase::describe(bool recursive) const
   printf("   symbols:\n");
 
   for (size_t i = 0; i < mSymbols.size(); i++)
-    printf("       %3ld: %s\n", i, mSymbols[i]->name);
+    printf("       %3d: %s\n", (int) i, mSymbols[i]->name);
 
   if (mUsedScopes.size() > 0)
   {
@@ -265,7 +265,7 @@ void ScopeBase::describe(bool recursive) const
     printf("   modUses:\n");
 
     for (size_t i = 0; i < mUsedScopes.size(); i++)
-      printf("       %3ld: %s\n", i, mUsedScopes[i]->name());
+      printf("       %3d: %s\n", (int) i, mUsedScopes[i]->name());
   }
 
   printf(">\n\n");
