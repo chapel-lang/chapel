@@ -9,6 +9,7 @@ module unitTest {
   proc beginLocal(type t) {
     writeln("=== local begin");
     const m0 = allMemoryUsed();
+    proc beginLocal_help()
     {
       var s0: t;
       s0 = "s0";
@@ -20,12 +21,14 @@ module unitTest {
         begin if doCorrectnessTest then writeln(s1);
       }
     }
+    beginLocal_help();
     checkMemLeaks(m0);
   }
 
   proc beginRemote(type t) {
     writeln("=== remote begin");
     const m0 = allMemoryUsed();
+    proc beginRemote_help(type t)
     {
       var s0: t;
       s0 = "s0";
@@ -39,6 +42,7 @@ module unitTest {
         begin on Locales[numLocales-1] do if doCorrectnessTest then writeln(s1);
       }
     }
+    beginRemote_help(t);
     checkMemLeaks(m0);
   }
 

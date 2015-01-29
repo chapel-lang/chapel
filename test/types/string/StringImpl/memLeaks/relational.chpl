@@ -28,6 +28,7 @@ module unitTest {
   proc relLocal(type t, useExpr=false) {
     writeln("=== relational operators (local)");
     const m0 = allMemoryUsed();
+    proc relLocal_hgelp(type t, useExpr=false)
     {
       const s0:t = "chicken";
       const s1:t = "egg";
@@ -38,12 +39,14 @@ module unitTest {
       f(s3, s0, useExpr);
       f(s0, s3, useExpr);
     }
+    relLocal_hgelp(t, useExpr);
     checkMemLeaks(m0);
   }
 
   proc relRemote(type t, useExpr=false) {
     writeln("=== relational operators (remote)");
     const m0 = allMemoryUsed();
+    proc relRemote_help(type t, useExpr=false)
     {
       const s0:t = "chicken";
       on Locales[numLocales-1] {
@@ -64,6 +67,7 @@ module unitTest {
         }
       }
     }
+    relRemote_help(t, useExpr);
     checkMemLeaks(m0);
   }
 
