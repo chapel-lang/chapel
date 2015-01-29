@@ -98,6 +98,8 @@ fannkuch-redux:
 fasta:
   01/14/14:
     - enabled unlocked I/O on fasta and fasta-printf
+  11/07/14:
+    - Add c_string_copy type
 
 ft:
   09/05/14:
@@ -190,6 +192,10 @@ parOpEquals:
     - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+regexdna:
+  11/07/14:
+    - Add c_string_copy type
 
 spectralnorm:
   01/21/15:
