@@ -97,7 +97,7 @@ void buildDefaultDestructor(AggregateType* ct);
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;
-void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars, bool usePrune);
+void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars);
 void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore);
 
 // deadCodeElimination.cpp

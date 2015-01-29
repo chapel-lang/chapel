@@ -23,6 +23,7 @@
 #include "astutil.h"
 #include "bb.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -454,7 +455,7 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
 
       CondStmt*  condStmt  = toCondStmt(expr->parentExpr);
       WhileStmt* whileStmt = toWhileStmt(expr->parentExpr);
-      ForLoop* forLoop = toForLoop(expr->parentExpr);
+      ForLoop*   forLoop   = toForLoop(expr->parentExpr);
 
       if (condStmt && condStmt->condExpr == expr)
         // If the expr is the condition expression of an if statement,
@@ -465,14 +466,17 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
         // If the expr is the condition expression of a while statement,
         // then remove the entire While.
         whileStmt->remove();
-      
-      else if (forLoop &&
-               (forLoop->indexGet() == expr || forLoop->iteratorGet() == expr))
-      {
-        // Do nothing.
-        // The mIndex and mIterator fields are references to symbols declared
-        // elsewhere, so just leave them in place.
-      }   
+
+      else if (forLoop   && forLoop->indexGet()      == expr)
+        // If the expr is the indexVariable of ForLoop statement,
+        // then remove the entire ForLoop statement
+        forLoop->remove();
+
+      else if (forLoop   && forLoop->iteratorGet()   == expr)
+        // If the expr is the indexVariable of ForLoop statement,
+        // then remove the entire ForLoop statement
+        forLoop->remove();
+
       else
         expr->remove();
     }

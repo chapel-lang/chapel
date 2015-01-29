@@ -49,7 +49,8 @@ class ExternBlockStmt;
 class CondStmt;
 class GotoStmt;
 
-class AstVisitor {
+class AstVisitor
+{
 public:
                  AstVisitor();
   virtual       ~AstVisitor();

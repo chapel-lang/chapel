@@ -1,0 +1,4 @@
+TestMinkWithArg.chpl:8: error: 'new' must be followed by a type expression
+TestMinkWithArg.chpl:8: error: 'new' must be followed by a type expression
+TestMinkWithArg.chpl:9: error: 'new' must be followed by a type expression
+TestMinkWithArg.chpl:9: error: 'new' must be followed by a type expression

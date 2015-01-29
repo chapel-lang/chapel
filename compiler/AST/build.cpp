@@ -303,28 +303,44 @@ Expr* buildDotExpr(const char* base, const char* member) {
 }
 
 
-Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
+static Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = newTemp();
+
   lvar->addFlag(FLAG_MAYBE_PARAM);
-  FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                                 new CallExpr("isTrue", right),
-                                 new SymExpr(gFalse));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr("compilerError", new_StringSymbol("cannot promote short-circuiting && operator"))));
+
+  FnSymbol*  ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
+                                new CallExpr("isTrue", right),
+                                new SymExpr(gFalse));
+
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
+
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
+                                  new CallExpr("compilerError", eMsg)));
+
   ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
+
   return new CallExpr(new DefExpr(ifFn));
 }
 
 
-Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
+static Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = newTemp();
+
   lvar->addFlag(FLAG_MAYBE_PARAM);
-  FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                                 new SymExpr(gTrue),
-                                 new CallExpr("isTrue", right));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr("compilerError", new_StringSymbol("cannot promote short-circuiting || operator"))));
+
+  FnSymbol*  ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
+                               new SymExpr(gTrue),
+                               new CallExpr("isTrue", right));
+
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
+
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
+                                  new CallExpr("compilerError", eMsg)));
+
   ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
+
   return new CallExpr(new DefExpr(ifFn));
 }
 
@@ -459,6 +475,9 @@ buildExternBlockStmt(const char* c_code) {
 
 ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
+  if (currentFileNamedOnCommandLine) {
+    mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+  }
 
   mod->filename = astr(filename);
   mod->doc      = docs;
@@ -886,14 +905,6 @@ CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
   }
 }
 
-static void
-checkForNonRefIntents(CallExpr* byrefVars) {
-  for_actuals(actual, byrefVars)
-    if (ArgSymbol* arg = toArgSymbol(actual))
-      if (arg->intent != INTENT_REF)
-        USR_FATAL_CONT(byrefVars, "intents other than 'ref' are not allowed in a 'with' clause of a 'forall' loop or expression");
-}
-
 static BlockStmt*
 buildFollowLoop(VarSymbol* iter,
                 VarSymbol* leadIdxCopy,
@@ -1025,8 +1036,6 @@ buildForallLoopStmt(Expr*      indices,
   //
   INT_ASSERT(!loopBody->byrefVars);
   if (byref_vars) {
-    // todo: push this check downstream, e.g. into checkParsed()
-    checkForNonRefIntents(byref_vars);
     INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
     byref_vars->primitive = primitives[PRIM_FORALL_LOOP];
   } else {
