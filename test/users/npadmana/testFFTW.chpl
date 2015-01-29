@@ -19,8 +19,8 @@ var A,B,goodA,goodB : [D] fftw_complex;
 	}
 	f.close();
 }
-var fwd = plan_dft_1d(100, A[0],B[0],1,FFTW_ESTIMATE);
-var rev = plan_dft_1d(100, B[0],A[0],-1,FFTW_ESTIMATE);
+var fwd = plan_dft_1d(100, A[0],B[0],FFTW_FORWARD,FFTW_ESTIMATE);
+var rev = plan_dft_1d(100, B[0],A[0],FFTW_BACKWARD,FFTW_ESTIMATE);
 // Test forward and reverse transform
 A = goodA;
 execute(fwd);
@@ -34,8 +34,8 @@ destroy_plan(fwd);
 destroy_plan(rev);
 
 // Test in-place transforms
-fwd = plan_dft_1d(100,A[0],A[0],1,FFTW_ESTIMATE);
-rev = plan_dft_1d(100,A[0],A[0],-1,FFTW_ESTIMATE);
+fwd = plan_dft_1d(100,A[0],A[0],FFTW_FORWARD,FFTW_ESTIMATE);
+rev = plan_dft_1d(100,A[0],A[0],FFTW_BACKWARD,FFTW_ESTIMATE);
 A = goodA;
 // Test forward and reverse transform
 A = goodA;
@@ -45,6 +45,24 @@ writeln(err);
 execute(rev);
 A /= 100; // FFTW does an unnormalized transform
 err = max reduce abs(A-goodA);
+writeln(err);
+destroy_plan(fwd);
+destroy_plan(rev);
+
+// Testing r2c and c2r
+var rD : domain(1) = 0.. #(2*(100/2 + 1)); // Padding to do in place transforms
+var cD : domain(1) = 0.. #(100/2 + 1);
+var rA : [rD] real(64);
+var cB : [cD] fftw_complex;
+fwd = plan_dft_r2c_1d(100,rA[0],cB[0],FFTW_ESTIMATE);
+rev = plan_dft_c2r_1d(100,cB[0],rA[0],FFTW_ESTIMATE);
+rA[D] = re(goodA);
+execute(fwd);
+err = max reduce abs(cB - goodB[cD]);
+writeln(err);
+execute(rev);
+rA /= 100;
+err = max reduce abs(rA[D] - re(goodA));
 writeln(err);
 destroy_plan(fwd);
 destroy_plan(rev);

@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      4503,        129]
-NotebookOptionsPosition[      4169,        113]
-NotebookOutlinePosition[      4528,        129]
-CellTagsIndexPosition[      4485,        126]
+NotebookDataLength[      4772,        134]
+NotebookOptionsPosition[      4438,        118]
+NotebookOutlinePosition[      4797,        134]
+CellTagsIndexPosition[      4754,        131]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -36,48 +36,53 @@ Cell[BoxData[
    RowBox[{"Writer", " ", "function"}], " ", "*)"}], "\[IndentingNewLine]", 
   RowBox[{
    RowBox[{
-    RowBox[{"writeArr", "[", 
-     RowBox[{"dim_", ",", " ", "fn_"}], "]"}], ":=", " ", 
-    RowBox[{"Module", "[", 
-     RowBox[{
-      RowBox[{"{", 
-       RowBox[{"a", ",", "b", ",", "fs"}], "}"}], ",", "\[IndentingNewLine]", 
-      
+    RowBox[{"Clear", "[", "writeArr", "]"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"writeArr", "[", 
+      RowBox[{"dim_", ",", " ", "fn_"}], "]"}], ":=", " ", 
+     RowBox[{"Module", "[", 
       RowBox[{
-       RowBox[{"a", " ", "=", " ", 
-        RowBox[{"RandomReal", "[", 
-         RowBox[{
-          RowBox[{"{", 
-           RowBox[{"0", ",", "1"}], "}"}], ",", "dim"}], "]"}]}], ";", 
-       "\[IndentingNewLine]", 
-       RowBox[{"b", " ", "=", " ", 
-        RowBox[{"Fourier", "[", 
-         RowBox[{"a", ",", 
-          RowBox[{"FourierParameters", "\[Rule]", 
+       RowBox[{"{", 
+        RowBox[{"a", ",", "b", ",", "fs"}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{
+        RowBox[{"a", " ", "=", " ", 
+         RowBox[{"RandomReal", "[", 
+          RowBox[{
            RowBox[{"{", 
-            RowBox[{"1", ",", "1"}], "}"}]}]}], "]"}]}], ";", 
-       "\[IndentingNewLine]", 
-       RowBox[{"fs", " ", "=", " ", 
-        RowBox[{"OpenWrite", "[", 
-         RowBox[{"fn", ",", 
-          RowBox[{"BinaryFormat", "\[Rule]", "True"}]}], "]"}]}], ";", 
-       "\[IndentingNewLine]", 
-       RowBox[{"BinaryWrite", "[", 
-        RowBox[{"fs", ",", "dim", ",", "\"\<Integer32\>\"", ",", 
-         RowBox[{"ByteOrdering", "\[Rule]", 
-          RowBox[{"-", "1"}]}]}], "]"}], ";", "\[IndentingNewLine]", 
-       RowBox[{"BinaryWrite", "[", 
-        RowBox[{"fs", ",", "a", ",", " ", "\"\<Real64\>\"", ",", 
-         RowBox[{"ByteOrdering", "\[Rule]", 
-          RowBox[{"-", "1"}]}]}], "]"}], ";", "\[IndentingNewLine]", 
-       RowBox[{"BinaryWrite", "[", 
-        RowBox[{"fs", ",", "b", ",", " ", "\"\<Complex128\>\"", ",", 
-         RowBox[{"ByteOrdering", "\[Rule]", 
-          RowBox[{"-", "1"}]}]}], "]"}], ";", "\[IndentingNewLine]", 
-       RowBox[{"Close", "[", "fs", "]"}], ";"}]}], "\[IndentingNewLine]", 
-     "]"}]}], ";"}]}]], "Input",
+            RowBox[{"0", ",", "1"}], "}"}], ",", "dim"}], "]"}]}], ";", 
+        "\[IndentingNewLine]", 
+        RowBox[{"b", " ", "=", " ", 
+         RowBox[{"Fourier", "[", 
+          RowBox[{"a", ",", 
+           RowBox[{"FourierParameters", "\[Rule]", 
+            RowBox[{"{", 
+             RowBox[{"1", ",", 
+              RowBox[{"-", "1"}]}], "}"}]}]}], "]"}]}], ";", 
+        "\[IndentingNewLine]", 
+        RowBox[{"fs", " ", "=", " ", 
+         RowBox[{"OpenWrite", "[", 
+          RowBox[{"fn", ",", 
+           RowBox[{"BinaryFormat", "\[Rule]", "True"}]}], "]"}]}], ";", 
+        "\[IndentingNewLine]", 
+        RowBox[{"BinaryWrite", "[", 
+         RowBox[{"fs", ",", "dim", ",", "\"\<Integer32\>\"", ",", 
+          RowBox[{"ByteOrdering", "\[Rule]", 
+           RowBox[{"-", "1"}]}]}], "]"}], ";", "\[IndentingNewLine]", 
+        RowBox[{"BinaryWrite", "[", 
+         RowBox[{"fs", ",", "a", ",", " ", "\"\<Real64\>\"", ",", 
+          RowBox[{"ByteOrdering", "\[Rule]", 
+           RowBox[{"-", "1"}]}]}], "]"}], ";", "\[IndentingNewLine]", 
+        RowBox[{"BinaryWrite", "[", 
+         RowBox[{"fs", ",", "b", ",", " ", "\"\<Complex128\>\"", ",", 
+          RowBox[{"ByteOrdering", "\[Rule]", 
+           RowBox[{"-", "1"}]}]}], "]"}], ";", "\[IndentingNewLine]", 
+        RowBox[{"Close", "[", "fs", "]"}], ";"}]}], "\[IndentingNewLine]", 
+      "]"}]}], ";"}]}]}]], "Input",
  CellChangeTimes->{{3.6314031420946503`*^9, 3.631403228628937*^9}, 
-   3.631403568538219*^9, {3.631403642441084*^9, 3.631403644567264*^9}}],
+   3.631403568538219*^9, {3.631403642441084*^9, 3.631403644567264*^9}, {
+   3.6314859331654587`*^9, 3.631486000263154*^9}, {3.631486041501898*^9, 
+   3.6314860593443947`*^9}}],
 
 Cell[BoxData[
  RowBox[{
@@ -129,8 +134,8 @@ CellTagsIndex->{}
 (*NotebookFileOutline
 Notebook[{
 Cell[558, 20, 408, 10, 46, "Input"],
-Cell[969, 32, 1988, 47, 182, "Input"],
-Cell[2960, 81, 1205, 30, 114, "Input"]
+Cell[969, 32, 2257, 52, 199, "Input"],
+Cell[3229, 86, 1205, 30, 148, "Input"]
 }
 ]
 *)

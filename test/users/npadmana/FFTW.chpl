@@ -5,6 +5,8 @@ module FFTW {
 
 	// Define the various planner flags
 	// See Sec. 4.3.2 of FFTW manual "Planner Flags"
+	extern const FFTW_FORWARD : c_int;
+	extern const FFTW_BACKWARD : c_int;
 	extern const FFTW_ESTIMATE : c_uint;
 	extern const FFTW_MEASURE : c_uint;
 	extern const FFTW_PATIENT : c_uint;
@@ -21,6 +23,7 @@ module FFTW {
 	extern type fftw_complex = 2*real(64); // 4.1.1
 	extern type fftw_plan; // opaque type
 	type _cxptr = c_ptr(2*c_double);
+	type _rptr = c_ptr(c_double);
 
 	// Planner functions
 	// Complex : 4.3.1
@@ -30,13 +33,32 @@ module FFTW {
 		return fftw_plan_dft_1d(n0,c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
 	}
 	proc plan_dft_2d(n0 : c_int, n1 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan {
-		extern proc fftw_plan_dft_2d(n0 : c_int, n1 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags : c_uint) : fftw_plan;
+		extern proc fftw_plan_dft_2d(n0 : c_int, n1 : c_int, in1 : _cxptr, out1 : _cxptr, sign : c_int, flags : c_uint) : fftw_plan;
 		return fftw_plan_dft_2d(n0,n1,c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
 	}
 	proc plan_dft_3d(n0 : c_int, n1 : c_int, n2 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan {
-		extern proc fftw_plan_dft_3d(n0 : c_int, n1 : c_int, n2 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags : c_uint) : fftw_plan;
+		extern proc fftw_plan_dft_3d(n0 : c_int, n1 : c_int, n2 : c_int,  in1 : _cxptr,  out1 : _cxptr, sign : c_int, flags : c_uint) : fftw_plan;
 		return fftw_plan_dft_3d(n0,n1,n2,c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
 	}
+
+	// Real-to-complex and complex-to-real plans
+	// We handle these with a type parameter to let the user pass in an appropriately sized
+	// real array for the complex part, most usually when doing an in-place transform.
+	proc plan_dft_r2c_1d(n0 : c_int, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
+		where ((t.type==real(64)) || (t.type==fftw_complex)) && ((tt.type==real(64)) || (tt.type==fftw_complex)) 
+	{
+		//-- define the extern proc
+		extern proc fftw_plan_dft_r2c_1d(n0 : c_int,  in1 : _rptr,  out1 : _cxptr, flags : c_uint) : fftw_plan;
+		return fftw_plan_dft_r2c_1d(n0,c_ptrTo(in1) : c_ptr(c_double), c_ptrTo(out1) : _cxptr, flags);
+	}
+	proc plan_dft_c2r_1d(n0 : c_int, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
+		where ((t.type==real(64)) || (t.type==fftw_complex)) && ((tt.type==real(64)) || (tt.type==fftw_complex)) {
+		//-- define the extern proc
+		extern proc fftw_plan_dft_c2r_1d(n0 : c_int,  in1 : _cxptr,  out1 : _rptr, flags : c_uint) : fftw_plan;
+		return fftw_plan_dft_c2r_1d(n0,c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : c_ptr(c_double), flags);
+	}
+
+
 
 
 
@@ -56,8 +78,15 @@ module FFTW {
 
 
 	// Utilities -- not in FFTW
-	proc abs((r,c) : fftw_complex) : real {
+	proc abs((r,c) : fftw_complex) : real(64) {
 		return sqrt(r*r + c*c);
+	}
+
+	proc re((r,c) : fftw_complex) : real(64) {
+		return r;
+	}
+	proc im((r,c) : fftw_complex) : real(64) {
+		return c;
 	}
 
 
