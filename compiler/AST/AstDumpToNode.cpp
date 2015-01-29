@@ -164,10 +164,6 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
         tag = "User";
         break;
 
-      case MOD_MAIN:
-        tag = "Main";
-        break;
-
     }
 
     fprintf(mFP, "#<ModuleSymbol      %12d %s", node->id, node->name);

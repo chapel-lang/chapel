@@ -208,7 +208,6 @@ void printClass(std::ofstream *file, AggregateType *cl) {
   if (! cl->isUnion()) {
     printTabs(file);
 
-    // TODO: for rst, change convert to '.. class:: ' and '.. record:: '
     if (cl->isClass()) {
       *file << outputMap["class"];
     } else if (cl->isRecord()) {
@@ -330,10 +329,12 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     NUMTABS--;
     *file << outputMap["module"] << name << std::endl;
     if (mod->doc != NULL) {
+      NUMTABS++;
       printTabs(file);
       *file << outputMap["module comment prefix"];
       *file << mod->doc << std::endl;
       *file << std::endl;
+      NUMTABS--;
     }
   }
 
