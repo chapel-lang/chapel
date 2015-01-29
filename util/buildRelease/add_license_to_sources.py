@@ -55,7 +55,8 @@ class LicenseCommenter(object):
             return '\n'.join(map(lambda l: self.comment_line(l, '#'),
                                  self.comment_text_lines)) + '\n\n'
 
-        c_style_comments = ['.c', '.chpl', '.cpp', '.h', '.lex', '.ypp', '.y']
+        c_style_comments = ['.c', '.chpl', '.cpp', '.h', '.ypp', '.y']
+        c_multiline_comments = ['.lex']
 
         root, extension = os.path.splitext(source_filename)
         if extension in c_style_comments:
@@ -68,6 +69,16 @@ class LicenseCommenter(object):
             comment_lines = map(lambda l: self.comment_line(l, '//'),
                                 self.comment_text_lines)
             comment_lines.append('\n')
+            return '\n'.join(comment_lines)
+        elif extension in c_multiline_comments:
+            # Use this form:
+            #
+            # /*
+            #  * license lines...
+            #  */
+            license_lines = map(lambda l: self.comment_line(l, ' *'),
+                                self.comment_text_lines)
+            comment_lines = ['/*'] + license_lines + [' */', '\n']
             return '\n'.join(comment_lines)
         else:
             raise ValueError('Cannot figure out comment style for: {0}'.format(source_filename))
