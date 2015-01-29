@@ -176,7 +176,9 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType,
 
   closeInputFile(yyin);
 
-  if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
+  if (yyblock == NULL) {
+    INT_FATAL("yyblock should always be non-NULL after yyparse()");
+  } else if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
     const char* modulename = filenameToModulename(filename);
 
     newModule      = buildModule(modulename, yyblock, yyfilename, NULL);

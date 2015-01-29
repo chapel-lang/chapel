@@ -17,35 +17,26 @@
  * limitations under the License.
  */
 
-#include "VisibleSymbol.h"
+#ifndef _SCOPE_FUNCTION_H_
+#define _SCOPE_FUNCTION_H_
 
 #include "ScopeBase.h"
 
-VisibleSymbol::VisibleSymbol(Symbol*          sym,
-                             const ScopeBase* scope,
-                             int              distance)
-{
-  mSymbol   = sym;
-  mScope    = scope;
-  mDistance = distance;
-}
+class FnSymbol;
 
-VisibleSymbol::~VisibleSymbol()
+class ScopeFunction : public ScopeBase
 {
+public:
+                        ScopeFunction(FnSymbol*        fn,
+                                      const ScopeBase* parent);
+                       ~ScopeFunction();
 
-}
+private:
+                        ScopeFunction();
 
-Symbol* VisibleSymbol::symbol() const
-{
-  return mSymbol;
-}
+  virtual void          describeHeader(FILE* fp)                    const;
 
-const ScopeBase* VisibleSymbol::scope() const
-{
-  return mScope;
-}
+  FnSymbol*             mFunction;
+};
 
-int VisibleSymbol::distance() const
-{
-  return mDistance;
-}
+#endif
