@@ -24,18 +24,72 @@
 #include <cstdlib>
 
 IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
-                               const std::vector<IpeSymbol*>& symbols)
+                               const std::vector<IpeSymbol*>& formals)
 {
   mParent    = parent;
 
-  mSlotCount = symbols.size();
+  mDepth     = (parent == 0) ? 0 : parent->mDepth + 1;
+
+  mSlotCount = formals.size();
   mSlotArray = (IpeSymbol**) malloc(mSlotCount * sizeof(IpeSymbol*));
 
   for (int i = 0; i < mSlotCount; i++)
-    mSlotArray[i] = symbols[i];
+    mSlotArray[i] = formals[i];
 
   // 2015/01/14 NOAKES.  Currently assumes objects are constant size
   mData      = malloc(8 * mSlotCount);
+}
+
+IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
+                               const std::vector<IpeSymbol*>& formals,
+                               const std::vector<IpeValue>&   actuals)
+{
+  INT_ASSERT(formals.size() == actuals.size());
+
+  mParent    = parent;
+
+  mDepth     = (parent == 0) ? 0 : parent->mDepth + 1;
+
+  mSlotCount = formals.size();
+  mSlotArray = (IpeSymbol**) malloc(mSlotCount * sizeof(IpeSymbol*));
+
+  for (size_t i = 0; i < formals.size(); i++)
+    mSlotArray[i] = formals[i];
+
+  // 2015/01/14 NOAKES.  Currently assumes objects are constant size
+  mData      = malloc(8 * mSlotCount);
+
+  for (size_t i = 0; i < formals.size(); i++)
+    assign(formals[i], actuals[i]);
+}
+
+IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
+                               const std::vector<IpeSymbol*>& formals,
+                               const std::vector<IpeValue>&   actuals,
+                               int                            slotCount,
+                               int                            dataSize)
+{
+  INT_ASSERT(actuals.size() == formals.size());
+  INT_ASSERT(slotCount      >= formals.size());
+  INT_ASSERT(dataSize       >= 8 * slotCount);
+
+  mParent    = parent;
+
+  mDepth     = (parent == 0) ? 0 : parent->mDepth + 1;
+
+  mSlotCount = slotCount;
+  mSlotArray = (IpeSymbol**) malloc(mSlotCount * sizeof(IpeSymbol*));
+
+  for (size_t i = 0; i < formals.size(); i++)
+    mSlotArray[i] = formals[i];
+
+  for (size_t i = formals.size(); i < slotCount; i++)
+    mSlotArray[i] = NULL;
+
+  mData      = malloc(dataSize);
+
+  for (size_t i = 0; i < formals.size(); i++)
+    assign(formals[i], actuals[i]);
 }
 
 IpeEnvironment::~IpeEnvironment()
@@ -47,17 +101,25 @@ IpeEnvironment::~IpeEnvironment()
     free(mData);
 }
 
-IpeValue IpeEnvironment::lookup(IpeSymbol* variable)
+
+#include "AstDumpToNode.h"
+
+IpeValue IpeEnvironment::lookup(IpeSymbol* variable) const
 {
+  const IpeEnvironment* frame = this;
+
+  while (frame->mDepth > variable->depth())
+    frame = frame->mParent;
+
   Type*    type = variable->type;
-  void*    env  = (((char*) mData) + variable->offset());
+  void*    env  = (((char*) frame->mData) + variable->offset());
   IpeValue retval;
 
   if (strcmp(type->symbol->name, "bool") == 0)
-    retval.bValue = *((bool*) env);
+    retval.bValue = *((bool*)   env);
 
   else if (strcmp(type->symbol->name, "int") == 0)
-    retval.iValue = *((long*) env);
+    retval.iValue = *((long*)   env);
 
   else if (strcmp(type->symbol->name, "real") == 0)
     retval.rValue = *((double*) env);
@@ -74,8 +136,13 @@ IpeValue IpeEnvironment::lookup(IpeSymbol* variable)
 
 void IpeEnvironment::assign(IpeSymbol* variable, IpeValue value)
 {
+  IpeEnvironment* frame = this;
+
+  while (frame->mDepth > variable->depth())
+    frame = frame->mParent;
+
   Type* type = variable->type;
-  void* env  = (((char*) mData) + variable->offset());
+  void* env  = (((char*) frame->mData) + variable->offset());
 
   if (strcmp(type->symbol->name, "bool") == 0)
     *((bool*) env)   = value.bValue;
@@ -92,7 +159,7 @@ void IpeEnvironment::assign(IpeSymbol* variable, IpeValue value)
 
 void IpeEnvironment::describe() const
 {
-  printf("Environment\n");
+  printf("Environment %3d\n", mDepth);
 
   for (int i = 0; i < mSlotCount; i++)
   {
