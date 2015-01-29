@@ -60,13 +60,12 @@ class LicenseCommenter(object):
         if extension in c_style_comments:
             # Use this form:
             #
-            # /*
-            #  * License line one
-            #  * ...
-            #  * last license line
-            #  */
-            license_lines = map(lambda l: ' * {0}'.format(l), self.comment_text_lines)
-            comment_lines = ['/*'] + license_lines + [' */', '\n']
+            # // License line one
+            # // ...
+            # // last license line
+            #
+            comment_lines = map(lambda l: '// {0}'.format(l), self.comment_text_lines)
+            comment_lines.append('\n')
             return '\n'.join(comment_lines)
         else:
             raise ValueError('Cannot figure out comment style for: {0}'.format(source_filename))
