@@ -57,6 +57,10 @@ AllCompTime:
   11/09/14:
     - disable the task table by default
 
+assign.1024:
+  01/21/15:
+    - optimize range follower iter so optimize-loop-iterators fires
+
 bfs:
   09/25/14:
     - addition of octal to, reformatting of format printing.
@@ -100,6 +104,12 @@ fasta:
     - enabled unlocked I/O on fasta and fasta-printf
   10/07/14:
     - Add c_string_copy type
+
+forall-dom-range:
+  01/21/15:
+    - optimize range follower iter so optimize-loop-iterators fires
+  01/23/15:
+    - optimize range follower iter for non-strided ranges
 
 ft:
   09/05/14:
