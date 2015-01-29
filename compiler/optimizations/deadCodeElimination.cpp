@@ -459,23 +459,21 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
 
       if (condStmt && condStmt->condExpr == expr)
         // If the expr is the condition expression of an if statement,
-        // then remove the entire if.
+        // then remove the entire if. (NOTE 1)
         condStmt->remove();
 
       else if (whileStmt && whileStmt->condExprGet() == expr)
         // If the expr is the condition expression of a while statement,
-        // then remove the entire While.
+        // then remove the entire While. (NOTE 1)
         whileStmt->remove();
 
       else if (forLoop   && forLoop->indexGet()      == expr)
-        // If the expr is the indexVariable of ForLoop statement,
-        // then remove the entire ForLoop statement
-        forLoop->remove();
+        // Do nothing. (NOTE 2)
+        ;
 
       else if (forLoop   && forLoop->iteratorGet()   == expr)
-        // If the expr is the indexVariable of ForLoop statement,
-        // then remove the entire ForLoop statement
-        forLoop->remove();
+        // Do nothing. (NOTE 2)
+        ;
 
       else
         expr->remove();
@@ -576,3 +574,22 @@ static void deadGotoElimination(FnSymbol* fn)
   }
 }
 #endif
+
+//########################################################################
+//# NOTES
+//#
+//# 1. This cleanup is not really part of dead block removal, but is necessary
+//#    to avoid leaving the AST in a malformed state.  A more-factored approach
+//#    would be to have a cleanup function that can be invoked on parts of the
+//#    tree to normalize AST constructs that have been partially eviscerated.
+//#
+//#    This particular traversal should probably be done in postorder.  Then,
+//#    the check at the top of the loop can be eliminated additional checks can
+//#    be added to ensure that when a construct is to be removed, all of its
+//#    constituent parts have already been removed from the tree.
+//#
+//# 2. Because the ForLoop construct contains initialization code, we cannot
+//#    necessarily remove the entire for loop when we discover that evaluation
+//#    of the iterator index is dead.  (It's probably a safer bet when the
+//#    iterator expression is dead.)
+//#
