@@ -52,7 +52,8 @@ class LicenseCommenter(object):
         """
         if 'Makefile' in source_filename:
             # Add "# " to each line.
-            return '\n'.join(map(lambda l: '# {0}'.format(l), self.comment_text_lines)) + '\n\n'
+            return '\n'.join(map(lambda l: self.comment_line(l, '#'),
+                                 self.comment_text_lines)) + '\n\n'
 
         c_style_comments = ['.c', '.chpl', '.cpp', '.h', '.lex', '.ypp', '.y']
 
@@ -64,11 +65,19 @@ class LicenseCommenter(object):
             # // ...
             # // last license line
             #
-            comment_lines = map(lambda l: '// {0}'.format(l), self.comment_text_lines)
+            comment_lines = map(lambda l: self.comment_line(l, '//'),
+                                self.comment_text_lines)
             comment_lines.append('\n')
             return '\n'.join(comment_lines)
         else:
             raise ValueError('Cannot figure out comment style for: {0}'.format(source_filename))
+
+    def comment_line(self, line, comment):
+        """Returns commented version of line."""
+        if len(line) > 0:
+            return '{0} {1}'.format(comment, line)
+        else:
+            return comment
 
     def parse_args(self):
 
