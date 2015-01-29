@@ -17,6 +17,7 @@
 
 #include "ScopeModule.h"
 
+#include "ipe.h"
 #include "stmt.h"
 #include "symbol.h"
 

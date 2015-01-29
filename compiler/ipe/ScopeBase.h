@@ -71,8 +71,8 @@ private:
                                          std::vector<ModuleSymbol*>& visited);
 
 
-  bool                            isConflicted(const Symbol*       sym)                 const;
-  bool                            isConflicted(const ModuleSymbol* mod)                 const;
+  bool                            isConflicted(Symbol*       sym)                       const;
+  bool                            isConflicted(ModuleSymbol* mod)                       const;
 
   bool                            isVisited(ModuleSymbol*               module,
                                             std::vector<ModuleSymbol*>& visited);

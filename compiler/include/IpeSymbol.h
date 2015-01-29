@@ -33,10 +33,9 @@ class Type;
 class IpeSymbol : public Symbol
 {
 public:
-                     IpeSymbol(const char* name,
-                               Type*       type,
-                               int         depth,
-                               int         offset);
+                     IpeSymbol(ArgSymbol* symbol);
+                     IpeSymbol(VarSymbol* symbol);
+
                     ~IpeSymbol();
 
   virtual void       verify();
@@ -50,10 +49,21 @@ public:
   virtual bool       isConstValWillNotChange()                const;
   virtual bool       isParameter()                            const;
 
+  Symbol*            symbol()                                 const;
+
   int                depth()                                  const;
   int                offset()                                 const;
 
+  void               locationSet(int depth, int offset);
+
 private:
+                     IpeSymbol();
+                     IpeSymbol(Symbol* symbol);
+
+  void               init(Symbol* symbol);
+
+  Symbol*            mSymbol;
+
   int                mDepth;
   int                mOffset;
 };

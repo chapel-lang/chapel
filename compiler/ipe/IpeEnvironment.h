@@ -29,11 +29,21 @@ class IpeEnvironment
 {
 public:
                      IpeEnvironment(IpeEnvironment*                parent,
-                                    const std::vector<IpeSymbol*>& symbols);
+                                    const std::vector<IpeSymbol*>& formals);
+
+                     IpeEnvironment(IpeEnvironment*                parent,
+                                    const std::vector<IpeSymbol*>& formals,
+                                    const std::vector<IpeValue>&   actuals);
+
+                     IpeEnvironment(IpeEnvironment*                parent,
+                                    const std::vector<IpeSymbol*>& formals,
+                                    const std::vector<IpeValue>&   actuals,
+                                    int                            slotCount,
+                                    int                            dataSize);
 
                     ~IpeEnvironment();
 
-  IpeValue           lookup(IpeSymbol* variable);
+  IpeValue           lookup(IpeSymbol* variable)                      const;
   void               assign(IpeSymbol* variable, IpeValue value);
 
   void               describe()                                       const;
@@ -42,6 +52,7 @@ private:
                      IpeEnvironment();
 
   IpeEnvironment*    mParent;
+  int                mDepth;
 
   int                mSlotCount;
   IpeSymbol**        mSlotArray;

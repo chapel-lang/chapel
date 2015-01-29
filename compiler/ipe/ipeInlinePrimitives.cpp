@@ -111,6 +111,7 @@ static void ipeInline(Expr* genExpr)
   else if (WhileDoStmt* expr = toWhileDoStmt(genExpr))
     ipeInline(expr);
 
+  // This must appear after WhileDoStmt etc
   else if (BlockStmt*   expr = toBlockStmt(genExpr))
     ipeInline(expr);
 
@@ -137,13 +138,19 @@ static void ipeInline(Expr* genExpr)
 
 static void ipeInline(DefExpr* defExpr)
 {
+  if (defExpr->sym != 0)
+  {
+    if (FnSymbol* fn = toFnSymbol(defExpr->sym))
+      ipeInline(fn);
+  }
+
   if (defExpr->init != 0)
     ipeInline(defExpr->init);
 }
 
 // NOAKES 2015-01-07: This handles only the simplest possible
 // cases required for the simplest primitives currently in IPE
-// ChapelBase. Currently extremely fragile.
+// ChapelBase. Extremely fragile.
 static void ipeInline(CallExpr* callExpr)
 {
   if (callExpr->baseExpr)

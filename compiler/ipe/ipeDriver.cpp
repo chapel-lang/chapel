@@ -17,9 +17,10 @@
 
 #include "ipe.h"
 
+#include "ipeReplaceVariables.h"
 #include "ipeResolve.h"
+#include "ipeAssignLocations.h"
 #include "ipeInlinePrimitives.h"
-#include "ipeInsertVariables.h"
 #include "ipeEvaluate.h"
 
 #include "AstDumpToNode.h"
@@ -36,9 +37,12 @@ struct PassInfo
 static PassInfo sPassList[] =
 {
   { "parse",            parse               },
+
+  { "replaceVariables", ipeReplaceVariables },
   { "resolve",          ipeResolve          },
+  { "assignLocations",  ipeAssignLocations  },
   { "inlinePrimitives", ipeInlinePrimitives },
-  { "insertVariables",  ipeInsertVariables  },
+
   { "evaluate",         ipeEvaluate         }
 };
 
@@ -48,7 +52,6 @@ void ipeRun()
 
   setupLogfiles();
 
-  // Remaining passes run only on application module
   for (size_t i = 0; i < passListSize; i++)
   {
     sPassList[i].function();
