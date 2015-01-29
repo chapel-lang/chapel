@@ -70,7 +70,7 @@ IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
                                int                            dataSize)
 {
   INT_ASSERT(actuals.size() == formals.size());
-  INT_ASSERT(slotCount      >= formals.size());
+  INT_ASSERT(slotCount      >= (int) formals.size());
   INT_ASSERT(dataSize       >= 8 * slotCount);
 
   mParent    = parent;
@@ -83,7 +83,7 @@ IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
   for (size_t i = 0; i < formals.size(); i++)
     mSlotArray[i] = formals[i];
 
-  for (size_t i = formals.size(); i < slotCount; i++)
+  for (size_t i = formals.size(); i < (size_t) slotCount; i++)
     mSlotArray[i] = NULL;
 
   mData      = malloc(dataSize);
@@ -100,9 +100,6 @@ IpeEnvironment::~IpeEnvironment()
   if (mData     != 0)
     free(mData);
 }
-
-
-#include "AstDumpToNode.h"
 
 IpeValue IpeEnvironment::lookup(IpeSymbol* variable) const
 {
