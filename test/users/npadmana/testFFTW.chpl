@@ -53,8 +53,8 @@ destroy_plan(fwd);
 destroy_plan(rev);
 
 // Testing r2c and c2r
-var rD : domain(1) = 0.. #(2*(dims(1)/2 + 1)); // Padding to do in place transforms
-var cD : domain(1) = 0.. #(dims(1)/2 + 1);
+var rD = 0.. #(2*(dims(1)/2 + 1)); // Padding to do in place transforms
+var cD = 0.. #(dims(1)/2 + 1);
 var rA : [rD] real(64);
 var cB : [cD] fftw_complex;
 fwd = plan_dft_r2c_1d(dims(1),rA[0],cB[0],FFTW_ESTIMATE);
@@ -62,6 +62,22 @@ rev = plan_dft_c2r_1d(dims(1),cB[0],rA[0],FFTW_ESTIMATE);
 rA[D] = re(goodA);
 execute(fwd);
 err = max reduce abs(cB - goodB[cD]);
+writeln(err);
+execute(rev);
+rA /= * reduce dims;
+err = max reduce abs(rA[D] - re(goodA));
+writeln(err);
+destroy_plan(fwd);
+destroy_plan(rev);
+// In place transform
+fwd = plan_dft_r2c_1d(dims(1),rA[0],rA[0],FFTW_ESTIMATE);
+rev = plan_dft_c2r_1d(dims(1),rA[0],rA[0],FFTW_ESTIMATE);
+rA[D] = re(goodA);
+execute(fwd);
+// Define domains to extract the real and imaginary parts
+var reD = 0..(2*(dims(1)/2)+1) by 2; // Padding to do in place transforms
+var imD = 1..(2*(dims(1)/2) + 1) by 2; // Padding to do in place transforms
+err = (max reduce abs(rA[reD] - re(goodB[cD]))) + (max reduce abs(rA[imD] - im(goodB[cD])));
 writeln(err);
 execute(rev);
 rA /= * reduce dims;
