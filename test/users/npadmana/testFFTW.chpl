@@ -1,6 +1,10 @@
 use FFTW;
 
-var err : real;
+proc printcmp(x, y) {
+	var err = max reduce abs(x-y);
+	writeln(err);
+}
+
 
 /* Read in the data and set up the domains appropriately */
 param ndim : int = 1;
@@ -44,12 +48,10 @@ var rev = plan_dft_1d(dims, B[0],A[0],FFTW_BACKWARD,FFTW_ESTIMATE);
 // Test forward and reverse transform
 A = goodA;
 execute(fwd);
-err = max reduce abs(B-goodB);
-writeln(err);
+printcmp(B,goodB);
 execute(rev);
 A /= norm; 
-err = max reduce abs(A-goodA);
-writeln(err);
+printcmp(A,goodA);
 destroy_plan(fwd);
 destroy_plan(rev);
 
@@ -60,12 +62,10 @@ A = goodA;
 // Test forward and reverse transform
 A = goodA;
 execute(fwd);
-err = max reduce abs(A-goodB);
-writeln(err);
+printcmp(A,goodB);
 execute(rev);
-A /= * reduce dims; // FFTW does an unnormalized transform
-err = max reduce abs(A-goodA);
-writeln(err);
+A /= norm; // FFTW does an unnormalized transform
+printcmp(A,goodA);
 destroy_plan(fwd);
 destroy_plan(rev);
 
@@ -76,12 +76,10 @@ fwd = plan_dft_r2c_1d(dims,rA[0],cB[0],FFTW_ESTIMATE);
 rev = plan_dft_c2r_1d(dims,cB[0],rA[0],FFTW_ESTIMATE);
 rA[D] = re(goodA);
 execute(fwd);
-err = max reduce abs(cB - goodB[cD]);
-writeln(err);
+printcmp(cB,goodB[cD]);
 execute(rev);
 rA /= norm;
-err = max reduce abs(rA[D] - re(goodA));
-writeln(err);
+printcmp(rA[D],re(goodA));
 destroy_plan(fwd);
 destroy_plan(rev);
 // In place transform
@@ -89,12 +87,11 @@ fwd = plan_dft_r2c_1d(dims,rA[0],rA[0],FFTW_ESTIMATE);
 rev = plan_dft_c2r_1d(dims,rA[0],rA[0],FFTW_ESTIMATE);
 rA[D] = re(goodA);
 execute(fwd);
-err = (max reduce abs(rA[reD] - re(goodB[cD]))) + (max reduce abs(rA[imD] - im(goodB[cD])));
-writeln(err);
+printcmp(rA[reD],re(goodB[cD]));
+printcmp(rA[imD],im(goodB[cD]));
 execute(rev);
 rA /= norm;
-err = max reduce abs(rA[D] - re(goodA));
-writeln(err);
+printcmp(rA[D],re(goodA));
 destroy_plan(fwd);
 destroy_plan(rev);
 
