@@ -416,7 +416,7 @@ PGC-W-0205-Argument mismatch for assert - all but a few failed
 
 something going wrong with reservedSymbolNames causes reserved names to show up in generated code.
 --------------------------------------------------------------------------------------------------
-All tests fail when this happens (xc-wb.host.prgenv-pgi 2015-01-08, xc-wb.prgenv-pgi 2015-01-16, xc-wb.prgenv-pgi 2015-01-21, xc-wb.prgenv-gnu 2015-01-22)
+All but one tests fail when this happens (xc-wb.host.prgenv-pgi 2015-01-08, xc-wb.prgenv-pgi 2015-01-16, xc-wb.prgenv-pgi 2015-01-21, xc-wb.prgenv-gnu 2015-01-22, xc-wb.intel 2015-01-30)
 
 Sporadic compilation timeouts
 -----------------------------
@@ -546,10 +546,32 @@ Reviewed 2015-01-23
 
 
 ============================
-xc-wb.host.prgenv-cray
+xc-wb.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
 Reviewed 2015-01-23
 ============================
+
+array index out of bounds
+-------------------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 5)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 5)]
+
+
+============================
+xc-wb.host.prgenv-cray
+Inherits 'xc-wb.prgenv-cray'
+Reviewed 2015-01-23
+============================
+
+terminate called after throwing an instance of 'std::out_of_range'
+------------------------------------------------------------------
+[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)]
 
 
 === sporadic failures below ===
