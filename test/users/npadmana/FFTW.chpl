@@ -28,7 +28,7 @@ module FFTW {
 	// Planner functions
 	// Complex : 4.3.1
 	// NOTE : We pass in arrays using ref 
-	proc plan_dft_1d((n0) : 1*c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan {
+	proc plan_dft_1d((n0,) : 1*c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan {
 		extern proc fftw_plan_dft_1d(n0 : c_int, in1 : _cxptr, out1 : _cxptr, sign : c_int, flags : c_uint) : fftw_plan;
 		return fftw_plan_dft_1d(n0,c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
 	}
@@ -44,14 +44,14 @@ module FFTW {
 	// Real-to-complex and complex-to-real plans
 	// We handle these with a type parameter to let the user pass in an appropriately sized
 	// real array for the complex part, most usually when doing an in-place transform.
-	proc plan_dft_r2c_1d((n0) : 1*c_int, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
+	proc plan_dft_r2c_1d((n0,) : 1*c_int, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
 		where ((t.type==real(64)) || (t.type==fftw_complex)) && ((tt.type==real(64)) || (tt.type==fftw_complex)) 
 	{
 		//-- define the extern proc
 		extern proc fftw_plan_dft_r2c_1d(n0 : c_int,  in1 : _rptr,  out1 : _cxptr, flags : c_uint) : fftw_plan;
 		return fftw_plan_dft_r2c_1d(n0,c_ptrTo(in1) : c_ptr(c_double), c_ptrTo(out1) : _cxptr, flags);
 	}
-	proc plan_dft_c2r_1d((n0) : 1*c_int, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
+	proc plan_dft_c2r_1d((n0,) : 1*c_int, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
 		where ((t.type==real(64)) || (t.type==fftw_complex)) && ((tt.type==real(64)) || (tt.type==fftw_complex)) {
 		//-- define the extern proc
 		extern proc fftw_plan_dft_c2r_1d(n0 : c_int,  in1 : _cxptr,  out1 : _rptr, flags : c_uint) : fftw_plan;
