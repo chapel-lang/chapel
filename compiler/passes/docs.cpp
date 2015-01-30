@@ -84,7 +84,7 @@ void docs(void) {
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-      if ((!devOnlyModule(mod) || developer) && !mod->hasFlag(FLAG_NO_DOC)) {
+      if (!mod->hasFlag(FLAG_NO_DOC) && (!devOnlyModule(mod) || developer)) {
         std::string filename = mod->filename;
 
         if (mod->modTag == MOD_INTERNAL) {
@@ -174,8 +174,8 @@ void printArg(std::ofstream *file, ArgSymbol *arg) {
 void printFields(std::ofstream *file, AggregateType *cl) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
-      if (!var->hasFlag(FLAG_SUPER_CLASS) &&
-          !var->hasFlag(FLAG_NO_DOC)) {
+      if (!var->hasFlag(FLAG_NO_DOC) &&
+          !var->hasFlag(FLAG_SUPER_CLASS)) {
         // Don't document the super class field, we don't want to know about it
         // Also, don't document this field if it has a "no doc" pragma attached
         // to it
@@ -220,7 +220,7 @@ void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
 }
 
 void printClass(std::ofstream *file, AggregateType *cl) {
-  if (! cl->isUnion() && !cl->symbol->hasFlag(FLAG_NO_DOC)) {
+  if (!cl->symbol->hasFlag(FLAG_NO_DOC) && ! cl->isUnion()) {
     printTabs(file);
 
     if (cl->isClass()) {
