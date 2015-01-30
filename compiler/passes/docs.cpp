@@ -84,7 +84,7 @@ void docs(void) {
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-      if (!devOnlyModule(mod) || developer) {
+      if (!devOnlyModule(mod) || false) {
         std::string filename = mod->filename;
 
         if (mod->modTag == MOD_INTERNAL) {
@@ -387,7 +387,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
   
   forv_Vec(FnSymbol, fn, fns) {
-    if (!devOnlyFunction(fn) || developer) {
+    if (!devOnlyFunction(fn) || false) {
       printFunction(file, fn, false);
     }
   }
@@ -405,7 +405,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
   
   forv_Vec(ModuleSymbol, md, mods) {
-    if (!devOnlyModule(md) || developer) 
+    if (!devOnlyModule(md) || false) 
       printModule(file, md, name + "." +  md->name);
   }
   if (fDocsTextOnly)
@@ -445,7 +445,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
 
   *file << fn->name << "(";
   if (fn->numFormals() > 0) {
-    if (!developer && strcmp(fn->getFormal(1)->name, "_mt") == 0) {
+    if (!false && strcmp(fn->getFormal(1)->name, "_mt") == 0) {
       for (int i = 3; i < fn->numFormals(); i++) {
         ArgSymbol *cur = fn->getFormal(i);
         printArg(file, cur);
