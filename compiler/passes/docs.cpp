@@ -518,6 +518,17 @@ std::string generateSphinxProject(std::string dirpath) {
 /* Call `make html` from inside sphinx project. */
 void generateSphinxOutput(std::string dirpath) {
   std::string htmldir = dirpath + std::string("/html");
-  std::string cmd = std::string("cd ") + htmldir + std::string(" && ") + std::string(CHPL_MAKE) + std::string(" html");
+
+  // The virtualenv activate script is at:
+  //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/activate
+  std::string activate =
+    CHPL_HOME +
+    std::string("/third-party/chpldoc-venv/install/") +
+    CHPL_TARGET_PLATFORM +
+    std::string("/chpdoc-virtualenv/bin/activate");
+
+  // Run: `source $activate && cd $htmldir && $CHPL_MAKE html`
+  std::string cmd = std::string("source ") + activate + std::string(" && cd ") + htmldir +
+    std::string(" && ") + std::string(CHPL_MAKE) + std::string(" html");
   mysystem(cmd.c_str(), "building html output from chpldoc sphinx project");
 }
