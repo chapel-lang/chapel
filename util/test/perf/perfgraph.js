@@ -471,7 +471,7 @@ function customDrawCallback(g, initial) {
   // if this isn't the initial draw, and this graph is fully rendered then
   // sync this graphs x-axis with all other ready graphs along the x-axis
   if (!initial && g.isReady) {
-    var range = g.xAxisRange();
+    var range = g.xAxisRange().slice();
     range[0] = roundDate(range[0], false);
     range[1] = roundDate(range[1], true);
 
