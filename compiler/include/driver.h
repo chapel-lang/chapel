@@ -59,6 +59,7 @@ extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
+extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
