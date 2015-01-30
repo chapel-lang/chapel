@@ -18,7 +18,7 @@ var A,B,goodA,goodB : [D] fftw_complex;
 	for ii in 1..ndim {
 		f.read(dims(ii));
 	}
-	D = 0.. #dims(1);
+	D = 0.. #dims(ndim);
 	for (r,c) in goodA {
 		f.read(r);
 		c = 0;
@@ -32,11 +32,11 @@ var A,B,goodA,goodB : [D] fftw_complex;
 var first : ndim*int;
 if (ndim==1) {
 	// Domains for real FFT
-	rD = 0.. #(2*(dims(1)/2 + 1)); // Padding to do in place transforms
-	cD = 0.. #(dims(1)/2 + 1);
+	rD = 0.. #(2*(dims(ndim)/2 + 1)); // Padding to do in place transforms
+	cD = 0.. #(dims(ndim)/2 + 1);
 	// Define domains to extract the real and imaginary parts
-	reD = rD[0..(2*(dims(1)/2)+1) by 2]; // Padding to do in place transforms
-	imD = rD[1..(2*(dims(1)/2) + 1) by 2]; // Padding to do in place transforms
+	reD = rD[0..(2*(dims(ndim)/2)+1) by 2]; // Padding to do in place transforms
+	imD = rD[1..(2*(dims(ndim)/2) + 1) by 2]; // Padding to do in place transforms
 	first=(0,);
 }
 
