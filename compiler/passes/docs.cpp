@@ -84,7 +84,7 @@ void docs(void) {
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-      if (!devOnlyModule(mod) || developer) {
+      if (!mod->hasFlag(FLAG_NO_DOC) && (!devOnlyModule(mod) || developer)) {
         std::string filename = mod->filename;
 
         if (mod->modTag == MOD_INTERNAL) {
@@ -174,7 +174,11 @@ void printArg(std::ofstream *file, ArgSymbol *arg) {
 void printFields(std::ofstream *file, AggregateType *cl) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
-      if (!var->hasFlag(FLAG_SUPER_CLASS)) {
+      if (!var->hasFlag(FLAG_NO_DOC) &&
+          !var->hasFlag(FLAG_SUPER_CLASS)) {
+        // Don't document the super class field, we don't want to know about it
+        // Also, don't document this field if it has a "no doc" pragma attached
+        // to it
         printTabs(file);
         *file << outputMap["field"];
         // For rst, this will insert '.. attribute:: ' here
@@ -216,7 +220,7 @@ void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
 }
 
 void printClass(std::ofstream *file, AggregateType *cl) {
-  if (! cl->isUnion()) {
+  if (!cl->symbol->hasFlag(FLAG_NO_DOC) && ! cl->isUnion()) {
     printTabs(file);
 
     if (cl->isClass()) {
@@ -321,173 +325,178 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
-  // Print the module directive first, for .rst mode. This will associate the
-  // Module: <name> title with the module. If the .. module:: directive comes
-  // after the title, sphinx will complain about a duplicate id error.
-  if (!fDocsTextOnly) {
-    *file << outputMap["module"] << name << std::endl;
+  if (!mod->hasFlag(FLAG_NO_DOC)) {
+    // Print the module directive first, for .rst mode. This will associate the
+    // Module: <name> title with the module. If the .. module:: directive comes
+    // after the title, sphinx will complain about a duplicate id error.
+    if (!fDocsTextOnly) {
+      *file << outputMap["module"] << name << std::endl;
+      if (mod->doc != NULL) {
+        NUMTABS++;
+        printTabs(file);
+        *file << outputMap["module comment prefix"];
+
+        // Grab first line of comment for synopsis.
+        std::stringstream synopsisStream(mod->doc);
+        std::string firstLine;
+        std::getline(synopsisStream, firstLine);
+
+        *file << firstLine << std::endl;
+        NUMTABS--;
+      }
+      *file << std::endl;
+    }
+
+    printTabs(file);
+    *file << "Module: " << name << std::endl;
+    if (!fDocsTextOnly) {
+      int length = strlen("Module: ") + strlen(name.c_str());
+      for (int i = 0; i < length; i++) {
+        *file << "=";
+      }
+      *file << std::endl;
+      // Make the length of this equal to "Module: " + name.length
+    }
+    NUMTABS++;
     if (mod->doc != NULL) {
-      NUMTABS++;
-      printTabs(file);
-      *file << outputMap["module comment prefix"];
-
-      // Grab first line of comment for synopsis.
-      std::stringstream synopsisStream(mod->doc);
-      std::string firstLine;
-      std::getline(synopsisStream, firstLine);
-
-      *file << firstLine << std::endl;
+      // Only print tabs for text only mode. The .rst prefers not to have the
+      // tabs for module level comments and leading whitespace removed.
+      if (fDocsTextOnly) {
+        printTabs(file);
+        *file << mod->doc << std::endl;
+      } else {
+        std::string modDoc = ltrim(std::string(mod->doc));
+        *file << modDoc << std::endl;
+      }
+    }
+    // For non-rst mode, revert to the original tab level.
+    if(!fDocsTextOnly) {
       NUMTABS--;
     }
-    *file << std::endl;
-  }
 
-  printTabs(file);
-  *file << "Module: " << name << std::endl;
-  if (!fDocsTextOnly) {
-    int length = strlen("Module: ") + strlen(name.c_str());
-    for (int i = 0; i < length; i++) {
-      *file << "=";
+    Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
+    if (fDocsAlphabetize)
+      qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
+    forv_Vec(VarSymbol, var, configs) {
+      if (!var->hasFlag(FLAG_NO_DOC)) {
+        printTabs(file);
+        *file << outputMap["config"];
+        printVarStart(file, var);
+        printVarType(file, var);
+        printVarDocs(file, var);
+      }
     }
-    *file << std::endl;
-    // Make the length of this equal to "Module: " + name.length
-  }
-  NUMTABS++;
-  if (mod->doc != NULL) {
-    // Only print tabs for text only mode. The .rst prefers not to have the
-    // tabs for module level comments and leading whitespace removed.
-    if (fDocsTextOnly) {
-      printTabs(file);
-      *file << mod->doc << std::endl;
-    } else {
-      std::string modDoc = ltrim(std::string(mod->doc));
-      *file << modDoc << std::endl;
-    }
-  }
 
-  // For non-rst mode, revert to the original tab level.
-  if(!fDocsTextOnly) {
-    NUMTABS--;
-  }
-
-  Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
-  if (fDocsAlphabetize)
-    qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
-  forv_Vec(VarSymbol, var, configs) {
-    printTabs(file);
-    *file << outputMap["config"];
-    printVarStart(file, var);
-    printVarType(file, var);
-    printVarDocs(file, var);
-  }
-
-  Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
-  // If alphabetical option passed, fDocsAlphabetizes the output 
-  if (fDocsAlphabetize) 
-    qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
+    Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
+    // If alphabetical option passed, fDocsAlphabetizes the output
+    if (fDocsAlphabetize)
+      qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
   
-  forv_Vec(FnSymbol, fn, fns) {
-    if (!devOnlyFunction(fn) || developer) {
-      printFunction(file, fn, false);
+    forv_Vec(FnSymbol, fn, fns) {
+      if (!devOnlyFunction(fn) || developer) {
+        printFunction(file, fn, false);
+      }
     }
-  }
 
-  Vec<AggregateType*> classes = mod->getTopLevelClasses();
-  if (fDocsAlphabetize)
-    qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
+    Vec<AggregateType*> classes = mod->getTopLevelClasses();
+    if (fDocsAlphabetize)
+      qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
 
-  forv_Vec(AggregateType, cl, classes) {
-    printClass(file, cl);
-  }
+    forv_Vec(AggregateType, cl, classes) {
+      printClass(file, cl);
+    }
 
-  Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
-  if (fDocsAlphabetize)
-    qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
+    Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
+    if (fDocsAlphabetize)
+      qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
   
-  forv_Vec(ModuleSymbol, md, mods) {
-    if (!devOnlyModule(md) || developer) 
-      printModule(file, md, name + "." +  md->name);
+    forv_Vec(ModuleSymbol, md, mods) {
+      if (!devOnlyModule(md) || developer)
+        printModule(file, md, name + "." +  md->name);
+    }
+    if (fDocsTextOnly)
+      NUMTABS--;
   }
-  if (fDocsTextOnly)
-    NUMTABS--;
 }
 
 void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
-  printTabs(file);
-  NUMTABS++;
-  bool iterator = fn->hasFlag(FLAG_ITERATOR_FN);
-  if (method) {
-    if (iterator) {
-      *file << outputMap["iter method"];
-    } else {
-      *file << outputMap["method"];
-    }
-  } else {
-    if (iterator) {
-      *file << outputMap["iter func"];
-    } else {
-      *file << outputMap["func"];
-    }
-  }
-  if (fn->hasFlag(FLAG_INLINE)) {
-    *file << "inline ";
-  } else if (fn->hasFlag(FLAG_EXPORT)) {
-    *file << "export ";
-  } else if (fn->hasFlag(FLAG_EXTERN)) {
-    *file << "extern ";
-  }
-  
-  if (iterator) {
-    *file << "iter ";
-  } else {
-    *file << "proc ";
-  }
-
-  *file << fn->name << "(";
-  if (fn->numFormals() > 0) {
-    if (!developer && strcmp(fn->getFormal(1)->name, "_mt") == 0) {
-      for (int i = 3; i < fn->numFormals(); i++) {
-        ArgSymbol *cur = fn->getFormal(i);
-        printArg(file, cur);
-        *file << ", ";
+  if (!fn->hasFlag(FLAG_NO_DOC)) {
+    printTabs(file);
+    NUMTABS++;
+    bool iterator = fn->hasFlag(FLAG_ITERATOR_FN);
+    if (method) {
+      if (iterator) {
+        *file << outputMap["iter method"];
+      } else {
+        *file << outputMap["method"];
       }
-      if (fn->numFormals() != 2) {
+    } else {
+      if (iterator) {
+        *file << outputMap["iter func"];
+      } else {
+        *file << outputMap["func"];
+      }
+    }
+    if (fn->hasFlag(FLAG_INLINE)) {
+      *file << "inline ";
+    } else if (fn->hasFlag(FLAG_EXPORT)) {
+      *file << "export ";
+    } else if (fn->hasFlag(FLAG_EXTERN)) {
+      *file << "extern ";
+    }
+
+    if (iterator) {
+      *file << "iter ";
+    } else {
+      *file << "proc ";
+    }
+
+    *file << fn->name << "(";
+    if (fn->numFormals() > 0) {
+      if (!developer && strcmp(fn->getFormal(1)->name, "_mt") == 0) {
+        for (int i = 3; i < fn->numFormals(); i++) {
+          ArgSymbol *cur = fn->getFormal(i);
+          printArg(file, cur);
+          *file << ", ";
+        }
+        if (fn->numFormals() != 2) {
+          ArgSymbol *cur = fn->getFormal(fn->numFormals());
+          printArg(file, cur);
+        }
+      } else {
+        for (int i = 1; i < fn->numFormals(); i++) {
+          ArgSymbol *cur = fn->getFormal(i);
+          printArg(file, cur);
+          *file << ", ";
+        }
         ArgSymbol *cur = fn->getFormal(fn->numFormals());
         printArg(file, cur);
       }
-    } else {
-      for (int i = 1; i < fn->numFormals(); i++) {
-        ArgSymbol *cur = fn->getFormal(i);
-        printArg(file, cur);
-        *file << ", ";
-      }
-      ArgSymbol *cur = fn->getFormal(fn->numFormals());
-      printArg(file, cur);
     }
-  }
-  *file << ")"; 
-  switch (fn->retTag) {
-  case RET_REF:
-    *file << " ref"; break;
-  case RET_PARAM:
-    *file << " param"; break;
-  case RET_TYPE:
-    *file << " type"; break;
-  default: break;
-  }
-  if (fn->retExprType != NULL) {
-    *file << ": ";
-    fn->retExprType->body.tail->prettyPrint(file);
-    // TODO: better type output
-  }
-  *file << std::endl;
+    *file << ")";
+    switch (fn->retTag) {
+    case RET_REF:
+      *file << " ref"; break;
+    case RET_PARAM:
+      *file << " param"; break;
+    case RET_TYPE:
+      *file << " type"; break;
+    default: break;
+    }
+    if (fn->retExprType != NULL) {
+      *file << ": ";
+      fn->retExprType->body.tail->prettyPrint(file);
+      // TODO: better type output
+    }
+    *file << std::endl;
 
-  if (fn->doc != NULL) {
-    printTabs(file);
-    *file << fn->doc << std::endl;
+    if (fn->doc != NULL) {
+      printTabs(file);
+      *file << fn->doc << std::endl;
+    }
+    *file << std::endl;
+    NUMTABS--;
   }
-  *file << std::endl;
-  NUMTABS--;
 }
 
 void createDocsFileFolders(std::string filename) {
