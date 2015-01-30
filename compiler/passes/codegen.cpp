@@ -587,6 +587,13 @@ static void protectNameFromC(Symbol* sym) {
   const char* oldName = sym->cname;
   const char* newName = astr(oldName, "_chpl");
   sym->cname = newName;
+  //
+  // Can we free this given how we create names?  free() doesn't like
+  // const char*, I don't want to just cast it away, and I'm not
+  // certain we can assume it isn't aliased to someting else, like
+  // sym->name...  In other cases, we seem to leak old names as
+  // well... :P
+  //
   //  free(oldName);
 }
 
