@@ -112,14 +112,18 @@ static bool isInWithClause(SymExpr* se) {
 //
 static void findOuterVars(BlockStmt* block, SymbolMap& uses) {
   std::vector<SymExpr*> symExprs;
+
   collectSymExprsSTL(block, symExprs);
+
   for_vector(SymExpr, symExpr, symExprs) {
     Symbol* sym = symExpr->var;
-    if (toVarSymbol(sym) || toArgSymbol(sym))
+
+    if (isLocSymbol(sym)) {
       if (!isCorrespIndexVar(block, sym) &&
           !isInWithClause(symExpr)       &&
           isOuterVar(sym, block))
         uses.put(sym, markUnspecified);
+    }
   }
 }
 

@@ -1228,7 +1228,7 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if (//(toVarSymbol(actualSym) || toArgSymbol(actualSym)) && // What does this exclude?
+  if (// isLocSymbol(actualSym) && // What does this exclude?
       actualType == dtStringC && formalType == dtString)
     return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
@@ -4304,9 +4304,10 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
-      if (toVarSymbol(sym) || toArgSymbol(sym))
+      if (isLocSymbol(sym)) {
         if (isOuterVar(sym, fn))
           return true;
+      }
     }
   }
   return false;
@@ -4600,7 +4601,7 @@ preFold(Expr* expr) {
     }
 
     if (SymExpr* sym = toSymExpr(call->baseExpr)) {
-      if (toVarSymbol(sym->var) || toArgSymbol(sym->var)) {
+      if (isLocSymbol(sym->var)) {
         Expr* base = call->baseExpr;
         base->replace(new UnresolvedSymExpr("this"));
         call->insertAtHead(base);
@@ -4642,7 +4643,7 @@ preFold(Expr* expr) {
         sprintf(field, "x%" PRId64, index);
         result = new SymExpr(base->var->type->getField(field)->type->symbol);
         call->replace(result);
-      } else if (base && (isVarSymbol(base->var) || isArgSymbol(base->var))) {
+      } else if (base && isLocSymbol(base->var)) {
         //
         // resolve tuple indexing by an integral parameter
         //
