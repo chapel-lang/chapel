@@ -46,7 +46,7 @@ class ScopeBase
 {
 public:
                                   ScopeBase(const ScopeBase* parent);
-                                 ~ScopeBase();
+  virtual                        ~ScopeBase();
 
   void                            extend(BlockStmt* block);
   void                            describe(bool recursive = false)                      const;

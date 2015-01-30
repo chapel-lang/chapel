@@ -101,8 +101,23 @@ IpeEnvironment::~IpeEnvironment()
     free(mData);
 }
 
+// Bind a name to a location
+void IpeEnvironment::bind(IpeSymbol* variable)
+{
+  // NOAKES 2015/01/30  Assumes slots are fixed size
+  int index = variable->offset() / 8;
+
+  INT_ASSERT(index >= 0 && index < mSlotCount);
+
+  mSlotArray[index] = variable;
+}
+
 IpeValue IpeEnvironment::lookup(IpeSymbol* variable) const
 {
+  // NOAKES 2015/01/30  Assumes slots are fixed size
+  INT_ASSERT(variable->offset() >= 0 &&
+             variable->offset() < 8 * mSlotCount);
+
   const IpeEnvironment* frame = this;
 
   while (frame->mDepth > variable->depth())
@@ -133,6 +148,10 @@ IpeValue IpeEnvironment::lookup(IpeSymbol* variable) const
 
 void IpeEnvironment::assign(IpeSymbol* variable, IpeValue value)
 {
+  // NOAKES 2015/01/30  Assumes slots are fixed size
+  INT_ASSERT(variable->offset() >= 0 &&
+             variable->offset() < 8 * mSlotCount);
+
   IpeEnvironment* frame = this;
 
   while (frame->mDepth > variable->depth())
@@ -156,34 +175,40 @@ void IpeEnvironment::assign(IpeSymbol* variable, IpeValue value)
 
 void IpeEnvironment::describe() const
 {
-  printf("Environment %3d\n", mDepth);
+  printf("Environment %3d with %3d slots\n", mDepth, mSlotCount);
 
   for (int i = 0; i < mSlotCount; i++)
   {
-    IpeSymbol* slot = mSlotArray[i];
-    void*      env  = (void*) (((char*) mData) + slot->offset());
-
-    if (Type* type = slot->type)
+    if (IpeSymbol* slot = mSlotArray[i])
     {
-      printf("      %-20s %-4s ", slot->name, type->symbol->name);
+      void* env = (void*) (((char*) mData) + slot->offset());
 
-      if (strcmp(type->symbol->name, "bool") == 0)
+      if (Type* type = slot->type)
       {
-        if (*((long*) env) == 0)
-          printf("       false\n");
-        else
-          printf("        true\n");
-      }
+        printf("      %-20s %-4s ", slot->name, type->symbol->name);
 
-      else if (strcmp(type->symbol->name, "int") == 0)
-      {
-        printf("%12lu\n", *((long*) env));
-      }
+        if (strcmp(type->symbol->name, "bool") == 0)
+        {
+          if (*((long*) env) == 0)
+            printf("       false\n");
+          else
+            printf("        true\n");
+        }
 
-      else if (strcmp(type->symbol->name, "real") == 0)
-      {
-        printf("     %12.4f\n", *((double*) env));
+        else if (strcmp(type->symbol->name, "int") == 0)
+        {
+          printf("%12lu\n", *((long*) env));
+        }
+
+        else if (strcmp(type->symbol->name, "real") == 0)
+        {
+          printf("     %12.4f\n", *((double*) env));
+        }
       }
+    }
+    else
+    {
+      printf("      slot[%3d]: ?????\n", i);
     }
   }
 }

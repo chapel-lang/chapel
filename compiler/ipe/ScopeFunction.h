@@ -29,7 +29,7 @@ class ScopeFunction : public ScopeBase
 public:
                         ScopeFunction(FnSymbol*        fn,
                                       const ScopeBase* parent);
-                       ~ScopeFunction();
+  virtual              ~ScopeFunction();
 
 private:
                         ScopeFunction();

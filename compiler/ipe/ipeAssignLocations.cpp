@@ -181,16 +181,20 @@ static int assignLocations(Expr* expression, int depth, int offset)
 
 static int assignLocations(WhileDoStmt* whileDoStmt, int depth, int offset)
 {
+  int localOffset = offset;
+
   for_alist(expr, whileDoStmt->body)
-    assignLocations(expr, depth, offset);
+    localOffset = assignLocations(expr, depth, localOffset);
 
   return offset;
 }
 
 static int assignLocations(BlockStmt* blockStmt, int depth, int offset)
 {
+  int localOffset = offset;
+
   for_alist(expr, blockStmt->body)
-    assignLocations(expr, depth, offset);
+    localOffset = assignLocations(expr, depth, localOffset);
 
   return offset;
 }
