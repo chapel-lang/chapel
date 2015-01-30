@@ -23,6 +23,7 @@ proc runtest(param ndim : int, fn : string) {
 		}
 		if (ndim == 2) {
 			D = {0.. #dims(1),0.. #dims(ndim)};
+			writeln(dims, D);
 		}
 		if (ndim == 3) {
 			D = {0.. #dims(1),0.. #dims(2), 0.. #dims(ndim)};
@@ -35,18 +36,31 @@ proc runtest(param ndim : int, fn : string) {
 			f.read(r); f.read(c);
 		}
 		f.close();
+		writeln("Data read...");
 	}
 	// Set up domains based on dimension size
 	var first : ndim*int;
 	if (ndim==1) {
+		var ldim = dims(1)/2 + 1;
 		// Domains for real FFT
-		rD = 0.. #(2*(dims(ndim)/2 + 1)); // Padding to do in place transforms
-		cD = 0.. #(dims(ndim)/2 + 1);
+		rD = 0.. #(2*ldim); // Padding to do in place transforms
+		cD = 0.. #ldim;
 		// Define domains to extract the real and imaginary parts
-		reD = rD[0..(2*(dims(ndim)/2)+1) by 2]; // Padding to do in place transforms
-		imD = rD[1..(2*(dims(ndim)/2) + 1) by 2]; // Padding to do in place transforms
+		reD = rD[0..(2*ldim-1) by 2]; // Padding to do in place transforms
+		imD = rD[1..(2*ldim-1) by 2]; // Padding to do in place transforms
 		first=(0,);
 	}
+	if (ndim==2) {
+		// Domains for real FFT
+		var ldim = (dims(2)/2+1);
+		rD = {0.. #dims(1),0.. #(2*ldim)}; // Padding to do in place transforms
+		cD = {0.. #dims(1),0.. #ldim};
+		// Define domains to extract the real and imaginary parts
+		reD = rD[..,0..(2*ldim-1) by 2]; // Padding to do in place transforms
+		imD = rD[..,1..(2*ldim-1) by 2]; // Padding to do in place transforms
+		first=(0,0);
+	}
+	writeln("Domains set....");
 
 	// FFTW does not normalize inverse transform, set up norm
 	var norm = * reduce dims;
@@ -78,6 +92,7 @@ proc runtest(param ndim : int, fn : string) {
 	printcmp(A,goodA);
 	destroy_plan(fwd);
 	destroy_plan(rev);
+	writeln("Complex-to-Complex tested...");
 
 	// Testing r2c and c2r
 	var rA : [rD] real(64);
@@ -104,8 +119,10 @@ proc runtest(param ndim : int, fn : string) {
 	printcmp(rA[D],re(goodA));
 	destroy_plan(fwd);
 	destroy_plan(rev);
+	writeln("Real-to-Complex tested...");
 
 }
 
 runtest(1, "arr1d.dat");
+runtest(2, "arr2d.dat");
 
