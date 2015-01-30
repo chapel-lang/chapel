@@ -45,8 +45,8 @@ var norm = * reduce dims;
 
 
 // FFT testing here
-var fwd = plan_dft_1d(dims, A[first],B[first],FFTW_FORWARD,FFTW_ESTIMATE);
-var rev = plan_dft_1d(dims, B[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
+var fwd = plan_dft(dims, A[first],B[first],FFTW_FORWARD,FFTW_ESTIMATE);
+var rev = plan_dft(dims, B[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
 // Test forward and reverse transform
 A = goodA;
 execute(fwd);
@@ -58,8 +58,8 @@ destroy_plan(fwd);
 destroy_plan(rev);
 
 // Test in-place transforms
-fwd = plan_dft_1d(dims,A[first],A[first],FFTW_FORWARD,FFTW_ESTIMATE);
-rev = plan_dft_1d(dims,A[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
+fwd = plan_dft(dims,A[first],A[first],FFTW_FORWARD,FFTW_ESTIMATE);
+rev = plan_dft(dims,A[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
 A = goodA;
 // Test forward and reverse transform
 A = goodA;

@@ -28,9 +28,14 @@ module FFTW {
 	// Planner functions
 	// Complex : 4.3.1
 	// NOTE : We pass in arrays using ref 
-	proc plan_dft_1d((n0,) : 1*c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan {
-		extern proc fftw_plan_dft_1d(n0 : c_int, in1 : _cxptr, out1 : _cxptr, sign : c_int, flags : c_uint) : fftw_plan;
-		return fftw_plan_dft_1d(n0,c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
+	proc plan_dft(dims, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan
+		where (isHomogeneousTuple(dims))
+	{
+		extern proc fftw_plan_dft(rank : c_int, const ref n : c_int, in1 : _cxptr, out1 : _cxptr, sign : c_int, flags : c_uint) : fftw_plan;
+		// Make sure types are correct
+		param ndim : c_int = dims.size;
+		var dims1 : ndim*c_int = dims;
+		return fftw_plan_dft(ndim, dims1(1), c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
 	}
 	proc plan_dft_2d(n0 : c_int, n1 : c_int, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan {
 		extern proc fftw_plan_dft_2d(n0 : c_int, n1 : c_int, in1 : _cxptr, out1 : _cxptr, sign : c_int, flags : c_uint) : fftw_plan;
