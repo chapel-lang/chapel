@@ -29,6 +29,7 @@ var A,B,goodA,goodB : [D] fftw_complex;
 	f.close();
 }
 // Set up domains based on dimension size
+var first : ndim*int;
 if (ndim==1) {
 	// Domains for real FFT
 	rD = 0.. #(2*(dims(1)/2 + 1)); // Padding to do in place transforms
@@ -36,6 +37,7 @@ if (ndim==1) {
 	// Define domains to extract the real and imaginary parts
 	reD = rD[0..(2*(dims(1)/2)+1) by 2]; // Padding to do in place transforms
 	imD = rD[1..(2*(dims(1)/2) + 1) by 2]; // Padding to do in place transforms
+	first=(0,);
 }
 
 // FFTW does not normalize inverse transform, set up norm
@@ -43,8 +45,8 @@ var norm = * reduce dims;
 
 
 // FFT testing here
-var fwd = plan_dft_1d(dims, A[0],B[0],FFTW_FORWARD,FFTW_ESTIMATE);
-var rev = plan_dft_1d(dims, B[0],A[0],FFTW_BACKWARD,FFTW_ESTIMATE);
+var fwd = plan_dft_1d(dims, A[first],B[first],FFTW_FORWARD,FFTW_ESTIMATE);
+var rev = plan_dft_1d(dims, B[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
 // Test forward and reverse transform
 A = goodA;
 execute(fwd);
@@ -56,8 +58,8 @@ destroy_plan(fwd);
 destroy_plan(rev);
 
 // Test in-place transforms
-fwd = plan_dft_1d(dims,A[0],A[0],FFTW_FORWARD,FFTW_ESTIMATE);
-rev = plan_dft_1d(dims,A[0],A[0],FFTW_BACKWARD,FFTW_ESTIMATE);
+fwd = plan_dft_1d(dims,A[first],A[first],FFTW_FORWARD,FFTW_ESTIMATE);
+rev = plan_dft_1d(dims,A[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
 A = goodA;
 // Test forward and reverse transform
 A = goodA;
@@ -72,8 +74,8 @@ destroy_plan(rev);
 // Testing r2c and c2r
 var rA : [rD] real(64);
 var cB : [cD] fftw_complex;
-fwd = plan_dft_r2c_1d(dims,rA[0],cB[0],FFTW_ESTIMATE);
-rev = plan_dft_c2r_1d(dims,cB[0],rA[0],FFTW_ESTIMATE);
+fwd = plan_dft_r2c_1d(dims,rA[first],cB[first],FFTW_ESTIMATE);
+rev = plan_dft_c2r_1d(dims,cB[first],rA[first],FFTW_ESTIMATE);
 rA[D] = re(goodA);
 execute(fwd);
 printcmp(cB,goodB[cD]);
@@ -83,8 +85,8 @@ printcmp(rA[D],re(goodA));
 destroy_plan(fwd);
 destroy_plan(rev);
 // In place transform
-fwd = plan_dft_r2c_1d(dims,rA[0],rA[0],FFTW_ESTIMATE);
-rev = plan_dft_c2r_1d(dims,rA[0],rA[0],FFTW_ESTIMATE);
+fwd = plan_dft_r2c_1d(dims,rA[first],rA[first],FFTW_ESTIMATE);
+rev = plan_dft_c2r_1d(dims,rA[first],rA[first],FFTW_ESTIMATE);
 rA[D] = re(goodA);
 execute(fwd);
 printcmp(rA[reD],re(goodB[cD]));
