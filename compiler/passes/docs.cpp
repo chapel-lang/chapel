@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <functional>
 #include <map>
 #include <iostream>
 #include <fstream>
@@ -319,6 +321,10 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
+  // TODO: print the module directive first, for .rst mode. This will associate
+  //       the Module: <name> title with the module. If the .. module::
+  //       directive comes after the title, sphinx will complain about a
+  //       duplicate id error.
   printTabs(file);
   *file << "Module: " << name << std::endl;
   if (!fDocsTextOnly) {
@@ -332,11 +338,14 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   NUMTABS++;
   if (mod->doc != NULL) {
     // Only print tabs for text only mode. The .rst prefers not to have the
-    // tabs for module level comments.
+    // tabs for module level comments and leading whitespace removed.
     if (fDocsTextOnly) {
       printTabs(file);
+      *file << mod->doc << std::endl;
+    } else {
+      std::string modDoc = ltrim(std::string(mod->doc));
+      *file << modDoc << std::endl;
     }
-    *file << mod->doc << std::endl;
   }
   if(!fDocsTextOnly) {
     NUMTABS--;
@@ -531,4 +540,13 @@ void generateSphinxOutput(std::string dirpath) {
   std::string cmd = std::string("source ") + activate + std::string(" && cd ") + htmldir +
     std::string(" && ") + std::string(CHPL_MAKE) + std::string(" html");
   mysystem(cmd.c_str(), "building html output from chpldoc sphinx project");
+}
+
+/* trim from start
+ *
+ * From: http://stackoverflow.com/a/217605
+ */
+static inline std::string ltrim(std::string s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+  return s;
 }

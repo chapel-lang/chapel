@@ -52,3 +52,5 @@ bool isNotSubmodule(ModuleSymbol *mod);
 std::string generateSphinxProject(std::string dirpath);
 
 void generateSphinxOutput(std::string dirpath);
+
+static inline std::string ltrim(std::string s);
