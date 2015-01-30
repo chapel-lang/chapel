@@ -21,14 +21,31 @@
 
 #include "AstVisitor.h"
 
-IpeSymbol::IpeSymbol(const char* name,
-                     Type*       type,
-                     int         depth,
-                     int         offset) :
-  Symbol(E_IpeSymbol, name, type)
+IpeSymbol::IpeSymbol(ArgSymbol* symbol) :
+Symbol(E_IpeSymbol, symbol->name, NULL)
 {
-  mDepth  = depth;
-  mOffset = offset;
+  init(symbol);
+}
+
+IpeSymbol::IpeSymbol(VarSymbol* symbol) :
+Symbol(E_IpeSymbol, symbol->name, NULL)
+{
+  init(symbol);
+}
+
+IpeSymbol::IpeSymbol(Symbol* symbol) :
+Symbol(E_IpeSymbol, symbol->name, NULL)
+{
+  init(symbol);
+}
+
+void IpeSymbol::init(Symbol* symbol)
+{
+  mSymbol  = symbol;
+  mDepth   =     -1;
+  mOffset  =     -1;
+
+  defPoint = symbol->defPoint;
 
   gIpeSymbols.add(this);
 }
@@ -51,13 +68,17 @@ void IpeSymbol::verify()
 
 IpeSymbol* IpeSymbol::copyInner(SymbolMap* map)
 {
-  IpeSymbol* retval = new IpeSymbol(name, type, mDepth, mOffset);
+  IpeSymbol* retval = new IpeSymbol(mSymbol);
 
   retval->copyFlags(this);
 
-  retval->cname = cname;
+  retval->cname   = cname;
 
-  return retval;
+  retval->type    = type;
+  retval->mDepth  = mDepth;
+  retval->mOffset = mOffset;
+
+   return retval;
 }
 
 void IpeSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst)
@@ -83,6 +104,17 @@ bool IpeSymbol::isParameter() const
 void IpeSymbol::accept(AstVisitor* visitor)
 {
   visitor->visitIpeSym(this);
+}
+
+void IpeSymbol::locationSet(int depth, int offset)
+{
+  mDepth  = depth;
+  mOffset = offset;
+}
+
+Symbol* IpeSymbol::symbol() const
+{
+  return mSymbol;
 }
 
 int IpeSymbol::depth() const

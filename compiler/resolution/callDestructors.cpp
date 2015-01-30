@@ -820,6 +820,21 @@ static void insertAutoCopyTemps()
           }
         }
       }
+
+      // 2015/01/21 hilde: Workaround for incomplete implementation of
+      // SymExpr::remove() in the context of a ForLoop (as its mIndex field).
+      // This operation is required by the early operation of
+      // deadBlockElimination().
+
+      // In that case, the DefExpr for the symbol should no longer exist, so we
+      // would never reach here.  Given that it is never defined and we *do*
+      // reach here, there is no harm in not creating the autoCopy temp.  This
+      // code will probably all be deprecated when the new AMM story comes
+      // online anyway, so it would be a waste of time trying to "do things
+      // right" in this routine.
+      if (! move)
+        continue;
+
       INT_ASSERT(move);
       SET_LINENO(move);
       Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);

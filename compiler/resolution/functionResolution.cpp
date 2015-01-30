@@ -3328,7 +3328,7 @@ static void lvalueCheck(CallExpr* call)
         char cn1 = calleeFn->name[0];
         const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
         // Should this be the same condition as in insertLineNumber() ?
-        if (developer || mod->modTag == MOD_USER || mod->modTag == MOD_MAIN) {
+        if (developer || mod->modTag == MOD_USER) {
           USR_FATAL_CONT(actual, "non-lvalue actual is passed to %s formal '%s'"
                          " of %s%s", formal->intentDescrString(), formal->name,
                          calleeFn->name, calleeParens);
@@ -4720,6 +4720,25 @@ preFold(Expr* expr) {
       if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         result = new CallExpr("chpl__convertValueToRuntimeType", call->get(1)->remove());
         call->replace(result);
+
+        // If this call is inside a BLOCK_TYPE_ONLY, it will be removed and the
+        // runtime type will not be initialized. Unset this bit to fix.
+        //
+        // Assumption: The block we need to modify is either the parent or
+        // grandparent expression of the call.
+        BlockStmt* blk = NULL;
+        if ((blk = toBlockStmt(result->parentExpr))) {
+          // If the call's parent expression is a block, we assume it to
+          // be a scopeless type_only block.
+          INT_ASSERT(blk->blockTag & BLOCK_TYPE);
+        } else {
+          // The grandparent block doesn't necessarily have the BLOCK_TYPE_ONLY
+          // flag.
+          blk = toBlockStmt(result->parentExpr->parentExpr);
+        }
+        if (blk) {
+          (unsigned&)(blk->blockTag) &= ~(unsigned)BLOCK_TYPE_ONLY;
+        }
       }
     } else if (call->isPrimitive(PRIM_QUERY)) {
       Symbol* field = determineQueriedField(call);
@@ -7298,6 +7317,8 @@ static void
 pruneResolvedTree() {
 
   removeUnusedFunctions();
+  if (fRemoveUnreachableBlocks)
+    deadBlockElimination();
   removeRandomPrimitives();
   replaceTypeArgsWithFormalTypeTemps();
   removeParamArgs();
@@ -7314,13 +7335,25 @@ pruneResolvedTree() {
   removeCompilerWarnings();
 }
 
+static void clearDefaultInitFns(FnSymbol* unusedFn) {
+  // Before removing an unused function, check if it is a defaultInitializer.
+  // If unusedFn is a defaultInitializer, its retType's defaultInitializer
+  // field will be unusedFn. Set the defaultInitializer field to NULL so the
+  // removed function doesn't leave behind a garbage pointer.
+  if (unusedFn->retType->defaultInitializer == unusedFn) {
+    unusedFn->retType->defaultInitializer = NULL;
+  }
+}
+
 static void removeUnusedFunctions() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (! fn->isResolved() || fn->retTag == RET_PARAM)
+      if (! fn->isResolved() || fn->retTag == RET_PARAM) {
+        clearDefaultInitFns(fn);
         fn->defPoint->remove();
+      }
     }
   }
 }

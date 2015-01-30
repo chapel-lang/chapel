@@ -19,12 +19,15 @@
 
 #include "VisibleSymbol.h"
 
-#include "DefScope.h"
+#include "ScopeBase.h"
 
-VisibleSymbol::VisibleSymbol(Symbol* sym, const DefScope* scope)
+VisibleSymbol::VisibleSymbol(Symbol*          sym,
+                             const ScopeBase* scope,
+                             int              distance)
 {
-  mSymbol = sym;
-  mScope  = scope;
+  mSymbol   = sym;
+  mScope    = scope;
+  mDistance = distance;
 }
 
 VisibleSymbol::~VisibleSymbol()
@@ -37,12 +40,12 @@ Symbol* VisibleSymbol::symbol() const
   return mSymbol;
 }
 
-const DefScope* VisibleSymbol::scope() const
+const ScopeBase* VisibleSymbol::scope() const
 {
   return mScope;
 }
 
-int VisibleSymbol::depth() const
+int VisibleSymbol::distance() const
 {
-  return mScope->depthGet();
+  return mDistance;
 }

@@ -20,51 +20,38 @@
 #include "ipeResolve.h"
 
 #include "AstDumpToNode.h"
-#include "DefScope.h"
 #include "expr.h"
 #include "ipe.h"
+#include "IpeSymbol.h"
+#include "ScopeBlock.h"
+#include "ScopeFunction.h"
+#include "ScopeModule.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "VisibleSymbol.h"
 #include "WhileDoStmt.h"
 
-static void  rootScopeInit(DefScope* scope);
+static void  resolve(ModuleSymbol*      module);
 
-static Expr* resolve(ModuleSymbol*      module, const DefScope* scope);
-static Expr* resolve(FnSymbol*          fn,     const DefScope* scope);
+static Expr* resolve(Expr*              expr,   const ScopeBase* scope);
+static Expr* resolve(FnSymbol*          fn,     const ScopeBase* scope);
+static Expr* resolve(BlockStmt*         expr,   const ScopeBase* scope);
 
-static Expr* resolve(BlockStmt*         expr,   const DefScope* scope);
-static Expr* resolve(CondStmt*          expr,   const DefScope* scope);
-static Expr* resolve(WhileDoStmt*       expr,   const DefScope* scope);
+static Expr* resolve(CondStmt*          expr,   const ScopeBase* scope);
+static Expr* resolve(WhileDoStmt*       expr,   const ScopeBase* scope);
 
-static Expr* resolve(Expr*              expr,   const DefScope* scope);
-static Expr* resolve(DefExpr*           expr,   const DefScope* scope);
-static Expr* resolve(SymExpr*           expr,   const DefScope* scope);
-static Expr* resolve(UnresolvedSymExpr* expr,   const DefScope* scope);
-static Expr* resolve(CallExpr*          expr,   const DefScope* scope);
+static Expr* resolve(DefExpr*           expr,   const ScopeBase* scope);
+
+static Expr* resolve(SymExpr*           expr,   const ScopeBase* scope);
+static Expr* resolve(UnresolvedSymExpr* expr,   const ScopeBase* scope);
+
+static Expr* resolve(CallExpr*          expr,   const ScopeBase* scope);
 
 static Type* typeForExpr(Expr* expr);
 
-static bool  blockCreatesScope(BlockStmt* block);
-
 static Expr* selectFunc(Expr*               funName,
                         std::vector<Type*>& actualTypes,
-                        const DefScope*     scope);
-
-static int   sRootModuleIndex = 0;
-
-/************************************ | *************************************
-*                                                                           *
-* IPE needs to extract core definitions from the Root Module but this       *
-* module is constantly updated.  We arrange for the core initialization     *
-* routine to call this function so that it can establish a high water mark. *
-*                                                                           *
-************************************* | ************************************/
-
-void ipeRootInit()
-{
-  sRootModuleIndex = rootModule->block->body.length;
-}
+                        const ScopeBase*    scope);
 
 /************************************ | *************************************
 *                                                                           *
@@ -75,20 +62,17 @@ void ipeRootInit()
 
 void ipeResolve()
 {
-  DefScope* scopeBase = DefScope::extend(NULL);
-
-  rootScopeInit(scopeBase);
-
   // Scan the Root Module Declaration
   //   Every expression should be a DefExpr.
-  //   Process every Top Level Module Declaration
+  //   Process every User module
   for_alist(stmt, rootModule->block->body)
   {
     if (DefExpr* defExpr = toDefExpr(stmt))
     {
       if (ModuleSymbol* module = toModuleSymbol(defExpr->sym))
       {
-        resolve(module, scopeBase);
+        if (module->modTag == MOD_USER)
+          resolve(module);
       }
     }
     else
@@ -98,33 +82,20 @@ void ipeResolve()
 
 /************************************ | *************************************
 *                                                                           *
-* We combine DefExprs in _root and ChapelBase in to a single DefScope       *
+*                                                                           *
 *                                                                           *
 ************************************* | ************************************/
 
-static void rootScopeInit(DefScope* scope)
+static Expr* resolve(Expr* expr, const ScopeBase* scope);
+
+static void resolve(ModuleSymbol* module)
 {
-  // Append the first N slots in rootModule
-  for (int i = 1; i <= sRootModuleIndex; i++)
-  {
-    if (DefExpr* expr = toDefExpr(rootModule->block->body.get(i)))
-      scope->addDefinition(expr);
-    else
-      INT_ASSERT(false);
-  }
+  ScopeModule* scope = new ScopeModule(module);
 
-  // Any top level module definitions in rootModule
-  for_alist(stmt, rootModule->block->body)
+  for_alist(stmt, module->block->body)
   {
-    if (DefExpr* expr = toDefExpr(stmt))
-    {
-      if (isModuleSymbol(expr->sym) == true)
-        scope->addDefinition(expr);
-    }
+    resolve(stmt, scope);
   }
-
-  // All definitions in ChapelBase
-  scope->extendByModule(baseModule);
 }
 
 /************************************ | *************************************
@@ -133,15 +104,12 @@ static void rootScopeInit(DefScope* scope)
 *                                                                           *
 ************************************* | ************************************/
 
-static Expr* resolve(Expr* expr, const DefScope* scope)
+static Expr* resolve(Expr* expr, const ScopeBase* scope)
 {
   Expr* retval = 0;
 
-  if (DefExpr* sel = toDefExpr(expr))
-  {
-    resolve(sel, scope);
-    retval = 0;
-  }
+  if (false)
+    ;
 
   else if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
     retval = resolve(sel, scope);
@@ -149,92 +117,43 @@ static Expr* resolve(Expr* expr, const DefScope* scope)
   else if (SymExpr*           sel = toSymExpr(expr))
     retval = resolve(sel, scope);
 
+  else if (DefExpr*           sel = toDefExpr(expr))
+    retval = resolve(sel, scope);
+
   else if (CallExpr*          sel = toCallExpr(expr))
+    retval = resolve(sel, scope);
+
+  else if (FnSymbol*          sel = toFnSymbol(expr))
     retval = resolve(sel, scope);
 
   else if (WhileDoStmt*       sel = toWhileDoStmt(expr))
     retval = resolve(sel, scope);
 
-  else if (BlockStmt*         sel = toBlockStmt(expr))
+  else if (CondStmt*          sel = toCondStmt(expr))
     retval = resolve(sel, scope);
 
-  else if (CondStmt*          sel = toCondStmt(expr))
+  // This must come after WhileDoStmt etc
+  else if (BlockStmt*         sel = toBlockStmt(expr))
     retval = resolve(sel, scope);
 
   else
   {
-    AstDumpToNode logger(stdout);
+    AstDumpToNode logger(stdout, 3);
 
     printf("resolve Unhandled expr\n");
+    printf("   ");
     expr->accept(&logger);
     printf("\n\n\n");
+
     INT_ASSERT(false);
   }
 
   return retval;
 }
 
-static Expr* resolve(ModuleSymbol* module, const DefScope* parent)
+static Expr* resolve(FnSymbol* fn, const ScopeBase* parent)
 {
-  BlockStmt*      moduleBody = module->block;
-  const DefScope* scope      = 0;
-
-  if (blockCreatesScope(moduleBody) == true)
-  {
-    DefScope* newScope = DefScope::extend(parent);
-
-    // Extend scope with the top-level DefExprs
-    for_alist(stmt, moduleBody->body)
-    {
-      if (DefExpr* expr = toDefExpr(stmt))
-        newScope->addDefinition(expr);
-    }
-
-    scope = newScope;
-  }
-  else
-  {
-    scope = parent;
-  }
-
-  // Resolve every statement in the block
-  for_alist(stmt, moduleBody->body)
-  {
-    resolve(stmt, scope);
-  }
-
-  return 0;
-}
-
-static Expr* resolve(FnSymbol* fn, const DefScope* parent)
-{
-  const DefScope* scope = 0;
-
-  if (fn->formals.length > 0)
-  {
-    DefScope* formalsScope = DefScope::extend(parent);
-
-    for (int i = 1; i <= fn->formals.length; i++)
-    {
-      DefExpr*   defExpr = 0;
-      ArgSymbol* formal  = 0;
-
-      defExpr = toDefExpr(fn->formals.get(i));
-      INT_ASSERT(defExpr);
-
-      formal  = toArgSymbol(defExpr->sym);
-      INT_ASSERT(formal);
-      INT_ASSERT(formal->type);
-
-      formalsScope->addDefinition(defExpr);
-    }
-
-    scope = formalsScope;
-  }
-  else
-  {
-    scope = parent;
-  }
+  ScopeFunction* scope = new ScopeFunction(fn, parent);
 
   if (fn->body)
     resolve(fn->body,        scope);
@@ -245,26 +164,12 @@ static Expr* resolve(FnSymbol* fn, const DefScope* parent)
   return 0;
 }
 
-static Expr* resolve(BlockStmt* blockStmt, const DefScope* parent)
+static Expr* resolve(BlockStmt* blockStmt, const ScopeBase* parent)
 {
-  const DefScope* scope = 0;
+  const ScopeBase* scope = parent;
 
   if ((blockStmt->blockTag & BLOCK_SCOPELESS) == 0)
-  {
-    DefScope* newScope = DefScope::extend(parent);
-
-    for_alist(stmt, blockStmt->body)
-    {
-      if (DefExpr* defExpr = toDefExpr(stmt))
-        newScope->addDefinition(defExpr);
-    }
-
-    scope = newScope;
-  }
-  else
-  {
-    scope = parent;
-  }
+    scope = new ScopeBlock(blockStmt, parent);
 
   for_alist(stmt, blockStmt->body)
   {
@@ -279,7 +184,7 @@ static Expr* resolve(BlockStmt* blockStmt, const DefScope* parent)
   return blockStmt;
 }
 
-static Expr* resolve(CondStmt* stmt, const DefScope* scope)
+static Expr* resolve(CondStmt* stmt, const ScopeBase* scope)
 {
   resolve(stmt->condExpr, scope);
   resolve(stmt->thenStmt, scope);
@@ -290,7 +195,7 @@ static Expr* resolve(CondStmt* stmt, const DefScope* scope)
   return stmt;
 }
 
-static Expr* resolve(WhileDoStmt* expr, const DefScope* scope)
+static Expr* resolve(WhileDoStmt* expr, const ScopeBase* scope)
 {
   resolve(expr->condExprGet(), scope);
 
@@ -307,7 +212,7 @@ static Expr* resolve(WhileDoStmt* expr, const DefScope* scope)
   return expr;
 }
 
-static Expr* resolve(DefExpr* defExpr, const DefScope* scope)
+static Expr* resolve(DefExpr* defExpr, const ScopeBase* scope)
 {
   Type* typeType = 0;
   Type* initType = 0;
@@ -375,12 +280,12 @@ static Expr* resolve(DefExpr* defExpr, const DefScope* scope)
   return 0;
 }
 
-static Expr* resolve(SymExpr* expr, const DefScope* scope)
+static Expr* resolve(SymExpr* expr, const ScopeBase* scope)
 {
   return expr;
 }
 
-static Expr* resolve(UnresolvedSymExpr* expr, const DefScope* scope)
+static Expr* resolve(UnresolvedSymExpr* expr, const ScopeBase* scope)
 {
   std::vector<VisibleSymbol> symbols;
   Expr*                      retval = 0;
@@ -389,11 +294,13 @@ static Expr* resolve(UnresolvedSymExpr* expr, const DefScope* scope)
 
   if (symbols.size() == 0)
   {
-    AstDumpToNode logger(stdout);
+    AstDumpToNode logger(stdout, 3);
 
     printf("resolve UnresolvedSymExpr. Failed to find a definition\n");
+    printf("   ");
     expr->accept(&logger);
     printf("\n\n");
+
     INT_ASSERT(false);
   }
   else
@@ -406,9 +313,10 @@ static Expr* resolve(UnresolvedSymExpr* expr, const DefScope* scope)
   return retval;
 }
 
-static Expr* resolve(CallExpr* expr, const DefScope* scope)
+static Expr* resolve(CallExpr* expr, const ScopeBase* scope)
 {
-  int                count = expr->numActuals();
+  bool               isUseStmt = expr->isPrimitive(PRIM_USE);
+  int                count     = expr->numActuals();
   std::vector<Type*> actualTypes;
 
   // Resolve the actuals
@@ -418,7 +326,8 @@ static Expr* resolve(CallExpr* expr, const DefScope* scope)
     Expr* res    = resolve(actual, scope);
     Type* type   = typeForExpr(res);
 
-    if (res == 0 || type == 0)
+    // Do not currently have a type for Module
+    if (res == 0 || (isUseStmt == false && type == 0))
     {
       AstDumpToNode logger(stdout, 3);
 
@@ -430,9 +339,26 @@ static Expr* resolve(CallExpr* expr, const DefScope* scope)
       expr->accept(&logger);
       printf("\n\n\n");
 
-      printf("expr->typeInfo()\n\n   ");
-      expr->typeInfo()->accept(&logger);
-      printf("\n\n\n");
+      if (expr->typeInfo() != 0)
+      {
+        printf("expr->typeInfo()\n\n   ");
+        expr->typeInfo()->accept(&logger);
+        printf("\n\n\n");
+      }
+
+      if (res != 0)
+      {
+        printf("res:\n   ");
+        res->accept(&logger);
+        printf("\n\n\n");
+      }
+
+      if (type != 0)
+      {
+        printf("type:\n   ");
+        type->accept(&logger);
+        printf("\n\n\n");
+      }
 
       INT_ASSERT(false);
     }
@@ -459,6 +385,13 @@ static Expr* resolve(CallExpr* expr, const DefScope* scope)
     INT_ASSERT(func->formals.length == count);
   }
 
+  // Remove Use Statements from the tree
+  if (isUseStmt == true)
+  {
+    expr->remove();
+    expr = 0;
+  }
+
   return expr;
 }
 
@@ -479,13 +412,22 @@ static Type* typeForExpr(Expr* expr)
 
   else if (SymExpr* value = toSymExpr(expr))
   {
-    if (TypeSymbol* type = toTypeSymbol(value->var))
+    if (false)
+      ;
+
+    else if (TypeSymbol* type = toTypeSymbol(value->var))
       retval = type->type;
 
-    else if (VarSymbol* var = toVarSymbol(value->var))
+    // Var/Arg in user level modules
+    else if (IpeSymbol*  sym  = toIpeSymbol(value->var))
+      retval = sym->type;
+
+    // Immediates
+    else if (VarSymbol*  var  = toVarSymbol(value->var))
       retval = var->type;
 
-    else if (ArgSymbol* arg = toArgSymbol(value->var))
+    // Formals for internal functions
+    else if (ArgSymbol*  arg  = toArgSymbol(value->var))
       retval = arg->type;
   }
 
@@ -517,41 +459,21 @@ static Type* typeForExpr(Expr* expr)
 
 /************************************ | *************************************
 *                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-static bool blockCreatesScope(BlockStmt* block)
-{
-  bool retval = false;
-
-  if (block->blockTag == BLOCK_NORMAL)
-  {
-    Expr* head = block->body.head;
-
-    for (Expr* stmt = head; stmt && retval == false; stmt = stmt->next)
-      retval = isDefExpr(stmt);
-  }
-
-  return retval;
-}
-
-/************************************ | *************************************
-*                                                                           *
 * A drastically simplified form of Function Resolution for IPE.             *
 *                                                                           *
 ************************************* | ************************************/
 
-static void resolveFuncFormals(FnSymbol*  fn,     const DefScope* scope);
+static void resolveFuncFormals(FnSymbol*  fn,     const ScopeBase* scope);
 
-static void resolveFormalType (ArgSymbol* formal, const DefScope* scope);
+static void resolveFormalType (IpeSymbol* formal, const ScopeBase* scope);
+static void resolveFormalType (ArgSymbol* formal, const ScopeBase* scope);
 
 static bool ipeFunctionExactMatch(FnSymbol*           fn,
                                   std::vector<Type*>& actualTypes);
 
 static Expr* selectFunc(Expr*               funName,
                         std::vector<Type*>& actualTypes,
-                        const DefScope*     scope)
+                        const ScopeBase*    scope)
 {
   Expr* retval = 0;
 
@@ -611,25 +533,53 @@ static Expr* selectFunc(Expr*               funName,
   return retval;
 }
 
-static void resolveFuncFormals(FnSymbol* fn, const DefScope* scope)
+static void resolveFuncFormals(FnSymbol* fn, const ScopeBase* scope)
 {
   for_alist(formal, fn->formals)
   {
     DefExpr*   def = toDefExpr(formal);
-    ArgSymbol* arg = toArgSymbol(def->sym);
 
-    INT_ASSERT(arg);
-
-    if (arg->type == 0)
+    if (IpeSymbol* ipe = toIpeSymbol(def->sym))
     {
-      resolveFormalType(arg, scope);
+      if (ipe->type == 0)
+      {
+        resolveFormalType(ipe, scope);
 
-      INT_ASSERT(arg->type);
+        INT_ASSERT(ipe->type);
+      }
+    }
+
+    else if (ArgSymbol* arg = toArgSymbol(def->sym))
+    {
+      if (arg->type == 0)
+      {
+        resolveFormalType(arg, scope);
+
+        INT_ASSERT(arg->type);
+      }
+    }
+
+    else
+    {
+      INT_ASSERT(false);
     }
   }
 }
 
-static void resolveFormalType(ArgSymbol* formal, const DefScope* scope)
+static void resolveFormalType(IpeSymbol* formal, const ScopeBase* scope)
+{
+  if (ArgSymbol* arg = toArgSymbol(formal->symbol()))
+  {
+    resolveFormalType(arg, scope);
+    formal->type = arg->type;
+  }
+  else
+  {
+    INT_ASSERT(false);
+  }
+}
+
+static void resolveFormalType(ArgSymbol* formal, const ScopeBase* scope)
 {
   BlockStmt*                 bs    = formal->typeExpr;
 
@@ -679,6 +629,16 @@ static bool ipeFunctionExactMatch(FnSymbol*           fn,
       INT_ASSERT(expr);
 
       ArgSymbol* arg  = toArgSymbol(expr->sym);
+
+      if (arg == 0)
+      {
+        IpeSymbol* ipe = toIpeSymbol(expr->sym);
+
+        INT_ASSERT(ipe);
+
+        arg = toArgSymbol(ipe->symbol());
+      }
+
       INT_ASSERT(arg);
 
       match = (actualsTypes[i] == arg->type) ? true : false;

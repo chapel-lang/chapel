@@ -130,7 +130,6 @@ endif
 #
 THIRD_PARTY_DIR = $(CHPL_MAKE_HOME)/third-party
 
-include $(THIRD_PARTY_DIR)/creoleparser/Makefile.include
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
 include $(THIRD_PARTY_DIR)/dlmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
@@ -140,6 +139,7 @@ include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
+include $(THIRD_PARTY_DIR)/chpldoc-venv/Makefile.include
 
 -include $(THIRD_PARTY_DIR)/Makefile.devel.include
 

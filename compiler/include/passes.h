@@ -100,6 +100,9 @@ extern Symbol* markUnspecified;
 void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars);
 void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore);
 
+// deadCodeElimination.cpp
+void deadBlockElimination();
+
 // flattenFunctions.cpp
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 

@@ -1,0 +1,7 @@
+reduceArrOfAssocDom.chpl:5: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+reduceArrOfAssocDom.chpl:7: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+reduceArrOfAssocDom.chpl:7: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+reduceArrOfAssocDom.chpl:7: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+reduceArrOfAssocDom.chpl:7: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+reduceArrOfAssocDom.chpl:7: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+55
