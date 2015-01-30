@@ -276,12 +276,11 @@ static IpeValue evaluate(BlockStmt* blockStmt, IpeEnvironment* env)
 {
   IpeValue retval;
 
+  // NOAKES 2015/01/30.  Needs to be updated to track RETURN state
   for_alist(expr, blockStmt->body)
   {
-    evaluate(expr, env);
+    retval = evaluate(expr, env);
   }
-
-  retval.iValue = 0;
 
   return retval;
 }
@@ -344,6 +343,7 @@ static IpeValue evaluate(DefExpr* defExpr, IpeEnvironment* env)
     else
       value = evaluate(defExpr->init,      env);
 
+    env->bind(sym);
     env->assign(sym, value);
   }
 
@@ -658,6 +658,22 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeEnvironment* env)
     }
 
     handled = true;
+  }
+
+  // NOAKES 2015/01/30 This version only supports return of
+  // value.  It does not handle flow of control
+  else if (callExpr->isPrimitive(PRIM_RETURN) == true)
+  {
+    // This case implies a structured goto
+    if (callExpr->numActuals() == 0)
+    {
+      INT_ASSERT(false);
+    }
+    else
+    {
+      retval  = evaluate(callExpr->get(1), env);
+      handled = true;
+    }
   }
 
   else
