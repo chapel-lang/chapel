@@ -388,7 +388,13 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
         *file << outputMap["config"];
         printVarStart(file, var);
         printVarType(file, var);
-        *file << std::endl;
+
+        // For .rst mode, put a line break after the .. data:: directive and
+        // its description text.
+        if (!fDocsTextOnly) {
+          *file << std::endl;
+        }
+
         printVarDocs(file, var);
       }
     }
