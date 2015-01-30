@@ -5,9 +5,9 @@ Module: fields
       var typedField: int(64)
       var alsoTyped: string
       var commented
-          This field has a doc attached, does that work? 
+         This field has a doc attached, does that work? 
       var typeComment: int(64)
-          This field has a doc and an explicit type 
+         This field has a doc and an explicit type 
       const initialized: string
       var initializedType: int(64)
       inherited from object
@@ -18,6 +18,6 @@ Module: fields
       var typedField: int(64)
       var alsoTyped: string
       var commented
-          This field has a doc attached, does that work? 
+         This field has a doc attached, does that work? 
       var typeComment: int(64)
-          This field has a doc and an explicit type 
+         This field has a doc and an explicit type 
