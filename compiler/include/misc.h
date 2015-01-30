@@ -56,6 +56,7 @@ bool forceWidePtrsForLocal();
 bool requireWideReferences();
 bool requireOutlinedOn();
 
+const char* cleanFilename(BaseAST*    ast);
 const char* cleanFilename(const char* name);
 
 void setupError(const char* filename, int lineno, int tag);

@@ -607,41 +607,54 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
 {
   fprintf(mFP, "#<DefExpr           %12d", node->id);
 
-  mOffset = mOffset + 2;
-
-  if (node->sym)
+  if (node->sym             != 0 &&
+      node->exprType        == 0 &&
+      node->init            == 0 &&
+      isFnSymbol(node->sym) == false)
   {
-    newline();
-    fprintf(mFP, "sym:      ");
-
-    mOffset = mOffset + 10;
+    fputs(" sym:      ", mFP);
     node->sym->accept(this);
-    mOffset = mOffset - 10;
   }
-
-  if (node->exprType)
+  else
   {
-    newline();
-    fprintf(mFP, "exprType: ");
+    mOffset = mOffset + 2;
 
-    mOffset = mOffset + 10;
-    node->exprType->accept(this);
-    mOffset = mOffset - 10;
+    if (node->sym)
+    {
+      newline();
+      fputs("sym:      ", mFP);
+
+      mOffset = mOffset + 10;
+      node->sym->accept(this);
+      mOffset = mOffset - 10;
+    }
+
+    if (node->exprType)
+    {
+      newline();
+      fputs("exprType: ", mFP);
+
+      mOffset = mOffset + 10;
+      node->exprType->accept(this);
+      mOffset = mOffset - 10;
+    }
+
+    if (node->init)
+    {
+      newline();
+      fputs("init:     ", mFP);
+
+      mOffset = mOffset + 10;
+      node->init->accept(this);
+      mOffset = mOffset - 10;
+    }
+
+    mOffset = mOffset - 2;
+
+    newline();
   }
 
-  if (node->init)
-  {
-    newline();
-    fprintf(mFP, "init:     ");
-
-    mOffset = mOffset + 10;
-    node->init->accept(this);
-    mOffset = mOffset - 10;
-  }
-
-  mOffset = mOffset - 2;
-  newline();
-  fprintf(mFP, ">");
+  fputc('>', mFP);
 
   return false;
 }
