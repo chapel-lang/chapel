@@ -292,9 +292,13 @@ void printVarDocs(std::ofstream *file, VarSymbol *var) {
   // TODO: Do we want to parse the output here to make it indent nicely?
   NUMTABS++;
   if (var->doc != NULL) {
-    printTabs(file);
-    *file << var->doc;
-    *file << std::endl;
+    std::stringstream descStream(var->doc);
+    std::string line;
+    while (std::getline(descStream, line)) {
+      printTabs(file);
+      *file << ltrim(line);
+      *file << std::endl;
+    }
   }
   NUMTABS--;
 }
@@ -379,6 +383,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     *file << outputMap["config"];
     printVarStart(file, var);
     printVarType(file, var);
+    *file << std::endl;
     printVarDocs(file, var);
   }
 
