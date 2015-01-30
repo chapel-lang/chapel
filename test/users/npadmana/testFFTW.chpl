@@ -74,8 +74,8 @@ destroy_plan(rev);
 // Testing r2c and c2r
 var rA : [rD] real(64);
 var cB : [cD] fftw_complex;
-fwd = plan_dft_r2c_1d(dims,rA[first],cB[first],FFTW_ESTIMATE);
-rev = plan_dft_c2r_1d(dims,cB[first],rA[first],FFTW_ESTIMATE);
+fwd = plan_dft_r2c(dims,rA[first],cB[first],FFTW_ESTIMATE);
+rev = plan_dft_c2r(dims,cB[first],rA[first],FFTW_ESTIMATE);
 rA[D] = re(goodA);
 execute(fwd);
 printcmp(cB,goodB[cD]);
@@ -85,8 +85,8 @@ printcmp(rA[D],re(goodA));
 destroy_plan(fwd);
 destroy_plan(rev);
 // In place transform
-fwd = plan_dft_r2c_1d(dims,rA[first],rA[first],FFTW_ESTIMATE);
-rev = plan_dft_c2r_1d(dims,rA[first],rA[first],FFTW_ESTIMATE);
+fwd = plan_dft_r2c(dims,rA[first],rA[first],FFTW_ESTIMATE);
+rev = plan_dft_c2r(dims,rA[first],rA[first],FFTW_ESTIMATE);
 rA[D] = re(goodA);
 execute(fwd);
 printcmp(rA[reD],re(goodB[cD]));
