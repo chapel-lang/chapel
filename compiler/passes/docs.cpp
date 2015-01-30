@@ -321,10 +321,27 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
-  // TODO: print the module directive first, for .rst mode. This will associate
-  //       the Module: <name> title with the module. If the .. module::
-  //       directive comes after the title, sphinx will complain about a
-  //       duplicate id error.
+  // Print the module directive first, for .rst mode. This will associate the
+  // Module: <name> title with the module. If the .. module:: directive comes
+  // after the title, sphinx will complain about a duplicate id error.
+  if (!fDocsTextOnly) {
+    *file << outputMap["module"] << name << std::endl;
+    if (mod->doc != NULL) {
+      NUMTABS++;
+      printTabs(file);
+      *file << outputMap["module comment prefix"];
+
+      // Grab first line of comment for synopsis.
+      std::stringstream synopsisStream(mod->doc);
+      std::string firstLine;
+      std::getline(synopsisStream, firstLine);
+
+      *file << firstLine << std::endl;
+      NUMTABS--;
+    }
+    *file << std::endl;
+  }
+
   printTabs(file);
   *file << "Module: " << name << std::endl;
   if (!fDocsTextOnly) {
@@ -347,23 +364,10 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       *file << modDoc << std::endl;
     }
   }
+
+  // For non-rst mode, revert to the original tab level.
   if(!fDocsTextOnly) {
     NUMTABS--;
-    *file << outputMap["module"] << name << std::endl;
-    if (mod->doc != NULL) {
-      NUMTABS++;
-      printTabs(file);
-      *file << outputMap["module comment prefix"];
-
-      // Grab first line of comment for synopsis.
-      std::stringstream synopsisStream(mod->doc);
-      std::string firstLine;
-      std::getline(synopsisStream, firstLine);
-
-      *file << firstLine << std::endl;
-      *file << std::endl;
-      NUMTABS--;
-    }
   }
 
   Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
