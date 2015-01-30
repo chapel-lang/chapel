@@ -2,13 +2,13 @@ Module: recordsAndClasses
    Record: thingy
    Class: whatchamacallit
       var aThingy: thingy
-          This field contains a thingy 
+         This field contains a thingy 
       inherited from object
 
    Class: recursion
       var aWhatchamacallit: whatchamacallit
-          This field contains a whatchamacallit 
+         This field contains a whatchamacallit 
       var recursive: recursion
-          This field is recursive 
+         This field is recursive 
       inherited from object
 

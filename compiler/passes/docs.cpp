@@ -34,6 +34,7 @@
 #include "stmt.h"
 #include "docs.h"
 #include "mysystem.h"
+#include "stringutil.h"
 
 int NUMTABS = 0;
 
@@ -295,9 +296,13 @@ void printVarDocs(std::ofstream *file, VarSymbol *var) {
   // TODO: Do we want to parse the output here to make it indent nicely?
   NUMTABS++;
   if (var->doc != NULL) {
-    printTabs(file);
-    *file << var->doc;
-    *file << std::endl;
+    std::stringstream descStream(var->doc);
+    std::string line;
+    while (std::getline(descStream, line)) {
+      printTabs(file);
+      *file << ltrim(line);
+      *file << std::endl;
+    }
   }
   NUMTABS--;
 }
@@ -383,6 +388,13 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
         *file << outputMap["config"];
         printVarStart(file, var);
         printVarType(file, var);
+
+        // For .rst mode, put a line break after the .. data:: directive and
+        // its description text.
+        if (!fDocsTextOnly) {
+          *file << std::endl;
+        }
+
         printVarDocs(file, var);
       }
     }
@@ -522,37 +534,37 @@ std::string generateSphinxProject(std::string dirpath) {
   //        provided... (thomasvandoren, 2015-01-29)
 
   // Create the output dir under the docs output dir.
-  std::string htmldir = dirpath + std::string("/html");
+  const char * htmldir = astr(dirpath.c_str(), "/html");
 
   // Ensure output directory exists.
-  std::string mkdirCmd = std::string("mkdir -p ") + htmldir;
-  mysystem(mkdirCmd.c_str(), "creating docs output dir");
+  const char * mkdirCmd = astr("mkdir -p ", htmldir);
+  mysystem(mkdirCmd, "creating docs output dir");
 
   // Copy the sphinx template into the output dir.
-  std::string sphinxTemplate = std::string(CHPL_HOME) + std::string("/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
-  std::string cmd = std::string("cp -r ") + sphinxTemplate + std::string(" ") + htmldir + "/";
-  mysystem(cmd.c_str(), "copying chpldoc sphinx template");
+  const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
+  const char * cmd = astr("cp -r ", sphinxTemplate, " ", htmldir, "/");
+  mysystem(cmd, "copying chpldoc sphinx template");
 
-  std::string moddir = htmldir + "/source/modules";
-  return moddir;
+  const char * moddir = astr(htmldir, "/source/modules");
+  return std::string(moddir);
 }
 
 /* Call `make html` from inside sphinx project. */
 void generateSphinxOutput(std::string dirpath) {
-  std::string htmldir = dirpath + std::string("/html");
+  const char * htmldir = astr(dirpath.c_str(), "/html");
 
   // The virtualenv activate script is at:
   //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/activate
-  std::string activate =
-    CHPL_HOME +
-    std::string("/third-party/chpldoc-venv/install/") +
-    CHPL_TARGET_PLATFORM +
-    std::string("/chpdoc-virtualenv/bin/activate");
+  const char * activate = astr(
+    CHPL_HOME, "/third-party/chpldoc-venv/install/",
+    CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/activate");
 
   // Run: `source $activate && cd $htmldir && $CHPL_MAKE html`
-  std::string cmd = std::string("source ") + activate + std::string(" && cd ") + htmldir +
-    std::string(" && ") + std::string(CHPL_MAKE) + std::string(" html");
-  mysystem(cmd.c_str(), "building html output from chpldoc sphinx project");
+  const char * cmd = astr(
+    "source ", activate,
+    " && cd ", htmldir, " && ",
+    CHPL_MAKE, " html");
+  mysystem(cmd, "building html output from chpldoc sphinx project");
 }
 
 /* trim from start
