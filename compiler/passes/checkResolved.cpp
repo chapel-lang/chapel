@@ -56,6 +56,7 @@ checkResolved() {
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->hasFlag(FLAG_ITERATOR_FN) &&
+        fn->retType->defaultInitializer &&
         fn->retType->defaultInitializer->defPoint->parentSymbol == fn)
       USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
     if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)

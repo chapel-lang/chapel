@@ -341,6 +341,26 @@ void ForLoop::accept(AstVisitor* visitor)
   }
 }
 
+void ForLoop::replaceChild(Expr* oldAst, Expr* newAst)
+{
+  if (oldAst == mIndex)
+  {
+    SymExpr* se = toSymExpr(newAst);
+    // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
+    INT_ASSERT(!newAst || se);
+    mIndex = se;
+  }
+  else if (oldAst == mIterator)
+  {
+    SymExpr* se = toSymExpr(newAst);
+    // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
+    INT_ASSERT(!newAst || se);
+    mIterator = se;
+  }
+  else
+    LoopStmt::replaceChild(oldAst, newAst);
+}
+
 Expr* ForLoop::getFirstExpr()
 {
   Expr* retval = 0;

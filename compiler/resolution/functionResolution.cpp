@@ -4737,7 +4737,7 @@ preFold(Expr* expr) {
           blk = toBlockStmt(result->parentExpr->parentExpr);
         }
         if (blk) {
-          (unsigned&)(blk->blockTag) &= !(unsigned)BLOCK_TYPE_ONLY;
+          (unsigned&)(blk->blockTag) &= ~(unsigned)BLOCK_TYPE_ONLY;
         }
       }
     } else if (call->isPrimitive(PRIM_QUERY)) {
@@ -7317,6 +7317,8 @@ static void
 pruneResolvedTree() {
 
   removeUnusedFunctions();
+  if (fRemoveUnreachableBlocks)
+    deadBlockElimination();
   removeRandomPrimitives();
   replaceTypeArgsWithFormalTypeTemps();
   removeParamArgs();
@@ -7333,13 +7335,25 @@ pruneResolvedTree() {
   removeCompilerWarnings();
 }
 
+static void clearDefaultInitFns(FnSymbol* unusedFn) {
+  // Before removing an unused function, check if it is a defaultInitializer.
+  // If unusedFn is a defaultInitializer, its retType's defaultInitializer
+  // field will be unusedFn. Set the defaultInitializer field to NULL so the
+  // removed function doesn't leave behind a garbage pointer.
+  if (unusedFn->retType->defaultInitializer == unusedFn) {
+    unusedFn->retType->defaultInitializer = NULL;
+  }
+}
+
 static void removeUnusedFunctions() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
     if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (! fn->isResolved() || fn->retTag == RET_PARAM)
+      if (! fn->isResolved() || fn->retTag == RET_PARAM) {
+        clearDefaultInitFns(fn);
         fn->defPoint->remove();
+      }
     }
   }
 }
