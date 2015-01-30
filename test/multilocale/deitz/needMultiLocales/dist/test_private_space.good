@@ -1,7 +1,7 @@
 0 1
-diagnostics = (get = 0, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 0, fork_fast = 0, fork_nb = 1) (get = 0, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 1, fork_fast = 0, fork_nb = 0)
+diagnostics = (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 0, fork_fast = 0, fork_nb = 1) (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0)
 1 2 3 4 5 6 7 8
 10 26
-diagnostics = (get = 0, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 0, fork_fast = 0, fork_nb = 2) (get = 0, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 2, fork_fast = 0, fork_nb = 0)
+diagnostics = (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 0, fork_fast = 0, fork_nb = 2) (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 2, fork_fast = 0, fork_nb = 0)
 0: 10
 1: 26

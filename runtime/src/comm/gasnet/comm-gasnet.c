@@ -395,14 +395,21 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   return (chpl_comm_nb_handle_t) ret;
 }
 
-int chpl_comm_nb_handle_is_complete(chpl_comm_nb_handle_t h)
+int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 {
   return ((void*)h) == NULL;
 }
 
-void chpl_comm_nb_wait_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
+  assert(NULL == GASNET_INVALID_HANDLE);  // serious confusion if not so
   gasnet_wait_syncnb_some((gasnet_handle_t*) h, nhandles);
+}
+
+int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+{
+  assert(NULL == GASNET_INVALID_HANDLE);  // serious confusion if not so
+  return gasnet_try_syncnb_some((gasnet_handle_t*) h, nhandles) == GASNET_OK;
 }
 
 int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
@@ -1178,20 +1185,24 @@ uint64_t chpl_numCommNBGets(void) {
   return chpl_comm_commDiagnostics.get_nb;
 }
 
-uint64_t chpl_numCommTestNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb_test;
-}
-
-uint64_t chpl_numCommWaitNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb_wait;
-}
-
 uint64_t chpl_numCommPuts(void) {
   return chpl_comm_commDiagnostics.put;
 }
 
 uint64_t chpl_numCommNBPuts(void) {
   return chpl_comm_commDiagnostics.put_nb;
+}
+
+uint64_t chpl_numCommTestNB(void) {
+  return chpl_comm_commDiagnostics.test_nb;
+}
+
+uint64_t chpl_numCommWaitNB(void) {
+  return chpl_comm_commDiagnostics.wait_nb;
+}
+
+uint64_t chpl_numCommTryNB(void) {
+  return chpl_comm_commDiagnostics.try_nb;
 }
 
 uint64_t chpl_numCommFastForks(void) {
