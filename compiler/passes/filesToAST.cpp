@@ -71,10 +71,10 @@ void parse() {
 
   setIteratorTags();
 
-  standardModule        = ParseMod("ChapelStandard",       MOD_INTERNAL);
-  INT_ASSERT(standardModule);
-
   if (fUseIPE == false) {
+    standardModule        = ParseMod("ChapelStandard",       MOD_INTERNAL);
+    INT_ASSERT(standardModule);
+
     printModuleInitModule = ParseMod("PrintModuleInitOrder", MOD_INTERNAL);
     INT_ASSERT(printModuleInitModule);
   }

@@ -105,7 +105,6 @@ BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
-BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 
 CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
 CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);

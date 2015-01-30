@@ -1,0 +1,5 @@
+bug: 'ref B = A;' misses refcnt++ when 'A' is a domain or array or slice
+
+Cf. ref B => A seems to work properly.
+
+Once this bug is fixed: remove the .skipif

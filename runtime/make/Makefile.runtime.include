@@ -40,7 +40,7 @@ RUNTIME_DEFS += -DCHPL_COMM_DEBUG
 endif
 
 ifeq ($(OPTIMIZE),1)
-RUNTIME_DEFS += -DCHPL_OPTIMIZE
+RUNTIME_DEFS += -DCHPL_OPTIMIZE -DNDEBUG
 endif
 
 # For HDFS support (and backwards compatibility)

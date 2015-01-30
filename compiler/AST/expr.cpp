@@ -125,6 +125,21 @@ bool Expr::isStmt() const {
   return false;
 }
 
+// IPE: Provide the name of the symbol/variable being defined
+const char* DefExpr::name() const {
+  const char* retval = 0;
+
+  if (isVarSymbol(sym)    == true ||
+      isArgSymbol(sym)    == true ||
+      isTypeSymbol(sym)   == true ||
+      isFnSymbol(sym)     == true ||
+      isModuleSymbol(sym) == true) {
+    retval = sym->name;
+  }
+
+  return retval;
+}
+
 // Return true if this expression is a ModuleDefinition i.e. it
 // is a DefExpr and the referenced symbol is a Module Symbol
 

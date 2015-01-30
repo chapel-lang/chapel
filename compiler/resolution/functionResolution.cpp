@@ -4356,7 +4356,8 @@ isNormalField(Symbol* field)
 
 static CallExpr* toPrimToLeaderCall(Expr* expr) {
   if (CallExpr* call = toCallExpr(expr))
-    if (call->isPrimitive(PRIM_TO_LEADER))
+    if (call->isPrimitive(PRIM_TO_LEADER) ||
+        call->isPrimitive(PRIM_TO_STANDALONE))
       return call;
   return NULL;
 }

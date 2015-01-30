@@ -182,6 +182,19 @@ module ChapelIteratorSupport {
   inline proc _toLeaderZip(x: _tuple, args...)
     return _toLeader(x(1), (...args));
 
+  pragma "no implicit copy"
+  pragma "expand tuples with values"
+  inline proc _toStandalone(iterator: _iteratorClass, args...)
+    return chpl__autoCopy(__primitive("to standalone", iterator, (...args)));
+
+  pragma "expand tuples with values"
+  inline proc _toStandalone(ir: _iteratorRecord, args...) {
+    pragma "no copy" var ic = _getIterator(ir);
+    pragma "no copy" var standalone = _toStandalone(ic, (...args));
+    _freeIterator(ic);
+    return standalone;
+  }
+
   //
   // return true if any iterator supports fast followers
   //
