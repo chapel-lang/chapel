@@ -52,6 +52,10 @@ general
 Reviewed 2015-01-23
 ===================
 
+unexpected block structure in WhileStmt.cpp (hilde, noakes)
+-----------------------------------------------------------
+[Error matching .bad file for functions/deitz/test_return1] (2015-01-30..)
+
 
 ===================
 linux64
@@ -119,17 +123,13 @@ timeout (2014-11-12, first run)
 -------------------------------
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
 
-timeout (2015-01-29, elliot, should be fixed with #1196)
-------------------------------
-[Error: Timed out executing program parallel/begin/dinan/mvm_coforall]
-
 
 === sporadic failures below ===
 
 sporadic signal 11
 ------------------
 [Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-09, 2014-12-15, 2014-12-19, 2015-01-04)
-[Error matching program output for parallel/begin/dinan/mvm_coforall] (2014-11-21, 2014-11-27, 2014-12-15, 2015-01-22, 2015-01-27..2015-01-28)
+[Error matching program output for parallel/begin/dinan/mvm_coforall] (2014-11-21, 2014-11-27, 2014-12-15, 2015-01-22, 2015-01-27..2015-01-28) - believed fixed
 
 
 ===================
@@ -246,22 +246,6 @@ System I/O error.  Thomas has escalated to sys-ops
 --------------------------------------------------
 [Error running sub_test in /ptmp/jenkins/chapel-ci/workspace/correctness-test-valgrind/test/release/examples/spec/Variables (1)]
 
-invalid read in compiler (2014-12-16 -- diten, presumed due to standalone par)
-------------------------------------------------------------------------------
-[Error matching program output for functions/iterators/sungeun/iterInClass]
-
-invalid read in compiler (2014-12-13 -- diten, presumed due to standalone par)
-------------------------------------------------------------------------------
-[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader1]
-[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader2]
-[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader3]
-[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader4]
-[Error matching program output for functions/deitz/iterators/leader_follower/test_recursive_leader]
-[Error matching program output for multilocale/vass/recursive-iterator-twice-multiloc]
-[Error matching program output for studies/colostate/Jacobi-1D-Diamond-Tiling]
-[Error matching program output for studies/colostate/Jacobi-1D-Sliced-Diamond-Tiling]
-[Error matching program output for studies/glob/test_glob (compopts: 1)]
-
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
@@ -310,7 +294,7 @@ Reviewed 2015-01-23
 ===================
 numa
 Inherits 'general'
-Reviewed 2015-01-29
+Reviewed 2015-01-30
 ===================
 
 
@@ -1401,7 +1385,7 @@ Consistent execution timouts
 
 sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25)
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28)
 
 sporadic os.unlink calls in sub_test failing due to resource being busy
 =======================================================================
