@@ -17,9 +17,12 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <functional>
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <iterator>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -66,13 +69,17 @@ void docs(void) {
       outputMap["iter method"] = ".. itermethod:: ";
       outputMap["func"] = ".. function:: ";
       outputMap["method"] = ".. method:: ";
-      outputMap["config"] = ".. data:: ";
+      outputMap["config"] = ".. data:: config ";
       outputMap["field"] = ".. attribute:: ";
     }
 
     // Open the directory to store the docs
-    std::string folderName = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
+    std::string docsDir = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
+    std::string folderName = docsDir;
 
+    if (!fDocsTextOnly) {
+      folderName = generateSphinxProject(docsDir);
+    }
 
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     
@@ -109,6 +116,10 @@ void docs(void) {
           file.close();
         }
       }
+    }
+
+    if (!fDocsTextOnly) {
+      generateSphinxOutput(docsDir);
     }
   }
 }
@@ -310,6 +321,27 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
+  // Print the module directive first, for .rst mode. This will associate the
+  // Module: <name> title with the module. If the .. module:: directive comes
+  // after the title, sphinx will complain about a duplicate id error.
+  if (!fDocsTextOnly) {
+    *file << outputMap["module"] << name << std::endl;
+    if (mod->doc != NULL) {
+      NUMTABS++;
+      printTabs(file);
+      *file << outputMap["module comment prefix"];
+
+      // Grab first line of comment for synopsis.
+      std::stringstream synopsisStream(mod->doc);
+      std::string firstLine;
+      std::getline(synopsisStream, firstLine);
+
+      *file << firstLine << std::endl;
+      NUMTABS--;
+    }
+    *file << std::endl;
+  }
+
   printTabs(file);
   *file << "Module: " << name << std::endl;
   if (!fDocsTextOnly) {
@@ -322,21 +354,20 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   }
   NUMTABS++;
   if (mod->doc != NULL) {
-    printTabs(file);
-    *file << mod->doc << std::endl;
+    // Only print tabs for text only mode. The .rst prefers not to have the
+    // tabs for module level comments and leading whitespace removed.
+    if (fDocsTextOnly) {
+      printTabs(file);
+      *file << mod->doc << std::endl;
+    } else {
+      std::string modDoc = ltrim(std::string(mod->doc));
+      *file << modDoc << std::endl;
+    }
   }
+
+  // For non-rst mode, revert to the original tab level.
   if(!fDocsTextOnly) {
     NUMTABS--;
-    *file << outputMap["module"] << name << std::endl;
-    if (mod->doc != NULL) {
-      NUMTABS++;
-      printTabs(file);
-      *file << outputMap["module comment prefix"];
-      *file << std::endl;
-      *file << mod->doc << std::endl;
-      *file << std::endl;
-      NUMTABS--;
-    }
   }
 
   Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
@@ -471,4 +502,55 @@ void createDocsFileFolders(std::string filename) {
     total = dirCutoff + 1;
     dirCutoff = shorter.find("/");
   }
+}
+
+/* 
+ * Create new sphinx project at given location and return path where .rst files
+ * should be placed.
+ */
+std::string generateSphinxProject(std::string dirpath) {
+  // FIXME: This ought to be done in a TMPDIR, unless --save-rst is
+  //        provided... (thomasvandoren, 2015-01-29)
+
+  // Create the output dir under the docs output dir.
+  std::string htmldir = dirpath + std::string("/html");
+
+  // Ensure output directory exists.
+  std::string mkdirCmd = std::string("mkdir -p ") + htmldir;
+  mysystem(mkdirCmd.c_str(), "creating docs output dir");
+
+  // Copy the sphinx template into the output dir.
+  std::string sphinxTemplate = std::string(CHPL_HOME) + std::string("/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
+  std::string cmd = std::string("cp -r ") + sphinxTemplate + std::string(" ") + htmldir + "/";
+  mysystem(cmd.c_str(), "copying chpldoc sphinx template");
+
+  std::string moddir = htmldir + "/source/modules";
+  return moddir;
+}
+
+/* Call `make html` from inside sphinx project. */
+void generateSphinxOutput(std::string dirpath) {
+  std::string htmldir = dirpath + std::string("/html");
+
+  // The virtualenv activate script is at:
+  //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/activate
+  std::string activate =
+    CHPL_HOME +
+    std::string("/third-party/chpldoc-venv/install/") +
+    CHPL_TARGET_PLATFORM +
+    std::string("/chpdoc-virtualenv/bin/activate");
+
+  // Run: `source $activate && cd $htmldir && $CHPL_MAKE html`
+  std::string cmd = std::string("source ") + activate + std::string(" && cd ") + htmldir +
+    std::string(" && ") + std::string(CHPL_MAKE) + std::string(" html");
+  mysystem(cmd.c_str(), "building html output from chpldoc sphinx project");
+}
+
+/* trim from start
+ *
+ * From: http://stackoverflow.com/a/217605
+ */
+static inline std::string ltrim(std::string s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+  return s;
 }
