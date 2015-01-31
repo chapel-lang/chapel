@@ -1552,6 +1552,17 @@ for testname in testsrc:
                         sys.stdout.write(']\n')
                         sys.stdout.write('[Execution output was as follows:]\n')
                         sys.stdout.write(output)
+                    else:
+                        # for perf runs print out the 5 processes with the
+                        # highest cpu usage. This should help identify if other
+                        # processes might have interfered with a test.
+                        if perftest:
+                            print('[Reporting processes with top 5 highest cpu usages]')
+                            sys.stdout.flush()
+                            psCom = 'ps ax -o user,pid,pcpu,command '
+                            subprocess.call(psCom + '| head -n 1', shell=True)
+                            subprocess.call(psCom + '| tail -n +2 | sort -r -k 3 | head -n 5', shell=True)
+
 
                 else:
                     if redirectin == None:
