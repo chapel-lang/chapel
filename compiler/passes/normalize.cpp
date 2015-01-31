@@ -386,7 +386,7 @@ checkUseBeforeDefs() {
                     USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
                 }
               }
-            } else if (isLocSymbol(sym->var)) {
+            } else if (isLcnSymbol(sym->var)) {
               if (sym->var->defPoint->parentExpr != rootModule->block &&
                   (sym->var->defPoint->parentSymbol == fn ||
                    (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {

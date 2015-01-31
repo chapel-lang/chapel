@@ -272,7 +272,7 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   Vec<Symbol*> symSet;
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->parentSymbol) {
-      if (isLocSymbol(def->sym)) {
+      if (isLcnSymbol(def->sym)) {
         symSet.set_add(def->sym);
       }
     }
@@ -290,7 +290,7 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<Symbol*>& symSet,
                                 Vec<SymExpr*>& symExprs) {
   if (DefExpr* def = toDefExpr(ast)) {
-    if (isLocSymbol(def->sym)) {
+    if (isLcnSymbol(def->sym)) {
       symSet.set_add(def->sym);
     }
   } else if (SymExpr* se = toSymExpr(ast)) {

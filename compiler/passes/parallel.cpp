@@ -575,7 +575,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (def->parentSymbol) {
-        if (isLocSymbol(def->sym)) {
+        if (isLcnSymbol(def->sym)) {
           symSet.set_add(def->sym);
         }
       }

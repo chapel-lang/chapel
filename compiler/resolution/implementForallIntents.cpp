@@ -118,7 +118,7 @@ static void findOuterVars(BlockStmt* block, SymbolMap& uses) {
   for_vector(SymExpr, symExpr, symExprs) {
     Symbol* sym = symExpr->var;
 
-    if (isLocSymbol(sym)) {
+    if (isLcnSymbol(sym)) {
       if (!isCorrespIndexVar(block, sym) &&
           !isInWithClause(symExpr)       &&
           isOuterVar(sym, block))

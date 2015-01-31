@@ -288,7 +288,7 @@ static inline bool isSymbol(const BaseAST* a)
 static inline bool isType(const BaseAST* a)
 { return a && isType(a->astTag); }
 
-static inline bool isLocSymbol(const BaseAST* a)
+static inline bool isLcnSymbol(const BaseAST* a)
 { return a && (a->astTag == E_ArgSymbol || a->astTag == E_VarSymbol); }
 
 #define def_is_ast(Type)                          \

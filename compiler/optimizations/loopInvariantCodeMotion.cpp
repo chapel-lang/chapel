@@ -544,7 +544,7 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
       collectSymExprsSTL(expr, symExprs);
       for_vector(SymExpr, symExpr, symExprs) {
         if(symExpr->parentSymbol) {
-          if(isLocSymbol(symExpr->var)) {
+          if(isLcnSymbol(symExpr->var)) {
             localMap[symExpr] = block->id;
             int result = isDefAndOrUse(symExpr);
             //Add defs
@@ -833,7 +833,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     // itself is also deffed. This is handled in buildDefUseMaps for normal
     // variables but we have to handle when a variable aliases a record's field
     // and the alias is deffed.
-    if(isLocSymbol(symExpr->var)) {
+    if(isLcnSymbol(symExpr->var)) {
       // if the current variable is a record
       if(AggregateType* ct = toAggregateType(symExpr->var->type->symbol->type)) {
         if(isRecord(symExpr->var->type->symbol->type)) {
@@ -1056,7 +1056,7 @@ static bool containsSynchronizationVar(BaseAST* ast) {
   collectSymExprsSTL(ast, symExprs);
   for_vector(SymExpr, symExpr, symExprs) {
 
-    if(isLocSymbol(symExpr->var)) {
+    if(isLcnSymbol(symExpr->var)) {
       Type* symType = symExpr->var->type;
       Type* valType = symType->getValType();
       if (isSyncType(symType) || isAtomicType(symType) ||

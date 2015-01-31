@@ -210,7 +210,7 @@ bool Symbol::isImmediate() const {
 *                                                                   *
 ********************************* | ********************************/
 
-LocSymbol::LocSymbol(AstTag      astTag,
+LcnSymbol::LcnSymbol(AstTag      astTag,
                      const char* initName,
                      Type*       initType) :
   Symbol(astTag, initName, initType)
@@ -219,23 +219,23 @@ LocSymbol::LocSymbol(AstTag      astTag,
   mOffset = -1;
 }
 
-LocSymbol::~LocSymbol()
+LcnSymbol::~LcnSymbol()
 {
 
 }
 
-void LocSymbol::locationSet(int depth, int offset)
+void LcnSymbol::locationSet(int depth, int offset)
 {
   mDepth  = depth;
   mOffset = offset;
 }
 
-int LocSymbol::depth() const
+int LcnSymbol::depth() const
 {
   return mDepth;
 }
 
-int LocSymbol::offset() const
+int LcnSymbol::offset() const
 {
   return mOffset;
 }
@@ -247,7 +247,7 @@ int LocSymbol::offset() const
 
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
-  LocSymbol(E_VarSymbol, init_name, init_type),
+  LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
   doc(NULL)
 {
@@ -863,7 +863,7 @@ void VarSymbol::accept(AstVisitor* visitor) {
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
                      Type* iType, Expr* iTypeExpr,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
-  LocSymbol(E_ArgSymbol, iName, iType),
+  LcnSymbol(E_ArgSymbol, iName, iType),
   intent(iIntent),
   typeExpr(NULL),
   defaultExpr(NULL),

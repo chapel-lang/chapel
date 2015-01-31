@@ -152,7 +152,7 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
-      if (isLocSymbol(sym)) {
+      if (isLcnSymbol(sym)) {
         if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
           uses->put(sym, markUnspecified);
       }

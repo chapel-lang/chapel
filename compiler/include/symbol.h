@@ -149,7 +149,7 @@ private:
 *                                                                   *
 ********************************* | ********************************/
 
-class LocSymbol : public Symbol
+class LcnSymbol : public Symbol
 {
 public:
   int       depth()                                            const;
@@ -158,14 +158,14 @@ public:
   void      locationSet(int depth, int offset);
 
 protected:
-            LocSymbol(AstTag      astTag,
+            LcnSymbol(AstTag      astTag,
                       const char* initName,
                       Type*       initType);
 
-  virtual  ~LocSymbol();
+  virtual  ~LcnSymbol();
 
 private:
-            LocSymbol();
+            LcnSymbol();
 
   int       mDepth;                // Lexical depth relative to root
   int       mOffset;               // Byte offset within frame
@@ -176,7 +176,7 @@ private:
 *                                                                   *
 ********************************* | ********************************/
 
-class VarSymbol : public LocSymbol {
+class VarSymbol : public LcnSymbol {
 public:
   // Note that string immediate values are stored
   // with C escapes - that is newline is 2 chars \ n
@@ -210,7 +210,7 @@ public:
 *                                                                   *
 ********************************* | ********************************/
 
-class ArgSymbol : public LocSymbol {
+class ArgSymbol : public LcnSymbol {
 public:
   ArgSymbol(IntentTag   iIntent,
             const char* iName,
