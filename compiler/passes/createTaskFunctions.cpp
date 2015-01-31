@@ -145,13 +145,17 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   Vec<BaseAST*> asts;
+
   collect_asts(fn, asts);
+
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
-      if (toVarSymbol(sym) || toArgSymbol(sym))
+
+      if (isLocSymbol(sym)) {
         if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
           uses->put(sym, markUnspecified);
+      }
     }
   }
 }

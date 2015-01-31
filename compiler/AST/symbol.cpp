@@ -205,12 +205,49 @@ bool Symbol::isImmediate() const {
 
 /******************************** | *********************************
 *                                                                   *
+* Common base class for ArgSymbol and VarSymbol.                    *
+* Also maintains a small amount of IPE specific state.              *
+*                                                                   *
+********************************* | ********************************/
+
+LocSymbol::LocSymbol(AstTag      astTag,
+                     const char* initName,
+                     Type*       initType) :
+  Symbol(astTag, initName, initType)
+{
+  mDepth  = -1;
+  mOffset = -1;
+}
+
+LocSymbol::~LocSymbol()
+{
+
+}
+
+void LocSymbol::locationSet(int depth, int offset)
+{
+  mDepth  = depth;
+  mOffset = offset;
+}
+
+int LocSymbol::depth() const
+{
+  return mDepth;
+}
+
+int LocSymbol::offset() const
+{
+  return mOffset;
+}
+
+/******************************** | *********************************
+*                                                                   *
 *                                                                   *
 ********************************* | ********************************/
 
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
-  Symbol(E_VarSymbol, init_name, init_type),
+  LocSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
   doc(NULL)
 {
@@ -826,7 +863,7 @@ void VarSymbol::accept(AstVisitor* visitor) {
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
                      Type* iType, Expr* iTypeExpr,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
-  Symbol(E_ArgSymbol, iName, iType),
+  LocSymbol(E_ArgSymbol, iName, iType),
   intent(iIntent),
   typeExpr(NULL),
   defaultExpr(NULL),
