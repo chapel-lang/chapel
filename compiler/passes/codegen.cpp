@@ -542,7 +542,7 @@ static void protectNameFromC(Symbol* sym) {
   // ways that caused headaches for me).
   //
   ModuleSymbol* symMod = sym->getModule();
-  if (symMod->modTag != MOD_USER) {
+  if (symMod->modTag == MOD_INTERNAL) {
     return;
   }
 
