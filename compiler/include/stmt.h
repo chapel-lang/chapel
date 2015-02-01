@@ -104,7 +104,12 @@ public:
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);
 
+  // I.E. Not a Loop or an OnStmt or ...
+  bool                isRealBlockStmt()                            const;
+
   bool                isScopeless()                                const;
+  bool                isBlockType(PrimitiveTag tag)                const;
+
   int                 length()                                     const;
 
   void                moduleUseAdd(ModuleSymbol* mod);

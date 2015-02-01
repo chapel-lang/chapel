@@ -19,9 +19,12 @@ IPE_SRCS =                           \
            ipeDriver.cpp             \
            ipeResolve.cpp            \
            ipeInlinePrimitives.cpp   \
+           ipeInsertVariables.cpp    \
            ipeEvaluate.cpp           \
                                      \
            DefScope.cpp              \
+           IpeEnvironment.cpp        \
+           IpeSymbol.cpp             \
            VisibleSymbol.cpp
 
 

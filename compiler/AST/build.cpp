@@ -31,6 +31,8 @@
 #include "symbol.h"
 #include "type.h"
 
+static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt);
+
 static void
 checkControlFlow(Expr* expr, const char* context) {
   Vec<const char*> labelSet; // all labels in expr argument
@@ -301,28 +303,44 @@ Expr* buildDotExpr(const char* base, const char* member) {
 }
 
 
-Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
+static Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = newTemp();
+
   lvar->addFlag(FLAG_MAYBE_PARAM);
-  FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                                 new CallExpr("isTrue", right),
-                                 new SymExpr(gFalse));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr("compilerError", new_StringSymbol("cannot promote short-circuiting && operator"))));
+
+  FnSymbol*  ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
+                                new CallExpr("isTrue", right),
+                                new SymExpr(gFalse));
+
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
+
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
+                                  new CallExpr("compilerError", eMsg)));
+
   ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
+
   return new CallExpr(new DefExpr(ifFn));
 }
 
 
-Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
+static Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
   VarSymbol* lvar = newTemp();
+
   lvar->addFlag(FLAG_MAYBE_PARAM);
-  FnSymbol* ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
-                                 new SymExpr(gTrue),
-                                 new CallExpr("isTrue", right));
-  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar), new CallExpr("compilerError", new_StringSymbol("cannot promote short-circuiting || operator"))));
+
+  FnSymbol*  ifFn = buildIfExpr(new CallExpr("isTrue", lvar),
+                               new SymExpr(gTrue),
+                               new CallExpr("isTrue", right));
+
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
+
+  ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
+                                  new CallExpr("compilerError", eMsg)));
+
   ifFn->insertAtHead(new CallExpr(PRIM_MOVE, lvar, left));
   ifFn->insertAtHead(new DefExpr(lvar));
+
   return new CallExpr(new DefExpr(ifFn));
 }
 
@@ -889,14 +907,6 @@ CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
   }
 }
 
-static void
-checkForNonRefIntents(CallExpr* byrefVars) {
-  for_actuals(actual, byrefVars)
-    if (ArgSymbol* arg = toArgSymbol(actual))
-      if (arg->intent != INTENT_REF)
-        USR_FATAL_CONT(byrefVars, "intents other than 'ref' are not allowed in a 'with' clause of a 'forall' loop or expression");
-}
-
 static BlockStmt*
 buildFollowLoop(VarSymbol* iter,
                 VarSymbol* leadIdxCopy,
@@ -1028,8 +1038,6 @@ buildForallLoopStmt(Expr*      indices,
   //
   INT_ASSERT(!loopBody->byrefVars);
   if (byref_vars) {
-    // todo: push this check downstream, e.g. into checkParsed()
-    checkForNonRefIntents(byref_vars);
     INT_ASSERT(byref_vars->isPrimitive(PRIM_ACTUALS_LIST));
     byref_vars->primitive = primitives[PRIM_FORALL_LOOP];
   } else {
@@ -1196,24 +1204,10 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   //
   // detect on-statement directly inside coforall-loop
   //
-  BlockStmt* onBlock = NULL;
-  BlockStmt* tmp = body;
-  while (tmp) {
-    if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfoGet() && b->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON)) {
-        onBlock = b;
-        break;
-      }
-    }
-    if (tmp->body.tail == tmp->body.head) {
-      tmp = toBlockStmt(tmp->body.tail);
-      if (tmp && tmp->blockInfoGet())
-        tmp = NULL;
-    } else
-      tmp = NULL;
-  }
+  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
 
   SET_LINENO(body);
+
   if (onBlock) {
     //
     // optimization of on-statements directly inside coforall-loops
@@ -1826,7 +1820,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 
 
 static Expr* extractLocaleID(Expr* expr) {
-  // If the on <x> expression is a primitive_on_locale_num, we just 
+  // If the on <x> expression is a primitive_on_locale_num, we just
   // return the primitive.
   // PRIM_ON_LOCAL_NUM is now passed through to codegen,
   // but we don't want to wrap it in PRIM_WIDE_GET_LOCALE.
@@ -1859,22 +1853,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   //
   // detect begin statement directly inside on-statement
   //
-  BlockStmt* beginBlock = NULL;
-  BlockStmt* tmp = body;
-  while (tmp) {
-    if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfoGet() && b->blockInfoGet()->isPrimitive(PRIM_BLOCK_BEGIN)) {
-        beginBlock = b;
-        break;
-      }
-    }
-    if (tmp->body.tail == tmp->body.head) {
-      tmp = toBlockStmt(tmp->body.tail);
-      if (tmp && tmp->blockInfoGet())
-        tmp = NULL;
-    } else
-      tmp = NULL;
-  }
+  BlockStmt* beginBlock = findStmtWithTag(PRIM_BLOCK_BEGIN, body);
 
   // If the locale model doesn't require outlined on functions and this is a
   // --local compile, then we take the on-expression, execute it to evaluate
@@ -1890,7 +1869,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     // remote_fork (node) {
     //   branch /*local*/ { foo(); }
     // } wait;
-    // to 
+    // to
     // remote_fork (node) { foo(); } // no wait();
 
     // Execute the construct "on x begin ..." asynchronously.
@@ -1919,26 +1898,11 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   checkControlFlow(stmt, "begin statement");
 
   BlockStmt* body = toBlockStmt(stmt);
-  
+
   //
   // detect on-statement directly inside begin statement
   //
-  BlockStmt* onBlock = NULL;
-  BlockStmt* tmp = body;
-  while (tmp) {
-    if (BlockStmt* b = toBlockStmt(tmp->body.tail)) {
-      if (b->blockInfoGet() && b->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON)) {
-        onBlock = b;
-        break;
-      }
-    }
-    if (tmp->body.tail == tmp->body.head) {
-      tmp = toBlockStmt(tmp->body.tail);
-      if (tmp && tmp->blockInfoGet())
-        tmp = NULL;
-    } else
-      tmp = NULL;
-  }
+  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
 
   if (onBlock) {
     body->insertAtHead(new CallExpr("_upEndCount"));
@@ -2061,7 +2025,7 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
         DefExpr* newde = new DefExpr(new TypeSymbol(vs->name, pt));
         de->replace(newde);
         de = newde;
-      }           
+      }
       de->sym->addFlag(FLAG_EXTERN);
     } else {
       INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
@@ -2097,4 +2061,51 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
     }
   }
   return blk;
+}
+
+// Attempt to find a stmt with a specific PrimitiveTag in a blockStmt
+//
+// For the case we're interested in we anticipate that the parser
+// has constructed the following structure
+//
+//   BlockStmt
+//     Scopeless BlockStmt
+//       DefExpr  to define a tmp var
+//       CallExpr to implement a move to the tmp var
+//       BlockStmt with blockInfo
+//
+// So
+//   1) We're trying to test the tail position of a blockStmt
+//   2) We may need to step down one or more levels of blockStmt
+//
+// Finally BlockStmt is currently overloaded to represent a number of
+// Stmts e.g. Loops, OnStmts, LocalStmts etc.
+// We need to take care to discriminate among these
+
+static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
+  BlockStmt* retval = NULL;
+
+  while (blockStmt != NULL && retval == NULL) {
+    BlockStmt* tail = toBlockStmt(blockStmt->body.tail);
+
+    // This is the stmt we're looking for
+    if (tail != NULL && tail->isBlockType(tag)) {
+      retval    = tail;
+
+    // Stop if the current blockStmt is not of length 1
+    } else if (blockStmt->length() != 1) {
+      blockStmt = NULL;
+
+    // Stop if the tail is not a "real" BlockStmt (e.g. a Loop etc)
+    } else if (tail == NULL || tail->isRealBlockStmt() == false) {
+      blockStmt = NULL;
+
+    // Step in to the block and try again
+    } else {
+      blockStmt = tail;
+
+    }
+  }
+
+  return retval;
 }

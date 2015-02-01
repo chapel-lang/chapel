@@ -157,8 +157,7 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
 }
 
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
-// If 'usePrune', only 'ref' intent is allowed, implemented it with markPrune.
-void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars, bool usePrune) {
+void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
   if (!byrefVars) return;
   ArgSymbol* tiMarker = NULL;
   // the actuals alternate: tiMark arg, task-intent variable [, repeat]
@@ -170,14 +169,8 @@ void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars, bool usePrune) {
     Symbol* var = se->var;
     if (tiMarker) {
       SymbolMapElem* elem = uses->get_record(var);
-      if (elem) {
-       if (usePrune) {
-        INT_ASSERT(tiMarker->intent == INTENT_REF); // checkForNonRefIntents()
-        elem->value = markPruned;
-       } else {
+      if (elem)
         elem->value = tiMarker;
-       }
-      }
       tiMarker = NULL;
     } else {
       tiMarker =  toArgSymbol(var);
@@ -495,7 +488,7 @@ void createTaskFunctions(void) {
           SymbolMap* uses = new SymbolMap();
           findOuterVars(fn, uses);
 
-          pruneOuterVars(uses, block->byrefVars, false);
+          pruneOuterVars(uses, block->byrefVars);
           pruneThisArg(call->parentSymbol, uses, false);
           block->byrefVars->remove();
 

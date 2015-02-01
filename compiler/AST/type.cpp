@@ -1227,6 +1227,8 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
+  dtVoid                               = createInternalType ("void", "void");
+
   dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool", "chpl_bool");
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",  "int64_t");
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real", "_real64");
@@ -1254,17 +1256,26 @@ void initPrimitiveTypes() {
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
 
   //
-  // The IPE currently avoids most primitive types
+  // Mark the "high water mark" for types that IPE relies on directly
   //
   if (fUseIPE == true) {
     ipeRootInit();
+  }
+
+  gTryToken = new VarSymbol("chpl__tryToken", dtBool);
+
+  gTryToken->addFlag(FLAG_CONST);
+  rootModule->block->insertAtTail(new DefExpr(gTryToken));
+
+  //
+  // IPE tries to run without the rest of the types
+  //
+  if (fUseIPE == true) {
     return;
   }
 
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
-
-  dtVoid = createInternalType ("void", "void");
 
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
@@ -1276,10 +1287,6 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
   dtValue = createInternalType("value", "_chpl_value");
-
-  gTryToken = new VarSymbol("chpl__tryToken", dtBool);
-  gTryToken->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gTryToken));
 
   INIT_PRIM_BOOL("bool(1)", 1);
   INIT_PRIM_BOOL("bool(8)", 8);

@@ -44,6 +44,16 @@ all:
     - switch default memory allocator from cstdlib to tcmalloc
   09/12/14:
     - switch default memory allocator back to cstdlib
+  11/05/14:
+    - fix overlapping memcpy() reported by valgrind
+  12/18/14:
+    - change mult in array indexing to conditional, then revert
+  12/22/14:
+    - simplify some locale model interactions with the runtime
+  01/16/15:
+    - move chpl_getLocaleID into the modules
+
+AllCompTime:
   11/09/14:
     - disable the task table by default
 
@@ -82,6 +92,8 @@ ep-b:
 fannkuch-redux:
   07/22/14:
     - Error due to cleaning up file incompletely
+  09/04/14:
+    - LICM no longer hoisting globals (bug fix related to hoisting wide things)
 
 fasta:
   01/14/14:
@@ -102,6 +114,18 @@ is:
     - added -E to tests which would benefit from it
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
+
+jacobi:
+  03/07/14:
+    - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
+  08/19/14:
+    - C for loops initial commit
+  08/20/14:
+    - Tom's use of user-defined default constructors
+  08/26/14:
+    - Kyle's ref temp peephole optimization
+  11/09/14:
+    - disable the task table by default
 
 lulesh:
   03/15/14:
@@ -152,22 +176,28 @@ mandelbrot:
     - Chapel level improvement by using a nonlocking writer
   03/19/14:
     - Bulk IO optimization
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
 
-jacobi:
-  03/07/14:
-    - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
-  08/19/14:
-    - C for loops initial commit
-  08/20/14:
-    - Tom's use of user-defined default constructors
-  08/26/14:
-    - Kyle's ref temp peephole optimization
+mandelbrot-extras:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
 
 parOpEquals:
   09/06/13:
     - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+spectralnorm:
+  01/21/15:
+    - qthreads updated to yield every ~100 uncontested sync var locks
+
+spectral-norm-specify-step:
+  01/21/15:
+    - qthreads updated to yield every ~100 uncontested sync var locks
 
 SSCA2_main:
   06/12/13:

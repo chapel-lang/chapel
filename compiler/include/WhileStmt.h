@@ -25,9 +25,13 @@
 class WhileStmt : public LoopStmt
 {
 public:
-  SymExpr*               condExprGet()                                const;
+  Expr*                  condExprGet()                                const;
+  SymExpr*               condExprForTmpVariableGet()                  const;
 
 protected:
+                         WhileStmt(Expr*      sym,
+                                   BlockStmt* initBody);
+
                          WhileStmt(VarSymbol* sym,
                                    BlockStmt* initBody);
 
@@ -37,8 +41,13 @@ protected:
                                    SymbolMap*       mapRef,
                                    bool             internal);
 
+  // Interface to BaseAST
   virtual void           verify();
 
+  // Interface to Expr
+  virtual void           replaceChild(Expr* oldAst, Expr* newAst);
+
+  // New interface
   virtual bool           isWhileStmt()                                const;
 
   virtual void           checkConstLoops();
@@ -58,7 +67,7 @@ private:
   void                   checkConstWhileLoop();
   bool                   loopBodyHasExits();
 
-  SymExpr*               mCondExpr;
+  Expr*                  mCondExpr;
 };
 
 #endif

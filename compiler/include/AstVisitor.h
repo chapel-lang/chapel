@@ -27,6 +27,7 @@ class PrimitiveType;
 class ArgSymbol;
 class EnumSymbol;
 class FnSymbol;
+class IpeSymbol;
 class LabelSymbol;
 class ModuleSymbol;
 class TypeSymbol;
@@ -48,7 +49,8 @@ class ExternBlockStmt;
 class CondStmt;
 class GotoStmt;
 
-class AstVisitor {
+class AstVisitor
+{
 public:
                  AstVisitor();
   virtual       ~AstVisitor();
@@ -83,6 +85,8 @@ public:
 
   virtual bool   enterFnSym       (FnSymbol*          node) = 0;
   virtual void   exitFnSym        (FnSymbol*          node) = 0;
+
+  virtual void   visitIpeSym      (IpeSymbol*         node) = 0;
 
   virtual void   visitLabelSym    (LabelSymbol*       node) = 0;
 

@@ -93,6 +93,7 @@ typedef syncvar_t chpl_mutex_t;
 typedef struct {
     aligned_t lockers_in;
     aligned_t lockers_out;
+    uint_fast32_t uncontested_locks;
     int       is_full;
     syncvar_t signal_full;
     syncvar_t signal_empty;

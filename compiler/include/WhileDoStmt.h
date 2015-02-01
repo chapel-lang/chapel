@@ -53,8 +53,8 @@ public:
 private:
                          WhileDoStmt();
 
-                         WhileDoStmt(VarSymbol* var,
-                                     BlockStmt* initBody);
+                         WhileDoStmt(Expr*      cond, BlockStmt* body);
+                         WhileDoStmt(VarSymbol* var,  BlockStmt* body);
 };
 
 #endif
