@@ -25,30 +25,28 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-// Noakes 2015/02/02 Bison 2.3 relies on this
+// Noakes 2015/02/02 Bison 2.3 relies on this ordering
 #include "yy.h"
 #include "chapel.tab.h"
 
 #include <cstdlib>
 
-BlockStmt*  yyblock           = NULL;
-const char* yyfilename        = NULL;
-int         yystartlineno     = 0;
+BlockStmt*              yyblock                    = NULL;
+const char*             yyfilename                 = NULL;
+int                     yystartlineno              = 0;
 
-ModTag      currentModuleType = MOD_INTERNAL;
+ModTag                  currentModuleType          = MOD_INTERNAL;
 
-int         chplLineno        = 0;
-bool        chplParseString    = false;
-const char* chplParseStringMsg = NULL;
+int                     chplLineno                 = 0;
+bool                    chplParseString            = false;
+const char*             chplParseStringMsg         = NULL;
 
-
+static bool             handlingInternalModulesNow = false;
 
 static Vec<const char*> modNameSet;
 static Vec<const char*> modNameList;
 static Vec<const char*> modDoneSet;
 static Vec<CallExpr*>   modReqdByInt;  // modules required by internal ones
-
-static bool handlingInternalModulesNow = false;
 
 void addModuleToParseList(const char* name, CallExpr* useExpr) {
   const char* modName = astr(name);
