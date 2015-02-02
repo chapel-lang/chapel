@@ -51,6 +51,7 @@ int                yylex();
 int                getNextYYChar();
 void               lexerScanString(const char* string);
 void               lexerResetFile();
+void               processNewline();
 
 int                yyparse();
 void               yyerror(const char* str);

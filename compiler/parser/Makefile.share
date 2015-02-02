@@ -17,8 +17,7 @@
 
 PARSER_SRCS =                                                      \
               countTokens.cpp                                      \
-              parser.cpp                                           \
-              processTokens.cpp
+              parser.cpp
 
 CXX_C_SRCS  =                                                      \
 	      chapel.tab.cpp                                       \

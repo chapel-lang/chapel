@@ -226,6 +226,23 @@ yield            return processToken(TYIELD);
 *                                                                           *
 ************************************* | ************************************/
 
+#include "countTokens.h"
+#include "misc.h"
+#include "stringutil.h"
+
+#include <cstring>
+#include <cctype>
+#include <string>
+
+static void  newString();
+static void  addString(const char* str);
+static void  addChar(char c);
+static void  addCharString(char c);
+
+static int   stringBuffLen = 0;
+static int   stringLen     = 0;
+static char* stringBuffer  = NULL;
+
 int getNextYYChar() {
   int retval = yyinput();
 
@@ -242,6 +259,18 @@ void lexerScanString(const char* string) {
 
 void lexerResetFile() {
   YY_NEW_FILE;
+}
+
+void processNewline() {
+  chplLineno++;
+
+  yylloc.first_column = 0;
+  yylloc.last_column  = 0;
+
+  yylloc.first_line   = chplLineno;
+  yylloc.last_line    = chplLineno;
+
+  countNewline();
 }
 
 /************************************ | *************************************
@@ -338,6 +367,7 @@ static char* eatStringLiteral(const char* startChar) {
         break;
     }
   } /* eat up string */
+
   if (c == 0) {
     yyerror("EOF in string");
   }
@@ -679,3 +709,61 @@ static void processMultiLineComment() {
 static void processInvalidToken() {
   yyerror("Invalid token");
 }
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static void addCharMaybeEscape(char c, bool canEscape);
+static char toHex(char c);
+
+static void newString() {
+  stringLen = 0;
+
+  if (stringBuffLen) {
+    stringBuffer[stringLen] = '\0';
+  }
+}
+
+static void addString(const char* str) {
+  for (int i = 0; str[i]; i++)
+    addChar(str[i]);
+}
+
+static void addChar(char c) {
+  addCharMaybeEscape(c, false);
+}
+
+static void addCharString(char c) {
+  addCharMaybeEscape(c, true);
+}
+
+static void addCharMaybeEscape(char c, bool canEscape) {
+  int escape  = canEscape && !(isascii(c) && isprint(c));
+  int charlen = escape ? 4 : 1; // convert nonasci to \xNN
+
+  if (stringLen + charlen + 1 > stringBuffLen) {
+    stringBuffLen = 2*(stringBuffLen + charlen);
+    stringBuffer  = (char*) realloc(stringBuffer,
+                                    stringBuffLen * sizeof(char));
+  }
+
+  if (escape) {
+    stringBuffer[stringLen++] = '\\';
+    stringBuffer[stringLen++] = 'x';
+    stringBuffer[stringLen++] = toHex(((unsigned char)c) >> 4);
+    stringBuffer[stringLen++] = toHex(c & 0xf);
+  } else {
+    stringBuffer[stringLen++] = c;
+  }
+
+  stringBuffer[stringLen] = '\0';
+}
+
+// Returns the hexadecimal character for 0-16.
+static char toHex(char c) {
+  return (0 <= c && c <= 9) ? '0' + c : 'A' + (c - 10);
+}
+
