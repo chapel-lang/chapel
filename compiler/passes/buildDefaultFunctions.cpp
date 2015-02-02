@@ -304,7 +304,6 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   fn->addFlag(FLAG_METHOD);
   fn->cname = astr("chpl_", ct->symbol->cname, "_", fn->cname);
   fn->addFlag(FLAG_NO_PARENS);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->_this = _this;
 }
 
