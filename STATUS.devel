@@ -60,12 +60,6 @@ General (see also portability section at the bottom of this file)
   # modules/diten/module_use_hides_size_var.future
   # types/records/sungeun/chapelTypes/record_array.future
   # extern/vass/c_sublocid_any.inner-extern.future
-  # extern/vass/c_sublocid_any.mod-ne.future
-- Names in a Chapel program can collide with name used by the back-end
-  compiler and libraries.
-  # classes/vass/duplicate-virtual-method-ok-1.future
-  # trivial/figueroa/UnmangledSymbols.future
-  # users/vass/global-j1.future
 - There are several internal memory leaks:
   # memory/figueroa/StringLeaks5.future
   # memory/figueroa/LeakedMemory6.future
