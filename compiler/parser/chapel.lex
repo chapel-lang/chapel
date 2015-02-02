@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,69 +22,15 @@
 
 %{
 
-#include <cstdio>
 #include "lexyacc.h"
 #include "chapel.tab.h"
 
-#ifndef processToken
-#define processToken(t)                         \
-  countToken(yytext);                           \
-  if (captureTokens) {                          \
-    if (t == TASSIGN ||                         \
-        t == TDOTDOTDOT)                        \
-      strcat(captureString, " ");               \
-    if (t != TLCBR)                             \
-      strcat(captureString, yytext);            \
-    if (t == TCOMMA ||                          \
-        t == TPARAM ||                          \
-        t == TZIP  ||                           \
-        t == TTYPE ||                           \
-        t == TCONST ||                          \
-        t == TIN ||                             \
-        t == TINOUT ||                          \
-        t == TOUT ||                            \
-        t == TREF ||                            \
-        t == TCOLON ||                          \
-        t == TASSIGN ||                         \
-        t == TRSBR)                             \
-      strcat(captureString, " ");               \
-  }                                             \
-  /* processToken means we are parsing Chapel */\
-  BEGIN(INITIAL);                               \
-  return(t)
-#endif
+#include <cstdio>
 
-#define processStringLiteral(q)            \
-  yylval.pch = eatStringLiteral(q);        \
-  countToken(astr(q, yylval.pch, q)); \
-  if (captureTokens) {                     \
-    strcat(captureString, yytext);         \
-    strcat(captureString, yylval.pch);     \
-    strcat(captureString, yytext);         \
-  }                                        \
-  /* string literals only in Chapel */     \
-  BEGIN(INITIAL);                          \
-  return(STRINGLITERAL)
-
-#define processExtern()                    \
-  countToken(yytext);                      \
-  if (captureTokens) {                     \
-    strcat(captureString, yytext);         \
-  }                                        \
-  BEGIN(externmode);                       \
-  return TEXTERN;
-
-#define processExternCode()                \
-  yylval.pch = eatExternCode();            \
-  countToken(astr(yylval.pch));            \
-  if (captureTokens) {                     \
-    strcat(captureString, yylval.pch);     \
-  }                                        \
-  /* only one { } block is special */      \
-  BEGIN(INITIAL);                          \
-  return(EXTERNCODE)
-
-
+static int processToken(int t);
+static int processStringLiteral(const char* q);
+static int processExtern();
+static int processExternCode();
 
 %}
 
@@ -108,150 +54,150 @@ floatLiteral     {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
 
 %%
 
-align            processToken(TALIGN);
-atomic           processToken(TATOMIC);
-begin            processToken(TBEGIN);
-break            processToken(TBREAK);
-by               processToken(TBY);
-class            processToken(TCLASS);
-cobegin          processToken(TCOBEGIN);
-coforall         processToken(TCOFORALL);
-config           processToken(TCONFIG);
-const            processToken(TCONST);
-continue         processToken(TCONTINUE);
-delete           processToken(TDELETE);
-dmapped          processToken(TDMAPPED);
-do               processToken(TDO);
-domain           processToken(TDOMAIN);
-else             processToken(TELSE);
-enum             processToken(TENUM);
-export           processToken(TEXPORT);
-extern           processExtern();
-for              processToken(TFOR);
-forall           processToken(TFORALL);
-if               processToken(TIF);
-in               processToken(TIN);
-index            processToken(TINDEX);
-inline           processToken(TINLINE);
-inout            processToken(TINOUT);
-iter             processToken(TITER);
-label            processToken(TLABEL);
-lambda           processToken(TLAMBDA);
-let              processToken(TLET);
-local            processToken(TLOCAL);
-module           processToken(TMODULE);
-new              processToken(TNEW);
-nil              processToken(TNIL);
-noinit           processToken(TNOINIT);
-on               processToken(TON);
-otherwise        processToken(TOTHERWISE);
-out              processToken(TOUT);
-param            processToken(TPARAM);
-zip              processToken(TZIP);
-pragma           processToken(TPRAGMA);
-__primitive      processToken(TPRIMITIVE);
-proc             processToken(TPROC);
-record           processToken(TRECORD);
-reduce           processToken(TREDUCE);
-ref              processToken(TREF);
-return           processToken(TRETURN);
-scan             processToken(TSCAN);
-select           processToken(TSELECT);
-serial           processToken(TSERIAL);
-single           processToken(TSINGLE);
-sparse           processToken(TSPARSE);
-subdomain        processToken(TSUBDOMAIN);
-sync             processToken(TSYNC);
-then             processToken(TTHEN);
-type             processToken(TTYPE);
-union            processToken(TUNION);
-use              processToken(TUSE);
-var              processToken(TVAR);
-when             processToken(TWHEN);
-where            processToken(TWHERE);
-while            processToken(TWHILE);
-with             processToken(TWITH);
-yield            processToken(TYIELD);
+align            return processToken(TALIGN);
+atomic           return processToken(TATOMIC);
+begin            return processToken(TBEGIN);
+break            return processToken(TBREAK);
+by               return processToken(TBY);
+class            return processToken(TCLASS);
+cobegin          return processToken(TCOBEGIN);
+coforall         return processToken(TCOFORALL);
+config           return processToken(TCONFIG);
+const            return processToken(TCONST);
+continue         return processToken(TCONTINUE);
+delete           return processToken(TDELETE);
+dmapped          return processToken(TDMAPPED);
+do               return processToken(TDO);
+domain           return processToken(TDOMAIN);
+else             return processToken(TELSE);
+enum             return processToken(TENUM);
+export           return processToken(TEXPORT);
+extern           return processExtern();
+for              return processToken(TFOR);
+forall           return processToken(TFORALL);
+if               return processToken(TIF);
+in               return processToken(TIN);
+index            return processToken(TINDEX);
+inline           return processToken(TINLINE);
+inout            return processToken(TINOUT);
+iter             return processToken(TITER);
+label            return processToken(TLABEL);
+lambda           return processToken(TLAMBDA);
+let              return processToken(TLET);
+local            return processToken(TLOCAL);
+module           return processToken(TMODULE);
+new              return processToken(TNEW);
+nil              return processToken(TNIL);
+noinit           return processToken(TNOINIT);
+on               return processToken(TON);
+otherwise        return processToken(TOTHERWISE);
+out              return processToken(TOUT);
+param            return processToken(TPARAM);
+zip              return processToken(TZIP);
+pragma           return processToken(TPRAGMA);
+__primitive      return processToken(TPRIMITIVE);
+proc             return processToken(TPROC);
+record           return processToken(TRECORD);
+reduce           return processToken(TREDUCE);
+ref              return processToken(TREF);
+return           return processToken(TRETURN);
+scan             return processToken(TSCAN);
+select           return processToken(TSELECT);
+serial           return processToken(TSERIAL);
+single           return processToken(TSINGLE);
+sparse           return processToken(TSPARSE);
+subdomain        return processToken(TSUBDOMAIN);
+sync             return processToken(TSYNC);
+then             return processToken(TTHEN);
+type             return processToken(TTYPE);
+union            return processToken(TUNION);
+use              return processToken(TUSE);
+var              return processToken(TVAR);
+when             return processToken(TWHEN);
+where            return processToken(TWHERE);
+while            return processToken(TWHILE);
+with             return processToken(TWITH);
+yield            return processToken(TYIELD);
 
-"_"              processToken(TUNDERSCORE);
+"_"              return processToken(TUNDERSCORE);
 
-"="              processToken(TASSIGN);
-"+="             processToken(TASSIGNPLUS);
-"-="             processToken(TASSIGNMINUS);
-"*="             processToken(TASSIGNMULTIPLY);
-"/="             processToken(TASSIGNDIVIDE);
-"**="            processToken(TASSIGNEXP);
-"%="             processToken(TASSIGNMOD);
-"&="             processToken(TASSIGNBAND);
-"|="             processToken(TASSIGNBOR);
-"^="             processToken(TASSIGNBXOR);
-"&&="            processToken(TASSIGNLAND);
-"||="            processToken(TASSIGNLOR);
-"<<="            processToken(TASSIGNSL);
-">>="            processToken(TASSIGNSR);
+"="              return processToken(TASSIGN);
+"+="             return processToken(TASSIGNPLUS);
+"-="             return processToken(TASSIGNMINUS);
+"*="             return processToken(TASSIGNMULTIPLY);
+"/="             return processToken(TASSIGNDIVIDE);
+"**="            return processToken(TASSIGNEXP);
+"%="             return processToken(TASSIGNMOD);
+"&="             return processToken(TASSIGNBAND);
+"|="             return processToken(TASSIGNBOR);
+"^="             return processToken(TASSIGNBXOR);
+"&&="            return processToken(TASSIGNLAND);
+"||="            return processToken(TASSIGNLOR);
+"<<="            return processToken(TASSIGNSL);
+">>="            return processToken(TASSIGNSR);
 
-"=>"             processToken(TALIAS);
+"=>"             return processToken(TALIAS);
 
-"<=>"            processToken(TSWAP);
+"<=>"            return processToken(TSWAP);
 
-{floatLiteral}   processToken(REALLITERAL);
+{floatLiteral}   return processToken(REALLITERAL);
 
-"#"              processToken(THASH);
-".."             processToken(TDOTDOT);
-"..."            processToken(TDOTDOTDOT);
+"#"              return processToken(THASH);
+".."             return processToken(TDOTDOT);
+"..."            return processToken(TDOTDOTDOT);
 
-"&&"             processToken(TAND);
-"||"             processToken(TOR);
-"!"              processToken(TNOT);
+"&&"             return processToken(TAND);
+"||"             return processToken(TOR);
+"!"              return processToken(TNOT);
 
-"&"              processToken(TBAND);
-"|"              processToken(TBOR);
-"^"              processToken(TBXOR);
-"~"              processToken(TBNOT);
+"&"              return processToken(TBAND);
+"|"              return processToken(TBOR);
+"^"              return processToken(TBXOR);
+"~"              return processToken(TBNOT);
 
-"<<"             processToken(TSHIFTLEFT);
-">>"             processToken(TSHIFTRIGHT);
+"<<"             return processToken(TSHIFTLEFT);
+">>"             return processToken(TSHIFTRIGHT);
 
-"=="             processToken(TEQUAL);
-"!="             processToken(TNOTEQUAL);
-"<="             processToken(TLESSEQUAL);
-">="             processToken(TGREATEREQUAL);
-"<"              processToken(TLESS);
-">"              processToken(TGREATER);
+"=="             return processToken(TEQUAL);
+"!="             return processToken(TNOTEQUAL);
+"<="             return processToken(TLESSEQUAL);
+">="             return processToken(TGREATEREQUAL);
+"<"              return processToken(TLESS);
+">"              return processToken(TGREATER);
 
-"+"              processToken(TPLUS);
-"-"              processToken(TMINUS);
-"*"              processToken(TSTAR);
-"/"              processToken(TDIVIDE);
-"%"              processToken(TMOD);
-"--"             processToken(TMINUSMINUS);
-"++"             processToken(TPLUSPLUS);
+"+"              return processToken(TPLUS);
+"-"              return processToken(TMINUS);
+"*"              return processToken(TSTAR);
+"/"              return processToken(TDIVIDE);
+"%"              return processToken(TMOD);
+"--"             return processToken(TMINUSMINUS);
+"++"             return processToken(TPLUSPLUS);
 
-"**"             processToken(TEXP);
+"**"             return processToken(TEXP);
 
-":"              processToken(TCOLON);
-";"              processToken(TSEMI);
-","              processToken(TCOMMA);
-"."              processToken(TDOT);
-"("              processToken(TLP);
-")"              processToken(TRP);
-"["              processToken(TLSBR);
-"]"              processToken(TRSBR);
-<externmode>"{"  processExternCode();
-<INITIAL>"{"     processToken(TLCBR);
-"}"              processToken(TRCBR);
-"<~>"            processToken(TIO);
+":"              return processToken(TCOLON);
+";"              return processToken(TSEMI);
+","              return processToken(TCOMMA);
+"."              return processToken(TDOT);
+"("              return processToken(TLP);
+")"              return processToken(TRP);
+"["              return processToken(TLSBR);
+"]"              return processToken(TRSBR);
+<externmode>"{"  return processExternCode();
+<INITIAL>"{"     return processToken(TLCBR);
+"}"              return processToken(TRCBR);
+"<~>"            return processToken(TIO);
 
 
-"?"              processToken(TQUESTION);
+"?"              return processToken(TQUESTION);
 
-{ident}          processToken(TIDENT);
-{intLiteral}     processToken(INTLITERAL);
-{intLiteral}i    processToken(IMAGLITERAL);
-{floatLiteral}i  processToken(IMAGLITERAL);
+{ident}          return processToken(TIDENT);
+{intLiteral}     return processToken(INTLITERAL);
+{intLiteral}i    return processToken(IMAGLITERAL);
+{floatLiteral}i  return processToken(IMAGLITERAL);
 
-"\""             processStringLiteral("\"");
-"\'"             processStringLiteral("\'");
+"\""             return processStringLiteral("\"");
+"\'"             return processStringLiteral("\'");
 
 [ \t\r]          processWhitespace(yytext);
 \n               processNewline();
@@ -283,4 +229,82 @@ void lexerScanString(const char* string) {
 
 void lexerResetFile() {
   YY_NEW_FILE;
+}
+
+static int processToken(int t) {
+  countToken(yytext);
+
+  if (captureTokens) {
+    if (t == TASSIGN ||
+        t == TDOTDOTDOT)
+      strcat(captureString, " ");
+
+    if (t != TLCBR)
+      strcat(captureString, yytext);
+
+    if (t == TCOMMA  ||
+        t == TPARAM  ||
+        t == TZIP    ||
+        t == TTYPE   ||
+        t == TCONST  ||
+        t == TIN     ||
+        t == TINOUT  ||
+        t == TOUT    ||
+        t == TREF    ||
+        t == TCOLON  ||
+        t == TASSIGN ||
+        t == TRSBR)
+      strcat(captureString, " ");
+  }
+
+  /* processToken means we are parsing Chapel */
+  BEGIN(INITIAL);
+
+  return t;
+}
+
+
+static int processStringLiteral(const char* q) {
+  yylval.pch = eatStringLiteral(q);
+
+  countToken(astr(q, yylval.pch, q));
+
+  if (captureTokens) {
+    strcat(captureString, yytext);
+    strcat(captureString, yylval.pch);
+    strcat(captureString, yytext);
+  }
+
+  /* string literals only in Chapel */
+  BEGIN(INITIAL);
+
+  return STRINGLITERAL;
+}
+
+static int processExtern() {
+  countToken(yytext);
+
+  if (captureTokens) {
+    strcat(captureString, yytext);
+  }
+
+  BEGIN(externmode);
+
+  return TEXTERN;
+}
+
+static int processExternCode() {
+  yylval.pch = eatExternCode();
+
+  countToken(astr(yylval.pch));
+
+  if (captureTokens) {
+    strcat(captureString, yylval.pch);
+  }
+
+  /* only one { } block is special */
+
+  BEGIN(INITIAL);
+
+  return EXTERNCODE;
 }
