@@ -974,6 +974,23 @@ const char* ArgSymbol::intentDescrString(void) {
   return "unknown intent";
 }
 
+// describes the given intent (for use in an English sentence)
+const char* intentDescrString(IntentTag intent) {
+  switch (intent) {
+    case INTENT_BLANK:     return "blank intent";
+    case INTENT_IN:        return "'in' intent";
+    case INTENT_INOUT:     return "'inout' intent";
+    case INTENT_OUT:       return "'out' intent";
+    case INTENT_CONST:     return "'const' intent";
+    case INTENT_CONST_IN:  return "'const in' intent";
+    case INTENT_CONST_REF: return "'const ref' intent";
+    case INTENT_REF:       return "'ref' intent";
+    case INTENT_PARAM:     return "'param' intent";
+    case INTENT_TYPE:      return "'type' intent";
+    default:               return "<unknown intent>";
+  }
+}
+
 
 GenRet ArgSymbol::codegenType() {
   GenInfo* info = gGenInfo;
