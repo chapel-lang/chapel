@@ -532,11 +532,10 @@ static void codegen_header_compilation_config() {
 
 static void protectNameFromC(Symbol* sym) {
   //
-  // If we've done our job right, compiler-generated symbols should
-  // already be munged by starting with 'chpl_' so shouldn't require
-  // additional munging here.
+  // Symbols that start with 'chpl_' are presumably compiler-generated
+  // and sufficiently unique not to require further munging.
   //
-  if (sym->hasFlag(FLAG_COMPILER_GENERATED)) {
+  if (strncmp(sym->cname, "chpl_", 5) == 0) {
     return;
   }
 
