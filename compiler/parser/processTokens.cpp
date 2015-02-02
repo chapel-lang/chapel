@@ -30,12 +30,11 @@
 #include <cctype>
 #include <string>
 
-static int stringBuffLen = 0;
-static int stringLen = 0;
-static char* stringBuffer = NULL;
+int   stringBuffLen = 0;
+int   stringLen     = 0;
+char* stringBuffer  = NULL;
 
-
-static void newString(void) {
+void newString() {
   stringLen = 0;
   if (stringBuffLen) {
     stringBuffer[stringLen] = '\0';
@@ -73,7 +72,7 @@ static inline void addCharString(char c) {
   addCharMaybeEscape(c, true);
 }
 
-static inline void addChar(char c) {
+void addChar(char c) {
   addCharMaybeEscape(c, false);
 }
 
@@ -125,107 +124,6 @@ char* eatStringLiteral(const char* startChar) {
 }
 
 
-void processSingleLineComment(void) {
-  register int c;
-
-  newString();
-  countCommentLine();
-  while (1) {
-    while ( (c = getNextYYChar()) != '\n' && c != 0) {
-      addChar(c);
-    }    /* eat up text of comment */
-    countSingleLineComment(stringBuffer);
-    if (c != 0) {
-      processNewline();
-    }
-    break;
-  }
-}
-
-
-void processMultiLineComment() {
-  int c;
-  int lastc;
-  int lastlastc;
-  int depth;
-
-  c = 0;
-  lastc = 0;
-  depth = 1;
-
-  newString();
-  countCommentLine();
-
-  int labelIndex = 0;
-  int len = strlen(fDocsCommentLabel);
-  if (len >= 2) {
-    labelIndex = 2;
-  }
-
-  std::string wholeComment = "";
-  
-  while (depth > 0) {
-    lastlastc = lastc;
-    lastc = c;
-    c = getNextYYChar();
-    if( c == '\n' ) {
-      countMultiLineComment(stringBuffer);
-      processNewline();
-      if (fDocs && labelIndex == len) {
-        wholeComment += stringBuffer;
-        wholeComment += '\n';
-      }
-      newString();
-      countCommentLine();
-    } else {
-      if ((labelIndex < len) && (labelIndex != -1)) {
-        if (c == fDocsCommentLabel[labelIndex]) {
-          labelIndex++;
-        } else {
-          labelIndex = -1;
-        }
-      }
-      addChar(c);
-    }
-    if( lastc == '*' && c == '/' && lastlastc != '/' ) { // close comment
-      depth--;
-    } else if( lastc == '/' && c == '*' ) { // start nested
-      depth++;
-    } else if( c == 0 ) {
-      yyerror( "EOF in comment" );
-    }
-  }
-
-  // back up two to not print */ again.
-  if( stringLen >= 2 ) stringLen -= 2;
-  // back up further if the user has specified a special form of commenting
-  if (len > 2 && labelIndex == len) stringLen -= (len - 2);
-  stringBuffer[stringLen] = '\0';
-  
-  // Saves the comment grabbed to the comment field of the location struct,
-  // for use when the --docs flag is implemented
-  if (fDocs && labelIndex == len) {
-    wholeComment += stringBuffer;
-    if (len > 2) {
-      len -= 2;
-      wholeComment = wholeComment.substr(len);
-      // Trim the start of the string if the user has specified a special form
-      // of commenting
-    }
-
-    // Also, only need to fix indentation failure when the comment matters
-    size_t location = wholeComment.find("\\x09");
-    while (location != std::string::npos) {
-      wholeComment = wholeComment.substr(0, location) + wholeComment.substr(location + 4);
-      wholeComment.insert(location, "\t");
-      location = wholeComment.find("\\x09");
-    }
-    yylloc.comment = (char *)astr(wholeComment.c_str());
-  }
-
-  countMultiLineComment(stringBuffer);
-  newString();
-}
 
 char* eatExternCode() {
   // Note - when the lexer calls this function, it has already

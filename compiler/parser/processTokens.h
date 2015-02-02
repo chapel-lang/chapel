@@ -23,11 +23,15 @@
 /* BLC: This file contains routines that help chapel.lex process
    tokens */
 
-void processNewline(void);
+void  newString();
+void  addChar(char c);
+
+void  processNewline();
 char* eatStringLiteral(const char* c);
-char* eatExternCode(void);
-void processSingleLineComment(void);
-void processMultiLineComment(void);
+char* eatExternCode();
+
+extern int   stringBuffLen;
+extern int   stringLen;
+extern char* stringBuffer;
 
 #endif
-

@@ -33,6 +33,10 @@ static int  processExtern();
 static int  processExternCode();
 
 static void processWhitespace(const char* tabOrSpace);
+
+static void processSingleLineComment();
+static void processMultiLineComment();
+
 static void processInvalidToken();
 
 %}
@@ -317,6 +321,124 @@ static void processWhitespace(const char* tabOrSpace) {
   // something here
 }
 
+
+static void processSingleLineComment() {
+  int c;
+
+  newString();
+
+  countCommentLine();
+
+  while (1) {
+    while ( (c = getNextYYChar()) != '\n' && c != 0) {
+      addChar(c);
+    }    /* eat up text of comment */
+
+    countSingleLineComment(stringBuffer);
+
+    if (c != 0) {
+      processNewline();
+    }
+
+    break;
+  }
+}
+
+static void processMultiLineComment() {
+  int         c            = 0;
+  int         lastc        = 0;
+  int         depth        = 1;
+  int         labelIndex   = 0;
+  int         len          = 0;
+  std::string wholeComment = "";
+
+  newString();
+  countCommentLine();
+
+  len = strlen(fDocsCommentLabel);
+
+  if (len >= 2) {
+    labelIndex = 2;
+  }
+
+  while (depth > 0) {
+    int lastlastc = lastc;
+
+    lastc = c;
+    c     = getNextYYChar();
+
+    if (c == '\n') {
+      countMultiLineComment(stringBuffer);
+      processNewline();
+
+      if (fDocs && labelIndex == len) {
+        wholeComment += stringBuffer;
+        wholeComment += '\n';
+      }
+
+      newString();
+
+      countCommentLine();
+    } else {
+      if ((labelIndex < len) && (labelIndex != -1)) {
+        if (c == fDocsCommentLabel[labelIndex]) {
+          labelIndex++;
+        } else {
+          labelIndex = -1;
+        }
+      }
+
+      addChar(c);
+    }
+
+    if (lastc == '*' && c == '/' && lastlastc != '/') { // close comment
+      depth--;
+
+    } else if (lastc == '/' && c == '*') { // start nested
+      depth++;
+    } else if (c == 0) {
+      yyerror( "EOF in comment" );
+    }
+  }
+
+  // back up two to not print */ again.
+  if (stringLen >= 2)
+    stringLen -= 2;
+
+  // back up further if the user has specified a special form of commenting
+  if (len > 2 && labelIndex == len)
+    stringLen -= (len - 2);
+
+  stringBuffer[stringLen] = '\0';
+
+  // Saves the comment grabbed to the comment field of the location struct,
+  // for use when the --docs flag is implemented
+  if (fDocs && labelIndex == len) {
+    wholeComment += stringBuffer;
+
+    if (len > 2) {
+      len          = len - 2;
+      wholeComment = wholeComment.substr(len);
+    }
+
+    // Also, only need to fix indentation failure when the comment matters
+    size_t location = wholeComment.find("\\x09");
+
+    while (location != std::string::npos) {
+      wholeComment = wholeComment.substr(0, location) + wholeComment.substr(location + 4);
+
+      wholeComment.insert(location, "\t");
+
+      location = wholeComment.find("\\x09");
+    }
+
+    yylloc.comment = (char*) astr(wholeComment.c_str());
+  }
+
+  countMultiLineComment(stringBuffer);
+
+  newString();
+}
 
 static void processInvalidToken() {
   yyerror("Invalid token");
