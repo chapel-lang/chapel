@@ -30,11 +30,11 @@ extern const char* chplParseStringMsg;
 extern ModTag      currentModuleType;
 extern bool        currentFileNamedOnCommandLine;
 
-ModuleSymbol*      ParseFile(const char* filename,
+ModuleSymbol*      parseFile(const char* filename,
                              ModTag      modtype,
                              bool        namedOnCommandLine=false);
 
-ModuleSymbol*      ParseMod(const char* modname,
+ModuleSymbol*      parseMod(const char* modname,
                             ModTag modtype);
 
 BlockStmt*         parseString(const char* string,

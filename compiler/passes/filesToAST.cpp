@@ -67,16 +67,16 @@ void parse() {
   if (countTokens)
     countTokensInCmdLineFiles();
 
-  baseModule            = ParseMod("ChapelBase",           MOD_INTERNAL);
+  baseModule            = parseMod("ChapelBase",           MOD_INTERNAL);
   INT_ASSERT(baseModule);
 
   setIteratorTags();
 
-  standardModule        = ParseMod("ChapelStandard",       MOD_INTERNAL);
+  standardModule        = parseMod("ChapelStandard",       MOD_INTERNAL);
   INT_ASSERT(standardModule);
 
   if (fUseIPE == false) {
-    printModuleInitModule = ParseMod("PrintModuleInitOrder", MOD_INTERNAL);
+    printModuleInitModule = parseMod("PrintModuleInitOrder", MOD_INTERNAL);
     INT_ASSERT(printModuleInitModule);
   }
 
@@ -107,7 +107,7 @@ void parse() {
 
     while ((inputFilename = nthFilename(filenum++))) {
       if (isChplSource(inputFilename)) {
-        ParseFile(inputFilename, MOD_USER, true);
+        parseFile(inputFilename, MOD_USER, true);
       }
     }
   }
@@ -131,7 +131,7 @@ static void countTokensInCmdLineFiles() {
 
   while ((inputFilename = nthFilename(filenum++))) {
     if (isChplSource(inputFilename)) {
-      ParseFile(inputFilename, MOD_USER, true);
+      parseFile(inputFilename, MOD_USER, true);
     }
   }
 

@@ -138,8 +138,9 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
 static bool firstFile = true;
 bool currentFileNamedOnCommandLine=false;
 
-ModuleSymbol* ParseFile(const char* filename, ModTag modType, 
-                        bool namedOnCommandLine) {
+ModuleSymbol* parseFile(const char* filename,
+                        ModTag      modType,
+                        bool        namedOnCommandLine) {
   ModuleSymbol* newModule = NULL;
   currentFileNamedOnCommandLine = namedOnCommandLine;
 
@@ -241,7 +242,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType,
 }
 
 
-ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
+ModuleSymbol* parseMod(const char* modname, ModTag modType) {
   bool          isInternal = (modType == MOD_INTERNAL) ? true : false;
   bool          isStandard = false;
   ModuleSymbol* retval     = NULL;
@@ -251,7 +252,7 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
       modType = MOD_STANDARD;
     }
 
-    retval = ParseFile(filename, modType);
+    retval = parseFile(filename, modType);
   }
 
   return retval;
@@ -261,7 +262,7 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
 void parseDependentModules(ModTag modtype) {
   forv_Vec(const char*, modName, modNameList) {
     if (!modDoneSet.set_in(modName)) {
-      if (ParseMod(modName, modtype)) {
+      if (parseMod(modName, modtype)) {
         modDoneSet.set_add(modName);
       }
     }
@@ -311,7 +312,7 @@ void parseDependentModules(ModTag modtype) {
         // if we haven't found the standard version of the module then we
         // need to parse it
         if (!foundInt) {
-          ModuleSymbol* mod = ParseFile(stdModNameToFilename(modName),
+          ModuleSymbol* mod = parseFile(stdModNameToFilename(modName),
                                         MOD_STANDARD);
 
           // if we also found a user module by the same name, we need to
