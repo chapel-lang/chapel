@@ -21,9 +21,9 @@
 
 #include "chpl.h"
 #include "expr.h"
+#include "parser.h"
 #include "stmt.h"
-
-#include "../parser/lexyacc.h"
+#include "stringutil.h"
 
 static Map<const char*, Expr*> configMap;
 static Vec<const char*>        usedConfigParams;

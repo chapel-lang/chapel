@@ -20,6 +20,7 @@
 #ifndef _YY_H_
 #define _YY_H_
 
+// These support YYSTYPE in chapel.tab.h
 class ArgSymbol;
 class BlockStmt;
 class CallExpr;
@@ -38,6 +39,10 @@ enum ProcIter {
 
 #include <cstdio>
 
+
+extern int         captureTokens;
+extern char        captureString[1024];
+
 extern BlockStmt*  yyblock;
 extern int         yydebug;
 extern const char* yyfilename;
@@ -48,7 +53,6 @@ extern char*       yytext;
 extern int         chplLineno;
 
 int                yylex();
-int                getNextYYChar();
 void               lexerScanString(const char* string);
 void               lexerResetFile();
 void               processNewline();

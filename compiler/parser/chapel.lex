@@ -22,10 +22,21 @@
 
 %{
 
-#include "lexyacc.h"
+#include "yy.h"
 #include "chapel.tab.h"
 
 #include <cstdio>
+
+//
+// Make sure exit is undefined:
+//
+
+#ifdef exit
+#undef exit
+#endif
+
+// And redefine it to call our exit routine:
+#define exit(x) clean_exit(x)
 
 static int  processToken(int t);
 static int  processStringLiteral(const char* q);
@@ -41,23 +52,27 @@ static void processInvalidToken();
 
 %}
 
-digit            [0-9]
 bit              [0-1]
 octDigit         [0-7]
+digit            [0-9]
 hexDigit         [0-9a-fA-F]
+
 letter           [_a-zA-Z]
+
 ident            {letter}({letter}|{digit}|"$")*
+
 binaryLiteral    0[bB]{bit}+
 octalLiteral     0[oO]{octDigit}+
 hexLiteral       0[xX]{hexDigit}+
 intLiteral       {digit}+|{binaryLiteral}|{octalLiteral}|{hexLiteral}
+
 exponent         [Ee][\+\-]?{digit}+
 floatLiteral1    {digit}*"."{digit}+({exponent})?
 floatLiteral2    {digit}+"."{exponent}
 floatLiteral3    {digit}+{exponent}
 floatLiteral     {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
 
-%s externmode
+%s               externmode
 
 %%
 
@@ -217,9 +232,6 @@ yield            return processToken(TYIELD);
 
 %%
 
-// it's difficult to prototype yyinput, so this is a way of exporting
-// it to other files in a controlled way
-
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -238,20 +250,11 @@ static void  newString();
 static void  addString(const char* str);
 static void  addChar(char c);
 static void  addCharString(char c);
+static int   getNextYYChar();
 
 static int   stringBuffLen = 0;
 static int   stringLen     = 0;
 static char* stringBuffer  = NULL;
-
-int getNextYYChar() {
-  int retval = yyinput();
-
-  if (retval == EOF) {
-    retval = 0;
-  }
-
-  return retval;
-}
 
 void lexerScanString(const char* string) {
   yy_scan_string(string);
@@ -765,5 +768,15 @@ static void addCharMaybeEscape(char c, bool canEscape) {
 // Returns the hexadecimal character for 0-16.
 static char toHex(char c) {
   return (0 <= c && c <= 9) ? '0' + c : 'A' + (c - 10);
+}
+
+static int getNextYYChar() {
+  int retval = yyinput();
+
+  if (retval == EOF) {
+    retval = 0;
+  }
+
+  return retval;
 }
 
