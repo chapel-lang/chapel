@@ -29,32 +29,31 @@
 #include "symbol.h"
 #include "WhileDoStmt.h"
 
-static void     collectVariables(std::vector<IpeSymbol*>& variables);
+static IpeEnvironment* createRootEnvironment();
+static int             environmentSize(FnSymbol* symbol);
 
-static void     execute(IpeEnvironment* env);
+static void            execute(IpeEnvironment* env);
 
-static IpeValue evaluate(Expr*         expr,    IpeEnvironment* env);
+static IpeValue        evaluate(Expr*         expr,    IpeEnvironment* env);
 
-static IpeValue evaluate(Symbol*       sym,     IpeEnvironment* env);
-static IpeValue evaluate(VarSymbol*    sym,     IpeEnvironment* env);
-static IpeValue evaluate(ModuleSymbol* module,  IpeEnvironment* env);
+static IpeValue        evaluate(Symbol*       sym,     IpeEnvironment* env);
+static IpeValue        evaluate(VarSymbol*    sym,     IpeEnvironment* env);
+static IpeValue        evaluate(ModuleSymbol* module,  IpeEnvironment* env);
 
-static IpeValue evaluate(WhileDoStmt*  expr,    IpeEnvironment* env);
-static IpeValue evaluate(BlockStmt*    expr,    IpeEnvironment* env);
-static IpeValue evaluate(CondStmt*     expr,    IpeEnvironment* env);
+static IpeValue        evaluate(WhileDoStmt*  expr,    IpeEnvironment* env);
+static IpeValue        evaluate(BlockStmt*    expr,    IpeEnvironment* env);
+static IpeValue        evaluate(CondStmt*     expr,    IpeEnvironment* env);
 
-static IpeValue evaluate(SymExpr*      expr,    IpeEnvironment* env);
-static IpeValue evaluate(DefExpr*      expr,    IpeEnvironment* env);
-static IpeValue evaluate(CallExpr*     expr,    IpeEnvironment* env);
+static IpeValue        evaluate(SymExpr*      expr,    IpeEnvironment* env);
+static IpeValue        evaluate(DefExpr*      expr,    IpeEnvironment* env);
+static IpeValue        evaluate(CallExpr*     expr,    IpeEnvironment* env);
+
+static IpeValue        evaluateCall  (CallExpr* callExpr, IpeEnvironment* env);
+static IpeValue        evaluatePrimop(CallExpr* callExpr, IpeEnvironment* env);
 
 void ipeEvaluate()
 {
-  std::vector<IpeSymbol*> variables;
-  IpeEnvironment*         rootEnv = 0;
-
-  collectVariables(variables);
-
-  rootEnv = new IpeEnvironment(0, variables);
+  IpeEnvironment* rootEnv = createRootEnvironment();
 
   execute(rootEnv);
 
@@ -63,7 +62,24 @@ void ipeEvaluate()
   delete rootEnv;
 }
 
-static void collectVariables(std::vector<IpeSymbol*>& variables)
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static void collectTopLevelVariables(std::vector<IpeSymbol*>& variables);
+
+static IpeEnvironment* createRootEnvironment()
+{
+  std::vector<IpeSymbol*> variables;
+
+  collectTopLevelVariables(variables);
+
+  return new IpeEnvironment(0, variables);
+}
+
+static void collectTopLevelVariables(std::vector<IpeSymbol*>& variables)
 {
   for_alist(rootStmt, rootModule->block->body)
   {
@@ -71,7 +87,7 @@ static void collectVariables(std::vector<IpeSymbol*>& variables)
     {
       if (ModuleSymbol* module = toModuleSymbol(rootDefExpr->sym))
       {
-        if (module != rootModule)
+        if (module->modTag == MOD_USER)
         {
           for_alist(stmt, module->block->body)
           {
@@ -89,6 +105,12 @@ static void collectVariables(std::vector<IpeSymbol*>& variables)
   }
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 static void execute(IpeEnvironment* env)
 {
   for_alist(rootStmt, rootModule->block->body)
@@ -97,12 +119,18 @@ static void execute(IpeEnvironment* env)
     {
       if (ModuleSymbol* module = toModuleSymbol(rootDefExpr->sym))
       {
-        if (module != rootModule)
+        if (module->modTag == MOD_USER)
           evaluate(module, env);
       }
     }
   }
 }
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 static IpeValue evaluate(Expr* expr, IpeEnvironment* env)
 {
@@ -179,11 +207,17 @@ static IpeValue evaluate(VarSymbol* sym, IpeEnvironment* env)
   {
     Type* type = sym->type;
 
+    INT_ASSERT(type);
+    INT_ASSERT(type->symbol);
+    INT_ASSERT(type->symbol->name);
+
     if (strcmp(type->symbol->name, "bool") == 0)
       retval.bValue = imm->v_bool;
 
     else if (strcmp(type->symbol->name, "int")  == 0)
+    {
       retval.iValue = imm->v_int64;
+    }
 
     else if (strcmp(type->symbol->name, "real") == 0)
       retval.rValue = imm->v_float64;
@@ -242,10 +276,11 @@ static IpeValue evaluate(BlockStmt* blockStmt, IpeEnvironment* env)
 {
   IpeValue retval;
 
+  // NOAKES 2015/01/30.  Needs to be updated to track RETURN state
   for_alist(expr, blockStmt->body)
-    evaluate(expr, env);
-
-  retval.iValue = 0;
+  {
+    retval = evaluate(expr, env);
+  }
 
   return retval;
 }
@@ -308,6 +343,7 @@ static IpeValue evaluate(DefExpr* defExpr, IpeEnvironment* env)
     else
       value = evaluate(defExpr->init,      env);
 
+    env->bind(sym);
     env->assign(sym, value);
   }
 
@@ -342,13 +378,72 @@ static IpeValue evaluate(DefExpr* defExpr, IpeEnvironment* env)
 
 static IpeValue evaluate(CallExpr* callExpr, IpeEnvironment* env)
 {
-  bool     handled = false;
   IpeValue retval;
 
   if (callExpr->primitive == 0)
+    retval = evaluateCall(callExpr, env);
+  else
+    retval = evaluatePrimop(callExpr, env);
+
+  return retval;
+}
+
+static IpeValue evaluateCall(CallExpr* callExpr, IpeEnvironment* env)
+{
+  IpeValue retval;
+
+  if (FnSymbol* fnSymbol = callExpr->isResolved())
   {
-    handled       = false;
+    int                     newEnvSize = environmentSize(fnSymbol);
+    IpeEnvironment*         newEnv     = NULL;
+
+    std::vector<IpeSymbol*> formals;
+    std::vector<IpeValue>   actuals;
+
+    for (int i = 0; i < callExpr->numActuals(); i++)
+    {
+      DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(i + 1));
+      IpeSymbol* formal  = toIpeSymbol(defExpr->sym);
+
+      INT_ASSERT(formal);
+
+      formals.push_back(formal);
+      actuals.push_back(evaluate(callExpr->get(i + 1), env));
+    }
+
+    newEnv = new IpeEnvironment(env,
+                                formals,
+                                actuals,
+                                newEnvSize / 8,
+                                newEnvSize);
+
+    retval = evaluate(fnSymbol->body, newEnv);
+  }
+  else
+  {
+    AstDumpToNode logger(stdout);
+
+    printf("evaluateCall(CallExpr, Env)\n\n");
+    printf("Function has not been resolved\n");
+
+    callExpr->accept(&logger);
+    printf("\n\n\n");
+
+    INT_ASSERT(false);
     retval.iValue = 0;
+  }
+
+  return retval;
+}
+
+static IpeValue evaluatePrimop(CallExpr* callExpr, IpeEnvironment* env)
+{
+  bool     handled = false;
+  IpeValue retval;
+
+  if (false)
+  {
+
   }
 
   else if (callExpr->isPrimitive(PRIM_ASSIGN) == true)
@@ -357,7 +452,10 @@ static IpeValue evaluate(CallExpr* callExpr, IpeEnvironment* env)
     IpeSymbol* variable   = toIpeSymbol(dstSymExpr->var);
     IpeValue   value      = evaluate(callExpr->get(2), env);
 
+    INT_ASSERT(variable);
+
     env->assign(variable, value);
+
     retval.iValue = 0;
     handled       = true;
   }
@@ -562,6 +660,22 @@ static IpeValue evaluate(CallExpr* callExpr, IpeEnvironment* env)
     handled = true;
   }
 
+  // NOAKES 2015/01/30 This version only supports return of
+  // value.  It does not handle flow of control
+  else if (callExpr->isPrimitive(PRIM_RETURN) == true)
+  {
+    // This case implies a structured goto
+    if (callExpr->numActuals() == 0)
+    {
+      INT_ASSERT(false);
+    }
+    else
+    {
+      retval  = evaluate(callExpr->get(1), env);
+      handled = true;
+    }
+  }
+
   else
   {
     retval.iValue = 0;
@@ -569,11 +683,12 @@ static IpeValue evaluate(CallExpr* callExpr, IpeEnvironment* env)
 
   if (handled == false)
   {
-    AstDumpToNode logger(stdout);
+    AstDumpToNode logger(stdout, 3);
 
-    printf("evaluate(CallExpr, Env)\n\n");
+    printf("evaluatePrimop(CallExpr, Env)\n\n");
     printf("Failed to handle\n");
 
+    printf("   ");
     callExpr->accept(&logger);
     printf("\n\n\n");
 
@@ -581,4 +696,150 @@ static IpeValue evaluate(CallExpr* callExpr, IpeEnvironment* env)
   }
 
   return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static int environmentSize(Symbol*       symbol,    int currMax);
+static int environmentSize(IpeSymbol*    symbol,    int currMax);
+
+static int environmentSize(Expr*         expr,      int currMax);
+
+static int environmentSize(WhileDoStmt*  blockStmt, int currMax);
+static int environmentSize(BlockStmt*    blockStmt, int currMax);
+static int environmentSize(CondStmt*     condStmt,  int currMax);
+
+static int environmentSize(DefExpr*      defExpr,   int currMax);
+static int environmentSize(CallExpr*     callExpr,  int currMax);
+
+static int environmentSize(FnSymbol* symbol)
+{
+  // NOAKES 2015/01/27 Values are currently fixed size
+  int currMax = 8 * symbol->numFormals();
+
+  return environmentSize(symbol->body, currMax);
+}
+
+static int environmentSize(Symbol* symbol, int currMax)
+{
+  if (false)
+    ;
+
+  else if (IpeSymbol*    sym = toIpeSymbol(symbol))
+    currMax = environmentSize(sym, currMax);
+
+  else if (FnSymbol*     sym = toFnSymbol(symbol))
+    currMax = environmentSize(sym, currMax);
+
+  else
+  {
+    AstDumpToNode logger(stdout, 3);
+
+    printf("environmentSize unhandled symbol\n");
+    printf("   ");
+    symbol->accept(&logger);
+    printf("\n\n\n");
+
+    INT_ASSERT(false);
+  }
+
+  return currMax;
+}
+
+// NOAKES 2015/01/26: IpeSymbol is currently of fixed size 8
+static int environmentSize(IpeSymbol* symbol, int currMax)
+{
+  return symbol->offset() + 8;
+}
+
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static int environmentSize(Expr* expression, int currMax)
+{
+  if (false)
+    ;
+
+  else if (isSymExpr(expression) == true)
+    ;
+
+  else if (FnSymbol*    expr = toFnSymbol(expression))
+    currMax = environmentSize(expr, currMax);
+
+  else if (WhileDoStmt* expr = toWhileDoStmt(expression))
+    currMax = environmentSize(expr, currMax);
+
+  // This must appear after WhileDoStmt etc
+  else if (BlockStmt*   expr = toBlockStmt(expression))
+    currMax = environmentSize(expr, currMax);
+
+  else if (CondStmt*    expr = toCondStmt(expression))
+    currMax = environmentSize(expr, currMax);
+
+  else if (DefExpr*     expr = toDefExpr(expression))
+    currMax = environmentSize(expr, currMax);
+
+  else if (CallExpr*    expr = toCallExpr(expression))
+    currMax = environmentSize(expr, currMax);
+
+  else
+  {
+    AstDumpToNode logger(stdout, 3);
+
+    printf("environmentSize unhandled expr\n");
+    printf("   ");
+    expression->accept(&logger);
+    printf("\n\n\n");
+
+    INT_ASSERT(false);
+  }
+
+  return currMax;
+}
+
+static int environmentSize(WhileDoStmt* whileDoStmt, int currMax)
+{
+  for_alist(expr, whileDoStmt->body)
+    currMax = environmentSize(expr, currMax);
+
+  return currMax;
+}
+
+static int environmentSize(BlockStmt* blockStmt, int currMax)
+{
+  for_alist(expr, blockStmt->body)
+    currMax = environmentSize(expr, currMax);
+
+  return currMax;
+}
+
+static int environmentSize(CondStmt* condStmt, int currMax)
+{
+  currMax = environmentSize(condStmt->thenStmt, currMax);
+
+  if (condStmt->elseStmt != 0)
+    currMax = environmentSize(condStmt->elseStmt, currMax);
+
+  return currMax;
+}
+
+static int environmentSize(DefExpr* defExpr, int currMax)
+{
+  if (IpeSymbol* ipe = toIpeSymbol(defExpr->sym))
+    currMax = environmentSize(ipe, currMax);
+
+  return currMax;
+}
+
+static int environmentSize(CallExpr* callExpr, int currMax)
+{
+  return currMax;
 }

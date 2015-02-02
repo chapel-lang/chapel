@@ -2484,9 +2484,7 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
 }
 
 void ModuleSymbol::addDefaultUses() {
-  if (fUseIPE == true) {
-
-  } else if (modTag != MOD_INTERNAL && hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
+  if (modTag != MOD_INTERNAL && hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
     UnresolvedSymExpr* modRef = 0;
 
     SET_LINENO(this);
@@ -2878,7 +2876,7 @@ VarSymbol* newTemp(const char* name, Type* type) {
     if (localTempNames)
       name = astr("_t", istr(tempID++), "_");
     else
-      name = "_tmp";
+      name = "tmp";
   }
   VarSymbol* vs = new VarSymbol(name, type);
   vs->addFlag(FLAG_TEMP);

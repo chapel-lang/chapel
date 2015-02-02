@@ -59,6 +59,7 @@ extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
+extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
@@ -70,6 +71,7 @@ extern bool fNoOptimizeLoopIterators;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
+extern bool fRemoveUnreachableBlocks;
 extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
 extern int  tuple_copy_limit;

@@ -17,9 +17,26 @@
  * limitations under the License.
  */
 
-#ifndef _IPE_INSERT_VARIABLES_H_
-#define _IPE_INSERT_VARIABLES_H_
+#ifndef _SCOPE_BLOCK_H_
+#define _SCOPE_BLOCK_H_
 
-void ipeInsertVariables();
+#include "ScopeBase.h"
+
+class BlockStmt;
+
+class ScopeBlock : public ScopeBase
+{
+public:
+                        ScopeBlock(BlockStmt*       block,
+                                   const ScopeBase* parent);
+  virtual              ~ScopeBlock();
+
+private:
+                        ScopeBlock();
+
+  virtual void          describeHeader(FILE* fp)                    const;
+
+  BlockStmt*            mBlock;
+};
 
 #endif

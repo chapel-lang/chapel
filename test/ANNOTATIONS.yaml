@@ -12,13 +12,13 @@
 #   mm/dd/yy:
 #     - example annotation 5
 #
-# where group is the name of the .graph file that attached set of annotations
-# should apply to. When the long form of an annotation is used (when text and
-# host are specified) the annotation is only added to the graphs if the current
-# hostname is in the host list. 'all' is a special group where any annotations
-# are added to to every single graph. One limitation of dygraphs is that if you
-# try and place an annotation on a date that has no data (tests didn't run or
-# all failed) it will not be displayed.
+# where group is the base name of the .graph file that attached set of
+# annotations should apply to. When the long form of an annotation is used
+# (when text and host are specified) the annotation is only added to the graphs
+# if the current hostname is in the host list. 'all' is a special group where
+# any annotations are added to to every single graph.
+#
+# Groups are listed in case insensitive alphabetical order
 
 all:
   10/14/13:
@@ -56,6 +56,10 @@ all:
 AllCompTime:
   11/09/14:
     - disable the task table by default
+
+assign.1024:
+  01/21/15:
+    - optimize range follower iter so optimize-loop-iterators fires
 
 bfs:
   09/25/14:
@@ -98,6 +102,14 @@ fannkuch-redux:
 fasta:
   01/14/14:
     - enabled unlocked I/O on fasta and fasta-printf
+  10/07/14:
+    - Add c_string_copy type
+
+forall-dom-range:
+  01/21/15:
+    - optimize range follower iter so optimize-loop-iterators fires
+  01/23/15:
+    - optimize range follower iter for non-strided ranges
 
 ft:
   09/05/14:
@@ -137,11 +149,19 @@ lulesh-dense:
   03/15/14:
     - improved constness of de-nested functions, improved remove value forwarding
 
-nbody:
-  03/17/14:
-    - removed extra formal temps
-  07/24/14:
-    - chap04 Subtest random glitch
+mandelbrot:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  03/19/14:
+    - Bulk IO optimization
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
+
+mandelbrot-extras:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
 
 memleaks:
   11/13/13:
@@ -170,26 +190,24 @@ meteor:
 miniMD:
   12/21/13:
     - clean up of noRefCount related code in modules/internal (22473)
+  11/04/14:
+    - surprising regression from cast in DefaultRectangular (df8c3172cc9c)
 
-mandelbrot:
-  01/03/14:
-    - Chapel level improvement by using a nonlocking writer
-  03/19/14:
-    - Bulk IO optimization
-  09/05/14:
-    - maxTaskPar change delayed fifo->qthreads performance hit
-
-mandelbrot-extras:
-  01/03/14:
-    - Chapel level improvement by using a nonlocking writer
-  09/05/14:
-    - maxTaskPar change delayed fifo->qthreads performance hit
+nbody:
+  03/17/14:
+    - removed extra formal temps
+  07/24/14:
+    - chap04 Subtest random glitch
 
 parOpEquals:
   09/06/13:
     - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+regexdna:
+  10/07/14:
+    - Add c_string_copy type
 
 spectralnorm:
   01/21/15:
@@ -227,13 +245,13 @@ testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
 
-time_array_vs_tuple:
-  08/19/14:
-    - C for loops initial commit
-
 time_array_vs_ddata:
   05/31/14:
     - specializing binaries to target architectures
+
+time_array_vs_tuple:
+  08/19/14:
+    - C for loops initial commit
 
 time_iterate:
   11/13/13:

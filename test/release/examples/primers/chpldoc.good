@@ -23,8 +23,8 @@ Module: chpldoc
   
          var a: int(64)
             
-      Including the comments associated with their fields
-    
+            Including the comments associated with their fields
+            
          proc getA(): int(64)
             
       And class specific methods
@@ -42,8 +42,8 @@ Module: chpldoc
          inherited from Foo
             var a: int(64)
                
-      Including the comments associated with their fields
-    
+               Including the comments associated with their fields
+               
             proc getA(): int(64)
                
       And class specific methods

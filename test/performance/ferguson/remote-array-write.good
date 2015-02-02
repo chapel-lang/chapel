@@ -1,3 +1,3 @@
 1
 1
-(get = 0, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 12, get_nb = 0, get_nb_test = 0, get_nb_wait = 0, put = 100000, fork = 0, fork_fast = 0, fork_nb = 0)
+(get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 12, get_nb = 0, put = 100000, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 0, fork_fast = 0, fork_nb = 0)

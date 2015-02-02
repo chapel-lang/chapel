@@ -147,6 +147,7 @@ symbolFlag( FLAG_MAYBE_TYPE , npr, "maybe type" , "symbol can resolve to a type"
 symbolFlag( FLAG_MEMORY_ORDER_TYPE , ypr, "memory order type" , "type implementing memory order (normally called memory_order)" )
 symbolFlag( FLAG_METHOD , npr, "method" , "function that is a method" )
 symbolFlag( FLAG_MODIFIES_CONST_FIELDS , npr, "modifies const fields" , "... of 'this' argument" )
+symbolFlag( FLAG_MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
 symbolFlag( FLAG_MODULE_INIT , npr, "module init" , "a module init function" )
 // This flag marks the result of an autoCopy as necessary.
 // Necessary autoCopies are not removed by the removeUnnecessaryAutoCopyCalls optimization.
@@ -157,6 +158,7 @@ symbolFlag( FLAG_NO_AUTO_DESTROY , ypr, "no auto destroy" , ncm )
 symbolFlag( FLAG_NO_CODEGEN , ypr, "no codegen" , "do not generate e.g. C code defining this symbol" )
 symbolFlag( FLAG_NO_COPY , ypr, "no copy" , "do not apply chpl__initCopy to initialization of a variable" )
 symbolFlag( FLAG_NO_DEFAULT_FUNCTIONS , ypr, "no default functions" , ncm )
+symbolFlag( FLAG_NO_DOC, ypr, "no doc", "do not generate chpldoc documentation for this symbol" )
 symbolFlag( FLAG_NO_IMPLICIT_COPY , ypr, "no implicit copy" , "function does not require autoCopy/autoDestroy" )
 symbolFlag( FLAG_NO_INSTANTIATION_LIMIT , ypr, "no instantiation limit", "The instantiation limit is not checked for this function" )
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )

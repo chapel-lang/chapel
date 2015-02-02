@@ -17,15 +17,21 @@
 
 IPE_SRCS =                           \
            ipeDriver.cpp             \
+           ipeReplaceVariables.cpp   \
            ipeResolve.cpp            \
+           ipeCheckReturn.cpp        \
            ipeInlinePrimitives.cpp   \
-           ipeInsertVariables.cpp    \
+           ipeAssignLocations.cpp    \
            ipeEvaluate.cpp           \
                                      \
-           DefScope.cpp              \
            IpeEnvironment.cpp        \
            IpeSymbol.cpp             \
-           VisibleSymbol.cpp
+           VisibleSymbol.cpp         \
+                                     \
+           ScopeBase.cpp             \
+           ScopeModule.cpp           \
+           ScopeFunction.cpp         \
+           ScopeBlock.cpp
 
 
 SVN_SRCS = $(IPE_SRCS)

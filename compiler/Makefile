@@ -117,12 +117,16 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
-	rm -f $(CHPLDOC)
-	ln -s $(notdir $(CHPL)) $(CHPLDOC)
 	rm -f $(CHPLIPE)
 	ln -s $(notdir $(CHPL)) $(CHPLIPE)
 	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 	-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
+
+$(CHPLDOC): $(CHPL)
+	rm -f $(CHPLDOC)
+	ln -s $(notdir $(CHPL)) $(CHPLDOC)
+
+chpldoc: $(CHPLDOC)
 
 $(CHPL_BIN_DIR):
 	mkdir -p $@

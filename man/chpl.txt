@@ -215,6 +215,17 @@ OPTIONS
                     $CHPL_TARGET_COMPILER indicates a PGI compiler (pgi or
                     cray-prgenv-pgi), in which case the default is 1020.
 
+  --[no-]munge-user-idents   By default, chpl munges all user
+                    identifiers in the generated C code in order to
+                    minimize the chances of conflict with an
+                    identifier or keyword in C (in the current
+                    implementation, this is done by appending '_chpl'
+                    to the identifier). This flag provides the ability
+                    to disable this munging. Note that whichever mode,
+                    the flag is in, chpl may perform
+                    additional munging in order to implement Chapel
+                    semantics in C, or for other reasons.
+
   --savec <dir>      Saves the compiler-generated C code in the specified 
                     directory, creating the directory if it does not already
                     exist. This option may overwrite existing files in the

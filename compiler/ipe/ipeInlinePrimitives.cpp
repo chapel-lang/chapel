@@ -56,7 +56,8 @@ void ipeInlinePrimitives()
     {
       if (ModuleSymbol* module = toModuleSymbol(defExpr->sym))
       {
-        ipeInline(module);
+        if (module->modTag == MOD_USER)
+          ipeInline(module);
       }
     }
     else
@@ -69,6 +70,48 @@ static void ipeInline(ModuleSymbol* module)
   for_alist(stmt, module->block->body)
   {
     ipeInline(stmt);
+  }
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static void ipeInline(Expr* genExpr)
+{
+  if (isSymExpr(genExpr) == true)
+    ;
+
+  else if (FnSymbol*    expr = toFnSymbol(genExpr))
+    ipeInline(expr);
+
+  else if (WhileDoStmt* expr = toWhileDoStmt(genExpr))
+    ipeInline(expr);
+
+  // This must appear after WhileDoStmt etc
+  else if (BlockStmt*   expr = toBlockStmt(genExpr))
+    ipeInline(expr);
+
+  else if (CondStmt*    expr = toCondStmt(genExpr))
+    ipeInline(expr);
+
+  else if (DefExpr*     expr = toDefExpr(genExpr))
+    ipeInline(expr);
+
+  else if (CallExpr*    expr = toCallExpr(genExpr))
+    ipeInline(expr);
+
+  else
+  {
+    AstDumpToNode logger(stdout);
+
+    printf("ipeInline unhandled expr\n");
+    genExpr->accept(&logger);
+    printf("\n\n\n");
+
+    INT_ASSERT(false);
   }
 }
 
@@ -100,52 +143,21 @@ static void ipeInline(CondStmt* condStmt)
     ipeInline(condStmt->elseStmt);
 }
 
-static void ipeInline(Expr* genExpr)
-{
-  if (isSymExpr(genExpr) == true)
-  {
-
-  }
-
-  else if (FnSymbol*    expr = toFnSymbol(genExpr))
-    ipeInline(expr);
-
-  else if (WhileDoStmt* expr = toWhileDoStmt(genExpr))
-    ipeInline(expr);
-
-  else if (BlockStmt*   expr = toBlockStmt(genExpr))
-    ipeInline(expr);
-
-  else if (CondStmt*    expr = toCondStmt(genExpr))
-    ipeInline(expr);
-
-  else if (DefExpr*     expr = toDefExpr(genExpr))
-    ipeInline(expr);
-
-  else if (CallExpr*    expr = toCallExpr(genExpr))
-    ipeInline(expr);
-
-  else
-  {
-    AstDumpToNode logger(stdout);
-
-    printf("ipeInline unhandled expr\n");
-    genExpr->accept(&logger);
-    printf("\n\n\n");
-
-    INT_ASSERT(false);
-  }
-}
-
 static void ipeInline(DefExpr* defExpr)
 {
+  if (defExpr->sym != 0)
+  {
+    if (FnSymbol* fn = toFnSymbol(defExpr->sym))
+      ipeInline(fn);
+  }
+
   if (defExpr->init != 0)
     ipeInline(defExpr->init);
 }
 
 // NOAKES 2015-01-07: This handles only the simplest possible
 // cases required for the simplest primitives currently in IPE
-// ChapelBase. Currently extremely fragile.
+// ChapelBase. Extremely fragile.
 static void ipeInline(CallExpr* callExpr)
 {
   if (callExpr->baseExpr)
@@ -259,6 +271,23 @@ static void ipeInline(CallExpr* callExpr)
           INT_ASSERT(false);
         }
       }
+    }
+  }
+
+  else
+  {
+#if 0
+    AstDumpToNode logger(stdout, 3);
+
+    printf("CallExpr prim unhandled\n");
+    printf("   ");
+    callExpr->accept(&logger);
+    printf("\n\n");
+#endif
+
+    for (int i = 1; i <= callExpr->numActuals(); i++)
+    {
+      ipeInline(callExpr->get(i));
     }
   }
 }
