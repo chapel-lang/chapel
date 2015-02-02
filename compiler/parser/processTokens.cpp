@@ -331,12 +331,3 @@ char* eatExternCode() {
   return stringBuffer;
 }
 
-void processWhitespace(const char* tabOrSpace) {
-  // might eventually want to keep track of column numbers and do
-  // something here
-}
-
-
-void processInvalidToken() {
-  yyerror("Invalid token");
-}

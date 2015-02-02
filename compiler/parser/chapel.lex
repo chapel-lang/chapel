@@ -27,10 +27,13 @@
 
 #include <cstdio>
 
-static int processToken(int t);
-static int processStringLiteral(const char* q);
-static int processExtern();
-static int processExternCode();
+static int  processToken(int t);
+static int  processStringLiteral(const char* q);
+static int  processExtern();
+static int  processExternCode();
+
+static void processWhitespace(const char* tabOrSpace);
+static void processInvalidToken();
 
 %}
 
@@ -307,4 +310,14 @@ static int processExternCode() {
   BEGIN(INITIAL);
 
   return EXTERNCODE;
+}
+
+static void processWhitespace(const char* tabOrSpace) {
+  // might eventually want to keep track of column numbers and do
+  // something here
+}
+
+
+static void processInvalidToken() {
+  yyerror("Invalid token");
 }
