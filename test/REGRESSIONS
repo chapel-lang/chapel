@@ -262,7 +262,7 @@ sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-05)
-[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..
+[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..)
 
 sporadic (?) compilation timeouts
 ---------------------------------
@@ -510,7 +510,7 @@ sporadic dropping/mangling of output
 [Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass] (2015-01-12..)
 [Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] (2014-12-25..2015-01-08)
 [Error matching program output for distributions/dm/t5a] (2015-01-23)
-[Error matching program output for distributions/deitz/exBlockExample/block2D] (2015-01-21)
+[Error matching program output for distributions/deitz/exBlockExample/block2D] (2015-01-21..2015-01-29)
 [Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (2014-10-24)
 [Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)] (2014-11-13)
 [Error matching program output for functions/diten/refIntents] (2014-09-30)
@@ -552,8 +552,8 @@ Inherits 'x?-wb.prgenv-cray'
 Reviewed 2015-01-23
 ============================
 
-array index out of bounds - elliot?
------------------------------------
+array index out of bounds - elliot
+----------------------------------
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
@@ -570,12 +570,12 @@ Inherits 'xc-wb.prgenv-cray'
 Reviewed 2015-01-23
 ============================
 
-terminate called after throwing an instance of 'std::out_of_range' - happens when making the directory in which to place documentation, but that wasn't alterred
-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)] (2015-01-30..)
-
-
 === sporadic failures below ===
+
+terminate called after throwing an instance of 'std::out_of_range' - happens when making the directory in which to place documentation
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)] (2015-01-30)
+
 
 all tests fail compilation with "$CHPL_HOME/modules/internal/ChapelDistribution.chpl:65: error: unresolved call '(bool)'"
 -------------------------------------------------------------------------------------------------------------------------
@@ -1102,7 +1102,7 @@ Reviewed 2015-01-29
 
 floating point issues
 ---------------------
-FAILED:  release/examples/benchmarks/lulesh.test3DLulesh (compopts: 1, execopts: 3) (2015-01-29)
+FAILED:  release/examples/benchmarks/lulesh.test3DLulesh (compopts: 1, execopts: 3) (2015-01-29, 2015-01-31)
 
 
 
@@ -1307,7 +1307,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-ugni-gnu
 Inherits 'cray-module-correctness-cray-xe-ugni*'
 and 'cray-module-correctness-cray-xe-*-gnu'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
