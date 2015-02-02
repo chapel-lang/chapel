@@ -409,12 +409,6 @@ Reviewed 2015-01-23
 ===================
 
 
-=== sporadic failures below ===
-
-PGC-W-0205-Argument mismatch for assert - all but a few failed
---------------------------------------------------------------
-(xe-wb.prgenv-pgi 2015-01-29)
-
 something going wrong with reservedSymbolNames causes reserved names to show up in generated code.
 --------------------------------------------------------------------------------------------------
 All but one tests fail when this happens (xc-wb.host.prgenv-pgi 2015-01-08, xc-wb.prgenv-pgi 2015-01-16, xc-wb.prgenv-pgi 2015-01-21, xc-wb.prgenv-gnu 2015-01-22, xc-wb.intel 2015-01-30)
@@ -577,14 +571,14 @@ terminate called after throwing an instance of 'std::out_of_range' - happens whe
 [Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)] (2015-01-30)
 
 
-all tests fail compilation with "$CHPL_HOME/modules/internal/ChapelDistribution.chpl:65: error: unresolved call '(bool)'"
--------------------------------------------------------------------------------------------------------------------------
-(2015-01-19..2015-01-26)
+"$CHPL_HOME/modules/internal/ChapelDistribution.chpl:65: error: unresolved call '(bool)'" (2015-01-19..2015-01-26)
+------------------------------------------------------------------------------------------------------------------
+all tests fail compilation
 
 or "$CHPL_HOME/modules/internal/ChapelArray.chpl:2117: In function '='
-$CHPL_HOME/modules/internal/ChapelArray.chpl:2119: error: unresolved call '(list(BaseArr))'"
+$CHPL_HOME/modules/internal/ChapelArray.chpl:2119: error: unresolved call '(list(BaseArr))'" (2015-01-27..2015-01-28)
 --------------------------------------------------------------------------------------------
-(2015-01-27..2015-01-28)
+
 
 
 ===================
@@ -694,6 +688,10 @@ Inherits 'x?-wb.*' and '*pgi*'
 Reviewed 2015-01-23
 ==============================
 
+PGC-W-0205-Argument mismatch for assert (xe-wb.prgenv-pgi 2015-01-29)
+---------------------------------------------------------------------
+all but a few failed
+
 
 ===========================
 xc-wb.host.prgenv-pgi
@@ -704,7 +702,7 @@ Reviewed 2015-01-23
 
 ===============================
 cray-module-correctness-cray-x?
-Inherits 'general'
+Inherits 'x?-wb.*'
 Reviewed 2015-01-29
 ===============================
 
@@ -730,6 +728,7 @@ Reviewed 2015-01-29
 ===========================================
 cray-module-correctness-cray-x?-gasnet*
 Inherits 'cray-module-correctness-cray-x?'
+and 'gasnet*'
 Reviewed 2015-01-29
 ===========================================
 
@@ -744,6 +743,7 @@ Reviewed 2015-01-29
 ==========================================
 cray-module-correctness-cray-x?-ugni*
 Inherits 'cray-module-correctness-cray-x?'
+and 'no-local'
 Reviewed 2015-01-29
 ==========================================
 
@@ -757,6 +757,7 @@ FAILED:  release/examples/benchmarks/miniMD/explicit.miniMD
 ==========================================
 cray-module-correctness-cray-x?-*-cray
 Inherits 'cray-module-correctness-cray-x?'
+and '*prgenv-cray*'
 Reviewed 2015-01-29
 ==========================================
 
@@ -764,6 +765,7 @@ Reviewed 2015-01-29
 ==========================================
 cray-module-correctness-cray-x?-*-pgi
 Inherits 'cray-module-correctness-cray-x?'
+and '*pgi*'
 Reviewed 2015-01-29
 ==========================================
 
@@ -771,6 +773,7 @@ Reviewed 2015-01-29
 ==========================================
 cray-module-correctness-cray-x?-*-intel
 Inherits 'cray-module-correctness-cray-x?'
+and '*intel*'
 Reviewed 2015-01-29
 ==========================================
 
