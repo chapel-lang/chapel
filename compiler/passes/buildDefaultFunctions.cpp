@@ -302,8 +302,9 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   normalize(fn);
   ct->methods.add(fn);
   fn->addFlag(FLAG_METHOD);
-  fn->cname = astr("_", ct->symbol->cname, "_", fn->cname);
+  fn->cname = astr("chpl_", ct->symbol->cname, "_", fn->cname);
   fn->addFlag(FLAG_NO_PARENS);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->_this = _this;
 }
 

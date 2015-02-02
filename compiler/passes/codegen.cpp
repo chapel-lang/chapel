@@ -532,6 +532,15 @@ static void codegen_header_compilation_config() {
 
 static void protectNameFromC(Symbol* sym) {
   //
+  // If we've done our job right, compiler-generated symbols should
+  // already be munged by starting with 'chpl_' so shouldn't require
+  // additional munging here.
+  //
+  if (sym->hasFlag(FLAG_COMPILER_GENERATED)) {
+    return;
+  }
+
+  //
   // Let's assume we only have to rename user symbols and that we've
   // done a good job of protecting our internal and standard module
   // symbols.  This has the advantage of not having to take special
