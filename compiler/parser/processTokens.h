@@ -26,9 +26,9 @@
 void  newString();
 void  addChar(char c);
 void  addCharString(char c);
+void  addString(const char* str);
 
 void  processNewline();
-char* eatExternCode();
 
 extern int   stringBuffLen;
 extern int   stringLen;

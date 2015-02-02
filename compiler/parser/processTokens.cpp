@@ -76,9 +76,9 @@ void addChar(char c) {
   addCharMaybeEscape(c, false);
 }
 
-static void addString(const char* str) {
-  int i;
-  for( i = 0; str[i]; i++ ) addChar(str[i]);
+void addString(const char* str) {
+  for (int i = 0; str[i]; i++)
+    addChar(str[i]);
 }
 
 void processNewline(void) {
@@ -87,112 +87,3 @@ void processNewline(void) {
   yylloc.first_line = yylloc.last_line = chplLineno;
   countNewline();
 }
-
-
-
-
-
-char* eatExternCode() {
-  // Note - when the lexer calls this function, it has already
-  // consumed the first {
-  int depth = 1;
-  int c = 0, lastc = 0;
-  const int in_code = 0;
-  const int in_single_quote = 1;
-  const int in_single_quote_backslash = 2;
-  const int in_double_quote = 3;
-  const int in_double_quote_backslash = 4;
-  const int in_single_line_comment = 5;
-  const int in_single_line_comment_backslash = 6;
-  const int in_multi_line_comment = 7;
-  int state = 0;
-
-  newString();
-
-  // First, store the line information.
-  addString("#line ");
-  addString(istr(chplLineno));
-  addString(" \"");
-  addString(yyfilename);
-  addString("\" ");
-  addString("\n");
-
-  // Now, append the C code until we get to a }.
-  while (depth > 0) {
-    lastc = c;
-    c = getNextYYChar();
-   
-    if (c == 0) {
-      switch (state) {
-        case in_code:
-          // there was no match to the {
-          yyerror("Missing } in extern block");
-          break;
-        case in_single_quote:
-        case in_single_quote_backslash:
-          yyerror("Runaway \'string\' in extern block");
-          break;
-        case in_double_quote:
-        case in_double_quote_backslash:
-          yyerror("Runaway \"string\" in extern block");
-          break;
-        case in_single_line_comment: 
-          yyerror("Missing newline after extern block // comment");
-          break;
-        case in_multi_line_comment: 
-          yyerror("Runaway /* comment */ in extern block");
-          break;
-      }
-      break;
-    }
-
-    addChar(c);
-
-    if( c == '\n' ) processNewline();
-
-    // Now update state (are we in a comment? a string?)
-    switch (state) {
-      case in_code:
-        if( c == '\'' ) state = in_single_quote;
-        else if( c == '"' ) state = in_double_quote;
-        else if( lastc == '/' && c == '/' ) state = in_single_line_comment;
-        else if( lastc == '/' && c == '*' ) state = in_multi_line_comment;
-        else if( c == '{' ) depth++;
-        else if( c == '}' ) depth--;
-        break;
-      case in_single_quote:
-        if( c == '\\' ) state = in_single_quote_backslash;
-        else if( c == '\'' ) state = in_code;
-        break;
-      case in_single_quote_backslash:
-        state = in_single_quote;
-        break;
-      case in_double_quote:
-        if( c == '\\' ) state = in_double_quote_backslash;
-        else if( c == '"' ) state = in_code;
-        break;
-      case in_double_quote_backslash:
-        state = in_double_quote;
-        break;
-      case in_single_line_comment: 
-        if( c == '\n' ) state = in_code;
-        break;
-      case in_single_line_comment_backslash: 
-        if( c == ' ' || c == '\t' || c == '\n' )
-          state = in_single_line_comment_backslash;
-        else state = in_single_line_comment;
-        break;
-      case in_multi_line_comment: 
-        if( lastc == '*' && c == '/' ) state = in_code;
-        break;
-    }
-  }
-
-  //save the C String
-  //eliminate the final '{'
-  if (stringLen >=1) stringLen -= 1;
-  stringBuffer[stringLen] = '\0';
-
-  return stringBuffer;
-}
-
