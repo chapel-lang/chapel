@@ -19,11 +19,12 @@
 
 #include "processTokens.h"
 
-#include "chapel.tab.h"
 #include "countTokens.h"
 #include "misc.h"
 #include "stringutil.h"
+
 #include "yy.h"
+#include "chapel.tab.h"
 
 #include <cstring>
 #include <cctype>
