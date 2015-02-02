@@ -220,6 +220,12 @@ yield            return processToken(TYIELD);
 // it's difficult to prototype yyinput, so this is a way of exporting
 // it to other files in a controlled way
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 int getNextYYChar() {
   int retval = yyinput();
 
@@ -237,6 +243,12 @@ void lexerScanString(const char* string) {
 void lexerResetFile() {
   YY_NEW_FILE;
 }
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 static int processToken(int t) {
   countToken(yytext);
@@ -270,6 +282,13 @@ static int processToken(int t) {
   return t;
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static char* eatStringLiteral(const char* startChar);
 
 static int processStringLiteral(const char* q) {
   yylval.pch = eatStringLiteral(q);
@@ -288,6 +307,50 @@ static int processStringLiteral(const char* q) {
   return STRINGLITERAL;
 }
 
+static char* eatStringLiteral(const char* startChar) {
+  const char startCh = *startChar;
+  int        c       = 0;
+
+  newString();
+
+  while ((c = getNextYYChar()) != startCh && c != 0) {
+    if (c == '\n') {
+      yytext[0] = '\0';
+      yyerror("end-of-line in a string literal without a preceeding backslash");
+    } else {
+      if (startCh == '\'' && c == '\"') {
+        addCharString('\\');
+      }
+
+      addCharString(c);
+    }
+
+    if (c == '\\') {
+      c = getNextYYChar();
+
+      if (c == '\n') {
+        processNewline();
+        addCharString('n');
+      } else if (c != 0) {
+        addCharString(c);
+      }
+      else
+        break;
+    }
+  } /* eat up string */
+  if (c == 0) {
+    yyerror("EOF in string");
+  }
+
+  return stringBuffer;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 static int processExtern() {
   countToken(yytext);
 
@@ -299,6 +362,12 @@ static int processExtern() {
 
   return TEXTERN;
 }
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 static int processExternCode() {
   yylval.pch = eatExternCode();
@@ -316,11 +385,23 @@ static int processExternCode() {
   return EXTERNCODE;
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 static void processWhitespace(const char* tabOrSpace) {
   // might eventually want to keep track of column numbers and do
   // something here
 }
 
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 static void processSingleLineComment() {
   int c;
@@ -343,6 +424,12 @@ static void processSingleLineComment() {
     break;
   }
 }
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 static void processMultiLineComment() {
   int         c            = 0;
@@ -439,6 +526,12 @@ static void processMultiLineComment() {
 
   newString();
 }
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 static void processInvalidToken() {
   yyerror("Invalid token");

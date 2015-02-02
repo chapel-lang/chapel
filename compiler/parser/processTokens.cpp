@@ -68,7 +68,7 @@ static void addCharMaybeEscape(char c, bool canEscape) {
   stringBuffer[stringLen] = '\0';
 }
 
-static inline void addCharString(char c) {
+void addCharString(char c) {
   addCharMaybeEscape(c, true);
 }
 
@@ -89,39 +89,6 @@ void processNewline(void) {
 }
 
 
-char* eatStringLiteral(const char* startChar) {
-  register int c;
-  const char startCh = *startChar;
-  
-  newString();
-    while ((c = getNextYYChar()) != startCh && c != 0) {
-      if (c == '\n')
-     {
-        yytext[0] = '\0'; yyerror(
-          "end-of-line in a string literal without a preceeding backslash");
-     } else {
-      if (startCh == '\'' && c == '\"') {
-        addCharString('\\');
-      }
-      addCharString(c);
-     }
-      if (c == '\\') {
-        c = getNextYYChar();
-        if (c == '\n')
-        {
-          processNewline(); addCharString('n');
-        } else if (c != 0) {
-          addCharString(c);
-        }
-        else
-          break;
-      }
-    } /* eat up string */
-    if (c == 0) {
-      yyerror("EOF in string");
-    }
-  return stringBuffer;
-}
 
 
 
