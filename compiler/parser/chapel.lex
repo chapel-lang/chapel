@@ -269,25 +269,18 @@ yield            processToken(TYIELD);
 
 int getNextYYChar() {
   int retval = yyinput();
+
   if (retval == EOF) {
     retval = 0;
   }
+
   return retval;
 }
 
-bool chplParseString;
-const char *chplParseStringMsg = NULL;
-BlockStmt*
-parseString(const char* string, const char* filename, const char* msg) {
-  yyblock = NULL;
-  yyfilename = filename;
-  chplParseString = true;
-  chplParseStringMsg = msg;
+void lexerScanString(const char* string) {
   yy_scan_string(string);
-  yyparse();
-  chplParseString = false;
-  chplParseStringMsg = NULL;
-  YY_NEW_FILE; // reset the lexer
-  return yyblock;
 }
 
+void lexerResetFile() {
+  YY_NEW_FILE;
+}

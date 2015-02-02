@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "countTokens.h"
+#include "expr.h"
 #include "files.h"
 #include "parser.h"
 #include "passes.h"

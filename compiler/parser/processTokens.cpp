@@ -28,6 +28,7 @@
 
 #include <cstring>
 #include <cctype>
+#include <string>
 
 static int stringBuffLen = 0;
 static int stringLen = 0;

@@ -24,18 +24,23 @@
 #include "files.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "yy.h"
 
-// This depends on yy.h
+// Noakes 2015/02/02 Bison 2.3 relies on this
+#include "yy.h"
 #include "chapel.tab.h"
 
 #include <cstdlib>
 
 BlockStmt*  yyblock           = NULL;
 const char* yyfilename        = NULL;
-int         chplLineno        = 0;
 int         yystartlineno     = 0;
+
 ModTag      currentModuleType = MOD_INTERNAL;
+
+int         chplLineno        = 0;
+bool        chplParseString    = false;
+const char* chplParseStringMsg = NULL;
+
 
 
 static Vec<const char*> modNameSet;
@@ -325,3 +330,24 @@ void parseDependentModules(ModTag modtype) {
     } while (modReqdByInt.n != 0);
   }
 }
+
+BlockStmt* parseString(const char* string,
+                       const char* filename,
+                       const char* msg) {
+  yyblock            = NULL;
+  yyfilename         = filename;
+
+  chplParseString    = true;
+  chplParseStringMsg = msg;
+
+  lexerScanString(string);
+  yyparse();
+
+  chplParseString    = false;
+  chplParseStringMsg = NULL;
+
+  lexerResetFile();
+
+  return yyblock;
+}
+
