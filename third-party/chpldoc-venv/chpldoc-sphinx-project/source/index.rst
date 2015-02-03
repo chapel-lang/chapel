@@ -12,7 +12,7 @@ Contents:
    :maxdepth: 2
    :glob:
 
-   modules/*
+   modules/**
 
 
 Indices and tables
