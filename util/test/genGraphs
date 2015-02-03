@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys, os, shutil, time, math, re
-from optparse import OptionParser
+import argparse
 
 import fileReadHelp
 import json
@@ -10,48 +10,48 @@ try:
 except ImportError:
     annotate = None
 
-usage =  '%prog [options] <graphfiles>'
-parser = OptionParser(usage=usage)
-parser.add_option('-g', '--graphlist', dest='graphlist',
-                  help='file with list of graphfiles', metavar='FILE')
-parser.add_option('-t', '--testdir', dest='testdir',
-                  help='test directory', metavar='DIR',
-                  default='.')
-parser.add_option('-o', '--outdir', dest='outdir',
-                  help='output directory', metavar='DIR',
-                  default=None)
-parser.add_option('-p', '--perfdir', dest='perfdir',
-                  help='performance data directory', metavar='DIR',
-                  default=None)
-parser.add_option('-n', '--name', dest='name',
-                  help='Test platform name', metavar='NAME',
-                  default=None)
-parser.add_option('-s', '--startdate', dest='startdate',
-                  help='graph start date', metavar='DATE')
-parser.add_option('-e', '--enddate', dest='enddate',
-                  help='graph end date', metavar='DATE')
-parser.add_option('-a', '--alttitle', dest='alttitle', 
-                  help='alternate/custom site title', 
-                  metavar='NAME', default=None)
-parser.add_option('-v', '--verbose', dest='verbose',
-                  action='store_true', default=False)
-parser.add_option('-d', '--debug', dest='debug',
-                  action='store_true', default=False)
-parser.add_option('-r', '--reduce', dest='g_reduce', type='choice',
-                  metavar='STRATEGY', default='avg',
-                  choices=['avg', 'med', 'min', 'max'])
-parser.add_option('-x', '--no-bounds', dest='g_display_bounds',
-                  action='store_false', default=True)
-parser.add_option('-u', '--numericX', dest='numericX',
-                  help='expect numbers (e.g. revisions), not dates,' +
-                       ' for the X axis',
-                  action='store_true', default=False)
-parser.add_option('-m', '--multiple-descriptions', dest='multiDesc',
-                  help='look for multiple versions of the keys',
-                  default=[], action='append')
-
+desc = 'produces dygraphs from .dat and .graph files'
+parser = argparse.ArgumentParser(description=desc)
+parser.add_argument('graphfiles', nargs='*', default=[])
+parser.add_argument('-g', '--graphlist', dest='graphlist',
+                    help='file with list of graphfiles', metavar='FILE')
+parser.add_argument('-t', '--testdir', dest='testdir',
+                    help='test directory', metavar='DIR',
+                    default='.')
+parser.add_argument('-o', '--outdir', dest='outdir',
+                    help='output directory', metavar='DIR',
+                    default=None)
+parser.add_argument('-p', '--perfdir', dest='perfdir',
+                    help='performance data directory', metavar='DIR',
+                    default=None)
+parser.add_argument('-n', '--name', dest='name',
+                    help='Test platform name', metavar='NAME',
+                    default=None)
+parser.add_argument('-s', '--startdate', dest='startdate',
+                    help='graph start date', metavar='DATE')
+parser.add_argument('-e', '--enddate', dest='enddate',
+                    help='graph end date', metavar='DATE')
+parser.add_argument('-a', '--alttitle', dest='alttitle',
+                    help='alternate/custom site title',
+                    metavar='NAME', default=None)
+parser.add_argument('-v', '--verbose', dest='verbose',
+                    action='store_true', default=False)
+parser.add_argument('-d', '--debug', dest='debug',
+                    action='store_true', default=False)
+parser.add_argument('-r', '--reduce', dest='g_reduce',
+                    metavar='STRATEGY', default='avg',
+                    choices=['avg', 'med', 'min', 'max'])
+parser.add_argument('-x', '--no-bounds', dest='g_display_bounds',
+                    action='store_false', default=True)
+parser.add_argument('-u', '--numericX', dest='numericX',
+                    help='expect numbers (e.g. revisions), not dates,' +
+                         ' for the X axis',
+                    action='store_true', default=False)
+parser.add_argument('-m', '--multiple-descriptions', dest='multiDesc',
+                    help='look for multiple versions of the keys',
+                    default=[], action='append')
 if annotate:
-    parser.add_option('-j', '--annotate', dest='annotation_file',
+    parser.add_argument('-j', '--annotate', dest='annotation_file',
                       default=None)
 
 debug = False
@@ -791,7 +791,7 @@ class GraphClass:
 ####################
 
 def main():
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     sys.stdout.write('Running genGraphs with %s\n'%(' '.join(sys.argv)))
     global debug
     debug = options.debug
@@ -854,11 +854,9 @@ def main():
     except (IOError, OSError):
         return -1
 
-    # get the list of .graph files
-    lines = list()
     # command line .graph files
-    for a in args:
-        lines.append(a)
+    lines = options.graphfiles
+
     # .graph files from the specified  file
     graphlist = options.graphlist
     if graphlist != None:
