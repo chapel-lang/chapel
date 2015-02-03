@@ -955,6 +955,27 @@ bool ArgSymbol::isParameter() const {
 }
 
 
+const char* retTagDescrString(RetTag retTag) {
+  switch (retTag) {
+    case RET_VALUE: return "value";
+    case RET_REF:   return "ref";
+    case RET_PARAM: return "param";
+    case RET_TYPE:  return "type";
+    default:        return "<unknown RetTag>";
+  }
+}
+
+
+const char* modTagDescrString(ModTag modTag) {
+  switch (modTag) {
+    case MOD_INTERNAL:  return "internal";
+    case MOD_STANDARD:  return "standard";
+    case MOD_USER:      return "user";
+    default:            return "<unknown ModTag>";
+  }
+}
+
+
 // describes this argument's intent (for use in an English sentence)
 const char* ArgSymbol::intentDescrString(void) {
   switch (intent) {

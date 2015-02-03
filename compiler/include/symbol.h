@@ -41,6 +41,7 @@ class IteratorInfo;
 class Stmt;
 class SymExpr;
 
+// keep in sync with retTagDescrString()
 enum RetTag {
   RET_VALUE,
   RET_REF,
@@ -71,6 +72,7 @@ enum IntentTag {
   INTENT_BLANK     = INTENT_FLAG_BLANK
 };
 
+// keep in sync with modTagDescrString()
 enum ModTag {
   MOD_INTERNAL,  // an internal module that the user shouldn't know about
   MOD_STANDARD,  // a standard module from the Chapel libraries
@@ -476,6 +478,10 @@ FlagSet getRecordWrappedFlags(Symbol* s);
 FlagSet getSyncFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
+
+// for use in an English sentence
+const char* retTagDescrString(RetTag retTag);
+const char* modTagDescrString(ModTag modTag);
 const char* intentDescrString(IntentTag intent);
 
 // Return true if the arg must use a C pointer whether or not

@@ -81,4 +81,8 @@ const char* shortLoc(BaseAST* ast);
 const char* debugLoc(int id);
 const char* debugLoc(BaseAST* ast);
 
+int debugID(int id);
+int debugID(BaseAST* ast);
+
+
 #endif

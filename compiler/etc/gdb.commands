@@ -44,4 +44,8 @@ end
 define loc
  p ::stringLoc($arg0)
 end
+define locid
+ set $r837 = ($arg0)
+ printf "%d  %s\n", debugID($r837), debugLoc($r837)
+end
 break gdbShouldBreakHere
