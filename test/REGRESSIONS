@@ -415,9 +415,11 @@ Reviewed 2015-02-02
 ===================
 
 
+=== sporadic failures below ===
+
 something going wrong with reservedSymbolNames causes reserved names to show up in generated code.
 --------------------------------------------------------------------------------------------------
-All but one tests fail when this happens (xc-wb.host.prgenv-pgi 2015-01-08, xc-wb.prgenv-pgi 2015-01-16, xc-wb.prgenv-pgi 2015-01-21, xc-wb.prgenv-gnu 2015-01-22, xc-wb.intel 2015-01-30)
+All tests fail when this happens (xc-wb.host.prgenv-pgi 2015-01-08, xc-wb.prgenv-pgi 2015-01-16, xc-wb.prgenv-pgi 2015-01-21, xc-wb.prgenv-gnu 2015-01-22, xc-wb.intel 2015-01-30)
 
 Sporadic compilation timeouts
 -----------------------------
@@ -460,7 +462,7 @@ array index out of bounds - elliot (2015-01-30)
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 5)]
 [Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
-
+[Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)]
 
 infinite loop warning (since filed?)
 ------------------------------------
