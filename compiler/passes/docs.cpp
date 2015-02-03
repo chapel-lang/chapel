@@ -85,7 +85,8 @@ void docs(void) {
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-      if (!mod->hasFlag(FLAG_NO_DOC) && (!devOnlyModule(mod) || developer)) {
+      // TODO: Add flag to compiler to turn on doc dev only output
+      if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
         std::string filename = mod->filename;
 
         if (mod->modTag == MOD_INTERNAL) {
@@ -405,7 +406,8 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
   
     forv_Vec(FnSymbol, fn, fns) {
-      if (!devOnlyFunction(fn) || developer) {
+      // TODO: Add flag to compiler to turn on doc dev only output
+      if (!devOnlyFunction(fn)) {
         printFunction(file, fn, false);
       }
     }
@@ -423,7 +425,8 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
   
     forv_Vec(ModuleSymbol, md, mods) {
-      if (!devOnlyModule(md) || developer)
+      // TODO: Add flag to compiler to turn on doc dev only output
+      if (!devOnlyModule(md))
         printModule(file, md, name + "." +  md->name);
     }
     if (fDocsTextOnly)
@@ -465,7 +468,8 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
 
     *file << fn->name << "(";
     if (fn->numFormals() > 0) {
-      if (!developer && strcmp(fn->getFormal(1)->name, "_mt") == 0) {
+      // TODO: add flag to compiler to turn on docs dev only output
+      if (strcmp(fn->getFormal(1)->name, "_mt") == 0) {
         for (int i = 3; i < fn->numFormals(); i++) {
           ArgSymbol *cur = fn->getFormal(i);
           printArg(file, cur);
