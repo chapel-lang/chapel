@@ -187,28 +187,33 @@ fprint_imm(FILE *fp, Immediate &imm, bool showType) {
   int res = -1;
   switch (imm.const_kind) {
     case NUM_KIND_NONE:
-      if (showType) res = fputs(":NONE", fp); break;
+      if (showType) res = fputs(":NONE", fp);
       break;
     case NUM_KIND_BOOL: {
       // Since I'm using uints to store the bools, should cast to the
       // same to be consistent.
-      res = fprintf(fp, "%"PRIu64, imm.bool_value()); break;
-      if (showType) res += fprintf(fp, " :bool"); break;
+      res = fprintf(fp, "%"PRIu64, imm.bool_value());
+      if (showType) res += fputs(" :bool", fp);
+      break;
     }
     case NUM_KIND_UINT: {
       switch (imm.num_index) {
         case INT_SIZE_8: 
           res = fprintf(fp, "%u", (unsigned)imm.v_uint8);
-          if (showType) res += fputs(" :uint(8)", fp); break;
+          if (showType) res += fputs(" :uint(8)", fp);
+          break;
         case INT_SIZE_16:
           res = fprintf(fp, "%u", (unsigned)imm.v_uint16);
-          if (showType) res += fputs(" :uint(16)", fp); break;
+          if (showType) res += fputs(" :uint(16)", fp);
+          break;
         case INT_SIZE_32:
           res = fprintf(fp, "%u", (unsigned)imm.v_uint32);
-          if (showType) res += fputs(" :uint(32)", fp); break;
+          if (showType) res += fputs(" :uint(32)", fp);
+          break;
         case INT_SIZE_64:
           res = fprintf(fp, "%"PRIu64, imm.v_uint64);
-          if (showType) res += fputs(" :uint(64)", fp); break;
+          if (showType) res += fputs(" :uint(64)", fp);
+          break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
@@ -217,16 +222,20 @@ fprint_imm(FILE *fp, Immediate &imm, bool showType) {
       switch (imm.num_index) {
         case INT_SIZE_8: 
           res = fprintf(fp, "%d", imm.v_int8);
-          if (showType) res += fputs(" :int(8)", fp); break;
+          if (showType) res += fputs(" :int(8)", fp);
+          break;
         case INT_SIZE_16:
           res = fprintf(fp, "%d", imm.v_int16);
-          if (showType) res += fputs(" :int(16)", fp); break;
+          if (showType) res += fputs(" :int(16)", fp);
+          break;
         case INT_SIZE_32:
           res = fprintf(fp, "%"PRId32, imm.v_int32);
-          if (showType) res += fputs(" :int(32)", fp); break;
+          if (showType) res += fputs(" :int(32)", fp);
+          break;
         case INT_SIZE_64:
           res = fprintf(fp, "%"PRId64, imm.v_int64);
-          if (showType) res += fputs(" :int(64)", fp); break;
+          if (showType) res += fputs(" :int(64)", fp);
+          break;
         default: INT_FATAL("Unhandled case in switch statement");
       }
       break;
