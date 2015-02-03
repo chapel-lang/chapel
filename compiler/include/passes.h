@@ -97,8 +97,11 @@ void buildDefaultDestructor(AggregateType* ct);
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;
-void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars);
-void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore);
+void markOuterVarsWithIntents(SymbolMap* uses, CallExpr* byrefVars);
+void pruneThisArg(Symbol* parent, SymbolMap* uses);
+
+// deadCodeElimination.cpp
+void deadBlockElimination();
 
 // flattenFunctions.cpp
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);

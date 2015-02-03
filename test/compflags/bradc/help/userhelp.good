@@ -64,6 +64,8 @@ C Code Generation Options:
       --[no-]cpp-lines                [Don't] Generate #line annotations
       --max-c-ident-len               Maximum length of identifiers in
                                       generated code, 0 for unlimited
+      --[no-]munge-user-idents        [Don't] Munge user identifiers to avoid
+                                      naming conflicts with external code
       --savec <directory>             Save generated C code in directory
 
 C Code Compilation Options:

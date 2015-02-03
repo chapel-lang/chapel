@@ -47,7 +47,6 @@ ScopeFunction::ScopeFunction(FnSymbol* fn, const ScopeBase* parent) : ScopeBase(
     }
 
     INT_ASSERT(formal);
-    INT_ASSERT(formal->type);
 
     addSym(defExpr->sym);
   }

@@ -29,7 +29,7 @@ class ScopeBlock : public ScopeBase
 public:
                         ScopeBlock(BlockStmt*       block,
                                    const ScopeBase* parent);
-                       ~ScopeBlock();
+  virtual              ~ScopeBlock();
 
 private:
                         ScopeBlock();

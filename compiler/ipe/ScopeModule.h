@@ -28,7 +28,7 @@ class ScopeModule : public ScopeBase
 {
 public:
                         ScopeModule(ModuleSymbol* module);
-                       ~ScopeModule();
+  virtual              ~ScopeModule();
 
   const char*           name()                                      const;
 

@@ -56,8 +56,8 @@ const int INTENT_FLAG_PARAM = 0x10;
 const int INTENT_FLAG_TYPE  = 0x20;
 const int INTENT_FLAG_BLANK = 0x40;
 
-// If this enum is modified, ArgSymbol::intentDescrString should also be
-// updated to match
+// If this enum is modified, ArgSymbol::intentDescrString()
+// and intentDescrString(IntentTag) should also be updated to match
 enum IntentTag {
   INTENT_IN        = INTENT_FLAG_IN,
   INTENT_OUT       = INTENT_FLAG_OUT,
@@ -476,6 +476,7 @@ FlagSet getRecordWrappedFlags(Symbol* s);
 FlagSet getSyncFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
+const char* intentDescrString(IntentTag intent);
 
 // Return true if the arg must use a C pointer whether or not
 // pass-by-reference intents are used.

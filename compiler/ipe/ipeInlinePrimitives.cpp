@@ -56,7 +56,8 @@ void ipeInlinePrimitives()
     {
       if (ModuleSymbol* module = toModuleSymbol(defExpr->sym))
       {
-        ipeInline(module);
+        if (module->modTag == MOD_USER)
+          ipeInline(module);
       }
     }
     else
@@ -72,40 +73,16 @@ static void ipeInline(ModuleSymbol* module)
   }
 }
 
-static void ipeInline(FnSymbol* fn)
-{
-  ipeInline(fn->body);
-}
-
-static void ipeInline(WhileDoStmt* whileDoStmt)
-{
-  ipeInline(whileDoStmt->condExprGet());
-
-  for_alist(expr, whileDoStmt->body)
-    ipeInline(expr);
-}
-
-static void ipeInline(BlockStmt* blockStmt)
-{
-  for_alist(expr, blockStmt->body)
-    ipeInline(expr);
-}
-
-static void ipeInline(CondStmt* condStmt)
-{
-  ipeInline(condStmt->condExpr);
-  ipeInline(condStmt->thenStmt);
-
-  if (condStmt->elseStmt != 0)
-    ipeInline(condStmt->elseStmt);
-}
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 static void ipeInline(Expr* genExpr)
 {
   if (isSymExpr(genExpr) == true)
-  {
-
-  }
+    ;
 
   else if (FnSymbol*    expr = toFnSymbol(genExpr))
     ipeInline(expr);
@@ -136,6 +113,34 @@ static void ipeInline(Expr* genExpr)
 
     INT_ASSERT(false);
   }
+}
+
+static void ipeInline(FnSymbol* fn)
+{
+  ipeInline(fn->body);
+}
+
+static void ipeInline(WhileDoStmt* whileDoStmt)
+{
+  ipeInline(whileDoStmt->condExprGet());
+
+  for_alist(expr, whileDoStmt->body)
+    ipeInline(expr);
+}
+
+static void ipeInline(BlockStmt* blockStmt)
+{
+  for_alist(expr, blockStmt->body)
+    ipeInline(expr);
+}
+
+static void ipeInline(CondStmt* condStmt)
+{
+  ipeInline(condStmt->condExpr);
+  ipeInline(condStmt->thenStmt);
+
+  if (condStmt->elseStmt != 0)
+    ipeInline(condStmt->elseStmt);
 }
 
 static void ipeInline(DefExpr* defExpr)
@@ -266,6 +271,23 @@ static void ipeInline(CallExpr* callExpr)
           INT_ASSERT(false);
         }
       }
+    }
+  }
+
+  else
+  {
+#if 0
+    AstDumpToNode logger(stdout, 3);
+
+    printf("CallExpr prim unhandled\n");
+    printf("   ");
+    callExpr->accept(&logger);
+    printf("\n\n");
+#endif
+
+    for (int i = 1; i <= callExpr->numActuals(); i++)
+    {
+      ipeInline(callExpr->get(i));
     }
   }
 }
