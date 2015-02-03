@@ -532,8 +532,9 @@ static void codegen_header_compilation_config() {
 
 static void protectNameFromC(Symbol* sym) {
   //
-  // Symbols that start with 'chpl_' are presumably compiler-generated
-  // and sufficiently unique not to require further munging.
+  // Symbols that start with 'chpl_' were presumably named by the
+  // implementation (compiler, internal modules, runtime) and
+  // sufficiently unique to not require further munging.
   //
   if (strncmp(sym->cname, "chpl_", 5) == 0) {
     return;
