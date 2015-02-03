@@ -2235,20 +2235,20 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
   // hdfs://<host>:<port>/<path>
   proc parse_hdfs_path(path:string): (string, int, string) {
 
-    var hostidx_start = path.indexOf("//");
-    var new_str = path.substring(hostidx_start+2..path.length);
-    var hostidx_end = new_str.indexOf(":");
-    var host = new_str.substring(0..hostidx_end-1);
+    var hostidx_start = path.find("//");
+    var new_str = path[hostidx_start+2..path.length];
+    var hostidx_end = new_str.find(":");
+    var host = new_str[0..hostidx_end-1];
 
-    new_str = new_str.substring(hostidx_end+1..new_str.length);
+    new_str = new_str[hostidx_end+1..new_str.length];
 
-    var portidx_end = new_str.indexOf("/");
-    var port = new_str.substring(0..portidx_end-1);
+    var portidx_end = new_str.find("/");
+    var port = new_str[0..portidx_end-1];
 
     //the file path is whatever we have left
-    var file_path = new_str.substring(portidx_end+1..new_str.length);
+    var file_path = new_str[portidx_end+1..new_str.length];
 
-    return (host, port:int, file_path);
+    return (host, /*port:int*/0, file_path);
   }
 
   var local_style = style;
@@ -2646,7 +2646,7 @@ record ioChar {
   }
 }
 
-// Note: This returns a c_string_copy.
+//TODO strings: make it return a string...
 // The caller has responsibility for freeing the returned string.
 pragma "no doc"
 inline proc _cast(type t, x: ioChar) where t == c_string_copy {
@@ -2682,14 +2682,10 @@ record ioNewline {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioNewline) where t == c_string {
+inline proc _cast(type t, x: ioNewline) where t == string {
   return "\n";
 }
 
-pragma "no doc"
-inline proc _cast(type t, x: ioNewline) where t == c_string_copy {
-  return __primitive("string_copy", "\n");
-}
 
 /*
 
@@ -2715,13 +2711,8 @@ record ioLiteral {
 }
 
 pragma "no doc"
-inline proc _cast(type t, x: ioLiteral) where t == c_string {
+inline proc _cast(type t, x: ioLiteral) where t == string {
   return x.val;
-}
-
-pragma "no doc"
-inline proc _cast(type t, x: ioLiteral) where t == c_string_copy {
-  return __primitive("string_copy", x.val);
 }
 
 /*
@@ -2742,11 +2733,9 @@ record ioBits {
   }
 }
 
-pragma "no doc"
-inline proc _cast(type t, x: ioBits) where t == c_string {
+inline proc _cast(type t, x: ioBits) where t == string {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
-  // FIX ME: should this be copied?
-  return ret.c_str();
+  return ret;
 }
 
 
@@ -3584,7 +3573,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, par
   } else if t == ioChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, x.val.c_str(), x.val.length:ssize_t);
   } else if t == ioBits {
     return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {

@@ -99,12 +99,12 @@ module MemTracking
                                       s_memLeaksByDesc.len);
       else ret_memLeaksByDesc = "";
       if s_memLog.len != 0 then
-        ret_memLog = remoteStringCopy(s_memLog.home,
+        ret_memLog = copyRemoteBuffer(s_memLog.home.id,
                                       s_memLog.base,
                                       s_memLog.len);
       else ret_memLog = nil;
       if s_memLeaksLog.len != 0 then
-        ret_memLeaksLog = remoteStringCopy(s_memLeaksLog.home,
+        ret_memLeaksLog = copyRemoteBuffer(s_memLeaksLog.home.id,
                                            s_memLeaksLog.base,
                                            s_memLeaksLog.len);
       else ret_memLeaksLog = nil;

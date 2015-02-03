@@ -718,16 +718,20 @@ module DefaultAssociative {
   
   // Use djb2 (Dan Bernstein in comp.lang.c)
   inline proc chpl__defaultHash(x : string): int(64) {
-    return chpl__defaultHash(x.c_str());
-  }
-
-  inline proc chpl__defaultHash(x : c_string): int(64) {
     var hash: int(64) = 0;
-    for c in 1..(x.length) {
-      hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
+    for c in 0..#(x.length) {
+      hash = ((hash << 5) + hash) ^ x.base[c];
     }
     return _gen_key(hash);
   }
+
+  //inline proc chpl__defaultHash(x : c_string): int(64) {
+  //  var hash: int(64) = 0;
+  //  for c in 1..(x.length) {
+  //    hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
+  //  }
+  //  return _gen_key(hash);
+  //}
   
   inline proc chpl__defaultHash(l : []) {
       var hash : int(64) = 0;

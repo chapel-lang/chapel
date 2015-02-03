@@ -223,11 +223,11 @@ inline proc ==(a: c_void_ptr, b: c_ptr) {
 }
 pragma "no doc"
 inline proc ==(a: c_ptr, b: _nilType) {
-  return __primitive("ptr_eq", a, nil);
+  return __primitive("ptr_eq", a, c_nil);
 }
 pragma "no doc"
 inline proc ==(a: _nilType, b: c_ptr) {
-  return __primitive("ptr_eq", nil, b);
+  return __primitive("ptr_eq", c_nil, b);
 }
 
 pragma "no doc"
@@ -244,11 +244,11 @@ inline proc !=(a: c_void_ptr, b: c_ptr) {
 }
 pragma "no doc"
 inline proc !=(a: c_ptr, b: _nilType) {
-  return __primitive("ptr_neq", a, nil);
+  return __primitive("ptr_neq", a, c_nil);
 }
 pragma "no doc"
 inline proc !=(a: _nilType, b: c_ptr) {
-  return __primitive("ptr_neq", nil, b);
+  return __primitive("ptr_neq", c_nil, b);
 }
 
 pragma "no doc"
