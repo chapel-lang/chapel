@@ -157,7 +157,7 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
 }
 
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
-void tiMarkOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
+void markOuterVarsWithIntents(SymbolMap* uses, CallExpr* byrefVars) {
   if (!byrefVars) return;
   ArgSymbol* tiMarker = NULL;
   // the actuals alternate: tiMark arg, task-intent variable [, repeat]
@@ -473,7 +473,7 @@ void createTaskFunctions(void) {
           SymbolMap* uses = new SymbolMap();
           findOuterVars(fn, uses);
 
-          tiMarkOuterVars(uses, block->byrefVars);
+          markOuterVarsWithIntents(uses, block->byrefVars);
           pruneThisArg(call->parentSymbol, uses);
           block->byrefVars->remove();
 

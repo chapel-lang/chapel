@@ -283,7 +283,7 @@ static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
     Symbol* ovar = outerVars[idx];
     Symbol* svar = shadowVars[idx];
 
-    // keep in sync with detupleLeadIdx()
+    // keep in sync with shadowForRefIntents()
     if (svar->hasFlag(FLAG_REF_VAR)) {
       // createShadowVars() keeps 'const ref'-intent vars, drops 'ref'-vars
       INT_ASSERT(svar->hasFlag(FLAG_CONST));
@@ -303,6 +303,55 @@ static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
   }
 }
 
+
+// Returns true if this variable has been taken care of.
+static bool shadowForRefIntents(CallExpr* lcCall, Symbol* ovar, Symbol* svar) {
+  // keep in sync with addActualsTo_toLeader()
+  if (svar->hasFlag(FLAG_REF_VAR)) {
+    // createShadowVars() keeps 'const ref'-intent vars, drops 'ref'-vars
+    INT_ASSERT(svar->hasFlag(FLAG_CONST));
+    lcCall->insertBefore(new DefExpr(svar));
+    if (isRecordWrappedType(ovar->type)) {
+      // Just bit-copy, not "assign". Since 'svar' lives within the
+      // forall loop body, no ref counter increment/decrement is needed.
+      lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar, ovar));
+    } else {
+      // Need to adjust svar's type.
+      INT_ASSERT(svar->type == ovar->type->getValType()); // current state
+      svar->type = ovar->type->getRefType();
+      if (isReferenceType(ovar->type)) {
+        // 'ovar' is already a reference, copy that reference.
+        lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar, ovar));
+      } else {
+        // Take a reference of 'ovar'.
+        lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar,
+                               new CallExpr(PRIM_ADDR_OF, ovar)));
+      }
+    }
+    return true;
+  }
+  // Not taken care of.
+  return false;
+}
+
+static CallExpr* findLeadIdxCopyInit(Symbol* leadIdxSym,
+                                     Symbol* leadIdxCopySym)
+{
+  CallExpr* lcCall = NULL;
+  for (Expr* seekExpr = leadIdxCopySym->defPoint->next; seekExpr;
+       seekExpr = seekExpr->next)
+    if (CallExpr* seekCall = toCallExpr(seekExpr))
+      if (seekCall->isPrimitive(PRIM_MOVE))
+        if (SymExpr* seekArg1 = toSymExpr(seekCall->get(1)))
+          if (seekArg1->var == leadIdxCopySym)
+            if (SymExpr* seekArg2 = toSymExpr(seekCall->get(2)))
+              if (seekArg2->var == leadIdxSym) {
+                lcCall = seekCall;
+                break;
+              }
+  INT_ASSERT(lcCall);
+  return lcCall;
+}
 
 //
 // Extracts 'ix'-th component from 'leadIdx' tuple into 'dest', i.e.
@@ -328,7 +377,6 @@ static void extractFromLeaderYield(CallExpr* lcCall, int ix,
                                 dest, leadIdx, new_StringSymbol(buf)));
 }
 
-
 static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
                            int numLeaderActuals,
                            std::vector<Symbol*>& outerVars,
@@ -338,19 +386,7 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
   // (The leader will be converted to yield a tuple during resolution.)
   // Find the assignment leadIdxCopy:=leadIdx,
   // starting from DefExpr of chpl__leadIdxCopy.
-  CallExpr* lcCall = NULL;
-  for (Expr* seekExpr = leadIdxCopySym->defPoint->next; seekExpr;
-       seekExpr = seekExpr->next)
-    if (CallExpr* seekCall = toCallExpr(seekExpr))
-      if (seekCall->isPrimitive(PRIM_MOVE))
-        if (SymExpr* seekArg1 = toSymExpr(seekCall->get(1)))
-          if (seekArg1->var == leadIdxCopySym)
-            if (SymExpr* seekArg2 = toSymExpr(seekCall->get(2)))
-              if (seekArg2->var == leadIdxSym) {
-                lcCall = seekCall;
-                break;
-              }
-  INT_ASSERT(lcCall);
+  CallExpr* lcCall = findLeadIdxCopyInit(leadIdxSym, leadIdxCopySym);
 
   // ... and add the detupling.
   // First, for leadIdxCopy.
@@ -362,29 +398,8 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
   for (uint idx = 0; idx < outerVars.size(); idx++) {
     Symbol* ovar = outerVars[idx];
     Symbol* svar = shadowVars[idx];
-    // keep in sync with addActualsTo_toLeader
-    if (svar->hasFlag(FLAG_REF_VAR)) {
-      // createShadowVars() keeps 'const ref'-intent vars, drops 'ref'-vars
-      INT_ASSERT(svar->hasFlag(FLAG_CONST));
-      lcCall->insertBefore(new DefExpr(svar));
-      if (isRecordWrappedType(ovar->type)) {
-        // Just bit-copy, not "assign". Since 'svar' lives within the
-        // forall loop body, no ref counter increment/decrement is needed.
-        lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar, ovar));
-      } else {
-        // Need to adjust svar's type.
-        INT_ASSERT(svar->type == ovar->type->getValType()); // current state
-        svar->type = ovar->type->getRefType();
-        if (isReferenceType(ovar->type)) {
-          // 'ovar' is already a reference, copy that reference.
-          lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar, ovar));
-        } else {
-          // Take a reference of 'ovar'.
-          lcCall->insertBefore(new CallExpr(PRIM_MOVE, svar,
-                                 new CallExpr(PRIM_ADDR_OF, ovar)));
-        }
-      }
-    } else {
+    bool needToExtract = !shadowForRefIntents(lcCall, ovar, svar);
+    if (needToExtract) {
       INT_ASSERT(numLeaderActuals > 0);
       lcCall->insertBefore(new DefExpr(svar));
       extractFromLeaderYield(lcCall, ++ix, svar, leadIdxSym);
@@ -594,7 +609,7 @@ static void getOuterVars(BlockStmt* body, SymbolMap& uses)
 
   // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
   findOuterVars(body, uses);
-  tiMarkOuterVars(&uses, byrefVars);
+  markOuterVarsWithIntents(&uses, byrefVars);
   pruneThisArg(body->parentSymbol, &uses);
 }
 
