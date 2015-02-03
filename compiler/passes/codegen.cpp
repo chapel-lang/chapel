@@ -532,6 +532,15 @@ static void codegen_header_compilation_config() {
 
 static void protectNameFromC(Symbol* sym) {
   //
+  // Symbols that start with 'chpl_' were presumably named by the
+  // implementation (compiler, internal modules, runtime) and
+  // sufficiently unique to not require further munging.
+  //
+  if (strncmp(sym->cname, "chpl_", 5) == 0) {
+    return;
+  }
+
+  //
   // Let's assume we only have to rename user symbols and that we've
   // done a good job of protecting our internal and standard module
   // symbols.  This has the advantage of not having to take special
