@@ -491,9 +491,9 @@ module ChapelIO {
   }
   
   proc halt(args ...?numArgs) {
-    var tmpstring: c_string;
+    var tmpstring: string;
     tmpstring.write((...args));
-    __primitive("chpl_error", "halt reached - " + tmpstring);
+    __primitive("chpl_error", "halt reached - " + tmpstring.c_str());
   }
   
   proc warning(s:string) {
@@ -552,6 +552,7 @@ module ChapelIO {
   
   pragma "dont disable remote value forwarding"
   proc ref c_string.write(args ...?n) {
+    compilerError("c_string.write()");
     //TODO strings: something...
     /*
     var sc = new StringWriter(this:string);
