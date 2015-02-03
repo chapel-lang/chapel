@@ -67,6 +67,7 @@ tags
 /man/man1/chpl.1
 
 # Modules ignores.
+/modules/docs
 /modules/internal/tasks/muxed
 /modules/internal/threads/soft-threads
 
