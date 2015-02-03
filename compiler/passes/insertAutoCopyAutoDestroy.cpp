@@ -73,7 +73,7 @@ static int debug = 0;
 //# avoided. 
 //#
 //# After copy-constructor calls have been added, the routine has its full
-//# complement of construcotr calls.  Correct AMM is then just a matter of
+//# complement of constructor calls.  Correct AMM is then just a matter of
 //# inserting the minimum number of destructor calls to drive the ownership of
 //# all local variables to false before the routine ends.  
 //#

@@ -244,6 +244,8 @@ static void resolveOther();
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
 static void protoIteratorClass(FnSymbol* fn);
+static FnSymbol* protoGetIterator(IteratorInfo* ii, FnSymbol* fn);
+static FnSymbol* protoFreeIterator(IteratorInfo* ii, FnSymbol* fn);
 static bool isInstantiatedField(Symbol* field);
 static Symbol* determineQueriedField(CallExpr* call);
 static void resolveSpecifiedReturnType(FnSymbol* fn);
@@ -762,21 +764,58 @@ protoIteratorClass(FnSymbol* fn) {
   fn->iteratorInfo->init->addFlag(FLAG_RESOLVED);
   fn->iteratorInfo->incr->addFlag(FLAG_RESOLVED);
 
-  ii->getIterator = new FnSymbol("_getIterator");
-  ii->getIterator->addFlag(FLAG_AUTO_II);
-  ii->getIterator->addFlag(FLAG_INLINE);
-  ii->getIterator->retType = ii->iclass;
-  ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
-  VarSymbol* ret = newTemp("_ic_", ii->iclass);
-  ii->getIterator->insertAtTail(new DefExpr(ret));
-  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo()->symbol);
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-  fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
+  ii->getIterator = protoGetIterator(ii, fn);
+  ii->freeIterator = protoFreeIterator(ii, fn);
+
+  // This is a bit of a kludge.  The defaultInitializer field of the iterator
+  // class type is reused to stash the getIterator function for later use.
   ii->iclass->defaultInitializer = ii->getIterator;
-  normalize(ii->getIterator);
-  resolveFns(ii->getIterator);  // No shortcuts.
+}
+
+static FnSymbol* protoGetIterator(IteratorInfo* ii, FnSymbol* fn)
+{
+  FnSymbol* newFn = new FnSymbol("_getIterator");
+  newFn->addFlag(FLAG_AUTO_II);
+  newFn->addFlag(FLAG_INLINE);
+  newFn->retType = ii->iclass;
+
+  newFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
+
+  VarSymbol* ret = newTemp("_ic_", ii->iclass);
+  newFn->insertAtTail(new DefExpr(ret));
+
+  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo()->symbol);
+  newFn->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
+  newFn->insertAtTail(new CallExpr(PRIM_SETCID, ret));
+  newFn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+
+  fn->defPoint->insertBefore(new DefExpr(newFn));
+  normalize(newFn);
+  resolveFns(newFn);
+
+  return newFn;
+}
+
+
+static FnSymbol* protoFreeIterator(IteratorInfo* ii, FnSymbol* fn)
+{
+  FnSymbol* newFn = new FnSymbol("_freeIterator");
+  newFn->addFlag(FLAG_AUTO_II);
+  newFn->addFlag(FLAG_INLINE);
+  newFn->addFlag(FLAG_DESTRUCTOR);
+  newFn->retType = dtVoid;
+
+  ArgSymbol* ic = new ArgSymbol(INTENT_BLANK, "ic", ii->iclass);
+  newFn->insertFormalAtTail(ic);
+
+  newFn->insertAtTail(callChplHereFree(ic));
+  newFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  fn->defPoint->insertBefore(new DefExpr(newFn));
+  normalize(newFn);
+  resolveFns(newFn);
+
+  return newFn;
 }
 
 

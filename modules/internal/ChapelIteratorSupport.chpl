@@ -105,9 +105,10 @@ module ChapelIteratorSupport {
     return x;
   }
 
-  inline proc _freeIterator(ic: _iteratorClass) {
-    chpl_here_free(__primitive("cast_to_void_star", ic));
-  }
+// Maybe not needed:
+//  inline proc _freeIterator(ic: _iteratorClass) {
+//    chpl_here_free(__primitive("cast_to_void_star", ic));
+//  }
 
   inline proc _freeIterator(x: _tuple) {
     for param i in 1..x.size do

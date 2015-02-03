@@ -31,6 +31,7 @@
 #include "optimizations.h"
 #include "view.h"
 #include "WhileStmt.h"
+#include "resolution.h" // for autoDestroyMap.
 
 //
 // This file implements lowerIterator() called by the lowerIterators pass
@@ -46,6 +47,7 @@
 IteratorInfo::IteratorInfo() :
   iterator(NULL),
   getIterator(NULL),
+  freeIterator(NULL),
   iclass(NULL),
   irecord(NULL),
   advance(NULL),
@@ -1034,6 +1036,46 @@ rebuildGetIterator(IteratorInfo* ii) {
 }
 
 
+// Fills in the body of the freeIterator function.
+// Record fields in the iterator class must be auto-destroyed because they are
+// auto-copied when the class instance is created.
+// You don't see this explicitly in rebuildGetIterator above, because automatic
+// memory management (AMM) adds these autocopy calls later (see
+// insertAutoCopyAutoDestroy()).  
+static void
+rebuildFreeIterator(IteratorInfo* ii) {
+  FnSymbol* freeIterator = ii->freeIterator;
+  ArgSymbol* ic = freeIterator->getFormal(1);   // This is the iterator class instance.
+  AggregateType* ict = toAggregateType(ic->type);
+
+  // Enumerate the fields in the iterator record.
+  // We are only interested in fields that are also in the iterator record,
+  // because these are the ones that are copied in when the iterator class
+  // instance is created (see the implementation of rebuildGetIterator() above).
+  for_fields(field, ii->irecord) {
+    // The record and class fields have the same name and type, so we can use
+    // them interchangeably.
+    FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+    if (autoDestroyFn)
+    {
+      ArgSymbol* dtor_arg = autoDestroyFn->getFormal(1);
+      VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtor_arg->type);
+
+    // These statements get inserted in reverse order.
+      freeIterator->insertAtHead(new CallExpr(autoDestroyFn, tmp));
+      // Insert a dereference if the destructor takes its argument by value
+      // rather than by ref.  It shouldn't but that's another story....
+      PrimitiveTag getFieldOp = (dtor_arg->type == field->type->refType) ?
+        PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE;
+      CallExpr* getFieldCall =
+        new CallExpr(getFieldOp, ic, ict->getField(field->name));
+      freeIterator->insertAtHead(new CallExpr(PRIM_MOVE, tmp, getFieldCall));
+      freeIterator->insertAtHead(new DefExpr(tmp));
+    }
+  }
+}
+
+
 // All "newRet" symbols used in yield expressions will need special handling,
 // so we collect them into a set.
 static void
@@ -1227,4 +1269,5 @@ void lowerIterator(FnSymbol* fn) {
   }
   rebuildIterator(ii, local2rfield, locals);
   rebuildGetIterator(ii);
+  rebuildFreeIterator(ii);
 }

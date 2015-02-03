@@ -671,7 +671,10 @@ returnRecordsByReferenceArguments() {
 static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_DESTRUCTOR)) {
+    if (fn->hasFlag(FLAG_DESTRUCTOR) &&
+        // TODO: Right now, we flesh out the body of a freeIterator function
+        // "by hand".  But if we can reuse this code, that would be much better.
+        !fn->hasFlag(FLAG_AUTO_II)) {
       AggregateType* ct = toAggregateType(fn->_this->getValType());
       INT_ASSERT(ct);
 
