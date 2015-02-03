@@ -271,9 +271,9 @@ void printClass(std::ofstream *file, AggregateType *cl) {
 }
 
 void printVarStart(std::ofstream *file, VarSymbol *var) {
-  // TODO: I need to get this to print type fields as type fields instead of
-  // vars.
-  if (var->isConstant())
+  if (var->hasFlag(FLAG_TYPE_VARIABLE))
+    *file << "type ";
+  else if (var->isConstant())
     *file << "const ";
   else if (var->isParameter())
     *file << "param ";
@@ -295,8 +295,14 @@ void printVarType(std::ofstream *file, VarSymbol *var) {
 void printVarDocs(std::ofstream *file, VarSymbol *var) {
   // TODO: Do we want to parse the output here to make it indent nicely?
   NUMTABS++;
-  if (var->doc != NULL) {
-    std::stringstream descStream(var->doc);
+  const char * doc;
+  if (var->doc != NULL)
+    doc = var->doc;
+  else if (var->hasFlag(FLAG_TYPE_VARIABLE))
+    doc = var->type->symbol->doc;
+
+  if (doc != NULL) {
+    std::stringstream descStream(doc);
     std::string line;
     while (std::getline(descStream, line)) {
       printTabs(file);

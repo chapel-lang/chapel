@@ -793,6 +793,7 @@ type_alias_decl_stmt_inner:
     {
       VarSymbol* var = new VarSymbol($1);
       var->addFlag(FLAG_TYPE_VARIABLE);
+      var->doc = @1.comment;
       DefExpr* def = new DefExpr(var, $2);
       $$ = buildChapelStmt(def);
     }
@@ -800,6 +801,7 @@ type_alias_decl_stmt_inner:
     {
       VarSymbol* var = new VarSymbol($1);
       var->addFlag(FLAG_TYPE_VARIABLE);
+      var->doc = @1.comment;
       DefExpr* def = new DefExpr(var, $2);
       $4->insertAtHead(def);
       $$ = buildChapelStmt($4);
