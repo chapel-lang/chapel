@@ -89,6 +89,9 @@ third-party-chpldoc-venv: FORCE
 chpldoc: compiler third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
 
+modules-docs: chpldoc
+	cd modules && $(MAKE) documentation
+
 clean: FORCE
 	cd compiler && $(MAKE) clean
 	cd modules && $(MAKE) clean
