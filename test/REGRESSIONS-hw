@@ -3,7 +3,7 @@ This file is to keep track of the hw nodes
 ===============================
 cray-module-correctness-cray-x?
 Inherits 'x?-wb.*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===============================
 
 === sporadic failures below ===
@@ -16,7 +16,7 @@ any
 ==========================================
 cray-module-correctness-cray-x?-none*
 Inherits 'cray-module-correctness-cray-x?'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
@@ -24,14 +24,14 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-x?-gasnet*
 Inherits 'cray-module-correctness-cray-x?'
 and 'gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===========================================
 
 
 ==================================================
 cray-module-correctness-cray-x?-gasnet-mpi*
 Inherits 'cray-module-correctness-cray-x?-gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==================================================
 
 
@@ -39,7 +39,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-x?-ugni*
 Inherits 'cray-module-correctness-cray-x?'
 and 'no-local'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 floating point issues (except xc-slurm-ugni-gnu)
@@ -53,14 +53,14 @@ FAILED:  release/examples/benchmarks/miniMD/explicit.miniMD
 
 floating point issues
 ---------------------
-FAILED:  release/examples/benchmarks/lulesh.test3DLulesh (compopts: 1, execopts: 3) (2015-01-29, 2015-01-31, 2015-02-01)
+FAILED:  release/examples/benchmarks/lulesh.test3DLulesh (compopts: 1, execopts: 3) (2015-02-02, 2015-01-31, 2015-02-01)
 
 
 ==========================================
 cray-module-correctness-cray-x?-*-cray
 Inherits 'cray-module-correctness-cray-x?'
 and '*prgenv-cray*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
@@ -68,7 +68,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-x?-*-pgi
 Inherits 'cray-module-correctness-cray-x?'
 and '*pgi*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
@@ -76,21 +76,21 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-x?-*-intel
 Inherits 'cray-module-correctness-cray-x?'
 and '*intel*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
 ==========================================
 cray-module-correctness-cray-x?-*-gnu
 Inherits 'cray-module-correctness-cray-x?'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
 ==========================================
 cray-module-correctness-cray-xc*
 Inherits 'cray-module-correctness-cray-x?'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
@@ -98,7 +98,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-none*
 Inherits 'cray-module-correctness-cray-x?-none*'
 and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -106,14 +106,14 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet*
 Inherits 'cray-module-correctness-cray-xc*'
 and 'cray-module-correctness-cray-x?-gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 =============================================
 
 
 ==================================================
 cray-module-correctness-cray-xc-gasnet-aries*
 Inherits 'cray-module-correctness-cray-xc-gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==================================================
 
 
@@ -121,7 +121,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet-mpi*
 Inherits 'cray-module-correctness-cray-x?-gasnet-mpi*'
 and 'cray-module-correctness-cray-xc-gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -129,7 +129,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-ugni*
 Inherits 'cray-module-correctness-cray-x?-ugni*'
 and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===============================================
 
 
@@ -137,7 +137,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-*-cray
 Inherits 'cray-module-correctness-cray-x?-*-cray'
 and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 =================================================
 
 
@@ -145,7 +145,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-*-pgi
 Inherits 'cray-module-correctness-cray-x?-*-pgi'
 and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -153,7 +153,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-*-intel
 Inherits 'cray-module-correctness-cray-x?-*-intel'
 and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==================================================
 
 
@@ -161,7 +161,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-*-gnu
 Inherits 'cray-module-correctness-cray-x?-*-gnu'
 and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
@@ -169,7 +169,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-none-cray
 Inherits 'cray-module-correctness-cray-xc-none*'
 and 'cray-module-correctness-cray-xc-*-cray'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -177,7 +177,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-none-pgi
 Inherits 'cray-module-correctness-cray-xc-none*'
 and 'cray-module-correctness-cray-xc-*-pgi'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -185,7 +185,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-none-intel
 Inherits 'cray-module-correctness-cray-xc-none*'
 and 'cray-module-correctness-cray-xc-*-intel'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -193,7 +193,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-none-gnu
 Inherits 'cray-module-correctness-cray-xc-none*'
 and 'cray-module-correctness-cray-xc-*-gnu'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -201,7 +201,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet-aries-cray
 Inherits 'cray-module-correctness-cray-xc-gasnet-aries*'
 and ''cray-module-correctness-cray-xc-*-cray'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ========================================================
 
 
@@ -209,7 +209,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet-aries-pgi
 Inherits 'cray-module-correctness-cray-xc-gasnet-aries*'
 and ''cray-module-correctness-cray-xc-*-pgi'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ========================================================
 
 
@@ -217,7 +217,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet-aries-intel
 Inherits 'cray-module-correctness-cray-xc-gasnet-aries*'
 and ''cray-module-correctness-cray-xc-*-intel'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ========================================================
 
 
@@ -225,7 +225,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet-aries-gnu
 Inherits 'cray-module-correctness-cray-xc-gasnet-aries*'
 and ''cray-module-correctness-cray-xc-*-gnu'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ========================================================
 
 
@@ -233,7 +233,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet-mpi-cray
 Inherits 'cray-module-correctness-cray-xc-gasnet-mpi*'
 and 'cray-module-correctness-cray-xc-*-cray'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -241,7 +241,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet-mpi-pgi
 Inherits 'cray-module-correctness-cray-xc-gasnet-mpi*'
 and 'cray-module-correctness-cray-xc-*-pgi'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -249,7 +249,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet-mpi-intel
 Inherits 'cray-module-correctness-cray-xc-gasnet-mpi*'
 and 'cray-module-correctness-cray-xc-*-intel'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -257,7 +257,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-gasnet-mpi-gnu
 Inherits 'cray-module-correctness-cray-xc-gasnet-mpi*'
 and 'cray-module-correctness-cray-xc-*-gnu'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -265,7 +265,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-ugni-intel
 Inherits 'cray-module-correctness-cray-xc-ugni*'
 and 'cray-module-correctness-cray-xc-*-intel'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -273,28 +273,28 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-ugni-gnu
 Inherits 'cray-module-correctness-cray-xc-ugni*'
 and 'cray-module-correctness-cray-xc-*-gnu'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
 ==========================================
 cray-module-correctness-cray-xc-knc
 Inherits 'cray-module-correctness-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
 ==========================================
 cray-module-correctness-cray-xc-llvm
 Inherits 'cray-module-correctness-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
 ==========================================
 cray-module-correctness-cray-xc-slurm
 Inherits 'cray-module-correctness-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
@@ -302,7 +302,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-none-cray
 Inherits 'cray-module-correctness-cray-xc-none-cray'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ====================================================
 
 
@@ -310,7 +310,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-none-pgi
 Inherits 'cray-module-correctness-cray-xc-none-pgi'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===================================================
 
 
@@ -318,7 +318,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-none-intel
 Inherits 'cray-module-correctness-cray-xc-none-intel'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 =====================================================
 
 
@@ -326,7 +326,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-none-gnu
 Inherits 'cray-module-correctness-cray-xc-none-gnu'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===================================================
 
 
@@ -334,7 +334,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-gasnet-aries-cray
 Inherits 'cray-module-correctness-cray-xc-gasnet-aries-cray'
 and ''cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ============================================================
 
 
@@ -342,7 +342,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-gasnet-aries-pgi
 Inherits 'cray-module-correctness-cray-xc-gasnet-aries-pgi'
 and ''cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===========================================================
 
 
@@ -350,7 +350,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-gasnet-aries-intel
 Inherits 'cray-module-correctness-cray-xc-gasnet-aries-intel'
 and ''cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 =============================================================
 
 
@@ -358,7 +358,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-gasnet-aries-gnu
 Inherits 'cray-module-correctness-cray-xc-gasnet-aries-gnu'
 and ''cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===========================================================
 
 
@@ -366,7 +366,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-gasnet-mpi-cray
 Inherits 'cray-module-correctness-cray-xc-gasnet-mpi-cray'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================================
 
 
@@ -374,7 +374,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-gasnet-mpi-pgi
 Inherits 'cray-module-correctness-cray-xc-gasnet-mpi-pgi'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 =========================================================
 
 
@@ -382,7 +382,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-gasnet-mpi-intel
 Inherits 'cray-module-correctness-cray-xc-gasnet-mpi-intel'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===========================================================
 
 
@@ -390,7 +390,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-gasnet-mpi-gnu
 Inherits 'cray-module-correctness-cray-xc-gasnet-mpi-gnu'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 =========================================================
 
 
@@ -398,7 +398,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-ugni-intel
 Inherits 'cray-module-correctness-cray-xc-ugni-intel'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 =====================================================
 
 
@@ -406,14 +406,14 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xc-slurm-ugni-gnu
 Inherits 'cray-module-correctness-cray-xc-ugni-gnu'
 and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===================================================
 
 
 ==========================================
 cray-module-correctness-cray-xe*
 Inherits 'cray-module-correctness-cray-x?'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
@@ -421,7 +421,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-none*
 Inherits 'cray-module-correctness-cray-x?-none*'
 and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -429,14 +429,14 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-gasnet*
 Inherits 'cray-module-correctness-cray-xe*'
 and 'cray-module-correctness-cray-x?-gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 =============================================
 
 
 ==================================================
 cray-module-correctness-cray-xe-gasnet-gemini*
 Inherits 'cray-module-correctness-cray-xe-gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==================================================
 
 
@@ -444,7 +444,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-gasnet-mpi*
 Inherits 'cray-module-correctness-cray-x?-gasnet-mpi*'
 and 'cray-module-correctness-cray-xe-gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -452,13 +452,13 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-ugni*
 Inherits 'cray-module-correctness-cray-x?-ugni*'
 and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
 === sporadic failures below ===
 
-Out of memory (2015-01-29, 2015-02-01)
+Out of memory (2015-02-02, 2015-02-01)
 --------------------------------------
 release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)
 release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)
@@ -472,7 +472,7 @@ FAILED:  release/examples/benchmarks/hpcc/variants.ra-cleanloop
 cray-module-correctness-cray-xe-*-cray
 Inherits 'cray-module-correctness-cray-x?-*-cray'
 and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 =================================================
 
 
@@ -480,7 +480,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-*-pgi
 Inherits 'cray-module-correctness-cray-x?-*-pgi'
 and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -488,7 +488,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-*-intel
 Inherits 'cray-module-correctness-cray-x?-*-intel'
 and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==================================================
 
 
@@ -496,7 +496,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-*-gnu
 Inherits 'cray-module-correctness-cray-x?-*-gnu'
 and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==========================================
 
 
@@ -504,7 +504,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-none-cray
 Inherits 'cray-module-correctness-cray-xe-none*'
 and 'cray-module-correctness-cray-xe-*-cray'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -512,7 +512,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-none-pgi
 Inherits 'cray-module-correctness-cray-xe-none*'
 and 'cray-module-correctness-cray-xe-*-pgi'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -520,7 +520,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-none-intel
 Inherits 'cray-module-correctness-cray-xe-none*'
 and 'cray-module-correctness-cray-xe-*-intel'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -528,7 +528,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-none-gnu
 Inherits 'cray-module-correctness-cray-xe-none*'
 and 'cray-module-correctness-cray-xe-*-gnu'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -536,7 +536,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-gasnet-gemini-cray
 Inherits 'cray-module-correctness-cray-xe-gasnet-gemini*'
 and ''cray-module-correctness-cray-xe-*-cray'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ========================================================
 
 
@@ -544,7 +544,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-gasnet-gemini-pgi
 Inherits 'cray-module-correctness-cray-xe-gasnet-gemini*'
 and ''cray-module-correctness-cray-xe-*-pgi'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ========================================================
 
 
@@ -552,7 +552,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-gasnet-gemini-intel
 Inherits 'cray-module-correctness-cray-xe-gasnet-gemini*'
 and ''cray-module-correctness-cray-xe-*-intel'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ========================================================
 
 
@@ -567,7 +567,7 @@ FAILED:  release/examples/benchmarks/miniMD.miniMD (2015-01-30)
 cray-module-correctness-cray-xe-gasnet-gemini-gnu
 Inherits 'cray-module-correctness-cray-xe-gasnet-gemini*'
 and ''cray-module-correctness-cray-xe-*-gnu'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ========================================================
 
 
@@ -575,7 +575,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-gasnet-mpi-cray
 Inherits 'cray-module-correctness-cray-xe-gasnet-mpi*'
 and 'cray-module-correctness-cray-xe-*-cray'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -591,7 +591,7 @@ FAILED:  release/examples/benchmarks/miniMD.miniMD (2015-02-01..)
 cray-module-correctness-cray-xe-gasnet-mpi-pgi
 Inherits 'cray-module-correctness-cray-xe-gasnet-mpi*'
 and 'cray-module-correctness-cray-xe-*-pgi'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -599,7 +599,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-gasnet-mpi-intel
 Inherits 'cray-module-correctness-cray-xe-gasnet-mpi*'
 and 'cray-module-correctness-cray-xe-*-intel'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -607,7 +607,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-gasnet-mpi-gnu
 Inherits 'cray-module-correctness-cray-xe-gasnet-mpi*'
 and 'cray-module-correctness-cray-xe-*-gnu'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ======================================================
 
 
@@ -615,7 +615,7 @@ Reviewed 2015-01-29
 cray-module-correctness-cray-xe-ugni-intel
 Inherits 'cray-module-correctness-cray-xe-ugni*'
 and 'cray-module-correctness-cray-xe-*-intel'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================================
 
 
@@ -630,14 +630,14 @@ Reviewed 2015-02-02
 ================================
 cray-module-performance-cray-xc*
 Inherits 'general'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ================================
 
 
 ============================================
 cray-module-performance-cray-xc-gasnet*
 Inherits 'cray-module-performance-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ============================================
 
 Execution timeout
@@ -648,7 +648,7 @@ FAILED:  release/examples/benchmarks/ssca2.SSCA2_main (compopts: 1, execopts: 2)
 ==================================================
 cray-module-performance-cray-xc-gasnet-aries
 Inherits 'cray-module-performance-cray-xc-gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ==================================================
 
 Execution timeout
@@ -659,7 +659,7 @@ FAILED:  release/examples/benchmarks/hpcc.ra-atomics
 ===========================================
 cray-module-performance-cray-xc-gasnet-mpi
 Inherits 'cray-module-performance-cray-xc-gasnet*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===========================================
 
 Execution timeout
@@ -670,7 +670,7 @@ FAILED:  release/examples/benchmarks/miniMD.miniMD (compopts: 1)
 ===========================================
 cray-module-performance-cray-xc-ugni
 Inherits 'cray-module-performance-cray-xc*'
-Reviewed 2015-01-29
+Reviewed 2015-02-02
 ===========================================
 
 Segfault
