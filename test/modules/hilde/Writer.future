@@ -1,6 +1,6 @@
 bug: User definition of 'Writer' module breaks internal modules
 
-When code like defines a module named 'Writer' like this (whether
+When code defines a module named 'Writer' like this (whether
 explicitly, or implicitly from the filename, as in this case), it
 causes the internal modules to break because their references to
 'Writer' resolve to this user module rather than to the 'Writer' class
