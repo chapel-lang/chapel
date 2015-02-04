@@ -639,7 +639,7 @@ static std::string firstNonEmptyLine(std::string s) {
   std::string result;
   while (std::getline(sStream, line)) {
     if (!isEmpty(line)) {
-      result = line;
+      result = ltrim(line);
       break;
     }
   }
