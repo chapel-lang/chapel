@@ -122,6 +122,12 @@ export CHPL_COMM=none
 export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
+# Request config-specific suppressions, if applicable.
+suppfile=Suppressions/$CHPL_NIGHTLY_TEST_CONFIG_NAME.suppress
+if [ -r "$CHPL_HOME/test/$suppfile" ] ; then
+  nightly_args="-suppress $suppfile"
+fi
+
 # Ensure that one of the CPU modules is loaded.
 my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)
 if [ "${my_arch}" = "none" ] ; then

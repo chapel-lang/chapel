@@ -1,0 +1,2 @@
+# This test fails under xe-wb.prgenv-cray due to BUG 822194.
+modules/sungeun/test_safeSub
