@@ -31,7 +31,9 @@ extern Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy functio
 extern Map<FnSymbol*,FnSymbol*> iteratorLeaderMap;
 extern Map<FnSymbol*,FnSymbol*> iteratorFollowerMap;
 
+#ifndef HILDE_MM
 FnSymbol* requiresImplicitDestroy(CallExpr* call);
+#endif
 
 bool isDispatchParent(Type* t, Type* pt);
 

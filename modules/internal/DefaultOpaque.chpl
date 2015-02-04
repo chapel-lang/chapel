@@ -33,9 +33,18 @@ module DefaultOpaque {
     proc DefaultOpaqueDom(dist: DefaultDist, param parSafe: bool) {
       this.dist = dist;
       adomain = new DefaultAssociativeDom(_OpaqueIndex, dist, parSafe=parSafe);
+      // This prevents premature deletion of the contained associated dom, in
+      // case it is iterated upon, or other operations that might cause the
+      // refCount to take an excursion from zero and return there.
+      // When the ref count of a dom goes to zero the dom is reclaimed (freed),
+      // and that would be bad.
+      adomain.incRefCount();
     }
   
     proc ~DefaultOpaqueDom() {
+      // We assume that adomain is not shared out, so that when the containing
+      // opaque dom is deleted, the contained associative domain can be free
+      // unconditionally.
       for i in adomain do delete i;
       delete adomain;
     }

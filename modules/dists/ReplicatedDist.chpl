@@ -243,7 +243,7 @@ proc chpl__autoCopy(x: ReplicatedDom) {
   return x;
 }
 
-proc chpl__autoDestroy(x: ReplicatdDom) {
+proc chpl__autoDestroy(x: ReplicatedDom) {
   if !noRefCount {
     var cnt = x.destroyDom();
     if cnt == 0 then

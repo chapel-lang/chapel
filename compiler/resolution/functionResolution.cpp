@@ -338,7 +338,6 @@ static Expr* preFold(Expr* expr);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static bool isSubType(Type* sub, Type* super);
 static void insertValueTemp(Expr* insertPoint, Expr* actual);
-FnSymbol* requiresImplicitDestroy(CallExpr* call);
 static Expr* postFold(Expr* expr);
 static void
 computeReturnTypeParamVectors(BaseAST* ast,
@@ -5420,6 +5419,7 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
 }
 
 
+#ifndef HILDE_MM
 //
 // returns resolved function if the function requires an implicit
 // destroy of its returned value (i.e. reference count)
@@ -5464,6 +5464,7 @@ requiresImplicitDestroy(CallExpr* call) {
   }
   return NULL;
 }
+#endif
 
 
 static Expr*
@@ -5593,17 +5594,17 @@ postFold(Expr* expr) {
           }
         }
         if (!set) {
+#ifndef HILDE_MM
           if (lhs->var->hasFlag(FLAG_EXPR_TEMP) &&
               !lhs->var->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
               if (requiresImplicitDestroy(rhsCall)) {
                 lhs->var->addFlag(FLAG_INSERT_AUTO_COPY);
-#ifndef HILDE_MM
                 lhs->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
-#endif
               }
             }
           }
+#endif
           if (isReferenceType(lhs->var->type) ||
               lhs->var->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
               lhs->var->type->symbol->hasFlag(FLAG_ARRAY))
