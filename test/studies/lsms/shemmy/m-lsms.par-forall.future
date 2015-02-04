@@ -1,0 +1,57 @@
+bug: application crash
+
+This test has run with --dataParTasksPerLocale=1 since it was added.
+It even had an assert(dataParTasksPerLocale==1).
+
+Removing that option and that assert, the test crashes with:
+
+m-lsms.par-forall.chpl:67: error: halt reached - array index out of bounds: (1)
+
+where in a single multilocale run I have seen three errors with the erroneous
+indices of 1, 6, and 9.
+
+Briefly looking at the code, I did not even see any array indexing operations
+there, and did not investigate further. Valgrind did not turn up anything,
+and the program runs successfully under valgrind. It is unclear to me
+whether it is an application code bug or a Chapel bug.
+
+Serializing that particular forall, the code runs successfully.
+So I am putting a 'serial serialForall do' around it where serialForall
+default to 'true' and is 'false' for this .future.
+
+
+It seems like some memory error is detected on the mac/darwin, where we get:
+
+  m-lsms.par-forall(56564,0x1094bf000) malloc: *** error for object 0x7fcf2b600170: pointer being freed was not allocated
+  *** set a breakpoint in malloc_error_break to debug
+  m-lsms.par-forall.chpl:67: error: halt reached - array index out of bounds: (2)
+
+So maybe it is easier to debug the issue on that platform.
+
+However, I am skipif-ing this test for the mac to avoid the trouble of
+getting .bad to match. The troubles seem to be: (A) 'sed' works
+differently on the mac, so it seems, and (B) I don't know how consistent
+the additional output on the mac is.
+
+This test also succeeded under numa in the nightly testing, and I do
+not know whether it was a false positive or whether it actually works
+correctly under numa. Brad and I agree that it is not worth putting
+time into investigating this further. Therefore...
+I skipif this test under all but the default configuration.
+Once it works there, remove the .skipif and let it run on other
+configurations as well.
+
+11/14/14 Update: This test also succeeded in the default configuration
+in the nightly testing. I believe that it was a false positive, because
+it failed when I ran it by hand for comm=none with both fifo and qthreads
+tasking.
+  SO I am making it a .notest, to avoid further noise in nightly testing.
+This is a poor-man's solution to the situation, I just do not have
+any better ideas, given that this test is not a high priority for us.
+The serial-forall variant, which passes, is still being tested
+as m-lsms.chpl.
+
+
+Once this bug is fixed: (a) remove this test altogether;
+(b) remove 'serialForall' and the 'serial' statement from m-lsms.chpl
+- to make that adjacent 'forall' parallel, as originally intended.

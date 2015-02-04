@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,8 @@
 
 #ifndef _BUILD_H_
 #define _BUILD_H_
+
+#include <set>
 
 #include "flags.h"
 #include "stmt.h"
@@ -53,9 +55,6 @@ Expr* buildStringLiteral(const char* pch);
 Expr* buildDotExpr(BaseAST* base, const char* member);
 Expr* buildDotExpr(const char* base, const char* member);
 
-Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right);
-Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right);
-
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
@@ -66,9 +65,12 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
-BlockStmt* buildWhileDoLoopStmt(Expr* cond, BlockStmt* body);
-BlockStmt* buildDoWhileLoopStmt(Expr* cond, BlockStmt* body);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
+void       checkIndices(BaseAST* indices);
+void       destructureIndices(BlockStmt* block,
+                              BaseAST*   indices,
+                              Expr*      init,
+                              bool       coforall);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  CallExpr* byref_vars,
@@ -76,13 +78,9 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
 BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
-BlockStmt* buildForLoopStmt(Expr* indices,
-                            Expr* iterator,
-                            BlockStmt* body,
-                            bool coforall = false,
-                            bool zippered = false);
 BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
+                               CallExpr* byref_vars,
                                BlockStmt* body,
                                bool zippered = false);
 CallExpr* buildForLoopExpr(Expr* indices,
@@ -104,12 +102,12 @@ BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op = NULL);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs);
 BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
-BlockStmt* buildTypeSelectStmt(CallExpr* s, BlockStmt* whenstmts);
 
 CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
 CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, Flag externconfig, Flag varconst, Flag ref, char* docs);
+
+BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, char* docs);
 
 DefExpr*  buildClassDefExpr(const char* name, 
                             Type*       type,

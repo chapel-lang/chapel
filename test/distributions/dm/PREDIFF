@@ -1,4 +1,4 @@
-#!/bin/bash --norc
+#!/bin/bash
 
 testname=$1
 outputfile=$2
@@ -13,6 +13,27 @@ case $testname in
   (t5a) doRLN=true; doSort=false ;;
   (s7)  doSort=false ;;
   (tmath) doSort=false ;;
+  (hplx)
+     # special handling
+     mv $outputfile $outputfile.orig
+
+     #
+     # There is no consistent failing output.
+     # Using greps and .bad, the intention is to detect the expected failure,
+     # i.e. the absense of the 'start...finish' line,
+     # and distinguish it from other failures like syntax errors.
+     #
+     # The error "ReplicatedDist.chpl:272: error: attempt to dereference nil"
+     # or similar is sometimes reported in a failed run, sometimes not.
+     # Ditto "FATAL ERROR: recursive failure in AMUDP_SPMDShutdown".
+     #
+     egrep -i '^start...finish$|error|warning' $outputfile.orig \
+       | grep -v 'error: attempt to dereference nil' \
+       | grep -v 'FATAL ERROR:' \
+       > $outputfile
+
+     echo retained the original output in $outputfile.orig
+     ;; #hplx
 esac
 
 # remove line numbers from warnings

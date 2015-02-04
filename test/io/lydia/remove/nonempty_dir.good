@@ -1,2 +1,0 @@
-nonempty_dir.chpl:3: error: Directory not empty in remove with path "nonempty"
-cat: nonempty: Is a directory

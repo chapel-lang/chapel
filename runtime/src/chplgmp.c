@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -86,7 +86,7 @@ void chpl_gmp_mpz_print(mpz_t x)
 }
 
 
-c_string chpl_gmp_mpz_get_str(int base, mpz_t x)
+c_string_copy chpl_gmp_mpz_get_str(int base, mpz_t x)
 {
   size_t len = mpz_sizeinbase(x, base);
 

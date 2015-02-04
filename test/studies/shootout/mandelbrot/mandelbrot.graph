@@ -1,5 +1,5 @@
-perfkeys: real, real, real, real, real, real, real, real, real
-files: mandelbrot-complex.dat, mandelbrot-dist.dat, mandelbrot-no-dist.dat, mandelbrot-stdout.dat, mandelbrot-stdout-putchar.dat, mandelbrot-unzipped.dat, mandelbrot-blc.dat, mandelbrot.dat, mandelbrot-unrolled.dat
-graphkeys: mandelbrot-complex, mandelbrot-dist, mandelbrot-no-dist, mandelbrot-ferguson-stdout, mandelbrot-ferguson-putchar, mandelbrot-unzipped, mandelbrot-blc, release, mandelbrot-unrolled
+perfkeys: real, real, real, real, real, real, real, real, real, real
+files: mandelbrot-complex.dat, mandelbrot-dist.dat, mandelbrot-no-dist.dat, mandelbrot-stdout.dat, mandelbrot-stdout-putchar.dat, mandelbrot-unzipped.dat, mandelbrot-blc.dat, mandelbrot.dat, mandelbrot-unrolled.dat, mandelbrot-MAXLOGICAL.dat
+graphkeys: mandelbrot-complex, mandelbrot-dist, mandelbrot-no-dist, mandelbrot-ferguson-stdout, mandelbrot-ferguson-putchar, mandelbrot-unzipped, mandelbrot-blc, release, mandelbrot-unrolled, MAX_LOGICAL unrolled
 ylabel: Time (seconds)
 graphtitle: Mandelbrot variations

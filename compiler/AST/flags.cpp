@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -75,6 +75,7 @@ bool viewFlagsShort = true;
 bool viewFlagsPragma = false;
 bool viewFlagsName  = false;
 bool viewFlagsComment = false;
+bool viewFlagsExtras = true;
 
 void
 viewFlags(BaseAST* ast) {
@@ -93,6 +94,31 @@ viewFlags(BaseAST* ast) {
           printf("// %s",
                  *flagComments[e->value] ? flagComments[e->value] : "ncm");
         printf("\n");
+      }
+    }
+    if (viewFlagsExtras) {
+      if (VarSymbol* vs = toVarSymbol(sym)) {
+        if (vs->immediate) {
+          printf("immediate ");
+          fprint_imm(stdout, *toVarSymbol(sym)->immediate, true);
+          printf("\n");
+        }
+      } else if (ArgSymbol* as = toArgSymbol(sym)) {
+        printf("%s arg\n", as->intentDescrString());
+      } else if (toTypeSymbol(sym)) {
+        printf("a TypeSymbol\n");
+      } else if (FnSymbol* fs = toFnSymbol(sym)) {
+        printf("fn %s(%d args) %s\n",
+               fs->_this ? intentDescrString(fs->thisTag) : "",
+               fs->numFormals(), retTagDescrString(fs->retTag));
+      } else if (toEnumSymbol(sym)) {
+        printf("an EnumSymbol\n");
+      } else if (ModuleSymbol* ms = toModuleSymbol(sym)) {
+        printf("module %s\n", modTagDescrString(ms->modTag));
+      } else if (toLabelSymbol(sym)) {
+        printf("a LabelSymbol\n");
+      } else {
+        printf("unknown symbol kind\n");
       }
     }
   } else {

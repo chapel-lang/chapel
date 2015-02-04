@@ -4,10 +4,11 @@ import sys, os, shutil, time, math, re
 from optparse import OptionParser
 
 import fileReadHelp
+import json
 try:
-  import annotate
+    import annotate
 except ImportError:
-  annotate = None
+    annotate = None
 
 usage =  '%prog [options] <graphfiles>'
 parser = OptionParser(usage=usage)
@@ -71,11 +72,146 @@ def parse_date(value, dateformat='%m/%d/%y'):
     else:
         return time.strptime(value.strip(), dateformat)
 
-def show_date(value):
+def show_date(value=time.localtime()):
     if numericX:
         return value
     else:
         return time.strftime('%Y-%m-%d', value)
+
+# converts a csv file to json. Converts the csv file to json where the json
+# object has two members: the labels and the actual data formatted as required
+# by dygraphs
+def csv_to_json(csvFile, ginfo):
+    data = parse_csv(csvFile)
+    os.unlink(csvFile)
+
+    # rename the csv file to indicate that it's a json file
+    jsonFile = os.path.splitext(csvFile)[0]+'.json'
+    ginfo.datfname = os.path.splitext(ginfo.datfname)[0]+'.json'
+
+    # each label is stored in a single element array because of how it is
+    # parsed, get rid of that array so labels is now a simple array of strings
+    labels = [a[0] for a in data[0]]
+    data = data[1:]
+
+    lines = []
+    for line in data:
+        # like for the labels, strip the array surrounding the date
+        curDate = line[0][0]
+        dataForCurDate = line[1:]
+        curLine = [curDate]
+        # the data for a series on the current date is stored as ['val'],
+        # ['low', 'med', 'high'], or ['']. Need to parse as floats, and turn
+        # [''] (no data for this series on this date) into None so json.dumps
+        # turns it into null.
+        for seriesArr in dataForCurDate:
+            if len(seriesArr) == 1 and seriesArr[0] == '':
+                curLine.append(None)
+            else:
+                curLine.append([try_parse_float(x) for x in seriesArr])
+        lines.append(curLine)
+
+    # if there was no data in the csvFile, create an empty entry for todays
+    # date. Dygraphs does not accept a zero length array for the data so we add
+    # a single entry for today's date with null data for each series
+    if len(lines) == 0:
+        line = [None for label in labels]
+        line[0] = show_date()
+        lines.append(line)
+
+    jsonObj = {'labels': labels, 'data': lines}
+    with open(jsonFile, 'w') as f:
+        f.write(json.dumps(jsonObj))
+
+# Helper functions to parse/write/sort a dygraphs compatible csv file.
+#
+# Expected form of csv file is:
+#
+# Date,<perfKey1>,<perfKey2>
+# YYYY-mm-dd,<key1Value>,<key2Value>
+# YYYY-mm-dd,<key1Value>,<key2Value>
+#
+# where <keyXValue> is of the form 'val' for numtrials=1 (customBars are not
+# being used), 'lowVal;medVal;highVal' for numTrials>1 (customBars are being
+# used), or '' if there was no no value for that key for that date
+#
+# Parses a csv file of the above form into a list of the form:
+#
+# [[['Date'], ['perfKey1'], ['perfKey2']],
+# [['YYYY-mm-dd'],[<key1Value>],[<key2Value>]],
+# [['YYYY-mm-dd'],[<key1Value>],[<key2Value>]]]
+#
+# where <keyXValue> is either a single value as a string, 3 values (low, med,
+# high) as strings, or the empty string if there was no value for that key for
+# that date
+
+def parse_csv(csvFile):
+    lines = fileReadHelp.ReadFileWithComments(csvFile)
+
+    data = []
+    for line in lines:
+        line = line.rstrip()
+        if len(line) > 0:
+            valuesString = line.split(',')
+            values = []
+            for valueString in valuesString:
+                 values.append(valueString.split(';'))
+            data.append(values)
+
+    return data
+
+def data_to_csv(data, csvFile):
+    lines = []
+    for values in data:
+        line = []
+        for value in values:
+            line.append(';'.join(value))
+        lines.append(','.join(line)+'\n')
+
+    with open(csvFile, 'w') as f:
+        f.writelines(lines)
+
+# sorts a csv of the aforementioned form. Sorts a series' keys and it's
+# corresponding values (column) from greatest to least in terms of a series
+# most recent data.
+# Takes:
+#   Date,<perfKey1>,<perfKey2>
+#   YYYY-mm-dd,1;2;3,0;1;2
+#   YYYY-mm-dd,1;2;3,3;4;5
+# and transforms it into:
+#   Date,<perfKey2>,<perfKey1>
+#   YYYY-mm-dd,0;1;2,1;2;3
+#   YYYY-mm-dd,3;4;5,1;2;3
+#
+# also works for 'val', instead of 'low;med;high' and empty values: ''
+def sort_csv(csvFile):
+    data = parse_csv(csvFile)
+
+    # transpose the data so that we can sort by row
+    data = zip(*data)
+    # remove the Date perfkey and the actual dates as they screw up sorting
+    dates = data.pop(0)
+
+    # sort function called on values of the form:
+    #   [['perfKey1'],[<key1Value>],[<key1Value>]]
+    # where keyXValue are of the form described above. sorts by the most recent
+    # date, and grabs the middle value. returns -1 for empty values, so that
+    # series with no recent data filter down to the bottom
+    def parse_sortable_float(values):
+        mostRecentValues = values[len(values)-1]
+        value = mostRecentValues[len(mostRecentValues)//2]
+        if value == '':
+            return -1.0
+        return try_parse_float(value)
+
+    data.sort(key=lambda values: parse_sortable_float(values), reverse=True)
+
+    # add the dates back in
+    data.insert(0, dates)
+    # untranspose the data
+    data = zip(*data)
+
+    data_to_csv(data, csvFile)
 
 ############
 
@@ -213,7 +349,6 @@ class GraphStuff:
         self.gfile.write('   "enddate" : "%s",\n'%(ginfo.enddate))
         self.gfile.write('   "displayrange" : %s,\n'%(str(ginfo.displayrange).lower()))
         self.gfile.write('   "expand" : %d,\n'%(ginfo.expand))
-        self.gfile.write('   "sort" : %s,\n'%(str(ginfo.sort).lower()))
         self.gfile.write('   "annotations" : [')
         if ginfo.annotations:
           self.gfile.write('\n      ')
@@ -330,7 +465,7 @@ class GraphClass:
         self.displayrange = _displayrange
         self._reduce = _reduce
         self.expand = _expand
-        self.sort = _sort 
+        self.sort = _sort
         self.annotations = []
 
     def __str__(self):
@@ -471,48 +606,52 @@ class GraphClass:
             for i in range(numKeys):
                 if not self.datfilenames[i] in datfiles:
                     continue
-                df = datfiles[self.datfilenames[i]]
-                if currLines[i] < len(df.lines):
-                    fields = zip(*df.lines[currLines[i]])
-                    myDate = fields[0][0]
-                    if myDate == minDate:
-                        # consume this line
-                        line_to_write += ','
-                        if len(fields)>df.mykeys[i] and '-' not in fields[df.mykeys[i]]:
-                            fieldId = df.mykeys[i]
-                            value = fields[fieldId][0]
-                            if self.generate:
-                                method = self.generate[i]
-                            else:
-                                method = self._reduce
-
-                            if method == 'avg':
-                                value = math.fsum(fields[fieldId])/len(fields[fieldId])
-                            elif method == 'med':
-                                slist = sorted(fields[fieldId])
-                                if len(fields[fieldId]) % 2 == 0:
-                                    value = (slist[len(slist)/2]+slist[len(slist)/2-1])/2
+                try:
+                    df = datfiles[self.datfilenames[i]]
+                    if currLines[i] < len(df.lines):
+                        fields = zip(*df.lines[currLines[i]])
+                        myDate = fields[0][0]
+                        if myDate == minDate:
+                            # consume this line
+                            line_to_write += ','
+                            if len(fields)>df.mykeys[i] and '-' not in fields[df.mykeys[i]]:
+                                fieldId = df.mykeys[i]
+                                value = fields[fieldId][0]
+                                if self.generate:
+                                    method = self.generate[i]
                                 else:
-                                    value = slist[len(slist)/2]
-                            elif method == 'min':
-                                value = min(fields[fieldId])
-                            elif method == 'max':
-                                value = max(fields[fieldId])
+                                    method = self._reduce
 
-                            if self.displayrange:
-                                minval = min(fields[fieldId])
-                                maxval = max(fields[fieldId])
-                                line_to_write += "{0};{1};{2}".format(minval, value, maxval)
-                            else:
-                                line_to_write += "{0}".format(value)
-                            found_data = True
-                        currLines[i] += 1
+                                if method == 'avg':
+                                    value = math.fsum(fields[fieldId])/len(fields[fieldId])
+                                elif method == 'med':
+                                    slist = sorted(fields[fieldId])
+                                    if len(fields[fieldId]) % 2 == 0:
+                                        value = (slist[len(slist)/2]+slist[len(slist)/2-1])/2
+                                    else:
+                                        value = slist[len(slist)/2]
+                                elif method == 'min':
+                                    value = min(fields[fieldId])
+                                elif method == 'max':
+                                    value = max(fields[fieldId])
+
+                                if self.displayrange:
+                                    minval = min(fields[fieldId])
+                                    maxval = max(fields[fieldId])
+                                    line_to_write += "{0};{1};{2}".format(minval, value, maxval)
+                                else:
+                                    line_to_write += "{0}".format(value)
+                                found_data = True
+                            currLines[i] += 1
+                        else:
+                            # no data for this date
+                            line_to_write += ','
                     else:
                         # no data for this date
                         line_to_write += ','
-                else:
-                    # no data for this date
-                    line_to_write += ','
+                except:
+                    print('[Error parsing .dat file: {0}'.format(self.datfilenames[i]))
+                    raise
 
             if found_data:
               f.write(line_to_write)
@@ -525,6 +664,17 @@ class GraphClass:
 
         f.write('\n')
         f.close()
+
+        # sort the csv if sorting is enabled for this graph. This happens after
+        # the file is created instead of above because the above process
+        # appends to the file line by line and it wasn't clear to me how to get
+        # it into a better form. If instead of writing out line by line, you
+        # put the data into a list of the form described in the csv helper
+        # functions section above, you can eliminate the intermediate step.
+        if self.sort:
+            sort_csv(fname)
+
+        csv_to_json(fname, self)
 
         if startdate == None:
             startdate = time.localtime()
@@ -556,6 +706,10 @@ class GraphClass:
             start = len(self.graphkeys)
             for i in range(start,nperfkeys):
                 self.graphkeys.append(self.perfkeys[i])
+
+        # strip trailing colons, equals, spaces, and dashes so graphkeys are
+        # cleaner. We have a lot of them when graph keys come from perfkeys
+        self.graphkeys = [key.rstrip(':= -') for key in self.graphkeys]
 
         for i in range(nperfkeys):
             for j in range(nperfkeys):
@@ -600,10 +754,6 @@ class GraphClass:
                     datfile = os.path.basename(dat)
                     self.datfilenames.append(os.path.join(datpath, desc, datfile))
                     self.perfkeys.append(perf)
-                    # strip trailing colons, equals and spaces, we seem to have
-                    # a lot of these coming from our perfkeys
-                    while graph.endswith((':', '=', ' ')):
-                        graph = graph[:-1]
                     # append description
                     self.graphkeys.append(graph + graphdesc)
 

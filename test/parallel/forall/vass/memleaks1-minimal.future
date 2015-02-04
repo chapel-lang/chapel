@@ -1,0 +1,18 @@
+memory: leak in 'forall' that engages forall intents, with certain leaders
+
+Forall intents (PR #614 aka f015d56) introduced an (additional) memory leak
+when a forall loop engages the (const in) forall intent on a variable.
+For details see Commit df8e3b03.
+
+These tests extract this behavior:
+
+  memleaks1-minimal.chpl   -- a minimal setup that exhibits the issue
+
+  memleaks2-BlockDist.chpl -- a full-fledged example using BlockDist's leaders
+
+Both tests leak in a variety of setups, whenever 'on' clauses
+are not optimized away. So they can be tested with --no-local or
+(currently) "numa" locale model.
+
+I restrict them to be tested only in a small set of configurations, to
+save testing time. Once they are fixed there, the .skipifs can be removed.

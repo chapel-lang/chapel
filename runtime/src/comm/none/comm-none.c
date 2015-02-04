@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -60,7 +60,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        int ln, c_string fn)
 {
   assert(node == 0);
-  memcpy(raddr, addr, len*elemSize);
+  chpl_memcpy(raddr, addr, len*elemSize);
   return NULL;
 }
 
@@ -70,22 +70,32 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        int ln, c_string fn)
 {
   assert(node == 0);
-  memcpy(addr, raddr, len*elemSize);
+  chpl_memcpy(addr, raddr, len*elemSize);
   return NULL;
 }
 
-int chpl_comm_nb_handle_is_complete(chpl_comm_nb_handle_t h)
+int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 {
-  return ((void*)h) == NULL;
+  return ((void*) h) == NULL;
 }
 
-void chpl_comm_nb_wait_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
   size_t i;
   for( i = 0; i < nhandles; i++ ) {
     assert(h[i] == NULL);
   }
 }
+
+int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+{
+  size_t i;
+  for( i = 0; i < nhandles; i++ ) {
+    assert(h[i] == NULL);
+  }
+  return 0;
+}
+
 int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
 {
   return 0;
@@ -494,7 +504,7 @@ void chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
   info->fid = fid;
   info->arg_size = arg_size;
   if (arg_size)
-    memcpy(&(info->arg), arg, arg_size);
+    chpl_memcpy(&(info->arg), arg, arg_size);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
                            subloc, chpl_nullTaskID, false);
 }
@@ -528,10 +538,11 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) { }
 
 uint64_t chpl_numCommGets(void) { return 0; }
 uint64_t chpl_numCommNBGets(void) { return 0; }
-uint64_t chpl_numCommTestNBGets(void) { return 0; }
-uint64_t chpl_numCommWaitNBGets(void) { return 0; }
 uint64_t chpl_numCommPuts(void) { return 0; }
 uint64_t chpl_numCommNBPuts(void) { return 0; }
+uint64_t chpl_numCommTestNB(void) { return 0; }
+uint64_t chpl_numCommWaitNB(void) { return 0; }
+uint64_t chpl_numCommTryNB(void) { return 0; }
 uint64_t chpl_numCommForks(void) { return 0; }
 uint64_t chpl_numCommFastForks(void) { return 0; }
 uint64_t chpl_numCommNBForks(void) { return 0; }

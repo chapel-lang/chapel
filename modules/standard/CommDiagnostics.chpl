@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -35,9 +35,11 @@ module CommDiagnostics
   extern record chpl_commDiagnostics {
     var get: uint(64);
     var get_nb: uint(64);
-    var get_nb_test: uint(64);
-    var get_nb_wait: uint(64);
     var put: uint(64);
+    var put_nb: uint(64);
+    var test_nb: uint(64);
+    var wait_nb: uint(64);
+    var try_nb: uint(64);
     var fork: uint(64);
     var fork_fast: uint(64);
     var fork_nb: uint(64);
@@ -86,9 +88,11 @@ module CommDiagnostics
   // See note above regarding extern records
   extern proc chpl_numCommGets(): uint(64);
   extern proc chpl_numCommNBGets(): uint(64);
-  extern proc chpl_numCommTestNBGets(): uint(64);
-  extern proc chpl_numCommWaitNBGets(): uint(64);
   extern proc chpl_numCommPuts(): uint(64);
+  extern proc chpl_numCommNBPuts(): uint(64);
+  extern proc chpl_numCommTestNB(): uint(64);
+  extern proc chpl_numCommWaitNB(): uint(64);
+  extern proc chpl_numCommTryNB(): uint(64);
   extern proc chpl_numCommForks(): uint(64);
   extern proc chpl_numCommFastForks(): uint(64);
   extern proc chpl_numCommNBForks(): uint(64);
@@ -98,13 +102,15 @@ module CommDiagnostics
     for loc in Locales do on loc {
       // See note above regarding extern records
       D(loc.id).get = chpl_numCommGets();
+      D(loc.id).get_nb = chpl_numCommNBGets();
       D(loc.id).put = chpl_numCommPuts();
+      D(loc.id).put_nb = chpl_numCommNBPuts();
+      D(loc.id).test_nb = chpl_numCommTestNB();
+      D(loc.id).wait_nb = chpl_numCommWaitNB();
+      D(loc.id).try_nb = chpl_numCommTryNB();
       D(loc.id).fork = chpl_numCommForks();
       D(loc.id).fork_fast = chpl_numCommFastForks();
       D(loc.id).fork_nb = chpl_numCommNBForks();
-      D(loc.id).get_nb = chpl_numCommNBGets();
-      D(loc.id).get_nb_test = chpl_numCommTestNBGets();
-      D(loc.id).get_nb_wait = chpl_numCommWaitNBGets();
     }
     return D;
   }
@@ -112,13 +118,15 @@ module CommDiagnostics
   proc getCommDiagnosticsHere() {
     var cd: commDiagnostics;
     cd.get = chpl_numCommGets();
+    cd.get_nb = chpl_numCommNBGets();
     cd.put = chpl_numCommPuts();
+    cd.put_nb = chpl_numCommNBPuts();
+    cd.test_nb = chpl_numCommTestNB();
+    cd.wait_nb = chpl_numCommWaitNB();
+    cd.try_nb = chpl_numCommTryNB();
     cd.fork = chpl_numCommForks();
     cd.fork_fast = chpl_numCommFastForks();
     cd.fork_nb = chpl_numCommNBForks();
-    cd.get_nb = chpl_numCommNBGets();
-    cd.get_nb_test = chpl_numCommTestNBGets();
-    cd.get_nb_wait = chpl_numCommWaitNBGets();
     return cd;
   }
   

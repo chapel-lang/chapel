@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,6 @@
 
 #include "passes.h"
 #include "resolveIntents.h"
-#include "view.h"
 
 bool intentsResolved = false;
 
@@ -45,6 +44,7 @@ static IntentTag constIntentForType(Type* t) {
              t == dtTaskList ||
              t == dtNil ||
              t == dtStringC ||
+             t == dtStringCopy ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
     return INTENT_CONST_IN;
   }
@@ -66,6 +66,7 @@ IntentTag blankIntentForType(Type* t) {
              is_enum_type(t) ||
              is_string_type(t) ||
              t == dtStringC ||
+             t == dtStringCopy ||
              isClass(t) ||
              isRecord(t) ||
              isUnion(t) ||
@@ -83,23 +84,26 @@ IntentTag blankIntentForType(Type* t) {
   return INTENT_BLANK;
 }
 
+IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
+  if (existingIntent == INTENT_BLANK) {
+    return blankIntentForType(t);
+  } else if (existingIntent == INTENT_CONST) {
+    return constIntentForType(t);
+  } else {
+    return existingIntent;
+  }
+}
+
+static IntentTag blankIntentForThisArg(Type* t) {
+  // todo: be honest when 't' is an array or domain
+  return INTENT_CONST_IN;
+}
+
 void resolveArgIntent(ArgSymbol* arg) {
-  if (arg->intent == INTENT_BLANK) {
-    if (arg->hasFlag(FLAG_ARG_THIS)) {
-      //
-      // BLC: If we eventually support 'var' intents for 'this' as
-      // part of the opt_this_intent_tag rule in the parser, we would
-      // need to cue off of that information in setting the intent for
-      // "this" here.
-      //
-      arg->intent = INTENT_CONST_IN;
-    } else {
-      arg->intent = blankIntentForType(arg->type);
-    }
-  }
-  if (arg->intent == INTENT_CONST) {
-    arg->intent = constIntentForType(arg->type);
-  }
+  arg->intent = 
+    arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK ?
+    blankIntentForThisArg(arg->type) :
+    concreteIntent(arg->intent, arg->type);
 }
 
 void resolveIntents() {

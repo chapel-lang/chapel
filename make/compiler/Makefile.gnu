@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -134,9 +134,9 @@ GEN_CFLAGS += -Wno-strict-overflow
 endif
 
 #
-# developer settings
+# compiler warnings settings
 #
-ifdef CHPL_DEVELOPER
+ifeq ($(WARNINGS), 1)
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,11 +17,13 @@
  * limitations under the License.
  */
 
+#include "optimizations.h"
+
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
 #include "expr.h"
-#include "optimizations.h"
+#include "stlUtil.h"
 #include "stmt.h"
 
 //#define DEBUG_LIVE
@@ -46,10 +48,10 @@ liveVariableAnalysis(FnSymbol* fn,
                      Vec<SymExpr*>& useSet,
                      Vec<SymExpr*>& defSet,
                      std::vector<BitVec*>& OUT) {
-  buildLocalsVectorMap(fn, locals, localMap);
+  BasicBlock::buildLocalsVectorMap(fn, locals, localMap);
 
 #ifdef DEBUG_LIVE
-  printLocalsVector(locals, localMap);
+  BasicBlock::printLocalsVector(locals, localMap);
 #endif
 
   buildDefUseSets(locals, fn, defSet, useSet);
@@ -100,11 +102,11 @@ liveVariableAnalysis(FnSymbol* fn,
   }
 
 #ifdef DEBUG_LIVE
-  printf("DEF\n"); printLocalsVectorSets(DEF, locals);
-  printf("USE\n"); printLocalsVectorSets(USE, locals);
+  printf("DEF\n"); BasicBlock::printLocalsVectorSets(DEF, locals);
+  printf("USE\n"); BasicBlock::printLocalsVectorSets(USE, locals);
 #endif
 
-  backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
+  BasicBlock::backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
 
   for_vector(BitVec, use, USE)
     delete use, use = 0;

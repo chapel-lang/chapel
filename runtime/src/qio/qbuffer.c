@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,11 +19,13 @@
 
 
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
 #include "qbuffer.h"
+
+#include "error.h"
 
 #include "sys.h"
 
@@ -70,7 +72,10 @@ void qbytes_free_munmap(qbytes_t* b) {
   */
 
   err = sys_munmap(b->data, b->len);
-  assert( !err );
+
+  if (err) {
+    chpl_internal_error("sys_munmap() failed");
+  }
 
   _qbytes_free_qbytes(b);
 }
@@ -237,7 +242,7 @@ int qbytes_append_realloc(qbytes_t* qb, size_t item_size, void* item)
       qb->data = a;
    }
    // now put the new value in.
-   memcpy(a + len, item, item_size);
+   qio_memcpy(a + len, item, item_size);
    qb->len += item_size; // increment the item size.
 
    return 0;
@@ -916,7 +921,7 @@ qioerr qbuffer_flatten(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
 
   j = 0;
   for( i = 0; i < iovcnt; i++ ) {
-    memcpy(PTR_ADDBYTES(ret->data, j), iov[i].iov_base, iov[i].iov_len);
+    qio_memcpy(PTR_ADDBYTES(ret->data, j), iov[i].iov_base, iov[i].iov_len);
     j += iov[i].iov_len;
   }
 
@@ -1006,7 +1011,7 @@ qioerr qbuffer_copyout(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end,
   j = 0;
   for( i = 0; i < iovcnt; i++ ) {
     if( j + iov[i].iov_len > ret_len ) goto error_nospace;
-    memcpy(PTR_ADDBYTES(ptr, j), iov[i].iov_base, iov[i].iov_len);
+    qio_memcpy(PTR_ADDBYTES(ptr, j), iov[i].iov_base, iov[i].iov_len);
     j += iov[i].iov_len;
   }
 
@@ -1044,7 +1049,7 @@ qioerr qbuffer_copyin(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
   j = 0;
   for( i = 0; i < iovcnt; i++ ) {
     if( j + iov[i].iov_len > ret_len ) goto error_nospace;
-    memcpy(iov[i].iov_base, PTR_ADDBYTES(ptr, j), iov[i].iov_len);
+    qio_memcpy(iov[i].iov_base, PTR_ADDBYTES(ptr, j), iov[i].iov_len);
     j += iov[i].iov_len;
   }
 

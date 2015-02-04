@@ -1,1 +1,1 @@
--DSIMPLE_TEST $CHPL_HOME/runtime/src/qio/deque.c -pthread
+-DCHPL_RT_UNIT_TEST $CHPL_HOME/runtime/src/qio/deque.c -lpthread

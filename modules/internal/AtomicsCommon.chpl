@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-pragma "no use ChapelStandard"
 module AtomicsCommon {
   record atomic_refcnt {
     // The common case seems to be local access to this class, so we

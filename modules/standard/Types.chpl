@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -381,11 +381,16 @@ proc numBytes(type t) param return numBits(t)/8;
 // min(type) -- returns the minimum value a type can store
 //
 
-proc min(type t) where t == bool
-  return false;
+proc min(type t) param  where isBool(t)      return false: t;
 
-proc min(type t) where isIntegralType(t) || isFloatType(t)
-  return __primitive( "_min", t);
+proc min(type t) param  where t == int(8)    return 0x80: t;
+proc min(type t) param  where t == int(16)   return 0x8000: t;
+proc min(type t) param  where t == int(32)   return 0x80000000: t;
+proc min(type t) param  where t == int(64)   return 0x8000000000000000: t;
+
+proc min(type t) param  where isUint(t)      return 0: t;
+
+proc min(type t) where isFloatType(t)        return __primitive( "_min", t);
 
 proc min(type t) where isComplexType(t) {
   var x: t;
@@ -398,11 +403,19 @@ proc min(type t) where isComplexType(t) {
 // max(type) -- returns the maximum value a type can store
 //
 
-proc max(type t) where t == bool
-  return true;
+proc max(type t) param  where isBool(t)      return true: t;
 
-proc max(type t) where isIntegralType(t) || isFloatType(t)
-  return __primitive( "_max", t);
+proc max(type t) param  where t == int(8)    return 0x7f: t;
+proc max(type t) param  where t == int(16)   return 0x7fff: t;
+proc max(type t) param  where t == int(32)   return 0x7fffffff: t;
+proc max(type t) param  where t == int(64)   return 0x7fffffffffffffff: t;
+
+proc max(type t) param  where t == uint(8)   return 0xff: t;
+proc max(type t) param  where t == uint(16)  return 0xffff: t;
+proc max(type t) param  where t == uint(32)  return 0xffffffff: t;
+proc max(type t) param  where t == uint(64)  return 0xffffffffffffffff: t;
+
+proc max(type t) where isFloatType(t)        return __primitive( "_max", t);
 
 proc max(type t) where isComplexType(t) {
   var x: t;

@@ -1,0 +1,4 @@
+bug Global const strings are not replicated.
+
+Note that once this future is retired, the test should be removed and
+the appropriate line in globalConstRepl.chpl should be uncommented.

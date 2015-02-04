@@ -1,0 +1,2 @@
+# This is to test the behavior of widecols.chpl on cygwin
+CHPL_HOST_PLATFORM >= cygwin

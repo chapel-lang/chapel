@@ -1,5 +1,5 @@
 proc norm(x: [], p) where x.rank == 1 {
-  type select p {
+  select p.type {
     when int {
       if (p == 2) {
         return sqrt(+ reduce (x*x));

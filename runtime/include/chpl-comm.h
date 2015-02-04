@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -80,7 +80,7 @@ extern const int chpl_heterogeneous;
 // Do a GET in a nonblocking fashion, returning a handle which can be used to
 // wait for the GET to complete. The destination buffer must not be modified
 // before the request completes (after waiting on the returned handle)
-chpl_comm_nb_handle_t  chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
+chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                      int32_t elemSize, int32_t typeIndex,
                                      int32_t len,
                                      int ln, c_string fn);
@@ -93,15 +93,20 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                     int32_t len,
                                     int ln, c_string fn);
 
-// Returns 1 if the handle has already been waited for and has
-// been cleared out in a call to chpl_comm_wait_some.
-int chpl_comm_nb_handle_is_complete(chpl_comm_nb_handle_t h);
+// Returns nonzero iff the handle has already been waited for and has
+// been cleared out in a call to chpl_comm_{wait,try}_some.
+int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h);
 
 // Wait on handles created by chpl_comm_start_....  ignores completed handles.
-// Returns the number of handles completed, which must be >=1 if all handles
-// are not already completed. Clears out completed handles so that
-// calling chpl_comm_nb_handle_is_complete on them returns 1.
-void chpl_comm_nb_wait_some(chpl_comm_nb_handle_t* h, size_t nhandles);
+// Clears out completed handles so that calling chpl_comm_nb_handle_is_complete
+// on them returns nonzero.
+void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
+
+// Try handles created by chpl_comm_start_....  ignores completed handles.
+// Clears out completed handles so that calling chpl_comm_nb_handle_is_complete
+// on them returns nonzero.  Returns nonzero iff at least one completion is
+// detected.
+int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 
 // Returns whether or not the passed wide address is known to be in
 // a communicable memory region - that is, a region for which it is
@@ -351,10 +356,11 @@ void chpl_comm_make_progress(void);
 typedef struct _chpl_commDiagnostics {
   uint64_t get;
   uint64_t get_nb;
-  uint64_t get_nb_test;
-  uint64_t get_nb_wait;
   uint64_t put;
   uint64_t put_nb;
+  uint64_t test_nb;
+  uint64_t wait_nb;
+  uint64_t try_nb;
   uint64_t fork;
   uint64_t fork_fast;
   uint64_t fork_nb;
@@ -382,10 +388,11 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 //
 uint64_t chpl_numCommGets(void);
 uint64_t chpl_numCommNBGets(void);
-uint64_t chpl_numCommTestNBGets(void);
-uint64_t chpl_numCommWaitNBGets(void);
 uint64_t chpl_numCommPuts(void);
 uint64_t chpl_numCommNBPuts(void);
+uint64_t chpl_numCommTestNB(void);
+uint64_t chpl_numCommWaitNB(void);
+uint64_t chpl_numCommTryNB(void);
 uint64_t chpl_numCommForks(void);
 uint64_t chpl_numCommFastForks(void);
 uint64_t chpl_numCommNBForks(void);

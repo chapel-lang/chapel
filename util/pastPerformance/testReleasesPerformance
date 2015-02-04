@@ -3,12 +3,19 @@
 #
 # Use this script to generate performance for the current suite of
 # tests across the past several releases (those that are outlined
-# below).  
+# below).
 #
 # To use it:
 #
+# * note that this script is currently hard-coded to our usage of if
+#   at Cray in terms of referring to certain paths and pre-installed
+#   locations of past releases.
+#
 # * set CHPL_HOME to indicate the current CHPL_HOME that you want to
-#   use (from which the util/ scripts will be used)
+#   use (from which the util/ scripts will be used).  Note that this
+#   copy of the repository should be in /tmp or on the local disk (if
+#   you want to make the results comparable to the ones we gather
+#   nightly) and up-to-date with the master.
 #
 # * optionally, set CHPL_TEST_PERF_DIR to indicate where you want
 #   the output .dat and html/ files to be placed.  By default, it
@@ -18,6 +25,9 @@
 #   (typically $CHPL_HOME/test) and run testReleasesPerformance.  As
 #   in a normal test run, this will test all subdirectories under the
 #   cwd.
+#
+# * the script will then run the current performance tests across all
+#   past releases.
 #
 
 function testReleasePerformance {
@@ -64,6 +74,10 @@ testReleasePerformance
 
 export CHPL_TEST_PERF_DATE="04/07/14"
 export CHPL_HOME=$chpl_release_home/chapel-1.9.0
+testReleasePerformance
+
+export CHPL_TEST_PERF_DATE="09/22/14"
+export CHPL_HOME=$chpl_release_home/chapel-1.10.0
 testReleasePerformance
 
 #

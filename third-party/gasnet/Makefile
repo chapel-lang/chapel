@@ -87,15 +87,6 @@ endif
 
 MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)
 
-#
-# set up the directories
-#
-GASNET_ABS_DIR = $(shell pwd)
-GASNET_SUBDIR = $(GASNET_ABS_DIR)/GASNet-$(GASNET_VERSION)
-# redefined these with the absolute path for the build
-GASNET_INSTALL_DIR = $(GASNET_ABS_DIR)/$(GASNET_INSTALL_SUBDIR)
-GASNET_BUILD_DIR = $(GASNET_ABS_DIR)/$(GASNET_BUILD_SUBDIR)
-
 default: all
 
 all: gasnet
@@ -136,3 +127,5 @@ gasnet: gasnet-config gasnet-build gasnet-install
 	$(CHPL_MAKE_HOME)/util/chplenv/check_huge_pages.py
 
 FORCE:
+
+.NOTPARALLEL:

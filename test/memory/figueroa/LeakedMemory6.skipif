@@ -1,5 +1,0 @@
-# Don't test this for CHPL_COMM!=none, because in that case we run afoul of
-# the problem described by functions/sungeun/promotionWithNoInline.future due
-# throwing --no-inline when we need coerce and promotion wrappers in the code
-# for modules/internal/MemTracking.chpl:chpl_memTracking_returnConfigVals().
-CHPL_COMM != none

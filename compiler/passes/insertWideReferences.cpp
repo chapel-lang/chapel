@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,6 @@ static void insertWideCastTemps();
 static void derefWideStringActuals();
 static void derefWideRefsToWideClasses();
 static void widenGetPrivClass();
-static void moveAddressSourcesToTemp(void);
 
 AggregateType* wideStringType = NULL;
 
@@ -120,7 +119,7 @@ static void localizeCall(CallExpr* call) {
     case PRIM_ASSIGN: // Not sure about this one.
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIM_DEREF)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             insertLocalTemp(rhs->get(1));
             if (!rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
@@ -135,7 +134,7 @@ static void localizeCall(CallExpr* call) {
                    rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
                    rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                    rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
               rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             SymExpr* sym = toSymExpr(rhs->get(2));
             INT_ASSERT(sym);
@@ -167,7 +166,7 @@ static void localizeCall(CallExpr* call) {
           }
           break;
         } else if (rhs->isPrimitive(PRIM_GET_UNION_ID)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
             insertLocalTemp(rhs->get(1));
           }
           break;
@@ -184,8 +183,8 @@ static void localizeCall(CallExpr* call) {
           !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         break;
       }
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         insertLocalTemp(call->get(1));
       }
@@ -194,7 +193,7 @@ static void localizeCall(CallExpr* call) {
       if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         insertLocalTemp(call->get(2));
         if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-            call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+            call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
           toSymExpr(call->get(1))->var->type = call->get(1)->typeInfo()->getField("addr")->type;
         }
       }
@@ -205,14 +204,14 @@ static void localizeCall(CallExpr* call) {
       }
       break;
     case PRIM_SET_UNION_ID:
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         insertLocalTemp(call->get(1));
       }
       break;
     case PRIM_SET_MEMBER:
     case PRIM_SET_SVEC_MEMBER:
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         insertLocalTemp(call->get(1));
       }
       break;
@@ -235,10 +234,16 @@ static void handleLocalBlocks() {
   Vec<BlockStmt*> queue; // queue of blocks to localize
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol)
-      if (block->blockInfo)
-        if (block->blockInfo->isPrimitive(PRIM_BLOCK_LOCAL))
+    if (block->parentSymbol) {
+      // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet()
+      if (block->isLoopStmt() == true) {
+
+      } else if (block->blockInfoGet()) {
+        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
           queue.add(block);
+        }
+      }
+    }
   }
 
   forv_Vec(BlockStmt, block, queue) {
@@ -261,7 +266,7 @@ static void handleLocalBlocks() {
             queue.add(local->body);
             cache.put(fn, local);
             cache.put(local, local); // to handle recursion
-            if (local->retType->symbol->hasFlag(FLAG_WIDE)) {
+            if (local->retType->symbol->hasFlag(FLAG_WIDE_REF)) {
               CallExpr* ret = toCallExpr(local->body->body.tail);
               INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
               // Capture the return expression in a local temp.
@@ -391,10 +396,6 @@ insertWideReferences(void) {
   widenGetPrivClass();
   heapAllocateGlobalsTail(heapAllocateGlobals, heapVars);
   handleLocalBlocks();
-  narrowWideReferences();
-
-  // TODO: Test if this step is really necessary.  If it is, document why.
-  moveAddressSourcesToTemp();
 }
 
 
@@ -529,7 +530,7 @@ static void buildWideRefMap()
 
       AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
       TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
-      wts->addFlag(FLAG_WIDE);
+      wts->addFlag(FLAG_WIDE_REF);
       theProgram->block->insertAtTail(new DefExpr(wts));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
@@ -551,7 +552,7 @@ static void widenRefs()
     // do not change the reference field in a wide reference type
     //
     if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
-      if (ts->hasFlag(FLAG_WIDE))
+      if (ts->hasFlag(FLAG_WIDE_REF))
         continue;
 
     //
@@ -674,7 +675,7 @@ static void narrowWideClassesThroughCalls()
 
         // Select symbols with wide types.
         if (symType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-            symType->symbol->hasFlag(FLAG_WIDE)) {
+            symType->symbol->hasFlag(FLAG_WIDE_REF)) {
           Type* narrowType = symType->getField("addr")->type;
 
           // Copy 
@@ -734,7 +735,7 @@ static void insertWideClassTempsForNil()
           }
         } else if (call->isPrimitive(PRIM_MOVE)) {
           if (Type* wtype = call->get(1)->typeInfo()) {
-            if (wtype->symbol->hasFlag(FLAG_WIDE)) {
+            if (wtype->symbol->hasFlag(FLAG_WIDE_REF)) {
               if (Type* wctype = wtype->getField("addr")->type->getField("_val")->type) {
                 if (wctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                   VarSymbol* tmp = newTemp(wctype);
@@ -748,7 +749,7 @@ static void insertWideClassTempsForNil()
         } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
           if (Type* wctype = call->get(2)->typeInfo()) {
             if (wctype->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-                wctype->symbol->hasFlag(FLAG_WIDE)) {
+                wctype->symbol->hasFlag(FLAG_WIDE_REF)) {
               VarSymbol* tmp = newTemp(wctype);
               call->insertBefore(new DefExpr(tmp));
               se->replace(new SymExpr(tmp));
@@ -759,7 +760,7 @@ static void insertWideClassTempsForNil()
           Type* valueType = call->get(1)->getValType();
           Type* componentType = valueType->getField("x1")->type;
           if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-              componentType->symbol->hasFlag(FLAG_WIDE)) {
+              componentType->symbol->hasFlag(FLAG_WIDE_REF)) {
             VarSymbol* tmp = newTemp(componentType);
             call->insertBefore(new DefExpr(tmp));
             se->replace(new SymExpr(tmp));
@@ -842,8 +843,10 @@ static void derefWideRefsToWideClasses()
         call->isPrimitive(PRIM_WIDE_GET_NODE) ||
         call->isPrimitive(PRIM_WIDE_GET_ADDR) ||
         call->isPrimitive(PRIM_SET_MEMBER)) {
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
+          // This should be removed when string_rec is the default string type
+          call->get(1)->getValType() != wideStringType) {
         SET_LINENO(call);
         VarSymbol* tmp = newTemp(call->get(1)->getValType());
         call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -872,29 +875,3 @@ static void widenGetPrivClass()
 }
 
 
-// In every move:
-//   if the LHS type has the WIDE or REF flag
-//   and its value type is a wide class
-//   and the RHS type is the same as the contents of the wide pointer:
-//     Create a temp copy of the RHS, and
-//     replace the RHS of the move with the temp.
-static void moveAddressSourcesToTemp()
-{
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
-           call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) &&
-          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-          call->get(2)->typeInfo() == call->get(1)->getValType()->getField("addr")->type) {
-        //
-        // widen rhs class
-        //
-        SET_LINENO(call);
-        VarSymbol* tmp = newTemp(call->get(1)->getValType());
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
-        call->insertAtTail(tmp);
-      }
-    }
-  }
-}

@@ -488,6 +488,13 @@ only if the range is iterable. In this case the loop iterates over the
 members of the range's represented sequence, in the order defined by
 the sequence. If the range is empty, no iterations are executed.
 
+\begin{craychapel}
+An attempt to iterate over a range causes an error if adding stride to
+the range's last index overflows its index type, i.e. if the sum is
+greater than the index type's maximum value, or smaller than its
+minimum value.
+\end{craychapel}
+
 \subsubsection{Iterating over Unbounded Ranges in Zippered Iterations}
 \label{Iterating_over_Unbounded_Ranges_in_Zippered_Iterations}
 \index{ranges!iteration!zippered}

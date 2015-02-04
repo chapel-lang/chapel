@@ -81,7 +81,7 @@
 #   -sysprediff <path>
 #   -suppress <suppression file>
 #   -nostdinredirect
-#   -launchertimeout pbs
+#   -launchertimeout <queueing system>
 #   -logfile   <log filename>         $testdir/Logs/<username>.<tgt-platform>.log
 #                                     (where $testdir is $CHPL_HOME/test if
 #                                     it exists, $CHPL_HOME/examples, if it
@@ -89,6 +89,9 @@
 #   -memleaks
 #   -no-chpl-home-warn                Do not show warning when start_test invoked outside CHPL_HOME
 #   -progress                         Print pass/fail to stderr for each test. Does not work for directories.
+#   -junit-xml                        Create jUnit XML style report.
+#   -junit-xml-file <file>            Path to store jUnit XML report. When set, -junit-xml is implied.
+#   -junit-remove-prefix <prefix>     Remove <prefix> from all tests in jUnit report.
 #
 # All options can be used with a double-dash format as well 
 # (e.g. --compopts).
@@ -166,8 +169,8 @@
 # the value "x.yz" out of the output file (all non-whitespace 
 # characters after the key string until the next whitespace 
 # character).  These data values will then be written to a file
-# named $CHPL_TEST_PERF_DIR/<machine name>/foo.dat (where
-# $CHPL_TEST_PERF_DIR is "$CHPL_HOME/test/perfdat" by default) in a
+# named $CHPL_TEST_PERF_DIR/foo.dat (where by default
+# $CHPL_TEST_PERF_DIR is "$CHPL_HOME/test/perfdat/<machine name>") in a
 # TAB-separated manner for graphing or display using gnuplot or Excel.
 #
 # When running with the -performance flag, compiler and executable
@@ -480,7 +483,7 @@
 #      <blank>        : a blank line is skipped
 #      <var> == <val> : checks to see if envvar "var" is "val"
 #      <var> != <val> : checks to see if envvar "var" is not "val"
-#       <var> <= <val> : true if <var> contains the substring "val".
+#      <var> <= <val> : true if <var> contains the substring "val".
 #      CHPL_MEM_LEAK_TESTING == true : check if we are testing for memory leaks
 #    All of the lines of containing conditional expressions are logically
 #    or'd together, and if any of them are true, the test is
@@ -724,11 +727,15 @@ set recurse = 1
 set tee = "tee"
 set numlocales = 0
 set comm = `$utildir/chplenv/chpl_comm.py`
+set launcher = `$utildir/chplenv/chpl_launcher.py`
 set locMod = `$utildir/chplenv/chpl_locale_model.py`
 set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
 set progress = 0
+set junit_xml = 0
+set junit_xml_file = 0
+set junit_remove_prefix = 0
 
 while ( $#argv > 0 )
     switch ( "$argv[1]" )
@@ -938,6 +945,12 @@ while ( $#argv > 0 )
         shift
         setenv CHPL_NO_STDIN_REDIRECT true
         breaksw
+    case -stdinredirect:
+    case --stdinredirect:
+        shift
+        unset CHPL_NO_STDIN_REDIRECT true
+        setenv CHPL_TEST_FORCE_STDIN_REDIRECT true
+        breaksw
     case -launchertimeout:
     case --launchertimeout:
         shift
@@ -953,6 +966,24 @@ while ( $#argv > 0 )
     case --progress:
         shift
         set progress = 1
+        breaksw
+    case -junit-xml:
+    case --junit-xml:
+        shift
+        set junit_xml = 1
+        breaksw
+    case -junit-xml-file:
+    case --junit-xml-file:
+        shift
+        set junit_xml = 1
+        set junit_xml_file = $argv[1]
+        shift
+        breaksw
+    case -junit-remove-prefix
+    case --junit-remove-prefix
+        shift
+        set junit_remove_prefix = $argv[1]
+        shift
         breaksw
     case -h:
     case -help:
@@ -984,13 +1015,16 @@ while ( $#argv > 0 )
         echo "          -sysprediff <path>"
         echo "          -suppress <filename>"
         echo "          -numlocales <number>"
-        echo "          -nostdinredirect"
-        echo "          -launchertimeout pbs"
+        echo "          -[no]stdinredirect"
+        echo "          -launchertimeout <queueing system>"
 #       echo "          -interpret (or -i)"
         echo "          -logfile <file>      (currently: $logfile)"
         echo "          -memleaks <file>"
         echo "          -no-chpl-home-warn"
         echo "          -progress"
+        echo "          -junit-xml"
+        echo "          -junit-xml-file <file>  (implies -junit-xml)"
+        echo "          -junit-remove-prefix <prefix>"
         echo "          -h, -help"
         exit 0
         breaksw
@@ -1166,6 +1200,31 @@ setenv CHPL_GASNET_SEGMENT `$utildir/chplenv/chpl_comm_segment.py`
 echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
 setenv CHPL_LOCALE_MODEL $locMod
 
+# we know that stdin redirection doesn't work for most launchers. only do
+# redirection when there's no launcher, or the launcher is amudprun, which we
+# know supports stdin redirection. Only set and alert user unless they threw
+# -nostdinredirect or -stdinredirect
+if ($launcher != "none" && $launcher != "amudprun") then
+    if (! $?CHPL_NO_STDIN_REDIRECT && ! $?CHPL_TEST_FORCE_STDIN_REDIRECT ) then
+        echo "[Info: assuming stdin redirection is not supported, skipping tests with stdin]" |& $tee -a $logfile
+        setenv CHPL_NO_STDIN_REDIRECT true
+    endif
+endif
+
+# sub_test supports using slurm and pbs/qsub to handle timeouts instead of
+# managing timeouts itself. Use the launcher timeout by default if the
+# supported launcher is detected.
+if (! $?CHPL_LAUNCHER_TIMEOUT && ! $?CHPL_TEST_DONT_SET_LAUNCHER_TIMEOUT) then
+    if ($launcher =~ *slurm*) then
+        setenv CHPL_LAUNCHER_TIMEOUT slurm
+    endif
+
+    if ($launcher =~ *pbs* || $launcher =~ *qsub*) then
+        setenv CHPL_LAUNCHER_TIMEOUT pbs
+    endif
+endif
+
+
 if ($comm != "none" && $numlocales == 0) then
     set numlocales = "1"
 endif
@@ -1336,8 +1395,8 @@ else
 endif
 
 # If we are running the performance tests, then check for unique .dat
-#  filenames.  Issue a error and exit if we have specified a common
-#  common directory via CHPL_TEST_PERF_DIR otherwise issue a warning.
+#  filenames.  Issue an error and exit if we have specified the data
+#  directory via CHPL_TEST_PERF_DIR, otherwise issue a warning.
 # NOTE: I am not proud of having written the following.
 if ($performance) then
     echo ""
@@ -1388,9 +1447,9 @@ endif
 # maybe start_test should just be re-written in a more modern
 # scripting language.
 #
-if ($gengraphs) then
+if ($gengraphs || $compperformance) then
     echo ""
-    echo "[Checking that all .graph files appear in $CHPL_HOME/test/GRAPHFILES and $CHPL_HOME/test/COMPGRAPHFILES]" |& $tee -a $logfile
+    echo "[Checking for duplicate .graph files and that all .graph files appear in $CHPL_HOME/test/.*GRAPHFILES]" |& $tee -a $logfile
     $utildir/test/checkGraphfiles |& tee -a $logfile
 endif
 
@@ -1452,7 +1511,12 @@ foreach test ($testlist)
 
             $sub_test "$compiler" |& $tee -a $logfile
             set errcode = $status
-            if ($errcode != 0) then
+            # $errcode of 173 is special sub_test error code that
+            # indicates sub_test failed and already reported an
+            # error.
+            #
+            # 173 = reduce(operator.add, map(ord, 'CHAPEL')) % 256
+            if ($errcode != 0 && $errcode != 173) then
                 echo "[Error running sub_test for $test]" |& $tee -a $logfile
             endif
             if ($progress == 1) then
@@ -1564,8 +1628,12 @@ foreach testType ($testTypes)
                 # Skip this directory if there is a SKIPIF file
                 # and the condition it contains evaluates to true.
                 if (-e ./SKIPIF) then
-                    set skiptest = `$utildir/test/testEnv ./SKIPIF`
-                    if ($skiptest == 1) then
+                    if (-x ./SKIPIF) then
+                        set skiptest = `./SKIPIF`
+                    else
+                        set skiptest = `$utildir/test/testEnv ./SKIPIF`
+                    endif
+                    if ( $skiptest == "1" || $skiptest == "True" ) then
                         echo "[Skipping directory based on SKIPIF environment settings]" |& $tee -a $logfile
                         continue
                     endif
@@ -1578,11 +1646,15 @@ foreach testType ($testTypes)
                 while (! $pruneif && $cwd != $basedir)
                     set skipfilen = $cwd.skipif
                     if (-e $skipfilen) then
-                        set pruneif = `$utildir/test/testEnv $skipfilen`
+                        if (-x $skipfilen) then
+                            set pruneif = `$skipfilen`
+                        else
+                            set pruneif = `$utildir/test/testEnv $skipfilen`
+                        endif
                     endif
                     cd ..
                 end
-                if ($pruneif) then
+                if ( $pruneif == "1" || $pruneif == "True" ) then
                     echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]" |& $tee -a $logfile
                     continue
                 endif
@@ -1614,7 +1686,12 @@ foreach testType ($testTypes)
                     
                         $sub_test "$compiler" |& $tee -a $logfile
                         set errcode = $status
-                        if ($errcode != 0) then
+                        # $errcode of 173 is special sub_test error code that
+                        # indicates sub_test failed and already reported an
+                        # error.
+                        #
+                        # 173 = reduce(operator.add, map(ord, 'CHAPEL')) % 256
+                        if ($errcode != 0 && $errcode != 173) then
                             echo "[Error running sub_test in $dir ($errcode)]" |& $tee -a $logfile
                         endif
                     endif
@@ -1736,10 +1813,11 @@ set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
 
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 if ($clean_only == 0) then
-    grep "$errormarker" $logfile |& $tee -a $logfile.summary
+    grep "$errormarker" $logfile |& $tee -a $logfile.summary >/dev/null
     if ($suppressions != "") then
         $utildir/test/filterSuppressions $suppressions $logfile.summary
     endif
+    grep "$errormarker" $logfile.summary
 
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
     grep "$warningmarker" $logfile |& $tee -a $logfile.summary
@@ -1758,6 +1836,23 @@ if ($clean_only == 0) then
     echo "[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures | #Warnings = $warnings ]" |& $tee -a $logfile.summary
 else
     echo \[Summary: CLEAN ONLY\] |& $tee $logfile.summary
+endif
+
+echo ''
+
+set junit_args = "--start-test-log=$logfile"
+if ($junit_xml_file != 0) then
+    set junit_args = "$junit_args --junit-xml=$junit_xml_file"
+endif
+if ($junit_remove_prefix != 0) then
+    set junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
+endif
+if ($suppressions != "") then
+    set junit_args = "$junit_args --suppress=$suppressions"
+endif
+if ($junit_xml == 1) then
+    echo "[Generating jUnit XML report]"
+    $utildir/test/convert_start_test_log_to_junit_xml.py $junit_args
 endif
 
 echo \[END\] |& $tee -a $logfile.summary

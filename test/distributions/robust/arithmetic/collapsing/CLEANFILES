@@ -1,0 +1,3 @@
+test_array_rank_change1.good
+test_domain_rank_change1.good
+test_domain_rank_change_OOB.good

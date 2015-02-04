@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,6 +74,7 @@ struct PassInfo {
 #define LOG_prune2                             'Y'
 #define LOG_returnStarTuplesByRefArgs          's'
 #define LOG_insertWideReferences               'W'
+#define LOG_narrowWideReferences               'a'
 #define LOG_optimizeOnClauses                  'o'
 #define LOG_addInitCalls                       'M'
 #define LOG_insertLineNumbers                  'n'
@@ -133,7 +134,7 @@ static PassInfo sPassList[] = {
   RUN(refPropagation),          // reference propagation
   RUN(copyPropagation),         // copy propagation
   RUN(deadCodeElimination),     // eliminate dead code
-  RUN(removeWrapRecords),       // remove _array, _domain, and 
+  RUN(removeWrapRecords),       // remove _array, _domain, and
                                 // _distribution records
   RUN(removeEmptyRecords),      // remove empty records
   RUN(localizeGlobals),         // pull out global constants from loop runs
@@ -143,6 +144,7 @@ static PassInfo sPassList[] = {
   RUN(returnStarTuplesByRefArgs),
 
   RUN(insertWideReferences),    // inserts wide references for on clauses
+  RUN(narrowWideReferences),    // narrows wide references where possible
   RUN(optimizeOnClauses),       // Optimize on clauses
   RUN(addInitCalls),            // Add module init calls and guards.
 
@@ -154,8 +156,7 @@ static PassInfo sPassList[] = {
 
 static void runPass(PhaseTracker& tracker, size_t passIndex);
 
-void runPasses(PhaseTracker& tracker) {
-  bool   isChpldoc    = (strcmp(chplBinaryName, "chpldoc") == 0);
+void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
 
   setupLogfiles();

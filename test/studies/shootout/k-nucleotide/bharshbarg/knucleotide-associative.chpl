@@ -89,7 +89,7 @@ inline proc startsWithThree(data : []) {
   return data[1] == 0x3E && data[2] == 0x54 && data[3] == 0x48;
 }
 
-proc main() {
+proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const inFile = openfd(0);
   const fileLen = inFile.length();

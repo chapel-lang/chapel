@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+#
+# Note that this test will fail if the setgid bit is set on this
+# directory and the group id is different than the effective group id.
+#
+
+file_user=$(ls -l file.txt | awk '{print $3}')
+file_group=$(ls -l file.txt | awk '{print $4}')
+
+current_user=$(id -un)
+current_groups=$(groups)
+
+group_result=$(python -c "print('${file_group}' in '${current_groups}')")
+
+if [ "${file_user}" = "${current_user}" -a "${group_result}" = "True" ] ; then
+  echo "no change" >> $2
+fi

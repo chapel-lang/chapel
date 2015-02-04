@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -228,10 +228,12 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
   }
   sprintf(_nbuf, "%s%d", getNumLocalesStr(), numLocales);
   if (strcmp(CHPL_TARGET_ARCH, "knc")==0) {
+    largv[largc++] = (char *) getAprunArgStr(aprun_cc);
+    largv[largc++] = (char *) ccArg;
     largv[largc++] = _nbuf;
     largv[largc++] = (char *) getAprunArgStr(aprun_k);
     sprintf(_Nbuf, "%s%d", getLocalesPerNodeStr(), getLocalesPerNode());
-    largv[largc++] = _Nbuf;    
+    largv[largc++] = _Nbuf;
   } else {
     largv[largc++] = (char *) getAprunArgStr(aprun_cc);
     largv[largc++] = (char *) ccArg;

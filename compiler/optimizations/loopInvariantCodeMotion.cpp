@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,24 +22,28 @@
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
+#include "CForLoop.h"
 #include "dominator.h"
 #include "expr.h"
+#include "ForLoop.h"
+#include "ParamForLoop.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "timer.h"
-#include "view.h"
+#include "WhileStmt.h"
 
-#include <stack>
-#include <set>
 #include <algorithm>
+#include <set>
+#include <stack>
 
 
 
 //#define debugHoisting
 #ifdef debugHoisting
   #define printDebug(string) printf string
-#else 
+#else
   #define printDebug(string) //do nothing
 #endif
 
@@ -48,11 +52,11 @@
 
 #ifdef detailedTiming
   #define startTimer(timer) timer.start()
-  #define stopTimer(timer) timer.stop()
+  #define stopTimer(timer)  timer.stop()
 #else
-  #define startTimer(timer) //do nothing 
-  #define stopTimer(timer) //do nothing 
-#endif 
+  #define startTimer(timer) // do nothing
+  #define stopTimer(timer)  // do nothing
+#endif
 
 
 Timer allOperandsAreLoopInvariantTimer;
@@ -69,128 +73,115 @@ Timer overallTimer;
 
 #define MAX_NUM_ALIASES 200000
 
-//TODO The alias analysis is extremely conservative. Beyond possibly not hoisting 
-//things that can be, it is also a performance issue because you have a lot more 
-//definitions to consider before declaration something invariant. 
+//TODO The alias analysis is extremely conservative. Beyond possibly not hoisting
+//things that can be, it is also a performance issue because you have a lot more
+//definitions to consider before declaration something invariant.
 
-//TODO some other possible optimizations are if you're looking at an outer 
-//loop in a nest you can ignore everything inside the inner loop(s) since you 
+//TODO some other possible optimizations are if you're looking at an outer
+//loop in a nest you can ignore everything inside the inner loop(s) since you
 //already know they can't be hoisted
 
- 
+
 /*
 * This is really just a wrapper for the collection of basic blocks that
-* make up a loop. However, it also stores the header, and builds the bit 
+* make up a loop. However, it also stores the header, and builds the bit
 * representation as the loop is built to save time. The bit representation
-* and the bit representation of the exits can be gotten, putting them 
-* in a centralized location. 
+* and the bit representation of the exits can be gotten, putting them
+* in a centralized location.
 */
 class Loop {
-
-  private:
+private:
     std::vector<BasicBlock*>* loopBlocks;
-    BasicBlock* header;
-    BitVec* bitBlocks;
-    BitVec* bitExits;
+    BasicBlock*               header;
+    BitVec*                   bitBlocks;
+    BitVec*                   bitExits;
 
-  public: 
+public:
     Loop(int nBlocks) {
       loopBlocks = new std::vector<BasicBlock*>;
-      bitBlocks = new BitVec(nBlocks); 
-      bitExits = new BitVec(nBlocks);
+      bitBlocks  = new BitVec(nBlocks);
+      bitExits   = new BitVec(nBlocks);
     }
-    
+
     ~Loop() {
       delete loopBlocks;
-      loopBlocks = 0;
       delete bitBlocks;
-      bitBlocks = 0;
       delete bitExits;
-      bitExits = 0;      
     }
-    
-    // This function exists to place an expr in the 
-    // "preheader" of the loop, 
+
+    // This function exists to place an expr in the
+    // "preheader" of the loop,
     void insertBefore(Expr* expr) {
-      if(header->exprs.size() != 0) {
+      if (header->exprs.size() != 0) {
         // find the first expr in the header, and get it's parent expr (for
         // most cases it will be the surrounding block statement of the loop)
-        if(BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
-          if(blockStmt->isLoop()) {
+        if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
+          if (blockStmt->isLoopStmt()) {
             blockStmt->insertBefore(expr->remove());
-          } else {
-            // for c for loops, the header is the test segment of the c for loop
-            // primitive which is still in the primitive. In this case we need
-            // to first get the primitive and then get its parent which will be
-            // the surrounding block stmt of the loop.
-            if (CallExpr* call = toCallExpr(blockStmt->parentExpr)) {
-              if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
-                if (BlockStmt* outer = toBlockStmt(call->parentExpr)) {
-                  if (outer->blockInfo == call) {
-                    outer->insertBefore(expr->remove());
-                  }
-                }
-              }
-            }
+
+          } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
+            CForLoop* cforLoop = CForLoop::loopForClause(blockStmt);
+
+            cforLoop->insertBefore(expr->remove());
           }
         }
       }
     }
-    
+
     //Set the header, and insert the header into the loop blocks
     void setHeader(BasicBlock* setHeader) {
       header = setHeader;
       insertBlock(setHeader);
     }
-    
+
     //add all the blocks from other loop to this loop
     void combine(Loop* otherLoop) {
       for_vector(BasicBlock, block, *otherLoop->getBlocks()) {
         insertBlock(block);
       }
     }
-    
+
     //insert a block and update the bit representation
     void insertBlock(BasicBlock* block) {
       //if this block is already in the loop, do nothing
       if(bitBlocks->test(block->id)) {
         return;
       }
-    
+
       //add the block to the list of blocks and to the bit representation
       loopBlocks->push_back(block);
       bitBlocks->set(block->id);
     }
-    
+
     //check if a block is in the loop based on block id
     bool contains(int i) {
       return bitBlocks->test(i);
     }
-    
-    //check if a block is in the loop 
+
+    //check if a block is in the loop
     bool contains(BasicBlock* block) {
       return bitBlocks->test(block->id);
     }
-    
-    //get the header block 
+
+    //get the header block
     BasicBlock* getHeader() {
       return header;
     }
-    
-    //get the actual blocks in the loop 
+
+    //get the actual blocks in the loop
     std::vector<BasicBlock*>* getBlocks() {
       return loopBlocks;
     }
-    
+
     //get the bitvector that represents the blocks in the loop
     BitVec* getBitBlocks() {
       return bitBlocks;
     }
-    
+
     //get the bitvector that represents the exit blocks
     //the exit blocks are the blocks that have a next basic
-    //block that is outside of the loop. 
-    BitVec* getBitExits() {    
+    //block that is outside of the loop.
+    BitVec* getBitExits() {
       bitExits->reset();
       for_vector(BasicBlock, block, *loopBlocks) {
         for_vector(BasicBlock, out, block->outs) {
@@ -201,7 +192,7 @@ class Loop {
       }
       return bitExits;
     }
-    
+
     //return the number of blocks in the loop
     unsigned size() {
       return loopBlocks->size();
@@ -1019,7 +1010,7 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
   
   BitVec* bitExits = loop->getBitExits();
    
-  for(int i = 0; i < bitExits->size(); i++) {
+  for(size_t i = 0; i < bitExits->size(); i++) {
     if(bitExits->test(i)) {
       if(dominates(defBlock, i, dominators) == false) {
         return false;
@@ -1147,10 +1138,15 @@ void loopInvariantCodeMotion(void) {
 
     //build the basic blocks, where the first bb is the entry block 
     startTimer(buildBBTimer);
-    buildBasicBlocks(fn);
+
+    BasicBlock::buildBasicBlocks(fn);
+
     std::vector<BasicBlock*> basicBlocks = *fn->basicBlocks;
+
     BasicBlock* entryBlock = basicBlocks[0];
+
     unsigned nBlocks = basicBlocks.size();
+
     stopTimer(buildBBTimer);
     
     //compute the dominators 

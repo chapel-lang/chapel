@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -28,10 +28,11 @@ COMMON_NOGEN_SRCS = \
 	chpl-bitops.c \
 	chpl-cache.c \
 	chpl-comm.c \
+	chpl-init.c \
 	chplexit.c \
+	chpl-file-utils.c \
 	chplgmp.c \
 	chplio.c \
-        chplisdir.c \
 	chpl-mem.c \
 	chpl-mem-desc.c \
 	chpl-mem-hook.c \

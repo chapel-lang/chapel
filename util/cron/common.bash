@@ -74,9 +74,6 @@ log_info "CHPL_HOME is: ${CHPL_HOME}"
 export CHPL_HOST_PLATFORM=$($CHPL_HOME/util/chplenv/chpl_platform.py --host)
 log_info "CHPL_HOST_PLATFORM is: ${CHPL_HOST_PLATFORM}"
 
-# Enable warnings and errors.
-export CHPL_DEVELOPER=true
-
 # Disable processor specialization (overridden in some configurations)
 export CHPL_TARGET_ARCH=none
 
@@ -104,8 +101,12 @@ export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 
 # It is tempting to use hostname --short, but macs only support the short form
 # of the argument.
-export CHPL_TEST_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
-export CHPL_TEST_COMP_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
+if [ -z "$CHPL_TEST_PERF_DIR" ]; then
+    export CHPL_TEST_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
+fi
+if [ -z "$CHPL_TEST_COMP_PERF_DIR" ]; then
+    export CHPL_TEST_COMP_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
+fi
 
 # When module function is available, ie on a cray, load the subversion module.
 if [ -f /etc/modules/bash ] ; then

@@ -1,5 +1,5 @@
-# This number is chosen to try to limit the test to use less than
-# 4GB of ram, but to have large enough callstacks to deal with a
+# This number is chosen to try to limit the total amount of memory
+# used but to have large enough callstacks to deal with a
 # recursively called function that already has large call stacks
 # because of how we generate begins (especially for --no-local)
-CHPL_RT_CALL_STACK_SIZE=4M
+CHPL_RT_CALL_STACK_SIZE=3M

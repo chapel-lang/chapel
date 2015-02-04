@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,12 +26,8 @@
 // backward compatible with the architecture implicitly provided by
 // releases 1.6 and preceding.
 //
-pragma "no use ChapelStandard"
 module LocaleModel {
 
-  // This should eventually be unified with
-  // CHPL_LOCALE_MODEL_NUM_SUBLOCALES which is currently defined in the
-  // runtime for any locale model that doesn't use sub locales
   param localeModelHasSublocales = true;
 
   use ChapelLocale;
@@ -51,9 +47,6 @@ module LocaleModel {
   // interface for assembling and disassembling chpl_localeID_t values.  This
   // module then provides the interface the compiler-emitted code uses to do
   // the same.
-
-  type chpl_nodeID_t = int(32);
-  type chpl_sublocID_t = int(32);
 
   extern record chpl_localeID_t {
     // We need to know that this is a record type in order to pass it to and
@@ -173,7 +166,6 @@ module LocaleModel {
 
     proc chpl_id() return _node_id;     // top-level locale (node) number
     proc chpl_localeid() {
-      extern const c_sublocid_any: chpl_sublocID_t;
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any); 
     }
     proc chpl_name() return local_name;
@@ -302,7 +294,6 @@ module LocaleModel {
     // -1 is used in the abstract locale class to specify an invalid node ID.
     proc chpl_id() return numLocales;
     proc chpl_localeid() {
-      extern const c_sublocid_none: chpl_sublocID_t;
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
     proc chpl_name() return local_name();
@@ -340,6 +331,17 @@ module LocaleModel {
         return (myLocales[node:int].getChild(subloc:int)):locale;
     }
   }
+
+  //////////////////////////////////////////
+  //
+  // utilities
+  //
+  inline
+  proc chpl_getSubloc() {
+    extern proc chpl_task_getSubloc(): chpl_sublocID_t;
+    return chpl_task_getSubloc();
+  }
+
 
   //////////////////////////////////////////
   //
@@ -393,8 +395,6 @@ module LocaleModel {
                                 fn: int, args: c_void_ptr, args_size: int(32));
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   extern proc chpl_task_setSubloc(subloc: int(32));
-  extern const c_sublocid_none: chpl_sublocID_t;
-  extern const c_sublocid_any: chpl_sublocID_t;
 
   //
   // regular "on"

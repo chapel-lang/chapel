@@ -1,2 +1,2 @@
---fast --no-cc-warnings -sprintCorrect=true -sprintPerf=false -M helpers
---fast --no-cc-warnings -sprintCorrect=true -sprintPerf=false -M helpers -suseStencilDist=true -sdefaultDoRADOpt=false
+-sprintCorrect=true -sprintPerf=false -M helpers
+-sprintCorrect=true -sprintPerf=false -M helpers -suseStencilDist=true -sdefaultDoRADOpt=false

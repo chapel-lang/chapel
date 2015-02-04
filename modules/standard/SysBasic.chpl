@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -105,6 +105,12 @@ inline proc c_free(data: c_ptr) {
 inline proc ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
   return __primitive("ptr_eq", a, b);
 }
+inline proc ==(a: c_ptr, b: c_void_ptr) {
+  return __primitive("ptr_eq", a, b);
+}
+inline proc ==(a: c_void_ptr, b: c_ptr) {
+  return __primitive("ptr_eq", a, b);
+}
 inline proc ==(a: c_ptr, b: _nilType) {
   return __primitive("ptr_eq", a, nil);
 }
@@ -115,6 +121,12 @@ inline proc ==(a: _nilType, b: c_ptr) {
 inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
   return __primitive("ptr_neq", a, b);
 }
+inline proc !=(a: c_ptr, b: c_void_ptr) {
+  return __primitive("ptr_neq", a, b);
+}
+inline proc !=(a: c_void_ptr, b: c_ptr) {
+  return __primitive("ptr_neq", a, b);
+}
 inline proc !=(a: c_ptr, b: _nilType) {
   return __primitive("ptr_neq", a, nil);
 }
@@ -122,9 +134,9 @@ inline proc !=(a: _nilType, b: c_ptr) {
   return __primitive("ptr_neq", nil, b);
 }
 
-inline proc _cond_test(x: c_ptr) return x != nil;
+inline proc _cond_test(x: c_ptr) return x != c_nil;
 
-inline proc !(x: c_ptr) return x == nil;
+inline proc !(x: c_ptr) return x == c_nil;
 extern proc c_pointer_return(ref x:?t):c_ptr(t);
 
 inline proc c_ptrTo(arr: []) where isRectangularArr(arr) && arr.rank == 1 {
@@ -147,6 +159,7 @@ extern proc qio_err_to_int(a:syserr):int(32);
 extern proc qio_int_to_err(a:int(32)):syserr;
 extern proc qio_err_iserr(a:syserr):c_int;
 
+// No error occurred
 inline proc ENOERR return 0:err_t;
 
 // When err_t is no longer just int(32), will need to add cases for err_t too.

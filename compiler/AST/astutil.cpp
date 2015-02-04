@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,12 +19,16 @@
 
 #include "astutil.h"
 #include "baseAST.h"
+#include "CForLoop.h"
+#include "ForLoop.h"
 #include "expr.h"
 #include "passes.h"
+#include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
+#include "WhileStmt.h"
 
 #include <vector>
 
@@ -678,7 +682,9 @@ static void
 visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 {
   // chpl_gen_main is always visible (if it exists).
-  pruneVisit(chpl_gen_main, fns, types);
+  // --ipe does not build chpl_gen_main
+  if (chpl_gen_main)
+    pruneVisit(chpl_gen_main, fns, types);
 
   // When present, the printModuleInitOrder function is always visible;
   // it will be NULL for --minimal-modules compilations

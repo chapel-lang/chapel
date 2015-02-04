@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -59,6 +59,7 @@ void check_loopInvariantCodeMotion();
 void check_prune2();
 void check_returnStarTuplesByRefArgs();
 void check_insertWideReferences();
+void check_narrowWideReferences();
 void check_optimizeOnClauses();
 void check_addInitCalls();
 void check_insertLineNumbers();

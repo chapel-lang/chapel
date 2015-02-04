@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,11 @@
 #include <wordexp.h>
 // from qio runtime
 #include "sys.h"
+
+static inline
+int chpl_glob(const char* pattern, int flags, glob_t* ret_glob) {
+  return glob(pattern, flags, NULL, ret_glob);
+}
 
 static inline
 size_t chpl_glob_num(const glob_t glb) {

@@ -30,6 +30,7 @@ forall (a,b,c) in zip(A,B,C) {
   //c = a + b;
 }
 //writeln(C);
+
 var sum = new BigInt(0);
 for c in C {
   //writeln(c.locale, " ", c.sizeinbase(10));
@@ -43,4 +44,16 @@ modulus.nextprime(modulus);
 writeln(modulus);
 sum.mod(sum, modulus);
 writeln(sum);
+delete modulus;
+delete sum;
 
+// Release the array elements.
+forall a in A {
+  delete a;
+}
+forall b in B {
+  delete b;
+}
+forall c in C {
+  delete c;
+}

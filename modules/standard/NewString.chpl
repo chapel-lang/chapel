@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -72,16 +72,36 @@
 module BaseStringType {
   use CString;
   // This type must support the c_string interface
+  // TODO: It should really be c_string_copy.
   type baseType = c_string;
   param baseTypeString = "c_string":c_string;
-  inline proc free_baseType(s) { chpl_free_c_string(s); }
+  // This used to be defined in terms of chpl_free_c_string_copy, but that one wants
+  // the argument to be a c_string_copy.  Here, we lie about the interface to
+  // chpl_rt_free_c_string(), so we can get around having to coerce the wrong
+  // baseType (c_string) to the right one (c_string_copy).  The coercion will
+  // allocate more memory, which is not what we want.  When baseType is
+  // replaced by c_string_copy, this workaround can be removed.
+  inline proc free_baseType(ref s) {
+    pragma "insert line file info"
+    extern proc chpl_rt_free_c_string(ref cs: c_string);
+    pragma "insert line file info"
+    extern proc chpl_rt_free_c_string_copy(ref csc: c_string_copy);
+
+    if (s == _nullString) then return;
+
+    select s.type {
+      when c_string do chpl_rt_free_c_string(s);
+      when c_string_copy do chpl_rt_free_c_string_copy(s);
+      otherwise halt("operand of free_baseType must be c_string or c_string_copy.");
+    }
+  }
 
   pragma "insert line file info"
   extern proc stringMove(dest: c_string, src: c_string, len: int): c_string;
   pragma "insert line file info"
-  extern proc remoteStringCopy(src_loc: int, src_addr: c_string, len: int): c_string;
+  extern proc remoteStringCopy(src_loc: int, src_addr: c_string, len: int): c_string_copy;
 
-  config const debugStrings = false;
+  config param debugStrings = false;
 }
 
 // Chapel Strings
@@ -182,7 +202,7 @@ module NewString {
       var ret: string_rec;
       if !this.isEmptyString() && i>0 {
         const sremote = this.home.id != here.id;
-        const sbase = if sremote
+        var   sbase = if sremote
                       then remoteStringCopy(this.home.id, this.base, this.len)
                       else this.base;
         const cs = sbase.substring(i);
@@ -202,7 +222,7 @@ module NewString {
       var ret: string_rec;
       if !this.isEmptyString() && r.size>0 {
         const sremote = this.home.id != here.id;
-        const sbase = if sremote
+        var   sbase = if sremote
                       then remoteStringCopy(this.home.id, this.base, this.len)
                       else this.base;
         const cs = sbase.substring(r);
@@ -225,7 +245,7 @@ module NewString {
       // Assume s.base is shorter than this.base, so go to the home locale
       on this.home {
         const sremote = s.home.id != here.id;
-        const sbase = if sremote
+        var   sbase = if sremote
                       then remoteStringCopy(s.home.id, s.base, s.len)
                       else s.base;
         ret = this.base.indexOf(sbase);
@@ -241,7 +261,7 @@ module NewString {
       if s==_defaultOf(baseType) then return 0;
       // We don't support remote c_string, so for this version, copy this.base
       const sremote = this.home.id != here.id;
-      const sbase = if sremote
+      var   sbase = if sremote
                     then remoteStringCopy(this.home.id, this.base, this.len)
                     else this.base;
       const ret = sbase.indexOf(s);
@@ -283,7 +303,7 @@ module NewString {
     proc writeThis(f: Writer) {
       if !this.isEmptyString() {
         if (this.home.id != here.id) {
-          const tcs = remoteStringCopy(this.home.id, this.base, this.len);
+          var tcs = remoteStringCopy(this.home.id, this.base, this.len);
           f.write(tcs);
           free_baseType(tcs);
         } else {
@@ -357,7 +377,7 @@ module NewString {
         if debugStrings then writeln("  rhs remote: ", rhs.home.id);
         const len = rhs.len; // cache the remote copy of len
         // TODO: reuse the base from remoteStringCopy()
-        const rs = if len!=0 then remoteStringCopy(rhs.home.id, rhs.base, len)
+        var rs = if len!=0 then remoteStringCopy(rhs.home.id, rhs.base, len)
                    else _defaultOf(baseType);
         lhs.reinitString(rs, len);
         if len!=0 then free_baseType(rs);
@@ -397,11 +417,11 @@ module NewString {
     const s1len = s1.len;
     ret.len = s0len + s1len;
     const s0remote = s0.home.id != here.id;
-    const s0base = if s0remote
+    var   s0base = if s0remote
                    then remoteStringCopy(s0.home.id, s0.base, s0len)
                    else s0.base;
     const s1remote = s1.home.id != here.id;
-    const s1base = if s1remote
+    var   s1base = if s1remote
                    then remoteStringCopy(s1.home.id, s1.base, s1len)
                    else s1.base;
     ret.base = s0base+s1base;
@@ -422,13 +442,34 @@ module NewString {
     const slen = s.len;
     ret.len = slen + cs.length;
     const sremote = s.home.id != here.id;
-    const sbase = if sremote
+    var   sbase = if sremote
                   then remoteStringCopy(s.home.id, s.base, slen)
                   else s.base;
     ret.base = sbase+cs;
     ret.incRefCntNoAlias();
     if sremote then free_baseType(sbase);
     if debugStrings then writeln("leaving proc +() string+"+baseTypeString);
+    return ret;
+  }
+
+  proc +(s: string_rec, ref cs: c_string_copy) {
+    if cs.locale.id != here.id then
+      halt("Cannot concatenate a remote "+baseTypeString+"_copy.");
+    if debugStrings then writeln("in proc +() string+"+baseTypeString+"_copy");
+    if cs == _defaultOf(c_string_copy) then return s;
+    if s.isEmptyString() then return cs:string_rec;
+    var ret: string_rec;
+    const slen = s.len;
+    ret.len = slen + cs.length;
+    const sremote = s.home.id != here.id;
+    var   sbase = if sremote
+                  then remoteStringCopy(s.home.id, s.base, slen)
+                  else s.base;
+    ret.base = sbase+cs;
+    ret.incRefCntNoAlias();
+    if sremote then free_baseType(sbase);
+    free_baseType(cs);
+    if debugStrings then writeln("leaving proc +() string+"+baseTypeString+"_copy");
     return ret;
   }
 
@@ -442,7 +483,7 @@ module NewString {
     const slen = s.len;
     ret.len = cs.length + slen;
     const sremote = s.home.id != here.id;
-    const sbase = if sremote
+    var   sbase = if sremote
                   then remoteStringCopy(s.home.id, s.base, slen)
                   else s.base;
     ret.base = cs+sbase;
@@ -452,22 +493,39 @@ module NewString {
     return ret;
   }
 
+  proc +(ref cs: c_string_copy, s: string_rec) {
+    if cs.locale.id != here.id then
+      halt("Cannot concatenate a remote "+baseTypeString+"_copy.");
+    if debugStrings then writeln("in proc +() "+baseTypeString+"_copy+string");
+    if cs == _defaultOf(c_string_copy) then return s;
+    if s.isEmptyString() then return cs:string_rec;
+    var ret: string_rec;
+    const slen = s.len;
+    ret.len = cs.length + slen;
+    const sremote = s.home.id != here.id;
+    var   sbase = if sremote
+                  then remoteStringCopy(s.home.id, s.base, slen)
+                  else s.base;
+    ret.base = cs+sbase;
+    ret.incRefCntNoAlias();
+    if sremote then free_baseType(sbase);
+    free_baseType(cs);
+    if debugStrings then writeln("leaving proc +() "+baseTypeString+"+string");
+    return ret;
+  }
+
   //
   // Concatenation with other types is done by casting to the baseType
   //
   inline proc concatHelp(s: string_rec, x:?t) where t != string_rec {
-    const cs = x:baseType;
+    var cs = x:c_string_copy;
     const ret = s + cs;
-    if !isBoolType(x.type) && !isEnumType(x.type) then
-      free_baseType(cs);
     return ret;
   }
 
   inline proc concatHelp(x:?t, s: string_rec) where t != string_rec  {
-    const cs = x:baseType;
+    var cs = x:c_string_copy;
     const ret = cs + s;
-    if !isBoolType(x.type) && !isEnumType(x.type) then
-      free_baseType(cs);
     return ret;
   }
 
@@ -567,15 +625,11 @@ module NewString {
   // Other casts to strings use the baseType
   inline proc _cast(type t, x) where t==string_rec && x.type != baseType {
     if debugStrings then writeln("in _cast() ", typeToString(t), "-string");
-    const cs = x:baseType;
+    const cs = x:c_string_copy;
     var ret: string_rec;
     ret.len = cs.length;
     assert(ret.len != 0);
-    if isBoolType(x.type) || isEnumType(x.type) then
-      // These are returned as string literals so copy the string
-      ret.base = stringMove(_defaultOf(baseType), cs, ret.len);
-    else
-      ret.base = cs;
+    ret.base = cs;
     ret.incRefCntNoAlias();
     if debugStrings then writeln("leaving _cast() ", typeToString(t),
                                  "-string");
@@ -597,7 +651,7 @@ module NewString {
   inline proc _cast(type t, s: string_rec) where t!=baseType {
     if debugStrings then writeln("in _cast() string-", typeToString(t));
     const sremote = s.home.id != here.id;
-    const sbase = if sremote
+    var   sbase = if sremote
                   then remoteStringCopy(s.home.id, s.base, s.len)
                   else s.base;
     // Note that any error checking on the string is done in the runtime

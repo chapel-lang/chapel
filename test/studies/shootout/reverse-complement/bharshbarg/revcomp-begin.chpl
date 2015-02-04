@@ -9,7 +9,7 @@ proc string.toBytes() {
 const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".toBytes();
 var table : [1..128] uint(8);
 
-proc main() {
+proc main(args: [] string) {
   param newLineChar = 0x0A;
   param greaterThan = 0x3E;
   var inFile = openfd(0); // stdin

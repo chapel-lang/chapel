@@ -1,1 +1,0 @@
-nonexistent_file.chpl:3: error: No such file or directory in remove with path "nonexistent_file.txt"

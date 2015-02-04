@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,7 @@
  */
 
 #include <string.h>
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
@@ -87,7 +87,7 @@ size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
   // single iovbuf. So we need to go from one iovbuf to the other
   while (realsize > ret->vec[ret->curr].iov_len*size - ret->amt_read)  {
     // This cast to char* is to get rid "subscript of pointer to incomplete type" warnings
-    memcpy(&(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ptr_data, ret->vec[ret->curr].iov_len*size - ret->amt_read);
+    chpl_memcpy(&(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ptr_data, ret->vec[ret->curr].iov_len*size - ret->amt_read);
     ret->total_read += (ret->vec[ret->curr].iov_len*size - ret->amt_read);
     realsize -= ret->vec[ret->curr].iov_len*size - ret->amt_read;
     ptr_data = &(ptr_data[(ret->vec[ret->curr].iov_len*size - ret->amt_read)]);
@@ -103,7 +103,7 @@ size_t buf_writer(char* ptr_data, size_t size, size_t nmemb, void* userdata)
   // The amount of data that we have been given by curl is <= to the amount of space
   // that we have left in this iovbuf. So we can simply read it all in.
   if (realsize <= (ret->vec[ret->curr].iov_len*size - ret->amt_read)) {
-    memcpy(&(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ptr_data, realsize);
+    chpl_memcpy(&(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ptr_data, realsize);
     ret->total_read += realsize;
     ret->amt_read += realsize;
     // We have fully populated this iovbuf
@@ -136,7 +136,7 @@ size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
 
   // We can upload more than one iovbuf at once, so do it.
   while (realsize > ret->vec[ret->curr].iov_len*size - ret->amt_read)  {
-    memcpy(ptr, &(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ret->vec[ret->curr].iov_len*size - ret->amt_read);
+    chpl_memcpy(ptr, &(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), ret->vec[ret->curr].iov_len*size - ret->amt_read);
     ret->total_read += (ret->vec[ret->curr].iov_len*size - ret->amt_read);
     realsize -= ret->vec[ret->curr].iov_len*size - ret->amt_read;
     ptr = &(((char*)ptr)[(ret->vec[ret->curr].iov_len*size - ret->amt_read)]);
@@ -151,7 +151,7 @@ size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
   // The amount of data that we need to hand to curl is <= the amount of space
   // that we have left in this iovbuf, so we have to be careful not to exceed it
   if (realsize <= (ret->vec[ret->curr].iov_len*size - ret->amt_read)) {
-    memcpy(ptr, &(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), realsize);
+    chpl_memcpy(ptr, &(((char*)ret->vec[ret->curr].iov_base)[ret->amt_read]), realsize);
     ret->total_read += realsize;
     ret->amt_read += realsize;
     // We have fully read this iovbuf
@@ -177,7 +177,7 @@ size_t chpl_curl_write_string(void *contents, size_t size, size_t nmemb, void *u
     return 0;
   }
 
-  memcpy(&(str->mem[str->size]), contents, realsize);
+  chpl_memcpy(&(str->mem[str->size]), contents, realsize);
   str->size += realsize;
   str->mem[str->size] = 0;
 

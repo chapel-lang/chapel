@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 #
-# Configure environment for a particular configuration for whitebox testing.
+# Configure environment for a particular configuration for whitebox testing. To
+# use this outside of nightly testing, set these two variables in the
+# environment:
+#
+# Variable   Values
+# ------------------------------------------------------
+# COMPILER    cray, intel, pgi, gnu
+# COMP_TYPE   TARGET, HOST-TARGET, HOST-TARGET-no-PrgEnv
+#
+# Optionally, the platform can be set with:
+#
+# CRAY_PLATFORM_FROM_JENKINS
+#
+# The default is cray-xc. cray-xe is the other valid option.
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash
@@ -21,7 +34,10 @@ fi
 
 # Variable set by Jenkins to indicate type of whitebox. If it is not set, assume cray-xc.
 platform=${CRAY_PLATFORM_FROM_JENKINS:-cray-xc}
-log_info="Using platform: ${platform}"
+log_info "Using platform: ${platform}"
+
+short_platform=$(echo "${platform}" | cut -d- -f2)
+log_info "Short platform: ${short_platform}"
 
 # Setup vars that will help load the correct compiler module.
 case $COMP_TYPE in
@@ -31,6 +47,8 @@ case $COMP_TYPE in
 
         export CHPL_TARGET_PLATFORM=$platform
         log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
+
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.prgenv-${COMPILER}"
         ;;
     HOST-TARGET)
         module_name=PrgEnv-${COMPILER}
@@ -40,6 +58,8 @@ case $COMP_TYPE in
         export CHPL_TARGET_PLATFORM=$platform
         log_info "Set CHPL_HOST_PLATFORM to: ${CHPL_HOST_PLATFORM}"
         log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
+
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.host.prgenv-${COMPILER}"
         ;;
     HOST-TARGET-no-PrgEnv)
         the_cc=${COMPILER}
@@ -48,6 +68,8 @@ case $COMP_TYPE in
         fi
         module_name=${the_cc}
         chpl_host_value=${COMPILER}
+
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.${COMPILER}"
         ;;
     *)
         log_error "Unknown COMP_TYPE value: ${COMP_TYPE}. Exiting."
@@ -97,7 +119,7 @@ export CHPL_LAUNCHER=none
 export CHPL_COMM=none
 
 # Set some vars that nightly cares about.
-export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly/whitebox/${platform}
+export CHPL_NIGHTLY_LOGDIR=/data/sea/chapel/Nightly
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 # Ensure that one of the CPU modules is loaded.

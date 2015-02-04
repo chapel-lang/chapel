@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+"""Skip test if curl is not set in CHPL_AUX_FILESYS."""
+
+import os
+print('curl' not in os.environ.get('CHPL_AUX_FILESYS', ''))

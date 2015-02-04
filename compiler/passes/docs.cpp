@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,9 +17,12 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <functional>
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <iterator>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,8 +34,12 @@
 #include "stmt.h"
 #include "docs.h"
 #include "mysystem.h"
+#include "stringutil.h"
 
 int NUMTABS = 0;
+
+static std::map<std::string, std::string> outputMap;
+// If we were using C++11 then this could be an unordered_map
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -49,13 +56,37 @@ static int compareClasses(const void *v1, const void* v2) {
 void docs(void) {
 
   if (fDocs) {
-    std::string folderName = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
+    // Create a map of structural names to their expected chpldoc output
+    if (fDocsTextOnly) {
+      outputMap["class"] = "Class: ";
+      outputMap["record"] = "Record: ";
+      outputMap["config"] = "config ";
+    } else {
+      outputMap["class"] = ".. class:: ";
+      outputMap["record"] = ".. record:: ";
+      outputMap["module"] = ".. module:: ";
+      outputMap["module comment prefix"] = ":synopsis: ";
+      outputMap["iter func"] = ".. iterfunction:: ";
+      outputMap["iter method"] = ".. itermethod:: ";
+      outputMap["func"] = ".. function:: ";
+      outputMap["method"] = ".. method:: ";
+      outputMap["config"] = ".. data:: config ";
+      outputMap["field"] = ".. attribute:: ";
+    }
 
+    // Open the directory to store the docs
+    std::string docsDir = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
+    std::string folderName = docsDir;
+
+    if (!fDocsTextOnly) {
+      folderName = generateSphinxProject(docsDir);
+    }
 
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-      if (!devOnlyModule(mod) || developer) {
+      // TODO: Add flag to compiler to turn on doc dev only output
+      if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
         std::string filename = mod->filename;
 
         if (mod->modTag == MOD_INTERNAL) {
@@ -75,22 +106,22 @@ void docs(void) {
         
         if (isNotSubmodule(mod)) {
           // Creates files for each top level module
-          filename = filename + mod->name + ".txt";
+          if (!fDocsTextOnly)
+            filename = filename + mod->name + ".rst";
+          else
+            filename = filename + mod->name + ".txt";
           std::ofstream file(filename.c_str(), std::ios::out);
+          if (!fDocsTextOnly) {
+            file << ".. default-domain:: chpl" << std::endl << std::endl;
+          }
           printModule(&file, mod, mod->name);
           file.close();
         }
       }
     }
+
     if (!fDocsTextOnly) {
-      char command[1024];
-      sprintf(command, "export PYTHONPATH=%s/third-party/creoleparser/install:$PYTHONPATH && python %s/util/docs/chpldoc2html %s", CHPL_HOME, CHPL_HOME, folderName.c_str());
-      if (mysystem(command, "converting creole docs to html", true) != 0) {
-        fprintf(stderr, "\n");
-        USR_FATAL("chpldoc2html failed when creating your --docs output.\n"
-                  "       Make sure the Creoleparser and Genshi Python packages are in your path.\n"
-                  "       One way to do so is: '%s -C $CHPL_HOME/third-party creoleparser'\n", CHPL_MAKE);
-      }
+      generateSphinxOutput(docsDir);
     }
   }
 }
@@ -145,8 +176,15 @@ void printArg(std::ofstream *file, ArgSymbol *arg) {
 void printFields(std::ofstream *file, AggregateType *cl) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
-      if (!var->hasFlag(FLAG_SUPER_CLASS)) {
+      if (!var->hasFlag(FLAG_NO_DOC) &&
+          !var->hasFlag(FLAG_SUPER_CLASS)) {
+        // Don't document the super class field, we don't want to know about it
+        // Also, don't document this field if it has a "no doc" pragma attached
+        // to it
         printTabs(file);
+        *file << outputMap["field"];
+        // For rst, this will insert '.. attribute:: ' here
+        // For plain text, nothing will be inserted
         printVarStart(file, var);
         Expr *expr;
         if (cl->isClass()) {
@@ -159,16 +197,13 @@ void printFields(std::ofstream *file, AggregateType *cl) {
             if (end->primitive != NULL) {
               *file << ": ";
               end->prettyPrint(file);
+              // TODO: prettify type output
             } else if (SymExpr* sym = toSymExpr(end->argList.tail)) {
               *file << " = ";
               sym->prettyPrint(file);
             }
           }
         } 
-        if (!fDocsTextOnly)
-          *file << "\\\\"; 
-        // The set of '\' is only when using creoleparser instead of 
-        // python-creole    
   
         *file << std::endl;
         printVarDocs(file, var);
@@ -187,30 +222,42 @@ void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
 }
 
 void printClass(std::ofstream *file, AggregateType *cl) {
-  if (! cl->isUnion()) {
+  if (!cl->symbol->hasFlag(FLAG_NO_DOC) && ! cl->isUnion()) {
     printTabs(file);
-    if (!fDocsTextOnly)
-      *file << "===";
+
     if (cl->isClass()) {
-      *file << "Class: " ;
+      *file << outputMap["class"];
     } else if (cl->isRecord()) {
-      *file << "Record: ";
+      *file << outputMap["record"];
     }
   
     NUMTABS++;
     *file << cl->symbol->name << std::endl;
+
+    // In rst mode, ensure there is an empty line between the class/record
+    // signature and its description or the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+
     if (cl->doc != NULL) {
       printTabs(file);
       *file << cl->doc << std::endl;
+
+      // In rst mode, ensure there is an empty line between the class/record
+      // description and the next directive.
+      if (!fDocsTextOnly) {
+        *file << std::endl;
+      }
     }
     printFields(file, cl);
-        // If alphabetical option passed, alphabetizes the output 
+    // If alphabetical option passed, alphabetizes the output
     if (fDocsAlphabetize) 
       qsort(cl->methods.v, cl->methods.n, sizeof(cl->methods.v[0]), 
         compareNames);
     
     forv_Vec(FnSymbol, fn, cl->methods){
-      printFunction(file, fn);
+      printFunction(file, fn, true);
     }
     
     Vec<AggregateType*> list;
@@ -221,18 +268,13 @@ void printClass(std::ofstream *file, AggregateType *cl) {
     
     forv_Vec(AggregateType, c, list) {
       printTabs(file);
-      if (!fDocsTextOnly)
-        *file << "//";
       *file << "inherited from " << c->symbol->name;
-      if (!fDocsTextOnly)
-        *file << "//" << "\\\\\\\\"; 
-      // The set of '\' is only when using creoleparser instead of python-creole
       *file << std::endl;
       NUMTABS++;
       printFields(file, c);
     
       forv_Vec(FnSymbol, fn, c->methods) {
-        printFunction(file, fn);
+        printFunction(file, fn, true);
        
       }
       NUMTABS--;
@@ -243,9 +285,8 @@ void printClass(std::ofstream *file, AggregateType *cl) {
 }
 
 void printVarStart(std::ofstream *file, VarSymbol *var) {
-  if (!fDocsTextOnly)
-    *file << "**";
-
+  // TODO: I need to get this to print type fields as type fields instead of
+  // vars.
   if (var->isConstant())
     *file << "const ";
   else if (var->isParameter())
@@ -253,41 +294,36 @@ void printVarStart(std::ofstream *file, VarSymbol *var) {
   else 
     *file << "var ";
   
-  if (!fDocsTextOnly)
-    *file << "**";
-  
   *file << var->name;
 }
 
 void printVarType(std::ofstream *file, VarSymbol *var) {  
   if (var->defPoint->exprType != NULL) {
     *file << ": ";
-    var->defPoint->exprType->prettyPrint(file); 
+    var->defPoint->exprType->prettyPrint(file);
+    // TODO: Make type output prettier
   }
-  if (!fDocsTextOnly)
-    *file << "\\\\"; 
-  // The set of '\' is only when using creoleparser instead of python-creole    
   *file << std::endl;
 }
 
 void printVarDocs(std::ofstream *file, VarSymbol *var) {
+  // TODO: Do we want to parse the output here to make it indent nicely?
   NUMTABS++;
   if (var->doc != NULL) {
-    printTabs(file);
-    *file << var->doc;
-    if (!fDocsTextOnly)
-      *file << "\\\\"; 
-    // The set of '\' is only when using creoleparser instead of python-creole  
-    *file << std::endl;
+    std::stringstream descStream(var->doc);
+    std::string line;
+    while (std::getline(descStream, line)) {
+      printTabs(file);
+      *file << ltrim(line);
+      *file << std::endl;
+    }
   }
   NUMTABS--;
 }
 
 void printTabs(std::ofstream *file) {
-  if (fDocsTextOnly) {
-    for (int i = 1; i <= NUMTABS; i++) {
-      *file << "   ";
-    }
+  for (int i = 1; i <= NUMTABS; i++) {
+    *file << "   ";
   }
 }
 
@@ -308,124 +344,188 @@ bool devOnlyModule(ModuleSymbol *mod) {
 }
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
-  if (!fDocsTextOnly)
-    *file << "----" << std::endl;
-  printTabs(file);
-  if (!fDocsTextOnly)
-    *file << "==";
-  *file << "Module: " << name << std::endl;
-  NUMTABS++;
-  if (mod->doc != NULL) {
-    printTabs(file);
-    *file << mod->doc << std::endl;
-  }
-  Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
-  if (fDocsAlphabetize)
-    qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
-  forv_Vec(VarSymbol, var, configs) {
-    printTabs(file);
-    if (!fDocsTextOnly)
-      *file << "**config** ";
-    else 
-      *file << "config ";
-    printVarStart(file, var);
-    printVarType(file, var);
-    printVarDocs(file, var);
-  }
+  if (!mod->hasFlag(FLAG_NO_DOC)) {
+    // Print the module directive first, for .rst mode. This will associate the
+    // Module: <name> title with the module. If the .. module:: directive comes
+    // after the title, sphinx will complain about a duplicate id error.
+    if (!fDocsTextOnly) {
+      *file << outputMap["module"] << name << std::endl;
+      if (mod->doc != NULL) {
+        NUMTABS++;
+        printTabs(file);
+        *file << outputMap["module comment prefix"];
 
-  Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
-  // If alphabetical option passed, fDocsAlphabetizes the output 
-  if (fDocsAlphabetize) 
-    qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
-  
-  forv_Vec(FnSymbol, fn, fns) {
-    if (!devOnlyFunction(fn) || developer) {
-      printFunction(file, fn);
+        // Grab first line of comment for synopsis.
+        std::stringstream synopsisStream(mod->doc);
+        std::string firstLine;
+        std::getline(synopsisStream, firstLine);
+
+        *file << firstLine << std::endl;
+        NUMTABS--;
+      }
+      *file << std::endl;
     }
-  }
 
-  Vec<AggregateType*> classes = mod->getTopLevelClasses();
-  if (fDocsAlphabetize)
-    qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
+    printTabs(file);
+    *file << "Module: " << name << std::endl;
+    if (!fDocsTextOnly) {
+      int length = strlen("Module: ") + strlen(name.c_str());
+      for (int i = 0; i < length; i++) {
+        *file << "=";
+      }
+      *file << std::endl;
+      // Make the length of this equal to "Module: " + name.length
+    }
+    NUMTABS++;
+    if (mod->doc != NULL) {
+      // Only print tabs for text only mode. The .rst prefers not to have the
+      // tabs for module level comments and leading whitespace removed.
+      if (fDocsTextOnly) {
+        printTabs(file);
+        *file << mod->doc << std::endl;
+      } else {
+        std::string modDoc = ltrim(std::string(mod->doc));
+        *file << modDoc << std::endl;
+      }
+    }
+    // For non-rst mode, revert to the original tab level.
+    if(!fDocsTextOnly) {
+      NUMTABS--;
+    }
 
-  forv_Vec(AggregateType, cl, classes) {
-    printClass(file, cl);
-  }
+    Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
+    if (fDocsAlphabetize)
+      qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
+    forv_Vec(VarSymbol, var, configs) {
+      if (!var->hasFlag(FLAG_NO_DOC)) {
+        printTabs(file);
+        *file << outputMap["config"];
+        printVarStart(file, var);
+        printVarType(file, var);
 
-  Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
-  if (fDocsAlphabetize)
-    qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
+        // For .rst mode, put a line break after the .. data:: directive and
+        // its description text.
+        if (!fDocsTextOnly) {
+          *file << std::endl;
+        }
+
+        printVarDocs(file, var);
+      }
+    }
+
+    Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
+    // If alphabetical option passed, fDocsAlphabetizes the output
+    if (fDocsAlphabetize)
+      qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
   
-  forv_Vec(ModuleSymbol, md, mods) {
-    if (!devOnlyModule(md) || developer) 
-      printModule(file, md, name + "." +  md->name);
+    forv_Vec(FnSymbol, fn, fns) {
+      // TODO: Add flag to compiler to turn on doc dev only output
+      if (!devOnlyFunction(fn)) {
+        printFunction(file, fn, false);
+      }
+    }
+
+    Vec<AggregateType*> classes = mod->getTopLevelClasses();
+    if (fDocsAlphabetize)
+      qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
+
+    forv_Vec(AggregateType, cl, classes) {
+      printClass(file, cl);
+    }
+
+    Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
+    if (fDocsAlphabetize)
+      qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
+  
+    forv_Vec(ModuleSymbol, md, mods) {
+      // TODO: Add flag to compiler to turn on doc dev only output
+      if (!devOnlyModule(md))
+        printModule(file, md, name + "." +  md->name);
+    }
+    if (fDocsTextOnly)
+      NUMTABS--;
   }
-  NUMTABS--;
 }
 
-void printFunction(std::ofstream *file, FnSymbol *fn) {
-  printTabs(file);
-  NUMTABS++;
-  if (!fDocsTextOnly)
-    *file << "====";
-  if (fn->hasFlag(FLAG_INLINE)) {
-    *file << "inline ";
-  } else if (fn->hasFlag(FLAG_EXPORT)) {
-    *file << "export ";
-  } else if (fn->hasFlag(FLAG_EXTERN)) {
-    *file << "extern ";
-  }
-  
-  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-    *file << "iter ";
-  } else {
-    *file << "proc ";
-  }
-
-  *file << fn->name << "(";
-  if (fn->numFormals() > 0) {
-    if (!developer && strcmp(fn->getFormal(1)->name, "_mt") == 0) {
-      for (int i = 3; i < fn->numFormals(); i++) {
-        ArgSymbol *cur = fn->getFormal(i);
-        printArg(file, cur);
-        *file << ", ";
+void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
+  if (!fn->hasFlag(FLAG_NO_DOC)) {
+    printTabs(file);
+    NUMTABS++;
+    bool iterator = fn->hasFlag(FLAG_ITERATOR_FN);
+    if (method) {
+      if (iterator) {
+        *file << outputMap["iter method"];
+      } else {
+        *file << outputMap["method"];
       }
-      if (fn->numFormals() != 2) {
+    } else {
+      if (iterator) {
+        *file << outputMap["iter func"];
+      } else {
+        *file << outputMap["func"];
+      }
+    }
+    if (fn->hasFlag(FLAG_INLINE)) {
+      *file << "inline ";
+    } else if (fn->hasFlag(FLAG_EXPORT)) {
+      *file << "export ";
+    } else if (fn->hasFlag(FLAG_EXTERN)) {
+      *file << "extern ";
+    }
+
+    if (iterator) {
+      *file << "iter ";
+    } else {
+      *file << "proc ";
+    }
+
+    *file << fn->name << "(";
+    if (fn->numFormals() > 0) {
+      // TODO: add flag to compiler to turn on docs dev only output
+      if (strcmp(fn->getFormal(1)->name, "_mt") == 0) {
+        for (int i = 3; i < fn->numFormals(); i++) {
+          ArgSymbol *cur = fn->getFormal(i);
+          printArg(file, cur);
+          *file << ", ";
+        }
+        if (fn->numFormals() != 2) {
+          ArgSymbol *cur = fn->getFormal(fn->numFormals());
+          printArg(file, cur);
+        }
+      } else {
+        for (int i = 1; i < fn->numFormals(); i++) {
+          ArgSymbol *cur = fn->getFormal(i);
+          printArg(file, cur);
+          *file << ", ";
+        }
         ArgSymbol *cur = fn->getFormal(fn->numFormals());
         printArg(file, cur);
       }
-    } else {
-      for (int i = 1; i < fn->numFormals(); i++) {
-        ArgSymbol *cur = fn->getFormal(i);
-        printArg(file, cur);
-        *file << ", ";
-      }
-      ArgSymbol *cur = fn->getFormal(fn->numFormals());
-      printArg(file, cur);
     }
-  }
-  *file << ")"; 
-  switch (fn->retTag) {
-  case RET_REF:
-    *file << " ref"; break;
-  case RET_PARAM:
-    *file << " param"; break;
-  case RET_TYPE:
-    *file << " type"; break;
-  default: break;
-  }
-  if (fn->retExprType != NULL) {
-    *file << ": ";
-    fn->retExprType->body.tail->prettyPrint(file);
-  }
-  *file << std::endl;
+    *file << ")";
+    switch (fn->retTag) {
+    case RET_REF:
+      *file << " ref"; break;
+    case RET_PARAM:
+      *file << " param"; break;
+    case RET_TYPE:
+      *file << " type"; break;
+    default: break;
+    }
+    if (fn->retExprType != NULL) {
+      *file << ": ";
+      fn->retExprType->body.tail->prettyPrint(file);
+      // TODO: better type output
+    }
+    *file << std::endl;
 
-  if (fn->doc != NULL) {
-    printTabs(file);
-    *file << fn->doc << std::endl;
+    if (fn->doc != NULL) {
+      printTabs(file);
+      *file << fn->doc << std::endl;
+    }
+    *file << std::endl;
+    NUMTABS--;
   }
-  *file << std::endl;
-  NUMTABS--;
 }
 
 void createDocsFileFolders(std::string filename) {
@@ -440,4 +540,55 @@ void createDocsFileFolders(std::string filename) {
     total = dirCutoff + 1;
     dirCutoff = shorter.find("/");
   }
+}
+
+/* 
+ * Create new sphinx project at given location and return path where .rst files
+ * should be placed.
+ */
+std::string generateSphinxProject(std::string dirpath) {
+  // FIXME: This ought to be done in a TMPDIR, unless --save-rst is
+  //        provided... (thomasvandoren, 2015-01-29)
+
+  // Create the output dir under the docs output dir.
+  const char * htmldir = astr(dirpath.c_str(), "/html");
+
+  // Ensure output directory exists.
+  const char * mkdirCmd = astr("mkdir -p ", htmldir);
+  mysystem(mkdirCmd, "creating docs output dir");
+
+  // Copy the sphinx template into the output dir.
+  const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
+  const char * cmd = astr("cp -r ", sphinxTemplate, " ", htmldir, "/");
+  mysystem(cmd, "copying chpldoc sphinx template");
+
+  const char * moddir = astr(htmldir, "/source/modules");
+  return std::string(moddir);
+}
+
+/* Call `make html` from inside sphinx project. */
+void generateSphinxOutput(std::string dirpath) {
+  const char * htmldir = astr(dirpath.c_str(), "/html");
+
+  // The virtualenv activate script is at:
+  //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/activate
+  const char * activate = astr(
+    CHPL_HOME, "/third-party/chpldoc-venv/install/",
+    CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/activate");
+
+  // Run: `source $activate && cd $htmldir && $CHPL_MAKE html`
+  const char * cmd = astr(
+    "source ", activate,
+    " && cd ", htmldir, " && ",
+    CHPL_MAKE, " html");
+  mysystem(cmd, "building html output from chpldoc sphinx project");
+}
+
+/* trim from start
+ *
+ * From: http://stackoverflow.com/a/217605
+ */
+static inline std::string ltrim(std::string s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+  return s;
 }

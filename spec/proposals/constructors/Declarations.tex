@@ -1,0 +1,197 @@
+\section{Declarations}
+\label{Declarations}
+
+This section describes the proposed syntax for variable and field declarations, including
+optional initializers and their impact upon object initialization.  This proposal does not
+address the behavior of the \sntx{no-initialization-part} with respect to class and record
+types.  That behavior is the subject of a separate design.
+
+The present proposal seeks to address the sometimes surprising semantics arising from
+initialization depending on whether the type is specified.  It also seeks to define
+initialization in terms of construction, and remove unnecessary data motion as much as
+possible.
+
+Thus, the proposal mainly deals with implementation details.  The proposed changes should
+not affect the functional behavior of programs: they should affect only performance.  The
+observable changes will affect the total amount of memory allocated and freed, the amount
+of processing time spent in data motion and the number of times copy-constructors and
+copy-assignment operators are called.  But filtering out a program's introspection
+w.r.t. these quantities, its output should remain unaffected.
+
+\subsection{Syntax}
+
+The proposed syntax is unchanged from the existing syntax.
+
+\subsection{Semantics}
+
+The proposed semantic changes are detailed below.  The description is in terms of declared
+variables, but it applies in the same way to fields declared within a class or record.
+
+\subsubsection{Normalize Type Inference}
+
+The current implementation conflates value and type representation to the extent that
+\emph{representing the declared type of a variable requires creating a default-valued
+  object of that type}.  This seems almost self-referential, and probably accounts for
+much of the complexity surrounding initialization in the compiler, and the extra code
+emitted when a variable's type is specified explicitly.
+
+At a high level, the proposal here is to perform variable type inference separately from
+initialization.  That is, if a variable (or the return type of a function) has a declared type, that type will be represented internally as a type only.  It
+will not have a value associated with it and it will not entail the creation of a default
+value of that type as a stand-in for the type itself.
+
+This will require representing the type of a variable separately from its
+initializer.  As it happens, there is already room in the AST for this representation.
+But the normalization performed in \chpl{fix_def_expr()} removes both the \chpl{exprType}
+and \chpl{init} fields from a variable declaration and replaces them with flattened AST.
+The flattened AST creates a temporary object that has the value of the initializer
+expression (if present) or an invocation of \chpl{PRIM_INIT} on the type expression
+provided.  That temporary is copied into the declared variable by assignment.  
+
+In contrast, we propose that at least the exprType portion of the representation be left in
+place, at least until resolution is complete.
+The expression representing an \chpl{exprType} must evaluate to a type.  Once type
+resolution is complete, it can be discarded.  
+
+Another observation is that only the type information conveyed by such an expression is
+important.  Any values used in the representation of that expression may be discarded.
+Unfortunately, it is rather glib to say so.  Representation of coercions between
+fundamental types is currently tightly coupled with their value representation.  This
+seemingly small change in the internal representation will in fact be quite extensive.
+
+\subsubsection{Unify Initialization}
+
+In the current implementation, there is a step where the value is default-initialized
+prior to its value being established with an initializer if present.  If the view is taken
+that the declaration itself always results in a constructor call (the copy-constructor if
+an initializer is supplied and the no-args constructor if not), then default
+initialization becomes moot and should be removed.
+
+As part of this proposal, the existing \chpl{_defaultOf()} feature will be preserved.  The
+observation is that a call to \chpl{_defaultOf()} is effectively a constructor call.  This
+is backed up by the fact that the compiler-supplied implementation of \chpl{_defaultOf()}
+actually calls the compiler-supplied zero-args constructor.  
+
+After the type of a variable is established, it will either have an initialization
+expression or not.  If the initialization expression is missing, the compiler will add a
+call to \chpl{_defaultOf()} to supply the default value corresponding to that type.  If the
+\chpl{=noinit} initializer is supplied, then the special actions specified for
+that initializer are taken.  Otherwise, the initializer provided explicitly in the code is
+used.
+
+Like the \chpl{exprType} expression, it may be desirable to leave the initializer attached
+to the declaration rather than smashing it flat.  But in this case, I think either
+representation will serve: there is no pressing need to un-flatten the representation.
+
+\subsubsection{Collapse Constructor Calls}
+
+In the current implementation, constructor calls allocate and initialize (for class types)
+or simply initialize (for record types) an unnamed object of the corresponding type.  
+For class types, the resulting object is copied into the named variable using assignment.
+But since assignment of class variables is rigidly defined by the language to be a bitwise
+copy of a reference (pointer) to that unnamed object, the copy is not expensive.
+
+For record types, the story is different.  In general, the semantics of assignment are not
+defined if the left operand is in an uninitialized state.  So using assignment to
+initialize the named variable is flat wrong.  If the initializer expression is a named
+object (see below) then at worst copy-construction should be used.  But for constructor
+calls we can do even better by eliminating the copy entirely.
+
+Secondly, it is wasteful of effort to gin up
+an anonymous record object, copy its contents into a named record object and then throw
+the original away.  It would be better to express a constructor as a method that
+initializes the memory associated with the named variable in situ.  Allocation and
+deallocation of the unnamed temporary could be avoided, as well as the verbatim copy.
+
+Therefore, the proposal is to represent constructors as methods and the calls to them as
+method invocations.  This will directly support initializing record objects in situ.  For
+symmetry, it is desirable (though less urgent) to pull the allocation part of class
+object creation (via a \chpl{new} expression) outside of the constructor.  That would make
+the internal structure of class and record constructors identical.  
+
+Where an explicit initializer or constructor call is not provided, it is similarly desirable to have
+\chpl{_defaultOf()} defined as a method, for the same reasons as described above for
+constructors.  In the current implementation \chpl{_defaultOf()} works like a constructor
+--- its default implementation for record types even devolving to a constructor call.
+Maintaining that symmetry will keep the specification and implementation of
+\chpl{_defaultOf()} simple.
+
+\subsubsection{Use Copy-Construction, Not Assignment}
+
+The cases discussed so far involve no initializer, the \chpl{=noinit} initializer and an
+initializer that looks like a constructor call (i.e. \chpl{= new T(...)}.  The remaining
+case is where the initializer expression is an expression coercible to the type of the
+named variable.\footnote{In the case that the type of the named variable is not specified
+  explicitly, it will be inferred from the computed type of the initializer expression.
+  The inferred type of the variable will of course always match the type of the
+  initializer expression exactly, so the latter is always trivially coercible to the
+  former.}
+
+As explained above, assignment in the context of initialization is illegal, because the
+left operand is not yet initialized.  Copy-construction should be used instead.  The
+proposal here is to simply substitute a copy-constructor call where assignment is inserted
+today.  For fundamental and class types, copy-construction, assignment and bit-wise moves are
+semantically equivalent, so in that realm it becomes merely a name change.  The difference
+between assignment, copy-construction and a bitwise copy is only of consequence as it
+applies to records and record-based types (e.g. tuples and ranges).
+
+\subsection{Discussion}
+
+Using copy-construction in place of assignment does not currently make any difference as
+long as the compiler-provided versions of those methods are used.  However, for
+user-defined record types, the assumption of prior initialization of the left operand of
+assignment can be violated, and such a violation may cause incorrect behavior.  I believe
+we already have one test case that fails (only in multi-locale testing) due to this
+problem (in privatized arrays, because the default privatization index is not distinguished
+from a valid one).  More such problems may appear as greater use is made of records to
+support ad hoc memory management schemes.  The simple solution is to ``do it
+right''.
+
+Normalizing type inference will get rid of the extra type variable initialization code.
+After which, unifying the initialization code just means adding a \chpl{_defaultOf} call
+wherever no explicit initializer is provided.  Collapsing constructor calls will provide
+some nice code size reduction and performance improvement.
+
+\subsection{Examples}
+
+An example of the odd behavior associated with an explicit type as well as constructor
+call in an initializer is given by test/types/records/hilde/newUserDefaultCtor.chpl:
+\begin{chapel}
+record R
+{
+  proc R() { writeln("Called R()."); }
+  proc ~R() { writeln("Called ~R()."); }
+}
+
+var r:R = new R();
+
+writeln("Done.");
+\end{chapel}
+The output of this program is:
+\begin{chapelprintoutput}
+Called R().
+Called R().
+Called ~R().
+Done.
+Called ~R().
+\end{chapelprintoutput}
+\noindent
+whereas what is expected is:
+\begin{chapelprintoutput}
+Called R().
+Done.
+Called ~R().
+\end{chapelprintoutput}
+
+
+The difference between calling assignment versus calling the copy-constructor should be
+made apparent by instrumenting both in a test case.
+
+The other changes --- separating out type inference and handling initialization uniformly
+--- can probably only be detected by examining the AST.  The supporting change of
+representing and calling constructors as methods would, for the most part only be visible
+in the AST.  Although (as mentioned above) total memory usage statistics would also be
+expected to change.  The performance benefits of initializing variables in situ might be
+exposed by calling a function that performs initialization a couple million times and
+comparing the total elapsed time before and after.
+

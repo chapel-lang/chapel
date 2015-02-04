@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,16 +31,19 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TransformLogicalShortCircuit.h"
 
 #include <cctype>
+#include <set>
 #include <vector>
 
 bool normalized = false;
 
 //
 // Static functions: forward declaration
-// 
+//
 static void insertModuleInit();
+static void transformLogicalShortCircuit();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
@@ -51,17 +54,22 @@ static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
+static void init_array_alias(VarSymbol* var, Expr* type, Expr* init, Expr* stmt);
+static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt);
+static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp);
+static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, VarSymbol* constTemp);
+static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* constTemp);
 static void hack_resolve_types(ArgSymbol* arg);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
 static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
                                                       DefExpr* def,
                                                       int width);
-static void replace_query_uses(ArgSymbol* formal, 
-                               DefExpr*   def, 
+static void replace_query_uses(ArgSymbol* formal,
+                               DefExpr*   def,
                                CallExpr*  query,
                                Vec<SymExpr*>& symExprs);
-static void add_to_where_clause(ArgSymbol* formal, 
+static void add_to_where_clause(ArgSymbol* formal,
                                 Expr*      expr,
                                 CallExpr*  query);
 static void fixup_query_formals(FnSymbol* fn);
@@ -70,6 +78,7 @@ static void find_printModuleInit_stuff();
 
 void normalize() {
   insertModuleInit();
+  transformLogicalShortCircuit();
 
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -216,6 +225,60 @@ static void insertModuleInit() {
       mod->initFn->addFlag(FLAG_EXPORT);
       mod->initFn->addFlag(FLAG_LOCAL_ARGS);
     }
+  }
+}
+
+
+
+/************************************ | *************************************
+*                                                                           *
+* Historically, parser/build converted                                      *
+*                                                                           *
+*    <expr1> && <expr2>                                                     *
+*    <expr1> || <expr2>                                                     *
+*                                                                           *
+* into an IfExpr (which itself currently has a complex implementation).     *
+*                                                                           *
+* Now we allow the parser to generate a simple unresolvable call to either  *
+* && or || and then replace it with the original IF/THEN/ELSE expansion.    *
+*                                                                           *
+************************************* | ************************************/
+
+static void transformLogicalShortCircuit()
+{
+  std::set<Expr*>           stmts;
+  std::set<Expr*>::iterator iter;
+
+  // Collect the distinct stmts that contain logical AND/OR expressions
+  forv_Vec(CallExpr, call, gCallExprs)
+  {
+    if (call->primitive == 0)
+    {
+      if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr))
+      {
+        if (strcmp(expr->unresolved, "&&") == 0 ||
+            strcmp(expr->unresolved, "||") == 0)
+        {
+          stmts.insert(call->getStmtExpr());
+        }
+      }
+    }
+  }
+
+  // Transform each expression.
+  //
+  // In general this will insert new IF-expressions immediately before the
+  // current statement.  This approach interacts with Chapel's scoping
+  // rule for do-while stmts.  We need to ensure that the additional
+  // scope has been wrapped around the do-while before we perform this
+  // transform.
+  //
+  for (iter = stmts.begin(); iter != stmts.end(); iter++)
+  {
+    Expr*                        stmt = *iter;
+    TransformLogicalShortCircuit transform(stmt);
+
+    stmt->accept(&transform);
   }
 }
 
@@ -893,17 +956,7 @@ fix_def_expr(VarSymbol* var) {
   // handle var ... : ... => ...;
   //
   if (var->hasFlag(FLAG_ARRAY_ALIAS)) {
-    CallExpr* partial;
-    if (!type) {
-      partial = new CallExpr("newAlias", gMethodToken, init->remove());
-      // newAlias is not a method, so we don't set the methodTag
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
-    } else {
-      partial = new CallExpr("reindex", gMethodToken, init->remove());
-      partial->partialTag = true;
-      partial->methodTag = true;
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
-    }
+    init_array_alias(var, type, init, stmt);
     return;
   }
 
@@ -920,7 +973,45 @@ fix_def_expr(VarSymbol* var) {
   // handle ref variables
   //
   if (var->hasFlag(FLAG_REF_VAR)) {
+    init_ref_var(var, init, stmt);
+    return;
+  }
 
+  //
+  // insert code to initialize config variable from the command line
+  //
+  if (var->hasFlag(FLAG_CONFIG)) {
+    if (!var->hasFlag(FLAG_PARAM)) {
+      init_config_var(var, stmt, constTemp);
+    }
+  }
+
+  if (type) {
+    init_typed_var(var, type, init, stmt, constTemp);
+  } else {
+    init_untyped_var(var, init, stmt, constTemp);
+  }
+}
+
+
+static void init_array_alias(VarSymbol* var, Expr* type, Expr* init, Expr* stmt)
+{
+    CallExpr* partial;
+    if (!type) {
+      partial = new CallExpr("newAlias", gMethodToken, init->remove());
+      // newAlias is not a method, so we don't set the methodTag
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
+    } else {
+      partial = new CallExpr("reindex", gMethodToken, init->remove());
+      partial->partialTag = true;
+      partial->methodTag = true;
+      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
+    }
+}
+
+
+static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt)
+{
     if (!init) {
       USR_FATAL_CONT(var, "References must be initialized when they are defined.");
     }
@@ -952,15 +1043,11 @@ fix_def_expr(VarSymbol* var) {
     }
 
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_ADDR_OF, varLocation)));
+}
 
-    return;
-  }
 
-  //
-  // insert code to initialize config variable from the command line
-  //
-  if (var->hasFlag(FLAG_CONFIG)) {
-    if (!var->hasFlag(FLAG_PARAM)) {
+static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp)
+{
       Expr* noop = new CallExpr(PRIM_NOOP);
       Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
                              new_StringSymbol(var->getModule()->name) :
@@ -980,13 +1067,12 @@ fix_def_expr(VarSymbol* var) {
                                     module_name)),
           noop,
           new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
-
       stmt = noop; // insert regular definition code in then block
-    }
-  }
+}
 
-  if (type) {
 
+static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, VarSymbol* constTemp)
+{
     //
     // use cast for parameters to avoid multiple parameter assignments
     //
@@ -1002,7 +1088,41 @@ fix_def_expr(VarSymbol* var) {
     // the initialization expression if it exists
     //
     bool isNoinit = init && init->isNoInitExpr();
-    if (isNoinit) {
+
+    bool moduleNoinit = false;
+    if (isNoinit && !fUseNoinit) {
+      // In the case where --no-use-noinit is thrown, we want to still use
+      // noinit in the module code (as the correct operation of strings and
+      // complexes depends on it).
+
+      // Lydia note: The requirement for strings is expected to go away when
+      // our new string implementation is the default.  The requirement for
+      // complexes is expected to go away when we transition to constructors for
+      // all types instead of the _defaultOf function
+      Symbol* moduleSource = var;
+      while (!isModuleSymbol(moduleSource) && moduleSource != NULL &&
+             moduleSource->defPoint != NULL) {
+        // This will go up the definition tree until it reaches a module symbol
+        // Or until it encounters a null field.
+        moduleSource = moduleSource->defPoint->parentSymbol;
+      }
+      ModuleSymbol* mod = toModuleSymbol(moduleSource);
+      if (mod != NULL && moduleSource->defPoint != NULL) {
+        // As these are the only other cases that would have caused the prior
+        // while loop to exit, the moduleSource must be a module
+        moduleNoinit = (mod->modTag == MOD_INTERNAL) || (mod->modTag == MOD_STANDARD);
+        // Check if the parent module of this variable is a standard or
+        // internal module, and store the result of this check in moduleNoinit
+      }
+    }
+
+    // Lydia note:  I'm adding fUseNoinit here because utilizing noinit with
+    // return temps is necessary, so the only instances that should be
+    // controlled by the flag are generated here
+    if (isNoinit && (fUseNoinit || moduleNoinit)) {
+      // Only perform this action if noinit has been specified and the flag
+      // --no-use-noinit has not been thrown (or if the noinit is found in
+      // module code)
       var->defPoint->init->remove();
       CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
                    new CallExpr(PRIM_NO_INIT, type->remove()));
@@ -1010,7 +1130,13 @@ fix_def_expr(VarSymbol* var) {
       // its def expression after all), insert the move after the defPoint
       stmt->insertAfter(initCall);
     } else {
-      // Is not noInit
+      if (!fUseNoinit && isNoinit) {
+        // The instance would be initialized to noinit, but we aren't allowing
+        // noinit, so remove the initialization expression, allowing  it to
+        // default initialize.
+        init->remove();
+        init = NULL;
+      }
 
       // Create an empty type block.
       BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
@@ -1042,9 +1168,11 @@ fix_def_expr(VarSymbol* var) {
 
       stmt->insertAfter(block);
     }
+}
 
-  } else {
 
+static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* constTemp)
+{
     // See Note 4.
     //
     // initialize untyped variable with initialization expression
@@ -1073,7 +1201,6 @@ fix_def_expr(VarSymbol* var) {
       // when building default type constructors.
       if ((toSymExpr(init) && (toSymExpr(init)->typeInfo() == dtStringC)) &&
           !var->hasFlag(FLAG_PARAM)) {
-        INT_ASSERT(type==NULL);
         // This logic is the same as the case above under 'if (type)',
         // but simplified for this specific case.
         SET_LINENO(stmt);
@@ -1092,8 +1219,8 @@ fix_def_expr(VarSymbol* var) {
             new CallExpr("chpl__initCopy", init->remove())));
       }
     }
-  }
 }
+
 
 static void hack_resolve_types(ArgSymbol* arg) {
   // Look only at unknown or arbitrary types.
@@ -1266,7 +1393,6 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
       se->var = new_IntSymbol(width);
   }
   fn->defPoint->insertAfter(new DefExpr(newfn));
-  fixup_query_formals(newfn);
 }
 
 static void
@@ -1419,15 +1545,20 @@ fixup_query_formals(FnSymbol* fn) {
 
 static void
 find_printModuleInit_stuff() {
-  std::vector<Symbol*> symbols;
-  collectSymbolsSTL(printModuleInitModule, symbols);
-  for_vector(Symbol, symbol, symbols) {
-    if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
-      gModuleInitIndentLevel = toVarSymbol(symbol);
-      INT_ASSERT(gModuleInitIndentLevel);
-    } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
-      gPrintModuleInitFn = toFnSymbol(symbol);
-      INT_ASSERT(gPrintModuleInitFn);
+  if (fUseIPE == false) {
+    std::vector<Symbol*> symbols;
+
+    collectSymbolsSTL(printModuleInitModule, symbols);
+
+    for_vector(Symbol, symbol, symbols) {
+      if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+        gModuleInitIndentLevel = toVarSymbol(symbol);
+        INT_ASSERT(gModuleInitIndentLevel);
+
+      } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
+        gPrintModuleInitFn = toFnSymbol(symbol);
+        INT_ASSERT(gPrintModuleInitFn);
+      }
     }
   }
 }

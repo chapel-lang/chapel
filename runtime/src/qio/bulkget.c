@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,7 @@
 qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
 {
   qbytes_t* ret;
-  int64_t src_len;
+  int64_t src_len = 0; // init prevents "may be used uninited" with gcc 4.4.*
   qioerr err;
 
   // First, get the length of the bytes.
@@ -72,7 +72,7 @@ qioerr bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
   j = 0;
   for( i = 0; i < iovcnt; i++ ) {
     if( j + iov[i].iov_len > dst_len ) goto error_nospace;
-    //memcpy(PTR_ADDBYTES(ptr, j), iov[i].iov_base, iov[i].iov_len);
+    //chpl_memcpy(PTR_ADDBYTES(ptr, j), iov[i].iov_base, iov[i].iov_len);
 
     // TODO -- note -- technically, this should be gasnet_put_bulk,
     // since we don't want to require src/dst to have a particular alignment.

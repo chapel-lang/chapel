@@ -1,0 +1,41 @@
+# This is the generated code that we expect with the anonymous range iteration
+# applied. This check is pretty fragile since it's hard-coding names of
+# variables and other things in the check, but I don't expect it to change
+# that often. If it becomes a problem it can be revisited. If this test
+# changes and this output needs to be updated the important things to look for
+# are that there are no range constructions for the anonymous ranges, and that
+# for strided anonymous ranges where the stride is known at compile time, the
+# "C for loop" uses "<, <=, >, or >="
+
+# I would expect the output to change if argument names for the direct
+# iterators are changed, copy propagation is updated, or something else
+# changes that makes variables names different or the formatting of c for
+# loops to change.
+
+# for i in 1..2 do write(i); writeln();
+ic__F1_high_chpl = INT64(2);
+for (i_chpl = INT64(1); ((i_chpl <= _ic__F1_high_chpl)); i_chpl += INT64(1))
+
+# for i in 2..2+1 do write(i); writeln();
+_ic__F1_high_chpl2 = INT64(3);
+for (i_chpl2 = INT64(2); ((i_chpl2 <= _ic__F1_high_chpl2)); i_chpl2 += INT64(1))
+
+# var lo=3, hi=4; for i in lo..hi do write(i); writeln();
+_ic__F1_high_chpl3 = INT64(4);
+for (i_chpl3 = INT64(3); ((i_chpl3 <= _ic__F1_high_chpl3)); i_chpl3 += INT64(1))
+
+# for i in 4..5 by 2 do write(i); writeln();
+_ic__F1_high_chpl4 = INT64(5);
+for (i_chpl4 = INT64(4); ((i_chpl4 <= _ic__F1_high_chpl4)); i_chpl4 += INT64(2)) {
+
+# for (i, j) in zip(1..10 by 3, 1..10 by -3) do write(i,j); writeln();
+_ic__F1_high_chpl5 = INT64(10);
+for (_ic__F3_i_chpl = INT64(1),_ic__F3_i_chpl2 = INT64(10); (tmp_chpl = (_ic__F3_i_chpl <= _ic__F1_high_chpl5),tmp_chpl); tmp_chpl2 = _ic__F3_i_chpl,tmp_chpl2 += INT64(3),_ic__F3_i_chpl = tmp_chpl2,tmp_chpl3 = _ic__F3_i_chpl2,tmp_chpl3 += INT64(-3),_ic__F3_i_chpl2 = tmp_chpl3)
+
+# var r = 1..10 by 2; for (i, j) in zip(1..10 by 2, r) do write(i, j); writeln();
+_ic__F1_high_chpl6 = INT64(10);
+for (_ic__F3_i_chpl3 = INT64(1),_ic__value_chpl = tmp_chpl5; (tmp_chpl6 = (_ic__F3_i_chpl3 <= _ic__F1_high_chpl6),tmp_chpl6); tmp_chpl7 = _ic__F3_i_chpl3,tmp_chpl7 += INT64(2),_ic__F3_i_chpl3 = tmp_chpl7,tmp_chpl8 = _ic__value_chpl,tmp_chpl8 += ret_chpl19,_ic__value_chpl = tmp_chpl8)
+
+# coforall i in 5..5 do write(i); writeln();
+_ic__F1_high_chpl7 = INT64(5);
+for (i_chpl5 = INT64(5); ((i_chpl5 <= _ic__F1_high_chpl7)); i_chpl5 += INT64(1))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -63,19 +63,19 @@ _complex128 c_string_to_complex128(c_string str, int lineno, c_string filename);
 
 
 /* every other primitive type to string */
-c_string int8_t_to_c_string(int8_t x);
-c_string int16_t_to_c_string(int16_t x);
-c_string int32_t_to_c_string(int32_t x);
-c_string int64_t_to_c_string(int64_t x);
-c_string uint8_t_to_c_string(uint8_t x);
-c_string uint16_t_to_c_string(uint16_t x);
-c_string uint32_t_to_c_string(uint32_t x);
-c_string uint64_t_to_c_string(uint64_t x);
-c_string _real32_to_c_string(_real32 x);
-c_string _real64_to_c_string(_real64 x);
-c_string _imag32_to_c_string(_imag32 x);
-c_string _imag64_to_c_string(_imag64 x);
+c_string_copy integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned);
+c_string_copy real_to_c_string_copy(_real64 x, chpl_bool isImag);
 
+// Since Chapel's type system treats c_string and c_string_copy as distinct
+// types, we could rely on the Chapel compiler doing the right thing if these
+// routines are used as externs in module code.
+// TODO: Currently, they are called directly in codegen.  This is dangerous
+// because the C compiler treats the two types identically.
+// However, the distinction between c_string and c_string_copy should be
+// respected, so we can free dynamically-allocated C strings and avoid freeing
+// statically-allocated ones.  The easiest approach is probably to call these
+// (and other type##_to_c_string functions) from module code.
+// TODO: Can we use the pattern above, to reduce the number of interfaces required?
 static ___always_inline
 c_string chpl_bool_to_c_string(chpl_bool x) {
   return x ? "true" : "false";
@@ -99,18 +99,25 @@ c_string chpl_bool64_to_c_string(chpl_bool64 x) {
 
 #include "chpl-string.h"
 
+// Note that this routine returns a reference to the character buffer in the
+// underlying chpl_string, so the chpl_string must last longer than the
+// returned c_string or the caller must make a copy of the result.  The caller
+// should not free the returned string.
 static ___always_inline
 c_string chpl_string_to_c_string(chpl_string s, int lineno, c_string filename) {
   c_string ret;
-  c_string_from_string(&ret, &s, -1, "");
-  return ret; // leaky?
+  c_string_from_string(&ret, &s, lineno, filename);
+  return ret; // leaky? No. (see above)
 }
 
+// This routine returns a chpl_string containing a verbatim copy of the
+// passed-in C string.  The (chpl_)string destructor will take care of
+// deallocating that memory.
 static ___always_inline
 chpl_string c_string_to_chpl_string(c_string s, int lineno, c_string filename) {
   chpl_string ret;
-  string_from_c_string(&ret, s, 0, -1, -1, "");
-  return ret; // leaky?
+  string_from_c_string(&ret, s, 0, -1, lineno, filename);
+  return ret; // leaky? No. (see above)
 }
 
-#endif
+#endif // _chplcast_h_

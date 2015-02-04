@@ -1,5 +1,5 @@
-perfkeys: real, real, real, real, real, real, real
-files: fannkuch-redux.dat, fannkuch-redux-blc.dat, fannkuch-redux-blc-int8.dat, fannkuch-redux-blc-compact.dat, fannkuch-redux-release.dat, fannkuch-redux-coforall.dat, fannkuch-redux-iter.dat
-graphkeys: Kyle version, Brad version, Brad int8 version, Brad compact version, Release version, Coforall version, Iterator version
+perfkeys: real, real, real, real, real, real, real, real
+files: fannkuch-redux.dat, fannkuch-redux-blc.dat, fannkuch-redux-blc-int8.dat, fannkuch-redux-blc-compact.dat, fannkuch-redux-release.dat, fannkuch-redux-coforall.dat, fannkuch-redux-iter.dat, fannkuch-MAXLOGICAL.dat
+graphkeys: Kyle version, Brad version, Brad int8 version, Brad compact version, Release version, Coforall version, Iterator version, MAX_LOGICAL release
 ylabel: Time (seconds)
 graphtitle: Fannkuch-Redux (n=12)
