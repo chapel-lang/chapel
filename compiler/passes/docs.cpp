@@ -233,9 +233,22 @@ void printClass(std::ofstream *file, AggregateType *cl) {
   
     NUMTABS++;
     *file << cl->symbol->name << std::endl;
+
+    // In rst mode, ensure there is an empty line between the class/record
+    // signature and its description or the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+
     if (cl->doc != NULL) {
       printTabs(file);
       *file << cl->doc << std::endl;
+
+      // In rst mode, ensure there is an empty line between the class/record
+      // description and the next directive.
+      if (!fDocsTextOnly) {
+        *file << std::endl;
+      }
     }
     printFields(file, cl);
     // If alphabetical option passed, alphabetizes the output
@@ -272,9 +285,9 @@ void printClass(std::ofstream *file, AggregateType *cl) {
 }
 
 void printVarStart(std::ofstream *file, VarSymbol *var) {
-  // TODO: I need to get this to print type fields as type fields instead of
-  // vars.
-  if (var->isConstant())
+  if (var->hasFlag(FLAG_TYPE_VARIABLE))
+    *file << "type ";
+  else if (var->isConstant())
     *file << "const ";
   else if (var->isParameter())
     *file << "param ";
