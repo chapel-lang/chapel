@@ -379,8 +379,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       // Only print tabs for text only mode. The .rst prefers not to have the
       // tabs for module level comments and leading whitespace removed.
       if (fDocsTextOnly) {
-        printTabs(file);
-        *file << mod->doc << std::endl;
+        ltrimAndPrintLines(mod->doc, file);
       } else {
         NUMTABS--;
         ltrimAndPrintLines(mod->doc, file);
