@@ -357,10 +357,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
         *file << outputMap["module comment prefix"];
 
         // Grab first line of comment for synopsis.
-        std::stringstream synopsisStream(mod->doc);
-        std::string firstLine;
-        std::getline(synopsisStream, firstLine);
-
+        std::string firstLine = firstNonEmptyLine(mod->doc);
         *file << firstLine << std::endl;
         NUMTABS--;
       }
@@ -628,6 +625,23 @@ static std::string erase(std::string s, int count) {
     line.erase(line.begin(), line.begin() + count);
     result += line;
     result += std::string("\n");
+  }
+  return result;
+}
+
+/*
+ * Returns first non empty line of the string. "Empty lines" are those with no
+ * characters or only whitespace characters.
+ */
+static std::string firstNonEmptyLine(std::string s) {
+  std::stringstream sStream(s);
+  std::string line;
+  std::string result;
+  while (std::getline(sStream, line)) {
+    if (!isEmpty(line)) {
+      result = line;
+      break;
+    }
   }
   return result;
 }
