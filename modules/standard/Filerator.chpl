@@ -116,11 +116,13 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
    from 'path'.
 
      * path: the directory to start from
-     * topdown: indicates whether to yield the directories using a preorder (vs. postorder) traversal
+     * topdown: indicates whether to yield the directories using a
+       preorder (vs. postorder) traversal
      * depth: indicates the maximal depth of recursion to use
      * dotfiles: indicates whether to enter directories with dotfile names
      * followlinks: indicates whether to follow symbolic links or not
-     * sort: indicates whether to consider subdirectories in sorted order or not
+     * sort: indicates whether to consider subdirectories in sorted
+       order or not
   
    by default, walkdirs() will start in the current directory, process
    directories in preorder; recursively traverse subdirectories; and
