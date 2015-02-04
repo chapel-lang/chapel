@@ -727,22 +727,69 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       var fs:c_void_ptr;
       error = hdfs_connect(fs, host.c_str(), port);
       if error then ioerror(error, "Unable to connect to HDFS", host);
+      /* TODO: This code is an alternative to the above line, which breaks the
+         function's original invariant of not generating errors within itself.
+         This is better style and should still work, but we can't be certain
+         until we test it and aren't capable of testing HDFS at this point.
+         When further work with HDFS is done, please test and edit this function
+         to behave appropriately by removing the above line and replacing it
+         with the following three. (2015-02-04, lydia)
+
+      if error then return ret;
+      // connect fully specifies the error message so all we'd need to do is
+      // return.
+      */
       error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
       // Since we don't have an auto-destructor for this, we actually need to make
       // the reference count 1 on this FS after we open this file so that we will
       // disconnect once we close this file.
       hdfs_do_release(fs);
       if error then ioerror(error, "Unable to open file in HDFS", url);
+      /* TODO: The above line breaks the function's original invariant of not
+         generating errors within itself.  It is better style to remove this
+         line.  Doing so should still work, but we can't be certain until we
+         test it and aren't capable of testing HDFS at this point.  When
+         further work with HDFS is done, please test and edit this function to
+         behave appropriately by removing the above line (2015-02-04, lydia)
+
+      */
     } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
       error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
       if error then ioerror(error, "Unable to open URL", url);
+      /* TODO: The above line breaks the function's original invariant of not
+         generating errors within itself.  It is better style to remove this
+         line.  Doing so should still work, but we can't be certain until we
+         test it and aren't capable of regularly testing curl at this point.
+         When further work with auxiliary file systems are done, please test and
+         edit this function to behave appropriately by removing the above line
+         (2015-02-04, lydia)
+
+      */
     } else {
       ioerror(ENOENT:syserr, "Invalid URL passed to open");
+      /* TODO: This code is an alternative to the above line, which breaks the
+         function's original invariant of not generating errors within itself.
+         This is better style and should still work, but we can't be certain
+         until we test it and aren't capable of testing HDFS at this point.
+         When further work with HDFS is done, please test and edit this function
+         to behave appropriately by removing the above line and replacing it
+         with the following one. (2015-02-04, lydia)
+
+      error = ENOENT:syserr; // Invalid URL provided
+      */
     }
   } else {
     if (path == "") then
       ioerror(ENOENT:syserr, "in open: Both path and url were path");
+    /* TODO: The above two lines breaks the function's original invariant of not
+       generating errors within itself.  It is better style to remove these
+       lines.  Doing so should still work, but we can't be certain until we
+       test it and aren't capable of regularly testing auxiliary file systems at
+       this point.  When further work with auxiliary file systems are done,
+       please test and edit this function to behave appropriately by removing
+       the above two lines. (2015-02-04, lydia)
 
+    */
     error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
   }
 

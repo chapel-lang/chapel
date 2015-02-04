@@ -292,9 +292,9 @@ void printClass(std::ofstream *file, AggregateType *cl) {
 }
 
 void printVarStart(std::ofstream *file, VarSymbol *var) {
-  // TODO: I need to get this to print type fields as type fields instead of
-  // vars.
-  if (var->isConstant())
+  if (var->hasFlag(FLAG_TYPE_VARIABLE))
+    *file << "type ";
+  else if (var->isConstant())
     *file << "const ";
   else if (var->isParameter())
     *file << "param ";

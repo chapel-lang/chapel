@@ -145,18 +145,49 @@ private:
 
 /******************************** | *********************************
 *                                                                   *
+* This class has two roles:                                         *
+*    1) A common abstract base class for VarSymbol and ArgSymbol.   *
+*    2) Maintain location state as an IPE "optimization".           *
 *                                                                   *
 ********************************* | ********************************/
 
-class VarSymbol : public Symbol {
- public:
+class LcnSymbol : public Symbol
+{
+public:
+  int       depth()                                            const;
+  int       offset()                                           const;
+
+  void      locationSet(int depth, int offset);
+
+protected:
+            LcnSymbol(AstTag      astTag,
+                      const char* initName,
+                      Type*       initType);
+
+  virtual  ~LcnSymbol();
+
+private:
+            LcnSymbol();
+
+  int       mDepth;                // Lexical depth relative to root
+  int       mOffset;               // Byte offset within frame
+};
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+class VarSymbol : public LcnSymbol {
+public:
   // Note that string immediate values are stored
   // with C escapes - that is newline is 2 chars \ n
   Immediate   *immediate;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
-  ~VarSymbol();
+  virtual ~VarSymbol();
+
   void verify();
   virtual void    accept(AstVisitor* visitor);
   DECLARE_SYMBOL_COPY(VarSymbol);
@@ -181,7 +212,7 @@ class VarSymbol : public Symbol {
 *                                                                   *
 ********************************* | ********************************/
 
-class ArgSymbol : public Symbol {
+class ArgSymbol : public LcnSymbol {
 public:
   ArgSymbol(IntentTag   iIntent,
             const char* iName,

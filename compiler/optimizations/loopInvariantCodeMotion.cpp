@@ -536,22 +536,22 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
               }
             }
           }
-        } 
+        }
       }
-    
+
       //Check each symExpr to see if its a use and or def and add to the appropriate lists
       std::vector<SymExpr*> symExprs;
       collectSymExprsSTL(expr, symExprs);
       for_vector(SymExpr, symExpr, symExprs) {
         if(symExpr->parentSymbol) {
-          if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+          if(isLcnSymbol(symExpr->var)) {
             localMap[symExpr] = block->id;
             int result = isDefAndOrUse(symExpr);
-            //Add defs 
+            //Add defs
             if(result & 1) {
               addDefOrUse(localDefMap, symExpr->var, symExpr);
             }
-            //add uses 
+            //add uses
             if(result & 2) {
               addDefOrUse(localUseMap, symExpr->var, symExpr);
             }
@@ -573,7 +573,7 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
         }
       }
     }
-  }   
+  }
 }
 
 
@@ -722,17 +722,17 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
   //as it seems unlikely that anybody would be willing to wait the 2+ hours it
   //takes for a program to actual compile. However, if compilation times become
   //unpredictable a compiler flag can be added. With less conservative analysis
-  //though, this threshold should be eliminated. 
+  //though, this threshold should be eliminated.
   int numAliases = 0;
-  //compute the map of aliases for each symbol 
+  //compute the map of aliases for each symbol
   startTimer(computeAliasTimer);
   std::map<Symbol*, std::set<Symbol*> > aliases;
 
   //Compute the aliases for the function's parameters. Any args passed by ref
-  //can potentially alias each other. 
+  //can potentially alias each other.
   for_alist(formal1, fn->formals) {
     for_alist(formal2, fn->formals) {
-      if(formal1 == formal2) 
+      if(formal1 == formal2)
         continue;
       if(ArgSymbol* arg1 = toArgSymbol(toDefExpr(formal1)->sym)) {
         if(ArgSymbol* arg2 = toArgSymbol(toDefExpr(formal2)->sym)) {
@@ -749,10 +749,10 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     //if there are too many aliases, just return. Since nothing has been added
     //to the list of invariants, nothing will be hoisted from the current fn
     if(numAliases > MAX_NUM_ALIASES) {
-#ifdef detailedTiming 
+#ifdef detailedTiming
        FILE* tooManyAliasesFile = fopen(astr(CHPL_HOME,"/LICMaliases.txt"), "a");
        fprintf(tooManyAliasesFile, "Skipping fn %s %d of module %s %d "
-           "because there were too many aliases\n", fn->name, fn->id, 
+           "because there were too many aliases\n", fn->name, fn->id,
            fn->getModule()->name, fn->getModule()->id);
 
        fclose(tooManyAliasesFile);
@@ -760,29 +760,29 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
       stopTimer(computeAliasTimer);
       return;
     }
- 
+
     for_vector(Expr, expr, block2->exprs) {
       if(CallExpr* call = toCallExpr(expr)) {
         Symbol* rhs = rhsAlias(call);
         if(rhs != NULL) {
           Symbol* lhs = NULL;
-          if(call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) 
+          if(call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
             lhs = toSymExpr(call->get(1))->var;
           else
             lhs = toSymExpr(call->get(2))->var;
-        
+
           for_set(Symbol, rhsAlias, aliases[rhs]) {
             printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id,
               rhsAlias->name, rhsAlias->id));
-            
+
             aliases[rhsAlias].insert(lhs);
             aliases[lhs].insert(rhsAlias);
             numAliases += 2;
           }
-          printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id, rhs->name, 
+          printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id, rhs->name,
             rhs->id));
-          
-          aliases[rhs].insert(lhs); 
+
+          aliases[rhs].insert(lhs);
           aliases[lhs].insert(rhs);
           numAliases += 2;
         }
@@ -790,26 +790,26 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     }
   }
   stopTimer(computeAliasTimer);
-  
-  //calculate the actual defs of a symbol including the defs of 
-  //its aliases. If there are no defs or we have a constant, 
+
+  //calculate the actual defs of a symbol including the defs of
+  //its aliases. If there are no defs or we have a constant,
   //add it to the list of invariants
   startTimer(calculateActualDefsTimer);
-  std::set<SymExpr*> loopInvariantOperands;  
+  std::set<SymExpr*> loopInvariantOperands;
   std::set<SymExpr*> loopInvariantInstructions;
   std::map<SymExpr*, std::set<SymExpr*> > actualDefs;
   for_vector(SymExpr, symExpr, loopSymExprs) {
-  
+
     //skip already known invariants
     if(loopInvariantOperands.count(symExpr) == 1) {
       continue;
     }
-    
-    //mark all the const operands 
+
+    //mark all the const operands
     if(isConst(symExpr)) {
       loopInvariantOperands.insert(symExpr);
-    }    
-        
+    }
+
     //calculate defs of the aliases
     if(aliases.count(symExpr->var) == 1) {
       for_set(Symbol, symbol, aliases[symExpr->var]) {
@@ -818,22 +818,22 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
           for_vector(SymExpr, aliasSymExpr, *localDefMap[symbol]) {
             if(CallExpr* call = toCallExpr(aliasSymExpr->parentExpr)) {
               if(symExpr->var == rhsAlias(call)) {
-                //do nothing 
+                //do nothing
               }
               else if(aliases[symExpr->var].count(rhsAlias(call)) == 0) {
                 actualDefs[symExpr].insert(aliasSymExpr);
-              }  
+              }
             }
           }
         }
       }
-    }    
-   
+    }
+
     // We have to note that for records if a field is deffed then the record
     // itself is also deffed. This is handled in buildDefUseMaps for normal
     // variables but we have to handle when a variable aliases a record's field
     // and the alias is deffed.
-    if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+    if(isLcnSymbol(symExpr->var)) {
       // if the current variable is a record
       if(AggregateType* ct = toAggregateType(symExpr->var->type->symbol->type)) {
         if(isRecord(symExpr->var->type->symbol->type)) {
@@ -1047,16 +1047,16 @@ static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols
 
 
 /*
- * Collects the uses and defs of symbols the baseAST 
- * and checks for any synchronization variables such as 
- * atomics, syncs, and singles. 
+ * Collects the uses and defs of symbols the baseAST
+ * and checks for any synchronization variables such as
+ * atomics, syncs, and singles.
  */
 static bool containsSynchronizationVar(BaseAST* ast) {
   std::vector<SymExpr*> symExprs;
   collectSymExprsSTL(ast, symExprs);
   for_vector(SymExpr, symExpr, symExprs) {
-    
-    if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+
+    if(isLcnSymbol(symExpr->var)) {
       Type* symType = symExpr->var->type;
       Type* valType = symType->getValType();
       if (isSyncType(symType) || isAtomicType(symType) ||
