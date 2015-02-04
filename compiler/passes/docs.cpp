@@ -35,7 +35,6 @@
 #include "docs.h"
 #include "mysystem.h"
 #include "stringutil.h"
-#include "intlimits.h"
 
 int NUMTABS = 0;
 
@@ -614,7 +613,7 @@ static inline bool isEmpty(std::string s) {
  * Erase 'count' number of characters from beginning of each line in 's'. Just
  * ltrim() the first line, though.
  */
-static std::string erase(std::string s, size_t count) {
+static std::string erase(std::string s, int count) {
   std::stringstream sStream(s);
   std::string line;
   bool first = true;
@@ -640,12 +639,12 @@ static std::string erase(std::string s, size_t count) {
  * FIXME: Find minimum prefix also if every single line begins with
  *        "\s+*\s". (thomasvandoren, 2015-02-04)
  */
-static size_t minimumPrefix(std::string s) {
+static int minimumPrefix(std::string s) {
   std::stringstream sStream(s);
   std::string line;
   bool first = true;
-  size_t minPrefix = SIZE_MAX;
-  size_t currentPrefix;
+  int minPrefix = INT_MAX;
+  int currentPrefix;
   while (std::getline(sStream, line)) {
     // Skip the first line. It is a special case that often has been trimmed to
     // some extent.
@@ -674,7 +673,7 @@ static size_t minimumPrefix(std::string s) {
  * lines, and print them.
  */
 void ltrimAndPrintLines(std::string s, std::ofstream *file) {
-  size_t minPrefix = minimumPrefix(s);
+  int minPrefix = minimumPrefix(s);
   std::string trimmedS = erase(s, minPrefix);
 
   std::stringstream sStream(trimmedS);
