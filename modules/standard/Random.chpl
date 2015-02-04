@@ -21,12 +21,16 @@
    Support for pseudorandom number generation
 
    This module defines an abstraction for a stream of pseudorandom
-   numbers, :chpl:class:RandomStream:.  The current implementation is
-   based on the one used in the NAS Parallel Benchmarks (NPB,
-   available at: http://www.nas.nasa.gov/publications/npb.html).  The
-   longer-term intention is to add knobs permitting users to select
-   other pseudorandom number generation algorithms, such as the
-   Mersenne twister.
+   numbers, :chpl:class:`RandomStream`.  It also provides a helper
+   function, :chpl:func:`fillRandom` that can be used to fill an array
+   with random numbers in parallel.
+
+   The current implementation is based on the one that is used in the
+   NAS Parallel Benchmarks (NPB, available at:
+   http://www.nas.nasa.gov/publications/npb.html).  The longer-term
+   intention is to add knobs permitting users to select other
+   pseudorandom number generation algorithms, such as the Mersenne
+   twister.
 
    Paraphrasing the comments from the NPB reference implementation:
 
@@ -65,9 +69,6 @@
    initializing the random stream seed, but only one option is
    implemented at present.
 
-   3. Can the multiplier 'arand' be moved into the RandomStream class
-   so that it can be changed by a user of this class?
-
 */
 module Random {
 
@@ -80,7 +81,7 @@ module Random {
      class.
   */
 
-/* TODO: Document fillRandom here */
+/* This is some placeholder documentation for fillRandom() */
 proc fillRandom(x:[], seed: int(64)) {
   if x.eltType != complex && x.eltType != real && x.eltType != imag then
     compilerError("Random.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
