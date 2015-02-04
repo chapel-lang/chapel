@@ -109,12 +109,15 @@ class argument_map(object):
             return arch
 
         if compiler == 'gnu':
-            if version >= 4.9:
+            if version.major > 4:
                 return cls.gcc49.get(arch, '')
-            if version >= 4.7:
-                return cls.gcc47.get(arch, '')
-            if version >= 4.3:
-                return cls.gcc43.get(arch, '')
+            elif version.major == 4:
+                if version.minor >= 9:
+                    return cls.gcc49.get(arch, '')
+                elif version.minor >= 7:
+                    return cls.gcc47.get(arch, '')
+                elif version.minor >= 3:
+                    return cls.gcc43.get(arch, '')
             return 'none'
         elif compiler == 'intel':
             return cls.intel.get(arch, '')
