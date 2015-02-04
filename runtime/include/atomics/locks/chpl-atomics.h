@@ -305,7 +305,11 @@ DECLARE_ATOMICS(uint_least8_t);
 DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
-DECLARE_ATOMICS(uintptr_t);
+
+// For some reason using the DECLARE_ATOMICS macro for uintptr_t causes build
+// issues on netbsd.
+DECLARE_ATOMICS_BASE(uintptr_t, uintptr_t);
+DECLARE_ATOMICS_FETCH_OPS(uintptr_t);
 
 DECLARE_REAL_ATOMICS(_real32);
 DECLARE_REAL_ATOMICS(_real64);
