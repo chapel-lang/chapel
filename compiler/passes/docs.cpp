@@ -526,9 +526,6 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
       ltrimAndPrintLines(fn->doc, file);
       *file << std::endl;
     }
-    if (fDocsTextOnly) {
-      *file << std::endl;
-    }
     NUMTABS--;
   }
 }
