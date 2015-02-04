@@ -93,7 +93,7 @@ modules-docs-only:
 	cd modules && $(MAKE) documentation
 
 modules-docs: chpldoc
-# Call `make modules-docs-build` as part of the recipe instead of as a
+# Call `make modules-docs-only` as part of the recipe instead of as a
 # dependency so parallel make executions correctly build chpldoc first.
 	$(MAKE) modules-docs-only
 
