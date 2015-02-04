@@ -772,10 +772,6 @@ module ChapelArray {
     }
   
     inline proc these() {
-      // This should be pushed up to the caller of these().
-      // Otherwise, we will leak memory.
-      if !noRefCount then
-        _value.incRefCount();
       return _value.these();
     }
   
@@ -1506,8 +1502,6 @@ module ChapelArray {
     // count must be decremented when the containing location or structure is
     // deleted.
     inline proc these() ref {
-      if !noRefCount then
-        _value.incRefCount();
       return _value.these();
     }
   

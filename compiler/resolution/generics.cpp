@@ -258,7 +258,12 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
     Symbol* tmp = newTemp();
     block->insertAtTail(new DefExpr(tmp));
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, new_StringSymbol(astr("x", istr(i))))));
+#if HILDE_MM
+    call->insertAtTail(new SymExpr(tmp));
+#else
+// Not needed (and undesirable) with AMM.
     call->insertAtTail(new CallExpr("chpl__autoCopy", tmp));
+#endif
   }
   
   block->insertAtTail(new CallExpr(PRIM_RETURN, call));
