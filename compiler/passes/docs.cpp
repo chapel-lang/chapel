@@ -233,9 +233,22 @@ void printClass(std::ofstream *file, AggregateType *cl) {
   
     NUMTABS++;
     *file << cl->symbol->name << std::endl;
+
+    // In rst mode, ensure there is an empty line between the class/record
+    // signature and its description or the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+
     if (cl->doc != NULL) {
       printTabs(file);
       *file << cl->doc << std::endl;
+
+      // In rst mode, ensure there is an empty line between the class/record
+      // description and the next directive.
+      if (!fDocsTextOnly) {
+        *file << std::endl;
+      }
     }
     printFields(file, cl);
     // If alphabetical option passed, alphabetizes the output
