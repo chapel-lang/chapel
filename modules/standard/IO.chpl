@@ -3863,17 +3863,22 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch
 
 
 /* Enumerates matches in the string as well as capture groups.
+
    Returns tuples of reMatch objects, the 1st is always
-    the match for the whole pattern.
+   the match for the whole pattern.
+
    At the time each match is returned, the channel position is
-    at the start of that match. Note though that you would have
-    to advance to get to the position of a capture group.
+   at the start of that match. Note though that you would have
+   to advance to get to the position of a capture group.
+
    After returning each match, advances to just after that
-    match and looks for another match. Thus, it will not return
-    overlapping matches.
+   match and looks for another match. Thus, it will not return
+   overlapping matches.
+
    In the end, leaves the channel position at the end of the
-    last reported match (if we ran out of maxmatches)
-    or at the end of the channel (if we no longer matched)
+   last reported match (if we ran out of maxmatches)
+   or at the end of the channel (if we no longer matched)
+
    Holds the channel lock for the duration of the search.
  */
 iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
