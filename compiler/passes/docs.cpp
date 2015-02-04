@@ -251,6 +251,13 @@ void printClass(std::ofstream *file, AggregateType *cl) {
       }
     }
     printFields(file, cl);
+
+    // In rst mode, add an additional line break after the attributes and
+    // before the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+
     // If alphabetical option passed, alphabetizes the output
     if (fDocsAlphabetize) 
       qsort(cl->methods.v, cl->methods.n, sizeof(cl->methods.v[0]), 
@@ -523,7 +530,9 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
       ltrimAndPrintLines(fn->doc, file);
       *file << std::endl;
     }
-    *file << std::endl;
+    if (fDocsTextOnly) {
+      *file << std::endl;
+    }
     NUMTABS--;
   }
 }
