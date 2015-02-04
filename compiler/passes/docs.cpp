@@ -310,13 +310,7 @@ void printVarDocs(std::ofstream *file, VarSymbol *var) {
   // TODO: Do we want to parse the output here to make it indent nicely?
   NUMTABS++;
   if (var->doc != NULL) {
-    std::stringstream descStream(var->doc);
-    std::string line;
-    while (std::getline(descStream, line)) {
-      printTabs(file);
-      *file << ltrim(line);
-      *file << std::endl;
-    }
+    ltrimAndPrintLines(var->doc, file);
   }
   NUMTABS--;
 }
@@ -384,8 +378,10 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
         printTabs(file);
         *file << mod->doc << std::endl;
       } else {
-        std::string modDoc = ltrim(std::string(mod->doc));
-        *file << modDoc << std::endl;
+        NUMTABS--;
+        ltrimAndPrintLines(mod->doc, file);
+        *file << std::endl;
+        NUMTABS++;
       }
     }
     // For non-rst mode, revert to the original tab level.
@@ -519,9 +515,13 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     }
     *file << std::endl;
 
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+
     if (fn->doc != NULL) {
-      printTabs(file);
-      *file << fn->doc << std::endl;
+      ltrimAndPrintLines(fn->doc, file);
+      *file << std::endl;
     }
     *file << std::endl;
     NUMTABS--;
@@ -591,4 +591,17 @@ void generateSphinxOutput(std::string dirpath) {
 static inline std::string ltrim(std::string s) {
   s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
   return s;
+}
+
+/* Iterate through all lines of s. Print tabs before each line, ltrim the
+ * lines, and print them.
+ */
+void ltrimAndPrintLines(std::string s, std::ofstream *file) {
+  std::stringstream sStream(s);
+  std::string line;
+  while (std::getline(sStream, line)) {
+    printTabs(file);
+    *file << ltrim(line);
+    *file << std::endl;
+  }
 }
