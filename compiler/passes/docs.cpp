@@ -298,8 +298,8 @@ void printVarDocs(std::ofstream *file, VarSymbol *var) {
   const char * doc;
   if (var->doc != NULL)
     doc = var->doc;
-  else if (var->hasFlag(FLAG_TYPE_VARIABLE))
-    doc = var->type->symbol->doc;
+  //else if (var->hasFlag(FLAG_TYPE_VARIABLE))
+  //doc = var->type->symbol->doc;
 
   if (doc != NULL) {
     std::stringstream descStream(doc);
