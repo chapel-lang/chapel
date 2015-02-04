@@ -309,14 +309,8 @@ void printVarType(std::ofstream *file, VarSymbol *var) {
 void printVarDocs(std::ofstream *file, VarSymbol *var) {
   // TODO: Do we want to parse the output here to make it indent nicely?
   NUMTABS++;
-  const char * doc;
-  if (var->doc != NULL)
-    doc = var->doc;
-  //else if (var->hasFlag(FLAG_TYPE_VARIABLE))
-  //doc = var->type->symbol->doc;
-
-  if (doc != NULL) {
-    std::stringstream descStream(doc);
+  if (var->doc != NULL) {
+    std::stringstream descStream(var->doc);
     std::string line;
     while (std::getline(descStream, line)) {
       printTabs(file);
