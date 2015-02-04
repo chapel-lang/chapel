@@ -48,5 +48,13 @@ $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 # created, but still make sure the command fails.
 	cd $(@D) && ( $(MAKE_SYS_BASIC_TYPES) > $(@F) || { rm -f $(@F) && false ; } )
 
+MODULES_TO_DOCUMENT = \
+	standard/BitOps.chpl \
+	standard/Random.chpl
+
+documentation:
+	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
+	@echo "HTML files are at \$$CHPL_HOME/modules/docs/html/build/html/."
+
 FORCE:
 

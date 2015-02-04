@@ -50,7 +50,7 @@ def get(flag='host'):
             else:
                 platform_val = "cygwin32"
         elif platform_val.startswith('netbsd'):
-            if machine == 'x86_64':
+            if machine == 'amd64':
                 platform_val = 'netbsd64'
             else:
                 platform_val = 'netbsd32'
