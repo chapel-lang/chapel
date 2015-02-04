@@ -18,6 +18,8 @@
  */
 
 /*
+   Support for pseudorandom number generation
+
    This module defines an abstraction for a stream of pseudorandom
    numbers, :chpl:class:RandomStream:.  The current implementation is
    based on the one used in the NAS Parallel Benchmarks (NPB,
