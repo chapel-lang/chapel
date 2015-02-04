@@ -30,8 +30,11 @@ typedef struct chpl_chpl____wide_chpl_string_s chpl____wide_chpl_string;
 
 chpl_string
 chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
-  if (chpl_rt_nodeFromLocaleID(x->locale) == chpl_nodeID)
-    return string_copy(x->addr, lineno, filename);
+  if (chpl_rt_nodeFromLocaleID(x->locale) == chpl_nodeID) {
+    if (x->size > 0)
+      return string_copy_len(x->addr, x->size, lineno, filename);
+    return NULL;
+  }
   else {
     chpl_string s;
     chpl_comm_wide_get_string(&s, x,
@@ -194,30 +197,19 @@ void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int
  * responsibility to make sure that dest is large enough to hold src.
  * Return the moved string.
  */
-// Even if allocation is done here, the returned string is already owned
-// elsewhere.  So we return a c_string, not a c_string_copy.
-c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
-                         int32_t lineno, c_string filename) {
-  char *ret;
+void stringMove(c_string dest, c_string src, int64_t len,
+                int32_t lineno, c_string filename) {
+  char* ret;
+
   if (src == NULL)
-    return NULL;
+    chpl_error("Invalid source string in stringMove.", lineno, filename);
 
-  if (dest == NULL ||
-      // TODO: Want to deprecate indicating an empty string by a string of zero
-      // length.  This works OK if the string is unallocated (such as a string
-      // literal), but does not work well with an allocated string.  An
-      // allocated string of zero length still occupies memory (one byte for
-      // the NUL, at least), so that leaves us with a dilemma.  Which is it?
-      strlen(dest) == 0)
-    ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
-  else
-    // reuse the buffer
-    // The cast is necessary so we can write into the buffer (which is declared
-    // to be const).
-    ret = (char *) dest;
-
-  snprintf(ret, len+1, "%s", src);
-  return (c_string) ret;
+  // reuse the buffer
+  // The cast is necessary so we can write into the buffer (which is declared
+  // to be const).
+  ret = (char*) dest;
+  strncpy(ret, src, len);
+  ret[len] = '\0';
 }
 
 /* This function returns a string from src_locale located at src_addr.

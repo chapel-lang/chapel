@@ -240,7 +240,7 @@ module String {
   //
   inline proc _cast(type t, x: complex(?w)) where t == c_string_copy {
     if isnan(x.re) || isnan(x.im) then
-      return __primitive("string_copy", "nan");
+      return string_copy_len("nan", 3);
     var re = (x.re):c_string_copy;
     var im: c_string_copy;
     var op: c_string;
@@ -461,13 +461,13 @@ module CString {
     return chpl_bool_to_c_string(x:bool);
   }
   inline proc _cast(type t, x: bool(?w)) where t == c_string_copy {
-    return __primitive("string_copy", chpl_bool_to_c_string(x:bool));
+    return string_copy(chpl_bool_to_c_string(x:bool));
   }
 
   inline proc _cast(type t, x:enumerated) where t == c_string_copy {
     // Use the compiler-generated enum to c_string conversion.
     var cs = _cast(c_string, x);
-    return __primitive("string_copy", cs);
+    return string_copy(cs);
   }
 
   inline proc _cast(type t, x:integral) where t == c_string_copy {

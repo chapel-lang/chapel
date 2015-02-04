@@ -29,13 +29,23 @@
 // These should be moved to chpl-string.c and eventually go away.
 chpl_string chpl_refToString(void* ref) {
   char buff[32];
-  sprintf(buff, "%p", ref);
-  return string_copy(buff, 0, NULL);
+  int len = snprintf(buff, sizeof(buff), "%p", ref);
+  if (len <= 0)
+    // Assume that we format at least one character.
+    chpl_error("Formatting error in chpl_refToString", 0, NULL);
+  if (len >= sizeof(buff))
+    chpl_error("Buffer overflow in chpl_refToString", 0, NULL);
+  return string_copy_len(buff, len, 0, NULL);
 }
 
 
 chpl_string chpl_wideRefToString(c_nodeid_t node, void* addr) {
   char buff[32];
-  sprintf(buff, "%" FORMAT_c_nodeid_t ":%p", node, addr);
-  return string_copy(buff, 0, NULL);
+  int len = snprintf(buff, sizeof(buff), "%" FORMAT_c_nodeid_t ":%p", node, addr);
+  if (len <= 0)
+    // Assume that we format at least one character.
+    chpl_error("Formatting error in chpl_wideRefToString", 0, NULL);
+  if (len >= sizeof(buff))
+    chpl_error("Buffer overflow in chpl_wideRefToString", 0, NULL);
+  return string_copy_len(buff, len, 0, NULL);
 }

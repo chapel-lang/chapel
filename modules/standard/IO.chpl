@@ -963,7 +963,7 @@ inline proc _cast(type t, x: ioNewline) where t == c_string {
 }
 
 inline proc _cast(type t, x: ioNewline) where t == c_string_copy {
-  return __primitive("string_copy", "\n");
+  return string_copy_len("\n", 1);
 }
 
 // Used to represent a constant string we want to read or write...
@@ -981,7 +981,7 @@ inline proc _cast(type t, x: ioLiteral) where t == c_string {
 }
 
 inline proc _cast(type t, x: ioLiteral) where t == c_string_copy {
-  return __primitive("string_copy", x.val);
+  return string_copy(x.val);
 }
 
 // Used to represent some number of bits we want to read or write...

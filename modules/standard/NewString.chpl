@@ -97,7 +97,11 @@ module BaseStringType {
   }
 
   pragma "insert line file info"
-  extern proc stringMove(dest: c_string, src: c_string, len: int): c_string;
+  extern proc stringMove(dest: c_string, src: c_string, len: int): void;
+  pragma "insert line file info"
+  extern proc string_copy(src: c_string): c_string_copy;
+  pragma "insert line file info"
+  extern proc string_copy_len(src: c_string, len: int): c_string_copy;
   pragma "insert line file info"
   extern proc remoteStringCopy(src_loc: int, src_addr: c_string, len: int): c_string_copy;
 
@@ -168,13 +172,13 @@ module NewString {
       if new_len != 0 {
         if new_len < this.len {
           // reuse the buffer
-          this.base = stringMove(this.base, s, new_len);
+          stringMove(this.base, s, new_len);
         } else {
           // free the old buffer
           if this.len != 0 then
             on home do free_baseType(this.base);
           // allocate a new buffer
-          this.base = stringMove(_defaultOf(baseType), s, new_len);
+          this.base = string_copy_len(s, new_len);
         }
       } else {
         // free the old buffer
@@ -297,6 +301,7 @@ module NewString {
 
     inline proc isEmptyString() {
       if this.isAlias then return false;
+      if this.base == _nullString then return true;
       else return this.len==0; // this should be enough of a check
     }
 
@@ -352,7 +357,7 @@ module NewString {
       const slen = s.len; // cache the remote copy of len
       if s.home.id == here.id {
         if debugStrings then writeln("  local initCopy");
-        ret.base = stringMove(_defaultOf(baseType), s.base, slen);
+        ret.base = string_copy_len(s.base, slen);
       } else {
         if debugStrings then writeln("  remote initCopy: ", s.home.id);
         ret.base = remoteStringCopy(s.home.id, s.base, slen);
@@ -616,7 +621,7 @@ module NewString {
       halt("Cannot cast a remote "+baseTypeString+" to string.");
     var ret: string_rec;
     ret.len = cs.length;
-    if ret.len != 0 then ret.base = __primitive("string_copy", cs);
+    if ret.len != 0 then ret.base = string_copy(cs);
     ret.incRefCntNoAlias();
     if debugStrings then writeln("leaving _cast() "+baseTypeString+"-string");
     return ret;

@@ -68,12 +68,17 @@ char* chpl_glom_strings(int numstrings, ...) {
 c_string_copy chpl_format(c_string format, ...) {
   va_list ap;
   char z[128];
+  int len;
 
   va_start(ap, format);
-  if (vsnprintf(z, sizeof(z), format, ap) >= sizeof(z))
-    chpl_error("overflow encountered in format", 0, 0);
+  len = vsnprintf(z, sizeof(z), format, ap);
+  if (len < 0)
+    chpl_error("formatting error encountered in chpl_format", 0, 0);
+  if (len >= sizeof(z))
+    chpl_error("overflow encountered in chpl_format", 0, 0);
   va_end(ap);
-  return string_copy(z, 0, 0);
+
+  return string_copy_len(z, len, 0, NULL);
 }
 
 
@@ -93,18 +98,36 @@ chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
 }
 
 
+// len is the size of the returned string, not counting the terminating NUL.
+// Exactly len characters are copied from the source string.
+// The source string can contain NUL characters and need not contain a
+// terminating NUL.  A terminating NUL is always appended to the result.
+// If len == 0, an empty string ("") is returned.  This string still occpies
+// one byte because of the terminating NUL, so test for len == 0 if that is not
+// what you want.
+c_string_copy
+string_copy_len(c_string x, size_t len, int32_t lineno, c_string filename)
+{
+  char* buf;
+
+  buf = (char*) chpltypes_malloc(len+1, CHPL_RT_MD_STRING_COPY_DATA,
+                                 lineno, filename);
+  memcpy(buf, x, len);
+  buf[len] = '\0';
+
+  return buf;
+}
+
 c_string_copy
 string_copy(c_string x, int32_t lineno, c_string filename)
 {
-  char *z;
+  size_t len;
 
   // If the input string is null, just return null.
-  if (x == NULL)
-    return NULL;
+  if (x == NULL) return NULL;
 
-  z = (char*)chpltypes_malloc(strlen(x)+1, CHPL_RT_MD_STRING_COPY_DATA,
-                              lineno, filename);
-  return strcpy(z, x);
+  len = strlen(x);
+  return string_copy_len(x, len, lineno, filename);
 }
 
 // string_concat always returns a newly-allocated c_string (or NULL).

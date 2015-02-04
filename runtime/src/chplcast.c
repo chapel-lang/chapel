@@ -351,6 +351,8 @@ integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
   char buffer[256];
   const char* format = "";
   enum {UNSIGNED = 0<<16, SIGNED = 1<<16 };
+  int len;
+
   switch (SIGNED * isSigned + size)
   {
    default:
@@ -366,20 +368,26 @@ integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
    case   SIGNED + 4: format = "%" PRId32; break;
    case   SIGNED + 8: format = "%" PRId64; break;
   }
-  sprintf(buffer, format, x);
-  return string_copy(buffer, 0, NULL);
+
+  len = snprintf(buffer, sizeof(buffer), format, x);
+  if (len <= 0)
+    chpl_error("Formatting error in integral_to_c_string_copy", 0, NULL);
+  if (len >= sizeof(buffer))
+    chpl_error("Buffer overflow in integral_to_c_string_copy", 0, NULL);
+  return string_copy_len(buffer, len, 0, NULL);
 }
 
 /*
  *  real and imag to string
  */
-static char* ensureDecimal(char* buffer) {
-  char* last = buffer + strlen(buffer);
+
+// Returns the number of characters added.
+static size_t ensureDecimal(char* buffer) {
   if (!strchr(buffer, '.') && !strchr(buffer, 'e')) {
     strcat(buffer, ".0");
-    last += 2;
+    return 2;
   }
-  return last;
+  return 0;
 }
 
 #define NANSTRING "nan"
@@ -392,21 +400,24 @@ c_string_copy
 real_to_c_string_copy(_real64 x, chpl_bool isImag)
 {
   if (isnan(x)) {
-    return string_copy(NANSTRING, 0, NULL);
+    return string_copy_len(NANSTRING, sizeof(NANSTRING), 0, NULL);
   } else if (isinf(x)) {
     if (x < 0) {
-      return string_copy(NEGINFSTRING, 0, NULL);
+      return string_copy_len(NEGINFSTRING, sizeof(NEGINFSTRING), 0, NULL);
     } else {
-      return string_copy(POSINFSTRING, 0, NULL);
+      return string_copy_len(POSINFSTRING, sizeof(POSINFSTRING), 0, NULL);
     }
   } else {
     char buffer[256];
-    char* last;
-
-    sprintf(buffer, "%lg", x);
-    last = ensureDecimal(buffer);
+    int len = snprintf(buffer, sizeof(buffer), "%lg", x);
+    if (len <= 0)
+      // Assume that we format at least one character.
+      chpl_error("Formatting error in real_to_c_string_copy", 0, NULL);
+    if (len >= sizeof(buffer))
+      chpl_error("Buffer overflow error in real_to_c_string_copy", 0, NULL);
+    len += ensureDecimal(buffer);
     if (isImag)
-      strcat(last, "i");
-    return string_copy(buffer, 0, NULL);
+      strcat(buffer + len++, "i");
+    return string_copy_len(buffer, len, 0, NULL);
   }
 }
