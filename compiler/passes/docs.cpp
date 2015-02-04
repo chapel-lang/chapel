@@ -35,6 +35,7 @@
 #include "docs.h"
 #include "mysystem.h"
 #include "stringutil.h"
+#include "intlimits.h"
 
 int NUMTABS = 0;
 
