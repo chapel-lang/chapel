@@ -129,8 +129,7 @@ bool Expr::isStmt() const {
 const char* DefExpr::name() const {
   const char* retval = 0;
 
-  if (isVarSymbol(sym)    == true ||
-      isArgSymbol(sym)    == true ||
+  if (isLcnSymbol(sym)    == true ||
       isTypeSymbol(sym)   == true ||
       isFnSymbol(sym)     == true ||
       isModuleSymbol(sym) == true) {
@@ -1843,7 +1842,7 @@ GenRet codegenLocalDeref(GenRet r)
   // (instead of running codegenDeref with chplType=type->refType )
   ret = codegenValue(r);
   ret.isLVPtr = GEN_PTR;
-  if( r.chplType ) ret.chplType = r.chplType->getValType(); 
+  if( r.chplType ) ret.chplType = r.chplType->getValType();
   return ret;
 }
 

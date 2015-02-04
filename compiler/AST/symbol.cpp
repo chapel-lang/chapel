@@ -205,12 +205,49 @@ bool Symbol::isImmediate() const {
 
 /******************************** | *********************************
 *                                                                   *
+* Common base class for ArgSymbol and VarSymbol.                    *
+* Also maintains a small amount of IPE specific state.              *
+*                                                                   *
+********************************* | ********************************/
+
+LcnSymbol::LcnSymbol(AstTag      astTag,
+                     const char* initName,
+                     Type*       initType) :
+  Symbol(astTag, initName, initType)
+{
+  mDepth  = -1;
+  mOffset = -1;
+}
+
+LcnSymbol::~LcnSymbol()
+{
+
+}
+
+void LcnSymbol::locationSet(int depth, int offset)
+{
+  mDepth  = depth;
+  mOffset = offset;
+}
+
+int LcnSymbol::depth() const
+{
+  return mDepth;
+}
+
+int LcnSymbol::offset() const
+{
+  return mOffset;
+}
+
+/******************************** | *********************************
+*                                                                   *
 *                                                                   *
 ********************************* | ********************************/
 
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
-  Symbol(E_VarSymbol, init_name, init_type),
+  LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
   doc(NULL)
 {
@@ -826,7 +863,7 @@ void VarSymbol::accept(AstVisitor* visitor) {
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
                      Type* iType, Expr* iTypeExpr,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
-  Symbol(E_ArgSymbol, iName, iType),
+  LcnSymbol(E_ArgSymbol, iName, iType),
   intent(iIntent),
   typeExpr(NULL),
   defaultExpr(NULL),
