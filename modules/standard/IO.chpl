@@ -524,6 +524,7 @@ extern type fdflag_t = c_int;
 */
 extern type iohints = c_int;
 
+/* TODO: document file record. */
 pragma "ignore noinit"
 record file {
   var home: locale = here;
@@ -586,6 +587,7 @@ proc file.unlock() {
 // File style cannot be modified after the file is created;
 // this prevents race conditions;
 // channel style is protected by channel lock, can be modified.
+pragma "no doc"
 proc file._style:iostyle {
   check();
 
@@ -1961,6 +1963,7 @@ proc channel.modifyStyle(f:func(iostyle, iostyle))
 }
 */
 
+/* TODO: document ItemReader record. */
 record ItemReader {
   type ItemType;
   param kind:iokind;
@@ -3613,7 +3616,7 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
 }
 
 
-/** Sets arg to the string of a match.
+/*  Sets arg to the string of a match.
     If arg is not a string, the match will be coerced to a arg.type.
 
     Assumes that the channel has been marked before where
@@ -3654,7 +3657,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
 }
 
 
-/** Search for an offset in the channel matching the
+/*  Search for an offset in the channel matching the
     passed regular expression, possibly pulling out capture groups.
     If there is a match, leaves the channel position at the
     match. If there is no match, the channel position will be
@@ -3706,7 +3709,7 @@ proc channel.search(re:regexp):reMatch
   return ret;
 }
 
-/** Like channel.search but assigning capture groups to arguments.
+/*  Like channel.search but assigning capture groups to arguments.
  */
 proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 {
