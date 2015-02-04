@@ -25,6 +25,7 @@
 #include "passes.h"
 #include "primitive.h"
 #include "resolution.h"
+#include "bb.h"
 
 //
 // Static function declarations.
@@ -53,6 +54,7 @@ static void checkTaskRemovedPrims(); // Checks that certain primitives are
 static void checkLowerIteratorsRemovedPrims();
 static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
+static void checkBuildBasicBlocks();
 static void checkAutoCopyMap();
 static void checkFormalActualBaseTypesMatch();
 static void checkRetTypeMatchesRetVarType();
@@ -395,6 +397,7 @@ void check_afterEveryPass()
     verify();
     checkForDuplicateUses();
     checkFlagRelationships();
+    checkBuildBasicBlocks();
   }
 }
 
@@ -565,6 +568,13 @@ checkFlagRelationships()
       INT_ASSERT(!fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_LOCAL_ARGS));
     }
   }
+}
+
+static void
+checkBuildBasicBlocks()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+    BasicBlock::buildBasicBlocks(fn);
 }
 
 static void
