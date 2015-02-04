@@ -17,53 +17,59 @@
  * limitations under the License.
  */
 
-//
-// Random Module
-//
-// This standard module contains a random number generator based on
-// the one used in the NPB benchmarks.  Tailoring the NPB comments to
-// this code, we can say the following:
-//
-//   This generator returns uniform pseudorandom real values in the
-//   range (0, 1) by using the linear congruential generator
-//
-//     x_{k+1} = a x_k  (mod 2**46)
-//
-//   where 0 < x_k < 2**46 and 0 < a < 2**46.  This scheme generates
-//   2**44 numbers before repeating.  The seed value must be an odd
-//   64-bit integer in the range (1, 2^46).  The generated values are
-//   normalized to be between 0 and 1, i.e., 2**(-46) * x_k.
-//
-//   This generator should produce the same results on any computer
-//   with at least 48 mantissa bits for real(64) data.
-//
-// Open Issues
-//
-// 1. We would like to support general serial and parallel iterators
-// on the RandomStream class, but this is not possible with our
-// current parallel iterator framework.
-//
-// 2. The random number generation functionality in this module is
-// currently restricted to 64-bit real, 64-bit imag, and 128-bit
-// complex values.  This should be extended to other primitive types
-// for which this would make sense.  Coercions are insufficient.
-//
-// 3. Can the multiplier 'arand' be moved into the RandomStream class
-// so that it can be changed by a user of this class.
-//
-// 4. By default, the random stream seed is initialized based on the
-// current time in microseconds, allowing for some degree of
-// randomness.  The intent of the SeedGenerator enumerated type is to
-// provide a menu of options for initializing the random stream seed,
-// but only one option is implemented to date.
-//
-// Note on Private
-//
-// It is the intent that once Chapel supports the notion of 'private',
-// everything prefixed with RandomPrivate_ will be made private to
-// this module and everything prefixed with RandomStreamPrivate_ will
-// be made private to the RandomStream class.
-//
+/*
+   This module defines an abstraction for a stream of pseudorandom
+   numbers, :chpl:class:RandomStream:.  The current implementation is
+   based on the one used in the NAS Parallel Benchmarks (NPB,
+   available at: http://www.nas.nasa.gov/publications/npb.html).  The
+   longer-term intention is to add knobs permitting users to select
+   other pseudorandom number generation algorithms, such as the
+   Mersenne twister.
+
+   Summarizing the comments from the reference implementation:
+
+     This generator returns uniform pseudorandom real values in the
+     range (0, 1) by using the linear congruential generator
+
+       x_{k+1} = a x_k  (mod 2**46)
+
+     where 0 < x_k < 2**46 and 0 < a < 2**46.  This scheme generates
+     2**44 numbers before repeating.  The seed value must be an odd
+     64-bit integer in the range (1, 2^46).  The generated values are
+     normalized to be between 0 and 1, i.e., 2**(-46) * x_k.
+
+     This generator should produce the same results on any computer
+     with at least 48 mantissa bits for real(64) data.
+
+   Here is a list of currently open issues (TODOs) for this module:
+
+   1. We would like to support general serial and parallel iterators
+   on the RandomStream class, but this is not possible with our
+   current parallel iterator framework.
+
+   2. The random number generation functionality in this module is
+   currently restricted to 64-bit real, 64-bit imag, and 128-bit
+   complex values.  This should be extended to other primitive types
+   for which this would make sense.  Coercions are insufficient.
+
+   3. Can the multiplier 'arand' be moved into the RandomStream class
+   so that it can be changed by a user of this class?
+
+   4. By default, the random stream seed is initialized based on the
+   current time in microseconds, allowing for some degree of
+   randomness.  The intent of the SeedGenerator enumerated type is to
+   provide a menu of options for initializing the random stream seed,
+   but only one option is implemented to date.
+
+   Note to developers on "private":
+     
+   It is the intent that once Chapel supports a notion of 'private'
+   symbols, everything prefixed with RandomPrivate will be made
+   private to this module and everything prefixed with
+   'RandomStreamPrivate_' will be made private to the RandomStream
+   class.
+*/
+module Random {
 
 proc fillRandom(x:[], seed: int(64)) {
   if x.eltType != complex && x.eltType != real && x.eltType != imag then
@@ -311,3 +317,5 @@ iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
     }
   }
 }
+
+} // close module Random
