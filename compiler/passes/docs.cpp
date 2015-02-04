@@ -594,6 +594,13 @@ static inline std::string ltrim(std::string s) {
 }
 
 /*
+ * Return true if 's' is empty or only has whitespace characters.
+ */
+static inline bool isEmpty(std::string s) {
+  return s.end() == std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace)));
+}
+
+/*
  * Erase 'count' number of characters from beginning of each line in 's'. Just
  * ltrim() the first line, though.
  */
@@ -637,6 +644,13 @@ static size_t minimumPrefix(std::string s) {
       continue;
     }
 
+    // If line only contains blanks, do not include it in this
+    // computation. Especially in the case that the string is empty.
+    if (isEmpty(line)) {
+      continue;
+    }
+
+    // Find the first non-space character. Record if it is the new minimum.
     currentPrefix = std::find_if(line.begin(), line.end(), std::not1(std::ptr_fun<int, int>(std::isspace))) - line.begin();
     if (currentPrefix < minPrefix) {
       minPrefix = currentPrefix;

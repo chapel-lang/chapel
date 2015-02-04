@@ -55,6 +55,8 @@ void generateSphinxOutput(std::string dirpath);
 
 static inline std::string ltrim(std::string s);
 
+static inline bool isEmpty(std::string s);
+
 static std::string erase(std::string s, size_t count);
 
 static size_t minimumPrefix(std::string s);
