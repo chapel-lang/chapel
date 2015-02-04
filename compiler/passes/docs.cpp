@@ -241,8 +241,8 @@ void printClass(std::ofstream *file, AggregateType *cl) {
     }
 
     if (cl->doc != NULL) {
-      printTabs(file);
-      *file << cl->doc << std::endl;
+      ltrimAndPrintLines(cl->doc, file);
+      *file << std::endl;
 
       // In rst mode, ensure there is an empty line between the class/record
       // description and the next directive.
