@@ -1068,7 +1068,12 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
-  pragma "auto destroy fn" inline proc chpl__autoDestroy(x: object) { }
+  // The "compiler generated" pragma gives this lower precedence than any
+  // user-defined class destructor.
+  pragma "compiler generated" 
+  pragma "auto destroy fn"
+  inline proc chpl__autoDestroy(x: object) { }
+
   pragma "auto destroy fn" inline proc chpl__autoDestroy(type t)  { }
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {

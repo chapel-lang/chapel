@@ -462,6 +462,22 @@ module DefaultAssociative {
     }
   }
   
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultAssociativeDom) {
+    if ! noRefCount then
+      x.incRefCount();
+    return x;
+  }
+  
+  // TODO: See if the autoDestroy can be pushed up into a base class.
+  proc chpl__autoDestroy(x: DefaultAssociativeDom) {
+    if !noRefCount {
+      var cnt = x.destroyDom();
+      if cnt == 0 then
+        delete x;
+    }
+  }
+
   class DefaultAssociativeArr: BaseArr {
     type eltType;
     type idxType;
@@ -599,8 +615,22 @@ module DefaultAssociative {
       return _newDomain(dom);
     }
   }
-  
-  
+
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultAssociativeArr) {
+    if !noRefCount then
+      x.incRefCount();
+    return x;
+  }
+
+  proc chpl__autoDestroy(x: DefaultAssociativeArr) {
+    if !noRefCount {
+      var cnt = x.destroyArr();
+      if cnt == 0 then
+        delete x;
+    }
+  }
+
   proc chpl__defaultHashWrapper(x): chpl_table_index_type {
     const hash = chpl__defaultHash(x); 
     return (hash & max(chpl_table_index_type)): chpl_table_index_type;

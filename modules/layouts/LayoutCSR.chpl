@@ -311,6 +311,21 @@ class CSRDom: BaseSparseDom {
 }
 
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CSRDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CSRDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 class CSRArr: BaseArr {
   type eltType;
   param rank : int;

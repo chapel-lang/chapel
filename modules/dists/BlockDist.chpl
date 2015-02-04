@@ -594,6 +594,21 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
                    dataParMinGranularity);
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 iter BlockDom.these() {
   for i in whole do
     yield i;
@@ -780,6 +795,21 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
 // Added as a performance stopgap to avoid returning a domain
 //
 proc LocBlockDom.member(i) return myBlock.member(i);
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
+}
 
 proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {

@@ -342,6 +342,21 @@ class BlockCyclicDom: BaseRectangularDom {
   var pid: int = -1; // privatized object id
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockCyclicDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockCyclicDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 proc BlockCyclicDom.dsiDims() return whole.dims();
 
 proc BlockCyclicDom.dsiDim(d: int) return whole.dim(d);
@@ -642,6 +657,21 @@ class BlockCyclicArr: BaseArr {
   var myLocArr: LocBlockCyclicArr(eltType, rank, idxType, stridable);
 
   var pid: int = -1; // privatized object id
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockCyclicArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockCyclicArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
 }
 
 proc BlockCyclicArr.dsiGetBaseDom() return dom;

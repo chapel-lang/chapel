@@ -449,18 +449,22 @@ static bool typeHasRefField(Type *type) {
 //
 static FnSymbol*
 resolveUninsertedCall(Type* type, CallExpr* call) {
+  // In case resolveCall drops other stuff into the tree ahead of the call, we
+  // wrap everything in a block for safe removal.
+  BlockStmt* block = new BlockStmt();
+  block->insertAtHead(call);
+
   if (type->defaultInitializer) {
     if (type->defaultInitializer->instantiationPoint)
-      type->defaultInitializer->instantiationPoint->insertAtHead(call);
+      type->defaultInitializer->instantiationPoint->insertAtHead(block);
     else
-      type->symbol->defPoint->insertBefore(call);
+      type->symbol->defPoint->insertBefore(block);
   } else {
-    chpl_gen_main->insertAtHead(call);
+    chpl_gen_main->insertAtHead(block);
   }
 
   resolveCall(call);
-  call->remove();
-
+  block->remove();
   return call->isResolved();
 }
 
@@ -7031,7 +7035,8 @@ static void resolveAutoCopies() {
     if (ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
       continue; // Skip the "dmapped" pseudo-type.
 
-    if (isRecord(ts->type) || getSyncFlags(ts).any())
+    if (isRecord(ts->type) || getSyncFlags(ts).any() ||
+        isDomImplType(ts->type) || isArrayImplType(ts->type))
     {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);

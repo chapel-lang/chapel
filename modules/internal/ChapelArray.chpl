@@ -658,6 +658,12 @@ module ChapelArray {
         if !noRefCount then
           _value.incRefCount();
       }
+      // We have to bump the ref count on x to keep it in existence while it is
+      // being iterated over.
+      // TODO: need to add a corresponding decrement downstream.  Adding it at
+      // the end of this routine will cause premature deletion.
+      if !noRefCount then
+        x.incRefCount();
       const enumTuple = chpl_enum_enumerate(idxType);
       for param i in 1..enumTuple.size do
         x.dsiAdd(enumTuple(i));
@@ -772,10 +778,6 @@ module ChapelArray {
     }
   
     inline proc these() {
-      // This should be pushed up to the caller of these().
-      // Otherwise, we will leak memory.
-      if !noRefCount then
-        _value.incRefCount();
       return _value.these();
     }
   
@@ -1506,8 +1508,6 @@ module ChapelArray {
     // count must be decremented when the containing location or structure is
     // deleted.
     inline proc these() ref {
-      if !noRefCount then
-        _value.incRefCount();
       return _value.these();
     }
   

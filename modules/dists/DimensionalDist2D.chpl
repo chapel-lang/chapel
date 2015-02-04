@@ -464,6 +464,21 @@ proc _passLocalLocIDsDom1d(dom1d, dist1d) {
 /// domain //////////////////////////////////////////////////////////////////
 
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DimensionalDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DimensionalDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 //== privatization
 
 proc DimensionalDom.dsiSupportsPrivatization() param return true;
@@ -756,6 +771,21 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
 
 /// array ///////////////////////////////////////////////////////////////////
 
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DimensionalArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DimensionalArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
+}
 
 //== privatization
 

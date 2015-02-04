@@ -81,6 +81,21 @@ class PrivateDom: BaseRectangularDom {
   proc dsiMember(i) return 0 <= i && i <= numLocales-1;
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: PrivateDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: PrivateDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 class PrivateArr: BaseArr {
   type eltType;
   param rank: int;
@@ -89,6 +104,21 @@ class PrivateArr: BaseArr {
   var dom: PrivateDom(rank, idxType, stridable);
   var data: eltType;
   var pid: int = -1;
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: PrivateArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: PrivateArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
 }
 
 proc PrivateArr.dsiGetBaseDom() return dom;

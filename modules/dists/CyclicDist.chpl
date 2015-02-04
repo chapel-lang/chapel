@@ -364,6 +364,21 @@ class CyclicDom : BaseRectangularDom {
 }
 
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CyclicDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CyclicDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 proc CyclicDom.setup() {
   if locDoms(dist.targetLocDom.low) == nil {
     coforall localeIdx in dist.targetLocDom {
@@ -583,6 +598,21 @@ class CyclicArr: BaseArr {
   var myLocArr: LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1;
   const SENTINEL = max(rank*idxType);
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CyclicArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CyclicArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
 }
 
 proc CyclicArr.dsiSlice(d: CyclicDom) {

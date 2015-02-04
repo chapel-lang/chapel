@@ -81,6 +81,25 @@ module DefaultOpaque {
     }
   }
   
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultOpaqueDom) {
+    if ! noRefCount then
+      x.incRefCount();
+    return x;
+  }
+  
+  proc chpl__autoDestroy(x: DefaultOpaqueDom) {
+    if !noRefCount {
+      var cnt = x.destroyDom();
+      if cnt == 0 then
+        delete x;
+    }
+  }
+
+  proc DefaultOpaqueDom.dsiRemove(idx: idxType) {
+    adomain.dsiRemove(idx);
+  }
+  
   proc DefaultOpaqueDom.dsiSerialWrite(f: Writer) {
     adomain.dsiSerialWrite(f);
   }
@@ -106,8 +125,14 @@ module DefaultOpaque {
     var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
                                             parSafeDom=parSafe, dom=dom.adomain);
   
+    proc initialize() {
+      // We have to bump the reference count to move it away from zero.
+      anarray.incRefCount();
+    }
+
     proc ~DefaultOpaqueArr() {
-      delete anarray;
+      // Something more may be needed here.
+      delete anarray; anarray = nil;
     }
   
     proc dsiGetBaseDom() return dom;
@@ -147,8 +172,19 @@ module DefaultOpaque {
     }
   }
   
-  proc DefaultOpaqueDom.dsiRemove(idx: idxType) {
-    adomain.dsiRemove(idx);
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultOpaqueArr) {
+    if !noRefCount then
+      x.incRefCount();
+    return x;
   }
   
+  proc chpl__autoDestroy(x: DefaultOpaqueArr) {
+    if !noRefCount {
+      var cnt = x.destroyArr();
+      if cnt == 0 then
+        delete x;
+    }
+  }
+
 }

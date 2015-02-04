@@ -1025,10 +1025,24 @@ rebuildGetIterator(IteratorInfo* ii) {
   // Enumerate the fields in the iterator record (argument).
   for_fields(field, ii->irecord) {
     // Load the record field into a temp, and then use that to set the corresponding class field.
-    VarSymbol* tmp = newTemp(field->type);
-    getIterator->insertBeforeReturn(new DefExpr(tmp));
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField(field->name), tmp));
+    VarSymbol* fieldReadTmp = newTemp(field->type);
+    getIterator->insertBeforeReturn(new DefExpr(fieldReadTmp));
+    CallExpr* fieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
+    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, fieldReadTmp, fieldRead));
+    
+    // Very special iterator-only MM code!  See Note 1.
+    VarSymbol* fieldWriteTmp = fieldReadTmp;
+    if (isDomImplType(field->type) || isArrayImplType(field->type))
+    {
+      VarSymbol* tmp = newTemp("RWT_tmp", field->type);
+      getIterator->insertBeforeReturn(new DefExpr(tmp));
+      FnSymbol* autoCopyFn = autoCopyMap.get(field->type);
+      // This autoCopyFn is expected to exist!
+      CallExpr* autoCopyCall = new CallExpr(autoCopyFn, fieldReadTmp);
+      getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
+      fieldWriteTmp = tmp;
+    }
+    getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField(field->name), fieldWriteTmp));
   }
 
   // The return is supplied in the shell function created during functionResolution.
@@ -1271,3 +1285,28 @@ void lowerIterator(FnSymbol* fn) {
   rebuildGetIterator(ii);
   rebuildFreeIterator(ii);
 }
+
+//########################################################################
+//# NOTES
+//#
+//# Note 1:
+//#  A call to "proc these()" on an array or dom returns the underlying class
+//#  object rather than the record-wrapped version.  The record wrapping is
+//#  used for perform memory management, so without it the "nude" array or
+//#  dom is unmanaged.  
+//#  Since the underlying object is a class object rather than a record
+//#  object, it is invisible to the AMM implementation in
+//#  insertAutoCopyAutoDestroy().  That is, all MM on class objects has to be
+//#  done "manually".  Since we are manipulating class objects here, we have
+//#  to insert that MM specially.
+//#  This implementation leverages the autoCopy/autoDestroy mechanism used
+//#  for AMM of records.  The reason for this is that pruneResolvedTree()
+//#  clears out functions that are not referred to anywhere in the code.
+//#  Since this code is adding calls post-resolution, they must be preserved
+//#  some way and they must already be resolved.  Leveraging this mechanism
+//#  for the (class) implementations of record-wrapped types seems
+//#  reasonable, since in spirit our use of "autoCopy" and "autoDestroy" is
+//#  consistent with their use w.r.t. records.  The only downside is that
+//#  autoCopy and autoDestroy functions now have to be added explicilty to
+//#  each RWT implementation.
+//########################################################################
