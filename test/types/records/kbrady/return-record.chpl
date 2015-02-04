@@ -18,6 +18,15 @@ module foo {
     }
   }
 
+  // This is the way to write a copy constructor at present.
+  pragma "init copy fn"
+  proc chpl__initCopy(const ref rhs: Zed) {
+    writeln("in chpl__initCopy(",rhs,":Zed)");
+    var result:Zed;
+    result.x = if rhs.x then new helper(rhs.x.y) else nil;
+    return result;
+  }
+
   proc =(ref lhs: Zed, rhs: Zed) {
     if debugAssign then writeln("in =(Zed(",lhs.x,"), Zed(",rhs.x,"))");
     else writeln("in =(Zed, Zed)");

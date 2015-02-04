@@ -276,7 +276,7 @@ inline proc _defaultOf(type t) param where (isEnumType(t)) {
 inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
 
 // Various types whose default value is known
-inline proc _defaultOf(type t) param where t: void return _void;
+inline proc _defaultOf(type t) where t: void return _void;
 inline proc _defaultOf(type t) where t: opaque return _nullOpaque;
 inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
 inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
