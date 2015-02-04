@@ -593,15 +593,71 @@ static inline std::string ltrim(std::string s) {
   return s;
 }
 
-/* Iterate through all lines of s. Print tabs before each line, ltrim the
+/*
+ * Erase 'count' number of characters from beginning of each line in 's'. Just
+ * ltrim() the first line, though.
+ */
+static std::string erase(std::string s, size_t count) {
+  std::stringstream sStream(s);
+  std::string line;
+  bool first = true;
+  std::string result = std::string("");
+  while (std::getline(sStream, line)) {
+    if (first) {
+      result += ltrim(line);
+      result += std::string("\n");
+      first = false;
+      continue;
+    }
+    line.erase(line.begin(), line.begin() + count);
+    result += line;
+    result += std::string("\n");
+  }
+  return result;
+}
+
+/*
+ * Iterate through string, skipping the first line, finding the minimum amount
+ * of whitespace before each line.
+ *
+ * FIXME: Find minimum prefix also if every single line begins with
+ *        "\s+*\s". (thomasvandoren, 2015-02-04)
+ */
+static size_t minimumPrefix(std::string s) {
+  std::stringstream sStream(s);
+  std::string line;
+  bool first = true;
+  size_t minPrefix = SIZE_MAX;
+  size_t currentPrefix;
+  while (std::getline(sStream, line)) {
+    // Skip the first line. It is a special case that often has been trimmed to
+    // some extent.
+    if (first) {
+      first = false;
+      continue;
+    }
+
+    currentPrefix = std::find_if(line.begin(), line.end(), std::not1(std::ptr_fun<int, int>(std::isspace))) - line.begin();
+    if (currentPrefix < minPrefix) {
+      minPrefix = currentPrefix;
+    }
+  }
+  return minPrefix;
+}
+
+/*
+ * Iterate through all lines of s. Print tabs before each line, ltrim the
  * lines, and print them.
  */
 void ltrimAndPrintLines(std::string s, std::ofstream *file) {
-  std::stringstream sStream(s);
+  size_t minPrefix = minimumPrefix(s);
+  std::string trimmedS = erase(s, minPrefix);
+
+  std::stringstream sStream(trimmedS);
   std::string line;
   while (std::getline(sStream, line)) {
     printTabs(file);
-    *file << ltrim(line);
+    *file << line;
     *file << std::endl;
   }
 }
