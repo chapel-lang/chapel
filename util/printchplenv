@@ -100,6 +100,10 @@ def print_mode(mode='list'):
 
     hwloc = chpl_hwloc.get()
     print_var('CHPL_HWLOC', hwloc, mode, 'hwloc', ('runtime',))
+    # only 'make' needs this value (for linking user programs)
+    if mode == 'make' and hwloc == 'hwloc':
+        hwloc_numa = chpl_hwloc_numa.get()
+        print_var('  CHPL_HWLOC_NUMA', hwloc_numa, mode, filters=('runtime',))
 
     regexp = chpl_regexp.get()
     print_var('CHPL_REGEXP', regexp, mode, 're', ('runtime',))

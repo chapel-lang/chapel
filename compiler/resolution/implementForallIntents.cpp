@@ -279,7 +279,7 @@ static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
   numLeaderActuals = 0;
   Expr* tlStmt = tlCall->getStmtExpr();
   // .. and add the actuals.
-  for (uint idx = 0; idx < outerVars.size(); idx++) {
+  for (size_t idx = 0; idx < outerVars.size(); idx++) {
     Symbol* ovar = outerVars[idx];
     Symbol* svar = shadowVars[idx];
 
@@ -395,7 +395,7 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
     extractFromLeaderYield(lcCall, ix, leadIdxCopySym, leadIdxSym);
 
   // Then, for the shadow vars.
-  for (uint idx = 0; idx < outerVars.size(); idx++) {
+  for (size_t idx = 0; idx < outerVars.size(); idx++) {
     Symbol* ovar = outerVars[idx];
     Symbol* svar = shadowVars[idx];
     bool needToExtract = !shadowForRefIntents(lcCall, ovar, svar);
