@@ -26,7 +26,7 @@
    other pseudorandom number generation algorithms, such as the
    Mersenne twister.
 
-   Summarizing the comments from the reference implementation:
+   Paraphrasing the comments from the NPB reference implementation:
 
      This generator returns uniform pseudorandom real values in the
      range (0, 1) by using the linear congruential generator
@@ -43,34 +43,42 @@
 
    Here is a list of currently open issues (TODOs) for this module:
 
-   1. We would like to support general serial and parallel iterators
-   on the RandomStream class, but this is not possible with our
-   current parallel iterator framework.
+   1. We plan to support general serial and parallel iterators on the
+   RandomStream class; however, providing the full suite of iterators
+   is not possible with our current parallel iterator framework.
+   Specifically, if :chpl:class:RandomStream: is a follower in a
+   zippered iteration context, there is no way for it to update the
+   total number of random numbers generated in a safe/sane/coordinated
+   way.  We are exploring a revised leader-follower iterator framework
+   that would support this idiom (and other cursor-based ones).
 
-   2. The random number generation functionality in this module is
-   currently restricted to 64-bit real, 64-bit imag, and 128-bit
-   complex values.  This should be extended to other primitive types
-   for which this would make sense.  Coercions are insufficient.
+   2. This module is currently restricted to generating real(64),
+   imag(64), and complex(128) complex values.  We would like to extend
+   this support to include other primitive types as well.
+
+   3. If no seed is provided by the user, one is chosen based on the
+   current time in microseconds, allowing for some degree of
+   pseudorandomness in seed selection.  The intent of the
+   SeedGenerator record is to provide a menu of other options for
+   initializing the random stream seed, but only one option is
+   implemented at present.
 
    3. Can the multiplier 'arand' be moved into the RandomStream class
    so that it can be changed by a user of this class?
 
-   4. By default, the random stream seed is initialized based on the
-   current time in microseconds, allowing for some degree of
-   randomness.  The intent of the SeedGenerator enumerated type is to
-   provide a menu of options for initializing the random stream seed,
-   but only one option is implemented to date.
-
-   Note to developers on "private":
-     
-   It is the intent that once Chapel supports a notion of 'private'
-   symbols, everything prefixed with RandomPrivate will be made
-   private to this module and everything prefixed with
-   'RandomStreamPrivate_' will be made private to the RandomStream
-   class.
 */
 module Random {
 
+  /* Note to developers on "private" symbols:
+     
+     It is the intent that once Chapel supports a notion of 'private'
+     symbols, everything prefixed with RandomPrivate will be made
+     private to this module and everything prefixed with
+     'RandomStreamPrivate_' will be made private to the RandomStream
+     class.
+  */
+
+/* TODO: Document fillRandom here */
 proc fillRandom(x:[], seed: int(64)) {
   if x.eltType != complex && x.eltType != real && x.eltType != imag then
     compilerError("Random.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
@@ -203,7 +211,9 @@ const RandomPrivate_r23   = 0.5**23,
       RandomPrivate_t23   = 2.0**23,
       RandomPrivate_r46   = 0.5**46,
       RandomPrivate_t46   = 2.0**46,
-      RandomPrivate_arand = 1220703125.0;
+      RandomPrivate_arand = 1220703125.0; // TODO: Is arand something that a
+                                          // user might want to set on a
+                                          // case-by-case basis?
 
 //
 // NPB-defined randlc routine
