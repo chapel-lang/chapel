@@ -22,7 +22,7 @@
 
    This module defines an abstraction for a stream of pseudorandom
    numbers, :chpl:class:`RandomStream`.  It also provides a helper
-   function, :chpl:func:`fillRandom` that can be used to fill an array
+   function, :chpl:proc:`fillRandom` that can be used to fill an array
    with random numbers in parallel.
 
    The current implementation is based on the one that is used in the
@@ -81,21 +81,26 @@ module Random {
      class.
   */
 
-/* This is some placeholder documentation for fillRandom() */
-proc fillRandom(x:[], seed: int(64)) {
-  if x.eltType != complex && x.eltType != real && x.eltType != imag then
-    compilerError("Random.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
+/* fillRandom() is a utility function that fills an array of real(64),
+   imag(64), or complex(128) elements with pseudorandom values in
+   parallel.  The array determines the parallelization schedule based
+   on its domain map.
+
+     :arg arr array-of-[real | imag | complex]: Array to be filled
+     :arg seed int: seed for the random number generator (defaults to SeedGenerator.currentTime)
+
+ */
+
+proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime)
+  where (x.eltType == real || x.eltType == imag || x.eltType == complex) {
   var randNums = new RandomStream(seed, parSafe=false);
-  randNums.fillRandom(x);
+  randNums.fillRandom(arr);
   delete randNums;
 }
 
-proc fillRandom(x:[]) {
-  if x.eltType != complex && x.eltType != real && x.eltType != imag then
-    compilerError("Random.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
-  var randNums = new RandomStream(parSafe=false);
-  randNums.fillRandom(x);
-  delete randNums;
+pragma "no doc"
+proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime) {
+  compilerError("Random.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
 }
 
 record SeedGenerators {
@@ -152,7 +157,7 @@ class RandomStream {
     return result;
   }
 
-  proc fillRandom(X: [], param parSafe = this.parSafe) {
+  proc fillRandom(arr: [], param parSafe = this.parSafe) {
     if X.eltType != complex && X.eltType != real && X.eltType != imag then
       compilerError("RandomStream.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
     forall (x, r) in zip(X, iterate(X.domain, X.eltType, parSafe)) do
@@ -221,6 +226,7 @@ const RandomPrivate_r23   = 0.5**23,
 //
 // NPB-defined randlc routine
 //
+pragma "no doc"
 proc RandomPrivate_randlc(inout x: real, a: real = RandomPrivate_arand) {
   var t1 = RandomPrivate_r23 * a;
   const a1 = floor(t1),
@@ -239,6 +245,7 @@ proc RandomPrivate_randlc(inout x: real, a: real = RandomPrivate_arand) {
 }
 
 // Wrapper that takes a result type (two calls for complex types)
+pragma "no doc"
 proc RandomPrivate_randlc(type resultType, inout x: real) {
   if resultType == complex then
     return (RandomPrivate_randlc(x), RandomPrivate_randlc(x)):complex;
@@ -250,6 +257,7 @@ proc RandomPrivate_randlc(type resultType, inout x: real) {
 // Return a value for the cursor so that the next call to randlc will
 // return the same value as the nth call to randlc
 //
+pragma "no doc"
 proc RandomPrivate_randlc_skipto(seed: int(64), in n: integral): real {
   var cursor = seed:real;
   n -= 1;
@@ -272,6 +280,7 @@ proc RandomPrivate_randlc_skipto(seed: int(64), in n: integral): real {
 //
 // iterate over outer ranges in tuple of ranges
 //
+pragma "no doc"
 iter RandomPrivate_outer(ranges, param dim: int = 1) {
   if dim + 1 == ranges.size {
     for i in ranges(dim) do
@@ -288,6 +297,7 @@ iter RandomPrivate_outer(ranges, param dim: int = 1) {
 //
 // RandomStream iterator implementation
 //
+pragma "no doc"
 iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                           start: int(64)) {
   var cursor = RandomPrivate_randlc_skipto(seed, start);
@@ -295,6 +305,7 @@ iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
     yield RandomPrivate_randlc(resultType, cursor);
 }
 
+pragma "no doc"
 iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                           start: int(64), param tag: iterKind)
       where tag == iterKind.leader {
@@ -302,6 +313,7 @@ iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
     yield block;
 }
 
+pragma "no doc"
 iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                           start: int(64), param tag: iterKind, followThis)
       where tag == iterKind.follower {
