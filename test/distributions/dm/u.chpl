@@ -5,7 +5,7 @@ use DimensionalDist2D;
 
 /// label the output with "phases" //////////////////////////////////////////
 
-var pfx = "# ";
+var pfx:c_string_copy = "# ";
 var phase = 0;
 var no_pfx = false;
 
