@@ -27,10 +27,13 @@ def get(flag='target'):
             # with an older gcc, we fall back to locks
             if compiler_val == 'gnu' or compiler_val == 'cray-prgenv-gnu':
                 version = utils.get_compiler_version('gnu')
-                if version >= 4.8:
+                if version.major > 4:
                     atomics_val = 'intrinsics'
-                elif version >= 4.1 and not platform_val.endswith('32'):
-                    atomics_val = 'intrinsics'
+                if version.major == 4:
+                    if version.minor >= 8:
+                        atomics_val = 'intrinsics'
+                    elif version.minor >= 1 and not platform_val.endswith('32'):
+                        atomics_val = 'intrinsics'
             elif compiler_val == 'intel' or compiler_val == 'cray-prgenv-intel':
                 atomics_val = 'intrinsics'
             elif compiler_val == 'cray-prgenv-cray':
