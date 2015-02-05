@@ -621,7 +621,17 @@ static std::string erase(std::string s, int count) {
       first = false;
       continue;
     }
-    line.erase(line.begin(), line.begin() + count);
+
+    // Check that string has at least 'count' characters to erase. If there are
+    // fewer than 'count', erase all characters in line.
+    size_t endIndex;
+    if (line.length() >= (size_t)count) {
+      endIndex = count;
+    } else {
+      endIndex = line.length();
+    }
+
+    line.erase(line.begin(), line.begin() + endIndex);
     result += line;
     result += std::string("\n");
   }
