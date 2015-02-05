@@ -71,12 +71,15 @@ runtest() {
   EXE=$1
   DESC=$2
   echo Running $EXE
-  $EXE > /dev/null
+  `$CHPL_HOME/util/test/timedexec 500 $EXE > /dev/null`
   RETVAL=$?
   if [ $RETVAL -eq 0 ]
   then
     echo "[Success matching C regexp test $EXE $DESC]"
     rm $EXE
+  elif [ $RETVAL -eq 222 ]
+  then
+    echo "[Error Timed out executing regexp test $EXE $DESC]"
   else
     echo "[Error matching C regexp test $EXE $DESC]"
   fi
