@@ -295,7 +295,7 @@ Paragraph level markup
 These directives create short paragraphs and can be used inside information
 units as well as normal text:
 
-.. admonition:: note
+``note``
 
    An especially important bit of information about an API that a user should be
    aware of when using whatever bit of API the note pertains to.  The content of
