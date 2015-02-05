@@ -592,9 +592,9 @@ void generateSphinxOutput(std::string dirpath) {
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
     CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/activate");
 
-  // Run: `source $activate && cd $htmldir && $CHPL_MAKE html`
+  // Run: `. $activate && cd $htmldir && $CHPL_MAKE html`
   const char * cmd = astr(
-    "source ", activate,
+    ". ", activate,
     " && cd ", htmldir, " && ",
     CHPL_MAKE, " html");
   mysystem(cmd, "building html output from chpldoc sphinx project");
@@ -632,7 +632,17 @@ static std::string erase(std::string s, int count) {
       first = false;
       continue;
     }
-    line.erase(line.begin(), line.begin() + count);
+
+    // Check that string has at least 'count' characters to erase. If there are
+    // fewer than 'count', erase all characters in line.
+    size_t endIndex;
+    if (line.length() >= (size_t)count) {
+      endIndex = count;
+    } else {
+      endIndex = line.length();
+    }
+
+    line.erase(line.begin(), line.begin() + endIndex);
     result += line;
     result += std::string("\n");
   }
