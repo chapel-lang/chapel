@@ -504,7 +504,6 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
         printArg(file, cur);
       }
     }
-    ;
     if (!fn->hasFlag(FLAG_NO_PARENS))
       *file << ")";
     switch (fn->retTag) {
