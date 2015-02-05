@@ -480,7 +480,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     }
 
     *file << fn->name;
-    if (fn->hasFlag(FLAG_NO_PARENS))
+    if (!fn->hasFlag(FLAG_NO_PARENS))
       *file << "(";
     if (fn->numFormals() > 0) {
       // TODO: add flag to compiler to turn on docs dev only output
@@ -505,7 +505,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
       }
     }
     ;
-    if (fn->hasFlag(FLAG_NO_PARENS))
+    if (!fn->hasFlag(FLAG_NO_PARENS))
       *file << ")";
     switch (fn->retTag) {
     case RET_REF:
