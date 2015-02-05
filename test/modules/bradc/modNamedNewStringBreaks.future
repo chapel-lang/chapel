@@ -1,0 +1,26 @@
+bug: logic to protect module conflict names breaks
+
+(bradc would be willing to work on this more when it becomes a real
+issue for someone)
+
+When user modules have the same name as standard modules, and those
+standard modules are defined within files that define multiple
+modules, it can break compilation.  This test shows this for a module
+named NewString, which is currently a standard module that has
+multiple modules within it.
+
+Looking at parser.cpp, the problem stems from having the ParseFile()/
+ParseMod() routines return "NULL" in the event that the file contains
+multiple modules which is a pretty dumb interface.  My two thoughts
+about fixing this would be either:
+
+(a) to have any logic that needs to be applied to such modules get
+pushed into ParseFile()/ParseMod() rather than taking place at the
+callsite.  There aren't many cases that actually do something with the
+returned value, and one of them seems (unless I'm reading it wrong) to
+duplicate logic that is already done within the function anyway.
+
+(b) to improve the interface to return a vector/list/something of the
+modules that the file contained.  While this is a "smarter" interface,
+the small number of cases that use the return value suggest trying to
+take approach (a) to me.
