@@ -318,6 +318,13 @@ void parseDependentModules(ModTag modtype) {
           if (foundUsr) {
             SET_LINENO(oldModNameExpr);
 
+            if (mod == NULL) {
+              INT_FATAL("Trying to rename a standard module that's part of\n"
+                        "a file defining multiple\nmodules doesn't work yet;\n"
+                        "see test/modules/bradc/modNamedNewStringBreaks.future"
+                        " for details");
+            }
+            
             mod->name = astr("chpl_", modName);
 
             UnresolvedSymExpr* newModNameExpr = new UnresolvedSymExpr(mod->name);
