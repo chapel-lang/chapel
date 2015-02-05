@@ -276,7 +276,7 @@ definitions, like ``int``, ``int(64)``, ``bool``, ``[] int``, ``RandomStream``,
 etc. More verbose descriptions, qualifications, and limitations of those types
 should go in the corresponding ``arg``, ``returns``, or ``yields`` field.
 
-For example, when documenting a chapel method::
+For example, when documenting a Chapel proc::
 
    /*
     * Calculates number of pipes and returns fooy.
