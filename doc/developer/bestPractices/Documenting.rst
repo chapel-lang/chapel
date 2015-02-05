@@ -308,7 +308,7 @@ units as well as normal text:
 
          This function is not suitable for high precision calculations.
 
-.. admonition:: warning
+``warning``
 
    An important bit of information about an API that a user should be aware of
    when using whatever bit of API the warning pertains to.  The content of the
@@ -318,7 +318,7 @@ units as well as normal text:
    information regarding the possibility of crashes, data loss, or security
    implications.
 
-.. admonition:: versionadded
+``versionadded``
 
    This directive documents the version of Chapel which added the described
    feature, or a part of it, to the library or API. When this applies to an
@@ -337,13 +337,13 @@ units as well as normal text:
    Note that there must be no blank line between the directive head and the
    explanation; this is to make these blocks visually continuous in the markup.
 
-.. admonition:: versionchanged
+``versionchanged``
 
    Similar to ``versionadded``, but describes when and what changed in the named
    feature in some way (changed side effects, platform support, etc.).  This one
    *must* have the second argument (explanation of the change).
 
-.. admonition:: seealso
+``seealso``
 
    Many sections include a list of references to module documentation or
    external documents.  These lists are created using the ``seealso`` directive.
