@@ -264,6 +264,10 @@ void printClass(std::ofstream *file, AggregateType *cl) {
         compareNames);
     
     forv_Vec(FnSymbol, fn, cl->methods){
+      // if fn is primary method
+      //   output it
+      // else
+      //   don't
       printFunction(file, fn, true);
     }
     
@@ -419,6 +423,11 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   
     forv_Vec(FnSymbol, fn, fns) {
       // TODO: Add flag to compiler to turn on doc dev only output
+
+      // if fn is secondary method
+      //   output it
+      // else
+      //   don't
       if (!devOnlyFunction(fn)) {
         printFunction(file, fn, false);
       }
@@ -477,7 +486,9 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     } else {
       *file << "proc ";
     }
-
+    // if fn is not primary method
+    //   get type name from 'this' argument
+    //   output it + '.' before fn->name
     *file << fn->name;
     if (!fn->hasFlag(FLAG_NO_PARENS))
       *file << "(";
