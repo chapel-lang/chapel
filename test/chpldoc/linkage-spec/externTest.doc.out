@@ -24,7 +24,7 @@ Module: externTest
       extern proc inside
          Comment for method inside module 
 
-      extern proc commentless()
+      extern proc commentless
       extern proc hasArg(val: int(64))
          Comment for method with an argument inside module 
 
