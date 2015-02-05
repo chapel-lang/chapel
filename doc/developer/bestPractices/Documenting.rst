@@ -213,13 +213,13 @@ versatile:
 The following roles refer to objects in modules and are possibly hyperlinked if
 a matching identifier is found:
 
-``chpl:mod``
+``:chpl:mod:``
 
     Reference a module; a dotted name may be used. See `cross-references`_ for
     details on dotted and non-dotted names.
 
-.. admonition:: chpl:proc
-                chpl:iter
+``:chpl:proc:``
+``:chpl:iter:``
 
     Reference a Chapel function or iterator. The role text needs not include
     trailing parentheses to enhance readability.
@@ -231,20 +231,20 @@ a matching identifier is found:
 
     Dotted names may be used for any form.
 
-.. admonition:: chpl:data
-                chpl:const
-                chpl:var
-                chpl:param
-                chpl:type
+``:chpl:data:``
+``:chpl:const:``
+``:chpl:var:``
+``:chpl:param:``
+``:chpl:type:``
 
     Reference a module-level variable, constant, compiler param, or type.
 
-.. admonition:: chpl:class
-                chpl:record
+``:chpl:class:``
+``:chpl:record:``
 
     Reference a class or record; a dotted name may be used.
 
-.. admonition:: chpl:attr
+``:chpl:attr:``
 
     Reference a data attribute (const, var, param, generic type) of an object.
 
