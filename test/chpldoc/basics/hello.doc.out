@@ -1,4 +1,4 @@
-Module: hello
-   proc hello()
-       This method prints out a greeting.
+Module: nestFunctions
+   proc outer()
+      This the comment for the outer function 
 
