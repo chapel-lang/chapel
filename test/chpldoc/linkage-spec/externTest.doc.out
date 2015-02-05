@@ -21,7 +21,7 @@ Module: externTest
 
    extern proc hasReturnTypeAndArgCommentless(val: int(64)): int(64)
    Module: externTest.Other
-      extern proc inside()
+      extern proc inside
          Comment for method inside module 
 
       extern proc commentless()
