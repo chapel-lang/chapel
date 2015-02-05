@@ -29,8 +29,8 @@
    NAS Parallel Benchmarks (NPB, available at:
    http://www.nas.nasa.gov/publications/npb.html).  The longer-term
    intention is to add knobs permitting users to select other
-   pseudorandom number generation algorithms, such as the Mersenne
-   twister.
+   pseudorandom number generation (PNRG) algorithms, such as the
+   Mersenne twister.
 
    Paraphrasing the comments from the NPB reference implementation:
 
@@ -81,15 +81,45 @@ module Random {
      class.
   */
 
-/* fillRandom() is a utility function that fills an array of real(64),
-   imag(64), or complex(128) elements with pseudorandom values in
-   parallel.  The array determines the parallelization schedule based
-   on its domain map.
+// CHPLDOC BUG: No documentation created for the following
 
-     :arg arr array-of-[real | imag | complex]: Array to be filled
-     :arg seed int: seed for the random number generator (defaults to SeedGenerator.currentTime)
+/* 
+   SeedGenerator is a built-in value of type
+   :chpl:record:`SeedGenerators` that is designed to provide a
+   convenient means of generating seeds when the user does not wish to
+   specify one manually.
+*/
+const SeedGenerator: SeedGenerators;
 
- */
+
+/*
+  SeedGenerators is a record type that is designed to provide methods
+  for generating seeds when the user needs help creating one.  It
+  currently only supports one, but the intention is to add more over
+  time.
+*/
+
+record SeedGenerators {
+  proc currentTime {
+    use Time;
+    const seed: int(64) = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+    return (if seed % 2 == 0 then seed + 1 else seed) % (1:int(64) << 46);
+  }
+};
+
+
+/*
+  fillRandom() is a convenience function that fills an array of
+   real(64), imag(64), or complex(128) elements with pseudorandom
+   values from a new RandomStream in parallel.  The parallelization
+   strategy is determined by the array's domain map.
+
+   :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128)
+   :type arr: [] T
+
+   :arg int seed: the seed to use for the PNRG (defaults to SeedGenerator.currentTime)
+
+*/
 
 proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime)
   where (x.eltType == real || x.eltType == imag || x.eltType == complex) {
@@ -102,16 +132,6 @@ pragma "no doc"
 proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime) {
   compilerError("Random.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
 }
-
-record SeedGenerators {
-  proc currentTime {
-    use Time;
-    const seed: int(64) = getCurrentTime(unit=TimeUnits.microseconds):int(64);
-    return (if seed % 2 == 0 then seed + 1 else seed) % (1:int(64) << 46);
-  }
-};
-
-const SeedGenerator: SeedGenerators;
 
 class RandomStream {
   param parSafe: bool = true;
