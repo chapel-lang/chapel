@@ -524,6 +524,7 @@ extern type fdflag_t = c_int;
 */
 extern type iohints = c_int;
 
+/* TODO: document file record. */
 pragma "ignore noinit"
 record file {
   var home: locale = here;
@@ -586,6 +587,7 @@ proc file.unlock() {
 // File style cannot be modified after the file is created;
 // this prevents race conditions;
 // channel style is protected by channel lock, can be modified.
+pragma "no doc"
 proc file._style:iostyle {
   check();
 
@@ -2008,6 +2010,7 @@ proc channel.modifyStyle(f:func(iostyle, iostyle))
 }
 */
 
+/* TODO: document ItemReader record. */
 record ItemReader {
   type ItemType;
   param kind:iokind;
@@ -3660,7 +3663,7 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
 }
 
 
-/** Sets arg to the string of a match.
+/*  Sets arg to the string of a match.
     If arg is not a string, the match will be coerced to a arg.type.
 
     Assumes that the channel has been marked before where
@@ -3701,7 +3704,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
 }
 
 
-/** Search for an offset in the channel matching the
+/*  Search for an offset in the channel matching the
     passed regular expression, possibly pulling out capture groups.
     If there is a match, leaves the channel position at the
     match. If there is no match, the channel position will be
@@ -3753,7 +3756,7 @@ proc channel.search(re:regexp):reMatch
   return ret;
 }
 
-/** Like channel.search but assigning capture groups to arguments.
+/*  Like channel.search but assigning capture groups to arguments.
  */
 proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 {
@@ -3907,17 +3910,22 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch
 
 
 /* Enumerates matches in the string as well as capture groups.
+
    Returns tuples of reMatch objects, the 1st is always
-    the match for the whole pattern.
+   the match for the whole pattern.
+
    At the time each match is returned, the channel position is
-    at the start of that match. Note though that you would have
-    to advance to get to the position of a capture group.
+   at the start of that match. Note though that you would have
+   to advance to get to the position of a capture group.
+
    After returning each match, advances to just after that
-    match and looks for another match. Thus, it will not return
-    overlapping matches.
+   match and looks for another match. Thus, it will not return
+   overlapping matches.
+
    In the end, leaves the channel position at the end of the
-    last reported match (if we ran out of maxmatches)
-    or at the end of the channel (if we no longer matched)
+   last reported match (if we ran out of maxmatches)
+   or at the end of the channel (if we no longer matched)
+
    Holds the channel lock for the duration of the search.
  */
 iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))

@@ -241,8 +241,8 @@ void printClass(std::ofstream *file, AggregateType *cl) {
     }
 
     if (cl->doc != NULL) {
-      printTabs(file);
-      *file << cl->doc << std::endl;
+      ltrimAndPrintLines(cl->doc, file);
+      *file << std::endl;
 
       // In rst mode, ensure there is an empty line between the class/record
       // description and the next directive.
@@ -251,6 +251,13 @@ void printClass(std::ofstream *file, AggregateType *cl) {
       }
     }
     printFields(file, cl);
+
+    // In rst mode, add an additional line break after the attributes and
+    // before the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+
     // If alphabetical option passed, alphabetizes the output
     if (fDocsAlphabetize) 
       qsort(cl->methods.v, cl->methods.n, sizeof(cl->methods.v[0]), 
@@ -285,9 +292,9 @@ void printClass(std::ofstream *file, AggregateType *cl) {
 }
 
 void printVarStart(std::ofstream *file, VarSymbol *var) {
-  // TODO: I need to get this to print type fields as type fields instead of
-  // vars.
-  if (var->isConstant())
+  if (var->hasFlag(FLAG_TYPE_VARIABLE))
+    *file << "type ";
+  else if (var->isConstant())
     *file << "const ";
   else if (var->isParameter())
     *file << "param ";
@@ -310,13 +317,7 @@ void printVarDocs(std::ofstream *file, VarSymbol *var) {
   // TODO: Do we want to parse the output here to make it indent nicely?
   NUMTABS++;
   if (var->doc != NULL) {
-    std::stringstream descStream(var->doc);
-    std::string line;
-    while (std::getline(descStream, line)) {
-      printTabs(file);
-      *file << ltrim(line);
-      *file << std::endl;
-    }
+    ltrimAndPrintLines(var->doc, file);
   }
   NUMTABS--;
 }
@@ -356,10 +357,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
         *file << outputMap["module comment prefix"];
 
         // Grab first line of comment for synopsis.
-        std::stringstream synopsisStream(mod->doc);
-        std::string firstLine;
-        std::getline(synopsisStream, firstLine);
-
+        std::string firstLine = firstNonEmptyLine(mod->doc);
         *file << firstLine << std::endl;
         NUMTABS--;
       }
@@ -381,11 +379,12 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       // Only print tabs for text only mode. The .rst prefers not to have the
       // tabs for module level comments and leading whitespace removed.
       if (fDocsTextOnly) {
-        printTabs(file);
-        *file << mod->doc << std::endl;
+        ltrimAndPrintLines(mod->doc, file);
       } else {
-        std::string modDoc = ltrim(std::string(mod->doc));
-        *file << modDoc << std::endl;
+        NUMTABS--;
+        ltrimAndPrintLines(mod->doc, file);
+        *file << std::endl;
+        NUMTABS++;
       }
     }
     // For non-rst mode, revert to the original tab level.
@@ -479,7 +478,9 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
       *file << "proc ";
     }
 
-    *file << fn->name << "(";
+    *file << fn->name;
+    if (!fn->hasFlag(FLAG_NO_PARENS))
+      *file << "(";
     if (fn->numFormals() > 0) {
       // TODO: add flag to compiler to turn on docs dev only output
       if (strcmp(fn->getFormal(1)->name, "_mt") == 0) {
@@ -502,7 +503,8 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
         printArg(file, cur);
       }
     }
-    *file << ")";
+    if (!fn->hasFlag(FLAG_NO_PARENS))
+      *file << ")";
     switch (fn->retTag) {
     case RET_REF:
       *file << " ref"; break;
@@ -519,11 +521,14 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     }
     *file << std::endl;
 
-    if (fn->doc != NULL) {
-      printTabs(file);
-      *file << fn->doc << std::endl;
+    if (!fDocsTextOnly) {
+      *file << std::endl;
     }
-    *file << std::endl;
+
+    if (fn->doc != NULL) {
+      ltrimAndPrintLines(fn->doc, file);
+      *file << std::endl;
+    }
     NUMTABS--;
   }
 }
@@ -576,9 +581,9 @@ void generateSphinxOutput(std::string dirpath) {
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
     CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/activate");
 
-  // Run: `source $activate && cd $htmldir && $CHPL_MAKE html`
+  // Run: `. $activate && cd $htmldir && $CHPL_MAKE html`
   const char * cmd = astr(
-    "source ", activate,
+    ". ", activate,
     " && cd ", htmldir, " && ",
     CHPL_MAKE, " html");
   mysystem(cmd, "building html output from chpldoc sphinx project");
@@ -591,4 +596,114 @@ void generateSphinxOutput(std::string dirpath) {
 static inline std::string ltrim(std::string s) {
   s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
   return s;
+}
+
+/*
+ * Return true if 's' is empty or only has whitespace characters.
+ */
+static inline bool isEmpty(std::string s) {
+  return s.end() == std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace)));
+}
+
+/*
+ * Erase 'count' number of characters from beginning of each line in 's'. Just
+ * ltrim() the first line, though.
+ */
+static std::string erase(std::string s, int count) {
+  std::stringstream sStream(s);
+  std::string line;
+  bool first = true;
+  std::string result = std::string("");
+  while (std::getline(sStream, line)) {
+    if (first) {
+      result += ltrim(line);
+      result += std::string("\n");
+      first = false;
+      continue;
+    }
+
+    // Check that string has at least 'count' characters to erase. If there are
+    // fewer than 'count', erase all characters in line.
+    size_t endIndex;
+    if (line.length() >= (size_t)count) {
+      endIndex = count;
+    } else {
+      endIndex = line.length();
+    }
+
+    line.erase(line.begin(), line.begin() + endIndex);
+    result += line;
+    result += std::string("\n");
+  }
+  return result;
+}
+
+/*
+ * Returns first non empty line of the string. "Empty lines" are those with no
+ * characters or only whitespace characters.
+ */
+static std::string firstNonEmptyLine(std::string s) {
+  std::stringstream sStream(s);
+  std::string line;
+  std::string result;
+  while (std::getline(sStream, line)) {
+    if (!isEmpty(line)) {
+      result = ltrim(line);
+      break;
+    }
+  }
+  return result;
+}
+
+/*
+ * Iterate through string, skipping the first line, finding the minimum amount
+ * of whitespace before each line.
+ *
+ * FIXME: Find minimum prefix also if every single line begins with
+ *        "\s+*\s". (thomasvandoren, 2015-02-04)
+ */
+static int minimumPrefix(std::string s) {
+  std::stringstream sStream(s);
+  std::string line;
+  bool first = true;
+  int minPrefix = INT_MAX;
+  int currentPrefix;
+  while (std::getline(sStream, line)) {
+    // Skip the first line. It is a special case that often has been trimmed to
+    // some extent.
+    if (first) {
+      first = false;
+      continue;
+    }
+
+    // If line only contains blanks, do not include it in this
+    // computation. Especially in the case that the string is empty.
+    if (isEmpty(line)) {
+      continue;
+    }
+
+    // Find the first non-space character. Record if it is the new minimum.
+    currentPrefix = std::find_if(line.begin(), line.end(), std::not1(std::ptr_fun<int, int>(std::isspace))) - line.begin();
+    if (currentPrefix < minPrefix) {
+      minPrefix = currentPrefix;
+    }
+  }
+  return minPrefix;
+}
+
+/*
+ * Iterate through all lines of s. Print tabs before each line, ltrim the
+ * lines, and print them.
+ */
+void ltrimAndPrintLines(std::string s, std::ofstream *file) {
+  int minPrefix = minimumPrefix(s);
+  std::string trimmedS = erase(s, minPrefix);
+
+  std::stringstream sStream(trimmedS);
+  std::string line;
+  while (std::getline(sStream, line)) {
+    printTabs(file);
+    *file << line;
+    *file << std::endl;
+  }
 }

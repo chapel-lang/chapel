@@ -59,12 +59,13 @@ proc chdir(name: string) {
 /* Set the permissions of the file or directory specified by name to that
    indicated by settings.  Returns any errors that occurred via an out
    parameter.
-   err: a syserr used to indicate if an error occurred
-   name: the name of the file/directory which should have its permissions
-         alterred.
-   mode: an integer representing the permissions desired for the file
-         in question.  See description of the provided constants for potential
-         values.
+
+   :arg err: a syserr used to indicate if an error occurred
+   :arg name: the name of the file/directory which should have its permissions
+              alterred.
+   :arg mode: an integer representing the permissions desired for the file in
+              question.  See description of the provided constants for
+              potential values.
 */
 proc chmod(out err: syserr, name: string, mode: int) {
   err = chpl_fs_chmod(name.c_str(), mode);
@@ -73,11 +74,12 @@ proc chmod(out err: syserr, name: string, mode: int) {
 
 /* Set the permissions of the file or directory specified by name to that
    indicated by settings, and may generate an error message
-   name: the name of the file/directory which should have its permissions
-         alterred.
-   mode: an integer representing the permissions desired for the file
-         in question.  See description of the provided constants for potential
-         values.
+
+   :arg name: the name of the file/directory which should have its permissions
+              alterred.
+   :arg mode: an integer representing the permissions desired for the file
+              in question.  See description of the provided constants for potential
+              values.
 */
 proc chmod(name: string, mode: int){
   var err: syserr = ENOERR;
@@ -92,8 +94,7 @@ proc chmod(name: string, mode: int){
    err: a syserr used to indicate if an error occurred
    name: the name of the file to be changed.
    uid: user id to use as new owner, or -1 if it should remain the same.
-   gid: group id to use as the new group owner, or -1 if it should remain the
-        same.
+   gid: group id to use as the new group owner, or -1 if it should remain the same.
 */
 proc chown(out err: syserr, name: string, uid: int, gid: int) {
   err = chpl_fs_chown(name.c_str(), uid:c_int, gid:c_int);
@@ -104,8 +105,7 @@ proc chown(out err: syserr, name: string, uid: int, gid: int) {
    unchanged. Generates an error message if one occurred.
    name: the name of the file to be changed.
    uid: user id to use as new owner, or -1 if it should remain the same.
-   gid: group id to use as the new group owner, or -1 if it should remain the
-        same.
+   gid: group id to use as the new group owner, or -1 if it should remain the same.
 */
 proc chown(name: string, uid: int, gid: int) {
   var err: syserr = ENOERR;
@@ -259,14 +259,15 @@ extern const S_ISVTX: int;
 /* Attempt to create a directory with the given path.  If parents is true,
    will attempt to create any directory in the path that did not previously
    exist.  Returns any errors that occurred via an out parameter
-   err: a syserr used to indicate if an error occurred
-   name: the name of the directory to be created, fully specified.
-   mode: an integer representing the permissions desired for the file
-         in question.  See description of the provided constants for potential
-         values.
-   parents: a boolean indicating if parent directories should be created.
-            If set to false, any nonexistent parent will cause an error to
-            occur.
+
+   :arg err: a syserr used to indicate if an error occurred
+   :arg name: the name of the directory to be created, fully specified.
+   :arg mode: an integer representing the permissions desired for the file in
+              question. See description of the provided constants for
+              potential values.
+   :arg parents: a boolean indicating if parent directories should be created.
+                 If set to false, any nonexistent parent will cause an error to
+                 occur.
 
    Important note: In the case where parents is true, there is a potential
    security vulnerability.  Checking whether parent directories exist and
@@ -283,13 +284,14 @@ proc mkdir(out err: syserr, name: string, mode: int = 0o777,
 /* Attempt to create a directory with the given path.  If parents is true,
    will attempt to create any directory in the path that did not previously
    exist.  Generates an error message if one occurred.
-   name: the name of the directory to be created, fully specified.
-   mode: an integer representing the permissions desired for the file
-         in question.  See description of the provided constants for potential
-         values.
-   parents: a boolean indicating if parent directories should be created.
-            If set to false, any nonexistent parent will cause an error to
-            occur.
+
+   :arg name: the name of the directory to be created, fully specified.
+   :arg mode: an integer representing the permissions desired for the file in
+              question. See description of the provided constants for
+              potential values.
+   :arg parents: a boolean indicating if parent directories should be created.
+                 If set to false, any nonexistent parent will cause an error to
+                 occur.
 
    Important note: In the case where parents is true, there is a potential
    security vulnerability.  Checking whether parent directories exist and

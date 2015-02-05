@@ -21,12 +21,17 @@ CRAYPE_GEN_CFLAGS = -hnomessage=7212 -hipa2
 NO_IEEE_FLOAT_GEN_CFLAGS = -hfp1
 IEEE_FLOAT_GEN_CFLAGS = -hfp0
 
-# If this is not a --fast compilation or OPTIMIZE=1 is not set, use the cce
-# develop feature. It improves compiler time by throtting certain things in the
-# compiler that are known to add time. It is not the same as -O0. See the man
-# page for details.
+# If this is not a --fast compilation or OPTIMIZE=1 is not set, disable
+# optimizations for cce. This is done by default for other compilers and it
+# tends to improve the compiler performance.
+#
+# Another option for cce is the -hdevelop feature, which attempts to improve
+# compilation time by throttling certain things in the compiler that are known
+# to add time. For Chapel codes, -O0 tends to give the fastest compile times,
+# which is why it is used here. -hdevelop is something to look at in the future
+# if execution time becomes too slow with -O0.
 ifneq ($(OPTIMIZE),1)
-CFLAGS += -hdevelop
+CFLAGS += -O0
 endif
 
 #
