@@ -45,7 +45,7 @@ Module: inlineTest
    inline proc allThreeCommentless(val: int(64)): int(64)
 
    Module: inlineTest.Other
-      inline proc inside()
+      inline proc inside
           Comment for inline method inside module 
 
       inline proc commentless()
