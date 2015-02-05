@@ -271,21 +271,29 @@ recognized and formatted nicely:
   iterators.
 * ``ytype``: Yield type. Creates a link if possible.
 
+``type``, ``rtype``, and ``ytype`` should be concise and literal type
+definitions, like ``int``, ``int(64)``, ``bool``, ``[] int``, ``RandomStream``,
+etc. More verbose descriptions, qualifications, and limitations of those types
+should go in the corresponding ``arg``, ``returns``, or ``yields`` field.
+
 For example, when documenting a chapel method::
 
    /*
     * Calculates number of pipes and returns fooy.
     * 
-    * :arg bars: number of bars
+    * :arg bars: Number of bars. Must be more than 1 and less than 1000.
     * :type bars: int
     * 
-    * :arg hours: hours available
+    * :arg hours: Hours available. Default is 1.0.
     * :type hours: real
     * 
-    * :returns: amount of fooy available
+    * :returns: Amount of fooy available.
     * :rtype: Foo
     */
-   proc foo(x, y): Foo {}
+   proc foo(x, y=1.0): Foo
+   {
+     ...
+   }
 
 .. note:: These fields must be left-aligned with the outer most paragraphs.
 
