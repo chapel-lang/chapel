@@ -581,9 +581,9 @@ void generateSphinxOutput(std::string dirpath) {
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
     CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/activate");
 
-  // Run: `source $activate && cd $htmldir && $CHPL_MAKE html`
+  // Run: `. $activate && cd $htmldir && $CHPL_MAKE html`
   const char * cmd = astr(
-    "source ", activate,
+    ". ", activate,
     " && cd ", htmldir, " && ",
     CHPL_MAKE, " html");
   mysystem(cmd, "building html output from chpldoc sphinx project");
