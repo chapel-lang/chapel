@@ -493,9 +493,9 @@ static void widenClasses()
             fn->retType = wide;
     }
 
-    // Widen all variables, 
+    // Widen all variables,
     // and all arguments of functions not marked "extern".
-    if (isVarSymbol(def->sym) || isArgSymbol(def->sym))
+    if (isLcnSymbol(def->sym))
     {
       if (Type* wide = wideClassMap.get(def->sym->type))
         if (isVarSymbol(def->sym) ||
@@ -570,7 +570,7 @@ static void widenRefs()
     }
 
     // Widen all variables and arguments of reference type.
-    if (isVarSymbol(def->sym) || isArgSymbol(def->sym))
+    if (isLcnSymbol(def->sym))
     {
       if (Type* wide = wideRefMap.get(def->sym->type))
         def->sym->type = wide;

@@ -1,9 +1,9 @@
 Module: recordsAndClasses
    proc takesAThingy(): thingy
-       This method returns a record 
+      This method returns a record 
 
    proc takesAWhatchamacallit(): whatchamacallit
-       This method returns a whatchamacallit 
+      This method returns a whatchamacallit 
 
    Record: thingy
    Class: whatchamacallit

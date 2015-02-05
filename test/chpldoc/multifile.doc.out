@@ -1,9 +1,9 @@
 Module: first
-    This module uses another module in a separate file 
+   This module uses another module in a separate file 
    proc main()
-       This function calls the other module's function 
+      This function calls the other module's function 
 
 Module: second
    proc method()
-       This method is called by a method in another file 
+      This method is called by a method in another file 
 

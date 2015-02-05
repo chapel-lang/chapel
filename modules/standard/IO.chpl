@@ -524,6 +524,7 @@ extern type fdflag_t = c_int;
 */
 extern type iohints = c_int;
 
+/* TODO: document file record. */
 pragma "ignore noinit"
 record file {
   var home: locale = here;
@@ -586,6 +587,7 @@ proc file.unlock() {
 // File style cannot be modified after the file is created;
 // this prevents race conditions;
 // channel style is protected by channel lock, can be modified.
+pragma "no doc"
 proc file._style:iostyle {
   check();
 
@@ -725,22 +727,69 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       var fs:c_void_ptr;
       error = hdfs_connect(fs, host.c_str(), port);
       if error then ioerror(error, "Unable to connect to HDFS", host);
+      /* TODO: This code is an alternative to the above line, which breaks the
+         function's original invariant of not generating errors within itself.
+         This is better style and should still work, but we can't be certain
+         until we test it and aren't capable of testing HDFS at this point.
+         When further work with HDFS is done, please test and edit this function
+         to behave appropriately by removing the above line and replacing it
+         with the following three. (2015-02-04, lydia)
+
+      if error then return ret;
+      // connect fully specifies the error message so all we'd need to do is
+      // return.
+      */
       error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
       // Since we don't have an auto-destructor for this, we actually need to make
       // the reference count 1 on this FS after we open this file so that we will
       // disconnect once we close this file.
       hdfs_do_release(fs);
       if error then ioerror(error, "Unable to open file in HDFS", url);
+      /* TODO: The above line breaks the function's original invariant of not
+         generating errors within itself.  It is better style to remove this
+         line.  Doing so should still work, but we can't be certain until we
+         test it and aren't capable of testing HDFS at this point.  When
+         further work with HDFS is done, please test and edit this function to
+         behave appropriately by removing the above line (2015-02-04, lydia)
+
+      */
     } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
       error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
       if error then ioerror(error, "Unable to open URL", url);
+      /* TODO: The above line breaks the function's original invariant of not
+         generating errors within itself.  It is better style to remove this
+         line.  Doing so should still work, but we can't be certain until we
+         test it and aren't capable of regularly testing curl at this point.
+         When further work with auxiliary file systems are done, please test and
+         edit this function to behave appropriately by removing the above line
+         (2015-02-04, lydia)
+
+      */
     } else {
       ioerror(ENOENT:syserr, "Invalid URL passed to open");
+      /* TODO: This code is an alternative to the above line, which breaks the
+         function's original invariant of not generating errors within itself.
+         This is better style and should still work, but we can't be certain
+         until we test it and aren't capable of testing HDFS at this point.
+         When further work with HDFS is done, please test and edit this function
+         to behave appropriately by removing the above line and replacing it
+         with the following one. (2015-02-04, lydia)
+
+      error = ENOENT:syserr; // Invalid URL provided
+      */
     }
   } else {
     if (path == "") then
       ioerror(ENOENT:syserr, "in open: Both path and url were path");
+    /* TODO: The above two lines breaks the function's original invariant of not
+       generating errors within itself.  It is better style to remove these
+       lines.  Doing so should still work, but we can't be certain until we
+       test it and aren't capable of regularly testing auxiliary file systems at
+       this point.  When further work with auxiliary file systems are done,
+       please test and edit this function to behave appropriately by removing
+       the above two lines. (2015-02-04, lydia)
 
+    */
     error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
   }
 
@@ -1961,6 +2010,7 @@ proc channel.modifyStyle(f:func(iostyle, iostyle))
 }
 */
 
+/* TODO: document ItemReader record. */
 record ItemReader {
   type ItemType;
   param kind:iokind;
@@ -3613,7 +3663,7 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
 }
 
 
-/** Sets arg to the string of a match.
+/*  Sets arg to the string of a match.
     If arg is not a string, the match will be coerced to a arg.type.
 
     Assumes that the channel has been marked before where
@@ -3654,7 +3704,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
 }
 
 
-/** Search for an offset in the channel matching the
+/*  Search for an offset in the channel matching the
     passed regular expression, possibly pulling out capture groups.
     If there is a match, leaves the channel position at the
     match. If there is no match, the channel position will be
@@ -3706,7 +3756,7 @@ proc channel.search(re:regexp):reMatch
   return ret;
 }
 
-/** Like channel.search but assigning capture groups to arguments.
+/*  Like channel.search but assigning capture groups to arguments.
  */
 proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 {
@@ -3860,17 +3910,22 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch
 
 
 /* Enumerates matches in the string as well as capture groups.
+
    Returns tuples of reMatch objects, the 1st is always
-    the match for the whole pattern.
+   the match for the whole pattern.
+
    At the time each match is returned, the channel position is
-    at the start of that match. Note though that you would have
-    to advance to get to the position of a capture group.
+   at the start of that match. Note though that you would have
+   to advance to get to the position of a capture group.
+
    After returning each match, advances to just after that
-    match and looks for another match. Thus, it will not return
-    overlapping matches.
+   match and looks for another match. Thus, it will not return
+   overlapping matches.
+
    In the end, leaves the channel position at the end of the
-    last reported match (if we ran out of maxmatches)
-    or at the end of the channel (if we no longer matched)
+   last reported match (if we ran out of maxmatches)
+   or at the end of the channel (if we no longer matched)
+
    Holds the channel lock for the duration of the search.
  */
 iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
