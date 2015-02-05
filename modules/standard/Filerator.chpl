@@ -114,6 +114,7 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
    walkdirs() recursively walks a directory structure, yielding
    directory names.  The strings that are generated will be rooted
    from 'path'.
+
      * path: the directory to start from
      * topdown: indicates whether to yield the directories using a
        preorder (vs. postorder) traversal
@@ -156,6 +157,7 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false,
 
    wordexp() gives a glob-like capability, implemented with C's wordexp()
    (which is, itself a routine that provides a glob-like capability :)
+
      * pattern: the glob pattern to match against
   
    By default, it will list all files/directories in the current directory
@@ -184,6 +186,7 @@ iter wordexp(pattern="*") {
 /* iter glob(pattern="*")
 
    glob() gives glob() capabilities and is implemented using C's glob()
+
      * pattern: the glob pattern to match against
 
    By default, it will list all files/directories in the current directory
@@ -214,6 +217,7 @@ iter glob(pattern="*") {
 
    findfiles() is a simple find-like utility implemented using the
    above routines
+
      * startdir: where to start when looking for files
      * recursive: tells whether or not to descend recurisvely
      * dotfiles: tells whether or not to yield dotfiles
