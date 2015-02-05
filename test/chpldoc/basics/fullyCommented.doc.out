@@ -12,7 +12,7 @@ Module: fullyCommented
        Comment for method with argument and body 
 
    Module: fullyCommented.Other
-      proc inside()
+      proc inside
           Comment for method inside module 
 
       proc body()

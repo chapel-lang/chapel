@@ -479,7 +479,9 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
       *file << "proc ";
     }
 
-    *file << fn->name << "(";
+    *file << fn->name;
+    if (!fn->hasFlag(FLAG_NO_PARENS))
+      *file << "(";
     if (fn->numFormals() > 0) {
       // TODO: add flag to compiler to turn on docs dev only output
       if (strcmp(fn->getFormal(1)->name, "_mt") == 0) {
@@ -502,7 +504,8 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
         printArg(file, cur);
       }
     }
-    *file << ")";
+    if (!fn->hasFlag(FLAG_NO_PARENS))
+      *file << ")";
     switch (fn->retTag) {
     case RET_REF:
       *file << " ref"; break;
