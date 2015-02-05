@@ -213,7 +213,7 @@ versatile:
 The following roles refer to objects in modules and are possibly hyperlinked if
 a matching identifier is found:
 
-.. admonition:: chpl:mod
+``chpl:mod``
 
     Reference a module; a dotted name may be used. See `cross-references`_ for
     details on dotted and non-dotted names.
