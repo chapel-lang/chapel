@@ -21,16 +21,15 @@
    Support for pseudorandom number generation
 
    This module defines an abstraction for a stream of pseudorandom
-   numbers, :chpl:class:`RandomStream`.  It also provides a helper
-   function, :chpl:proc:`fillRandom` that can be used to fill an array
-   with random numbers in parallel.
+   numbers, :chpl:class:`RandomStream`.  It also provides a
+   convenience function, :chpl:proc:`fillRandom` that can be used to
+   fill an array with random numbers in parallel.
 
-   The current implementation is based on the one that is used in the
-   NAS Parallel Benchmarks (NPB, available at:
-   http://www.nas.nasa.gov/publications/npb.html).  The longer-term
-   intention is to add knobs permitting users to select other
-   pseudorandom number generation (PNRG) algorithms, such as the
-   Mersenne twister.
+   The current pseudorandom number generator (PRNG) used by the
+   abstraction uses the algorithm used by the NAS Parallel Benchmarks
+   (NPB, available at: http://www.nas.nasa.gov/publications/npb.html).
+   The longer-term intention is to add knobs to select between a menu
+   of PNRGs, such as the Mersenne twister.
 
    Paraphrasing the comments from the NPB reference implementation:
 
@@ -40,16 +39,20 @@
        x_{k+1} = a x_k  (mod 2**46)
 
      where 0 < x_k < 2**46 and 0 < a < 2**46.  This scheme generates
-     2**44 numbers before repeating.  The seed value must be an odd
-     64-bit integer in the range (1, 2^46).  The generated values are
+     2**44 numbers before repeating.  The generated values are
      normalized to be between 0 and 1, i.e., 2**(-46) * x_k.
 
      This generator should produce the same results on any computer
-     with at least 48 mantissa bits for real(64) data.
+     with at least 48 mantissa bits for `real(64)` data.
+
 
    Here is a list of currently open issues (TODOs) for this module:
 
-   1. We plan to support general serial and parallel iterators on the
+   1. This module is currently restricted to generating `real(64)`,
+   `imag(64)`, and `complex(128)` complex values.  We would like to
+   extend this support to include other primitive types as well.
+
+   2. We plan to support general serial and parallel iterators on the
    RandomStream class; however, providing the full suite of iterators
    is not possible with our current parallel iterator framework.
    Specifically, if :chpl:class:RandomStream: is a follower in a
@@ -58,10 +61,6 @@
    way.  We are exploring a revised leader-follower iterator framework
    that would support this idiom (and other cursor-based ones).
 
-   2. This module is currently restricted to generating real(64),
-   imag(64), and complex(128) complex values.  We would like to extend
-   this support to include other primitive types as well.
-
    3. If no seed is provided by the user, one is chosen based on the
    current time in microseconds, allowing for some degree of
    pseudorandomness in seed selection.  The intent of the
@@ -69,10 +68,14 @@
    initializing the random stream seed, but only one option is
    implemented at present.
 
+   4. As noted above, we plan to add support for additional PRNG
+   algorithms over time.
+
 */
 module Random {
 
-  /* Note to developers on "private" symbols:
+  /* 
+     Note for developers on "private" symbols:
      
      It is the intent that once Chapel supports a notion of 'private'
      symbols, everything prefixed with RandomPrivate will be made
@@ -81,25 +84,43 @@ module Random {
      class.
   */
 
-// CHPLDOC BUG: No documentation created for the following
+  /* Internal TODOs for developers:
+
+     - is the parSafe on each of the three main calls overkill?
+
+     - should RandomStream be paramterized by the type to return?
+       it seems odd that currently getNext() and getNth() return
+       reals always...
+  */
+
+// CHPLDOC FIXME: The following doesn't show up in the documentation
 
 /* 
-   SeedGenerator is a built-in value of type
-   :chpl:record:`SeedGenerators` that is designed to provide a
+   An instance of :chpl:record:`SeedGenerators` that provides a
    convenient means of generating seeds when the user does not wish to
    specify one manually.
 */
 const SeedGenerator: SeedGenerators;
 
 
+// CHPLDOC FIXME: Respect ordering of things in the file
+
 /*
-  SeedGenerators is a record type that is designed to provide methods
-  for generating seeds when the user needs help creating one.  It
-  currently only supports one, but the intention is to add more over
-  time.
+  Provides methods to help generate seeds when the user doesn't want
+  to create one.  It currently only supports one such method, but the
+  intention is to add more over time.
+
+  (Note: once Chapel supports static class methods,
+  :chpl:const:`SeedGenerator` and :chpl:record:`SeedGenerators` should
+  be combined into a single record type with static methods).
 */
 
 record SeedGenerators {
+  /*
+    Generate a seed based on the current time in microseconds as
+    reported by :chpl:proc:`Time.getCurrentTime`, ensuring that it
+    meets the PRNG's requirements.
+  */
   proc currentTime {
     use Time;
     const seed: int(64) = getCurrentTime(unit=TimeUnits.microseconds):int(64);
@@ -108,17 +129,33 @@ record SeedGenerators {
 };
 
 
+// CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the 
+// :arg <type> <name>: form or else switching the order to 
+// :arg <name> <type>: as it's an easy trap to simply type the same
+// argument as in the function's signature.
+
+
+// CHPLDOC FIXME: int(64) prints out as int(64)(64)
+
+// CHPLDOC FIXME: if the first line below is shifted one character to the
+// left, it ends up being rendered like a method
+
+// CHPLDOC FIXME: if the first line below is shifted one character to the
+// right, it ends up causing a warning (promoted to error) in the .rst
+// file.  It'd be preferable to have it declare the issue in terms of
+// the .chpl line numbers.
+
 /*
-  fillRandom() is a convenience function that fills an array of
-   real(64), imag(64), or complex(128) elements with pseudorandom
-   values from a new RandomStream in parallel.  The parallelization
-   strategy is determined by the array's domain map.
+  Fill an array of real(64), imag(64), or complex(128) elements with
+  pseudorandom values in parallel using a new
+  :chpl:class:`RandomStream`.  The parallelization strategy is
+  determined by the array.
 
-   :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128)
-   :type arr: [] T
+  :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128).
+  :type arr: [] T
 
-   :arg int seed: the seed to use for the PNRG (defaults to SeedGenerator.currentTime)
-
+  :arg seed: The seed to use for the PRNG.  Defaults to :chpl:const:`SeedGenerator`.currentTime.
+  :type seed: int
 */
 
 proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime)
@@ -133,10 +170,41 @@ proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime) {
   compilerError("Random.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
 }
 
+/*
+  Models a stream of pseudorandom numbers.  See the module-level
+  notes for :chpl:mod:`Random` for details on the PRNG used.
+*/
+
 class RandomStream {
+  //
+  // CHPLDOC FIXME: We should print the type and default value for parSafe
+  //
+  /*
+    Indicates whether or not the RandomStream needs to be
+    parallel-safe by default.  If multiple tasks interact with it in
+    an uncoordinated fashion, this must be set to `true`.  If it will
+    only be called from a single task, or if only one task will call
+    into it at a time, setting to `false` will reduce overhead related
+    to ensuring mutual exclusion.
+  */
   param parSafe: bool = true;
+  /*
+    The seed value for the PRNG.  It must be an odd integer in the
+    range (1, 2**46).
+  */
   const seed: int(64);
 
+  /*
+    Constructs a new stream of random numbers using the specified seed
+    and parallel safety.  Ensures that the seed value meets the PRNG's
+    constraints.
+
+    :arg seed: The seed to use for the PRNG.  Defaults to :chpl:const:`SeedGenerator`.currentTime.
+    :type seed: int
+
+    :arg parSafe: The parallel safety setting.  Defaults to `true`.
+    :type parSafe: bool
+  */
   proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
                    param parSafe: bool = true) {
     if seed % 2 == 0 || seed < 1 || seed > 1:int(64)<<46 then
@@ -144,7 +212,22 @@ class RandomStream {
     RandomStreamPrivate_init(seed);
   }
 
-  proc getNext(param parSafe = this.parSafe) {
+  //
+  // CHPL FIXME: the type of parSafe below is printed out as _unknown
+  //
+
+  //
+  // CHPL FIXME: the real(64) below gets rendered as real(64)(64)
+
+  /*
+    Returns the next value in the random stream as a `real(64)`
+
+    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to this.parSafe.
+    :type parSafe: bool
+
+    :returns: The next value in the random stream as a `real(64)`.
+   */
+  proc getNext(param parSafe = this.parSafe): real(64) {
     if parSafe then
       RandomStreamPrivate_lock$ = true;
     RandomStreamPrivate_count += 1;
@@ -153,6 +236,16 @@ class RandomStream {
       RandomStreamPrivate_lock$;
     return result;
   }
+
+  /*
+    Skips to an arbitrary value in the random stream.
+
+    :arg n: The position in the stream to skip to.  Must be non-negative.
+    :type n: integral
+
+    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to this.parSafe.
+    :type parSafe: bool
+   */
 
   proc skipToNth(n: integral, param parSafe = this.parSafe) {
     if n <= 0 then
@@ -164,6 +257,20 @@ class RandomStream {
     if parSafe then
       RandomStreamPrivate_lock$;
   }
+
+  /*
+    Skip to an arbitrary value in the random stream and return it.
+    This is equivalent to :chpl:proc:`skipToNth()` followed by
+    :chpl:proc:`getNext()`.
+
+    :arg n: The position in the stream to skip to.  Must be non-negative.
+    :type n: integral
+
+    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to this.parSafe.
+    :type parSafe: bool
+
+    :returns: The `n`th value in the random stream as a `real(64)`.
+  */
 
   proc getNth(n: integral, param parSafe = this.parSafe) {
     if (n <= 0) then 
@@ -177,6 +284,7 @@ class RandomStream {
     return result;
   }
 
+  pragma "no doc"
   proc fillRandom(arr: [], param parSafe = this.parSafe) {
     if X.eltType != complex && X.eltType != real && X.eltType != imag then
       compilerError("RandomStream.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
@@ -184,6 +292,7 @@ class RandomStream {
       x = r;
   }
 
+  pragma "no doc"
   proc iterate(D: domain, type resultType=real, param parSafe = this.parSafe) {
     if resultType != complex && resultType != real && resultType != imag then
       compilerError("RandomStream.iterate is only defined for real(64), imag(64), and complex(128) result types");
@@ -199,6 +308,7 @@ class RandomStream {
     return RandomPrivate_iterate(resultType, D, seed, start);
   }
 
+  pragma "no doc"
   proc writeThis(f: Writer) {
     f <~> "RandomStream(parSafe=";
     f <~> parSafe;
@@ -214,16 +324,23 @@ class RandomStream {
   // be made private to this class.
   //
 
+  pragma "no doc"
   var RandomStreamPrivate_lock$: sync bool;
+  pragma "no doc"
   var RandomStreamPrivate_cursor: real;
+  pragma "no doc"
   var RandomStreamPrivate_count: int(64);
 
+  pragma "no doc"
   proc RandomStreamPrivate_init(seed: int(64)) {
     this.seed = seed;
     RandomStreamPrivate_cursor = seed;
     RandomStreamPrivate_count = 1;
   }    
 }
+
+// CHPLDOC FIXME: Prints "inherited from object" at the bottom which
+// seems out of place.
 
 ////////////////////////////////////////////////////////////// MODULE PRIVATE //
 //
