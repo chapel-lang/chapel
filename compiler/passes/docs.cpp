@@ -266,7 +266,7 @@ void printClass(std::ofstream *file, AggregateType *cl) {
     forv_Vec(FnSymbol, fn, cl->methods){
       // We only want to print methods defined within the class under the
       // class header
-      if (fn->hasFlag(FLAG_METHOD_PRIMARY))
+      if (fn->isPrimaryMethod())
         printFunction(file, fn, true);
     }
     
@@ -425,8 +425,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
 
       // We want methods on classes that are defined at the module level to be
       // printed at the module level
-      if (!devOnlyFunction(fn) || (fn->hasFlag(FLAG_METHOD) &&
-                                   !fn->hasFlag(FLAG_METHOD_PRIMARY))) {
+      if (!devOnlyFunction(fn) || fn->isSecondaryMethod()) {
         printFunction(file, fn, false);
       }
     }
@@ -487,7 +486,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     // if fn is not primary method
     //   get type name from 'this' argument
     //   output it + '.' before fn->name
-    if (fn->hasFlag(FLAG_METHOD) && !fn->hasFlag(FLAG_METHOD_PRIMARY)) {
+    if (fn->isSecondaryMethod()) {
       if (fn->numFormals() > 1) {
         ArgSymbol *myTypeHolder = fn->getFormal(2);
         if (myTypeHolder->hasFlag(FLAG_ARG_THIS))

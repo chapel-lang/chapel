@@ -166,7 +166,7 @@ insertLineNumber(CallExpr* call) {
 
 static bool isClassMethodCall(CallExpr* call) {
   FnSymbol* fn = call->isResolved();
-  if (fn && fn->hasFlag(FLAG_METHOD) && fn->_this) {
+  if (fn && fn->isMethod() && fn->_this) {
     if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
       if (fn->numFormals() > 0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {

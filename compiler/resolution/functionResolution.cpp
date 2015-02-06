@@ -621,7 +621,7 @@ const char* toString(FnSymbol* fn) {
   } else if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
     INT_ASSERT(!strncmp("_construct_", fn->name, 11));
     str = astr(fn->name+11);
-  } else if (fn->hasFlag(FLAG_METHOD_PRIMARY)) {
+  } else if (fn->isPrimaryMethod()) {
     if (!strcmp(fn->name, "this")) {
       INT_ASSERT(fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
       str = astr(toString(fn->getFormal(2)->type));
