@@ -148,13 +148,12 @@ record SeedGenerators {
 /*
   Fill an array of `real(64)`, `imag(64)`, or `complex(128)` elements
   with pseudorandom values in parallel using a new
-  :chpl:class:`RandomStream` created for the sole purpose of this
-  routine.  The first `arr.size` values from the stream will be
-  assigned to the array's elements in row-major order for `real` and
-  `imag` elements.  For `complex` elements, consecutive pairs of
-  random numbers are assigned to the real and imaginary components,
-  respectively.  The parallelization strategy is determined by the
-  array.
+  :chpl:class:`RandomStream` created specifically for this call.  The
+  first `arr.size` values from the stream will be assigned to the
+  array's elements in row-major order for `real` and `imag` elements.
+  For `complex` elements, consecutive pairs of random numbers are
+  assigned to the real and imaginary components, respectively.  The
+  parallelization strategy is determined by the array.
 
   :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128).
   :type arr: [] T
