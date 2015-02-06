@@ -8,6 +8,5 @@ Module: methodOutsideClassDef
       method declared outside it as well 
 
       proc internalMeth()
-
       inherited from object
 
