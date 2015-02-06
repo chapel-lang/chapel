@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,19 @@ CRAYPE_GEN_CFLAGS = -hnomessage=7212 -hipa2
 
 NO_IEEE_FLOAT_GEN_CFLAGS = -hfp1
 IEEE_FLOAT_GEN_CFLAGS = -hfp0
+
+# If this is not a --fast compilation or OPTIMIZE=1 is not set, disable
+# optimizations for cce. This is done by default for other compilers and it
+# tends to improve the compiler performance.
+#
+# Another option for cce is the -hdevelop feature, which attempts to improve
+# compilation time by throttling certain things in the compiler that are known
+# to add time. For Chapel codes, -O0 tends to give the fastest compile times,
+# which is why it is used here. -hdevelop is something to look at in the future
+# if execution time becomes too slow with -O0.
+ifneq ($(OPTIMIZE),1)
+CFLAGS += -O0
+endif
 
 #
 # The current Cray compiler does not compile GASNet cleanly, so we have

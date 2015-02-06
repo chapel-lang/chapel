@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,9 +25,12 @@
 #define _BSD_SOURCE
 #endif
 
-#ifndef _DARWIN_C_SOURCE
 // to get NI_MAXHOST or NI_MAXSERV
+#ifndef _DARWIN_C_SOURCE
 #define _DARWIN_C_SOURCE
+#endif
+#ifndef _NETBSD_SOURCE
+#define _NETBSD_SOURCE
 #endif
 
 // AIX needs _ALL_SOURCE

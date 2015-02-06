@@ -1,0 +1,17 @@
+type inferred
+-------------
+in baz()
+in Zed(1)
+in =(Zed, Zed)
+in ~Zed({y = 1})
+(x = {y = 2})
+in ~Zed({y = 2})
+
+type specified
+--------------
+in gob()
+in Zed(1)
+in =(Zed, Zed)
+in ~Zed({y = 1})
+(x = {y = 2})
+in ~Zed({y = 2})

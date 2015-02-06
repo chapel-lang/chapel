@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ class ModuleSymbol;
 class Symbol;
 class Type;
 
-class AstDumpToNode : public AstLogger 
+class AstDumpToNode : public AstLogger
 {
 public:
   //
@@ -41,10 +41,17 @@ public:
   // are written.  The name of each file includes the name of the
   // Module, the number for the pass, and the name for the pass.
   //
-  static  void     view(const char* passName, int passNum);
+  static  void     view(const char*   passName,
+                        int           passNum);
 
-                   AstDumpToNode(FILE* fp);
+  static  void     view(const char*   passName,
+                        int           passNum,
+                        ModuleSymbol* module);
+
+                   AstDumpToNode(FILE* fp, int offset = 0);
   virtual         ~AstDumpToNode();
+
+  void             offsetSet(int offset);
 
   //
   // These functions are the "implementation" interface for the
@@ -55,49 +62,60 @@ public:
   // themselves
   //
 
-  virtual bool     enterAggrType  (AggregateType*     node);
-  virtual void     exitAggrType   (AggregateType*     node);
+  virtual bool     enterAggrType    (AggregateType*     node);
+  virtual void     exitAggrType     (AggregateType*     node);
 
-  virtual bool     enterEnumType  (EnumType*          node);
-  virtual void     exitEnumType   (EnumType*          node);
+  virtual bool     enterEnumType    (EnumType*          node);
+  virtual void     exitEnumType     (EnumType*          node);
 
-  virtual void     visitPrimType  (PrimitiveType*     node);
+  virtual void     visitPrimType    (PrimitiveType*     node);
 
-  virtual bool     enterArgSym    (ArgSymbol*         node);
+  virtual bool     enterArgSym      (ArgSymbol*         node);
 
-  virtual void     visitEnumSym   (EnumSymbol*        node);
+  virtual void     visitEnumSym     (EnumSymbol*        node);
 
-  virtual bool     enterFnSym     (FnSymbol*          node);
+  virtual bool     enterFnSym       (FnSymbol*          node);
 
-  virtual void     visitLabelSym  (LabelSymbol*       node);
+  virtual void     visitIpeSym      (IpeSymbol*         node);
 
-  virtual bool     enterModSym    (ModuleSymbol*      node);
-  virtual void     exitModSym     (ModuleSymbol*      node);
+  virtual void     visitLabelSym    (LabelSymbol*       node);
 
-  virtual bool     enterTypeSym   (TypeSymbol*        node);
+  virtual bool     enterModSym      (ModuleSymbol*      node);
+  virtual void     exitModSym       (ModuleSymbol*      node);
 
-  virtual void     visitVarSym    (VarSymbol*         node);
+  virtual bool     enterTypeSym     (TypeSymbol*        node);
 
-  virtual bool     enterCallExpr  (CallExpr*          node);
-  virtual void     exitCallExpr   (CallExpr*          node);
+  virtual void     visitVarSym      (VarSymbol*         node);
 
-  virtual bool     enterDefExpr   (DefExpr*           node);
+  virtual bool     enterCallExpr    (CallExpr*          node);
 
-  virtual bool     enterNamedExpr (NamedExpr*         node);
-  virtual void     exitNamedExpr  (NamedExpr*         node);
+  virtual bool     enterDefExpr     (DefExpr*           node);
 
-  virtual void     visitSymExpr   (SymExpr*           node);
+  virtual bool     enterNamedExpr   (NamedExpr*         node);
+  virtual void     exitNamedExpr    (NamedExpr*         node);
 
-  virtual void     visitUsymExpr  (UnresolvedSymExpr* node);
+  virtual void     visitSymExpr     (SymExpr*           node);
 
-  virtual bool     enterBlockStmt (BlockStmt*         node);
+  virtual void     visitUsymExpr    (UnresolvedSymExpr* node);
 
-  virtual bool     enterCondStmt  (CondStmt*          node);
+  virtual bool     enterBlockStmt   (BlockStmt*         node);
 
-  virtual void     visitEblockStmt(ExternBlockStmt*   node);
+  virtual bool     enterWhileDoStmt (WhileDoStmt*       node);
 
-  virtual bool     enterGotoStmt  (GotoStmt*          node);
-  virtual void     exitGotoStmt   (GotoStmt*          node);
+  virtual bool     enterDoWhileStmt (DoWhileStmt*       node);
+
+  virtual bool     enterCForLoop    (CForLoop*          node);
+
+  virtual bool     enterForLoop     (ForLoop*           node);
+
+  virtual bool     enterParamForLoop(ParamForLoop*      node);
+
+  virtual bool     enterCondStmt    (CondStmt*          node);
+
+  virtual void     visitEblockStmt  (ExternBlockStmt*   node);
+
+  virtual bool     enterGotoStmt    (GotoStmt*          node);
+  virtual void     exitGotoStmt     (GotoStmt*          node);
 
 private:
                    AstDumpToNode();

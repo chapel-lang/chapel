@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -286,6 +286,8 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
         }
       }
     }
+    if (types.n == 0 || maxVMT == 0)
+      fprintf(hdrfile, "(chpl_fn_p)0");
     fprintf(hdrfile, "\n};\n");
   } else {
 #ifdef HAVE_LLVM
@@ -419,7 +421,7 @@ static inline bool shouldCodegenAggregate(AggregateType* ct)
   //   we do visit.
   if( isClass(ct) ) { // is it actually a class?
     if( ct->symbol->hasFlag(FLAG_REF) ||
-        ct->symbol->hasFlag(FLAG_WIDE) ||
+        ct->symbol->hasFlag(FLAG_WIDE_REF) ||
         ct->symbol->hasFlag(FLAG_DATA_CLASS)) return true;
     else return false;
   }
@@ -528,6 +530,83 @@ static void codegen_header_compilation_config() {
 }
 
 
+static void protectNameFromC(Symbol* sym) {
+  //
+  // Symbols that start with 'chpl_' were presumably named by the
+  // implementation (compiler, internal modules, runtime) and
+  // sufficiently unique to not require further munging.
+  //
+  if (strncmp(sym->cname, "chpl_", 5) == 0) {
+    return;
+  }
+
+  //
+  // Let's assume we only have to rename user symbols and that we've
+  // done a good job of protecting our internal and standard module
+  // symbols.  This has the advantage of not having to take special
+  // pains to keep from renaming things like chpl_string and uint64_t
+  // (which perhaps should arguably also have FLAG_EXTERN, but don't
+  // consistently seem to today; and adding FLAG_EXTERN to them seems
+  // to result in it getting propagated to type aliases and such in
+  // ways that caused headaches for me).
+  //
+  ModuleSymbol* symMod = sym->getModule();
+  if (symMod->modTag == MOD_INTERNAL) {
+    return;
+  }
+
+  //
+  // If this symbol is exported of an extern symbol then someone
+  // outside of Chapel is relying on it to have a certain name and we
+  // need to respect that.
+  //
+  if (sym->hasFlag(FLAG_EXPORT) || sym->hasFlag(FLAG_EXTERN)) {
+    return;
+  }
+
+  //
+  // Walk from the symbol up to its enclosing module.  If the symbol
+  // is declared within an extern declaration, we should preserve its
+  // name for similar reasons.
+  //
+  if (sym != symMod) {
+    Symbol* parentSym = sym->defPoint->parentSymbol;
+    while (parentSym != symMod) {
+      if (parentSym->hasFlag(FLAG_EXTERN)) {
+        return;
+      }
+      parentSym = parentSym->defPoint->parentSymbol;
+    }
+  }
+
+  //
+  // For the sake of clarity, let's also avoid renaming arguments of
+  // exported functions.
+  //
+  if (toArgSymbol(sym)) {
+    Symbol* parentSym = sym->defPoint->parentSymbol;
+    if (parentSym->hasFlag(FLAG_EXPORT)) {
+      return;
+    }
+  }
+
+  //
+  // Rename the symbol
+  //
+  const char* oldName = sym->cname;
+  const char* newName = astr(oldName, "_chpl");
+  sym->cname = newName;
+  //
+  // Can we free this given how we create names?  free() doesn't like
+  // const char*, I don't want to just cast it away, and I'm not
+  // certain we can assume it isn't aliased to someting else, like
+  // sym->name...  In other cases, we seem to leak old names as
+  // well... :P
+  //
+  //  free(oldName);
+}
+
+
 // TODO: Split this into a number of smaller routines.<hilde>
 static void codegen_header() {
   GenInfo* info = gGenInfo;
@@ -570,6 +649,36 @@ static void codegen_header() {
     functions.add(fn);
   }
   qsort(functions.v, functions.n, sizeof(functions.v[0]), compareSymbol);
+
+
+  //
+  // by default, mangle all Chapel symbols to avoid clashing with C
+  // identifiers.  This can be disabled via the --munge-user-idents
+  // flag.
+  //
+  if (fMungeUserIdents) {
+    forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(VarSymbol, sym, gVarSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(ArgSymbol, sym, gArgSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(TypeSymbol, sym, gTypeSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(FnSymbol, sym, gFnSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(EnumSymbol, sym, gEnumSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(LabelSymbol, sym, gLabelSymbols) {
+      protectNameFromC(sym);
+    }
+  }
 
 
   //
@@ -671,8 +780,8 @@ static void codegen_header() {
           if (!strncmp(def->sym->cname, "_t", 2))
             def->sym->cname = astr("T", def->sym->cname + 2);
         } else {
-          // temp name is _tmp
-          if (!strcmp(def->sym->cname, "_tmp"))
+          // temp name is tmp
+          if (!strcmp(def->sym->cname, "tmp"))
             def->sym->cname = astr("T");
         }
       }

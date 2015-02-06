@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -148,7 +148,7 @@ returnInfoCast(CallExpr* call) {
   if (t2->symbol->hasFlag(FLAG_WIDE_CLASS))
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
-  if (t2->symbol->hasFlag(FLAG_WIDE))
+  if (t2->symbol->hasFlag(FLAG_WIDE_REF))
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
   return t1;
@@ -541,8 +541,10 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
   prim_def(PRIM_BLOCK_UNLOCAL, "unlocal block", returnInfoVoid);
 
+  prim_def(PRIM_FORALL_LOOP, "forall loop", returnInfoVoid);
   prim_def(PRIM_TO_LEADER, "to leader", returnInfoVoid);
   prim_def(PRIM_TO_FOLLOWER, "to follower", returnInfoVoid);
+  prim_def(PRIM_TO_STANDALONE, "to standalone", returnInfoVoid);
 
   prim_def(PRIM_DELETE, "delete", returnInfoVoid);
 

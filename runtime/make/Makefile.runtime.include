@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -40,7 +40,7 @@ RUNTIME_DEFS += -DCHPL_COMM_DEBUG
 endif
 
 ifeq ($(OPTIMIZE),1)
-RUNTIME_DEFS += -DCHPL_OPTIMIZE
+RUNTIME_DEFS += -DCHPL_OPTIMIZE -DNDEBUG
 endif
 
 # For HDFS support (and backwards compatibility)
@@ -86,6 +86,13 @@ GMP_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.gmp-$(CHPL_MAKE_GMP)
 # Add any further includes for HWLOC.
 HWLOC_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.hwloc-$(CHPL_MAKE_HWLOC)
 -include $(HWLOC_INCLUDE)
+
+#
+# For use with pyChapel / library-mode.
+# Position independent code is required to create shared objects.
+ifeq ($(CHPL_LIBMODE),shared)
+RUNTIME_DEFS += -fPIC
+endif
 
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
 RUNTIME_CXXFLAGS += $(RUNTIME_DEFS)

@@ -9,7 +9,7 @@ def get():
     make_val = os.environ.get('CHPL_MAKE')
     if not make_val:
         platform_val = chpl_platform.get()
-        if platform_val == 'cygwin' or platform_val == 'darwin':
+        if platform_val.startswith('cygwin') or platform_val == 'darwin':
             make_val = 'make'
         elif platform_val.startswith('linux'):
             if utils.find_executable('gmake'):

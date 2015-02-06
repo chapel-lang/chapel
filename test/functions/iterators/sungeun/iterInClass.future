@@ -1,8 +1,0 @@
-bug: Iterator returning locale type gets internal error in resolveIntents
-
-The test gets the following error for the getChildren() method.
-
-  iterInClass.chpl:2: error: Unhandled type in blankIntentForType() [resolveIntents.cpp:59]
-
-Note that this does not happen when there is only one class with a
-method called getChildren().

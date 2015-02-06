@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -224,6 +224,7 @@ module BitOps {
 /**
  * module to hide the extern procedures
  */
+pragma "no doc"
 module BitOps_internal {
   extern proc chpl_bitops_popcount_32(x: c_uint) : uint(32);
   extern proc chpl_bitops_popcount_64(x: c_ulonglong) : uint(64);

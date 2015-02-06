@@ -12,7 +12,7 @@ proc foo () {
   var A: [D] int = 7;
   D = {1..N};
   A[A.domain.low] = 5;
-  [i in A.domain] sum += A[i]*i;
+  [i in A.domain with(ref sum)] sum += A[i]*i; // no race - in 'serial'
   return sum;
 }
 

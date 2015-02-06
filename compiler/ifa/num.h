@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -206,13 +206,15 @@ ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
   return !memcmp(imm1, imm2, sizeof(*imm1));
 }
 
-int fprint_imm(FILE *fp, Immediate &imm);
+int fprint_imm(FILE *fp, Immediate &imm, bool showType = false);
 int snprint_imm(char *s, size_t max, Immediate &imm);
 int snprint_imm(char *str, size_t max, char *control_string, Immediate &imm);
 void coerce_immediate(Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
 void fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);
 void convert_string_to_immediate(const char *str, Immediate *imm);
+const char* istrFromUserUint(long long unsigned int i);
+const char* istrFromUserInt(long long int i);
 
 #endif
 

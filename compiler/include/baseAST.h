@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,18 +46,22 @@
   macro(PrimitiveType) sep                         \
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
+                                                   \
   macro(ModuleSymbol) sep                          \
-  macro(VarSymbol) sep                             \
-  macro(ArgSymbol) sep                             \
-  macro(TypeSymbol) sep                            \
-  macro(FnSymbol) sep                              \
-  macro(EnumSymbol) sep                            \
-  macro(LabelSymbol) sep                           \
+  macro(VarSymbol)    sep                          \
+  macro(ArgSymbol)    sep                          \
+  macro(IpeSymbol)    sep                          \
+  macro(TypeSymbol)   sep                          \
+  macro(FnSymbol)     sep                          \
+  macro(EnumSymbol)   sep                          \
+  macro(LabelSymbol)  sep                          \
+                                                   \
   macro(SymExpr) sep                               \
   macro(UnresolvedSymExpr) sep                     \
   macro(DefExpr) sep                               \
   macro(CallExpr) sep                              \
   macro(NamedExpr) sep                             \
+                                                   \
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
@@ -71,6 +75,14 @@ class Expr;
 class GenRet;
 class Symbol;
 class Type;
+
+class LoopStmt;
+class WhileStmt;
+class WhileDoStmt;
+class DoWhileStmt;
+class ForLoop;
+class CForLoop;
+class ParamForLoop;
 
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
@@ -123,6 +135,7 @@ enum AstTag {
   E_ModuleSymbol,
   E_VarSymbol,
   E_ArgSymbol,
+  E_IpeSymbol,
   E_TypeSymbol,
   E_FnSymbol,
   E_EnumSymbol,
@@ -204,6 +217,7 @@ public:
   FnSymbol*         getFunction();
   ModuleSymbol*     getModule();
   Type*             getValType();
+  Type*             getRefType();
 
   const char*       astTagAsString()                             const;
 
@@ -218,7 +232,6 @@ protected:
 private:
                     BaseAST();
 
-  Type*             getRefType();
   Type*             getWideRefType();
 };
 
@@ -261,8 +274,7 @@ public:
 // vectors of modules
 //
 extern Vec<ModuleSymbol*> allModules;  // contains all modules
-extern Vec<ModuleSymbol*> userModules; // contains main + user modules
-extern Vec<ModuleSymbol*> mainModules; // contains main modules
+extern Vec<ModuleSymbol*> userModules; // contains user modules
 
 //
 // class test inlines: determine the dynamic type of a BaseAST*
@@ -276,8 +288,14 @@ static inline bool isSymbol(const BaseAST* a)
 static inline bool isType(const BaseAST* a)
 { return a && isType(a->astTag); }
 
-#define def_is_ast(Type) \
-  static inline bool is##Type(BaseAST* a) { return a && a->astTag == E_##Type; }
+static inline bool isLcnSymbol(const BaseAST* a)
+{ return a && (a->astTag == E_ArgSymbol || a->astTag == E_VarSymbol); }
+
+#define def_is_ast(Type)                          \
+  static inline bool is##Type(const BaseAST* a)   \
+  {                                               \
+    return a && a->astTag == E_##Type;            \
+  }
 
 def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
@@ -291,6 +309,7 @@ def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
 def_is_ast(VarSymbol)
 def_is_ast(ArgSymbol)
+def_is_ast(IpeSymbol)
 def_is_ast(TypeSymbol)
 def_is_ast(FnSymbol)
 def_is_ast(EnumSymbol)
@@ -300,12 +319,21 @@ def_is_ast(EnumType)
 def_is_ast(AggregateType)
 #undef def_is_ast
 
+bool isLoopStmt(BaseAST* a);
+bool isWhileStmt(BaseAST* a);
+bool isWhileDoStmt(BaseAST* a);
+bool isDoWhileStmt(BaseAST* a);
+bool isParamForLoop(BaseAST* a);
+bool isForLoop(BaseAST* a);
+bool isCForLoop(BaseAST* a);
+
 //
 // safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
 //
 #define def_to_ast(Type) \
   static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; }
+
 def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
@@ -319,6 +347,7 @@ def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
 def_to_ast(VarSymbol)
 def_to_ast(ArgSymbol)
+def_to_ast(IpeSymbol)
 def_to_ast(TypeSymbol)
 def_to_ast(FnSymbol)
 def_to_ast(EnumSymbol)
@@ -328,7 +357,17 @@ def_to_ast(PrimitiveType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)
 def_to_ast(Type)
+
+def_to_ast(LoopStmt);
+def_to_ast(WhileStmt);
+def_to_ast(WhileDoStmt);
+def_to_ast(DoWhileStmt);
+def_to_ast(ForLoop);
+def_to_ast(CForLoop);
+def_to_ast(ParamForLoop);
+
 #undef def_to_ast
+
 //
 // traversal macros
 //
@@ -362,12 +401,42 @@ def_to_ast(Type)
     AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
     AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                \
     break;                                                              \
-  case E_BlockStmt:                                                     \
-    AST_CALL_LIST (_a, BlockStmt, body,           call, __VA_ARGS__);   \
-    AST_CALL_CHILD(_a, BlockStmt, blockInfoGet(), call, __VA_ARGS__);   \
-    AST_CALL_CHILD(_a, BlockStmt, modUses,        call, __VA_ARGS__);   \
-    AST_CALL_CHILD(_a, BlockStmt, byrefVars,      call, __VA_ARGS__);   \
-    break;                                                              \
+                                                                               \
+  case E_BlockStmt: {                                                          \
+    BlockStmt* stmt = toBlockStmt(_a);                                         \
+                                                                               \
+    if (stmt->isWhileDoStmt() == true) {                                       \
+      AST_CALL_LIST (stmt, WhileStmt,    body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, WhileStmt,    condExprGet(),  call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isDoWhileStmt()  == true) {                               \
+      AST_CALL_LIST (stmt, WhileStmt,    body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, WhileStmt,    condExprGet(),  call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isForLoop()      == true) {                               \
+      AST_CALL_LIST (stmt, ForLoop,      body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ForLoop,      indexGet(),     call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ForLoop,      iteratorGet(),  call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isCForLoop()     == true) {                               \
+      AST_CALL_LIST (stmt, CForLoop,     body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, CForLoop,     initBlockGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, CForLoop,     testBlockGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, CForLoop,     incrBlockGet(), call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isParamForLoop() == true) {                               \
+      AST_CALL_LIST (stmt, ParamForLoop, body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ParamForLoop, resolveInfo(),  call, __VA_ARGS__);   \
+                                                                               \
+    } else  {                                                                  \
+      AST_CALL_LIST (stmt, BlockStmt,    body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt,    blockInfoGet(), call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt,    modUses,        call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, BlockStmt,    byrefVars,      call, __VA_ARGS__);   \
+    }                                                                          \
+    break;                                                                     \
+  }                                                                            \
+                                                                               \
   case E_CondStmt:                                                      \
     AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);          \
     AST_CALL_CHILD(_a, CondStmt, thenStmt, call, __VA_ARGS__);          \

@@ -7,14 +7,27 @@ inside them.
 
 from __future__ import print_function
 
+import os.path
+import re
 import sys
 
 for line in sys.stdin.readlines():
     filename, content = line.split(':', 1)
 
-    config_name = content.split('"')[1]
-    expected_script_name = 'test-{0}.bash'.format(config_name)
+    filename_parts = os.path.splitext(filename)
+    filename_base = filename_parts[0]
 
-    if not filename.endswith(expected_script_name):
+    pattern = re.compile(r'CHPL_NIGHTLY_TEST_CONFIG_NAME="(?P<config_name>[a-z0-9\-.]+)"',
+                         re.IGNORECASE)
+    match = pattern.search(content)
+    config_name = None
+    if match is not None:
+        config_name = match.group('config_name')
+    else:
+        print('[ERROR] Could not find nightly test config name '
+              'in: {0}'.format(filename))
+        sys.exit(0)
+
+    if not filename_base.endswith(config_name):
         print('[ERROR] test script name: "{0}" does not match its config name: "{1}"'.format(
             filename, config_name))

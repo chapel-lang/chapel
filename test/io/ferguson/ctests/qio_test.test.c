@@ -2,6 +2,13 @@
 #include <assert.h>
 #include <stdio.h>
 
+// TODO (12/05/14): This test makes use of lseek and then
+// reads through the file, using bytes read as an indicator
+// of position.  On Cygwin, you can't depend on that
+// indicator being accurate, so the test fails. We should
+// rewrite this test to be more portable and look for
+// similar assumptions in our qio code.
+
 int verbose = 0;
 
 unsigned char data_at(int64_t offset)

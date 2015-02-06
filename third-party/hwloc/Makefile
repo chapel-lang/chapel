@@ -5,22 +5,23 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-#
-# set up the directories
-#
-HWLOC_ABS_DIR = $(shell pwd)
-HWLOC_INSTALL_DIR = $(HWLOC_ABS_DIR)/$(HWLOC_INSTALL_SUBDIR)
-HWLOC_BUILD_DIR = $(HWLOC_ABS_DIR)/$(HWLOC_BUILD_SUBDIR)
-HWLOC_DIR = $(HWLOC_ABS_DIR)
-
 CHPL_HWLOC_CFG_OPTIONS += --enable-static --disable-shared --disable-libxml2 --disable-pci
 
-ifneq ($(CHPL_MAKE_PLATFORM), darwin)
 ifeq ($(CHPL_MAKE_TARGET_COMPILER), pgi)
-  CHPL_HWLOC_CFG_OPTIONS += LDFLAGS=-Bstatic
-else
-  CHPL_HWLOC_CFG_OPTIONS += LDFLAGS=-static
-endif
+  #
+  # When using the PGI compiler natively (not with the Cray PrgEnv
+  # wrapper), with default dynamic linking, we fail trying to link
+  # lstopo.  The PGI compiler isn't gcc and can't do -print-search-dirs,
+  # so the hwloc libtool ends up using "/usr/lib /lib" as a default
+  # search path and tries to link the 32-bit /usr/lib/libX11.so into the
+  # 64-bit lstopo, getting an architecture mismatch gripe.  To work
+  # around this, disable the cairo graphical backend for lstopo.  This
+  # is the only thing that uses X11, so without it we don't try to link
+  # libX11.  (I also tried using --disable-gl, --x-libraries=/usr/lib64,
+  # and --without-x to solve this problem, and none of those worked.
+  # Forcing static linking does work, but that seems too big a hammer.)
+  #
+  CHPL_HWLOC_CFG_OPTIONS += --disable-cairo
 endif
 
 CHPL_HWLOC_CFG_OPTIONS += $(CHPL_HWLOC_MORE_CFG_OPTIONS)

@@ -1,4 +1,4 @@
 1 1 1 1
-Amount of leaked memory after calling foo(): 16
+Amount of leaked memory after calling foo(): 32
 sum is 100
 0 1 1 1 1

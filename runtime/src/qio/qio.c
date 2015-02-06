@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,12 +31,14 @@
 
 #include "sys_basic.h"
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
 #include "qio.h"
 #include "qbuffer.h"
+
+#include "error.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -520,7 +522,7 @@ qio_hint_t choose_io_method(qio_file_t* file, qio_hint_t hints, qio_hint_t defau
       method = QIO_METHOD_PREADPWRITE;
 
     // Read and write
-    if((fdflags & QIO_FDFLAG_WRITEABLE)  && 
+    if((fdflags & QIO_FDFLAG_READABLE)   &&
         (fdflags & QIO_FDFLAG_WRITEABLE) &&
         file->fsfns->preadv && file->fsfns->pwritev)
       method = QIO_METHOD_PREADPWRITE;
@@ -1509,7 +1511,9 @@ qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
   // adding to the qbuffer the file data.
   // We do not check cached_start since we might have moved
   // the mark_stack along with changing cached_start
-  assert( ch->cached_end == expect_end );
+  if ( ch->cached_end != expect_end ) {
+    chpl_internal_error("_qio_channel_makebuffer_unlocked() failed");
+  }
 
   ch->mark_stack[0] = qbuffer_start_offset(&ch->buf);
 

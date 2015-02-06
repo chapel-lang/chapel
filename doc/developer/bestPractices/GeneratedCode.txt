@@ -15,6 +15,28 @@ To recompile:  make -f DIRECTORY/Makefile
 --print-commands  => shows commands issued by the compiler
 
 
+Why are my identifiers renamed in the generated code?
+-----------------------------------------------------
+
+* Note that all user identifiers are munged by default in Chapel's
+  generated code to prevent inadvertent conflicts with identifiers
+  from other C libraries and headers against which Chapel is linked
+  (see the 'chpl' man page for --[no-]munge-user-idents for more
+  information).  This can have the downside of making the generated
+  code not correspond with the Chapel source in a way that can make
+  reading the code, as well as debugging and profiling it, slightly
+  more complicated.  Compiling with the --no-munge-user-idents flag
+  can reduce the degree to which this is done (and for most programs,
+  should still work fine).
+
+* In some cases, Chapel does additional munging in order to turn legal
+  Chapel into legal C (e.g., Chapel supports overloads but C doesn't).
+  This munging cannot be disabled by a flag and is typically necessary
+  (though Chapel is sometimes overly conservative in deciding to
+  munge).  Generally, the more C-like your code is, the less this
+  should happen.
+
+
 How to benchmark/time it?
 -------------------------
 

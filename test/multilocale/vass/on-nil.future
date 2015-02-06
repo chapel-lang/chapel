@@ -1,0 +1,283 @@
+semantic: define the behavior of "on EXPR do ..." when EXPR==nil
+
+This future is a summary of the email thread re "on nil - what should it be?"
+on the internal list in February 2014.
+
+---------------------------------
+
+* We would like to clarify, for each of the following cases:
+ - what locale should STMT execute on?
+ - what is EXPR.locale (A,B) or nil.locale (C)?
+
+// According to the spec, these two questions are equivalent.
+
+(A)  on EXPR do STMT;
+  where
+     EXPR.type == locale or its subclass
+  and
+     EXPR == nil
+
+(B)  on EXPR do STMT;
+  where
+     EXPR.type is not locale or its subclass
+  and
+     EXPR == nil
+
+(C)  on nil do STMT;
+  i.e. when the user wrote 'nil' explicitly
+
+* We seem to agree that in all three cases STMT should be executed
+on the current locale. (C) should also generate a compiler warning
+"did you really mean this?" or "this does not do anything useful".
+
+* We discussed a couple of related topics - see below.
+
+* In the current implementation, 'nil' is a wide pointer, so it includes
+a locale ID. That locale ID corresponds to the locale on which the 'nil'
+expression was evaluated and propagates across 'on' and wide-pointer
+assignments.
+
+The 'on' statement just extracts that locale ID, whether or not
+the expression is nil. This is probably not what we want.
+
+* In the current implementation, the 'on' statement determines the target
+locale by looking at the expression's locale ID even when the expression
+is of a locale type.
+
+We need to keep an eye on this. If we introduce locale objects whose
+wide pointer's locale ID does not match the locale they represent,
+e.g. for GPUs, this will not do what we want.
+
+---------------------------------
+
+* Tom H. proposed thinking about it as an implicit cast from the 'on'
+expression to locale ID. Brad objected because we do not want to
+confuse this with other implicit casts. Greg objected because with
+hierarchical locales "it's hard to imagine anything less portable."
+
+---------------------------------
+
+* Brad suggests to make 'locale' a "value" type, not a class type.
+E.g. make 'locale' a record-wrapped type.
+
+Then, a locale cannot be 'nil' and there is no issue.
+
+Then also, what is the default value for the 'locale' type?
+The obvious candidate is 'here'.
+
+---------------------------------
+
+* Brad considers the case:
+
+    on EXPR do STMT;
+ where
+    EXPR==nil
+    EXPR is either of a locale type or any other class type
+
+to be analogous to the case:
+
+    on EXPR do STMT;
+ where
+    EXPR is of a "value" type
+
+In the "value" type case the semantics is:
+
+(A) If EXPR is a variable, or generally speaking an l-value,
+STMT executes on the locale where the variable is declared.
+
+(B) Otherwise, EXPR's value is always local; STMT executes
+on the current locale.
+
+See Brad's explanatory emails below.
+
+Vass thinks that implementing the "value"-type semantics
+for a class-typed EXPR would add complexity in the compiler
+and the generated code. It should be doable though.
+
+Tom feels that the simplest definition of "on EXPR", where
+EXPR is of a class type, is "go to the locale of the object
+that EXPR references". Since 'nil' does not reference
+any objects, this locale is undefined, so it should result
+in a run-time error.
+
+The .good file reflects the view that
+STMT executes on the current locale whenever EXPR==nil.
+
+We should also check our definitions and implementation
+for the cases where EXPR is:
+ - a non-distributed array
+ - a distributed array
+ - A[i], where A is an array of ints
+  - A is distributed
+  - A is not distributed
+
+// The spec does not define what a "value" type is.
+// Intuitively: numeric types, enums, records are "value" types.
+
+---------------------------------
+
+* In those cases where the on-statement always executes
+on the current locale, we want the compiler to issue a warning
+"did you really mean this?" or "this does not do anything useful".
+
+These are the cases where the on-clause is a literal, nil,
+or an r-value of a "value" type.
+
+We used to have such a warning and then it went away with
+hierarchical locales?
+
+BTW implementing the warning in the compiler is pretty trivial:
+just check for these cases in extractLocaleID().
+In addition, extractLocaleID() could return NULL in these cases
+and buildOnStmt() could discard the 'on' if so - just return 'stmt'.
+(Wrap it in BlockStmt if it is not already.)
+
+-----------------------------------------------------------------------------
+(Here is one explanatory email from Brad.)
+
+This question of nil being a legal locale value gets back to my point
+in an earlier mail in this thread that, for an end user, I'd prefer to
+have them thinking of locales and sublocales as value types (maybe
+we'd implement as a record-wrapped class?) rather than a
+class/reference type if we could pull that off.  In such a world,
+'nil' would not be a legal locale value (just as it's not a legal
+domain/array value today even though their guts are implemented as
+classes).
+
+Even if we didn't end up in such a world, I think 'nil' is already a
+special enough type/value that we could easily have 'on nil' do
+something other than "what I would do for a locale expression."
+
+The reason I like treating 'on nil' case more like the 'on literal'
+case than the 'on locale' case is that if a variable holds a nil
+value, we want the on-clause to execute where the variable is stored,
+not to generate an error or no-op.  That is:
+
+    class Shape { }
+
+    var myShape: Shape = nil;
+
+    on Locales[1] {
+      on myShape { // ***This should execute back on locale 0*** }
+    }
+
+If we were to say that
+
+    on nil { }
+
+generated an execution-time error, that would make it seem
+inconsistent with how we deal with named vs. literal values of other
+types.  For example, for reals:
+
+    var myReal: real = 0;
+
+    on Locales[1] {
+      on myReal { // should execute back on locale 0 }
+    }
+
+whereas:
+
+    on 0.0 {  // no-op since 0.0 is local
+    }
+
+Which I think of as suggesting the following:
+
+    on nil {  // no-op since nil is local
+    }
+
+
+All that said, if we're really only talking about what should happen
+to literal/param 'nil' values (since any other cases have names and
+locales) then I think we're wasting time debating a pretty
+insignificant corner case (and keep in mind... one that I already want
+to generate a warning for, as with "on 0.0" above).  Put another way,
+if the implementation generated an execution time warning in the case
+where it was a literal, and not when it was a value stored in a
+variable, I could live with that.
+
+But making it a no-op still seems like the preferable solution to me.
+
+-----------------------------------------------------------------------------
+(Here is another explanatory email from Brad.)
+
+> on nil { ... } // which locale does it go to? is it a runtime error?
+
+'nil', like other literals, evaluate to local values, so this is
+essentially a no-op.  We've discussed making a compiler warning/error
+for such cases (maybe have even had one in the past?), but I guess not
+currently.
+
+>  var l: locale;
+>  ... wonder around locales ...
+>  l = nil;
+>  ... wonder around locales some more, without changing 'l' ...
+>  on l { ... }  // where should this go? is it a runtime error?
+
+I'd expect this to go where l is originally declared on the argument
+that if there is no object to go to, an 'on' on a class reference
+should go to where the reference itself is stored (Greg and Sung will
+have to back up my memory, but I think that Michael requested these
+semantics, if we didn't have them, at the Dec review).
+
+That said, if at all possible, I'd also really like to end up in a
+world where 'locale' is more of a value type (like a record-wrapped
+class?) with a default value of RootLocale, which would make the
+assignment of nil to l illegal.  If we could pull this off, another
+advantage it might lead to would be to exchange generic instantitation
+for dynamic dispatch with locale-oriented stuff.  Or, I might just be
+satisfied if we didn't permit 'nil' to be assigned to locale variables
+(in which case, maybe I wouldn't notice whether it was a value type or
+not?)
+
+
+> * When you do "on l {...}" where l is a class-typed variable that
+    has 'nil' as the value, you go to the locale where *that* nil was
+    evaluated.
+
+This is the part that seems most regrettable/surprising to me.  The
+fact that 'on nil' is a no-op could be surprising to a user, but seems
+defensible to me (and with a warning, the user shouldn't be surprised
+either).
+
+
+> * In the spec - and perhaps in our minds too - when EXP has the type
+    'locale' (or a subtype), then "EXP.locale" is whatever EXP
+    evaluates to. Correspondingly, "on EXP do" goes to whatever locale
+    EXP evaluates to.
+>
+> Turns out that this not so in the current implementation. Even if
+  EXP is a locale or a locale-typed nil, "on EXP do" goes to the
+  locale of that value, not to that value per se. The difference is
+  observable when EXP is nil or
+
+This case I'm proposing handling by not having nil carry a locale with it.
+
+
+> when the locale value is allocated on a different locale than what
+  it represents.
+
+It used to be the case that this would happen only when there was a
+bug in the implementation (which doesn't seem like a case that should
+be worried about it defining the language).  I'm not certain whether
+we prevent the creation and destruction of locales by the user code
+once initialization is complete in the current implementation, but we
+used to (and I'd like to see this again).
+
+
+> * Furthermore, if the implementation is not changed, we need to
+    figure out how to deal with 'on' to GPU locales, which are going
+    to be allocated outside GPUs (did I get this right?).
+
+That's a good point.  But one might also argue that the scaffolding
+required to run on a GPU would need to execute outside of the GPU as
+well. At any rate, I think your point is correct that we should say
+such on-clauses execute on the locale that the locale subclass object
+represents rather than the one whose memory stores it.
+
+
+> * If we stick with the spec, we need to figure out what "on l do" means
+    when l==nil.
+
+I think it should mean "go where l is stored."
+
+-----------------------------------------------------------------------------

@@ -9,7 +9,7 @@ developers.  A possible reading order is roughly as follows:
 GettingStarted.txt
   A list of suggested "first steps" for new developers.
 
-ContributorInfo.txt
+ContributorInfo.rst
   Information for contributors about setting up github accounts, the
   developer workflow, and testing changes.
 
@@ -36,6 +36,9 @@ GeneratedCode.txt
 
 GASNetOnDesktops.txt
   Tips on running and debugging Chapel programs with GASNet on your desktop.
+
+GitCheatsheet.rst
+  Tips for using git.
 
 CHPL_DEVELOPER.txt
   The most important environment variable you want to set, and what it does.

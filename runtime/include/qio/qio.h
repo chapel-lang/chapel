@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -226,8 +226,8 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 
 #else
 
-#ifndef SIMPLE_TEST
-#error Chapel runtime should be included before QIO or SIMPLE_TEST should be set
+#ifndef CHPL_RT_UNIT_TEST
+#error Chapel runtime should be included before QIO or CHPL_RT_UNIT_TEST should be set
 #endif
 
 #include <pthread.h>

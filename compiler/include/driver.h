@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,17 +31,16 @@ class Timer;
 // For versions of bison beyond 2.3, this struct and the following
 // two defines should be moved back into chapel.ypp into a %code requires
 // block so that YYLTYPE is near the YYLLOC_DEFAULT definition.
-typedef struct YYLTYPE {    
-       int first_line;      
-       int first_column;    
-       int last_line;       
-       int last_column;     
-       char *comment;       
-} YYLTYPE;
-#define YYLTYPE_IS_DECLARED 1
-#define YYLTYPE_IS_TRIVIAL 1
+struct YYLTYPE {
+  int   first_line;
+  int   first_column;
+  int   last_line;
+  int   last_column;
+  char* comment;
+};
 
-extern const char *chplBinaryName;
+#define YYLTYPE_IS_DECLARED 1
+#define YYLTYPE_IS_TRIVIAL  1
 
 extern int  instantiation_limit;
 
@@ -60,6 +59,7 @@ extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
+extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
@@ -71,6 +71,7 @@ extern bool fNoOptimizeLoopIterators;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
+extern bool fRemoveUnreachableBlocks;
 extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
 extern int  tuple_copy_limit;
@@ -106,7 +107,7 @@ extern const char* chpl_env_vars[];
 extern const char* chpl_env_var_names[];
 
 extern bool  printPasses;
-extern FILE* printPassesFile; 
+extern FILE* printPassesFile;
 
 // Set true if CHPL_WIDE_POINTERS==struct.
 // In that case, the code generator emits structures
@@ -150,6 +151,7 @@ extern int  fLinkStyle;
 extern int  debugParserLevel;
 extern int  debugShortLoc;
 extern bool fLibraryCompile;
+extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;
 extern bool fVerify;
@@ -178,17 +180,12 @@ extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 
-extern bool debugCCode, optimizeCCode, specializeCCode;
-
-extern bool fEnableTimers;
-extern Timer timer1;
-extern Timer timer2;
-extern Timer timer3;
-extern Timer timer4;
-extern Timer timer5;
+extern bool debugCCode;
+extern bool optimizeCCode;
+extern bool specializeCCode;
 
 extern bool fNoMemoryFrees;
-extern int numGlobalsOnHeap;
+extern int  numGlobalsOnHeap;
 extern bool preserveInlinedLineNumbers;
 
 extern int breakOnID;
@@ -201,5 +198,9 @@ extern char compileVersion[64];
 // This flag is useful for testing
 // the compiler but breaks the language!
 extern bool fMinimalModules;
+
+// Set to true if we want to use the experimental
+// Interactive Programming Environmment (IPE) mode.
+extern bool fUseIPE;
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,11 +22,6 @@
 
 #include "sys_basic.h"
 #include "chpltypes.h"
-
-//
-// The flat locale model doesn't have sublocales.  It only has top
-// level (network-connected) locales.
-//
 
 //
 // This is the type of a global locale ID.
@@ -70,11 +65,5 @@ static ___always_inline
 c_sublocid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t loc) {
   return c_sublocid_any;
 }
-
-//
-// Force the tasking layer to say there are no sublocales even if it
-// knows otherwise (NUMA, e.g.).
-//
-#define CHPL_LOCALE_MODEL_NUM_SUBLOCALES 0
 
 #endif // _chpl_locale_model_h_

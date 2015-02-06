@@ -208,7 +208,8 @@ proc GridVariable.writeData (
     // order achieves column major order on the original domain.
     //------------------------------------------------------------
     var range_tuple: dimension*range(stridable=true);
-    [d in dimensions] range_tuple(d) = grid.cells.dim(1 + dimension - d);
+    [d in dimensions with (ref range_tuple)] // could also be 'for param d'
+      range_tuple(d) = grid.cells.dim(1 + dimension - d);
 
     var cells_transposed: domain(dimension, stridable=true);
     cells_transposed = {(...range_tuple)};
@@ -218,7 +219,8 @@ proc GridVariable.writeData (
     for cell_transposed in cells_transposed do {
 
       //==== Write value ====
-      [d in dimensions] cell(d) = cell_transposed(1 + dimension - d);
+      [d in dimensions with (ref cell)] // could also be 'for param d'
+        cell(d) = cell_transposed(1 + dimension - d);
       if abs(value(cell)) > 1.0e-99 then
         outfile.writeln(format(efmt, value(cell)));
       else

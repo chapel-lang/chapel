@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,12 +20,12 @@
 // checkResolved.cpp
 
 #include "passes.h"
-#include "driver.h"
 
-#include "stmt.h"
-#include "expr.h"
-#include "stlUtil.h"
 #include "astutil.h"
+#include "driver.h"
+#include "expr.h"
+#include "stmt.h"
+#include "stlUtil.h"
 
 #include <set>
 
@@ -56,6 +56,7 @@ checkResolved() {
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->hasFlag(FLAG_ITERATOR_FN) &&
+        fn->retType->defaultInitializer &&
         fn->retType->defaultInitializer->defPoint->parentSymbol == fn)
       USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
     if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
@@ -69,7 +70,7 @@ checkResolved() {
           SymExpr* sym = toSymExpr(def->init);
           if (!sym || (!sym->var->hasFlag(FLAG_PARAM) &&
                        !toVarSymbol(sym->var)->immediate))
-            USR_FATAL_CONT(def, "enumerator '%s' is not an integer param value", 
+            USR_FATAL_CONT(def, "enumerator '%s' is not an integer param value",
                            def->sym->name);
         }
       }
@@ -83,7 +84,7 @@ checkResolved() {
 // Returns the smallest number of definitions of ret on any path through the
 // given expression.
 static int
-isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) 
+isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 {
   if (!expr)
     return 0;
@@ -94,7 +95,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   if (isSymExpr(expr))
     return 0;
 
-  if (CallExpr* call = toCallExpr(expr)) 
+  if (CallExpr* call = toCallExpr(expr))
   {
     // Maybe add a "no return" pragma and use that instead.
     if (call->isNamed("halt"))
@@ -151,6 +152,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
         }
       }
     }
+
     return 0;
   }
 
@@ -165,9 +167,18 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 
   if (BlockStmt* block = toBlockStmt(expr))
   {
-    if (block->blockInfoGet()  == NULL ||
-        block->isDoWhileLoop() == true ||
-        block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
+    // NOAKES 2014/11/25 Transitional.  Ensure we don't call blockInfoGet()
+    if (block->isWhileDoStmt()  == true ||
+        block->isForLoop()      == true ||
+        block->isCForLoop()     == true ||
+        block->isParamForLoop() == true)
+    {
+      return 0;
+    }
+
+    else if (block->isDoWhileStmt() == true ||
+             block->blockInfoGet()  == NULL ||
+             block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
     {
       int result = 0;
 
@@ -177,7 +188,10 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
       return result;
     }
 
-    return 0;
+    else
+    {
+      return 0;
+    }
   }
 
   if (isExternBlockStmt(expr))
@@ -249,7 +263,7 @@ checkNoRecordDeletes()
   forv_Vec(CallExpr, call, gCallExprs)
   {
     FnSymbol* fn = call->isResolved();
-  
+
     // Note that fn can (legally) be null if the call is primitive.
     if (fn && fn->hasFlag(FLAG_DESTRUCTOR)) {
       // Statements of the form 'delete x' (PRIM_DELETE) are replaced

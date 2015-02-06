@@ -1,0 +1,137 @@
+% This is a first draft and is likely to change!
+
+\section{The {\bf noinit} Initializer}
+\label{noinit}
+
+This section describes the proposed syntax and semantics for the \chpl{noinit}
+initializer.
+
+\subsection{Syntax}
+\label{noinit_Syntax}
+
+The special initializer \chpl{noinit} may appear anywhere an \sntx{initializer-expression}
+may appear: in a variable or field declaration or as the initialization expression in an
+initializer-list.  To include \chpl{noinit} in the syntax, we replace \sntx{expression}
+with \sntx{initializer-expression} in those context and define the latter as:
+\begin{syntax}
+initializer-expression:
+  expression
+  `noinit'
+\end{syntax}
+
+\subsection{Semantics}
+\label{noinit_Semantics}
+
+When the variable or field being initialized is of a scalar type (integer, real, imaginary,
+complex, bool, enum), presence of the \chpl{noinit} initializer disables the normal
+default initialization. 
+
+When the variable or field being initialized is of class or record type, the \chpl{noinit}
+initializer is internally replaced by a call to the constructor for the type of the
+destination variable or field, passing the argument ``\chpl{noinit = true}''.  Hence the
+two declarations below are exactly equivalent: 
+\begin{chapel}
+var r1:R = noinit;
+var r2:R = new R(noinit = true);
+\end{chapel}
+\noindent
+The \chpl{noinit} initializer is essentially syntactical sugar for a specific constructor
+invocation.  Note that when \chpl{noinit} is supplied for a variable or field of class
+type, \emph{more} initialization will be performed than if the class variable had no
+initializer at all and was thus default-initialized to \chpl{nil}.  However, that behavior
+is consistent with the interpretation of the \chpl{noinit} initializer as a constructor call.
+
+When the variable or field is of tuple type, the
+\chpl{noinit = true} argument is passed to the constructor for each of its elements.
+
+
+\subsection{Discussion}
+\label{noinit_Discussion}
+
+A number of advantages accompany defining the \chpl{noinit} feature in this way:
+\begin{itemize}
+\item It is easy to implement.
+\item It is easy to describe in the specification.
+\item When explained as a textual substitution, the feature is easy to comprehend.
+\item The effect of \chpl{noinit} is under the control of the record author.
+\end{itemize}
+
+This last point is particularly important, because even when \chpl{noinit} is used to
+initialize a record, the resulting object must be initialized to a point that it obeys the
+basic invariants pertaining to the assignment operator for that record type.
+
+By using the \chpl{noinit} initializer in the initializer-list of a record or class
+constructor, the sub-objects of a record or class can be left in an uninitialized or
+partially-initialized state (as defined by that field's type).  This permits the effect of
+the \chpl{noinit} flag to be defined recursively.  Moreover, it provides a path by which
+most of the initialization of a record can be inhibited --- should the record author deem
+that desirable.  
+
+The example in the next subsection shows that careful coding can result in record
+initialization that overrides the language default behavior and leaves some or all of the
+fields partially or completely uninitialized.  The way this is achieved under the current
+proposal is rather verbose, so we might consider alternate syntax that inhibits field
+initialization by default rather than having it on by default.  We
+might have an alternate keyword to indicate that only the named fields are participate in
+field-initialization in a constructor.  As a strawman, consider \chpl{with only}
+\begin{chapel}
+ctor R(x : real)
+with only (r = x)
+{}
+\end{chapel}
+In the record type R defined below, this would leave the fields \chpl{i} and \chpl{u}
+unitialized and set the value of field \chpl{r} to x.  It then becomes very easy to write
+a constructor that will perform no initialization at all:
+\begin{chapel}
+ctor R() with only () {}
+\end{chapel}
+
+An alternate idea would be to give the noinit constructor its own character.  In that
+case, the \chpl{noinit} initializer means ``call the noinit constructor passing zero
+arguments''.  In the context of a noinit constructor, the with-clause would have a
+slightly modified meaning: field names not mentioned explicitly would be initialized
+through a call to their noinit constructors, recursively.  Contrast this with the standard
+with-clause, wherein if a field name is unmentioned it is initialized using that field's
+class-scope or record-scope initial value.
+
+
+\subsection{Examples}
+\label{noinit_Examples}
+
+For example, in:
+\begin{chapel}
+record R {
+  var i: int = -7;
+  var r: real = 3.1416;
+  var u: uint = 42;
+
+  ctor (param noinit = false) 
+  with (i = int(noinit=noinit), r = real(noinit=noinit), u = uint(noinit=noinit)) 
+  {}
+  ctor (x : real) with (noinit, r = x, noinit) {}
+}
+
+var r1:R = noinit;
+var r2:R;
+var r3:R(2.71828);
+
+writeln(r1);
+writeln(r2);
+writeln(r3);
+\end{chapel}
+\noindent
+the declaration of \chpl{r1} will provide space for \chpl{r1} but perform no initialization
+whatsoever.  That is, default initialization of its fields will be inhibited.  In
+contrast, the declaration of \chpl{r2} will result in all three fields being
+default-initialized.  (The \chpl{noinit} flag is passed as false to each scalar type's
+constructor, but since no value is supplied, the default value for that type is used
+instead.)  The declaration of \chpl{r3} will result in fields \chpl{i} and
+\chpl{u} remaining uninitialized while \chpl{r} is set to the real value supplied.  The
+output of the program should be
+\begin{chapelprintoutput}
+(i = <rj>, r = <rj>, u = <rj>)
+(i = 0, r = 0.0, u = 0)
+(i = <rj>, r = 2.71828, u = <rj>)
+\end{chapelprintoutput}
+where \chpl{<rj>} means ``random junk''.
+

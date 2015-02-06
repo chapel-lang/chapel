@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,7 @@ void createDocsFileFolders(std::string filename);
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name);
 
-void printFunction(std::ofstream *file, FnSymbol *fn);
+void printFunction(std::ofstream *file, FnSymbol *fn, bool method);
 
 void printVarStart(std::ofstream *file, VarSymbol *var);
 
@@ -48,3 +48,19 @@ bool devOnlyFunction(FnSymbol *fn);
 bool devOnlyModule(ModuleSymbol *mod);
 
 bool isNotSubmodule(ModuleSymbol *mod);
+
+std::string generateSphinxProject(std::string dirpath);
+
+void generateSphinxOutput(std::string dirpath);
+
+static inline std::string ltrim(std::string s);
+
+static inline bool isEmpty(std::string s);
+
+static std::string erase(std::string s, int count);
+
+static std::string firstNonEmptyLine(std::string s);
+
+static int minimumPrefix(std::string s);
+
+void ltrimAndPrintLines(std::string s, std::ofstream *file);

@@ -7,8 +7,4 @@ source $CWD/common-gasnet.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.darwin"
 
-# Do not send modern mac test results to regressions list until
-# nondeterministic compiler errors are fixed.
-# (thomasvandoren, 2014-09-08)
-export CHPL_NIGHTLY_CRON_RECIPIENT="chapel-test-results-all@lists.sourceforge.net"
 $CWD/nightly -cron -examples

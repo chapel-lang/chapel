@@ -1,29 +1,29 @@
-perfkeys:  Time in seconds =
-files: ep.S.dat
-graphkeys: runtime - S
+perfkeys:  Time in seconds =, Time in seconds =
+files: ep.S.dat, ep.S.maxLogical.dat
+graphkeys: runtime - S, MAX_LOGICAL - S
 graphtitle: NAS Parallel Benchmarks: EP timings - size S
 
-perfkeys:  Time in seconds =
-files: ep.W.dat
-graphkeys: runtime - W
+perfkeys:  Time in seconds =, Time in seconds =
+files: ep.W.dat, ep.W.maxLogical.dat
+graphkeys: runtime - W, MAX_LOGICAL - W
 graphtitle: NAS Parallel Benchmarks: EP timings - size W
 
-perfkeys:  Time in seconds =
-files: ep.A.dat
-graphkeys: runtime - A
+perfkeys:  Time in seconds =, Time in seconds =
+files: ep.A.dat, ep.A.maxLogical.dat
+graphkeys: runtime - A, MAX_LOGICAL - A
 graphtitle: NAS Parallel Benchmarks: EP timings - size A
 
-#perfkeys:  Time in seconds =
-#files: ep.B.dat
-#graphkeys: runtime - B
+#perfkeys:  Time in seconds =, Time in seconds =
+#files: ep.B.dat, ep.B.maxLogical.dat
+#graphkeys: runtime - B, MAX_LOGICAL - B
 #graphtitle: NAS Parallel Benchmarks: EP timings - size B
 
-#perfkeys:  Time in seconds =
-#files: ep.C.dat
-#graphkeys: runtime - C
+#perfkeys:  Time in seconds =, Time in seconds =
+#files: ep.C.dat, ep.C.maxLogical.dat
+#graphkeys: runtime - C, MAX_LOGICAL - C
 #graphtitle: NAS Parallel Benchmarks: EP timings - size C
 
-#perfkeys:  Time in seconds =
-#files: ep.D.dat
-#graphkeys: runtime - D
+#perfkeys:  Time in seconds =, Time in seconds =
+#files: ep.D.dat, ep.D.maxLogical.dat
+#graphkeys: runtime - D, MAX_LOGICAL - D
 #graphtitle: NAS Parallel Benchmarks: EP timings - size D

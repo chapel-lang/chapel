@@ -1,1 +1,1 @@
-test_int8_range_big_stride.chpl:1: error: the step argument of the 'by' operator is too large
+test_int8_range_big_stride.chpl:1: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)

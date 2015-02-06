@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,11 +19,13 @@
 
 
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
 #include "qbuffer.h"
+
+#include "error.h"
 
 #include "sys.h"
 
@@ -70,7 +72,10 @@ void qbytes_free_munmap(qbytes_t* b) {
   */
 
   err = sys_munmap(b->data, b->len);
-  assert( !err );
+
+  if (err) {
+    chpl_internal_error("sys_munmap() failed");
+  }
 
   _qbytes_free_qbytes(b);
 }

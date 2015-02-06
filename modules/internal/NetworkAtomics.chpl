@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,6 @@
  */
 
 pragma "atomic module"
-pragma "no use ChapelStandard"
 module NetworkAtomics {
   const LINENO = -1:int(32); // it'd be nice if we had something like __LINENO__
 
