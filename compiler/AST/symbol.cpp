@@ -2254,23 +2254,6 @@ void FnSymbol::accept(AstVisitor* visitor) {
   }
 }
 
-// This function is a method on an aggregate type
-bool FnSymbol::isMethod() const {
-  return hasFlag(FLAG_METHOD);
-}
-
-// This function is a method on an aggregate type, defined within its
-// declaration
-bool FnSymbol::isPrimaryMethod() const {
-  return hasFlag(FLAG_METHOD_PRIMARY);
-}
-
-// This function is a method on an aggregate type, defined outside its
-// definition
-bool FnSymbol::isSecondaryMethod() const {
-  return isMethod() && !isPrimaryMethod();
-}
-
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *

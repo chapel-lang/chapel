@@ -338,7 +338,7 @@ void printTabs(std::ofstream *file) {
 // functions.
 bool devOnlyFunction(FnSymbol *fn) {
   return (fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) 
-          || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->isPrimaryMethod());
+          || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->hasFlag(FLAG_METHOD_PRIMARY));
 }
 
 // Returns true if the provide module is one of the internal or standard 
