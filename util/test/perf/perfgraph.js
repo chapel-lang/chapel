@@ -52,17 +52,16 @@ var blockRedraw = false;
 
 // hack to use the previous compiler performance keys to set
 // colors/dashed lines for various configurations.
-if (descriptions[0]) {
-  var primaryString = descriptions[0];
+if (configurations[0]) {
+  var primaryString = configurations[0];
 } else {
   var primaryString = ' (all)';
 }
-if (descriptions[1]) {
-  var secondaryString =  descriptions[1];
+if (configurations[1]) {
+  var secondaryString =  configurations[1];
 } else {
   var secondaryString = ' (examples)';
 }
-
 // The main elements that all the graphs and graph legends will be put in
 var parent = document.getElementById('graphdisplay');
 var legend = document.getElementById('legenddisplay');
@@ -205,24 +204,8 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     setupAnnToggle(g, graphInfo, annToggle);
     g.isReady = true;
 
-
-    // We let dygraphs handle reading the data and parsing it into an array. We
-    // then sort that data on the first draw. This is a little weird because
-    // we're creating a graph, and while it's rendering we sort it but having
-    // to parse the data ourselves would be a real pain. Since the series
-    // colors don't get sorted with the data we save the original and then
-    // reset so that multiple series that are next to each other don't have the
-    // same color. After sorting is done, we may expand the graph.
-
-    var expandNum = graphInfo.expand;
-
-    // if we're expanding a graph, or we have multiple configs, set new colors
-    if ((expandNum !== undefined && expandNum !== 0) || descriptions.length > 0) {
+    if (configurations.length > 0) {
       setColors(g, g.getColors().slice(), true);
-      g.setAnnotations(g.annotations());
-    }
-
-    if (descriptions.length > 0) {
       setConfigurationVisibility(g, true);
       g.setAnnotations(g.annotations());
     }
@@ -246,18 +229,15 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
 function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
 
   var expandAllSentinel = -1;
-  var expandNum = graphInfo.expand;
+  var expand = graphInfo.defaultexpand;
   var labels = graphLabels;
 
   // if we don't need to expand just return
-  if (!expandNum || expandNum === 0) {
+  if (!expand) {
     return;
   }
 
-  // check for expand all sentinel, or expansion too high
-  if (expandNum === expandAllSentinel || expandNum >= labels.length) {
-    expandNum = labels.length - 1;
-  }
+  var expandNum = labels.length - 1;
 
   // modify the current graph's visibility if only some of the series are to
   // be expanded
@@ -301,7 +281,7 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
       newInfo[info] = graphInfo[info];
     }
     newInfo.title = newInfo.title + ": " + labels[j].replace(' (all)', '');
-    newInfo.expand = 0;
+    newInfo.defaultexpand = false;
 
     var exampleLabel = labels[j].replace(primaryString, secondaryString);
     var exampleIndex = labels.indexOf(exampleLabel);
@@ -547,27 +527,34 @@ function perfGraphInit() {
 
   // generate the multi configuration menu and toggle options
   var toggleConf = document.getElementById('toggleConf');
-  if (descriptions.length > 0) {
+  if (configurations.length > 0) {
     var queryStringConf = getOption(OptionsEnum.CONFIGURATIONS)
       if (queryStringConf) {
         var setConfigurations = queryStringConf.split(',');
       } else {
-        var setConfigurations = [descriptions[0].trim()];
+        var setConfigurations = configurationsVis;
+        for (var j = 0; j < setConfigurations.length; j++) {
+          setConfigurations[j] = normalizeForURL(setConfigurations[j]);
+        }
+
       }
 
-    for (var i = 0; i < descriptions.length; i++) {
+    for (var i = 0; i < configurations.length; i++) {
       var elem = document.createElement('div');
-      var description = descriptions[i];
+      var configuration = configurations[i];
       elem.className = 'graph';
-      elem.innerHTML = '<input id="hide' + i + '"type="checkbox">' + description;
+      elem.innerHTML = '<input id="hide' + i + '"type="checkbox">' + configuration;
       toggleConf.appendChild(elem);
       var checkBox = document.getElementById('hide' + i);
-      if (setConfigurations.indexOf(description.trim()) >= 0) {
+      if (setConfigurations.indexOf(normalizeForURL(configuration)) >= 0) {
         checkBox.checked = true;
       } else {
         checkBox.checked = false;
       }
       checkBox.onchange = function() {
+        var configsURL = normalizeForURL(getCheckedConfigurations().join());
+        setQueryStringFromOption(OptionsEnum.CONFIGURATIONS, configsURL);
+
         for (var i = 0; i < gs.length; i++) {
           setConfigurationVisibility(gs[i], false);
         }
@@ -665,32 +652,37 @@ function setupGraphSelectionPane() {
 // Sets which configurations should be visible when there are multiple
 // configurations available. e.g. --local vs --no-local
 function setConfigurationVisibility(graph, blockRedraw) {
-  var checked = {};
-  var configs = ''
-    for (var i = 0; i<descriptions.length; i++) {
-      var checkBox = document.getElementById('hide' + i);
-      if (checkBox.checked) {
-        configs += i + ',';
-      }
-      checked[descriptions[i]] = checkBox.checked;
+  var labels = graph.getLabels().slice();
+  var disabledConfs = getCheckedConfigurations(false);
+  var visibility = getVisibilityForConfigurations(labels, disabledConfs);
+  graph.updateOptions({visibility: visibility}, blockRedraw);
+}
+
+function getCheckedConfigurations(checked_status) {
+  checked_status = defaultFor(checked_status, true);
+
+  var configs = [];
+  for (var i = 0; i < configurations.length; i++) {
+    var checkBox = document.getElementById('hide' + i);
+    if (checkBox.checked === checked_status) {
+      configs.push(configurations[i]);
     }
-  if (configs.removeTrailingChar() === descriptions[0].trim()) {
-    configs = '';
   }
-  setQueryStringFromOption(OptionsEnum.CONFIGURATIONS, configs.removeTrailingChar());
-  var labels = graph.getLabels();
-  var visibility = graph.visibility();
-  for (var j = 1; j < labels.length; j++) {
-    var prop = graph.getPropertiesForSeries(labels[j]);
-    for (var check in checked) {
-      if (checked.hasOwnProperty(check)) {
-        if (labels[j].endsWith(check)) {
-          visibility[j-1] = checked[check];
-        }
+  return configs;
+}
+
+function getVisibilityForConfigurations(graphLabels, disabledConfigurations) {
+  var graphSeries = graphLabels.slice(1);
+  var visibility = [];
+  for (var i = 0; i < graphSeries.length; i++) {
+    visibility[i] = true;
+    for (var j = 0; j < disabledConfigurations.length; j++) {
+      if (graphSeries[i].endsWith(disabledConfigurations[j])) {
+        visibility[i] = false;
       }
     }
-    graph.updateOptions({visibility: visibility}, blockRedraw);
   }
+  return visibility;
 }
 
 
@@ -1150,11 +1142,11 @@ function defaultFor(arg, defaultVal) {
 }
 
 
-// removes all non-alphanumeric characters from a string and converts to
+// removes all characters that are not alphanumeric or commas and convert to
 // lowercase
 function normalizeForURL(str) {
   // pull regex out of replace so it gets precompiled
-  var nonAlphaNumRegex = /[^a-z0-9]/g;
+  var unwantedURLCharsRegex = /[^a-z0-9,]/g;
   // convert to lower case first so regex doesn't have to be case insensitive
-  return str.toLowerCase().replace(nonAlphaNumRegex, '');
+  return str.toLowerCase().replace(unwantedURLCharsRegex, '');
 }
