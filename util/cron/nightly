@@ -301,7 +301,9 @@ $memleaksdir = $ENV{'CHPL_NIGHTLY_MEMLEAKS_DIR'};
 
 if ($memleaks ne "") {
     # Default to known file share.
-    if ($memleaksdir eq "") {
+    if ($debug == 1 && $memleaksdir eq "") {
+        $memleaksdir = $logdir;
+    } elsif ($memleaksdir eq "") {
         $memleaksdir = "/data/sea/chapel/NightlyMemLeaks";
     }
 
