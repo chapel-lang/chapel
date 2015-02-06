@@ -297,6 +297,25 @@ if (! (-r $logdir and -w $logdir and -d $logdir)) {
     print "Error: CHPL_NIGHTLY_LOGDIR ($logdir) not accessible\n";
 }
 
+$memleaksdir = $ENV{'CHPL_NIGHTLY_MEMLEAKS_DIR'};
+
+if ($memleaks ne "") {
+    # Default to known file share.
+    if ($memleaksdir eq "") {
+        $memleaksdir = "/data/sea/chapel/NightlyMemLeaks";
+    }
+
+    unless(-d $memleaksdir) {
+        mkpath $memleaksdir;
+    }
+
+    # Check that memleaks dir is accessible.
+    if (! (-r $memleaksdir and -w $memleaksdir and -d $memleaksdir)) {
+        print "Error: CHPL_NIGHTLY_MEMLEAKS_DIR ($memleaksdir) not accessible\n";
+        exit 1;
+    }
+}
+
 
 $testbindirname = dirname($0);
 $utildir = "$testbindirname/../../util";
@@ -832,7 +851,7 @@ if ($runtests == 0) {
 # analyze memory leaks tests
 #
     if (!($memleaks eq "")) {
-        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog -show_strings $basetmpdir/$memleaks > $logdir/$memleaks");
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog -show_strings $basetmpdir/$memleaks > $memleaksdir/$memleaks");
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data
@@ -840,9 +859,9 @@ if ($runtests == 0) {
         # This is not ideal (we may be a day behind depending on when
         #  the tests finish), but it good enough for now.
         if ($examples == 0) {
-            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaksfull.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaksfull $logdir");
+            mysystem("cd $testdir && cp $memleaksdir/$memleaks ./memleaksfull.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaksfull $memleaksdir");
         } else {
-            mysystem("cd $testdir && cp $logdir/$memleaks ./memleaks.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaks $logdir");
+            mysystem("cd $testdir && cp $memleaksdir/$memleaks ./memleaks.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaks $memleaksdir");
         }
     }
 }
