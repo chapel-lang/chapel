@@ -379,6 +379,9 @@ class FnSymbol : public Symbol {
 
   bool            tag_generic();
   bool            isResolved()                                 const;
+  bool            isMethod()                                   const;
+  bool            isPrimaryMethod()                            const;
+  bool            isSecondaryMethod()                          const;
 };
 
 /******************************** | *********************************

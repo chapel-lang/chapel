@@ -264,7 +264,10 @@ void printClass(std::ofstream *file, AggregateType *cl) {
         compareNames);
     
     forv_Vec(FnSymbol, fn, cl->methods){
-      printFunction(file, fn, true);
+      // We only want to print methods defined within the class under the
+      // class header
+      if (fn->isPrimaryMethod())
+        printFunction(file, fn, true);
     }
     
     Vec<AggregateType*> list;
@@ -334,7 +337,7 @@ void printTabs(std::ofstream *file) {
 // functions.
 bool devOnlyFunction(FnSymbol *fn) {
   return (fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) 
-          || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->hasFlag(FLAG_METHOD));
+          || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->isPrimaryMethod());
 }
 
 // Returns true if the provide module is one of the internal or standard 
@@ -419,7 +422,10 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   
     forv_Vec(FnSymbol, fn, fns) {
       // TODO: Add flag to compiler to turn on doc dev only output
-      if (!devOnlyFunction(fn)) {
+
+      // We want methods on classes that are defined at the module level to be
+      // printed at the module level
+      if (!devOnlyFunction(fn) || fn->isSecondaryMethod()) {
         printFunction(file, fn, false);
       }
     }
@@ -477,7 +483,16 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     } else {
       *file << "proc ";
     }
-
+    // if fn is not primary method
+    //   get type name from 'this' argument
+    //   output it + '.' before fn->name
+    if (fn->isSecondaryMethod()) {
+      if (fn->numFormals() > 1) {
+        ArgSymbol *myTypeHolder = fn->getFormal(2);
+        if (myTypeHolder->hasFlag(FLAG_ARG_THIS))
+          *file << myTypeHolder->type->symbol->name << ".";
+      }
+    }
     *file << fn->name;
     if (!fn->hasFlag(FLAG_NO_PARENS))
       *file << "(";
