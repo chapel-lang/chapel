@@ -143,7 +143,6 @@ if ($no_clone == 0) {
     "third-party",
     "util/chplenv",
     "util/config",
-    "util/docs",
     "util/quickstart",
     "util/test"
 );
