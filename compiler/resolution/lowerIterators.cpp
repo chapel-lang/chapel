@@ -2012,7 +2012,12 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
+    AggregateType* fat = toAggregateType(field->type);
+    FnSymbol* autoCopy = autoCopyMap.get(field->type);
+    if (autoCopy &&
+        // For now, apply the autocopy only to non-class types.'
+        // See the note in reconstructIRAutoDestroy() below.
+        fat && fat->isRecord()) {
       Symbol* tmp1 = newTemp(field->name, field->type);
       Symbol* tmp2 = newTemp(autoCopy->retType);
       block->insertAtTail(new DefExpr(tmp1));
@@ -2040,6 +2045,13 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   for_fields(field, irt) {
     SET_LINENO(field);
     if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
+      // For now, ignore class types.  At present, only nude domain and array
+      // implementation types have autoCopy and autoDestroy functions defined
+      // for them, so this test captures only those cases.
+      AggregateType* fat = toAggregateType(field->type);
+      if (!fat || !fat->isRecord())
+        continue;
+
       Symbol* tmp = newTemp(field->name, field->type);
       block->insertAtTail(new DefExpr(tmp));
       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
