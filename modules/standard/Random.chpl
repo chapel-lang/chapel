@@ -148,8 +148,12 @@ record SeedGenerators {
 /*
   Fill an array of real(64), imag(64), or complex(128) elements with
   pseudorandom values in parallel using a new
-  :chpl:class:`RandomStream`.  The parallelization strategy is
-  determined by the array.
+  :chpl:class:`RandomStream` created for the lifetime of this routine.
+  The first `arr.size` values from the stream will be assigned to the
+  array's elements in row-major order for `real` and `imag` elements.
+  For complex elements, consecutive pairs of random numbers are
+  assigned to the real and imaginary components, respectively.  The
+  parallelization strategy is determined by the array.
 
   :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128).
   :type arr: [] T
@@ -159,7 +163,7 @@ record SeedGenerators {
 */
 
 proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime)
-  where (x.eltType == real || x.eltType == imag || x.eltType == complex) {
+  where (arr.eltType == real || arr.eltType == imag || arr.eltType == complex) {
   var randNums = new RandomStream(seed, parSafe=false);
   randNums.fillRandom(arr);
   delete randNums;
@@ -286,9 +290,9 @@ class RandomStream {
 
   pragma "no doc"
   proc fillRandom(arr: [], param parSafe = this.parSafe) {
-    if X.eltType != complex && X.eltType != real && X.eltType != imag then
+    if arr.eltType != complex && arr.eltType != real && arr.eltType != imag then
       compilerError("RandomStream.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
-    forall (x, r) in zip(X, iterate(X.domain, X.eltType, parSafe)) do
+    forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType, parSafe)) do
       x = r;
   }
 
