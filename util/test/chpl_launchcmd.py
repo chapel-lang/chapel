@@ -568,7 +568,10 @@ class AbstractJob(object):
 
         # Allow hostlist to be set in environment variable CHPL_LAUNCHCMD_HOSTLIST.
         if args.hostlist is None:
-            args.hostlist = os.environ.get('CHPL_LAUNCHCMD_HOSTLIST')
+            env_hostlist = os.environ.get('CHPL_LAUNCHCMD_HOSTLIST')
+            if not env_hostlist:
+                env_hostlist = None
+            args.hostlist = env_hostlist
 
         # It is bad form to use a two character argument with only a single
         # dash. Unfortunately, we support it. And unfortunately, python argparse
