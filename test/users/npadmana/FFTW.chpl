@@ -34,8 +34,6 @@ module FFTW {
 		extern proc fftw_plan_dft(rank : c_int, const ref n : c_int, in1 : _cxptr, out1 : _cxptr, sign : c_int, flags : c_uint) : fftw_plan;
 		// Make sure types are correct
 		param ndim : c_int = dims.size;
-		//var dims1 : ndim*c_int = dims;
-		//writeln(dims1); //?????
 		return fftw_plan_dft(ndim, dims(1), c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
 	}
 
@@ -49,8 +47,6 @@ module FFTW {
 		extern proc fftw_plan_dft_r2c(rank : c_int, const ref n : c_int,  in1 : _rptr,  out1 : _cxptr, flags : c_uint) : fftw_plan;
 		// Make sure types are correct
 		param ndim : c_int = dims.size;
-		//var dims1 : ndim*c_int = dims;
-		//writeln(dims1); //??????
 		return fftw_plan_dft_r2c(ndim,dims(1),c_ptrTo(in1) : c_ptr(c_double), c_ptrTo(out1) : _cxptr, flags);
 	}
 	proc plan_dft_c2r(dims, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
@@ -60,8 +56,6 @@ module FFTW {
 		extern proc fftw_plan_dft_c2r(rank : c_int, const ref n : c_int, in1 : _cxptr,  out1 : _rptr, flags : c_uint) : fftw_plan;
 		// Make sure types are correct
 		param ndim : c_int = dims.size;
-		//var dims1 : ndim*c_int = dims;
-		//writeln(dims1); //?????
 		return fftw_plan_dft_c2r(ndim, dims(1),c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : c_ptr(c_double), flags);
 	}
 
