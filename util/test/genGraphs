@@ -46,9 +46,13 @@ parser.add_option('-u', '--numericX', dest='numericX',
                   help='expect numbers (e.g. revisions), not dates,' +
                        ' for the X axis',
                   action='store_true', default=False)
-parser.add_option('-m', '--multiple-descriptions', dest='multiDesc',
-                  help='look for multiple versions of the keys',
-                  default=[], action='append')
+parser.add_option('-m', '--multiple-configurations', dest='multiConf',
+                  help='comma separated list of configurations. ":v" after a '
+                       'configuration makes it visible by default. e.g '
+                       '"local:v,--no-local:v" will create graphs with series '
+                       'duplicated for local and --no-local both of which will '
+                       'be visible by default on the web page.',
+                  default='')
 
 if annotate:
     parser.add_option('-j', '--annotate', dest='annotation_file',
@@ -57,7 +61,8 @@ if annotate:
 debug = False
 verbose = False
 numericX = False
-multiDesc = []
+multiConf = []
+defaultMultiConf = []
 
 def try_parse_float(value):
     try:
@@ -103,12 +108,17 @@ def csv_to_json(csvFile, ginfo):
         # the data for a series on the current date is stored as ['val'],
         # ['low', 'med', 'high'], or ['']. Need to parse as floats, and turn
         # [''] (no data for this series on this date) into None so json.dumps
-        # turns it into null.
+        # turns it into null. If we're not using custom bars (displayrange is
+        # false) then our val will come in as ['val'] but we just want to store
+        # the single value, not the single value in an array
         for seriesArr in dataForCurDate:
             if len(seriesArr) == 1 and seriesArr[0] == '':
                 curLine.append(None)
             else:
-                curLine.append([try_parse_float(x) for x in seriesArr])
+                if (ginfo.displayrange):
+                    curLine.append([try_parse_float(x) for x in seriesArr])
+                else:
+                    curLine.append(try_parse_float(seriesArr[0]))
         lines.append(curLine)
 
     # if there was no data in the csvFile, create an empty entry for todays
@@ -213,6 +223,40 @@ def sort_csv(csvFile):
 
     data_to_csv(data, csvFile)
 
+
+# Strips all but the first 'numseries' series from a csv file. Useful for
+# things like compiler performance testing where you want to display the top 10
+# passes. If multiple configurations are being used it grabs the series from
+# the default configuration and then finds the other configurations for those
+# series.
+def strip_series(csvFile, numseries):
+    data = parse_csv(csvFile)
+    labels = [a[0] for a in data[0]]
+    newData = []
+    data = zip(*data)
+    numFound = 0
+    newData.append(data[0])
+    if multiConf:
+        defaultConf = multiConf[0]
+        for i in range(1, len(labels)):
+            if labels[i].endswith('(' + defaultConf + ')') and numFound < numseries:
+                numFound+=1
+                newData.append(data[i])
+                for conf in multiConf[1:]:
+                    confLabel = labels[i].replace('('+defaultConf+')','('+conf+')')
+                    newData.append(data[labels.index(confLabel)])
+    else:
+        for i in range(1, numseries+1):
+            newData.append(data[i])
+
+    # untranspose the data
+    data = zip(*newData)
+
+    data_to_csv(data, csvFile)
+
+
+
+
 ############
 
 # Global info about generating graphs
@@ -279,7 +323,8 @@ class GraphStuff:
         runDate = time.strftime('%Y-%m-%d', time.localtime())
         self.gfile.write('var runDate= "%s";\n'%(runDate))
         self.gfile.write('var numericX = %s;\n'%(str(numericX).lower()))
-        self.gfile.write('var descriptions = [%s];\n' %(', '.join([ '" ('+desc+')"' for desc in multiDesc])))
+        self.gfile.write('var configurations = [%s];\n' %(', '.join([ '" ('+conf+')"' for conf in multiConf])))
+        self.gfile.write('var configurationsVis = [%s];\n' %(', '.join([ '"('+conf+')"' for conf in defaultMultiConf])))
         self.gfile.write('var allGraphs = [\n')
         self.firstGraph = True
         return 0
@@ -317,16 +362,17 @@ class GraphStuff:
         # find the series to attach annotations to. If there were multiple
         # configurations, attach to a series in the default (first listed)
         # configuration. Else attach to first series
-        if multiDesc:
-            defaultDesc = multiDesc[0]
+        series = ''
+        if multiConf:
+            defaultConf = multiConf[0]
             for graphkey in ginfo.graphkeys:
-                if graphkey.endswith('(' + defaultDesc + ')'):
+                if graphkey.endswith('(' + defaultConf + ')'):
                     series = graphkey
         else:
             series = ginfo.graphkeys[0]
 
         # generate the annotations for this graph
-        if annotate and not numericX:
+        if series and annotate and not numericX:
             ginfo.annotations = annotate.get(
                 self.all_annotations, ginfo.name, series,
                 parse_date(ginfo.startdate, '%Y-%m-%d'),
@@ -348,7 +394,7 @@ class GraphStuff:
         self.gfile.write('   "startdate" : "%s",\n'%(ginfo.startdate))
         self.gfile.write('   "enddate" : "%s",\n'%(ginfo.enddate))
         self.gfile.write('   "displayrange" : %s,\n'%(str(ginfo.displayrange).lower()))
-        self.gfile.write('   "expand" : %d,\n'%(ginfo.expand))
+        self.gfile.write('   "defaultexpand" : %s,\n'%(str(ginfo.expand).lower()))
         self.gfile.write('   "annotations" : [')
         if ginfo.annotations:
           self.gfile.write('\n      ')
@@ -426,8 +472,10 @@ class GraphStuff:
             # multiple graphs where the first one is all the series combined and
             # the subsequent ones contain each series individually. -1 means 
             # expand all. Other numbers indicate the number of series to expand 
-            elif key == 'expand':
-                graphs[currgraph].expand = int(rest.strip())
+            elif key == 'defaultexpand':
+                graphs[currgraph].expand = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
+            elif key == 'numseries':
+                graphs[currgraph].numseries = int(rest.strip())
             elif key == 'sort':
                 graphs[currgraph].sort = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
 
@@ -446,7 +494,7 @@ class GraphClass:
     gid = 1
     def __init__(self, _name, _graphNum, _suites=[], _startdate=None,
                  _enddate=None, _reduce='avg', _displayrange=True, 
-                 _expand=0, _sort=True):
+                 _expand=False, _sort=True):
         self.id = GraphClass.gid
         GraphClass.gid += 1
         self.name = _name.strip()
@@ -465,6 +513,7 @@ class GraphClass:
         self.displayrange = _displayrange
         self._reduce = _reduce
         self.expand = _expand
+        self.numseries = -1
         self.sort = _sort
         self.annotations = []
 
@@ -674,6 +723,9 @@ class GraphClass:
         if self.sort:
             sort_csv(fname)
 
+        if self.numseries > 0:
+            strip_series(fname, self.numseries)
+
         csv_to_json(fname, self)
 
         if startdate == None:
@@ -736,7 +788,9 @@ class GraphClass:
             else:
                 self.datfilenames[i] = graphInfo.perfdir+'/'+fn
 
-        if multiDesc:
+        # this is the 'magic' for multiple configurations. It takes the info
+        # for a graph and creates copies for each configuration.
+        if multiConf:
             # copy datfiles, and keys to temp copies, and clear originals
             tempdatfilenames = self.datfilenames[0:]
             tempperfkeys = self.perfkeys[0:]
@@ -745,17 +799,54 @@ class GraphClass:
             self.perfkeys = []
             self.graphkeys = []
 
-            graphDescs = [ ' ('+desc+')' for desc in multiDesc if desc ]
-            for desc, graphdesc in zip(multiDesc, graphDescs):
-                if desc == 'default':
-                    desc = ''
-                for dat, perf, graph in zip(tempdatfilenames, tempperfkeys, tempgraphkeys):
+            graphConfs = [ ' ('+conf+')' for conf in multiConf if conf ]
+            for dat, perf, graph in zip(tempdatfilenames, tempperfkeys, tempgraphkeys):
+                for conf, graphconf in zip(multiConf, graphConfs):
+                    if conf == 'default':
+                        conf = ''
+
                     datpath = os.path.dirname(dat)
                     datfile = os.path.basename(dat)
-                    self.datfilenames.append(os.path.join(datpath, desc, datfile))
-                    self.perfkeys.append(perf)
-                    # append description
-                    self.graphkeys.append(graph + graphdesc)
+                    fullDatFile = os.path.join(datpath, conf, datfile)
+
+                    # if we found the files for the current conf, add the
+                    # datfile, perf key, and graph key (with conf appended)
+                    if os.path.exists(fullDatFile):
+                        self.datfilenames.append(fullDatFile)
+                        self.perfkeys.append(perf)
+                        self.graphkeys.append(graph + graphconf)
+                    # if the .dat file wasn't found, then it's possible the
+                    # test didn't run for this configuration. Try to find the
+                    # .dat file for one of the configurations and copy the
+                    # series (first line.) Dygraphs expects there to be a
+                    # series for each configuration even if there's no data.
+                    else:
+                        for otherConf in multiConf:
+                            if otherConf == 'default':
+                                otherConf = ''
+                            otherFullDatFile = os.path.join(datpath, otherConf, datfile)
+                            if os.path.exists(otherFullDatFile):
+                                firstline = ''
+                                with open(otherFullDatFile, 'r') as f:
+                                    firstline = f.readline()
+                                if firstline:
+                                    with open(fullDatFile, 'w') as f:
+                                        f.write(firstline)
+                    # if we still didn't find the file, it might be a test that
+                    # doesn't really have multi-configurations (misc stats for
+                    # compiler perf.) If there's a file not in a conf directory
+                    # use it and don't append the conf to the graph key
+                    if not os.path.exists(fullDatFile) and not 'default' in multiConf:
+                        myDatFile = os.path.join(datpath, datfile)
+                        if os.path.exists(myDatFile):
+                            self.datfilenames.append(myDatFile)
+                            self.perfkeys.append(perf)
+                            self.graphkeys.append(graph)
+                            break;
+                    # it's possible we still didn't fine the file, but if
+                    # that's the case the test wasn't run for any configuration
+                    # and we won't generate data for any series which won't
+                    # bother dygraphs
 
             nperfkeys = len(self.perfkeys)
 
@@ -799,7 +890,6 @@ def main():
     verbose = options.verbose
     global numericX
     numericX = options.numericX
-    global multiDesc
 
     if options.perfdir != None:
         perfdir = options.perfdir
@@ -824,10 +914,25 @@ def main():
        else:
            enddate = time.localtime()
 
-    if options.multiDesc:
-        multiDesc = options.multiDesc
+    global multiConf
+    global defaultMultiConf
+    # process multiConf options. Format is 'conf1[:v][,conf2[:v]]*'
+    # e.g. 'default:v,no-local:v', which will generate two configurations that
+    # are visible by default. If 'v' isn't specified the series will not be
+    # visible by default. If 'v' isn't specified for any series, the first conf
+    # will be visible by default
+    if options.multiConf:
+        tempConf = options.multiConf.split(',')
+        for confAndDefaultVis in tempConf:
+            temp = confAndDefaultVis.split(':')
+            conf = temp[0]
+            multiConf.append(conf)
+            if len(temp) > 1 and temp[1] == 'v':
+                defaultMultiConf.append(conf);
+        if len(defaultMultiConf) == 0:
+            defaultMultiConf.append(multiConf[0])
     else:
-        multiDesc = []
+        multiConf = []
 
     if annotate:
         if options.annotation_file != None:
