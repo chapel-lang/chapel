@@ -102,8 +102,8 @@ static int debug = 0;
 //  IN   -- The set of symbols that are owned at the beginning of the block
 //          (after forward flow analysis).
 //  OUT  -- The set of symbols that are owned at the end of the block (after
-//          forward flow analysis); the set of symbols that must not be owned
-//          at the end of the block (after backward flow analysis).
+//          forward flow analysis); the complement of the set of symbols that
+//           must not be owned at the end of the block (after backward flow).
 //
 // GEN[i] contains a true bit corresponding to each symbol that is constructed
 // in that block.  We expect that symbol is constructed only once, so if IN[i]
@@ -361,9 +361,11 @@ static bool isCreated(SymExpr* se)
 }
 
 
-// Returns true if the expression in which the given SymExpr appears makes it a
-// bitwise copy of some other symbol; false otherwise.
-static bool isBitwiseCopy(SymExpr* se,
+// Returns nonzero if the expression in which the given SymExpr appears makes it a
+// bitwise copy of some other symbol; zero otherwise.  If the parent expression
+// of the given se is a bitwise copy, the return value is the
+// index of the given se in the argument list of the move (1 or 2).
+static int bitwiseCopyArg(SymExpr* se,
                           SymbolIndexMap& symbolIndex)
 {
   // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
@@ -373,25 +375,29 @@ static bool isBitwiseCopy(SymExpr* se,
     if (call->isPrimitive(PRIM_MOVE) ||
         call->isPrimitive(PRIM_ASSIGN))
     {
-      // se must be the first argument.
-      if (call->get(1) == se)
-      {
-        // The second argument must also be a symexpr.
-        if (SymExpr* rhse = toSymExpr(call->get(2)))
-        {
-          // And it must contain a local symbol.
-          Symbol* rhs = rhse->var;
-          if (symbolIndex.find(rhs) == symbolIndex.end())
+      SymExpr* lhse = toSymExpr(call->get(1));
+      SymExpr* rhse = toSymExpr(call->get(2));
+
+      // To be a bitwise copy, the RHS expression must be a SymExpr.
+      if (! rhse)
+        return 0;
+      
+      // And it must contain a local symbol.
+      Symbol* rhs = rhse->var;
+      if (symbolIndex.find(rhs) == symbolIndex.end())
             // Not found, so skip this move.
             // The lhs will be considered unowned, which is correct because it
             // is just a bitwise copy of the value of the global.
-            return false;
-          return true;
-        }
-      }
+        return 0;
+
+      if (se == lhse)
+        return 1;
+      if (se == rhse)
+        return 2;
+      INT_FATAL(se, "SymExpr does not appear in its parent move expression");
     }
   }
-  return false;
+  return 0;
 }
 
 
@@ -602,8 +608,16 @@ static void populateAliases(SymExprVector& symExprs,
     if (symbolIndex.find(sym) == symbolIndex.end())
       continue;
 
+    // We treat the return value variable specially.  It cannot participate in
+    // alias cliques because it can be assigned more than once and that causes
+    // two unrelated cliques to be joined.
+    if (sym == toFnSymbol(se->parentSymbol)->getReturnSymbol())
+      continue;
+
     // Pass ownership to this symbol if it is the result of a bitwise copy.
-    if (isBitwiseCopy(se, symbolIndex))
+    if (bitwiseCopyArg(se, symbolIndex) == 1)
+      // It suffices to create the alias when the se is the left operand (1),
+      // though it probably does no harm to do this symmetrically.
       createAlias(se, aliases);
   }
 }
@@ -659,6 +673,9 @@ static Expr* getLastNonflowStatement(BasicBlock* bb)
     INT_ASSERT(bb->ins.size() == 1);
     bb = bb->ins.at(0);
   }
+  // Actually, this doesn't quite work, because the increment clause may depend
+  // on one or more of the values being deleted.  So we also have to ensure
+  // that they are not read in the increment clause before moving them.
 #endif
 
   size_t i = bb->exprs.size();
@@ -712,8 +729,6 @@ static void processCreator(SymExpr* se,
   // through to block 5.  After flow analysis (unless we treat the members of a
   // clique equivalently), each call_tmp will be destroyed within its
   // respective block, making ret unowned on exit -- an error.
-  // TODO: Compute aliases in a separate traversal, so it is obvious that
-  // aliases are aliases across the entire function.
   // TODO: I think we can represent all members of an alias set with one bit in
   // the flow sets -- either all are owned or none are.  This will save time
   // and space.
@@ -726,7 +741,7 @@ static void processCreator(SymExpr* se,
 }
 
 
-static void processBitwiseCopy(SymExpr* se, BitVec* gen,
+static void processBitwiseCopy(SymExpr* se, BitVec* gen, BitVec* kill,
                                const AliasVectorMap& aliases,
                                SymbolIndexMap& symbolIndex)
 {
@@ -738,30 +753,34 @@ static void processBitwiseCopy(SymExpr* se, BitVec* gen,
   Symbol* lsym = lhs->var;
   Symbol* rsym = rhs->var;
 
+  SymbolVector* laliasList = aliases.at(lsym);
+  SymbolVector* raliasList = aliases.at(rsym);
+
   // Copy ownership state from RHS.
   size_t rindex = symbolIndex[rsym];
-  if (!gen->get(rindex))
+  bool owned = gen->get(rindex);
+
+  // If the two alias lists are identical, then the two symbols are in the
+  // same alias clique.  Otherwise, ownership is being transferred out of one
+  // clique into the other.  When that happens, we clear the gen bit and set
+  // the kill bit for each member of the RHS clique.
+  if (laliasList != raliasList)
   {
-    if (fWarnOwnership)
-      USR_WARN(rsym, "Uninitialized symbol is copied here");
-    // This can be a problem because the way we track aliases assumes that the
-    // ownership state of every member of the alias clique is the same.
-    // If this assumption turns out to be untrue, then we have to track aliases
-    // statement by statement, which will be more expensive.
-    // This assumption would be violated if for example we have:
-    //  var a
-    //  var b
-    //  (move b a)
-    //  (move a _defaultOf(type_tmp))
-    // Now b is an alias of a (they way we currently track aliases), but the
-    // value of a is owned while the value of b is not.
-  }
-  else
-  {
-    SymbolVector* aliasList = aliases.at(lsym);
-    for_vector(Symbol, alias, *aliasList)
+    for_vector(Symbol, ralias, *raliasList)
     {
-      size_t index = symbolIndex[alias];
+      size_t index = symbolIndex[ralias];
+      gen->reset(index);
+      kill->set(index);
+    }
+  }
+
+  // Now set the gen bit for each member of the lhs clique, but only if the RHS
+  // was owned.
+  if (owned)
+  {
+    for_vector(Symbol, lalias, *laliasList)
+    {
+      size_t index = symbolIndex[lalias];
       gen->set(index);
     }
   }
@@ -806,8 +825,8 @@ static void computeTransitions(SymExprVector& symExprs,
     if (isCreated(se))
       processCreator(se, gen, aliases, symbolIndex);
 
-    if (isBitwiseCopy(se, symbolIndex))
-      processBitwiseCopy(se, gen, aliases, symbolIndex);
+    if (bitwiseCopyArg(se, symbolIndex) == 1)
+      processBitwiseCopy(se, gen, kill, aliases, symbolIndex);
 
     if (isConsumed(se))
       processConsumer(se, gen, kill, aliases, symbolIndex);
@@ -957,8 +976,8 @@ static void insertAutoCopy(SymExprVector& symExprs, BitVec* gen, BitVec* kill,
       processCreator(se, gen, aliases, symbolIndex);
 
     // Pass ownership to this symbol if it is the result of a bitwise copy.
-    if (isBitwiseCopy(se, symbolIndex))
-      processBitwiseCopy(se, gen, aliases, symbolIndex);
+    if (bitwiseCopyArg(se, symbolIndex) == 1)
+      processBitwiseCopy(se, gen, kill, aliases, symbolIndex);
 
     if (isConsumed(se))
     {
@@ -1198,6 +1217,8 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   // be no greater than OUT | KILL (that is, every symbol owned at the
   // beginning of the block (IN) must either appear in OUT or be killed in the
   // block.
+  // Also, kills are propagated backward, so that a variable owned on one path
+  // into a node is owned on all such paths.
   backwardFlowOwnership(*fn->basicBlocks, IN, OUT);
 
 #if DEBUG_AMM
