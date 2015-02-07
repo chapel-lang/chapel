@@ -1,4 +1,10 @@
+// The default case
 use FFTW;
+// The segfaulty case
+//use FFTWsegfault;
+// The odd fix 
+//use FFTWsegfaultfix;
+
 
 proc printcmp(x, y) {
 	var err = max reduce abs(x-y);
