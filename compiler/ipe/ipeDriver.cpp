@@ -21,8 +21,9 @@
 
 #include "ipeReplaceVariables.h"
 #include "ipeResolve.h"
-#include "ipeAssignLocations.h"
+#include "ipeCheckReturn.h"
 #include "ipeInlinePrimitives.h"
+#include "ipeAssignLocations.h"
 #include "ipeEvaluate.h"
 
 #include "AstDumpToNode.h"
@@ -42,8 +43,9 @@ static PassInfo sPassList[] =
 
   { "replaceVariables", ipeReplaceVariables },
   { "resolve",          ipeResolve          },
-  { "assignLocations",  ipeAssignLocations  },
   { "inlinePrimitives", ipeInlinePrimitives },
+  { "checkReturn",      ipeCheckReturn      },
+  { "assignLocations",  ipeAssignLocations  },
 
   { "evaluate",         ipeEvaluate         }
 };

@@ -85,7 +85,7 @@ const char* cleanFilename(const char* name) {
 }
 
 
-static const char* cleanFilename(BaseAST* ast) {
+const char* cleanFilename(BaseAST* ast) {
   const char* astFname = ast->fname();
   if (astFname)
     return cleanFilename(astFname);

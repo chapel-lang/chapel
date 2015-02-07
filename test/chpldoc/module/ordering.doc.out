@@ -2,5 +2,5 @@ Module: ordering
    config var first: string
       This config var should be printed first 
    proc second()
-       This proc should be printed after all config vars 
+      This proc should be printed after all config vars 
 

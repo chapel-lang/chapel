@@ -145,19 +145,23 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   Vec<BaseAST*> asts;
+
   collect_asts(fn, asts);
+
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
-      if (toVarSymbol(sym) || toArgSymbol(sym))
+
+      if (isLcnSymbol(sym)) {
         if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
           uses->put(sym, markUnspecified);
+      }
     }
   }
 }
 
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
-void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
+void markOuterVarsWithIntents(SymbolMap* uses, CallExpr* byrefVars) {
   if (!byrefVars) return;
   ArgSymbol* tiMarker = NULL;
   // the actuals alternate: tiMark arg, task-intent variable [, repeat]
@@ -185,27 +189,12 @@ void pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
 // That includes the implicit 'this' in the constructor - see
 // the commit message for r21602. So we exclude those from consideration.
 // While there, we prune other things for forall intents.
-void pruneThisArg(Symbol* parent, SymbolMap* uses, bool pruneMore) {
+void pruneThisArg(Symbol* parent, SymbolMap* uses) {
   form_Map(SymbolMapElem, e, *uses) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
-        if (sym->hasFlag(FLAG_ARG_THIS) ||
-            // If we do not prune MT, _toLeader(..., _mt...) does not get
-            // resolved. E.g. parallel/taskPar/figueroa/taskParallel.chpl
-            (pruneMore && (
-              sym->type == dtMethodToken ||
-              // Prune sync vars, which would be passed by reference anyway.
-              // TODO: We shouldn't need to do this. Currently we need it
-              // because sync variables do not get tupled/detupled properly
-              // when threading through the leader iterator for forall intents.
-              // See e.g. test/distributions/dm/s7.chpl
-              isSyncType(sym->type)      ||
-              // ... and some other things while we are at it. Less AST.
-              isAtomicType(sym->type)    ||
-              sym->type->symbol->hasFlag(FLAG_ARRAY))))
-        {
+        if (sym->hasFlag(FLAG_ARG_THIS))
           e->value = markPruned;
-        }
       }
   }
 }
@@ -488,8 +477,8 @@ void createTaskFunctions(void) {
           SymbolMap* uses = new SymbolMap();
           findOuterVars(fn, uses);
 
-          pruneOuterVars(uses, block->byrefVars);
-          pruneThisArg(call->parentSymbol, uses, false);
+          markOuterVarsWithIntents(uses, block->byrefVars);
+          pruneThisArg(call->parentSymbol, uses);
           block->byrefVars->remove();
 
           addVarsToActuals(call, uses);

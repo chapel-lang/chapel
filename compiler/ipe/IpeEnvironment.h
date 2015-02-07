@@ -45,6 +45,8 @@ public:
 
                     ~IpeEnvironment();
 
+  void               bind(IpeSymbol* variable);
+
   IpeValue           lookup(IpeSymbol* variable)                      const;
   void               assign(IpeSymbol* variable, IpeValue value);
 

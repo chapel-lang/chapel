@@ -34,17 +34,16 @@
 static void  resolve(ModuleSymbol*      module);
 
 static Expr* resolve(Expr*              expr,   const ScopeBase* scope);
-static Expr* resolve(FnSymbol*          fn,     const ScopeBase* scope);
-static Expr* resolve(BlockStmt*         expr,   const ScopeBase* scope);
 
+static Expr* resolve(FnSymbol*          fn,     const ScopeBase* scope);
+
+static Expr* resolve(BlockStmt*         expr,   const ScopeBase* scope);
 static Expr* resolve(CondStmt*          expr,   const ScopeBase* scope);
 static Expr* resolve(WhileDoStmt*       expr,   const ScopeBase* scope);
 
 static Expr* resolve(DefExpr*           expr,   const ScopeBase* scope);
-
 static Expr* resolve(SymExpr*           expr,   const ScopeBase* scope);
 static Expr* resolve(UnresolvedSymExpr* expr,   const ScopeBase* scope);
-
 static Expr* resolve(CallExpr*          expr,   const ScopeBase* scope);
 
 static Type* typeForExpr(Expr* expr);
@@ -52,6 +51,9 @@ static Type* typeForExpr(Expr* expr);
 static Expr* selectFunc(Expr*               funName,
                         std::vector<Type*>& actualTypes,
                         const ScopeBase*    scope);
+
+static void resolveFuncFormals(FnSymbol*        fn,
+                               const ScopeBase* scope);
 
 /************************************ | *************************************
 *                                                                           *
@@ -86,16 +88,14 @@ void ipeResolve()
 *                                                                           *
 ************************************* | ************************************/
 
-static Expr* resolve(Expr* expr, const ScopeBase* scope);
-
 static void resolve(ModuleSymbol* module)
 {
   ScopeModule* scope = new ScopeModule(module);
 
   for_alist(stmt, module->block->body)
-  {
     resolve(stmt, scope);
-  }
+
+  delete scope;
 }
 
 /************************************ | *************************************
@@ -155,31 +155,61 @@ static Expr* resolve(FnSymbol* fn, const ScopeBase* parent)
 {
   ScopeFunction* scope = new ScopeFunction(fn, parent);
 
+  resolveFuncFormals(fn, scope);
+
   if (fn->body)
     resolve(fn->body,        scope);
 
   if (fn->retExprType)
     resolve(fn->retExprType, scope);
 
+  delete scope;
+
   return 0;
 }
 
 static Expr* resolve(BlockStmt* blockStmt, const ScopeBase* parent)
 {
+  ScopeBase*       frame =   NULL;
   const ScopeBase* scope = parent;
 
   if ((blockStmt->blockTag & BLOCK_SCOPELESS) == 0)
-    scope = new ScopeBlock(blockStmt, parent);
+  {
+    frame = new ScopeBlock(blockStmt, parent);
+    scope = frame;
+  }
 
   for_alist(stmt, blockStmt->body)
   {
     Expr* resolvedExpr = resolve(stmt, scope);
 
-    INT_ASSERT(resolvedExpr);
+    if (resolvedExpr == 0)
+    {
+      AstDumpToNode logger(stdout, 3);
+
+      printf("\n\n\n\n");
+      printf("\n\n\n\n");
+      printf("Internal error.  Failed to resolve\n");
+
+      printf("   ");
+      stmt->accept(&logger);
+      printf("\n\n");
+
+      printf("in\n\n");
+
+      printf("   ");
+      blockStmt->accept(&logger);
+      printf("\n\n");
+
+      INT_ASSERT(false);
+    }
 
     if (resolvedExpr != stmt)
       stmt->replace(resolvedExpr);
   }
+
+  if (frame != NULL)
+    delete frame;
 
   return blockStmt;
 }
@@ -216,6 +246,12 @@ static Expr* resolve(DefExpr* defExpr, const ScopeBase* scope)
 {
   Type* typeType = 0;
   Type* initType = 0;
+
+  if (defExpr->sym      != 0)
+  {
+    if (FnSymbol* fnSymbol = toFnSymbol(defExpr->sym))
+      resolve(fnSymbol, scope);
+  }
 
   if (defExpr->exprType != 0)
   {
@@ -277,7 +313,7 @@ static Expr* resolve(DefExpr* defExpr, const ScopeBase* scope)
   if (defExpr->exprType != 0)
     defExpr->exprType->remove();
 
-  return 0;
+  return defExpr;
 }
 
 static Expr* resolve(SymExpr* expr, const ScopeBase* scope)
@@ -370,13 +406,13 @@ static Expr* resolve(CallExpr* expr, const ScopeBase* scope)
   }
 
   // Select the function
-  if (expr->baseExpr)
+  if (UnresolvedSymExpr* baseExpr = toUnresolvedSymExpr(expr->baseExpr))
   {
-    Expr*     funcRef = selectFunc(expr->baseExpr, actualTypes, scope);
+    Expr*     funcRef = selectFunc(baseExpr, actualTypes, scope);
     FnSymbol* func    = 0;
 
     INT_ASSERT(funcRef);
-    expr->baseExpr->replace(funcRef);
+    baseExpr->replace(funcRef);
 
     if (SymExpr* symExpr = toSymExpr(funcRef))
       func = toFnSymbol(symExpr->var);
@@ -463,8 +499,6 @@ static Type* typeForExpr(Expr* expr)
 *                                                                           *
 ************************************* | ************************************/
 
-static void resolveFuncFormals(FnSymbol*  fn,     const ScopeBase* scope);
-
 static void resolveFormalType (IpeSymbol* formal, const ScopeBase* scope);
 static void resolveFormalType (ArgSymbol* formal, const ScopeBase* scope);
 
@@ -523,9 +557,10 @@ static Expr* selectFunc(Expr*               funName,
 
   else
   {
-    AstDumpToNode logger(stdout);
+    AstDumpToNode logger(stdout, 3);
 
     printf("selectFunc   Unhandled\n");
+    printf("   ");
     funName->accept(&logger);
     printf("\n\n\n");
   }

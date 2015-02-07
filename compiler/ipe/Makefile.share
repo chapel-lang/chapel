@@ -19,8 +19,9 @@ IPE_SRCS =                           \
            ipeDriver.cpp             \
            ipeReplaceVariables.cpp   \
            ipeResolve.cpp            \
-           ipeAssignLocations.cpp    \
+           ipeCheckReturn.cpp        \
            ipeInlinePrimitives.cpp   \
+           ipeAssignLocations.cpp    \
            ipeEvaluate.cpp           \
                                      \
            IpeEnvironment.cpp        \

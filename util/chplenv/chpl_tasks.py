@@ -11,7 +11,9 @@ def get():
         arch_val = chpl_arch.get('target', get_lcd=True)
         platform_val = chpl_platform.get()
         compiler_val = chpl_compiler.get('target')
-        if (arch_val == 'knc' or platform_val.startswith('cygwin') or
+        if (arch_val == 'knc' or
+                platform_val.startswith('cygwin') or
+                platform_val.startswith('netbsd') or
                 compiler_val == 'cray-prgenv-cray'):
             tasks_val = 'fifo'
         else:

@@ -20,7 +20,7 @@
 #if defined __CYGWIN__
 #include <windows.h>
 #endif
-#if defined __APPLE__
+#if defined(__APPLE__) || defined(__NetBSD__)
 #include <sys/sysctl.h>
 #endif
 #if defined _AIX
@@ -124,7 +124,7 @@ size_t chpl_bytesAvailOnThisLocale(void) {
 }
 
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__NetBSD__)
 //
 // Return information about the processors on the system.
 //
@@ -210,7 +210,7 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
   if (numCpus == 0)
     numCpus = chpl_getNumLogicalCpus(true);
   return numCpus;
-#elif defined __linux__
+#elif defined(__linux__) || defined(__NetBSD__)
   //
   // Linux
   //
@@ -223,11 +223,13 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
-#ifdef __MIC__
+#if defined __MIC__
       //
       // On Intel MIC, we seem (for now at least) not to have kernel
       // scheduling affinity information.
       //
+      numCpus = numPhysCpus;
+#elif defined __NetBSD__
       numCpus = numPhysCpus;
 #else
       //
@@ -294,7 +296,7 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
   if (numCpus == 0)
     numCpus = sysconf(_SC_NPROCESSORS_ONLN);
   return numCpus;
-#elif defined __linux__
+#elif defined(__linux__) || defined(__NetBSD__)
   //
   // Linux
   //
@@ -307,11 +309,13 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
-#ifdef __MIC__
+#if defined __MIC__
       //
       // On Intel MIC, we seem (for now at least) not to have kernel
       // scheduling affinity information.
       //
+      numCpus = numLogCpus;
+#elif defined __NetBSD__
       numCpus = numLogCpus;
 #else
       cpu_set_t m;

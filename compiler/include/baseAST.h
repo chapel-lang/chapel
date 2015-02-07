@@ -217,6 +217,7 @@ public:
   FnSymbol*         getFunction();
   ModuleSymbol*     getModule();
   Type*             getValType();
+  Type*             getRefType();
 
   const char*       astTagAsString()                             const;
 
@@ -231,7 +232,6 @@ protected:
 private:
                     BaseAST();
 
-  Type*             getRefType();
   Type*             getWideRefType();
 };
 
@@ -287,6 +287,9 @@ static inline bool isSymbol(const BaseAST* a)
 
 static inline bool isType(const BaseAST* a)
 { return a && isType(a->astTag); }
+
+static inline bool isLcnSymbol(const BaseAST* a)
+{ return a && (a->astTag == E_ArgSymbol || a->astTag == E_VarSymbol); }
 
 #define def_is_ast(Type)                          \
   static inline bool is##Type(const BaseAST* a)   \

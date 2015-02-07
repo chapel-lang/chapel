@@ -24,26 +24,29 @@
 #include "files.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "yy.h"
 
-// This depends on yy.h
+// Noakes 2015/02/02 Bison 2.3 relies on this ordering
+#include "yy.h"
 #include "chapel.tab.h"
 
 #include <cstdlib>
 
-BlockStmt*  yyblock           = NULL;
-const char* yyfilename        = NULL;
-int         chplLineno        = 0;
-int         yystartlineno     = 0;
-ModTag      currentModuleType = MOD_INTERNAL;
+BlockStmt*              yyblock                    = NULL;
+const char*             yyfilename                 = NULL;
+int                     yystartlineno              = 0;
 
+ModTag                  currentModuleType          = MOD_INTERNAL;
+
+int                     chplLineno                 = 0;
+bool                    chplParseString            = false;
+const char*             chplParseStringMsg         = NULL;
+
+static bool             handlingInternalModulesNow = false;
 
 static Vec<const char*> modNameSet;
 static Vec<const char*> modNameList;
 static Vec<const char*> modDoneSet;
 static Vec<CallExpr*>   modReqdByInt;  // modules required by internal ones
-
-static bool handlingInternalModulesNow = false;
 
 void addModuleToParseList(const char* name, CallExpr* useExpr) {
   const char* modName = astr(name);
@@ -133,8 +136,9 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
 static bool firstFile = true;
 bool currentFileNamedOnCommandLine=false;
 
-ModuleSymbol* ParseFile(const char* filename, ModTag modType, 
-                        bool namedOnCommandLine) {
+ModuleSymbol* parseFile(const char* filename,
+                        ModTag      modType,
+                        bool        namedOnCommandLine) {
   ModuleSymbol* newModule = NULL;
   currentFileNamedOnCommandLine = namedOnCommandLine;
 
@@ -236,7 +240,7 @@ ModuleSymbol* ParseFile(const char* filename, ModTag modType,
 }
 
 
-ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
+ModuleSymbol* parseMod(const char* modname, ModTag modType) {
   bool          isInternal = (modType == MOD_INTERNAL) ? true : false;
   bool          isStandard = false;
   ModuleSymbol* retval     = NULL;
@@ -246,7 +250,7 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
       modType = MOD_STANDARD;
     }
 
-    retval = ParseFile(filename, modType);
+    retval = parseFile(filename, modType);
   }
 
   return retval;
@@ -256,7 +260,7 @@ ModuleSymbol* ParseMod(const char* modname, ModTag modType) {
 void parseDependentModules(ModTag modtype) {
   forv_Vec(const char*, modName, modNameList) {
     if (!modDoneSet.set_in(modName)) {
-      if (ParseMod(modName, modtype)) {
+      if (parseMod(modName, modtype)) {
         modDoneSet.set_add(modName);
       }
     }
@@ -306,7 +310,7 @@ void parseDependentModules(ModTag modtype) {
         // if we haven't found the standard version of the module then we
         // need to parse it
         if (!foundInt) {
-          ModuleSymbol* mod = ParseFile(stdModNameToFilename(modName),
+          ModuleSymbol* mod = parseFile(stdModNameToFilename(modName),
                                         MOD_STANDARD);
 
           // if we also found a user module by the same name, we need to
@@ -314,6 +318,13 @@ void parseDependentModules(ModTag modtype) {
           if (foundUsr) {
             SET_LINENO(oldModNameExpr);
 
+            if (mod == NULL) {
+              INT_FATAL("Trying to rename a standard module that's part of\n"
+                        "a file defining multiple\nmodules doesn't work yet;\n"
+                        "see test/modules/bradc/modNamedNewStringBreaks.future"
+                        " for details");
+            }
+            
             mod->name = astr("chpl_", modName);
 
             UnresolvedSymExpr* newModNameExpr = new UnresolvedSymExpr(mod->name);
@@ -325,3 +336,24 @@ void parseDependentModules(ModTag modtype) {
     } while (modReqdByInt.n != 0);
   }
 }
+
+BlockStmt* parseString(const char* string,
+                       const char* filename,
+                       const char* msg) {
+  yyblock            = NULL;
+  yyfilename         = filename;
+
+  chplParseString    = true;
+  chplParseStringMsg = msg;
+
+  lexerScanString(string);
+  yyparse();
+
+  chplParseString    = false;
+  chplParseStringMsg = NULL;
+
+  lexerResetFile();
+
+  return yyblock;
+}
+

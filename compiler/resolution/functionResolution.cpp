@@ -621,7 +621,7 @@ const char* toString(FnSymbol* fn) {
   } else if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
     INT_ASSERT(!strncmp("_construct_", fn->name, 11));
     str = astr(fn->name+11);
-  } else if (fn->hasFlag(FLAG_METHOD)) {
+  } else if (fn->isPrimaryMethod()) {
     if (!strcmp(fn->name, "this")) {
       INT_ASSERT(fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
       str = astr(toString(fn->getFormal(2)->type));
@@ -690,6 +690,7 @@ protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
   if (strcmp(name, "advance"))
     fn->addFlag(FLAG_INLINE);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->addFlag(FLAG_METHOD);
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->iclass);
   fn->_this->addFlag(FLAG_ARG_THIS);
   fn->retType = retType;
@@ -1228,7 +1229,7 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if (//(toVarSymbol(actualSym) || toArgSymbol(actualSym)) && // What does this exclude?
+  if (// isLcnSymbol(actualSym) && // What does this exclude?
       actualType == dtStringC && formalType == dtString)
     return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
@@ -3976,6 +3977,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *p
   FnSymbol* parent_method = new FnSymbol("this");
   parent_method->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  parent_method->addFlag(FLAG_METHOD);
   ArgSymbol* thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
   thisParentSymbol->addFlag(FLAG_ARG_THIS);
   parent_method->insertFormalAtTail(thisParentSymbol);
@@ -4184,6 +4186,7 @@ createFunctionAsValue(CallExpr *call) {
   FnSymbol *thisMethod = new FnSymbol("this");
   thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  thisMethod->addFlag(FLAG_METHOD);
   ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
   thisSymbol->addFlag(FLAG_ARG_THIS);
   thisMethod->insertFormalAtTail(thisSymbol);
@@ -4304,9 +4307,10 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
-      if (toVarSymbol(sym) || toArgSymbol(sym))
+      if (isLcnSymbol(sym)) {
         if (isOuterVar(sym, fn))
           return true;
+      }
     }
   }
   return false;
@@ -4600,7 +4604,7 @@ preFold(Expr* expr) {
     }
 
     if (SymExpr* sym = toSymExpr(call->baseExpr)) {
-      if (toVarSymbol(sym->var) || toArgSymbol(sym->var)) {
+      if (isLcnSymbol(sym->var)) {
         Expr* base = call->baseExpr;
         base->replace(new UnresolvedSymExpr("this"));
         call->insertAtHead(base);
@@ -4642,7 +4646,7 @@ preFold(Expr* expr) {
         sprintf(field, "x%" PRId64, index);
         result = new SymExpr(base->var->type->getField(field)->type->symbol);
         call->replace(result);
-      } else if (base && (isVarSymbol(base->var) || isArgSymbol(base->var))) {
+      } else if (base && isLcnSymbol(base->var)) {
         //
         // resolve tuple indexing by an integral parameter
         //

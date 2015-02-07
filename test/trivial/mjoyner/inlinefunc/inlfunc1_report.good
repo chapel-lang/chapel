@@ -1,5 +1,5 @@
-chapel compiler: reporting inlining, _Foo_x function was inlined
-chapel compiler: reporting inlining, _Foo_y function was inlined
-chapel compiler: reporting inlining, _Foo_y function was inlined
-chapel compiler: reporting inlining, _Foo_z function was inlined
+chapel compiler: reporting inlining, chpl_get_Foo_x function was inlined
+chapel compiler: reporting inlining, chpl_get_Foo_y function was inlined
+chapel compiler: reporting inlining, chpl_get_Foo_y function was inlined
+chapel compiler: reporting inlining, chpl_get_Foo_z function was inlined
 2
