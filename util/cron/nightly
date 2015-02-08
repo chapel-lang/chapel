@@ -324,14 +324,6 @@ $utildir = "$testbindirname/../../util";
 
 
 #
-# set mail options
-#
-$mailer = $ENV{'CHPL_MAILER'};
-if ($mailer eq "") {
-    $mailer = "mail";
-}
-
-#
 # Get test configuration name.
 #
 if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
@@ -352,6 +344,22 @@ $chplhomedir = abs_path("$cwd/../..");
 $testdir = "$chplhomedir/test";
 print "\$chplhomedir = $chplhomedir\n";
 
+
+#
+# set mail options. Default to util/test/send_email.py, if available and
+# working. If not available or not working, default to 'mail'.
+#
+$mailer = $ENV{'CHPL_MAILER'};
+if ($mailer eq "") {
+    $chplsendemail = "$chplhomedir/util/test/send_email.py";
+    `$chplsendemail --help >/dev/null 2>&1`;
+    if ($? == 0) {
+        $mailer = "$chplsendemail";
+    } else {
+        $mailer = "mail";
+    }
+}
+print "\$mailer = $mailer\n";
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 
