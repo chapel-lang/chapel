@@ -14,6 +14,9 @@ use Cwd;
 use Cwd 'abs_path';
 use Sys::Hostname;
 
+use FindBin;
+use lib "$FindBin::Bin";
+
 use nightlysubs;
 
 # Mailing lists.
@@ -685,43 +688,8 @@ if ($runtests == 0) {
     $endtime = localtime;
 
 #
-# sort output
+# Sync performance graphs to SF.
 #
-
-    if ($status == 0) {
-        `cat $rawsummary | grep -v "^.END" | grep -v "^.Test Summary" | LC_ALL=C sort > $sortedsummary`;
-
-        $oldsummary = `grep Summary: $prevsummary`; chomp($oldsummary);
-        $cursummary = `grep Summary: $sortedsummary`; chomp($cursummary);
-
-        $oldsucc = &numsuccesses($oldsummary);
-        $oldfail = &numfailures($oldsummary);
-        $oldfut  = &numfutures($oldsummary);
-
-        $cursucc = &numsuccesses($cursummary);
-        $curfail = &numfailures($cursummary);
-        $curfut  = &numfutures($cursummary);
-
-        $delsucc = &delta($oldsucc, $cursucc);
-        $delfail = &delta($oldfail, $curfail);
-        $delfut  = &delta($oldfut, $curfut);
-
-        $summary = "Tests run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
-    } else {
-        $summary = "Tests run: failed";
-    }
-
-    $knownumtests = 1;
-    if ($status == 0) {
-        $oldnumtests = $oldsucc + $oldfail;
-        $curnumtests = $cursucc + $curfail;
-        $deltests = &delta($oldnumtests, $curnumtests);
-        $numtestssummary = "$curnumtests Tests ($deltests), $curfut Futures ($delfut)";
-    } else {
-        $numtestssummary = "unknown number of Tests";
-        $knownumtests = 0;
-    }
-
 
     if ($performance == 1 or $compperformance == 1) {
         # sync the performance graphs over to sourceforge
@@ -729,6 +697,10 @@ if ($runtests == 0) {
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
    }
+
+#
+# Splice nightly data into release-over-release performance, and sync to SF.
+#
 
     if ($releasePerformance == 1) {
         my $svnReleasePerfDir = "$svnPerfDir/releaseOverRelease/";
@@ -786,82 +758,9 @@ if ($runtests == 0) {
         }
     }
 
-#
-# send mail
-#
-    $futuremarker = "^Future";
-    
-    $newfailures = "???";
-    if ($status == 0) {
-        $newfailures = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newfailures);
-        $newresolved = `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | wc -l`; chomp($newresolved);
-        $newpassingfutures = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success" | wc -l`; chomp($newpassingfutures);
-        $passingfutures = `grep "$futuremarker" $sortedsummary | grep "\\[Success" | wc -l`; chomp($passingfutures);
-        $newfailures += 0;
-    }
+# FIXME: Pass correct args here!
+    `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
 
-    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0) {
-        print "Mailing to minimal group\n";
-        $recipient = $nochangerecipient;
-    } else {
-        print "Mailing to everyone\n";
-    }
-
-    $mailsubject = "$subjectid $config_name";
-    $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
-
-    print "Trying... $mailcommand\n";
-    open(MAIL, $mailcommand);
-    
-    print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
-    print MAIL "$numtestssummary\n";
-    print MAIL "$summary\n";
-    print MAIL endMailHeader();
-    
-    if ($status == 0) {
-        print MAIL "--- New Errors -------------------------------\n";
-        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
-        print MAIL "\n";
-
-        print MAIL "--- Resolved Errors --------------------------\n";
-        print MAIL `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
-        print MAIL "\n";
-    
-        print MAIL "--- New Passing Future tests------------------\n";
-        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-        print MAIL "\n";    
-
-        print MAIL "--- Passing Future tests ---------------------\n";
-        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
-        print MAIL "\n";    
-
-        print MAIL "--- Unresolved Errors ------------------------\n";
-        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker"`;
-        print MAIL "\n";
-
-        print MAIL "--- New Failing Future tests -----------------\n";
-        print MAIL `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
-        print MAIL "\n";    
-
-        print MAIL "--- Unresolved Future tests ------------------\n";
-        print MAIL `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
-        print MAIL "\n";    
-    }
-    
-    print MAIL endMailChplenv();
-    close(MAIL);
-    
-    
-#
-# tuck this run's output away for comparison tomorrow
-#
-    if ($debug == 0) {
-        if ($status == 0) {
-            system("cp -pv $sortedsummary $prevsummary");
-        }
-    }
-    
-    
 #
 # analyze memory leaks tests
 #
