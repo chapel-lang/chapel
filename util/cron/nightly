@@ -17,6 +17,7 @@ use Sys::Hostname;
 # Mailing lists.
 $failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net";
+$replymail = "chapel-developers\@lists.sourceforge.net";
 
 $valgrind = 0;
 $interpret = 0;
@@ -220,6 +221,7 @@ chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
+    $replymail = $debugemail;
 }
 $today = `date +%w-%a`; chomp($today);
 $starttime = localtime;
@@ -235,6 +237,7 @@ if ($cronrecipient ne "") {
     print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
     $failuremail = $cronrecipient;
     $allmail = $cronrecipient;
+    $replymail = $cronrecipient;
 }
 
 #
@@ -354,7 +357,7 @@ if ($mailer eq "") {
     $chplsendemail = "$chplhomedir/util/test/send_email.py";
     `$chplsendemail --help >/dev/null 2>&1`;
     if ($? == 0) {
-        $mailer = "$chplsendemail";
+        $mailer = "$chplsendemail --header=Reply-To=$replymail,Precedence=bulk";
     } else {
         $mailer = "mail";
     }

@@ -3,6 +3,7 @@
 # Mailing lists.
 $failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net";
+$replymail = "chapel-developers\@lists.sourceforge.net";
 
 $printusage = 1;
 $debug = 1;
@@ -38,6 +39,7 @@ chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
+    $replymail = $debugemail;
 }
 
 if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
@@ -48,6 +50,7 @@ if ($cronrecipient ne "") {
     print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
     $failuremail = $cronrecipient;
     $allmail = $cronrecipient;
+    $replymail = $cronrecipient;
 }
 
 
@@ -93,7 +96,7 @@ if ($mailer eq "") {
     $chplsendemail = "$chplhomedir/util/test/send_email.py";
     `$chplsendemail --help >/dev/null 2>&1`;
     if ($? == 0) {
-        $mailer = "$chplsendemail";
+        $mailer = "$chplsendemail --header=Reply-To=$replymail,Precedence=bulk";
     } else {
         $mailer = "mail";
     }
