@@ -6,19 +6,11 @@ email (cygwin). Message body is taken from stdin.
 
 from __future__ import print_function
 
-try:
-    import envelopes
-except ImportError:
-    import traceback
-    traceback.print_exc()
-    print()
-    print('"envelopes" package is required. To install: pip install envelopes')
-    print('Alternatively, use a mail client like: mail, Mail, email, etc')
-    exit(1)
-
+import email.mime.text
 import getpass
 import logging
 import optparse
+import smtplib
 import socket
 import sys
 
@@ -43,19 +35,29 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
     :arg sender: Optional sender address. Defaults to <user>@<fqdn>
     :arg smtp_host: Optional SMTP host. Defaults to 'localhost'.
     """
-    if sender is None:
-        sender = _default_sender()
+    if isinstance(recipients, basestring):
+        recipients = [recipients]
+    sender = sender or _default_sender()
+    subject = subject or ''
 
-    msg = envelopes.Envelope(
-        to_addr=recipients,
-        from_addr=sender,
-        subject=subject,
-        headers=headers,
-        text_body=body
-    )
+    msg = email.mime.text.MIMEText(body)
 
-    logging.info('Sending email via {0}: {1}'.format(smtp_host, msg))
-    msg.send(smtp_host)
+    msg['Subject'] = subject
+    msg['From'] = sender
+    msg['To'] = ','.join(recipients)
+
+    if headers:
+        for key, value in headers.iteritems():
+            msg[key] = value
+
+    logging.debug('Opening connection to: {0}'.format(smtp_host))
+    smtp = smtplib.SMTP(smtp_host)
+    try:
+        logging.info('Sending email to: {0} from: {1} subject: {2}'.format(
+            sender, ','.join(recipients), subject))
+        smtp.sendmail(sender, recipients, msg.as_string())
+    finally:
+        smtp.quit()
 
 
 def _parse_headers(option, opt, value, parser, *args, **kwargs):
