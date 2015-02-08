@@ -1,9 +1,15 @@
 #
-# subroutines
+# nightly subroutines
 #
-# package nightlysubs;
-# use Exporter 'import';
-# @EXPORT_OK = qw(mysystem numsuccesses numfailures numfutures delta ensureSummaryExists startMailHeader endMailHeader endMailChplenv);
+
+use File::Basename;
+use Cwd;
+use Cwd 'abs_path';
+use Sys::Hostname;
+
+$cwd = abs_path(dirname(__FILE__));
+$chplhomedir = abs_path("$cwd/../..");
+
 
 sub mysystem {
     $command = $_[0];

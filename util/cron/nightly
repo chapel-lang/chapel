@@ -347,8 +347,6 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
 #
 # directory variables
 #
-$cwd = abs_path(dirname(__FILE__));
-$chplhomedir = abs_path("$cwd/../..");
 $testdir = "$chplhomedir/test";
 print "\$chplhomedir = $chplhomedir\n";
 
