@@ -50,6 +50,7 @@
 *                                                                           *
 ************************************* | ************************************/
 
+class ArgSymbol;
 class FnSymbol;
 
 #include <string>
@@ -78,6 +79,16 @@ public:
   void                   appendFormal(FnSymbol* fn, int oneBasedIndex);
 
 private:
+
+  // Index of formal "this"            -> [0 .. 2]
+  int                    indexForThis(FnSymbol* fn)                    const;
+
+  // Index of first user facing formal -> [1 .. 3]
+  int                    indexOfFirstFormal(FnSymbol* fn)              const;
+
+  // Get user facing formal by one-based-index
+  ArgSymbol*             formalGet(FnSymbol* fn, int oneBasedIndex)    const;
+
   std::string            mText;
 };
 

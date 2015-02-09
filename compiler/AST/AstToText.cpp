@@ -19,6 +19,7 @@
 
 #include "AstToText.h"
 
+#include "expr.h"
 #include "symbol.h"
 
 AstToText::AstToText()
@@ -89,10 +90,12 @@ void AstToText::appendFormals(FnSymbol* fn)
 // Excludes "_mt" (method token) and "this" when they are present
 int AstToText::numFormals(FnSymbol* fn) const
 {
-  // Incomplete
-  int numFormals = fn->formals.length;
+  int retval = fn->formals.length;
 
-  return numFormals;
+  if (fn->isMethod() == true)
+    retval = retval - indexForThis(fn);
+
+  return retval;
 }
 
 void AstToText::appendFormal(FnSymbol* fn, int oneBasedIndex)
@@ -100,5 +103,72 @@ void AstToText::appendFormal(FnSymbol* fn, int oneBasedIndex)
   // Incomplete
 }
 
+/************************************ | *************************************
+*                                                                           *
+* Helper functions for handling the "hidden formals" for methods.           *
+*                                                                           *
+* If a procedure is a method then                                           *
+*                                                                           *
+*   In earlier passes                                                       *
+*      formals[1] has name _mt (the method token)                           *
+*      formals[2] is flagged with FLAG_ARG_THIS                             *
+*                                                                           *
+*    In later passes                                                        *
+*       formals[1] is flagged with FLAG_ARG_THIS                            *
+*                                                                           *
+************************************* | ************************************/
 
+// The index for "this" -> [0 .. 2]
+int AstToText::indexForThis(FnSymbol* fn) const
+{
+  int        numFormals = fn->formals.length;
+  ArgSymbol* arg1       = NULL;
+  ArgSymbol* arg2       = NULL;
+  int        retval     = 0;
 
+  //
+  // Attempt to get the ArgSymbol for the first two formals (if present)
+  //
+  if (numFormals >= 1)
+  {
+    DefExpr* formal = toDefExpr(fn->formals.get(1));
+
+    arg1 = toArgSymbol(formal->sym);
+  }
+
+  if (numFormals >= 2)
+  {
+    DefExpr* formal = toDefExpr(fn->formals.get(2));
+
+    arg2 = toArgSymbol(formal->sym);
+  }
+
+  //
+  // Determine if either of the first two formals is "this"
+  //
+  if      (arg1 != NULL && strcmp(arg1->name, "_mt")    == 0 &&
+           arg2 != NULL && arg2->hasFlag(FLAG_ARG_THIS) == true)
+    retval = 2;
+
+  else if (arg1 != NULL && arg1->hasFlag(FLAG_ARG_THIS) == true)
+    retval = 1;
+
+  else
+    retval = 0;
+
+  return retval;
+}
+
+// The one-based index of the first user-facing formal -> [1 .. 3]
+int AstToText::indexOfFirstFormal(FnSymbol* fn) const
+{
+  return indexForThis(fn) + 1;
+}
+
+ArgSymbol* AstToText::formalGet(FnSymbol* fn, int oneBasedIndex) const
+{
+  int      effIndex = indexForThis(fn) + oneBasedIndex;
+  DefExpr* expr     = toDefExpr(fn->formals.get(effIndex));
+
+  return toArgSymbol(expr->sym);
+}
