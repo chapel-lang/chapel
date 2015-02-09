@@ -700,7 +700,7 @@ Reviewed 2015-02-09
 ===================
 cygwin*
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 check_channel assertion failure
@@ -719,7 +719,7 @@ consistent execution timeout (frequent)
 ===========================
 cygwin32
 Inherits 'cygwin*' and '*32'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===========================
 
 Generated output "FAILED" (see below for sporadic): First run 2014-12-07
@@ -743,15 +743,11 @@ sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ------------------------------------------------------------------------------
 [Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..)
 
-sporadic os.unlink calls in sub_test failing due to resource being busy
-=======================================================================
-[Error running sub_test in *] (2014-12-11, 2014-12-12, 2014-12-15, 2014-12-16, 2014-12-17, 2014-12-18)
-
 
 ================================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ================================
 
 QIO qio_err_to_int() == EEOF assertion error
