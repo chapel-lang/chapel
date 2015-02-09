@@ -226,7 +226,9 @@ chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
-    $replymail = $debugemail;
+    if ($debug == 1) {
+        $replymail = $debugemail;
+    }
 }
 $today = `date +%w-%a`; chomp($today);
 $starttime = localtime;
@@ -366,6 +368,7 @@ if ($mailer eq "") {
     }
 }
 print "\$mailer = $mailer\n";
+
 
 $launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
 

@@ -39,7 +39,9 @@ chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
-    $replymail = $debugemail;
+    if ($debug == 1) {
+        $replymail = $debugemail;
+    }
 }
 
 if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
