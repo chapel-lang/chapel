@@ -146,14 +146,14 @@ Reviewed 2015-02-09
 ===================
 perf*
 Inherits 'general'
-Reviewed 2015-01-23
+Reviewed 2015-02-09
 ===================
 
 
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -162,17 +162,10 @@ consistent failure due to insane memory usage (should get better with strings)
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
-=== sporadic failures below ===
-
-sporadic execution timeout
---------------------------
-[Error: Timed out executing program performance/bharshbarg/range-forall] (2015-01-16..2015-01-21)
-
-
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -183,14 +176,14 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
 ====================
 perf.chapel-shootout
 Inherits 'perf*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ====================
 
 consistent failure due to insane memory usage (should get better with strings)
