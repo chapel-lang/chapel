@@ -261,7 +261,7 @@ sporadic execution timeout
 ===================
 llvm
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
@@ -272,14 +272,14 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 ===================
 fifo
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
 ===================
 numa
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
