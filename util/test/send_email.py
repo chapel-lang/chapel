@@ -26,7 +26,7 @@ def main():
     send_email(args.recipients, body, args.subject, args.header, args.sender, args.smtp_host)
 
 
-def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_host='localhost'):
+def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_host=None):
     """Send email!
 
     :arg recipients: list of recipients. If only one, may be a string.
@@ -40,6 +40,7 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
         recipients = [recipients]
     sender = sender or _default_sender()
     subject = subject or ''
+    smtp_host = smtp_host or _default_smtp_host()
 
     msg = email.mime.text.MIMEText(body)
 
