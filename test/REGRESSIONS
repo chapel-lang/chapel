@@ -49,12 +49,15 @@
 
 ===================
 general
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
-Whitespace mismatch (tvandoren, lydia)
---------------------------------------
-[Error matching .bad file for chpldoc/compflags/alphabetical/classFields]
+
+Compiler output mismatch for futures with scoping/shadowing (lydia)
+-------------------------------------------------------------------
+[Error matching .bad file for functions/kbrady/proc_scoping]
+[Error matching .bad file for modules/bradc/useFileSystemShadowsPath]
+Future (bug: compiler reports an error incorrectly) [Success matching program output for classes/vass/generic-parenthesesless-big1]
 
 
 ===================
@@ -315,8 +318,13 @@ Reviewed 2015-02-02
 ===================
 gasnet*
 Inherits 'no-local'
-Reviewed 2015-01-23
+Reviewed 2015-02-09
 ===================
+
+
+Comm count mismatch (lydia)
+---------------------------
+[Error matching program output for distributions/deitz/test_block_representation (compopts: 1)]
 
 
 === sporadic failures below ===
