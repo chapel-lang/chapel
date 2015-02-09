@@ -1,6 +1,11 @@
 // Wrapper for FFTW version 3.
 module FFTWsegfault {
 
+  config param useWorkaround=false;
+
+  // NOTE: See the three writeln's below which, when uncommented, make
+  // the code work
+
 	use SysCTypes;
 
 	// Define the various planner flags
@@ -35,7 +40,7 @@ module FFTWsegfault {
 		// Make sure types are correct
 		param ndim : c_int = dims.size;
 		var dims1 : ndim*c_int = dims;
-		//writeln(dims1); //?????
+                if useWorkaround then writeln(dims1);
 		return fftw_plan_dft(ndim, dims1(1), c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
 	}
 
@@ -50,7 +55,7 @@ module FFTWsegfault {
 		// Make sure types are correct
 		param ndim : c_int = dims.size;
 		var dims1 : ndim*c_int = dims;
-		//writeln(dims1); //??????
+                if useWorkaround then writeln(dims1);
 		return fftw_plan_dft_r2c(ndim,dims1(1),c_ptrTo(in1) : c_ptr(c_double), c_ptrTo(out1) : _cxptr, flags);
 	}
 	proc plan_dft_c2r(dims, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
@@ -61,7 +66,7 @@ module FFTWsegfault {
 		// Make sure types are correct
 		param ndim : c_int = dims.size;
 		var dims1 : ndim*c_int = dims;
-		//writeln(dims1); //?????
+                if useWorkaround then writeln(dims1);
 		return fftw_plan_dft_c2r(ndim, dims1(1),c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : c_ptr(c_double), flags);
 	}
 
