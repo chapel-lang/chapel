@@ -693,12 +693,8 @@ Reviewed 2015-02-02
 ===================
 rhel64
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
-
-lack of -lnuma at user link time - gbt (2015-01-31..)
------------------------------------------------------
-all tests
 
 
 ===================
