@@ -770,21 +770,21 @@ Dies with signal 6
 ===================
 dist-block
 Inherits 'gasnet*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
 ===================
 dist-cyclic
 Inherits 'gasnet*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
 === sporadic failures below ===
 
-sporadic execution timeout (2015-01-18)
----------------------------------------
+sporadic execution timeout (very infrequent) (2014-11-04, 2015-01-18)
+---------------------------------------------------------------------
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
 [Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
 
@@ -792,5 +792,5 @@ sporadic execution timeout (2015-01-18)
 ===================
 dist-replicated
 Inherits 'gasnet*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
