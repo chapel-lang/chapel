@@ -7,7 +7,10 @@ use nightlysubs;
 
 $num_args = $#ARGV + 1;
 if ($num_args != 16) {
-    print "usage: nightly_email.pl FIXME";
+    print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
+    print "         \$prevsummary \$mailer \$nochangerecipient \$recipient \n";
+    print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
+    print "         \$endtime \$crontab \$testdirs \$debug\n";
     exit 1;
 }
 
