@@ -54,6 +54,7 @@ Reviewed 2015-02-09
 
 
 Compiler output mismatch for futures with scoping/shadowing (lydia)
+ - Note: Only shows up in configurations that test futures
 -------------------------------------------------------------------
 [Error matching .bad file for functions/kbrady/proc_scoping]
 [Error matching .bad file for modules/bradc/useFileSystemShadowsPath]
@@ -194,21 +195,21 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 fast
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ============================
 
 
