@@ -1,1 +1,2 @@
-{}
+proc_scoping.chpl:1: In function 'test':
+proc_scoping.chpl:6: error: 'print_me' undeclared (first use this function)
