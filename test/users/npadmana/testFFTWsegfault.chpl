@@ -1,4 +1,4 @@
-use FFTW;
+use FFTWsegfault; // switching to use FFTWsegfaultfix works, surprisingly
 
 
 proc printcmp(x, y) {
