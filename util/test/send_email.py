@@ -88,6 +88,12 @@ def _default_sender():
     return '{0}@{1}'.format(getpass.getuser(), socket.getfqdn())
 
 
+def _default_smtp_host():
+    """Return default smtp host, which is localhost unless CHPL_UTIL_SMTP_HOST is
+    set in environment.
+    """
+    return os.environ.get('CHPL_UTIL_SMTP_HOST', 'localhost')
+
 def _parse_args():
     """Parse and return command line arguments."""
     class NoWrapHelpFormatter(optparse.IndentedHelpFormatter):
@@ -129,7 +135,7 @@ def _parse_args():
     )
     mail_group.add_option(
         '--smtp-host',
-        default='localhost',
+        default=_default_smtp_host(),
         help='SMTP host to use when sending email.'
     )
 
