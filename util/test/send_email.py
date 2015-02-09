@@ -54,7 +54,9 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
     smtp = smtplib.SMTP(smtp_host)
     try:
         logging.info('Sending email to: {0} from: {1} subject: {2}'.format(
-            sender, ','.join(recipients), subject))
+            ','.join(recipients), sender, subject))
+        logging.debug('Email headers: {0}'.format(headers))
+        logging.debug('Email body length: {0}'.format(len(body)))
         smtp.sendmail(sender, recipients, msg.as_string())
     finally:
         smtp.quit()
