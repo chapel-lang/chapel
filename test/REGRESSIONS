@@ -216,15 +216,8 @@ Reviewed 2015-02-09
 ===================
 verify
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
-
-
-=== sporadic failures below ===
-
-sporadic execution timeout
---------------------------
-[Error: Timed out executing program stress/deitz/test_10k_begins] (2015-01-08)
 
 
 ===================
