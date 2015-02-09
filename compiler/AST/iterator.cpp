@@ -989,20 +989,47 @@ rebuildIterator(IteratorInfo* ii,
 
     // Get the corresponding field in the iterator class
     Symbol* field = local2field.get(local);
-
+    Symbol* localValue = local;
     if (local->type == field->type->refType) {
       // If a ref var, 
-      // load the local into a temp and then set the value of the corresponding field.
+      // load the local into a temp and use this to set the value of the corresponding field.
       Symbol* tmp = newTemp(field->type);
       fn->insertAtTail(new DefExpr(tmp));
       fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
                      new CallExpr(PRIM_DEREF, local)));
-      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, tmp));
-    } else {
-      // Otherwise, just set the iterator class field directly.
-      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, local));
+      localValue = tmp;
     }
+#if 0
+    // Very special code for record-wrapped types:
+    // This is a workaround for weirdness in how record-wrapped types are
+    // handled in iterator records.  Calls to the these() method on arrays and
+    // domains returns a "nude" version of the corresponding array or domain,
+    // that is therefore (because it is a class object) not reference counted.
+    // In place where they should be reference counted, they should be passed
+    // around with their record wrapping.  In places where their persistence is
+    // guaranteed, they could be passed around by reference, but other iterator
+    // code presently depends upon them being passed by value (the immediately
+    // preceding clause which applies a deref operator makes sure that this is
+    // true).  Fixing the iterator code so that it could tolerate "these" items
+    // passed by value might also work -- provided the rule is obeyed that the
+    // referent outlasts any reference generated from it.
+    if (isDomImplType(localValue->type) || isArrayImplType(localValue->type))
+    {
+      Symbol* tmp = newTemp("RWT_ir", localValue->type);
+      fn->insertAtTail(new DefExpr(tmp));
+      FnSymbol* autoCopyFn = autoCopyMap.get(localValue->type);
+      // We will fail here if an array or dom implementation fails to provide
+      // an autocopy function.
+      fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                    new CallExpr(autoCopyFn, localValue)));
+      localValue = tmp;
+    }
+    // Note that there is no corresponding destructor function, so thingies
+    // that are autocopied here will be leaked.  More work to do.  Correctness
+    // first; zero leaks second; optimization third.
+#endif
+    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, localValue));
   }
 
   // Return the filled-in iterator record.

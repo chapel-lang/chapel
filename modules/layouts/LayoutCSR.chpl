@@ -405,6 +405,21 @@ class CSRArr: BaseArr {
 }
 
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CSRArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+  
+proc chpl__autoDestroy(x: CSRArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 proc CSRDom.dsiSerialWrite(f: Writer) {
   f.writeln("{");
   for r in rowRange {
