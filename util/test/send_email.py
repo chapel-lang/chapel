@@ -10,6 +10,7 @@ import email.mime.text
 import getpass
 import logging
 import optparse
+import os
 import smtplib
 import socket
 import sys
@@ -131,12 +132,12 @@ def _parse_args():
     mail_group.add_option(
         '-S', '--sender',
         default=_default_sender(),
-        help='Sender email address.'
+        help='Sender email address. (default: %default)'
     )
     mail_group.add_option(
         '--smtp-host',
         default=_default_smtp_host(),
-        help='SMTP host to use when sending email.'
+        help='SMTP host to use when sending email. (default: %default)'
     )
 
     parser.add_option_group(mail_group)
