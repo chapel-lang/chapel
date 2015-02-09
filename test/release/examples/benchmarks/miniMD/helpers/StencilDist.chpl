@@ -672,6 +672,22 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
   }
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: StencilDom) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: StencilDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
+
 //
 // output domain
 //
@@ -988,6 +1004,22 @@ iter StencilArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
 }
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: StencilArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+  
+proc chpl__autoDestroy(x: StencilArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 
 //
 // TODO: Rewrite this to reuse more of the global domain iterator
