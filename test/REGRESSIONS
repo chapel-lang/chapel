@@ -116,19 +116,14 @@ GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
 ===================
 linux32
 Inherits '*32'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
-timeout (2014-11-12, first run)
--------------------------------
-[Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
 
-
-=== sporadic failures below ===
-
-sporadic signal 11
-------------------
-[Error matching program output for stress/deitz/test_10k_begins] (2014-11-13..2014-12-09, 2014-12-15, 2014-12-19, 2015-01-04)
+timeout (2015-02-05, first run) - (elliot/michael)
+--------------------------------------------------
+[Error Timed out executing regexp test ./regexp_channel_test Regexp Channels Test]
+[Error Timed out executing regexp test ./regexp_test Regexp Test]
 
 
 ===================
