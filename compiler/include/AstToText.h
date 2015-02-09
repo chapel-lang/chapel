@@ -51,6 +51,7 @@
 ************************************* | ************************************/
 
 class ArgSymbol;
+class Expr;
 class FnSymbol;
 
 #include <string>
@@ -80,14 +81,24 @@ public:
 
 private:
 
-  // Index of formal "this"            -> [0 .. 2]
+  //
+  // Support for function names
+  //
+  void                   appendThisIntent(FnSymbol* fn);
+  void                   appendClassName (FnSymbol* fn);
+
+  //
+  // Support for selecting formals for functions and methods
+  //
   int                    indexForThis(FnSymbol* fn)                    const;
-
-  // Index of first user facing formal -> [1 .. 3]
   int                    indexOfFirstFormal(FnSymbol* fn)              const;
-
-  // Get user facing formal by one-based-index
   ArgSymbol*             formalGet(FnSymbol* fn, int oneBasedIndex)    const;
+
+  //
+  // Formatting the expressions found in formals (skeleton)
+  //
+  void                   appendExpr(Expr*              expr);
+  void                   appendExpr(const char*        name);
 
   std::string            mText;
 };

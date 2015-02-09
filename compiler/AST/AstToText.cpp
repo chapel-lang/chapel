@@ -20,6 +20,7 @@
 #include "AstToText.h"
 
 #include "expr.h"
+#include "stmt.h"
 #include "symbol.h"
 
 AstToText::AstToText()
@@ -58,7 +59,135 @@ void AstToText::appendNameAndFormals(FnSymbol* fn)
 
 void AstToText::appendName(FnSymbol* fn)
 {
-  // Incomplete
+  if (developer == true)
+    mText += fn->name;
+
+  else if (fn->hasFlag(FLAG_MODULE_INIT))
+  {
+    INT_ASSERT(strncmp(fn->name, "chpl__init_",      11) == 0);
+
+    mText += "top-level module statements for ";
+    mText += (fn->name + 11);
+  }
+
+  else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+  {
+    INT_ASSERT(strncmp(fn->name, "_type_construct_", 16) == 0);
+
+    mText += (fn->name + 16);
+  }
+
+  else if (fn->hasFlag(FLAG_CONSTRUCTOR))
+  {
+    INT_ASSERT(strncmp(fn->name, "_construct_",      11) == 0);
+
+    mText += (fn->name + 11);
+  }
+
+  else if (fn->hasFlag(FLAG_DESTRUCTOR) == true)
+  {
+    appendClassName(fn);
+    mText += ".~";
+    appendClassName(fn);
+  }
+
+  else if (fn->hasFlag(FLAG_METHOD))
+  {
+    appendThisIntent(fn);
+
+    if (strcmp(fn->name, "this") == 0)
+    {
+      appendClassName(fn);
+    }
+
+    else
+    {
+      appendClassName(fn);
+      mText += '.';
+      mText += fn->name;
+    }
+  }
+
+  else
+    mText += fn->name;
+}
+
+void AstToText::appendThisIntent(FnSymbol* fn)
+{
+  int index = indexForThis(fn);
+
+  if (index > 0)
+  {
+    DefExpr*   formal = toDefExpr(fn->formals.get(index));
+    ArgSymbol* argSym = toArgSymbol(formal->sym);
+
+    if (argSym->intent == INTENT_REF)
+      mText += "ref ";
+
+    else if (argSym->intent == INTENT_PARAM)
+      mText += "param ";
+  }
+}
+
+void AstToText::appendClassName(FnSymbol* fn)
+{
+  int index = indexForThis(fn);
+
+  if (index > 0)
+  {
+    DefExpr*   formal = toDefExpr(fn->formals.get(index));
+    ArgSymbol* argSym = toArgSymbol(formal->sym);
+
+    if (argSym->typeExpr)
+    {
+      BlockStmt* bs = argSym->typeExpr;
+
+      if (bs->body.length == 1)
+      {
+        Expr* expr = bs->body.only();
+
+        if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
+        {
+          mText += sel->unresolved;
+        }
+
+        else if (SymExpr* sel = toSymExpr(expr))
+        {
+          if (TypeSymbol* typeSym = toTypeSymbol(sel->var))
+          {
+            appendExpr(typeSym->name);
+          }
+          else
+          {
+            INT_ASSERT(false);
+          }
+        }
+
+        else
+        {
+          INT_ASSERT(false);
+        }
+      }
+
+      else
+      {
+        INT_ASSERT(false);
+      }
+    }
+
+    else if (PrimitiveType* type = toPrimitiveType(argSym->type))
+      appendExpr(type->symbol->name);
+
+    else if (AggregateType* type = toAggregateType(argSym->type))
+      appendExpr(type->symbol->name);
+
+    else
+      INT_ASSERT(false);
+  }
+  else
+  {
+    INT_ASSERT(false);
+  }
 }
 
 /************************************ | *************************************
@@ -172,3 +301,20 @@ ArgSymbol* AstToText::formalGet(FnSymbol* fn, int oneBasedIndex) const
 
   return toArgSymbol(expr->sym);
 }
+
+/************************************ | *************************************
+*                                                                           *
+* Normalized version for the primitive expressions found in formals.        *
+*                                                                           *
+************************************* | ************************************/
+
+void AstToText::appendExpr(Expr* expr)
+{
+  // Incomplete
+}
+
+void AstToText::appendExpr(const char* name)
+{
+  // Incomplete
+}
+
