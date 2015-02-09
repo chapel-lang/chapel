@@ -1000,7 +1000,7 @@ rebuildIterator(IteratorInfo* ii,
                      new CallExpr(PRIM_DEREF, local)));
       localValue = tmp;
     }
-#if 0
+
     // Very special code for record-wrapped types:
     // This is a workaround for weirdness in how record-wrapped types are
     // handled in iterator records.  Calls to the these() method on arrays and
@@ -1028,7 +1028,7 @@ rebuildIterator(IteratorInfo* ii,
     // Note that there is no corresponding destructor function, so thingies
     // that are autocopied here will be leaked.  More work to do.  Correctness
     // first; zero leaks second; optimization third.
-#endif
+
     fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, localValue));
   }
 
