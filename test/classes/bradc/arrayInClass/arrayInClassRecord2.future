@@ -1,0 +1,30 @@
+bug: Recursive definition of autoCopy blows the stack.
+
+This is another manifestation of the same problem that shows up in
+arrayDomInClassRecord2.chpl.  In this case, the autoCopy routine does not fail due to
+accessing uninitialized memory.  Instead, because _iterator_for_loopexpr makes a value
+copy of "this" that is (by definition) an autoCopy call.  The autoCopy constructor for R
+dutifully initializes the fields in R before performing the copy, and this
+default-initialization uses the parloopexpr to initialize the array field in the record.
+The circularity of this procedure should be evident.
+
+As for arrayDomInClassRecord2, the best solution would be to avoid passing the whole
+record into the parloopexpr.  That routine should only know about the arguments (iterable
+and kernel) that are being used to perform the initialization.  Failing that, copying the
+record into the iterator record as a reference rather than as a value will also break the
+cycle.  
+
+Under the new constructor model, it is still necessary to initialize a field
+before the body of the constructor is reached.  So going over to that model and changing
+constructors to methods will not help in this case.  The implementation of parloopexpr
+should be fixed in one of the ways mentioned in the preceding paragraph.
+
+
+A snippet of the blown stack showing the infinite recursion:
+#2572 0x000000000040a523 in chpl__autoCopy60 (x=0x7fffff885a60) at obj/ChapelBase.c:2622
+#2573 0x0000000000453762 in _iterator_for_loopexpr4 (this25=0x7fffff885cc0, iterator=0x7fffff885b70) at obj/arrayInClassRecord2.c:492
+#2574 0x00000000004532cd in _parloopexpr4 (this25=0x7fffff885cc0) at obj/arrayInClassRecord2.c:406
+#2575 0x0000000000452c53 in _default_wrap__construct_R2 (A2=0x7fffff885d40) at obj/arrayInClassRecord2.c:332
+#2576 0x0000000000453182 in chpl__initCopy66 (x=0x7fffff885e90) at obj/arrayInClassRecord2.c:393
+#2577 0x000000000040a523 in chpl__autoCopy60 (x=0x7fffff885e90) at obj/ChapelBase.c:2622
+
