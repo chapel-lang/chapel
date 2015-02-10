@@ -300,6 +300,7 @@ Reviewed 2015-02-09
 
 
 Comm count mismatch (lydia)
+ --> fixed on 2015-02-10
 ---------------------------
 [Error matching program output for distributions/deitz/test_block_representation (compopts: 1)]
 
