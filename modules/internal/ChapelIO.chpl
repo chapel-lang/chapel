@@ -51,7 +51,7 @@ module ChapelIO {
       if _isIoPrimitiveTypeOrNewline(t) {
         writePrimitive(x);
       } else {
-        if isClassType(t) {
+        if isClassType(t) || chpl_isDdata(t) {
           // FUTURE -- write the class name/ID?
   
           if x == nil {
@@ -530,7 +530,7 @@ module ChapelIO {
   
   proc _ddata.writeThis(f: Writer) {
     compilerWarning("printing _ddata class");
-    write("<_ddata class cannot be printed>");
+    f.write("<_ddata class cannot be printed>");
   }
 
   proc chpl_taskID_t.writeThis(f: Writer) {
