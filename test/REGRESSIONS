@@ -558,11 +558,10 @@ $CHPL_HOME/modules/internal/ChapelArray.chpl:2119: error: unresolved call '(list
 --------------------------------------------------------------------------------------------
 
 
-
 ===================
 *intel*
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 test assertion failures (2014-09-21..)
@@ -579,21 +578,21 @@ binary files differ (2014-09-21..)
 ================================
 x?-wb.intel
 Inherits 'x?-wb.*' and '*intel*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ================================
 
 
 ================================
 x?-wb.prgenv-intel
 Inherits 'x?-wb.*' and '*intel*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ================================
 
 
 =============================
 xc-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 =============================
 
 
