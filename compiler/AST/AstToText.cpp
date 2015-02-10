@@ -198,16 +198,54 @@ void AstToText::appendClassName(FnSymbol* fn)
 
 void AstToText::appendFormals(FnSymbol* fn)
 {
-  int count = numFormals(fn);
+  int  count = numFormals(fn);
+  bool skip  = skipParens(fn);
+  bool first = true;
 
-  mText += '(';
+  if (skip == false)
+    mText += '(';
 
   for (int index = 1; index <= count; index++)
   {
-    // Incomplete
+    ArgSymbol* arg = formalGet(fn, index);
+
+    if (arg->hasFlag(FLAG_IS_MEME) == false)
+    {
+      if (first == true)
+      {
+        if (skip == true)
+          mText += " ";
+
+        first = false;
+      }
+      else
+        mText += ", ";
+
+      appendFormal(fn, index);
+    }
   }
 
-  mText += ')';
+  if (skip == false)
+    mText += ')';
+}
+
+bool AstToText::skipParens(FnSymbol* fn) const
+{
+  bool retval = false;
+
+  if (fn->hasFlag(FLAG_NO_PARENS))
+    retval = true;
+
+  else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && fn->numFormals() == 0)
+    retval = true;
+
+  else if (fn->hasFlag(FLAG_MODULE_INIT)      && developer        == false)
+    retval = true;
+
+  else
+    retval = false;
+
+  return retval;
 }
 
 /************************************ | *************************************

@@ -88,6 +88,11 @@ private:
   void                   appendClassName (FnSymbol* fn);
 
   //
+  // Helper function for normalizing formals list
+  //
+  bool                   skipParens(FnSymbol* fn)                      const;
+
+  //
   // Support for selecting formals for functions and methods
   //
   int                    indexForThis(FnSymbol* fn)                    const;
