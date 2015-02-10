@@ -139,15 +139,15 @@ inline proc _cond_test(x: c_ptr) return x != c_nil;
 inline proc !(x: c_ptr) return x == c_nil;
 extern proc c_pointer_return(ref x:?t):c_ptr(t);
 
-inline proc c_ptrTo(arr: []) where isRectangularArr(arr) && arr.rank == 1 {
+inline proc c_ptrTo(arr: []) where isRectangularArr(arr) {
   return c_pointer_return(arr[arr.domain.low]);
 }
 inline proc c_ptrTo(ref x:?t):c_ptr(t)
 {
   if isArrayType(t) then
-    compilerError("c_ptrTo unsupported array type");
+    compilerError("c_ptrTo unsupported array type", 2);
   if isDomainType(t) then
-    compilerError("c_ptrTo domain type not supported");
+    compilerError("c_ptrTo domain type not supported", 2);
   // Other cases should be avoided, e.g. sync vars
   return c_pointer_return(x);
 }
