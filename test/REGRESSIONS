@@ -286,14 +286,14 @@ Reviewed 2015-02-09
 ===================
 no-local
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
 =================================
 no-local.linux32
 Inherits 'linux32' and 'no-local'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 =================================
 
 
@@ -311,17 +311,17 @@ Comm count mismatch (lydia)
 
 === sporadic failures below ===
 
-execution timeout (2015-01-18)
----------------------------------------
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
+sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
+ - see "gasnet+fifo: types/string/StringImpl/memLeaks/coforall.chpl" thread for details
+ - frequent for gasnet.fifo, infrequent for gasnet-fast, very infrequent for gasnet-everything
+---------------------------------------------------------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, ..., 2015-01-26, 2015-02-08)
 
 
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
@@ -329,13 +329,13 @@ Reviewed 2015-02-02
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program performance/ferguson/remote-tuple-write] (2015-01-23)
+[Error: Timed out executing program performance/ferguson/remote-tuple-write] (2015-01-23..2015-01-26)
 
 
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 
@@ -343,53 +343,41 @@ Reviewed 2015-02-02
 
 sporadic execution timeout (regularly)
 --------------------------------------
-[Error: Timed out executing program studies/sudoku/dinan/sudoku] (2014-11-01, 2014-11-06, 2014-12-18)
+[Error: Timed out executing program studies/sudoku/dinan/sudoku] (2014-11-01, 2014-11-06, 2014-12-18, 2015-01-02)
 
 
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===============================
 
 
 =============================
 gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 =============================
-
-consistent execution timeouts
------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (2014-11-28.. )
 
 
 === sporadic failures below ===
 
-sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
----------------------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, 2014-12-14, 2014-12-17, 2015-01-21, 2015-01-26)
-
 sporadic execution timeouts (frequent)
 --------------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15, 2015-01-07, 2015-01-09, 2015-01-25)
-
-sporadic execution timeouts (infrequent)
-----------------------------------------
-[Error: Timed out executing program optimizations/bulkcomm/alberto/Block/2dDRtoBDTest] (2014-10-21, 2014-11-23, 2015-01-26)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_gaxpy] (2014-10-19, 2014-10-24, 2014-11-11, 2014-11-13, 2014-12-13, 2014-12-15, 2015-01-07, 2015-01-09, 2015-01-25, 2015-02-08)
 
 
 =============================
 gasnet.llvm
 Inherits 'gasnet*' and 'llvm'
-Reviewed 2015-01-23
+Reviewed 2015-02-09
 =============================
 
 
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 =============================
 
 
