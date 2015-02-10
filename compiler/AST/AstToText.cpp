@@ -811,7 +811,7 @@ void AstToText::appendExpr(SymExpr* expr, bool quoteStrings)
 
   else if (ArgSymbol*  sym = toArgSymbol(expr->var))
   {
-    mText += sym->name;
+    appendExpr(sym->name);
   }
 
   else if (TypeSymbol* sym = toTypeSymbol(expr->var))
