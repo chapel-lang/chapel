@@ -223,7 +223,7 @@ Reviewed 2015-02-09
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
 System I/O error.  Thomas has escalated to sys-ops
