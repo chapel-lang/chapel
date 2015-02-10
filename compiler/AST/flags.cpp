@@ -64,7 +64,7 @@ initFlags() {
 }
 
 void writeFlags(FILE* fp, Symbol* sym) {
-  for (int flagNum = FLAG_UNKNOWN+1; flagNum < NUM_FLAGS; flagNum++) {
+  for (int flagNum = FLAG_FIRST; flagNum <= FLAG_LAST; flagNum++) {
     if (sym->flags[flagNum]) {
       fprintf(fp, " \"%s\"", flagShortNames[flagNum]);
     }
@@ -84,7 +84,7 @@ viewFlags(BaseAST* ast) {
   if (!viewFlagsShort && !viewFlagsName && !viewFlagsComment)
     viewFlagsName = true;
   if (Symbol* sym = toSymbol(ast)) {
-    for (int flagNum = FLAG_UNKNOWN+1; flagNum < NUM_FLAGS; flagNum++) {
+    for (int flagNum = FLAG_FIRST; flagNum <= FLAG_LAST; flagNum++) {
       if (sym->flags[flagNum]) {
         if (viewFlagsName)
           printf("%s ", flagNames[flagNum]);
