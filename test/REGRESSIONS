@@ -421,7 +421,7 @@ Reviewed 2015-02-09
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
-Reviewed 2015-02-29
+Reviewed 2015-02-09
 ====================
 
 An invalid option "openmp" appears on the command line. (2014-11-17 -- thomas/ben/et al)
@@ -529,14 +529,14 @@ output mismatch (first seen 2015-01-09, vass) (-hdevelop only?)
 ======================================
 x?-wb.prgenv-cray
 Inherits 'x?-wb.*' and '*prgenv-cray*'
-Reviewed 2015-02-29
+Reviewed 2015-02-09
 ======================================
 
 
 ============================
 xc-wb.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2015-02-29
+Reviewed 2015-02-09
 ============================
 
 
