@@ -103,6 +103,7 @@ private:
 
   void                   appendFormalType(ArgSymbol* arg);
   bool                   typeExprCopiedFromDefaultExpr(ArgSymbol* arg) const;
+  bool                   exprTypeHackEqual(Expr* expr0, Expr* expr1)   const;
   bool                   handleNormalizedTypeOf(BlockStmt* bs);
 
   void                   appendFormalVariableExpr(ArgSymbol* arg);

@@ -397,16 +397,158 @@ void AstToText::appendFormalType(ArgSymbol* arg)
   }
 }
 
+//
+// Attempt to determine, heuristically, if normalize.hack_resolve_types()
+// has copied defaultExpr to typeExpr. We want to avoid printing this
+// synthesizedtypeExpr expression.
+//
+// The current minimum conditions for this are
+//
+//     a) typeExpr was NULL
+//     b) the defaultExpr is a blockStmt with 1 stmt
+//
+// Then it gets tricky. We fall back on a tree-recursion that tries to
+// determine if two expression are structurally "equal" in a manner that
+// appears to handle the current use cases.
+//
+//
 bool AstToText::typeExprCopiedFromDefaultExpr(ArgSymbol* arg) const
 {
-  // Incomplete
-  return false;
+  BlockStmt* typeBlock    = arg->typeExpr;
+  BlockStmt* defaultBlock = arg->defaultExpr;
+  bool       retval       = false;
+
+  if (typeBlock != NULL && defaultBlock != NULL)
+  {
+    if (typeBlock->body.length == 1 && defaultBlock->body.length == 1)
+    {
+      Expr* typeExpr    = typeBlock->body.only();
+      Expr* defaultExpr = defaultBlock->body.only();
+
+      retval = exprTypeHackEqual(typeExpr, defaultExpr);
+    }
+  }
+
+  return retval;
 }
+
+// Compares two expressions for signs of the typeHack copy
+bool AstToText::exprTypeHackEqual(Expr* expr0, Expr* expr1) const
+{
+  bool retval = true;
+
+  if (expr0 == NULL && expr1 == NULL)
+  {
+    retval = true;
+  }
+
+  else if (isUnresolvedSymExpr(expr0) && isUnresolvedSymExpr(expr1))
+  {
+    UnresolvedSymExpr* sym0 = toUnresolvedSymExpr(expr0);
+    UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr1);
+
+    retval = (sym0->unresolved == sym1->unresolved);
+  }
+
+  else if (isSymExpr(expr0) && isSymExpr(expr1))
+  {
+    SymExpr* sym0 = toSymExpr(expr0);
+    SymExpr* sym1 = toSymExpr(expr1);
+
+    retval = (sym0->var == sym1->var);
+  }
+
+  else if (isCallExpr(expr0) && isCallExpr(expr1))
+  {
+    CallExpr* call0 = toCallExpr(expr0);
+    CallExpr* call1 = toCallExpr(expr1);
+
+    if (call0->primitive != call1->primitive)
+      retval = false;
+
+    else if (call0->numActuals() != call1->numActuals())
+      retval = false;
+
+    else if (exprTypeHackEqual(call0->baseExpr, call1->baseExpr) == false)
+      retval = false;
+
+    else
+    {
+      for (int i = 1; i <= call0->numActuals() && retval == true; i++)
+        retval = exprTypeHackEqual(call0->get(i), call1->get(i));
+    }
+  }
+
+  // For proc of the form "proc foo(x = bar())",
+  //   expr0 wraps a FnSymbol
+  //   expr1 is the original function name
+  else if (isSymExpr(expr0) && isUnresolvedSymExpr(expr1))
+  {
+    SymExpr*           sym0 = toSymExpr(expr0);
+    FnSymbol*          fn   = toFnSymbol(sym0->var);
+
+    UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr1);
+
+    retval = (fn != 0 && strcmp(fn->name, sym1->unresolved) == 0);
+  }
+
+  else
+  {
+    retval = false;
+  }
+
+  return retval;
+}
+
+//
+// Before normalize, the AST for the typeOf part of a signature like
+//
+//   +(x: _tuple, y: x(1).type)
+//
+// is roughly
+//
+//   #<BlockStmt #<CallExpr "typeof" #<CallExpr x(1)>> >
+//
+// After normalize, this becomes (roughly)
+//
+//   #<BlockStmt #<DefExpr  call_tmp>
+//               #<CallExpr "move"(call_tmp, #<CallExpr x(1)>)>
+//               #<CallExpr "typeof"(call_tmp)>
+//
+// Attempt to detect this pattern and then generate the desired output.
+//
 
 bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
 {
-  // Incomplete
-  return false;
+  bool retval = false;
+
+  if (bs->body.length == 3)
+  {
+    DefExpr*  callTmp = toDefExpr (bs->body.get(1));
+    CallExpr* moveExp = toCallExpr(bs->body.get(2));
+    CallExpr* typeExp = toCallExpr(bs->body.get(3));
+
+    if (callTmp != NULL && moveExp != NULL && typeExp != NULL)
+    {
+      if (moveExp->isPrimitive(PRIM_MOVE)   == true &&
+          typeExp->isPrimitive(PRIM_TYPEOF) == true)
+      {
+        if (CallExpr* moveSrc = toCallExpr(moveExp->get(2)))
+        {
+          if (moveSrc->numActuals() == 1)
+          {
+            mText  += ": ";
+            appendExpr(moveSrc);
+            mText  += ".type ";
+
+            retval =  true;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
