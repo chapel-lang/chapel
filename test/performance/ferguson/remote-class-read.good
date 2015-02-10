@@ -1,4 +1,4 @@
 15000450000
 {x = 1, y = 2, z = 3}
 {x = 100000, y = 100001, z = 100002}
-(get = 9, get_nb = 0, put = 2, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 600012, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0)
+(get = 9, get_nb = 0, put = 3, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 600012, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 4, fork_fast = 0, fork_nb = 0)
