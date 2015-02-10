@@ -379,7 +379,6 @@ void AstToText::appendFormalType(ArgSymbol* arg)
   else if (AggregateType* type = toAggregateType(arg->type))
   {
     mText += ": ";
-
     appendExpr(type->symbol->name);
   }
 
@@ -645,43 +644,6 @@ bool AstToText::isTypeDefault(Expr* expr) const
   return retval;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /************************************ | *************************************
 *                                                                           *
 * Helper functions for handling the "hidden formals" for methods.           *
@@ -760,16 +722,597 @@ ArgSymbol* AstToText::formalGet(FnSymbol* fn, int oneBasedIndex) const
 
 void AstToText::appendExpr(Expr* expr)
 {
-  // Incomplete
+  if      (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
+    appendExpr(sel);
+
+  else if (SymExpr*           sel = toSymExpr(expr))
+    appendExpr(sel, false);
+
+  else if (CallExpr*          sel = toCallExpr(expr))
+    appendExpr(sel);
+
+  else if (DefExpr*           sel = toDefExpr(expr))
+    appendExpr(sel);
+
+  else if (NamedExpr*         sel = toNamedExpr(expr))
+    appendExpr(sel);
+
+  else
+  {
+    // NOAKES 2015/02/05  Debugging support.
+    // Might become ASSERT in the future
+    mText += "AppendExpr.01";
+  }
+}
+
+void AstToText::appendExpr(UnresolvedSymExpr* expr)
+{
+  appendExpr(expr->unresolved);
 }
 
 void AstToText::appendExpr(SymExpr* expr, bool quoteStrings)
 {
-  // Incomplete
+  if (VarSymbol* var = toVarSymbol(expr->var))
+  {
+    if (var->immediate != 0)
+    {
+      const size_t bufSize = 128;
+      char         imm[bufSize];
+
+      if (var->type == dtBool)
+      {
+        if (var->immediate->v_bool == 0)
+          sprintf(imm, "false");
+        else
+          sprintf(imm, "true");
+      }
+
+      else if (var->immediate->const_kind == CONST_KIND_STRING)
+      {
+        if (strcmp(var->immediate->v_string, "_dom") == 0)
+          strcpy(imm, "domain");
+
+        else if (quoteStrings == true)
+        {
+          char* ptr = imm;
+
+          *ptr++ = '"';
+          strcpy(ptr, var->immediate->v_string);
+          ptr = strchr(ptr, '\0');
+          *ptr++ = '"';
+          *ptr++ = '\0';
+        }
+
+        else
+          strcpy(imm, var->immediate->v_string);
+      }
+
+      else
+      {
+        snprint_imm(imm, bufSize, *var->immediate);
+
+        if (var->type != 0 && is_imag_type(var->type) == true)
+        {
+          char* tail = strchr(imm, '\0');
+
+          *tail++ = 'i';
+          *tail   = '\0';
+        }
+      }
+
+      mText += imm;
+    }
+    else
+    {
+      if (strcmp(var->name, "nil") != 0)
+        mText += var->name;
+    }
+  }
+
+  else if (ArgSymbol*  sym = toArgSymbol(expr->var))
+  {
+    mText += sym->name;
+  }
+
+  else if (TypeSymbol* sym = toTypeSymbol(expr->var))
+  {
+    appendExpr(sym->name);
+  }
+
+  else if (EnumSymbol* sym = toEnumSymbol(expr->var))
+  {
+    if (EnumType* type = toEnumType(sym->type))
+    {
+      mText += type->symbol->name;
+      mText += '.';
+      mText += sym->name;
+    }
+    else
+    {
+      mText += " appendExpr.SymExpr.00";
+    }
+  }
+
+  else
+  {
+    // NOAKES 2015/02/05  Debugging support.
+    // Might become ASSERT in the future
+    mText += " appendExpr.SymExpr.01";
+  }
 }
 
+void AstToText::appendExpr(CallExpr* expr)
+{
+  if (expr->primitive == 0)
+  {
+    if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr->baseExpr))
+    {
+      const char* fnName = sel->unresolved;
+
+      // UnaryOp not
+      if     (strcmp(fnName, "!")                            == 0)
+      {
+        mText += "!";
+        appendExpr(expr->get(1));
+      }
+
+      // UnaryOp negate
+      else if (strcmp(fnName, "-")                           == 0 &&
+               expr->numActuals()                            == 1)
+      {
+        mText += "-";
+        appendExpr(expr->get(1));
+      }
+
+      else if (strcmp(fnName, "_cast")                        == 0)
+      {
+        appendExpr(expr->get(2));
+        mText += ": ";
+        appendExpr(expr->get(1));
+      }
+
+      else if (strcmp(fnName, "chpl__atomicType")             == 0)
+      {
+        mText += "atomic";
+        appendExpr(expr->get(1));
+      }
+
+      else if (strcmp(fnName, "chpl__ensureDomainExpr")       == 0)
+      {
+        appendExpr(expr->get(1));
+      }
+
+      else if (strcmp(fnName, "chpl__buildDomainRuntimeType") == 0)
+      {
+        if (expr->numActuals() == 2)
+        {
+          if (isUnresolvedSymExpr(expr->get(1)) &&
+              isUnresolvedSymExpr(expr->get(2)))
+          {
+            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
+            UnresolvedSymExpr* sym2 = toUnresolvedSymExpr(expr->get(2));
+
+            if (strcmp(sym1->unresolved, "defaultDist") == 0)
+            {
+              mText += "domain(";
+              appendExpr(sym2);
+              mText += ")";
+            }
+
+            else
+            {
+              // NOAKES 2015/02/05  Debugging support.
+              // Might become ASSERT in the future
+              mText += "AppendExpr.Call00";
+            }
+          }
+
+          else if (isSymExpr(expr->get(1)) && isSymExpr(expr->get(2)))
+          {
+            SymExpr*   sym1 = toSymExpr(expr->get(1));
+            SymExpr*   sym2 = toSymExpr(expr->get(2));
+
+            VarSymbol* arg1 = toVarSymbol(sym1->var);
+            ArgSymbol* arg2 = toArgSymbol(sym2->var);
+
+            if (arg1 != 0 && arg2 != 0 && strcmp(arg1->name, "defaultDist") == 0)
+            {
+              mText += "domain(";
+              appendExpr(sym2);
+              mText += ")";
+            }
+
+            else
+            {
+              // NOAKES 2015/02/05  Debugging support.
+              // Might become ASSERT in the future
+              mText += "AppendExpr.Call01";
+            }
+          }
+
+          else
+          {
+            // NOAKES 2015/02/05  Debugging support.
+            // Might become ASSERT in the future
+            mText += "AppendExpr.Call02";
+          }
+
+        }
+
+        else
+        {
+          // NOAKES 2015/02/05  Debugging support.
+          // Might become ASSERT in the future
+          mText += "AppendExpr.Call03";
+        }
+      }
+
+      else if (strcmp(fnName, "chpl__buildArrayRuntimeType") == 0)
+      {
+        mText += "[";
+        appendExpr(expr->get(1));
+        mText += "] ";
+
+        if (expr->numActuals() == 2)
+          appendExpr(expr->get(2));
+      }
+
+      else if (strcmp(fnName, "_build_tuple")                == 0)
+        appendExpr(expr, "");
+
+      else if (strcmp(fnName, "chpl__buildIndexType")        == 0)
+        appendExpr(expr, "index");
+
+      else if (strcmp(fnName, "range")                       == 0)
+        appendExpr(expr, "range");
+
+      else if (strcmp(fnName, ".")                           == 0)
+      {
+        SymExpr* symExpr1 = toSymExpr(expr->get(1));
+        SymExpr* symExpr2 = toSymExpr(expr->get(2));
+
+        if (symExpr1 != 0 && symExpr2 != 0)
+        {
+          if (isArgSymbol(symExpr1->var) && isVarSymbol(symExpr2->var))
+          {
+            ArgSymbol* sym1 = toArgSymbol(symExpr1->var);
+
+            if (strcmp(sym1->name, "this") == 0)
+            {
+              appendExpr(symExpr2);
+            }
+            else
+            {
+              appendExpr(symExpr1);
+              mText += '.';
+              appendExpr(symExpr2);
+            }
+          }
+
+          else if (isVarSymbol(symExpr1->var) && isVarSymbol(symExpr2->var))
+          {
+            VarSymbol* sym1 = toVarSymbol(symExpr1->var);
+
+            if (strcmp(sym1->name, "this") == 0)
+            {
+              appendExpr(symExpr2);
+            }
+            else
+            {
+              appendExpr(symExpr1);
+              mText += '.';
+              appendExpr(symExpr2);
+            }
+          }
+
+          else
+          {
+            // NOAKES 2015/02/05  Debugging support.
+            // Might become ASSERT in the future
+            mText += "AppendExpr.Call04";
+          }
+
+        }
+        else
+        {
+          appendExpr(expr->get(1));
+          mText += '.';
+          appendExpr(expr->get(2));
+        }
+      }
+
+      // Convert <name>(_mt, this) to <name>
+      else if (isMtThis(expr) == true)
+      {
+        UnresolvedSymExpr* name = toUnresolvedSymExpr(expr->baseExpr);
+
+        mText += name->unresolved;
+      }
+
+      // Convert <name>(_mt, <class>) to <class>.<name>
+      else if (isMtOther(expr) == true)
+      {
+        UnresolvedSymExpr* name     = toUnresolvedSymExpr(expr->baseExpr);
+        SymExpr*           symClass = toSymExpr(expr->get(2));
+
+        mText += symClass->var->name;
+        mText += '.';
+        mText += name->unresolved;
+      }
+
+      // NOAKES 2015/02/09 Treating all calls with 2 actuals as binary operators
+      else if (expr->numActuals() == 2)
+      {
+        appendExpr(expr->get(1));
+        appendExpr(expr->baseExpr);
+        appendExpr(expr->get(2));
+      }
+
+      else
+        appendExpr(expr, fnName);
+    }
+
+    else if (isSymExpr(expr->baseExpr))
+    {
+      if (expr->numActuals() == 0)
+      {
+        // NOAKES 2015/02/05  Debugging support.
+        // Might become ASSERT in the future
+        mText += "AppendExpr.Call06";
+      }
+
+      else if (expr->numActuals() == 1)
+      {
+        appendExpr(expr->baseExpr);
+        mText += '(';
+        appendExpr(expr->get(1));
+        mText += ')';
+      }
+
+      else
+      {
+        appendExpr(expr->baseExpr);
+        mText += '(';
+
+        for (int i = 1; i <= expr->numActuals(); i++)
+        {
+          if (i > 1)
+            mText += ", ";
+
+          appendExpr(expr->get(i));
+        }
+
+        mText += ')';
+      }
+    }
+
+    else
+    {
+      // NOAKES 2015/02/05  Debugging support.
+      // Might become ASSERT in the future
+      mText += "AppendExpr.Call08";
+    }
+  }
+
+  else
+  {
+    if (expr->isPrimitive(PRIM_TYPEOF))
+    {
+      appendExpr(expr->get(1));
+      mText += ".type ";
+    }
+    else
+    {
+      // NOAKES 2015/02/05  Debugging support.
+      // Might become ASSERT in the future
+      mText += "AppendExpr.Call09";
+    }
+  }
+}
+
+void AstToText::appendExpr(DefExpr* expr)
+{
+  mText += '?';
+
+  if (VarSymbol* var = toVarSymbol(expr->sym))
+  {
+    if (strncmp(var->name, "chpl__query", 11) != 0)
+      mText += var->name;
+  }
+
+  else
+  {
+    // NOAKES 2015/02/05  Debugging support.
+    // Might become ASSERT in the future
+    mText += " appendExpr.DefExpr.00";
+  }
+}
+
+void AstToText::appendExpr(NamedExpr* expr)
+{
+  mText += expr->name;
+  mText += " = ";
+  appendExpr(expr->actual);
+}
+
+void AstToText::appendExpr(CallExpr* expr, const char* fnName)
+{
+  appendExpr(fnName);
+  mText += '(';
+
+  for (int i = 1; i <= expr->numActuals(); i++)
+  {
+    if (i > 1)
+      mText += ", ";
+
+    appendExpr(expr->get(i));
+  }
+
+  mText += ')';
+}
+
+// Normalize names
 void AstToText::appendExpr(const char* name)
 {
-  // Incomplete
+  //
+  // NOAKES 2015/02/05
+  //
+  // The compiler maps sync -> _syncvar, single -> _singlevar, etc.
+  //
+  // Undo this mapping.
+  // There are a few uses of these names in internal modules and those
+  // will be altered but this is acceptable for this incremental upgrade.
+
+  if      (strncmp(name, "_syncvar",          8) == 0)
+    appendSpecialExpr(name, "_syncvar", "sync");
+
+  else if (strncmp(name, "_singlevar",        8) == 0)
+    appendSpecialExpr(name, "_singlevar",  "single");
+
+  else if (strncmp(name, "_domain",           8) == 0)
+    appendSpecialExpr(name, "_domain",  "domain");
+
+  // Unwrap _ref(foo())
+  else if (strncmp(name, "_ref(",             5) == 0)
+  {
+    std::string buffer = removeOuterParens(name + 4);
+
+    appendExpr(buffer.c_str());
+  }
+
+  // Convert to array syntax
+  else if (strcmp(name, "_array")                == 0)
+    mText += "[] ";
+
+  // Normalize type names for 64-bit default
+  else if (strcmp(name, "int(64)")               == 0)
+    mText += "int";
+
+  else if (strcmp(name, "uint(64)")              == 0)
+    mText += "uint";
+
+  else if (strcmp(name, "real(64)")              == 0)
+    mText += "real";
+
+  else if (strcmp(name, "imag(64)")              == 0)
+    mText += "imag";
+
+  else if (strcmp(name, "complex(128)")          == 0)
+    mText += "complex";
+
+  else
+    mText += name;
+}
+
+// Handle cases like
+//   _syncvar -> sync
+//   _syncvar(int(64)) -> sync int
+//
+//   root will be "_syncvar"
+//   repl will be "sync"
+//
+void AstToText::appendSpecialExpr(const char* name,
+                                  const char* root,
+                                  const char* repl)
+{
+  int len = strlen(root);
+
+  // Write out the replacement string
+  mText += repl;
+
+  // Now check for a parenthesized string
+  if (name[len] == '(')
+  {
+    std::string buffer = removeOuterParens(name);
+
+    mText += ' ';
+    appendExpr(buffer.c_str());
+  }
+}
+
+// Remove outer parens i.e. "(foo(a))" -> "foo(a)"
+std::string AstToText::removeOuterParens(const char* parenExpr) const
+{
+  // Step over the initial open paren
+  const char* fptr       = parenExpr + 1;
+  int         parenCount = 1;
+
+  std::string retval     = "";
+
+  while ((*fptr != '\0' && *fptr != ')') || parenCount > 1)
+  {
+    if (*fptr == '(')
+      parenCount += 1;
+    else if (*fptr == ')')
+      parenCount -= 1;
+
+    retval += *fptr++;
+  }
+
+  return retval;
+}
+
+//
+// Before normalize, the AST for the signatures of methods like
+//
+//    _singlevar.writeEF(val: base_type)
+//    _singlevar.writeEF(val: sv.base_type)
+//
+// is roughly
+//
+//    #<ArgSymbol typeExpr: #<Call "." ("this", "base_type")>>
+//    #<ArgSymbol typeExpr: #<Call "." ("sv",   "base_type")>>
+//
+// respectively.  This is easy to detect and reformat.
+//
+// After normalize these signatures become (roughly)
+//
+//    #<ArgSymbol typeExpr: #<Call "base_type" ("_mt", "this")
+//    #<ArgSymbol typeExpr: #<Call "base_type" ("_mt", "sv")
+//
+// These predicates check for this pattern.
+//
+
+bool AstToText::isMtThis(CallExpr* expr) const
+{
+  return isMtArg(expr, true);
+}
+
+bool AstToText::isMtOther(CallExpr* expr) const
+{
+  return isMtArg(expr, false);
+}
+
+bool AstToText::isMtArg(CallExpr* expr, bool expectThis) const
+{
+  bool retval = false;
+
+  if (isUnresolvedSymExpr(expr->baseExpr))
+  {
+    if (CallExpr* call = toCallExpr(expr))
+    {
+      if (call->numActuals() == 2)
+      {
+        SymExpr* symMt     = toSymExpr(call->get(1));
+        SymExpr* symTarget = toSymExpr(call->get(2));
+
+        if (symMt != NULL && symTarget != 0)
+        {
+          VarSymbol* varMt     = toVarSymbol(symMt->var);
+          ArgSymbol* argTarget = toArgSymbol(symTarget->var);
+
+          if (varMt                             != NULL          &&
+              argTarget                         != NULL          &&
+              varMt->type                       == dtMethodToken &&
+              argTarget->hasFlag(FLAG_ARG_THIS) == expectThis)
+          {
+            retval = true;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 

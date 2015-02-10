@@ -52,9 +52,13 @@
 
 class ArgSymbol;
 class BlockStmt;
+class CallExpr;
+class DefExpr;
 class Expr;
 class FnSymbol;
+class NamedExpr;
 class SymExpr;
+class UnresolvedSymExpr;
 
 #include <string>
 
@@ -123,10 +127,31 @@ private:
   //
   void                   appendExpr(Expr*              expr);
 
+  void                   appendExpr(UnresolvedSymExpr* expr);
+
   void                   appendExpr(SymExpr*           expr,
                                     bool               quoteStrings);
 
+  void                   appendExpr(CallExpr*          expr);
+
+  void                   appendExpr(CallExpr*          expr,
+                                    const char*        fnName);
+
+  void                   appendExpr(DefExpr*           expr);
+
+  void                   appendExpr(NamedExpr*         expr);
+
   void                   appendExpr(const char*        name);
+
+  void                   appendSpecialExpr(const char* name,
+                                           const char* root,
+                                           const char* repl);
+
+  std::string            removeOuterParens(const char* parenExpr)      const;
+
+  bool                   isMtThis (CallExpr* expr)                     const;
+  bool                   isMtOther(CallExpr* expr)                     const;
+  bool                   isMtArg  (CallExpr* expr, bool expectThis)    const;
 
   std::string            mText;
 };
