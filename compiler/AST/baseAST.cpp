@@ -393,7 +393,17 @@ const char* BaseAST::astTagAsString() const {
       break;
 
     case E_BlockStmt:
-      retval = "BlockStmt";
+      {
+        // see AST_CHILDREN_CALL
+        BlockStmt* stmt = toBlockStmt(this);
+        if (false) retval = "";
+        else if (stmt->isCForLoop())     retval = "CForLoop";
+        else if (stmt->isForLoop())      retval = "ForLoop";
+        else if (stmt->isParamForLoop()) retval = "ParamForLoop";
+        else if (stmt->isWhileDoStmt())  retval = "WhileDoStmt";
+        else if (stmt->isDoWhileStmt())  retval = "DoWhileStmt";
+        else retval = "BlockStmt";
+      }
       break;
 
     case E_CondStmt:
@@ -552,49 +562,49 @@ GenRet baseASTCodegenString(const char* str)
 *                                                                             *
 ************************************** | *************************************/
 
-bool isLoopStmt(BaseAST* a)
+bool isLoopStmt(const BaseAST* a)
 {
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isLoopStmt()) ? true : false;
 }
 
-bool isWhileStmt(BaseAST* a)
+bool isWhileStmt(const BaseAST* a)
 {
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isWhileStmt()) ? true : false;
 }
 
-bool isWhileDoStmt(BaseAST* a)
+bool isWhileDoStmt(const BaseAST* a)
 {
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isWhileDoStmt()) ? true : false;
 }
 
-bool isDoWhileStmt(BaseAST* a)
+bool isDoWhileStmt(const BaseAST* a)
 {
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isDoWhileStmt()) ? true : false;
 }
 
-bool isParamForLoop(BaseAST* a)
+bool isParamForLoop(const BaseAST* a)
 {
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isParamForLoop()) ? true : false;
 }
 
-bool isForLoop(BaseAST* a)
+bool isForLoop(const BaseAST* a)
 {
   BlockStmt* stmt = toBlockStmt(a);
 
   return (stmt != 0 && stmt->isForLoop()) ? true : false;
 }
 
-bool isCForLoop(BaseAST* a)
+bool isCForLoop(const BaseAST* a)
 {
   BlockStmt* stmt = toBlockStmt(a);
 
