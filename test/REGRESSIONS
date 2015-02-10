@@ -628,11 +628,11 @@ Reviewed 2015-02-02
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===================
 
-undefined reference to chpl_bitops_debruijn64 (2014-07-14)
-----------------------------------------------------------
+undefined reference to chpl_bitops_debruijn64
+---------------------------------------------
 [Error matching compiler output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
 
 negative floating point 0.0 not supported
@@ -641,29 +641,22 @@ negative floating point 0.0 not supported
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral]
 [Error matching program output for types/file/bradc/scalar/floatcomplexexceptions]
 
-consistent execution timeout
-----------------------------
+consistent execution timeout (no intrinsics for pgi, test is slow with locks)
+-----------------------------------------------------------------------------
 [Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
-
-
-=== sporadic failures below ===
-
-target program died with signal 11, without coredump
-----------------------------------------------------
-[Error matching program output for stress/deitz/test_10k_begins] (xe-wb.prgenv-pgi  2014-11-16, xe-wb.pgi 2014-11-18, 2014-11-28)
 
 
 ==============================
 x?-wb.pgi
 Inherits 'x?-wb.*' and '*pgi*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ==============================
 
 
 ==============================
 x?-wb.prgenv-pgi
 Inherits 'x?-wb.*' and '*pgi*'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ==============================
 
 PGC-W-0205-Argument mismatch for assert (xe-wb.prgenv-pgi 2015-01-29, can't reproduce)
@@ -674,7 +667,7 @@ all but a few failed
 ===========================
 xc-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
-Reviewed 2015-02-02
+Reviewed 2015-02-09
 ===========================
 
 
