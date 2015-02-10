@@ -267,8 +267,278 @@ int AstToText::numFormals(FnSymbol* fn) const
 
 void AstToText::appendFormal(FnSymbol* fn, int oneBasedIndex)
 {
-  // Incomplete
+  ArgSymbol* arg = formalGet(fn, oneBasedIndex);
+
+  appendFormalIntent(arg);
+
+  appendFormalName(arg);
+
+  appendFormalType(arg);
+
+  appendFormalVariableExpr(arg);
+
+  appendFormalDefault(arg);
 }
+
+void AstToText::appendFormalIntent(ArgSymbol* arg)
+{
+  switch (arg->intent)
+  {
+    case INTENT_IN:
+      mText += "in ";
+      break;
+
+    case INTENT_OUT:
+      mText += "out ";
+      break;
+
+    case INTENT_INOUT:
+      mText += "inout ";
+      break;
+
+    case INTENT_CONST:
+      mText += "const ";
+      break;
+
+    case INTENT_CONST_IN:
+      mText += "const in ";
+      break;
+
+    case INTENT_REF:
+      mText += "ref ";
+      break;
+
+    case INTENT_CONST_REF:
+      mText += "const ref ";
+      break;
+
+    case INTENT_PARAM:
+      mText += "param ";
+      break;
+
+    case INTENT_TYPE:
+      break;
+
+    case INTENT_BLANK:
+      break;
+  }
+
+  if (arg->hasFlag(FLAG_TYPE_VARIABLE))
+    mText += "type ";
+}
+
+void AstToText::appendFormalName(ArgSymbol* arg)
+{
+  mText += arg->name;
+}
+
+void AstToText::appendFormalType(ArgSymbol* arg)
+{
+  if (arg->typeExpr != 0)
+  {
+    BlockStmt* blockStmt = arg->typeExpr;
+
+    if (blockStmt->length() == 1)
+    {
+      // Do not print a synthesized typeExpr
+      if (typeExprCopiedFromDefaultExpr(arg) == false)
+      {
+        mText += ": ";
+        appendExpr(arg->typeExpr->body.get(1));
+      }
+    }
+
+    else
+    {
+      if (handleNormalizedTypeOf(blockStmt) == false)
+      {
+        // NOAKES 2015/02/05  Debugging support.
+        // Might become ASSERT in the future or perhaps AST will be
+        // altered so that typeExpr is actually an expression
+        mText += " AppendType.00";
+      }
+    }
+  }
+
+  else if (arg->type == dtUnknown)
+  {
+
+  }
+
+  else if (arg->type == dtAny)
+  {
+
+  }
+
+  else if (PrimitiveType* type = toPrimitiveType(arg->type))
+  {
+    mText += ": ";
+    appendExpr(type->symbol->name);
+  }
+
+  else if (AggregateType* type = toAggregateType(arg->type))
+  {
+    mText += ": ";
+
+    appendExpr(type->symbol->name);
+  }
+
+  else if (EnumType*      type = toEnumType(arg->type))
+  {
+    mText += ": ";
+    appendExpr(type->symbol->name);
+  }
+
+  else
+  {
+    // NOAKES 2015/02/05  Debugging support.
+    // Might become ASSERT in the future
+    mText += " AppendType.02";
+  }
+}
+
+bool AstToText::typeExprCopiedFromDefaultExpr(ArgSymbol* arg) const
+{
+  // Incomplete
+  return false;
+}
+
+bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
+{
+  // Incomplete
+  return false;
+}
+
+void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
+{
+  if (arg->variableExpr != 0)
+  {
+    mText += " ...";
+
+    if (BlockStmt* blockStmt = toBlockStmt(arg->variableExpr))
+    {
+      Expr* expr = blockStmt->body.get(1);
+
+      if (blockStmt->length() == 1)
+      {
+        if (DefExpr* sel = toDefExpr(expr))
+        {
+          if (VarSymbol* sym = toVarSymbol(sel->sym))
+          {
+            if (strncmp(sym->name, "chpl__query", 11) != 0)
+            {
+              mText += "?";
+              mText += sym->name;
+            }
+          }
+          else
+          {
+            // NOAKES 2015/02/05  Debugging support.
+            // Might become ASSERT in the future
+            mText += " appendFormalVariableExpr.00";
+          }
+        }
+
+        else
+        {
+          appendExpr(expr);
+        }
+      }
+      else
+      {
+        // NOAKES 2015/02/05  Debugging support. Might become ASSERT in
+        // the future or variableExpr might be converted to an expression
+        mText += " appendFormalVariableExpr.01";
+      }
+    }
+    else
+    {
+      // NOAKES 2015/02/05  Debugging support.
+      // Might become ASSERT in the future
+      mText += " appendFormalVariableExpr.02";
+    }
+  }
+}
+
+void AstToText::appendFormalDefault(ArgSymbol* arg)
+{
+  if (arg->defaultExpr  != NULL)
+  {
+    BlockStmt* bs = arg->defaultExpr;
+
+    if (bs->body.length == 1)
+    {
+      Expr* expr = bs->body.get(1);
+
+      if (isTypeDefault(expr) == false)
+      {
+        mText += " = ";
+
+        if (SymExpr* sym = toSymExpr(expr))
+          appendExpr(sym, true);
+        else
+          appendExpr(expr);
+      }
+    }
+
+    else
+    {
+      // NOAKES 2015/02/05  Debugging support. Might become ASSERT in the future
+      // or AST might be updated so that defaultExpr is simply an expression.
+      mText += " = AppendFormalDefault.00";
+    }
+  }
+}
+
+bool AstToText::isTypeDefault(Expr* expr) const
+{
+  bool retval = false;
+
+  if (SymExpr* symExpr = toSymExpr(expr))
+  {
+    if (VarSymbol* var = toVarSymbol(symExpr->var))
+      retval = (strcmp(var->name, "_typeDefaultT") == 0) ? true : false;
+  }
+
+  return retval;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /************************************ | *************************************
 *                                                                           *
@@ -347,6 +617,11 @@ ArgSymbol* AstToText::formalGet(FnSymbol* fn, int oneBasedIndex) const
 ************************************* | ************************************/
 
 void AstToText::appendExpr(Expr* expr)
+{
+  // Incomplete
+}
+
+void AstToText::appendExpr(SymExpr* expr, bool quoteStrings)
 {
   // Incomplete
 }

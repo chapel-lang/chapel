@@ -51,8 +51,10 @@
 ************************************* | ************************************/
 
 class ArgSymbol;
+class BlockStmt;
 class Expr;
 class FnSymbol;
+class SymExpr;
 
 #include <string>
 
@@ -93,6 +95,22 @@ private:
   bool                   skipParens(FnSymbol* fn)                      const;
 
   //
+  // Helper functions for normalizing a single formal
+  //
+  void                   appendFormalIntent(ArgSymbol* arg);
+
+  void                   appendFormalName(ArgSymbol* arg);
+
+  void                   appendFormalType(ArgSymbol* arg);
+  bool                   typeExprCopiedFromDefaultExpr(ArgSymbol* arg) const;
+  bool                   handleNormalizedTypeOf(BlockStmt* bs);
+
+  void                   appendFormalVariableExpr(ArgSymbol* arg);
+
+  void                   appendFormalDefault(ArgSymbol* arg);
+  bool                   isTypeDefault(Expr* expr)                     const;
+
+  //
   // Support for selecting formals for functions and methods
   //
   int                    indexForThis(FnSymbol* fn)                    const;
@@ -103,6 +121,10 @@ private:
   // Formatting the expressions found in formals (skeleton)
   //
   void                   appendExpr(Expr*              expr);
+
+  void                   appendExpr(SymExpr*           expr,
+                                    bool               quoteStrings);
+
   void                   appendExpr(const char*        name);
 
   std::string            mText;
