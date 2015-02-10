@@ -29,6 +29,7 @@ typedef MapElem<const char*, int> FlagMapElem;
 // see also flags_list.h for description
 static FlagMap flagMap;
 static const char* flagNames[NUM_FLAGS];
+static const char* flagShortNames[NUM_FLAGS];
 static const char* flagComments[NUM_FLAGS];
 static bool flagPragma[NUM_FLAGS];
 
@@ -48,6 +49,7 @@ initFlags() {
 # define symbolFlag(NAME,PRAGMA,MAPNAME,COMMENT) \
     flagMap.put(astr(MAPNAME), NAME); \
     flagNames[NAME] = #NAME; \
+    flagShortNames[NAME] = astr(MAPNAME); \
     flagComments[NAME] = COMMENT; \
     flagPragma[NAME] = PRAGMA;
 # include "flags_list.h"
@@ -62,9 +64,9 @@ initFlags() {
 }
 
 void writeFlags(FILE* fp, Symbol* sym) {
-  form_Map(FlagMapElem, e, flagMap) {
-    if (sym->flags[e->value]) {
-      fprintf(fp, " \"%s\"", e->key);
+  for (int flagNum = FLAG_FIRST; flagNum <= FLAG_LAST; flagNum++) {
+    if (sym->flags[flagNum]) {
+      fprintf(fp, " \"%s\"", flagShortNames[flagNum]);
     }
   }
 }
@@ -82,17 +84,17 @@ viewFlags(BaseAST* ast) {
   if (!viewFlagsShort && !viewFlagsName && !viewFlagsComment)
     viewFlagsName = true;
   if (Symbol* sym = toSymbol(ast)) {
-    form_Map(FlagMapElem, e, flagMap) {
-      if (sym->flags[e->value]) {
+    for (int flagNum = FLAG_FIRST; flagNum <= FLAG_LAST; flagNum++) {
+      if (sym->flags[flagNum]) {
         if (viewFlagsName)
-          printf("%s ", flagNames[e->value]);
+          printf("%s ", flagNames[flagNum]);
         if (viewFlagsPragma)
-          printf("%s", flagPragma[e->value] ? "ypr " : "npr ");
+          printf("%s", flagPragma[flagNum] ? "ypr " : "npr ");
         if (viewFlagsShort)
-          printf("\"%s\" ", e->key);
+          printf("\"%s\" ", flagShortNames[flagNum]);
         if (viewFlagsComment)
           printf("// %s",
-                 *flagComments[e->value] ? flagComments[e->value] : "ncm");
+                 *flagComments[flagNum] ? flagComments[flagNum] : "ncm");
         printf("\n");
       }
     }
