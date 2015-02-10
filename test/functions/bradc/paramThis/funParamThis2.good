@@ -1,1 +1,1 @@
-In foo() with (nonsensical) param this
+funParamThis2.chpl:1: error: 'this' intents can only be applied to methods

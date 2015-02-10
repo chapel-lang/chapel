@@ -1,2 +1,4 @@
 # First let's ensure these work for comm=none. Then we can try other configs.
 CHPL_COMM != none
+# Still doesn't work with munging turned off.
+CHPL_MUNGE_USER_IDENTS == 0

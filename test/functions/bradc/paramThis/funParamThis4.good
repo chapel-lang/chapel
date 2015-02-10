@@ -1,0 +1,3 @@
+funParamThis4.chpl:17: error: ambiguous call 'C.foo()'
+funParamThis4.chpl:7: note: candidates are: C.foo()
+funParamThis4.chpl:11: note:                 C.foo()

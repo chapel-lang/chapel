@@ -392,6 +392,8 @@ tags
 /third-party/hwloc/hwloc-1.7.2
 /third-party/llvm/llvm
 /third-party/re2/re2
+/third-party/qthread/qthread-1.10/autom4te.cache/
+/third-party/qthread/qthread-1.10/config.h.in
 
 # Util ignores.
 /util/pastPerformance/ra.dat

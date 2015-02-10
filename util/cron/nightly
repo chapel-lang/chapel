@@ -364,6 +364,7 @@ if ($mailer eq "") {
     if ($? == 0) {
         $mailer = "$chplsendemail --header=Reply-To=$replymail,Precedence=bulk";
     } else {
+        print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
         $mailer = "mail";
     }
 }
