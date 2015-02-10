@@ -1,0 +1,11 @@
+bug: Array field initializer accesses the containing record as a whole.
+
+This is the same problem as in arrayDomInClassRecord.  It does not manifest as a fault
+when run after being compiled for serial execution, but when run with valgrind, it is
+still trying to access uninitialized memory.  This is because the parloopexpr refers to
+the record as a whole, rather than just to the array it is trying to initialize (accessing
+the dom as a separate data item is permissible).
+
+When compiled with --no-local, the error manifests as an invalid node ID.  (With
+CHPL_COMM=none, the node id should always be zero.)
+

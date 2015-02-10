@@ -1,0 +1,9 @@
+bug: Record initializer read uninitialized memory.
+
+This is the same bug as reported for ArrayDomInClassRecord2, but manifests in a different
+way.  The root problem is still that the parloopexpr used to initialize the array field in
+a record is given access to and attempts to make a copy of the entire record.  In this
+case, nothing bad happens when the program compiled for local execution.  When it is
+compiled using --no-local, then at some point it attempts to access the array field and
+discovers that the node portion of the array class pointer contains garbage.
+
