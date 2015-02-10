@@ -1,0 +1,32 @@
+feature request: Let getters return values by const ref
+
+Following introduction of AMM, this test fails because there is an autoCopy inserted
+before the return of a record passed back by value.  The autoCopy performs memory
+allocation, which immediately kicks the function containing it out of the running for the
+fastOnOptimization.
+
+This test passed before, because in the dsiAccess, formerly no MM was performed on
+fully-clad arrays (as elements of a larger array).  The current implementation of AMM
+relies on tracking memory for fully-clad arrays, but there are a number of optimizations
+that can still be performed.
+
+Actually, I'm not sure why we allocate memory in that dsiAccess call.  That is worth
+looking into.
+
+For this particular case, it is recommended that getters be reimplemented as functions
+returning const ref.  The only difference between a (compiler-supplied) getter vs. a
+setter is that the return intent of the former will be "const ref" while the return intent
+of the latter simply "ref".  When AMM wants to copy the value held in a reference into a
+variable or field, it performs an autoCopy.  Therefore, the desired value semantics
+associated with a getter will be supplied "for free" by the AMM implementation.  For
+starters, we can just use the setter form for all accesses, and supply the getter form
+later, when const ref return intents are implemented (I assume they are not available
+right now) and we wish to turn down the screws on access control a bit.
+
+When it can be guaranteed that an array will outlast a reference to it, it is not
+necessary to maintain the reference count across that call.  The current implementation
+for iterator records and classes is too conservative w.r.t. fields referring to
+reference-counted types.  As long as the above guarantee can be proven for the serial
+case, and task handling increments reference counts appropriately for the other case, then
+the routines that create and destroy iterator records and classes can be "special" and
+save a few copies and reference count manipulations.
