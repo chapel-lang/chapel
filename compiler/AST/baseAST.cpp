@@ -395,7 +395,7 @@ const char* BaseAST::astTagAsString() const {
     case E_BlockStmt:
       {
         // see AST_CHILDREN_CALL
-        BlockStmt* stmt = toBlockStmt(this);
+        const BlockStmt* stmt = toConstBlockStmt(this);
         if (false) retval = "";
         else if (stmt->isCForLoop())     retval = "CForLoop";
         else if (stmt->isForLoop())      retval = "ForLoop";
@@ -564,49 +564,49 @@ GenRet baseASTCodegenString(const char* str)
 
 bool isLoopStmt(const BaseAST* a)
 {
-  BlockStmt* stmt = toBlockStmt(a);
+  const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isLoopStmt()) ? true : false;
 }
 
 bool isWhileStmt(const BaseAST* a)
 {
-  BlockStmt* stmt = toBlockStmt(a);
+  const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isWhileStmt()) ? true : false;
 }
 
 bool isWhileDoStmt(const BaseAST* a)
 {
-  BlockStmt* stmt = toBlockStmt(a);
+  const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isWhileDoStmt()) ? true : false;
 }
 
 bool isDoWhileStmt(const BaseAST* a)
 {
-  BlockStmt* stmt = toBlockStmt(a);
+  const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isDoWhileStmt()) ? true : false;
 }
 
 bool isParamForLoop(const BaseAST* a)
 {
-  BlockStmt* stmt = toBlockStmt(a);
+  const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isParamForLoop()) ? true : false;
 }
 
 bool isForLoop(const BaseAST* a)
 {
-  BlockStmt* stmt = toBlockStmt(a);
+  const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isForLoop()) ? true : false;
 }
 
 bool isCForLoop(const BaseAST* a)
 {
-  BlockStmt* stmt = toBlockStmt(a);
+  const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isCForLoop()) ? true : false;
 }
