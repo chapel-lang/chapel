@@ -53,6 +53,12 @@ public:
 
   void             offsetSet(int offset);
 
+  // These adjust the printing format. Could be per-instance.
+  static bool          compact;
+  static const char*   delimitEnter;
+  static const char*   delimitExit;
+  static bool          showNodeIDs;
+
   //
   // These functions are the "implementation" interface for the
   // Visitor pattern.
@@ -127,7 +133,8 @@ private:
   void             ast_symbol(Symbol* sym, bool def);
 
   void             writeSymbol(Symbol* sym)                             const;
-  void             writeType  (Type*   type)                            const;
+  void             writeSymbolCompact(Symbol* sym)                      const;
+  void             writeType(Type* type, bool announce = true)          const;
 
   void             write(const char* text);
   void             write(bool spaceBefore, const char* text, bool spaceAfter);
@@ -145,6 +152,14 @@ private:
   void             logVisit(const char* fmt, ...);
 
   void             logWrite(const char* fmt, ...);
+
+  // enable compact mode
+  void             enterNode(BaseAST* node)                             const;
+  void             enterNodeSym(Symbol* node, const char* name = 0)     const;
+  void             exitNode(BaseAST* node, bool addNewline = false)     const;
+  void             writeField(const char* msg, int offset, BaseAST* field);
+  const char*      longString(const char* arg)                          const;
+  const char*      nodeIdString(BaseAST* node, bool spaceBefore, bool spaceAfter)  const;
 
   const char*      mPath;
   FILE*            mFP;
