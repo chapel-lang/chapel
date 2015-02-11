@@ -1028,7 +1028,7 @@ for testname in testsrc:
         continue # on to next test
     # 1: test all futures
     elif testfutures == 1:
-      pass
+        pass
     # 2: test only futures
     elif testfutures == 2 and testfuturesfile == False:
         sys.stdout.write('[Skipping non-future test: %s/%s]\n'%(localdir,test_filename))
