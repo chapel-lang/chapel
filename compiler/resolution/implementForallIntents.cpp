@@ -416,33 +416,6 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
     lcCall->remove();
 }
 
-//
-// A forall-intents variation on replaceVarUsesWithFormals() in
-// createTaskFunctions.cpp:
-//   fn          --> block
-//   ArgSymbol   --> symbol
-//   if (e->key) --> INT_ASSERT
-//
-static void
-replaceVarUsesWithFormals(Expr* block, SymbolMap& vars) {
-  if (vars.n == 0) return;
-  // TODO add aliases (defs and their inits) for const-ref outer variables
-  std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(block, symExprs);
-  form_Map(SymbolMapElem, e, vars) {
-    Symbol* sym = e->key;
-    if (e->value != markPruned) {
-      SET_LINENO(sym);
-      Symbol* arg = e->value;
-      for_vector(SymExpr, se, symExprs) {
-        if (se->var == sym) {
-          se->var = arg;
-        }
-      }
-    }
-  }
-}
-
 static void findBlockWithDefOf(Expr* start, const char* varName,
                                BlockStmt*& resultBlock, DefExpr*& resultDef)
 {
@@ -613,8 +586,8 @@ static void getOuterVars(BlockStmt* body, SymbolMap& uses)
 
   // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
   findOuterVars(body, uses);
-  markOuterVarsWithIntents(&uses, byrefVars);
-  pruneThisArg(body->parentSymbol, &uses);
+  markOuterVarsWithIntents(byrefVars, uses);
+  pruneThisArg(body->parentSymbol, uses);
 }
 
 static void verifyOuterVars(BlockStmt* body2,
@@ -708,7 +681,7 @@ void implementForallIntents1(DefExpr* defChplIter)
                    outerVars, shadowVars);
 
     // replace outer vars with shadows in the loop body
-    replaceVarUsesWithFormals(forallBody1, uses1);
+    replaceVarUses(forallBody1, uses1);
   }
 
   forallBody1->byrefVars->remove();
@@ -725,7 +698,7 @@ void implementForallIntents1(DefExpr* defChplIter)
 
     if (numShadowVars > 0)
       // same outer variables, same shadow variables as for forallBody1
-      replaceVarUsesWithFormals(forallBody2, uses1);
+      replaceVarUses(forallBody2, uses1);
 
     forallBody2->byrefVars->remove();
   }
