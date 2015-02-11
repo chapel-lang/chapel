@@ -319,20 +319,22 @@ def_is_ast(EnumType)
 def_is_ast(AggregateType)
 #undef def_is_ast
 
-bool isLoopStmt(BaseAST* a);
-bool isWhileStmt(BaseAST* a);
-bool isWhileDoStmt(BaseAST* a);
-bool isDoWhileStmt(BaseAST* a);
-bool isParamForLoop(BaseAST* a);
-bool isForLoop(BaseAST* a);
-bool isCForLoop(BaseAST* a);
+bool isLoopStmt(const BaseAST* a);
+bool isWhileStmt(const BaseAST* a);
+bool isWhileDoStmt(const BaseAST* a);
+bool isDoWhileStmt(const BaseAST* a);
+bool isParamForLoop(const BaseAST* a);
+bool isForLoop(const BaseAST* a);
+bool isCForLoop(const BaseAST* a);
 
 //
 // safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
 //
 #define def_to_ast(Type) \
-  static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; }
+  static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; } \
+  static inline const Type * toConst##Type(const BaseAST* a) \
+    { return is##Type(a) ? (const Type*)a : NULL; }
 
 def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
