@@ -147,7 +147,8 @@ module ChapelBase {
   config param CHPL_CACHE_REMOTE: bool = false;
 
   config param noRefCount = false;
-  
+  config param debugDistRefCount = false;
+
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                     // the iterator to yield zero times.
 

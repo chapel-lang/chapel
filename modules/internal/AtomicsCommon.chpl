@@ -56,6 +56,10 @@ module AtomicsCommon {
         return got - 1;
       }
     }
+    
+    inline proc read():int(64) {
+      return _cnt.read();
+    }
   }
 }
 
