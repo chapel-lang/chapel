@@ -1454,7 +1454,7 @@ for testname in testsrc:
             timereal = chpllauncher in ['pbs-aprun', 'aprun', 'slurm-srun']
 
             args=list()
-            if timer and timereal
+            if timer and timereal:
                 cmd='./'+execname
                 os.environ['CHPL_LAUNCHER_REAL_WRAPPER'] = timer
             elif timer:
