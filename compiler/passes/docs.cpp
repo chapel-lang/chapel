@@ -71,7 +71,7 @@ void docs(void) {
       outputMap["func"] = ".. function:: ";
       outputMap["method"] = ".. method:: ";
       outputMap["config"] = ".. data:: config ";
-      outputMap["globals"] = ".. data:: ";
+      outputMap["global"] = ".. data:: ";
       outputMap["field"] = ".. attribute:: ";
     }
 
@@ -400,40 +400,14 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     if (fDocsAlphabetize)
       qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
     forv_Vec(VarSymbol, var, configs) {
-      if (!var->hasFlag(FLAG_NO_DOC)) {
-        printTabs(file);
-        *file << outputMap["config"];
-        printVarStart(file, var);
-        printVarType(file, var);
-
-        // For .rst mode, put a line break after the .. data:: directive and
-        // its description text.
-        if (!fDocsTextOnly) {
-          *file << std::endl;
-        }
-
-        printVarDocs(file, var);
-      }
+      printGlobal(file, var, true);
     }
 
     Vec<VarSymbol*> variables = mod->getTopLevelVariables();
     if (fDocsAlphabetize)
       qsort(variables.v, variables.n, sizeof(variables.v[0]), compareNames);
     forv_Vec(VarSymbol, var, variables) {
-      if (!var->hasFlag(FLAG_NO_DOC)) {
-        printTabs(file);
-        *file << outputMap["globals"];
-        printVarStart(file, var);
-        printVarType(file, var);
-
-        // For .rst mode, put a line break after the .. data:: directive and
-        // its description text.
-        if (!fDocsTextOnly) {
-          *file << std::endl;
-        }
-
-        printVarDocs(file, var);
-      }
+      printGlobal(file, var, false);
     }
     Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
     // If alphabetical option passed, fDocsAlphabetizes the output
@@ -469,6 +443,23 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     }
     if (fDocsTextOnly)
       NUMTABS--;
+  }
+}
+
+void printGlobal(std::ofstream *file, VarSymbol *global, bool config) {
+  if (!global->hasFlag(FLAG_NO_DOC)) {
+    printTabs(file);
+    *file << outputMap[config ? "config" : "global"];
+    printVarStart(file, global);
+    printVarType(file, global);
+
+    // For .rst mode, put a line break after the .. data:: directive and
+    // its description text.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+
+    printVarDocs(file, global);
   }
 }
 

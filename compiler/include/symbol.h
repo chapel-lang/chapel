@@ -454,6 +454,10 @@ public:
 
   // LLVM uses this for extern C blocks.
   ExternBlockInfo*     extern_info;
+
+private:
+  void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
+
 };
 
 /******************************** | *********************************
