@@ -712,7 +712,7 @@ function getDateFromURL(whichDate, defaultDate) {
   if (dateString === normalizeForURL('today'))
     return getTodaysDate();
 
-  return dateString
+  return dateString;
 }
 
 
@@ -989,6 +989,7 @@ function getOptions() {
   for (option in OptionsEnum) { options[OptionsEnum[option]] = '';}
 
   var queryString = document.location.search.slice(1);
+  queryString = decodeURIComponent(queryString);
   var queryStrings = queryString.split('&');
   for (var i = 0; i < queryStrings.length; i++) {
     var curOption = queryStrings[i].split('=');
