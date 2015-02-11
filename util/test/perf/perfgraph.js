@@ -447,19 +447,14 @@ function customDrawCallback(g, initial) {
     range[0] = roundDate(range[0], false);
     range[1] = roundDate(range[1], true);
 
-    var changedXAxis = false;
+    setURLFromDate(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
+    setURLFromDate(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
+
     for (var j = 0; j < gs.length; j++) {
       if (gs[j].isReady && differentDateRanges(range, gs[j].xAxisRange())) {
         gs[j].updateOptions({ dateWindow: range });
-        changedXAxis = true;
       }
     }
-
-    if (changedXAxis) {
-      setURLFromDate(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
-      setURLFromDate(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
-    }
-
   }
   blockRedraw = false;
 }
