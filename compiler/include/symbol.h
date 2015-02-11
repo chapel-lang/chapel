@@ -434,6 +434,7 @@ public:
   // New interface
   Vec<AggregateType*>  getTopLevelClasses();
   Vec<VarSymbol*>      getTopLevelConfigVars();
+  Vec<VarSymbol*>      getTopLevelVariables();
   Vec<FnSymbol*>       getTopLevelFunctions(bool includeExterns);
   Vec<ModuleSymbol*>   getTopLevelModules();
 

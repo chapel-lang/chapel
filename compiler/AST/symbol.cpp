@@ -2460,7 +2460,7 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
   return classes;
 }
 
-// Collect the top-level classes for this Module.
+// Collect the top-level config variables for this Module.
 //
 // See the comment on getTopLevelClasses()
 Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
@@ -2493,13 +2493,45 @@ Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
   return configs;
 }
 
-// Collect the top-level classes for this Module.
+// Collect the top-level variables that aren't configs for this Module.
+//
+// See the comment on getTopLevelClasses()
+Vec<VarSymbol*> ModuleSymbol::getTopLevelVariables() {
+  Vec<VarSymbol*> variables;
+
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+
+      if (VarSymbol* var = toVarSymbol(def->sym)) {
+        if (!var->hasFlag(FLAG_CONFIG)) {
+          variables.add(var);
+        }
+
+      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
+        if (fn->hasFlag(FLAG_MODULE_INIT)) {
+          for_alist(expr2, fn->body->body) {
+            if (DefExpr* def2 = toDefExpr(expr2)) {
+              if (VarSymbol* var = toVarSymbol(def2->sym)) {
+                if (!var->hasFlag(FLAG_CONFIG)) {
+                  variables.add(var);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return variables;
+}
+
+// Collect the top-level functions for this Module.
 //
 // This one is similar to getTopLevelModules() and
-// getTopLevelFunctions except that it collects any
+// getTopLevelClasses() except that it collects any
 // functions and then steps in to initFn if it finds it.
 //
-
 Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
   Vec<FnSymbol*> fns;
 

@@ -71,6 +71,7 @@ void docs(void) {
       outputMap["func"] = ".. function:: ";
       outputMap["method"] = ".. method:: ";
       outputMap["config"] = ".. data:: config ";
+      outputMap["globals"] = ".. data:: ";
       outputMap["field"] = ".. attribute:: ";
     }
 
@@ -415,6 +416,25 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       }
     }
 
+    Vec<VarSymbol*> variables = mod->getTopLevelVariables();
+    if (fDocsAlphabetize)
+      qsort(variables.v, variables.n, sizeof(variables.v[0]), compareNames);
+    forv_Vec(VarSymbol, var, variables) {
+      if (!var->hasFlag(FLAG_NO_DOC)) {
+        printTabs(file);
+        *file << outputMap["globals"];
+        printVarStart(file, var);
+        printVarType(file, var);
+
+        // For .rst mode, put a line break after the .. data:: directive and
+        // its description text.
+        if (!fDocsTextOnly) {
+          *file << std::endl;
+        }
+
+        printVarDocs(file, var);
+      }
+    }
     Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
     // If alphabetical option passed, fDocsAlphabetizes the output
     if (fDocsAlphabetize)
