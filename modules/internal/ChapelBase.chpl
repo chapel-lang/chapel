@@ -702,6 +702,9 @@ module ChapelBase {
       return __primitive("array_get", this, i);
     }
   }
+
+  proc chpl_isDdata(type t) param where t: _ddata return true;
+  proc chpl_isDdata(type t) param return false;
   
   inline proc =(ref a: _ddata(?t), b: _ddata(t)) {
     __primitive("=", a, b);
