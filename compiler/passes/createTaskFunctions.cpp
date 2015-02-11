@@ -20,6 +20,7 @@
 #include "astutil.h"
 #include "passes.h"
 #include "stmt.h"
+#include "stlUtil.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
 Symbol* markPruned;
@@ -101,7 +102,7 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
 
 // We use modified versions of these in flattenFunctions.cpp:
 //  isOuterVar(), findOuterVars(), addVarsToFormals(),
-//  replaceVarUsesWithFormals(), addVarsToActuals()
+//  replaceVarUsesWithFormals() -> replaceVarUses(), addVarsToActuals()
 
 // Is 'sym' a non-const variable (including formals) defined outside of 'fn'?
 // This is a modification of isOuterVar() from flattenFunctions.cpp.
@@ -143,7 +144,7 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 }
 
 static void
-findOuterVars(FnSymbol* fn, SymbolMap* uses) {
+findOuterVars(FnSymbol* fn, SymbolMap& uses) {
   Vec<BaseAST*> asts;
 
   collect_asts(fn, asts);
@@ -154,14 +155,14 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
 
       if (isLcnSymbol(sym)) {
         if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
-          uses->put(sym, markUnspecified);
+          uses.put(sym, markUnspecified);
       }
     }
   }
 }
 
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
-void markOuterVarsWithIntents(SymbolMap* uses, CallExpr* byrefVars) {
+void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
   if (!byrefVars) return;
   ArgSymbol* tiMarker = NULL;
   // the actuals alternate: tiMark arg, task-intent variable [, repeat]
@@ -172,7 +173,7 @@ void markOuterVarsWithIntents(SymbolMap* uses, CallExpr* byrefVars) {
                     // or it is a SymExpr over a tiMark ArgSymbol
     Symbol* var = se->var;
     if (tiMarker) {
-      SymbolMapElem* elem = uses->get_record(var);
+      SymbolMapElem* elem = uses.get_record(var);
       if (elem)
         elem->value = tiMarker;
       tiMarker = NULL;
@@ -189,8 +190,8 @@ void markOuterVarsWithIntents(SymbolMap* uses, CallExpr* byrefVars) {
 // That includes the implicit 'this' in the constructor - see
 // the commit message for r21602. So we exclude those from consideration.
 // While there, we prune other things for forall intents.
-void pruneThisArg(Symbol* parent, SymbolMap* uses) {
-  form_Map(SymbolMapElem, e, *uses) {
+void pruneThisArg(Symbol* parent, SymbolMap& uses) {
+  form_Map(SymbolMapElem, e, uses) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
         if (sym->hasFlag(FLAG_ARG_THIS))
@@ -200,8 +201,8 @@ void pruneThisArg(Symbol* parent, SymbolMap* uses) {
 }
 
 static void
-addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
-  form_Map(SymbolMapElem, e, *vars) {
+addVarsToFormals(FnSymbol* fn, SymbolMap& vars) {
+  form_Map(SymbolMapElem, e, vars) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
@@ -220,30 +221,25 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
   }
 }
 
-static void
-replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
-  if (vars->n == 0) return;
-  Vec<BaseAST*> asts;
-  collect_asts(fn->body, asts);
-  form_Map(SymbolMapElem, e, *vars) {
-      Symbol* sym = e->key;
-      if (e->value != markPruned) {
-        SET_LINENO(sym);
-        ArgSymbol* arg = toArgSymbol(e->value);
-        forv_Vec(BaseAST, ast, asts) {
-          if (SymExpr* se = toSymExpr(ast)) {
-            if (se->var == sym) {
-              se->var = arg;
-            }
-          }
-        }
-      }
+void replaceVarUses(Expr* topAst, SymbolMap& vars) {
+  if (vars.n == 0) return;
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(topAst, symExprs);
+  form_Map(SymbolMapElem, e, vars) {
+    Symbol* oldSym = e->key;
+    if (e->value != markPruned) {
+      SET_LINENO(oldSym);
+      Symbol* newSym = e->value;
+      for_vector(SymExpr, se, symExprs)
+        if (se->var == oldSym)
+          se->var = newSym;
+    }
   }
 }
 
 static void
-addVarsToActuals(CallExpr* call, SymbolMap* vars) {
-  form_Map(SymbolMapElem, e, *vars) {
+addVarsToActuals(CallExpr* call, SymbolMap& vars) {
+  form_Map(SymbolMapElem, e, vars) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
@@ -474,16 +470,16 @@ void createTaskFunctions(void) {
           hasTaskIntentClause = true;
 
           // Convert referenced variables to explicit arguments.
-          SymbolMap* uses = new SymbolMap();
+          SymbolMap uses;
           findOuterVars(fn, uses);
 
-          markOuterVarsWithIntents(uses, block->byrefVars);
+          markOuterVarsWithIntents(block->byrefVars, uses);
           pruneThisArg(call->parentSymbol, uses);
           block->byrefVars->remove();
 
           addVarsToActuals(call, uses);
           addVarsToFormals(fn, uses);
-          replaceVarUsesWithFormals(fn, uses);
+          replaceVarUses(fn->body, uses);
         }
       } // if fn
     } // if blockInfo

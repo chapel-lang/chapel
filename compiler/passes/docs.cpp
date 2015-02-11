@@ -71,6 +71,7 @@ void docs(void) {
       outputMap["func"] = ".. function:: ";
       outputMap["method"] = ".. method:: ";
       outputMap["config"] = ".. data:: config ";
+      outputMap["global"] = ".. data:: ";
       outputMap["field"] = ".. attribute:: ";
     }
 
@@ -264,7 +265,10 @@ void printClass(std::ofstream *file, AggregateType *cl) {
         compareNames);
     
     forv_Vec(FnSymbol, fn, cl->methods){
-      printFunction(file, fn, true);
+      // We only want to print methods defined within the class under the
+      // class header
+      if (fn->isPrimaryMethod())
+        printFunction(file, fn, true);
     }
     
     Vec<AggregateType*> list;
@@ -334,7 +338,7 @@ void printTabs(std::ofstream *file) {
 // functions.
 bool devOnlyFunction(FnSymbol *fn) {
   return (fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) 
-          || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->hasFlag(FLAG_METHOD));
+          || fn->hasFlag(FLAG_CONSTRUCTOR) || fn->isPrimaryMethod());
 }
 
 // Returns true if the provide module is one of the internal or standard 
@@ -396,22 +400,15 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     if (fDocsAlphabetize)
       qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
     forv_Vec(VarSymbol, var, configs) {
-      if (!var->hasFlag(FLAG_NO_DOC)) {
-        printTabs(file);
-        *file << outputMap["config"];
-        printVarStart(file, var);
-        printVarType(file, var);
-
-        // For .rst mode, put a line break after the .. data:: directive and
-        // its description text.
-        if (!fDocsTextOnly) {
-          *file << std::endl;
-        }
-
-        printVarDocs(file, var);
-      }
+      printGlobal(file, var, true);
     }
 
+    Vec<VarSymbol*> variables = mod->getTopLevelVariables();
+    if (fDocsAlphabetize)
+      qsort(variables.v, variables.n, sizeof(variables.v[0]), compareNames);
+    forv_Vec(VarSymbol, var, variables) {
+      printGlobal(file, var, false);
+    }
     Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
     // If alphabetical option passed, fDocsAlphabetizes the output
     if (fDocsAlphabetize)
@@ -419,7 +416,10 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   
     forv_Vec(FnSymbol, fn, fns) {
       // TODO: Add flag to compiler to turn on doc dev only output
-      if (!devOnlyFunction(fn)) {
+
+      // We want methods on classes that are defined at the module level to be
+      // printed at the module level
+      if (!devOnlyFunction(fn) || fn->isSecondaryMethod()) {
         printFunction(file, fn, false);
       }
     }
@@ -443,6 +443,23 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     }
     if (fDocsTextOnly)
       NUMTABS--;
+  }
+}
+
+void printGlobal(std::ofstream *file, VarSymbol *global, bool config) {
+  if (!global->hasFlag(FLAG_NO_DOC)) {
+    printTabs(file);
+    *file << outputMap[config ? "config" : "global"];
+    printVarStart(file, global);
+    printVarType(file, global);
+
+    // For .rst mode, put a line break after the .. data:: directive and
+    // its description text.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+
+    printVarDocs(file, global);
   }
 }
 
@@ -477,7 +494,16 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     } else {
       *file << "proc ";
     }
-
+    // if fn is not primary method
+    //   get type name from 'this' argument
+    //   output it + '.' before fn->name
+    if (fn->isSecondaryMethod()) {
+      if (fn->numFormals() > 1) {
+        ArgSymbol *myTypeHolder = fn->getFormal(2);
+        if (myTypeHolder->hasFlag(FLAG_ARG_THIS))
+          *file << myTypeHolder->type->symbol->name << ".";
+      }
+    }
     *file << fn->name;
     if (!fn->hasFlag(FLAG_NO_PARENS))
       *file << "(";

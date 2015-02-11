@@ -23,6 +23,7 @@
 #include "passes.h"
 #include "resolveIntents.h"
 #include "stmt.h"
+#include "stlUtil.h"
 
 
 //
@@ -198,14 +199,14 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
 
 static void
 replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
-  Vec<BaseAST*> asts;
-  collect_asts(fn->body, asts);
+  if (vars->n == 0) return;
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(fn->body, symExprs);
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       ArgSymbol* arg = toArgSymbol(e->value);
       Type* type = arg->type;
-      forv_Vec(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
+      for_vector(SymExpr, se, symExprs) {
           if (se->var == sym) {
             if (type == sym->type) {
               se->var = arg;
@@ -234,7 +235,6 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               }
             }
           }
-        }
       }
     }
   }

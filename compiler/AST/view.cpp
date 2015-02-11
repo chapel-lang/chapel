@@ -33,6 +33,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "WhileStmt.h"
+#include "AstDump.h"
+#include "AstDumpToNode.h"
 
 #include <inttypes.h>
 
@@ -444,6 +446,43 @@ void mark_view(BaseAST* ast, int id) {
   printf("\n\n");
   fflush(stdout);
 }
+
+
+// feel free to propose a better name
+void astDump_view(int id) {
+  if (BaseAST* ast = aidWithError(id, "astDump_view"))
+    astDump_view(ast);
+}
+
+void astDump_view(BaseAST* ast) {
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    AstDump logger(stdout);
+    ast->accept(&logger);
+  }
+  printf("\n\n");
+  fflush(stdout);
+}
+
+
+// feel free to propose a better name
+void astDumpToNode_view(int id) {
+  if (BaseAST* ast = aidWithError(id, "astDumpToNode_view"))
+    astDumpToNode_view(ast);
+}
+
+void astDumpToNode_view(BaseAST* ast) {
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    AstDumpToNode logger(stdout);
+    ast->accept(&logger);
+  }
+  printf("\n\n");
+  fflush(stdout);
+}
+
 
 static bool log_need_space;
 

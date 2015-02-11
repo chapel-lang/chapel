@@ -379,6 +379,9 @@ class FnSymbol : public Symbol {
 
   bool            tag_generic();
   bool            isResolved()                                 const;
+  bool            isMethod()                                   const;
+  bool            isPrimaryMethod()                            const;
+  bool            isSecondaryMethod()                          const;
 };
 
 /******************************** | *********************************
@@ -431,6 +434,7 @@ public:
   // New interface
   Vec<AggregateType*>  getTopLevelClasses();
   Vec<VarSymbol*>      getTopLevelConfigVars();
+  Vec<VarSymbol*>      getTopLevelVariables();
   Vec<FnSymbol*>       getTopLevelFunctions(bool includeExterns);
   Vec<ModuleSymbol*>   getTopLevelModules();
 
@@ -450,6 +454,10 @@ public:
 
   // LLVM uses this for extern C blocks.
   ExternBlockInfo*     extern_info;
+
+private:
+  void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
+
 };
 
 /******************************** | *********************************

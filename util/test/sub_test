@@ -1446,22 +1446,42 @@ for testname in testsrc:
                 sys.stdout.write(']\n')
                 break; # on to next compopts
 
+            # When doing whole program execution, we want to time the _real
+            # binary for launchers that use a queue so we don't include the
+            # time to get the reservation. These are the launchers known to
+            # support timing the _real using CHPL_LAUNCHER_REAL_WRAPPER.
+            chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()
+            timereal = chpllauncher in ['pbs-aprun', 'aprun', 'slurm-srun']
+
             args=list()
-            if timer:
+            if timer and timereal:
+                cmd='./'+execname
+                os.environ['CHPL_LAUNCHER_REAL_WRAPPER'] = timer
+            elif timer:
                 cmd=timer
                 args+=['./'+execname]
-            elif launchcmd:
-                launchcmd_exec_time_file = execname + '_launchcmd_exec_time.txt'
-                os.environ['CHPL_LAUNCHCMD_EXEC_TIME_FILE'] = launchcmd_exec_time_file
-                launch_cmd_list = shlex.split(launchcmd)
-                cmd = launch_cmd_list[0]
-                args += launch_cmd_list[1:]
-                args += ['./'+execname]
             elif valgrindbin:
                 cmd=valgrindbin
                 args+=valgrindbinopts+['./'+execname]
             else:
                 cmd='./'+execname
+
+            # if we're using a launchcmd, build up the command to call
+            # launchcmd, and have it run the cmd and args built above
+            if launchcmd:
+                # have chpl_launchcmd time execution and place results in a
+                # file since sub_test time will include time to get reservation
+                launchcmd_exec_time_file = execname + '_launchcmd_exec_time.txt'
+                os.environ['CHPL_LAUNCHCMD_EXEC_TIME_FILE'] = launchcmd_exec_time_file
+
+                # save old cmd and args and add them after launchcmd args.
+                oldcmd = cmd
+                oldargs = list(args)
+                launch_cmd_list = shlex.split(launchcmd)
+                cmd = launch_cmd_list[0]
+                args = launch_cmd_list[1:]
+                args += [oldcmd]
+                args += oldargs
 
             args+=globalExecopts
             args+=shlex.split(execopts)
@@ -1505,7 +1525,7 @@ for testname in testsrc:
                         my_stdin = None
                     else:
                         my_stdin=file(redirectin, 'r')
-                    test_command = [cmd] + LauncherTimeoutArgs(timeout) + args
+                    test_command = [cmd] + args + LauncherTimeoutArgs(timeout)
                     p = subprocess.Popen(test_command,
                                         env=dict(os.environ.items() + testenv.items()),
                                         stdin=my_stdin,

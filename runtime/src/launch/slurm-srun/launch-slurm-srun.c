@@ -234,9 +234,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --output=%s.%%j.out\n", argv[0]);
     }
 
-    // add the srun command and the binary name
-    fprintf(slurmFile, "srun %s ", chpl_get_real_binary_name());
-    
+    // add the srun command and the (possibly wrapped) binary name.
+    fprintf(slurmFile, "srun %s %s ",
+        chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
+
     // add any arguments passed to the launcher to the binary 
     for (i=1; i<argc; i++) {
       fprintf(slurmFile, " '%s'", argv[i]);
@@ -298,17 +299,18 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (account && strlen(account) > 0) {
       len += sprintf(iCom+len, "--account=%s ", account);
     }
-
-    // add the binary name 
-    len += sprintf(iCom+len, "%s", chpl_get_real_binary_name());
     
+    // add the (possibly wrapped) binary name
+    len += sprintf(iCom+len, "%s %s ",
+        chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
+
     // add any arguments passed to the launcher to the binary 
     for (i=1; i<argc; i++) {
-      len += sprintf(iCom+len, " %s", argv[i]);
+      len += sprintf(iCom+len, "%s ", argv[i]);
     }
    
     // launch the job using srun
-    sprintf(baseCommand, "srun %s", iCom);
+    sprintf(baseCommand, "srun %s ", iCom);
   }
 
   // copy baseCommand into command and return it 
