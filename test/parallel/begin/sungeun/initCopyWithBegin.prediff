@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-sed -e "s/REM[0-9]*/REMnnnn/" $2 > $2.prediff.tmp && mv $2.prediff.tmp $2
