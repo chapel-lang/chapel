@@ -1196,6 +1196,7 @@ setenv LAUNCHCMD "$launchcmd"
 echo \[comm: \"$comm\"\] |& $tee -a $logfile
 setenv CHPL_COMM $comm
 setenv CHPL_GASNET_SEGMENT `$utildir/chplenv/chpl_comm_segment.py`
+setenv CHPL_LAUNCHER $launcher
 
 echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
 setenv CHPL_LOCALE_MODEL $locMod
