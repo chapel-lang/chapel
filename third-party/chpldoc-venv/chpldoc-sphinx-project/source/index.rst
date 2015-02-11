@@ -12,13 +12,12 @@ Contents:
    :maxdepth: 2
    :glob:
 
-   modules/*
+   modules/**
 
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
+* :chpl:chplref:`chplmodindex`
 * :ref:`search`
-

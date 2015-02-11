@@ -1,0 +1,2 @@
+# test greps generated c code, will fail for llvm
+COMPOPTS <= --llvm

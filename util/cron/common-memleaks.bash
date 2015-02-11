@@ -3,9 +3,8 @@
 # Configure environment for memory leaks testing. This should be sourced by
 # other scripts that wish to make use of the variables set here.
 
+export CHPL_NIGHTLY_MEMLEAKS_DIR=${CHPL_NIGHTLY_MEMLEAKS_DIR:-$logdir_prefix/NightlyMemLeaks}
 export CHPL_COMM=none
-export CHPL_NIGHTLY_LOGDIR=$logdir_prefix/NightlyMemLeaks
-export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 
 function memleaks_log()
 {
@@ -32,7 +31,7 @@ function save_memleaks_log()
     local tests=$1
     local logfile=$(memleaks_log $tests)
     local abs_logfile=${CHPL_NIGHTLY_TMPDIR:-${TMPDIR:-/tmp}}/$logfile
-    local destination=${CHPL_NIGHTLY_LOGDIR}/FULL.memleaks/
+    local destination=${CHPL_NIGHTLY_MEMLEAKS_DIR}/FULL.memleaks/
 
     log_info "Saving raw memory leaks log file."
     cp $abs_logfile $destination

@@ -1196,6 +1196,7 @@ setenv LAUNCHCMD "$launchcmd"
 echo \[comm: \"$comm\"\] |& $tee -a $logfile
 setenv CHPL_COMM $comm
 setenv CHPL_GASNET_SEGMENT `$utildir/chplenv/chpl_comm_segment.py`
+setenv CHPL_LAUNCHER $launcher
 
 echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
 setenv CHPL_LOCALE_MODEL $locMod
@@ -1748,7 +1749,7 @@ if ($compperformance) then
     set atitle = "Chapel Compiler Performance Graphs"
     #now actually create the graphs
     echo "[Creating compiler performance graphs now]"
-    $createCoolerGraphs -p "$compperfdir" -o "$compperfhtmldir" -a "$atitle" -n"$compperftestname" "$startdate_t" -g "$compGraphList" -t "$CHPL_HOME/test"  |& $tee -a $logfile
+    $createCoolerGraphs -p "$compperfdir" -o "$compperfhtmldir" -a "$atitle" -n"$compperftestname" "$startdate_t" -g "$compGraphList" -t "$CHPL_HOME/test" -m all:v,examples:v -x |& $tee -a $logfile
 
     if ($status == 0) then
         echo "[Success generating compiler performance graphs for $compGraphList in $compperfhtmldir]" |& $tee -a $logfile

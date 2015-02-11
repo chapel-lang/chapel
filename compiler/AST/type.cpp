@@ -547,6 +547,7 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
       fn->insertFormalAtHead(
           new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
       fn->addFlag(FLAG_METHOD);
+      fn->addFlag(FLAG_METHOD_PRIMARY);
     }
   }
   if (def->parentSymbol || def->list)

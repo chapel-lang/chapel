@@ -373,11 +373,11 @@ checkUseBeforeDefs() {
           // that symbol is not defined/declared before use
           if (SymExpr* sym = toSymExpr(ast)) {
             CallExpr* call = toCallExpr(sym->parentExpr);
-            if (call && 
+            if (call &&
                 (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
                 call->get(1) == sym)
               continue; // We already handled this case above.
-          
+
             if (toModuleSymbol(sym->var)) {
               if (!toFnSymbol(fn->defPoint->parentSymbol)) {
                 if (!call || !call->isPrimitive(PRIM_USED_MODULES_LIST)) {
@@ -386,7 +386,7 @@ checkUseBeforeDefs() {
                     USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);
                 }
               }
-            } else if (isVarSymbol(sym->var) || isArgSymbol(sym->var)) {
+            } else if (isLcnSymbol(sym->var)) {
               if (sym->var->defPoint->parentExpr != rootModule->block &&
                   (sym->var->defPoint->parentSymbol == fn ||
                    (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {

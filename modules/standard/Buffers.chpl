@@ -212,7 +212,7 @@ module Buffers {
   }
   */
 
-  // buffer methods.
+  /* buffer methods. */
   proc buffer.buffer(out error:syserr) {
     this.home = here;
     error = qbuffer_create(this._buf_internal);
@@ -444,7 +444,7 @@ module Buffers {
     }
   }*/
 
-  // methods to read/write basic types.
+  /* methods to read/write basic types. */
   proc buffer.copyout(it:buffer_iterator, out value, out error:syserr):buffer_iterator {
     var ret:buffer_iterator;
     ret.home = this.home;

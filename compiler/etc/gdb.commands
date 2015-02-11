@@ -44,4 +44,9 @@ end
 define loc
  p ::stringLoc($arg0)
 end
+define locid
+  # evaluate $arg0 only once
+  set $eval_temp = ($arg0)
+  printf "%d  %s\n", debugID($eval_temp), debugLoc($eval_temp)
+end
 break gdbShouldBreakHere

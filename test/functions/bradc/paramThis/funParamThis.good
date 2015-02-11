@@ -1,3 +1,3 @@
-funParamThis.chpl:9: error: ambiguous call 'foo()'
-funParamThis.chpl:1: note: candidates are: param foo()
-funParamThis.chpl:5: note:                 foo()
+funParamThis.chpl:9: error: unresolved call 'int(64).foo("hi")'
+funParamThis.chpl:1: note: candidates are: param int.foo()
+funParamThis.chpl:5: note:                 int.foo()

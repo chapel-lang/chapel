@@ -7,11 +7,9 @@ genCodeDir = 'genCode'
 actualGenCodeFile = os.path.join(genCodeDir, sys.argv[1]+'.c')
 testOutputFile = sys.argv[2]
 
-searchString = "thisNameProbablyWontConflictWithOthers"
+searchString = "thisNameProbablyWontConflictWithOthers_chpl"
 
-if (testOutputFile.find("1") != -1):
-    searchString += "_chpl"
-searchString += " "
+wantmatch = (testOutputFile.find("1") != -1)
 
 count = 0
 
@@ -21,8 +19,14 @@ for line in open(actualGenCodeFile):
 
 with open (testOutputFile, 'a') as f:
     if (count > 0):
-        f.write('Found match(es)\n')
+        if wantmatch:
+            f.write('SUCCESS: Matched as expected\n')
+        else:
+            f.write('ERROR: Incorrectly found matches against "{0}"\n'.format(searchstring))
     else:
-        f.write('Didn\'t find matches against "{0}"'.format(searchString))
+        if wantmatch:
+            f.write('ERROR: Didn\'t find matches against "{0}"\n'.format(searchString))
+        else:
+            f.write('SUCCESS: Matched as expected\n')
 
 shutil.rmtree(genCodeDir)

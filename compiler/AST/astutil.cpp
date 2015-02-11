@@ -210,7 +210,7 @@ void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
   asts.add(ast);
 }
-              
+
 static void collect_top_asts_internal_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
   if (!isSymbol(ast) || isArgSymbol(ast)) {
     AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
@@ -229,7 +229,7 @@ void collect_top_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
   asts.push_back(ast);
 }
-              
+
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
   reset_ast_loc(destNode, sourceNode->astloc);
 }
@@ -272,7 +272,7 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   Vec<Symbol*> symSet;
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->parentSymbol) {
-      if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+      if (isLcnSymbol(def->sym)) {
         symSet.set_add(def->sym);
       }
     }
@@ -290,7 +290,7 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<Symbol*>& symSet,
                                 Vec<SymExpr*>& symExprs) {
   if (DefExpr* def = toDefExpr(ast)) {
-    if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+    if (isLcnSymbol(def->sym)) {
       symSet.set_add(def->sym);
     }
   } else if (SymExpr* se = toSymExpr(ast)) {
@@ -390,7 +390,7 @@ bool isRelationalOperator(CallExpr* call) {
 // TODO this should be fixed to include PRIM_SET_MEMBER
 // See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
 // TODO this should also be fixed to include the PRIM_SVEC_SET_MEMBER
-// which gets inserted from the returnStartTuplesByRefArgs pass 
+// which gets inserted from the returnStartTuplesByRefArgs pass
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //

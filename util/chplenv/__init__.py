@@ -10,6 +10,7 @@ __all__ = [
     'chpl_compiler',
     'chpl_gmp',
     'chpl_hwloc',
+    'chpl_hwloc_numa',
     'chpl_launcher',
     'chpl_llvm',
     'chpl_locale_model',

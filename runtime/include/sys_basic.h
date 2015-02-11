@@ -25,9 +25,12 @@
 #define _BSD_SOURCE
 #endif
 
-#ifndef _DARWIN_C_SOURCE
 // to get NI_MAXHOST or NI_MAXSERV
+#ifndef _DARWIN_C_SOURCE
 #define _DARWIN_C_SOURCE
+#endif
+#ifndef _NETBSD_SOURCE
+#define _NETBSD_SOURCE
 #endif
 
 // AIX needs _ALL_SOURCE

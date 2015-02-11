@@ -205,12 +205,49 @@ bool Symbol::isImmediate() const {
 
 /******************************** | *********************************
 *                                                                   *
+* Common base class for ArgSymbol and VarSymbol.                    *
+* Also maintains a small amount of IPE specific state.              *
+*                                                                   *
+********************************* | ********************************/
+
+LcnSymbol::LcnSymbol(AstTag      astTag,
+                     const char* initName,
+                     Type*       initType) :
+  Symbol(astTag, initName, initType)
+{
+  mDepth  = -1;
+  mOffset = -1;
+}
+
+LcnSymbol::~LcnSymbol()
+{
+
+}
+
+void LcnSymbol::locationSet(int depth, int offset)
+{
+  mDepth  = depth;
+  mOffset = offset;
+}
+
+int LcnSymbol::depth() const
+{
+  return mDepth;
+}
+
+int LcnSymbol::offset() const
+{
+  return mOffset;
+}
+
+/******************************** | *********************************
+*                                                                   *
 *                                                                   *
 ********************************* | ********************************/
 
 VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
-  Symbol(E_VarSymbol, init_name, init_type),
+  LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
   doc(NULL)
 {
@@ -826,7 +863,7 @@ void VarSymbol::accept(AstVisitor* visitor) {
 ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
                      Type* iType, Expr* iTypeExpr,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
-  Symbol(E_ArgSymbol, iName, iType),
+  LcnSymbol(E_ArgSymbol, iName, iType),
   intent(iIntent),
   typeExpr(NULL),
   defaultExpr(NULL),
@@ -955,6 +992,27 @@ bool ArgSymbol::isParameter() const {
 }
 
 
+const char* retTagDescrString(RetTag retTag) {
+  switch (retTag) {
+    case RET_VALUE: return "value";
+    case RET_REF:   return "ref";
+    case RET_PARAM: return "param";
+    case RET_TYPE:  return "type";
+    default:        return "<unknown RetTag>";
+  }
+}
+
+
+const char* modTagDescrString(ModTag modTag) {
+  switch (modTag) {
+    case MOD_INTERNAL:  return "internal";
+    case MOD_STANDARD:  return "standard";
+    case MOD_USER:      return "user";
+    default:            return "<unknown ModTag>";
+  }
+}
+
+
 // describes this argument's intent (for use in an English sentence)
 const char* ArgSymbol::intentDescrString(void) {
   switch (intent) {
@@ -972,6 +1030,23 @@ const char* ArgSymbol::intentDescrString(void) {
 
   INT_FATAL(this, "unknown intent");
   return "unknown intent";
+}
+
+// describes the given intent (for use in an English sentence)
+const char* intentDescrString(IntentTag intent) {
+  switch (intent) {
+    case INTENT_BLANK:     return "blank intent";
+    case INTENT_IN:        return "'in' intent";
+    case INTENT_INOUT:     return "'inout' intent";
+    case INTENT_OUT:       return "'out' intent";
+    case INTENT_CONST:     return "'const' intent";
+    case INTENT_CONST_IN:  return "'const in' intent";
+    case INTENT_CONST_REF: return "'const ref' intent";
+    case INTENT_REF:       return "'ref' intent";
+    case INTENT_PARAM:     return "'param' intent";
+    case INTENT_TYPE:      return "'type' intent";
+    default:               return "<unknown intent>";
+  }
 }
 
 
@@ -2179,6 +2254,23 @@ void FnSymbol::accept(AstVisitor* visitor) {
   }
 }
 
+// This function is a method on an aggregate type
+bool FnSymbol::isMethod() const {
+  return hasFlag(FLAG_METHOD);
+}
+
+// This function is a method on an aggregate type, defined within its
+// declaration
+bool FnSymbol::isPrimaryMethod() const {
+  return hasFlag(FLAG_METHOD_PRIMARY);
+}
+
+// This function is a method on an aggregate type, defined outside its
+// definition
+bool FnSymbol::isSecondaryMethod() const {
+  return isMethod() && !isPrimaryMethod();
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -2368,28 +2460,32 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
   return classes;
 }
 
-// Collect the top-level classes for this Module.
+// This is intended to be called by getTopLevelConfigsVars and
+// getTopLevelVariables, since the code for them would otherwise be roughly
+// the same.
+
+// It is also private to ModuleSymbols
 //
-// See the comment on getTopLevelClasses()
-Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
-  Vec<VarSymbol*> configs;
+// See the comment on getTopLevelFunctions() for the rationale behind the AST
+// traversal
+void ModuleSymbol::getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config) {
+  if (DefExpr* def = toDefExpr(expr)) {
 
-  for_alist(expr, block->body) {
-    if (DefExpr* def = toDefExpr(expr)) {
+    if (VarSymbol* var = toVarSymbol(def->sym)) {
+      if (var->hasFlag(FLAG_CONFIG) == config) {
+        // The config status of the variable matches what we are looking for
+        contain->add(var);
+      }
 
-      if (VarSymbol* var = toVarSymbol(def->sym)) {
-        if (var->hasFlag(FLAG_CONFIG)) {
-          configs.add(var);
-        }
-
-      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (fn->hasFlag(FLAG_MODULE_INIT)) {
-          for_alist(expr2, fn->body->body) {
-            if (DefExpr* def2 = toDefExpr(expr2)) {
-              if (VarSymbol* var = toVarSymbol(def2->sym)) {
-                if (var->hasFlag(FLAG_CONFIG)) {
-                  configs.add(var);
-                }
+    } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
+      if (fn->hasFlag(FLAG_MODULE_INIT)) {
+        for_alist(expr2, fn->body->body) {
+          if (DefExpr* def2 = toDefExpr(expr2)) {
+            if (VarSymbol* var = toVarSymbol(def2->sym)) {
+              if (var->hasFlag(FLAG_CONFIG) == config) {
+                // The config status of the variable matches what we are
+                // looking for
+                contain->add(var);
               }
             }
           }
@@ -2397,17 +2493,36 @@ Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
       }
     }
   }
+}
+
+// Collect the top-level config variables for this Module.
+Vec<VarSymbol*> ModuleSymbol::getTopLevelConfigVars() {
+  Vec<VarSymbol*> configs;
+
+  for_alist(expr, block->body) {
+    getTopLevelConfigOrVariables(&configs, expr, true);
+  }
 
   return configs;
 }
 
-// Collect the top-level classes for this Module.
+// Collect the top-level variables that aren't configs for this Module.
+Vec<VarSymbol*> ModuleSymbol::getTopLevelVariables() {
+  Vec<VarSymbol*> variables;
+
+  for_alist(expr, block->body) {
+    getTopLevelConfigOrVariables(&variables, expr, false);
+  }
+
+  return variables;
+}
+
+// Collect the top-level functions for this Module.
 //
 // This one is similar to getTopLevelModules() and
-// getTopLevelFunctions except that it collects any
+// getTopLevelClasses() except that it collects any
 // functions and then steps in to initFn if it finds it.
 //
-
 Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
   Vec<FnSymbol*> fns;
 

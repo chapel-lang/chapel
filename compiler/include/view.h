@@ -55,6 +55,11 @@ void        mark_view(BaseAST* ast, int id);
 void        list_view(int id);
 void        list_view(BaseAST* ast);
 
+void        astDump_view(int id);
+void        astDump_view(BaseAST* ast);
+void        astDumpToNode_view(int id);
+void        astDumpToNode_view(BaseAST* ast);
+
 void        viewFlags(int id);
 
 void        map_view(SymbolMap* map);
@@ -80,5 +85,9 @@ const char* shortLoc(BaseAST* ast);
 
 const char* debugLoc(int id);
 const char* debugLoc(BaseAST* ast);
+
+int debugID(int id);
+int debugID(BaseAST* ast);
+
 
 #endif

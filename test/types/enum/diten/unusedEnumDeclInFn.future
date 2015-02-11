@@ -1,0 +1,1 @@
+bug: unused enum declaration in function body causes bad mem access in compiler

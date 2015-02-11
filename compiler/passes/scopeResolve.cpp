@@ -1064,8 +1064,9 @@ static void move_constructor_to_outer(FnSymbol* fn, AggregateType* outerType)
   fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK,
                                                    "_mt",
                                                    dtMethodToken)));
-
   fn->addFlag(FLAG_METHOD);
+
+  fn->addFlag(FLAG_METHOD_PRIMARY);
 
   Expr* insertPoint = outerType->symbol->defPoint;
 
