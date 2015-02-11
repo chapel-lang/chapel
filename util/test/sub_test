@@ -894,6 +894,7 @@ for testname in testsrc:
     futuretest=''
     executebin=execute
     testfuturesfile=False
+    testskipiffile=False
     noexecfile=False
     execoptsfile=False
     precomp=None
@@ -940,6 +941,7 @@ for testname in testsrc:
 
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
+            testskipiffile=True
             skiptest=runSkipIf(f)
             try:
                 skipme=False
@@ -1011,10 +1013,6 @@ for testname in testsrc:
                 redirectin=f
 
         if suffix==futureSuffix:
-            if testfutures==0:
-                sys.stdout.write('[Skipping future test: %s/%s]\n'%(localdir,test_filename))
-                do_not_test=True
-                break
             testfuturesfile=True
 
     del test_filename_files
@@ -1023,10 +1021,23 @@ for testname in testsrc:
     if do_not_test:
         continue # on to next test
 
-    # Skip non-future tests if specified
-    if (testfuturesfile==False and testfutures==2):
+
+    # 0: test no futures
+    if testfutures == 0 and testfuturesfile == True:
+        sys.stdout.write('[Skipping future test: %s/%s]\n'%(localdir,test_filename))
+        continue # on to next test
+    # 1: test all futures
+    elif testfutures == 1:
+      pass
+    # 2: test only futures
+    elif testfutures == 2 and testfuturesfile == False:
         sys.stdout.write('[Skipping non-future test: %s/%s]\n'%(localdir,test_filename))
         continue # on to next test
+    # 3: test futures that have a .skipif file
+    elif testfutures == 3 and testfuturesfile == True and testskipiffile == False:
+        sys.stdout.write('[Skipping future test without a skipif: %s/%s]\n'%(localdir,test_filename))
+        continue # on to next test
+
 
     # Set numlocales
     if (numlocales == 0) or (chplcomm=='none') or is_c_test:

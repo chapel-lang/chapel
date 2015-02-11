@@ -7,4 +7,4 @@ source $CWD/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="verify"
 
-$CWD/nightly -cron -no-futures -verify
+$CWD/nightly -cron -verify

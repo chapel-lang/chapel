@@ -39,7 +39,7 @@ $releasePerformance = 0;
 $compperformance = 0;
 $compperformancedescription = "";
 $componly = 0;
-$nofutures = 0;
+$futuresMode = 3;
 $suppressions = "";
 $parnodefile = "";
 $baseline = 0;
@@ -121,8 +121,10 @@ while (@ARGV) {
         $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
 	$componly = 1;
+    } elsif ($flag eq "-futures") {
+	$futuresMode = 1;
     } elsif ($flag eq "-no-futures") {
-	$nofutures = 1;
+	$futuresMode = 0;
     } elsif ($flag eq "-parnodefile") {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
@@ -173,7 +175,7 @@ if (@ARGV) {
 }
 
 if ($printusage == 1) {
-    print "nightly [-debug|-cron] {[-notest] [-valgrind] [-componly] [-no-futures] [-performance]}\n";
+    print "nightly [-debug|-cron] {[-notest] [-valgrind] [-componly] [-[no-]futures] [-performance]}\n";
     print "\t-debug       : check out sources and run for individual user (default)\n";
     print "\t-cron        : use for nightly cron runs only\n";
     print "\t-notest      : don't run the tests (check the build only)\n";
@@ -197,6 +199,7 @@ if ($printusage == 1) {
     print "\t-memleaks <log> : run memleaks tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
+    print "\t-futures     : run all futures, not just those with skipifs\n";
     print "\t-no-futures  : do not run future tests\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
     print "\t-cron-recipient : send -cron emails to this address instead of SourceForge mailing list(s)\n";
@@ -511,9 +514,8 @@ if ($interpret == 1) {
 if ($valgrind == 1) {
     $testflags = "$testflags -valgrind";
 }
-if ($nofutures == 0) {
-    $testflags = "$testflags -futures";
-}
+
+$testflags = "$testflags -futures-mode $futuresMode";
 
 #
 # Test directories to run.

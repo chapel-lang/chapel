@@ -11,4 +11,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.numa"
 # TODO: Do we need/want this? (thomasvandoren, 2014-07-01)
 export GASNET_QUIET=Y
 
-$CWD/nightly -cron -multilocale -no-futures
+$CWD/nightly -cron -multilocale
