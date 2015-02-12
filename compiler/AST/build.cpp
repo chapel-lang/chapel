@@ -142,15 +142,16 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
 
 BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
                            BlockStmt* stmt) {
-  if (DefExpr* def = toDefExpr(stmt->body.first())) {
-    //
-    // Apply pragma to all Symbols DefExpr'd in the statement
-    //
-    while (def) {
+  bool error = false;
+  for_alist(expr, stmt->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
       addPragmaFlags(def->sym, pragmas);
-      def = toDefExpr(def->next);
+    } else {
+      error = true;
+      break;
     }
-  } else if (pragmas->n > 0) {
+  }
+  if (error && pragmas->n > 0) {
     USR_FATAL_CONT(stmt, "cannot attach pragmas to this statement");
     USR_PRINT(stmt, "   %s \"%s\"",
               pragmas->n == 1 ? "pragma" : "starting with pragma",
