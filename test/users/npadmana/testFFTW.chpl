@@ -120,18 +120,18 @@ proc runtest(param ndim : int, fn : string) {
   destroy_plan(fwd);
   destroy_plan(rev);
   // In place transform
-//  var rA2 : [rD] real(64);
-//  fwd = plan_dft_r2c(dims,rA2[first],rA2[first],FFTW_ESTIMATE);
-//  rev = plan_dft_c2r(dims,rA2[first],rA2[first],FFTW_ESTIMATE);
-//  rA2[D] = re(goodA);
-//  execute(fwd);
-//  printcmp(rA2[reD],re(goodB[cD]));
-//  printcmp(rA2[imD],im(goodB[cD]));
-//  execute(rev);
-//  rA2 /= norm;
-//  printcmp(rA2[D],re(goodA));
-//  destroy_plan(fwd);
-//  destroy_plan(rev);
+  var rA2 : [rD] real(64);
+  fwd = plan_dft_r2c(D,rA2,FFTW_ESTIMATE);
+  rev = plan_dft_c2r(D,rA2,FFTW_ESTIMATE);
+  rA2[D] = re(goodA);
+  execute(fwd);
+  printcmp(rA2[reD],re(goodB[cD]));
+  printcmp(rA2[imD],im(goodB[cD]));
+  execute(rev);
+  rA2 /= norm;
+  printcmp(rA2[D],re(goodA));
+  destroy_plan(fwd);
+  destroy_plan(rev);
 
 }
 

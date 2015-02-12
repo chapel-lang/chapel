@@ -45,24 +45,25 @@ module FFTW {
     return fftw_plan_dft(rank, dims, in1, out1, sign, flags);
   }
 
-  // Real-to-complex and complex-to-real out-of-place planning routines
-  // We handle these with a type parameter to let the user pass in an appropriately sized
-  // real array for the complex part, most usually when doing an in-place transform.
+  // Real-to-complex and complex-to-real planning routines
+  // There are two cases that we treat independently here : in-place and out-of-place transforms
 
   // Since the calls to FFTW are the same, pull the extern declarations out.
   // TODO : This should be cleaned up further and made consistent across the file
+  // TODO : NP : I'm dropping this back to pointers, because I don't know how to cast arrays.
   extern proc fftw_plan_dft_r2c(rank: c_int, 
       n,  // BLC: having trouble being specific
-      in1: [] real(64), 
-      out1: [] fftw_complex, 
+      in1: _rptr,
+      out1: _cxptr, 
       flags : c_uint) : fftw_plan;
   extern proc fftw_plan_dft_c2r(rank: c_int, 
       n,  // BLC: having trouble being specific
-      in1: [] fftw_complex, 
-      out1: [] real(64), 
+      in1: _cxptr,
+      out1: _rptr,
       flags : c_uint) : fftw_plan;
 
 
+  // Out-of-place routines
   proc plan_dft_r2c(in1 : [] real(64), out1 : [] fftw_complex, flags :c_uint) : fftw_plan
   {
     param rank = in1.rank: c_int;
@@ -71,7 +72,7 @@ module FFTW {
     for param i in 1..rank do
       dims(i) = in1.domain.dim(i).size: c_int;
 
-    return fftw_plan_dft_r2c(rank, dims, in1, out1, flags);
+    return fftw_plan_dft_r2c(rank, dims, c_ptrTo(in1) : _rptr, c_ptrTo(out1) : _cxptr, flags);
   }
   proc plan_dft_c2r(in1 : [] fftw_complex, out1 : [] real(64),  flags :c_uint) : fftw_plan
   {
@@ -81,8 +82,34 @@ module FFTW {
     for param i in 1..rank do
       dims(i) = out1.domain.dim(i).size: c_int;
 
-    return fftw_plan_dft_c2r(rank, dims, in1, out1, flags);
+    return fftw_plan_dft_c2r(rank, dims, c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _rptr, flags);
   }
+
+  // In-place routines, note that these take in the true leading dimension
+  // TODO : We should put in checks to see that the sizes are consistent
+  // TODO : We should check on types...
+  proc plan_dft_r2c(realDom : domain, in1 : [] ?t, flags : c_uint) : fftw_plan 
+  {
+    param rank = realDom.rank: c_int;
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = realDom.dim(i).size: c_int;
+
+    return fftw_plan_dft_r2c(rank, dims, c_ptrTo(in1) : _rptr, c_ptrTo(in1) : _cxptr, flags);
+  }
+  proc plan_dft_c2r(realDom : domain, in1: [] ?t, flags : c_uint) : fftw_plan 
+  {
+    param rank = realDom.rank: c_int;
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = realDom.dim(i).size: c_int;
+
+    return fftw_plan_dft_c2r(rank, dims, c_ptrTo(in1) : _cxptr, c_ptrTo(in1) : _rptr, flags);
+  }
+
+
 
 
   // Real-to-complex and complex-to-real plans
