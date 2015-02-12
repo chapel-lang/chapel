@@ -93,8 +93,6 @@ module Random {
        reals always...
   */
 
-// CHPLDOC FIXME: The following doesn't show up in the documentation
-
 /* 
    An instance of :chpl:record:`SeedGenerators` that provides a
    convenient means of generating seeds when the user does not wish to
@@ -369,6 +367,7 @@ class RandomStream {
 //
 // NPB-defined constants for linear congruential generator
 //
+pragma "no doc"
 const RandomPrivate_r23   = 0.5**23,
       RandomPrivate_t23   = 2.0**23,
       RandomPrivate_r46   = 0.5**46,
