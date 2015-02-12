@@ -229,7 +229,7 @@ class AbstractJob(object):
         """
         with _temp_dir() as working_dir:
             output_file = os.path.join(working_dir, 'test_output.log')
-            input_file = os.path.join(working_dir, 'test_intput')
+            input_file = os.path.join(working_dir, 'test_input')
             testing_dir = os.getcwd()
 
             job_id = self.submit_job(testing_dir, output_file, input_file)
