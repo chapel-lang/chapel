@@ -158,8 +158,10 @@ private:
   void             enterNodeSym(Symbol* node, const char* name = 0)     const;
   void             exitNode(BaseAST* node, bool addNewline = false)     const;
   void             writeField(const char* msg, int offset, BaseAST* field);
-  const char*      longString(const char* arg)                          const;
-  const char*      nodeIdString(BaseAST* node, bool spaceBefore, bool spaceAfter)  const;
+  void             writeLongString(const char* msg, const char* arg)    const;
+  void             writeNodeID(BaseAST* node,
+                               bool spaceBefore,
+                               bool spaceAfter)                         const;
 
   const char*      mPath;
   FILE*            mFP;

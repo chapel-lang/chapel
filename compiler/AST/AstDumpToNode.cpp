@@ -136,54 +136,57 @@ bool AstDumpToNode::close()
 *                                                                   *
 ********************************* | ********************************/
 
-#define longStringLength 36
-#define longStringFormat "%-36s"
-static char longStringBuffer[longStringLength];
-static char nodeIdBuffer[64];
-
 // pad right to longStringLength unless compact
-const char* AstDumpToNode::longString(const char* arg) const {
+void AstDumpToNode::writeLongString(const char* msg, const char* arg) const
+{
+  static const size_t longStringLength = 36;
+  fputs(msg, mFP);
   if (compact || strlen(arg) >= longStringLength)
-    return arg;
-  sprintf(longStringBuffer, longStringFormat, arg);
-  return longStringBuffer;
+    fputs(arg, mFP);
+  else
+    fprintf(mFP, "%-36s", arg);
 }
 
-// produce the string for Node ID if desired, or empty string otherwise
-// 'spaceBefore' matters only when showNodeIds.
-const char* AstDumpToNode::nodeIdString(BaseAST* node,
-                                        bool spaceBefore,
-                                        bool spaceAfter) const
+// Print the node ID, only if desired i.e. if showNodeIDs.
+// spaceBefore, spaceAfter matter only when showNodeIds.
+void AstDumpToNode::writeNodeID(BaseAST* node,
+                                bool spaceBefore,
+                                bool spaceAfter) const
 {
   if (!showNodeIDs)
-    return "";
+    return;
 
   const char* sb = spaceBefore ? " " : "";
   const char* sa = spaceAfter  ? " " : "";
 
   if (compact)
-    sprintf(nodeIdBuffer, "%s%d%s",   sb, node->id, sa);
+    fprintf(mFP, "%s%d%s",   sb, node->id, sa);
   else
-    sprintf(nodeIdBuffer, "%s%12d%s", sb, node->id, sa);
-
-  return nodeIdBuffer;
+    fprintf(mFP, "%s%12d%s", sb, node->id, sa);
 }
 
-void AstDumpToNode::enterNode(BaseAST* node) const {
+void AstDumpToNode::enterNode(BaseAST* node) const
+{
   if (compact)
-    fprintf(mFP, "%s%s%s",
-            delimitEnter, node->astTagAsString(), nodeIdString(node, 1, 0));
+  {
+    fprintf(mFP, "%s%s", delimitEnter, node->astTagAsString());
+    writeNodeID(node, 1, 0);
+  }
   else
-    fprintf(mFP, "%s%-18s%s",
-            delimitEnter, node->astTagAsString(), nodeIdString(node, 0, 0));
+  {
+    fprintf(mFP, "%s%-18s", delimitEnter, node->astTagAsString());
+    writeNodeID(node, 0, 0);
+  }
 }
 
-void AstDumpToNode::enterNodeSym(Symbol* node, const char* name) const {
+void AstDumpToNode::enterNodeSym(Symbol* node, const char* name) const
+{
   enterNode(node);
-  fprintf(mFP, " name: %s", longString(name ? name : node->name));
+  writeLongString(" name: ", name ? name : node->name);
 }
 
-void AstDumpToNode::exitNode(BaseAST* node, bool addNewline) const {
+void AstDumpToNode::exitNode(BaseAST* node, bool addNewline) const
+{
   fputs(delimitExit, mFP);
   if (addNewline) fputc('\n', mFP);
 }  
@@ -203,7 +206,6 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
     exitNode(node);
 
     retval  = false;
-
   }
   else
   {
@@ -848,8 +850,10 @@ bool AstDumpToNode::enterCallExpr(CallExpr* node)
       write("on");
   }
 
-  if (compact) {
-    if (PrimitiveOp* primitive = node->primitive) {
+  if (compact)
+  {
+    if (PrimitiveOp* primitive = node->primitive)
+    {
       fprintf(mFP, " '%s'", primitive->name);
     }
   }
@@ -920,11 +924,14 @@ void AstDumpToNode::visitSymExpr(SymExpr* node)
   Symbol* sym = node->var;
 
   enterNode(node);
-  if (compact) {
+  if (compact)
+  {
     fputc(' ', mFP);
     writeSymbolCompact(sym);
-  } else {
-    fprintf(mFP, " var:  ");
+  }
+  else
+  {
+    fputs(" var:  ", mFP);
     writeSymbol(sym);
   }
   exitNode(node);
@@ -1246,10 +1253,11 @@ void AstDumpToNode::visitVarSym(VarSymbol* node)
 ********************************* | ********************************/
 
 
-static char symPrefixBuffer[1024];
-
 // "module." or "class::" is applicable, "" otherwise
+// beware it may return a static buffer
 static const char* symPrefixString(Symbol* sym) {
+  static char symPrefixBuffer[1024];
+
   if (!sym)
     return "";
 
@@ -1344,7 +1352,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     if (sym->type != 0)
     {
-      fprintf(mFP, "      %s", longString(""));
+      writeLongString("      ", "");
       writeType(sym->type);
     }
 
@@ -1360,7 +1368,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     if (sym->type != 0 || var->depth() >= 0 || var->offset() >= 0)
     {
-      fprintf(mFP, "name: %s", longString(name));
+      writeLongString("name: ", name);
 
       if (var->type)
       {
@@ -1432,7 +1440,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       }
       else
       {
-        fprintf(mFP, "name: %s", longString(name));
+        writeLongString("name: ", name);
         writeType(sym->type);
       }
     }
@@ -1461,7 +1469,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
         }
       }
 
-      fprintf(mFP, "imm:  %s", longString(imm));
+      writeLongString("imm:  ", imm);
 
       if (sym->type)
       {
@@ -1479,27 +1487,38 @@ void AstDumpToNode::writeSymbolCompact(Symbol* sym) const
   // ad-hoc suppress "VarSymbol" et al.
   fputs(delimitEnter, mFP);
 
-  if (!sym) {
+  if (!sym)
+  {
     fprintf(mFP, "<NULL>");
 
-  } else if (VarSymbol* var = toVarSymbol(sym)) {
-    if (Immediate* imm = var->immediate) {
+  }
+  else if (VarSymbol* var = toVarSymbol(sym))
+  {
+    if (Immediate* imm = var->immediate)
+    {
       fprintf(mFP, "imm: ");
       fprint_imm(mFP, *imm);
-    } else {
-      fprintf(mFP, "%s%s%s",
-              nodeIdString(sym, 0, 1), symPrefixString(sym), sym->name);
     }
+    else
+    {
+      writeNodeID(sym, 0, 1);
+      fprintf(mFP, "%s%s", symPrefixString(sym), sym->name);
+    }
+  }
+  else if (ArgSymbol* arg = toArgSymbol(sym))
+  {
+    writeNodeID(sym, 0, 1);
+    fprintf(mFP, "arg %s", arg->name);
 
-  } else if (ArgSymbol* arg = toArgSymbol(sym)) {
-    fprintf(mFP, "%s""arg %s", nodeIdString(sym, 0, 1), arg->name);
-
-  } else {
-    fprintf(mFP, "%s%s", nodeIdString(sym, 0, 1), sym->astTagAsString());
+  }
+  else
+  {
+    writeNodeID(sym, 0, 1);
+    fprintf(mFP, "%s", sym->astTagAsString());
 
   }
 
-  fputs(delimitExit, mFP);
+  fprintf(mFP, "%s", delimitExit);
 }
 
 void AstDumpToNode::ast_symbol(const char* tag, Symbol* sym, bool def)
@@ -1609,14 +1628,21 @@ void AstDumpToNode::writeType(Type* type, bool announce) const
   else if (type == 0)
     ;
 
-  else if (PrimitiveType* t = toPrimitiveType(type)) {
-    if (compact) {
+  else if (PrimitiveType* t = toPrimitiveType(type))
+  {
+    if (compact)
+    {
       // ad-hoc suppress "PrimitiveType"
-      fprintf(mFP, "%s%s%s%s", delimitEnter, nodeIdString(t, 0, 1),
-                               t->symbol->name, delimitExit);
-    } else {
+      fputs(delimitEnter, mFP);
+      writeNodeID(t, 0, 1);
+      fputs(t->symbol->name, mFP);
+      fputs(delimitExit, mFP);
+    }
+    else
+    {
       enterNode(type);
-      fprintf(mFP, " %s", t->symbol->name);
+      fputc(' ', mFP);
+      fputs(t->symbol->name, mFP);
       exitNode(type);
     }
   }
