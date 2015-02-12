@@ -720,8 +720,7 @@ set graphsdisprange = 1
 set graphsgendefault = "avg"
 set startdate = ""
 set genGraphOpts = ""
-set testfutures = 0
-set testfuturesonly = 0
+set futuresMode = 0
 set testnotests = 0
 set recurse = 1
 set tee = "tee"
@@ -807,14 +806,28 @@ while ( $#argv > 0 )
     case -futures:
     case --futures:
         shift
-        set testfutures = 1
+        set futuresMode = 1
         breaksw
     case -futures-only
     case --futures-only
     case -futuresonly
     case --futuresonly
         shift
-        set testfuturesonly = 1
+        set futuresMode = 2
+        breaksw
+    case -futures-skipif
+    case --futures-skipif
+    case -futuresskipif
+    case --futuresskipif
+        shift
+        set futuresMode = 3
+        breaksw
+    # "undocumented" option, only meant to be used by nightly
+    case -futures-mode:
+    case --futures-mode:
+        shift
+        set futuresMode = "$argv[1]"
+        shift
         breaksw
     case -i:
     case --interpret:
@@ -1008,7 +1021,8 @@ while ( $#argv > 0 )
         echo "          -startdate <MM/DD/YY> (currently: '')"
         echo "          -genGraphOpts OPT or -genGraphOpts 'OPT1 OPT2 ...'"
         echo "          -futures"
-        echo "          -futuresonly"
+        echo "          -futures-only"
+        echo "          -futures-skipif"
         echo "          -valgrind"
         echo "          -valgrindexe"
         echo "          -syspreexec <path>"
@@ -1564,17 +1578,9 @@ end
 
 setenv CHPL_TEST_SINGLES 0
 
-# for this mode, only test futures and notests as specified
-# by the command-line flags
-if ($testfuturesonly == 1) then
-    setenv CHPL_TEST_FUTURES 2
-else
-    if ($testfutures == 1) then
-        setenv CHPL_TEST_FUTURES 1
-    else
-        setenv CHPL_TEST_FUTURES 0
-    endif
-endif
+# for this mode, test only futures that were specified on the command-line
+# (defaults to no futures)
+setenv CHPL_TEST_FUTURES $futuresMode
 
 if ($testnotests == 1) then
     setenv CHPL_TEST_NOTESTS 1
