@@ -309,7 +309,7 @@ class AbstractJob(object):
                     job_id, output_file))
 
             # try removing the file stdin was copied to, might not exist
-            logging.debug('removing stdin file.'
+            logging.debug('removing stdin file.')
             try:
                 os.unlink(input_file)
             except OSError:
