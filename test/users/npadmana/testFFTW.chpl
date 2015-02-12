@@ -79,33 +79,36 @@ proc runtest(param ndim : int, fn : string) {
   // FFTW does not normalize inverse transform, set up norm
   var norm = * reduce dims;
 
+        writeln("A.domain = ", A.domain);
+        writeln("B.domain = ", B.domain);
+        writeln("dims = ", dims);
 
-  // FFT testing here
-  var fwd = plan_dft(dims, A[first],B[first],FFTW_FORWARD,FFTW_ESTIMATE);
-  var rev = plan_dft(dims, B[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
-  // Test forward and reverse transform
-  A = goodA;
-  execute(fwd);
-  printcmp(B,goodB);
-  execute(rev);
-  A /= norm; 
-  printcmp(A,goodA);
-  destroy_plan(fwd);
-  destroy_plan(rev);
+	// FFT testing here
+	var fwd = plan_dft(A, B, FFTW_FORWARD, FFTW_ESTIMATE);
+	var rev = plan_dft(B, A, FFTW_BACKWARD, FFTW_ESTIMATE);
+	// Test forward and reverse transform
+	A = goodA;
+	execute(fwd);
+	printcmp(B,goodB);
+	execute(rev);
+	A /= norm; 
+	printcmp(A,goodA);
+	destroy_plan(fwd);
+	destroy_plan(rev);
 
-  // Test in-place transforms
-  fwd = plan_dft(dims,A[first],A[first],FFTW_FORWARD,FFTW_ESTIMATE);
-  rev = plan_dft(dims,A[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
-  A = goodA;
-  // Test forward and reverse transform
-  A = goodA;
-  execute(fwd);
-  printcmp(A,goodB);
-  execute(rev);
-  A /= norm; // FFTW does an unnormalized transform
-  printcmp(A,goodA);
-  destroy_plan(fwd);
-  destroy_plan(rev);
+	// Test in-place transforms
+	fwd = plan_dft(A, A, FFTW_FORWARD, FFTW_ESTIMATE);
+	rev = plan_dft(A, A, FFTW_BACKWARD, FFTW_ESTIMATE);
+	A = goodA;
+	// Test forward and reverse transform
+	A = goodA;
+	execute(fwd);
+	printcmp(A,goodB);
+	execute(rev);
+	A /= norm; // FFTW does an unnormalized transform
+	printcmp(A,goodA);
+	destroy_plan(fwd);
+	destroy_plan(rev);
 
   // Testing r2c and c2r
   var rA : [D] real(64); // No padding for an out-of place transform
@@ -138,8 +141,9 @@ proc runtest(param ndim : int, fn : string) {
 
 writeln("1D");
 runtest(1, "arr1d.dat");
+/*
 writeln("2D");
 runtest(2, "arr2d.dat");
 writeln("3D");
 runtest(3, "arr3d.dat");
-
+*/

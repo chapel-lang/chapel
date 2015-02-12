@@ -28,14 +28,22 @@ module FFTW {
   // Planner functions
   // Complex : 4.3.1
   // NOTE : We pass in arrays using ref 
-  proc plan_dft(dims, ref in1 : fftw_complex, ref out1 : fftw_complex, sign : c_int, flags :c_uint) : fftw_plan
-    where (isHomogeneousTuple(dims))
-    {
-      extern proc fftw_plan_dft(rank : c_int, const ref n : c_int, in1 : _cxptr, out1 : _cxptr, sign : c_int, flags : c_uint) : fftw_plan;
-      // Make sure types are correct
-      param ndim : c_int = dims.size;
-      return fftw_plan_dft(ndim, dims(1), c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _cxptr, sign, flags);
-    }
+  proc plan_dft(in1 : [] fftw_complex, out1 : [] fftw_complex, sign : c_int, flags :c_uint) : fftw_plan
+  {
+    param rank = in1.rank: c_int;
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = in1.domain.dim(i).size: c_int;
+
+    extern proc fftw_plan_dft(rank: c_int, 
+        n,  // BLC: having trouble being specific
+        in1: [] fftw_complex, 
+        out1: [] fftw_complex, 
+        sign : c_int, flags : c_uint) : fftw_plan;
+
+    return fftw_plan_dft(rank, dims, in1, out1, sign, flags);
+  }
 
   // Real-to-complex and complex-to-real plans
   // We handle these with a type parameter to let the user pass in an appropriately sized
