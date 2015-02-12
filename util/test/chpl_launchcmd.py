@@ -229,9 +229,10 @@ class AbstractJob(object):
         """
         with _temp_dir() as working_dir:
             output_file = os.path.join(working_dir, 'test_output.log')
+            input_file = os.path.join(working_dir, 'test_intput')
             testing_dir = os.getcwd()
 
-            job_id = self.submit_job(testing_dir, output_file)
+            job_id = self.submit_job(testing_dir, output_file, input_file)
             logging.info('Test has been queued (job id: {0}). Waiting for output...'.format(job_id))
 
             # TODO: The while condition here should look for jobs that become held,
@@ -307,6 +308,13 @@ class AbstractJob(object):
                 raise ValueError('[Error: output file from job (id: {0}) does not exist at: {1}]'.format(
                     job_id, output_file))
 
+            # try removing the file stdin was copied to, might not exist
+            logging.debug('removing stdin file.'
+            try:
+                os.unlink(input_file)
+            except OSError:
+                pass
+
             logging.debug('Reading output file.')
             with open(output_file, 'r') as fp:
                 output = fp.read()
@@ -314,7 +322,7 @@ class AbstractJob(object):
 
         return output
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Submit a new job using ``testing_dir`` as the working dir and
         ``output_file`` as the location for the output. Returns the job id on
         success. AbstractJob does not implement this method. It is the
@@ -677,7 +685,7 @@ class MoabJob(AbstractJob):
             logging.error('XML output: {0}'.format(output))
             raise
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Launch job using qsub and return job id.
 
         :type testing_dir: str
@@ -813,7 +821,7 @@ class PbsProJob(AbstractJob):
         logging.debug('qsub command: {0}'.format(submit_command))
         return submit_command
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Launch job using qsub and return job id.
 
         :type testing_dir: str
@@ -896,7 +904,7 @@ class SlurmJob(AbstractJob):
         else:
             raise ValueError('Could not parse output from squeue: {0}'.format(stdout))
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Launch job using executable. Set CHPL_LAUNCHER_USE_SBATCH=true in
         environment to avoid using expect script. The executable will create a
         sbatch script and submit it. Parse and return the job id after job is
@@ -914,6 +922,9 @@ class SlurmJob(AbstractJob):
         env = os.environ.copy()
         env['CHPL_LAUNCHER_USE_SBATCH'] = 'true'
         env['CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME'] = output_file
+        with open(input_file, 'w') as fp:
+            fp.write(sys.stdin.read())
+        env['SLURM_STDINMODE'] = input_file
 
         cmd = self.test_command[:]
         # Add --nodelist into the command line

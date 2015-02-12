@@ -1226,10 +1226,10 @@ echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
 setenv CHPL_LOCALE_MODEL $locMod
 
 # we know that stdin redirection doesn't work for most launchers. only do
-# redirection when there's no launcher, or the launcher is amudprun, which we
-# know supports stdin redirection. Only set and alert user unless they threw
-# -nostdinredirect or -stdinredirect
-if ($launcher != "none" && $launcher != "amudprun") then
+# redirection when there's no launcher, or we know the launcher supports stdin
+# redirection (amudprun and slurm currently.) Set and alert user unless they
+# threw -nostdinredirect or -stdinredirect
+if ($launcher != "none" && $launcher != "amudprun" && $launcher != "slurm-srun") then
     if (! $?CHPL_NO_STDIN_REDIRECT && ! $?CHPL_TEST_FORCE_STDIN_REDIRECT ) then
         echo "[Info: assuming stdin redirection is not supported, skipping tests with stdin]" |& $tee -a $logfile
         setenv CHPL_NO_STDIN_REDIRECT true
