@@ -23,7 +23,7 @@ class Planet {
 
 iter TriangleIter(B: [] Planet) {
   for i in NBODIES {
-    refvar b1 = B[i];
+    ref b1 = B[i];
     for j in i+1..numBodies {
       yield (b1,B[j]);
     }
