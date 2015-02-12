@@ -44,7 +44,6 @@ proc runtest(param ndim : int, fn : string) {
     writeln("Data read...");
   }
   // Set up domains based on dimension size
-  var first : ndim*int;
   if (ndim==1) {
     var ldim = dims(1)/2 + 1;
     // Domains for real FFT
@@ -53,7 +52,6 @@ proc runtest(param ndim : int, fn : string) {
     // Define domains to extract the real and imaginary parts for inplace transforms
     reD = rD[0..(2*ldim-1) by 2]; // Padding to do in place transforms
     imD = rD[1..(2*ldim-1) by 2]; // Padding to do in place transforms
-    first=(0,);
   }
   if (ndim==2) {
     // Domains for real FFT
@@ -63,7 +61,6 @@ proc runtest(param ndim : int, fn : string) {
     // Define domains to extract the real and imaginary parts for in place transforms
     reD = rD[..,0..(2*ldim-1) by 2]; // Padding to do in place transforms
     imD = rD[..,1..(2*ldim-1) by 2]; // Padding to do in place transforms
-    first=(0,0);
   }
   if (ndim==3) {
     // Domains for real FFT
@@ -73,7 +70,6 @@ proc runtest(param ndim : int, fn : string) {
     // Define domains to extract the real and imaginary parts for in place transforms
     reD = rD[..,..,0..(2*ldim-1) by 2]; // Padding to do in place transforms
     imD = rD[..,..,1..(2*ldim-1) by 2]; // Padding to do in place transforms
-    first=(0,0,0);
   }
 
   // FFTW does not normalize inverse transform, set up norm
