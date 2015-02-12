@@ -90,6 +90,9 @@ static PassInfo sPassList[] = {
   // Chapel to AST
   RUN(parse),                   // parse files and create AST
   RUN(checkParsed),             // checks semantics of parsed AST
+  RUN(docs),                    // if fDocs is set, this will generate docs.
+                                // if the executable is named "chpldoc" then
+                                // the application will stop after this phase
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
@@ -101,9 +104,6 @@ static PassInfo sPassList[] = {
   RUN(cleanup),                 // post parsing transformations
   RUN(scopeResolve),            // resolve symbols by scope
   RUN(flattenClasses),          // denest nested classes
-  RUN(docs),                    // if fDocs is set, this will generate docs.
-                                // if the executable is named "chpldoc" then
-                                // the application will stop after this phase
 
   RUN(normalize),               // normalization transformations
   RUN(checkNormalized),         // check semantics of normalized AST

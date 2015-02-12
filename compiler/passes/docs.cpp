@@ -188,6 +188,17 @@ void printFields(std::ofstream *file, AggregateType *cl) {
         // For rst, this will insert '.. attribute:: ' here
         // For plain text, nothing will be inserted
 
+        printVarStart(file, var);
+        if (var->defPoint->exprType != NULL) {
+          *file << ": ";
+          var->defPoint->exprType->prettyPrint(file);
+          // TODO: Make type output prettier
+        }
+        if (var->defPoint->init != NULL) {
+          *file << " = ";
+          var->defPoint->init->prettyPrint(file);
+        }
+        /*
         // These aren't modes the ArgSymbol would know about, so cover them
         // here.
         if (var->isConstant())
@@ -207,7 +218,7 @@ void printFields(std::ofstream *file, AggregateType *cl) {
         }
         *file << argOutput->text();
         delete argOutput;
-
+        */
         *file << std::endl;
         printVarDocs(file, var);
       }
@@ -502,8 +513,23 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     if (fn->isSecondaryMethod()) {
       if (fn->numFormals() > 1) {
         ArgSymbol *myTypeHolder = fn->getFormal(2);
-        if (myTypeHolder->hasFlag(FLAG_ARG_THIS))
-          *file << myTypeHolder->type->symbol->name << ".";
+        if (myTypeHolder->hasFlag(FLAG_ARG_THIS)) {
+          Expr *typeExpr = myTypeHolder->typeExpr;
+          if (BlockStmt *body = toBlockStmt(typeExpr)) {
+            if (UnresolvedSymExpr *typeName = toUnresolvedSymExpr(body->body.tail)) {
+              *file << typeName->unresolved << ".";
+            } else {
+              INT_ASSERT(false);
+              // Shouldn't reach here, me thinks.  Tell Lydia.
+            }
+          } else {
+            INT_ASSERT(false); // Shouldn't reach here, me thinks.  Tell Lydia.
+          }
+        } else {
+          INT_ASSERT(false); // Shouldn't reach here, me thinks.  Tell Lydia.
+        }
+      } else {
+        INT_ASSERT(false); // Shouldn't reach here, me thinks.  Tell Lydia.
       }
     }
     *file << fn->name;
