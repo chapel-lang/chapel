@@ -1,0 +1,2 @@
+#!/bin/bash
+gcc -c baz.c
