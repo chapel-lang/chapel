@@ -48,6 +48,21 @@ module FFTW {
   // Real-to-complex and complex-to-real out-of-place planning routines
   // We handle these with a type parameter to let the user pass in an appropriately sized
   // real array for the complex part, most usually when doing an in-place transform.
+
+  // Since the calls to FFTW are the same, pull the extern declarations out.
+  // TODO : This should be cleaned up further and made consistent across the file
+  extern proc fftw_plan_dft_r2c(rank: c_int, 
+      n,  // BLC: having trouble being specific
+      in1: [] real(64), 
+      out1: [] fftw_complex, 
+      flags : c_uint) : fftw_plan;
+  extern proc fftw_plan_dft_c2r(rank: c_int, 
+      n,  // BLC: having trouble being specific
+      in1: [] fftw_complex, 
+      out1: [] real(64), 
+      flags : c_uint) : fftw_plan;
+
+
   proc plan_dft_r2c(in1 : [] real(64), out1 : [] fftw_complex, flags :c_uint) : fftw_plan
   {
     param rank = in1.rank: c_int;
@@ -55,12 +70,6 @@ module FFTW {
     var dims: rank*c_int;
     for param i in 1..rank do
       dims(i) = in1.domain.dim(i).size: c_int;
-
-    extern proc fftw_plan_dft_r2c(rank: c_int, 
-        n,  // BLC: having trouble being specific
-        in1: [] real(64), 
-        out1: [] fftw_complex, 
-        flags : c_uint) : fftw_plan;
 
     return fftw_plan_dft_r2c(rank, dims, in1, out1, flags);
   }
@@ -71,12 +80,6 @@ module FFTW {
     var dims: rank*c_int;
     for param i in 1..rank do
       dims(i) = out1.domain.dim(i).size: c_int;
-
-    extern proc fftw_plan_dft_c2r(rank: c_int, 
-        n,  // BLC: having trouble being specific
-        in1: [] fftw_complex, 
-        out1: [] real(64), 
-        flags : c_uint) : fftw_plan;
 
     return fftw_plan_dft_c2r(rank, dims, in1, out1, flags);
   }
