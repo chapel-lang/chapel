@@ -35,6 +35,7 @@
 #include "docs.h"
 #include "mysystem.h"
 #include "stringutil.h"
+#include "AstToText.h"
 
 int NUMTABS = 0;
 
@@ -186,26 +187,27 @@ void printFields(std::ofstream *file, AggregateType *cl) {
         *file << outputMap["field"];
         // For rst, this will insert '.. attribute:: ' here
         // For plain text, nothing will be inserted
-        printVarStart(file, var);
-        Expr *expr;
+
+        // These aren't modes the ArgSymbol would know about, so cover them
+        // here.
+        if (var->isConstant())
+          *file << "const ";
+        else if (!var->hasFlag(FLAG_TYPE_VARIABLE) && !var->isParameter())
+          *file << "var ";
+
+        // Use AstToText to generate correct output based on the arg symbol
+        // in the default initializer that corresponds to this field.
+        AstToText *argOutput = new AstToText();
         if (cl->isClass()) {
-          expr = cl->defaultTypeConstructor->body->body.get(i);
+          argOutput->appendFormal(cl->defaultInitializer, i-1);
+          // argVersion = cl->defaultInitializer->getFormal(i-1);
         } else {
-          expr = cl->defaultTypeConstructor->body->body.get(i+1);
+          argOutput->appendFormal(cl->defaultInitializer, i);
+          //argVersion = cl->defaultInitializer->getFormal(i);
         }
-        if (CallExpr *list = toCallExpr(expr)) {
-          if (CallExpr *end = toCallExpr(list->argList.tail)) {
-            if (end->primitive != NULL) {
-              *file << ": ";
-              end->prettyPrint(file);
-              // TODO: prettify type output
-            } else if (SymExpr* sym = toSymExpr(end->argList.tail)) {
-              *file << " = ";
-              sym->prettyPrint(file);
-            }
-          }
-        } 
-  
+        *file << argOutput->text();
+        delete argOutput;
+
         *file << std::endl;
         printVarDocs(file, var);
       }
