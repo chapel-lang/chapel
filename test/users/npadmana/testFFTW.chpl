@@ -79,10 +79,6 @@ proc runtest(param ndim : int, fn : string) {
   // FFTW does not normalize inverse transform, set up norm
   var norm = * reduce dims;
 
-        writeln("A.domain = ", A.domain);
-        writeln("B.domain = ", B.domain);
-        writeln("dims = ", dims);
-
 	// FFT testing here
 	var fwd = plan_dft(A, B, FFTW_FORWARD, FFTW_ESTIMATE);
 	var rev = plan_dft(B, A, FFTW_BACKWARD, FFTW_ESTIMATE);
@@ -141,9 +137,7 @@ proc runtest(param ndim : int, fn : string) {
 
 writeln("1D");
 runtest(1, "arr1d.dat");
-/*
 writeln("2D");
 runtest(2, "arr2d.dat");
 writeln("3D");
 runtest(3, "arr3d.dat");
-*/
