@@ -556,6 +556,9 @@ chplcomm=os.getenv('CHPL_COMM','none').strip()
 chplcommstr='.comm-'+chplcomm
 # sys.stdout.write('chplcomm=%s\n'%(chplcomm))
 
+# CHPL_LAUNCHER
+chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()
+
 # CHPL_LOCALE_MODEL
 chpllm=os.getenv('CHPL_LOCALE_MODEL','flat').strip()
 chpllmstr='.lm-'+chpllm
@@ -1021,7 +1024,6 @@ for testname in testsrc:
     if do_not_test:
         continue # on to next test
 
-
     # 0: test no futures
     if testfutures == 0 and testfuturesfile == True:
         sys.stdout.write('[Skipping future test: %s/%s]\n'%(localdir,test_filename))
@@ -1038,6 +1040,10 @@ for testname in testsrc:
         sys.stdout.write('[Skipping future test without a skipif: %s/%s]\n'%(localdir,test_filename))
         continue # on to next test
 
+    # c tests don't have a way to launch themselves
+    if is_c_test and chpllauncher != 'none':
+        sys.stdout.write('[Skipping c test: %s/%s]\n'%(localdir,test_filename))
+        continue
 
     # Set numlocales
     if (numlocales == 0) or (chplcomm=='none') or is_c_test:
@@ -1461,7 +1467,6 @@ for testname in testsrc:
             # binary for launchers that use a queue so we don't include the
             # time to get the reservation. These are the launchers known to
             # support timing the _real using CHPL_LAUNCHER_REAL_WRAPPER.
-            chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()
             timereal = chpllauncher in ['pbs-aprun', 'aprun', 'slurm-srun']
 
             args=list()
