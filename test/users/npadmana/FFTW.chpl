@@ -45,27 +45,64 @@ module FFTW {
     return fftw_plan_dft(rank, dims, in1, out1, sign, flags);
   }
 
+  // Real-to-complex and complex-to-real out-of-place planning routines
+  // We handle these with a type parameter to let the user pass in an appropriately sized
+  // real array for the complex part, most usually when doing an in-place transform.
+  proc plan_dft_r2c(in1 : [] real(64), out1 : [] fftw_complex, flags :c_uint) : fftw_plan
+  {
+    param rank = in1.rank: c_int;
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = in1.domain.dim(i).size: c_int;
+
+    extern proc fftw_plan_dft_r2c(rank: c_int, 
+        n,  // BLC: having trouble being specific
+        in1: [] real(64), 
+        out1: [] fftw_complex, 
+        flags : c_uint) : fftw_plan;
+
+    return fftw_plan_dft_r2c(rank, dims, in1, out1, flags);
+  }
+  proc plan_dft_c2r(in1 : [] fftw_complex, out1 : [] real(64),  flags :c_uint) : fftw_plan
+  {
+    param rank = out1.rank: c_int; // The dimensions are that of the real array
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = out1.domain.dim(i).size: c_int;
+
+    extern proc fftw_plan_dft_c2r(rank: c_int, 
+        n,  // BLC: having trouble being specific
+        in1: [] fftw_complex, 
+        out1: [] real(64), 
+        flags : c_uint) : fftw_plan;
+
+    return fftw_plan_dft_c2r(rank, dims, in1, out1, flags);
+  }
+
+
   // Real-to-complex and complex-to-real plans
   // We handle these with a type parameter to let the user pass in an appropriately sized
   // real array for the complex part, most usually when doing an in-place transform.
-  proc plan_dft_r2c(dims, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
-    where ((t.type==real(64)) || (t.type==fftw_complex)) && ((tt.type==real(64)) || (tt.type==fftw_complex)) && (isHomogeneousTuple(dims))
-    {
-      //-- define the extern proc
-      extern proc fftw_plan_dft_r2c(rank : c_int, const ref n : c_int,  in1 : _rptr,  out1 : _cxptr, flags : c_uint) : fftw_plan;
-      // Make sure types are correct
-      param ndim : c_int = dims.size;
-      return fftw_plan_dft_r2c(ndim,dims(1),c_ptrTo(in1) : c_ptr(c_double), c_ptrTo(out1) : _cxptr, flags);
-    }
-  proc plan_dft_c2r(dims, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
-    where ((t.type==real(64)) || (t.type==fftw_complex)) && ((tt.type==real(64)) || (tt.type==fftw_complex)) && (isHomogeneousTuple(dims))
-    {
-      //-- define the extern proc
-      extern proc fftw_plan_dft_c2r(rank : c_int, const ref n : c_int, in1 : _cxptr,  out1 : _rptr, flags : c_uint) : fftw_plan;
-      // Make sure types are correct
-      param ndim : c_int = dims.size;
-      return fftw_plan_dft_c2r(ndim, dims(1),c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : c_ptr(c_double), flags);
-    }
+//  proc plan_dft_r2c(dims, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
+//    where ((t.type==real(64)) || (t.type==fftw_complex)) && ((tt.type==real(64)) || (tt.type==fftw_complex)) && (isHomogeneousTuple(dims))
+//    {
+//      //-- define the extern proc
+//      extern proc fftw_plan_dft_r2c(rank : c_int, const ref n : c_int,  in1 : _rptr,  out1 : _cxptr, flags : c_uint) : fftw_plan;
+//      // Make sure types are correct
+//      param ndim : c_int = dims.size;
+//      return fftw_plan_dft_r2c(ndim,dims(1),c_ptrTo(in1) : c_ptr(c_double), c_ptrTo(out1) : _cxptr, flags);
+//    }
+//  proc plan_dft_c2r(dims, ref in1 : ?t, ref out1 : ?tt, flags : c_uint) : fftw_plan 
+//    where ((t.type==real(64)) || (t.type==fftw_complex)) && ((tt.type==real(64)) || (tt.type==fftw_complex)) && (isHomogeneousTuple(dims))
+//    {
+//      //-- define the extern proc
+//      extern proc fftw_plan_dft_c2r(rank : c_int, const ref n : c_int, in1 : _cxptr,  out1 : _rptr, flags : c_uint) : fftw_plan;
+//      // Make sure types are correct
+//      param ndim : c_int = dims.size;
+//      return fftw_plan_dft_c2r(ndim, dims(1),c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : c_ptr(c_double), flags);
+//    }
 
 
 
