@@ -133,14 +133,14 @@ static int getCoresPerLocale(void) {
 
   return numCores;
 }
-
+#define MAX_COM_LEN 4096
 // create the command that will actually launch the program and 
 // create any files needed for the launch like the batch script 
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {
   int i;
   int size;
-  char baseCommand[2048];
+  char baseCommand[MAX_COM_LEN];
   char* command;
   FILE* slurmFile;
   char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
@@ -148,6 +148,31 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
+
+  // For programs with large amounts of output, a lot of time can be
+  // spent syncing the stdout buffer to the output file. This can cause
+  // tests to run extremely slow and can cause stdout and stderr to
+  // become mixed in odd ways since stdout is buffered but stderr isn't.
+  // To alleviate this problem (and to allow accurate external timings
+  // of tests) this allows the output to be "buffered" to /tmp and
+  // copied once the job is done.
+  //
+  // Note that this should work even for multi-locale tests since all
+  // the output is piped through a single node.
+  //
+  // The *NoFmt versions are the same as the regular version, except
+  // that instead of using slurms output formatters, they use the
+  // corresponding env var. e.g. you have to use '--output=%j.out to
+  // have the output file be <jobid>.out, but when we copy the tmp file
+  // to the real output file, the %j and other formatters aren't
+  // available so we have to use the equivelent slurm env var
+  // (SLURM_JOB_ID.) The env vars can't be used when specifying --output
+  // because they haven't been initialized yet
+  char* bufferStdout = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
+  char stdoutFile         [MAX_COM_LEN];
+  char stdoutFileNoFmt    [MAX_COM_LEN];
+  char tmpStdoutFile      [MAX_COM_LEN];
+  char tmpStdoutFileNoFmt [MAX_COM_LEN];
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -160,9 +185,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   }
 
   if (basenamePtr == NULL) {
-      basenamePtr = argv[0];
+    basenamePtr = argv[0];
   } else {
-      basenamePtr++;
+    basenamePtr++;
   }
   
   chpl_compute_real_binary_name(argv[0]);
@@ -224,14 +249,30 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (account && strlen(account) > 0) {
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
     }
- 
-    // set the output name to either the user specified
-    // or to the binaryName.<jobID>.out if none specified
-    if (outputfn!=NULL) {
-      fprintf(slurmFile, "#SBATCH --output=%s\n", outputfn);
+
+    // set the output file name to either the user specified
+    // name or to the binaryName.<jobID>.out if none specified
+    if (outputfn != NULL) {
+      sprintf(stdoutFile,      "%s", outputfn);
+      sprintf(stdoutFileNoFmt, "%s", outputfn);
     }
     else {
-      fprintf(slurmFile, "#SBATCH --output=%s.%%j.out\n", argv[0]);
+      sprintf(stdoutFile,      "%s.%s.out", argv[0], "%j");
+      sprintf(stdoutFileNoFmt, "%s.%s.out", argv[0], "$SLURM_JOB_ID");
+    }
+
+    // If we're buffering the output, set the temp output file name.
+    // It's always /tmp/binaryName.<jobID>.out.
+    if (bufferStdout != NULL) {
+      sprintf(tmpStdoutFile,      "/tmp/%s.%s.out", argv[0], "%j");
+      sprintf(tmpStdoutFileNoFmt, "/tmp/%s.%s.out", argv[0], "$SLURM_JOB_ID");
+    }
+
+    // set actual output file based on if we're buffering stdout
+    if (bufferStdout != NULL) {
+      fprintf(slurmFile, "#SBATCH --output=%s\n", tmpStdoutFile);
+    } else {
+      fprintf(slurmFile, "#SBATCH --output=%s\n", stdoutFile);
     }
 
     // add the srun command and the (possibly wrapped) binary name.
@@ -243,6 +284,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, " '%s'", argv[i]);
     }
     fprintf(slurmFile, "\n");
+
+    // After the job is run, if we buffered stdout to /tmp, we need to
+    // copy the /tmp output to the actual output file. The /tmp output
+    // will only exist on one node, ignore failures on the other nodes
+    if (bufferStdout != NULL) {
+      fprintf(slurmFile, "srun mv %s %s 2>/dev/null\n", tmpStdoutFileNoFmt, stdoutFileNoFmt);
+    }
 
     // close the batch file and change permissions 
     fclose(slurmFile);
