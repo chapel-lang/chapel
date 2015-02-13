@@ -1385,7 +1385,7 @@ if ($performance || $compperformance) then
 
   if ( $status != 0 ) then
       echo "[Error: Failed to save current sha to $shaDatFilePath]" |& $tee -a $logfile
-  else
+  endif
 endif
 
 
