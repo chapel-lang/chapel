@@ -197,6 +197,15 @@ def LauncherTimeoutArgs(seconds):
 def ShellEscape(str):
     return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', str)
 
+# Grabs the start and end of the output and replaces non-printable chars with ~
+def trim_output(output):
+    max_size = 256*1024 # ~1/4 MB
+    if len(output) > max_size:
+        new_output = output[:max_size/2]
+        new_output += output[-max_size/2:]
+        output = new_output
+    return ''.join(s if s in string.printable else "~" for s in output)
+
 # return True if f has .chpl extension
 def IsChplTest(f):
     if re.match(r'^.+\.(chpl|test\.c)$', f):
@@ -246,7 +255,7 @@ def DiffFiles(f1, f2):
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
     if p.returncode != 0:
-        sys.stdout.write(myoutput)
+        sys.stdout.write(trim_output(myoutput))
     return p.returncode
 
 # diff output vs. .bad file, filtering line numbers out of error messages that arise
@@ -448,15 +457,6 @@ def runSkipIf(skipifName):
     else:
         skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
     return skiptest
-
-# Grabs first and last 1000 characters and replaces non-printable ones with ~
-def trim_output(output):
-    if len(output) > 2000:
-        new_output = output[:1000]
-        new_output += output[-1000:]
-        output = new_output
-    return ''.join(s if s in string.printable else "~" for s in output)
-
 
 # Start of sub_test proper
 #
@@ -1730,10 +1730,9 @@ for testname in testsrc:
                         if not os.path.isfile(execgoodfile) or not os.access(execgoodfile, os.R_OK):
                             sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execgoodfile))
                             sys.stdout.write('[Execution output was as follows:]\n')
-                            combined = subprocess.Popen(['cat', execlog],
-                                                        stdout=subprocess.PIPE).
-                                                        communicate()[0]
-                            sys.stdout.write(trim_output(combined))
+                            exec_output = subprocess.Popen(['cat', execlog],
+                                stdout=subprocess.PIPE).communicate()[0]
+                            sys.stdout.write(trim_output(exec_output))
 
                             continue # on to next execopts
 
