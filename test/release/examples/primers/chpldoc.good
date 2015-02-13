@@ -1,5 +1,5 @@
 Module: chpldoc
-   proc commented(val: int(64)): string
+   proc commented(val: int): string
       
       Multiline comments found before a method are associated with that method
       as long as there are no code blocks between them.
@@ -18,16 +18,14 @@ Module: chpldoc
          And classes can display their comments, too
          
 
-         var a: int(64)
+         var a: int
             
             Including the comments associated with their fields
             
-         proc getA(): int(64)
+         proc getA(): int
             
             And class specific methods
             
-
-         inherited from object
 
       Class: Bar
          
@@ -35,17 +33,15 @@ Module: chpldoc
          comments are output in both the super and the subclass
          
 
-         proc setA(newVal: int(64))
+         proc setA(newVal: int)
          inherited from Foo
-            var a: int(64)
+            var a: int
                
                Including the comments associated with their fields
                
-            proc getA(): int(64)
+            proc getA(): int
                
                And class specific methods
                
 
-
-         inherited from object
 
