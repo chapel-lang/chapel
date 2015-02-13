@@ -304,6 +304,18 @@ Inherits 'no-local'
 Reviewed 2015-02-09
 ===================
 
+internal error: execvp() failed: Bad address (2015-02-12.., lydia?)
+(happens on: gasnet.fifo, gasnet-fast)
+-------------------------------------------------------------------
+[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
+[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
+
+execution timeout, possibly related to above errors (2015-02-12, ???)
+(happens on: gasnet.fifo, gasnet-fast)
+---------------------------------------------------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
+
+
 === sporadic failures below ===
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
@@ -353,15 +365,6 @@ gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
 Reviewed 2015-02-09
 =============================
-
-internal error: execvp() failed: Bad address (2015-02-12.., lydia?)
--------------------------------------------------------------------
-[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
-[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
-
-execution timeout (2015-02-12, ???)
------------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
 
 === sporadic failures below ===
 
