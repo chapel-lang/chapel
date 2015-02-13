@@ -558,7 +558,7 @@ class AbstractJob(object):
         parser = argparse.ArgumentParser(
             description=__doc__,
             formatter_class=OurFormatter)
-        parser.add_argument('--CHPL_LAUNCHCMD_DEBUG', action='store_true',
+        parser.add_argument('--CHPL_LAUNCHCMD_DEBUG', action='store_true', dest='verbose',
                             default=('CHPL_LAUNCHCMD_DEBUG' in os.environ),
                             help=('Verbose output. Setting CHPL_LAUNCHCMD_DEBUG '
                                   'in environment also enables verbose output.'))
@@ -567,7 +567,7 @@ class AbstractJob(object):
         parser.add_argument('--n', help='Placeholder')
         parser.add_argument('--walltime', type=cls._cli_walltime,
                             help='Timeout as walltime for qsub.')
-        parser.add_argument('--CHPL_LAUNCHCMD_HOSTLIST',
+        parser.add_argument('--CHPL_LAUNCHCMD_HOSTLIST', dest='hostlist',
                             help=('Optional hostlist specification for reserving '
                                   'specific nodes. Can also be set with env var '
                                   'CHPL_LAUNCHCMD_HOSTLIST'))
