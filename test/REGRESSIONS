@@ -264,13 +264,6 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 
 
 ===================
-xc.llvm
-Inherits 'llvm'
-Reviewed 2015-02-10
-===================
-
-
-===================
 fifo
 Inherits 'general'
 Reviewed 2015-02-09
