@@ -302,11 +302,6 @@ internal error: execvp() failed: Bad address (2015-02-12.., lydia?)
 [Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
 [Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
 
-execution timeout, possibly related to above errors (2015-02-12, ???)
-(happens on: gasnet.fifo, gasnet-fast)
----------------------------------------------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy]
-
 
 === sporadic failures below ===
 
@@ -315,6 +310,12 @@ sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
  - frequent for gasnet.fifo, infrequent for gasnet-fast, very infrequent for gasnet-everything
 ---------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, ..., 2015-01-26, 2015-02-10)
+
+execution timeout, possibly related to above errors
+(happens on: gasnet.fifo, gasnet-fast)
+---------------------------------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (2015-02-12)
+
 
 
 ===================
