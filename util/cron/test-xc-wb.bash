@@ -8,7 +8,7 @@ source $CWD/functions.bash
 source $CWD/common-whitebox.bash
 
 # Run the tests!
-nightly_args="-cron -examples -no-futures"
+nightly_args="-cron"
 log_info "Calling nightly with args: ${nightly_args}"
 $CWD/nightly ${nightly_args}
 log_info "Finished running nightly."
