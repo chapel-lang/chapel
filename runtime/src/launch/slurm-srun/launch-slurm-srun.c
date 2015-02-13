@@ -57,6 +57,23 @@ typedef enum {
   unknown
 } sbatchVersion;
 
+// Find the default tmp directory. Try getting the tmp dir from the
+// ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
+static const char* getTmpDir() {
+  int i;
+  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
+  for (i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
+    const char* curDir = getenv(possibleDirsInEnv[i]);
+    if (curDir != NULL) {
+      return curDir;
+    }
+  }
+#ifdef P_tmpdir
+  return P_tmpdir;
+#endif
+  return "/tmp";
+}
+
 // Check what version of slurm is on the system 
 // Since this is c we actually write the version to a file 
 // and then get the version out 
@@ -154,7 +171,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // tests to run extremely slow and can cause stdout and stderr to
   // become mixed in odd ways since stdout is buffered but stderr isn't.
   // To alleviate this problem (and to allow accurate external timings
-  // of tests) this allows the output to be "buffered" to /tmp and
+  // of tests) this allows the output to be "buffered" to <tmpDir> and
   // copied once the job is done.
   //
   // Note that this should work even for multi-locale tests since all
@@ -168,7 +185,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // available so we have to use the equivelent slurm env var
   // (SLURM_JOB_ID.) The env vars can't be used when specifying --output
   // because they haven't been initialized yet
-  char* bufferStdout = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
+  char* bufferStdout    = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
+  const char* tmpDir    = getTmpDir();
   char stdoutFile         [MAX_COM_LEN];
   char stdoutFileNoFmt    [MAX_COM_LEN];
   char tmpStdoutFile      [MAX_COM_LEN];
@@ -262,10 +280,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     }
 
     // If we're buffering the output, set the temp output file name.
-    // It's always /tmp/binaryName.<jobID>.out.
+    // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
-      sprintf(tmpStdoutFile,      "/tmp/%s.%s.out", argv[0], "%j");
-      sprintf(tmpStdoutFileNoFmt, "/tmp/%s.%s.out", argv[0], "$SLURM_JOB_ID");
+      sprintf(tmpStdoutFile,      "%s/%s.%s.out", tmpDir, argv[0], "%j");
+      sprintf(tmpStdoutFileNoFmt, "%s/%s.%s.out", tmpDir, argv[0], "$SLURM_JOB_ID");
     }
 
     // set actual output file based on if we're buffering stdout
@@ -285,8 +303,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     }
     fprintf(slurmFile, "\n");
 
-    // After the job is run, if we buffered stdout to /tmp, we need to
-    // copy the /tmp output to the actual output file. The /tmp output
+    // After the job is run, if we buffered stdout to <tmpDir>, we need
+    // to copy the output to the actual output file. The <tmpDir> output
     // will only exist on one node, ignore failures on the other nodes
     if (bufferStdout != NULL) {
       fprintf(slurmFile, "srun mv %s %s 2>/dev/null\n", tmpStdoutFileNoFmt, stdoutFileNoFmt);
