@@ -1369,19 +1369,19 @@ if ($performance || $compperformance) then
   # output the key to a temp .perfkeys file for computePerfStats to use
   set shaKey = "sha"
   set shaPerfKeys = "$chplTestTmpDir/sha.perfkeys"
-  echo "$shaKey " > $shaPerfKeys
+  echo "$shaKey " > "$shaPerfKeys"
 
   # output the shaKey and current sha to a temp file for computePerfStats to use
   set shaOut = "$chplTestTmpDir/sha.exec.out.tmp"
-  echo "$shaKey `git rev-parse HEAD`" >  $shaOut
+  echo "$shaKey `git rev-parse HEAD`" > "$shaOut"
 
   # the name of the .dat file to store the sha (store in env var for gengraphs)
   set shaDatFileName = "perfSha"
   set shaDatFilePath = "$perfdir/$shaDatFileName.dat"
-  setenv CHPL_TEST_SHA_DAT_FILE $shaDatFilePath
+  setenv CHPL_TEST_SHA_DAT_FILE "$shaDatFilePath"
 
   echo "[Saving current git sha to $shaDatFilePath]" |& $tee -a $logfile
-  $utildir/test/computePerfStats $shaDatFileName $datdir $shaPerfKeys $shaOut
+  "$utildir/test/computePerfStats" "$shaDatFileName" "$datdir" "$shaPerfKeys" "$shaOut"
 
   if ( $status != 0 ) then
       echo "[Error: Failed to save current sha to $shaDatFilePath]" |& $tee -a $logfile
