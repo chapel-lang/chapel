@@ -35,6 +35,7 @@
 #include "docs.h"
 #include "mysystem.h"
 #include "stringutil.h"
+#include "scopeResolve.h"
 #include "AstToText.h"
 
 int NUMTABS = 0;
@@ -57,6 +58,12 @@ static int compareClasses(const void *v1, const void* v2) {
 void docs(void) {
 
   if (fDocs) {
+    // To handle inheritance, we need to look up parent classes and records.
+    // In order to be successful when looking up these parents, the import
+    // expressions should be accurately accounted for.
+    addToSymbolTable(gDefExprs);
+    processImportExprs();
+
     // Create a map of structural names to their expected chpldoc output
     if (fDocsTextOnly) {
       outputMap["class"] = "Class: ";
@@ -227,11 +234,11 @@ void printFields(std::ofstream *file, AggregateType *cl) {
 }
 
 void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
-  forv_Vec(Type, t, cl->dispatchParents) {
-    if (AggregateType* c = toAggregateType(t)) {
-      list->add_exclusive(c);
-      inheritance(list, c);
-    }
+  for_alist(expr, cl->inherits) {
+    AggregateType* pt = discoverParentAndCheck(expr, cl);
+
+    list->add_exclusive(pt);
+    inheritance(list, pt);
   }
 }
 
