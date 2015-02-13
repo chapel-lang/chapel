@@ -210,8 +210,8 @@ Inherits 'general'
 Reviewed 2015-02-09
 ===================
 
-test_10k_begins.chpl:17: error: halt reached - error detected (2015-02-13.., ???)
----------------------------------------------------------------------------------
+test_10k_begins.chpl:17: error: halt reached - error detected (2015-02-13..)
+----------------------------------------------------------------------------
 [Error matching program output for stress/deitz/test_10k_begins]
 
 

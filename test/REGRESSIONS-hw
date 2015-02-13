@@ -1,4 +1,4 @@
-This file is to keep track of the hw nodes
+# This file is used to keep track of the cray hardware testing.
 
 ===============================
 x?.*
@@ -6,10 +6,21 @@ Inherits 'x?-wb.*'
 Reviewed 2015-02-02
 ===============================
 
+"AttributeError: 'Namespace' object has no attribute 'hostlist'" (2015-02-13, elliot, thomas)
+(all configurations)
+------------------------------------------------------------------------------------------------------------------------
+All tests fail to launch
+
+
 === sporadic failures below ===
 
-Occasional "unexpected termination of the channel" -- happens when cray goes offline
-------------------------------------------------------------------------------------
+"No package 'libsci_mpi' found" for testing running on jupiter (2015-02-13)
+(xc.*.*.aprun)
+---------------------------------------------------------------------------
+All tess fail to compile
+
+"unexpected termination of the channel" -- happens when cray goes offline
+-------------------------------------------------------------------------
 any
 
 
