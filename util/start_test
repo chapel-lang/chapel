@@ -1351,6 +1351,42 @@ if ($compperformance) then
     set combineCompPerf = $utildir/test/combineCompPerfData
 endif
 
+# save the sha for the current run so we can map dates to shas in the
+# performance and compiler performance graphs
+if ($performance || $compperformance) then
+
+  set datdir = ""
+  if ($performance) then
+    set datdir = $perfdir
+  else
+    set datdir = $compperfdir
+  endif
+
+  if (! -e $datdir) then
+      mkdir -p $datdir
+  endif
+
+  # output the key to a temp .perfkeys file for computePerfStats to use
+  set shaKey = "sha"
+  set shaPerfKeys = "$chplTestTmpDir/sha.perfkeys"
+  echo "$shaKey " > "$shaPerfKeys"
+
+  # output the shaKey and current sha to a temp file for computePerfStats to use
+  set shaOut = "$chplTestTmpDir/sha.exec.out.tmp"
+  echo "$shaKey `git rev-parse HEAD`" > "$shaOut"
+
+  # the name of the .dat file to store the sha (store in env var for gengraphs)
+  set shaDatFileName = "perfSha"
+  set shaDatFilePath = "$perfdir/$shaDatFileName.dat"
+  setenv CHPL_TEST_SHA_DAT_FILE "$shaDatFilePath"
+
+  echo "[Saving current git sha to $shaDatFilePath]" |& $tee -a $logfile
+  "$utildir/test/computePerfStats" "$shaDatFileName" "$datdir" "$shaPerfKeys" "$shaOut"
+
+  if ( $status != 0 ) then
+      echo "[Error: Failed to save current sha to $shaDatFilePath]" |& $tee -a $logfile
+  endif
+endif
 
 
 # Auto-generate tests from the spec
