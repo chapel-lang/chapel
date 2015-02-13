@@ -58,7 +58,7 @@ sub main {
     $workingdir = $ARGV[1];
     $testdir = $ARGV[2];
     $chplenv = $ARGV[3];
-    $futures_mode = "-futures-mode $ARGV[4]"
+    $futures_mode = "-futures-mode \"" . $ARGV[4] . "\"";
     $valgrind = ($ARGV[5] == 1) ? "-valgrind" : "";
 
     print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;

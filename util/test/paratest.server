@@ -538,7 +538,7 @@ sub main {
         } elsif (/^-futures-mode/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $futures_mode = "$ARGV[0]";
+                $futures_mode = $ARGV[0];
             } else {
                 print "missing -futures-mode arg\n";
                 exit (8);
