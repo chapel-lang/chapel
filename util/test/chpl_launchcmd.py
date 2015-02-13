@@ -929,7 +929,7 @@ class SlurmJob(AbstractJob):
         # We could use stdout buffering for other configurations too, but I
         # don't think there's any need. Currently, single locale perf testing
         # is the only config that has any tests that produce a lot of output
-        if os.getenv('CHPL_TEST_PERF') != None and self.num_locales == 1:
+        if os.getenv('CHPL_TEST_PERF') != None and self.num_locales <= 1:
             env['CHPL_LAUNCHER_SLURM_BUFFER_STDOUT'] = 'true'
 
         cmd = self.test_command[:]
