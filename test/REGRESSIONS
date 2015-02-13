@@ -115,11 +115,6 @@ Inherits '*32'
 Reviewed 2015-02-09
 ===================
 
-Vass fixed on 2015-02-12
-------------------------
-[Error matching .bad file for variables/vass/ref-to-domains-arrays]
-
-
 timeout (2015-02-05, first run) - (elliot/michael)
 --------------------------------------------------
 [Error Timed out executing regexp test ./regexp_channel_test Regexp Channels Test]
@@ -214,6 +209,10 @@ verify
 Inherits 'general'
 Reviewed 2015-02-09
 ===================
+
+test_10k_begins.chpl:17: error: halt reached - error detected (2015-02-13.., ???)
+---------------------------------------------------------------------------------
+[Error matching program output for stress/deitz/test_10k_begins]
 
 
 ===================
@@ -740,10 +739,6 @@ Reviewed 2015-02-09
 chpl__header.h:4214:13: error: conflicting types for 'chpl__extern_array_wrapper_cprintarr' -- (2015-02-11.., brad)
 -------------------------------------------------------------------------------------------------------------------
 [Error matching compiler output for extern/bradc/multidimArrToExtern (compopts: 1)]
-
-Started failing on 2015-02-12, first run (brad)
------------------------------------------------
-[Error matching .bad file for studies/shootout/nbody/sidelnik/nbody_iterator_7-refInIterator]
 
 Dies with signal 6
 ------------------
