@@ -36,7 +36,6 @@
 #include "mysystem.h"
 #include "stringutil.h"
 #include "scopeResolve.h"
-#include "AstToText.h"
 
 int NUMTABS = 0;
 
