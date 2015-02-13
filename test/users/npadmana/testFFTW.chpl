@@ -44,7 +44,6 @@ proc runtest(param ndim : int, fn : string) {
     writeln("Data read...");
   }
   // Set up domains based on dimension size
-  var first : ndim*int;
   if (ndim==1) {
     var ldim = dims(1)/2 + 1;
     // Domains for real FFT
@@ -53,7 +52,6 @@ proc runtest(param ndim : int, fn : string) {
     // Define domains to extract the real and imaginary parts for inplace transforms
     reD = rD[0..(2*ldim-1) by 2]; // Padding to do in place transforms
     imD = rD[1..(2*ldim-1) by 2]; // Padding to do in place transforms
-    first=(0,);
   }
   if (ndim==2) {
     // Domains for real FFT
@@ -63,7 +61,6 @@ proc runtest(param ndim : int, fn : string) {
     // Define domains to extract the real and imaginary parts for in place transforms
     reD = rD[..,0..(2*ldim-1) by 2]; // Padding to do in place transforms
     imD = rD[..,1..(2*ldim-1) by 2]; // Padding to do in place transforms
-    first=(0,0);
   }
   if (ndim==3) {
     // Domains for real FFT
@@ -73,45 +70,43 @@ proc runtest(param ndim : int, fn : string) {
     // Define domains to extract the real and imaginary parts for in place transforms
     reD = rD[..,..,0..(2*ldim-1) by 2]; // Padding to do in place transforms
     imD = rD[..,..,1..(2*ldim-1) by 2]; // Padding to do in place transforms
-    first=(0,0,0);
   }
 
   // FFTW does not normalize inverse transform, set up norm
   var norm = * reduce dims;
 
+	// FFT testing here
+	var fwd = plan_dft(A, B, FFTW_FORWARD, FFTW_ESTIMATE);
+	var rev = plan_dft(B, A, FFTW_BACKWARD, FFTW_ESTIMATE);
+	// Test forward and reverse transform
+	A = goodA;
+	execute(fwd);
+	printcmp(B,goodB);
+	execute(rev);
+	A /= norm; 
+	printcmp(A,goodA);
+	destroy_plan(fwd);
+	destroy_plan(rev);
 
-  // FFT testing here
-  var fwd = plan_dft(dims, A[first],B[first],FFTW_FORWARD,FFTW_ESTIMATE);
-  var rev = plan_dft(dims, B[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
-  // Test forward and reverse transform
-  A = goodA;
-  execute(fwd);
-  printcmp(B,goodB);
-  execute(rev);
-  A /= norm; 
-  printcmp(A,goodA);
-  destroy_plan(fwd);
-  destroy_plan(rev);
-
-  // Test in-place transforms
-  fwd = plan_dft(dims,A[first],A[first],FFTW_FORWARD,FFTW_ESTIMATE);
-  rev = plan_dft(dims,A[first],A[first],FFTW_BACKWARD,FFTW_ESTIMATE);
-  A = goodA;
-  // Test forward and reverse transform
-  A = goodA;
-  execute(fwd);
-  printcmp(A,goodB);
-  execute(rev);
-  A /= norm; // FFTW does an unnormalized transform
-  printcmp(A,goodA);
-  destroy_plan(fwd);
-  destroy_plan(rev);
+	// Test in-place transforms
+	fwd = plan_dft(A, A, FFTW_FORWARD, FFTW_ESTIMATE);
+	rev = plan_dft(A, A, FFTW_BACKWARD, FFTW_ESTIMATE);
+	A = goodA;
+	// Test forward and reverse transform
+	A = goodA;
+	execute(fwd);
+	printcmp(A,goodB);
+	execute(rev);
+	A /= norm; // FFTW does an unnormalized transform
+	printcmp(A,goodA);
+	destroy_plan(fwd);
+	destroy_plan(rev);
 
   // Testing r2c and c2r
   var rA : [D] real(64); // No padding for an out-of place transform
   var cB : [cD] fftw_complex;
-  fwd = plan_dft_r2c(dims,rA[first],cB[first],FFTW_ESTIMATE);
-  rev = plan_dft_c2r(dims,cB[first],rA[first],FFTW_ESTIMATE);
+  fwd = plan_dft_r2c(rA,cB,FFTW_ESTIMATE);
+  rev = plan_dft_c2r(cB,rA,FFTW_ESTIMATE);
   rA[D] = re(goodA);
   execute(fwd);
   printcmp(cB,goodB[cD]);
@@ -122,8 +117,8 @@ proc runtest(param ndim : int, fn : string) {
   destroy_plan(rev);
   // In place transform
   var rA2 : [rD] real(64);
-  fwd = plan_dft_r2c(dims,rA2[first],rA2[first],FFTW_ESTIMATE);
-  rev = plan_dft_c2r(dims,rA2[first],rA2[first],FFTW_ESTIMATE);
+  fwd = plan_dft_r2c(D,rA2,FFTW_ESTIMATE);
+  rev = plan_dft_c2r(D,rA2,FFTW_ESTIMATE);
   rA2[D] = re(goodA);
   execute(fwd);
   printcmp(rA2[reD],re(goodB[cD]));
@@ -142,4 +137,3 @@ writeln("2D");
 runtest(2, "arr2d.dat");
 writeln("3D");
 runtest(3, "arr3d.dat");
-

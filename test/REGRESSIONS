@@ -115,7 +115,6 @@ Inherits '*32'
 Reviewed 2015-02-09
 ===================
 
-
 timeout (2015-02-05, first run) - (elliot/michael)
 --------------------------------------------------
 [Error Timed out executing regexp test ./regexp_channel_test Regexp Channels Test]
@@ -211,12 +210,18 @@ Inherits 'general'
 Reviewed 2015-02-09
 ===================
 
+test_10k_begins.chpl:17: error: halt reached - error detected (2015-02-13..)
+----------------------------------------------------------------------------
+[Error matching program output for stress/deitz/test_10k_begins]
+
 
 ===================
 valgrind
 Inherits 'general'
 Reviewed 2015-02-09
 ===================
+
+Job fails to run due to paratest.server missing command line flags. (2015-02-12, elliot)
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
@@ -258,13 +263,6 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 
 
 ===================
-xc.llvm
-Inherits 'llvm'
-Reviewed 2015-02-10
-===================
-
-
-===================
 fifo
 Inherits 'general'
 Reviewed 2015-02-09
@@ -298,10 +296,11 @@ Inherits 'no-local'
 Reviewed 2015-02-09
 ===================
 
-
-Comm count mismatch (lydia)
----------------------------
-[Error matching program output for distributions/deitz/test_block_representation (compopts: 1)]
+internal error: execvp() failed: Bad address (2015-02-12.., lydia?)
+(happens on: gasnet.fifo, gasnet-fast)
+-------------------------------------------------------------------
+[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
+[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
 
 
 === sporadic failures below ===
@@ -311,6 +310,12 @@ sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
  - frequent for gasnet.fifo, infrequent for gasnet-fast, very infrequent for gasnet-everything
 ---------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, ..., 2015-01-26, 2015-02-10)
+
+execution timeout, possibly related to above errors
+(happens on: gasnet.fifo, gasnet-fast)
+---------------------------------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (2015-02-12)
+
 
 
 ===================
@@ -528,6 +533,7 @@ Inherits 'xc-wb.prgenv-cray'
 Reviewed 2015-02-09
 ============================
 
+
 === sporadic failures below ===
 
 terminate called after throwing an instance of 'std::out_of_range' - happens when making the directory in which to place documentation
@@ -542,6 +548,10 @@ all tests fail compilation
 or "$CHPL_HOME/modules/internal/ChapelArray.chpl:2117: In function '='
 $CHPL_HOME/modules/internal/ChapelArray.chpl:2119: error: unresolved call '(list(BaseArr))'" (2015-01-27..2015-01-28)
 --------------------------------------------------------------------------------------------
+
+for param loop in String.chpl --> "$CHPL_HOME/modules/internal/String.chpl:120: error: " (2015-02-11)
+-----------------------------------------------------------------------------------------------------
+all tests fail compilation
 
 
 ===================
@@ -727,6 +737,9 @@ Inherits 'general'
 Reviewed 2015-02-09
 ===================
 
+chpl__header.h:4214:13: error: conflicting types for 'chpl__extern_array_wrapper_cprintarr' -- (2015-02-11.., brad)
+-------------------------------------------------------------------------------------------------------------------
+[Error matching compiler output for extern/bradc/multidimArrToExtern (compopts: 1)]
 
 Dies with signal 6
 ------------------
