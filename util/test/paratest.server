@@ -41,7 +41,7 @@ $pwd = `pwd`; chomp $pwd;
 $client_script = "$pwd/../util/test/paratest.client";
 $summary_len = 2;
 $sleep_time = 1;                       # polling time (sec) to distribute work
-$incl_futures = 0;
+$futures_mode = 0;
 $filedist = 0;
 $node_para = 1;				                 # the number of tasks to run on each node
 $valgrind = 0;
@@ -251,7 +251,7 @@ sub feed_nodes {
                     $execopts = "\\\"$execopts\\\"";
                 }
                 # If the command line gets too long, consider using xargs
-                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $incl_futures $valgrind $memleaksflag $compopts $execopts";
+                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $compopts $execopts";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
@@ -534,8 +534,17 @@ sub main {
                 print "missing -dirfile arg\n";
                 exit (8);
             }
+         # "undocumented" option, only meant to be used by other scripts
+        } elsif (/^-futures-mode/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $futures_mode = $ARGV[0];
+            } else {
+                print "missing -futures-mode arg\n";
+                exit (8);
+            }
         } elsif (/^-futures/) {
-            $incl_futures = 1;
+            $futures_mode = 1;
         } elsif (/^-logfile/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
@@ -659,7 +668,7 @@ sub main {
             next if /^$|^\#/;
             chomp;
             if ($filedist) {
-                push @testdir_list, find_files( $_, 0, !$incl_futures, 0);
+                push @testdir_list, find_files( $_, 0, !$futures_mode, 0);
             } else {
                 push @testdir_list, $_;
             }
@@ -674,7 +683,7 @@ sub main {
         chdir $cwd;
         if ($filedist) {
 	    print "[Collecting test files in $cwd]\n";
-            @testdir_list = find_files (".", 0, !$incl_futures, 1);
+            @testdir_list = find_files (".", 0, !$futures_mode, 1);
         } else {
 	    print "[Collecting test directories in $cwd]\n";
             @testdir_list = find_subdirs (".", 0);

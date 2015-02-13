@@ -822,7 +822,7 @@ while ( $#argv > 0 )
         shift
         set futuresMode = 3
         breaksw
-    # "undocumented" option, only meant to be used by nightly
+    # "undocumented" option, only meant to be used by other scripts
     case -futures-mode:
     case --futures-mode:
         shift

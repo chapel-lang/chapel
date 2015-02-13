@@ -3,13 +3,13 @@
 # Client-side of the parallel testing script, paratest.server.
 # Used remotely by paratest.server to run start_test locally.
 #
-# Usage: paratest.client id chapeltestdir testdir chplenv futures valgrind [compopts]
+# Usage: paratest.client id chapeltestdir testdir chplenv futures-mode valgrind [compopts]
 #  
 #  id - used to create a file to synchronize with paratest.server
 #  chapeltestdir - root dir of Chapel test infrastructure
 #  testdir - directory to run start_test on
 #  chplenv - Chapel environment variables
-#  futures - include .future tests (0=no, 1=yes)
+#  futures-mode - include .futures (0=no, 1=all, 2=futures only, 3=futures with skipifs)
 #  valgrind - run valgrind (0=no, 1=yes)
 #  compopts - optional Chapel compiler options
 #
@@ -51,17 +51,17 @@ sub main {
 
     if ($#ARGV < 5) {
         fatal("insufficient arguments: '@ARGV'\n" .
-	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures valgrind memleaks [compopts] [execopts]");
+	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks [compopts] [execopts]");
     }
 
     $id = $ARGV[0];
     $workingdir = $ARGV[1];
     $testdir = $ARGV[2];
     $chplenv = $ARGV[3];
-    $incl_futures = ($ARGV[4] == 1) ? "-futures" : "";
+    $futures_mode = "-futures-mode \"" . $ARGV[4] . "\"";
     $valgrind = ($ARGV[5] == 1) ? "-valgrind" : "";
 
-    print "$id $workingdir $testdir $incl_futures $valgrind" if $debug;
+    print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;
     if ($#ARGV>=7) {
         $compopts = "-compopts \"" . $ARGV[7] . "\"";
     }
@@ -95,7 +95,7 @@ sub main {
 
     $memleaks = ($ARGV[6] == 1) ? "-memleaks $logdir/tmp.$dirfname.$node.memleaks" : "";
 
-    $testarg = "-compiler $compiler -logfile $logfile $incl_futures $valgrind $compopts $execopts $memleaks";
+    $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks";
     $testarg = "$testarg $testdir -norecurse";
 
     # Set up the Chapel environment passed in by paratest.server
