@@ -35,11 +35,13 @@ $allhellos = 0;
 $examples = 0;
 $performance = 0;
 $performancedescription = "";
+$performanceconfigs = "";
 $releasePerformance = 0;
 $compperformance = 0;
 $compperformancedescription = "";
+$syncsuffix = "";
 $componly = 0;
-$nofutures = 0;
+$futuresMode = 3;
 $suppressions = "";
 $parnodefile = "";
 $baseline = 0;
@@ -96,11 +98,15 @@ while (@ARGV) {
     } elsif ($flag eq "-performance-description") {
         $performance = 1;
         $performancedescription = shift @ARGV;
+    } elsif ($flag eq "-performance-configs") {
+        $performanceconfigs = shift @ARGV;
     } elsif ($flag eq "-releasePerformance") {
         $releasePerformance = 1;
     } elsif ($flag eq "-compperformance") {
         $compperformance = 1;
         $compperformancedescription = shift @ARGV;
+    } elsif ($flag eq "-sync-dir-suffix") {
+        $syncsuffix = shift @ARGV;
     } elsif ($flag eq "-numtrials") {
         $numtrials = shift @ARGV;
     } elsif ($flag eq "-compopts") {
@@ -121,8 +127,10 @@ while (@ARGV) {
         $suppressions = shift @ARGV;
     } elsif ($flag eq "-componly") {
 	$componly = 1;
+    } elsif ($flag eq "-futures") {
+	$futuresMode = 1;
     } elsif ($flag eq "-no-futures") {
-	$nofutures = 1;
+	$futuresMode = 0;
     } elsif ($flag eq "-parnodefile") {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
@@ -173,7 +181,7 @@ if (@ARGV) {
 }
 
 if ($printusage == 1) {
-    print "nightly [-debug|-cron] {[-notest] [-valgrind] [-componly] [-no-futures] [-performance]}\n";
+    print "nightly [-debug|-cron] {[-notest] [-valgrind] [-componly] [-[no-]futures] [-performance]}\n";
     print "\t-debug       : check out sources and run for individual user (default)\n";
     print "\t-cron        : use for nightly cron runs only\n";
     print "\t-notest      : don't run the tests (check the build only)\n";
@@ -186,7 +194,8 @@ if ($printusage == 1) {
     print "\t-valgrind    : run tests in valgrind mode\n";
 #    print "\t-interpret   : run tests in interpreted mode\n";
     print "\t-performance : run performance tests\n";
-    print "\t-performance-description : run performance tests with additional description";
+    print "\t-performance-description : run performance tests with additional description\n";
+    print "\t-performance-configs : comma seperated configs to graph, ':v' after config to be visible by default\n";
     print "\t-compperformance <description>: run tests with compiler performance tracking\n";
     print "\t-numtrials <number> : number of trials to run\n";
     print "\t-startdate	  : run performance tests providing a common start date to all the graphs\n";
@@ -197,6 +206,7 @@ if ($printusage == 1) {
     print "\t-memleaks <log> : run memleaks tests\n";
     print "\t-no-local    : run tests using --no-local\n";
     print "\t-componly    : only run the compiler, not the generated binary\n";
+    print "\t-futures     : run all futures, not just those with skipifs\n";
     print "\t-no-futures  : do not run future tests\n";
     print "\t-parnodefile : specify a node file to use for parallel testing\n";
     print "\t-cron-recipient : send -cron emails to this address instead of SourceForge mailing list(s)\n";
@@ -511,9 +521,8 @@ if ($interpret == 1) {
 if ($valgrind == 1) {
     $testflags = "$testflags -valgrind";
 }
-if ($nofutures == 0) {
-    $testflags = "$testflags -futures";
-}
+
+$testflags = "$testflags -futures-mode $futuresMode";
 
 #
 # Test directories to run.
@@ -590,6 +599,10 @@ if ($performance == 1) {
     if ($performancedescription ne "") {
        $testflags = "$testflags -performance-description $performancedescription";
     }
+    if ($performanceconfigs ne "") {
+       $testflags = "$testflags -performance-configs \"$performanceconfigs\"";
+    }
+
 }
 if ($compperformance == 1) { 
     if ($startdate eq "-1") {
@@ -695,7 +708,7 @@ if ($runtests == 0) {
 
     if ($performance == 1 or $compperformance == 1) {
         # sync the performance graphs over to sourceforge
-        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/html/ $host --logFile $logdir/syncToSourceForge.errors";
+        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/html/ $host/$syncsuffix --logFile $logdir/syncToSourceForge.errors";
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
    }
@@ -754,7 +767,7 @@ if ($runtests == 0) {
             mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
 
             # sync the perf graphs over to sourceforge
-            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $host/releaseOverRelease/ --logFile $logdir/syncReleaseToSourceForge.errors";
+            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $host/releaseOverRelease/$syncsuffix --logFile $logdir/syncReleaseToSourceForge.errors";
             $rsyncMessage = "syncing release performance graph to sourceforge -- log file at $logdir/syncReleaseToSourceForge.errors";
             mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
         }
