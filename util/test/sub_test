@@ -449,6 +449,15 @@ def runSkipIf(skipifName):
         skiptest = subprocess.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE).communicate()[0]
     return skiptest
 
+# Grabs first and last 1000 characters and replaces non-printable ones with ~
+def trim_output(output):
+    if len(output) > 2000:
+        new_output = output[:1000]
+        new_output += output[-1000:]
+        output = new_output
+    return ''.join(s if s in string.printable else "~" for s in output)
+
+
 # Start of sub_test proper
 #
 
@@ -1563,7 +1572,7 @@ for testname in testsrc:
                         printTestVariation(compoptsnum, execoptsnum);
                         sys.stdout.write(']\n')
                         sys.stdout.write('[Execution output was as follows:]\n')
-                        sys.stdout.write(output)
+                        sys.stdout.write(trim_output(output))
 
                 elif useTimedExec:
                     wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
@@ -1587,7 +1596,7 @@ for testname in testsrc:
                         printTestVariation(compoptsnum, execoptsnum);
                         sys.stdout.write(']\n')
                         sys.stdout.write('[Execution output was as follows:]\n')
-                        sys.stdout.write(output)
+                        sys.stdout.write(trim_output(output))
                     else:
                         # for perf runs print out the 5 processes with the
                         # highest cpu usage. This should help identify if other
@@ -1708,7 +1717,7 @@ for testname in testsrc:
                         # .good file that corresponds to that run 
                         if not onlyone:
                             commExecNum.insert(0,'.'+str(compoptsnum)+'-'+str(execoptsnum))
-                        
+
                         # if the .good file was explicitly specified, look for
                         # that version instead of the multiple
                         # compopts/execopts or just the base .good file 
@@ -1721,9 +1730,10 @@ for testname in testsrc:
                         if not os.path.isfile(execgoodfile) or not os.access(execgoodfile, os.R_OK):
                             sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execgoodfile))
                             sys.stdout.write('[Execution output was as follows:]\n')
-                            sys.stdout.write(subprocess.Popen(['cat', execlog],
-                                                              stdout=subprocess.PIPE).
-                                            communicate()[0])
+                            combined = subprocess.Popen(['cat', execlog],
+                                                        stdout=subprocess.PIPE).
+                                                        communicate()[0]
+                            sys.stdout.write(trim_output(combined))
 
                             continue # on to next execopts
 
