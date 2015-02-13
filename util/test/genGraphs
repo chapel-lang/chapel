@@ -1061,13 +1061,15 @@ def main():
             sys.stdout.write('Created SUCCESS file\n')
             #
             # recursively chmod the html/ directory for access via web servers
+            #  - for directories, chmod u+rwx and go+rx
+            #  - for directories, chmod go+r
             #
             for root, dirs, files in os.walk(outdir):
                 os.chmod(root, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
                 for momo in dirs:
                     os.chmod(os.path.join(root, momo), stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
                 for momo in files:
-                    os.chmod(os.path.join(root, momo), stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
+                    os.chmod(os.path.join(root, momo), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
 
     return 0
