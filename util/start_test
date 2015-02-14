@@ -1912,6 +1912,10 @@ if ($junit_xml_file != 0) then
 endif
 if ($junit_remove_prefix != 0) then
     set junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
+else if ($testRootDir = "") then
+    # If --test-root was thrown, also remove it from the junit report (in case
+    # something slipped through in sub_test).
+    set junit_args = "$junit_args --remove-prefix=$testRootDir"
 endif
 if ($suppressions != "") then
     set junit_args = "$junit_args --suppress=$suppressions"
