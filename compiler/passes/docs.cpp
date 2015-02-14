@@ -517,26 +517,15 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     //   get type name from 'this' argument
     //   output it + '.' before fn->name
     if (fn->isSecondaryMethod()) {
-      if (fn->numFormals() > 1) {
-        ArgSymbol *myTypeHolder = fn->getFormal(2);
-        if (myTypeHolder->hasFlag(FLAG_ARG_THIS)) {
-          Expr *typeExpr = myTypeHolder->typeExpr;
-          if (BlockStmt *body = toBlockStmt(typeExpr)) {
-            if (UnresolvedSymExpr *typeName = toUnresolvedSymExpr(body->body.tail)) {
-              *file << typeName->unresolved << ".";
-            } else {
-              INT_ASSERT(false);
-              // Shouldn't reach here, me thinks.  Tell Lydia.
-            }
-          } else {
-            INT_ASSERT(false); // Shouldn't reach here, me thinks.  Tell Lydia.
-          }
-        } else {
-          INT_ASSERT(false); // Shouldn't reach here, me thinks.  Tell Lydia.
-        }
-      } else {
-        INT_ASSERT(false); // Shouldn't reach here, me thinks.  Tell Lydia.
-      }
+      INT_ASSERT (fn->numFormals() > 1);
+      ArgSymbol *myTypeHolder = fn->getFormal(2);
+      INT_ASSERT (myTypeHolder->hasFlag(FLAG_ARG_THIS));
+      Expr *typeExpr = myTypeHolder->typeExpr;
+      BlockStmt *body = toBlockStmt(typeExpr);
+      INT_ASSERT (body);
+      UnresolvedSymExpr *typeName = toUnresolvedSymExpr(body->body.tail);
+      INT_ASSERT (typeName);
+      *file << typeName->unresolved << ".";
     }
     *file << fn->name;
     if (!fn->hasFlag(FLAG_NO_PARENS))
