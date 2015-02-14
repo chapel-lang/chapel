@@ -607,8 +607,6 @@ fn_decl_stmt:
 
       fn->copyFlags($1);
       // The user explicitly named this function (controls mangling).
-      if ($1->hasFlag(FLAG_EXPORT) || $1->hasFlag(FLAG_EXTERN))
-        fn->addFlag(FLAG_USER_NAMED);
       if (*$1->name)
         fn->cname = $1->name;
 
