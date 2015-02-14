@@ -203,6 +203,7 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
   }
 
   newargv[len-1] = NULL;
+  newargv[len-2] = NULL;
 
   // add any launcher args
   if (largc > 0) {
