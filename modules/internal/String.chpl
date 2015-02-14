@@ -38,7 +38,7 @@ pragma "no use ChapelStandard"
  *   becomes the default, the compiler should automatically coerce the
  *   rest.
  *
- * - It is assumed the the baseType is a local-only type, so we never
+ * - It is assumed the baseType is a local-only type, so we never
  *   make a remote copy of one passed in by the user, though remote
  *   copies are made of internal baseType variables.
  *
@@ -83,7 +83,7 @@ module BaseStringType {
   proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: size_t): bufferType {
       const dest = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
       chpl_string_comm_get(dest, src_loc_id, src_addr, len);
-      dest[len+1] = 0;
+      dest[len] = 0;
       return dest;
   }
 
@@ -174,11 +174,12 @@ module String {
           this._size = s_len+1;
         }
         memmove(this.base, buf, s_len);
-        this.base[s_len+1] = 0;
+        this.base[s_len] = 0;
       } else {
         // free the old buffer
         if this.len != 0 then chpl_mem_free(this.base);
         this.base = nil;
+        this._size = 0;
       }
 
       this.len = s_len;
@@ -213,9 +214,15 @@ module String {
       return ret;
     }
 
-    proc this(i: uint) {
+    iter these() : string {
+      for i in 1..this.len {
+        yield this[i];
+      }
+    }
+
+    proc this(i: uint) : string {
       var ret: string;
-      if i == 0 || i > this.len then return ret;
+      if i == 0 || i > this.len then halt("index out of bounds of string");
 
       ret._size = min_alloc_size;
       ret.len = 1;
@@ -225,7 +232,7 @@ module String {
       if remoteThis {
         chpl_string_comm_get(ret.base, this.home.id, this.base, this.len);
       } else {
-        ret.base[0] = this.base[i];
+        ret.base[0] = this.base[i-1];
       }
       ret.base[1] = 0;
 
@@ -233,7 +240,7 @@ module String {
     }
 
     // TODO: I wasn't very good about caching variables locally in this one.
-    proc this(r: range(?)) {
+    proc this(r: range(?)) : string {
       var ret: string;
       if this.len == 0 then return ret;
 
@@ -251,7 +258,7 @@ module String {
 
       var r2 = r[1:r.idxType..#this.len];
       if r2.size <= 0 {
-        halt("range out of bounds of string");
+        halt("tring to slice a string with a range of size 0");
         //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
       } else {
         ret.len = r2.size:uint;
@@ -273,7 +280,7 @@ module String {
       for (r2_i, i) in zip(r2, 0..) {
         ret.base[i] = thisBase[r2_i-1];
       }
-      ret.base[ret.len+1] = 0;
+      ret.base[ret.len] = 0;
 
       if remoteThis then chpl_mem_free(thisBase);
 
@@ -318,9 +325,9 @@ module String {
         if needle.len == 0 then return true;
         if needle.len > this.len then continue;
 
-        for i in 0..needle.len {
+        for i in 0..#needle.len {
           if needle.base[i] != this.base[i] then break;
-          if i == needle.len then return true;
+          if i == needle.len-1 then return true;
         }
       }
       return false;
@@ -328,17 +335,23 @@ module String {
 
     // Returns the index of the first occurrence of a substring within a
     // string or 0 if the substring is not in the string.
-    //TODO: this could be a much better string search (Boyer-Moore/whatever)
-    inline proc find(s: string) : uint {
-      if s.len == 0 then return 1; //TODO: should this always be 0?
-      if this.len == 0 then return 0;
+    //TODO: this could be a much better string search
+    //      (Boyer-Moore-Horspool|any thing other than brute force)
+    proc find(s: string) : uint {
+      const slen = s.len;
+      const thisLen = this.len;
+      if slen == 0 then return 1; //TODO: should this always be 0?
+      if thisLen == 0 then return 0;
+      if slen > thisLen then return 0;
+
       var ret: uint = 0;
-      // Assume s.base is shorter than this.base, so go to the home locale
+      // s.base is shorter than this.base, so go to the home locale
       on this.home {
-        var sLocal = makeLocal(s);
-        for i in 0:uint..#this.len {
+        const sLocal = makeLocal(s);
+        const lastPossible = (this.len-sLocal.len)+1;
+        for i in 0:uint..#lastPossible {
           for j in 0:uint..#sLocal.len {
-            if this.base[i] != sLocal.base[j] then break;
+            if this.base[i+j] != sLocal.base[j] then break;
             if j == sLocal.len-1 then ret = i+1;
           }
           if ret != 0 then break;
@@ -365,7 +378,7 @@ module String {
       memmove(ret.base, s.base, s.len);
       ret.len = s.len;
       ret._size = s.len+1;
-      ret.base[ret.len+1] = 0;
+      ret.base[ret.len] = 0;
     }
 
     if debugStrings then
@@ -396,14 +409,14 @@ module String {
           chpl_debug_string_print("  local initCopy");
         ret.base = chpl_mem_alloc(s.len+1, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
         memmove(ret.base, s.base, s.len);
+        ret.base[s.len] = 0;
       } else {
         if debugStrings then
           chpl_debug_string_print("  remote initCopy: "+s.home.id:c_string);
         ret.base = copyRemoteBuffer(s.home.id, s.base, slen);
       }
       ret.len = slen;
-      ret._size = slen;
-      ret.base[ret.len+1] = 0;
+      ret._size = slen+1;
     }
 
     if debugStrings then
@@ -459,6 +472,7 @@ module String {
     // Make this some sort of local check once we have local types/vars
     if (rhs_c.locale.id != hereId) || (lhs.home.id != hereId) then
       halt("Cannot assign a remote c_string to a string.");
+
     const len = rhs_c.length;
     const buff:bufferType = rhs_c:bufferType;
     lhs.reinitString(buff, len);
@@ -498,7 +512,7 @@ module String {
     } else {
       memmove(ret.base+s0len, s1.base, s1len);
     }
-    ret.base[ret.len+1] = 0;
+    ret.base[ret.len] = 0;
 
     if debugStrings then
       chpl_debug_string_print("leaving proc +()");
@@ -533,7 +547,7 @@ module String {
       memmove(ret.base+cs.length, sbase, slen);
     }
 
-    ret.base[ret.len+1] = 0;
+    ret.base[ret.len] = 0;
 
     if sremote then chpl_mem_free(sbase);
 
@@ -662,9 +676,6 @@ module String {
   //
   // Casts (casts to / from other primitive types are in StringCasts)
   //
-  // TODO: I want to break all of these casts from string to T out into
-  // T.parse(string), but we dont support methods on types yet. Ideally they
-  // would use a tagged union retval as well.
 
   // :(
   inline proc _cast(type t, cs: c_string) where t == bufferType {
@@ -693,7 +704,7 @@ module String {
 
     var ret: string;
     ret.len = cs.length;
-    ret._size = ret.len;
+    ret._size = ret.len+1;
     if ret.len != 0 then ret.base = __primitive("string_copy", cs): bufferType;
 
     if debugStrings then
