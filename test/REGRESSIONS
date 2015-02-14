@@ -264,6 +264,12 @@ Inherits 'general'
 Reviewed 2015-02-09
 ===================
 
+Vass fixed these 2015-02-13
+---------------------------
+[Error matching .bad file for arrays/vass/setter-assigned-to-a-var]
+[Error matching .bad file for users/vass/crash1callDestructorsMain]
+[Error matching .bad file for variables/vass/ref-to-domains-arrays]
+
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
@@ -337,9 +343,9 @@ Inherits 'no-local'
 Reviewed 2015-02-09
 ===================
 
-internal error: execvp() failed: Bad address (2015-02-12.., Vass?)
+internal error: execvp() failed: Bad address (2015-02-12.., Elliot)
 (happens on: gasnet.fifo, gasnet-fast, gasnet-everything)
-------------------------------------------------------------------
+-------------------------------------------------------------------
 [Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
 [Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
 
