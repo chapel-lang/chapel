@@ -89,6 +89,7 @@
 #   -memleaks
 #   -no-chpl-home-warn                Do not show warning when start_test invoked outside CHPL_HOME
 #   -progress                         Print pass/fail to stderr for each test. Does not work for directories.
+#   -test-root                        Absolute path to test dir. Set when test dir is not under CHPL_HOME.
 #   -junit-xml                        Create jUnit XML style report.
 #   -junit-xml-file <file>            Path to store jUnit XML report. When set, -junit-xml is implied.
 #   -junit-remove-prefix <prefix>     Remove <prefix> from all tests in jUnit report.
@@ -732,6 +733,7 @@ set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
 set progress = 0
+set testRootDir = ""
 set junit_xml = 0
 set junit_xml_file = 0
 set junit_remove_prefix = 0
@@ -988,6 +990,12 @@ while ( $#argv > 0 )
         shift
         set progress = 1
         breaksw
+    case -test-root:
+    case --test-root:
+        shift
+        set testRootDir = shift $argv[1]
+        shift
+        breaksw
     case -junit-xml:
     case --junit-xml:
         shift
@@ -1046,6 +1054,7 @@ while ( $#argv > 0 )
         echo "          -memleaks <file>"
         echo "          -no-chpl-home-warn"
         echo "          -progress"
+        echo "          -test-root"
         echo "          -junit-xml"
         echo "          -junit-xml-file <file>  (implies -junit-xml)"
         echo "          -junit-remove-prefix <prefix>"
@@ -1073,6 +1082,10 @@ end
 
 if ($optionerr == 1) then
     exit 1
+endif
+
+if ($testRootDir != "") then
+    setenv CHPL_TEST_ROOT_DIR = "$testRootDir"
 endif
 
 set invocationDir = "$cwd"
