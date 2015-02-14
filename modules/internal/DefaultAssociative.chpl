@@ -755,6 +755,7 @@ module DefaultAssociative {
     return _gen_key(hash);
   }
 
+  // TODO strings: can remove defaultHash(c_string)?
   //inline proc chpl__defaultHash(x : c_string): int(64) {
   //  var hash: int(64) = 0;
   //  for c in 1..(x.length) {
