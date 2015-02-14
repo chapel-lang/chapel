@@ -645,7 +645,8 @@ endif
 if ($?CHPL_TEST_UTIL_DIR) then
     set utildir = "$CHPL_TEST_UTIL_DIR"
 else
-    set utildir = `dirname $0`
+    set start_test_dir = `dirname $0`
+    set utildir = `cd $start_test_dir && pwd`
     setenv CHPL_TEST_UTIL_DIR $utildir
 endif
 if (! -d $utildir || ! -x $utildir) then
