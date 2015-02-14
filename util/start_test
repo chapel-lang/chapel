@@ -993,7 +993,7 @@ while ( $#argv > 0 )
     case -test-root:
     case --test-root:
         shift
-        set testRootDir = shift $argv[1]
+        set testRootDir = $argv[1]
         shift
         breaksw
     case -junit-xml:
@@ -1085,7 +1085,7 @@ if ($optionerr == 1) then
 endif
 
 if ($testRootDir != "") then
-    setenv CHPL_TEST_ROOT_DIR = "$testRootDir"
+    setenv CHPL_TEST_ROOT_DIR "$testRootDir"
 endif
 
 set invocationDir = "$cwd"
@@ -1912,10 +1912,12 @@ if ($junit_xml_file != 0) then
 endif
 if ($junit_remove_prefix != 0) then
     set junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
-else if ($testRootDir = "") then
-    # If --test-root was thrown, also remove it from the junit report (in case
-    # something slipped through in sub_test).
-    set junit_args = "$junit_args --remove-prefix=$testRootDir"
+else
+    if ($testRootDir != "") then
+	# If --test-root was thrown, also remove it from the junit report (in case
+	# something slipped through in sub_test).
+	set junit_args = "$junit_args --remove-prefix=$testRootDir"
+    endif
 endif
 if ($suppressions != "") then
     set junit_args = "$junit_args --suppress=$suppressions"
