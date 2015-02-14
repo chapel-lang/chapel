@@ -264,8 +264,6 @@ Inherits 'general'
 Reviewed 2015-02-09
 ===================
 
-Job fails to run due to paratest.server missing command line flags. (2015-02-12, elliot)
-
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
