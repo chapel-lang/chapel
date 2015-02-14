@@ -39,11 +39,11 @@ struct PassInfo {
 // These entries should be kept in the same order as the entries in passlist.h.
 #define LOG_parse                              'p'
 #define LOG_checkParsed                        NUL
+#define LOG_docs                               NUL
 #define LOG_readExternC                        'c'
 #define LOG_cleanup                            'u'
 #define LOG_scopeResolve                       'S'
 #define LOG_flattenClasses                     'b'
-#define LOG_docs                               NUL
 #define LOG_normalize                          'N'
 #define LOG_checkNormalized                    NUL
 #define LOG_buildDefaultFunctions              'D'
