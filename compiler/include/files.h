@@ -64,6 +64,7 @@ bool isCHeader(const char* filename);
 bool isCSource(const char* filename);
 bool isObjFile(const char* filename);
 void testInputFiles(int numFilenames, char* filename[]);
+void testInputFile(const char* filename);
 const char* nthFilename(int i);
 void addLibInfo(const char* filename);
 void addIncInfo(const char* incDir);

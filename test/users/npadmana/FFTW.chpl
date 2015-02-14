@@ -2,6 +2,7 @@
 module FFTW {
 
   use SysCTypes;
+  use "$FFTW_DIR/include/fftw3.h"; //, "$FFTW_DIR/lib/libfftw3.a";
 
   // Define the various planner flags
   // See Sec. 4.3.2 of FFTW manual "Planner Flags"

@@ -23,6 +23,7 @@
 #include "baseAST.h"
 #include "config.h"
 #include "expr.h"
+#include "files.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -30,6 +31,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "view.h"
 
 static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt);
 
@@ -361,6 +363,17 @@ static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
 
 
 static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
+  if (SymExpr* se = toSymExpr(module)) {
+    if (VarSymbol* var = toVarSymbol(se->var)) {
+      if (var->isImmediate()) {
+        Immediate* imm = var->immediate;
+        if (imm->const_kind == CONST_KIND_STRING) {
+          testInputFile(imm->v_string);
+          return list;
+        }
+      }
+    }
+  }
   CallExpr* newUse = new CallExpr(PRIM_USE, module);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
@@ -376,6 +389,9 @@ BlockStmt* buildUseStmt(CallExpr* modules) {
   BlockStmt* list = NULL;
   for_actuals(expr, modules)
     list = buildUseList(expr->remove(), list);
+  if (list == NULL) {
+    return new BlockStmt(new CallExpr("chpl_noop"));
+  }
   return list;
 }
 

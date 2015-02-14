@@ -284,6 +284,7 @@ void closeInputFile(FILE* infile) {
 
 
 static const char** inputFilenames = {NULL};
+static int numInputFiles = 0;
 
 
 static bool checkSuffix(const char* filename, const char* suffix) {
@@ -322,11 +323,12 @@ static bool isRecognizedSource(char* filename) {
 
 
 void testInputFiles(int numFilenames, char* filename[]) {
-  inputFilenames = (const char**)malloc((numFilenames+1)*sizeof(char*));
-  int i;
+  int i, j = numInputFiles;
   char achar;
+  numInputFiles += numFilenames;
+  inputFilenames = (const char**)realloc(inputFilenames, (numInputFiles+1)*sizeof(char*));
 
-  for (i = 0; i < numFilenames; i++) {
+  for (i = 0; i < numFilenames; i++, j++) {
     if (!isRecognizedSource(filename[i])) {
       USR_FATAL(astr("file '",
                      filename[i],
@@ -344,13 +346,18 @@ void testInputFiles(int numFilenames, char* filename[]) {
       closeInputFile(testfile);
     }
 
-    inputFilenames[i] = astr(filename[i]);
+    inputFilenames[j] = astr(filename[i]);
   }
 
-  inputFilenames[i] = NULL;
+  inputFilenames[j] = NULL;
 
   if (!foundChplSource)
     USR_FATAL("Command line contains no .chpl source files");
+}
+
+void testInputFile(const char* filename) {
+  char* filenamearr[1] = {(char*)filename};
+  testInputFiles(1, filenamearr);
 }
 
 
