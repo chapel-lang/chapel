@@ -1,5 +1,6 @@
 use FFTW;
 
+config param nthread : int(32) = 1; // If 1, then don't compile in the thread support.
 
 proc printcmp(x, y) {
   var err = max reduce abs(x-y);
@@ -131,9 +132,22 @@ proc runtest(param ndim : int, fn : string) {
 
 }
 
+// Initialize multi-threaded support if desired
+if (nthread > 1) {
+  var ret = init_threads();
+  if (ret == 0) then halt("Failed to initialize thread support:", ret);
+  plan_with_nthreads(nthread);
+}
+
+
+
 writeln("1D");
 runtest(1, "arr1d.dat");
 writeln("2D");
 runtest(2, "arr2d.dat");
 writeln("3D");
 runtest(3, "arr3d.dat");
+
+if (nthread > 1) {
+  cleanup_threads();
+}
