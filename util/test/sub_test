@@ -58,6 +58,10 @@
 #                         system. CAUTION: This wont necessarily work for all
 #                         tests, but can allow for running multiple start_tests
 #                         over a directory in parallel.
+# CHPL_TEST_ROOT_DIR: Absolute path to the test/ dir. Useful when test dir is
+#                     not under $CHPL_HOME. Should not be set when test/ is
+#                     under $CHPL_HOME. When it is set and the path prefixes a
+#                     test in the logs, it will be removed (from the logs).
 #
 #
 # DIRECTORY-WIDE FILES:  These settings are for the entire directory and
@@ -205,6 +209,7 @@ def trim_output(output):
         new_output += output[-max_size/2:]
         output = new_output
     return ''.join(s if s in string.printable else "~" for s in output)
+
 
 # return True if f has .chpl extension
 def IsChplTest(f):
@@ -511,6 +516,12 @@ if os.path.isdir(testdir)==0:
 # Needed for MacOS mount points
 testdir = os.path.realpath(testdir)
 # sys.stdout.write('testdir='+testdir+'\n');
+
+# If user specified a different test directory (e.g. with --test-root flag on
+# start_test), use it instead.
+test_root_dir = os.environ.get('CHPL_TEST_ROOT_DIR')
+if test_root_dir is not None:
+    testdir = test_root_dir
 
 # Use timedexec
 # As much as I hate calling out to another script for the time out stuff,
