@@ -1,0 +1,15 @@
+Module: fieldInheritance
+   Class: Elder
+      This class has two fields 
+
+      var rod: string
+      var staff: bool
+   Class: Younger
+      This class should inherit its Elder's fields 
+
+      var key: int
+      var stone: imag
+      inherited from Elder
+         var rod: string
+         var staff: bool
+

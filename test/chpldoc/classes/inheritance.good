@@ -1,0 +1,40 @@
+Module: inheritance
+   Class: Grandparent
+      The eldest 
+
+      proc getOffMyLawn()
+         You durn kids! 
+
+      proc backInMyDay()
+   Class: Parent
+      Second generation 
+
+      proc goToYourRoom()
+         Grounded! 
+
+      proc curfew()
+      inherited from Grandparent
+         proc getOffMyLawn()
+            You durn kids! 
+
+         proc backInMyDay()
+
+   Class: Child
+      Reaping the benefits of third generation status 
+
+      proc whine()
+         But I was going to go pick up some power converters! 
+
+      proc youNeverLetMeDoAnythingFun()
+      inherited from Parent
+         proc goToYourRoom()
+            Grounded! 
+
+         proc curfew()
+
+      inherited from Grandparent
+         proc getOffMyLawn()
+            You durn kids! 
+
+         proc backInMyDay()
+

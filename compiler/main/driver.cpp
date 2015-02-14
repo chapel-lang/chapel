@@ -978,7 +978,7 @@ int main(int argc, char* argv[]) {
     if (fDocs == false && strcmp(sArgState.program_name, "chpldoc") == 0)
       fDocs = true;
 
-    runPasses(tracker, strcmp(sArgState.program_name, "chpldoc") == 0);
+    runPasses(tracker, fDocs);
   } else {
     ipeRun();
   }

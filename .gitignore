@@ -107,7 +107,6 @@ tags
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
 
 /test/chpldoc/**/docs
-/test/chpldoc/**/*.good
 
 /test/chpldoc/compflags/folder/myDocs
 /test/chpldoc/compflags/folder/my-docs

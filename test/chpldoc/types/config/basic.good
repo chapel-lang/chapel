@@ -1,0 +1,26 @@
+Module: basic
+   config var isInt: int
+      Comment for config var that is an int 
+   config var isIntCommentless: int
+   config var isReal: real
+      Comment for config var that is a real 
+   config var isRealCommentless: real
+   config var isBool: bool
+      Comment for config var that is a bool 
+   config var isBoolCommentless: bool
+   config var isString: string
+      Comment for config var that is a string 
+   config var isStringCommentless: string
+   config var isComplex: complex
+      Comment for config var that is a complex number 
+   config var isComplexCommentless: complex
+   config var isUint: uint
+      Comment for config var that is a uint 
+   config var isUintCommentless: uint
+   config var isImag: imag
+      Comment for config var that is an imaginary number 
+   config var isImagCommentless: imag
+   config var longComment: int
+      This comment is rather long
+      And spans for
+      Multiple lines 

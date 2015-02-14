@@ -1,12 +1,12 @@
 init :
 parse :
 checkParsed :
+docs :
 readExternC :
 expandExternArrayCalls :
 cleanup :
 scopeResolve :
 flattenClasses :
-docs :
 normalize :
 checkNormalized :
 buildDefaultFunctions :

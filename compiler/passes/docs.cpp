@@ -35,6 +35,7 @@
 #include "docs.h"
 #include "mysystem.h"
 #include "stringutil.h"
+#include "scopeResolve.h"
 
 int NUMTABS = 0;
 
@@ -56,6 +57,12 @@ static int compareClasses(const void *v1, const void* v2) {
 void docs(void) {
 
   if (fDocs) {
+    // To handle inheritance, we need to look up parent classes and records.
+    // In order to be successful when looking up these parents, the import
+    // expressions should be accurately accounted for.
+    addToSymbolTable(gDefExprs);
+    processImportExprs();
+
     // Create a map of structural names to their expected chpldoc output
     if (fDocsTextOnly) {
       outputMap["class"] = "Class: ";
@@ -186,26 +193,38 @@ void printFields(std::ofstream *file, AggregateType *cl) {
         *file << outputMap["field"];
         // For rst, this will insert '.. attribute:: ' here
         // For plain text, nothing will be inserted
+
         printVarStart(file, var);
-        Expr *expr;
-        if (cl->isClass()) {
-          expr = cl->defaultTypeConstructor->body->body.get(i);
-        } else {
-          expr = cl->defaultTypeConstructor->body->body.get(i+1);
+        if (var->defPoint->exprType != NULL) {
+          *file << ": ";
+          var->defPoint->exprType->prettyPrint(file);
+          // TODO: Make type output prettier
         }
-        if (CallExpr *list = toCallExpr(expr)) {
-          if (CallExpr *end = toCallExpr(list->argList.tail)) {
-            if (end->primitive != NULL) {
-              *file << ": ";
-              end->prettyPrint(file);
-              // TODO: prettify type output
-            } else if (SymExpr* sym = toSymExpr(end->argList.tail)) {
-              *file << " = ";
-              sym->prettyPrint(file);
-            }
-          }
-        } 
-  
+        if (var->defPoint->init != NULL) {
+          *file << " = ";
+          var->defPoint->init->prettyPrint(file);
+        }
+        /*
+        // These aren't modes the ArgSymbol would know about, so cover them
+        // here.
+        if (var->isConstant())
+          *file << "const ";
+        else if (!var->hasFlag(FLAG_TYPE_VARIABLE) && !var->isParameter())
+          *file << "var ";
+
+        // Use AstToText to generate correct output based on the arg symbol
+        // in the default initializer that corresponds to this field.
+        AstToText *argOutput = new AstToText();
+        if (cl->isClass()) {
+          argOutput->appendFormal(cl->defaultInitializer, i-1);
+          // argVersion = cl->defaultInitializer->getFormal(i-1);
+        } else {
+          argOutput->appendFormal(cl->defaultInitializer, i);
+          //argVersion = cl->defaultInitializer->getFormal(i);
+        }
+        *file << argOutput->text();
+        delete argOutput;
+        */
         *file << std::endl;
         printVarDocs(file, var);
       }
@@ -214,11 +233,11 @@ void printFields(std::ofstream *file, AggregateType *cl) {
 }
 
 void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
-  forv_Vec(Type, t, cl->dispatchParents) {
-    if (AggregateType* c = toAggregateType(t)) {
-      list->add_exclusive(c);
-      inheritance(list, c);
-    }
+  for_alist(expr, cl->inherits) {
+    AggregateType* pt = discoverParentAndCheck(expr, cl);
+
+    list->add_exclusive(pt);
+    inheritance(list, pt);
   }
 }
 
@@ -498,11 +517,15 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     //   get type name from 'this' argument
     //   output it + '.' before fn->name
     if (fn->isSecondaryMethod()) {
-      if (fn->numFormals() > 1) {
-        ArgSymbol *myTypeHolder = fn->getFormal(2);
-        if (myTypeHolder->hasFlag(FLAG_ARG_THIS))
-          *file << myTypeHolder->type->symbol->name << ".";
-      }
+      INT_ASSERT (fn->numFormals() > 1);
+      ArgSymbol *myTypeHolder = fn->getFormal(2);
+      INT_ASSERT (myTypeHolder->hasFlag(FLAG_ARG_THIS));
+      Expr *typeExpr = myTypeHolder->typeExpr;
+      BlockStmt *body = toBlockStmt(typeExpr);
+      INT_ASSERT (body);
+      UnresolvedSymExpr *typeName = toUnresolvedSymExpr(body->body.tail);
+      INT_ASSERT (typeName);
+      *file << typeName->unresolved << ".";
     }
     *file << fn->name;
     if (!fn->hasFlag(FLAG_NO_PARENS))
