@@ -5,3 +5,5 @@ CHPL_COMM!=none
 COMPOPTS <= --no-local
 # It also fails differently under numa
 CHPL_LOCALE_MODEL!=flat
+# and produces a bunch of error messages under valgrind
+CHPL_TEST_VGRND_EXE == on
