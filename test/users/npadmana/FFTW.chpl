@@ -22,8 +22,6 @@ module FFTW {
   // Also note that if one used complex types, then one would need to include complex.h at the command line
   extern type fftw_complex = 2*real(64); // 4.1.1
   extern type fftw_plan; // opaque type
-  type _cxptr = c_ptr(2*c_double);
-  type _rptr = c_ptr(c_double);
 
   // Planner functions
   // Complex : 4.3.1
@@ -53,13 +51,13 @@ module FFTW {
   // TODO : NP : I'm dropping this back to pointers, because I don't know how to cast arrays.
   extern proc fftw_plan_dft_r2c(rank: c_int, 
       n,  // BLC: having trouble being specific
-      in1: _rptr,
-      out1: _cxptr, 
+      in1: [],
+      out1: [], 
       flags : c_uint) : fftw_plan;
   extern proc fftw_plan_dft_c2r(rank: c_int, 
       n,  // BLC: having trouble being specific
-      in1: _cxptr,
-      out1: _rptr,
+      in1: [],
+      out1: [],
       flags : c_uint) : fftw_plan;
 
 
@@ -72,7 +70,7 @@ module FFTW {
     for param i in 1..rank do
       dims(i) = in1.domain.dim(i).size: c_int;
 
-    return fftw_plan_dft_r2c(rank, dims, c_ptrTo(in1) : _rptr, c_ptrTo(out1) : _cxptr, flags);
+    return fftw_plan_dft_r2c(rank, dims, in1, out1, flags);
   }
   proc plan_dft_c2r(in1 : [] fftw_complex, out1 : [] real(64),  flags :c_uint) : fftw_plan
   {
@@ -82,7 +80,7 @@ module FFTW {
     for param i in 1..rank do
       dims(i) = out1.domain.dim(i).size: c_int;
 
-    return fftw_plan_dft_c2r(rank, dims, c_ptrTo(in1) : _cxptr, c_ptrTo(out1) : _rptr, flags);
+    return fftw_plan_dft_c2r(rank, dims, in1, out1, flags);
   }
 
   // In-place routines, note that these take in the true leading dimension
@@ -96,7 +94,7 @@ module FFTW {
     for param i in 1..rank do
       dims(i) = realDom.dim(i).size: c_int;
 
-    return fftw_plan_dft_r2c(rank, dims, c_ptrTo(in1) : _rptr, c_ptrTo(in1) : _cxptr, flags);
+    return fftw_plan_dft_r2c(rank, dims, in1, in1, flags);
   }
   proc plan_dft_c2r(realDom : domain, in1: [] ?t, flags : c_uint) : fftw_plan 
   {
@@ -106,7 +104,7 @@ module FFTW {
     for param i in 1..rank do
       dims(i) = realDom.dim(i).size: c_int;
 
-    return fftw_plan_dft_c2r(rank, dims, c_ptrTo(in1) : _cxptr, c_ptrTo(in1) : _rptr, flags);
+    return fftw_plan_dft_c2r(rank, dims, in1, in1, flags);
   }
 
 
