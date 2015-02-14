@@ -268,7 +268,6 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
     f->addFlag(FLAG_EXTERN);
     f->addFlag(FLAG_LOCAL_ARGS);
     f->addFlag(FLAG_FUNCTION_PROTOTYPE);
-    f->addFlag(FLAG_USER_NAMED);
     Expr* chpl_type = convertToChplType(module, fd->getResultType().getTypePtr(), results);
     BlockStmt* result = buildFunctionDecl(
        f, RET_VALUE, chpl_type, NULL, NULL, NULL);
