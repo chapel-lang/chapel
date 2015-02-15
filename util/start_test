@@ -1391,7 +1391,7 @@ if ($performance || $compperformance) then
 
   # the name of the .dat file to store the sha (store in env var for gengraphs)
   set shaDatFileName = "perfSha"
-  set shaDatFilePath = "$perfdir/$shaDatFileName.dat"
+  set shaDatFilePath = "$datdir/$shaDatFileName.dat"
   setenv CHPL_TEST_SHA_DAT_FILE "$shaDatFilePath"
 
   echo "[Saving current git sha to $shaDatFilePath]" |& $tee -a $logfile
