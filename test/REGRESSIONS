@@ -52,6 +52,10 @@ general
 Reviewed 2015-02-09
 ===================
 
+release testing failures (2015-02-14, thomas)
+---------------------------------------------
+start_test fails to start
+
 
 ===================
 linux64
@@ -253,10 +257,6 @@ Inherits 'general'
 Reviewed 2015-02-09
 ===================
 
-test_10k_begins.chpl:17: error: halt reached - error detected (2015-02-13..)
-----------------------------------------------------------------------------
-[Error matching program output for stress/deitz/test_10k_begins]
-
 
 ===================
 valgrind
@@ -337,13 +337,6 @@ Inherits 'no-local'
 Reviewed 2015-02-09
 ===================
 
-internal error: execvp() failed: Bad address (2015-02-12.., Elliot)
-(happens on: gasnet.fifo, gasnet-fast, gasnet-everything)
--------------------------------------------------------------------
-[Error matching program output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
-[Error matching program output for studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
-
-
 === sporadic failures below ===
 
 sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
@@ -352,10 +345,10 @@ sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, ..., 2015-01-26, 2015-02-10)
 
-execution timeout, possibly related to above errors
+execution timeout
 (happens on: gasnet.fifo, gasnet-fast)
 ---------------------------------------------------
-[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (2015-02-12)
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (2015-02-15)
 
 
 
@@ -562,15 +555,8 @@ Reviewed 2015-02-09
 
 
 ============================
-xc-wb.prgenv-cray
+x?-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2015-02-09
-============================
-
-
-============================
-xc-wb.host.prgenv-cray
-Inherits 'xc-wb.prgenv-cray'
 Reviewed 2015-02-09
 ============================
 
@@ -633,7 +619,7 @@ Reviewed 2015-02-09
 
 
 =============================
-xc-wb.host.prgenv-intel
+x?-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
 Reviewed 2015-02-09
 =============================
@@ -661,7 +647,7 @@ Reviewed 2015-02-09
 
 
 ===========================
-xc-wb.host.prgenv-gnu
+x?-wb.host.prgenv-gnu
 Inherits 'x?-wb.prgenv-gnu'
 Reviewed 2015-02-09
 ===========================
@@ -707,7 +693,7 @@ all but a few failed
 
 
 ===========================
-xc-wb.host.prgenv-pgi
+x?-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
 Reviewed 2015-02-09
 ===========================
@@ -783,10 +769,6 @@ baseline
 Inherits 'general'
 Reviewed 2015-02-09
 ===================
-
-chpl__header.h:4214:13: error: conflicting types for 'chpl__extern_array_wrapper_cprintarr' -- (2015-02-11.., brad)
--------------------------------------------------------------------------------------------------------------------
-[Error matching compiler output for extern/bradc/multidimArrToExtern (compopts: 1)]
 
 Dies with signal 6
 ------------------
