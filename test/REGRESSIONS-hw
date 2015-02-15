@@ -6,10 +6,11 @@ Inherits 'x?-wb.*'
 Reviewed 2015-02-02
 ===============================
 
-"AttributeError: 'Namespace' object has no attribute 'hostlist'" (2015-02-13, elliot, thomas)
-(all configurations)
-------------------------------------------------------------------------------------------------------------------------
-All tests fail to launch
+chpl_launchcmd issue (2015-02-14, elliot, thomas)
+Appears to affect random correctness tests and all perf.xc.{no-local,local}.* tests.
+-----------------------------------------------------------------------------------------------------------------------------
+Tests fail due to:
+ValueError: [Error: output file from job (id: 707527) does not exist at: $CHPL_HOME/test/.../chapel-test-???/test_output.log]
 
 
 === sporadic failures below ===
@@ -25,11 +26,45 @@ any
 
 
 ==========================================
+xe.*
+Inherits 'x?.*'
+Reviewed 2015-02-15
+==========================================
+
+=== sporadic issues ===
+
+Sporadic compilation timeouts (XE test system is less powerful)
+(happens most often when compiler=cray)
+---------------------------------------------------------------
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: *)]
+[Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: *)]
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
+[Error: Timed out compilation for release/examples/primers/distributions]
+
+
+==========================================
 x?.none.*
 Inherits 'x?.*'
 Reviewed 2015-02-02
 ==========================================
 
+
+===========================================
+x?.[gasnet].*
+Inherits 'x?.*' and 'gasnet*'
+Reviewed 2015-02-02
+===========================================
+
+== sporadic issues ===
+
+Sporadic execution timeouts due to comm init failure. Has occurred with aries, gemini, and mpi substrate.
+[PE_1]:inet_connect:inet_connect: connect failed after 301 attempts
+---------------------------------------------------------------------------------------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream] (2015-02-15)
+[Error: Timed out executing program release/examples/hello2-module] (2015-02-15)
+[Error: Timed out executing program release/examples/hello] (2015-02-15)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream] (2015-02-15)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)] (2015-02-15)
 
 ===========================================
 x?.{aries,gemini}.*
@@ -54,28 +89,36 @@ Reviewed 2015-02-02
 
 === sporadic failures below ===
 
-Out of memory (2015-02-02, 2015-02-01)
+Out of memory (2015-02-01, 2015-02-15)
 --------------------------------------
-release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)
-release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
 
 
-Out of memory (2015-02-02)
---------------------------
-FAILED:  release/examples/benchmarks/hpcc/variants.ra-cleanloop
+Out of memory (2015-02-02, 2015-02-15)
+--------------------------------------
+[Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
 
-floating point issues (except xc-slurm-ugni-gnu)
-------------------------------------------------
-FAILED:  release/examples/benchmarks/lulesh.lulesh
-FAILED:  release/examples/benchmarks/miniMD.miniMD
-FAILED:  release/examples/benchmarks/miniMD/explicit.miniMD
+floating point issues (2015-02-02, 2015-02-15)
+----------------------------------------------
+[Error matching program output for release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
 
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
 
-=== sporadic failures below ===
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 5)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 5)]
 
-floating point issues
----------------------
-FAILED:  release/examples/benchmarks/lulesh.test3DLulesh (compopts: 1, execopts: 3) (2015-02-02, 2015-01-31, 2015-02-01)
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
 
 
 ==========================================
@@ -112,6 +155,10 @@ Inherits 'x?.*'
 Reviewed 2015-02-02
 ==========================================
 
+On Cray systems, it is unclear how file systems interact with KNCs.
+-------------------------------------------------------------------
+[Error matching program output for release/examples/primers/fileIO] (2015-02-12.., first run)
+
 
 ==========================================
 xc.llvm
@@ -142,9 +189,15 @@ Reviewed 2015-02-02
 
 
 ============================================
+perf.xc.{no-local,local}.*
 Inherits 'perf.xc.*'
 Reviewed 2015-02-02
 ============================================
+
+chpl_launchcmd issue (2015-02-14, elliot, thomas)
+ValueError: [Error: output file from job (id: 707527) does not exist at: $CHPL_HOME/test/.../chapel-test-???/test_output.log]
+-----------------------------------------------------------------------------------------------------------------------------
+All tests fail to find perf keys.
 
 
 ==================================================
@@ -153,10 +206,16 @@ Inherits 'perf.xc.*'
 Reviewed 2015-02-02
 ==================================================
 
-Execution timeout
------------------
-FAILED:  release/examples/benchmarks/hpcc.ra-atomics
-FAILED:  release/examples/benchmarks/ssca2.SSCA2_main (compopts: 1, execopts: 2)
+Execution timeout (2015-02-02..)
+--------------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra-atomics]
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)]
+
+=== sporadic issues ===
+
+Sporadic execution timeouts.
+----------------------------
+[Error: Timed out executing program studies/hpcc/HPL/vass/hpl.hpcc2012 (compopts: 1)] (2015-02-15)
 
 
 ===========================================
@@ -165,10 +224,10 @@ Inherits 'perf.xc.*'.
 Reviewed 2015-02-02
 ===========================================
 
-Execution timeout
------------------
-FAILED:  release/examples/benchmarks/miniMD.miniMD (compopts: 1)
-FAILED:  release/examples/benchmarks/ssca2.SSCA2_main (compopts: 1, execopts: 2)
+Execution timeout (2015-02-02..)
+--------------------------------
+[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)]
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)]
 
 
 ===========================================
@@ -179,4 +238,35 @@ Reviewed 2015-02-02
 
 Segfault
 --------
-FAILED:  release/examples/benchmarks/hpcc.stream-ep (2015-01-31..2015-02-01)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-01-31..)
+
+
+===========================================
+xc.mpi.cray.aprun
+Inherits 'x?.*.cray*' and 'x?.mpi.*'
+Reviewed 2015-02-02
+===========================================
+
+=== sporadic issues ===
+
+Differences in floating point numbers
+-------------------------------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (2015-02-14)
+
+
+aprun: Apid <id>: Apid <id> RCA ec_node_unavailable event received for nid <nid>
+--------------------------------------------------------------------------------
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (2015-02-14)
+
+
+===========================================
+xe.mpi.intel
+Inherits 'x?.*'
+Reviewed 2015-02-02
+===========================================
+
+=== sporadic issues ===
+
+Sporadic compilation timeouts
+-----------------------------
+[Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: 2)] (2015-02-15)
