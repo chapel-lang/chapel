@@ -264,12 +264,6 @@ Inherits 'general'
 Reviewed 2015-02-09
 ===================
 
-Vass fixed these 2015-02-13
----------------------------
-[Error matching .bad file for arrays/vass/setter-assigned-to-a-var]
-[Error matching .bad file for users/vass/crash1callDestructorsMain]
-[Error matching .bad file for variables/vass/ref-to-domains-arrays]
-
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
@@ -579,6 +573,12 @@ xc-wb.host.prgenv-cray
 Inherits 'xc-wb.prgenv-cray'
 Reviewed 2015-02-09
 ============================
+
+unresolved call in Types.chpl (2015-02-15, brad)
+$CHPL_HOME/modules/standard/Types.chpl:72: In function 'isIntType':
+$CHPL_HOME/modules/standard/Types.chpl:73: error: unresolved call '||(0, 0)'
+----------------------------------------------------------------------------
+All tests fail to compile.
 
 
 === sporadic failures below ===
