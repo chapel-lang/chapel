@@ -267,14 +267,7 @@ if ($basetmpdir eq "") {
 if ($basetmpdir eq "") { 
     $basetmpdir = "/tmp"; 
 } 
-$make = $ENV{'CHPL_NIGHTLY_MAKE'};
-if ($make eq "") {
-    $make = $ENV{'MAKE'};
-}
-if ($make eq "") {
-    $make = "make";
-}
-print "Using make: $make\n";
+
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
@@ -342,6 +335,19 @@ if ($memleaks ne "") {
 
 $testbindirname = dirname($0);
 $utildir = "$testbindirname/../../util";
+
+
+# Determine which make to use.
+$make = "";
+if (exists($ENV{'CHPL_NIGHTLY_MAKE'})) {
+    $make = $ENV{'CHPL_NIGHTLY_MAKE'};
+} elsif (exists($ENV{'MAKE'})) {
+    $make = $ENV{'MAKE'};
+} else {
+    $make = `$utildir/chplenv/chpl_make.py`;
+    chomp($make);
+}
+print "Using make: $make\n";
 
 
 #
