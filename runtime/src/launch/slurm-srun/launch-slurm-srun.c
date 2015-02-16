@@ -60,17 +60,25 @@ typedef enum {
 // Find the default tmp directory. Try getting the tmp dir from the
 // ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
 static const char* getTmpDir() {
-  int i;
-  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
-  for (i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
-    const char* curDir = getenv(possibleDirsInEnv[i]);
-    if (curDir != NULL) {
-      return curDir;
-    }
-  }
-#ifdef P_tmpdir
-  return P_tmpdir;
-#endif
+// TODO Elliot (02/15/15): I'm temporarily disabling this logic and just using
+// '/tmp' to see if it resolves the single local xc perf testing failures. We
+// set TMPDIR in one of our common scripts. We then make that dir on the login
+// node, but not on the compute nodes, so the program can't actually put it's
+// output anywhere. If this resolves the issues, I'll update the launcher to
+// do something smarter like create the temp dir before running and remove it
+// afterwards.
+//
+//  int i;
+//  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
+//  for (i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
+//    const char* curDir = getenv(possibleDirsInEnv[i]);
+//    if (curDir != NULL) {
+//      return curDir;
+//    }
+//  }
+//#ifdef P_tmpdir
+//  return P_tmpdir;
+//#endif
   return "/tmp";
 }
 
