@@ -59,7 +59,7 @@ typedef enum {
 
 // Find the default tmp directory. Try getting the tmp dir from the
 // ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
-static const char* getTmpDir() {
+static const char* getTmpDir(void) {
 // TODO Elliot (02/15/15): I'm temporarily disabling this logic and just using
 // '/tmp' to see if it resolves the single local xc perf testing failures. We
 // set TMPDIR in one of our common scripts. We then make that dir on the login
