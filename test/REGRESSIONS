@@ -462,6 +462,10 @@ Inherits '*prgenv-*'
 Reviewed 2015-02-09
 ====================
 
+Execution timeout on 2015-02-15
+-------------------------------
+[Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)]
+
 An invalid option "openmp" appears on the command line. (2014-11-17 -- thomas/ben/et al)
 ----------------------------------------------------------------------------------------
 [Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
