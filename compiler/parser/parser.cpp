@@ -27,7 +27,7 @@
 
 // Noakes 2015/02/02 Bison 2.3 relies on this ordering
 #include "yy.h"
-#include "chapel.tab.h"
+#include "bison-chapel.h"
 
 #include <cstdlib>
 
