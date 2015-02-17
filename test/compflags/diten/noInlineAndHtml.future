@@ -1,1 +1,0 @@
-bug: "--no-inline -t" causes a compiler seg fault

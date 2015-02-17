@@ -1,4 +1,0 @@
-unimplemented feature: copy constructor
-
-This test shows that we need a copy constructor or the destructor can't free
-what it wants to free.
