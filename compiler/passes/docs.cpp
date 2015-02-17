@@ -36,6 +36,7 @@
 #include "mysystem.h"
 #include "stringutil.h"
 #include "scopeResolve.h"
+#include "AstToText.h"
 
 int NUMTABS = 0;
 
@@ -204,27 +205,6 @@ void printFields(std::ofstream *file, AggregateType *cl) {
           *file << " = ";
           var->defPoint->init->prettyPrint(file);
         }
-        /*
-        // These aren't modes the ArgSymbol would know about, so cover them
-        // here.
-        if (var->isConstant())
-          *file << "const ";
-        else if (!var->hasFlag(FLAG_TYPE_VARIABLE) && !var->isParameter())
-          *file << "var ";
-
-        // Use AstToText to generate correct output based on the arg symbol
-        // in the default initializer that corresponds to this field.
-        AstToText *argOutput = new AstToText();
-        if (cl->isClass()) {
-          argOutput->appendFormal(cl->defaultInitializer, i-1);
-          // argVersion = cl->defaultInitializer->getFormal(i-1);
-        } else {
-          argOutput->appendFormal(cl->defaultInitializer, i);
-          //argVersion = cl->defaultInitializer->getFormal(i);
-        }
-        *file << argOutput->text();
-        delete argOutput;
-        */
         *file << std::endl;
         printVarDocs(file, var);
       }
@@ -513,6 +493,11 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     } else {
       *file << "proc ";
     }
+    AstToText *fnInfo = new AstToText();
+    fnInfo->appendNameAndFormals(fn);
+    *file << fnInfo->text();
+    delete fnInfo;
+    /*
     // if fn is not primary method
     //   get type name from 'this' argument
     //   output it + '.' before fn->name
@@ -554,6 +539,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     }
     if (!fn->hasFlag(FLAG_NO_PARENS))
       *file << ")";
+    */
     switch (fn->retTag) {
     case RET_REF:
       *file << " ref"; break;
