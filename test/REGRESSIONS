@@ -56,6 +56,11 @@ release testing failures (2015-02-14, thomas)
 ---------------------------------------------
 start_test fails to start
 
+possible sporadic timeout
+(xc-wb.pgi, xc-wb.prgenv-gnu)
+-----------------------------
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (2015-02-15)
+
 
 ===================
 linux64
@@ -181,42 +186,6 @@ perf.chap04.playground
 Inherits 'perf.chap04'
 Reviewed 2015-02-13
 ======================
-
-
-timedexec: target program died with signal 11, without coredump (2015-02-13, first run)
-munmap_chunk(): invalid pointer: ...
----------------------------------------------------------------------------------------
-[Error matching performance keys for functions/iterators/angeles/distAdaptativeWS (compopts: 1)]
-[Error matching performance keys for functions/iterators/angeles/distAdaptativeWSv1 (compopts: 1)]
-
-
-distAdaptativeWSv2.chpl:188: error: halt reached - reallocating not supported for this array type (2015-02-13, first run)
--------------------------------------------------------------------------------------------------------------------------
-[Error matching performance keys for functions/iterators/angeles/distAdaptativeWSv2 (compopts: 1)]
-
-
-timedexec: target program died with signal 11, without coredump (2015-02-13, first run)
----------------------------------------------------------------------------------------
-[Error matching performance keys for functions/iterators/angeles/dynamic]
-
-
-timedexec: target program died with signal 6, without coredump (2015-02-13, first run)
-*** glibc detected *** ./guided: free(): invalid next size (normal): ... ***
---------------------------------------------------------------------------------------
-[Error matching performance keys for functions/iterators/angeles/guided] (2015-02-13, first run)
-
-
-compilation timeout (2015-02-13, first run)
--------------------------------------------
-[Error: Timed out compilation for performance/compiler/bradc/compSampler-timecomp (compopts: 1)]
-
-
-execution timeouts (2015-02-13, first run)
-------------------------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans]
-[Error: Timed out executing program studies/shootout/fannkuch-redux/bradc/fannkuch-redux-blc-compact]
-[Error: Timed out executing program studies/shootout/nbody/bradc/nbody-blc-slice]
-[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_forloop_3]
 
 
 ====================
