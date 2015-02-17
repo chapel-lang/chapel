@@ -133,8 +133,6 @@ record SeedGenerators {
 // argument as in the function's signature.
 
 
-// CHPLDOC FIXME: int(64) prints out as int(64)(64)
-
 // CHPLDOC FIXME: if the first line below is shifted one character to the
 // left, it ends up being rendered like a method
 
@@ -142,6 +140,12 @@ record SeedGenerators {
 // right, it ends up causing a warning (promoted to error) in the .rst
 // file.  It'd be preferable to have it declare the issue in terms of
 // the .chpl line numbers.
+
+//
+// CHPLDOC FIXME: Do we want default values to print in the function
+// prototype?  (I think we do, given that it reflects the code in the
+// file)
+//
 
 /*
   Fill an array of `real(64)`, `imag(64)`, or `complex(128)` elements
@@ -176,11 +180,7 @@ proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime) {
   Models a stream of pseudorandom numbers.  See the module-level
   notes for :chpl:mod:`Random` for details on the PRNG used.
 */
-
 class RandomStream {
-  //
-  // CHPLDOC FIXME: We should print the type and default value for parSafe
-  //
   /*
     Indicates whether or not the RandomStream needs to be
     parallel-safe by default.  If multiple tasks interact with it in
@@ -195,6 +195,11 @@ class RandomStream {
     range (1, 2**46).
   */
   const seed: int(64);
+
+
+  //
+  // CHPLDOC FIXME: More missing default values below
+  //
 
   /*
     Constructs a new stream of random numbers using the specified seed
@@ -215,11 +220,8 @@ class RandomStream {
   }
 
   //
-  // CHPL FIXME: the type of parSafe below is printed out as _unknown
+  // CHPLDOC FIXME: the type of parSafe below is printed out as _unknown
   //
-
-  //
-  // CHPL FIXME: the real(64) below gets rendered as real(64)(64)
 
   /*
     Returns the next value in the random stream as a `real(64)`
@@ -354,8 +356,6 @@ class RandomStream {
   }    
 }
 
-// CHPLDOC FIXME: Prints "inherited from object" at the bottom which
-// seems out of place.
 
 ////////////////////////////////////////////////////////////// MODULE PRIVATE //
 //
