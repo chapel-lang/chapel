@@ -17,13 +17,16 @@
  * limitations under the License.
  */
 
+%option outfile="flex-chapel.cpp"
+%option header-file="../include/flex-chapel.h"
+
 %option noyywrap
 %option nounput
 
 %{
 
 #include "yy.h"
-#include "chapel.tab.h"
+#include "bison-chapel.h"
 
 #include <cstdio>
 

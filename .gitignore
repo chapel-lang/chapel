@@ -32,15 +32,7 @@ tags
 /compiler/main/BUILD_VERSION
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
-/compiler/parser/chapel.output
-/compiler/parser/chapel.tab.cpp
-/compiler/parser/chapel.tab.h
-/compiler/parser/modulefinder.tab.c
-/compiler/parser/modulefinder.tab.h
-/compiler/parser/modulefinder.lex.yy.c
-/compiler/parser/lex.yy.cpp
-/compiler/parser/lex.yy.h
-/compiler/parser/modulefinder
+/compiler/parser/bison-chapel.output
 /compiler/passes/reservedSymbolNames.h
 
 # Doc ignores.

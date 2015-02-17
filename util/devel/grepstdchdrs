@@ -16,4 +16,4 @@ fi
 
 filter=${1:+cat}
 cd $project_dir && \
-find compiler \( \( -name '*.cpp' -o -name '*.h' \) -a ! -name 'chapel.tab.cpp' -a ! -name 'lex.yy.cpp' \) -exec egrep ${1:--s} '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print | `echo "${filter:-grep -v include[^/]}"`a
+find compiler \( \( -name '*.cpp' -o -name '*.h' \) -a ! -name 'bison-chapel.cpp' -a ! -name 'flex-chapel.cpp' -a ! -name 'flex-chapel.h' \) -exec egrep ${1:--s} '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|math|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print | `echo "${filter:-grep -v include[^/]}"`a

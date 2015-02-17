@@ -16,16 +16,12 @@
 # limitations under the License.
 
 PARSER_SRCS =                                                      \
+              bison-chapel.cpp                                     \
+              flex-chapel.cpp                                      \
               countTokens.cpp                                      \
               parser.cpp
 
-CXX_C_SRCS  =                                                      \
-	      chapel.tab.cpp                                       \
-	      lex.yy.cpp
-
 SVN_SRCS    = $(PARSER_SRCS)
-SRCS        = $(SVN_SRCS) $(CXX_C_SRCS)
+SRCS        = $(SVN_SRCS)
 
-PARSER_OBJS =                                                      \
-	$(CXX_C_SRCS:%.cpp=$(PARSER_OBJDIR)/%.$(OBJ_SUFFIX))       \
-	$(PARSER_SRCS:%.cpp=$(PARSER_OBJDIR)/%.$(OBJ_SUFFIX))
+PARSER_OBJS = $(PARSER_SRCS:%.cpp=$(PARSER_OBJDIR)/%.$(OBJ_SUFFIX))
