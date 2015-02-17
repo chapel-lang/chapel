@@ -202,6 +202,9 @@ Inherits 'perf*'
 Reviewed 2015-02-17
 ====================
 
+Email on chapel-shoout system was not sending through 2015-02-17.
+--> Should be fixed on 2015-02-18
+
 consistent failure due to insane memory usage (should get better with strings)
 ------------------------------------------------------------------------------
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
