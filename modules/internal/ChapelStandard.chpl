@@ -46,6 +46,7 @@ module ChapelStandard {
   use LocalesArray;
   use ChapelArray;
   use ChapelDistribution;
+  use Assert;
   use ChapelIO;
   use LocaleTree;
   use DefaultAssociative;

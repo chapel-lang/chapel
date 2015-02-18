@@ -478,23 +478,6 @@ module ChapelIO {
     this.readwrite(ionl);
   }
   
-  
-  
-  proc assert(test: bool) {
-    if !test then
-      __primitive("chpl_error", "assert failed");
-  }
-  
-  extern proc chpl_exit_any(status:int);
-  
-  proc assert(test: bool, args ...?numArgs) {
-    if !test {
-      var tmpstring: c_string;
-      tmpstring.write((...args));
-      __primitive("chpl_error", "assert failed - " + tmpstring);
-    }
-  }
-  
   proc halt() {
     __primitive("chpl_error", "halt reached");
   }
