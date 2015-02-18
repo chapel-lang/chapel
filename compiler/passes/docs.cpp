@@ -143,45 +143,6 @@ bool isNotSubmodule(ModuleSymbol *mod) {
           strcmp("_root", mod->defPoint->parentSymbol->name) == 0);
 }
 
-void printIntent(std::ofstream *file, IntentTag intent) {
-  switch(intent) {
-  case INTENT_IN:
-    *file << "in "; break;
-  case INTENT_INOUT:
-    *file << "inout "; break;
-  case INTENT_OUT:
-    *file << "out "; break;
-  case INTENT_CONST:
-    *file << "const "; break;
-  case INTENT_CONST_IN:
-    *file << "const in "; break;
-  case INTENT_CONST_REF:
-    *file << "const ref "; break;
-  case INTENT_REF:
-    *file << "ref "; break;
-  case INTENT_PARAM:
-    *file << "param "; break;
-  default:
-    break;
-  }
-}
-
-void printArg(std::ofstream *file, ArgSymbol *arg) {
-  printIntent(file, arg->intent);
-  if (arg->hasFlag(FLAG_TYPE_VARIABLE)) {
-    *file << "type ";  
-    // Because type intents are handled differently during parsing
-  } 
-    
-  *file << arg->name;
-  if (arg->typeExpr != NULL) {
-    *file << ": ";
-    arg->typeExpr->body.tail->prettyPrint(file);
-  } else if (arg->type != NULL && arg->type != dtAny) {
-    *file << ": " << arg->type->symbol->name;
-  }
-}
-
 void printFields(std::ofstream *file, AggregateType *cl) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {

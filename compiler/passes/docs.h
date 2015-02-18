@@ -19,10 +19,6 @@
 
 #include <string>
 
-void printArg(std::ofstream *file, ArgSymbol *arg);
-
-void printIntent(std::ofstream *file, IntentTag intent);
-
 void printTabs(std::ofstream *file);
 
 void createDocsFileFolders(std::string filename);
