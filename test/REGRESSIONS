@@ -57,7 +57,7 @@ Appears to be non-deterministic issue when building compiler
 pgi: "PGC-W-0205-Argument mismatch for assert"
 gnu: "error: macro "assert" passed 3 arguments, but takes just 1"
 intel: ""
-(xe-wb.prgenv-pgi on 2015-01-29, xe-wb.prgenv-intel, smoke test whitebox, numa on 2015-02-14)
+(xe-wb.prgenv-pgi on 2015-01-29, xe-wb.prgenv-intel, smoke test whitebox, numa on 2015-02-14, xc-wb.prgenv-pgi on 2015-02-17)
 ---------------------------------------------------------------------------------------------
 All tests fail with: [Error matching compiler output for ...]
 
@@ -241,7 +241,7 @@ Reviewed 2015-02-17
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-02-16
+Reviewed 2015-02-17
 ===================
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
@@ -446,7 +446,7 @@ Reviewed 2015-02-17
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ====================
 
 Execution timeout on 2015-02-15
@@ -541,17 +541,18 @@ signal 11 (first seen 2014-03-02) (Note resolved with CCE 8.3.8)
 ======================================
 x?-wb.prgenv-cray
 Inherits 'x?-wb.*' and '*prgenv-cray*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ======================================
 
 
 ============================
 x?-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ============================
 
 unresolved call in Types.chpl (2015-02-15, brad)
+--> xe-wb.host.prgenv-cray passed on  2015-02-17 (fixed or fluke?)
 $CHPL_HOME/modules/standard/Types.chpl:72: In function 'isIntType':
 $CHPL_HOME/modules/standard/Types.chpl:73: error: unresolved call '||(0, 0)'
 ----------------------------------------------------------------------------
@@ -598,7 +599,7 @@ binary files differ (2014-09-21..)
 ================================
 x?-wb.intel
 Inherits 'x?-wb.*' and '*intel*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ================================
 
 
