@@ -51,6 +51,58 @@
   int processNewline(yyscan_t scanner);
 }
 
+//
+// Definition of YYSTYPE
+//
+
+%code requires {
+
+  #include "symbol.h"
+
+  #include <cstdio>
+
+  class ArgSymbol;
+  class BlockStmt;
+  class CallExpr;
+  class DefExpr;
+  class EnumType;
+  class Expr;
+  class FnSymbol;
+  class Type;
+
+  enum   ProcIter {
+    ProcIter_PROC,
+    ProcIter_ITER
+  };
+
+  struct IntentExpr {
+    ArgSymbol* first;
+    Expr*      second;
+  };
+
+  // The lexer only uses pch.
+  // The remaining types are for parser productions
+  union  YYSTYPE {
+    const char*       pch;
+
+    Vec<const char*>* vpch;
+    RetTag            retTag;
+    bool              b;
+    IntentTag         pt;
+    Expr*             pexpr;
+    DefExpr*          pdefexpr;
+    CallExpr*         pcallexpr;
+    BlockStmt*        pblockstmt;
+    Type*             ptype;
+    EnumType*         penumtype;
+    FnSymbol*         pfnsymbol;
+    Flag              flag;
+    ProcIter          procIter;
+    FlagSet*          flagSet;
+    IntentExpr        pIntentExpr;
+  };
+}
+
 %{
 
 #include "build.h"
@@ -98,25 +150,6 @@ static int query_uid = 1;
 %verbose
 
 %start program
-
-%union {
-  const char* pch;
-  Vec<const char*>* vpch;
-  RetTag retTag;
-  bool b;
-  IntentTag pt;
-  Expr* pexpr;
-  DefExpr* pdefexpr;
-  CallExpr* pcallexpr;
-  BlockStmt* pblockstmt;
-  Type* ptype;
-  EnumType* penumtype;
-  FnSymbol* pfnsymbol;
-  Flag flag;
-  ProcIter procIter;
-  FlagSet* flagSet;
-  struct { ArgSymbol* first; Expr* second; } pIntentExpr;
-};
 
 //
 // identifiers and literals
