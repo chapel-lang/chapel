@@ -36,6 +36,7 @@
 #include "mysystem.h"
 #include "stringutil.h"
 #include "scopeResolve.h"
+#include "AstToText.h"
 
 int NUMTABS = 0;
 
@@ -142,45 +143,6 @@ bool isNotSubmodule(ModuleSymbol *mod) {
           strcmp("_root", mod->defPoint->parentSymbol->name) == 0);
 }
 
-void printIntent(std::ofstream *file, IntentTag intent) {
-  switch(intent) {
-  case INTENT_IN:
-    *file << "in "; break;
-  case INTENT_INOUT:
-    *file << "inout "; break;
-  case INTENT_OUT:
-    *file << "out "; break;
-  case INTENT_CONST:
-    *file << "const "; break;
-  case INTENT_CONST_IN:
-    *file << "const in "; break;
-  case INTENT_CONST_REF:
-    *file << "const ref "; break;
-  case INTENT_REF:
-    *file << "ref "; break;
-  case INTENT_PARAM:
-    *file << "param "; break;
-  default:
-    break;
-  }
-}
-
-void printArg(std::ofstream *file, ArgSymbol *arg) {
-  printIntent(file, arg->intent);
-  if (arg->hasFlag(FLAG_TYPE_VARIABLE)) {
-    *file << "type ";  
-    // Because type intents are handled differently during parsing
-  } 
-    
-  *file << arg->name;
-  if (arg->typeExpr != NULL) {
-    *file << ": ";
-    arg->typeExpr->body.tail->prettyPrint(file);
-  } else if (arg->type != NULL && arg->type != dtAny) {
-    *file << ": " << arg->type->symbol->name;
-  }
-}
-
 void printFields(std::ofstream *file, AggregateType *cl) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
@@ -204,27 +166,6 @@ void printFields(std::ofstream *file, AggregateType *cl) {
           *file << " = ";
           var->defPoint->init->prettyPrint(file);
         }
-        /*
-        // These aren't modes the ArgSymbol would know about, so cover them
-        // here.
-        if (var->isConstant())
-          *file << "const ";
-        else if (!var->hasFlag(FLAG_TYPE_VARIABLE) && !var->isParameter())
-          *file << "var ";
-
-        // Use AstToText to generate correct output based on the arg symbol
-        // in the default initializer that corresponds to this field.
-        AstToText *argOutput = new AstToText();
-        if (cl->isClass()) {
-          argOutput->appendFormal(cl->defaultInitializer, i-1);
-          // argVersion = cl->defaultInitializer->getFormal(i-1);
-        } else {
-          argOutput->appendFormal(cl->defaultInitializer, i);
-          //argVersion = cl->defaultInitializer->getFormal(i);
-        }
-        *file << argOutput->text();
-        delete argOutput;
-        */
         *file << std::endl;
         printVarDocs(file, var);
       }
@@ -513,6 +454,11 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     } else {
       *file << "proc ";
     }
+    AstToText *fnInfo = new AstToText();
+    fnInfo->appendNameAndFormals(fn);
+    *file << fnInfo->text();
+    delete fnInfo;
+    /*
     // if fn is not primary method
     //   get type name from 'this' argument
     //   output it + '.' before fn->name
@@ -554,6 +500,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     }
     if (!fn->hasFlag(FLAG_NO_PARENS))
       *file << ")";
+    */
     switch (fn->retTag) {
     case RET_REF:
       *file << " ref"; break;
