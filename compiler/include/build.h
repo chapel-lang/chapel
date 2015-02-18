@@ -60,7 +60,7 @@ BlockStmt* buildUseStmt(CallExpr* modules);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char *docs);
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, const char* docs);
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
@@ -107,28 +107,28 @@ CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
 CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, char* docs);
+BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* docs);
 
-DefExpr*  buildClassDefExpr(const char* name, 
+DefExpr*  buildClassDefExpr(const char* name,
                             Type*       type,
                             Expr*       inherit,
                             BlockStmt*  decls,
                             Flag        isExtern,
-                            char*       docs);
+                            const char* docs);
 DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 FnSymbol* buildLambda(FnSymbol* fn);
-FnSymbol* buildFunctionSymbol(FnSymbol*   fn, 
+FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
                               const char* name,
                               IntentTag   thisTag,
                               const char* class_name);
-BlockStmt* buildFunctionDecl(FnSymbol*  fn, 
-                             RetTag     optRetTag,
-                             Expr*      optRetType,
-                             Expr*      optWhere, 
-                             BlockStmt* optFnBody,
-                             char*      docs);
+BlockStmt* buildFunctionDecl(FnSymbol*   fn,
+                             RetTag      optRetTag,
+                             Expr*       optRetType,
+                             Expr*       optWhere,
+                             BlockStmt*  optFnBody,
+                             const char* docs);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);

@@ -106,11 +106,11 @@
 
 %code requires {
   struct YYLTYPE {
-    int   first_line;
-    int   first_column;
-    int   last_line;
-    int   last_column;
-    char* comment;
+    int         first_line;
+    int         first_column;
+    int         last_line;
+    int         last_column;
+    const char* comment;
   };
 
   #define YYLTYPE_IS_DECLARED 1
