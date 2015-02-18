@@ -30,6 +30,92 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+/* "%code requires" blocks.  */
+
+/* Line 2132 of yacc.c  */
+#line 33 "chapel.ypp"
+
+  extern int  captureTokens;
+  extern char captureString[1024];
+
+
+/* Line 2132 of yacc.c  */
+#line 44 "chapel.ypp"
+
+  void lexerScanString(const char* string);
+  void lexerResetFile();
+
+  void processNewline();
+
+
+/* Line 2132 of yacc.c  */
+#line 55 "chapel.ypp"
+
+
+  #include "symbol.h"
+
+  #include <cstdio>
+
+  class ArgSymbol;
+  class BlockStmt;
+  class CallExpr;
+  class DefExpr;
+  class EnumType;
+  class Expr;
+  class FnSymbol;
+  class Type;
+
+  enum   ProcIter {
+    ProcIter_PROC,
+    ProcIter_ITER
+  };
+
+  struct IntentExpr {
+    ArgSymbol* first;
+    Expr*      second;
+  };
+
+  // The lexer only uses pch.
+  // The remaining types are for parser productions
+  union  YYSTYPE {
+    const char*       pch;
+
+    Vec<const char*>* vpch;
+    RetTag            retTag;
+    bool              b;
+    IntentTag         pt;
+    Expr*             pexpr;
+    DefExpr*          pdefexpr;
+    CallExpr*         pcallexpr;
+    BlockStmt*        pblockstmt;
+    Type*             ptype;
+    EnumType*         penumtype;
+    FnSymbol*         pfnsymbol;
+    Flag              flag;
+    ProcIter          procIter;
+    FlagSet*          flagSet;
+    IntentExpr        pIntentExpr;
+  };
+
+
+/* Line 2132 of yacc.c  */
+#line 107 "chapel.ypp"
+
+  struct YYLTYPE {
+    int         first_line;
+    int         first_column;
+    int         last_line;
+    int         last_column;
+    const char* comment;
+  };
+
+  #define YYLTYPE_IS_DECLARED 1
+  #define YYLTYPE_IS_TRIVIAL  1
+
+
+
+/* Line 2132 of yacc.c  */
+#line 119 "../include/bison-chapel.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -171,35 +257,7 @@
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE
-{
 
-/* Line 2132 of yacc.c  */
-#line 82 "chapel.ypp"
-
-  const char* pch;
-  Vec<const char*>* vpch;
-  RetTag retTag;
-  bool b;
-  IntentTag pt;
-  Expr* pexpr;
-  DefExpr* pdefexpr;
-  CallExpr* pcallexpr;
-  BlockStmt* pblockstmt;
-  Type* ptype;
-  EnumType* penumtype;
-  FnSymbol* pfnsymbol;
-  Flag flag;
-  ProcIter procIter;
-  FlagSet* flagSet;
-  struct { ArgSymbol* first; Expr* second; } pIntentExpr;
-
-
-
-/* Line 2132 of yacc.c  */
-#line 201 "../include/bison-chapel.h"
-} YYSTYPE;
-# define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 #endif
@@ -221,3 +279,17 @@ typedef struct YYLTYPE
 
 extern YYLTYPE yylloc;
 
+/* "%code provides" blocks.  */
+
+/* Line 2132 of yacc.c  */
+#line 123 "chapel.ypp"
+
+  extern int yydebug;
+
+  int  yyparse();
+  void yyerror(const char* str);
+
+
+
+/* Line 2132 of yacc.c  */
+#line 296 "../include/bison-chapel.h"
