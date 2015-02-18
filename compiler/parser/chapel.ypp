@@ -42,13 +42,7 @@
 
 // It would be better if Flex could generate these for itself
 %code requires {
-  #define YYLEX_NEWLINE                  -1
-  #define YYLEX_SINGLE_LINE_COMMENT      -2
-  #define YYLEX_BLOCK_COMMENT            -3
-
-  typedef void* yyscan_t;
-
-  int processNewline(yyscan_t scanner);
+  void processNewline();
 }
 
 //
@@ -133,13 +127,13 @@
   #include "build.h"
   #include "DoWhileStmt.h"
   #include "driver.h"
+  #include "flex-chapel.h"
   #include "ForLoop.h"
   #include "parser.h"
   #include "stmt.h"
-  #include "WhileDoStmt.h"
   #include "stringutil.h"
   #include "vec.h"
-  #include "yy.h"
+  #include "WhileDoStmt.h"
 
   #include <cstdio>
   #include <cstdlib>
