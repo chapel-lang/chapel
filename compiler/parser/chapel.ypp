@@ -28,6 +28,18 @@
 //
 // The rules are listed in depth-first order from stmt and expr
 //
+
+// NOAKES 2015/02/10 To be deprecated
+%code requires {
+  extern int  captureTokens;
+  extern char captureString[1024];
+}
+
+%code {
+  int         captureTokens;
+  char        captureString[1024];
+}
+
 %{
 
 #include "build.h"
@@ -47,9 +59,6 @@
 #include <stdint.h>
 
 static int query_uid = 1;
-
-int        captureTokens;
-char       captureString[1024];
 
 #define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
   if (N) {                                                              \
