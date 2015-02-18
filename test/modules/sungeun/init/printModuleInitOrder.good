@@ -24,7 +24,6 @@ Initializing Modules:
     LocalesArray
     ChapelDistribution
      List
-    Assert
     ChapelIO
      IO
       Error
