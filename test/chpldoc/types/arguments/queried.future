@@ -1,6 +1,0 @@
-bug: incorrect type output
-
-This future is two-fold: a semantic question about how queried types should be
-output, and a bug in its current output.  At the moment, <DefExprType> is
-printed, exposing compiler implementation details and failing to print anything
-understandable.
