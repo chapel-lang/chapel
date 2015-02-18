@@ -21,8 +21,8 @@
 
 #include <cstring>
 
+#include "bison-chapel.h"
 #include "misc.h"
-#include "yy.h"
 
 bool countTokens = false;
 bool printTokens = false;

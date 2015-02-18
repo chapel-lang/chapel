@@ -42,6 +42,9 @@
 
 // It would be better if Flex could generate these for itself
 %code requires {
+  void lexerScanString(const char* string);
+  void lexerResetFile();
+
   void processNewline();
 }
 
@@ -120,6 +123,7 @@
 %code provides {
   extern int yydebug;
 
+  int  yyparse();
   void yyerror(const char* str);
 }
 
