@@ -369,7 +369,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     forv_Vec(VarSymbol, var, variables) {
       printGlobal(file, var, false);
     }
-    Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
+    Vec<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
     // If alphabetical option passed, fDocsAlphabetizes the output
     if (fDocsAlphabetize)
       qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
