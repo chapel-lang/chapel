@@ -52,7 +52,7 @@ general
 Reviewed 2015-02-17
 ===================
 
-Sporadic compiler issue.
+Sporadic compiler issue. (brad)
 Appears to be non-deterministic issue when building compiler
 pgi: "PGC-W-0205-Argument mismatch for assert"
 gnu: "error: macro "assert" passed 3 arguments, but takes just 1"
