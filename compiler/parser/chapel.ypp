@@ -190,8 +190,7 @@
                                                                           \
     } else  {                                                             \
       (Current) = yylloc;                                                 \
-    }                                                                     \
-
+    }
 
   void yyerror(YYLTYPE*       ignored,
                ParserContext* context,
@@ -279,30 +278,30 @@
 //
 // keywords, operators, and punctuation that requires precedence
 //
-%left TNOELSE
-%left TELSE
-%left TCOMMA
-%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
-%left TIN
-%left TALIGN TBY THASH
-%left TOR
-%left TAND
-%left TEQUAL TNOTEQUAL
-%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
-%left TDOTDOT
-%left TPLUS TMINUS
-%left TBOR
-%left TBXOR
-%left TBAND
-%left TSHIFTLEFT TSHIFTRIGHT
-%right TUPLUS TUMINUS
-%left TSTAR TDIVIDE TMOD
-%right TBNOT TNOT
-%left TREDUCE TSCAN TDMAPPED
-%right TEXP
-%left TCOLON
-%right TNEW
-%left TDOT TLP TRSBR TLCBR
+%left     TNOELSE
+%left     TELSE
+%left     TCOMMA
+%left     TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
+%left     TIN
+%left     TALIGN TBY THASH
+%left     TOR
+%left     TAND
+%left     TEQUAL TNOTEQUAL
+%left     TLESSEQUAL TGREATEREQUAL TLESS TGREATER
+%left     TDOTDOT
+%left     TPLUS TMINUS
+%left     TBOR
+%left     TBXOR
+%left     TBAND
+%left     TSHIFTLEFT TSHIFTRIGHT
+%right    TUPLUS TUMINUS
+%left     TSTAR TDIVIDE TMOD
+%right    TBNOT TNOT
+%left     TREDUCE TSCAN TDMAPPED
+%right    TEXP
+%left     TCOLON
+%right    TNEW
+%left     TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
 
 %type <flag> opt_config
@@ -313,9 +312,6 @@
 %type <retTag> opt_ret_tag
 
 %type <pch> ident fn_ident assignop_ident opt_ident
-
-
-
 
 %type <pblockstmt> program
 %type <pblockstmt> toplevel_stmt_ls
@@ -378,7 +374,7 @@
 %%
 
 program:
-  toplevel_stmt_ls                     { (void)@1.first_line; yyblock = $$; }
+  toplevel_stmt_ls                     { yyblock = $$; }
 ;
 
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
@@ -438,7 +434,7 @@ module_decl_stmt:
 ;
 
 module:
-  TMODULE                              { @$.comment = yylloc.comment; yylloc.comment = NULL;}
+  TMODULE                              { @$.comment = context->latestComment; context->latestComment = NULL; }
 ;
 
 
@@ -623,22 +619,30 @@ type_select_stmt:
 
 class_decl_stmt:
   opt_extern class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
-    { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1, @1.comment));
-      yylloc.comment = NULL; }
+    { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1, @1.comment)); }
 ;
 
 opt_extern:
-           { $$ = FLAG_UNKNOWN; }
-| TEXTERN  { $$ = FLAG_EXTERN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+           { $$ = FLAG_UNKNOWN; @$.comment = context->latestComment; context->latestComment = NULL; }
+| TEXTERN  { $$ = FLAG_EXTERN;  @$.comment = context->latestComment; context->latestComment = NULL; }
 ;
 
 class_tag:
-  TCLASS   { $$ = new AggregateType(AGGREGATE_CLASS); @$.comment = yylloc.comment;
-             yylloc.comment = NULL;}
-| TRECORD  { $$ = new AggregateType(AGGREGATE_RECORD); @$.comment = yylloc.comment;
-             yylloc.comment = NULL;}
-| TUNION   { $$ = new AggregateType(AGGREGATE_UNION); @$.comment = yylloc.comment;
-             yylloc.comment = NULL;}
+  TCLASS   {
+             $$                     = new AggregateType(AGGREGATE_CLASS);
+             @$.comment             = context->latestComment;
+             context->latestComment = NULL;
+           }
+| TRECORD  {
+             $$                     = new AggregateType(AGGREGATE_RECORD);
+             @$.comment             = context->latestComment;
+             context->latestComment = NULL;
+           }
+| TUNION   {
+             $$                     = new AggregateType(AGGREGATE_UNION);
+             @$.comment             = context->latestComment;
+             context->latestComment = NULL;
+           }
 ;
 
 opt_inherit:
@@ -721,21 +725,51 @@ lambda_decl_expr:
 // The FnSymbol is just used as a struct to carry the flag and
 // (for exports only) the cname of the function.
 linkage_spec:
-                { $$ = new FnSymbol(""); }
-| TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT);
+                {
+                  $$ = new FnSymbol("");
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TINLINE       {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_INLINE);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TEXPORT       {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_EXPORT);
                   $$->addFlag(FLAG_LOCAL_ARGS);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TEXPORT ident {
+                  $$ = new FnSymbol($2);
+                  $$->addFlag(FLAG_EXPORT);
                   $$->addFlag(FLAG_LOCAL_ARGS);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TEXTERN       {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_EXTERN);
                   $$->addFlag(FLAG_LOCAL_ARGS);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TEXTERN ident {
+                  $$ = new FnSymbol($2);
+                  $$->addFlag(FLAG_EXTERN);
                   $$->addFlag(FLAG_LOCAL_ARGS);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
 
 fn_decl_stmt:
   linkage_spec proc_or_iter
@@ -768,7 +802,7 @@ fn_decl_stmt:
       }
 
       $$ = buildFunctionDecl($4, $6, $7, $8, $9, @1.comment);
-      yylloc.comment = NULL;
+      context->latestComment = NULL;
     }
 ;
 
@@ -940,18 +974,24 @@ type_alias_decl_stmt_inner:
   ident opt_init_type
     {
       VarSymbol* var = new VarSymbol($1);
+
       var->addFlag(FLAG_TYPE_VARIABLE);
-      var->doc = yylloc.comment;
-      yylloc.comment = NULL;
+
+      var->doc               = context->latestComment;
+      context->latestComment = NULL;
+
       DefExpr* def = new DefExpr(var, $2);
       $$ = buildChapelStmt(def);
     }
 | ident opt_init_type TCOMMA type_alias_decl_stmt_inner
     {
       VarSymbol* var = new VarSymbol($1);
+
       var->addFlag(FLAG_TYPE_VARIABLE);
-      var->doc = yylloc.comment;
-      yylloc.comment = NULL;
+
+      var->doc               = context->latestComment;
+      context->latestComment = NULL;
+
       DefExpr* def = new DefExpr(var, $2);
       $4->insertAtHead(def);
       $$ = buildChapelStmt($4);
@@ -1005,9 +1045,9 @@ var_decl_stmt:
 ;
 
 opt_config:
-            { $$ = FLAG_UNKNOWN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TCONFIG   { $$ = FLAG_CONFIG; @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXTERN   { $$ = FLAG_EXTERN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+            { $$ = FLAG_UNKNOWN; @$.comment = context->latestComment; context->latestComment = NULL; }
+| TCONFIG   { $$ = FLAG_CONFIG;  @$.comment = context->latestComment; context->latestComment = NULL; }
+| TEXTERN   { $$ = FLAG_EXTERN;  @$.comment = context->latestComment; context->latestComment = NULL; }
 ;
 
 var_decl_stmt_inner_ls:
