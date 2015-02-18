@@ -35,6 +35,7 @@ Reviewed 2015-02-17
 
 Sporadic compilation timeouts (XE test system is less powerful)
 (happens most often when compiler=cray)
+(Thomas tried moving to eslogin node.)
 ---------------------------------------------------------------
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: *)]
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: *)]

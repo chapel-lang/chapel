@@ -52,7 +52,8 @@ general
 Reviewed 2015-02-17
 ===================
 
-Sporadic compiler issue.
+Sporadic compiler issue. (brad)
+---> Brad committed fix on 2015-02-17
 Appears to be non-deterministic issue when building compiler
 pgi: "PGC-W-0205-Argument mismatch for assert"
 gnu: "error: macro "assert" passed 3 arguments, but takes just 1"
@@ -202,6 +203,9 @@ Inherits 'perf*'
 Reviewed 2015-02-17
 ====================
 
+Email on chapel-shoout system was not sending through 2015-02-17.
+--> Should be fixed on 2015-02-18
+
 consistent failure due to insane memory usage (should get better with strings)
 ------------------------------------------------------------------------------
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
@@ -238,7 +242,7 @@ Reviewed 2015-02-17
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-02-16
+Reviewed 2015-02-17
 ===================
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
@@ -404,7 +408,7 @@ Reviewed 2015-02-17
 
 Compilation timeout (2015-02-17)
 Normally takes ~10s to compile. Started timing out (300s) on 2015-02-17.
-(Could be coincidence, but happened on both: xe-wb.prgenv-gnu, xe-wb.prgenv-pgi)
+(happened on: xe-wb.prgenv-gnu, xe-wb.prgenv-pgi, xc-wb.prgenv-pgi)
 --------------------------------------------------------------------------------
 [Error: Timed out compilation for compflags/bradc/html/testit (compopts: 1)]
 
@@ -443,7 +447,7 @@ Reviewed 2015-02-17
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ====================
 
 Execution timeout on 2015-02-15
@@ -538,17 +542,18 @@ signal 11 (first seen 2014-03-02) (Note resolved with CCE 8.3.8)
 ======================================
 x?-wb.prgenv-cray
 Inherits 'x?-wb.*' and '*prgenv-cray*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ======================================
 
 
 ============================
 x?-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ============================
 
 unresolved call in Types.chpl (2015-02-15, brad)
+--> xe-wb.host.prgenv-cray passed on  2015-02-17 (fixed or fluke?)
 $CHPL_HOME/modules/standard/Types.chpl:72: In function 'isIntType':
 $CHPL_HOME/modules/standard/Types.chpl:73: error: unresolved call '||(0, 0)'
 ----------------------------------------------------------------------------
@@ -595,14 +600,14 @@ binary files differ (2014-09-21..)
 ================================
 x?-wb.intel
 Inherits 'x?-wb.*' and '*intel*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ================================
 
 
 ================================
 x?-wb.prgenv-intel
 Inherits 'x?-wb.*' and '*intel*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ================================
 
 
