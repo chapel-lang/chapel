@@ -53,11 +53,12 @@ Reviewed 2015-02-17
 ===================
 
 Sporadic compiler issue. (brad)
+---> Brad committed fix on 2015-02-17
 Appears to be non-deterministic issue when building compiler
 pgi: "PGC-W-0205-Argument mismatch for assert"
 gnu: "error: macro "assert" passed 3 arguments, but takes just 1"
 intel: ""
-(xe-wb.prgenv-pgi on 2015-01-29, xe-wb.prgenv-intel, smoke test whitebox, numa on 2015-02-14, xc-wb.prgenv-pgi on 2015-02-17)
+(xe-wb.prgenv-pgi on 2015-01-29, xe-wb.prgenv-intel, smoke test whitebox, numa on 2015-02-14)
 ---------------------------------------------------------------------------------------------
 All tests fail with: [Error matching compiler output for ...]
 
@@ -407,7 +408,7 @@ Reviewed 2015-02-17
 
 Compilation timeout (2015-02-17)
 Normally takes ~10s to compile. Started timing out (300s) on 2015-02-17.
-(Could be coincidence, but happened on both: xe-wb.prgenv-gnu, xe-wb.prgenv-pgi)
+(happened on: xe-wb.prgenv-gnu, xe-wb.prgenv-pgi, xc-wb.prgenv-pgi)
 --------------------------------------------------------------------------------
 [Error: Timed out compilation for compflags/bradc/html/testit (compopts: 1)]
 
