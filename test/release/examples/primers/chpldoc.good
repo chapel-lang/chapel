@@ -1,12 +1,12 @@
 Module: chpldoc
    proc commented(val: int): string
       
-      Multiline comments found before a method are associated with that method
+      Multiline comments found before a function are associated with that function
       as long as there are no code blocks between them.
 
    proc stub(val): bool
       
-      The method can be a stub and still output its comment
+      The function can be a stub and still output its comment
 
    proc uncommented()
    Module: chpldoc.Defined
