@@ -446,7 +446,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     } else if (fn->hasFlag(FLAG_EXPORT)) {
       *file << "export ";
     } else if (fn->hasFlag(FLAG_EXTERN)) {
-      *file << "extern ";
+      // Do nothing.  Being extern is an implementation detail.
     }
 
     if (iterator) {
