@@ -40,6 +40,17 @@
   char        captureString[1024];
 }
 
+// It would be better if Flex could generate these for itself
+%code requires {
+  #define YYLEX_NEWLINE                  -1
+  #define YYLEX_SINGLE_LINE_COMMENT      -2
+  #define YYLEX_BLOCK_COMMENT            -3
+
+  typedef void* yyscan_t;
+
+  int processNewline(yyscan_t scanner);
+}
+
 %{
 
 #include "build.h"
