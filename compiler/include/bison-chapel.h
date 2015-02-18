@@ -32,14 +32,14 @@
 
 /* "%code requires" blocks.  */
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 33 "chapel.ypp"
 
   extern int  captureTokens;
   extern char captureString[1024];
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 44 "chapel.ypp"
 
   void lexerScanString(const char* string);
@@ -48,7 +48,7 @@
   void processNewline();
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 55 "chapel.ypp"
 
 
@@ -98,7 +98,7 @@
   };
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 107 "chapel.ypp"
 
   struct YYLTYPE {
@@ -114,7 +114,7 @@
 
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 119 "../include/bison-chapel.h"
 
 /* Tokens.  */
@@ -281,7 +281,7 @@ extern YYLTYPE yylloc;
 
 /* "%code provides" blocks.  */
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 123 "chapel.ypp"
 
   extern int yydebug;
@@ -291,5 +291,5 @@ extern YYLTYPE yylloc;
 
 
 
-/* Line 2132 of yacc.c  */
+/* Line 2068 of yacc.c  */
 #line 296 "../include/bison-chapel.h"

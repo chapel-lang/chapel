@@ -78,7 +78,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
   if (CallExpr* call = toCallExpr(iteratorExpr))
   {
     // grab the stride if we have a strided range
-    if (call->isNamed("by"))
+    if (call->isNamed("chpl_by"))
     {
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
