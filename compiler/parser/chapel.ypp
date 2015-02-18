@@ -129,42 +129,61 @@
   void yyerror(const char* str);
 }
 
-%{
+%code {
+  #include "build.h"
+  #include "DoWhileStmt.h"
+  #include "driver.h"
+  #include "ForLoop.h"
+  #include "parser.h"
+  #include "stmt.h"
+  #include "WhileDoStmt.h"
+  #include "stringutil.h"
+  #include "vec.h"
+  #include "yy.h"
 
-#include "build.h"
-#include "DoWhileStmt.h"
-#include "driver.h"
-#include "ForLoop.h"
-#include "parser.h"
-#include "stmt.h"
-#include "WhileDoStmt.h"
-#include "stringutil.h"
-#include "vec.h"
-#include "yy.h"
+  #include <cstdio>
+  #include <cstdlib>
+  #include <cstring>
+  #include <stdint.h>
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <stdint.h>
+  static int query_uid = 1;
 
-static int query_uid = 1;
+  #define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
+    if (N) {                                                              \
+      (Current).first_line   = (Rhs)[1].first_line;                       \
+      (Current).first_column = (Rhs)[1].first_column;                     \
+      (Current).last_line    = (Rhs)[N].last_line;                        \
+      (Current).last_column  = (Rhs)[N].last_column;                      \
+      (Current).comment      = NULL;                                      \
+                                                                          \
+      if ((Current).first_line)                                           \
+        yystartlineno = (Current).first_line;                             \
+                                                                          \
+    } else  {                                                             \
+      (Current) = yylloc;                                                 \
+    }                                                                     \
 
-#define YYLLOC_DEFAULT(Current, Rhs, N)                                 \
-  if (N) {                                                              \
-    (Current).first_line   = (Rhs)[1].first_line;                       \
-    (Current).first_column = (Rhs)[1].first_column;                     \
-    (Current).last_line    = (Rhs)[N].last_line;                        \
-    (Current).last_column  = (Rhs)[N].last_column;                      \
-    (Current).comment      = NULL;                                      \
-                                                                        \
-    if ((Current).first_line)                                           \
-      yystartlineno = (Current).first_line;                             \
-                                                                        \
-  } else  {                                                             \
-    (Current) = yylloc;                                                 \
-  }                                                                     \
 
-%}
+  void yyerror(const char* str) {
+    if (!chplParseString) {
+      fprintf(stderr, "%s:%d: %s", yyfilename, chplLineno, str);
+
+      if (strlen(yytext) > 0) {
+        fprintf(stderr, ": near '%s'", yytext);
+      }
+    } else {
+      fprintf(stderr, "%s: %s", yyfilename, str);
+
+      if (chplParseStringMsg && (strlen(chplParseStringMsg) > 0)) {
+        fprintf(stderr, " %s", chplParseStringMsg);
+      }
+    }
+
+    fprintf(stderr, "\n");
+
+    clean_exit(1);
+  }
+}
 
 %require "2.5"
 
@@ -1423,25 +1442,3 @@ reduce_scan_op_expr:
 | TBOR   { $$ = new UnresolvedSymExpr("BitwiseOrReduceScanOp"); }
 | TBXOR  { $$ = new UnresolvedSymExpr("BitwiseXorReduceScanOp"); }
 ;
-
-%%
-
-void yyerror(const char* str) {
-  if (!chplParseString) {
-    fprintf(stderr, "%s:%d: %s", yyfilename, chplLineno, str);
-
-    if (strlen(yytext) > 0) {
-      fprintf(stderr, ": near '%s'", yytext);
-    }
-  } else {
-    fprintf(stderr, "%s: %s", yyfilename, str);
-
-    if (chplParseStringMsg && (strlen(chplParseStringMsg) > 0)) {
-      fprintf(stderr, " %s", chplParseStringMsg);
-    }
-  }
-
-  fprintf(stderr, "\n");
-
-  clean_exit(1);
-}
