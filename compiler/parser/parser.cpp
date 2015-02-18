@@ -19,15 +19,13 @@
 
 #include "parser.h"
 
+#include "bison-chapel.h"
 #include "build.h"
 #include "countTokens.h"
 #include "files.h"
+#include "flex-chapel.h"
 #include "stringutil.h"
 #include "symbol.h"
-
-// Noakes 2015/02/02 Bison 2.3 relies on this ordering
-#include "yy.h"
-#include "bison-chapel.h"
 
 #include <cstdlib>
 

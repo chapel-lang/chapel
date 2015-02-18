@@ -697,8 +697,8 @@ char *yytext;
  */
 #line 27 "chapel.lex"
 
-#include "yy.h"
 #include "bison-chapel.h"
+#include "parser.h"
 
 #include <cstdio>
 

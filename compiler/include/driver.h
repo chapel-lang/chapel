@@ -28,20 +28,6 @@
 class Timer;
 
 
-// For versions of bison beyond 2.3, this struct and the following
-// two defines should be moved back into chapel.ypp into a %code requires
-// block so that YYLTYPE is near the YYLLOC_DEFAULT definition.
-struct YYLTYPE {
-  int   first_line;
-  int   first_column;
-  int   last_line;
-  int   last_column;
-  char* comment;
-};
-
-#define YYLTYPE_IS_DECLARED 1
-#define YYLTYPE_IS_TRIVIAL  1
-
 extern int  instantiation_limit;
 
 // optimization control flags
