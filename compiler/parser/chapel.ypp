@@ -103,6 +103,23 @@
   };
 }
 
+//
+// Definition of YYLTYPE
+//
+
+%code requires {
+  struct YYLTYPE {
+    int   first_line;
+    int   first_column;
+    int   last_line;
+    int   last_column;
+    char* comment;
+  };
+
+  #define YYLTYPE_IS_DECLARED 1
+  #define YYLTYPE_IS_TRIVIAL  1
+}
+
 %{
 
 #include "build.h"
