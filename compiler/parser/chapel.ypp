@@ -120,6 +120,15 @@
   #define YYLTYPE_IS_TRIVIAL  1
 }
 
+//
+// Provide declaration for debugging and yyerror
+//
+%code provides {
+  extern int yydebug;
+
+  void yyerror(const char* str);
+}
+
 %{
 
 #include "build.h"
