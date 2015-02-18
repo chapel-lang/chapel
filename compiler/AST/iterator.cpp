@@ -990,6 +990,8 @@ rebuildIterator(IteratorInfo* ii,
     // Get the corresponding field in the iterator class
     Symbol* field = local2field.get(local);
     Symbol* localValue = local;
+
+#ifndef REF_RECORDS_IN_IR
     if (local->type == field->type->refType) {
       // If a ref var, 
       // load the local into a temp and use this to set the value of the corresponding field.
@@ -1000,6 +1002,7 @@ rebuildIterator(IteratorInfo* ii,
                      new CallExpr(PRIM_DEREF, local)));
       localValue = tmp;
     }
+#endif
 
     // Very special code for record-wrapped types:
     // This is a workaround for weirdness in how record-wrapped types are
@@ -1178,9 +1181,15 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
 
   if (local) {
     type = local->type;
-    // The return value is automatically dereferenced (I guess).
+#ifndef REF_RECORDS_IN_IR
+    // If the iterator is a method and the local variable is _this and it is a
+    // reference (this second test is probably redundant), then capture the
+    // value of this in a field.
+    // This is equivalent to making a copy of the object being iterated over
+    // but not any class objects it references....  This is somewhat odd.
     if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
       type = type->getValType();
+#endif
   }
 
   // Add a field to the class
