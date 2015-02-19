@@ -68,8 +68,8 @@ static int  processExternCode(yyscan_t scanner);
 
 static void processWhitespace(yyscan_t scanner);
 
-static void processSingleLineComment(yyscan_t scanner);
-static void processMultiLineComment(yyscan_t scanner);
+static int  processSingleLineComment(yyscan_t scanner);
+static int  processBlockComment(yyscan_t scanner);
 
 static void processInvalidToken(yyscan_t scanner);
 
@@ -248,11 +248,11 @@ yield            return processToken(yyscanner, TYIELD);
 "\'"             return processStringLiteral(yyscanner, "\'");
 
 [ \t\r]          processWhitespace(yyscanner);
-\n               processNewline(yyscanner);
+\n               return processNewline(yyscanner);
 
-"//"             processSingleLineComment(yyscanner);
+"//"             return processSingleLineComment(yyscanner);
 
-"/*"             processMultiLineComment(yyscanner);
+"/*"             return processBlockComment(yyscanner);
 
 .                processInvalidToken(yyscanner);
 
@@ -290,7 +290,7 @@ void lexerResetFile() {
   YY_NEW_FILE;
 }
 
-void processNewline(yyscan_t scanner) {
+int processNewline(yyscan_t scanner) {
   YYLTYPE* yyLloc = yyget_lloc(scanner);
 
   chplLineno++;
@@ -302,6 +302,8 @@ void processNewline(yyscan_t scanner) {
   yyLloc->last_line    = chplLineno;
 
   countNewline();
+
+  return YYLEX_NEWLINE;
 }
 
 /************************************ | *************************************
@@ -633,7 +635,7 @@ static void processWhitespace(yyscan_t scanner) {
 *                                                                           *
 ************************************* | ************************************/
 
-static void processSingleLineComment(yyscan_t scanner) {
+static int processSingleLineComment(yyscan_t scanner) {
   YYSTYPE* yyLval = yyget_lval(scanner);
   int      c      = 0;
 
@@ -650,6 +652,10 @@ static void processSingleLineComment(yyscan_t scanner) {
   if (c != 0) {
     processNewline(scanner);
   }
+
+  yyLval->pch = astr(stringBuffer);
+
+  return YYLEX_SINGLE_LINE_COMMENT;
 }
 
 /************************************ | *************************************
@@ -658,7 +664,7 @@ static void processSingleLineComment(yyscan_t scanner) {
 *                                                                           *
 ************************************* | ************************************/
 
-static void processMultiLineComment(yyscan_t scanner) {
+static int processBlockComment(yyscan_t scanner) {
   YYSTYPE*    yyLval       = yyget_lval(scanner);
   YYLTYPE*    yyLloc       = yyget_lloc(scanner);
 
@@ -743,12 +749,14 @@ static void processMultiLineComment(yyscan_t scanner) {
       location = wholeComment.find("\\x09");
     }
 
-    yylloc.comment = (char*) astr(wholeComment.c_str());
+    yyLval->pch = astr(wholeComment.c_str());
   }
 
   countMultiLineComment(stringBuffer);
 
   newString();
+
+  return YYLEX_BLOCK_COMMENT;
 }
 
 /************************************ | *************************************
