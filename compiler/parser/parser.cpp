@@ -195,15 +195,15 @@ ModuleSymbol* parseFile(const char* filename,
       }
     }
 
+    if (namedOnCommandLine) {
+      stopCountingFileTokens(context.scanner);
+    }
+
     // Cleanup after the paser
     yypstate_delete(parser);
 
     // Cleanup after the lexer
     yylex_destroy(context.scanner);
-
-    if (namedOnCommandLine) {
-      stopCountingFileTokens();
-    }
 
     closeInputFile(fp);
 

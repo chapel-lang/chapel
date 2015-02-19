@@ -21,7 +21,6 @@
 
 #include <cstring>
 
-#include "bison-chapel.h"
 #include "misc.h"
 
 bool countTokens = false;
@@ -151,12 +150,12 @@ void startCountingFileTokens(const char* filename) {
 }
 
 
-void stopCountingFileTokens(void) {
+void stopCountingFileTokens(yyscan_t scanner) {
   tokenCountingOn = false;
-  
+
   if (printTokens) {
     if (strcmp(line, "") != 0) {
-      processNewline();
+      processNewline(scanner);
     }
 
     printSeparator();
