@@ -60,7 +60,7 @@
 // And redefine it to call our exit routine:
 #define exit(x) clean_exit(x)
 
-
+static int  processIdentifier(yyscan_t scanner);
 static int  processToken(yyscan_t scanner, int t);
 static int  processStringLiteral(yyscan_t scanner, const char* q);
 static int  processExtern(yyscan_t scanner);
@@ -243,7 +243,7 @@ yield            return processToken(yyscanner, TYIELD);
 {intLiteral}i    return processToken(yyscanner, IMAGLITERAL);
 {floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
 
-{ident}          return processToken(yyscanner, TIDENT);
+{ident}          return processIdentifier(yyscanner);
 "\""             return processStringLiteral(yyscanner, "\"");
 "\'"             return processStringLiteral(yyscanner, "\'");
 
@@ -309,6 +309,15 @@ void processNewline(yyscan_t scanner) {
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
+
+static int  processIdentifier(yyscan_t scanner) {
+  YYSTYPE* yyLval = yyget_lval(scanner);
+  int      retval = processToken(scanner, TIDENT);
+
+  yyLval->pch = astr(yyget_text(scanner));
+
+  return retval;
+}
 
 static int processToken(yyscan_t scanner, int t) {
   YYSTYPE* yyLval = yyget_lval(scanner);
