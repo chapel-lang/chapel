@@ -73,7 +73,7 @@ static void processMultiLineComment(yyscan_t scanner);
 
 static void processInvalidToken(yyscan_t scanner);
 
-
+static bool yy_has_state(yyscan_t scanner);
 %}
 
 bit              [0-1]
@@ -340,8 +340,11 @@ static int processToken(yyscan_t scanner, int t) {
       strcat(captureString, " ");
   }
 
-  /* processToken means we are parsing Chapel */
-  BEGIN(INITIAL);
+  // If the stack has a value then we must be in externmode.
+  // Return to INITIAL
+  if (yy_has_state(scanner) == true) {
+    yy_pop_state(scanner);
+  }
 
   return t;
 }
@@ -367,9 +370,6 @@ static int processStringLiteral(yyscan_t scanner, const char* q) {
     strcat(captureString, yyLval->pch);
     strcat(captureString, yyText);
   }
-
-  /* string literals only in Chapel */
-  BEGIN(INITIAL);
 
   return STRINGLITERAL;
 }
@@ -433,7 +433,8 @@ static int processExtern(yyscan_t scanner) {
     strcat(captureString, yyText);
   }
 
-  BEGIN(externmode);
+  // Push a state to record that "extern" has been seen
+  yy_push_state(externmode, scanner);
 
   return TEXTERN;
 }
@@ -457,10 +458,6 @@ static int processExternCode(yyscan_t scanner) {
   if (captureTokens) {
     strcat(captureString, yyLval->pch);
   }
-
-  /* only one { } block is special */
-
-  BEGIN(INITIAL);
 
   return EXTERNCODE;
 }
@@ -822,3 +819,18 @@ static int getNextYYChar(yyscan_t scanner) {
   return retval;
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static bool yy_has_state(yyscan_t yyscanner)
+{
+  // This is only to suppress a compiler warning
+  (void) yy_top_state;
+
+  struct yyguts_t * yyg = (struct yyguts_t*) yyscanner;
+
+  return yyg->yy_start_stack_ptr > 0;
+}
