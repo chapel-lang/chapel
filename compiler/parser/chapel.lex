@@ -74,6 +74,7 @@ static int  processBlockComment(yyscan_t scanner);
 static void processInvalidToken(yyscan_t scanner);
 
 static bool yy_has_state(yyscan_t scanner);
+
 %}
 
 bit              [0-1]
@@ -186,8 +187,6 @@ yield            return processToken(yyscanner, TYIELD);
 
 "<=>"            return processToken(yyscanner, TSWAP);
 
-{floatLiteral}   return processToken(yyscanner, REALLITERAL);
-
 "#"              return processToken(yyscanner, THASH);
 ".."             return processToken(yyscanner, TDOTDOT);
 "..."            return processToken(yyscanner, TDOTDOTDOT);
@@ -233,12 +232,10 @@ yield            return processToken(yyscanner, TYIELD);
 <INITIAL>"{"     return processToken(yyscanner, TLCBR);
 "}"              return processToken(yyscanner, TRCBR);
 "<~>"            return processToken(yyscanner, TIO);
-
-
 "?"              return processToken(yyscanner, TQUESTION);
 
 {intLiteral}     return processToken(yyscanner, INTLITERAL);
-
+{floatLiteral}   return processToken(yyscanner, REALLITERAL);
 
 {intLiteral}i    return processToken(yyscanner, IMAGLITERAL);
 {floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
@@ -247,13 +244,12 @@ yield            return processToken(yyscanner, TYIELD);
 "\""             return processStringLiteral(yyscanner, "\"");
 "\'"             return processStringLiteral(yyscanner, "\'");
 
-[ \t\r]          processWhitespace(yyscanner);
-\n               return processNewline(yyscanner);
-
 "//"             return processSingleLineComment(yyscanner);
-
 "/*"             return processBlockComment(yyscanner);
 
+\n               return processNewline(yyscanner);
+
+[ \t\r]          processWhitespace(yyscanner);
 .                processInvalidToken(yyscanner);
 
 %%
@@ -276,19 +272,12 @@ static void  newString();
 static void  addString(const char* str);
 static void  addChar(char c);
 static void  addCharString(char c);
+
 static int   getNextYYChar(yyscan_t scanner);
 
 static int   stringBuffLen = 0;
 static int   stringLen     = 0;
 static char* stringBuffer  = NULL;
-
-void lexerScanString(const char* string) {
-  yy_scan_string(string);
-}
-
-void lexerResetFile() {
-  YY_NEW_FILE;
-}
 
 int processNewline(yyscan_t scanner) {
   YYLTYPE* yyLloc = yyget_lloc(scanner);
@@ -793,7 +782,7 @@ static void newString() {
   stringLen = 0;
 
   if (stringBuffLen) {
-    stringBuffer[stringLen] = '\0';
+    stringBuffer[0] = '\0';
   }
 }
 
@@ -815,7 +804,7 @@ static void addCharMaybeEscape(char c, bool canEscape) {
   int charlen = escape ? 4 : 1; // convert nonasci to \xNN
 
   if (stringLen + charlen + 1 > stringBuffLen) {
-    stringBuffLen = 2*(stringBuffLen + charlen);
+    stringBuffLen = 2 * (stringBuffLen + charlen);
     stringBuffer  = (char*) realloc(stringBuffer,
                                     stringBuffLen * sizeof(char));
   }
