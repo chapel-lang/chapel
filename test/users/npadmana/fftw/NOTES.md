@@ -10,7 +10,6 @@ TODO
 	 I just noted that this could fail with an error from fftw saying that an alloc failed
 	 (after appearing to be stuck). Clearly something is not being passed correctly to FFTW.
 
-1. thread support
 1. MPI support
 1. Pull C prototypes out to allow power users to access things directly (maybe??)
 
@@ -27,6 +26,8 @@ Release Notes
 -------------
 
 (This is mostly just for internal use)
+
+    * MPI proof of concept (in a separate SimpleMPI module)
 
 fftw_v0.2
     * Clean up generic COMPOPTS
