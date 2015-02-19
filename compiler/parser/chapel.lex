@@ -395,8 +395,10 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
 
   while ((c = getNextYYChar(scanner)) != startCh && c != 0) {
     if (c == '\n') {
+      ParserContext context(scanner);
+
       yyText[0] = '\0';
-      yyerror("end-of-line in a string literal without a preceeding backslash");
+      yyerror(yyLloc, &context, "end-of-line in a string literal without a preceeding backslash");
     } else {
       if (startCh == '\'' && c == '\"') {
         addCharString('\\');
@@ -420,7 +422,9 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
   } /* eat up string */
 
   if (c == 0) {
-    yyerror("EOF in string");
+    ParserContext context(scanner);
+
+    yyerror(yyLloc, &context, "EOF in string");
   }
 
   return stringBuffer;
@@ -506,28 +510,30 @@ static char* eatExternCode(yyscan_t scanner) {
     c     = getNextYYChar(scanner);
 
     if (c == 0) {
+      ParserContext context(scanner);
+
       switch (state) {
         case in_code:
           // there was no match to the {
-          yyerror("Missing } in extern block");
+          yyerror(yyLloc, &context, "Missing } in extern block");
           break;
 
         case in_single_quote:
         case in_single_quote_backslash:
-          yyerror("Runaway \'string\' in extern block");
+          yyerror(yyLloc, &context, "Runaway \'string\' in extern block");
           break;
 
         case in_double_quote:
         case in_double_quote_backslash:
-          yyerror("Runaway \"string\" in extern block");
+          yyerror(yyLloc, &context, "Runaway \"string\" in extern block");
           break;
 
         case in_single_line_comment:
-          yyerror("Missing newline after extern block // comment");
+          yyerror(yyLloc, &context, "Missing newline after extern block // comment");
           break;
 
         case in_multi_line_comment:
-          yyerror("Runaway /* comment */ in extern block");
+          yyerror(yyLloc, &context, "Runaway /* comment */ in extern block");
           break;
       }
       break;
@@ -714,7 +720,9 @@ static int processBlockComment(yyscan_t scanner) {
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
     } else if (c == 0) {
-      yyerror( "EOF in comment" );
+      ParserContext context(scanner);
+
+      yyerror(yyLloc, &context, "EOF in comment");
     }
   }
 
@@ -766,7 +774,10 @@ static int processBlockComment(yyscan_t scanner) {
 ************************************* | ************************************/
 
 static void processInvalidToken(yyscan_t scanner) {
-  yyerror("Invalid token");
+  ParserContext context(scanner);
+  YYLTYPE*      yyLloc = yyget_lloc(scanner);
+
+  yyerror(yyLloc, &context, "Invalid token");
 }
 
 /************************************ | *************************************
