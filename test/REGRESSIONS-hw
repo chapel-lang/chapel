@@ -237,7 +237,6 @@ xe.none.cray
 xe.none.gnu
 xe.none.intel
 xe.none.pgi
-xe.ugni.gnu
 xe.ugni.intel
 
 
@@ -278,16 +277,27 @@ Missing output file (2015-02-18)
 ===========================================
 xc.none.cray.aprun
 Inherits 'x?.*.cray*' and 'x?.none.*'
-Reviewed 2015-02-18
+Reviewed 2015-02-19
 ===========================================
 
 === sporadic issues ===
 
-Missing output file (2015-02-18)
+Missing output file (2015-02-18,)
 --------------------------------
 [Error matching program output for release/examples/hello5-taskpar]
 
 
+===========================================
+xe.ugni.gnu
+Inherits 'x?.*.gnu*' and 'x?.ugni.*'
+Reviewed 2015-02-19
+===========================================
+
+=== sporadic issues ===
+
+tcmalloc allocation failure (2015-02-19..)
+---------------------------
+[Error matching program output for release/examples/benchmarks/hpcc/ra (compopts: 1)]
 
 
 ################################################################################
@@ -342,12 +352,17 @@ Sporadic execution timeout
 ===========================================
 perf.xc.16.ugni.gnu
 Inherits 'perf.xc.*'
-Reviewed 2015-02-17
+Reviewed 2015-02-19
 ===========================================
 
 Segfault
 --------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-01-31..)
+
+=== sporadic issues ===
+
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)] (2014-02-19)
+
 
 
 ============================================
