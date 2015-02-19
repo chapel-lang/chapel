@@ -59,7 +59,7 @@ static void clearHist(int h[]) {
 }
 
 
-static void clearLine(void) {
+static void clearLine() {
   if (firstLineInFile) {
     firstLineInFile = 0;
   } else {
@@ -76,7 +76,7 @@ static void clearLine(void) {
   }
 }
 
-static void clearFile(void) {
+static void clearFile() {
   fileTokens = 0;
   blankLines = 0;
   commentLines = 0;
@@ -86,21 +86,21 @@ static void clearFile(void) {
   firstLineInFile = 1;
 }
 
-static void clearGlob(void) {
+static void clearGlob() {
   totTokens = 0;
   clearHist(totTokenHist);
   maxTokensPerLineTot = 0;
 }
 
 
-static void printSeparator(void) {
+static void printSeparator() {
   fflush(stdout);
-  fprintf(stderr, 
+  fprintf(stderr,
           "=============================================================\n");
 }
 
 
-static void printFileSummary(void) {
+static void printFileSummary() {
   if (printTokens) {
     int j;
 
@@ -109,7 +109,7 @@ static void printFileSummary(void) {
     fprintf(stderr, "LINES  = %d code, %d comment, %d blank\n", codeLines,
             commentLines, blankLines);
     fprintf(stderr, "MAX TOKENS/LINE = %d\n"
-            "AVG TOKENS/CODE LINE = %.2f\n", 
+            "AVG TOKENS/CODE LINE = %.2f\n",
             maxTokensPerLineInFile, (double)fileTokens/codeLines);
     fprintf(stderr, "HISTOGRAM:\n");
     for (j=0; j<=maxTokensPerLineInFile; j++) {
@@ -119,7 +119,7 @@ static void printFileSummary(void) {
 }
 
 
-static void initTokenCount(void) {
+static void initTokenCount() {
   if (printTokens && !countTokens) { // printTokens => countTokens
     countTokens = true;
   }
@@ -151,12 +151,12 @@ void startCountingFileTokens(const char* filename) {
 }
 
 
-void stopCountingFileTokens(void) {
+void stopCountingFileTokens(yyscan_t scanner) {
   tokenCountingOn = false;
-  
+
   if (printTokens) {
     if (strcmp(line, "") != 0) {
-      processNewline();
+      processNewline(scanner);
     }
 
     printSeparator();
@@ -167,7 +167,7 @@ void stopCountingFileTokens(void) {
 }
 
 
-void finishCountingTokens(void) {
+void finishCountingTokens() {
   if (countTokens) {
     if (printTokens) {
       fflush(stdout);
@@ -186,7 +186,7 @@ void countToken(const char* text) {
       int attempted = snprintf(&line[start], LINE_SIZE - start, " %s", text);
       if (attempted >= LINE_SIZE - start) {
         INT_FATAL("line length overflow");
-      } 
+      }
     }
     lineTokens++;
     fileTokens++;
@@ -197,7 +197,7 @@ void countToken(const char* text) {
 }
 
 
-void countNewline(void) {
+void countNewline() {
   if (tokenCountingOn && countTokens) {
     if (lineBlank) {
       blankLines++;
@@ -223,7 +223,7 @@ void countNewline(void) {
 }
 
 
-void countCommentLine(void) {
+void countCommentLine() {
   if (tokenCountingOn && countTokens) {
     lineBlank = false;
   }
@@ -245,7 +245,7 @@ void countSingleLineComment(const char* comment) {
 }
 
 
-void countMultiLineComment(char* comment) {
+void countMultiLineComment(const char* comment) {
   if (printTokens) {
     int start = strlen(line);
     int attempted =
