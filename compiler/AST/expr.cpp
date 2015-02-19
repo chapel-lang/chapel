@@ -387,6 +387,36 @@ void Expr::insertAfter(Expr* new_ast) {
 }
 
 
+void
+Expr::replace(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  replace(new_Expr(format, args));
+  va_end(args);
+}
+
+
+void
+Expr::insertBefore(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertBefore(new_Expr(format, args));
+  va_end(args);
+}
+
+
+void
+Expr::insertAfter(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertAfter(new_Expr(format, args));
+  va_end(args);
+}
+
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -5909,6 +5939,116 @@ isIdentifierChar(const char c) {
           (c == '$') ||
           (c == '_') || (c == '.'));
 }
+
+
+/*********** new_Expr() ***********/
+/*
+
+new_Expr() lets you build AST more succinctly.
+
+You can call new_Expr() directly, or implicitly by calling:
+
+  BlockStmt::insertAtHead
+  BlockStmt::insertAtTail
+  FnSymbol::insertAtHead
+  FnSymbol::insertAtTail
+  Expr::insertBefore
+  Expr::insertAfter
+  Expr::replace
+
+Synopsis:
+
+  new_Expr(const char* format, ...)
+
+The format string should contain a Chapel statement or expression.
+
+SIMPLE CALLS
+
+The code
+
+  block->insertAtTail("foo()");
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr("foo"));
+
+USING SYMBOLS AND EXPRESSIONS
+
+Symbols and expressions can be added to the newly created expressions
+using %S and %E format flags.  For example, given:
+
+  VarSymbol* tmp;
+  CallExpr* call;
+
+the code
+
+  block->insertAtTail("foo(%S)", tmp);
+  block->insertAtTail("foo(%E)", call);
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr("foo", tmp));
+  block->insertAtTail(new CallExpr("foo", call));
+
+PRIMITIVES
+
+Primitives can be defined by enclosing the name of the primitive in
+apostrophes.  So the code
+
+  block->insertAtTail("'move'(%S, new CallExpr("foo"))");
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("foo")));
+
+STRING LITERALS
+
+String literals are also supported by enclosing a string in
+apostrophes.
+
+BLOCK STATEMENTS
+
+Finally, block statements and type block statements
+(BlockStmt::blockTag == BLOCK_TYPE) are supported
+via curly brackets and semicolons. For example:
+
+  new_Expr("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
+
+METHOD CALLS
+
+Note that AST represents method calls differently before and after normalize.
+
+Here are examples before normalize:
+
+  // localOp.accumulate(followIdx)
+  new_Expr(".(%S, 'accumulate')(%S)", localOp, followIdx);
+
+  // globalOp.generate()
+  new_Expr(".(%S, 'generate')()", globalOp);
+
+  // Paren-less calls are perhaps done so: localOp.identity
+  new_Expr(".(%S, 'identity')", localOp);
+
+After normalize method calls are represented as procedure calls with
+the first argument being gMethodToken:
+
+  // rvar.identity
+  new_Expr("identity(%S,%S)", gMethodToken, rvar);
+
+  // rvar.accumulate(svar)
+  new_Expr("accumulate(%S,%S,%S)", gMethodToken, rvar, svar);
+
+FINAL EXAMPLE
+
+The code
+
+  leadBlock->insertAtTail(new CallExpr(PRIM_MOVE, leadIter, new CallExpr("_getIterator", new CallExpr("_toLeader", iter))));
+
+can be written as
+
+  leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))", leadIter, iter);
+
+*/
 
 Expr*
 new_Expr(const char* format, ...) {
