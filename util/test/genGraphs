@@ -46,7 +46,7 @@ parser.add_option('-u', '--numericX', dest='numericX',
                   help='expect numbers (e.g. revisions), not dates,' +
                        ' for the X axis',
                   action='store_true', default=False)
-parser.add_option('-m', '--multiple-configurations', dest='multiConf',
+parser.add_option('-m', '--configs', dest='multiConf',
                   help='comma separated list of configurations. ":v" after a '
                        'configuration makes it visible by default. e.g '
                        '"local:v,--no-local:v" will create graphs with series '
