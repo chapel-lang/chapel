@@ -404,7 +404,7 @@ BlockStmt* parseString(const char* string,
 
     if (lexerStatus >= 0)
       parserStatus          = yypush_parse(parser, lexerStatus, &yylval, &yylloc, &context);
-    else if (lexerStatus == -2)
+    else if (lexerStatus == YYLEX_BLOCK_COMMENT)
       context.latestComment = yylval.pch;
   }
 
