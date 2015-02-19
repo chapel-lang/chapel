@@ -42,10 +42,13 @@
 
 // It would be better if Flex could generate these for itself
 %code requires {
-  void lexerScanString(const char* string);
-  void lexerResetFile();
+  #define YYLEX_NEWLINE                  -1
+  #define YYLEX_SINGLE_LINE_COMMENT      -2
+  #define YYLEX_BLOCK_COMMENT            -3
 
-  void processNewline();
+  typedef void* yyscan_t;
+
+  int processNewline(yyscan_t scanner);
 }
 
 //
@@ -118,13 +121,46 @@
 }
 
 //
+// Definition of the additional parameter to yypush_parse
+//
+
+%code requires {
+  #ifndef _BISON_CHAPEL_DEFINES_3_
+  #define _BISON_CHAPEL_DEFINES_3_
+
+  class ParserContext {
+  public:
+    ParserContext()
+    {
+      scanner       = 0;
+      latestComment = 0;
+      generatedStmt = 0;
+    }
+
+    ParserContext(yyscan_t scannerIn)
+    {
+      scanner       = scannerIn;
+      latestComment = 0;
+      generatedStmt = 0;
+    }
+
+    yyscan_t    scanner;
+    const char* latestComment;
+    BaseAST*    generatedStmt;
+  };
+
+  #endif
+}
+
+//
 // Provide declaration for debugging and yyerror
 //
 %code provides {
   extern int yydebug;
 
-  int  yyparse();
-  void yyerror(const char* str);
+  void yyerror(YYLTYPE*       ignored,
+               ParserContext* context,
+               const char*    str);
 }
 
 %code {
@@ -159,15 +195,18 @@
                                                                           \
     } else  {                                                             \
       (Current) = yylloc;                                                 \
-    }                                                                     \
+    }
 
-
-  void yyerror(const char* str) {
+  void yyerror(YYLTYPE*       ignored,
+               ParserContext* context,
+               const char*    str) {
     if (!chplParseString) {
+      const char* yyText = yyget_text(context->scanner);
+
       fprintf(stderr, "%s:%d: %s", yyfilename, chplLineno, str);
 
-      if (strlen(yytext) > 0) {
-        fprintf(stderr, ": near '%s'", yytext);
+      if (strlen(yyText) > 0) {
+        fprintf(stderr, ": near '%s'", yyText);
       }
     } else {
       fprintf(stderr, "%s: %s", yyfilename, str);
@@ -192,12 +231,21 @@
 %debug
 %verbose
 
+%locations
+%define api.pure
+%define api.push-pull push
+
+%parse-param { ParserContext* context }
+
 %start program
 
 //
 // identifiers and literals
 //
-%token TIDENT IMAGLITERAL INTLITERAL REALLITERAL
+%token <pch> TIDENT
+%token <pch> INTLITERAL
+%token <pch> REALLITERAL
+%token <pch> IMAGLITERAL
 %token <pch> STRINGLITERAL
 %token <pch> EXTERNCODE
 
@@ -448,7 +496,7 @@ opt_ident:
 ;
 
 ident:
-  TIDENT  { $$ = astr(yytext); }
+  TIDENT  { $$ = $1; }
 ;
 
 do_stmt:
@@ -1364,12 +1412,12 @@ parenthesized_expr:
 ;
 
 literal_expr:
-  INTLITERAL            { $$ = buildIntLiteral(yytext);  }
-| REALLITERAL           { $$ = buildRealLiteral(yytext); }
-| IMAGLITERAL           { $$ = buildImagLiteral(yytext); }
+  INTLITERAL            { $$ = buildIntLiteral($1);    }
+| REALLITERAL           { $$ = buildRealLiteral($1);   }
+| IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
-| TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr", $2); }
+| TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR assoc_expr_ls TRSBR
     {
       $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
