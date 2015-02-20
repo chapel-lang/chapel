@@ -26,5 +26,23 @@ module FFTW_MPI {
       ref local_no : c_ptrdiff, ref local_o_start : c_ptrdiff) : c_ptrdiff;
 
 
-
+  // Planner routines
+  extern proc fftw_mpi_plan_dft(rank: c_int, 
+      n,  // BLC: having trouble being specific
+      in1: [] fftw_complex, 
+      out1: [] fftw_complex, 
+      comm : MPI_Comm, 
+      sign : c_int, flags : c_uint) : fftw_plan;
+  extern proc fftw_plan_dft_r2c(rank: c_int, 
+      n,  // BLC: having trouble being specific
+      in1: [],
+      out1: [], 
+      comm : MPI_Comm, 
+      flags : c_uint) : fftw_plan;
+  extern proc fftw_plan_dft_c2r(rank: c_int, 
+      n,  // BLC: having trouble being specific
+      in1: [],
+      out1: [],
+      comm : MPI_Comm,
+      flags : c_uint) : fftw_plan;
 }
