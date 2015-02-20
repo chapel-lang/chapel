@@ -39,8 +39,10 @@ extern proc chpl_fs_remove(name: c_string):syserr;
    Note: this is not safe within a parallel context.  A chdir call in one task
    will affect the current working directory of all tasks for that locale.
 */
-proc chdir(out err: syserr, name: string) {
-  err = chpl_fs_chdir(name.c_str());
+proc locale.chdir(out err: syserr, name: string) {
+  on this {
+    err = chpl_fs_chdir(name.c_str());
+  }
 }
 
 /* Change the current working directory of the current locale to the specified
@@ -50,7 +52,7 @@ proc chdir(out err: syserr, name: string) {
    Note: this is not safe within a parallel context.  A chdir call in one task
    will affect the current working directory of all tasks for that locale.
 */
-proc chdir(name: string) {
+proc locale.chdir(name: string) {
   var err: syserr = ENOERR;
   chdir(err, name);
   if err != ENOERR then ioerror(err, "in chdir", name);

@@ -1,3 +1,3 @@
 use FileSystem;
 var directory = "no-such-dir";
-chdir(directory);
+here.chdir(directory);

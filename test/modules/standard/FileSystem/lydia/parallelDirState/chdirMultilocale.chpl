@@ -4,7 +4,7 @@ use FileSystem;
 
 on Locales[1] {
   writeln(cwd(), " on locale 1");
-  chdir("foo");
+  here.chdir("foo");
   writeln(cwd(), " on locale 1");
 }
 writeln(cwd(), " on locale 0"); 
