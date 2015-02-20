@@ -13,23 +13,27 @@ record RR {
   var xx, yy: int;
   // the default constructor
   proc RR() {
+    var done$: sync bool;
     on loc {
       this.xx = 555;
     }
     begin {
       this.yy = 666;
+      done$ = true;
     }
-    chpl_task_sleep(1);
+    done$;
   }
   // method with args
   proc modify(ee: int, ff: int) {
+    var done$: sync bool;
     on loc {
       this.xx = ee;
     }
     begin {
       this.yy = ff;
+      done$ = true;
     }
-    chpl_task_sleep(1);
+    done$;
   }
 } // record RR
 
@@ -37,23 +41,27 @@ record QQ {
   var aa, bb: int;
   // non-default constructor
   proc QQ(cc: int, dd: int) {
+    var done$: sync bool;
     on loc {
       this.aa = cc;
     }
     begin {
       this.bb = dd;
+      done$ = true;
     }
-    chpl_task_sleep(1);
+    done$;
   }
   // method with no args
   proc modify() {
+    var done$: sync bool;
     on loc {
       this.aa = 171717;
     }
     begin {
       this.bb = 181818;
+      done$ = true;
     }
-    chpl_task_sleep(1);
+    done$;
   }
 } // record QQ
 
