@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h> // for ptrdiff_t
 #include <sys/time.h> // for struct timeval
 
 // C types usable from Chapel.
@@ -42,6 +43,9 @@ typedef unsigned long long c_ulonglong;
 typedef float c_float;
 typedef double c_double;
 typedef void* c_void_ptr;
+typedef uintptr_t c_uintptr;
+typedef intptr_t c_intptr;
+typedef ptrdiff_t c_ptrdiff;
 
 // C++ does not support c99 bools
 #ifndef __cplusplus
