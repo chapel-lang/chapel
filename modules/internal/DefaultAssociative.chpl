@@ -147,7 +147,57 @@ module DefaultAssociative {
         }
       }
     }
-  
+ 
+    iter these(param tag: iterKind) where tag == iterKind.standalone {
+      if debugDefaultAssoc then
+        writeln("*** In domain standalone code:");
+      const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
+                       else dataParTasksPerLocale;
+      const ignoreRunning = dataParIgnoreRunningTasks;
+      const minIndicesPerTask = dataParMinGranularity;
+      // We are simply slicing up the table here.  Trying to do something
+      //  more intelligent (like evenly dividing up the full slots, led
+      //  to poor speed ups.
+      // This requires that the zipppered domains match.
+      const numIndices = tableSize;
+      if debugAssocDataPar {
+        writeln("### numTasks = ", numTasks);
+        writeln("### ignoreRunning = ", ignoreRunning);
+        writeln("### minIndicesPerTask = ", minIndicesPerTask);
+      }
+
+      if debugDefaultAssoc then
+        writeln("    numTasks=", numTasks, " (", ignoreRunning,
+                "), minIndicesPerTask=", minIndicesPerTask);
+
+      const numChunks = _computeNumChunks(numTasks, ignoreRunning,
+                                          minIndicesPerTask,
+                                          numIndices);
+      if debugDefaultAssoc then
+        writeln("    numChunks=", numChunks, " length=", numIndices);
+
+      if debugAssocDataPar then writeln("### numChunks=", numChunks);
+
+      if numChunks == 1 {
+        var followThisTab = this.table;
+        for slot in 0..numIndices-1 {
+          if table[slot].status == chpl__hash_status.full then
+            yield table[slot].idx;
+        }
+      } else {
+        coforall chunk in 0..#numChunks {
+          const (lo, hi) = _computeBlock(numIndices, numChunks,
+                                         chunk, numIndices-1);
+          if debugDefaultAssoc then
+            writeln("*** DI[", chunk, "]: tuple = ", (lo..hi,));
+          for slot in lo..hi {
+            if table[slot].status == chpl__hash_status.full then
+              yield table[slot].idx;
+          }
+        }
+      }
+    }
+ 
     iter these(param tag: iterKind) where tag == iterKind.leader {
       if debugDefaultAssoc then
         writeln("*** In domain leader code:");
@@ -512,7 +562,23 @@ module DefaultAssociative {
         yield dsiAccess(slot);
       }
     }
-  
+
+    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+      if debugDefaultAssoc then
+        writeln("In array standalone code");
+
+      for followThis in dom.these(iterKind.leader) {
+        var (chunk, unused) = followThis;
+        if debugDefaultAssoc then
+          writeln("In array standalone code: chunk = ", chunk);
+        var table = dom.table;
+        for slot in chunk {
+          if table[slot].status == chpl__hash_status.full then
+            yield data[slot];
+        }
+      }
+    }
+
     iter these(param tag: iterKind) where tag == iterKind.leader {
       for followThis in dom.these(tag) do
         yield followThis;
