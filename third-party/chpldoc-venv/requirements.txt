@@ -4,4 +4,4 @@ Pygments==2.0.2
 Sphinx==1.2.3
 docutils==0.12
 sphinx-rtd-theme==0.1.6
-sphinxcontrib-chapeldomain>=0.0.5
+sphinxcontrib-chapeldomain>=0.0.7
