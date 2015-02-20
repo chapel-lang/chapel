@@ -98,7 +98,8 @@ Out of memory (2015-02-01, 2015-02-15)
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
 
 
-Out of memory (2015-02-02, 2015-02-15)
+Out of memory (2015-02-02, 2015-02-15, 2015-02-20 xe.ugni.gnu)
+(tcmalloc: allocation failed)
 --------------------------------------
 [Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
 
@@ -109,6 +110,15 @@ floating point issues (2015-02-02, 2015-02-15)
 [Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
 [Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
 
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
+
+floating point issues (2015-02-02, 2015-02-15)
+Some of these were due to the ordering of atomic operations not being guaranteed.  
+Greg put in a fix #87 on 2015-02-19 that appears to resolve the problem for the main lulesh test.
+Add cases from above that appear to be passing consistenty and close out this category 
+  if they remain fixed thru the spring release.
+----------------------------------------------
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
@@ -118,8 +128,7 @@ floating point issues (2015-02-02, 2015-02-15)
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 5)]
 
-[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
-[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
+
 
 
 ==========================================
@@ -395,7 +404,7 @@ Reviewed 2015-02-17
 ============================================
 perf.xc.local.intel
 Inherits 'perf.xc.{no-local,local}.*' and '*intel*'
-Reviewed 2015-02-18
+Reviewed 2015-02-20
 ============================================
 
 Files sadSerial.output.bin and output.bin differ
@@ -408,13 +417,13 @@ Wrong output
 Checking for /one two( zero){6}/ on line 28... FAILURE.
 line 28:  one one nine nine nine nine nine nine
 -------------------------------------------------------
-[Error matching performance keys for studies/shootout/chameneos-redux/hannah/chameneos-redux-cas] (2015-02-15..)
+[Error matching performance keys for studies/shootout/chameneos-redux/hannah/chameneos-redux-cas] (2015-02-15..2015-02-19)
 
 
 ============================================
 perf.xc.local.pgi
 Inherits 'perf.xc.{no-local,local}.*' and '*pgi*'
-Reviewed 2015-02-18
+Reviewed 2015-02-20
 ============================================
 
 Fails due to module install vs. setchplenv.* script being outside $CHPL_HOME (2015-02-15 first run, thomas)
@@ -423,7 +432,7 @@ Shouldn't run for perf testing; also doesn't work with binary installs
 [Error found checking setchplenv.* scripts.]
 
 
-ra-atomics.chpl:87: error: Out of memory allocating "array elements" (2015-02-15, first run)
+ra-atomics.chpl:87: error: Out of memory allocating "array elements" (2015-02-15, first run, 2015-02-20)
 --------------------------------------------------------------------------------------------
 [Error matching performance keys for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
 

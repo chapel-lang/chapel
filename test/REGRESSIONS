@@ -242,7 +242,7 @@ Reviewed 2015-02-17
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-02-19
+Reviewed 2015-02-20
 ===================
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
@@ -262,7 +262,7 @@ sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-05, 2015-01-12..)
-[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..2015-02-18)
+[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..2015-02-18, 2015-02-20)
 
 sporadic compilation timeouts
 ---------------------------------
@@ -447,10 +447,10 @@ Reviewed 2015-02-17
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
-Reviewed 2015-02-17
+Reviewed 2015-02-20
 ====================
 
-Execution timeout on 2015-02-15
+Execution timeout on 2015-02-15..
 -------------------------------
 [Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)]
 
@@ -461,11 +461,11 @@ An invalid option "openmp" appears on the command line. (2014-11-17 -- thomas/be
 [Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
 [Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
 
-value is outside of the int range in C compilation (03/??/12)
+value is outside of the int range in C compilation (2012-03-??..)
 -------------------------------------------------------------
 [Error matching compiler output for types/enum/ferguson/enum_mintype_test]
 
-filenames get printed by C compiler when multiple .c files are specified in one command
+filenames get printed by C compiler when multiple .c files are specified in one command (..)
 ---------------------------------------------------------------------------------------
 [Error matching program output for modules/standard/BitOps/c-tests/bitops (compopts: 1)]
 [Error matching program output for modules/standard/BitOps/c-tests/bitops (compopts: 2)]
@@ -485,7 +485,7 @@ unexpected compiler output (listing the source files) (2014-07-23..)
 [Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
 gbt is working on getting rid of this
 
-error differs but within acceptable margin; should squash error printing
+error differs but within acceptable margin; should squash error printing (..)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
@@ -517,15 +517,6 @@ signal 11 (first seen ????-??-??)
 [Error matching program output for studies/590o/alaska/graph] ( ..2015-01-18, 2015-01-21..2015-02-01 )
 [Error matching program output for reductions/thomasvandoren/test/TestCounts] (2015-01-23..2015-02-01)
 
-sporadic "error: attempt to dereference nil" (xe-wb.prgenv-cray 2015-01-18)
----------------------------------------------------------------------------
-[Error matching compiler output for modules/standard/gmp/ferguson/gmp_dist_array]
-[Error matching compiler output for modules/standard/gmp/ferguson/gmp_random]
-[Error matching compiler output for modules/standard/gmp/ferguson/gmp_test]
-[Error matching compiler output for modules/standard/gmp/ferguson/gmp_writeln]
-[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-BigInt]
-[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt]
-
 
 === Only fail with optimizer on (CCE bugs/not seen nightly since using -O0) ===
 
@@ -549,18 +540,18 @@ Reviewed 2015-02-17
 ============================
 x?-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2015-02-17
+Reviewed 2015-02-20
 ============================
+
+=== sporadic failures below ===
 
 unresolved call in Types.chpl (2015-02-15, brad)
 --> xe-wb.host.prgenv-cray passed on  2015-02-17 (fixed or fluke?)
+Fluke: Failed again on 2015-02-19
 $CHPL_HOME/modules/standard/Types.chpl:72: In function 'isIntType':
 $CHPL_HOME/modules/standard/Types.chpl:73: error: unresolved call '||(0, 0)'
 ----------------------------------------------------------------------------
 All tests fail to compile.
-
-
-=== sporadic failures below ===
 
 terminate called after throwing an instance of 'std::out_of_range' - happens when making the directory in which to place documentation
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -580,10 +571,37 @@ for param loop in String.chpl --> "$CHPL_HOME/modules/internal/String.chpl:120: 
 all tests fail compilation
 
 
+============================
+xc-wb.prgenv-cray
+Inherits 'x?-wb.prgenv-cray'
+Reviewed 2015-02-20
+============================
+
+=== sporadic failures below ===
+
+error: attempt to dereference nil (2015-01-18)
+---------------------------------------------------------------------------
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_dist_array]
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_random]
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_test]
+[Error matching compiler output for modules/standard/gmp/ferguson/gmp_writeln]
+[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-BigInt]
+[Error matching compiler output for studies/shootout/pidigits/thomasvandoren/pidigits-ledrug-BigInt]
+
+Missing output on stdout
+-------------------------------------
+[Error matching program output for modules/vass/SSCA2-with-Private-2] (2015-02-19)
+[Error matching program output for users/hilde/refcnt] (2015-02-20)
+
+Missing whitespace in output on stdout
+--------------------------------------
+[Error matching program output for reductions/waynew/reductions] (2015-02-19)
+
+
 ===================
 *intel*
 Inherits 'general'
-Reviewed 2015-02-17
+Reviewed 2015-02-20
 ===================
 
 test assertion failures (2014-09-21..)
@@ -649,7 +667,7 @@ Reviewed 2015-02-17
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2015-02-17
+Reviewed 2015-02-20
 ===================
 
 undefined reference to chpl_bitops_debruijn64
@@ -717,7 +735,7 @@ consistent execution timeout (frequent)
 ===========================
 cygwin32
 Inherits 'cygwin*' and '*32'
-Reviewed 2015-02-19
+Reviewed 2015-02-20
 ===========================
 
 Generated output "FAILED" (see below for sporadic): First run 2014-12-07
@@ -739,7 +757,7 @@ Consistent execution timouts
 
 sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..2015-02-18)
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..2015-02-18, 2015-02-20..)
 
 
 ================================
