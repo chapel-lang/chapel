@@ -58,6 +58,10 @@ public:
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
 
+  void            insertBefore(const char* format, ...);
+  void            insertAfter(const char* format, ...);
+  void            replace(const char* format, ...);
+
   Expr*           remove();
 
   bool            isStmtExpr()                                       const;

@@ -720,7 +720,7 @@ module ChapelRange {
   }
   
   
-  proc chpl_by(r: range(?i,?b,?s), step) {
+  proc chpl_by_help(r: range(?i,?b,?s), step) {
     const lw: i = r.low,
           hh: i = r.high,
           st: r.strType = r.stride * step:r.strType;
@@ -740,14 +740,14 @@ module ChapelRange {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
     chpl_range_check_stride(step, r.idxType);
-    return chpl_by(r, step);
+    return chpl_by_help(r, step);
   }
   
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
   inline proc by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
-    return chpl_by(r, step:r.strType);
+    return chpl_by_help(r, step:r.strType);
   }
   
   

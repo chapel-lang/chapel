@@ -140,11 +140,18 @@ record SeedGenerators {
 // right, it ends up causing a warning (promoted to error) in the .rst
 // file.  It'd be preferable to have it declare the issue in terms of
 // the .chpl line numbers.
-
 //
-// CHPLDOC FIXME: Do we want default values to print in the function
-// prototype?  (I think we do, given that it reflects the code in the
-// file)
+// CHPLDOC FIXME: When a formal argument is of inferred/unknown type,
+// and has a default value, it is currently getting both '->' and '='
+// I think it should only get the '='.
+//
+// CHPLDOC FIXME: For that matter, it seems to me that we should be
+// rendering types as ':' rather than '->'.  I'm not seeing the
+// rationale for using non-syntax in this context and while it
+// seemed acceptable in some cases I was seeing it before (return
+// values, variables without default values), the more I think about
+// it, the more it seems like ':' would be more clear for Chapel
+// (even in the context where I was just looking past it earlier).
 //
 
 /*
@@ -197,10 +204,6 @@ class RandomStream {
   const seed: int(64);
 
 
-  //
-  // CHPLDOC FIXME: More missing default values below
-  //
-
   /*
     Constructs a new stream of random numbers using the specified seed
     and parallel safety.  Ensures that the seed value meets the PRNG's
@@ -218,10 +221,6 @@ class RandomStream {
       halt("RandomStream seed must be an odd integer between 0 and 2**46");
     RandomStreamPrivate_init(seed);
   }
-
-  //
-  // CHPLDOC FIXME: the type of parSafe below is printed out as _unknown
-  //
 
   /*
     Returns the next value in the random stream as a `real(64)`

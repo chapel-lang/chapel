@@ -771,7 +771,7 @@ fn_ident:
 | TMOD           { $$ = "%"; }
 | TEXP           { $$ = "**"; }
 | TNOT           { $$ = "!"; }
-| TBY            { $$ = "by"; }
+| TBY            { $$ = "chpl_by"; }
 | THASH          { $$ = "#"; }
 | TALIGN         { $$ = "align"; }
 | TSWAP          { $$ = "<=>"; }
@@ -1401,7 +1401,7 @@ binary_op_expr:
 | expr TAND expr           { $$ = new CallExpr("&&", $1, $3); }
 | expr TOR  expr           { $$ = new CallExpr("||", $1, $3); }
 | expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
-| expr TBY expr            { $$ = new CallExpr("by", $1, $3); }
+| expr TBY expr            { $$ = new CallExpr("chpl_by", $1, $3); }
 | expr TALIGN expr         { $$ = new CallExpr("align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
 | expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1); }
