@@ -6,18 +6,18 @@ var mylock1: sync int;
 var mylock2: sync int;
 
 here.chdir("task1/0");
-writeln(cwd());
+writeln(here.cwd());
 cobegin {
-  m1(); // Task 1 only calls cwd()
+  m1(); // Task 1 only calls here.cwd()
   m2(); // Task 2 only changes the directory
 }
-writeln(cwd()); // The starting task is affected as well
+writeln(here.cwd()); // The starting task is affected as well
 
 
 proc m1() {
   for i in 1..5 {
     mylock1.readFE();
-    writeln(cwd());
+    writeln(here.cwd());
     mylock2.writeEF(1);
   }  
 }

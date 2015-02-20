@@ -3,5 +3,5 @@ use FileSystem;
 // all locales.
 Locales.chdir("everyLoc"); // not the launch directory
 coforall loc in Locales do on loc do
-  writeln(cwd());
+  writeln(here.cwd());
 // Expect all locales to output everyLoc as their cwd.
