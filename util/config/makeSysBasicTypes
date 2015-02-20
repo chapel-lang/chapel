@@ -48,9 +48,9 @@ END
 "UCHAR_MAX", "c_uchar",
 "SHRT_MAX", "c_short",
 "USHRT_MAX", "c_ushort",
-"INTPTR_MAX" => "c_intptr",
-"UINTPTR_MAX" => "c_uintptr",
-"PTRDIFF_MAX" => "c_ptrdiff",
+"INTPTR_MAX", "c_intptr",
+"UINTPTR_MAX", "c_uintptr",
+"PTRDIFF_MAX", "c_ptrdiff",
 "SSIZE_MAX", "ssize_t",
 "SIZE_MAX", "size_t",
 );
