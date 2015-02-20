@@ -140,7 +140,7 @@ ModuleSymbol* parseFile(const char* filename,
 
   if (FILE* fp = openInputFile(filename)) {
     // State for the lexer
-    int             lexerStatus       =  100;
+    int             lexerStatus  = 100;
 
     // State for the parser
     yypstate*       parser       = yypstate_new();
@@ -160,11 +160,8 @@ ModuleSymbol* parseFile(const char* filename,
     yylloc.first_column           = 0;
     yylloc.last_line              = 1;
     yylloc.last_column            = 0;
-    yylloc.comment                = NULL;
 
     chplLineno                    = 1;
-
-    yyblock                       = NULL;
 
     if (printModuleFiles && (modType != MOD_INTERNAL || developer)) {
       if (firstFile) {
@@ -212,9 +209,7 @@ ModuleSymbol* parseFile(const char* filename,
     } else if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
       const char* modulename = filenameToModulename(filename);
 
-      retval         = buildModule(modulename, yyblock, yyfilename, NULL);
-
-      yylloc.comment = NULL;
+      retval = buildModule(modulename, yyblock, yyfilename, NULL);
 
       if (fUseIPE == false)
         theProgram->block->insertAtTail(new DefExpr(retval));
