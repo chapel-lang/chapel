@@ -242,7 +242,7 @@ Reviewed 2015-02-17
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-02-19
+Reviewed 2015-02-17
 ===================
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
@@ -262,7 +262,7 @@ sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-05, 2015-01-12..)
-[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..2015-02-18)
+[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..)
 
 sporadic compilation timeouts
 ---------------------------------
@@ -717,7 +717,7 @@ consistent execution timeout (frequent)
 ===========================
 cygwin32
 Inherits 'cygwin*' and '*32'
-Reviewed 2015-02-19
+Reviewed 2015-02-16
 ===========================
 
 Generated output "FAILED" (see below for sporadic): First run 2014-12-07
@@ -739,7 +739,7 @@ Consistent execution timouts
 
 sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..2015-02-18)
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..)
 
 
 ================================
