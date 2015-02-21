@@ -1,0 +1,9 @@
+bug: iteration over domains with aligned ranges
+
+It seems that when we iterate over domains whose
+ranges are strided and don't use the default
+alignment, we don't actually generate the right
+indices.  Well that's embarrassing.
+
+I've got a fix for this but need to test it before
+committing.
