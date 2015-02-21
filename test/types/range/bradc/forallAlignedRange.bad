@@ -3,4 +3,4 @@
 41
 57
 true
-forallAlignedRange.chpl:8: error: halt reached - array index out of bounds: (49)
+forallAlignedRange.chpl:8: error: halt reached - array index out of bounds: (1)
