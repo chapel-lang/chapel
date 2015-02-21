@@ -312,15 +312,19 @@ module DefaultRectangular {
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=idxType, stridable=stridable);
       if stridable {
+        type strType = chpl__signedType(idxType);
         for param i in 1..rank {
-          const stride = ranges(i).stride;
-          if stride > 0 {
-            const low = ranges(i).alignedLow + followThis(i).low*stride,
-                  high = ranges(i).alignedLow + followThis(i).high*stride;
+          const rStride = ranges(i).stride:strType,
+                fStride = followThis(i).stride:strType;
+          if ranges(i).stride > 0 {
+            const low = ranges(i).alignedLow + followThis(i).low*rStride,
+                  high = ranges(i).alignedLow + followThis(i).high*rStride,
+                  stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           } else {
-            const low = ranges(i).alignedHigh + followThis(i).high*stride,
-                  high = ranges(i).alignedHigh + followThis(i).low*stride;
+            const low = ranges(i).alignedHigh + followThis(i).high*rStride,
+                  high = ranges(i).alignedHigh + followThis(i).low*rStride,
+                  stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           }
         }
