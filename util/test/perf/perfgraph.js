@@ -48,7 +48,7 @@ var branchInfo = [
 // array of currently displayed graphs
 var gs = [];
 // used to prevent multiple redraws of graphs when syncing x-axis zooms
-var blockRedraw = false;
+var globalBlockRedraw = false;
 
 // The main elements that all the graphs and graph legends will be put in
 var parent = document.getElementById('graphdisplay');
@@ -422,8 +422,8 @@ function customAxisLabelFormatter(val, granularity, opts, dygraph) {
 // synchronize our graphs along the x-axis and check if we should warn that
 // using a log scale will result in wonky behavior.
 function customDrawCallback(g, initial) {
-  if (blockRedraw) return;
-  blockRedraw = true;
+  if (globalBlockRedraw) return;
+  globalBlockRedraw = true;
 
   // if a user has explicitly zoomed in on zero or negative value and they
   // attempt to take the log the graph will not render. This is a known
@@ -456,7 +456,7 @@ function customDrawCallback(g, initial) {
       }
     }
   }
-  blockRedraw = false;
+  globalBlockRedraw = false;
 }
 
 
@@ -541,10 +541,11 @@ function perfGraphInit() {
       checkBox.onchange = function() {
         var configsURL = normalizeForURL(getCheckedConfigurations().join());
         setQueryStringFromOption(OptionsEnum.CONFIGURATIONS, configsURL);
-
+        globalBlockRedraw = true;
         for (var i = 0; i < gs.length; i++) {
-          setConfigurationVisibility(gs[i], false);
+          setConfigurationVisibility(gs[i]);
         }
+        globalBlockRedraw = false;
       };
     }
   } else {
@@ -638,11 +639,11 @@ function setupGraphSelectionPane() {
 
 // Sets which configurations should be visible when there are multiple
 // configurations available. e.g. --local vs --no-local
-function setConfigurationVisibility(graph, blockRedraw) {
+function setConfigurationVisibility(graph) {
   var labels = graph.getLabels().slice();
   var disabledConfs = getCheckedConfigurations(false);
   var visibility = getVisibilityForConfigurations(labels, disabledConfs);
-  graph.updateOptions({visibility: visibility}, blockRedraw);
+  graph.updateOptions({visibility: visibility});
 }
 
 function getCheckedConfigurations(checked_status) {
@@ -792,7 +793,7 @@ function clearDates() {
   setURLFromDate(OptionsEnum.ENDDATE, '');
 
   // Reset the display range for each graph, blocking extra redraws
-  blockRedraw = true;
+  globalBlockRedraw = true;
   for (var i = 0; i < gs.length; i++) {
     var curGraph = gs[i];
     var start = parseDate(curGraph.graphInfo.startdate);
@@ -802,7 +803,7 @@ function clearDates() {
       curGraph.updateOptions({ dateWindow: range });
     }
   }
-  blockRedraw = false;
+  globalBlockRedraw = false;
 }
 
 
@@ -845,8 +846,7 @@ function getSuites() {
 }
 
 
-function selectSuite(suite, display) {
-  display = defaultFor(display, true);
+function selectSuite(suite) {
   for (var i = 0; i < allGraphs.length; i++) {
     var elem = document.getElementById('graph' + i);
     if (allGraphs[i].suites.indexOf(suite) >= 0) {
