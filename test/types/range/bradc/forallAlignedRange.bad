@@ -1,0 +1,6 @@
+9
+25
+41
+57
+true
+forallAlignedRange.chpl:8: error: halt reached - array index out of bounds: (49)
