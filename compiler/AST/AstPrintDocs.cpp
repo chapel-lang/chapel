@@ -17,7 +17,10 @@
  * limitations under the License.
  */
 
+#include <fstream>
 #include <iostream>
+#include <string>
+#include <sys/stat.h>
 
 #include "AstPrintDocs.h"
 
@@ -25,8 +28,10 @@
 #include "type.h"
 
 
-AstPrintDocs::AstPrintDocs() {
-}
+AstPrintDocs::AstPrintDocs(bool textOnly, std::string docsFolderName) :
+  textOnly(textOnly),
+  docsFolderName(docsFolderName)
+{}
 
 
 AstPrintDocs::~AstPrintDocs() {
@@ -219,4 +224,57 @@ bool AstPrintDocs::enterGotoStmt(GotoStmt* node) {
 
 
 void AstPrintDocs::exitGotoStmt(GotoStmt* node) {
+}
+
+
+//
+// Helper functions.
+//
+
+std::ostream* AstPrintDocs::openFile(ModuleSymbol *mod) {
+  return new std::ofstream(this->filename(mod).c_str(), std::ios::out);
+}
+
+
+std::string AstPrintDocs::filename(ModuleSymbol *mod) {
+  std::string filename = mod->filename;
+
+  if (mod->modTag == MOD_INTERNAL) {
+    filename = "internal-modules/";
+  } else if (mod ->modTag == MOD_STANDARD) {
+    filename = "standard-modules/";
+  } else {
+    size_t location = filename.rfind("/");
+    if (location != std::string::npos) {
+      filename = filename.substr(0, location + 1);
+    } else {
+      filename = "";
+    }
+  }
+  filename = this->docsFolderName + "/" + filename;
+  this->createDocsFileFolders(filename);
+
+  // Creates files for each top level module.
+  if (this-textOnly) {
+    filename = filename + mod->name + ".txt";
+  } else {
+    filename = filename + mod->name + ".rst";
+  }
+
+  return filename;
+}
+
+
+void AstPrintDocs::createDocsFileFolders(std::string filename) {
+  size_t dirCutoff = filename.find("/");
+  size_t total = 0;
+  while (dirCutoff != std::string::npos) {
+    // Creates each subdirectory within the new documentation directory
+    dirCutoff += total;
+    std::string shorter = filename.substr(dirCutoff+1);
+    std::string otherHalf = filename.substr(0, dirCutoff);
+    mkdir(otherHalf.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    total = dirCutoff + 1;
+    dirCutoff = shorter.find("/");
+  }
 }

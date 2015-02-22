@@ -20,12 +20,15 @@
 #ifndef _AST_PRINT_DOCS_H_
 #define _AST_PRINT_DOCS_H_
 
+#include <iostream>
+#include <string>
+
 #include "AstVisitor.h"
 
 
 class AstPrintDocs : public AstVisitor {
 public:
-                   AstPrintDocs();
+                  AstPrintDocs(bool textOnly, std::string docsFolderName);
   virtual         ~AstPrintDocs();
 
   //
@@ -106,6 +109,14 @@ public:
 
   virtual bool   enterGotoStmt    (GotoStmt*          node);
   virtual void   exitGotoStmt     (GotoStmt*          node);
+
+private:
+  bool            textOnly;
+  std::string     docsFolderName;
+
+  std::ostream*   openFile(ModuleSymbol *mod);
+  std::string     filename(ModuleSymbol *mod);
+  void            createDocsFileFolders(std::string filename);
 };
 
 #endif

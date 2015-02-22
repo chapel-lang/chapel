@@ -25,8 +25,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "AstPrintDocs.h"
-
 #include "driver.h"
 #include "passes.h"
 #include "symbol.h"
@@ -37,6 +35,7 @@
 #include "stringutil.h"
 #include "scopeResolve.h"
 #include "AstToText.h"
+#include "AstPrintDocs.h"
 
 int NUMTABS = 0;
 
@@ -85,7 +84,7 @@ void docs(void) {
 
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
 
-    AstPrintDocs *docsVisitor = new AstPrintDocs();
+    AstPrintDocs *docsVisitor = new AstPrintDocs(fDocsTextOnly, folderName);
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
