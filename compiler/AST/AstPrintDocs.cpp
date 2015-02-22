@@ -76,11 +76,13 @@ void AstPrintDocs::visitEnumSym(EnumSymbol* node) {
 
 
 bool AstPrintDocs::enterFnSym(FnSymbol* node) {
+  std::cout << "Entering: " << node->name << std::endl;
   return true;
 }
 
 
 void AstPrintDocs::exitFnSym(FnSymbol* node) {
+  std::cout << "Exiting: " << node->name << std::endl;
 }
 
 
@@ -113,6 +115,7 @@ void AstPrintDocs::exitTypeSym(TypeSymbol* node) {
 
 
 void AstPrintDocs::visitVarSym(VarSymbol* node) {
+  std::cout << "Visiting: " << node->name << std::endl;
 }
 
 
