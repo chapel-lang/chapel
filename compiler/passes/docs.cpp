@@ -39,9 +39,6 @@
 
 int NUMTABS = 0;
 
-static std::map<std::string, std::string> outputMap;
-// If we were using C++11 then this could be an unordered_map
-
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
   Symbol* s2 = *(Symbol* const *)v2;
@@ -62,17 +59,6 @@ void docs(void) {
     // expressions should be accurately accounted for.
     addToSymbolTable(gDefExprs);
     processImportExprs();
-
-    // Create a map of structural names to their expected chpldoc output
-    if (fDocsTextOnly) {
-      outputMap["class"] = "Class: ";
-      outputMap["record"] = "Record: ";
-    } else {
-      outputMap["class"] = ".. class:: ";
-      outputMap["record"] = ".. record:: ";
-      outputMap["module"] = ".. module:: ";
-      outputMap["module comment prefix"] = ":synopsis: ";
-    }
 
     // Open the directory to store the docs
     std::string docsDir = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
