@@ -77,10 +77,10 @@ void docs(void) {
         if (isNotSubmodule(mod)) {
           std::ofstream *file = openFileFromMod(mod, docsFolderName);
 
-          // AstPrintDocs *docsVisitor = new AstPrintDocs(file);
-          // mod->accept(docsVisitor);
+          AstPrintDocs *docsVisitor = new AstPrintDocs(file);
+          mod->accept(docsVisitor);
 
-          printModule(file, mod, mod->name);
+          // printModule(file, mod, mod->name);
 
           file->close();
         }
