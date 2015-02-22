@@ -52,6 +52,7 @@ bool AstPrintDocs::enterAggrType(AggregateType* node) {
 
 
 void AstPrintDocs::exitAggrType(AggregateType* node) {
+  // FIXME: print inheritance here! (thomasvandoren, 2015-02-21)
   this->tabs--;
 }
 

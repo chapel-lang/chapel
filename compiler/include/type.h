@@ -175,6 +175,9 @@ class AggregateType : public Type {
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
+  // FIXME: implement method to print inheritance. (thomasvandoren, 2015-02-22)
+  // virtual void printInheritanceDocs(std::ostream *file, unsigned int tabs)
+
 protected:
   virtual std::string docsDirective();
 
