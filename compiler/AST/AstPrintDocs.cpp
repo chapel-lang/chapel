@@ -91,7 +91,7 @@ void AstPrintDocs::exitModSym(ModuleSymbol* node) {
   this->moduleNames.pop();
 
   if (fDocsTextOnly) {
-    this->tabs++;
+    this->tabs--;
   }
 }
 
