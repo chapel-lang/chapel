@@ -51,14 +51,4 @@ std::string generateSphinxProject(std::string dirpath);
 
 void generateSphinxOutput(std::string dirpath);
 
-static inline std::string ltrim(std::string s);
-
-static inline bool isEmpty(std::string s);
-
-static std::string erase(std::string s, int count);
-
-static std::string firstNonEmptyLine(std::string s);
-
-static int minimumPrefix(std::string s);
-
-void ltrimAndPrintLines(std::string s, std::ofstream *file);
+static void ltrimAndPrintLines(std::string s, std::ofstream *file);
