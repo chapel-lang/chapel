@@ -44,5 +44,3 @@ static void generateSphinxOutput(std::string dirpath);
 static std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName);
 
 static std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsFolderName);
-
-static void ltrimAndPrintLines(std::string s, std::ofstream *file);

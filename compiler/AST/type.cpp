@@ -1166,6 +1166,54 @@ Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
 }
 
+
+void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << this->symbol->name;
+  *file << std::endl;
+
+  // In rst mode, ensure there is an empty line between the class/record
+  // signature and its description or the next directive.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+
+    // In rst mode, ensure there is an empty line between the class/record
+    // description and the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+std::string AggregateType::docsDirective() {
+  if (fDocsTextOnly) {
+    if (this->isClass()) {
+      return "Class: ";
+    } else if (this->isRecord()) {
+      return "Record: ";
+    }
+  } else {
+    if (this->isClass()) {
+      return ".. class:: ";
+    } else if (this->isRecord()) {
+      return ".. record:: ";
+    }
+  }
+  return "";
+}
+
+
 void initRootModule() {
   rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");

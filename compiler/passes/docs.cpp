@@ -134,33 +134,8 @@ void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
 
 void printClass(std::ofstream *file, AggregateType *cl) {
   if (!cl->symbol->hasFlag(FLAG_NO_DOC) && ! cl->isUnion()) {
-    printTabs(file);
+    cl->printDocs(file, NUMTABS);
 
-    if (cl->isClass()) {
-      *file << outputMap["class"];
-    } else if (cl->isRecord()) {
-      *file << outputMap["record"];
-    }
-  
-    NUMTABS++;
-    *file << cl->symbol->name << std::endl;
-
-    // In rst mode, ensure there is an empty line between the class/record
-    // signature and its description or the next directive.
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-
-    if (cl->doc != NULL) {
-      ltrimAndPrintLines(cl->doc, file);
-      *file << std::endl;
-
-      // In rst mode, ensure there is an empty line between the class/record
-      // description and the next directive.
-      if (!fDocsTextOnly) {
-        *file << std::endl;
-      }
-    }
     printFields(file, cl);
 
     // In rst mode, add an additional line break after the attributes and
@@ -371,16 +346,4 @@ std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
 std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsFolderName) {
   std::string filename = filenameFromMod(mod, docsFolderName);
   return new std::ofstream(filename, std::ios::out);
-}
-
-
-void ltrimAndPrintLines(std::string s, std::ofstream *file) {
-  std::string trimmedS = ltrimAllLines(s);
-  std::stringstream sStream(trimmedS);
-  std::string line;
-  while (std::getline(sStream, line)) {
-    printTabs(file);
-    *file << line;
-    *file << std::endl;
-  }
 }

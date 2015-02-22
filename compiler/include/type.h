@@ -172,6 +172,12 @@ class AggregateType : public Type {
   bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
   bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
   bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+protected:
+  virtual std::string docsDirective();
+
 };
 
 
