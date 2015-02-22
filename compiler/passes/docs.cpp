@@ -110,9 +110,7 @@ void docs(void) {
           else
             filename = filename + mod->name + ".txt";
           std::ofstream file(filename.c_str(), std::ios::out);
-          if (!fDocsTextOnly) {
-            file << ".. default-domain:: chpl" << std::endl << std::endl;
-          }
+
           printModule(&file, mod, mod->name);
           file.close();
         }
@@ -248,6 +246,10 @@ bool devOnlyModule(ModuleSymbol *mod) {
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   if (!mod->hasFlag(FLAG_NO_DOC)) {
+    if (!fDocsTextOnly) {
+      *file << ".. default-domain:: chpl" << std::endl << std::endl;
+    }
+
     // Print the module directive first, for .rst mode. This will associate the
     // Module: <name> title with the module. If the .. module:: directive comes
     // after the title, sphinx will complain about a duplicate id error.
