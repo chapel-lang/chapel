@@ -151,10 +151,10 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
       printTabs(file, tabs + 1);
       *file << "inherited from " << c->symbol->name;
       *file << std::endl;
-      printFields(file, c, tabs + 1);
+      printFields(file, c, tabs + 2);
     
       forv_Vec(FnSymbol, fn, c->methods) {
-        fn->printDocs(file, tabs + 1);
+        fn->printDocs(file, tabs + 2);
       }
       *file << std::endl;
     }
@@ -220,7 +220,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
       qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
 
     forv_Vec(AggregateType, cl, classes) {
-      printClass(file, cl, tabs);
+      printClass(file, cl, tabs + 1);
     }
 
     Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
