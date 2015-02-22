@@ -230,7 +230,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name, unsig
     forv_Vec(ModuleSymbol, md, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!devOnlyModule(md)) {
-        printModule(file, md, name + "." +  md->name, tabs);
+        printModule(file, md, name + "." +  md->name, tabs + 1);
       }
     }
   }
