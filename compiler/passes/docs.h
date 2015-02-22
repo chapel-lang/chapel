@@ -19,8 +19,6 @@
 
 #include <string>
 
-void printTabs(std::ofstream *file, unsigned int tabs);
-
 void createDocsFileFolders(std::string filename);
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs);

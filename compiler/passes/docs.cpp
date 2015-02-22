@@ -140,30 +140,22 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
       if (fn->isPrimaryMethod())
         fn->printDocs(file, tabs + 1);
     }
-    
-    Vec<AggregateType*> list;
-    inheritance(&list, cl);
+
+    Vec<AggregateType*> superClasses;
+    inheritance(&superClasses, cl);
 
     if (fDocsAlphabetize)
-      qsort(list.v, list.n, sizeof(list.v[0]), compareClasses);
+      qsort(superClasses.v, superClasses.n, sizeof(superClasses.v[0]), compareClasses);
     
-    forv_Vec(AggregateType, c, list) {
-      printTabs(file, tabs + 1);
-      *file << "inherited from " << c->symbol->name;
-      *file << std::endl;
-      printFields(file, c, tabs + 2);
+    forv_Vec(AggregateType, superClass, superClasses) {
+      superClass->printInheritanceDocs(file, tabs + 1);
+      printFields(file, superClass, tabs + 2);
     
-      forv_Vec(FnSymbol, fn, c->methods) {
+      forv_Vec(FnSymbol, fn, superClass->methods) {
         fn->printDocs(file, tabs + 2);
       }
       *file << std::endl;
     }
-  }
-}
-
-void printTabs(std::ofstream *file, unsigned int tabs) {
-  for (unsigned int i = 1; i <= tabs; i++) {
-    *file << "   ";
   }
 }
 

@@ -174,13 +174,10 @@ class AggregateType : public Type {
   bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
-
-  // FIXME: implement method to print inheritance. (thomasvandoren, 2015-02-22)
-  // virtual void printInheritanceDocs(std::ostream *file, unsigned int tabs)
+  virtual void printInheritanceDocs(std::ostream *file, unsigned int tabs);
 
 protected:
   virtual std::string docsDirective();
-
 };
 
 
