@@ -29,7 +29,8 @@
 
 
 AstPrintDocs::AstPrintDocs(std::ostream *file) :
-  file(file)
+  file(file),
+  tabs(0)
 {
 }
 
@@ -39,11 +40,14 @@ AstPrintDocs::~AstPrintDocs() {
 
 
 bool AstPrintDocs::enterAggrType(AggregateType* node) {
+  node->printDocs(this->file, this->tabs);
+  this->tabs++;
   return true;
 }
 
 
 void AstPrintDocs::exitAggrType(AggregateType* node) {
+  this->tabs--;
 }
 
 
@@ -74,6 +78,7 @@ void AstPrintDocs::visitEnumSym(EnumSymbol* node) {
 
 
 bool AstPrintDocs::enterFnSym(FnSymbol* node) {
+  node->printDocs(file, this->tabs);
   return true;
 }
 
@@ -91,12 +96,14 @@ void AstPrintDocs::visitLabelSym(LabelSymbol* node) {
 
 
 bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
-  node->printDocs(file, 0);
+  node->printDocs(this->file, this->tabs);
+  //this->tabs++;
   return true;
 }
 
 
 void AstPrintDocs::exitModSym(ModuleSymbol* node) {
+  //this->tabs--;
 }
 
 
@@ -110,6 +117,7 @@ void AstPrintDocs::exitTypeSym(TypeSymbol* node) {
 
 
 void AstPrintDocs::visitVarSym(VarSymbol* node) {
+  node->printDocs(this->file, this->tabs);
 }
 
 

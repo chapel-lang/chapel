@@ -112,6 +112,7 @@ public:
 
 private:
   std::ostream*   file;
+  unsigned int    tabs;
 };
 
 #endif
