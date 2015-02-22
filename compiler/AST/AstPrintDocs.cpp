@@ -79,7 +79,7 @@ void AstPrintDocs::visitEnumSym(EnumSymbol* node) {
 
 bool AstPrintDocs::enterFnSym(FnSymbol* node) {
   node->printDocs(file, this->tabs);
-  return true;
+  return false;
 }
 
 
