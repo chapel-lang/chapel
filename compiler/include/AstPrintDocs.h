@@ -32,38 +32,38 @@ public:
   virtual         ~AstPrintDocs();
 
   //
-  // The sub-classes of Type
+  // These methods are actually used by this visitor.
   //
   virtual bool   enterAggrType    (AggregateType*     node);
   virtual void   exitAggrType     (AggregateType*     node);
+  virtual bool   enterFnSym       (FnSymbol*          node);
+  virtual bool   enterModSym      (ModuleSymbol*      node);
+  virtual void   visitVarSym      (VarSymbol*         node);
 
+  //
+  // These methods are _not_ actually used by this visitor, but must be
+  // implemented in order to meet the AstVisitor interface.
+  //
   virtual bool   enterEnumType    (EnumType*          node);
   virtual void   exitEnumType     (EnumType*          node);
 
   virtual void   visitPrimType    (PrimitiveType*     node);
 
-  //
-  // The sub-classes of Symbol
-  //
   virtual bool   enterArgSym      (ArgSymbol*         node);
   virtual void   exitArgSym       (ArgSymbol*         node);
 
   virtual void   visitEnumSym     (EnumSymbol*        node);
 
-  virtual bool   enterFnSym       (FnSymbol*          node);
   virtual void   exitFnSym        (FnSymbol*          node);
 
   virtual void   visitIpeSym      (IpeSymbol*         node);
 
   virtual void   visitLabelSym    (LabelSymbol*       node);
 
-  virtual bool   enterModSym      (ModuleSymbol*      node);
   virtual void   exitModSym       (ModuleSymbol*      node);
 
   virtual bool   enterTypeSym     (TypeSymbol*        node);
   virtual void   exitTypeSym      (TypeSymbol*        node);
-
-  virtual void   visitVarSym      (VarSymbol*         node);
 
   //
   // The sub-classes of Expr

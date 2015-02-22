@@ -39,6 +39,11 @@ AstPrintDocs::~AstPrintDocs() {
 }
 
 
+//
+// Methods needed by this visitor.
+//
+
+
 bool AstPrintDocs::enterAggrType(AggregateType* node) {
   node->printDocs(this->file, this->tabs);
   this->tabs++;
@@ -49,6 +54,29 @@ bool AstPrintDocs::enterAggrType(AggregateType* node) {
 void AstPrintDocs::exitAggrType(AggregateType* node) {
   this->tabs--;
 }
+
+
+bool AstPrintDocs::enterFnSym(FnSymbol* node) {
+  node->printDocs(file, this->tabs);
+  return false;
+}
+
+
+bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
+  node->printDocs(this->file, this->tabs);
+  return true;
+}
+
+
+void AstPrintDocs::visitVarSym(VarSymbol* node) {
+  node->printDocs(this->file, this->tabs);
+}
+
+
+//
+// Methods *not* actually needed by this visitor, but required to meet the
+// AstVisitor interface. Please move above this line, if/when implemented.
+//
 
 
 bool AstPrintDocs::enterEnumType(EnumType* node) {
@@ -77,12 +105,6 @@ void AstPrintDocs::visitEnumSym(EnumSymbol* node) {
 }
 
 
-bool AstPrintDocs::enterFnSym(FnSymbol* node) {
-  node->printDocs(file, this->tabs);
-  return false;
-}
-
-
 void AstPrintDocs::exitFnSym(FnSymbol* node) {
 }
 
@@ -92,12 +114,6 @@ void AstPrintDocs::visitIpeSym(IpeSymbol* node) {
 
 
 void AstPrintDocs::visitLabelSym(LabelSymbol* node) {
-}
-
-
-bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
-  node->printDocs(this->file, this->tabs);
-  return true;
 }
 
 
@@ -111,11 +127,6 @@ bool AstPrintDocs::enterTypeSym(TypeSymbol* node) {
 
 
 void AstPrintDocs::exitTypeSym(TypeSymbol* node) {
-}
-
-
-void AstPrintDocs::visitVarSym(VarSymbol* node) {
-  node->printDocs(this->file, this->tabs);
 }
 
 
