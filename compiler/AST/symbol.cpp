@@ -43,6 +43,8 @@
 
 #include <cstdlib>
 #include <inttypes.h>
+#include <iostream>
+#include <sstream>
 #include <stdint.h>
 
 //
@@ -109,6 +111,9 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   cname(name),
   defPoint(NULL)
 {}
+
+
+const std::string Symbol::tabText = "   ";
 
 
 Symbol::~Symbol() {
@@ -207,6 +212,40 @@ bool Symbol::isImmediate() const {
   return false;
 }
 
+
+void Symbol::printTabs(std::ostream *file, unsigned int tabs) {
+  for (int i = 0; i < tabs; i++) {
+    *file << "   "; //Symbol::tabText.c_str();
+  }
+}
+
+
+std::string Symbol::docsDirective() {
+  return "";
+}
+
+
+// This method is the same for several subclasses of Symbol, so it is defined
+// on Symbol. 'doc' is not defined as a member of Symbol, so it must be taken
+// as an argument here.
+//
+// TODO: Can Symbol define a 'doc' member? What if `chpl --doc` went away and
+//       `chpldoc` was compiled with a special #define (e.g. -DCHPLDOC) so the
+//       'doc' member and all doc-related methods would only be available to
+//       chpldoc? (thomasvandoren, 2015-02-21)
+void Symbol::printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs) {
+  if (doc != NULL) {
+    std::stringstream sStream(ltrimAllLines(doc));
+    std::string line;
+    while (std::getline(sStream, line)) {
+      this->printTabs(file, tabs);
+      *file << line;
+      *file << std::endl;
+    }
+  }
+}
+
+
 /******************************** | *********************************
 *                                                                   *
 * Common base class for ArgSymbol and VarSymbol.                    *
@@ -302,6 +341,57 @@ bool VarSymbol::isConstValWillNotChange() const {
 bool VarSymbol::isParameter() const {
   return hasFlag(FLAG_PARAM) || immediate;
 }
+
+
+std::string VarSymbol::docsDirective() {
+  std::string result;
+  if (fDocsTextOnly) {
+    result = "";
+  } else {
+    // TODO: If this is a type (i.e. this->hasFlag(FLAG_TYPE_VARIABLE)), use
+    //       ".. type:: " as directive. (thomasvandoren, 2015-02-21)
+    result = ".. data:: ";
+  }
+  return this->hasFlag(FLAG_CONFIG) ? result + "config " : result;
+}
+
+
+void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->hasFlag(FLAG_NO_DOC)) {
+      return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+
+  if (this->hasFlag(FLAG_TYPE_VARIABLE)) {
+    *file << "type ";
+  } else if (this->isConstant()) {
+    *file << "const ";
+  } else if (this->isParameter()) {
+    *file << "param ";
+  } else {
+    *file << "var ";
+  }
+
+  *file << this->name;
+
+  if (this->defPoint->exprType != NULL) {
+    *file << ": ";
+    this->defPoint->exprType->prettyPrint(file);
+  }
+  *file << std::endl;
+
+  // For .rst mode, put a line break after the .. data:: directive and
+  // its description text.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  this->printDocsDescription(this->doc, file, tabs + 1);
+  //*file << std::endl;
+}
+
 
 #ifdef HAVE_LLVM
 static

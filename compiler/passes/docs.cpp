@@ -358,14 +358,14 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     if (fDocsAlphabetize)
       qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
     forv_Vec(VarSymbol, var, configs) {
-      printGlobal(file, var, true);
+      var->printDocs(file, NUMTABS);
     }
 
     Vec<VarSymbol*> variables = mod->getTopLevelVariables();
     if (fDocsAlphabetize)
       qsort(variables.v, variables.n, sizeof(variables.v[0]), compareNames);
     forv_Vec(VarSymbol, var, variables) {
-      printGlobal(file, var, false);
+      var->printDocs(file, NUMTABS);
     }
     Vec<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
     // If alphabetical option passed, fDocsAlphabetizes the output
@@ -401,23 +401,6 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     }
     if (fDocsTextOnly)
       NUMTABS--;
-  }
-}
-
-void printGlobal(std::ofstream *file, VarSymbol *global, bool config) {
-  if (!global->hasFlag(FLAG_NO_DOC)) {
-    printTabs(file);
-    *file << outputMap[config ? "config" : "global"];
-    printVarStart(file, global);
-    printVarType(file, global);
-
-    // For .rst mode, put a line break after the .. data:: directive and
-    // its description text.
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-
-    printVarDocs(file, global);
   }
 }
 

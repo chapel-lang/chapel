@@ -26,6 +26,7 @@
 #include "type.h"
 
 #include <bitset>
+#include <iostream>
 #include <vector>
 
 //
@@ -129,6 +130,9 @@ public:
 
   DefExpr*           defPoint; // Point of definition
 
+  // TODO: Add this in! (thomasvandoren, 2015-02-21)
+  //virtual void printDocs(std::ostream *file, unsigned int tabs);
+
 protected:
                      Symbol(AstTag      astTag,
                             const char* init_name,
@@ -136,10 +140,16 @@ protected:
 
   virtual           ~Symbol();
 
+  void printTabs(std::ostream *file, unsigned int tabs);
+  virtual std::string docsDirective();
+  virtual void printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
+
 private:
                      Symbol();
 
   virtual void       codegenPrototype(); // ie type decl
+
+  static const std::string tabText;
 };
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
@@ -206,6 +216,12 @@ public:
   void codegenDef();
   // global vars are different ...
   void codegenGlobalDef();
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+protected:
+
+  virtual std::string docsDirective();
 };
 
 /******************************** | *********************************
