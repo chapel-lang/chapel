@@ -108,6 +108,8 @@ void docs(void) {
         
         if (isNotSubmodule(mod)) {
           std::cout << "STARING: " << mod->name << std::endl;
+          // TODO: might need a separate visitor for each module... consider
+          //       attaching *file to AstPrintDocs instance... (thomasvandoren, 2015-02-21)
           mod->accept(docsVisitor);
           std::cout << "DONE: " << mod->name << std::endl;
 
