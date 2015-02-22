@@ -229,7 +229,6 @@ public:
   astlocT           astloc;     // Location of this node in the source code
 
   void                printTabs(std::ostream *file, unsigned int tabs);
-  virtual std::string docsDirective();
   virtual void        printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
 
   static  const       std::string tabText;

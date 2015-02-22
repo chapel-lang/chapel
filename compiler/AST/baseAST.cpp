@@ -482,11 +482,6 @@ void BaseAST::printTabs(std::ostream *file, unsigned int tabs) {
 }
 
 
-std::string BaseAST::docsDirective() {
-  return "";
-}
-
-
 // This method is the same for several subclasses of BaseAST, so it is defined
 // her on BaseAST. 'doc' is not defined as a member of BaseAST, so it must be
 // taken as an argument here.
