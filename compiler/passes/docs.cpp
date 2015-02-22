@@ -183,7 +183,7 @@ bool devOnlyModule(ModuleSymbol *mod) {
   return mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD;
 }
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name, unsigned int tabs) {
+void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
   if (!mod->hasFlag(FLAG_NO_DOC)) {
     mod->printDocs(file, tabs);
 
@@ -227,10 +227,11 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name, unsig
     if (fDocsAlphabetize)
       qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
   
-    forv_Vec(ModuleSymbol, md, mods) {
+    forv_Vec(ModuleSymbol, subMod, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
-      if (!devOnlyModule(md)) {
-        printModule(file, md, name + "." +  md->name, tabs + 1);
+      if (!devOnlyModule(subMod)) {
+        subMod->addPrefixToName(mod->docsName() + ".");
+        printModule(file, subMod, tabs + 1);
       }
     }
   }

@@ -2504,7 +2504,9 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     initFn(NULL),
     filename(NULL),
     doc(NULL),
-    extern_info(NULL) {
+    extern_info(NULL),
+    moduleNamePrefix("")
+{
 
   block->parentSymbol = this;
   registerModule(this);
@@ -2642,7 +2644,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   // after the title, sphinx will complain about a duplicate id error.
   if (!fDocsTextOnly) {
     *file << ".. default-domain:: chpl" << std::endl << std::endl;
-    *file << ".. module:: " << this->name << std::endl;
+    *file << ".. module:: " << this->docsName() << std::endl;
 
     if (this->doc != NULL) {
       this->printTabs(file, tabs + 1);
@@ -2654,7 +2656,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 
   this->printTabs(file, tabs);
-  const char *moduleTitle = astr("Module: ", this->name);
+  const char *moduleTitle = astr("Module: ", this->docsName().c_str());
   *file << moduleTitle << std::endl;
 
   if (!fDocsTextOnly) {
@@ -2678,6 +2680,22 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
       *file << std::endl;
     }
   }
+}
+
+
+/*
+ * Append 'prefix' to existing module name prefix.
+ */
+void ModuleSymbol::addPrefixToName(std::string prefix) {
+  this->moduleNamePrefix += prefix;
+}
+
+
+/*
+ * Returns name of module, including any prefixes that have been set.
+ */
+std::string ModuleSymbol::docsName() {
+  return this->moduleNamePrefix + this->name;
 }
 
 

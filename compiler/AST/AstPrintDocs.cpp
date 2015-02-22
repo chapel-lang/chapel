@@ -64,6 +64,10 @@ bool AstPrintDocs::enterFnSym(FnSymbol* node) {
 
 
 bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
+  // FIXME: track module prefix to handle submodules. Maybe a vector of module
+  //        name and then call node->addPrefixToName() before printing? Also
+  //        will need exitModSym that removes the the module from vector...
+  //        (thomasvandoren, 2015-02-22)
   node->printDocs(this->file, this->tabs);
   return true;
 }
