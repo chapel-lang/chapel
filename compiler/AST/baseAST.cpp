@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+#include <ostream>
+#include <sstream>
+#include <string>
+
 #include "baseAST.h"
 
 #include "astutil.h"
@@ -279,6 +283,10 @@ BaseAST::BaseAST(AstTag type) :
   }
 }
 
+
+const std::string BaseAST::tabText = "   ";
+
+
 BaseAST::~BaseAST() { 
 }
 
@@ -464,6 +472,39 @@ const char* BaseAST::astTagAsString() const {
   }
 
   return retval;
+}
+
+
+void BaseAST::printTabs(std::ostream *file, unsigned int tabs) {
+  for (int i = 0; i < tabs; i++) {
+    *file << this->tabText;
+  }
+}
+
+
+std::string BaseAST::docsDirective() {
+  return "";
+}
+
+
+// This method is the same for several subclasses of BaseAST, so it is defined
+// her on BaseAST. 'doc' is not defined as a member of BaseAST, so it must be
+// taken as an argument here.
+//
+// TODO: Can BaseAST define a 'doc' member? What if `chpl --doc` went away and
+//       `chpldoc` was compiled with a special #define (e.g. -DCHPLDOC) so the
+//       'doc' member and all doc-related methods would only be available to
+//       chpldoc? (thomasvandoren, 2015-02-21)
+void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs) {
+  if (doc != NULL) {
+    std::stringstream sStream(ltrimAllLines(doc));
+    std::string line;
+    while (std::getline(sStream, line)) {
+      this->printTabs(file, tabs);
+      *file << line;
+      *file << std::endl;
+    }
+  }
 }
 
 

@@ -140,12 +140,6 @@ protected:
 
   virtual           ~Symbol();
 
-  void printTabs(std::ostream *file, unsigned int tabs);
-  virtual std::string docsDirective();
-  virtual void printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
-
-  static const std::string tabText;
-
 private:
                      Symbol();
 
