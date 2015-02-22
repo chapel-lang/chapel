@@ -21,6 +21,7 @@
 #define _AST_PRINT_DOCS_H_
 
 #include <iostream>
+#include <stack>
 #include <string>
 
 #include "AstVisitor.h"
@@ -38,6 +39,7 @@ public:
   virtual void   exitAggrType     (AggregateType*     node);
   virtual bool   enterFnSym       (FnSymbol*          node);
   virtual bool   enterModSym      (ModuleSymbol*      node);
+  virtual void   exitModSym       (ModuleSymbol*      node);
   virtual void   visitVarSym      (VarSymbol*         node);
 
   //
@@ -59,8 +61,6 @@ public:
   virtual void   visitIpeSym      (IpeSymbol*         node);
 
   virtual void   visitLabelSym    (LabelSymbol*       node);
-
-  virtual void   exitModSym       (ModuleSymbol*      node);
 
   virtual bool   enterTypeSym     (TypeSymbol*        node);
   virtual void   exitTypeSym      (TypeSymbol*        node);
@@ -113,6 +113,7 @@ public:
 private:
   std::ostream*   file;
   unsigned int    tabs;
+  std::stack<std::string> moduleNames;
 };
 
 #endif
