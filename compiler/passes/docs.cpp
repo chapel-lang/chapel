@@ -144,29 +144,8 @@ bool isNotSubmodule(ModuleSymbol *mod) {
 void printFields(std::ofstream *file, AggregateType *cl) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
-      if (!var->hasFlag(FLAG_NO_DOC) &&
-          !var->hasFlag(FLAG_SUPER_CLASS)) {
-        // Don't document the super class field, we don't want to know about it
-        // Also, don't document this field if it has a "no doc" pragma attached
-        // to it
-        printTabs(file);
-        *file << outputMap["field"];
-        // For rst, this will insert '.. attribute:: ' here
-        // For plain text, nothing will be inserted
-
-        printVarStart(file, var);
-        if (var->defPoint->exprType != NULL) {
-          *file << ": ";
-          var->defPoint->exprType->prettyPrint(file);
-          // TODO: Make type output prettier
-        }
-        if (var->defPoint->init != NULL) {
-          *file << " = ";
-          var->defPoint->init->prettyPrint(file);
-        }
-        *file << std::endl;
-        printVarDocs(file, var);
-      }
+      var->makeField();
+      var->printDocs(file, NUMTABS);
     }
   }
 }

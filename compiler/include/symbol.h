@@ -219,9 +219,15 @@ public:
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
+  void makeField();
+
 protected:
 
   virtual std::string docsDirective();
+
+private:
+
+  bool isField;
 };
 
 /******************************** | *********************************

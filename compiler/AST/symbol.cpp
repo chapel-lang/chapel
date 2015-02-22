@@ -292,7 +292,8 @@ VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
-  doc(NULL)
+  doc(NULL),
+  isField(false)
 {
   gVarSymbols.add(this);
 }
@@ -350,14 +351,18 @@ std::string VarSymbol::docsDirective() {
   } else {
     // TODO: If this is a type (i.e. this->hasFlag(FLAG_TYPE_VARIABLE)), use
     //       ".. type:: " as directive. (thomasvandoren, 2015-02-21)
-    result = ".. data:: ";
+    if (this->isField) {
+      result = ".. attribute:: ";
+    } else {
+      result = ".. data:: ";
+    }
   }
   return this->hasFlag(FLAG_CONFIG) ? result + "config " : result;
 }
 
 
 void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->hasFlag(FLAG_NO_DOC)) {
+  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_SUPER_CLASS)) {
       return;
   }
 
@@ -380,6 +385,14 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << ": ";
     this->defPoint->exprType->prettyPrint(file);
   }
+
+  // FIXME: Do we want this for non-class globals/configs?
+  //        (thomasvandoren, 2015-02-21)
+  if (this->isField && this->defPoint->init != NULL) {
+    *file << " = ";
+    this->defPoint->init->prettyPrint(file);
+  }
+
   *file << std::endl;
 
   // For .rst mode, put a line break after the .. data:: directive and
@@ -390,6 +403,15 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
 
   this->printDocsDescription(this->doc, file, tabs + 1);
   //*file << std::endl;
+}
+
+
+/*
+ * For docs, when VarSymbol is used for class fields, identify them as such by
+ * calling this function.
+ */
+void VarSymbol::makeField() {
+  this->isField = true;
 }
 
 
