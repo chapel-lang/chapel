@@ -476,7 +476,7 @@ const char* BaseAST::astTagAsString() const {
 
 
 void BaseAST::printTabs(std::ostream *file, unsigned int tabs) {
-  for (int i = 0; i < tabs; i++) {
+  for (unsigned int i = 0; i < tabs; i++) {
     *file << this->tabText;
   }
 }
