@@ -53,7 +53,8 @@ bool AstPrintDocs::enterAggrType(AggregateType* node) {
 
 
 void AstPrintDocs::exitAggrType(AggregateType* node) {
-  // FIXME: print inheritance here! (thomasvandoren, 2015-02-21)
+  // TODO: Does it make sense to print inheritance here?
+  //       (thomasvandoren, 2015-02-22)
   this->tabs--;
 }
 
@@ -76,6 +77,10 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
   // Record this module's name, so it can be added to any submodules.
   this->moduleNames.push(node->docsName());
 
+  if (fDocsTextOnly) {
+    this->tabs++;
+  }
+
   return true;
 }
 
@@ -84,6 +89,10 @@ void AstPrintDocs::exitModSym(ModuleSymbol* node) {
   // Remove the current module from stack of names.
   assert(!this->moduleNames.empty());
   this->moduleNames.pop();
+
+  if (fDocsTextOnly) {
+    this->tabs++;
+  }
 }
 
 
