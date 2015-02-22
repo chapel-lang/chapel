@@ -66,7 +66,6 @@ void docs(void) {
     if (fDocsTextOnly) {
       outputMap["class"] = "Class: ";
       outputMap["record"] = "Record: ";
-      outputMap["config"] = "config ";
     } else {
       outputMap["class"] = ".. class:: ";
       outputMap["record"] = ".. record:: ";
@@ -76,9 +75,6 @@ void docs(void) {
       outputMap["iter method"] = ".. itermethod:: ";
       outputMap["func"] = ".. function:: ";
       outputMap["method"] = ".. method:: ";
-      outputMap["config"] = ".. data:: config ";
-      outputMap["global"] = ".. data:: ";
-      outputMap["field"] = ".. attribute:: ";
     }
 
     // Open the directory to store the docs
