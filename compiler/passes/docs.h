@@ -25,16 +25,6 @@ void createDocsFileFolders(std::string filename);
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name);
 
-void printGlobal(std::ofstream *file, VarSymbol *var, bool config);
-
-void printFunction(std::ofstream *file, FnSymbol *fn, bool method);
-
-void printVarStart(std::ofstream *file, VarSymbol *var);
-
-void printVarType(std::ofstream *file, VarSymbol *var);
-
-void printVarDocs(std::ofstream *file, VarSymbol *var);
-
 void printClass(std::ofstream *file, AggregateType *cl);
 
 void printFields(std::ofstream *file, AggregateType *cl);
