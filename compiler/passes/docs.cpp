@@ -79,6 +79,10 @@ void docs(void) {
           mod->accept(docsVisitor);
           delete docsVisitor;
 
+          // Comment the above three lines and uncomment the following line to
+          // get the old category based output (or alphabetical). Note that
+          // this will be restored (hopefully soon)... (thomasvandoren, 2015-02-22)
+          //
           // printModule(file, mod, 0);
 
           file->close();
