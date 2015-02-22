@@ -215,7 +215,7 @@ bool Symbol::isImmediate() const {
 
 void Symbol::printTabs(std::ostream *file, unsigned int tabs) {
   for (int i = 0; i < tabs; i++) {
-    *file << "   "; //Symbol::tabText.c_str();
+    *file << Symbol::tabText;
   }
 }
 
