@@ -71,10 +71,6 @@ void docs(void) {
       outputMap["record"] = ".. record:: ";
       outputMap["module"] = ".. module:: ";
       outputMap["module comment prefix"] = ":synopsis: ";
-      outputMap["iter func"] = ".. iterfunction:: ";
-      outputMap["iter method"] = ".. itermethod:: ";
-      outputMap["func"] = ".. function:: ";
-      outputMap["method"] = ".. method:: ";
     }
 
     // Open the directory to store the docs
@@ -201,7 +197,7 @@ void printClass(std::ofstream *file, AggregateType *cl) {
       // We only want to print methods defined within the class under the
       // class header
       if (fn->isPrimaryMethod())
-        printFunction(file, fn, true);
+        fn->printDocs(file, NUMTABS);
     }
     
     Vec<AggregateType*> list;
@@ -218,7 +214,7 @@ void printClass(std::ofstream *file, AggregateType *cl) {
       printFields(file, c);
     
       forv_Vec(FnSymbol, fn, c->methods) {
-        printFunction(file, fn, true);
+        fn->printDocs(file, NUMTABS);
        
       }
       NUMTABS--;
@@ -353,7 +349,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       // We want methods on classes that are defined at the module level to be
       // printed at the module level
       if (!devOnlyFunction(fn) || fn->isSecondaryMethod()) {
-        printFunction(file, fn, false);
+        fn->printDocs(file, NUMTABS);
       }
     }
 
@@ -379,111 +375,6 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   }
 }
 
-void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
-  if (!fn->hasFlag(FLAG_NO_DOC)) {
-    printTabs(file);
-    NUMTABS++;
-    bool iterator = fn->hasFlag(FLAG_ITERATOR_FN);
-    if (method) {
-      if (iterator) {
-        *file << outputMap["iter method"];
-      } else {
-        *file << outputMap["method"];
-      }
-    } else {
-      if (iterator) {
-        *file << outputMap["iter func"];
-      } else {
-        *file << outputMap["func"];
-      }
-    }
-    if (fn->hasFlag(FLAG_INLINE)) {
-      *file << "inline ";
-    } else if (fn->hasFlag(FLAG_EXPORT)) {
-      *file << "export ";
-    } else if (fn->hasFlag(FLAG_EXTERN)) {
-      // Do nothing.  Being extern is an implementation detail.
-    }
-
-    if (iterator) {
-      *file << "iter ";
-    } else {
-      *file << "proc ";
-    }
-    AstToText *fnInfo = new AstToText();
-    fnInfo->appendNameAndFormals(fn);
-    *file << fnInfo->text();
-    delete fnInfo;
-    /*
-    // if fn is not primary method
-    //   get type name from 'this' argument
-    //   output it + '.' before fn->name
-    if (fn->isSecondaryMethod()) {
-      INT_ASSERT (fn->numFormals() > 1);
-      ArgSymbol *myTypeHolder = fn->getFormal(2);
-      INT_ASSERT (myTypeHolder->hasFlag(FLAG_ARG_THIS));
-      Expr *typeExpr = myTypeHolder->typeExpr;
-      BlockStmt *body = toBlockStmt(typeExpr);
-      INT_ASSERT (body);
-      UnresolvedSymExpr *typeName = toUnresolvedSymExpr(body->body.tail);
-      INT_ASSERT (typeName);
-      *file << typeName->unresolved << ".";
-    }
-    *file << fn->name;
-    if (!fn->hasFlag(FLAG_NO_PARENS))
-      *file << "(";
-    if (fn->numFormals() > 0) {
-      // TODO: add flag to compiler to turn on docs dev only output
-      if (strcmp(fn->getFormal(1)->name, "_mt") == 0) {
-        for (int i = 3; i < fn->numFormals(); i++) {
-          ArgSymbol *cur = fn->getFormal(i);
-          printArg(file, cur);
-          *file << ", ";
-        }
-        if (fn->numFormals() != 2) {
-          ArgSymbol *cur = fn->getFormal(fn->numFormals());
-          printArg(file, cur);
-        }
-      } else {
-        for (int i = 1; i < fn->numFormals(); i++) {
-          ArgSymbol *cur = fn->getFormal(i);
-          printArg(file, cur);
-          *file << ", ";
-        }
-        ArgSymbol *cur = fn->getFormal(fn->numFormals());
-        printArg(file, cur);
-      }
-    }
-    if (!fn->hasFlag(FLAG_NO_PARENS))
-      *file << ")";
-    */
-    switch (fn->retTag) {
-    case RET_REF:
-      *file << " ref"; break;
-    case RET_PARAM:
-      *file << " param"; break;
-    case RET_TYPE:
-      *file << " type"; break;
-    default: break;
-    }
-    if (fn->retExprType != NULL) {
-      *file << ": ";
-      fn->retExprType->body.tail->prettyPrint(file);
-      // TODO: better type output
-    }
-    *file << std::endl;
-
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-
-    if (fn->doc != NULL) {
-      ltrimAndPrintLines(fn->doc, file);
-      *file << std::endl;
-    }
-    NUMTABS--;
-  }
-}
 
 void createDocsFileFolders(std::string filename) {
   size_t dirCutoff = filename.find("/");

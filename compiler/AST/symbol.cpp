@@ -38,6 +38,7 @@
 #include "stringutil.h"
 #include "type.h"
 
+#include "AstToText.h"
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
 
@@ -2386,6 +2387,89 @@ bool FnSymbol::isPrimaryMethod() const {
 bool FnSymbol::isSecondaryMethod() const {
   return isMethod() && !isPrimaryMethod();
 }
+
+
+// This function or method is an iterator (as opposed to a procedure).
+bool FnSymbol::isIterator() const {
+  return hasFlag(FLAG_ITERATOR_FN);
+}
+
+
+std::string FnSymbol::docsDirective() {
+  if (fDocsTextOnly) {
+    return "";
+  }
+
+  if (this->isMethod() && this-isIterator()) {
+    return ".. itermethod:: ";
+  } else if (this->isIterator()) {
+    return ".. iterfunction:: ";
+  } else if (this->isMethod()) {
+    return ".. method:: ";
+  } else {
+    return ".. function:: ";
+  }
+}
+
+
+void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  // Print the rst directive, if one is needed.
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+
+  // Print inline/export.
+  if (this->hasFlag(FLAG_INLINE)) {
+    *file << "inline ";
+  } else if (this->hasFlag(FLAG_EXPORT)) {
+    *file << "export ";
+  }
+
+  // Print iter/proc.
+  if (this->isIterator()) {
+    *file << "iter ";
+  } else {
+    *file << "proc ";
+  }
+
+  // Print name and arguments.
+  AstToText *info = new AstToText();
+  info->appendNameAndFormals(this);
+  *file << info->text();
+  delete info;
+
+  // Print ref return intent, if one exists.
+  switch (this->retTag) {
+  case RET_REF:
+    *file << " ref";
+    break;
+  case RET_PARAM:
+    *file << " param";
+    break;
+  case RET_TYPE:
+    *file << " type";
+    break;
+  default:
+    break;
+  }
+
+  // Print return type.
+  if (this->retExprType != NULL) {
+    *file << ": ";
+    this->retExprType->body.tail->prettyPrint(file);
+  }
+  *file << std::endl;
+
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  this->printDocsDescription(this->doc, file, tabs + 1);
+}
+
 
 /******************************** | *********************************
 *                                                                   *

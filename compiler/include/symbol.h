@@ -405,6 +405,13 @@ class FnSymbol : public Symbol {
   bool            isMethod()                                   const;
   bool            isPrimaryMethod()                            const;
   bool            isSecondaryMethod()                          const;
+  bool            isIterator()                                 const;
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+protected:
+
+  virtual std::string docsDirective();
 };
 
 /******************************** | *********************************
