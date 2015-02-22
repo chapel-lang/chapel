@@ -78,7 +78,7 @@ void docs(void) {
           AstPrintDocs *docsVisitor = new AstPrintDocs(file);
           mod->accept(docsVisitor);
 
-          // printModule(file, mod, mod->name, 0);
+          // printModule(file, mod, 0);
 
           file->close();
         }
