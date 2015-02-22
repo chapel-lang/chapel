@@ -332,5 +332,5 @@ std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
 
 std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsFolderName) {
   std::string filename = filenameFromMod(mod, docsFolderName);
-  return new std::ofstream(filename, std::ios::out);
+  return new std::ofstream(filename.c_str(), std::ios::out);
 }
