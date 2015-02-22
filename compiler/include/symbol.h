@@ -130,9 +130,6 @@ public:
 
   DefExpr*           defPoint; // Point of definition
 
-  // TODO: Add this in! (thomasvandoren, 2015-02-21)
-  //virtual void printDocs(std::ostream *file, unsigned int tabs);
-
 protected:
                      Symbol(AstTag      astTag,
                             const char* init_name,
