@@ -90,11 +90,12 @@ void docs(void) {
       if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
         if (isNotSubmodule(mod)) {
           std::ofstream *file = openFileFromMod(mod, docsFolderName);
-          AstPrintDocs *docsVisitor = new AstPrintDocs(file);
 
-          mod->accept(docsVisitor);
+          // AstPrintDocs *docsVisitor = new AstPrintDocs(file);
+          // mod->accept(docsVisitor);
 
-          // printModule(file, mod, mod->name);
+          printModule(file, mod, mod->name);
+
           file->close();
         }
       }
@@ -136,6 +137,7 @@ void printClass(std::ofstream *file, AggregateType *cl) {
   if (!cl->symbol->hasFlag(FLAG_NO_DOC) && ! cl->isUnion()) {
     cl->printDocs(file, NUMTABS);
 
+    NUMTABS++;
     printFields(file, cl);
 
     // In rst mode, add an additional line break after the attributes and
@@ -171,7 +173,6 @@ void printClass(std::ofstream *file, AggregateType *cl) {
     
       forv_Vec(FnSymbol, fn, c->methods) {
         fn->printDocs(file, NUMTABS);
-       
       }
       NUMTABS--;
       *file << std::endl;
@@ -204,7 +205,7 @@ bool devOnlyModule(ModuleSymbol *mod) {
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   if (!mod->hasFlag(FLAG_NO_DOC)) {
-    mod->printDocs(file, 0);
+    mod->printDocs(file, NUMTABS);
 
     Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
     if (fDocsAlphabetize)
