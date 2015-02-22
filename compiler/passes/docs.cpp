@@ -25,6 +25,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "AstPrintDocs.h"
+
 #include "driver.h"
 #include "passes.h"
 #include "symbol.h"
@@ -82,6 +84,8 @@ void docs(void) {
     }
 
     mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+
+    AstPrintDocs *docsVisitor = new AstPrintDocs();
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
@@ -104,6 +108,10 @@ void docs(void) {
         createDocsFileFolders(filename);
         
         if (isNotSubmodule(mod)) {
+          std::cout << "STARING: " << mod->name << std::endl;
+          mod->accept(docsVisitor);
+          std::cout << "DONE: " << mod->name << std::endl;
+
           // Creates files for each top level module
           if (!fDocsTextOnly)
             filename = filename + mod->name + ".rst";

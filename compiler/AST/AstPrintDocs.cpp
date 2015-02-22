@@ -17,7 +17,12 @@
  * limitations under the License.
  */
 
+#include <iostream>
+
 #include "AstPrintDocs.h"
+
+#include "symbol.h"
+#include "type.h"
 
 
 AstPrintDocs::AstPrintDocs() {
@@ -29,11 +34,13 @@ AstPrintDocs::~AstPrintDocs() {
 
 
 bool AstPrintDocs::enterAggrType(AggregateType* node) {
+  std::cout << "Entering: " << node->symbol->name << std::endl;
   return true;
 }
 
 
 void AstPrintDocs::exitAggrType(AggregateType* node) {
+  std::cout << "Exiting: " << node->symbol->name << std::endl;
 }
 
 
@@ -81,11 +88,13 @@ void AstPrintDocs::visitLabelSym(LabelSymbol* node) {
 
 
 bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
+  std::cout << "Entering: " << node->name << std::endl;
   return true;
 }
 
 
 void AstPrintDocs::exitModSym(ModuleSymbol* node) {
+  std::cout << "Exiting: " << node->name << std::endl;
 }
 
 
