@@ -224,37 +224,6 @@ void printClass(std::ofstream *file, AggregateType *cl) {
   }
 }
 
-void printVarStart(std::ofstream *file, VarSymbol *var) {
-  if (var->hasFlag(FLAG_TYPE_VARIABLE))
-    *file << "type ";
-  else if (var->isConstant())
-    *file << "const ";
-  else if (var->isParameter())
-    *file << "param ";
-  else 
-    *file << "var ";
-  
-  *file << var->name;
-}
-
-void printVarType(std::ofstream *file, VarSymbol *var) {  
-  if (var->defPoint->exprType != NULL) {
-    *file << ": ";
-    var->defPoint->exprType->prettyPrint(file);
-    // TODO: Make type output prettier
-  }
-  *file << std::endl;
-}
-
-void printVarDocs(std::ofstream *file, VarSymbol *var) {
-  // TODO: Do we want to parse the output here to make it indent nicely?
-  NUMTABS++;
-  if (var->doc != NULL) {
-    ltrimAndPrintLines(var->doc, file);
-  }
-  NUMTABS--;
-}
-
 void printTabs(std::ofstream *file) {
   for (int i = 1; i <= NUMTABS; i++) {
     *file << "   ";

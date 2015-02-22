@@ -402,8 +402,12 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << std::endl;
   }
 
-  this->printDocsDescription(this->doc, file, tabs + 1);
-  //*file << std::endl;
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
 }
 
 
@@ -2400,7 +2404,7 @@ std::string FnSymbol::docsDirective() {
     return "";
   }
 
-  if (this->isMethod() && this-isIterator()) {
+  if (this->isMethod() && this->isIterator()) {
     return ".. itermethod:: ";
   } else if (this->isIterator()) {
     return ".. iterfunction:: ";
@@ -2467,7 +2471,10 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << std::endl;
   }
 
-  this->printDocsDescription(this->doc, file, tabs + 1);
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+  }
 }
 
 
