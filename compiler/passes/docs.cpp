@@ -37,8 +37,6 @@
 #include "AstToText.h"
 #include "AstPrintDocs.h"
 
-int NUMTABS = 0;
-
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
   Symbol* s2 = *(Symbol* const *)v2;
@@ -77,10 +75,10 @@ void docs(void) {
         if (isNotSubmodule(mod)) {
           std::ofstream *file = openFileFromMod(mod, docsFolderName);
 
-          AstPrintDocs *docsVisitor = new AstPrintDocs(file);
-          mod->accept(docsVisitor);
+          // AstPrintDocs *docsVisitor = new AstPrintDocs(file);
+          // mod->accept(docsVisitor);
 
-          // printModule(file, mod, mod->name);
+          printModule(file, mod, mod->name, 0);
 
           file->close();
         }
@@ -101,11 +99,11 @@ bool isNotSubmodule(ModuleSymbol *mod) {
           strcmp("_root", mod->defPoint->parentSymbol->name) == 0);
 }
 
-void printFields(std::ofstream *file, AggregateType *cl) {
+void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
       var->makeField();
-      var->printDocs(file, NUMTABS);
+      var->printDocs(file, tabs);
     }
   }
 }
@@ -119,12 +117,11 @@ void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
   }
 }
 
-void printClass(std::ofstream *file, AggregateType *cl) {
+void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
   if (!cl->symbol->hasFlag(FLAG_NO_DOC) && ! cl->isUnion()) {
-    cl->printDocs(file, NUMTABS);
+    cl->printDocs(file, tabs);
 
-    NUMTABS++;
-    printFields(file, cl);
+    printFields(file, cl, tabs + 1);
 
     // In rst mode, add an additional line break after the attributes and
     // before the next directive.
@@ -141,7 +138,7 @@ void printClass(std::ofstream *file, AggregateType *cl) {
       // We only want to print methods defined within the class under the
       // class header
       if (fn->isPrimaryMethod())
-        fn->printDocs(file, NUMTABS);
+        fn->printDocs(file, tabs + 1);
     }
     
     Vec<AggregateType*> list;
@@ -151,24 +148,21 @@ void printClass(std::ofstream *file, AggregateType *cl) {
       qsort(list.v, list.n, sizeof(list.v[0]), compareClasses);
     
     forv_Vec(AggregateType, c, list) {
-      printTabs(file);
+      printTabs(file, tabs + 1);
       *file << "inherited from " << c->symbol->name;
       *file << std::endl;
-      NUMTABS++;
-      printFields(file, c);
+      printFields(file, c, tabs + 1);
     
       forv_Vec(FnSymbol, fn, c->methods) {
-        fn->printDocs(file, NUMTABS);
+        fn->printDocs(file, tabs + 1);
       }
-      NUMTABS--;
       *file << std::endl;
     }
-    NUMTABS--;
   }
 }
 
-void printTabs(std::ofstream *file) {
-  for (int i = 1; i <= NUMTABS; i++) {
+void printTabs(std::ofstream *file, unsigned int tabs) {
+  for (unsigned int i = 1; i <= tabs; i++) {
     *file << "   ";
   }
 }
@@ -189,22 +183,22 @@ bool devOnlyModule(ModuleSymbol *mod) {
   return mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD;
 }
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
+void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name, unsigned int tabs) {
   if (!mod->hasFlag(FLAG_NO_DOC)) {
-    mod->printDocs(file, NUMTABS);
+    mod->printDocs(file, tabs);
 
     Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
     if (fDocsAlphabetize)
       qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
     forv_Vec(VarSymbol, var, configs) {
-      var->printDocs(file, NUMTABS);
+      var->printDocs(file, tabs + 1);
     }
 
     Vec<VarSymbol*> variables = mod->getTopLevelVariables();
     if (fDocsAlphabetize)
       qsort(variables.v, variables.n, sizeof(variables.v[0]), compareNames);
     forv_Vec(VarSymbol, var, variables) {
-      var->printDocs(file, NUMTABS);
+      var->printDocs(file, tabs + 1);
     }
     Vec<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
     // If alphabetical option passed, fDocsAlphabetizes the output
@@ -217,7 +211,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       // We want methods on classes that are defined at the module level to be
       // printed at the module level
       if (!devOnlyFunction(fn) || fn->isSecondaryMethod()) {
-        fn->printDocs(file, NUMTABS);
+        fn->printDocs(file, tabs + 1);
       }
     }
 
@@ -226,7 +220,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
 
     forv_Vec(AggregateType, cl, classes) {
-      printClass(file, cl);
+      printClass(file, cl, tabs);
     }
 
     Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
@@ -235,11 +229,10 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   
     forv_Vec(ModuleSymbol, md, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
-      if (!devOnlyModule(md))
-        printModule(file, md, name + "." +  md->name);
+      if (!devOnlyModule(md)) {
+        printModule(file, md, name + "." +  md->name, tabs);
+      }
     }
-    if (fDocsTextOnly)
-      NUMTABS--;
   }
 }
 

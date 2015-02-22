@@ -19,15 +19,15 @@
 
 #include <string>
 
-void printTabs(std::ofstream *file);
+void printTabs(std::ofstream *file, unsigned int tabs);
 
 void createDocsFileFolders(std::string filename);
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name);
+void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name, unsigned int tabs);
 
-void printClass(std::ofstream *file, AggregateType *cl);
+void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
-void printFields(std::ofstream *file, AggregateType *cl);
+void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
 void inheritance(Vec<AggregateType*> *list, AggregateType *cl);
 
