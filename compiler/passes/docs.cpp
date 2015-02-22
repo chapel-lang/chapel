@@ -89,16 +89,12 @@ void docs(void) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
         if (isNotSubmodule(mod)) {
-          std::ofstream* file = openFileFromMod(mod, docsFolderName);
+          std::ofstream *file = openFileFromMod(mod, docsFolderName);
           AstPrintDocs *docsVisitor = new AstPrintDocs(file);
 
-          std::cout << "STARING: " << mod->name << std::endl;
-          // TODO: might need a separate visitor for each module... consider
-          //       attaching *file to AstPrintDocs instance... (thomasvandoren, 2015-02-21)
           mod->accept(docsVisitor);
-          std::cout << "DONE: " << mod->name << std::endl;
 
-          printModule(file, mod, mod->name);
+          // printModule(file, mod, mod->name);
           file->close();
         }
       }
@@ -233,55 +229,7 @@ bool devOnlyModule(ModuleSymbol *mod) {
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
   if (!mod->hasFlag(FLAG_NO_DOC)) {
-    if (!fDocsTextOnly) {
-      *file << ".. default-domain:: chpl" << std::endl << std::endl;
-    }
-
-    // Print the module directive first, for .rst mode. This will associate the
-    // Module: <name> title with the module. If the .. module:: directive comes
-    // after the title, sphinx will complain about a duplicate id error.
-    if (!fDocsTextOnly) {
-      *file << outputMap["module"] << name << std::endl;
-      if (mod->doc != NULL) {
-        NUMTABS++;
-        printTabs(file);
-        *file << outputMap["module comment prefix"];
-
-        // Grab first line of comment for synopsis.
-        std::string firstLine = firstNonEmptyLine(mod->doc);
-        *file << firstLine << std::endl;
-        NUMTABS--;
-      }
-      *file << std::endl;
-    }
-
-    printTabs(file);
-    *file << "Module: " << name << std::endl;
-    if (!fDocsTextOnly) {
-      int length = strlen("Module: ") + strlen(name.c_str());
-      for (int i = 0; i < length; i++) {
-        *file << "=";
-      }
-      *file << std::endl;
-      // Make the length of this equal to "Module: " + name.length
-    }
-    NUMTABS++;
-    if (mod->doc != NULL) {
-      // Only print tabs for text only mode. The .rst prefers not to have the
-      // tabs for module level comments and leading whitespace removed.
-      if (fDocsTextOnly) {
-        ltrimAndPrintLines(mod->doc, file);
-      } else {
-        NUMTABS--;
-        ltrimAndPrintLines(mod->doc, file);
-        *file << std::endl;
-        NUMTABS++;
-      }
-    }
-    // For non-rst mode, revert to the original tab level.
-    if(!fDocsTextOnly) {
-      NUMTABS--;
-    }
+    mod->printDocs(file, 0);
 
     Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
     if (fDocsAlphabetize)

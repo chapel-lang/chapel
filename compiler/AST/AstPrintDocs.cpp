@@ -30,7 +30,8 @@
 
 AstPrintDocs::AstPrintDocs(std::ostream *file) :
   file(file)
-{}
+{
+}
 
 
 AstPrintDocs::~AstPrintDocs() {
@@ -38,14 +39,11 @@ AstPrintDocs::~AstPrintDocs() {
 
 
 bool AstPrintDocs::enterAggrType(AggregateType* node) {
-  std::cout << "Entering: " << node->symbol->name << std::endl;
-  *this->file << "";
   return true;
 }
 
 
 void AstPrintDocs::exitAggrType(AggregateType* node) {
-  std::cout << "Exiting: " << node->symbol->name << std::endl;
 }
 
 
@@ -76,13 +74,11 @@ void AstPrintDocs::visitEnumSym(EnumSymbol* node) {
 
 
 bool AstPrintDocs::enterFnSym(FnSymbol* node) {
-  std::cout << "Entering: " << node->name << std::endl;
   return true;
 }
 
 
 void AstPrintDocs::exitFnSym(FnSymbol* node) {
-  std::cout << "Exiting: " << node->name << std::endl;
 }
 
 
@@ -95,13 +91,12 @@ void AstPrintDocs::visitLabelSym(LabelSymbol* node) {
 
 
 bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
-  std::cout << "Entering: " << node->name << std::endl;
+  node->printDocs(file, 0);
   return true;
 }
 
 
 void AstPrintDocs::exitModSym(ModuleSymbol* node) {
-  std::cout << "Exiting: " << node->name << std::endl;
 }
 
 
@@ -115,7 +110,6 @@ void AstPrintDocs::exitTypeSym(TypeSymbol* node) {
 
 
 void AstPrintDocs::visitVarSym(VarSymbol* node) {
-  std::cout << "Visiting: " << node->name << std::endl;
 }
 
 

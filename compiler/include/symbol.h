@@ -144,12 +144,12 @@ protected:
   virtual std::string docsDirective();
   virtual void printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
 
+  static const std::string tabText;
+
 private:
                      Symbol();
 
   virtual void       codegenPrototype(); // ie type decl
-
-  static const std::string tabText;
 };
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
@@ -484,6 +484,8 @@ public:
 
   // LLVM uses this for extern C blocks.
   ExternBlockInfo*     extern_info;
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
 
 private:
   void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);

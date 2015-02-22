@@ -2667,6 +2667,56 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
   return classes;
 }
 
+
+void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  // Print the module directive first, for .rst mode. This will associate the
+  // Module: <name> title with the module. If the .. module:: directive comes
+  // after the title, sphinx will complain about a duplicate id error.
+  if (!fDocsTextOnly) {
+    *file << ".. default-domain:: chpl" << std::endl << std::endl;
+    *file << ".. module:: " << this->name << std::endl;
+
+    if (this->doc != NULL) {
+      this->printTabs(file, tabs + 1);
+      *file << ":synopsis: ";
+      *file << firstNonEmptyLine(this->doc);
+      *file << std::endl;
+    }
+    *file << std::endl;
+  }
+
+  this->printTabs(file, tabs);
+  const char *moduleTitle = astr("Module: ", this->name);
+  *file << moduleTitle << std::endl;
+
+  if (!fDocsTextOnly) {
+    int length = tabs * this->tabText.length() + strlen(moduleTitle);
+    for (int i = 0; i < length; i++) {
+      *file << "=";
+    }
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    // Only print tabs for text only mode. The .rst prefers not to have the
+    // tabs for module level comments and leading whitespace removed.
+    unsigned int t = tabs;
+    if (fDocsTextOnly) {
+      t += 1;
+    }
+
+    this->printDocsDescription(this->doc, file, t);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
 // This is intended to be called by getTopLevelConfigsVars and
 // getTopLevelVariables, since the code for them would otherwise be roughly
 // the same.
