@@ -28,7 +28,7 @@
 
 class AstPrintDocs : public AstVisitor {
 public:
-                  AstPrintDocs(bool textOnly, std::string docsFolderName);
+                  AstPrintDocs(std::ostream *file);
   virtual         ~AstPrintDocs();
 
   //
@@ -111,12 +111,7 @@ public:
   virtual void   exitGotoStmt     (GotoStmt*          node);
 
 private:
-  bool            textOnly;
-  std::string     docsFolderName;
-
-  std::ostream*   openFile(ModuleSymbol *mod);
-  std::string     filename(ModuleSymbol *mod);
-  void            createDocsFileFolders(std::string filename);
+  std::ostream*   file;
 };
 
 #endif

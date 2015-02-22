@@ -76,52 +76,30 @@ void docs(void) {
 
     // Open the directory to store the docs
     std::string docsDir = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
-    std::string folderName = docsDir;
+    std::string docsFolderName = docsDir;
 
     if (!fDocsTextOnly) {
-      folderName = generateSphinxProject(docsDir);
+      docsFolderName = generateSphinxProject(docsDir);
     }
 
-    mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    mkdir(docsFolderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
 
-    AstPrintDocs *docsVisitor = new AstPrintDocs(fDocsTextOnly, folderName);
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
-        std::string filename = mod->filename;
-
-        if (mod->modTag == MOD_INTERNAL) {
-          filename = "internal-modules/";
-        } else if (mod ->modTag == MOD_STANDARD) {
-          filename = "standard-modules/";
-        } else {
-          size_t location = filename.rfind("/");
-          if (location != std::string::npos) {
-            filename = filename.substr(0, location + 1);
-          } else {
-            filename = "";
-          }
-        }
-        filename = folderName + "/" + filename;
-        createDocsFileFolders(filename);
-        
         if (isNotSubmodule(mod)) {
+          std::ofstream* file = openFileFromMod(mod, docsFolderName);
+          AstPrintDocs *docsVisitor = new AstPrintDocs(file);
+
           std::cout << "STARING: " << mod->name << std::endl;
           // TODO: might need a separate visitor for each module... consider
           //       attaching *file to AstPrintDocs instance... (thomasvandoren, 2015-02-21)
           mod->accept(docsVisitor);
           std::cout << "DONE: " << mod->name << std::endl;
 
-          // Creates files for each top level module
-          if (!fDocsTextOnly)
-            filename = filename + mod->name + ".rst";
-          else
-            filename = filename + mod->name + ".txt";
-          std::ofstream file(filename.c_str(), std::ios::out);
-
-          printModule(&file, mod, mod->name);
-          file.close();
+          printModule(file, mod, mod->name);
+          file->close();
         }
       }
     }
@@ -410,6 +388,41 @@ void generateSphinxOutput(std::string dirpath) {
     " && cd ", htmldir, " && ",
     CHPL_MAKE, " html");
   mysystem(cmd, "building html output from chpldoc sphinx project");
+}
+
+
+std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
+  std::string filename = mod->filename;
+
+  if (mod->modTag == MOD_INTERNAL) {
+    filename = "internal-modules/";
+  } else if (mod ->modTag == MOD_STANDARD) {
+    filename = "standard-modules/";
+  } else {
+    size_t location = filename.rfind("/");
+    if (location != std::string::npos) {
+      filename = filename.substr(0, location + 1);
+    } else {
+      filename = "";
+    }
+  }
+  filename = docsFolderName + "/" + filename;
+  createDocsFileFolders(filename);
+
+  // Creates files for each top level module.
+  if (fDocsTextOnly) {
+    filename = filename + mod->name + ".txt";
+  } else {
+    filename = filename + mod->name + ".rst";
+  }
+
+  return filename;
+}
+
+
+std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsFolderName) {
+  std::string filename = filenameFromMod(mod, docsFolderName);
+  return new std::ofstream(filename, std::ios::out);
 }
 
 

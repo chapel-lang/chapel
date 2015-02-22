@@ -37,8 +37,12 @@ bool devOnlyModule(ModuleSymbol *mod);
 
 bool isNotSubmodule(ModuleSymbol *mod);
 
-std::string generateSphinxProject(std::string dirpath);
+static std::string generateSphinxProject(std::string dirpath);
 
-void generateSphinxOutput(std::string dirpath);
+static void generateSphinxOutput(std::string dirpath);
+
+static std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName);
+
+static std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsFolderName);
 
 static void ltrimAndPrintLines(std::string s, std::ofstream *file);
