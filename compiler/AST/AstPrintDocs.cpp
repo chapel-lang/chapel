@@ -97,13 +97,11 @@ void AstPrintDocs::visitLabelSym(LabelSymbol* node) {
 
 bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
   node->printDocs(this->file, this->tabs);
-  //this->tabs++;
   return true;
 }
 
 
 void AstPrintDocs::exitModSym(ModuleSymbol* node) {
-  //this->tabs--;
 }
 
 
