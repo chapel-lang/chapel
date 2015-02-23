@@ -28,6 +28,21 @@ class CSR: BaseDist {
   proc dsiClone() return new CSR();
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CSR) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CSR) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 class CSRDom: BaseSparseDom {
   param rank : int;
   type idxType;
