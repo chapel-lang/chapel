@@ -226,18 +226,6 @@ tags
 /test/io/ferguson/asserteof.test.nums
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
-/test/io/fsouza/chdir/destination
-/test/io/fsouza/chown/file.txt
-/test/io/fsouza/isdir/my_file
-/test/io/fsouza/isfile/my_file
-/test/io/lydia/chmod/file
-/test/io/lydia/exists/broken_link
-/test/io/lydia/exists/dir_link
-/test/io/lydia/exists/file
-/test/io/lydia/exists/file_link
-/test/io/lydia/isLink/my_file
-/test/io/lydia/isLink/my_link_dir
-/test/io/lydia/isLink/my_link_file
 
 /test/localeModels/gbt/maxTaskPar.good
 
