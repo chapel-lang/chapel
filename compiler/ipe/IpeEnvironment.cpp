@@ -19,19 +19,19 @@
 
 #include "IpeEnvironment.h"
 
-#include "IpeSymbol.h"
+#include "symbol.h"
 
 #include <cstdlib>
 
 IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
-                               const std::vector<IpeSymbol*>& formals)
+                               const std::vector<LcnSymbol*>& formals)
 {
   mParent    = parent;
 
   mDepth     = (parent == 0) ? 0 : parent->mDepth + 1;
 
   mSlotCount = formals.size();
-  mSlotArray = (IpeSymbol**) malloc(mSlotCount * sizeof(IpeSymbol*));
+  mSlotArray = (LcnSymbol**) malloc(mSlotCount * sizeof(LcnSymbol*));
 
   for (int i = 0; i < mSlotCount; i++)
     mSlotArray[i] = formals[i];
@@ -41,7 +41,7 @@ IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
 }
 
 IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
-                               const std::vector<IpeSymbol*>& formals,
+                               const std::vector<LcnSymbol*>& formals,
                                const std::vector<IpeValue>&   actuals)
 {
   INT_ASSERT(formals.size() == actuals.size());
@@ -51,7 +51,7 @@ IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
   mDepth     = (parent == 0) ? 0 : parent->mDepth + 1;
 
   mSlotCount = formals.size();
-  mSlotArray = (IpeSymbol**) malloc(mSlotCount * sizeof(IpeSymbol*));
+  mSlotArray = (LcnSymbol**) malloc(mSlotCount * sizeof(LcnSymbol*));
 
   for (size_t i = 0; i < formals.size(); i++)
     mSlotArray[i] = formals[i];
@@ -64,7 +64,7 @@ IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
 }
 
 IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
-                               const std::vector<IpeSymbol*>& formals,
+                               const std::vector<LcnSymbol*>& formals,
                                const std::vector<IpeValue>&   actuals,
                                int                            slotCount,
                                int                            dataSize)
@@ -78,7 +78,7 @@ IpeEnvironment::IpeEnvironment(IpeEnvironment*                parent,
   mDepth     = (parent == 0) ? 0 : parent->mDepth + 1;
 
   mSlotCount = slotCount;
-  mSlotArray = (IpeSymbol**) malloc(mSlotCount * sizeof(IpeSymbol*));
+  mSlotArray = (LcnSymbol**) malloc(mSlotCount * sizeof(LcnSymbol*));
 
   for (size_t i = 0; i < formals.size(); i++)
     mSlotArray[i] = formals[i];
@@ -102,7 +102,7 @@ IpeEnvironment::~IpeEnvironment()
 }
 
 // Bind a name to a location
-void IpeEnvironment::bind(IpeSymbol* variable)
+void IpeEnvironment::bind(LcnSymbol* variable)
 {
   // NOAKES 2015/01/30  Assumes slots are fixed size
   int index = variable->offset() / 8;
@@ -112,8 +112,10 @@ void IpeEnvironment::bind(IpeSymbol* variable)
   mSlotArray[index] = variable;
 }
 
-IpeValue IpeEnvironment::lookup(IpeSymbol* variable) const
+IpeValue IpeEnvironment::lookup(LcnSymbol* variable) const
 {
+  IpeValue retval;
+
   // NOAKES 2015/01/30  Assumes slots are fixed size
   INT_ASSERT(variable->offset() >= 0 &&
              variable->offset() < 8 * mSlotCount);
@@ -125,7 +127,6 @@ IpeValue IpeEnvironment::lookup(IpeSymbol* variable) const
 
   Type*    type = variable->type;
   void*    env  = (((char*) frame->mData) + variable->offset());
-  IpeValue retval;
 
   if (strcmp(type->symbol->name, "bool") == 0)
     retval.bValue = *((bool*)   env);
@@ -142,11 +143,10 @@ IpeValue IpeEnvironment::lookup(IpeSymbol* variable) const
     INT_ASSERT(false);
   }
 
-
   return retval;
 }
 
-void IpeEnvironment::assign(IpeSymbol* variable, IpeValue value)
+void IpeEnvironment::assign(LcnSymbol* variable, IpeValue value)
 {
   // NOAKES 2015/01/30  Assumes slots are fixed size
   INT_ASSERT(variable->offset() >= 0 &&
@@ -179,7 +179,7 @@ void IpeEnvironment::describe() const
 
   for (int i = 0; i < mSlotCount; i++)
   {
-    if (IpeSymbol* slot = mSlotArray[i])
+    if (LcnSymbol* slot = mSlotArray[i])
     {
       void* env = (void*) (((char*) mData) + slot->offset());
 
@@ -212,4 +212,3 @@ void IpeEnvironment::describe() const
     }
   }
 }
-

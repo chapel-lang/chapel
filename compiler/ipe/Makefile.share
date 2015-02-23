@@ -17,7 +17,6 @@
 
 IPE_SRCS =                           \
            ipeDriver.cpp             \
-           ipeReplaceVariables.cpp   \
            ipeResolve.cpp            \
            ipeCheckReturn.cpp        \
            ipeInlinePrimitives.cpp   \
