@@ -37,6 +37,7 @@ Sporadic compilation timeouts (XE test system is less powerful)
 (happens most often when compiler=cray)
 (Thomas tried moving to eslogin node; compilation timeouts still present 2015-02-18)
 ---------------------------------------------------------------
+[Error: Timed out compilation for release/examples/benchmarks/hpcc/hpl] (2015-02-22 xe.mpi.cray)
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: *)]
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: *)]
 [Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
@@ -84,13 +85,13 @@ Reviewed 2015-02-17
 ==========================================
 x?.ugni.*
 Inherits 'x?.*' and 'no-local'
-Reviewed 2015-02-17
+Reviewed 2015-02-23
 ==========================================
 
 
 === sporadic failures below ===
 
-Out of memory (2015-02-01, 2015-02-15, 2015-02-22)
+Out of memory (2015-02-01, 2015-02-15, 2015-02-22 xe-ugni-gnu)
 --------------------------------------
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
@@ -218,7 +219,6 @@ xc.aries.pgi.aprun
 xc.aries.pgi.slurm
 xc.mpi.cray.slurm
 xc.mpi.gnu.slurm
-xc.mpi.intel.aprun
 xc.mpi.intel.slurm
 xc.mpi.pgi.aprun
 xc.mpi.pgi.slurm
@@ -233,7 +233,6 @@ xc.ugni.gnu.aprun
 xc.ugni.gnu.slurm
 xc.ugni.intel.aprun
 xc.ugni.intel.slurm
-xe.gemini.cray
 xe.gemini.gnu
 xe.gemini.intel
 xe.gemini.pgi
@@ -296,6 +295,18 @@ Missing output file (2015-02-18)
 
 
 ===========================================
+xc.mpi.intel.aprun
+Inherits 'x?.*.intel*' and 'x?.mpi.*'
+Reviewed 2015-02-23
+===========================================
+
+=== sporadic issues ===
+
+Missing output file (2015-02-22)
+-------------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
+
+===========================================
 xc.none.cray.aprun
 Inherits 'x?.*.cray*' and 'x?.none.*'
 Reviewed 2015-02-19
@@ -306,6 +317,16 @@ Reviewed 2015-02-19
 Missing output file (2015-02-18,)
 --------------------------------
 [Error matching program output for release/examples/hello5-taskpar]
+
+
+===========================================
+xe.gemini.cray
+Inherits 'x?.*.cray*' and 'x?.gemini.*'
+Reviewed 2015-02-23
+===========================================
+
+=== sporadic issues ===
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
 
 
 ===========================================
@@ -373,7 +394,7 @@ Sporadic execution timeout
 ===========================================
 perf.xc.16.ugni.gnu
 Inherits 'perf.xc.*'
-Reviewed 2015-02-19
+Reviewed 2015-02-22
 ===========================================
 
 Segfault
@@ -382,14 +403,14 @@ Segfault
 
 === sporadic issues ===
 
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)] (2014-02-19)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)] (2015-02-19, 2015-02-22)
 
 
 
 ============================================
 perf.xc.{no-local,local}.*
 Inherits 'perf.xc.*'
-Reviewed 2015-02-18
+Reviewed 2015-02-22
 ============================================
 
 (The launchcmd issue was apparently resolved 2015-02-17)

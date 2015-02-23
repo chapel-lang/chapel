@@ -242,8 +242,13 @@ Reviewed 2015-02-17
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-02-20
+Reviewed 2015-02-23
 ===================
+
+> ==15313== Conditional jump or move depends on uninitialised value(s)
+Related to failure under cygwin32.  Lydia is investigating.
+----------------------------------------------------------------------
+[Error matching compiler output for chpldoc/compflags/comment/loseComments (compopts: 1)]
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
@@ -271,6 +276,7 @@ sporadic compilation timeouts
 sporadic execution timeout
 --------------------------
 [Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2) (2015-01-27)]
+[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (2015-02-20)
 
 
 ===================
@@ -356,6 +362,10 @@ Reviewed 2015-02-17
 
 === sporadic failures below ===
 
+Segfault (2015-02-22)
+---------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read]
+
 sporadic execution timeout (regularly)
 --------------------------------------
 [Error: Timed out executing program studies/sudoku/dinan/sudoku] (2014-11-01, 2014-11-06, 2014-12-18, 2015-01-02)
@@ -425,8 +435,8 @@ Sporadic compilation timeouts
 [Error: Timed out compilation for arrays/bradc/intuintarr] (xe-wb.prgenv-cray 2015-01-16)
 [Error: Timed out compilation for arrays/bradc/localSlices/nonlocalslice] (xe-wb.prgenv-intel 2015-01-15)
 [Error: Timed out compilation for arrays/bradc/paulslice] (xe-wb.pgi 2015-01-20)
-[Error: Timed out compilation for arrays/bradc/slices/outOfBoundsSlice] (xe-wb.prgenv-pgi 2015-01-15)
-[Error: Timed out compilation for arrays/bradc/sliceViaSingleton3d] (xe-wb.intel 2015-01-20)
+[Error: Timed out compilation for arrays/bradc/slices/outOfBoundsSlice] (xe-wb.prgenv-pgi 2015-01-15, 2015-02-22)
+[Error: Timed out compilation for arrays/bradc/sliceViaSingleton3d] (xe-wb.intel 2015-01-20, xe-wb.prgenv-pgi 2015-02-22)
 [Error: Timed out compilation for arrays/claridge/arraySizeMismatch] (xe-wb.prgenv-cray 2015-01-07)
 [Error: Timed out compilation for arrays/marybeth/CMO_array] (xe-wb.intel 2015-01-22)
 
@@ -434,7 +444,7 @@ sporadic execution timeouts
 ---------------------------
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (xe-wb.pgi 2015-01-22)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4] (xe-wb.prgenv-pgi 2015-01-22)
-[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (xc-wb.pgi, xc-wb.prgenv-gnu 2015-02-15; xc-wb.prgenv-intel 2015-02-17)
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (xc-wb.pgi, xc-wb.prgenv-gnu 2015-02-15; xc-wb.prgenv-intel 2015-02-17; xc-wb.prgenv-gnu 2015-02-22)
 
 
 ==================
@@ -574,7 +584,7 @@ all tests fail compilation
 ============================
 xc-wb.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2015-02-20
+Reviewed 2015-02-22
 ============================
 
 === sporadic failures below ===
@@ -596,6 +606,27 @@ Missing output on stdout
 Missing whitespace in output on stdout
 --------------------------------------
 [Error matching program output for reductions/waynew/reductions] (2015-02-19)
+
+
+============================
+xe-wb.prgenv-cray
+Inherits 'x?-wb.prgenv-cray'
+Reviewed 2015-02-22
+============================
+
+=== sporadic failures below ===
+
+(2015-02-22)
+------------------------------
+[Error: Timed out compilation for arrays/bradc/reindex/reindex]
+
+Missing output on stdout
+-------------------------------------
+[Error matching program output for modules/vass/SSCA2-with-Private-2] (2015-02-22)
+
+Missing whitespace in output on stdout
+--------------------------------------
+[Error matching program output for reductions/waynew/reductions] (2015-02-22)
 
 
 ===================
@@ -632,8 +663,14 @@ Reviewed 2015-02-17
 =============================
 x?-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2015-02-17
+Reviewed 2015-02-23
 =============================
+
+=== sporadic issues ===
+
+(2015-02-22)
+------------------------------
+[Error: Timed out compilation for release/examples/primers/arrays]
 
 
 =======================
@@ -737,6 +774,11 @@ cygwin32
 Inherits 'cygwin*' and '*32'
 Reviewed 2015-02-20
 ===========================
+
+Compiler segfault (2015-02-22)
+Lydia is investigating.
+------------------------------
+[Error matching compiler output for chpldoc/compflags/comment/loseComments (compopts: 1)]
 
 Generated output "FAILED" (see below for sporadic): First run 2014-12-07
 ------------------------------------------------------------------------
