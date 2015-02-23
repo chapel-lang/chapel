@@ -1,4 +1,49 @@
 Module: intents
+   proc one(in val)
+      This function has an argument with the in intent 
+
+   proc two(out val)
+      This function has an argument with the out intent 
+
+   proc three(inout val)
+      This function has an argument with the inout intent 
+
+   proc four(param val)
+      This function has an argument with the param intent 
+
+   proc five(type val)
+      This function has an argument with the type intent 
+
+   proc fiveA(const val)
+      This function has an argument with the const intent 
+
+   proc fiveB(ref val)
+      This function has an argument with the ref intent 
+
+   proc six(in val: int)
+      This function has an argument with an intent and a type 
+
+   proc seven() ref
+      This function has a return intent of ref 
+
+   proc eight()
+      This function has a return intent of const 
+
+   proc nine() param
+      This function has a return intent of param 
+
+   proc ten() type
+      This function has a return intent of type 
+
+   proc twelve(val: int) param
+      This function has both an argument and a return intent 
+
+   proc thirteen(inout val) param
+      This function has both an argument intent and a return intent 
+
+   proc fourteen()
+      This function has a return intent (other than ref) and a body 
+
    Module: intents.Inner
       proc one(in val)
          This function has an argument with the in intent 
@@ -44,49 +89,4 @@ Module: intents
 
       proc fourteen()
          This function has a return intent (other than ref) and a body 
-
-   proc one(in val)
-      This function has an argument with the in intent 
-
-   proc two(out val)
-      This function has an argument with the out intent 
-
-   proc three(inout val)
-      This function has an argument with the inout intent 
-
-   proc four(param val)
-      This function has an argument with the param intent 
-
-   proc five(type val)
-      This function has an argument with the type intent 
-
-   proc fiveA(const val)
-      This function has an argument with the const intent 
-
-   proc fiveB(ref val)
-      This function has an argument with the ref intent 
-
-   proc six(in val: int)
-      This function has an argument with an intent and a type 
-
-   proc seven() ref
-      This function has a return intent of ref 
-
-   proc eight()
-      This function has a return intent of const 
-
-   proc nine() param
-      This function has a return intent of param 
-
-   proc ten() type
-      This function has a return intent of type 
-
-   proc twelve(val: int) param
-      This function has both an argument and a return intent 
-
-   proc thirteen(inout val) param
-      This function has both an argument intent and a return intent 
-
-   proc fourteen()
-      This function has a return intent (other than ref) and a body 
 
