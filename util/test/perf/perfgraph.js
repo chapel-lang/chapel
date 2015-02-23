@@ -293,9 +293,41 @@ function setupAnnToggle(g, graphInfo, annToggle) {
 
   annToggle.onclick = function() {
     if (g.annotations().length === 0) {
-      g.setAnnotations(graphInfo.annotations);
+      updateAnnotationsSeries(g);
+      g.setAnnotations(g.graphInfo.anotations);
     } else {
       g.setAnnotations([]);
+    }
+  }
+}
+
+
+// Update which series the annotations for a graph are attached to based on the
+// current configurations. Checks against disabled configs so we don't change
+// annotations for graphs that aren't using multi-configs. This only changes
+// the annotations in graphInfo, it does _not_ update the graph annotations
+function updateAnnotationsSeries(g) {
+  // if only one config or there's no annotations, nothing to update
+  var annotations = g.graphInfo.annotations;
+  var annLength = annotations.length;
+  if (multiConfs === false || annLength === 0) return;
+
+  // if all configs are hidden or all configs are visible, nothing to update
+  var enabledConfs = getCheckedConfigurations();
+  var disabledConfs = getCheckedConfigurations(false);
+  if (enabledConfs.length === 0 || disabledConfs.length == 0) return;
+
+  // note that all annotations attach themselves to the same series
+  var firstAnn = annotations[0].series;
+
+  // if ann series is a disabled config, replace it with an enabled one
+  for (var i = 0, len = disabledConfs.length; i < len; i++) {
+    if (firstAnn.endsWith(disabledConfs[i])) {
+      var newSeries = firstAnn.replace(disabledConfs[i], enabledConfs[0]);
+      for (var j = 0; j < annLength; j++) {
+        annotations[j].series = newSeries;
+      }
+      break; // replaced the series, break out of disabledConfigs loop
     }
   }
 }
@@ -541,6 +573,12 @@ function perfGraphInit() {
         setQueryStringFromOption(OptionsEnum.CONFIGURATIONS, configsURL);
 
         applyFnToAllGraphs(function(g) {
+          // attach annotations to visible series, if not already.
+          // suppressDraw, setConfigurationVisibility will draw the graph
+          if (g.annotations().length > 0) {
+            updateAnnotationsSeries(g)
+            g.setAnnotations(g.graphInfo.annotations, true);
+          }
           setConfigurationVisibility(g);
         });
       };
