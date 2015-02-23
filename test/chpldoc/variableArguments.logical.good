@@ -1,4 +1,17 @@
 Module: variableArguments
+   proc variable(x ...)
+      This method has a variable number of arguments 
+
+   proc variableCommentless(c ...)
+   proc limited(x ...5)
+      This method requires a specific number of arguments, w/o limiting type 
+
+   proc limitedCommentless(x ...5)
+   proc specifyMe(q ...?k)
+      This methods can take any number of arguments, but that number must 
+      be specified by the caller 
+
+   proc specifyMeCommentless(q ...?p)
    Module: variableArguments.Other
       proc variable(x ...)
          This method has a variable number of arguments 
@@ -13,16 +26,3 @@ Module: variableArguments
          be specified by the caller 
 
       proc specifyMeCommentless(q ...?p)
-   proc variable(x ...)
-      This method has a variable number of arguments 
-
-   proc variableCommentless(c ...)
-   proc limited(x ...5)
-      This method requires a specific number of arguments, w/o limiting type 
-
-   proc limitedCommentless(x ...5)
-   proc specifyMe(q ...?k)
-      This methods can take any number of arguments, but that number must 
-      be specified by the caller 
-
-   proc specifyMeCommentless(q ...?p)
