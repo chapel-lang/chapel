@@ -41,8 +41,10 @@ CLEAN_TARGS += \
 endif
 
 parser: FORCE
+	@rm -f bison-chapel.output bison-chapel.cpp flex-chapel.cpp
+	@rm -f ../include/bison-chapel.h ../include/flex-chapel.h
 	bison chapel.ypp
-	@if [ `grep "conflicts:" bison-chapel.output | wc -l` -ne 0 ]; then echo "PROBLEM: chapel.ypp contains conflicts"; exit 1; fi;
+	@if grep -q "conflicts:" bison-chapel.output; then echo "PROBLEM: chapel.ypp contains conflicts"; exit 1; fi;
 	flex chapel.lex
 
 FORCE:
