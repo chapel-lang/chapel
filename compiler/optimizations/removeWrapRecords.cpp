@@ -26,6 +26,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "stlUtil.h"
 
 
 static Type* getWrapRecordBaseType(Type* type);
@@ -89,6 +90,20 @@ removeWrapRecords() {
       if (!strcmp(formal->name, "_valueType")) {
         forv_Vec(CallExpr, call, *fn->calledBy) {
           formal_to_actual(call, formal)->remove();
+        }
+        // Remove all uses of _valueType within the body of this function.
+        std::vector<SymExpr*> symExprs;
+        collectSymExprsSTL(fn->body, symExprs);
+        for_vector(SymExpr, se, symExprs) {
+          // Ignore dead ones.
+          if (se->parentSymbol == NULL)
+            continue;
+          // Weed out all but the formal we're interested in.
+          if (se->var != formal)
+            continue;
+          // OK, remove the entire statement accessing the _valueType formal.
+          Expr* stmt = se->getStmtExpr();
+          stmt->remove();
         }
         formal->defPoint->remove();
       }        
