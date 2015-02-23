@@ -20,31 +20,36 @@
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
+class BlockStmt;
 class CallExpr;
 
 #include "symbol.h"
 
+extern int         chplLineno;
 extern bool        chplParseString;
 extern const char* chplParseStringMsg;
 
 extern ModTag      currentModuleType;
 extern bool        currentFileNamedOnCommandLine;
 
+extern int         yystartlineno;
+extern const char* yyfilename;
+extern BlockStmt*  yyblock;
+
 ModuleSymbol*      parseFile(const char* filename,
                              ModTag      modtype,
-                             bool        namedOnCommandLine=false);
+                             bool        namedOnCommandLine = false);
 
 ModuleSymbol*      parseMod(const char* modname,
-                            ModTag modtype);
+                            ModTag      modtype);
 
 BlockStmt*         parseString(const char* string,
                                const char* filename,
                                const char* msg);
 
 void               addModuleToParseList(const char* name,
-                                        CallExpr* newUse);
+                                        CallExpr*   newUse);
 
 void               parseDependentModules(ModTag modtype);
-
 
 #endif

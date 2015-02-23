@@ -79,8 +79,6 @@ static bool enableModuleUsesCache = false;
 //
 static Vec<const char*> aliasFieldSet;
 
-static void     addToSymbolTable(Vec<DefExpr*>& defs);
-static void     processImportExprs();
 static void     addClassToHierarchy(AggregateType* ct);
 
 static void addRecordDefaultConstruction();
@@ -213,7 +211,7 @@ void scopeResolve() {
 *                                                                           *
 ************************************* | ************************************/
 
-static void addToSymbolTable(Vec<DefExpr*>& defs) {
+void addToSymbolTable(Vec<DefExpr*>& defs) {
   forv_Vec(DefExpr, def, defs)
   {
     // If the symbol is a compiler-generated variable or a label,
@@ -264,7 +262,7 @@ static void addToSymbolTable(Vec<DefExpr*>& defs) {
 static ModuleSymbol* getUsedModule(Expr* expr);
 static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall);
 
-static void processImportExprs() {
+void processImportExprs() {
   // handle "use mod;" where mod is a module
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_USE)) {
@@ -396,37 +394,7 @@ static void addClassToHierarchy(AggregateType*       ct,
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, ct->inherits) {
-    UnresolvedSymExpr* se  = toUnresolvedSymExpr(expr);
-
-    INT_ASSERT(se);
-
-    //    printf("looking up %s\n", se->unresolved);
-    Symbol*            sym = lookup(expr, se->unresolved);
-    TypeSymbol*        ts  = toTypeSymbol(sym);
-
-    if (!ts)
-      USR_FATAL(expr, "Illegal super class");
-
-    //    printf("found it in %s\n", sym->getModule()->name);
-    AggregateType* pt = toAggregateType(ts->type);
-
-    if (!pt)
-      USR_FATAL(expr, "Illegal super class %s", ts->name);
-
-    if (isUnion(ct) && isUnion(pt))
-      USR_FATAL(expr, "Illegal inheritance involving union type");
-
-    if (isRecord(ct) && isClass(pt))
-      USR_FATAL(expr, "Record %s inherits from class %s",
-                ct->symbol->name, pt->symbol->name);
-
-    if (isClass(ct) && isRecord(pt))
-      // <hilde> Possible language change: Allow classes to inherit
-      // fields and methods from records.
-      USR_FATAL(expr,
-                "Class %s inherits from record %s",
-                ct->symbol->name,
-                pt->symbol->name);
+    AggregateType* pt = discoverParentAndCheck(expr, ct);
 
     localSeen->set_add(ct);
 
@@ -471,6 +439,41 @@ static void addClassToHierarchy(AggregateType*       ct,
       }
     }
   }
+}
+
+AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* child) {
+  UnresolvedSymExpr* se  = toUnresolvedSymExpr(storesName);
+
+  INT_ASSERT(se);
+
+  Symbol*            sym = lookup(storesName, se->unresolved);
+  TypeSymbol*        ts  = toTypeSymbol(sym);
+
+  //    printf("looking up %s\n", se->unresolved);
+  if (!ts)
+    USR_FATAL(storesName, "Illegal super class");
+
+  //    printf("found it in %s\n", sym->getModule()->name);
+  AggregateType* pt = toAggregateType(ts->type);
+
+  if (!pt)
+    USR_FATAL(storesName, "Illegal super class %s", ts->name);
+  if (isUnion(child) && isUnion(pt))
+    USR_FATAL(storesName, "Illegal inheritance involving union type");
+
+  if (isRecord(child) && isClass(pt))
+    USR_FATAL(storesName, "Record %s inherits from class %s",
+              child->symbol->name, pt->symbol->name);
+
+  if (isClass(child) && isRecord(pt))
+    // <hilde> Possible language change: Allow classes to inherit
+    // fields and methods from records.
+    USR_FATAL(storesName,
+              "Class %s inherits from record %s",
+              child->symbol->name,
+              pt->symbol->name);
+
+  return pt;
 }
 
 void add_root_type(AggregateType* ct)

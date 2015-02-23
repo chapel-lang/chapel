@@ -7,6 +7,16 @@ the various formats.
 The Makefile in this third-party directory creates a Python virtualenv and
 installs the python packages required by `chpldoc` inside it.
 
+To re-install the packages, e.g. to pick up updates to the
+sphinxcontrib-chapeldomain package, use this command:
+
+```bash
+gmake install-requirements
+
+# or on mac, cygwin:
+make install-requirements
+```
+
 Python Packages
 ---------------
 

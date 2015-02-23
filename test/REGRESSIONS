@@ -49,21 +49,31 @@
 
 ===================
 general
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
+
+Sporadic compiler issue. (brad)
+---> Brad committed fix on 2015-02-17
+Appears to be non-deterministic issue when building compiler
+pgi: "PGC-W-0205-Argument mismatch for assert"
+gnu: "error: macro "assert" passed 3 arguments, but takes just 1"
+intel: ""
+(xe-wb.prgenv-pgi on 2015-01-29, xe-wb.prgenv-intel, smoke test whitebox, numa on 2015-02-14)
+---------------------------------------------------------------------------------------------
+All tests fail with: [Error matching compiler output for ...]
 
 
 ===================
 linux64
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ===================
 *32
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 Seg fault First run 2014-12-07
@@ -112,9 +122,8 @@ GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
 ===================
 linux32
 Inherits '*32'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
-
 
 timeout (2015-02-05, first run) - (elliot/michael)
 --------------------------------------------------
@@ -125,29 +134,34 @@ timeout (2015-02-05, first run) - (elliot/michael)
 ===================
 darwin
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
+
+Email on chapelmac was not sending through 2015-02-17.
+--> Should be fixed on 2015-02-18
 
 
 ===================
 gnu.darwin
 Inherits 'darwin'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ===================
 perf*
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2015-02-09
+Reviewed 2015-02-15
 ===================
+
+bradc-lnx crashed 2015-02-16.
 
 consistent failure due to insane memory usage (should get better with strings)
 ------------------------------------------------------------------------------
@@ -158,7 +172,7 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 consistent failure due to insane memory usage (should get better with strings)
@@ -169,15 +183,28 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
+
+
+======================
+perf.chap04.playground
+Inherits 'perf.chap04'
+Reviewed 2015-02-17
+======================
+
+Currently running array slicing testing for Brad, Elliot. There are
+regressions, but they should be ignored until further notice from Elliot.
 
 
 ====================
 perf.chapel-shootout
 Inherits 'perf*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ====================
+
+Email on chapel-shoout system was not sending through 2015-02-17.
+--> Should be fixed on 2015-02-18
 
 consistent failure due to insane memory usage (should get better with strings)
 ------------------------------------------------------------------------------
@@ -187,35 +214,35 @@ consistent failure due to insane memory usage (should get better with strings)
 ===================
 fast
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ===================
 memleaks.examples
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ============================
 memleaks
 Inherits 'memleaks.examples'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ============================
 
 
 ===================
 verify
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
@@ -249,7 +276,7 @@ sporadic execution timeout
 ===================
 llvm
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
@@ -258,51 +285,38 @@ relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
 
 
 ===================
-xc.llvm
-Inherits 'llvm'
-Reviewed 2015-02-10
-===================
-
-
-===================
 fifo
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ===================
 numa
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ===================
 no-local
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 =================================
 no-local.linux32
 Inherits 'linux32' and 'no-local'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 =================================
 
 
 ===================
 gasnet*
 Inherits 'no-local'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
-
-
-Comm count mismatch (lydia)
----------------------------
-[Error matching program output for distributions/deitz/test_block_representation (compopts: 1)]
-
 
 === sporadic failures below ===
 
@@ -312,11 +326,17 @@ sporadic failures even after Sung quieted it down (frequently -- gbt/diten)
 ---------------------------------------------------------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/coforall] (2014-10-23..2014-11-30, ..., 2015-01-26, 2015-02-10)
 
+execution timeout
+(happens on: gasnet.fifo, gasnet-fast)
+---------------------------------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (2015-02-15, 2015-02-17)
+
+
 
 ===================
 gasnet-everything
 Inherits 'gasnet*'
-Reviewed 2015-02-09
+Reviewed 2015-02-16
 ===================
 
 
@@ -330,7 +350,7 @@ sporadic execution timeout
 ===================
 gasnet-fast
 Inherits 'gasnet*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
@@ -344,14 +364,14 @@ sporadic execution timeout (regularly)
 ===============================
 gasnet.darwin
 Inherits 'darwin' and 'gasnet*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===============================
 
 
 =============================
 gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 =============================
 
 === sporadic failures below ===
@@ -369,22 +389,28 @@ until we start running on real harware.
 =============================
 gasnet.llvm
 Inherits 'gasnet*' and 'llvm'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 =============================
 
 
 =============================
 gasnet.numa
 Inherits 'gasnet*' and 'numa'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 =============================
 
 
 ===================
 x?-wb.*
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
+
+Compilation timeout (2015-02-17)
+Normally takes ~10s to compile. Started timing out (300s) on 2015-02-17.
+(happened on: xe-wb.prgenv-gnu, xe-wb.prgenv-pgi, xc-wb.prgenv-pgi)
+--------------------------------------------------------------------------------
+[Error: Timed out compilation for compflags/bradc/html/testit (compopts: 1)]
 
 
 === sporadic failures below ===
@@ -408,20 +434,25 @@ sporadic execution timeouts
 ---------------------------
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_rangesub_5] (xe-wb.pgi 2015-01-22)
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_vector_4] (xe-wb.prgenv-pgi 2015-01-22)
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (xc-wb.pgi, xc-wb.prgenv-gnu 2015-02-15; xc-wb.prgenv-intel 2015-02-17)
 
 
 ==================
 *prgenv-*
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ====================
+
+Execution timeout on 2015-02-15
+-------------------------------
+[Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)]
 
 An invalid option "openmp" appears on the command line. (2014-11-17 -- thomas/ben/et al)
 ----------------------------------------------------------------------------------------
@@ -511,22 +542,23 @@ signal 11 (first seen 2014-03-02) (Note resolved with CCE 8.3.8)
 ======================================
 x?-wb.prgenv-cray
 Inherits 'x?-wb.*' and '*prgenv-cray*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ======================================
 
 
 ============================
-xc-wb.prgenv-cray
+x?-wb.host.prgenv-cray
 Inherits 'x?-wb.prgenv-cray'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ============================
 
+unresolved call in Types.chpl (2015-02-15, brad)
+--> xe-wb.host.prgenv-cray passed on  2015-02-17 (fixed or fluke?)
+$CHPL_HOME/modules/standard/Types.chpl:72: In function 'isIntType':
+$CHPL_HOME/modules/standard/Types.chpl:73: error: unresolved call '||(0, 0)'
+----------------------------------------------------------------------------
+All tests fail to compile.
 
-============================
-xc-wb.host.prgenv-cray
-Inherits 'xc-wb.prgenv-cray'
-Reviewed 2015-02-09
-============================
 
 === sporadic failures below ===
 
@@ -543,11 +575,15 @@ or "$CHPL_HOME/modules/internal/ChapelArray.chpl:2117: In function '='
 $CHPL_HOME/modules/internal/ChapelArray.chpl:2119: error: unresolved call '(list(BaseArr))'" (2015-01-27..2015-01-28)
 --------------------------------------------------------------------------------------------
 
+for param loop in String.chpl --> "$CHPL_HOME/modules/internal/String.chpl:120: error: " (2015-02-11)
+-----------------------------------------------------------------------------------------------------
+all tests fail compilation
+
 
 ===================
 *intel*
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 test assertion failures (2014-09-21..)
@@ -564,56 +600,56 @@ binary files differ (2014-09-21..)
 ================================
 x?-wb.intel
 Inherits 'x?-wb.*' and '*intel*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ================================
 
 
 ================================
 x?-wb.prgenv-intel
 Inherits 'x?-wb.*' and '*intel*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ================================
 
 
 =============================
-xc-wb.host.prgenv-intel
+x?-wb.host.prgenv-intel
 Inherits 'x?-wb.prgenv-intel'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 =============================
 
 
 =======================
 *gnu*
 Inherits from 'linux64'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 =======================
 
 
 ==============================
 x?-wb.gnu
 Inherits 'x?-wb.*' and '*gnu*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ==============================
 
 
 ==============================
 x?-wb.prgenv-gnu
 Inherits 'x?-wb.*' and '*gnu*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ==============================
 
 
 ===========================
-xc-wb.host.prgenv-gnu
+x?-wb.host.prgenv-gnu
 Inherits 'x?-wb.prgenv-gnu'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===========================
 
 
 ===================
 *pgi*
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 undefined reference to chpl_bitops_debruijn64
@@ -634,39 +670,35 @@ consistent execution timeout (no intrinsics for pgi, test is slow with locks)
 ==============================
 x?-wb.pgi
 Inherits 'x?-wb.*' and '*pgi*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ==============================
 
 
 ==============================
 x?-wb.prgenv-pgi
 Inherits 'x?-wb.*' and '*pgi*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ==============================
-
-PGC-W-0205-Argument mismatch for assert (xe-wb.prgenv-pgi 2015-01-29, can't reproduce)
---------------------------------------------------------------------------------------
-all but a few failed
 
 
 ===========================
-xc-wb.host.prgenv-pgi
+x?-wb.host.prgenv-pgi
 Inherits 'x?-wb.prgenv-pgi'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===========================
 
 
 ===================
 rhel.linux64
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ===================
 cygwin*
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-16
 ===================
 
 check_channel assertion failure
@@ -685,7 +717,7 @@ consistent execution timeout (frequent)
 ===========================
 cygwin32
 Inherits 'cygwin*' and '*32'
-Reviewed 2015-02-09
+Reviewed 2015-02-16
 ===========================
 
 Generated output "FAILED" (see below for sporadic): First run 2014-12-07
@@ -713,7 +745,7 @@ sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ================================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
-Reviewed 2015-02-09
+Reviewed 2015-02-16
 ================================
 
 QIO qio_err_to_int() == EEOF assertion error
@@ -724,9 +756,8 @@ QIO qio_err_to_int() == EEOF assertion error
 ===================
 baseline
 Inherits 'general'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
-
 
 Dies with signal 6
 ------------------
@@ -736,14 +767,14 @@ Dies with signal 6
 ===================
 dist-block
 Inherits 'gasnet*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
 ===================
 dist-cyclic
 Inherits 'gasnet*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
 
@@ -758,99 +789,6 @@ sporadic execution timeout (very infrequent) (2014-11-04, 2015-01-18)
 ===================
 dist-replicated
 Inherits 'gasnet*'
-Reviewed 2015-02-09
+Reviewed 2015-02-17
 ===================
 
-
-New XC/XE configs:
-
-cray-module-correctness-cray-xe
--------------------------------
-xe.gemini.cray -- 8 failures
-xe.gemini.intel
-xe.gemini.pgi
-xe.gemini.gnu
-xe.mpi.cray -- 5 failures
-xe.mpi.intel -- 2 failures
-xe.mpi.pgi
-xe.mpi.gnu
-xe.ugni.intel -- 12 failures
-xe.ugni.gnu  -- 8 failures
-xe.none.cray -- 1 failure
-xe.none.intel
-xe.none.pgi
-xe.none.gnu
-
-cray-module-correctness-cray-xc
--------------------------------
-xc.aries.cray.aprun
-xc.aries.intel.aprun
-xc.aries.pgi.aprun
-xc.aries.gnu.aprun
-xc.mpi.cray.aprun
-xc.mpi.intel.aprun
-xc.mpi.pgi.aprun  -- 1 failure
-xc.mpi.gnu.aprun
-xc.ugni.intel.aprun -- 7 failures
-xc.ugni.gnu.aprun
-xc.none.cray.aprun -- 1 failure
-xc.none.intel.aprun
-xc.none.pgi.aprun
-xc.none.gnu.aprun
-
-cray-module-correctness-cray-xc-slurm
--------------------------------------
-xc.aries.cray.slurm
-xc.aries.intel.slurm
-xc.aries.pgi.slurm
-xc.aries.gnu.slurm
-xc.mpi.cray.slurm
-xc.mpi.intel.slurm
-xc.mpi.pgi.slurm
-xc.mpi.gnu.slurm
-xc.ugni.intel.slurm -- 10 failures (greg, ben)
-xc.ugni.gnu.slurm
-xc.none.cray.slurm -- 1 failure
-xc.none.intel.slurm
-xc.none.pgi.slurm
-xc.none.gnu.slurm
-
-cray-module-correctness-cray-xc-llvm
-------------------------------------
-~~~ xc.llvm
-
-cray-module-correctness-cray-xc-knc
------------------------------------
-xc.knc
-
-cray-module-performance-cray-xc
--------------------------------
-perf.xc.16.aries.gnu
-~~~~~~~~~~~~~~~~~~~~
-2 failures
-
-perf.xc.16.mpi.gnu
-~~~~~~~~~~~~~~~~~~
-2 failures
-
-perf.xc.16.ugni.gnu
-~~~~~~~~~~~~~~~~~~~
-1 failure
-
-cray-module-performance-cray-xc-single-locale
----------------------------------------------
-perf.xc.local.cray
-~~~~~~~~~~~~~~~~~~
-52 failures
-
-perf.xc.local.intel
-~~~~~~~~~~~~~~~~~~~
-45 failures
-
-perf.xc.local.pgi
-~~~~~~~~~~~~~~~~~
-45 failures
-
-perf.xc.local.gnu
-~~~~~~~~~~~~~~~~~
-44 failures

@@ -1,680 +1,392 @@
-This file is to keep track of the hw nodes
+# This file is used to keep track of the cray hardware testing.
 
 ===============================
-cray-module-correctness-cray-x?
+x?.*
 Inherits 'x?-wb.*'
-Reviewed 2015-02-02
+Reviewed 2015-02-17
 ===============================
+
+chpl_launchcmd issue (2015-02-14, elliot, thomas)
+Appears to affect random correctness tests and all perf.xc.{no-local,local}.* tests.
+-----------------------------------------------------------------------------------------------------------------------------
+Tests fail due to:
+ValueError: [Error: output file from job (id: 707527) does not exist at: $CHPL_HOME/test/.../chapel-test-???/test_output.log]
+
 
 === sporadic failures below ===
 
-Occasional "unexpected termination of the channel"
---------------------------------------------------
+"No package 'libsci_mpi' found" for testing running on jupiter (2015-02-13)
+(xc.*.*.aprun)
+---------------------------------------------------------------------------
+All tess fail to compile
+
+"unexpected termination of the channel" -- happens when cray goes offline
+-------------------------------------------------------------------------
 any
 
 
 ==========================================
-cray-module-correctness-cray-x?-none*
-Inherits 'cray-module-correctness-cray-x?'
-Reviewed 2015-02-02
+xe.*
+Inherits 'x?.*'
+Reviewed 2015-02-17
+==========================================
+
+=== sporadic issues ===
+
+Sporadic compilation timeouts (XE test system is less powerful)
+(happens most often when compiler=cray)
+(Thomas tried moving to eslogin node.)
+---------------------------------------------------------------
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: *)]
+[Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: *)]
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
+[Error: Timed out compilation for release/examples/primers/distributions]
+
+
+==========================================
+x?.none.*
+Inherits 'x?.*'
+Reviewed 2015-02-17
 ==========================================
 
 
 ===========================================
-cray-module-correctness-cray-x?-gasnet*
-Inherits 'cray-module-correctness-cray-x?'
-and 'gasnet*'
-Reviewed 2015-02-02
+x?.[gasnet].*
+Inherits 'x?.*' and 'gasnet*'
+Reviewed 2015-02-17
+===========================================
+
+== sporadic issues ===
+
+Sporadic execution timeouts due to comm init failure. Has occurred with aries, gemini, and mpi substrate.
+[PE_1]:inet_connect:inet_connect: connect failed after 301 attempts
+---------------------------------------------------------------------------------------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream] (2015-02-15)
+[Error: Timed out executing program release/examples/hello2-module] (2015-02-15)
+[Error: Timed out executing program release/examples/hello] (2015-02-15)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream] (2015-02-15)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)] (2015-02-15)
+
+===========================================
+x?.{aries,gemini}.*
+Inherits 'x?.*' and 'gasnet*'
+Reviewed 2015-02-17
 ===========================================
 
 
 ==================================================
-cray-module-correctness-cray-x?-gasnet-mpi*
-Inherits 'cray-module-correctness-cray-x?-gasnet*'
-Reviewed 2015-02-02
+x?.mpi.*
+Inherits 'x?.*' and 'gasnet*'
+Reviewed 2015-02-17
 ==================================================
 
 
 ==========================================
-cray-module-correctness-cray-x?-ugni*
-Inherits 'cray-module-correctness-cray-x?'
-and 'no-local'
-Reviewed 2015-02-02
+x?.ugni.*
+Inherits 'x?.*' and 'no-local'
+Reviewed 2015-02-17
 ==========================================
-
-floating point issues (except xc-slurm-ugni-gnu)
-------------------------------------------------
-FAILED:  release/examples/benchmarks/lulesh.lulesh
-FAILED:  release/examples/benchmarks/miniMD.miniMD
-FAILED:  release/examples/benchmarks/miniMD/explicit.miniMD
 
 
 === sporadic failures below ===
 
-floating point issues
----------------------
-FAILED:  release/examples/benchmarks/lulesh.test3DLulesh (compopts: 1, execopts: 3) (2015-02-02, 2015-01-31, 2015-02-01)
-
-
-==========================================
-cray-module-correctness-cray-x?-*-cray
-Inherits 'cray-module-correctness-cray-x?'
-and '*prgenv-cray*'
-Reviewed 2015-02-02
-==========================================
-
-
-==========================================
-cray-module-correctness-cray-x?-*-pgi
-Inherits 'cray-module-correctness-cray-x?'
-and '*pgi*'
-Reviewed 2015-02-02
-==========================================
-
-
-==========================================
-cray-module-correctness-cray-x?-*-intel
-Inherits 'cray-module-correctness-cray-x?'
-and '*intel*'
-Reviewed 2015-02-02
-==========================================
-
-
-==========================================
-cray-module-correctness-cray-x?-*-gnu
-Inherits 'cray-module-correctness-cray-x?'
-Reviewed 2015-02-02
-==========================================
-
-
-==========================================
-cray-module-correctness-cray-xc*
-Inherits 'cray-module-correctness-cray-x?'
-Reviewed 2015-02-02
-==========================================
-
-
-================================================
-cray-module-correctness-cray-xc-none*
-Inherits 'cray-module-correctness-cray-x?-none*'
-and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-02-02
-================================================
-
-
-=============================================
-cray-module-correctness-cray-xc-gasnet*
-Inherits 'cray-module-correctness-cray-xc*'
-and 'cray-module-correctness-cray-x?-gasnet*'
-Reviewed 2015-02-02
-=============================================
-
-
-==================================================
-cray-module-correctness-cray-xc-gasnet-aries*
-Inherits 'cray-module-correctness-cray-xc-gasnet*'
-Reviewed 2015-02-02
-==================================================
-
-
-======================================================
-cray-module-correctness-cray-xc-gasnet-mpi*
-Inherits 'cray-module-correctness-cray-x?-gasnet-mpi*'
-and 'cray-module-correctness-cray-xc-gasnet*'
-Reviewed 2015-02-02
-======================================================
-
-
-===============================================
-cray-module-correctness-cray-xc-ugni*
-Inherits 'cray-module-correctness-cray-x?-ugni*'
-and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-02-02
-===============================================
-
-
-=================================================
-cray-module-correctness-cray-xc-*-cray
-Inherits 'cray-module-correctness-cray-x?-*-cray'
-and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-02-02
-=================================================
-
-
-================================================
-cray-module-correctness-cray-xc-*-pgi
-Inherits 'cray-module-correctness-cray-x?-*-pgi'
-and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-02-02
-================================================
-
-
-==================================================
-cray-module-correctness-cray-xc-*-intel
-Inherits 'cray-module-correctness-cray-x?-*-intel'
-and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-02-02
-==================================================
-
-
-==========================================
-cray-module-correctness-cray-xc-*-gnu
-Inherits 'cray-module-correctness-cray-x?-*-gnu'
-and 'cray-module-correctness-cray-xc*'
-Reviewed 2015-02-02
-==========================================
-
-
-================================================
-cray-module-correctness-cray-xc-none-cray
-Inherits 'cray-module-correctness-cray-xc-none*'
-and 'cray-module-correctness-cray-xc-*-cray'
-Reviewed 2015-02-02
-================================================
-
-
-================================================
-cray-module-correctness-cray-xc-none-pgi
-Inherits 'cray-module-correctness-cray-xc-none*'
-and 'cray-module-correctness-cray-xc-*-pgi'
-Reviewed 2015-02-02
-================================================
-
-
-================================================
-cray-module-correctness-cray-xc-none-intel
-Inherits 'cray-module-correctness-cray-xc-none*'
-and 'cray-module-correctness-cray-xc-*-intel'
-Reviewed 2015-02-02
-================================================
-
-
-================================================
-cray-module-correctness-cray-xc-none-gnu
-Inherits 'cray-module-correctness-cray-xc-none*'
-and 'cray-module-correctness-cray-xc-*-gnu'
-Reviewed 2015-02-02
-================================================
-
-
-========================================================
-cray-module-correctness-cray-xc-gasnet-aries-cray
-Inherits 'cray-module-correctness-cray-xc-gasnet-aries*'
-and ''cray-module-correctness-cray-xc-*-cray'
-Reviewed 2015-02-02
-========================================================
-
-
-========================================================
-cray-module-correctness-cray-xc-gasnet-aries-pgi
-Inherits 'cray-module-correctness-cray-xc-gasnet-aries*'
-and ''cray-module-correctness-cray-xc-*-pgi'
-Reviewed 2015-02-02
-========================================================
-
-
-========================================================
-cray-module-correctness-cray-xc-gasnet-aries-intel
-Inherits 'cray-module-correctness-cray-xc-gasnet-aries*'
-and ''cray-module-correctness-cray-xc-*-intel'
-Reviewed 2015-02-02
-========================================================
-
-
-========================================================
-cray-module-correctness-cray-xc-gasnet-aries-gnu
-Inherits 'cray-module-correctness-cray-xc-gasnet-aries*'
-and ''cray-module-correctness-cray-xc-*-gnu'
-Reviewed 2015-02-02
-========================================================
-
-
-======================================================
-cray-module-correctness-cray-xc-gasnet-mpi-cray
-Inherits 'cray-module-correctness-cray-xc-gasnet-mpi*'
-and 'cray-module-correctness-cray-xc-*-cray'
-Reviewed 2015-02-02
-======================================================
-
-
-======================================================
-cray-module-correctness-cray-xc-gasnet-mpi-pgi
-Inherits 'cray-module-correctness-cray-xc-gasnet-mpi*'
-and 'cray-module-correctness-cray-xc-*-pgi'
-Reviewed 2015-02-02
-======================================================
-
-
-======================================================
-cray-module-correctness-cray-xc-gasnet-mpi-intel
-Inherits 'cray-module-correctness-cray-xc-gasnet-mpi*'
-and 'cray-module-correctness-cray-xc-*-intel'
-Reviewed 2015-02-02
-======================================================
-
-
-======================================================
-cray-module-correctness-cray-xc-gasnet-mpi-gnu
-Inherits 'cray-module-correctness-cray-xc-gasnet-mpi*'
-and 'cray-module-correctness-cray-xc-*-gnu'
-Reviewed 2015-02-02
-======================================================
-
-
-================================================
-cray-module-correctness-cray-xc-ugni-intel
-Inherits 'cray-module-correctness-cray-xc-ugni*'
-and 'cray-module-correctness-cray-xc-*-intel'
-Reviewed 2015-02-02
-================================================
-
-
-================================================
-cray-module-correctness-cray-xc-ugni-gnu
-Inherits 'cray-module-correctness-cray-xc-ugni*'
-and 'cray-module-correctness-cray-xc-*-gnu'
-Reviewed 2015-02-02
-================================================
-
-
-==========================================
-cray-module-correctness-cray-xc-knc
-Inherits 'cray-module-correctness-cray-xc*'
-Reviewed 2015-02-02
-==========================================
-
-
-==========================================
-cray-module-correctness-cray-xc-llvm
-Inherits 'cray-module-correctness-cray-xc*'
-Reviewed 2015-02-02
-==========================================
-
-
-==========================================
-cray-module-correctness-cray-xc-slurm
-Inherits 'cray-module-correctness-cray-xc*'
-Reviewed 2015-02-02
-==========================================
-
-
-====================================================
-cray-module-correctness-cray-xc-slurm-none-cray
-Inherits 'cray-module-correctness-cray-xc-none-cray'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-====================================================
-
-
-===================================================
-cray-module-correctness-cray-xc-slurm-none-pgi
-Inherits 'cray-module-correctness-cray-xc-none-pgi'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-===================================================
-
-
-=====================================================
-cray-module-correctness-cray-xc-slurm-none-intel
-Inherits 'cray-module-correctness-cray-xc-none-intel'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-=====================================================
-
-
-===================================================
-cray-module-correctness-cray-xc-slurm-none-gnu
-Inherits 'cray-module-correctness-cray-xc-none-gnu'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-===================================================
-
-
-============================================================
-cray-module-correctness-cray-xc-slurm-gasnet-aries-cray
-Inherits 'cray-module-correctness-cray-xc-gasnet-aries-cray'
-and ''cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-============================================================
-
-
-===========================================================
-cray-module-correctness-cray-xc-slurm-gasnet-aries-pgi
-Inherits 'cray-module-correctness-cray-xc-gasnet-aries-pgi'
-and ''cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-===========================================================
-
-
-=============================================================
-cray-module-correctness-cray-xc-slurm-gasnet-aries-intel
-Inherits 'cray-module-correctness-cray-xc-gasnet-aries-intel'
-and ''cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-=============================================================
-
-
-===========================================================
-cray-module-correctness-cray-xc-slurm-gasnet-aries-gnu
-Inherits 'cray-module-correctness-cray-xc-gasnet-aries-gnu'
-and ''cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-===========================================================
-
-
-==========================================================
-cray-module-correctness-cray-xc-slurm-gasnet-mpi-cray
-Inherits 'cray-module-correctness-cray-xc-gasnet-mpi-cray'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-==========================================================
-
-
-=========================================================
-cray-module-correctness-cray-xc-slurm-gasnet-mpi-pgi
-Inherits 'cray-module-correctness-cray-xc-gasnet-mpi-pgi'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-=========================================================
-
-
-===========================================================
-cray-module-correctness-cray-xc-slurm-gasnet-mpi-intel
-Inherits 'cray-module-correctness-cray-xc-gasnet-mpi-intel'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-===========================================================
-
-
-=========================================================
-cray-module-correctness-cray-xc-slurm-gasnet-mpi-gnu
-Inherits 'cray-module-correctness-cray-xc-gasnet-mpi-gnu'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-=========================================================
-
-
-=====================================================
-cray-module-correctness-cray-xc-slurm-ugni-intel
-Inherits 'cray-module-correctness-cray-xc-ugni-intel'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-=====================================================
-
-
-===================================================
-cray-module-correctness-cray-xc-slurm-ugni-gnu
-Inherits 'cray-module-correctness-cray-xc-ugni-gnu'
-and 'cray-module-correctness-cray-xc-slurm'
-Reviewed 2015-02-02
-===================================================
-
-
-==========================================
-cray-module-correctness-cray-xe*
-Inherits 'cray-module-correctness-cray-x?'
-Reviewed 2015-02-02
-==========================================
-
-
-================================================
-cray-module-correctness-cray-xe-none*
-Inherits 'cray-module-correctness-cray-x?-none*'
-and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-02-02
-================================================
-
-
-=============================================
-cray-module-correctness-cray-xe-gasnet*
-Inherits 'cray-module-correctness-cray-xe*'
-and 'cray-module-correctness-cray-x?-gasnet*'
-Reviewed 2015-02-02
-=============================================
-
-
-==================================================
-cray-module-correctness-cray-xe-gasnet-gemini*
-Inherits 'cray-module-correctness-cray-xe-gasnet*'
-Reviewed 2015-02-02
-==================================================
-
-
-======================================================
-cray-module-correctness-cray-xe-gasnet-mpi*
-Inherits 'cray-module-correctness-cray-x?-gasnet-mpi*'
-and 'cray-module-correctness-cray-xe-gasnet*'
-Reviewed 2015-02-02
-======================================================
-
-
-================================================
-cray-module-correctness-cray-xe-ugni*
-Inherits 'cray-module-correctness-cray-x?-ugni*'
-and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-02-02
-================================================
-
-
-=== sporadic failures below ===
-
-Out of memory (2015-02-02, 2015-02-01)
+Out of memory (2015-02-01, 2015-02-15)
 --------------------------------------
-release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)
-release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
 
 
-Out of memory (2015-02-02)
+Out of memory (2015-02-02, 2015-02-15)
+--------------------------------------
+[Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
+
+floating point issues (2015-02-02, 2015-02-15)
+----------------------------------------------
+[Error matching program output for release/examples/benchmarks/miniMD/explicit/miniMD (compopts: 1)]
+
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
+[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
+
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 5)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 5)]
+
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
+
+
+==========================================
+x?.*.cray*
+Inherits 'x?.*' and '*prgenv-cray*'
+Reviewed 2015-02-17
+==========================================
+
+
+==========================================
+x?.*.pgi*
+Inherits 'x?.*' and '*pgi*'
+Reviewed 2015-02-17
+==========================================
+
+
+==========================================
+x?.*.intel*
+Inherits 'x?.*' and '*intel*'
+Reviewed 2015-02-17
+==========================================
+
+
+==========================================
+x?.*.gnu*
+Inherits 'x?.*' and '*gnu*'
+Reviewed 2015-02-17
+==========================================
+
+
+==========================================
+xc.knc
+Inherits 'x?.*'
+Reviewed 2015-02-17
+==========================================
+
+On Cray systems, it is unclear how file systems interact with KNCs.
+-------------------------------------------------------------------
+[Error matching program output for release/examples/primers/fileIO] (2015-02-12.., first run)
+
+
+==========================================
+xc.llvm
+Inherits 'x?.*' and 'llvm'
+Reviewed 2015-02-17
+==========================================
+
+
+==========================================
+x?.*slurm
+Inherits 'x?.*'
+Reviewed 2015-02-17
+==========================================
+
+
+====================================================
+x?.*aprun
+Inherits 'x?.*'
+Reviewed 2015-02-17
+====================================================
+
+
+================================
+perf.xc.*
+Inherits 'perf*'
+Reviewed 2015-02-17
+================================
+
+
+============================================
+perf.xc.{no-local,local}.*
+Inherits 'perf.xc.*'
+Reviewed 2015-02-17
+============================================
+
+chpl_launchcmd issue (2015-02-14, elliot, thomas)
+ValueError: [Error: output file from job (id: 707527) does not exist at: $CHPL_HOME/test/.../chapel-test-???/test_output.log]
+-----------------------------------------------------------------------------------------------------------------------------
+All tests fail to find perf keys.
+
+
+################################################################################
+Below this line are individual configurations for XC and XE.
+
+They are in order of logical groupings, which also happens to be alphabetical.
+Because there are so many, empty configurations are simply listed together, at
+the top. Please move them to the correct place when they have individual
+errors. Note that an empty configuration may have errors listed in one of the
+groups above, but it doesn't have any failures that _only_ occur in its
+configuration.
+################################################################################
+
+===================
+Empty configs
+Reviewed 2015-02-17
+===================
+
+xc.aries.cray.aprun
+xc.aries.cray.slurm
+xc.aries.gnu.aprun
+xc.aries.gnu.slurm
+xc.aries.intel.aprun
+xc.aries.intel.slurm
+xc.aries.pgi.aprun
+xc.aries.pgi.slurm
+xc.mpi.cray.slurm
+xc.mpi.gnu.aprun
+xc.mpi.gnu.slurm
+xc.mpi.intel.aprun
+xc.mpi.intel.slurm
+xc.mpi.pgi.aprun
+xc.mpi.pgi.slurm
+xc.none.cray.aprun
+xc.none.cray.slurm
+xc.none.gnu.aprun
+xc.none.gnu.slurm
+xc.none.intel.aprun
+xc.none.intel.slurm
+xc.none.pgi.aprun
+xc.none.pgi.slurm
+xc.ugni.gnu.aprun
+xc.ugni.gnu.slurm
+xc.ugni.intel.aprun
+xc.ugni.intel.slurm
+xe.gemini.cray
+xe.gemini.gnu
+xe.gemini.intel
+xe.gemini.pgi
+xe.mpi.cray
+xe.mpi.gnu
+xe.mpi.intel
+xe.mpi.pgi
+xe.none.cray
+xe.none.gnu
+xe.none.intel
+xe.none.pgi
+xe.ugni.gnu
+xe.ugni.intel
+
+
+===========================================
+xc.mpi.cray.aprun
+Inherits 'x?.*.cray*' and 'x?.mpi.*'
+Reviewed 2015-02-17
+===========================================
+
+=== sporadic issues ===
+
+Differences in floating point numbers
+-------------------------------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (2015-02-14)
+
+
+aprun: Apid <id>: Apid <id> RCA ec_node_unavailable event received for nid <nid>
+--------------------------------------------------------------------------------
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (2015-02-14)
+
+
+==================================================
+perf.xc.16.aries.gnu
+Inherits 'perf.xc.*'
+Reviewed 2015-02-17
+==================================================
+
+Execution timeout (2015-02-02..)
+--------------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra-atomics]
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)]
+
+=== sporadic issues ===
+
+Sporadic execution timeouts.
+----------------------------
+[Error: Timed out executing program studies/hpcc/HPL/vass/hpl.hpcc2012 (compopts: 1)] (2015-02-15)
+
+
+===========================================
+perf.xc.16.mpi.gnu
+Inherits 'perf.xc.*'.
+Reviewed 2015-02-17
+===========================================
+
+Execution timeout (2015-02-02..)
+--------------------------------
+[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)]
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)]
+
+=== sporadic issues ===
+
+Sporadic execution timeout
 --------------------------
-FAILED:  release/examples/benchmarks/hpcc/variants.ra-cleanloop
-
-=================================================
-cray-module-correctness-cray-xe-*-cray
-Inherits 'cray-module-correctness-cray-x?-*-cray'
-and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-02-02
-=================================================
-
-
-================================================
-cray-module-correctness-cray-xe-*-pgi
-Inherits 'cray-module-correctness-cray-x?-*-pgi'
-and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-02-02
-================================================
-
-
-==================================================
-cray-module-correctness-cray-xe-*-intel
-Inherits 'cray-module-correctness-cray-x?-*-intel'
-and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-02-02
-==================================================
-
-
-==========================================
-cray-module-correctness-cray-xe-*-gnu
-Inherits 'cray-module-correctness-cray-x?-*-gnu'
-and 'cray-module-correctness-cray-xe*'
-Reviewed 2015-02-02
-==========================================
-
-
-================================================
-cray-module-correctness-cray-xe-none-cray
-Inherits 'cray-module-correctness-cray-xe-none*'
-and 'cray-module-correctness-cray-xe-*-cray'
-Reviewed 2015-02-02
-================================================
-
-
-================================================
-cray-module-correctness-cray-xe-none-pgi
-Inherits 'cray-module-correctness-cray-xe-none*'
-and 'cray-module-correctness-cray-xe-*-pgi'
-Reviewed 2015-02-02
-================================================
-
-
-================================================
-cray-module-correctness-cray-xe-none-intel
-Inherits 'cray-module-correctness-cray-xe-none*'
-and 'cray-module-correctness-cray-xe-*-intel'
-Reviewed 2015-02-02
-================================================
-
-
-================================================
-cray-module-correctness-cray-xe-none-gnu
-Inherits 'cray-module-correctness-cray-xe-none*'
-and 'cray-module-correctness-cray-xe-*-gnu'
-Reviewed 2015-02-02
-================================================
-
-
-========================================================
-cray-module-correctness-cray-xe-gasnet-gemini-cray
-Inherits 'cray-module-correctness-cray-xe-gasnet-gemini*'
-and ''cray-module-correctness-cray-xe-*-cray'
-Reviewed 2015-02-02
-========================================================
-
-
-========================================================
-cray-module-correctness-cray-xe-gasnet-gemini-pgi
-Inherits 'cray-module-correctness-cray-xe-gasnet-gemini*'
-and ''cray-module-correctness-cray-xe-*-pgi'
-Reviewed 2015-02-02
-========================================================
-
-
-========================================================
-cray-module-correctness-cray-xe-gasnet-gemini-intel
-Inherits 'cray-module-correctness-cray-xe-gasnet-gemini*'
-and ''cray-module-correctness-cray-xe-*-intel'
-Reviewed 2015-02-02
-========================================================
-
-
-=== sporadic failures below ===
-
-Compilation timeout
--------------------
-FAILED:  release/examples/benchmarks/miniMD.miniMD (2015-01-30)
-
-
-========================================================
-cray-module-correctness-cray-xe-gasnet-gemini-gnu
-Inherits 'cray-module-correctness-cray-xe-gasnet-gemini*'
-and ''cray-module-correctness-cray-xe-*-gnu'
-Reviewed 2015-02-02
-========================================================
-
-
-======================================================
-cray-module-correctness-cray-xe-gasnet-mpi-cray
-Inherits 'cray-module-correctness-cray-xe-gasnet-mpi*'
-and 'cray-module-correctness-cray-xe-*-cray'
-Reviewed 2015-02-02
-======================================================
-
-
-=== sporadic failures below ===
-
-Compilation timeout
--------------------
-FAILED:  release/examples/benchmarks/ssca2.SSCA2_main (2015-02-01)
-FAILED:  release/examples/benchmarks/miniMD.miniMD (2015-02-01..)
-
-
-======================================================
-cray-module-correctness-cray-xe-gasnet-mpi-pgi
-Inherits 'cray-module-correctness-cray-xe-gasnet-mpi*'
-and 'cray-module-correctness-cray-xe-*-pgi'
-Reviewed 2015-02-02
-======================================================
-
-
-======================================================
-cray-module-correctness-cray-xe-gasnet-mpi-intel
-Inherits 'cray-module-correctness-cray-xe-gasnet-mpi*'
-and 'cray-module-correctness-cray-xe-*-intel'
-Reviewed 2015-02-02
-======================================================
-
-
-======================================================
-cray-module-correctness-cray-xe-gasnet-mpi-gnu
-Inherits 'cray-module-correctness-cray-xe-gasnet-mpi*'
-and 'cray-module-correctness-cray-xe-*-gnu'
-Reviewed 2015-02-02
-======================================================
-
-
-================================================
-cray-module-correctness-cray-xe-ugni-intel
-Inherits 'cray-module-correctness-cray-xe-ugni*'
-and 'cray-module-correctness-cray-xe-*-intel'
-Reviewed 2015-02-02
-================================================
-
-
-================================================
-cray-module-correctness-cray-xe-ugni-gnu
-Inherits 'cray-module-correctness-cray-xe-ugni*'
-and 'cray-module-correctness-cray-xe-*-gnu'
-Reviewed 2015-02-02
-================================================
-
-
-================================
-cray-module-performance-cray-xc*
-Inherits 'general'
-Reviewed 2015-02-02
-================================
-
-
-============================================
-cray-module-performance-cray-xc-gasnet*
-Inherits 'cray-module-performance-cray-xc*'
-Reviewed 2015-02-02
-============================================
-
-Execution timeout
------------------
-FAILED:  release/examples/benchmarks/ssca2.SSCA2_main (compopts: 1, execopts: 2)
-
-
-==================================================
-cray-module-performance-cray-xc-gasnet-aries
-Inherits 'cray-module-performance-cray-xc-gasnet*'
-Reviewed 2015-02-02
-==================================================
-
-Execution timeout
------------------
-FAILED:  release/examples/benchmarks/hpcc.ra-atomics
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)] (2015-02-16)
 
 
 ===========================================
-cray-module-performance-cray-xc-gasnet-mpi
-Inherits 'cray-module-performance-cray-xc-gasnet*'
-Reviewed 2015-02-02
-===========================================
-
-Execution timeout
------------------
-FAILED:  release/examples/benchmarks/miniMD.miniMD (compopts: 1)
-
-
-===========================================
-cray-module-performance-cray-xc-ugni
-Inherits 'cray-module-performance-cray-xc*'
-Reviewed 2015-02-02
+perf.xc.16.ugni.gnu
+Inherits 'perf.xc.*'
+Reviewed 2015-02-17
 ===========================================
 
 Segfault
 --------
-FAILED:  release/examples/benchmarks/hpcc.stream-ep (2015-01-31..2015-02-01)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-01-31..)
 
 
+============================================
+perf.xc.local.cray
+Inherits 'perf.xc.{no-local,local}.*' and '*prgenv-cray*'
+Reviewed 2015-02-17
+============================================
+
+
+============================================
+perf.xc.local.gnu
+Inherits 'perf.xc.{no-local,local}.*' and '*prgenv-cray*'
+Reviewed 2015-02-17
+============================================
+
+
+============================================
+perf.xc.local.intel
+Inherits 'perf.xc.{no-local,local}.*' and '*intel*'
+Reviewed 2015-02-17
+============================================
+
+Files sadSerial.output.bin and output.bin differ
+------------------------------------------------
+[Error matching performance keys for studies/parboil/SAD/sadSerial (compopts: 1)]
+
+=== sporadic issues ===
+
+Wrong output
+Checking for /one two( zero){6}/ on line 28... FAILURE.
+line 28:  one one nine nine nine nine nine nine
+-------------------------------------------------------
+[Error matching performance keys for studies/shootout/chameneos-redux/hannah/chameneos-redux-cas] (2015-02-15)
+
+
+============================================
+perf.xc.local.pgi
+Inherits 'perf.xc.{no-local,local}.*' and '*pgi*'
+Reviewed 2015-02-17
+============================================
+
+Fails due to module install vs. setchplenv.* script being outside $CHPL_HOME (2015-02-15 first run, thomas)
+Shouldn't run for perf testing; also doesn't work with binary installs
+----------------------------------------------------------------------
+[Error found checking setchplenv.* scripts.]
+
+
+ra-atomics.chpl:87: error: Out of memory allocating "array elements" (2015-02-15, first run)
+--------------------------------------------------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
+
+
+ValueError: [Error: output file from job (id: 725394) does not exist at: ... (2015-02-14, elliot, thomas)
+--> Elliot fixed the output log issue for 2015-02-18 (should reveal actual errors)
+---------------------------------------------------------------------------------------------------------
+[Error matching performance keys for studies/shootout/nbody/bradc/nbody-blc-slice]
+[Error matching performance keys for studies/shootout/nbody/sidelnik/nbody_forloop_3]
+
+
+============================================
+perf.xc.no-local.gnu
+Inherits 'perf.xc.{no-local,local}.*' and '*gnu*'
+Reviewed 2015-02-17
+============================================
+
+Lots of failures due to the missing output logs (mentioned above).
+--> Elliot fixed, should be better (ie start showing real errors) on 2015-02-18

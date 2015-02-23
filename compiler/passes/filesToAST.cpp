@@ -21,14 +21,14 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#include "passes.h"
+
+#include "bison-chapel.h"
 #include "config.h"
 #include "countTokens.h"
 #include "expr.h"
 #include "files.h"
 #include "parser.h"
-#include "passes.h"
-
-#include "yy.h"
 
 bool parsed = false;
 

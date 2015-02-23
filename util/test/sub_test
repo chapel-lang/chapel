@@ -58,6 +58,10 @@
 #                         system. CAUTION: This wont necessarily work for all
 #                         tests, but can allow for running multiple start_tests
 #                         over a directory in parallel.
+# CHPL_TEST_ROOT_DIR: Absolute path to the test/ dir. Useful when test dir is
+#                     not under $CHPL_HOME. Should not be set when test/ is
+#                     under $CHPL_HOME. When it is set and the path prefixes a
+#                     test in the logs, it will be removed (from the logs).
 #
 #
 # DIRECTORY-WIDE FILES:  These settings are for the entire directory and
@@ -197,6 +201,16 @@ def LauncherTimeoutArgs(seconds):
 def ShellEscape(str):
     return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', str)
 
+# Grabs the start and end of the output and replaces non-printable chars with ~
+def trim_output(output):
+    max_size = 256*1024 # ~1/4 MB
+    if len(output) > max_size:
+        new_output = output[:max_size/2]
+        new_output += output[-max_size/2:]
+        output = new_output
+    return ''.join(s if s in string.printable else "~" for s in output)
+
+
 # return True if f has .chpl extension
 def IsChplTest(f):
     if re.match(r'^.+\.(chpl|test\.c)$', f):
@@ -246,7 +260,7 @@ def DiffFiles(f1, f2):
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
     if p.returncode != 0:
-        sys.stdout.write(myoutput)
+        sys.stdout.write(trim_output(myoutput))
     return p.returncode
 
 # diff output vs. .bad file, filtering line numbers out of error messages that arise
@@ -503,6 +517,12 @@ if os.path.isdir(testdir)==0:
 testdir = os.path.realpath(testdir)
 # sys.stdout.write('testdir='+testdir+'\n');
 
+# If user specified a different test directory (e.g. with --test-root flag on
+# start_test), use it instead.
+test_root_dir = os.environ.get('CHPL_TEST_ROOT_DIR')
+if test_root_dir is not None:
+    testdir = test_root_dir
+
 # Use timedexec
 # As much as I hate calling out to another script for the time out stuff,
 #  subprocess doesn't quite cut it for this kind of stuff
@@ -555,6 +575,9 @@ if localdir.find('./') == 0:
 chplcomm=os.getenv('CHPL_COMM','none').strip()
 chplcommstr='.comm-'+chplcomm
 # sys.stdout.write('chplcomm=%s\n'%(chplcomm))
+
+# CHPL_LAUNCHER
+chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()
 
 # CHPL_LOCALE_MODEL
 chpllm=os.getenv('CHPL_LOCALE_MODEL','flat').strip()
@@ -894,6 +917,7 @@ for testname in testsrc:
     futuretest=''
     executebin=execute
     testfuturesfile=False
+    testskipiffile=False
     noexecfile=False
     execoptsfile=False
     precomp=None
@@ -940,6 +964,7 @@ for testname in testsrc:
 
         elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                (os.getenv('CHPL_TEST_SINGLES')=='0'))):
+            testskipiffile=True
             skiptest=runSkipIf(f)
             try:
                 skipme=False
@@ -1011,10 +1036,6 @@ for testname in testsrc:
                 redirectin=f
 
         if suffix==futureSuffix:
-            if testfutures==0:
-                sys.stdout.write('[Skipping future test: %s/%s]\n'%(localdir,test_filename))
-                do_not_test=True
-                break
             testfuturesfile=True
 
     del test_filename_files
@@ -1023,10 +1044,26 @@ for testname in testsrc:
     if do_not_test:
         continue # on to next test
 
-    # Skip non-future tests if specified
-    if (testfuturesfile==False and testfutures==2):
+    # 0: test no futures
+    if testfutures == 0 and testfuturesfile == True:
+        sys.stdout.write('[Skipping future test: %s/%s]\n'%(localdir,test_filename))
+        continue # on to next test
+    # 1: test all futures
+    elif testfutures == 1:
+        pass
+    # 2: test only futures
+    elif testfutures == 2 and testfuturesfile == False:
         sys.stdout.write('[Skipping non-future test: %s/%s]\n'%(localdir,test_filename))
         continue # on to next test
+    # 3: test futures that have a .skipif file
+    elif testfutures == 3 and testfuturesfile == True and testskipiffile == False:
+        sys.stdout.write('[Skipping future test without a skipif: %s/%s]\n'%(localdir,test_filename))
+        continue # on to next test
+
+    # c tests don't have a way to launch themselves
+    if is_c_test and chpllauncher != 'none':
+        sys.stdout.write('[Skipping c test: %s/%s]\n'%(localdir,test_filename))
+        continue
 
     # Set numlocales
     if (numlocales == 0) or (chplcomm=='none') or is_c_test:
@@ -1450,7 +1487,6 @@ for testname in testsrc:
             # binary for launchers that use a queue so we don't include the
             # time to get the reservation. These are the launchers known to
             # support timing the _real using CHPL_LAUNCHER_REAL_WRAPPER.
-            chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()
             timereal = chpllauncher in ['pbs-aprun', 'aprun', 'slurm-srun']
 
             args=list()
@@ -1547,7 +1583,7 @@ for testname in testsrc:
                         printTestVariation(compoptsnum, execoptsnum);
                         sys.stdout.write(']\n')
                         sys.stdout.write('[Execution output was as follows:]\n')
-                        sys.stdout.write(output)
+                        sys.stdout.write(trim_output(output))
 
                 elif useTimedExec:
                     wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
@@ -1571,7 +1607,7 @@ for testname in testsrc:
                         printTestVariation(compoptsnum, execoptsnum);
                         sys.stdout.write(']\n')
                         sys.stdout.write('[Execution output was as follows:]\n')
-                        sys.stdout.write(output)
+                        sys.stdout.write(trim_output(output))
                     else:
                         # for perf runs print out the 5 processes with the
                         # highest cpu usage. This should help identify if other
@@ -1692,7 +1728,7 @@ for testname in testsrc:
                         # .good file that corresponds to that run 
                         if not onlyone:
                             commExecNum.insert(0,'.'+str(compoptsnum)+'-'+str(execoptsnum))
-                        
+
                         # if the .good file was explicitly specified, look for
                         # that version instead of the multiple
                         # compopts/execopts or just the base .good file 
@@ -1705,9 +1741,9 @@ for testname in testsrc:
                         if not os.path.isfile(execgoodfile) or not os.access(execgoodfile, os.R_OK):
                             sys.stdout.write('[Error cannot locate program output comparison file %s/%s]\n'%(localdir, execgoodfile))
                             sys.stdout.write('[Execution output was as follows:]\n')
-                            sys.stdout.write(subprocess.Popen(['cat', execlog],
-                                                              stdout=subprocess.PIPE).
-                                            communicate()[0])
+                            exec_output = subprocess.Popen(['cat', execlog],
+                                stdout=subprocess.PIPE).communicate()[0]
+                            sys.stdout.write(trim_output(exec_output))
 
                             continue # on to next execopts
 

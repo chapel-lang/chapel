@@ -5,9 +5,13 @@ chpldoc feature
 The term 'chpldoc' refers to a prototypical capability for generating
 HTML- or text-based documentation for Chapel code from comments
 embedded within the code, similar in spirit to Javadoc or Pydoc.  As
-of the 1.6 release of Chapel, 'chpldoc' documentation can either be
+of the 1.11 release of Chapel, 'chpldoc' documentation can either be
 created via compiler flags or a standalone 'chpldoc' symbolic link
-that is put into $CHPL_HOME/bin/$CHPL_HOST_PLATFORM at build-time.
+that is created with the command
+
+  [g]make chpldoc
+
+and placed into $CHPL_HOME/bin/$CHPL_HOST_PLATFORM.
 
 
 Prerequisites
@@ -31,9 +35,7 @@ Generating docs
 
 To create chpldoc documentation, you can either add the '--doc' flag
 to your normal Chapel compiler line or use the standalone 'chpldoc'
-utility.  The primary difference between the two approaches is that
-the former will compile the Chapel program as usual while the latter
-will exit after creating the documentation.
+utility.
 
 By default, documentation created by chpldoc will end up in a
 subdirectory of the current working directory named 'docs/'.  You can
@@ -68,7 +70,7 @@ Documenting Chapel code
 -----------------------
 
 To document Chapel code, place a multi-line comment just prior to the
-definition of the symbol --- module, class, function, method,
+definition of the symbol --- module, class, function, method, global
 variable, etc. --- that you wish to comment.  By default, all
 multi-line comments are considered potential documentation.  If you
 would like to restrict documentation to multi-line comments starting
@@ -82,6 +84,13 @@ change in future versions.
 By default, documentation elements will be emitted in code order.  If
 the --docs-alphabetical flag is used, they will be sorted into
 alphabetical order within each lexical scope.
+
+If you would like a particular symbol to not be output as part of your
+documentation, you can specify this by prefacing the symbol with the
+pragma "no doc".  For example:
+
+    pragma "no doc"
+    proc foo() { ... }
 
 Documentation text within comments is parsed as ReStructed Text.
 
@@ -100,8 +109,6 @@ let us know.
 * add ability to create anchors within a document
 
 * add support for file-level comments for implicit/file-oriented modules
-
-* add mode in which symbols are not emitted if they have no documentation
 
 * improve placement of documentation files for .chpl files specified
   with absolute or relative paths

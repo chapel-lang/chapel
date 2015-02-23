@@ -7,4 +7,4 @@ source $CWD/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux32"
 
-$CWD/nightly -cron -no-futures
+$CWD/nightly -cron

@@ -35,6 +35,8 @@
 #include "docs.h"
 #include "mysystem.h"
 #include "stringutil.h"
+#include "scopeResolve.h"
+#include "AstToText.h"
 
 int NUMTABS = 0;
 
@@ -56,6 +58,12 @@ static int compareClasses(const void *v1, const void* v2) {
 void docs(void) {
 
   if (fDocs) {
+    // To handle inheritance, we need to look up parent classes and records.
+    // In order to be successful when looking up these parents, the import
+    // expressions should be accurately accounted for.
+    addToSymbolTable(gDefExprs);
+    processImportExprs();
+
     // Create a map of structural names to their expected chpldoc output
     if (fDocsTextOnly) {
       outputMap["class"] = "Class: ";
@@ -135,45 +143,6 @@ bool isNotSubmodule(ModuleSymbol *mod) {
           strcmp("_root", mod->defPoint->parentSymbol->name) == 0);
 }
 
-void printIntent(std::ofstream *file, IntentTag intent) {
-  switch(intent) {
-  case INTENT_IN:
-    *file << "in "; break;
-  case INTENT_INOUT:
-    *file << "inout "; break;
-  case INTENT_OUT:
-    *file << "out "; break;
-  case INTENT_CONST:
-    *file << "const "; break;
-  case INTENT_CONST_IN:
-    *file << "const in "; break;
-  case INTENT_CONST_REF:
-    *file << "const ref "; break;
-  case INTENT_REF:
-    *file << "ref "; break;
-  case INTENT_PARAM:
-    *file << "param "; break;
-  default:
-    break;
-  }
-}
-
-void printArg(std::ofstream *file, ArgSymbol *arg) {
-  printIntent(file, arg->intent);
-  if (arg->hasFlag(FLAG_TYPE_VARIABLE)) {
-    *file << "type ";  
-    // Because type intents are handled differently during parsing
-  } 
-    
-  *file << arg->name;
-  if (arg->typeExpr != NULL) {
-    *file << ": ";
-    arg->typeExpr->body.tail->prettyPrint(file);
-  } else if (arg->type != NULL && arg->type != dtAny) {
-    *file << ": " << arg->type->symbol->name;
-  }
-}
-
 void printFields(std::ofstream *file, AggregateType *cl) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
@@ -186,26 +155,17 @@ void printFields(std::ofstream *file, AggregateType *cl) {
         *file << outputMap["field"];
         // For rst, this will insert '.. attribute:: ' here
         // For plain text, nothing will be inserted
+
         printVarStart(file, var);
-        Expr *expr;
-        if (cl->isClass()) {
-          expr = cl->defaultTypeConstructor->body->body.get(i);
-        } else {
-          expr = cl->defaultTypeConstructor->body->body.get(i+1);
+        if (var->defPoint->exprType != NULL) {
+          *file << ": ";
+          var->defPoint->exprType->prettyPrint(file);
+          // TODO: Make type output prettier
         }
-        if (CallExpr *list = toCallExpr(expr)) {
-          if (CallExpr *end = toCallExpr(list->argList.tail)) {
-            if (end->primitive != NULL) {
-              *file << ": ";
-              end->prettyPrint(file);
-              // TODO: prettify type output
-            } else if (SymExpr* sym = toSymExpr(end->argList.tail)) {
-              *file << " = ";
-              sym->prettyPrint(file);
-            }
-          }
-        } 
-  
+        if (var->defPoint->init != NULL) {
+          *file << " = ";
+          var->defPoint->init->prettyPrint(file);
+        }
         *file << std::endl;
         printVarDocs(file, var);
       }
@@ -214,11 +174,11 @@ void printFields(std::ofstream *file, AggregateType *cl) {
 }
 
 void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
-  forv_Vec(Type, t, cl->dispatchParents) {
-    if (AggregateType* c = toAggregateType(t)) {
-      list->add_exclusive(c);
-      inheritance(list, c);
-    }
+  for_alist(expr, cl->inherits) {
+    AggregateType* pt = discoverParentAndCheck(expr, cl);
+
+    list->add_exclusive(pt);
+    inheritance(list, pt);
   }
 }
 
@@ -409,7 +369,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
     forv_Vec(VarSymbol, var, variables) {
       printGlobal(file, var, false);
     }
-    Vec<FnSymbol*> fns = mod->getTopLevelFunctions(true);
+    Vec<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
     // If alphabetical option passed, fDocsAlphabetizes the output
     if (fDocsAlphabetize)
       qsort(fns.v, fns.n, sizeof(fns.v[0]), compareNames);
@@ -486,7 +446,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     } else if (fn->hasFlag(FLAG_EXPORT)) {
       *file << "export ";
     } else if (fn->hasFlag(FLAG_EXTERN)) {
-      *file << "extern ";
+      // Do nothing.  Being extern is an implementation detail.
     }
 
     if (iterator) {
@@ -494,15 +454,24 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     } else {
       *file << "proc ";
     }
+    AstToText *fnInfo = new AstToText();
+    fnInfo->appendNameAndFormals(fn);
+    *file << fnInfo->text();
+    delete fnInfo;
+    /*
     // if fn is not primary method
     //   get type name from 'this' argument
     //   output it + '.' before fn->name
     if (fn->isSecondaryMethod()) {
-      if (fn->numFormals() > 1) {
-        ArgSymbol *myTypeHolder = fn->getFormal(2);
-        if (myTypeHolder->hasFlag(FLAG_ARG_THIS))
-          *file << myTypeHolder->type->symbol->name << ".";
-      }
+      INT_ASSERT (fn->numFormals() > 1);
+      ArgSymbol *myTypeHolder = fn->getFormal(2);
+      INT_ASSERT (myTypeHolder->hasFlag(FLAG_ARG_THIS));
+      Expr *typeExpr = myTypeHolder->typeExpr;
+      BlockStmt *body = toBlockStmt(typeExpr);
+      INT_ASSERT (body);
+      UnresolvedSymExpr *typeName = toUnresolvedSymExpr(body->body.tail);
+      INT_ASSERT (typeName);
+      *file << typeName->unresolved << ".";
     }
     *file << fn->name;
     if (!fn->hasFlag(FLAG_NO_PARENS))
@@ -531,6 +500,7 @@ void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
     }
     if (!fn->hasFlag(FLAG_NO_PARENS))
       *file << ")";
+    */
     switch (fn->retTag) {
     case RET_REF:
       *file << " ref"; break;

@@ -26,6 +26,7 @@
 #include "IpeSymbol.h"
 #include "log.h"
 #include "ParamForLoop.h"
+#include "parser.h"
 #include "passes.h"
 #include "runpasses.h"
 #include "stmt.h"
@@ -33,7 +34,6 @@
 #include "symbol.h"
 #include "type.h"
 #include "WhileStmt.h"
-#include "yy.h"
 
 static void cleanModuleList();
 

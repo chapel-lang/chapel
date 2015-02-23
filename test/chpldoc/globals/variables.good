@@ -1,0 +1,11 @@
+Module: hasGlobalVariables
+   This module has some global scoped variables. 
+   var first: int
+   var second
+   var third: bool
+   var fourth: int
+      This variable has an associated comment and a type 
+   var fifth
+      This variable has an associated comment and a value 
+   var sixth: bool
+      This variable has an associated comment, a type, and a value 

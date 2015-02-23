@@ -39,8 +39,10 @@ extern proc chpl_fs_remove(name: c_string):syserr;
    Note: this is not safe within a parallel context.  A chdir call in one task
    will affect the current working directory of all tasks for that locale.
 */
-proc chdir(out err: syserr, name: string) {
-  err = chpl_fs_chdir(name.c_str());
+proc locale.chdir(out err: syserr, name: string) {
+  on this {
+    err = chpl_fs_chdir(name.c_str());
+  }
 }
 
 /* Change the current working directory of the current locale to the specified
@@ -50,7 +52,7 @@ proc chdir(out err: syserr, name: string) {
    Note: this is not safe within a parallel context.  A chdir call in one task
    will affect the current working directory of all tasks for that locale.
 */
-proc chdir(name: string) {
+proc locale.chdir(name: string) {
   var err: syserr = ENOERR;
   chdir(err, name);
   if err != ENOERR then ioerror(err, "in chdir", name);
@@ -120,12 +122,19 @@ proc chown(name: string, uid: int, gid: int) {
    directory from underneath this task, so use caution when making use
    of this function in a parallel environment.
 */
-proc cwd(out err: syserr): string {
-  var tmp:c_string_copy, ret:string;
-  err = chpl_fs_cwd(tmp);
-  if err != ENOERR then return "";
-  // This version of toString steals its operand.  No need to free.
-  ret = toString(tmp);
+proc locale.cwd(out err: syserr): string {
+  var ret:string;
+  on this {
+    var tmp:c_string_copy;
+    // c_strings and c_string_copy's can't cross on statements.
+    err = chpl_fs_cwd(tmp);
+    if (err != ENOERR) {
+      ret = "";
+    } else {
+      // This version of toString steals its operand.  No need to free.
+      ret = toString(tmp);
+    }
+  }
   return ret;
 }
 
@@ -136,7 +145,7 @@ proc cwd(out err: syserr): string {
    directory from underneath this task, so use caution when making use
    of this function in a parallel environment.
 */
-proc cwd(): string {
+proc locale.cwd(): string {
   var err: syserr = ENOERR;
   var ret = cwd(err);
   if err != ENOERR then ioerror(err, "in cwd");

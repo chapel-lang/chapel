@@ -5,3 +5,6 @@
 CHPL_COMM != none
 COMPOPTS <= --no-local
 CHPL_LOCALE_MODEL != flat
+CHPL_TARGET_PLATFORM != linux64
+# and produces a few errors under valgrind
+CHPL_TEST_VGRND_EXE == on

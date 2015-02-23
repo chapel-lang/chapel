@@ -150,6 +150,10 @@ bool Symbol::isParameter() const {
   return false;
 }
 
+bool Symbol::isRenameable() const {
+  return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
+}
+
 
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;

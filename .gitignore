@@ -32,15 +32,7 @@ tags
 /compiler/main/BUILD_VERSION
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
-/compiler/parser/chapel.output
-/compiler/parser/chapel.tab.cpp
-/compiler/parser/chapel.tab.h
-/compiler/parser/modulefinder.tab.c
-/compiler/parser/modulefinder.tab.h
-/compiler/parser/modulefinder.lex.yy.c
-/compiler/parser/lex.yy.cpp
-/compiler/parser/lex.yy.h
-/compiler/parser/modulefinder
+/compiler/parser/bison-chapel.output
 /compiler/passes/reservedSymbolNames.h
 
 # Doc ignores.
@@ -107,7 +99,6 @@ tags
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
 
 /test/chpldoc/**/docs
-/test/chpldoc/**/*.good
 
 /test/chpldoc/compflags/folder/myDocs
 /test/chpldoc/compflags/folder/my-docs
@@ -235,18 +226,6 @@ tags
 /test/io/ferguson/asserteof.test.nums
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
-/test/io/fsouza/chdir/destination
-/test/io/fsouza/chown/file.txt
-/test/io/fsouza/isdir/my_file
-/test/io/fsouza/isfile/my_file
-/test/io/lydia/chmod/file
-/test/io/lydia/exists/broken_link
-/test/io/lydia/exists/dir_link
-/test/io/lydia/exists/file
-/test/io/lydia/exists/file_link
-/test/io/lydia/isLink/my_file
-/test/io/lydia/isLink/my_link_dir
-/test/io/lydia/isLink/my_link_file
 
 /test/localeModels/gbt/maxTaskPar.good
 
@@ -254,6 +233,24 @@ tags
 /test/memory/shannon/configVarFile.log
 
 /test/modules/gbt/printchplenv.good
+/test/modules/standard/FileSystem/fsouza/chdir/destination
+/test/modules/standard/FileSystem/fsouza/chown/file.txt
+/test/modules/standard/FileSystem/fsouza/isdir/my_dir
+/test/modules/standard/FileSystem/fsouza/isdir/my_file
+/test/modules/standard/FileSystem/fsouza/isfile/my_dir
+/test/modules/standard/FileSystem/fsouza/isfile/my_file
+/test/modules/standard/FileSystem/lydia/chmod/dir
+/test/modules/standard/FileSystem/lydia/chmod/file
+/test/modules/standard/FileSystem/lydia/exists/broken_link
+/test/modules/standard/FileSystem/lydia/exists/dir
+/test/modules/standard/FileSystem/lydia/exists/dir_link
+/test/modules/standard/FileSystem/lydia/exists/file
+/test/modules/standard/FileSystem/lydia/exists/file_link
+/test/modules/standard/FileSystem/lydia/exists/going_away
+/test/modules/standard/FileSystem/lydia/isLink/my_dir
+/test/modules/standard/FileSystem/lydia/isLink/my_file
+/test/modules/standard/FileSystem/lydia/isLink/my_link_dir
+/test/modules/standard/FileSystem/lydia/isLink/my_link_file
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/modules/standard/machine/numCores.good
 /test/modules/standard/memory/countMemory/countMemory.*.good
@@ -299,7 +296,8 @@ tags
 /test/release/examples/primers/varargs
 /test/release/examples/primers/test.bin
 
-/test/spec/
+/test/runtime/gbt/numThreadsSymbolicLogical.good
+/test/runtime/gbt/numThreadsSymbolicPhysical.good
 
 /test/studies/590o/alexco/*.txt
 /test/studies/amr/**/_output
