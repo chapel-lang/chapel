@@ -259,7 +259,7 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
       if (confIndex >= 0) {
         newLabels.push(graphLabels[confIndex]);
         newData = newData.concat(transposedData.slice(confIndex, confIndex+1));
-        newColors.push(graph.getPropertiesForSeries(graphLabels[i]).color);
+        newColors.push(graph.getPropertiesForSeries(graphLabels[confIndex]).color);
       } else {
         console.log('Warning: expected to find label "' + confLabel + '" for ' +
                     'graph "' + graphInfo.title + '" but it was missing');
