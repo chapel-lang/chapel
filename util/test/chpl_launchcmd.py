@@ -237,11 +237,10 @@ class AbstractJob(object):
 
             def wait_for_file(filename):
                 """Wait for filename for a few seconds. If it shows up, return early."""
-                for i in xrange(10):
-                    if os.path.exists(filename):
-                        break
-                    else:
-                        time.sleep(0.5)
+                t = 0
+                while not os.path.exists(filename) and t < 5:
+                    time.sleep(0.5)
+                    t += 0.5
 
             def job_status(job_id, output_file):
                 """Returns the status of the job specified by job_id
