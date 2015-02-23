@@ -212,12 +212,9 @@ public:
 
   void makeField();
 
-protected:
-
-  virtual std::string docsDirective();
-
 private:
 
+  virtual std::string docsDirective();
   bool isField;
 };
 
@@ -400,8 +397,7 @@ class FnSymbol : public Symbol {
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
-protected:
-
+private:
   virtual std::string docsDirective();
 };
 

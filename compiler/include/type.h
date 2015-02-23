@@ -176,7 +176,7 @@ class AggregateType : public Type {
   virtual void printDocs(std::ostream *file, unsigned int tabs);
   virtual void printInheritanceDocs(std::ostream *file, unsigned int tabs);
 
-protected:
+private:
   virtual std::string docsDirective();
 };
 
