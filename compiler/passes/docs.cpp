@@ -107,7 +107,6 @@ bool isNotSubmodule(ModuleSymbol *mod) {
 void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
-      var->makeField();
       var->printDocs(file, tabs);
     }
   }

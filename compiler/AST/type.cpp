@@ -550,6 +550,12 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
       fn->addFlag(FLAG_METHOD_PRIMARY);
     }
   }
+
+  if (VarSymbol* var = toVarSymbol(def->sym)) {
+    // Identify VarSymbol as class/record member.
+    var->makeField();
+  }
+
   if (def->parentSymbol || def->list)
     def->remove();
   if (tail)
