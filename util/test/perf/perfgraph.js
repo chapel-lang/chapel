@@ -421,9 +421,8 @@ function customAxisLabelFormatter(val, granularity, opts, dygraph) {
 
 // synchronize our graphs along the x-axis and check if we should warn that
 // using a log scale will result in wonky behavior.
-function customDrawCallback(g, initial) {
+function customDrawCallback(graph, initial) {
   if (globalBlockRedraw) return;
-  globalBlockRedraw = true;
 
   // if a user has explicitly zoomed in on zero or negative value and they
   // attempt to take the log the graph will not render. This is a known
@@ -432,31 +431,30 @@ function customDrawCallback(g, initial) {
   // requested a range, it will keep the same range for the log scale and
   // will attempt to take the log of zero.
   if (!initial) {
-    var yRange = g.yAxisRange();
-    if (yRange[0] <= 0 && g.isZoomed('y')) {
-      g.divs.logToggle.style.color = 'red';
+    var yRange = graph.yAxisRange();
+    if (yRange[0] <= 0 && graph.isZoomed('y')) {
+      graph.divs.logToggle.style.color = 'red';
     } else {
-      g.divs.logToggle.style.color = 'black';
+      graph.divs.logToggle.style.color = 'black';
     }
   }
 
   // if this isn't the initial draw, and this graph is fully rendered then
   // sync this graphs x-axis with all other ready graphs along the x-axis
-  if (!initial && g.isReady) {
-    var range = g.xAxisRange().slice();
+  if (!initial && graph.isReady) {
+    var range = graph.xAxisRange().slice();
     range[0] = roundDate(range[0], false);
     range[1] = roundDate(range[1], true);
 
     setURLFromDate(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
     setURLFromDate(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
 
-    for (var j = 0; j < gs.length; j++) {
-      if (gs[j].isReady && differentDateRanges(range, gs[j].xAxisRange())) {
-        gs[j].updateOptions({ dateWindow: range });
+    applyFnToAllGraphs(function(g) {
+      if (g.isReady && differentDateRanges(range, g.xAxisRange())) {
+        g.updateOptions({ dateWindow: range });
       }
-    }
+    });
   }
-  globalBlockRedraw = false;
 }
 
 
@@ -541,11 +539,10 @@ function perfGraphInit() {
       checkBox.onchange = function() {
         var configsURL = normalizeForURL(getCheckedConfigurations().join());
         setQueryStringFromOption(OptionsEnum.CONFIGURATIONS, configsURL);
-        globalBlockRedraw = true;
-        for (var i = 0; i < gs.length; i++) {
-          setConfigurationVisibility(gs[i]);
-        }
-        globalBlockRedraw = false;
+
+        applyFnToAllGraphs(function(g) {
+          setConfigurationVisibility(g);
+        });
       };
     }
   } else {
@@ -792,18 +789,15 @@ function clearDates() {
   setURLFromDate(OptionsEnum.STARTDATE, '');
   setURLFromDate(OptionsEnum.ENDDATE, '');
 
-  // Reset the display range for each graph, blocking extra redraws
-  globalBlockRedraw = true;
-  for (var i = 0; i < gs.length; i++) {
-    var curGraph = gs[i];
-    var start = parseDate(curGraph.graphInfo.startdate);
-    var end = parseDate(curGraph.graphInfo.enddate);
+  // Reset the display range for each graph
+  applyFnToAllGraphs(function(g) {
+    var start = parseDate(g.graphInfo.startdate);
+    var end = parseDate(g.graphInfo.enddate);
     var range = [start, end];
-    if (differentDateRanges(range, curGraph.xAxisRange)) {
-      curGraph.updateOptions({ dateWindow: range });
+    if (differentDateRanges(range, g.xAxisRange)) {
+      g.updateOptions({ dateWindow: range });
     }
-  }
-  globalBlockRedraw = false;
+  });
 }
 
 
@@ -1036,6 +1030,22 @@ function setQueryStringFromOption(option, optionValue) {
 //////////////////////
 // Helper functions //
 //////////////////////
+
+
+// Apply an arbitrary function to all graphs. The function being applied can
+// only have a single graph as it's argument. Redraws are blocked by default.
+// Useful so you don't forget to block redraws, which can kill performance.
+function applyFnToAllGraphs(fnToApply, blockRedraw) {
+  blockRedraw = defaultFor(blockRedraw, true);
+  var oldGlobalBlockRedraw = globalBlockRedraw;
+
+  globalBlockRedraw = blockRedraw;
+  var gsLength = gs.length;
+  for (var i = 0; i < gsLength; i++) {
+    fnToApply(gs[i]);
+  }
+  globalBlockRedraw = oldGlobalBlockRedraw;
+}
 
 
 // Transpose a 2 dimensional array
