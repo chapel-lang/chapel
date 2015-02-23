@@ -49,8 +49,6 @@ public:
   virtual bool   enterFnSym       (FnSymbol*          node);
   virtual void   exitFnSym        (FnSymbol*          node);
 
-  virtual void   visitIpeSym      (IpeSymbol*         node);
-
   virtual void   visitLabelSym    (LabelSymbol*       node);
 
   virtual bool   enterModSym      (ModuleSymbol*      node);

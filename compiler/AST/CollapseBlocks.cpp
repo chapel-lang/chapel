@@ -242,11 +242,6 @@ void CollapseBlocks::exitFnSym(FnSymbol* node)
 
 }
 
-void CollapseBlocks::visitIpeSym(IpeSymbol* node)
-{
-
-}
-
 void CollapseBlocks::visitLabelSym(LabelSymbol* node)
 {
 

@@ -25,7 +25,6 @@
 #include "expr.h"
 #include "flags.h"
 #include "ForLoop.h"
-#include "IpeSymbol.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "stmt.h"
@@ -1191,15 +1190,6 @@ bool AstDumpToNode::enterArgSym(ArgSymbol* node)
 //
 //
 
-void AstDumpToNode::visitIpeSym(IpeSymbol* node)
-{
-  writeSymbol(node);
-}
-
-//
-//
-//
-
 void AstDumpToNode::visitEnumSym(EnumSymbol* node)
 {
   enterNode(node);
@@ -1359,32 +1349,6 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
     if (!compact) writeFlags(mFP, sym);
     exitNode(sym);
 
-  }
-
-  else if (IpeSymbol* var = toIpeSymbol(sym))
-  {
-    enterNode(sym);
-    fprintf(mFP, " ");
-
-    if (sym->type != 0 || var->depth() >= 0 || var->offset() >= 0)
-    {
-      writeLongString("name: ", name);
-
-      if (var->type)
-      {
-        writeType(sym->type);
-      }
-
-      if (var->depth() >= 0 || var->offset() >= 0)
-        fprintf(mFP, " depth: %3d offset: %4d ", var->depth(), var->offset());
-    }
-    else
-    {
-      fprintf(mFP, "name: %s", name);
-    }
-
-    if (!compact) writeFlags(mFP, sym);
-    exitNode(sym);
   }
 
   else if (isLabelSymbol(sym) == true)
