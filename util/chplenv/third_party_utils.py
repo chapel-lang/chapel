@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+import os, re
+
+import utils
+from utils import memoize
+
+import chpl_arch, chpl_compiler, chpl_platform
+import chpl_locale_model
+
+
+#
+# This is the default unique configuration path.
+#
+@memoize
+def default_uniq_cfg_path():
+    return '{0}-{1}-{2}'.format(chpl_platform.get('target'),
+                                chpl_compiler.get('target'),
+                                chpl_arch.get('target', map_to_compiler=True,
+                                              get_lcd=False))
+
+#
+# Return libraries and other options mentioned in the old_library and
+# dependency_libs entries in a libtool .la file, recursively searching
+# other .la files encountered there.
+#
+@memoize
+def handle_la(la_path):
+    args = []
+    if os.path.isfile(la_path):
+        with open(la_path) as f:
+            for line in f.readlines():
+                if 'old_library=' in line:
+                    lib_name = line.split('\'')[1]
+                    p = re.compile(r'^lib([^/]+)\.a$')
+                    args.append(p.sub(r'-l\1', lib_name))
+                elif 'dependency_libs=' in line:
+                    for tok in line.split('\'')[1].split():
+                        if tok.endswith('.la'):
+                            args.extend(handle_la(tok))
+                        else:
+                            args.append(tok)
+    return args

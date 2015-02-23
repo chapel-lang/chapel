@@ -6,45 +6,26 @@ import chpl_arch, chpl_compiler, chpl_platform
 import utils
 from utils import memoize
 
-@memoize
+import third_party_utils
+
+
 def get_uniq_cfg_path():
-    target_platform = chpl_platform.get('target')
-    target_compiler = chpl_compiler.get('target')
-    target_arch = chpl_arch.get('target', map_to_compiler=True, get_lcd=False)
-    uniq_cfg_path = '{0}-{1}-{2}'.format(target_platform, target_compiler,
-                                         target_arch)
-    return uniq_cfg_path
-
-
-def handle_la(la_path):
-    args = ''
-    if os.path.isfile(la_path):
-        with open(la_path) as f:
-            for line in f.readlines():
-                if 'old_library=' in line:
-                    lib_name = line.split('\'')[1]
-                    p = re.compile(r'^lib([^/]+)\.a$')
-                    args = args + ' ' + p.sub(r'-l\1', lib_name)
-                elif 'dependency_libs=' in line:
-                    for tok in line.split('\'')[1].split(' '):
-                        if tok.endswith('.la'):
-                            args = args + ' ' + handle_la(tok)
-                        else:
-                            args = args + ' ' + tok
-    return args.strip()
+    return third_party_utils.default_uniq_cfg_path()
 
 
 def get_link_args():
-    chpl_home = utils.get_chpl_home()
-    uniq_cfg_path = get_uniq_cfg_path()
-    libdir = os.path.join(chpl_home, 'third-party', 'hwloc',
-                          'install', uniq_cfg_path, 'lib')
-    return handle_la(os.path.join(libdir, 'libhwloc.la'))
+    libdir = os.path.join(utils.get_chpl_home(),
+                          'third-party',
+                          'hwloc',
+                          'install',
+                          get_uniq_cfg_path(),
+                          'lib')
+    return third_party_utils.handle_la(os.path.join(libdir, 'libhwloc.la'))
 
 
 def _main():
     parser = optparse.OptionParser(
-        usage='usage: %prog -[l|q]')
+        usage='usage: %prog -[l|u]')
     parser.add_option('-l',
                       action='store_true',
                       dest='link_args',

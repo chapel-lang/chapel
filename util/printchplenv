@@ -133,21 +133,21 @@ def print_mode(mode='list'):
         all_3p_pkgs=subprocess.Popen([third_party_pkgs],
                                      stdout=subprocess.PIPE).communicate()[0].strip()
 
-        link_args_3p = ''
+        link_args_3p = []
         for pkg in all_3p_pkgs.split(' '):
             if pkg == 'qthreads':
                 print_var('  CHPL_QTHREAD_UNIQ_CFG_PATH',
                           chpl_qthreads_configs.get_uniq_cfg_path(),
                           mode, filters=('runtime',))
-                link_args_3p += ' ' + chpl_qthreads_configs.get_link_args()
+                link_args_3p.extend(chpl_qthreads_configs.get_link_args())
             elif pkg == 'hwloc':
                 print_var('  CHPL_HWLOC_UNIQ_CFG_PATH',
                           chpl_hwloc_configs.get_uniq_cfg_path(),
                           mode, filters=('runtime',))
-                link_args_3p += ' ' + chpl_hwloc_configs.get_link_args()
+                link_args_3p.extend(chpl_hwloc_configs.get_link_args())
 
         link_args_3p_dedup=[]
-        for arg in reversed(link_args_3p.split()):
+        for arg in reversed(link_args_3p):
             if arg not in link_args_3p_dedup:
                 link_args_3p_dedup.append(arg)
         print_var('  CHPL_THIRD_PARTY_LINK_ARGS',
