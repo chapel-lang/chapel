@@ -1710,6 +1710,18 @@ bool isRecordWrappedType(Type* t) {
   return false;
 }
 
+bool isDistImplType(Type* type)
+{
+  while (AggregateType* at = toAggregateType(type))
+  {
+    if (at->symbol->hasFlag(FLAG_BASE_DIST))
+      return true;
+    // Lazily assume single-inheritance.
+    type = at->dispatchParents.only();
+  }
+  return false;
+}
+
 bool isSyncType(Type* t) {
   return getSyncFlags(t->symbol).any();
 }

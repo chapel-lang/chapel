@@ -1017,7 +1017,9 @@ rebuildIterator(IteratorInfo* ii,
     // true).  Fixing the iterator code so that it could tolerate "these" items
     // passed by value might also work -- provided the rule is obeyed that the
     // referent outlasts any reference generated from it.
-    if (isDomImplType(localValue->type) || isArrayImplType(localValue->type))
+    if (isDomImplType(localValue->type) ||
+        isArrayImplType(localValue->type) ||
+        isDistImplType(localValue->type))
     {
       Symbol* tmp = newTemp("RWT_ir", localValue->type);
       fn->insertAtTail(new DefExpr(tmp));
@@ -1062,7 +1064,9 @@ rebuildGetIterator(IteratorInfo* ii) {
     
     // Very special iterator-only MM code!  See Note 1.
     VarSymbol* fieldWriteTmp = fieldReadTmp;
-    if (isDomImplType(field->type) || isArrayImplType(field->type))
+    if (isDomImplType(field->type) ||
+        isArrayImplType(field->type) ||
+        isDistImplType(field->type))
     {
       VarSymbol* tmp = newTemp("RWT_tmp", field->type);
       getIterator->insertBeforeReturn(new DefExpr(tmp));

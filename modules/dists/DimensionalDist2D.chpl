@@ -395,6 +395,21 @@ proc DimensionalDist2D.dsiIndexToLocale(indexx: indexT): locale {
                        di2.dsiIndexToLocale1d(indexx(2)):int);
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DimensionalDist2D) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DimensionalDist2D) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 // Find ix such that targetLocales(ix) == here.
 // If there is more than one answer, return one of them.
 // 'targetLocales' is passed explicitly because the caller may have

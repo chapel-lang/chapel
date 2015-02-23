@@ -31,6 +31,21 @@ class Private: BaseDist {
   }
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: Private) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: Private) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 class PrivateDom: BaseRectangularDom {
   param rank: int;
   type idxType;
