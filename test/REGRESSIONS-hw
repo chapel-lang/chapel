@@ -28,7 +28,7 @@ any
 ==========================================
 xe.*
 Inherits 'x?.*'
-Reviewed 2015-02-17
+Reviewed 2015-02-23
 ==========================================
 
 === sporadic issues ===
@@ -90,7 +90,7 @@ Reviewed 2015-02-17
 
 === sporadic failures below ===
 
-Out of memory (2015-02-01, 2015-02-15)
+Out of memory (2015-02-01, 2015-02-15, 2015-02-22)
 --------------------------------------
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
@@ -98,7 +98,7 @@ Out of memory (2015-02-01, 2015-02-15)
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
 
 
-Out of memory (2015-02-02, 2015-02-15, 2015-02-20 xe.ugni.gnu)
+Out of memory (2015-02-02, 2015-02-15, 2015-02-20, 2015-02-22 xe.ugni.gnu)
 (tcmalloc: allocation failed)
 --------------------------------------
 [Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
@@ -211,7 +211,6 @@ Reviewed 2015-02-17
 
 xc.aries.cray.aprun
 xc.aries.cray.slurm
-xc.aries.gnu.aprun
 xc.aries.gnu.slurm
 xc.aries.intel.aprun
 xc.aries.intel.slurm
@@ -247,6 +246,19 @@ xe.none.gnu
 xe.none.intel
 xe.none.pgi
 xe.ugni.intel
+
+
+===========================================
+xc.aries.gnu.aprun
+Inherits 'x?.*.gnu*' and 'x?.aries.*'
+Reviewed 2015-02-23
+===========================================
+
+=== sporadic issues ===
+
+Missing output file (2015-02-23)
+-------------------
+[Error matching program output for release/examples/hello3-datapar]
 
 
 ===========================================
@@ -442,5 +454,16 @@ ra-atomics.chpl:87: error: Out of memory allocating "array elements" (2015-02-15
 [Error: Timed out executing program studies/shootout/nbody/bradc/nbody-blc-slice]
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_forloop_3]
 
+
+============================================
+perf.xc.no-local.gnu
+Inherits 'perf.xc.{no-local,local}.*' and '*gnu*'
+============================================
+
+=== sporadic issues ===
+
+Differing whitespace
+--------------------
+[Error matching performance keys for io/vass/time-write (compopts: 1)]
 
 
