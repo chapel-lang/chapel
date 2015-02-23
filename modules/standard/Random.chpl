@@ -119,7 +119,7 @@ record SeedGenerators {
     reported by :chpl:proc:`Time.getCurrentTime`, ensuring that it
     meets the PRNG's requirements.
   */
-  proc currentTime {
+  proc currentTime: int(64) {
     use Time;
     const seed: int(64) = getCurrentTime(unit=TimeUnits.microseconds):int(64);
     return (if seed % 2 == 0 then seed + 1 else seed) % (1:int(64) << 46);
@@ -140,11 +140,6 @@ record SeedGenerators {
 // right, it ends up causing a warning (promoted to error) in the .rst
 // file.  It'd be preferable to have it declare the issue in terms of
 // the .chpl line numbers.
-
-//
-// CHPLDOC FIXME: Do we want default values to print in the function
-// prototype?  (I think we do, given that it reflects the code in the
-// file)
 //
 
 /*
@@ -161,7 +156,7 @@ record SeedGenerators {
   :type arr: [] T
 
   :arg seed: The seed to use for the PRNG.  Defaults to :chpl:proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`.
-  :type seed: int
+  :type seed: int(64)
 */
 
 proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime)
@@ -197,17 +192,13 @@ class RandomStream {
   const seed: int(64);
 
 
-  //
-  // CHPLDOC FIXME: More missing default values below
-  //
-
   /*
     Constructs a new stream of random numbers using the specified seed
     and parallel safety.  Ensures that the seed value meets the PRNG's
     constraints.
 
     :arg seed: The seed to use for the PRNG.  Defaults to :chpl:proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`..
-    :type seed: int
+    :type seed: int(64)
 
     :arg parSafe: The parallel safety setting.  Defaults to `true`.
     :type parSafe: bool
@@ -219,10 +210,6 @@ class RandomStream {
     RandomStreamPrivate_init(seed);
   }
 
-  //
-  // CHPLDOC FIXME: the type of parSafe below is printed out as _unknown
-  //
-
   /*
     Returns the next value in the random stream as a `real(64)`
 
@@ -231,7 +218,7 @@ class RandomStream {
 
     :returns: The next value in the random stream as a `real(64)`.
    */
-  proc getNext(param parSafe = this.parSafe): real(64) {
+  proc getNext(param parSafe: bool = this.parSafe): real(64) {
     if parSafe then
       RandomStreamPrivate_lock$ = true;
     RandomStreamPrivate_count += 1;
@@ -247,11 +234,11 @@ class RandomStream {
     :arg n: The position in the stream to skip to.  Must be non-negative.
     :type n: integral
 
-    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to this.parSafe.
+    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :chpl:param:`this.parSafe <RandomStream.parSafe>`.
     :type parSafe: bool
    */
 
-  proc skipToNth(n: integral, param parSafe = this.parSafe) {
+  proc skipToNth(n: integral, param parSafe: bool = this.parSafe) {
     if n <= 0 then
       halt("RandomStream.skipToNth(n) called with non-positive 'n' value", n);
     if parSafe then
@@ -263,20 +250,20 @@ class RandomStream {
   }
 
   /*
-    Advance/rewind the stream to the `n`-th value and return it.  This
-    is equivalent to :chpl:proc:`skipToNth()` followed by
-    :chpl:proc:`getNext()`.
+    Advance/rewind the stream to the `n`-th value and return it
+    (advancing the strem by one).  This is equivalent to
+    :chpl:proc:`skipToNth()` followed by :chpl:proc:`getNext()`.
 
     :arg n: The position in the stream to skip to.  Must be non-negative.
     :type n: integral
 
-    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to this.parSafe.
+    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :chpl:param:`this.parSafe <RandomStream.parSafe>`.
     :type parSafe: bool
 
     :returns: The `n`-th value in the random stream as a `real(64)`.
   */
 
-  proc getNth(n: integral, param parSafe = this.parSafe): real(64) {
+  proc getNth(n: integral, param parSafe: bool = this.parSafe): real(64) {
     if (n <= 0) then 
       halt("RandomStream.getNth(n) called with non-positive 'n' value", n);
     if parSafe then
@@ -298,11 +285,11 @@ class RandomStream {
     :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128).
     :type arr: [] T
 
-    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to this.parSafe.
+    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :chpl:param:`this.parSafe <RandomStream.parSafe>`.
     :type parSafe: bool
   */
 
-  proc fillRandom(arr: [], param parSafe = this.parSafe) {
+  proc fillRandom(arr: [], param parSafe: bool = this.parSafe) {
     if arr.eltType != complex && arr.eltType != real && arr.eltType != imag then
       compilerError("RandomStream.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
     forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType, parSafe)) do
@@ -310,7 +297,7 @@ class RandomStream {
   }
 
   pragma "no doc"
-  proc iterate(D: domain, type resultType=real, param parSafe = this.parSafe) {
+  proc iterate(D: domain, type resultType=real, param parSafe: bool = this.parSafe) {
     if resultType != complex && resultType != real && resultType != imag then
       compilerError("RandomStream.iterate is only defined for real(64), imag(64), and complex(128) result types");
     param cplxMultiplier = if resultType == complex then 2 else 1;

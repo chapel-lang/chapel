@@ -46,7 +46,7 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
 
   BlockStmt*   outer      = new BlockStmt();
 
-  if (call && call->isNamed("by"))
+  if (call && call->isNamed("chpl_by"))
   {
     stride = call->get(2)->remove();
     call   = toCallExpr(call->get(1));

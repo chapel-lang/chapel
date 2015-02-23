@@ -42,10 +42,18 @@
 
 // It would be better if Flex could generate these for itself
 %code requires {
-  void lexerScanString(const char* string);
-  void lexerResetFile();
+  #ifndef _BISON_CHAPEL_DEFINES_0_
+  #define _BISON_CHAPEL_DEFINES_0_
 
-  void processNewline();
+  #define YYLEX_NEWLINE                  -1
+  #define YYLEX_SINGLE_LINE_COMMENT      -2
+  #define YYLEX_BLOCK_COMMENT            -3
+
+  typedef void* yyscan_t;
+
+  int processNewline(yyscan_t scanner);
+
+  #endif
 }
 
 //
@@ -53,6 +61,8 @@
 //
 
 %code requires {
+  #ifndef _BISON_CHAPEL_DEFINES_1_
+  #define _BISON_CHAPEL_DEFINES_1_
 
   #include "symbol.h"
 
@@ -98,6 +108,8 @@
     FlagSet*          flagSet;
     IntentExpr        pIntentExpr;
   };
+
+  #endif
 }
 
 //
@@ -105,6 +117,9 @@
 //
 
 %code requires {
+  #ifndef _BISON_CHAPEL_DEFINES_2_
+  #define _BISON_CHAPEL_DEFINES_2_
+
   struct YYLTYPE {
     int         first_line;
     int         first_column;
@@ -115,6 +130,40 @@
 
   #define YYLTYPE_IS_DECLARED 1
   #define YYLTYPE_IS_TRIVIAL  1
+
+  #endif
+}
+
+//
+// Definition of the additional parameter to yypush_parse
+//
+
+%code requires {
+  #ifndef _BISON_CHAPEL_DEFINES_3_
+  #define _BISON_CHAPEL_DEFINES_3_
+
+  class ParserContext {
+  public:
+    ParserContext()
+    {
+      scanner       = 0;
+      latestComment = 0;
+      generatedStmt = 0;
+    }
+
+    ParserContext(yyscan_t scannerIn)
+    {
+      scanner       = scannerIn;
+      latestComment = 0;
+      generatedStmt = 0;
+    }
+
+    yyscan_t    scanner;
+    const char* latestComment;
+    BaseAST*    generatedStmt;
+  };
+
+  #endif
 }
 
 //
@@ -123,8 +172,9 @@
 %code provides {
   extern int yydebug;
 
-  int  yyparse();
-  void yyerror(const char* str);
+  void yyerror(YYLTYPE*       ignored,
+               ParserContext* context,
+               const char*    str);
 }
 
 %code {
@@ -159,15 +209,18 @@
                                                                           \
     } else  {                                                             \
       (Current) = yylloc;                                                 \
-    }                                                                     \
+    }
 
-
-  void yyerror(const char* str) {
+  void yyerror(YYLTYPE*       ignored,
+               ParserContext* context,
+               const char*    str) {
     if (!chplParseString) {
+      const char* yyText = yyget_text(context->scanner);
+
       fprintf(stderr, "%s:%d: %s", yyfilename, chplLineno, str);
 
-      if (strlen(yytext) > 0) {
-        fprintf(stderr, ": near '%s'", yytext);
+      if (strlen(yyText) > 0) {
+        fprintf(stderr, ": near '%s'", yyText);
       }
     } else {
       fprintf(stderr, "%s: %s", yyfilename, str);
@@ -192,12 +245,21 @@
 %debug
 %verbose
 
+%locations
+%define api.pure
+%define api.push-pull push
+
+%parse-param { ParserContext* context }
+
 %start program
 
 //
 // identifiers and literals
 //
-%token TIDENT IMAGLITERAL INTLITERAL REALLITERAL
+%token <pch> TIDENT
+%token <pch> INTLITERAL
+%token <pch> REALLITERAL
+%token <pch> IMAGLITERAL
 %token <pch> STRINGLITERAL
 %token <pch> EXTERNCODE
 
@@ -334,7 +396,7 @@
 %%
 
 program:
-  toplevel_stmt_ls                     { (void)@1.first_line; yyblock = $$; }
+  toplevel_stmt_ls                     { yyblock = $$; }
 ;
 
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
@@ -394,7 +456,7 @@ module_decl_stmt:
 ;
 
 module:
-  TMODULE                              { @$.comment = yylloc.comment; yylloc.comment = NULL;}
+  TMODULE                              { @$.comment = context->latestComment; context->latestComment = NULL; }
 ;
 
 
@@ -448,7 +510,7 @@ opt_ident:
 ;
 
 ident:
-  TIDENT  { $$ = astr(yytext); }
+  TIDENT  { $$ = $1; }
 ;
 
 do_stmt:
@@ -579,22 +641,30 @@ type_select_stmt:
 
 class_decl_stmt:
   opt_extern class_tag ident opt_inherit TLCBR class_level_stmt_ls TRCBR
-    { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1, @1.comment));
-      yylloc.comment = NULL; }
+    { $$ = buildChapelStmt(buildClassDefExpr($3, $2, $4, $6, $1, @1.comment)); }
 ;
 
 opt_extern:
-           { $$ = FLAG_UNKNOWN; }
-| TEXTERN  { $$ = FLAG_EXTERN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+           { $$ = FLAG_UNKNOWN; @$.comment = context->latestComment; context->latestComment = NULL; }
+| TEXTERN  { $$ = FLAG_EXTERN;  @$.comment = context->latestComment; context->latestComment = NULL; }
 ;
 
 class_tag:
-  TCLASS   { $$ = new AggregateType(AGGREGATE_CLASS); @$.comment = yylloc.comment;
-             yylloc.comment = NULL;}
-| TRECORD  { $$ = new AggregateType(AGGREGATE_RECORD); @$.comment = yylloc.comment;
-             yylloc.comment = NULL;}
-| TUNION   { $$ = new AggregateType(AGGREGATE_UNION); @$.comment = yylloc.comment;
-             yylloc.comment = NULL;}
+  TCLASS   {
+             $$                     = new AggregateType(AGGREGATE_CLASS);
+             @$.comment             = context->latestComment;
+             context->latestComment = NULL;
+           }
+| TRECORD  {
+             $$                     = new AggregateType(AGGREGATE_RECORD);
+             @$.comment             = context->latestComment;
+             context->latestComment = NULL;
+           }
+| TUNION   {
+             $$                     = new AggregateType(AGGREGATE_UNION);
+             @$.comment             = context->latestComment;
+             context->latestComment = NULL;
+           }
 ;
 
 opt_inherit:
@@ -677,21 +747,51 @@ lambda_decl_expr:
 // The FnSymbol is just used as a struct to carry the flag and
 // (for exports only) the cname of the function.
 linkage_spec:
-                { $$ = new FnSymbol(""); }
-| TINLINE       { $$ = new FnSymbol(""); $$->addFlag(FLAG_INLINE);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXPORT       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXPORT);
+                {
+                  $$ = new FnSymbol("");
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TINLINE       {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_INLINE);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TEXPORT       {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_EXPORT);
                   $$->addFlag(FLAG_LOCAL_ARGS);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXPORT ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXPORT);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TEXPORT ident {
+                  $$ = new FnSymbol($2);
+                  $$->addFlag(FLAG_EXPORT);
                   $$->addFlag(FLAG_LOCAL_ARGS);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXTERN       { $$ = new FnSymbol(""); $$->addFlag(FLAG_EXTERN);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TEXTERN       {
+                  $$ = new FnSymbol("");
+                  $$->addFlag(FLAG_EXTERN);
                   $$->addFlag(FLAG_LOCAL_ARGS);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXTERN ident { $$ = new FnSymbol($2); $$->addFlag(FLAG_EXTERN);
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
+| TEXTERN ident {
+                  $$ = new FnSymbol($2);
+                  $$->addFlag(FLAG_EXTERN);
                   $$->addFlag(FLAG_LOCAL_ARGS);
-                  @$.comment = yylloc.comment; yylloc.comment = NULL;}
+
+                  @$.comment             = context->latestComment;
+                  context->latestComment = NULL;
+                }
 
 fn_decl_stmt:
   linkage_spec proc_or_iter
@@ -724,7 +824,7 @@ fn_decl_stmt:
       }
 
       $$ = buildFunctionDecl($4, $6, $7, $8, $9, @1.comment);
-      yylloc.comment = NULL;
+      context->latestComment = NULL;
     }
 ;
 
@@ -771,7 +871,7 @@ fn_ident:
 | TMOD           { $$ = "%"; }
 | TEXP           { $$ = "**"; }
 | TNOT           { $$ = "!"; }
-| TBY            { $$ = "by"; }
+| TBY            { $$ = "chpl_by"; }
 | THASH          { $$ = "#"; }
 | TALIGN         { $$ = "align"; }
 | TSWAP          { $$ = "<=>"; }
@@ -896,19 +996,27 @@ type_alias_decl_stmt_inner:
   ident opt_init_type
     {
       VarSymbol* var = new VarSymbol($1);
+
       var->addFlag(FLAG_TYPE_VARIABLE);
-      var->doc = yylloc.comment;
-      yylloc.comment = NULL;
+
+      var->doc               = context->latestComment;
+      context->latestComment = NULL;
+
       DefExpr* def = new DefExpr(var, $2);
+
       $$ = buildChapelStmt(def);
     }
 | ident opt_init_type TCOMMA type_alias_decl_stmt_inner
     {
       VarSymbol* var = new VarSymbol($1);
+
       var->addFlag(FLAG_TYPE_VARIABLE);
-      var->doc = yylloc.comment;
-      yylloc.comment = NULL;
+
+      var->doc               = context->latestComment;
+      context->latestComment = NULL;
+
       DefExpr* def = new DefExpr(var, $2);
+
       $4->insertAtHead(def);
       $$ = buildChapelStmt($4);
     }
@@ -961,9 +1069,9 @@ var_decl_stmt:
 ;
 
 opt_config:
-            { $$ = FLAG_UNKNOWN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TCONFIG   { $$ = FLAG_CONFIG; @$.comment = yylloc.comment; yylloc.comment = NULL;}
-| TEXTERN   { $$ = FLAG_EXTERN; @$.comment = yylloc.comment; yylloc.comment = NULL;}
+            { $$ = FLAG_UNKNOWN; @$.comment = context->latestComment; context->latestComment = NULL; }
+| TCONFIG   { $$ = FLAG_CONFIG;  @$.comment = context->latestComment; context->latestComment = NULL; }
+| TEXTERN   { $$ = FLAG_EXTERN;  @$.comment = context->latestComment; context->latestComment = NULL; }
 ;
 
 var_decl_stmt_inner_ls:
@@ -1364,12 +1472,12 @@ parenthesized_expr:
 ;
 
 literal_expr:
-  INTLITERAL            { $$ = buildIntLiteral(yytext);  }
-| REALLITERAL           { $$ = buildRealLiteral(yytext); }
-| IMAGLITERAL           { $$ = buildImagLiteral(yytext); }
+  INTLITERAL            { $$ = buildIntLiteral($1);    }
+| REALLITERAL           { $$ = buildRealLiteral($1);   }
+| IMAGLITERAL           { $$ = buildImagLiteral($1);   }
 | STRINGLITERAL         { $$ = buildStringLiteral($1); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
-| TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr", $2); }
+| TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR assoc_expr_ls TRSBR
     {
       $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
@@ -1401,7 +1509,7 @@ binary_op_expr:
 | expr TAND expr           { $$ = new CallExpr("&&", $1, $3); }
 | expr TOR  expr           { $$ = new CallExpr("||", $1, $3); }
 | expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
-| expr TBY expr            { $$ = new CallExpr("by", $1, $3); }
+| expr TBY expr            { $$ = new CallExpr("chpl_by", $1, $3); }
 | expr TALIGN expr         { $$ = new CallExpr("align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
 | expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1); }

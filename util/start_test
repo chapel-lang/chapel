@@ -865,7 +865,7 @@ while ( $#argv > 0 )
     case --performance-configs:
     case -performance-configs:
         shift
-        set genGraphOpts = "$genGraphOpts --multiple-configurations $argv[1]"
+        set genGraphOpts = "$genGraphOpts --configs $argv[1]"
         shift
         breaksw
     case --compperformance:
