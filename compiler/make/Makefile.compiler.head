@@ -34,7 +34,7 @@ endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 INCL_CFLAGS = -I. -I$(COMPILER_ROOT)/include/$(CHPL_MAKE_HOST_PLATFORM) -I$(COMPILER_ROOT)/include $(LLVM_INCLUDES)
-COMP_CFLAGS += $(INCL_CFLAGS) -DHILDE_MM=1 -DREF_RECORDS_IN_IR=1
+COMP_CFLAGS += $(INCL_CFLAGS) -DHILDE_MM=1
 
 #
 # add gc-related stuff

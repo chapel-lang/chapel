@@ -953,7 +953,7 @@ noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
 // Preceding calls to the various build...() functions have copied out interesting parts
 // of the iterator function.
 // This function rips the guts out of the original iterator function and replaces them
-// with a simple function that just initializes the fields in the iterator class
+// with a simple function that just initializes the fields in the iterator record
 // with formal arguments of the original iterator that are live at yield sites within it.
 static void
 rebuildIterator(IteratorInfo* ii,
@@ -1183,12 +1183,20 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
     type = local->type;
 #ifndef REF_RECORDS_IN_IR
     // If the iterator is a method and the local variable is _this and it is a
-    // reference (this second test is probably redundant), then capture the
-    // value of this in a field.
-    // This is equivalent to making a copy of the object being iterated over
-    // but not any class objects it references....  This is somewhat odd.
+    // reference but the method is not a var method, then capture that value in
+    // a local variable and then use that to set the _this field in the IR.
+    // For var iterators, the user must ensure that the referenced object
+    // remains valid over the entire iteration.
     if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
-      type = type->getValType();
+    {
+      if (! (fn->thisTag & INTENT_FLAG_REF))
+        type = type->getValType();
+
+      // Debug only.  I want to expose cases where var iterator this fields are
+      // being copied by value.
+      else
+        INT_ASSERT(false);
+    }
 #endif
   }
 
