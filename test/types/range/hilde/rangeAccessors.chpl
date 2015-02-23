@@ -2,8 +2,8 @@
 // Demonstrate using accessors to update the fields in a range.
 //
 
-var r = 1..10
-var r2 = r by 2
+var r = 1..10;
+var r2 = r by 2;
 r2.low = 0;  // Does not change alignment.
 
 writeln(r2);  // 0..10 by 2 align 1
@@ -23,10 +23,10 @@ writeln(r2);  // 0..12 by 3
 var ASpace = 2..100;
 var A : [ASpace] bool;  // True if the matching index is a prime.
 for i in ASpace do A[i] = true;
-var r = ASpace;
+var ra = ASpace;
 for i in 2..10 {
-  r.low = i; r.stride = i; // r.alignment = 0;
-  for j in r do if j > i then A[i] = false;
+  ra.low = i; ra.stride = i; // ra.alignment = 0;
+  for j in ra do if j > i then A[i] = false;
 }
 writeln("The primes up to 100 are:");
 for i in ASpace do

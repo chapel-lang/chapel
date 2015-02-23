@@ -21,3 +21,15 @@ Also, the latter form is easier to read.  Compare:
 
     "The stride of r1 has been replaced by s."
 
+
+On the other hand, the same arguments can be applied to keeping the fields of a range
+constant as for making strings immutable -- that the performance benefits associated with
+being able to copy the record freely, without having it tied to subsequent changes in the
+original far outweighs the benefits of being able to modify an existing object.
+
+In multithreaded and especially in distributed execution environments, the benefits of
+making ranges immutable is pretty clear-cut.  That estimation is less true for strings,
+depending on their size.
+
+In summary, if strings are immutable then ranges should definitely be.  Conversely, if ranges
+are mutable, strings should be mutable also.
