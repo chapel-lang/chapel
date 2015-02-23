@@ -493,6 +493,21 @@ proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
   return newDist;
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: Block) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: Block) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 
 proc LocBlock.LocBlock(param rank: int,
                       type idxType, 

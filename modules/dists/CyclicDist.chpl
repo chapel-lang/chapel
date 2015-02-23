@@ -348,6 +348,21 @@ class LocCyclic {
   }
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: Cyclic) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: Cyclic) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 
 class CyclicDom : BaseRectangularDom {
   param rank: int;
