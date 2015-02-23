@@ -35,9 +35,7 @@ Generating docs
 
 To create chpldoc documentation, you can either add the '--doc' flag
 to your normal Chapel compiler line or use the standalone 'chpldoc'
-utility.  As of the 1.11 release, there is no difference between these
-approaches.  It is hoped that the ability to additionally generate an
-executable will be restored soon.
+utility.
 
 By default, documentation created by chpldoc will end up in a
 subdirectory of the current working directory named 'docs/'.  You can
@@ -89,7 +87,10 @@ alphabetical order within each lexical scope.
 
 If you would like a particular symbol to not be output as part of your
 documentation, you can specify this by prefacing the symbol with the
-pragma "no doc".
+pragma "no doc".  For example:
+
+    pragma "no doc"
+    proc foo() { ... }
 
 Documentation text within comments is parsed as ReStructed Text.
 

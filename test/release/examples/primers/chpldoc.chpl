@@ -57,6 +57,9 @@ proc uncommented() {
 pragma "no doc"
 proc undocumented() {
   // This function won't be in the final output.
+
+  // Once Chapel has support for marking symbol as private, that can be used
+  // to squash documentation instead.
 }
 
 /*
