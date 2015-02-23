@@ -1,3 +1,5 @@
+TODO: ref /doc/release/technotes/README.chpldoc
+
 Documenting Chapel
 ==================
 
