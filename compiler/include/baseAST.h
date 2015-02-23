@@ -73,6 +73,7 @@
 class AstVisitor;
 class Expr;
 class GenRet;
+class LcnSymbol;
 class Symbol;
 class Type;
 
@@ -369,6 +370,16 @@ def_to_ast(CForLoop);
 def_to_ast(ParamForLoop);
 
 #undef def_to_ast
+
+static inline LcnSymbol* toLcnSymbol(BaseAST* a)
+{
+  return isLcnSymbol(a) ? (LcnSymbol*) a : NULL;
+}
+
+static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
+{
+  return isLcnSymbol(a) ? (const LcnSymbol*) a : NULL;
+}
 
 //
 // traversal macros
