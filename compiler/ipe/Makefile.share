@@ -24,7 +24,6 @@ IPE_SRCS =                           \
            ipeEvaluate.cpp           \
                                      \
            IpeEnvironment.cpp        \
-           IpeSymbol.cpp             \
            VisibleSymbol.cpp         \
                                      \
            ScopeBase.cpp             \
