@@ -30,11 +30,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 PARSER_OBJDIR = $(OBJ_SUBDIR)
 include Makefile.share
 
-ifdef CHPL_PARSER_DEVELOPER
-TARGETS = parser-update $(PARSER_OBJS)
-else
 TARGETS = $(PARSER_OBJS)
-endif
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
@@ -48,22 +44,8 @@ parser: FORCE
 	@rm -f bison-chapel.output bison-chapel.cpp flex-chapel.cpp
 	@rm -f ../include/bison-chapel.h ../include/flex-chapel.h
 	bison chapel.ypp
-	@if [ `grep "conflicts:" bison-chapel.output | wc -l` -ne 0 ]; then echo "PROBLEM: chapel.ypp contains conflicts"; exit 1; fi;
+	@if grep -q "conflicts:" bison-chapel.output; then echo "PROBLEM: chapel.ypp contains conflicts"; exit 1; fi;
 	flex chapel.lex
-
-parser-update: parser-update-prep parser parser-update-compare
-
-parser-update-prep:
-	@[ -r bison-chapel.cpp ] && mv bison-chapel.cpp{,.tmp} || true
-	@[ -r flex-chapel.cpp  ] && mv flex-chapel.cpp{,.tmp} || true
-	@[ -r ../include/bison-chapel.h ] && mv ../include/bison-chapel.h{,.tmp} || true
-	@[ -r ../include/flex-chapel.h ] && mv ../include/flex-chapel.h{,.tmp} || true
-
-parser-update-compare:
-	@cmp -s bison-chapel.cpp{,.tmp} && mv bison-chapel.cpp{.tmp,} || rm -f bison-chapel.cpp.tmp
-	@cmp -s flex-chapel.cpp{,.tmp} && mv flex-chapel.cpp{.tmp,} || rm -f bison-chapel.cpp.tmp
-	@cmp -s ../include/bison-chapel.h{,.tmp} && mv ../include/bison-chapel.h{.tmp,} || rm -f ../include/bison-chapel.h.tmp
-	@cmp -s ../include/flex-chapel.h{,.tmp} && mv ../include/flex-chapel.h{.tmp,} || rm -f ../include/flex-chapel.h.tmp
 
 FORCE:
 

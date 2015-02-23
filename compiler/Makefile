@@ -128,11 +128,8 @@ $(CHPLDOC): $(CHPL)
 
 chpldoc: $(CHPLDOC)
 
-parser-force:
+parser:
 	$(MAKE) -C parser parser
-
-parser-update:
-	$(MAKE) -C parser parser-update
 
 $(CHPL_BIN_DIR):
 	mkdir -p $@
