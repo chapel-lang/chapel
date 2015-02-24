@@ -1,37 +1,4 @@
 Module: exportTest
-   Module: exportTest.Other
-      export proc inside()
-         Comment for method inside module 
-
-      export proc insideCommentless()
-      export proc body()
-         Comment for method with a body inside module 
-
-      export proc bodyCommentless()
-      export proc hasArg(val: int)
-         Comment for method with an argument inside module 
-
-      export proc hasArgCommentless(val: int)
-      export proc argAndBody(val: int)
-         Comment for method with argument and body inside module 
-
-      export proc argAndBodyCommentless(val: int)
-      export proc hasReturnType(): int
-         This method has a return type 
-
-      export proc hasReturnTypeCommentless(): int
-      export proc hasReturnTypeAndArg(val: int): int
-         This method has a return type and an argument 
-
-      export proc hasReturnTypeAndArgCommentless(val: int): int
-      export proc returnTypeAndBody(): int
-         This method has both a return type and a body 
-
-      export proc returnTypeAndBodyCommentless(): int
-      export proc allThree(val: int): int
-         This method has a return type, an argument, and a function body 
-
-      export proc allThreeCommentless(val: int): int
    export proc method1()
       Comment for method1 
 
@@ -69,3 +36,36 @@ Module: exportTest
       This method has a return type, an argument, and a function body 
 
    export proc allThreeCommentless2(val: int): int
+   Module: exportTest.Other
+      export proc inside()
+         Comment for method inside module 
+
+      export proc insideCommentless()
+      export proc body()
+         Comment for method with a body inside module 
+
+      export proc bodyCommentless()
+      export proc hasArg(val: int)
+         Comment for method with an argument inside module 
+
+      export proc hasArgCommentless(val: int)
+      export proc argAndBody(val: int)
+         Comment for method with argument and body inside module 
+
+      export proc argAndBodyCommentless(val: int)
+      export proc hasReturnType(): int
+         This method has a return type 
+
+      export proc hasReturnTypeCommentless(): int
+      export proc hasReturnTypeAndArg(val: int): int
+         This method has a return type and an argument 
+
+      export proc hasReturnTypeAndArgCommentless(val: int): int
+      export proc returnTypeAndBody(): int
+         This method has both a return type and a body 
+
+      export proc returnTypeAndBodyCommentless(): int
+      export proc allThree(val: int): int
+         This method has a return type, an argument, and a function body 
+
+      export proc allThreeCommentless(val: int): int
