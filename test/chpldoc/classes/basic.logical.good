@@ -16,17 +16,17 @@ Module: basic
          class with nary a tone, declared in the module all sad and
          alone, listed behind the proc that lies in the module that
          Lydia built 
-         Class: agedAndStiff
-            This is the classes all aged and stiff, aware of the proc
-            that is thoroughly miffed, raised in the module whose 
-            classes are grown, sister of the class with nary a tone,
-            declared in the module all sad and alone, listed behind 
-            the proc that lies in the module that Lydia built. 
-
          proc thoroughlyMiffed()
             This is the proc that is thoroughly miffed, raised in 
             the module whose classes are grown, sister of the class
             with nary a tone, declared in the module all sad and
             alone, listed behind the proc that lies in the module that
             Lydia built. 
+
+         Class: agedAndStiff
+            This is the classes all aged and stiff, aware of the proc
+            that is thoroughly miffed, raised in the module whose 
+            classes are grown, sister of the class with nary a tone,
+            declared in the module all sad and alone, listed behind 
+            the proc that lies in the module that Lydia built. 
 
