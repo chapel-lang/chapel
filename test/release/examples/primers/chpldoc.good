@@ -27,21 +27,10 @@ Module: chpldoc
             And class specific methods
             
 
-      Class: Bar
+      Class: Bar : Foo
          
          If a class inherits from another class, those fields, methods, and their
          comments are output in both the super and the subclass
          
 
          proc setA(newVal: int)
-         inherited from Foo
-            var a: int
-               
-               Including the comments associated with their fields
-               
-            proc getA(): int
-               
-               And class specific methods
-               
-
-
