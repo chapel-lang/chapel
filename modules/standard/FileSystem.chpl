@@ -109,6 +109,90 @@ proc chown(name: string, uid: int, gid: int) {
   if err != ENOERR then ioerror(err, "in chown", name);
 }
 
+/* Copies the contents and permissions of the file indicated by src into
+   the file or directory dest.  If dest is a directory, will create or
+   overwrite a file with the same basename as src in dest.  If metadata is
+   set to true, will also copy the metadata of the file to be copied.
+   err: a syserr used to indicate if an error occurred
+   src: the source file whose contents and permissions are to be copied
+   dest: the destination directory or file of the contents and permissions.
+   metadata: a boolean indicating whether to copy metadata associated with the
+             source file.
+*/
+proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
+  copyFile(err, src, dest);
+  if err != ENOERR then return;
+  copyMode(err, src, dest);
+  // TODO: Still needs to change the owner and group.
+}
+
+/* Copies the contents and permissions of the file indicated by src into
+   the file or directory dest.  If dest is a directory, will create or
+   overwrite a file with the same basename as src in dest.  If metadata is
+   set to true, will also copy the metadata of the file to be copied.  May
+   generate an error message.
+   src: the source file whose contents and permissions are to be copied
+   dest: the destination directory or file of the contents and permissions.
+   metadata: a boolean indicating whether to copy metadata associated with the
+             source file.
+*/
+proc copy(src: string, dest: string, metadata: bool = false) {
+  var err: syserr = ENOERR;
+  copy(err, src, dest, metadata);
+  if err != ENOERR then ioerror(err, "in copy", src);
+}
+
+/* Copies the contents of the file indicated by src into the file indicated
+   by dest, replacing dest if it already exists (and is different than src).
+   If the dest is not writable or src and dest are the same file, generates
+   an error.  Does not copy metadata.
+   err: a syserr used to indicate if an error occurred
+   src: the source file whose contents are to be copied.
+   dest: the destination of the contents.
+*/
+proc copyFile(out err: syserr, src: string, dest: string) {
+  extern proc chpl_fs_copyFile(src: c_string, dest: c_string): syserr;
+
+  err = chpl_fs_copyFile(src.c_str(), dest.c_str());
+}
+
+/* Copies the contents of the file indicated by src into the file indicated
+   by dest, replacing dest if it already exists (and is different than src).
+   If the dest is not writable or src and dest are the same file, generates
+   an error.  Does not copy metadata.  May generate an error message.
+   src: the source file whose contents are to be copied.
+   dest: the destination of the contents.
+*/
+proc copyFile(src: string, dest: string) {
+  var err: syserr = ENOERR;
+  copyFile(err, src, dest);
+  if err != ENOERR then ioerror(err, "in copyFile", src);
+}
+
+/* Copies the permissions of the file indicated by src to the file indicated
+   by dest, leaving contents, owner and group unaffected.
+   err: a syserr used to indicate if an error occurred
+   src: the source file whose permissions are to be copied.
+   dest: the destination of the permissions.
+*/
+proc copyMode(out err: syserr, src: string, dest: string) {
+  extern proc chpl_fs_copyMode(src: c_string, dest: c_string): syserr;
+
+  err = chpl_fs_copyMode(src.c_str(), dest.c_str());
+}
+
+/* Copies the permissions of the file indicated by src to the file indicated
+   by dest, leaving contents, owner and group unaffected.  May generate an error
+   message.
+   src: the source file whose permissions are to be copied.
+   dest: the destination of the permissions.
+*/
+proc copyMode(src: string, dest: string) {
+  var err: syserr = ENOERR;
+  copyMode(err, src, dest);
+  if err != ENOERR then ioerror(err, "in copyMode", src);
+}
+
 /* Returns the current working directory for the current locale.
    err: a syserr used to indicate if an error occurred
 

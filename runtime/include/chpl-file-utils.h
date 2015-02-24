@@ -32,6 +32,10 @@ qioerr chpl_fs_chmod(const char* name, int mode);
 
 qioerr chpl_fs_chown(const char* name, int uid, int gid);
 
+qioerr chlp_fs_copyFile(const char* src, const char* dest);
+
+qioerr chlp_fs_copyMode(const char* src, const char* dest);
+
 qioerr chpl_fs_cwd(const char** working_dir);
 
 qioerr chpl_fs_exists(int* ret, const char* name);

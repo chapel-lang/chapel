@@ -56,6 +56,20 @@ qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   return err;
 }
 
+/* Copy a file's contents from src to dest */
+qioerr chlp_fs_copyFile(const char* src, const char* dest) {
+  qioerr err = 0;
+
+  return err;
+}
+
+/* Copy a file's mode from src to dest */
+qioerr chlp_fs_copyMode(const char* src, const char* dest) {
+  qioerr err = 0;
+
+  return err;
+}
+
 // This routine returns a malloc'd string (through the working_dir pointer)
 // that must be deallocated by the caller.
 qioerr chpl_fs_cwd(const char** working_dir) {
