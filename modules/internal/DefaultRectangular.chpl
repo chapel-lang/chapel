@@ -534,7 +534,9 @@ module DefaultRectangular {
     var str: rank*chpl__signedType(idxType);
     var origin: idxType;
     var factoredOffs: idxType;
+    pragma "local field"
     var data : _ddata(eltType);
+    pragma "local field"
     var shiftedData : _ddata(eltType);
     var noinit_data: bool = false;
     //var numelm: int = -1; // for correctness checking
