@@ -27,7 +27,6 @@
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
-#include "IpeSymbol.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -78,8 +77,8 @@ void printStatistics(const char* pass) {
   int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kExternBlockStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
-  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nIpeSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
-  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kIpeSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
+  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
+  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nAggregateType;
   int kType = kPrimitiveType+kEnumType+kAggregateType;
 
@@ -436,10 +435,6 @@ const char* BaseAST::astTagAsString() const {
 
     case E_ArgSymbol:
       retval = "ArgSymbol";
-      break;
-
-    case E_IpeSymbol:
-      retval = "IpeSymbol";
       break;
 
     case E_TypeSymbol:
