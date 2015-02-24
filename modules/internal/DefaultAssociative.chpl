@@ -150,7 +150,7 @@ module DefaultAssociative {
  
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       if debugDefaultAssoc then
-        writeln("*** In domain standalone code:");
+        writeln("*** In associative domain standalone iterator");
       const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
                        else dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
@@ -166,17 +166,11 @@ module DefaultAssociative {
         writeln("### minIndicesPerTask = ", minIndicesPerTask);
       }
 
-      if debugDefaultAssoc then
-        writeln("    numTasks=", numTasks, " (", ignoreRunning,
-                "), minIndicesPerTask=", minIndicesPerTask);
-
       const numChunks = _computeNumChunks(numTasks, ignoreRunning,
                                           minIndicesPerTask,
                                           numIndices);
-      if debugDefaultAssoc then
-        writeln("    numChunks=", numChunks, " length=", numIndices);
 
-      if debugAssocDataPar then writeln("### numChunks=", numChunks);
+      if debugAssocDataPar then writeln("### numChunks=", numChunks, ", numIndices=", numIndices);
 
       if numChunks == 1 {
         var followThisTab = this.table;
@@ -188,8 +182,8 @@ module DefaultAssociative {
         coforall chunk in 0..#numChunks {
           const (lo, hi) = _computeBlock(numIndices, numChunks,
                                          chunk, numIndices-1);
-          if debugDefaultAssoc then
-            writeln("*** DI[", chunk, "]: tuple = ", (lo..hi,));
+          if debugAssocDataPar then
+            writeln("*** chunk: ", chunk, " owns ", lo..hi);
           for slot in lo..hi {
             if table[slot].status == chpl__hash_status.full then
               yield table[slot].idx;
@@ -565,16 +559,30 @@ module DefaultAssociative {
 
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       if debugDefaultAssoc then
-        writeln("In array standalone code");
-
-      for followThis in dom.these(iterKind.leader) {
-        var (chunk, unused) = followThis;
-        if debugDefaultAssoc then
-          writeln("In array standalone code: chunk = ", chunk);
-        var table = dom.table;
-        for slot in chunk {
-          if table[slot].status == chpl__hash_status.full then
+        writeln("*** In associative array standalone iterator");
+      const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
+                       else dataParTasksPerLocale;
+      const ignoreRunning = dataParIgnoreRunningTasks;
+      const minIndicesPerTask = dataParMinGranularity;
+      const numIndices = dom.tableSize;
+      const numChunks = _computeNumChunks(numTasks, ignoreRunning,
+                                          minIndicesPerTask, numIndices);
+      if numChunks == 1 {
+        for slot in 0..#numIndices {
+          if dom.table[slot].status == chpl__hash_status.full then
             yield data[slot];
+        }
+      } else {
+        coforall chunk in 0..#numChunks {
+          const (lo, hi) = _computeBlock(numIndices, numChunks,
+                                         chunk, numIndices-1);
+          if debugAssocDataPar then
+            writeln("In associative array standalone iterator: chunk = ", chunk);
+          var table = dom.table;
+          for slot in lo..hi {
+            if dom.table[slot].status == chpl__hash_status.full then
+              yield data[slot];
+          }
         }
       }
     }
