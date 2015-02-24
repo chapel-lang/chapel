@@ -145,21 +145,25 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
         fn->printDocs(file, tabs + 1);
     }
 
-    Vec<AggregateType*> superClasses;
-    inheritance(&superClasses, cl);
+    // TODO: Restore the following lines as opt-in feature. They print the the
+    //       "inherited from <blah>" line and all the inherited members and
+    //       methods. (thomasvandoren, 2015-02-23)
+    //
+    // Vec<AggregateType*> superClasses;
+    // inheritance(&superClasses, cl);
 
-    if (fDocsAlphabetize)
-      qsort(superClasses.v, superClasses.n, sizeof(superClasses.v[0]), compareClasses);
+    // if (fDocsAlphabetize)
+    //   qsort(superClasses.v, superClasses.n, sizeof(superClasses.v[0]), compareClasses);
     
-    forv_Vec(AggregateType, superClass, superClasses) {
-      superClass->printInheritanceDocs(file, tabs + 1);
-      printFields(file, superClass, tabs + 2);
+    // forv_Vec(AggregateType, superClass, superClasses) {
+    //   superClass->printInheritanceDocs(file, tabs + 1);
+    //   printFields(file, superClass, tabs + 2);
     
-      forv_Vec(FnSymbol, fn, superClass->methods) {
-        fn->printDocs(file, tabs + 2);
-      }
-      *file << std::endl;
-    }
+    //   forv_Vec(FnSymbol, fn, superClass->methods) {
+    //     fn->printDocs(file, tabs + 2);
+    //   }
+    //   *file << std::endl;
+    // }
   }
 }
 
