@@ -750,7 +750,7 @@ proc chpl__autoCopy(x: UserMapAssocArr) {
 
 proc chpl__autoDestroy(x: UserMapAssocArr) {
   if !noRefCount {
-    var cnt = x.destroyArray();
+    var cnt = x.destroyArr();
     if cnt == 0 then
       delete x;
   }
