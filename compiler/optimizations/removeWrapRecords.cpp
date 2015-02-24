@@ -37,6 +37,7 @@ static Type* getWrapRecordBaseType(Type* type);
 //
 void
 removeWrapRecords() {
+
   //
   // do not remove wrap records if dead code elimination is disabled
   // (or weakened because inlining or copy propagation is disabled)
@@ -45,7 +46,7 @@ removeWrapRecords() {
   //
   if (fNoDeadCodeElimination || fNoInline || fNoCopyPropagation)
     return;
-
+ 
   //
   // replace use of _valueType field with type
   //
@@ -82,7 +83,7 @@ removeWrapRecords() {
   }
 
   //
-  // remove formals for _valueType fields in constructors
+  // remove actuals bound to _valueType formals.
   //
   compute_call_sites();
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -91,6 +92,16 @@ removeWrapRecords() {
         forv_Vec(CallExpr, call, *fn->calledBy) {
           formal_to_actual(call, formal)->remove();
         }
+      }        
+    }
+  }
+
+  //
+  // remove all uses of _valueType formals, and then the formal itself.
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    for_formals(formal, fn) {
+      if (!strcmp(formal->name, "_valueType")) {
         // Remove all uses of _valueType within the body of this function.
         std::vector<SymExpr*> symExprs;
         collectSymExprsSTL(fn->body, symExprs);
@@ -114,6 +125,9 @@ removeWrapRecords() {
   // replace accesses of _value with wrap record
   //
   forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->parentSymbol == NULL)
+      continue;
+
     if (call->isPrimitive(PRIM_SET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (isRecordWrappedType(se->var->type)) {
