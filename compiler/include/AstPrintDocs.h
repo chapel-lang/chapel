@@ -58,8 +58,6 @@ public:
 
   virtual void   exitFnSym        (FnSymbol*          node);
 
-  virtual void   visitIpeSym      (IpeSymbol*         node);
-
   virtual void   visitLabelSym    (LabelSymbol*       node);
 
   virtual bool   enterTypeSym     (TypeSymbol*        node);
