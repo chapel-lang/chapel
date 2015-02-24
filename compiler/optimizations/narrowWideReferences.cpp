@@ -480,7 +480,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
 
             if (member->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
                 member->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              if (!member->var->hasFlag(FLAG_LOCAL_FIELD)) {
+              if (!fLocalFields || !member->var->hasFlag(FLAG_LOCAL_FIELD)) {
                 addNarrowDep(member->var, sym);
               } else {
                 wi->getMemberValueFields.add(def);
@@ -764,7 +764,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
       }
       if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         DEBUG_PRINTF("expr to widen: %s (%d / %d)\n", sym->cname, use->id, sym->id);
-        //wi->exprsToWiden.push_back(use);
+        wi->exprsToWiden.push_back(use);
         continue;
       }
       if (call->isPrimitive(PRIM_PTR_EQUAL) || call->isPrimitive(PRIM_PTR_NOTEQUAL)) {
@@ -918,8 +918,9 @@ narrowWideReferences() {
 
   insertWideReferenceTemps(*widenMap);
 
-  // TODO: add a flag to disable local fields
-  handleLocalFields(defMap, useMap);
+  if (fLocalFields) {
+    handleLocalFields(defMap, useMap);
+  }
 
   //
   // Free WideInfo class instances and def and use maps.

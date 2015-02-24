@@ -148,6 +148,7 @@ int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
+bool fLocalFields = true;
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
 bool fieeefloat = true;
 bool report_inlining = false;
@@ -689,6 +690,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
+ {"local-fields", ' ', NULL, "Enable [disable] local fields", "N", &fLocalFields, NULL, NULL},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
