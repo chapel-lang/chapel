@@ -46,6 +46,12 @@ AstPrintDocs::~AstPrintDocs() {
 
 
 bool AstPrintDocs::enterAggrType(AggregateType* node) {
+  // If class/record is not supposed to be documented, do not traverse into it
+  // (and skip the documentation).
+  if (node->symbol->hasFlag(FLAG_NO_DOC)) {
+    return false;
+  }
+
   node->printDocs(this->file, this->tabs);
   this->tabs++;
   return true;
@@ -53,6 +59,12 @@ bool AstPrintDocs::enterAggrType(AggregateType* node) {
 
 
 void AstPrintDocs::exitAggrType(AggregateType* node) {
+  // If class/record is not supposed to be documented, it was not traversed
+  // into or documented, so exit early from this method.
+  if (node->symbol->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
   // TODO: Does it make sense to print inheritance here?
   //       (thomasvandoren, 2015-02-22)
   this->tabs--;
