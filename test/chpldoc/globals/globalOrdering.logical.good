@@ -1,11 +1,11 @@
 Module: globalOrdering
    config var goop: bool
       I should be first 
+   config const resorted
+      I should be second 
    param after
       I should be third 
    var fluctuates: int
       I should be fourth 
-   config const resorted
-      I should be second 
    const running
       I'm last 
