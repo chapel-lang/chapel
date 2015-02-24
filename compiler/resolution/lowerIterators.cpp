@@ -1611,20 +1611,6 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
 }
 
 
-// When expanding a single-loop iterator with a single yield, the generated
-// code looks like:
-//   zip1(_iterator1); zip1(_iterator2);
-//   idx2 = getValue(_iterator2); idx1 = getValue(_iterator1);
-//   bool more1 = hasMore(iterator1);
-//   for (init(_iterator1), init(_iterator2); more1; incr(_iterator1), incr(_iterator2)) {
-//     zip2(_iterator);
-//     // Bounds checks inserted here.
-//     zip3(_iterator1); zip3(_iterator2);
-//     more = hasMore(itertor1);
-//   }
-//   zip4(_iterator2); zip4(_iterator1);
-// In zippered iterators, each clause may contain multiple calls to zip1(),
-// getValue(), etc.  These are inserted in the order shown.
 static void
 expandForLoop(ForLoop* forLoop) {
   SymExpr*   se2      = forLoop->iteratorGet();
@@ -1644,18 +1630,34 @@ expandForLoop(ForLoop* forLoop) {
   } else {
     // This code handles zippered iterators, dynamic iterators, and any other
     // iterator that cannot be inlined.
-    SET_LINENO(forLoop);
 
+    // When expanding a single-loop iterator with a single yield, the generated
+    // code looks like:
+    //   zip1(_iterator1); zip1(_iterator2);
+    //   idx2 = getValue(_iterator2); idx1 = getValue(_iterator1);
+    //   bool more1 = hasMore(iterator1);
+    //   for (init(_iterator1), init(_iterator2); more1; incr(_iterator1), incr(_iterator2)) {
+    //     zip2(_iterator);
+    //     // Bounds checks inserted here.
+    //     zip3(_iterator1); zip3(_iterator2);
+    //     more = hasMore(itertor1);
+    //   }
+    //   zip4(_iterator2); zip4(_iterator1);
+    // In zippered iterators, each clause may contain multiple calls to zip1(),
+    // getValue(), etc.  These are inserted in the order shown.
+
+    SET_LINENO(forLoop);
+    
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
-
+    
     SymExpr*     se1       = toSymExpr(forLoop->indexGet());
     VarSymbol*   index     = toVarSymbol(se1->var);
-
+    
     BlockStmt*   initBlock = new BlockStmt();
     BlockStmt*   testBlock = NULL;
     BlockStmt*   incrBlock = new BlockStmt();
-
+    
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
 
     // For each iterator we add the zip* functions in the appropriate place and
@@ -1746,6 +1748,7 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAtHead(buildIteratorCall(NULL, ZIP2, iterators.v[i], children));
     }
 
+    // 2015-02-23 hilde:
     // TODO: I think this wants to be insertBefore, and moved before the call
     // to getValue is inserted.  Check the order in the generated code to see
     // if this is the case.

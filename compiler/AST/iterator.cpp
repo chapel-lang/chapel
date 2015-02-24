@@ -112,8 +112,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
     return NULL;
   BlockStmt* singleFor = NULL;
   CallExpr* singleYield = NULL;
-  forv_Vec(BaseAST, ast, asts)
-  {
+  forv_Vec(BaseAST, ast, asts) {
     // If a yield statement,
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
@@ -127,7 +126,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
 
         // This test is not logically related to the preceding quick-exit, so
         // putting "else" here would be misleading.
-        if (dynamic_cast<LoopStmt*>(call->parentExpr) != NULL) {
+        if (isLoopStmt(call->parentExpr)) {
           // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
           if (isDoWhileStmt(call->parentExpr))
             return NULL;
@@ -147,7 +146,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
 
     // This clause captures the first loop statement (except for while-do
     // statements, for some reason ...).
-    else if (dynamic_cast<LoopStmt*>(ast) != NULL) {
+    else if (isLoopStmt(ast)) {
       // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
       if (isDoWhileStmt(ast))
         return NULL;
@@ -167,7 +166,7 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         // Is this intentional?
         if (singleFor == NULL)
           singleFor = block;
-        // TODO: Uncomment the following, and see what breaks
+        // 2015-02-23 hilde: TODO: Uncomment the following, and see what breaks
 //        else
 //          INT_FATAL(expr, "Iterator contains a second for loop.")
         // I think the existing code works because each loop should contain at
@@ -433,7 +432,8 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   map.put(ic, ii->zip1->_this);
 
   // Copy non-arg def expressions from the original iterator
-  // TODO: This is sloppy.  We only need local variables that are actually used
+  // 2015-02-23 hilde: TODO #1:
+  // This is sloppy.  We only need local variables that are actually used
   // within the zip1 body.  So we can probably gen the DefExprs we need by
   // scanning the exprs to be copied and just populating the map with the
   // symbols we actually use.  This utility can be factored out of all of the
@@ -465,7 +465,7 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this,
                                         ii->iclass->getField("more"), condExpr));
   } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
-    // TODO: See if we can apply the above simplification here as well.
+    // 2015-02-23 hilde: TODO: See if we can apply the above simplification here as well.
     SymExpr* index = forLoop->indexGet()->copy(&map);
 
     zip1body->insertAtTail(new CondStmt(index,
@@ -494,7 +494,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   BlockStmt* zip2body = new BlockStmt();
 
   // Copy non-arg def expressions from the original iterator
-  // See note above.
+  // See TODO #1 above.
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
@@ -529,7 +529,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   map.put(ic, ii->zip3->_this);
 
   // Copy non-arg def expressions from the original iterator
-  // See note above.
+  // See TODO #1 above.
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
@@ -584,7 +584,7 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   BlockStmt* zip4body = new BlockStmt();
 
   // Copy non-arg def expressions from the original iterator
-  // See note above.
+  // See TODO #1 above.
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
@@ -696,6 +696,8 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with hasMore->_this .
     map.put(ic, ii->hasMore->_this);
 
+    // 2015-02-23 hilde: There was an unnecessary call to copy(&map) here --
+    // pointed out by mnoakes -- which I removed.
     testBlock = cforLoop->testBlockGet();
 
     for_alist(expr, testBlock->body) {
@@ -906,7 +908,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
       }
       else if (CallExpr* call = toCallExpr(move->get(2)))
       {
-        // The RHS is a call.
+        // The RHS is a function call.
         if (FnSymbol* fn = call->isResolved()) {
           for_actuals(actual, call) {
             SymExpr* se = toSymExpr(actual);
@@ -917,7 +919,8 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
         }
         else
         {
-          // Not a call (a primitive instead).
+          // The RHS is not a function call: it must be a primitive instead.
+
           if (call->isPrimitive(PRIM_ADDR_OF) ||
               call->isPrimitive(PRIM_GET_MEMBER) ||
               // If we are reading a reference out of a field, I'm not sure we
@@ -1232,9 +1235,11 @@ void lowerIterator(FnSymbol* fn) {
 
   BlockStmt* singleLoop = NULL;
   if (CallExpr* singleLoopYield = isSingleLoopIterator(fn, asts))
+  {
     // If the iterator contains a single loop statement containing a single
     // yield, singleLoop is that loop statement; otherwise, it is NULL.
     singleLoop = toBlockStmt(singleLoopYield->parentExpr);
+  }
 
   //
   // create fields for all local variables and arguments; however, if
