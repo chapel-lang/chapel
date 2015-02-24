@@ -149,10 +149,6 @@ void AstPrintDocs::exitFnSym(FnSymbol* node) {
 }
 
 
-void AstPrintDocs::visitIpeSym(IpeSymbol* node) {
-}
-
-
 void AstPrintDocs::visitLabelSym(LabelSymbol* node) {
 }
 
