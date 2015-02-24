@@ -32,25 +32,35 @@
 
 /* "%code requires" blocks.  */
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 33 "chapel.ypp"
 
   extern int  captureTokens;
   extern char captureString[1024];
 
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 44 "chapel.ypp"
 
-  void lexerScanString(const char* string);
-  void lexerResetFile();
+  #ifndef _BISON_CHAPEL_DEFINES_0_
+  #define _BISON_CHAPEL_DEFINES_0_
 
-  void processNewline();
+  #define YYLEX_NEWLINE                  -1
+  #define YYLEX_SINGLE_LINE_COMMENT      -2
+  #define YYLEX_BLOCK_COMMENT            -3
+
+  typedef void* yyscan_t;
+
+  int processNewline(yyscan_t scanner);
+
+  #endif
 
 
-/* Line 2068 of yacc.c  */
-#line 55 "chapel.ypp"
+/* Line 2132 of yacc.c  */
+#line 63 "chapel.ypp"
 
+  #ifndef _BISON_CHAPEL_DEFINES_1_
+  #define _BISON_CHAPEL_DEFINES_1_
 
   #include "symbol.h"
 
@@ -97,9 +107,14 @@
     IntentExpr        pIntentExpr;
   };
 
+  #endif
 
-/* Line 2068 of yacc.c  */
-#line 107 "chapel.ypp"
+
+/* Line 2132 of yacc.c  */
+#line 119 "chapel.ypp"
+
+  #ifndef _BISON_CHAPEL_DEFINES_2_
+  #define _BISON_CHAPEL_DEFINES_2_
 
   struct YYLTYPE {
     int         first_line;
@@ -112,10 +127,42 @@
   #define YYLTYPE_IS_DECLARED 1
   #define YYLTYPE_IS_TRIVIAL  1
 
+  #endif
 
 
-/* Line 2068 of yacc.c  */
-#line 119 "../include/bison-chapel.h"
+/* Line 2132 of yacc.c  */
+#line 141 "chapel.ypp"
+
+  #ifndef _BISON_CHAPEL_DEFINES_3_
+  #define _BISON_CHAPEL_DEFINES_3_
+
+  class ParserContext {
+  public:
+    ParserContext()
+    {
+      scanner       = 0;
+      latestComment = 0;
+      generatedStmt = 0;
+    }
+
+    ParserContext(yyscan_t scannerIn)
+    {
+      scanner       = scannerIn;
+      latestComment = 0;
+      generatedStmt = 0;
+    }
+
+    yyscan_t    scanner;
+    const char* latestComment;
+    BaseAST*    generatedStmt;
+  };
+
+  #endif
+
+
+
+/* Line 2132 of yacc.c  */
+#line 166 "../include/bison-chapel.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -124,9 +171,9 @@
       know about them.  */
    enum yytokentype {
      TIDENT = 258,
-     IMAGLITERAL = 259,
-     INTLITERAL = 260,
-     REALLITERAL = 261,
+     INTLITERAL = 259,
+     REALLITERAL = 260,
+     IMAGLITERAL = 261,
      STRINGLITERAL = 262,
      EXTERNCODE = 263,
      TALIGN = 264,
@@ -262,7 +309,7 @@
 # define YYSTYPE_IS_DECLARED 1
 #endif
 
-extern YYSTYPE yylval;
+
 
 #if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
 typedef struct YYLTYPE
@@ -277,19 +324,43 @@ typedef struct YYLTYPE
 # define YYLTYPE_IS_TRIVIAL 1
 #endif
 
-extern YYLTYPE yylloc;
+
+
+#ifndef YYPUSH_DECLS
+#  define YYPUSH_DECLS
+struct yypstate;
+typedef struct yypstate yypstate;
+enum { YYPUSH_MORE = 4 };
+#if defined __STDC__ || defined __cplusplus
+int yypush_parse (yypstate *yyps, int yypushed_char, YYSTYPE const *yypushed_val, YYLTYPE const *yypushed_loc, ParserContext* context);
+#else
+int yypush_parse ();
+#endif
+
+#if defined __STDC__ || defined __cplusplus
+yypstate * yypstate_new (void);
+#else
+yypstate * yypstate_new ();
+#endif
+#if defined __STDC__ || defined __cplusplus
+void yypstate_delete (yypstate *yyps);
+#else
+void yypstate_delete ();
+#endif
+#endif
 
 /* "%code provides" blocks.  */
 
-/* Line 2068 of yacc.c  */
-#line 123 "chapel.ypp"
+/* Line 2132 of yacc.c  */
+#line 172 "chapel.ypp"
 
   extern int yydebug;
 
-  int  yyparse();
-  void yyerror(const char* str);
+  void yyerror(YYLTYPE*       ignored,
+               ParserContext* context,
+               const char*    str);
 
 
 
-/* Line 2068 of yacc.c  */
-#line 296 "../include/bison-chapel.h"
+/* Line 2132 of yacc.c  */
+#line 367 "../include/bison-chapel.h"
