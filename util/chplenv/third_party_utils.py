@@ -40,3 +40,26 @@ def handle_la(la_path):
                         else:
                             args.append(tok)
     return args
+
+
+#
+# This returns the default link args for the given third-party package.
+#
+def default_get_link_args(pkg, ucp='', libs=[]):
+    if ucp == '':
+        ucp = default_uniq_cfg_path()
+    if libs == []:
+        libs = [ 'lib' + pkg + '.la' ]
+    all_args = []
+    for lib_arg in libs:
+        if lib_arg.endswith('.la'):
+            all_args.extend(handle_la(os.path.join(utils.get_chpl_home(),
+                                                   'third-party',
+                                                   pkg,
+                                                   'install',
+                                                   ucp,
+                                                   'lib',
+                                                   lib_arg)))
+        else:
+            all_args.append(lib_arg)
+    return all_args

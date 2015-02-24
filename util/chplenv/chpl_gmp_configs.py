@@ -7,4 +7,4 @@ def get_uniq_cfg_path():
     return third_party_utils.default_uniq_cfg_path()
 
 def get_link_args():
-    return third_party_utils.default_get_link_args('hwloc')
+    return third_party_utils.default_get_link_args('gmp')
