@@ -249,6 +249,7 @@ TYPE_EXTERN Type* dtObject;
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
+TYPE_EXTERN std::map<Type*, Type*> narrowRefWideMap; // reference of wide class to reference of narrow class
 
 void     initRootModule();
 void     initPrimitiveTypes();

@@ -30,6 +30,7 @@
 #include "stringutil.h"
 #include "passes.h"
 #include "optimizations.h"
+#include <map>
 
 static void convertNilToObject();
 static void buildWideClasses();
@@ -497,10 +498,19 @@ static void widenClasses()
     // and all arguments of functions not marked "extern".
     if (isLcnSymbol(def->sym))
     {
-      if (Type* wide = wideClassMap.get(def->sym->type))
+      if (Type* wide = wideClassMap.get(def->sym->type)) {
         if (isVarSymbol(def->sym) ||
-            !def->parentSymbol->hasFlag(FLAG_EXTERN))
+            !def->parentSymbol->hasFlag(FLAG_EXTERN)) {
+          if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
+            // Don't widen a ref's _val. We create a duplicate type so that
+            // we can have references to both wide and narrow things.
+            if (ts->hasFlag(FLAG_REF)) {
+              continue;
+            }
+          }
           def->sym->type = wide;
+        }
+      }
     }
   }
 
@@ -527,15 +537,42 @@ static void buildWideRefMap()
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_REF)) {
       SET_LINENO(ts);
+      AggregateType* refToWideClass = NULL;
+      Type* inner = ts->type->getField("_val")->type;
 
+      if (inner->symbol->hasFlag(FLAG_WIDE_CLASS)) continue;
+
+      // Make a ref to a wide class: _ref__wide_T
+      // This preserves the original _ref_T
+      if (Type* wide = wideClassMap.get(inner)) {
+        refToWideClass = new AggregateType(AGGREGATE_CLASS);
+        TypeSymbol* row = new TypeSymbol(astr("_ref", wide->symbol->cname), refToWideClass);
+        row->addFlag(FLAG_REF);
+        theProgram->block->insertAtTail(new DefExpr(row));
+        refToWideClass->fields.insertAtTail(new DefExpr(new VarSymbol("_val", wide)));
+        narrowRefWideMap[refToWideClass] = ts->type;
+      }
+
+      // Create __wide__refs for each ref type.
+      // For refs to classes, we use the 'refToWideClass' type we just created.
       AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
       TypeSymbol* wts = new TypeSymbol(astr("__wide_", ts->cname), wide);
       wts->addFlag(FLAG_WIDE_REF);
       theProgram->block->insertAtTail(new DefExpr(wts));
       wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
-      wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", ts->type)));
+      VarSymbol* addr;
+      if (refToWideClass) {
+        addr = new VarSymbol("addr", refToWideClass);
+      } else {
+        addr = new VarSymbol("addr", ts->type);
+      }
+      wide->fields.insertAtTail(new DefExpr(addr));
 
       wideRefMap.put(ts->type, wide);
+
+      // ref->wide should also use this wide ref
+      if (refToWideClass)
+        wideRefMap.put(refToWideClass, wide);
     }
   }
 }
