@@ -1181,6 +1181,7 @@ void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
   this->printTabs(file, tabs);
   *file << this->docsDirective();
   *file << this->symbol->name;
+  *file << this->docsSuperClass();
   *file << std::endl;
 
   // In rst mode, ensure there is an empty line between the class/record
@@ -1198,6 +1199,37 @@ void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
     if (!fDocsTextOnly) {
       *file << std::endl;
     }
+  }
+}
+
+
+/*
+ * Returns super class string for documentation. If super class exists, returns
+ * ": <super class name>".
+ */
+std::string AggregateType::docsSuperClass() {
+  if (this->inherits.length > 0) {
+    std::vector<std::string> superClassNames;
+
+    for_alist(expr, this->inherits) {
+      if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
+        superClassNames.push_back(use->unresolved);
+      }
+    }
+
+    if (superClassNames.empty()) {
+      return "";
+    }
+
+    // If there are super classes, join them into a single comma delimited
+    // string prefixed with a colon.
+    std::string superClasses = " : " + superClassNames.front();
+    for (int i = 1; i < superClassNames.size(); i++) {
+      superClasses += ", " + superClassNames.at(i);
+    }
+    return superClasses;
+  } else {
+    return "";
   }
 }
 

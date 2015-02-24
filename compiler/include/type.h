@@ -178,6 +178,7 @@ class AggregateType : public Type {
 
 private:
   virtual std::string docsDirective();
+  std::string docsSuperClass();
 };
 
 
