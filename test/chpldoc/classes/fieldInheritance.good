@@ -9,7 +9,4 @@ Module: fieldInheritance
 
       var key: int
       var stone: imag
-      inherited from Elder
-         var rod: string
-         var staff: bool
 

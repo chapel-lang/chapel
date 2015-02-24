@@ -13,11 +13,6 @@ Module: inheritance
          Grounded! 
 
       proc curfew()
-      inherited from Grandparent
-         proc getOffMyLawn()
-            You durn kids! 
-
-         proc backInMyDay()
 
    Class: Child
       Reaping the benefits of third generation status 
@@ -26,15 +21,4 @@ Module: inheritance
          But I was going to go pick up some power converters! 
 
       proc youNeverLetMeDoAnythingFun()
-      inherited from Parent
-         proc goToYourRoom()
-            Grounded! 
-
-         proc curfew()
-
-      inherited from Grandparent
-         proc getOffMyLawn()
-            You durn kids! 
-
-         proc backInMyDay()
 
