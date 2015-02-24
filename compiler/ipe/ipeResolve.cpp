@@ -22,7 +22,6 @@
 #include "AstDumpToNode.h"
 #include "expr.h"
 #include "ipe.h"
-#include "IpeSymbol.h"
 #include "ScopeBlock.h"
 #include "ScopeFunction.h"
 #include "ScopeModule.h"
@@ -454,17 +453,9 @@ static Type* typeForExpr(Expr* expr)
     else if (TypeSymbol* type = toTypeSymbol(value->var))
       retval = type->type;
 
-    // Var/Arg in user level modules
-    else if (IpeSymbol*  sym  = toIpeSymbol(value->var))
+    // Var/Arg in user level modules and immediates
+    else if (LcnSymbol*  sym  = toLcnSymbol(value->var))
       retval = sym->type;
-
-    // Immediates
-    else if (VarSymbol*  var  = toVarSymbol(value->var))
-      retval = var->type;
-
-    // Formals for internal functions
-    else if (ArgSymbol*  arg  = toArgSymbol(value->var))
-      retval = arg->type;
   }
 
   else if (CallExpr* callExpr = toCallExpr(expr))
@@ -499,8 +490,7 @@ static Type* typeForExpr(Expr* expr)
 *                                                                           *
 ************************************* | ************************************/
 
-static void resolveFormalType (IpeSymbol* formal, const ScopeBase* scope);
-static void resolveFormalType (ArgSymbol* formal, const ScopeBase* scope);
+static void resolveFormalType(ArgSymbol* arg, const ScopeBase* scope);
 
 static bool ipeFunctionExactMatch(FnSymbol*           fn,
                                   std::vector<Type*>& actualTypes);
@@ -572,19 +562,9 @@ static void resolveFuncFormals(FnSymbol* fn, const ScopeBase* scope)
 {
   for_alist(formal, fn->formals)
   {
-    DefExpr*   def = toDefExpr(formal);
+    DefExpr* def = toDefExpr(formal);
 
-    if (IpeSymbol* ipe = toIpeSymbol(def->sym))
-    {
-      if (ipe->type == 0)
-      {
-        resolveFormalType(ipe, scope);
-
-        INT_ASSERT(ipe->type);
-      }
-    }
-
-    else if (ArgSymbol* arg = toArgSymbol(def->sym))
+    if (ArgSymbol* arg = toArgSymbol(def->sym))
     {
       if (arg->type == 0)
       {
@@ -598,19 +578,6 @@ static void resolveFuncFormals(FnSymbol* fn, const ScopeBase* scope)
     {
       INT_ASSERT(false);
     }
-  }
-}
-
-static void resolveFormalType(IpeSymbol* formal, const ScopeBase* scope)
-{
-  if (ArgSymbol* arg = toArgSymbol(formal->symbol()))
-  {
-    resolveFormalType(arg, scope);
-    formal->type = arg->type;
-  }
-  else
-  {
-    INT_ASSERT(false);
   }
 }
 
@@ -664,15 +631,6 @@ static bool ipeFunctionExactMatch(FnSymbol*           fn,
       INT_ASSERT(expr);
 
       ArgSymbol* arg  = toArgSymbol(expr->sym);
-
-      if (arg == 0)
-      {
-        IpeSymbol* ipe = toIpeSymbol(expr->sym);
-
-        INT_ASSERT(ipe);
-
-        arg = toArgSymbol(ipe->symbol());
-      }
 
       INT_ASSERT(arg);
 

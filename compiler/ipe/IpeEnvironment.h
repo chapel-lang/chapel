@@ -24,31 +24,31 @@
 
 #include <vector>
 
-class IpeSymbol;
+class LcnSymbol;
 class VarSymbol;
 
 class IpeEnvironment
 {
 public:
                      IpeEnvironment(IpeEnvironment*                parent,
-                                    const std::vector<IpeSymbol*>& formals);
+                                    const std::vector<LcnSymbol*>& formals);
 
                      IpeEnvironment(IpeEnvironment*                parent,
-                                    const std::vector<IpeSymbol*>& formals,
+                                    const std::vector<LcnSymbol*>& formals,
                                     const std::vector<IpeValue>&   actuals);
 
                      IpeEnvironment(IpeEnvironment*                parent,
-                                    const std::vector<IpeSymbol*>& formals,
+                                    const std::vector<LcnSymbol*>& formals,
                                     const std::vector<IpeValue>&   actuals,
                                     int                            slotCount,
                                     int                            dataSize);
 
                     ~IpeEnvironment();
 
-  void               bind(IpeSymbol* variable);
+  void               bind(LcnSymbol* variable);
 
-  IpeValue           lookup(IpeSymbol* variable)                      const;
-  void               assign(IpeSymbol* variable, IpeValue value);
+  IpeValue           lookup(LcnSymbol* variable)                      const;
+  void               assign(LcnSymbol* variable, IpeValue value);
 
   void               describe()                                       const;
 
@@ -59,7 +59,7 @@ private:
   int                mDepth;
 
   int                mSlotCount;
-  IpeSymbol**        mSlotArray;
+  LcnSymbol**        mSlotArray;
 
   void*              mData;
 };

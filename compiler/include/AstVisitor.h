@@ -27,7 +27,6 @@ class PrimitiveType;
 class ArgSymbol;
 class EnumSymbol;
 class FnSymbol;
-class IpeSymbol;
 class LabelSymbol;
 class ModuleSymbol;
 class TypeSymbol;
@@ -85,8 +84,6 @@ public:
 
   virtual bool   enterFnSym       (FnSymbol*          node) = 0;
   virtual void   exitFnSym        (FnSymbol*          node) = 0;
-
-  virtual void   visitIpeSym      (IpeSymbol*         node) = 0;
 
   virtual void   visitLabelSym    (LabelSymbol*       node) = 0;
 
