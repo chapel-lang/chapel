@@ -5,7 +5,7 @@ use File::Basename;
 
 # Mailing lists.
 $failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail@cray.com";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all@cray.com";
+$replymail = "chapel-developers\@lists.sourceforge.net";
 
 $printusage = 0;
 if (@ARGV) {
