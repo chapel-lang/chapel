@@ -55,7 +55,7 @@ checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-        !fn->hasFlag(FLAG_ITERATOR_FN) &&
+        !fn->isIterator() &&
         fn->retType->defaultInitializer &&
         fn->retType->defaultInitializer->defPoint->parentSymbol == fn)
       USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
@@ -205,7 +205,7 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 static void
 checkReturnPaths(FnSymbol* fn) {
   // Check to see if the function returns a value.
-  if (fn->hasFlag(FLAG_ITERATOR_FN) ||
+  if (fn->isIterator() ||
       !strcmp(fn->name, "=") || // TODO: Remove this to enforce new signature.
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
       fn->retType == dtVoid ||

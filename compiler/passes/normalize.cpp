@@ -85,7 +85,7 @@ void normalize() {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
       // violations should have caused USR_FATAL in semanticChecks.cpp
-      INT_ASSERT(fn && fn->hasFlag(FLAG_ITERATOR_FN));
+      INT_ASSERT(fn && fn->isIterator());
     }
     if (call->isPrimitive(PRIM_DELETE)) {
       SET_LINENO(call);
@@ -589,7 +589,7 @@ static void normalize_returns(FnSymbol* fn) {
   Vec<CallExpr*> calls;
   int numVoidReturns = 0;
   int numYields = 0;
-  bool isIterator = fn->hasFlag(FLAG_ITERATOR_FN);
+  bool isIterator = fn->isIterator();
   collectMyCallExprs(fn, calls, fn); // ones not in a nested function
   forv_Vec(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN)) {
@@ -671,7 +671,7 @@ static void normalize_returns(FnSymbol* fn) {
       // because it adds initialization code that is later removed.  
       // Also, we want arrays returned from iterators to behave like
       // references, so we add the 'var' return intent here.
-      if (fn->hasFlag(FLAG_ITERATOR_FN) &&
+      if (fn->isIterator() &&
           returnTypeIsArray(retExprType))
         // Treat iterators returning arrays as if they are always returned by ref.
         fn->retTag = RET_REF;

@@ -43,7 +43,7 @@ static void nonLeaderParCheck()
   // check for parallel constructs in non-leader iterators
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
+    if (fn->isIterator() && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
       nonLeaderParCheckInt(fn, true);
     }
   }
@@ -151,7 +151,7 @@ static void computeRecursiveIteratorSet() {
   forv_Vec(FnSymbol, iter, gFnSymbols)
   {
     // And select just the iterators.
-    if (!iter->hasFlag(FLAG_ITERATOR_FN))
+    if (!iter->isIterator())
       continue;
 
     // Determine if the iterator calls itself, either directly or indirectly.
@@ -793,7 +793,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
 //
 static void localizeIteratorReturnSymbols() {
   forv_Vec(FnSymbol, iterFn, gFnSymbols) {
-    if (iterFn->inTree() && iterFn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (iterFn->inTree() && iterFn->isIterator()) {
       Vec<BaseAST*> asts;
       collect_asts(iterFn, asts);
       localizeReturnSymbols(iterFn, asts);
@@ -822,7 +822,7 @@ yieldArraysByRef() {
     // Watch out for *initializations* of 'ret' - they look similar.
     if (call->isPrimitive(PRIM_MOVE)) {
       if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
-        if (fn->hasFlag(FLAG_ITERATOR_FN) &&
+        if (fn->isIterator() &&
             fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
         {
           Symbol* ret = fn->getReturnSymbol();
@@ -2173,7 +2173,7 @@ void lowerIterators() {
   computeRecursiveIteratorSet();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (fn->isIterator()) {
       fn->collapseBlocks();
 
       removeUnnecessaryGotos(fn);
@@ -2198,7 +2198,7 @@ void lowerIterators() {
   inlineIterators();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (fn->isIterator()) {
       fn->collapseBlocks();
       removeUnnecessaryGotos(fn);
     }
@@ -2215,7 +2215,7 @@ void lowerIterators() {
   fragmentLocalBlocks();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (fn->isIterator()) {
       // This collapseBlocks call is required for lowerIterator to inline
       // advance() into zip[1-4]
       fn->collapseBlocks();
