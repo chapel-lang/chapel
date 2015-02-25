@@ -198,6 +198,9 @@ OPTIONS
   --[no-]stack-checks   Enable [disable] run-time checking for stack
                     overflow.
 
+  --[no-]cast-checks   Enable [disable] run-time checking for invalid
+                    casts between types.
+
   C Code Generation Options
 
   --[no-]codegen     Enable [disable] generating C code and the binary

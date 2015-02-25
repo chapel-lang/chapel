@@ -450,6 +450,47 @@ proc numBits(type t: enumerated) param {
   return numBits(enum_mintype(t));
 }
 
+//
+// safe up/down casts between all integral types
+// performs the minimum number of runtime checks - uint(8)->uint(64) won't
+// perform any checks for example
+//
+inline proc safe_cast(type T, val) : T where isUintType(T) && isIntegralType(val.type) {
+  if castChecking {
+    if min(val.type) < 0 {
+      if val < 0 then // runtime check
+        halt("casting "+typeToString(val.type)+" < 0 to "+typeToString(T));
+    }
+    if max(val.type):uint > max(T):uint {
+      if (val:uint > max(T):uint) then // runtime check
+        halt("casting "+typeToString(val.type)+" > max("+typeToString(T)+") to "+typeToString(T));
+    }
+  }
+  return val:T;
+}
+
+inline proc safe_cast(type T, val) : T where isIntType(T) && isIntegralType(val.type) {
+  if castChecking {
+    if max(val.type):uint > max(T):uint {
+      // this isUintType check lets us avoid a runtime check for val < 0
+      if isUintType(val.type) {
+        if val:uint > max(T):uint then // runtime check
+          halt("casting "+typeToString(val.type)+" > max("+typeToString(T)+") to "+typeToString(T));
+      } else {
+        // max(T) <= max(int), so cast to int is safe
+        if val:int > max(T):int then // runtime check
+          halt("casting "+typeToString(val.type)+" > max("+typeToString(T)+") to "+typeToString(T));
+      }
+    }
+    if isIntType(val.type) {
+      if min(val.type):int < min(T):int {
+        if val:int < min(T):int then // runtime check
+          halt("casting "+typeToString(val.type)+" < min("+typeToString(T)+") to "+typeToString(T));
+      }
+    }
+  }
+  return val:T;
+}
 
 //
 // identity functions (for reductions)
