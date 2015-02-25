@@ -302,8 +302,8 @@ module DefaultSparse {
                 numElems, " elems");
       }
       if numChunks <= 1 {
-        for i in 1..numElems {
-          yield data[i];
+        for e in data[1..numElems] {
+          yield e;
         }
       } else {
         coforall chunk in 1..numChunks {
