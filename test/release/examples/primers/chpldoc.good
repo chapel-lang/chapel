@@ -29,8 +29,8 @@ Module: chpldoc
 
       Class: Bar : Foo
          
-         If a class inherits from another class, those fields, methods, and their
-         comments are output in both the super and the subclass
+         If a class inherits from another class, the inheritance is shown
+         in the signature.
          
 
          proc setA(newVal: int)

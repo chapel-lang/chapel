@@ -1,6 +1,6 @@
 Module: ordering
    proc second()
-      This proc should be printed after all config vars 
+      This is a proc... 
 
    config var first: string
-      This config var should be printed first 
+      This config var should be awesome. 
