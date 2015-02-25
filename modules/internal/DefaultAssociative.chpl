@@ -159,7 +159,6 @@ module DefaultAssociative {
       // We are simply slicing up the table here.  Trying to do something
       //  more intelligent (like evenly dividing up the full slots, led
       //  to poor speed ups.
-      // This requires that the zipppered domains match.
       const numIndices = tableSize;
       if debugAssocDataPar {
         writeln("### numTasks = ", numTasks);
