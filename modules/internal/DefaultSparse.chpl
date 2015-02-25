@@ -68,9 +68,10 @@ module DefaultSparse {
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       const numElems = nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
-      if debugDefaultSparse then
+      if debugDefaultSparse {
         writeln("DefaultSparseDom standalone: ", numChunks, " chunks, ",
                 numElems, " elems");
+      }
 
       // split our numElems elements over numChunks tasks
       if numChunks <= 1 {
@@ -308,8 +309,9 @@ module DefaultSparse {
         coforall chunk in 1..numChunks {
           const (startIx, endIx) =
             _computeChunkStartEnd(numElems, numChunks, chunk);
-          for e in data[startIx..endIx] do
+          for e in data[startIx..endIx] {
             yield e;
+          }
         }
       }
     }
