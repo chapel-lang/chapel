@@ -459,13 +459,19 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
     // By the time we get here, the condExpr has been passed through _cond_test
     // and the result stored in a temp, so condExprForTmpVariableGet just
     // returns the temp result.  So we can simply say:  (.= this more tmp)
-    // This assumes the backend will implicitly cast tmp to the type of more
-    // (an integer).
+    // This simplification depends on the current interpretation of more
+    // in a single-loop, single-yield iterator (i.e. 1 = more; 0 = done).
     SymExpr* condExpr = stmt->condExprForTmpVariableGet()->copy(&map);
+    Type* moreType = ii->iclass->getField("more")->type;
+    VarSymbol* condTemp = newTemp("cond_tmp", moreType);
+    zip1body->insertAtTail(new DefExpr(condTemp));
+    zip1body->insertAtTail(new CallExpr(PRIM_MOVE, condTemp,
+                                        new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
     zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this,
-                                        ii->iclass->getField("more"), condExpr));
+                                        ii->iclass->getField("more"), condTemp));
   } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
-    // 2015-02-23 hilde: TODO: See if we can apply the above simplification here as well.
+    // 2015-02-23 hilde: TODO: See if we can apply the above simplification
+    // here and in buildZip3 as well.
     SymExpr* index = forLoop->indexGet()->copy(&map);
 
     zip1body->insertAtTail(new CondStmt(index,
@@ -552,9 +558,13 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   // Check for more (only for non c for loops)
   if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
     SymExpr* condExpr = stmt->condExprForTmpVariableGet()->copy(&map);
-
+    Type* moreType = ii->iclass->getField("more")->type;
+    VarSymbol* condTemp = newTemp("cond_tmp", moreType);
+    zip3body->insertAtTail(new DefExpr(condTemp));
+    zip3body->insertAtTail(new CallExpr(PRIM_MOVE, condTemp,
+                                        new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
     zip3body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this,
-                                        ii->iclass->getField("more"), condExpr));
+                                        ii->iclass->getField("more"), condTemp));
   } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
     SymExpr* index = forLoop->indexGet()->copy(&map);
 
