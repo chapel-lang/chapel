@@ -32,16 +32,21 @@ public:
                   AstPrintDocs(std::ostream *file);
   virtual         ~AstPrintDocs();
 
-  //
-  // These methods are actually used by this visitor.
-  //
   virtual bool   enterAggrType    (AggregateType*     node);
   virtual void   exitAggrType     (AggregateType*     node);
+
   virtual bool   enterFnSym       (FnSymbol*          node);
   virtual bool   enterModSym      (ModuleSymbol*      node);
   virtual void   exitModSym       (ModuleSymbol*      node);
   virtual void   visitVarSym      (VarSymbol*         node);
-  virtual bool   enterBlockStmt   (BlockStmt*         node);
+
+  virtual bool   enterWhileDoStmt (WhileDoStmt*       node);
+  virtual bool   enterDoWhileStmt (DoWhileStmt*       node);
+  virtual bool   enterCForLoop    (CForLoop*          node);
+  virtual bool   enterForLoop     (ForLoop*           node);
+  virtual bool   enterParamForLoop(ParamForLoop*      node);
+  virtual bool   enterCondStmt    (CondStmt*          node);
+  virtual bool   enterGotoStmt    (GotoStmt*          node);
 
 private:
   std::ostream*   file;

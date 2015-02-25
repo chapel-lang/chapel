@@ -113,7 +113,35 @@ void AstPrintDocs::visitVarSym(VarSymbol* node) {
 }
 
 
-bool AstPrintDocs::enterBlockStmt(BlockStmt* node)
-{
+bool AstPrintDocs::enterWhileDoStmt(WhileDoStmt* node) {
+  return false;
+}
+
+
+bool AstPrintDocs::enterDoWhileStmt(DoWhileStmt* node) {
+  return false;
+}
+
+
+bool AstPrintDocs::enterCForLoop(CForLoop* node) {
+  return false;
+}
+
+
+bool AstPrintDocs::enterForLoop(ForLoop* node) {
+  return false;
+}
+
+
+bool AstPrintDocs::enterParamForLoop(ParamForLoop* node) {
+  return false;
+}
+
+bool AstPrintDocs::enterCondStmt(CondStmt* node) {
+  return false;
+}
+
+
+bool AstPrintDocs::enterGotoStmt(GotoStmt* node) {
   return false;
 }
