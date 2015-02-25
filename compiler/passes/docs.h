@@ -27,7 +27,10 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
 void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
-void inheritance(Vec<AggregateType*> *list, AggregateType *cl);
+// TODO: When inheritance docs are added back in, uncomment the following
+//       lines. (thomasvandoren, 2015-02-24)
+//
+// void inheritance(Vec<AggregateType*> *list, AggregateType *cl);
 
 bool devOnlyFunction(FnSymbol *fn);
 
