@@ -697,6 +697,10 @@ protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
   fn->insertFormalAtTail(fn->_this);
   ii->iterator->defPoint->insertBefore(new DefExpr(fn));
   normalize(fn);
+
+  // Pretend that this function is already resolved.
+  // Its body will be filled in during the lowerIterators pass.
+  fn->addFlag(FLAG_RESOLVED);
   return fn;
 }
 
@@ -739,22 +743,16 @@ protoIteratorClass(FnSymbol* fn) {
   ii->init = protoIteratorMethod(ii, "init", dtVoid);
   ii->incr = protoIteratorMethod(ii, "incr", dtVoid);
 
+  // The original iterator function is stashed in the defaultInitializer field
+  // of the iterator record type.  Since we are only creating shell functions
+  // here, we still need a way to obtain the original iterator function, so we
+  // can fill in the bodies of the above 9 methods in the lowerIterators pass.
   ii->irecord->defaultInitializer = fn;
   ii->irecord->scalarPromotionType = fn->retType;
   fn->retType = ii->irecord;
   fn->retTag = RET_VALUE;
 
   makeRefType(fn->retType);
-
-  fn->iteratorInfo->zip1->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->zip2->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->zip3->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->zip4->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->advance->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->hasMore->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->getValue->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->init->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->incr->addFlag(FLAG_RESOLVED);
 
   ii->getIterator = new FnSymbol("_getIterator");
   ii->getIterator->addFlag(FLAG_AUTO_II);
@@ -768,6 +766,10 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
+  // The _getIterator function is stashed in the defaultInitializer field of
+  // the iterator class type.  This makes it easy to obtain the iterator given
+  // just a symbol of the iterator class type.  This may include _getIterator
+  // and _getIteratorZip functions in the module code.
   ii->iclass->defaultInitializer = ii->getIterator;
   normalize(ii->getIterator);
   resolveFns(ii->getIterator);  // No shortcuts.
@@ -6184,6 +6186,7 @@ resolveFns(FnSymbol* fn) {
     for_formals(formal, fn) {
       if (formal->type == gLeaderTag->type &&
           paramMap.get(formal) == gLeaderTag) {
+        // Leader iterators are always inlined.
         fn->addFlag(FLAG_INLINE_ITERATOR);
         // need to do the following before 'fn' gets resolved
         stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
@@ -6248,6 +6251,7 @@ resolveFns(FnSymbol* fn) {
       }
       if (formal->type == gStandaloneTag->type &&
           paramMap.get(formal) == gStandaloneTag) {
+        // Standalone iterators are always inlined.
         fn->addFlag(FLAG_INLINE_ITERATOR);
       }
     }
