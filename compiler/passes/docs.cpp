@@ -33,12 +33,6 @@
 #include "docs.h"
 #include "mysystem.h"
 #include "stringutil.h"
-
-// TODO: When inheritance docs are added back in, uncomment the following
-//       lines. (thomasvandoren, 2015-02-24)
-//
-// #include "scopeResolve.h"
-
 #include "AstToText.h"
 #include "AstPrintDocs.h"
 
@@ -57,15 +51,6 @@ static int compareClasses(const void *v1, const void* v2) {
 void docs(void) {
 
   if (fDocs) {
-    // TODO: When inheritance docs are added back in, uncomment the following
-    //       lines. (thomasvandoren, 2015-02-24)
-    //
-    // // To handle inheritance, we need to look up parent classes and records.
-    // // In order to be successful when looking up these parents, the import
-    // // expressions should be accurately accounted for.
-    // addToSymbolTable(gDefExprs);
-    // processImportExprs();
-
     // Open the directory to store the docs
     std::string docsDir = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
     std::string docsFolderName = docsDir;
@@ -120,17 +105,6 @@ void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
   }
 }
 
-// TODO: When inheritance docs are added back in, uncomment the following
-//       lines. (thomasvandoren, 2015-02-24)
-//
-// void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
-//   for_alist(expr, cl->inherits) {
-//     AggregateType* pt = discoverParentAndCheck(expr, cl);
-//     list->add_exclusive(pt);
-//     inheritance(list, pt);
-//   }
-// }
-
 void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
   if (!cl->symbol->hasFlag(FLAG_NO_DOC) && ! cl->isUnion()) {
     cl->printDocs(file, tabs);
@@ -154,26 +128,6 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
       if (fn->isPrimaryMethod())
         fn->printDocs(file, tabs + 1);
     }
-
-    // TODO: Restore the following lines as opt-in feature. They print the the
-    //       "inherited from <blah>" line and all the inherited members and
-    //       methods. (thomasvandoren, 2015-02-23)
-    //
-    // Vec<AggregateType*> superClasses;
-    // inheritance(&superClasses, cl);
-
-    // if (fDocsAlphabetize)
-    //   qsort(superClasses.v, superClasses.n, sizeof(superClasses.v[0]), compareClasses);
-    
-    // forv_Vec(AggregateType, superClass, superClasses) {
-    //   superClass->printInheritanceDocs(file, tabs + 1);
-    //   printFields(file, superClass, tabs + 2);
-    
-    //   forv_Vec(FnSymbol, fn, superClass->methods) {
-    //     fn->printDocs(file, tabs + 2);
-    //   }
-    //   *file << std::endl;
-    // }
   }
 }
 
