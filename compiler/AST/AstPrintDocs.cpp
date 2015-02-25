@@ -111,3 +111,9 @@ void AstPrintDocs::exitModSym(ModuleSymbol* node) {
 void AstPrintDocs::visitVarSym(VarSymbol* node) {
   node->printDocs(this->file, this->tabs);
 }
+
+
+bool AstPrintDocs::enterBlockStmt(BlockStmt* node)
+{
+  return false;
+}

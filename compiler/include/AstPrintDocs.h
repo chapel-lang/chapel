@@ -41,6 +41,7 @@ public:
   virtual bool   enterModSym      (ModuleSymbol*      node);
   virtual void   exitModSym       (ModuleSymbol*      node);
   virtual void   visitVarSym      (VarSymbol*         node);
+  virtual bool   enterBlockStmt   (BlockStmt*         node);
 
 private:
   std::ostream*   file;
