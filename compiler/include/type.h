@@ -174,7 +174,6 @@ class AggregateType : public Type {
   bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
-  virtual void printInheritanceDocs(std::ostream *file, unsigned int tabs);
 
 private:
   virtual std::string docsDirective();

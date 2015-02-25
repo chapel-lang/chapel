@@ -1237,19 +1237,6 @@ std::string AggregateType::docsSuperClass() {
 }
 
 
-/*
- * Add "inherited from <name>" to the documentation.
- */
-void AggregateType::printInheritanceDocs(std::ostream *file, unsigned int tabs) {
-  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
-    return;
-  }
-  this->printTabs(file, tabs);
-  *file << "inherited from " << this->symbol->name;
-  *file << std::endl;
-}
-
-
 std::string AggregateType::docsDirective() {
   if (fDocsTextOnly) {
     if (this->isClass()) {
