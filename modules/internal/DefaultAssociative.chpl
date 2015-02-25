@@ -152,23 +152,11 @@ module DefaultAssociative {
       if debugDefaultAssoc {
         writeln("*** In associative domain standalone iterator");
       }
-      const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
-                       else dataParTasksPerLocale;
-      const ignoreRunning = dataParIgnoreRunningTasks;
-      const minIndicesPerTask = dataParMinGranularity;
       // We are simply slicing up the table here.  Trying to do something
       //  more intelligent (like evenly dividing up the full slots, led
       //  to poor speed ups.
       const numIndices = tableSize;
-      if debugAssocDataPar {
-        writeln("### numTasks = ", numTasks);
-        writeln("### ignoreRunning = ", ignoreRunning);
-        writeln("### minIndicesPerTask = ", minIndicesPerTask);
-      }
-
-      const numChunks = _computeNumChunks(numTasks, ignoreRunning,
-                                          minIndicesPerTask,
-                                          numIndices);
+      const numChunks = _computeNumChunks(numIndices);
 
       if debugAssocDataPar {
         writeln("### numChunks=", numChunks, ", numIndices=", numIndices);
@@ -565,13 +553,8 @@ module DefaultAssociative {
       if debugDefaultAssoc {
         writeln("*** In associative array standalone iterator");
       }
-      const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
-                       else dataParTasksPerLocale;
-      const ignoreRunning = dataParIgnoreRunningTasks;
-      const minIndicesPerTask = dataParMinGranularity;
       const numIndices = dom.tableSize;
-      const numChunks = _computeNumChunks(numTasks, ignoreRunning,
-                                          minIndicesPerTask, numIndices);
+      const numChunks = _computeNumChunks(numIndices);
       if numChunks == 1 {
         for slot in 0..#numIndices {
           if dom.table[slot].status == chpl__hash_status.full {
