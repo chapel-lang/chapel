@@ -1174,6 +1174,7 @@ Symbol* AggregateType::getField(int i) {
 
 
 void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
+  // TODO: Include unions... (thomasvandoren, 2015-02-25)
   if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
     return;
   }

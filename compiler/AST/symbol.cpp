@@ -2389,7 +2389,8 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   this->printTabs(file, tabs);
   *file << this->docsDirective();
 
-  // Print inline/export.
+  // Print inline/export. Externs do not get a prefix, since the user doesn't
+  // care whether it's an extern or not (they just want to use the function).
   if (this->hasFlag(FLAG_INLINE)) {
     *file << "inline ";
   } else if (this->hasFlag(FLAG_EXPORT)) {
@@ -2409,7 +2410,7 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   *file << info->text();
   delete info;
 
-  // Print ref return intent, if one exists.
+  // Print return intent, if one exists.
   switch (this->retTag) {
   case RET_REF:
     *file << " ref";
