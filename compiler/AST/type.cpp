@@ -1214,6 +1214,8 @@ std::string AggregateType::docsSuperClass() {
     for_alist(expr, this->inherits) {
       if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
         superClassNames.push_back(use->unresolved);
+      } else {
+        INT_FATAL(expr, "Expected UnresolvedSymExpr for all member of inherits alist.");
       }
     }
 
