@@ -493,6 +493,21 @@ proc Block.dsiCreateReindexDist(newSpace, oldSpace) {
   return newDist;
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: Block) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: Block) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 
 proc LocBlock.LocBlock(param rank: int,
                       type idxType, 
@@ -592,6 +607,21 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
   return new Block(newBbox, newTargetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity);
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
 }
 
 iter BlockDom.these() {
@@ -780,6 +810,21 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
 // Added as a performance stopgap to avoid returning a domain
 //
 proc LocBlockDom.member(i) return myBlock.member(i);
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
+}
 
 proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {

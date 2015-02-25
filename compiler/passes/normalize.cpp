@@ -546,7 +546,9 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
     // copy to the return value variable.
     // Contrast this with a move, which merely shares ownership between the
     // bitwise copies of the object.
+#ifndef HILDE_MM
     retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
   }
   else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
@@ -887,8 +889,11 @@ static void insert_call_temps(CallExpr* call)
   VarSymbol* tmp = newTemp("call_tmp");
   if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
     tmp->addFlag(FLAG_EXPR_TEMP);
+#ifndef HILDE_MM
+  // Can't we figure this out later?
   if (call->isPrimitive(PRIM_NEW))
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+#endif
   if (call->isPrimitive(PRIM_TYPEOF))
     tmp->addFlag(FLAG_TYPE_VARIABLE);
   tmp->addFlag(FLAG_MAYBE_PARAM);
@@ -915,6 +920,7 @@ fix_def_expr(VarSymbol* var) {
   if (!type && !init)
     return; // already fixed
 
+#ifndef HILDE_MM
   //
   // add "insert auto destroy" pragma to user variables that should be
   // auto destroyed
@@ -931,6 +937,7 @@ fix_def_expr(VarSymbol* var) {
       fn->_this != var && // Note 2.
       !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
 
   //
   // handle "no copy" variables
@@ -966,7 +973,10 @@ fix_def_expr(VarSymbol* var) {
   if (var->hasFlag(FLAG_CONST) && !var->hasEitherFlag(FLAG_EXTERN, FLAG_REF_VAR)) {
     constTemp = newTemp("const_tmp");
     stmt->insertBefore(new DefExpr(constTemp));
-    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, constTemp));
+    // Temporary hack: Add an autoCopy here, because the var is being
+    // initialized with the RHS value.
+    // Later, this insertion will be handled parsimoniously by insertAutoCopyAutoDestroy.
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", constTemp)));
   }
 
   //
@@ -1000,11 +1010,15 @@ static void init_array_alias(VarSymbol* var, Expr* type, Expr* init, Expr* stmt)
     if (!type) {
       partial = new CallExpr("newAlias", gMethodToken, init->remove());
       // newAlias is not a method, so we don't set the methodTag
+      // TODO AMM: newAlias should return a constructed object, which would make
+      // this autoCopy redundant.
       stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
     } else {
       partial = new CallExpr("reindex", gMethodToken, init->remove());
       partial->partialTag = true;
       partial->methodTag = true;
+      // TODO AMM: Does reindex return a constructed object?  If so, the autoCopy
+      // call is redundant.
       stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
     }
 }

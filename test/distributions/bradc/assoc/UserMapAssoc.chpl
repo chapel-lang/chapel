@@ -143,6 +143,21 @@ class UserMapAssoc : BaseDist {
   }
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: UserMapAssoc) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: UserMapAssoc) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 //
 // A per-locale local distribution class
 //
@@ -414,6 +429,21 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
   proc dsiReprivatize(other) {
     locDoms = other.locDoms;
+  }
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: UserMapAssocDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: UserMapAssocDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
   }
 }
 
@@ -708,6 +738,21 @@ class UserMapAssocArr: BaseArr {
   //
   proc dsiNumElements {
     return dom.dsiNumIndices;
+  }
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: UserMapAssocArr) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: UserMapAssocArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
   }
 }
 

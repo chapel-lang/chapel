@@ -890,6 +890,17 @@ record channel {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 }
 
+// This is a workaround for initializeClass not default-initializing the
+// _channel_internal field in a channel according to the above field-default
+// (QIO_CHANNEL_PTR_NULL) because the type qio_channel_ptr_t is external.
+// But also, that code should probably use the given initializer value rather
+// than the type default.
+proc channel.channel(param writing: bool, param kind: iokind, param locking: bool)
+{
+  home = nil;
+  _channel_internal = QIO_CHANNEL_PTR_NULL;
+}
+
 // TODO -- shouldn't have to write this this way!
 pragma "init copy fn"
 proc chpl__initCopy(x: channel) {

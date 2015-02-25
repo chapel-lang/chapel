@@ -13,17 +13,20 @@ module unitTest {
   proc asciiLocal(type t, useExpr=false) {
     writeln("=== ascii local");
     const m0 = allMemoryUsed();
+    proc asciiLocal_help()
     {
       const s0:t = "s";
       const s1:t = "";
       f(s0); f(s1);
     }
+    asciiLocal_help();
     checkMemLeaks(m0);
   }
 
   proc asciiRemote(type t, useExpr=false) {
     writeln("=== ascii remote");
     const m0 = allMemoryUsed();
+    proc asciiRemote_help()
     {
       const s0:t = "s";
       const s1:t = "";
@@ -31,6 +34,7 @@ module unitTest {
         f(s0); f(s1);
       }
     }
+    asciiRemote_help();
     checkMemLeaks(m0);
   }
 

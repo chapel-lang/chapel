@@ -4,6 +4,7 @@ module unitTest {
   proc findLocal(type t) {
     writeln("=== find local");
     const m0 = allMemoryUsed();
+    proc findLocal_help(type t)
     {
       const s: t = "She sells seashells by the seashore.";
 
@@ -39,12 +40,14 @@ module unitTest {
       s0 = "seashore";
       writeln(s.find(s0));
     }
+    findLocal_help(t);
     checkMemLeaks(m0);
   }
 
   proc findRemote(type t) {
     writeln("=== find remote");
     const m0 = allMemoryUsed();
+    proc findRemote_help(type t)
     {
       // const s: t = "humuhumunukunukuāpuaʻa";
       const s: t = "humuhumunukunukuapuaa";
@@ -59,6 +62,7 @@ module unitTest {
         writeln(s.find(s1));
       }
     }
+    findRemote_help(t);
     checkMemLeaks(m0);
   }
 

@@ -28,6 +28,21 @@ class CSR: BaseDist {
   proc dsiClone() return new CSR();
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CSR) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CSR) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 class CSRDom: BaseSparseDom {
   param rank : int;
   type idxType;
@@ -311,6 +326,21 @@ class CSRDom: BaseSparseDom {
 }
 
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CSRDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: CSRDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 class CSRArr: BaseArr {
   type eltType;
   param rank : int;
@@ -389,6 +419,21 @@ class CSRArr: BaseArr {
   }
 }
 
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: CSRArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+  
+proc chpl__autoDestroy(x: CSRArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
+}
 
 proc CSRDom.dsiSerialWrite(f: Writer) {
   f.writeln("{");

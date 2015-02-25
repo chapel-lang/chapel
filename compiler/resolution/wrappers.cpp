@@ -189,7 +189,8 @@ buildDefaultWrapper(FnSymbol* fn,
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }
-    wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
+    // This call is required to establish the type of _this.
+//    wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
   }
   CallExpr* call = new CallExpr(fn);
   call->square = info->call->square;    // Copy square brackets call flag.
@@ -227,9 +228,11 @@ buildDefaultWrapper(FnSymbol* fn,
                  isRefCountedType(wrapper_formal->type)) {
         // Formal has a type expression attached and is reference counted (?).
         temp = newTemp("wrap_type_arg");
+#ifndef HILDE_MM
         if (Symbol* field = fn->_this->type->getField(formal->name, false))
           if (field->defPoint->parentSymbol == fn->_this->type->symbol)
             temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
         wrapper->insertAtTail(new DefExpr(temp));
 
         // Give the formal its own copy of the type expression.
@@ -282,10 +285,13 @@ buildDefaultWrapper(FnSymbol* fn,
             {
               Symbol* copyTemp = newTemp("wrap_arg");
               wrapper->insertAtTail(new DefExpr(copyTemp));
+              // TODO AMM: Insertion of this autocopy can probably be left to
+              // ownership flow analysis.  Since the LHS is a structure member,
+              // the copy is required, but only if the RHS object is not owned.
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_StringSymbol(formal->name), copyTemp));
+                             new_StringSymbol(field->name), copyTemp));
               copy_map.put(formal, copyTemp);
               call->argList.tail->replace(new SymExpr(copyTemp));
             }

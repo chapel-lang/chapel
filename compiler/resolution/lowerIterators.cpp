@@ -1610,6 +1610,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
   forLoop->replace(body);
 }
 
+
 static void
 expandForLoop(ForLoop* forLoop) {
   SymExpr*   se2      = forLoop->iteratorGet();
@@ -1629,6 +1630,22 @@ expandForLoop(ForLoop* forLoop) {
   } else {
     // This code handles zippered iterators, dynamic iterators, and any other
     // iterator that cannot be inlined.
+
+    // When expanding a single-loop iterator with a single yield, the generated
+    // code looks like:
+    //   zip1(_iterator1); zip1(_iterator2);
+    //   idx2 = getValue(_iterator2); idx1 = getValue(_iterator1);
+    //   bool more1 = hasMore(iterator1);
+    //   for (init(_iterator1), init(_iterator2); more1; incr(_iterator1), incr(_iterator2)) {
+    //     zip2(_iterator);
+    //     // Bounds checks inserted here.
+    //     zip3(_iterator1); zip3(_iterator2);
+    //     more = hasMore(itertor1);
+    //   }
+    //   zip4(_iterator2); zip4(_iterator1);
+    // In zippered iterators, each clause may contain multiple calls to zip1(),
+    // getValue(), etc.  These are inserted in the order shown.
+
     SET_LINENO(forLoop);
 
     Vec<Symbol*> iterators;
@@ -1731,11 +1748,16 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAtHead(buildIteratorCall(NULL, ZIP2, iterators.v[i], children));
     }
 
+    // 2015-02-23 hilde:
+    // TODO: I think this wants to be insertBefore, and moved before the call
+    // to getValue is inserted.  Check the order in the generated code to see
+    // if this is the case.
     forLoop->insertAtHead(index->defPoint->remove());
 
-    // Even for zippered iterators we only have one conditional test for the
-    // loop. This takes that conditional and puts it into the test segment of
-    // the c for loop.
+    // Ensure that the test clause for completely unbounded loops contains
+    // something.
+    // testBlock is only non-NULL if isBoundedIterator() evaluates to true for
+    // at least one of the iterators being zippered together.
     if (testBlock == NULL) {
       testBlock = new BlockStmt();
 
@@ -1748,23 +1770,42 @@ expandForLoop(ForLoop* forLoop) {
     // scope to another if done in mid-transformation.
     CForLoop* cforLoop = CForLoop::buildWithBodyFrom(forLoop);
 
+    // Even for zippered iterators we only have one conditional test for the
+    // loop. This takes that conditional and puts it into the test segment of
+    // the c for loop.  Code in the initBlock and incrBlock clauses are each a
+    // concatenation of the init() and incr() calls for all iterators being
+    // zippered together.  The init() and incr() calls appear in the same order
+    // as the iterators appear in the zip(,,) tuple.
     cforLoop->loopHeaderSet(initBlock, testBlock, incrBlock);
 
     forLoop->replace(cforLoop);
   }
 }
 
+
+// Find all iterator constructs 
+// Select those whose _getIterator() functions have the FLAG_ITERATOR_INLINE.
+// Inline the selected iterators at their call sites.
 static void
 inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol) {
-      if (ForLoop* forLoop = toForLoop(block)) {
-        Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
-        FnSymbol* ifn      = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+    // Skip blocks that are no longer in the tree.
+    if (block->parentSymbol == NULL)
+      continue;
 
-        if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
-          expandIteratorInline(forLoop);
-        }
+    if (ForLoop* forLoop = toForLoop(block)) {
+      Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
+      // The _getIterator function is stashed in the defaultInitializer field
+      // of the iterator class.
+      FnSymbol* getIterFn = iterator->type->defaultInitializer;
+      // The operand of the getIterator function is an iterator record.
+      Type* irecord = getIterFn->getFormal(1)->type;
+      // The original iterator function is stored in the defaultInitializer
+      // field of an iterator record.
+      FnSymbol* ifn      = irecord->defaultInitializer;
+
+      if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
+        expandIteratorInline(forLoop);
       }
     }
   }
@@ -2012,7 +2053,12 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
+    AggregateType* fat = toAggregateType(field->type);
+    FnSymbol* autoCopy = autoCopyMap.get(field->type);
+    if (autoCopy &&
+        // For now, apply the autocopy only to non-class types.'
+        // See the note in reconstructIRAutoDestroy() below.
+        fat && fat->isRecord()) {
       Symbol* tmp1 = newTemp(field->name, field->type);
       Symbol* tmp2 = newTemp(autoCopy->retType);
       block->insertAtTail(new DefExpr(tmp1));
@@ -2040,6 +2086,13 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   for_fields(field, irt) {
     SET_LINENO(field);
     if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
+      // For now, ignore class types.  At present, only nude domain and array
+      // implementation types have autoCopy and autoDestroy functions defined
+      // for them, so this test captures only those cases.
+      AggregateType* fat = toAggregateType(field->type);
+      if (!fat || !fat->isRecord())
+        continue;
+
       Symbol* tmp = newTemp(field->name, field->type);
       block->insertAtTail(new DefExpr(tmp));
       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));

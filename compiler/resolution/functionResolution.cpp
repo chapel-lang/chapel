@@ -233,7 +233,9 @@ Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promot
 //# Static Function Declarations
 //#
 static bool hasRefField(Type *type);
+#ifndef HILDE_MM
 static bool typeHasRefField(Type *type);
+#endif
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static void makeRefType(Type* type);
 static void resolveAutoCopy(Type* type);
@@ -242,6 +244,8 @@ static void resolveOther();
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
 static void protoIteratorClass(FnSymbol* fn);
+static FnSymbol* protoGetIterator(IteratorInfo* ii, FnSymbol* fn);
+static FnSymbol* protoFreeIterator(IteratorInfo* ii, FnSymbol* fn);
 static bool isInstantiatedField(Symbol* field);
 static Symbol* determineQueriedField(CallExpr* call);
 static void resolveSpecifiedReturnType(FnSymbol* fn);
@@ -334,7 +338,6 @@ static Expr* preFold(Expr* expr);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static bool isSubType(Type* sub, Type* super);
 static void insertValueTemp(Expr* insertPoint, Expr* actual);
-FnSymbol* requiresImplicitDestroy(CallExpr* call);
 static Expr* postFold(Expr* expr);
 static void
 computeReturnTypeParamVectors(BaseAST* ast,
@@ -370,9 +373,9 @@ static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
 static void resolveRecordInitializers();
 static void insertDynamicDispatchCalls();
-static Type* buildRuntimeTypeInfo(FnSymbol* fn);
+static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
-static void initializeClass(Expr* stmt, Symbol* sym);
+ static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
 static void removeCompilerWarnings();
@@ -380,6 +383,9 @@ static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
+// static void resolveRuntimeTypeDestructor(Type* type);
+// static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct);
+static void buildRuntimeTypeInitCopyFn(AggregateType* ct);
 static void removeUnusedGlobals();
 static void removeParamArgs();
 static void removeRandomPrimitives();
@@ -426,6 +432,7 @@ static bool hasRefField(Type *type) {
   return true;
 }
 
+#ifndef HILDE_MM
 static bool typeHasRefField(Type *type) {
   if (AggregateType *ct = toAggregateType(type)) {
     for_fields(field, ct) {
@@ -434,24 +441,29 @@ static bool typeHasRefField(Type *type) {
   }
   return false;
 }
+#endif
 
 //
 // build reference type
 //
 static FnSymbol*
 resolveUninsertedCall(Type* type, CallExpr* call) {
+  // In case resolveCall drops other stuff into the tree ahead of the call, we
+  // wrap everything in a block for safe removal.
+  BlockStmt* block = new BlockStmt();
+  block->insertAtHead(call);
+
   if (type->defaultInitializer) {
     if (type->defaultInitializer->instantiationPoint)
-      type->defaultInitializer->instantiationPoint->insertAtHead(call);
+      type->defaultInitializer->instantiationPoint->insertAtHead(block);
     else
-      type->symbol->defPoint->insertBefore(call);
+      type->symbol->defPoint->insertBefore(block);
   } else {
-    chpl_gen_main->insertAtHead(call);
+    chpl_gen_main->insertAtHead(block);
   }
 
   resolveCall(call);
-  call->remove();
-
+  block->remove();
   return call->isResolved();
 }
 
@@ -697,6 +709,10 @@ protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
   fn->insertFormalAtTail(fn->_this);
   ii->iterator->defPoint->insertBefore(new DefExpr(fn));
   normalize(fn);
+
+  // Pretend that this function is already resolved.
+  // Its body will be filled in during the lowerIterators pass.
+  fn->addFlag(FLAG_RESOLVED);
   return fn;
 }
 
@@ -739,6 +755,10 @@ protoIteratorClass(FnSymbol* fn) {
   ii->init = protoIteratorMethod(ii, "init", dtVoid);
   ii->incr = protoIteratorMethod(ii, "incr", dtVoid);
 
+  // The original iterator function is stashed in the defaultInitializer field
+  // of the iterator record type.  Since we are only creating shell functions
+  // here, we still need a way to obtain the original iterator function, so we
+  // can fill in the bodies of the above 9 methods in the lowerIterators pass.
   ii->irecord->defaultInitializer = fn;
   ii->irecord->scalarPromotionType = fn->retType;
   fn->retType = ii->irecord;
@@ -746,31 +766,58 @@ protoIteratorClass(FnSymbol* fn) {
 
   makeRefType(fn->retType);
 
-  fn->iteratorInfo->zip1->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->zip2->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->zip3->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->zip4->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->advance->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->hasMore->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->getValue->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->init->addFlag(FLAG_RESOLVED);
-  fn->iteratorInfo->incr->addFlag(FLAG_RESOLVED);
+  ii->getIterator = protoGetIterator(ii, fn);
+  ii->freeIterator = protoFreeIterator(ii, fn);
 
-  ii->getIterator = new FnSymbol("_getIterator");
-  ii->getIterator->addFlag(FLAG_AUTO_II);
-  ii->getIterator->addFlag(FLAG_INLINE);
-  ii->getIterator->retType = ii->iclass;
-  ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
-  VarSymbol* ret = newTemp("_ic_", ii->iclass);
-  ii->getIterator->insertAtTail(new DefExpr(ret));
-  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo()->symbol);
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-  fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
+  // This is a bit of a kludge.  The defaultInitializer field of the iterator
+  // class type is reused to stash the getIterator function for later use.
   ii->iclass->defaultInitializer = ii->getIterator;
-  normalize(ii->getIterator);
-  resolveFns(ii->getIterator);  // No shortcuts.
+}
+
+static FnSymbol* protoGetIterator(IteratorInfo* ii, FnSymbol* fn)
+{
+  FnSymbol* newFn = new FnSymbol("_getIterator");
+  newFn->addFlag(FLAG_AUTO_II);
+  newFn->addFlag(FLAG_INLINE);
+  newFn->retType = ii->iclass;
+
+  newFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
+
+  VarSymbol* ret = newTemp("_ic_", ii->iclass);
+  newFn->insertAtTail(new DefExpr(ret));
+
+  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo()->symbol);
+  newFn->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
+  newFn->insertAtTail(new CallExpr(PRIM_SETCID, ret));
+  newFn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+
+  fn->defPoint->insertBefore(new DefExpr(newFn));
+  normalize(newFn);
+  resolveFns(newFn);
+
+  return newFn;
+}
+
+
+static FnSymbol* protoFreeIterator(IteratorInfo* ii, FnSymbol* fn)
+{
+  FnSymbol* newFn = new FnSymbol("_freeIterator");
+  newFn->addFlag(FLAG_AUTO_II);
+  newFn->addFlag(FLAG_INLINE);
+  newFn->addFlag(FLAG_DESTRUCTOR);
+  newFn->retType = dtVoid;
+
+  ArgSymbol* ic = new ArgSymbol(INTENT_BLANK, "ic", ii->iclass);
+  newFn->insertFormalAtTail(ic);
+
+  newFn->insertAtTail(callChplHereFree(ic));
+  newFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  fn->defPoint->insertBefore(new DefExpr(newFn));
+  normalize(newFn);
+  resolveFns(newFn);
+
+  return newFn;
 }
 
 
@@ -1668,6 +1715,19 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
             typeConstructorCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(paramMap.get(formal))));
           }
         }
+      }
+    }
+    if (fn->getReturnSymbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+    {
+      // This happens only with runtime types.
+      // Just pass along the type arguments if there are any.
+      for_actuals(actual, info.call)
+      {
+        if (NamedExpr* ne = toNamedExpr(actual))
+          actual = ne->actual;
+        if (SymExpr* se = toSymExpr(actual))
+          if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
+            typeConstructorCall->insertAtTail(se->var);
       }
     }
     info.call->insertBefore(typeConstructorCall);
@@ -2952,6 +3012,8 @@ static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
 
 // Report an error when storing a sync or single variable into a tuple.
 // This is because currently we deallocate memory excessively in this case.
+// TODO AMM: Review and see if this is still needed after comprehensive automatic
+// memory management is in place.
 static void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 {
   // Do not perform the checks if:
@@ -3758,8 +3820,9 @@ insertFormalTemps(FnSymbol* fn) {
 // The copy in is needed for "inout", "in" and "const in" intents.
 // The copy out is needed for "inout" and "out" intents.
 // Blank intent is treated like "const", and normally copies the formal through
-// chpl__autoCopy.
+// chpl__autoCopy.  (Check that this is still true.)
 // Note that autoCopy is called in this case, but not for "inout", "in" and "const in".
+// TODO AMM: Check that this special behavior is correct and necessary.
 // Either record-wrapped types are always passed by ref, or some unexpected
 // behavior will result by applying "in" intents to them.
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
@@ -3782,7 +3845,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
         !isRefCountedType(formalType))
     {
       tmp->addFlag(FLAG_CONST);
+#ifndef HILDE_MM
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
     }
 
     // This switch adds the extra code inside the current function necessary
@@ -3826,7 +3891,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
       // If the compiler verifies in a separate pass that it is never written,
       // we don't have to copy it.
       fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
+#ifndef HILDE_MM
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
       break;
 
      case INTENT_BLANK:
@@ -3838,6 +3905,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
            !ts->hasFlag(FLAG_ITERATOR_CLASS) &&
            !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
            !getSyncFlags(ts).any()) {
+         // TODO AMM: Remove this special case and let parallel handle it.
          if (fn->hasFlag(FLAG_BEGIN)) {
            // autoCopy/autoDestroy will be added later, in parallel pass
            // by insertAutoCopyDestroyForTaskArg()
@@ -3851,6 +3919,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
            // intentional: It gives tuple-wrapped record-wrapped types different
            // behavior from bare record-wrapped types.
            fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__autoCopy", formal)));
+#ifndef HILDE_MM
            // WORKAROUND:
            // This is a temporary bug fix that results in leaked memory.
            //
@@ -3879,6 +3948,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
                  (formal->type->getModule()->modTag==MOD_STANDARD))) ||
                !typeHasRefField(formal->type))
              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
          }
        } else
        {
@@ -5351,6 +5421,7 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
 }
 
 
+#ifndef HILDE_MM
 //
 // returns resolved function if the function requires an implicit
 // destroy of its returned value (i.e. reference count)
@@ -5358,6 +5429,8 @@ insertValueTemp(Expr* insertPoint, Expr* actual) {
 // Currently, FLAG_DONOR_FN is only relevant when placed on
 // chpl__autoCopy().
 //
+// TODO AMM: Would like to simplify this, so it returns true if the function
+// returns a record or tuple and false otherwise.
 FnSymbol*
 requiresImplicitDestroy(CallExpr* call) {
   if (FnSymbol* fn = call->isResolved()) {
@@ -5393,6 +5466,7 @@ requiresImplicitDestroy(CallExpr* call) {
   }
   return NULL;
 }
+#endif
 
 
 static Expr*
@@ -5522,6 +5596,7 @@ postFold(Expr* expr) {
           }
         }
         if (!set) {
+#ifndef HILDE_MM
           if (lhs->var->hasFlag(FLAG_EXPR_TEMP) &&
               !lhs->var->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
@@ -5531,7 +5606,7 @@ postFold(Expr* expr) {
               }
             }
           }
-
+#endif
           if (isReferenceType(lhs->var->type) ||
               lhs->var->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
               lhs->var->type->symbol->hasFlag(FLAG_ARRAY))
@@ -5932,6 +6007,7 @@ resolveExpr(Expr* expr) {
       if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
         if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+            !ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           resolveFormals(ct->defaultTypeConstructor);
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
@@ -6184,6 +6260,7 @@ resolveFns(FnSymbol* fn) {
     for_formals(formal, fn) {
       if (formal->type == gLeaderTag->type &&
           paramMap.get(formal) == gLeaderTag) {
+        // Leader iterators are always inlined.
         fn->addFlag(FLAG_INLINE_ITERATOR);
         // need to do the following before 'fn' gets resolved
         stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
@@ -6248,6 +6325,7 @@ resolveFns(FnSymbol* fn) {
       }
       if (formal->type == gStandaloneTag->type &&
           paramMap.get(formal) == gStandaloneTag) {
+        // Standalone iterators are always inlined.
         fn->addFlag(FLAG_INLINE_ITERATOR);
       }
     }
@@ -6962,7 +7040,9 @@ static void resolveAutoCopies() {
     if (ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
       continue; // Skip the "dmapped" pseudo-type.
 
-    if (isRecord(ts->type) || getSyncFlags(ts).any())
+    if (isRecord(ts->type) || getSyncFlags(ts).any() ||
+        isDomImplType(ts->type) || isArrayImplType(ts->type) ||
+        isDistImplType(ts->type))
     {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
@@ -7209,11 +7289,10 @@ static void insertDynamicDispatchCalls() {
   }
 }
 
-static Type*
+static AggregateType*
 buildRuntimeTypeInfo(FnSymbol* fn) {
   SET_LINENO(fn);
   AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
-  TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
     if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
       continue;
@@ -7224,9 +7303,30 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
     if (formal->hasFlag(FLAG_TYPE_VARIABLE))
       field->addFlag(FLAG_TYPE_VARIABLE);
   }
-  theProgram->block->insertAtTail(new DefExpr(ts));
+
+  // We expect the function name to start with "chpl__build" and then be
+  // followed by one of:
+  //  DomainRuntimeType
+  //  ArrayRuntimeType
+  const char prefix[] = "chpl__build";
+  const size_t prefix_len = sizeof(prefix) - 1; // Compile-time constant.  Trim
+                                                // off trailing NUL.
+  static size_t rtt_index = 0;  // Total kludge.  Would prefer to push the
+                                // definition of RTTs in to module code.
+  const size_t bufsiz = 24; // More than enough for 64 bits worth of decimal number,
+                   // terminating NUL included
+  char buffer[bufsiz]; 
+  // This probably has to be adjusted for 32-bit platforms.
+  snprintf(buffer, bufsiz, "%ld", ++rtt_index);
+  const char* name = astr(strstr(fn->name, prefix) + prefix_len, buffer);
+  TypeSymbol* ts = new TypeSymbol(name, ct);
+//  ts->addFlag(FLAG_NO_CODEGEN);
+  INT_ASSERT(ct->symbol == ts); // If so, we can just say "ts" here.
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
+  theProgram->block->insertAtTail(new DefExpr(ts));
+
   makeRefType(ts->type); // make sure the new type has a ref type.
+
   return ct;
 }
 
@@ -7512,7 +7612,8 @@ static void removeRandomPrimitive(CallExpr* call)
       // Replace string literals with field symbols in member primitives
       Type* baseType = call->get(1)->typeInfo();
       if (baseType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-        break;
+        if (call->parentSymbol->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+          break;
 
       if (!call->parentSymbol->hasFlag(FLAG_REF) &&
           baseType->symbol->hasFlag(FLAG_REF))
@@ -7706,15 +7807,24 @@ static void buildRuntimeTypeInitFns() {
         SET_LINENO(fn);
 
         // Build a new runtime type for this function
-        Type* runtimeType = buildRuntimeTypeInfo(fn);
+        AggregateType* runtimeType = buildRuntimeTypeInfo(fn);
         runtimeTypeMap.put(fn->retType, runtimeType);
 
         // Build chpl__convertRuntimeTypeToValue() instance.
         buildRuntimeTypeInitFn(fn, runtimeType);
+
+        // Build special functions for this runtime type, resolve them and add
+        // them to their respective maps for use in AMM.
+        build_constructors(runtimeType);
+        buildDefaultDestructor(runtimeType);
+        buildRuntimeTypeInitCopyFn(runtimeType);
+        resolveAutoCopy(runtimeType);
+        resolveAutoDestroy(runtimeType);
       }
     }
   }
 }
+
 
 // Build a function to return the runtime type by modifying
 // the original function.
@@ -7773,7 +7883,8 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
         ! field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
       continue;
 
-    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var, field, formal));
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, var,
+                                     new_StringSymbol(field->name), formal));
   }
 
   block->insertAtTail(new CallExpr(PRIM_RETURN, var));
@@ -7781,6 +7892,83 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
   // Replace the body of the orignal chpl__buildRuntime...Type() function.
   fn->body->replace(block);
 }
+
+
+#if 0 // Needed?
+static void
+resolveRuntimeTypeDestructor(Type* type) {
+  SET_LINENO(type->symbol);
+  Symbol* tmp = newTemp(type);
+  chpl_gen_main->insertAtHead(new DefExpr(tmp));
+  CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
+  FnSymbol* fn = resolveUninsertedCall(type, call);
+  resolveFns(fn);
+  type->destructor = fn;
+  tmp->defPoint->remove();
+}
+#endif
+
+
+#if 0 // Needed?
+// Build an autoDestroy function for the given runtime type, and insert it into
+// the autoDestroyMap.
+static void buildRuntimeTypeAutoDestroyFn(AggregateType* ct)
+{
+  SET_LINENO(ct->symbol);
+
+  FnSymbol* fn = new FnSymbol("chpl__autoDestroy");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_AUTO_DESTROY_FN);
+  fn->addFlag(FLAG_INLINE);
+  fn->cname = fn->name;
+  fn->retType = dtVoid;
+
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  fn->insertFormalAtTail(arg);
+
+  fn->insertAtTail(new CallExpr(PRIM_CALL_DESTRUCTOR, arg));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+}
+#endif
+
+
+static void buildRuntimeTypeInitCopyFn(AggregateType* ct)
+{
+  SET_LINENO(ct->symbol->defPoint);
+
+  FnSymbol* fn = new FnSymbol("chpl__initCopy");
+  fn->addFlag(FLAG_INIT_COPY_FN);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->retType = ct;
+
+  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "x", ct);
+  arg->addFlag(FLAG_MARKED_GENERIC);
+  fn->insertFormalAtTail(arg);
+
+  CallExpr* call = new CallExpr(ct->defaultInitializer);
+  for_fields(field, ct)
+  {
+    VarSymbol* tmp = newTemp(field->type);
+    if (field->hasFlag(FLAG_TYPE_VARIABLE))
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
+    fn->insertAtTail(new DefExpr(tmp));
+    Symbol* fieldName = new_StringSymbol(field->name);
+    CallExpr* rhs = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fieldName);
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, rhs));
+    call->insertAtTail(new NamedExpr(field->name, new SymExpr(tmp)));
+  }
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+
+  reset_ast_loc(def, ct->symbol);
+  normalize(fn);
+}
+
 
 static void removeFormalTypeAndInitBlocks()
 {
@@ -7935,7 +8123,7 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
             VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, field)));
+                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, new_StringSymbol(field->name))));
             if (formal->hasFlag(FLAG_TYPE_VARIABLE))
               tmp->addFlag(FLAG_TYPE_VARIABLE);
             runtimeTypeToValueCall->insertAtTail(tmp);
@@ -7943,8 +8131,9 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
           VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
-          INT_ASSERT(autoCopyMap.get(tmp->type));
-          call->replace(new CallExpr(autoCopyMap.get(tmp->type), tmp));
+          FnSymbol* autoCopy = autoCopyMap.get(tmp->type);
+          INT_ASSERT(autoCopy);
+          call->replace(new CallExpr(autoCopy, tmp));
         } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           //
           // This is probably related to a comment that used to handle
@@ -8056,6 +8245,13 @@ static void removeMootFields() {
   }
 }
 
+
+// Calls to initializeClass are needed for now, because at least "record-wrapped
+// types" depend on the class fields being initialized to nil.  Otherwise,
+// assignments to such types end up reading uninitialized memory, which is "undesirable".
+// This zero-initialization should not be needed after
+// initialization-is-construction.  The need for this zero initialization is
+// currently created by the use of assignment in initialization....
 static void expandInitFieldPrims()
 {
   forv_Vec(CallExpr, call, gCallExprs) {

@@ -615,13 +615,17 @@ destructureIndices(BlockStmt* block,
     var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
       var->addFlag(FLAG_COFORALL_INDEX_VAR);
+#ifndef HILDE_MM
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
   } else if (SymExpr* sym = toSymExpr(indices)) {
     block->insertAtHead(new CallExpr(PRIM_MOVE, sym->var, init));
     sym->var->addFlag(FLAG_INDEX_VAR);
     if (coforall)
       sym->var->addFlag(FLAG_COFORALL_INDEX_VAR);
+#ifndef HILDE_MM
     sym->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
   } else {
     INT_FATAL("Unexpected");
   }
@@ -692,6 +696,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   thenStmt->insertAtTail(new DefExpr(domain));
   // note that we need the below autoCopy until we start reference
   // counting domains within runtime array types
+  // TODO AMM: Check if the explicit insertion of an autoCopy is necessary here.
   thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, domain,
                            new CallExpr("chpl__autoCopy",
                              new CallExpr("chpl__ensureDomainExpr",
@@ -742,7 +747,7 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   //
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
-  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_CONST_IN, "iterator", dtAny);
+  ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
   fn->insertAtHead(new DefExpr(sifn));
   Expr* stmt = new CallExpr(PRIM_YIELD, expr);
@@ -1077,7 +1082,9 @@ buildForallLoopStmt(Expr*      indices,
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
+#ifndef HILDE_MM
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
   // ForallLeaderArgs: stash references so we know where things are.
@@ -1396,7 +1403,9 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   VarSymbol* localOp     = newTemp();
 
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
+#ifndef HILDE_MM
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
 
   ForLoop* followBody = new ForLoop(followIdx, followIter, NULL);
 

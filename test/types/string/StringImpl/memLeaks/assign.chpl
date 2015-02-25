@@ -1,9 +1,13 @@
+// Memory from local variables is not necessarily reclaimed until the end of
+// the contain routine.  This test was modified to reflect that.
+
 module unitTest {
   use main;
 
   proc assign(type t) {
     writeln("=== assignment");
     const m0 = allMemoryUsed();
+    proc assign_help()
     {
       var s0: t;
       s0 = "s0";
@@ -12,12 +16,14 @@ module unitTest {
       s1 = s0;
       if doCorrectnessTest then writeln(s1);
     }
+    assign_help();
     checkMemLeaks(m0);
   }
 
   proc assignShorter(type t) {
     writeln("=== assignment with shorter string");
     const m0 = allMemoryUsed();
+    proc assignShorter_help()
     {
       var s0: t;
       s0 = "s0";
@@ -28,12 +34,14 @@ module unitTest {
       s1 = s0;
       if doCorrectnessTest then writeln(s1);
     }
+    assignShorter_help();
     checkMemLeaks(m0);
   }
 
   proc assignLonger(type t) {
     writeln("=== assignment with longer string");
     const m0 = allMemoryUsed();
+    proc assignLonger_help()
     {
       var s0: t;
       s0 = "s0long";
@@ -44,12 +52,14 @@ module unitTest {
       s1 = s0;
       if doCorrectnessTest then writeln(s1);
     }
+    assignLonger_help();
     checkMemLeaks(m0);
   }
 
   proc assignEmpty(type t) {
     writeln("=== assignment to empty string");
     const m0 = allMemoryUsed();
+    proc assignEmpty_help()
     {
       var s0: t;
       s0 = "s0";
@@ -58,12 +68,14 @@ module unitTest {
       s0 = s1;
       if doCorrectnessTest then writeln(s0);
     }
+    assignEmpty_help();
     checkMemLeaks(m0);
   }
 
   proc remote_assign(type t) {
     writeln("=== remote assignment");
     const m0 = allMemoryUsed();
+    proc remote_assign_help(type t)
     {
       var s0, s3: t;
       s0 = "s0";
@@ -107,6 +119,7 @@ module unitTest {
         }
       }
     }
+    remote_assign_help(t);
     checkMemLeaks(m0);
   }
 

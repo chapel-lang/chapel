@@ -269,6 +269,22 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   return locInd;
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockCyclic) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockCyclic) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Distribution Class
 //
@@ -340,6 +356,21 @@ class BlockCyclicDom: BaseRectangularDom {
   //  const startLoc: index(dist.targetLocDom);
 
   var pid: int = -1; // privatized object id
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockCyclicDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockCyclicDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
 }
 
 proc BlockCyclicDom.dsiDims() return whole.dims();
@@ -642,6 +673,21 @@ class BlockCyclicArr: BaseArr {
   var myLocArr: LocBlockCyclicArr(eltType, rank, idxType, stridable);
 
   var pid: int = -1; // privatized object id
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: BlockCyclicArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: BlockCyclicArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
 }
 
 proc BlockCyclicArr.dsiGetBaseDom() return dom;

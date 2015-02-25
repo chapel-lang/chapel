@@ -33,9 +33,18 @@ module DefaultOpaque {
     proc DefaultOpaqueDom(dist: DefaultDist, param parSafe: bool) {
       this.dist = dist;
       adomain = new DefaultAssociativeDom(_OpaqueIndex, dist, parSafe=parSafe);
+      // This prevents premature deletion of the contained associated dom, in
+      // case it is iterated upon, or other operations that might cause the
+      // refCount to take an excursion from zero and return there.
+      // When the ref count of a dom goes to zero the dom is reclaimed (freed),
+      // and that would be bad.
+      adomain.incRefCount();
     }
   
     proc ~DefaultOpaqueDom() {
+      // We assume that adomain is not shared out, so that when the containing
+      // opaque dom is deleted, the contained associative domain can be free
+      // unconditionally.
       for i in adomain do delete i;
       delete adomain;
     }
@@ -81,6 +90,25 @@ module DefaultOpaque {
     }
   }
   
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultOpaqueDom) {
+    if ! noRefCount then
+      x.incRefCount();
+    return x;
+  }
+  
+  proc chpl__autoDestroy(x: DefaultOpaqueDom) {
+    if !noRefCount {
+      var cnt = x.destroyDom();
+      if cnt == 0 then
+        delete x;
+    }
+  }
+
+  proc DefaultOpaqueDom.dsiRemove(idx: idxType) {
+    adomain.dsiRemove(idx);
+  }
+  
   proc DefaultOpaqueDom.dsiSerialWrite(f: Writer) {
     adomain.dsiSerialWrite(f);
   }
@@ -106,8 +134,14 @@ module DefaultOpaque {
     var anarray = new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
                                             parSafeDom=parSafe, dom=dom.adomain);
   
+    proc initialize() {
+      // We have to bump the reference count to move it away from zero.
+      anarray.incRefCount();
+    }
+
     proc ~DefaultOpaqueArr() {
-      delete anarray;
+      // Something more may be needed here.
+      delete anarray; anarray = nil;
     }
   
     proc dsiGetBaseDom() return dom;
@@ -147,8 +181,19 @@ module DefaultOpaque {
     }
   }
   
-  proc DefaultOpaqueDom.dsiRemove(idx: idxType) {
-    adomain.dsiRemove(idx);
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultOpaqueArr) {
+    if !noRefCount then
+      x.incRefCount();
+    return x;
   }
   
+  proc chpl__autoDestroy(x: DefaultOpaqueArr) {
+    if !noRefCount {
+      var cnt = x.destroyArr();
+      if cnt == 0 then
+        delete x;
+    }
+  }
+
 }

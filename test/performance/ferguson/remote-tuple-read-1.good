@@ -1,4 +1,4 @@
 50006000000
 (2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 (100001, 100002, 100003, 100004, 100005, 100006, 100007, 100008, 100009, 100010)
-(get = 9, get_nb = 0, put = 2, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 100012, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0)
+(get = 9, get_nb = 0, put = 3, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 100012, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 4, fork_fast = 0, fork_nb = 0)

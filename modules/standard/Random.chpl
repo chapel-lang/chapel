@@ -21,8 +21,8 @@
    Support for pseudorandom number generation
 
    This module defines an abstraction for a stream of pseudorandom
-   numbers, :chpl:class:`RandomStream`.  It also provides a
-   convenience function, :chpl:proc:`fillRandom` that can be used to
+   numbers, :class:`RandomStream`.  It also provides a
+   convenience function, :proc:`fillRandom` that can be used to
    fill an array with random numbers in parallel.
 
    The current pseudorandom number generator (PRNG) implemented by
@@ -55,7 +55,7 @@
    2. We plan to support general serial and parallel iterators on the
    RandomStream class; however, providing the full suite of iterators
    is not possible with our current parallel iterator framework.
-   Specifically, if :chpl:class:`RandomStream` is a follower in a
+   Specifically, if :class:`RandomStream` is a follower in a
    zippered iteration context, there is no way for it to update the
    total number of random numbers generated in a safe/sane/coordinated
    way.  We are exploring a revised leader-follower iterator framework
@@ -64,7 +64,7 @@
    3. If no seed is provided by the user, one is chosen based on the
    current time in microseconds, allowing for some degree of
    pseudorandomness in seed selection.  The intent of
-   :chpl:record:`SeedGenerators` is to provide a menu of other options
+   :record:`SeedGenerators` is to provide a menu of other options
    for initializing the random stream seed, but only one option is
    implemented at present.
 
@@ -94,7 +94,7 @@ module Random {
   */
 
 /* 
-   An instance of :chpl:record:`SeedGenerators` that provides a
+   An instance of :record:`SeedGenerators` that provides a
    convenient means of generating seeds when the user does not wish to
    specify one manually.
 */
@@ -109,14 +109,14 @@ const SeedGenerator: SeedGenerators;
   intention is to add more over time.
 
   (Note: once Chapel supports static class methods,
-  :chpl:const:`SeedGenerator` and :chpl:record:`SeedGenerators` should
+  :const:`SeedGenerator` and :record:`SeedGenerators` should
   be combined into a single record type with static methods).
 */
 
 record SeedGenerators {
   /*
     Generate a seed based on the current time in microseconds as
-    reported by :chpl:proc:`Time.getCurrentTime`, ensuring that it
+    reported by :proc:`Time.getCurrentTime`, ensuring that it
     meets the PRNG's requirements.
   */
   proc currentTime: int(64) {
@@ -145,7 +145,7 @@ record SeedGenerators {
 /*
   Fill an array of `real(64)`, `imag(64)`, or `complex(128)` elements
   with pseudorandom values in parallel using a new
-  :chpl:class:`RandomStream` created specifically for this call.  The
+  :class:`RandomStream` created specifically for this call.  The
   first `arr.size` values from the stream will be assigned to the
   array's elements in row-major order for `real` and `imag` elements.
   For `complex` elements, consecutive pairs of random numbers are
@@ -155,7 +155,7 @@ record SeedGenerators {
   :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128).
   :type arr: [] T
 
-  :arg seed: The seed to use for the PRNG.  Defaults to :chpl:proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`.
+  :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`.
   :type seed: int(64)
 */
 
@@ -173,7 +173,7 @@ proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime) {
 
 /*
   Models a stream of pseudorandom numbers.  See the module-level
-  notes for :chpl:mod:`Random` for details on the PRNG used.
+  notes for :mod:`Random` for details on the PRNG used.
 */
 class RandomStream {
   /*
@@ -197,7 +197,7 @@ class RandomStream {
     and parallel safety.  Ensures that the seed value meets the PRNG's
     constraints.
 
-    :arg seed: The seed to use for the PRNG.  Defaults to :chpl:proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`..
+    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`..
     :type seed: int(64)
 
     :arg parSafe: The parallel safety setting.  Defaults to `true`.
@@ -213,7 +213,7 @@ class RandomStream {
   /*
     Returns the next value in the random stream as a `real(64)`
 
-    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :chpl:param:`this.parSafe <RandomStream.parSafe>`.
+    :arg parSafe: Permits :param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :param:`this.parSafe <RandomStream.parSafe>`.
     :type parSafe: bool
 
     :returns: The next value in the random stream as a `real(64)`.
@@ -234,7 +234,7 @@ class RandomStream {
     :arg n: The position in the stream to skip to.  Must be non-negative.
     :type n: integral
 
-    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :chpl:param:`this.parSafe <RandomStream.parSafe>`.
+    :arg parSafe: Permits :param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :param:`this.parSafe <RandomStream.parSafe>`.
     :type parSafe: bool
    */
 
@@ -252,12 +252,12 @@ class RandomStream {
   /*
     Advance/rewind the stream to the `n`-th value and return it
     (advancing the strem by one).  This is equivalent to
-    :chpl:proc:`skipToNth()` followed by :chpl:proc:`getNext()`.
+    :proc:`skipToNth()` followed by :proc:`getNext()`.
 
     :arg n: The position in the stream to skip to.  Must be non-negative.
     :type n: integral
 
-    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :chpl:param:`this.parSafe <RandomStream.parSafe>`.
+    :arg parSafe: Permits :param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :param:`this.parSafe <RandomStream.parSafe>`.
     :type parSafe: bool
 
     :returns: The `n`-th value in the random stream as a `real(64)`.
@@ -277,15 +277,15 @@ class RandomStream {
 
   /*
     Fill the argument array with pseudorandom values.  This method is
-    identical to the standalone :chpl:proc:`fillRandom` procedure,
+    identical to the standalone :proc:`fillRandom` procedure,
     except that it consumes random values from the
-    :chpl:class:`RandomStream` object on which it's invoked rather
+    :class:`RandomStream` object on which it's invoked rather
     than creating a new stream for the purpose of the call.
 
     :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128).
     :type arr: [] T
 
-    :arg parSafe: Permits :chpl:param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :chpl:param:`this.parSafe <RandomStream.parSafe>`.
+    :arg parSafe: Permits :param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :param:`this.parSafe <RandomStream.parSafe>`.
     :type parSafe: bool
   */
 

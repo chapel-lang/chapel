@@ -74,6 +74,21 @@ module DefaultRectangular {
     if defaultDist._value==nil then defaultDist = new dmap(new DefaultDist());
   }
   
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DefaultDist) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DefaultDist) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
   class DefaultRectangularDom: BaseRectangularDom {
     param rank : int;
     type idxType;
@@ -87,7 +102,7 @@ module DefaultRectangular {
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
     }
-  
+
     proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }
@@ -490,7 +505,26 @@ module DefaultRectangular {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
   }
-  
+
+  // This should look a lot like a "peeled" version of its domain counterpart in
+  // ChapelBase.chpl.
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultRectangularDom) {
+    if !noRefCount then
+      x.incRefCount();
+    return x;
+  }
+
+  // This should look a lot like a "stripped" vesion of the destructor for
+  // record _domain in ChapelArray.chpl
+  proc chpl__autoDestroy(x: DefaultRectangularDom) {
+    if !noRefCount {
+      var cnt = x.destroyDom();
+      if cnt == 0 then
+        delete x;
+    }
+  }
+
   record _remoteAccessData {
     type eltType;
     param rank : int;
@@ -1548,6 +1582,21 @@ module DefaultRectangular {
     return false;
   }
   
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultRectangularArr) {
+    if !noRefCount then
+      x.incRefCount();
+    return x;
+  }
+  
+  proc chpl__autoDestroy(x: DefaultRectangularArr) {
+    if !noRefCount {
+      var cnt = x.destroyArr();
+      if cnt == 0 then
+        delete x;
+    }
+  }
+
   //
   // Check whether the first 'tam' elements in arrays 'd1' and 'd2' are equal.
   // This is better than 'd1==d2' because it does not result in a forall.

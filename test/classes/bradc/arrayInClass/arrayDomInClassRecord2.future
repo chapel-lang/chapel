@@ -1,0 +1,134 @@
+bug: Forall initializer in constructor is a method and iterator initialization copies this by value.
+
+Following the introduction of AMM, this test fails because initialization of the array
+field invokes an iterator passing the entire record "this" to it.  Part of the iterator
+initialization involves copying the passed-in record by value.
+
+Unfortunately, the record being referred to is not fully initialized at that point, so
+invoking a method or function on the record is "against the rules".  Initialization of a
+field within a record should involve just that field.  Under the "new constructor story"
+it may also involve fields that have already been initialized by that point in the
+constructor, but that's a different story.
+
+I turned this into a future, so we can approach the problem in a disciplined way, rather
+than just hacking in a solution before the next release.  The two possible ways I can see
+to deal with this are:
+ 1) Perform zero-initialization of records at the beginning of each constructor using a
+    memset or equivalently brain-dead approach.
+ 2) Rework how field initialization expression for an array is created, so it does not
+    attempt to refer to fields that have not yet been initialized.
+
+Option 1 is a short-term, Q&D solution.  It will let this test pass due to nil checks
+that have been embedded in the array implementation.  Under the new constructor story,
+zero-initialization should be redundant.  However, as noted above, the parloopexpr being
+created and invoked is not playing by the rules.  Under the new constructor story, it
+should be flagged as illegal because it attempts to refer to the object as a whole before
+the end of the initializer-list has been reached.  So we still need option 2 in the long
+term.
+
+
+This code was not a problem before the introduction of AMM, because the "this" record was
+copied into the iterator record and class instances using a bitwise copy.  That breaks the
+rules of AMM.  So AMM inserts an autocopy where "this" is copied into the iterator
+record.  The autocopy function expects the record being copied to be fully-initialized.
+But the parloopexpr initializer is invoked when the record is only partially initialized.
+This leads to the copy-contructor accessing uninitialized memory.  Option 1 solves the
+problem in a brute-force way -- just stuffing zeroes into the fields of the record, so it
+valid in a trivial way before initialization is complete.
+
+But, as you can see, the way in which the iterator for the parloopexpr is implemented
++ AMM makes it circularly defined in a way.  Avoiding doing the copy by detecting that the
+array on the RHS is nil breaks the circularity, but this is not an elegant solution.  The
+right approach is to make the parloopexpr dependent only upon the fields it needs rather
+than the record as a whole.  
+
+With that much in place, if the user makes an array initializer depend on a field
+that is not yet initialized: In the current implementation, he will get invalid or
+unpredictable results; under the new constructor model, the attempt to access a field that
+is not yet initialized will be detected and reported as an error at runtime.
+
+
+Supporting documentation
+---------- -------------
+
+Here is the generated code for _default_wrap__construct_R().  This is the constructor
+which is automatically generated to perform default-initialization of a record R.
+
+/* arrayDomInClassRecord2.chpl:1 */
+/*  760624 */ static R _default_wrap__construct_R(void) {
+  /*  760626 */ R this21;
+  /*  760630 */ _domain_DefaultRectangularDom_1_int64_t_F_DefaultRectangularDom_1_int64_t_F default_argD;
+  /*  760633 */ range_int64_t_bounded_F call_tmp;
+  /*  760641 */ _domain_DefaultRectangularDom_1_int64_t_F_DefaultRectangularDom_1_int64_t_F call_tmp2;
+  /*  760658 */ _array_DefaultRectangularArr__real64_1_int64_t_F_DefaultRectangularArr__real64_1_int64_t_F default_argA;
+  /*  760661 */ _domain_DefaultRectangularDom_1_int64_t_F_DefaultRectangularDom_1_int64_t_F call_tmp3;
+  /*  760668 */ ArrayRuntimeType4 call_tmp4;
+  /*  760676 */ _ir__iterator_for_loopexpr3__ref_R call_tmp5;
+  /*  948675 */ _ref_R _ref_tmp_ = NULL;
+  /*  760697 */ R wrap_call_tmp;
+  /* 760625 */ /* 760635 */ call_tmp = chpl_build_bounded_range(INT64(1), INT64(10));
+  /* 760643 */ call_tmp2 = chpl__buildDomainExpr(&call_tmp);
+  /* 760651 */ default_argD = chpl__initCopy5(&call_tmp2);
+  /* 760654 */ (&this21)->D = default_argD;
+  /* 760663 */ call_tmp3 = chpl__ensureDomainExpr(&default_argD);
+  /* 760670 */ call_tmp4 = chpl__buildArrayRuntimeType3(&call_tmp3);
+  /* 948679 */ _ref_tmp_ = &this21;
+  /* 984468 */ chpl_check_nil(_ref_tmp_, INT64(3), "arrayDomInClassRecord2.chpl");
+=>/* 760678 */ call_tmp5 = _parloopexpr3(_ref_tmp_);
+  /* 760689 */ default_argA = _createFieldDefault8(&call_tmp4, &call_tmp5);
+  /* 760692 */ (&this21)->A = default_argA;
+  /* 760699 */ wrap_call_tmp = _construct_R(&default_argD, &default_argA, &this21);
+  /* 973039 */ chpl__autoDestroy65(&call_tmp5);
+  /* 973036 */ chpl__autoDestroy55(&call_tmp4);
+  /* 973033 */ chpl__autoDestroy76(&call_tmp3);
+  /* 973030 */ chpl__autoDestroy76(&call_tmp2);
+  /* 973027 */ chpl__autoDestroy13(&call_tmp);
+  /* 760701 */ return wrap_call_tmp;
+}
+
+On the line indicated by '=>', the initialization expression for field A is created,
+referring through _ref_tmp_ to this21, which is the (partially-initialized) record R as a
+whole.  Note that the initialization of field A is not complete until after the
+_parloopexpr3() call is invoked and the corresponding _ir__iterator_for_loopexpr3__ref_R
+(call_tmp5) is created.
+
+The other part of the problem is in _iterator_for_loopexpr3():
+/* arrayDomInClassRecord2.chpl:3 */
+/*  760770 */ static _ir__iterator_for_loopexpr3__ref_R _iterator_for_loopexpr3(_ref_R this21, _domain_DefaultRectangularDom_1_int64_t_F_DefaultRectangularDom_1_int64_t_F* const iterator) {
+  /*  963812 */ _ir__iterator_for_loopexpr3__ref_R _ir;
+  /*  963814 */ R T;
+  /*  973050 */ R auto_copy_tmp;
+  /*  973058 */ _domain_DefaultRectangularDom_1_int64_t_F_DefaultRectangularDom_1_int64_t_F auto_copy_tmp2;
+  /*  973066 */ _ir__iterator_for_loopexpr3__ref_R auto_copy_tmp3;
+  /* 760783 */ /* 963818 */ T = *(this21);
+=>/* 973055 */ auto_copy_tmp = chpl__autoCopy51(&T);
+  /* 963820 */ (&_ir)->F0_this = auto_copy_tmp;
+  /* 973063 */ auto_copy_tmp2 = chpl__autoCopy2(iterator);
+  /* 963824 */ (&_ir)->F1_iterator = auto_copy_tmp2;
+  /* 973071 */ auto_copy_tmp3 = chpl__autoCopy28(&_ir);
+  /* 963828 */ return auto_copy_tmp3;
+}
+
+_iterator_for_loopexpr3() is called by _parloopexpr3().  On the indicated line, we are
+attempting to copy the partially-initialized record as a whole, which is evidently wrong.
+One of the rules of AMM is that when a record is copied into a field, it must be piped
+through an autocopy.  Without this, memory management for class objects contained in the
+record will not be strictly correct.  Some external knowledge can be applied to optimize
+away the incrementing and decrementing of reference counts within an iterator.  However,
+AMM is designed to be stupid.  It will work if it is applied consistently, and it does not
+rely on external knowledge.
+
+One possible workaround would be to avoid the copy.  If it were possible to store a
+*reference* to the record R in the iterator record rather than a copy of R, then the
+autocopy call will not be inserted.  AMM requires another rule to be obeyed in this case:
+namely that the referenced record remain alive at least as long as the object that retains
+a reference to it.  This is a more disciplined way to optimize reference counting.
+
+I actually tried this approach, but there is another part of the iterator implementation
+that relies on the "this" object being copied verbatim if it is of reference type.  Since
+the changes required to get a ref-to-record field worked into the iterator implementation
+seemed to be another nontrivial project, I set that one aside.
+
+So here we hare.  My current recommendation is to suppress this test and then work on a
+disciplined resolution when the time can be devoted to doing it right.
+

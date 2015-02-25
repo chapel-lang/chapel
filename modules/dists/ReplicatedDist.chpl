@@ -190,6 +190,21 @@ proc ReplicatedDist.dsiPrivatize(privatizeData: this.targetLocales.type)
   return new ReplicatedDist(privTargetLocales, "used during privatization");
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: ReplicatedDist) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: ReplicatedDist) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // domains
@@ -235,6 +250,21 @@ class LocReplicatedDom {
   var domLocalRep: domain(rank, idxType, stridable);
 }
 
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: ReplicatedDom) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: ReplicatedDom) {
+  if !noRefCount {
+    var cnt = x.destroyDom();
+    if cnt == 0 then
+      delete x;
+  }
+}
 
 // No explicit ReplicatedDom constructor - use the default one.
 // proc ReplicatedDom.ReplicatedDom(...){...}
@@ -524,6 +554,21 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
       locArr = new LocReplicatedArr(eltType, rank, idxType, stridable,
                                     locDom);
   return result;
+}
+
+pragma "auto copy fn"
+proc chpl__autoCopy(x: ReplicatedArr) {
+  if !noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: ReplicatedArr) {
+  if !noRefCount {
+    var cnt = x.destroyArr();
+    if cnt == 0 then
+      delete x;
+  }
 }
 
 // Return the array element corresponding to the index - on the current locale

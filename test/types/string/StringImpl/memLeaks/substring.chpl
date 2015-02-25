@@ -6,6 +6,7 @@ module unitTest {
 
     proc substringHelp(i) {
       const m0 = allMemoryUsed();
+      proc substringHelp_help(i)
       {
         const s: t = "substring";
         if useExpr {
@@ -15,6 +16,7 @@ module unitTest {
           writeMe(ss);
         }
       }
+      substringHelp_help(i);
       checkMemLeaks(m0);
     }
 
@@ -39,6 +41,7 @@ module unitTest {
 
     proc substringHelp(i) {
       const m0 = allMemoryUsed();
+      proc substringHelp_help(i)
       {
         const s0: t = "substring";
         on Locales[numLocales-1] {
@@ -59,6 +62,7 @@ module unitTest {
           }
         }
       }
+      substringHelp_help(i);
       checkMemLeaks(m0);
     }
 

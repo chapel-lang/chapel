@@ -33,6 +33,7 @@ PASSES_SRCS = \
         filesToAST.cpp \
         flattenClasses.cpp \
         flattenFunctions.cpp \
+        insertAutoCopyAutoDestroy.cpp \
         insertLineNumbers.cpp \
         insertWideReferences.cpp \
         normalize.cpp \

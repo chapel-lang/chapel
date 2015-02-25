@@ -29,6 +29,9 @@
 #include "view.h"
 #include "WhileDoStmt.h"
 
+#include <queue>
+
+
 int                                          BasicBlock::nextID     = 0;
 BasicBlock*                                  BasicBlock::basicBlock = NULL;
 Map<LabelSymbol*, std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
@@ -296,6 +299,43 @@ void BasicBlock::thread(BasicBlock* src, BasicBlock* dst) {
   src->outs.push_back(dst);
 }
 
+// Removes a block from the basic block structure by traversing its lists of
+// predecessors and successors and removing any back-links.
+// The caller must then remove this block from any container and free it.
+void BasicBlock::remove()
+{
+  for_vector(BasicBlock, pred, this->ins)
+  {
+    BasicBlockVector& pred_outs = pred->outs;
+
+    // Look for this block in the list of successors of this predecessor.
+    BasicBlockVector::iterator i;
+    for (i = pred_outs.begin(); i != pred_outs.end(); ++i)
+    {
+      if (*i == this)
+        break;
+    }
+
+    // This block is in the list, right?
+    INT_ASSERT(i != pred_outs.end());
+    pred_outs.erase(i);
+  }
+  
+  for_vector(BasicBlock, succ, this->outs)
+  {
+    BasicBlockVector& succ_ins = succ->ins;
+
+    // Look for this block in the list of predecessors of this successor.
+    BasicBlockVector::iterator i;
+    for (i = succ_ins.begin(); i != succ_ins.end(); ++i)
+      if (*i == this)
+        break;
+
+    INT_ASSERT(i != succ_ins.end());
+    succ_ins.erase(i);
+  }
+}
+
 // Look for and remove empty blocks with no predecessor and whose successor is
 // the next block in sequence.  These blocks get created when a block ends in a
 // goto statement and the enclosing construct calls restart immediately.
@@ -309,22 +349,14 @@ void BasicBlock::removeEmptyBlocks(FnSymbol* fn)
   BasicBlockVector* new_blocks = new BasicBlockVector();
   for_vector(BasicBlock, bb, *fn->basicBlocks)
   {
-    // Skip empty blocks with no predecessors.
+    // Look for empty blocks with no predecessors.
     if (bb->ins.size() == 0 &&
         bb->exprs.size() == 0)
     {
       // This block will be removed.  It is no longer a predecessor of anyone,
       // so we must update the back links.
-      for_vector(BasicBlock, succ, bb->outs)
-      {
-        BasicBlockVector::iterator i;
-        for (i = succ->ins.begin(); i != succ->ins.end(); ++i)
-          if (*i == bb)
-            break;
-
-        INT_ASSERT(i != succ->ins.end());
-        succ->ins.erase(i);
-      }
+      bb->remove();
+      delete bb; bb = 0;
     }
     else
     {
@@ -397,6 +429,69 @@ bool BasicBlock::isOK() {
   }
 
   return true;
+}
+
+
+// This routine removes unreachable (interior) blocks from the flow graph
+// without modifying the underlying AST.  It is a workaround for the fact that
+// dead block removal does not succeed in removing all unreachable blocks from
+// the tree.
+void BasicBlock::ignoreUnreachableBlocks(FnSymbol* fn)
+{
+  // Find the reachable basic blocks within this function.
+  BasicBlockSet reachable;
+  BasicBlock::getReachableBlocks(fn, reachable);
+  
+  // Create a new vector that contains just the items we want to preserve.
+  int new_id = 0;
+  BasicBlockVector* new_blocks = new BasicBlockVector();
+  for_vector(BasicBlock, bb, *fn->basicBlocks)
+  {
+    if (reachable.count(bb))
+    {
+      // Add reachable blocks to the new BB vector.
+      bb->id = new_id++;
+      new_blocks->push_back(bb);
+    }
+    else
+    {
+      // Remove unreachable blocks from the flow graph.
+      bb->remove();
+    }
+  }
+  delete fn->basicBlocks; fn->basicBlocks = new_blocks;
+}
+
+
+// Populates the passed-in basic block set with blocks that are reachable from
+// the root (block 0).  The blocks which are not in this set are unreachable
+// and may be removed.
+void BasicBlock::getReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
+{
+  // We set up a work queue to perform a BFS on reachable blocks, and seed it
+  // with the first block in the function.
+  std::queue<BasicBlock*> work_queue;
+  work_queue.push((*fn->basicBlocks)[0]);
+
+  // Then we iterate until there are no more blocks to visit.
+  while (!work_queue.empty())
+  {
+    // Fetch and remove the next block.
+    BasicBlock* bb = work_queue.front();
+
+    work_queue.pop();
+
+    // Ignore it if we've already seen it.
+    if (reachable.count(bb))
+      continue;
+
+    // Otherwise, mark it as reachable, and append all of its successors to the
+    // work queue.
+    reachable.insert(bb);
+
+    for_vector(BasicBlock, out, bb->outs)
+      work_queue.push(out);
+  }
 }
 
 void BasicBlock::buildLocalsVectorMap(FnSymbol*          fn,

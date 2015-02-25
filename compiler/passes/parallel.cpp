@@ -33,6 +33,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "CForLoop.h"
 
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()
@@ -666,11 +667,29 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         FnSymbol* fn = toFnSymbol(move->parentSymbol);
         SET_LINENO(var);
         if (fn && innermostBlock == fn->body)
+          // The block is a function body.
           fn->insertBeforeReturnAfterLabel(callChplHereFree(move->get(1)->copy()));
         else {
-          BlockStmt* block = toBlockStmt(innermostBlock);
-          INT_ASSERT(block);
-          block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+          // The block is some other kind of block.
+          if (CForLoop* cfl = toCForLoop(innermostBlock))
+          {
+            // The logical end of the loop block is as at the end of the
+            // increment clause.  It is assumed here, that if the innerMost
+            // block contained the entire for loop, then that block would not
+            // be the CForLoop block itself.  If a block contains nothing but a
+            // CForLoop and then the block structure is smashed flat, we lose
+            // the ability to distinguish these two cases.
+            BlockStmt* incr = cfl->incrBlockGet();
+            incr->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+          }
+          // Other cases may need to be added here.
+          else
+          {
+            // A "normal" block.
+            BlockStmt* block = toBlockStmt(innermostBlock);
+            INT_ASSERT(block);
+            block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+          }
         }
       }
     }
@@ -1100,6 +1119,18 @@ reprivatizeIterators() {
 
 void
 parallel(void) {
+
+#ifdef HILDE_MM
+  // This is here just because it depends on the cleanup after lowerIterators
+  // having been performed, and it depends on lower iterators to get the basic
+  // block structure of iterator functions right.
+  // In other words, it could be moved back to the end of callDestructors.cpp
+  // if basic block analysis were modified to treat a PRIM_YIELD as an
+  // end-of-block and treat all blocks within an iterator function as
+  // successors of a faked-in start block.
+  insertAutoCopyAutoDestroy();
+#endif
+
   Vec<FnSymbol*> taskFunctions;
 
   // Collect the task functions for processing.

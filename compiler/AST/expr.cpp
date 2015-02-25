@@ -1496,8 +1496,13 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
     cname = de->sym->cname;
     name = de->sym->name;
   } else if(SymExpr *se = toSymExpr(field)) {
-    cname = se->var->cname;
-    name = se->var->name;
+    VarSymbol* var = toVarSymbol(se->var);
+    if (var && var->immediate) {
+      cname = name = var->immediate->v_string;
+    } else {
+      cname = se->var->cname;
+      name = se->var->name;
+    }
   } else if(NamedExpr *ne = toNamedExpr(field)) {
     cname = name = ne->name;
   } else {

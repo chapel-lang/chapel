@@ -1678,6 +1678,51 @@ bool isRecordWrappedType(Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
+// Returns true if the given type is one which can be returned by one of the
+// dsiNew*Dom() functions; false otherwise.
+// This check is performed by looking to see if the given type derives from the
+// BaseDom class.
+ bool isDomImplType(Type* type)
+{
+  while (AggregateType* at = toAggregateType(type))
+  {
+    if (at->symbol->hasFlag(FLAG_BASE_DOMAIN))
+      return true;
+    // Lazily assume single-inheritance.
+    type = at->dispatchParents.only();
+  }
+  return false;
+}
+
+// Returns true if the given type is one which can be returned by
+// dsiBuildArray() or similar function returning a "nude" array implementation;
+// false otherwise.
+// The test is actually performed by looking to see if the given type derives
+// from the BaseArr class.
+ bool isArrayImplType(Type* type)
+{
+  while (AggregateType* at = toAggregateType(type))
+  {
+    if (at->symbol->hasFlag(FLAG_BASE_ARRAY))
+      return true;
+    // Lazily assume single-inheritance.
+    type = at->dispatchParents.only();
+  }
+  return false;
+}
+
+bool isDistImplType(Type* type)
+{
+  while (AggregateType* at = toAggregateType(type))
+  {
+    if (at->symbol->hasFlag(FLAG_BASE_DIST))
+      return true;
+    // Lazily assume single-inheritance.
+    type = at->dispatchParents.only();
+  }
+  return false;
+}
+
 bool isSyncType(Type* t) {
   return getSyncFlags(t->symbol).any();
 }

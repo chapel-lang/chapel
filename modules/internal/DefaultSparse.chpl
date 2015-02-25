@@ -34,7 +34,7 @@ module DefaultSparse {
     var nnzDomSize = nnz;
     var nnzDom = {1..nnzDomSize};
 
-    var indices: [nnzDom] index(rank);
+    var indices: [nnzDom] index(rank, idxType);
 
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
@@ -106,8 +106,6 @@ module DefaultSparse {
     proc find(ind) {
       //
       // sjd: unfortunate specialization for rank == 1
-      // sjd: would it be better if indices were an array of rank*idxType?
-      // sjd: isn't it a bug as is because the idxType may not match index(rank)?
       //
       if rank == 1 && isTuple(ind) && ind.size == 1 then
         return BinarySearch(indices, ind(1), 1, nnz);
@@ -207,11 +205,11 @@ module DefaultSparse {
     proc dsiRemove(ind: rank*idxType) {
       rem_help(ind);
     }
-
+  
     proc dsiClear() {
       nnz = 0;
     }
-
+  
     iter dimIter(param d, ind) {
       if (d != rank-1) {
         compilerError("dimIter() not supported on sparse domains for dimensions other than the last");
@@ -221,6 +219,21 @@ module DefaultSparse {
     }
   }
 
+
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultSparseDom) {
+    if ! noRefCount then
+      x.incRefCount();
+    return x;
+  }
+  
+  proc chpl__autoDestroy(x: DefaultSparseDom) {
+    if !noRefCount {
+      var cnt = x.destroyDom();
+      if cnt == 0 then
+        delete x;
+    }
+  }
 
   class DefaultSparseArr: BaseArr {
     type eltType;
@@ -352,6 +365,21 @@ module DefaultSparse {
     }
   }
 
+
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: DefaultSparseArr) {
+    if !noRefCount then
+      x.incRefCount();
+    return x;
+  }
+  
+  proc chpl__autoDestroy(x: DefaultSparseArr) {
+    if !noRefCount {
+      var cnt = x.destroyArr();
+      if cnt == 0 then
+        delete x;
+    }
+  }
 
   proc DefaultSparseArr.dsiSerialWrite(f: Writer) {
     if (rank == 1) {

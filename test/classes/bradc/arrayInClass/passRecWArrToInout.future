@@ -1,0 +1,30 @@
+bug: Copy-constructor for a record containing an array is circularly defined.
+
+This is the same problem as for the other two bugs in this directory, but manifests in a
+different way.  Since the copy constructor is circularly defined, at one point the array
+field being initialized in one copy of the record is updated by assignment from a the
+array that is not yet initialized.  Depending on the junk that is on the stack, the
+routine proceeds to a point.  In this case, execution reaches the field-assignment and
+discovers that the RHS (junk) data is inconsistent with the dimensions of the default
+initialized array created to receive it.
+
+Ignoring the fact that field-initialization should be initialization, not assignment, we
+are back to the same problem.  The parloopexpr created to initialize the array field
+refers to the record as a whole and makes a verbatim copy of it.  This should not happen.
+
+Here is a snippet of the stack:
+#2  0x0000000000436f7c in checkArrayShapesUponAssignment (a=0x7fffffffd6e0, b=0x7fffffffd750) at obj/ChapelArray.c:1662
+#3  0x0000000000437053 in chpl___ASSIGN_10 (a=0x7fffffffd6e0, b=0x7fffffffd750) at obj/ChapelArray.c:1686
+#4  0x0000000000441fe9 in _default_wrap__construct_R2 (A=0x7fffffffd750) at obj/passRecWArrToInout.c:60
+#5  0x00000000004425ab in chpl__initCopy60 (x=0x7fffffffd8a0) at obj/passRecWArrToInout.c:140
+#6  0x00000000004098dc in chpl__autoCopy51 (x=0x7fffffffd8a0) at obj/ChapelBase.c:2392
+#7  0x0000000000443449 in _iterator_for_loopexpr3 (this21=0x7fffffffdb20, iterator=0x7fffffffd9b0) at obj/passRecWArrToInout.c:361
+#8  0x0000000000442750 in _parloopexpr3 (this21=0x7fffffffdb20) at obj/passRecWArrToInout.c:171
+#9  0x000000000044220d in _default_wrap__construct_R () at obj/passRecWArrToInout.c:87
+#10 0x0000000000441d6f in chpl__init_passRecWArrToInout (_ln=1, _fn=0x494758 "passRecWArrToInout.chpl") at obj/passRecWArrToInout.c:21
+
+The default_wrap_construct_R () is the default constructor for R and
+_default_wrap__construct_R2 (A) is the copy-constructor (effectively).
+The value of the A field in the record passed to _parloopexpr3 is already bogus, so if
+parloopexpr3 or its callees use that field in any way, the results should be (and are)
+unpredictable.

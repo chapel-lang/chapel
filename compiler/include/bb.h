@@ -31,6 +31,7 @@ class SymExpr;
 #include "map.h"
 
 #include <vector>
+#include <set>
 
 // Each basic block contains a list of expressions, in and out edges and an index.
 // The goto and label maps persist only between calls to buildBasicBlocks.
@@ -42,6 +43,7 @@ class BasicBlock
  public:
   typedef std::vector<BasicBlock*> BasicBlockVector;
   typedef std::vector<BitVec*> BitVecVector;
+  typedef std::set<BasicBlock*> BasicBlockSet;
 
   //
   // Class methods/variables
@@ -50,6 +52,10 @@ public:
   static void               clear(FnSymbol* fn);
 
   static void               buildBasicBlocks(FnSymbol* fn);
+
+  static void getReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
+
+  static void ignoreUnreachableBlocks(FnSymbol* fn);
 
   static void               printBasicBlocks(FnSymbol* fn);
 
@@ -111,6 +117,7 @@ private:
   //
 public:
                             BasicBlock();
+  void               remove();
 
   int                       id;
 

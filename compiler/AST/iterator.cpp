@@ -31,6 +31,7 @@
 #include "optimizations.h"
 #include "view.h"
 #include "WhileStmt.h"
+#include "resolution.h" // for autoDestroyMap.
 
 //
 // This file implements lowerIterator() called by the lowerIterators pass
@@ -46,6 +47,7 @@
 IteratorInfo::IteratorInfo() :
   iterator(NULL),
   getIterator(NULL),
+  freeIterator(NULL),
   iclass(NULL),
   irecord(NULL),
   advance(NULL),
@@ -113,42 +115,79 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
   BlockStmt* singleFor = NULL;
   CallExpr* singleYield = NULL;
   forv_Vec(BaseAST, ast, asts) {
+    // If a yield statement,
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
         if (singleYield) {
+          // We already saw a yield stmt.  This is the second one, so fail.
           return NULL;
-        } else if (BlockStmt* block = toBlockStmt(call->parentExpr)) {
-          // NOAKES 2014/11/18 It is strange that this ignores DOWHILE
-          if (block->isForLoop()     == true ||
-              block->isCForLoop()    == true ||
-              block->isWhileDoStmt() == true) {
-            singleYield = call;
-          } else {
+        }
+        
+        // Select yield statements whose parent expression is a loop statement
+        // (except for dowhile statements, for some reason....
+
+        // This test is not logically related to the preceding quick-exit, so
+        // putting "else" here would be misleading.
+        if (isLoopStmt(call->parentExpr)) {
+          // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
+          if (isDoWhileStmt(call->parentExpr))
             return NULL;
+
+          // We expect that ParamForLoops have already been removed from the tree
+          if (isParamForLoop(call->parentExpr))
+          {
+            INT_FATAL(call->parentExpr, "Unexpected ParamForLoop construct.");
           }
+
+          singleYield = call;
         } else {
           return NULL;
         }
       }
+    }
 
-    } else if (isWhileDoStmt(ast) ||
-               isForLoop(ast)     ||
-               isCForLoop(ast)) {
+    // This clause captures the first loop statement (except for while-do
+    // statements, for some reason ...).
+    else if (isLoopStmt(ast)) {
+      // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
+      if (isDoWhileStmt(ast))
+        return NULL;
+
+      // We expect that ParamForLoops have already been removed from the tree
+      if (isParamForLoop(ast))
+      {
+        INT_FATAL(ast, "Unexpected ParamForLoop construct.");
+      }
+
       Expr*      expr  = toExpr(ast);
       BlockStmt* block = toBlockStmt(ast);
 
-      if (singleFor == NULL && expr->parentExpr == fn->body) {
-        singleFor = block;
-
+      if (expr->parentExpr == fn->body) {
+        // This captures the first loop statement, but does not fail if there
+        // is more than one.  Compare the test for a single yield above.
+        // Is this intentional?
+        if (singleFor == NULL)
+          singleFor = block;
+        // 2015-02-23 hilde: TODO: Uncomment the following, and see what breaks
+//        else
+//          INT_FATAL(expr, "Iterator contains a second for loop.")
+        // I think the existing code works because each loop should contain at
+        // least one yield, so the second yield causes the singleYield test
+        // above to fail and return NULL preemptively.  Bad news if that
+        // assumption fails.
+        // This question would not arise if the search were rewritten in a more
+        // straightforward fashion: First, look for a single loop; then, within
+        // that single loop, look for a single yield.  Simple, obvious,
+        // foolproof.
+        // Also, probably the redundant code would be removed.
       } else {
         return NULL;
       }
+    }
 
-    // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
-    } else if (isDoWhileStmt(ast)) {
-      return NULL;
-
-    } else if (isGotoStmt(ast)) {
+    // If the iterator  contains a goto statement, it is not considered to be a
+    // single loop iterator.
+    else if (isGotoStmt(ast)) {
       return NULL;
     }
   }
@@ -383,7 +422,8 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
 //
 
 // Build the zip1 function, copying expressions out of the iterator
-// body that occur *before* the singleLoop
+// body that occur *before* the start of the loop proper (i.e. before the
+// singleLoop construct).
 static void
 buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   BlockStmt* zip1body = new BlockStmt();
@@ -394,6 +434,12 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   map.put(ic, ii->zip1->_this);
 
   // Copy non-arg def expressions from the original iterator
+  // 2015-02-23 hilde: TODO #1:
+  // This is sloppy.  We only need local variables that are actually used
+  // within the zip1 body.  So we can probably gen the DefExprs we need by
+  // scanning the exprs to be copied and just populating the map with the
+  // symbols we actually use.  This utility can be factored out of all of the
+  // buildZip functions.
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
@@ -412,14 +458,22 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   }
 
   if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
+    // By the time we get here, the condExpr has been passed through _cond_test
+    // and the result stored in a temp, so condExprForTmpVariableGet just
+    // returns the temp result.  So we can simply say:  (.= this more tmp)
+    // This simplification depends on the current interpretation of more
+    // in a single-loop, single-yield iterator (i.e. 1 = more; 0 = done).
     SymExpr* condExpr = stmt->condExprForTmpVariableGet()->copy(&map);
-
-    zip1body->insertAtTail(new CondStmt(condExpr,
-                                        new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
-                                        new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
-
-
+    Type* moreType = ii->iclass->getField("more")->type;
+    VarSymbol* condTemp = newTemp("cond_tmp", moreType);
+    zip1body->insertAtTail(new DefExpr(condTemp));
+    zip1body->insertAtTail(new CallExpr(PRIM_MOVE, condTemp,
+                                        new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
+    zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip1->_this,
+                                        ii->iclass->getField("more"), condTemp));
   } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
+    // 2015-02-23 hilde: TODO: See if we can apply the above simplification
+    // here and in buildZip3 as well.
     SymExpr* index = forLoop->indexGet()->copy(&map);
 
     zip1body->insertAtTail(new CondStmt(index,
@@ -448,6 +502,7 @@ buildZip2(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   BlockStmt* zip2body = new BlockStmt();
 
   // Copy non-arg def expressions from the original iterator
+  // See TODO #1 above.
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
@@ -482,6 +537,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   map.put(ic, ii->zip3->_this);
 
   // Copy non-arg def expressions from the original iterator
+  // See TODO #1 above.
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
@@ -504,11 +560,13 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   // Check for more (only for non c for loops)
   if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
     SymExpr* condExpr = stmt->condExprForTmpVariableGet()->copy(&map);
-
-    zip3body->insertAtTail(new CondStmt(condExpr,
-                                        new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(1)),
-                                        new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this, ii->iclass->getField("more"), new_IntSymbol(0))));
-
+    Type* moreType = ii->iclass->getField("more")->type;
+    VarSymbol* condTemp = newTemp("cond_tmp", moreType);
+    zip3body->insertAtTail(new DefExpr(condTemp));
+    zip3body->insertAtTail(new CallExpr(PRIM_MOVE, condTemp,
+                                        new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
+    zip3body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ii->zip3->_this,
+                                        ii->iclass->getField("more"), condTemp));
   } else if (ForLoop* forLoop = toForLoop(singleLoop)) {
     SymExpr* index = forLoop->indexGet()->copy(&map);
 
@@ -538,6 +596,7 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   BlockStmt* zip4body = new BlockStmt();
 
   // Copy non-arg def expressions from the original iterator
+  // See TODO #1 above.
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast))
       if (!isArgSymbol(def->sym))
@@ -565,6 +624,10 @@ buildZip4(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
 }
 
 
+// Builds the standard (non-optimized) iterator body by replacing yields with
+// statements that update the "more" field in the iterator class, gotos and
+// labels.  Then adds a jump table at the beginning of advance, so execution
+// will continue from the next label the next time the iterator is entered.
 static void
 buildAdvance(FnSymbol* fn,
              Vec<BaseAST*>& asts,
@@ -645,8 +708,9 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with hasMore->_this .
     map.put(ic, ii->hasMore->_this);
 
-    // NOAKES 2014/12/04 Why is this copy here?
-    testBlock = cforLoop->testBlockGet()->copy(&map);
+    // 2015-02-23 hilde: There was an unnecessary call to copy(&map) here --
+    // pointed out by mnoakes -- which I removed.
+    testBlock = cforLoop->testBlockGet();
 
     for_alist(expr, testBlock->body) {
       if (expr != testBlock->body.tail) {
@@ -696,7 +760,7 @@ buildInit(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with init->_this .
     map.put(ic, ii->init->_this);
 
-    initBlock = cforLoop->initBlockGet()->copy(&map);
+    initBlock = cforLoop->initBlockGet();
 
     for_alist(expr, initBlock->body) {
       initBody->insertAtTail(expr->copy(&map));
@@ -722,7 +786,7 @@ buildIncr(IteratorInfo* ii, BlockStmt* singleLoop) {
     // In copied expressions, replace _ic with incr->_this .
     map.put(ic, ii->incr->_this);
 
-    incrBlock = cforLoop->incrBlockGet()->copy(&map);
+    incrBlock = cforLoop->incrBlockGet();
 
     for_alist(expr, incrBlock->body) {
       incrBody->insertAtTail(expr->copy(&map));
@@ -846,27 +910,48 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
       CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
       INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 
-      SymExpr* se = toSymExpr(move->get(2));
-      CallExpr* call = toCallExpr(move->get(2));
-      if (se) {
+      if (SymExpr* se = toSymExpr(move->get(2)))
+      {
+        // The symbol is defined through a bitwise (pointer) copy.
         INT_ASSERT(se->var->type->symbol->hasFlag(FLAG_REF));
         if (se->var->defPoint->parentSymbol == fn) {
           syms.add_exclusive(se->var);
         }
-      } else if (call->isPrimitive(PRIM_ADDR_OF) ||
-                 call->isPrimitive(PRIM_GET_MEMBER) ||
-                 call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-        SymExpr* rhs = toSymExpr(call->get(1));
-        syms.add_exclusive(rhs->var);
-      } else if (FnSymbol* fn = call->isResolved()) {
-        for_actuals(actual, call) {
-          SymExpr* se = toSymExpr(actual);
-          if (se->var->defPoint->parentSymbol == fn) {
-            syms.add_exclusive(se->var);
+      }
+      else if (CallExpr* call = toCallExpr(move->get(2)))
+      {
+        // The RHS is a function call.
+        if (FnSymbol* fn = call->isResolved()) {
+          for_actuals(actual, call) {
+            SymExpr* se = toSymExpr(actual);
+            if (se->var->defPoint->parentSymbol == fn) {
+              syms.add_exclusive(se->var);
+            }
           }
         }
-      } else {
-        INT_FATAL(sym, "invalid assumption about reference");
+        else
+        {
+          // The RHS is not a function call: it must be a primitive instead.
+
+          if (call->isPrimitive(PRIM_ADDR_OF) ||
+              call->isPrimitive(PRIM_GET_MEMBER) ||
+              // If we are reading a reference out of a field, I'm not sure we
+              // capture the right rhs below.  (The actual target of the ref lies
+              // outside the struct that contains the ref.)
+              call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+            SymExpr* rhs = toSymExpr(call->get(1));
+            syms.add_exclusive(rhs->var);
+          }
+          else
+          {
+            INT_FATAL(sym, "Unhandled case: Ref returned by a primitive from which we did not expect one.");
+          }
+        }
+      }
+      else
+      {
+        // What else could it be?
+        INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
       }
     }
   }
@@ -951,7 +1036,7 @@ noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
 // Preceding calls to the various build...() functions have copied out interesting parts
 // of the iterator function.
 // This function rips the guts out of the original iterator function and replaces them
-// with a simple function that just initializes the fields in the iterator class
+// with a simple function that just initializes the fields in the iterator record
 // with formal arguments of the original iterator that are live at yield sites within it.
 static void
 rebuildIterator(IteratorInfo* ii,
@@ -966,7 +1051,7 @@ rebuildIterator(IteratorInfo* ii,
   forv_Vec(CallExpr, call, icalls) {
     if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
       // What to do if multiple calls? may or may not cause unwanted deletion.
-      if (false) // this assert is expensive to compute
+      if (fVerify) // this assert is expensive to compute
         INT_ASSERT(noOtherCalls(taskFn, call));
       taskFn->defPoint->remove();
     }
@@ -987,20 +1072,52 @@ rebuildIterator(IteratorInfo* ii,
 
     // Get the corresponding field in the iterator class
     Symbol* field = local2field.get(local);
+    Symbol* localValue = local;
 
+#ifndef REF_RECORDS_IN_IR
     if (local->type == field->type->refType) {
       // If a ref var, 
-      // load the local into a temp and then set the value of the corresponding field.
+      // load the local into a temp and use this to set the value of the corresponding field.
       Symbol* tmp = newTemp(field->type);
       fn->insertAtTail(new DefExpr(tmp));
       fn->insertAtTail(
         new CallExpr(PRIM_MOVE, tmp,
                      new CallExpr(PRIM_DEREF, local)));
-      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, tmp));
-    } else {
-      // Otherwise, just set the iterator class field directly.
-      fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, local));
+      localValue = tmp;
     }
+#endif
+
+    // Very special code for record-wrapped types:
+    // This is a workaround for weirdness in how record-wrapped types are
+    // handled in iterator records.  Calls to the these() method on arrays and
+    // domains returns a "nude" version of the corresponding array or domain,
+    // that is therefore (because it is a class object) not reference counted.
+    // In place where they should be reference counted, they should be passed
+    // around with their record wrapping.  In places where their persistence is
+    // guaranteed, they could be passed around by reference, but other iterator
+    // code presently depends upon them being passed by value (the immediately
+    // preceding clause which applies a deref operator makes sure that this is
+    // true).  Fixing the iterator code so that it could tolerate "these" items
+    // passed by value might also work -- provided the rule is obeyed that the
+    // referent outlasts any reference generated from it.
+    if (isDomImplType(localValue->type) ||
+        isArrayImplType(localValue->type) ||
+        isDistImplType(localValue->type))
+    {
+      Symbol* tmp = newTemp("RWT_ir", localValue->type);
+      fn->insertAtTail(new DefExpr(tmp));
+      FnSymbol* autoCopyFn = autoCopyMap.get(localValue->type);
+      // We will fail here if an array or dom implementation fails to provide
+      // an autocopy function.
+      fn->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
+                                    new CallExpr(autoCopyFn, localValue)));
+      localValue = tmp;
+    }
+    // Note that there is no corresponding destructor function, so thingies
+    // that are autocopied here will be leaked.  More work to do.  Correctness
+    // first; zero leaks second; optimization third.
+
+    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, iterator, field, localValue));
   }
 
   // Return the filled-in iterator record.
@@ -1023,14 +1140,70 @@ rebuildGetIterator(IteratorInfo* ii) {
   // Enumerate the fields in the iterator record (argument).
   for_fields(field, ii->irecord) {
     // Load the record field into a temp, and then use that to set the corresponding class field.
-    VarSymbol* tmp = newTemp(field->type);
-    getIterator->insertBeforeReturn(new DefExpr(tmp));
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-    getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField(field->name), tmp));
+    VarSymbol* fieldReadTmp = newTemp(field->type);
+    getIterator->insertBeforeReturn(new DefExpr(fieldReadTmp));
+    CallExpr* fieldRead = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
+    getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, fieldReadTmp, fieldRead));
+    
+    // Very special iterator-only MM code!  See Note 1.
+    VarSymbol* fieldWriteTmp = fieldReadTmp;
+    if (isDomImplType(field->type) ||
+        isArrayImplType(field->type) ||
+        isDistImplType(field->type))
+    {
+      VarSymbol* tmp = newTemp("RWT_tmp", field->type);
+      getIterator->insertBeforeReturn(new DefExpr(tmp));
+      FnSymbol* autoCopyFn = autoCopyMap.get(field->type);
+      // This autoCopyFn is expected to exist!
+      CallExpr* autoCopyCall = new CallExpr(autoCopyFn, fieldReadTmp);
+      getIterator->insertBeforeReturn(new CallExpr(PRIM_MOVE, tmp, autoCopyCall));
+      fieldWriteTmp = tmp;
+    }
+    getIterator->insertBeforeReturn(new CallExpr(PRIM_SET_MEMBER, ret, ii->iclass->getField(field->name), fieldWriteTmp));
   }
 
   // The return is supplied in the shell function created during functionResolution.
   // (See protoIteratorClass().)
+}
+
+
+// Fills in the body of the freeIterator function.
+// Record fields in the iterator class must be auto-destroyed because they are
+// auto-copied when the class instance is created.
+// You don't see this explicitly in rebuildGetIterator above, because automatic
+// memory management (AMM) adds these autocopy calls later (see
+// insertAutoCopyAutoDestroy()).  
+static void
+rebuildFreeIterator(IteratorInfo* ii) {
+  FnSymbol* freeIterator = ii->freeIterator;
+  ArgSymbol* ic = freeIterator->getFormal(1);   // This is the iterator class instance.
+  AggregateType* ict = toAggregateType(ic->type);
+
+  // Enumerate the fields in the iterator record.
+  // We are only interested in fields that are also in the iterator record,
+  // because these are the ones that are copied in when the iterator class
+  // instance is created (see the implementation of rebuildGetIterator() above).
+  for_fields(field, ii->irecord) {
+    // The record and class fields have the same name and type, so we can use
+    // them interchangeably.
+    FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+    if (autoDestroyFn)
+    {
+      ArgSymbol* dtor_arg = autoDestroyFn->getFormal(1);
+      VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtor_arg->type);
+
+    // These statements get inserted in reverse order.
+      freeIterator->insertAtHead(new CallExpr(autoDestroyFn, tmp));
+      // Insert a dereference if the destructor takes its argument by value
+      // rather than by ref.  It shouldn't but that's another story....
+      PrimitiveTag getFieldOp = (dtor_arg->type == field->type->refType) ?
+        PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE;
+      CallExpr* getFieldCall =
+        new CallExpr(getFieldOp, ic, ict->getField(field->name));
+      freeIterator->insertAtHead(new CallExpr(PRIM_MOVE, tmp, getFieldCall));
+      freeIterator->insertAtHead(new DefExpr(tmp));
+    }
+  }
 }
 
 
@@ -1095,9 +1268,23 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
 
   if (local) {
     type = local->type;
-    // The return value is automatically dereferenced (I guess).
+#ifndef REF_RECORDS_IN_IR
+    // If the iterator is a method and the local variable is _this and it is a
+    // reference but the method is not a var method, then capture that value in
+    // a local variable and then use that to set the _this field in the IR.
+    // For var iterators, the user must ensure that the referenced object
+    // remains valid over the entire iteration.
     if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
-      type = type->getValType();
+    {
+      if (! (fn->thisTag & INTENT_FLAG_REF))
+        type = type->getValType();
+
+      // Debug only.  I want to expose cases where var iterator this fields are
+      // being copied by value.
+      else
+        INT_ASSERT(false);
+    }
+#endif
   }
 
   // Add a field to the class
@@ -1148,7 +1335,10 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 }
 
 
-// Function resolution just adds a shell for the iterator records and classes.
+// Function resolution just adds a shell for the iterator records and classes,
+// and stubs in implementations for the advance, zip1, zip2, zip3, zip4,
+// hasMore, getValue, init and incr methods.
+// (see protoIteratorClass())
 // This function takes a pointer to an iterator and fills in those types.
 void lowerIterator(FnSymbol* fn) {
 
@@ -1158,8 +1348,11 @@ void lowerIterator(FnSymbol* fn) {
   collect_asts_postorder(fn, asts);
 
   BlockStmt* singleLoop = NULL;
-  if (CallExpr* singleLoopYield = isSingleLoopIterator(fn, asts))
+  if (CallExpr* singleLoopYield = isSingleLoopIterator(fn, asts)) {
+    // If the iterator contains a single loop statement containing a single
+    // yield, singleLoop is that loop statement; otherwise, it is NULL.
     singleLoop = toBlockStmt(singleLoopYield->parentExpr);
+  }
 
   //
   // create fields for all local variables and arguments; however, if
@@ -1174,6 +1367,7 @@ void lowerIterator(FnSymbol* fn) {
   Symbol* valField;
   bool oneLocalYS;  // see comment earlier
 
+  // Add all formals to the set of local symbols.
   for_formals(formal, fn)
     locals.add(formal);
 
@@ -1194,6 +1388,10 @@ void lowerIterator(FnSymbol* fn) {
 
   removeLocals(locals, asts, yldSymSet, fn);
 
+  //------------------------------------------------------------------------
+  // The above should probably be factored out.
+  //------------------------------------------------------------------------
+
   IteratorInfo* ii = fn->iteratorInfo;
   if (!fn->hasFlag(FLAG_INLINE_ITERATOR)) {
     // Does this force iterators marked as inline to be inlined
@@ -1205,14 +1403,10 @@ void lowerIterator(FnSymbol* fn) {
       buildZip3(ii, asts, singleLoop);
       buildZip4(ii, asts, singleLoop);
     } else {
-      // zip functions are already normal, because we normalized them in
-      // protoIteratorMethod (functionResolution.cpp).
+      // For iterators that are not single-loop/single-yield, zip2 and zip4 are
+      // no-ops and zip1 and zip3 simply call advance().
       ii->zip1->insertAtHead(new CallExpr(ii->advance, ii->zip1->_this));
-//      ii->zip1->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-//      ii->zip2->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
       ii->zip3->insertAtHead(new CallExpr(ii->advance, ii->zip3->_this));
-//      ii->zip3->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-//      ii->zip4->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     }
     buildAdvance(fn, asts, local2field, locals);
     // Note that buildInit and buildIncr are essentially no-ops for non c for
@@ -1227,4 +1421,30 @@ void lowerIterator(FnSymbol* fn) {
   }
   rebuildIterator(ii, local2rfield, locals);
   rebuildGetIterator(ii);
+  rebuildFreeIterator(ii);
 }
+
+//########################################################################
+//# NOTES
+//#
+//# Note 1:
+//#  A call to "proc these()" on an array or dom returns the underlying class
+//#  object rather than the record-wrapped version.  The record wrapping is
+//#  used for perform memory management, so without it the "nude" array or
+//#  dom is unmanaged.  
+//#  Since the underlying object is a class object rather than a record
+//#  object, it is invisible to the AMM implementation in
+//#  insertAutoCopyAutoDestroy().  That is, all MM on class objects has to be
+//#  done "manually".  Since we are manipulating class objects here, we have
+//#  to insert that MM specially.
+//#  This implementation leverages the autoCopy/autoDestroy mechanism used
+//#  for AMM of records.  The reason for this is that pruneResolvedTree()
+//#  clears out functions that are not referred to anywhere in the code.
+//#  Since this code is adding calls post-resolution, they must be preserved
+//#  some way and they must already be resolved.  Leveraging this mechanism
+//#  for the (class) implementations of record-wrapped types seems
+//#  reasonable, since in spirit our use of "autoCopy" and "autoDestroy" is
+//#  consistent with their use w.r.t. records.  The only downside is that
+//#  autoCopy and autoDestroy functions now have to be added explicilty to
+//#  each RWT implementation.
+//########################################################################

@@ -1,0 +1,3 @@
+feature request: Let getters return values by const ref
+
+Duplicate.  See optimizeOnClauses_basic.future.

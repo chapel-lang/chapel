@@ -119,39 +119,75 @@ module ChapelArray {
     }
   }
   
+  // This works like a constructor, and should probably be converted into one.
   proc _newArray(value) {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _array, which contains a new reference to this
+        // array representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _array(value, value);
+    }
   }
   
   proc _newDomain(value) {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _domain, which contains a new reference to this
+        // domain representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _domain(value, value);
+    }
   }
   
   proc _getDomain(value) {
     if _isPrivatized(value) then
       return new _domain(value.pid, value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _domain record, which contains a new reference to this
+        // domain representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _domain(value, value);
+    }
   }
   
   proc _newDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _distribution, which contains a new reference to this
+        // distribution representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _distribution(value, value);
+    }
   }
   
   proc _getDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(value.pid, value);
-    else
+    else {
+      if !noRefCount {
+        // We are creating a new _distribution, which contains a new reference to this
+        // distribution representation (value), so we have to increment the reference
+        // count.
+        value.incRefCount();
+      }
       return new _distribution(value, value);
+    }
   }
   
   
@@ -622,6 +658,12 @@ module ChapelArray {
         if !noRefCount then
           _value.incRefCount();
       }
+      // We have to bump the ref count on x to keep it in existence while it is
+      // being iterated over.
+      // TODO: need to add a corresponding decrement downstream.  Adding it at
+      // the end of this routine will cause premature deletion.
+      if !noRefCount then
+        x.incRefCount();
       const enumTuple = chpl_enum_enumerate(idxType);
       for param i in 1..enumTuple.size do
         x.dsiAdd(enumTuple(i));
@@ -1311,7 +1353,15 @@ module ChapelArray {
     //
     proc ~_array() {
      if !noRefCount {
+       // removeWrapRecords replaces the following conditional with "true",
+       // which is not what we want.
+       //       if _valueType == nil then
+       //         return;
       if !_isPrivatized(_valueType) {
+        if _value == nil then
+         // This happens e.g. for delete on an array field whose default
+         // initializer is a forall expr. [arrayInClassRecord.chpl]
+          return;
         on _value {
           var cnt = _value.destroyArr();
           if cnt == 0 then {
@@ -1452,6 +1502,11 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
   
+    // Note: Clients of this routine must update the ref count "manually".
+    // Specifically, if the return value of this routine is copied into a field
+    // or outer variable, then its ref count must be incremented.  The ref
+    // count must be decremented when the containing location or structure is
+    // deleted.
     inline proc these() ref {
       return _value.these();
     }
@@ -2115,7 +2170,14 @@ module ChapelArray {
   }
   
   proc =(ref a: domain, b: domain) {
-    if !isIrregularDom(a) && !isIrregularDom(b) {
+    if (b._value == nil) {
+      // In some places, we use assignment where we should be using initialization.
+      // When the RHS is nil (uninitialized), it is permissible to do nothing
+      // if the left side is also nil.
+      if (a._value != nil) then
+        halt("Cannot overwrite a valid domain with 'nil'.");
+    }
+    else if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
         on e do e.dsiReallocate(b);
       }

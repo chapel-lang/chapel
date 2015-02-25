@@ -615,7 +615,9 @@ static void build_type_constructor(AggregateType* ct) {
         //
         if (field->hasFlag(FLAG_TYPE_VARIABLE) || 
             field->hasFlag(FLAG_PARAM)         || 
-            (!exprType && !init)) {
+            (!exprType && !init &&
+             // This clause was added to handle runtime types.
+             field->type == dtUnknown)) {
 
           ArgSymbol* arg = create_generic_arg(field);
 
@@ -890,8 +892,9 @@ static void build_constructor(AggregateType* ct) {
       if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
         // init && !exprType
         VarSymbol* tmp = newTemp();
-
+#ifndef HILDE_MM
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+#endif
         tmp->addFlag(FLAG_MAYBE_PARAM);
         tmp->addFlag(FLAG_MAYBE_TYPE);
 
