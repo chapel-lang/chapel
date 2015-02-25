@@ -351,9 +351,7 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     this->defPoint->exprType->prettyPrint(file);
   }
 
-  // FIXME: Do we want this for non-class globals/configs?
-  //        (thomasvandoren, 2015-02-21)
-  if (this->isField && this->defPoint->init != NULL) {
+  if (this->defPoint->init != NULL) {
     *file << " = ";
     this->defPoint->init->prettyPrint(file);
   }
