@@ -163,7 +163,6 @@ module DefaultAssociative {
       }
 
       if numChunks == 1 {
-        var followThisTab = this.table;
         for slot in 0..numIndices-1 {
           if table[slot].status == chpl__hash_status.full {
             yield table[slot].idx;
