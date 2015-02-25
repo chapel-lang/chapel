@@ -3,6 +3,14 @@
 # These C tests don't conform to -Wall
 unset CHPL_DEVELOPER
 
+# Normalize $CHPL_HOME to fix problems with symbolic links
+SAVE_HOME=$CHPL_HOME
+export CHPL_HOME=`readlink -f $CHPL_HOME`
+if [ "x$CHPL_HOME" = "x" ]
+then
+  export CHPL_HOME=$SAVE_HOME
+fi
+
 CC=gcc
 CXX=g++
 DEFS=`$CHPL_HOME/util/config/compileline --includes-and-defines`

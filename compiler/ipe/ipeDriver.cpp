@@ -19,7 +19,6 @@
 
 #include "ipe.h"
 
-#include "ipeReplaceVariables.h"
 #include "ipeResolve.h"
 #include "ipeCheckReturn.h"
 #include "ipeInlinePrimitives.h"
@@ -41,7 +40,6 @@ static PassInfo sPassList[] =
 {
   { "parse",            parse               },
 
-  { "replaceVariables", ipeReplaceVariables },
   { "resolve",          ipeResolve          },
   { "inlinePrimitives", ipeInlinePrimitives },
   { "checkReturn",      ipeCheckReturn      },

@@ -29,17 +29,20 @@
 
 #include <cstdlib>
 
-BlockStmt*              yyblock                    = NULL;
-const char*             yyfilename                 = NULL;
-int                     yystartlineno              = 0;
+BlockStmt*              yyblock                       = NULL;
+const char*             yyfilename                    = NULL;
+int                     yystartlineno                 = 0;
 
-ModTag                  currentModuleType          = MOD_INTERNAL;
+ModTag                  currentModuleType             = MOD_INTERNAL;
 
-int                     chplLineno                 = 0;
-bool                    chplParseString            = false;
-const char*             chplParseStringMsg         = NULL;
+int                     chplLineno                    = 0;
+bool                    chplParseString               = false;
+const char*             chplParseStringMsg            = NULL;
 
-static bool             handlingInternalModulesNow = false;
+bool                    currentFileNamedOnCommandLine = false;
+
+static bool             firstFile                     = true;
+static bool             handlingInternalModulesNow    = false;
 
 static Vec<const char*> modNameSet;
 static Vec<const char*> modNameList;
@@ -130,113 +133,137 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
   return !hasUses && !hasOther && moduleDefs > 0;
 }
 
-
-static bool firstFile = true;
-bool currentFileNamedOnCommandLine=false;
-
 ModuleSymbol* parseFile(const char* filename,
                         ModTag      modType,
                         bool        namedOnCommandLine) {
-  ModuleSymbol* newModule = NULL;
-  currentFileNamedOnCommandLine = namedOnCommandLine;
+  ModuleSymbol* retval = NULL;
 
-  currentModuleType   = modType;
+  if (FILE* fp = openInputFile(filename)) {
+    // State for the lexer
+    int             lexerStatus  = 100;
 
-  yyfilename          = filename;
-  yystartlineno       = 1;
+    // State for the parser
+    yypstate*       parser       = yypstate_new();
+    int             parserStatus = YYPUSH_MORE;
+    YYLTYPE         yylloc;
+    ParserContext   context;
 
-  yylloc.first_column = 0;
-  yylloc.last_column  = 0;
-  yylloc.first_line   = 1;
-  yylloc.last_line    = 1;
-  yylloc.comment      = NULL;
+    currentFileNamedOnCommandLine = namedOnCommandLine;
 
-  chplLineno          = 1;
+    currentModuleType             = modType;
 
-  yyin                = openInputFile(filename);
+    yyblock                       = NULL;
+    yyfilename                    = filename;
+    yystartlineno                 = 1;
 
-  if (printModuleFiles && (modType != MOD_INTERNAL || developer)) {
-    if (firstFile) {
-      fprintf(stderr, "Parsing module files:\n");
-      firstFile = false;
+    yylloc.first_line             = 1;
+    yylloc.first_column           = 0;
+    yylloc.last_line              = 1;
+    yylloc.last_column            = 0;
+
+    chplLineno                    = 1;
+
+    if (printModuleFiles && (modType != MOD_INTERNAL || developer)) {
+      if (firstFile) {
+        fprintf(stderr, "Parsing module files:\n");
+        firstFile = false;
+      }
+
+      fprintf(stderr, "  %s\n", cleanFilename(filename));
     }
 
-    fprintf(stderr, "  %s\n", cleanFilename(filename));
-  }
+    if (namedOnCommandLine) {
+      startCountingFileTokens(filename);
+    }
 
-  yyblock = NULL;
+    yylex_init(&context.scanner);
+    yyset_in(fp, context.scanner);
 
-  if (namedOnCommandLine) {
-    startCountingFileTokens(filename);
-  }
+    while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
+      YYSTYPE yylval;
 
-  yyparse();
+      lexerStatus = yylex(&yylval, &yylloc, context.scanner);
 
-  if (namedOnCommandLine) {
-    stopCountingFileTokens();
-  }
-
-  closeInputFile(yyin);
-
-  if (yyblock == NULL) {
-    INT_FATAL("yyblock should always be non-NULL after yyparse()");
-  } else if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
-    const char* modulename = filenameToModulename(filename);
-
-    newModule      = buildModule(modulename, yyblock, yyfilename, NULL);
-
-    yylloc.comment = NULL;
-
-    if (fUseIPE == false)
-      theProgram->block->insertAtTail(new DefExpr(newModule));
-    else
-      rootModule->block->insertAtTail(new DefExpr(newModule));
-
-    addModuleToDoneList(newModule);
-
-  } else {
-    ModuleSymbol* moduleLast  = 0;
-    int           moduleCount = 0;
-
-    for_alist(stmt, yyblock->body) {
-      if (BlockStmt* block = toBlockStmt(stmt))
-        stmt = block->body.first();
-
-      if (DefExpr* defExpr = toDefExpr(stmt)) {
-        if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
-
-          if (fUseIPE == false)
-            theProgram->block->insertAtTail(defExpr->remove());
-          else
-            rootModule->block->insertAtTail(defExpr->remove());
-
-          addModuleToDoneList(modSym);
-
-          moduleLast  = modSym;
-          moduleCount = moduleCount + 1;
-        }
+      if        (lexerStatus >= 0) {
+        parserStatus          = yypush_parse(parser, lexerStatus, &yylval, &yylloc, &context);
+      } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
+        context.latestComment = yylval.pch;
       }
     }
 
-    if (moduleCount == 1)
-      newModule = moduleLast;
+    if (namedOnCommandLine) {
+      stopCountingFileTokens(context.scanner);
+    }
+
+    // Cleanup after the paser
+    yypstate_delete(parser);
+
+    // Cleanup after the lexer
+    yylex_destroy(context.scanner);
+
+    closeInputFile(fp);
+
+    if (yyblock == NULL) {
+      INT_FATAL("yyblock should always be non-NULL after yyparse()");
+
+    } else if (yyblock->body.head == 0 || containsOnlyModules(yyblock, filename) == false) {
+      const char* modulename = filenameToModulename(filename);
+
+      retval = buildModule(modulename, yyblock, yyfilename, NULL);
+
+      if (fUseIPE == false)
+        theProgram->block->insertAtTail(new DefExpr(retval));
+      else
+        rootModule->block->insertAtTail(new DefExpr(retval));
+
+      addModuleToDoneList(retval);
+
+    } else {
+      ModuleSymbol* moduleLast  = 0;
+      int           moduleCount = 0;
+
+      for_alist(stmt, yyblock->body) {
+        if (BlockStmt* block = toBlockStmt(stmt))
+          stmt = block->body.first();
+
+        if (DefExpr* defExpr = toDefExpr(stmt)) {
+          if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
+
+            if (fUseIPE == false)
+              theProgram->block->insertAtTail(defExpr->remove());
+            else
+              rootModule->block->insertAtTail(defExpr->remove());
+
+            addModuleToDoneList(modSym);
+
+            moduleLast  = modSym;
+            moduleCount = moduleCount + 1;
+          }
+        }
+      }
+
+      if (moduleCount == 1)
+        retval = moduleLast;
+    }
+
+    yyfilename                    =  NULL;
+
+    yylloc.first_line             =    -1;
+    yylloc.first_column           =     0;
+    yylloc.last_line              =    -1;
+    yylloc.last_column            =     0;
+
+    yystartlineno                 =    -1;
+    chplLineno                    =    -1;
+
+    currentFileNamedOnCommandLine = false;
+
+  } else {
+    fprintf(stderr, "ParseFile: Unable to open \"%s\" for reading\n", filename);
   }
 
-  yyfilename          = NULL;
-
-  yylloc.first_column =    0;
-  yylloc.last_column  =    0;
-  yylloc.first_line   =   -1;
-  yylloc.last_line    =   -1;
-
-  yystartlineno       =   -1;
-  chplLineno          =   -1;
-
-  currentFileNamedOnCommandLine = false;
-
-  return newModule;
+  return retval;
 }
-
 
 ModuleSymbol* parseMod(const char* modname, ModTag modType) {
   bool          isInternal = (modType == MOD_INTERNAL) ? true : false;
@@ -322,7 +349,7 @@ void parseDependentModules(ModTag modtype) {
                         "see test/modules/bradc/modNamedNewStringBreaks.future"
                         " for details");
             }
-            
+
             mod->name = astr("chpl_", modName);
 
             UnresolvedSymExpr* newModNameExpr = new UnresolvedSymExpr(mod->name);
@@ -338,20 +365,52 @@ void parseDependentModules(ModTag modtype) {
 BlockStmt* parseString(const char* string,
                        const char* filename,
                        const char* msg) {
-  yyblock            = NULL;
-  yyfilename         = filename;
+  // State for the lexer
+  YY_BUFFER_STATE handle            =    0;
+  int             lexerStatus       =  100;
+  YYLTYPE         yylloc;
 
-  chplParseString    = true;
-  chplParseStringMsg = msg;
+  // State for the parser
+  yypstate*       parser            = yypstate_new();
+  int             parserStatus      = YYPUSH_MORE;
+  ParserContext   context;
 
-  lexerScanString(string);
-  yyparse();
+  yylex_init(&(context.scanner));
+
+  handle              = yy_scan_string(string, context.scanner);
+
+  yyblock             = NULL;
+  yyfilename          = filename;
+
+  chplParseString     = true;
+  chplParseStringMsg  = msg;
+
+  yylloc.first_line   = 1;
+  yylloc.first_column = 0;
+
+  yylloc.last_line    = 1;
+  yylloc.last_column  = 0;
+
+  while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
+    YYSTYPE yylval;
+
+    lexerStatus  = yylex(&yylval, &yylloc, context.scanner);
+
+    if (lexerStatus >= 0)
+      parserStatus          = yypush_parse(parser, lexerStatus, &yylval, &yylloc, &context);
+    else if (lexerStatus == YYLEX_BLOCK_COMMENT)
+      context.latestComment = yylval.pch;
+  }
 
   chplParseString    = false;
   chplParseStringMsg = NULL;
 
-  lexerResetFile();
+  // Cleanup after the paser
+  yypstate_delete(parser);
+
+  // Cleanup after the lexer
+  yy_delete_buffer(handle, context.scanner);
+  yylex_destroy(context.scanner);
 
   return yyblock;
 }
-
