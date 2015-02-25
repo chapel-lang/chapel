@@ -18,18 +18,6 @@
  */
 use Error;
 
-extern proc chpl_fs_chdir(name: c_string):syserr;
-extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
-extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
-extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
-extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
-extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
-extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
-extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
-extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
-extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
-extern proc chpl_fs_remove(name: c_string):syserr;
-
 
 /* Change the current working directory of the current locale to the specified
    name. Returns any errors that occurred via an out parameter.
@@ -40,6 +28,8 @@ extern proc chpl_fs_remove(name: c_string):syserr;
    will affect the current working directory of all tasks for that locale.
 */
 proc locale.chdir(out err: syserr, name: string) {
+  extern proc chpl_fs_chdir(name: c_string):syserr;
+
   on this {
     err = chpl_fs_chdir(name.c_str());
   }
@@ -70,6 +60,8 @@ proc locale.chdir(name: string) {
               potential values.
 */
 proc chmod(out err: syserr, name: string, mode: int) {
+  extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
+
   err = chpl_fs_chmod(name.c_str(), mode);
 }
 
@@ -99,6 +91,8 @@ proc chmod(name: string, mode: int){
    gid: group id to use as the new group owner, or -1 if it should remain the same.
 */
 proc chown(out err: syserr, name: string, uid: int, gid: int) {
+  extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
+
   err = chpl_fs_chown(name.c_str(), uid:c_int, gid:c_int);
 }
 
@@ -123,6 +117,8 @@ proc chown(name: string, uid: int, gid: int) {
    of this function in a parallel environment.
 */
 proc locale.cwd(out err: syserr): string {
+  extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
+
   var ret:string;
   on this {
     var tmp:c_string_copy;
@@ -158,6 +154,8 @@ proc locale.cwd(): string {
    name: a string used to attempt to find the file specified.
 */
 proc exists(out err: syserr, name: string): bool {
+  extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
+
   var ret:c_int;
   err = chpl_fs_exists(ret, name.c_str());
   return ret != 0;
@@ -180,6 +178,8 @@ proc exists(name: string): bool {
    name: a string that could be the name of a directory.
 */
 proc isDir(out err:syserr, name:string):bool {
+  extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
+
   var ret:c_int;
   err = chpl_fs_is_dir(ret, name.c_str());
   return ret != 0;
@@ -201,6 +201,8 @@ proc isDir(name:string):bool {
    name: a string that could be the name of a file.
 */
 proc isFile(out err:syserr, name:string):bool {
+  extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
+
   var ret:c_int;
   err = chpl_fs_is_file(ret, name.c_str());
   return ret != 0;
@@ -222,6 +224,8 @@ proc isFile(name:string):bool {
    name: a string that could be the name of a symbolic link.
 */
 proc isLink(out err:syserr, name: string): bool {
+  extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
+
   var ret:c_int;
   err = chpl_fs_is_link(ret, name.c_str());
   return ret != 0;
@@ -287,6 +291,8 @@ extern const S_ISVTX: int;
 */
 proc mkdir(out err: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
+  extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
+
   err = chpl_fs_mkdir(name.c_str(), mode, parents);
 }
 
@@ -321,6 +327,8 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
 proc rename(out error: syserr, oldname, newname: string) {
+  extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
+
   error = chpl_fs_rename(oldname.c_str(), newname.c_str());
 }
 
@@ -339,6 +347,8 @@ proc rename(oldname, newname: string) {
    err: a syserr used to indicate if an error occurred during removal
    name: the name of the file/directory to remove */
 proc remove(out err: syserr, name: string) {
+  extern proc chpl_fs_remove(name: c_string):syserr;
+
   err = chpl_fs_remove(name.c_str());
 }
 
