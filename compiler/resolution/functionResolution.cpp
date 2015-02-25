@@ -7041,7 +7041,8 @@ static void resolveAutoCopies() {
       continue; // Skip the "dmapped" pseudo-type.
 
     if (isRecord(ts->type) || getSyncFlags(ts).any() ||
-        isDomImplType(ts->type) || isArrayImplType(ts->type))
+        isDomImplType(ts->type) || isArrayImplType(ts->type) ||
+        isDistImplType(ts->type))
     {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);

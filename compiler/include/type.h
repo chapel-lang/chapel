@@ -278,6 +278,7 @@ bool isRefCountedType(Type* t);
 bool isRecordWrappedType(Type* t);
 bool isDomImplType(Type* t);
 bool isArrayImplType(Type* t);
+bool isDistImplType(Type* t);
 bool isSyncType(Type* t);
 bool isAtomicType(Type* t);
 

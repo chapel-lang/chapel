@@ -190,6 +190,21 @@ proc ReplicatedDist.dsiPrivatize(privatizeData: this.targetLocales.type)
   return new ReplicatedDist(privTargetLocales, "used during privatization");
 }
 
+pragma "auto copy fn"
+proc chpl__autoCopy(x: ReplicatedDist) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: ReplicatedDist) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // domains

@@ -953,7 +953,7 @@ noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
 // Preceding calls to the various build...() functions have copied out interesting parts
 // of the iterator function.
 // This function rips the guts out of the original iterator function and replaces them
-// with a simple function that just initializes the fields in the iterator class
+// with a simple function that just initializes the fields in the iterator record
 // with formal arguments of the original iterator that are live at yield sites within it.
 static void
 rebuildIterator(IteratorInfo* ii,
@@ -990,6 +990,8 @@ rebuildIterator(IteratorInfo* ii,
     // Get the corresponding field in the iterator class
     Symbol* field = local2field.get(local);
     Symbol* localValue = local;
+
+#ifndef REF_RECORDS_IN_IR
     if (local->type == field->type->refType) {
       // If a ref var, 
       // load the local into a temp and use this to set the value of the corresponding field.
@@ -1000,6 +1002,7 @@ rebuildIterator(IteratorInfo* ii,
                      new CallExpr(PRIM_DEREF, local)));
       localValue = tmp;
     }
+#endif
 
     // Very special code for record-wrapped types:
     // This is a workaround for weirdness in how record-wrapped types are
@@ -1014,7 +1017,9 @@ rebuildIterator(IteratorInfo* ii,
     // true).  Fixing the iterator code so that it could tolerate "these" items
     // passed by value might also work -- provided the rule is obeyed that the
     // referent outlasts any reference generated from it.
-    if (isDomImplType(localValue->type) || isArrayImplType(localValue->type))
+    if (isDomImplType(localValue->type) ||
+        isArrayImplType(localValue->type) ||
+        isDistImplType(localValue->type))
     {
       Symbol* tmp = newTemp("RWT_ir", localValue->type);
       fn->insertAtTail(new DefExpr(tmp));
@@ -1059,7 +1064,9 @@ rebuildGetIterator(IteratorInfo* ii) {
     
     // Very special iterator-only MM code!  See Note 1.
     VarSymbol* fieldWriteTmp = fieldReadTmp;
-    if (isDomImplType(field->type) || isArrayImplType(field->type))
+    if (isDomImplType(field->type) ||
+        isArrayImplType(field->type) ||
+        isDistImplType(field->type))
     {
       VarSymbol* tmp = newTemp("RWT_tmp", field->type);
       getIterator->insertBeforeReturn(new DefExpr(tmp));
@@ -1178,9 +1185,23 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
 
   if (local) {
     type = local->type;
-    // The return value is automatically dereferenced (I guess).
+#ifndef REF_RECORDS_IN_IR
+    // If the iterator is a method and the local variable is _this and it is a
+    // reference but the method is not a var method, then capture that value in
+    // a local variable and then use that to set the _this field in the IR.
+    // For var iterators, the user must ensure that the referenced object
+    // remains valid over the entire iteration.
     if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
-      type = type->getValType();
+    {
+      if (! (fn->thisTag & INTENT_FLAG_REF))
+        type = type->getValType();
+
+      // Debug only.  I want to expose cases where var iterator this fields are
+      // being copied by value.
+      else
+        INT_ASSERT(false);
+    }
+#endif
   }
 
   // Add a field to the class

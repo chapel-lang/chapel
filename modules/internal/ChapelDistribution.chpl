@@ -22,7 +22,6 @@ module ChapelDistribution {
   use List;
 
   extern proc chpl_task_yield();
-  extern proc printf(fmt: c_string, arg...);  // For debugging support.
 
   //
   // Abstract distribution class
@@ -93,6 +92,7 @@ module ChapelDistribution {
   
     inline proc incRefCount(cnt=1) {
       if debugDistRefCount {
+        extern proc printf(fmt: c_string, arg...);
         const nucnt = _distCnt.read();
         printf("----- INC count was %ld\n", cnt);
         if cnt < 0 || cnt > 1000 then
@@ -106,6 +106,7 @@ module ChapelDistribution {
       compilerAssert(!noRefCount);
       const cnt = _distCnt.dec();
       if debugDistRefCount {
+        extern proc printf(fmt: c_string, arg...);
         printf("----- DEC count now %ld\n", cnt);
         if cnt < 0 || cnt > 1000 then
             halt("distribution reference count is bogus!");

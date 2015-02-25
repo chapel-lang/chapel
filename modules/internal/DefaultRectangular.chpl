@@ -74,6 +74,21 @@ module DefaultRectangular {
     if defaultDist._value==nil then defaultDist = new dmap(new DefaultDist());
   }
   
+pragma "auto copy fn"
+proc chpl__autoCopy(x: DefaultDist) {
+  if ! noRefCount then
+    x.incRefCount();
+  return x;
+}
+
+proc chpl__autoDestroy(x: DefaultDist) {
+  if !noRefCount {
+    var cnt = x.destroyDist();
+    if cnt == 0 then
+      delete x;
+  }
+}
+
   class DefaultRectangularDom: BaseRectangularDom {
     param rank : int;
     type idxType;
