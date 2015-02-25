@@ -151,9 +151,12 @@ proc copy(src: string, dest: string, metadata: bool = false) {
    dest: the destination of the contents.
 */
 proc copyFile(out err: syserr, src: string, dest: string) {
-  extern proc chpl_fs_copyFile(src: c_string, dest: c_string): syserr;
-
-  err = chpl_fs_copyFile(src.c_str(), dest.c_str());
+  // Check if the files are the same, error if yes
+  // Make sure src exists - though if it doesn't, we can just create
+  // an empty file.
+  // Make sure dest is not a weird file (like a pipe)
+  // Open src for reading, open dest for writing
+  // read in, write out.
 }
 
 /* Copies the contents of the file indicated by src into the file indicated
