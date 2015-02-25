@@ -1224,7 +1224,7 @@ std::string AggregateType::docsSuperClass() {
     // If there are super classes, join them into a single comma delimited
     // string prefixed with a colon.
     std::string superClasses = " : " + superClassNames.front();
-    for (int i = 1; i < superClassNames.size(); i++) {
+    for (unsigned int i = 1; i < superClassNames.size(); i++) {
       superClasses += ", " + superClassNames.at(i);
     }
     return superClasses;
