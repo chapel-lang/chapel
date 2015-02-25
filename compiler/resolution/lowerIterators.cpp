@@ -1647,17 +1647,17 @@ expandForLoop(ForLoop* forLoop) {
     // getValue(), etc.  These are inserted in the order shown.
 
     SET_LINENO(forLoop);
-    
+
     Vec<Symbol*> iterators;
     Vec<Symbol*> indices;
-    
+
     SymExpr*     se1       = toSymExpr(forLoop->indexGet());
     VarSymbol*   index     = toVarSymbol(se1->var);
-    
+
     BlockStmt*   initBlock = new BlockStmt();
     BlockStmt*   testBlock = NULL;
     BlockStmt*   incrBlock = new BlockStmt();
-    
+
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
 
     // For each iterator we add the zip* functions in the appropriate place and

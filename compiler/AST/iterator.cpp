@@ -1244,8 +1244,7 @@ void lowerIterator(FnSymbol* fn) {
   collect_asts_postorder(fn, asts);
 
   BlockStmt* singleLoop = NULL;
-  if (CallExpr* singleLoopYield = isSingleLoopIterator(fn, asts))
-  {
+  if (CallExpr* singleLoopYield = isSingleLoopIterator(fn, asts)) {
     // If the iterator contains a single loop statement containing a single
     // yield, singleLoop is that loop statement; otherwise, it is NULL.
     singleLoop = toBlockStmt(singleLoopYield->parentExpr);
