@@ -24,10 +24,10 @@
 #include <stack>
 #include <string>
 
-#include "AstVisitor.h"
+#include "AstVisitorTraverse.h"
 
 
-class AstPrintDocs : public AstVisitor {
+class AstPrintDocs : public AstVisitorTraverse {
 public:
                   AstPrintDocs(std::ostream *file);
   virtual         ~AstPrintDocs();
@@ -41,72 +41,6 @@ public:
   virtual bool   enterModSym      (ModuleSymbol*      node);
   virtual void   exitModSym       (ModuleSymbol*      node);
   virtual void   visitVarSym      (VarSymbol*         node);
-
-  //
-  // These methods are _not_ actually used by this visitor, but must be
-  // implemented in order to meet the AstVisitor interface.
-  //
-  virtual bool   enterEnumType    (EnumType*          node);
-  virtual void   exitEnumType     (EnumType*          node);
-
-  virtual void   visitPrimType    (PrimitiveType*     node);
-
-  virtual bool   enterArgSym      (ArgSymbol*         node);
-  virtual void   exitArgSym       (ArgSymbol*         node);
-
-  virtual void   visitEnumSym     (EnumSymbol*        node);
-
-  virtual void   exitFnSym        (FnSymbol*          node);
-
-  virtual void   visitLabelSym    (LabelSymbol*       node);
-
-  virtual bool   enterTypeSym     (TypeSymbol*        node);
-  virtual void   exitTypeSym      (TypeSymbol*        node);
-
-  //
-  // The sub-classes of Expr
-  //
-  virtual bool   enterCallExpr    (CallExpr*          node);
-  virtual void   exitCallExpr     (CallExpr*          node);
-
-  virtual bool   enterDefExpr     (DefExpr*           node);
-  virtual void   exitDefExpr      (DefExpr*           node);
-
-  virtual bool   enterNamedExpr   (NamedExpr*         node);
-  virtual void   exitNamedExpr    (NamedExpr*         node);
-
-  virtual void   visitSymExpr     (SymExpr*           node);
-
-  virtual void   visitUsymExpr    (UnresolvedSymExpr* node);
-
-  //
-  // The sub-classes of Stmt
-  //
-  virtual bool   enterBlockStmt   (BlockStmt*         node);
-  virtual void   exitBlockStmt    (BlockStmt*         node);
-
-  virtual bool   enterWhileDoStmt (WhileDoStmt*       node);
-  virtual void   exitWhileDoStmt  (WhileDoStmt*       node);
-
-  virtual bool   enterDoWhileStmt (DoWhileStmt*       node);
-  virtual void   exitDoWhileStmt  (DoWhileStmt*       node);
-
-  virtual bool   enterCForLoop    (CForLoop*          node);
-  virtual void   exitCForLoop     (CForLoop*          node);
-
-  virtual bool   enterForLoop     (ForLoop*           node);
-  virtual void   exitForLoop      (ForLoop*           node);
-
-  virtual bool   enterParamForLoop(ParamForLoop*      node);
-  virtual void   exitParamForLoop (ParamForLoop*      node);
-
-  virtual bool   enterCondStmt    (CondStmt*          node);
-  virtual void   exitCondStmt     (CondStmt*          node);
-
-  virtual void   visitEblockStmt  (ExternBlockStmt*   node);
-
-  virtual bool   enterGotoStmt    (GotoStmt*          node);
-  virtual void   exitGotoStmt     (GotoStmt*          node);
 
 private:
   std::ostream*   file;
