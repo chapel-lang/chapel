@@ -110,6 +110,7 @@ public:
   virtual bool       isConstValWillNotChange()                 const;
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
+          bool       isRenameable()                            const;
 
   virtual void       codegenDef();
 

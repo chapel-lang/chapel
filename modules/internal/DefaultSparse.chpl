@@ -34,7 +34,7 @@ module DefaultSparse {
     var nnzDomSize = nnz;
     var nnzDom = {1..nnzDomSize};
 
-    var indices: [nnzDom] index(rank);
+    var indices: [nnzDom] index(rank, idxType);
 
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
@@ -106,8 +106,6 @@ module DefaultSparse {
     proc find(ind) {
       //
       // sjd: unfortunate specialization for rank == 1
-      // sjd: would it be better if indices were an array of rank*idxType?
-      // sjd: isn't it a bug as is because the idxType may not match index(rank)?
       //
       if rank == 1 && isTuple(ind) && ind.size == 1 then
         return BinarySearch(indices, ind(1), 1, nnz);

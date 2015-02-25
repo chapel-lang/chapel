@@ -58,6 +58,7 @@ module ChapelStandard {
   use ChapelDynDispHack;
 
   // Standard modules.
+  use Assert;
   use Types;
   use Math;
 

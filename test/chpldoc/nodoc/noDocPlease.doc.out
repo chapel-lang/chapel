@@ -1,8 +1,0 @@
-Module: Foo
-   config var blah4: int(64)
-   proc d()
-   Class: bar
-      var showMe: bool
-      inherited from object
-
-cat: docs/toBeIgnored.txt: No such file or directory

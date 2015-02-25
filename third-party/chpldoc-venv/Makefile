@@ -12,11 +12,11 @@ default: all
 
 all: $(CHPLDOC_VENV_SPHINX_BUILD)
 
-clean:
+clean: FORCE
 
-cleanall:
+cleanall: FORCE
 
-clobber: clean
+clobber: FORCE
 	rm -rf install
 
 $(PYTHON):
@@ -59,8 +59,14 @@ $(CHPLDOC_VENV_SPHINX_BUILD): $(CHPLDOC_VENV_VIRTUALENV_DIR)
 	pip install -U --force-reinstall -r requirements.txt
 
 # Phony convenience target for install python packages.
-install-requirements: $(CHPLDOC_VENV_SPHINX_BUILD)
+install-requirements: rm-sphinx-build $(CHPLDOC_VENV_SPHINX_BUILD)
+
+# Remove sphinx-build, forcing install-requirements to be rebuilt.
+rm-sphinx-build: FORCE
+	@rm -f $(CHPLDOC_VENV_SPHINX_BUILD)
 
 FORCE:
 
-.PHONY: install-requirements create-virtualenv virtualenv check-exes
+.PHONY: install-requirements create-virtualenv virtualenv check-exes rm-sphinx-build
+
+.NOTPARALLEL:

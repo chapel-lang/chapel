@@ -128,6 +128,9 @@ $(CHPLDOC): $(CHPL)
 
 chpldoc: $(CHPLDOC)
 
+parser:
+	$(MAKE) -C parser parser
+
 $(CHPL_BIN_DIR):
 	mkdir -p $@
 

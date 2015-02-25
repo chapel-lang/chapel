@@ -178,6 +178,7 @@ bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
 char fDocsFolder[256] = "";
 bool fDocsTextOnly = false;
+bool fDocsIncludeExterns = true;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -751,6 +752,7 @@ static ArgumentDescription arg_desc[] = {
  {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
  {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, setCommentLabel},
  {"docs-dir", ' ', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
+ // {"docs-externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL}, // Commented out because we aren't sure we want it yet.
  {"docs-text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
@@ -978,7 +980,7 @@ int main(int argc, char* argv[]) {
     if (fDocs == false && strcmp(sArgState.program_name, "chpldoc") == 0)
       fDocs = true;
 
-    runPasses(tracker, strcmp(sArgState.program_name, "chpldoc") == 0);
+    runPasses(tracker, fDocs);
   } else {
     ipeRun();
   }

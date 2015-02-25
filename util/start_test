@@ -89,6 +89,7 @@
 #   -memleaks
 #   -no-chpl-home-warn                Do not show warning when start_test invoked outside CHPL_HOME
 #   -progress                         Print pass/fail to stderr for each test. Does not work for directories.
+#   -test-root                        Absolute path to test dir. Set when test dir is not under CHPL_HOME.
 #   -junit-xml                        Create jUnit XML style report.
 #   -junit-xml-file <file>            Path to store jUnit XML report. When set, -junit-xml is implied.
 #   -junit-remove-prefix <prefix>     Remove <prefix> from all tests in jUnit report.
@@ -644,7 +645,8 @@ endif
 if ($?CHPL_TEST_UTIL_DIR) then
     set utildir = "$CHPL_TEST_UTIL_DIR"
 else
-    set utildir = "$CHPL_HOME/util"
+    set start_test_dir = `dirname $0`
+    set utildir = `cd $start_test_dir/../util && pwd`
     setenv CHPL_TEST_UTIL_DIR $utildir
 endif
 if (! -d $utildir || ! -x $utildir) then
@@ -720,8 +722,7 @@ set graphsdisprange = 1
 set graphsgendefault = "avg"
 set startdate = ""
 set genGraphOpts = ""
-set testfutures = 0
-set testfuturesonly = 0
+set futuresMode = 0
 set testnotests = 0
 set recurse = 1
 set tee = "tee"
@@ -733,6 +734,7 @@ set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
 set progress = 0
+set testRootDir = ""
 set junit_xml = 0
 set junit_xml_file = 0
 set junit_remove_prefix = 0
@@ -807,14 +809,28 @@ while ( $#argv > 0 )
     case -futures:
     case --futures:
         shift
-        set testfutures = 1
+        set futuresMode = 1
         breaksw
     case -futures-only
     case --futures-only
     case -futuresonly
     case --futuresonly
         shift
-        set testfuturesonly = 1
+        set futuresMode = 2
+        breaksw
+    case -futures-skipif
+    case --futures-skipif
+    case -futuresskipif
+    case --futuresskipif
+        shift
+        set futuresMode = 3
+        breaksw
+    # "undocumented" option, only meant to be used by other scripts
+    case -futures-mode:
+    case --futures-mode:
+        shift
+        set futuresMode = "$argv[1]"
+        shift
         breaksw
     case -i:
     case --interpret:
@@ -842,6 +858,14 @@ while ( $#argv > 0 )
         set performance = 1
         set gengraphs = 1
         set performancedescription = $argv[1]
+        shift
+        breaksw
+    case --performance-configurations:
+    case -performance-configurations:
+    case --performance-configs:
+    case -performance-configs:
+        shift
+        set genGraphOpts = "$genGraphOpts --configs $argv[1]"
         shift
         breaksw
     case --compperformance:
@@ -908,7 +932,7 @@ while ( $#argv > 0 )
     case --gengraphopts:
     case -gengraphopts:
         shift
-        set genGraphOpts = "$argv[1]"
+        set genGraphOpts = "$genGraphOpts $argv[1]"
         shift
         breaksw
     case -norecurse:
@@ -967,6 +991,12 @@ while ( $#argv > 0 )
         shift
         set progress = 1
         breaksw
+    case -test-root:
+    case --test-root:
+        shift
+        set testRootDir = $argv[1]
+        shift
+        breaksw
     case -junit-xml:
     case --junit-xml:
         shift
@@ -998,6 +1028,8 @@ while ( $#argv > 0 )
         echo "          -norecurse"
         echo "          -comp-only"
         echo "          -performance"
+        echo "          -performance-description"
+        echo "          -performance-configurations"
         echo "          -compperformance"
         echo "          -compperformance-description <description>"
         echo "          -num-trials <number>"
@@ -1008,7 +1040,8 @@ while ( $#argv > 0 )
         echo "          -startdate <MM/DD/YY> (currently: '')"
         echo "          -genGraphOpts OPT or -genGraphOpts 'OPT1 OPT2 ...'"
         echo "          -futures"
-        echo "          -futuresonly"
+        echo "          -futures-only"
+        echo "          -futures-skipif"
         echo "          -valgrind"
         echo "          -valgrindexe"
         echo "          -syspreexec <path>"
@@ -1022,6 +1055,7 @@ while ( $#argv > 0 )
         echo "          -memleaks <file>"
         echo "          -no-chpl-home-warn"
         echo "          -progress"
+        echo "          -test-root"
         echo "          -junit-xml"
         echo "          -junit-xml-file <file>  (implies -junit-xml)"
         echo "          -junit-remove-prefix <prefix>"
@@ -1049,6 +1083,10 @@ end
 
 if ($optionerr == 1) then
     exit 1
+endif
+
+if ($testRootDir != "") then
+    setenv CHPL_TEST_ROOT_DIR "$testRootDir"
 endif
 
 set invocationDir = "$cwd"
@@ -1202,10 +1240,10 @@ echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
 setenv CHPL_LOCALE_MODEL $locMod
 
 # we know that stdin redirection doesn't work for most launchers. only do
-# redirection when there's no launcher, or the launcher is amudprun, which we
-# know supports stdin redirection. Only set and alert user unless they threw
-# -nostdinredirect or -stdinredirect
-if ($launcher != "none" && $launcher != "amudprun") then
+# redirection when there's no launcher, or we know the launcher supports stdin
+# redirection (amudprun and slurm currently.) Set and alert user unless they
+# threw -nostdinredirect or -stdinredirect
+if ($launcher != "none" && $launcher != "amudprun" && $launcher != "slurm-srun") then
     if (! $?CHPL_NO_STDIN_REDIRECT && ! $?CHPL_TEST_FORCE_STDIN_REDIRECT ) then
         echo "[Info: assuming stdin redirection is not supported, skipping tests with stdin]" |& $tee -a $logfile
         setenv CHPL_NO_STDIN_REDIRECT true
@@ -1327,6 +1365,42 @@ if ($compperformance) then
     set combineCompPerf = $utildir/test/combineCompPerfData
 endif
 
+# save the sha for the current run so we can map dates to shas in the
+# performance and compiler performance graphs
+if ($performance || $compperformance) then
+
+  set datdir = ""
+  if ($performance) then
+    set datdir = $perfdir
+  else
+    set datdir = $compperfdir
+  endif
+
+  if (! -e $datdir) then
+      mkdir -p $datdir
+  endif
+
+  # output the key to a temp .perfkeys file for computePerfStats to use
+  set shaKey = "sha"
+  set shaPerfKeys = "$chplTestTmpDir/sha.perfkeys"
+  echo "$shaKey " > "$shaPerfKeys"
+
+  # output the shaKey and current sha to a temp file for computePerfStats to use
+  set shaOut = "$chplTestTmpDir/sha.exec.out.tmp"
+  echo "$shaKey `git rev-parse HEAD`" > "$shaOut"
+
+  # the name of the .dat file to store the sha (store in env var for gengraphs)
+  set shaDatFileName = "perfSha"
+  set shaDatFilePath = "$datdir/$shaDatFileName.dat"
+  setenv CHPL_TEST_SHA_DAT_FILE "$shaDatFilePath"
+
+  echo "[Saving current git sha to $shaDatFilePath]" |& $tee -a $logfile
+  "$utildir/test/computePerfStats" "$shaDatFileName" "$datdir" "$shaPerfKeys" "$shaOut"
+
+  if ( $status != 0 ) then
+      echo "[Error: Failed to save current sha to $shaDatFilePath]" |& $tee -a $logfile
+  endif
+endif
 
 
 # Auto-generate tests from the spec
@@ -1564,17 +1638,9 @@ end
 
 setenv CHPL_TEST_SINGLES 0
 
-# for this mode, only test futures and notests as specified
-# by the command-line flags
-if ($testfuturesonly == 1) then
-    setenv CHPL_TEST_FUTURES 2
-else
-    if ($testfutures == 1) then
-        setenv CHPL_TEST_FUTURES 1
-    else
-        setenv CHPL_TEST_FUTURES 0
-    endif
-endif
+# for this mode, test only futures that were specified on the command-line
+# (defaults to no futures)
+setenv CHPL_TEST_FUTURES $futuresMode
 
 if ($testnotests == 1) then
     setenv CHPL_TEST_NOTESTS 1
@@ -1847,6 +1913,10 @@ if ($junit_xml_file != 0) then
 endif
 if ($junit_remove_prefix != 0) then
     set junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
+else if ($testRootDir != "") then
+    # If --test-root was thrown, also remove it from the junit report (in case
+    # something slipped through in sub_test).
+    set junit_args = "$junit_args --remove-prefix=$testRootDir"
 endif
 if ($suppressions != "") then
     set junit_args = "$junit_args --suppress=$suppressions"

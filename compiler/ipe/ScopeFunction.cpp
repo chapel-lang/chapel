@@ -19,7 +19,6 @@
 
 #include "ScopeFunction.h"
 
-#include "IpeSymbol.h"
 #include "stmt.h"
 #include "symbol.h"
 
@@ -36,15 +35,6 @@ ScopeFunction::ScopeFunction(FnSymbol* fn, const ScopeBase* parent) : ScopeBase(
     INT_ASSERT(defExpr);
 
     formal = toArgSymbol(defExpr->sym);
-
-    if (formal == 0)
-    {
-      IpeSymbol* ipe = toIpeSymbol(defExpr->sym);
-
-      INT_ASSERT(ipe);
-
-      formal = toArgSymbol(ipe->symbol());
-    }
 
     INT_ASSERT(formal);
 

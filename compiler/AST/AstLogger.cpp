@@ -62,9 +62,6 @@ bool AstLogger::enterFnSym(FnSymbol* node) {
 void AstLogger::exitFnSym(FnSymbol* node) {
 }
 
-void AstLogger::visitIpeSym(IpeSymbol* node) {
-}
-
 void AstLogger::visitLabelSym(LabelSymbol* node) {
 }
 

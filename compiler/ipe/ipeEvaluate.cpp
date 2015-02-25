@@ -21,7 +21,6 @@
 
 #include "AstDumpToNode.h"
 #include "IpeEnvironment.h"
-#include "IpeSymbol.h"
 #include "IpeValue.h"
 
 #include "alist.h"
@@ -51,6 +50,8 @@ static IpeValue        evaluate(CallExpr*     expr,    IpeEnvironment* env);
 static IpeValue        evaluateCall  (CallExpr* callExpr, IpeEnvironment* env);
 static IpeValue        evaluatePrimop(CallExpr* callExpr, IpeEnvironment* env);
 
+static bool            isImmediate(Symbol* sym);
+
 void ipeEvaluate()
 {
   IpeEnvironment* rootEnv = createRootEnvironment();
@@ -68,18 +69,18 @@ void ipeEvaluate()
 *                                                                           *
 ************************************* | ************************************/
 
-static void collectTopLevelVariables(std::vector<IpeSymbol*>& variables);
+static void collectTopLevelVariables(std::vector<LcnSymbol*>& variables);
 
 static IpeEnvironment* createRootEnvironment()
 {
-  std::vector<IpeSymbol*> variables;
+  std::vector<LcnSymbol*> variables;
 
   collectTopLevelVariables(variables);
 
   return new IpeEnvironment(0, variables);
 }
 
-static void collectTopLevelVariables(std::vector<IpeSymbol*>& variables)
+static void collectTopLevelVariables(std::vector<LcnSymbol*>& variables)
 {
   for_alist(rootStmt, rootModule->block->body)
   {
@@ -93,7 +94,7 @@ static void collectTopLevelVariables(std::vector<IpeSymbol*>& variables)
           {
             if (DefExpr* defExpr = toDefExpr(stmt))
             {
-              if (IpeSymbol* symbol = toIpeSymbol(defExpr->sym))
+              if (LcnSymbol* symbol = toLcnSymbol(defExpr->sym))
               {
                 variables.push_back(symbol);
               }
@@ -306,10 +307,14 @@ static IpeValue evaluate(SymExpr* expr, IpeEnvironment* env)
 {
   IpeValue retval;
 
-  if (VarSymbol* symbol = toVarSymbol(expr->var))
-    retval = evaluate(symbol, env);
+  if (isImmediate(expr->var) == true)
+  {
+    VarSymbol* var  = toVarSymbol(expr->var);
 
-  else if (IpeSymbol* variable = toIpeSymbol(expr->var))
+    retval = evaluate(var, env);
+  }
+
+  else if (LcnSymbol* variable = toLcnSymbol(expr->var))
     retval = env->lookup(variable);
 
   else
@@ -333,7 +338,7 @@ static IpeValue evaluate(DefExpr* defExpr, IpeEnvironment* env)
 {
   IpeValue retval;
 
-  if (IpeSymbol* sym = toIpeSymbol(defExpr->sym))
+  if (LcnSymbol* sym = toLcnSymbol(defExpr->sym))
   {
     IpeValue value;
 
@@ -397,13 +402,13 @@ static IpeValue evaluateCall(CallExpr* callExpr, IpeEnvironment* env)
     int                     newEnvSize = environmentSize(fnSymbol);
     IpeEnvironment*         newEnv     = NULL;
 
-    std::vector<IpeSymbol*> formals;
+    std::vector<LcnSymbol*> formals;
     std::vector<IpeValue>   actuals;
 
     for (int i = 0; i < callExpr->numActuals(); i++)
     {
       DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(i + 1));
-      IpeSymbol* formal  = toIpeSymbol(defExpr->sym);
+      LcnSymbol* formal  = toLcnSymbol(defExpr->sym);
 
       INT_ASSERT(formal);
 
@@ -449,7 +454,7 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeEnvironment* env)
   else if (callExpr->isPrimitive(PRIM_ASSIGN) == true)
   {
     SymExpr*   dstSymExpr = toSymExpr(callExpr->get(1));
-    IpeSymbol* variable   = toIpeSymbol(dstSymExpr->var);
+    LcnSymbol* variable   = toLcnSymbol(dstSymExpr->var);
     IpeValue   value      = evaluate(callExpr->get(2), env);
 
     INT_ASSERT(variable);
@@ -705,7 +710,7 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeEnvironment* env)
 ************************************* | ************************************/
 
 static int environmentSize(Symbol*       symbol,    int currMax);
-static int environmentSize(IpeSymbol*    symbol,    int currMax);
+static int environmentSize(LcnSymbol*    symbol,    int currMax);
 
 static int environmentSize(Expr*         expr,      int currMax);
 
@@ -729,7 +734,7 @@ static int environmentSize(Symbol* symbol, int currMax)
   if (false)
     ;
 
-  else if (IpeSymbol*    sym = toIpeSymbol(symbol))
+  else if (LcnSymbol*    sym = toLcnSymbol(symbol))
     currMax = environmentSize(sym, currMax);
 
   else if (FnSymbol*     sym = toFnSymbol(symbol))
@@ -750,8 +755,8 @@ static int environmentSize(Symbol* symbol, int currMax)
   return currMax;
 }
 
-// NOAKES 2015/01/26: IpeSymbol is currently of fixed size 8
-static int environmentSize(IpeSymbol* symbol, int currMax)
+// NOAKES 2015/01/26: LcnSymbol is currently of fixed size 8
+static int environmentSize(LcnSymbol* symbol, int currMax)
 {
   return symbol->offset() + 8;
 }
@@ -833,7 +838,7 @@ static int environmentSize(CondStmt* condStmt, int currMax)
 
 static int environmentSize(DefExpr* defExpr, int currMax)
 {
-  if (IpeSymbol* ipe = toIpeSymbol(defExpr->sym))
+  if (LcnSymbol* ipe = toLcnSymbol(defExpr->sym))
     currMax = environmentSize(ipe, currMax);
 
   return currMax;
@@ -842,4 +847,14 @@ static int environmentSize(DefExpr* defExpr, int currMax)
 static int environmentSize(CallExpr* callExpr, int currMax)
 {
   return currMax;
+}
+
+static bool isImmediate(Symbol* sym)
+{
+  bool retval = false;
+
+  if (VarSymbol* var = toVarSymbol(sym))
+    retval = (var->immediate != 0) ? true : false;
+
+  return retval;
 }
