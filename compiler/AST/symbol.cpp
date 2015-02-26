@@ -319,7 +319,10 @@ std::string VarSymbol::docsDirective() {
   if (fDocsTextOnly) {
     result = "";
   } else {
-    if (this->isType()) {
+    // Global type aliases become type directives. Types that are also fields
+    // could be generics, so let them be treated as regular fields (i.e. use
+    // the attribute directive).
+    if (this->isType() && !this->isField) {
       result = ".. type:: ";
     } else if (this->isField) {
       result = ".. attribute:: ";
