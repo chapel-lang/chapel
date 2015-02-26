@@ -581,6 +581,7 @@ extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
+extern VarSymbol *gCastChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;
