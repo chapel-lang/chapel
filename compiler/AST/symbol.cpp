@@ -309,6 +309,11 @@ bool VarSymbol::isParameter() const {
 }
 
 
+bool VarSymbol::isType() const {
+  return hasFlag(FLAG_TYPE_VARIABLE);
+}
+
+
 std::string VarSymbol::docsDirective() {
   std::string result;
   if (fDocsTextOnly) {
