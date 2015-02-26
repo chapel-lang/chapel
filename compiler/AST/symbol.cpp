@@ -319,8 +319,6 @@ std::string VarSymbol::docsDirective() {
   if (fDocsTextOnly) {
     result = "";
   } else {
-    // TODO: If this is a type (i.e. this->isType()), use
-    //       ".. type:: " as directive. (thomasvandoren, 2015-02-21)
     if (this->isType()) {
       result = ".. type:: ";
     } else if (this->isField) {
