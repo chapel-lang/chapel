@@ -156,7 +156,7 @@ const IOHINT_NONE = 0:c_int;
 /** RANDOM means we expect random access to a file */
 const IOHINT_RANDOM = QIO_HINT_RANDOM;
 
-/*  SEQUENTAL means expect sequential access. On
+/*  SEQUENTIAL means expect sequential access. On
     Linux, this should double the readahead.
  */
 const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
