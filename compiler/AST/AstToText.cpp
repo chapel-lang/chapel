@@ -59,10 +59,7 @@ void AstToText::appendNameAndFormals(FnSymbol* fn)
 
 void AstToText::appendName(FnSymbol* fn)
 {
-  if (developer == true)
-    mText += fn->name;
-
-  else if (fn->hasFlag(FLAG_MODULE_INIT))
+  if (fn->hasFlag(FLAG_MODULE_INIT))
   {
     INT_ASSERT(strncmp(fn->name, "chpl__init_",      11) == 0);
 
