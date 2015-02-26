@@ -166,6 +166,12 @@ static void ensureTmpDirExists() {
 }
 
 
+void deleteDir(const char* dirname) {
+  const char* cmd = astr("rm -rf ", dirname);
+  mysystem(cmd, astr("removing directory: ", dirname));
+}
+
+
 void deleteTmpDir() {
   static int inDeleteTmpDir = 0; // break infinite recursion
 
@@ -181,10 +187,7 @@ void deleteTmpDir() {
         strcmp(tmpdirname, "//") == 0) {
       INT_FATAL("tmp directory name looks fishy");
     }
-    const char* rmdircommand = "rm -r ";
-    const char* command = astr(rmdircommand, tmpdirname);
-
-    mysystem(command, "removing temporary directory");
+    deleteDir(tmpdirname);
     tmpdirname = NULL;
   }
 #endif
