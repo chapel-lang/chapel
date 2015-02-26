@@ -492,7 +492,6 @@ inline proc safe_cast(type T, val) : T where isIntType(T) && isIntegralType(val.
   return val:T;
 }
 
-
 //
 // identity functions (for reductions)
 //
