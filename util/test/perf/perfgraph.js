@@ -569,7 +569,9 @@ function perfGraphInit() {
         checkBox.checked = false;
       }
       checkBox.onchange = function() {
-        var configsURL = normalizeForURL(getCheckedConfigurations().join());
+        // even if the checked configs match the 'default' configs put them in
+        // the URL since the default configs could change over time.
+        var configsURL = normalizeArrayForURL(getCheckedConfigurations());
         setQueryStringFromOption(OptionsEnum.CONFIGURATIONS, configsURL);
 
         applyFnToAllGraphs(function(g) {
@@ -810,28 +812,23 @@ function setURLFromGraphs(suite) {
   suite = normalizeForURL(suite);
   // if no suite was selected, mark individual graphs
   if (suite === normalizeForURL(NO_SUITE)) {
-    var curGraphs = '';
-    var allChecked = true;
+    var curGraphs = [];
     for (var i = 0; i < allGraphs.length; i++) {
       var checkBox = document.getElementById('graph' + i);
       if (checkBox.checked) {
-        curGraphs += normalizeForURL(allGraphs[i].title) + ',';
-      } else {
-        allChecked = false;
+        curGraphs.push(allGraphs[i].title);
       }
     }
-
-    // remove the trailing ',' from the list of checked graphs
-    curGraphs = curGraphs.removeTrailingChar();
 
     // special case for if all graphs are selected. probably not needed
     // but this is the most common case where a lot of graphs are selected
     // and for some browsers we might be exceeding a url length limit
-    if (allChecked) {
-      curGraphs = 'all';
+    if (allGraphs.length === curGraphs.length) {
+      curGraphs = ['all'];
     }
 
-    setQueryStringFromOption(OptionsEnum.GRAPHS, curGraphs);
+    var curGraphsURL = normalizeArrayForURL(curGraphs);
+    setQueryStringFromOption(OptionsEnum.GRAPHS, curGraphsURL);
     setQueryStringFromOption(OptionsEnum.SUITE, '');
   }
   // if a suite was selected
@@ -1202,11 +1199,22 @@ function defaultFor(arg, defaultVal) {
 }
 
 
-// removes all characters that are not alphanumeric or commas and convert to
-// lowercase
+// normalizes each element of the array and converts the array to a comma
+// separated string. Does not modify original array
+function normalizeArrayForURL(arr) {
+  // slice, don't modify original array
+  var copy = arr.slice()
+  for (var i = 0 ; i < copy.length; i++) {
+    copy[i] = normalizeForURL(copy[i]);
+  }
+  return copy.toString();
+}
+
+
+// removes all characters that are not alphanumeric and converts to lowercase
 function normalizeForURL(str) {
   // pull regex out of replace so it gets precompiled
-  var unwantedURLCharsRegex = /[^a-z0-9,]/g;
+  var nonAlphaNumRegex = /[^a-z0-9]/g;
   // convert to lower case first so regex doesn't have to be case insensitive
-  return str.toLowerCase().replace(unwantedURLCharsRegex, '');
+  return str.toLowerCase().replace(nonAlphaNumRegex, '');
 }
