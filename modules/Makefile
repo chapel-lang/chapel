@@ -49,7 +49,8 @@ $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	cd $(@D) && ( $(MAKE_SYS_BASIC_TYPES) > $(@F) || { rm -f $(@F) && false ; } )
 
 MODULES_TO_DOCUMENT = \
-	standard/Random.chpl
+	standard/Random.chpl \
+	standard/Buffers.chpl
 
 documentation:
 	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
