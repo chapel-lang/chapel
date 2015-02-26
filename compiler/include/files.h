@@ -42,8 +42,9 @@ struct fileinfo {
 
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false);
 
-const char* makeTempDir(const char* dirPrefix);
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
+const char* getCwd();
+const char* makeTempDir(const char* dirPrefix);
 void deleteDir(const char* dirname);
 void deleteTmpDir(void);
 const char* objectFileForCFile(const char* cfile);

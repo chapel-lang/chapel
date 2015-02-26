@@ -87,6 +87,17 @@ void ensureDirExists(const char* dirname, const char* explanation) {
 }
 
 
+/* Returns the current working directory. */
+const char* getCwd() {
+  char cwd[PATH_MAX];
+  if (const char* result = getcwd(cwd, PATH_MAX)) {
+    return result;
+  } else {
+    return "";
+  }
+}
+
+
 static void removeSpacesFromString(char* str)
 {
   char* src = str;
