@@ -56,21 +56,35 @@ void docs(void) {
 
     std::string docsTempDir = makeTempDir("chpldoc-");
 
-    std::string docsDir = (strlen(fDocsFolder) > 0) ? fDocsFolder : "docs";
-    std::string docsFolderName = docsDir;
-
-    if (!fDocsTextOnly) {
-      docsFolderName = generateSphinxProject(docsDir);
+    // This is the final location for the output format (e.g. the html files.).
+    std::string docsOutputDir;
+    if (strlen(fDocsFolder) > 0) {
+      docsOutputDir = fDocsFolder;
+    } else {
+      docsOutputDir = astr(getCwd(), "/", "docs");
+      printf(astr(docsOutputDir.c_str(), "\n"));
     }
 
-    mkdir(docsFolderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    // The location of intermediate files (e.g. .rst files).
+    std::string docsWorkDir;
+    if (fDocsTextOnly) {
+      // For text-only mode, the output and working location is the same.
+      docsWorkDir = docsOutputDir;
+    } else {
+      // For rst mode, the working location is somewhere inside the temp dir.
+      docsWorkDir = generateSphinxProject(docsTempDir);
+    }
 
-    
+    // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
+    mkdir(docsWorkDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    mkdir(docsOutputDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+
+
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
         if (isNotSubmodule(mod)) {
-          std::ofstream *file = openFileFromMod(mod, docsFolderName);
+          std::ofstream *file = openFileFromMod(mod, docsWorkDir);
 
           AstPrintDocs *docsVisitor = new AstPrintDocs(file);
           mod->accept(docsVisitor);
@@ -88,7 +102,7 @@ void docs(void) {
     }
 
     if (!fDocsTextOnly) {
-      generateSphinxOutput(docsDir);
+      generateSphinxOutput(docsTempDir, docsOutputDir);
     }
 
     deleteDir(docsTempDir.c_str());
@@ -227,9 +241,6 @@ void createDocsFileFolders(std::string filename) {
  * should be placed.
  */
 std::string generateSphinxProject(std::string dirpath) {
-  // FIXME: This ought to be done in a TMPDIR, unless --save-rst is
-  //        provided... (thomasvandoren, 2015-01-29)
-
   // Create the output dir under the docs output dir.
   const char * sphinxDir = dirpath.c_str();
 
@@ -247,25 +258,27 @@ std::string generateSphinxProject(std::string dirpath) {
 }
 
 /* Call `make html` from inside sphinx project. */
-void generateSphinxOutput(std::string dirpath) {
-  const char * sphinxDir = dirpath.c_str();
-
+void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   // The virtualenv activate script is at:
   //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/activate
   const char * activate = astr(
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
     CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/activate");
 
-  // Run: `. $activate && cd $sphinxDir && $CHPL_MAKE html`
+  // Run:
+  //   . $activate && cd $sphinxDir &&
+  //     sphinx-build -b html -d build/doctrees -W source $outputDir
   const char * cmd = astr(
     ". ", activate,
-    " && cd ", sphinxDir, " && ",
-    CHPL_MAKE, " html");
+    " && cd ", sphinxDir.c_str(), " && ",
+    "sphinx-build -b html -d build/doctrees -W source ", outputDir.c_str());
   mysystem(cmd, "building html output from chpldoc sphinx project");
+  printf(astr("HTML files are at: ", outputDir.c_str(), "\n"));
+  printf("Begin by opening index.html in a browser.\n");
 }
 
 
-std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
+std::string filenameFromMod(ModuleSymbol *mod, std::string docsWorkDir) {
   std::string filename = mod->filename;
 
   if (mod->modTag == MOD_INTERNAL) {
@@ -280,7 +293,7 @@ std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
       filename = "";
     }
   }
-  filename = docsFolderName + "/" + filename;
+  filename = docsWorkDir + "/" + filename;
   createDocsFileFolders(filename);
 
   // Creates files for each top level module.
@@ -294,7 +307,7 @@ std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
 }
 
 
-std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsFolderName) {
-  std::string filename = filenameFromMod(mod, docsFolderName);
+std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsWorkDir) {
+  std::string filename = filenameFromMod(mod, docsWorkDir);
   return new std::ofstream(filename.c_str(), std::ios::out);
 }
