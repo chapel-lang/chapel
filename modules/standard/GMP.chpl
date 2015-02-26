@@ -305,8 +305,8 @@ module GMP {
     var mpz:mpz_t;
 
     // initializing integers (constructors)
-    proc BigInt(init2:bool, nbits:c_ulong) {
-      mpz_init2(this.mpz, nbits);
+    proc BigInt(init2:bool, nbits:uint) {
+      mpz_init2(this.mpz, safe_cast(c_ulong, nbits));
     }
     proc BigInt(num:c_long) {
       mpz_init_set_si(this.mpz, num);
@@ -417,11 +417,11 @@ module GMP {
         }
       }
     }
-    proc get_ui():c_ulong
+    proc get_ui():uint
     {
       var x:c_ulong;
       on this do x = mpz_get_ui(this.mpz);
-      return x;
+      return safe_cast(uint, x);
     }
     proc get_si():c_long
     {
@@ -520,11 +520,11 @@ module GMP {
         if acopy then delete a_;
       }
     }
-    proc mul_ui(a:BigInt, b:c_ulong)
+    proc mul_ui(a:BigInt, b:uint)
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_mul_ui(this.mpz, a_.mpz, b);
+        mpz_mul_ui(this.mpz, a_.mpz, safe_cast(c_ulong, b));
         if acopy then delete a_;
       }
     }
@@ -556,11 +556,11 @@ module GMP {
         if bcopy then delete b_;
       }
     }
-    proc submul_ui(a:BigInt, b:c_ulong)
+    proc submul_ui(a:BigInt, b:uint)
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_submul_ui(this.mpz, a_.mpz, b);
+        mpz_submul_ui(this.mpz, a_.mpz, safe_cast(c_ulong, b));
         if acopy then delete a_;
       }
     }
