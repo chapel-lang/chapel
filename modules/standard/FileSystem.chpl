@@ -360,3 +360,93 @@ proc remove(name: string) {
   remove(err, name);
   if err != ENOERR then ioerror(err, "in remove", name);
 }
+
+/* Returns true if both pathnames refer to the same file or directory
+   (utilizing operating system operations rather than string ones), returns
+   false otherwise.
+   err: a syserr used to indicate if an error occurred during comparison
+   file1, file2: string representations of paths to be compared.
+*/
+proc sameFile(out err: syserr, file1: string, file2: string): bool {
+  extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
+
+  var ret:c_int;
+  err = chpl_fs_samefile_string(ret, file1.c_str(), file2.c_str());
+  return ret != 0;
+}
+
+/* Returns true if both pathnames refer to the same file or directory
+   (utilizing operating system operations rather than string ones), returns
+   false otherwise.  May generate an error message.
+   file1, file2: string representations of paths to be compared.
+*/
+proc sameFile(file1: string, file2: string): bool {
+  var err:syserr = ENOERR;
+  var result = sameFile(err, file1, file2);
+  if err != ENOERR then ioerror(err, "in sameFile " + file1, file2);
+  return result;
+}
+
+/* Same as the above function, but taking file records instead of string
+   pathnames as arguments.
+*/
+proc sameFile(out err: syserr, file1: file, file2: file): bool {
+  extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
+                               file2: qio_file_ptr_t): syserr;
+
+  var ret:c_int;
+  if (is_c_nil(file1._file_internal) || is_c_nil(file2._file_internal)) {
+    // Implementation note on program design tradeoffs:
+    // I could use file.check() here.  That would not rely on the understanding
+    // of file's internals.  However, it would cause this method to either
+    // return error messages or halt, depending on the error encountered.
+    // This check could be moved to the version w/o the err argument, but if
+    // someone called this function w/o going through that, we'd lose the
+    // check.  Also, we already must make use of the record internals to do the
+    // inner comparison (since the record is a chapel construct), so there's no
+    // additional harm.
+
+    // The file is referencing a null file.  We'll get a segfault if we
+    // continue.
+    err = EBADF;
+    return false; // This part isn't as important as the error.
+  }
+
+
+  err = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
+  return ret != 0;
+}
+
+/* Same as the above function, but taking file records instead of string
+   pathnames as arguments.  May generate an error message.
+*/
+proc sameFile(file1: file, file2: file): bool {
+  var err:syserr = ENOERR;
+  var result = sameFile(err, file1, file2);
+  if err != ENOERR then ioerror(err, "in sameFile " + file1.path, file2.path);
+  return result;
+}
+
+/* Returns an integer representing the current permissions of the file specified
+   by name.  May generate an error message.
+   err: a syserr used to indicate if an error occurred during this function
+   name: the name of the file that you want to know the permissions of.
+*/
+proc viewMode(out err: syserr, name: string): int {
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
+
+  var ret:c_int;
+  err = chpl_fs_viewmode(ret, name.c_str());
+  return ret;
+}
+
+/* Returns an integer representing the current permissions of the file specified
+   by name.  May generate an error message.
+   name: the name of the file that you want to know the permissions of.
+*/
+proc viewMode(name: string): int {
+  var err:syserr = ENOERR;
+  var result = viewMode(err, name);
+  if err != ENOERR then ioerror(err, "in viewMode", name);
+  return result;
+}
