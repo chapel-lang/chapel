@@ -64,7 +64,8 @@ void docs(void) {
     if (strlen(fDocsSphinxDir) > 0) {
       docsSphinxDir = fDocsSphinxDir;
     } else {
-      docsSphinxDir = makeTempDir("chpldoc-");
+      docsTempDir = makeTempDir("chpldoc-");
+      docsSphinxDir = docsTempDir;
     }
 
     // The location of intermediate rst files.
