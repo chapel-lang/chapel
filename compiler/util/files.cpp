@@ -101,35 +101,61 @@ static void removeSpacesFromString(char* str)
 }
 
 
+/*
+ * Find the default tmp directory. Try getting the tmp dir from the ISO/IEC
+ * 9945 env var options first, then P_tmpdir, then "/tmp".
+ */
+static const char* getTempDir() {
+  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
+  for (unsigned int i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
+    const char* curDir = getenv(possibleDirsInEnv[i]);
+    if (curDir != NULL) {
+      return curDir;
+    }
+  }
+#ifdef P_tmpdir
+  return P_tmpdir;
+#endif
+  return "/tmp";
+}
+
+
+static const char* makeTempDir(const char* dirPrefix) {
+  // FIXME: This doesn't really work, yet. It mainly just replicates old behavior.
+  const char* tmpdirprefix = astr(getTempDir(), "/", dirPrefix);
+  const char* tmpdirsuffix = ".deleteme";
+
+  pid_t mypid = getpid();
+#ifdef DEBUGTMPDIR
+  mypid = 0;
+#endif
+
+  char mypidstr[MAX_CHARS_PER_PID];
+  snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
+
+  struct passwd* passwdinfo = getpwuid(geteuid());
+  const char* userid;
+  if (passwdinfo == NULL) {
+    userid = "anon";
+  } else {
+    userid = passwdinfo->pw_name;
+  }
+  char* myuserid = strdup(userid);
+  removeSpacesFromString(myuserid);
+
+  const char* tmpDir = astr(tmpdirprefix, myuserid, mypidstr, tmpdirsuffix);
+  ensureDirExists(tmpDir, "making temporary directory");
+
+  free(myuserid); myuserid = NULL;
+
+  return tmpDir;
+}
+
 static void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
     if (tmpdirname == NULL) {
-      const char* tmpdirprefix = "/tmp/chpl-";
-      const char* tmpdirsuffix = ".deleteme";
-
-      pid_t mypid = getpid();
-#ifdef DEBUGTMPDIR
-      mypid = 0;
-#endif
-
-      char mypidstr[MAX_CHARS_PER_PID];
-      snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
-
-      struct passwd* passwdinfo = getpwuid(geteuid());
-      const char* userid;
-      if (passwdinfo == NULL) {
-        userid = "anon";
-      } else {
-        userid = passwdinfo->pw_name;
-      }
-      char* myuserid = strdup(userid);
-      removeSpacesFromString(myuserid);
-
-      tmpdirname = astr(tmpdirprefix, myuserid, mypidstr, tmpdirsuffix);
+      tmpdirname = makeTempDir("chpl-");
       intDirName = tmpdirname;
-      ensureDirExists(intDirName, "making temporary directory");
-
-      free(myuserid); myuserid = NULL;
     }
   } else {
     if (intDirName != saveCDir) {
