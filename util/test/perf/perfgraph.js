@@ -59,6 +59,9 @@ var multiConfs = configurations.length != 0;
 if (!multiConfs) { configurations = ['']; }
 var defaultConfiguration = configurations[0];
 
+// Experimental: used to toggle how stroke pattern and line colors are used for
+// multi-configs
+var diffColorForEachConfig = false;
 
 // This is used to get the next div for the graph and legend. This is important
 // for graph expansion because we need to be able to add the expanded graphs
@@ -333,17 +336,6 @@ function updateAnnotationsSeries(g) {
 }
 
 
-// reset the stoke pattern for all graphs based on the currently displayed
-// configurations
-function resetStrokePattern() {
-  var curConfigs = getCheckedConfigurations();
-
-  applyFnToAllGraphs(function(g) {
-    var graphSeries = g.getLabels().slice(1);
-    var seriesOpts = genPerSeriesStrokePattern(graphSeries, curConfigs);
-    g.updateOptions({ series: seriesOpts });
-  });
-}
 
 
 // generate an object with an element for each series whose value is the stroke
@@ -359,12 +351,34 @@ function genPerSeriesStrokePattern(graphSeries, configs) {
   var strokePatterns = [SOLID_LINE, Dygraph.DASHED_LINE, Dygraph.DOT_DASH_LINE, Dygraph.DOTTED_LINE ];
 
   var seriesOptions = {};
-  for (var i = 0; i < graphSeries.length; i++) {
-    seriesOptions[graphSeries[i]] = {'strokePattern': SOLID_LINE};
-    for (var j = 0; j < configs.length; j++) {
-      if (graphSeries[i].endsWith(configs[j])) {
-        var strokePattern = strokePatterns[j%strokePatterns.length];
-        seriesOptions[graphSeries[i]] = {'strokePattern': strokePattern};
+  // generate per series options
+  if (multiConfs) {
+    // same stroke pattern for each series (color differentiates configs)
+    if (diffColorForEachConfig) {
+      var counter = 0;
+      for (var i = 0; i < graphSeries.length; i++) {
+        if (configs.length > 0 && graphSeries[i].endsWith(configs[0])) {
+          for (var j = 0; j < configs.length; j++) {
+            var confLabel = graphSeries[i].replace(configs[0], configs[j]);
+            var confIndex = graphSeries.indexOf(confLabel);
+            if (confIndex >= 0) {
+              var strokePattern = strokePatterns[counter%strokePatterns.length];
+              seriesOptions[confLabel] = {'strokePattern': strokePattern};
+            } else {console.log(confLabel);}
+          }
+          counter++
+        }
+      }
+    // different stroke pattern for each config (color differentiates series)
+    } else {
+      for (var i = 0; i < graphSeries.length; i++) {
+        seriesOptions[graphSeries[i]] = {'strokePattern': SOLID_LINE};
+        for (var j = 0; j < configs.length; j++) {
+          if (graphSeries[i].endsWith(configs[j])) {
+            var strokePattern = strokePatterns[j%strokePatterns.length];
+            seriesOptions[graphSeries[i]] = {'strokePattern': strokePattern};
+          }
+        }
       }
     }
   }
@@ -374,8 +388,6 @@ function genPerSeriesStrokePattern(graphSeries, configs) {
 
 // generate a list of colors to use for multi-conf graphs. Takes graphsSeries
 // which is the list of series for the graph and should not contain the 'Date'.
-// Note that this function does NOT work correctly if multi-confs aren't being
-// used. It will return an empty list in that case
 function genSeriesColors(graphSeries) {
   var colors = [];
 
@@ -405,19 +417,33 @@ function genSeriesColors(graphSeries) {
 
   // generate colors for multi-conf graphs
   if (multiConfs) {
-    var counter = 0;
-    for (var i = 0; i < graphSeries.length; i++) {
-      if (graphSeries[i].endsWith(defaultConfiguration)) {
-        var numColors = Math.ceil(graphSeries.length / configurations.length);
-        var colorStr = calcColor(counter, numColors);
+    // Give each config a unique color (stroke pattern differentiates series)
+    if (diffColorForEachConfig) {
+      var configColors = [];
+      for (var i = 0; i < graphSeries.length; i++) {
         for (var j = 0; j < configurations.length; j++) {
-          var confLabel = graphSeries[i].replace(defaultConfiguration, configurations[j]);
-          var confIndex = graphSeries.indexOf(confLabel);
-          if (confIndex >= 0) {
-            colors[confIndex] = colorStr;
+          if (graphSeries[i].endsWith(configurations[j])) {
+            var colorStr = calcColor(j, configurations.length);
+            colors[i] = colorStr
           }
         }
-        counter++
+      }
+    // same color for all configs (stroke pattern differentiates configs)
+    } else {
+      var counter = 0;
+      for (var i = 0; i < graphSeries.length; i++) {
+        if (graphSeries[i].endsWith(defaultConfiguration)) {
+          var numColors = Math.ceil(graphSeries.length / configurations.length);
+          var colorStr = calcColor(counter, numColors);
+          for (var j = 0; j < configurations.length; j++) {
+            var confLabel = graphSeries[i].replace(defaultConfiguration, configurations[j]);
+            var confIndex = graphSeries.indexOf(confLabel);
+            if (confIndex >= 0) {
+              colors[confIndex] = colorStr;
+            }
+          }
+          counter++
+        }
       }
     }
   }
@@ -598,15 +624,10 @@ function perfGraphInit() {
         });
       };
     }
-    if (configurations.length >= 3) {
-      var strokePatternToggle = document.createElement('input');
-      strokePatternToggle.type = 'button';
-      strokePatternToggle.value = 'Reset Stoke Patterns';
-      toggleConf.appendChild(strokePatternToggle);
-      strokePatternToggle.onclick = function() {
-        resetStrokePattern();
-      }
-    }
+
+    // Experimental: Add buttons to reset stroke patters and to invert stroke
+    // pattern / colors
+    addExperimentalButtons(toggleConf);
   } else {
     toggleConf.textContent = '';
   }
@@ -1027,7 +1048,6 @@ function findSelectedSuite() {
 
 
 
-
 //////////////////////
 // Start of options //
 //////////////////////
@@ -1239,4 +1259,63 @@ function normalizeForURL(str) {
   var nonAlphaNumRegex = /[^a-z0-9]/g;
   // convert to lower case first so regex doesn't have to be case insensitive
   return str.toLowerCase().replace(nonAlphaNumRegex, '');
+}
+
+
+
+////////////////////////////
+// Experimental functions //
+////////////////////////////
+
+
+// Experimental: Swap how color and stroke pattern are used to differentiate
+// different configs vs. different series on a graph
+function invertMultiConfigStrokeAndColor() {
+
+  diffColorForEachConfig = !diffColorForEachConfig;
+
+  var curConfigs = getCheckedConfigurations();
+  applyFnToAllGraphs(function(g) {
+    var graphSeries = g.getLabels().slice(1);
+    var seriesOpts = genPerSeriesStrokePattern(graphSeries, curConfigs);
+    var colors = genSeriesColors(graphSeries);
+    g.updateOptions({ series: seriesOpts, colors: colors });
+  });
+}
+
+
+// Experimental: reset the stoke pattern for all graphs based on the currently
+// displayed configurations
+function resetStrokePattern() {
+  var curConfigs = getCheckedConfigurations();
+  applyFnToAllGraphs(function(g) {
+    var graphSeries = g.getLabels().slice(1);
+    var seriesOpts = genPerSeriesStrokePattern(graphSeries, curConfigs);
+    g.updateOptions({ series: seriesOpts });
+  });
+}
+
+// Experimental: Add buttons to reset stroke patters and to invert stroke
+// pattern / colors
+function addExperimentalButtons(toggleConf) {
+  if (configurations.length >= 3) {
+    var strokePatternToggle = document.createElement('input');
+    strokePatternToggle.type = 'button';
+    strokePatternToggle.value = 'Reset Stoke Patterns';
+    toggleConf.appendChild(strokePatternToggle);
+    strokePatternToggle.onclick = function() {
+      resetStrokePattern();
+    }
+
+    var linebreak = document.createElement("br");
+    toggleConf.appendChild(linebreak);
+
+    var invertStrokeColorToggle = document.createElement('input');
+    invertStrokeColorToggle.type = 'button';
+    invertStrokeColorToggle.value = 'Invert Line Stroke/Color';
+    toggleConf.appendChild(invertStrokeColorToggle);
+    invertStrokeColorToggle.onclick = function() {
+      invertMultiConfigStrokeAndColor();
+    }
+  }
 }
