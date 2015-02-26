@@ -57,13 +57,7 @@ void docs(void) {
     std::string docsTempDir = makeTempDir("chpldoc-");
 
     // This is the final location for the output format (e.g. the html files.).
-    std::string docsOutputDir;
-    if (strlen(fDocsFolder) > 0) {
-      docsOutputDir = fDocsFolder;
-    } else {
-      docsOutputDir = astr(getCwd(), "/", "docs");
-      printf(astr(docsOutputDir.c_str(), "\n"));
-    }
+    std::string docsOutputDir = (strlen(fDocsFolder) > 0) ? fDocsFolder : "docs";
 
     // The location of intermediate files (e.g. .rst files).
     std::string docsWorkDir;
@@ -259,19 +253,25 @@ std::string generateSphinxProject(std::string dirpath) {
 
 /* Call `make html` from inside sphinx project. */
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
-  // The virtualenv activate script is at:
-  //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/activate
-  const char * activate = astr(
+  // The virtualenv active and sphinx-build scripts are in:
+  //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/
+  const char * venvBinDir = astr(
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
-    CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/activate");
+    CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/");
+  const char * activate = astr(venvBinDir, "activate");
+  const char * sphinxBuild = astr(venvBinDir, "sphinx-build");
 
   // Run:
-  //   . $activate && cd $sphinxDir &&
-  //     sphinx-build -b html -d build/doctrees -W source $outputDir
+  //   . $activate &&
+  //     sphinx-build -b html
+  //     -d $sphinxDir/build/doctrees -W
+  //     $sphinxDir/source $outputDir
+  const char * cmdPrefix = astr(". ", activate, " && ");
   const char * cmd = astr(
-    ". ", activate,
-    " && cd ", sphinxDir.c_str(), " && ",
-    "sphinx-build -b html -d build/doctrees -W source ", outputDir.c_str());
+    cmdPrefix,
+    sphinxBuild, " -b html -d ",
+    sphinxDir.c_str(), "/build/doctrees -W ",
+    sphinxDir.c_str(), "/source ", outputDir.c_str());
   mysystem(cmd, "building html output from chpldoc sphinx project");
   printf(astr("HTML files are at: ", outputDir.c_str(), "\n"));
   printf("Begin by opening index.html in a browser.\n");
