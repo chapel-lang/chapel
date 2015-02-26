@@ -550,6 +550,12 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
       fn->addFlag(FLAG_METHOD_PRIMARY);
     }
   }
+
+  if (VarSymbol* var = toVarSymbol(def->sym)) {
+    // Identify VarSymbol as class/record member.
+    var->makeField();
+  }
+
   if (def->parentSymbol || def->list)
     def->remove();
   if (tail)
@@ -1165,6 +1171,89 @@ Symbol* AggregateType::getField(const char* name, bool fatal) {
 Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
 }
+
+
+void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
+  // TODO: Include unions... (thomasvandoren, 2015-02-25)
+  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << this->symbol->name;
+  *file << this->docsSuperClass();
+  *file << std::endl;
+
+  // In rst mode, ensure there is an empty line between the class/record
+  // signature and its description or the next directive.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+
+    // In rst mode, ensure there is an empty line between the class/record
+    // description and the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+/*
+ * Returns super class string for documentation. If super class exists, returns
+ * ": <super class name>".
+ */
+std::string AggregateType::docsSuperClass() {
+  if (this->inherits.length > 0) {
+    std::vector<std::string> superClassNames;
+
+    for_alist(expr, this->inherits) {
+      if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
+        superClassNames.push_back(use->unresolved);
+      } else {
+        INT_FATAL(expr, "Expected UnresolvedSymExpr for all member of inherits alist.");
+      }
+    }
+
+    if (superClassNames.empty()) {
+      return "";
+    }
+
+    // If there are super classes, join them into a single comma delimited
+    // string prefixed with a colon.
+    std::string superClasses = " : " + superClassNames.front();
+    for (unsigned int i = 1; i < superClassNames.size(); i++) {
+      superClasses += ", " + superClassNames.at(i);
+    }
+    return superClasses;
+  } else {
+    return "";
+  }
+}
+
+
+std::string AggregateType::docsDirective() {
+  if (fDocsTextOnly) {
+    if (this->isClass()) {
+      return "Class: ";
+    } else if (this->isRecord()) {
+      return "Record: ";
+    }
+  } else {
+    if (this->isClass()) {
+      return ".. class:: ";
+    } else if (this->isRecord()) {
+      return ".. record:: ";
+    }
+  }
+  return "";
+}
+
 
 void initRootModule() {
   rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());

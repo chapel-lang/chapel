@@ -33,6 +33,9 @@
 #ifndef _BASEAST_H_
 #define _BASEAST_H_
 
+#include <ostream>
+#include <string>
+
 #include "map.h"
 #include "vec.h"
 
@@ -223,6 +226,11 @@ public:
   AstTag            astTag;     // BaseAST subclass
   int               id;         // Unique ID
   astlocT           astloc;     // Location of this node in the source code
+
+  void                printTabs(std::ostream *file, unsigned int tabs);
+  virtual void        printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
+
+  static  const       std::string tabText;
 
 protected:
                     BaseAST(AstTag type);

@@ -1,11 +1,11 @@
 Module: globalOrdering
    config var goop: bool
-      I should be first 
-   config const resorted
-      I should be second 
-   param after
-      I should be third 
+      hello 
+   param after = 35
+      I'm thirty five. 
    var fluctuates: int
-      I should be fourth 
-   const running
-      I'm last 
+      I fluctuate. Guess what I am? 
+   config const resorted = "what's in a name"
+      Who am I? 
+   const running = false
+      Run! 

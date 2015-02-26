@@ -19,27 +19,13 @@
 
 #include <string>
 
-void printTabs(std::ofstream *file);
-
 void createDocsFileFolders(std::string filename);
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name);
+void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs);
 
-void printGlobal(std::ofstream *file, VarSymbol *var, bool config);
+void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
-void printFunction(std::ofstream *file, FnSymbol *fn, bool method);
-
-void printVarStart(std::ofstream *file, VarSymbol *var);
-
-void printVarType(std::ofstream *file, VarSymbol *var);
-
-void printVarDocs(std::ofstream *file, VarSymbol *var);
-
-void printClass(std::ofstream *file, AggregateType *cl);
-
-void printFields(std::ofstream *file, AggregateType *cl);
-
-void inheritance(Vec<AggregateType*> *list, AggregateType *cl);
+void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
 bool devOnlyFunction(FnSymbol *fn);
 
@@ -47,18 +33,10 @@ bool devOnlyModule(ModuleSymbol *mod);
 
 bool isNotSubmodule(ModuleSymbol *mod);
 
-std::string generateSphinxProject(std::string dirpath);
+static std::string generateSphinxProject(std::string dirpath);
 
-void generateSphinxOutput(std::string dirpath);
+static void generateSphinxOutput(std::string dirpath);
 
-static inline std::string ltrim(std::string s);
+static std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName);
 
-static inline bool isEmpty(std::string s);
-
-static std::string erase(std::string s, int count);
-
-static std::string firstNonEmptyLine(std::string s);
-
-static int minimumPrefix(std::string s);
-
-void ltrimAndPrintLines(std::string s, std::ofstream *file);
+static std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsFolderName);

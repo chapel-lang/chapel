@@ -4,12 +4,8 @@ Module: fieldInheritance
 
       var rod: string
       var staff: bool
-   Class: Younger
+   Class: Younger : Elder
       This class should inherit its Elder's fields 
 
       var key: int
       var stone: imag
-      inherited from Elder
-         var rod: string
-         var staff: bool
-

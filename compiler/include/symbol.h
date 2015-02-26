@@ -26,6 +26,7 @@
 #include "type.h"
 
 #include <bitset>
+#include <iostream>
 #include <vector>
 
 //
@@ -206,6 +207,15 @@ public:
   void codegenDef();
   // global vars are different ...
   void codegenGlobalDef();
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+  void makeField();
+
+private:
+
+  virtual std::string docsDirective();
+  bool isField;
 };
 
 /******************************** | *********************************
@@ -383,6 +393,12 @@ class FnSymbol : public Symbol {
   bool            isMethod()                                   const;
   bool            isPrimaryMethod()                            const;
   bool            isSecondaryMethod()                          const;
+  bool            isIterator()                                 const;
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
 };
 
 /******************************** | *********************************
@@ -456,8 +472,16 @@ public:
   // LLVM uses this for extern C blocks.
   ExternBlockInfo*     extern_info;
 
+  virtual void         printDocs(std::ostream *file, unsigned int tabs);
+          void         addPrefixToName(std::string prefix);
+          std::string  docsName();
+
 private:
   void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
+
+  // Used when documenting submodules.
+  std::string          moduleNamePrefix;
+;
 
 };
 
