@@ -21,6 +21,7 @@
 #define _FILE_UTILS_H_
 
 #include "qio_error.h"
+#include "qio.h"
 #include "sys_basic.h"
 
 
@@ -52,5 +53,7 @@ qioerr chpl_fs_rename(const char* oldname, const char* newname);
 // Removes the file specified, returning a qioerr if one occurred
 qioerr chpl_fs_remove(const char* name);
 
+qioerr chpl_fs_samefile(int* ret, qio_file_t* file1, qio_file_t* file2);
+qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2);
 
 #endif
