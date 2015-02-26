@@ -17,24 +17,24 @@
  * limitations under the License.
  */
 
-#include <map>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <iterator>
-#include <sstream>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sstream>
 
-#include "driver.h"
-#include "passes.h"
-#include "symbol.h"
-#include "expr.h"
-#include "stmt.h"
-#include "docs.h"
-#include "mysystem.h"
-#include "stringutil.h"
-#include "AstToText.h"
 #include "AstPrintDocs.h"
+#include "AstToText.h"
+#include "driver.h"
+#include "expr.h"
+#include "mysystem.h"
+#include "passes.h"
+#include "stmt.h"
+#include "symbol.h"
+#include "stringutil.h"
+
+#include "docs.h"
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
