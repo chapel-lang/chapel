@@ -37,27 +37,27 @@ FIND_INT_SIZES_START
 END
 
 @max_to_type = (
-"INT_MAX", "c_int",
-"UINT_MAX", "c_uint",
-"LONG_MAX", "c_long",
-"ULONG_MAX", "c_ulong",
-"LLONG_MAX", "c_longlong",
-"ULLONG_MAX", "c_ulonglong",
-"CHAR_MAX", "c_char",
-"SCHAR_MAX", "c_schar",
-"UCHAR_MAX", "c_uchar",
-"SHRT_MAX", "c_short",
-"USHRT_MAX", "c_ushort",
-"INTPTR_MAX", "c_intptr",
-"UINTPTR_MAX", "c_uintptr",
-"PTRDIFF_MAX", "c_ptrdiff",
-"SSIZE_MAX", "ssize_t",
-"SIZE_MAX", "size_t",
+"INT_MAX", "c_int", "int",
+"UINT_MAX", "c_uint", "uint",
+"LONG_MAX", "c_long", "long",
+"ULONG_MAX", "c_ulong", "unsigned long",
+"LLONG_MAX", "c_longlong", "long long",
+"ULLONG_MAX", "c_ulonglong", "unsigned long long",
+"CHAR_MAX", "c_char", "char",
+"SCHAR_MAX", "c_schar", "signed char",
+"UCHAR_MAX", "c_uchar", "unsigned char",
+"SHRT_MAX", "c_short", "short",
+"USHRT_MAX", "c_ushort", "unsigned short",
+"INTPTR_MAX", "c_intptr", "intptr_t",
+"UINTPTR_MAX", "c_uintptr", "uintptr_t",
+"PTRDIFF_MAX", "c_ptrdiff", "ptrdiff_t",
+"SSIZE_MAX", "ssize_t", "ssize_t",
+"SIZE_MAX", "size_t", "size_t",
 );
 
 @maxes = ( );
 
-for (my $i = 0; $i < @max_to_type; $i+=2 ) {
+for (my $i = 0; $i < @max_to_type; $i+=3 ) {
   my $m = $max_to_type[$i];
   $cpreprocess .= $m . "\n";
   push(@maxes, $m);
@@ -165,11 +165,13 @@ $handled_c_ptr = 0;
 for (my $i = 0; $i < @values; $i++ ) {
   my $v = $values[$i];
   my $max = $maxes[$i];
-  my $othermax = $max_to_type[2*$i];
-  $max eq $max_to_type[2*$i] or die "max type mismatch";
-  my $typelhs = $max_to_type[2*$i+1];
+  my $othermax = $max_to_type[3*$i];
+  $max eq $max_to_type[3*$i] or die "max type mismatch";
+  my $typelhs = $max_to_type[3*$i+1];
+  my $ctype = $max_to_type[3*$i+2];
   my $typerhs = maxToType($v);
   push(@rhstypes, $typerhs);
+  print "/* The type corresponding to the C $ctype type */\n";
   print "extern type $typelhs = $typerhs;\n";
   if( $typelhs eq "c_ptr" ) {
     $handled_c_ptr = 1;
@@ -188,7 +190,7 @@ print "  pragma \"no prototype\"\n";
 print "  extern proc sizeof(type t): size_t;\n";
 print "\n";
 for (my $i = 0; $i < @values; $i++ ) {
-    my $typelhs = $max_to_type[2*$i+1];
+    my $typelhs = $max_to_type[3*$i+1];
     my $typerhs = $rhstypes[$i];
     print "  assert(sizeof($typelhs) == sizeof($typerhs));\n";
 }

@@ -49,9 +49,10 @@ $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	cd $(@D) && ( $(MAKE_SYS_BASIC_TYPES) > $(@F) || { rm -f $(@F) && false ; } )
 
 MODULES_TO_DOCUMENT = \
-	standard/Random.chpl
+	standard/Random.chpl \
+	$(SYS_CTYPES_MODULE)
 
-documentation:
+documentation: $(SYS_CTYPES_MODULE)
 	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
 	@echo "HTML files are at \$$CHPL_HOME/modules/docs/html/build/html/."
 
