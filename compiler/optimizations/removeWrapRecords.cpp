@@ -146,7 +146,9 @@ removeWrapRecords() {
                 ts->hasFlag(FLAG_HEAP))) {
               const char* bundlePrefix = "_class_locals";
               if (strncmp(ts->name, bundlePrefix, strlen(bundlePrefix))) {
-                var->addFlag(FLAG_LOCAL_FIELD);
+                if (isClass(var->type)) {
+                  var->addFlag(FLAG_LOCAL_FIELD);
+                }
               }
           }
         }

@@ -842,7 +842,6 @@ narrowArg(ArgSymbol* arg, WideInfo* wi,
       // Some later optimization should try to synchronize them onto narrow
       // args if possible.
       wi->mustBeWide = true;
-      return;
     } else {
       SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
       INT_ASSERT(actual);

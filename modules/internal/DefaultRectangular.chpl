@@ -802,27 +802,31 @@ module DefaultRectangular {
     }
   
     proc dsiSlice(d: DefaultRectangularDom) {
-      var alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
-                                           idxType=idxType,
-                                           stridable=d.stridable,
-                                           dom=d, noinit_data=true);
-      alias.data = data;
-      //alias.numelm = numelm;
-      alias.blk = blk;
-      alias.str = str;
-      alias.origin = origin;
-      for param i in 1..rank {
-        alias.off(i) = d.dsiDim(i).low;
-        // NOTE: Not bothering to check to see if the abs(..) expression
-        //  can fit into idxType
-        if str(i) > 0 {
-          alias.origin += blk(i) * (d.dsiDim(i).low - off(i)) / str(i):idxType;
-        } else {
-          alias.origin -= blk(i) * (d.dsiDim(i).low - off(i)) / abs(str(i)):idxType;
+      var alias : this.type;
+
+      on this {
+        alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
+                                             idxType=idxType,
+                                             stridable=d.stridable,
+                                             dom=d, noinit_data=true);
+        alias.data = data;
+        //alias.numelm = numelm;
+        alias.blk = blk;
+        alias.str = str;
+        alias.origin = origin;
+        for param i in 1..rank {
+          alias.off(i) = d.dsiDim(i).low;
+          // NOTE: Not bothering to check to see if the abs(..) expression
+          //  can fit into idxType
+          if str(i) > 0 {
+            alias.origin += blk(i) * (d.dsiDim(i).low - off(i)) / str(i):idxType;
+          } else {
+            alias.origin -= blk(i) * (d.dsiDim(i).low - off(i)) / abs(str(i)):idxType;
+          }
         }
+        alias.computeFactoredOffs();
+        alias.initShiftedData();
       }
-      alias.computeFactoredOffs();
-      alias.initShiftedData();
       return alias;
     }
   
