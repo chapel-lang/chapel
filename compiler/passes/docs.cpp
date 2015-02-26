@@ -54,23 +54,31 @@ void docs(void) {
   if (fDocs) {
     // Open the directory to store the docs
 
-    std::string docsTempDir = makeTempDir("chpldoc-");
-
     // This is the final location for the output format (e.g. the html files.).
     std::string docsOutputDir = (strlen(fDocsFolder) > 0) ? fDocsFolder : "docs";
 
-    // The location of intermediate files (e.g. .rst files).
-    std::string docsWorkDir;
+    // Root of the sphinx project and generated rst files. If
+    // --docs-save-sphinx is not specified, it will be a temp dir.
+    std::string docsTempDir = "";
+    std::string docsSphinxDir;
+    if (strlen(fDocsSphinxDir) > 0) {
+      docsSphinxDir = fDocsSphinxDir;
+    } else {
+      docsSphinxDir = makeTempDir("chpldoc-");
+    }
+
+    // The location of intermediate rst files.
+    std::string docsRstDir;
     if (fDocsTextOnly) {
       // For text-only mode, the output and working location is the same.
-      docsWorkDir = docsOutputDir;
+      docsRstDir = docsOutputDir;
     } else {
       // For rst mode, the working location is somewhere inside the temp dir.
-      docsWorkDir = generateSphinxProject(docsTempDir);
+      docsRstDir = generateSphinxProject(docsSphinxDir);
     }
 
     // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
-    mkdir(docsWorkDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    mkdir(docsRstDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
     mkdir(docsOutputDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
 
 
@@ -78,7 +86,7 @@ void docs(void) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
         if (isNotSubmodule(mod)) {
-          std::ofstream *file = openFileFromMod(mod, docsWorkDir);
+          std::ofstream *file = openFileFromMod(mod, docsRstDir);
 
           AstPrintDocs *docsVisitor = new AstPrintDocs(file);
           mod->accept(docsVisitor);
@@ -96,10 +104,12 @@ void docs(void) {
     }
 
     if (!fDocsTextOnly) {
-      generateSphinxOutput(docsTempDir, docsOutputDir);
+      generateSphinxOutput(docsSphinxDir, docsOutputDir);
     }
 
-    deleteDir(docsTempDir.c_str());
+    if (docsTempDir.length() > 0) {
+      deleteDir(docsTempDir.c_str());
+    }
   }
 }
 

@@ -178,6 +178,7 @@ bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
 char fDocsFolder[256] = "";
 bool fDocsTextOnly = false;
+char fDocsSphinxDir[256] = "";
 bool fDocsIncludeExterns = true;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
@@ -754,6 +755,7 @@ static ArgumentDescription arg_desc[] = {
  {"docs-dir", ' ', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  // {"docs-externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL}, // Commented out because we aren't sure we want it yet.
  {"docs-text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
+ {"docs-save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},  // "CHPL_SAVE_SPHINX_DIR", NULL
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
