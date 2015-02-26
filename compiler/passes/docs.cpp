@@ -28,6 +28,7 @@
 #include "AstToText.h"
 #include "driver.h"
 #include "expr.h"
+#include "files.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stmt.h"
@@ -52,7 +53,10 @@ void docs(void) {
 
   if (fDocs) {
     // Open the directory to store the docs
-    std::string docsDir = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
+
+    std::string docsTempDir = makeTempDir("chpldoc-");
+
+    std::string docsDir = (strlen(fDocsFolder) > 0) ? fDocsFolder : "docs";
     std::string docsFolderName = docsDir;
 
     if (!fDocsTextOnly) {
@@ -86,6 +90,8 @@ void docs(void) {
     if (!fDocsTextOnly) {
       generateSphinxOutput(docsDir);
     }
+
+    deleteDir(docsTempDir.c_str());
   }
 }
 
@@ -225,24 +231,24 @@ std::string generateSphinxProject(std::string dirpath) {
   //        provided... (thomasvandoren, 2015-01-29)
 
   // Create the output dir under the docs output dir.
-  const char * htmldir = astr(dirpath.c_str(), "/html");
+  const char * sphinxDir = dirpath.c_str();
 
   // Ensure output directory exists.
-  const char * mkdirCmd = astr("mkdir -p ", htmldir);
+  const char * mkdirCmd = astr("mkdir -p ", sphinxDir);
   mysystem(mkdirCmd, "creating docs output dir");
 
   // Copy the sphinx template into the output dir.
   const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
-  const char * cmd = astr("cp -r ", sphinxTemplate, " ", htmldir, "/");
+  const char * cmd = astr("cp -r ", sphinxTemplate, " ", sphinxDir, "/");
   mysystem(cmd, "copying chpldoc sphinx template");
 
-  const char * moddir = astr(htmldir, "/source/modules");
+  const char * moddir = astr(sphinxDir, "/source/modules");
   return std::string(moddir);
 }
 
 /* Call `make html` from inside sphinx project. */
 void generateSphinxOutput(std::string dirpath) {
-  const char * htmldir = astr(dirpath.c_str(), "/html");
+  const char * sphinxDir = dirpath.c_str();
 
   // The virtualenv activate script is at:
   //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/activate
@@ -250,10 +256,10 @@ void generateSphinxOutput(std::string dirpath) {
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
     CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/activate");
 
-  // Run: `. $activate && cd $htmldir && $CHPL_MAKE html`
+  // Run: `. $activate && cd $sphinxDir && $CHPL_MAKE html`
   const char * cmd = astr(
     ". ", activate,
-    " && cd ", htmldir, " && ",
+    " && cd ", sphinxDir, " && ",
     CHPL_MAKE, " html");
   mysystem(cmd, "building html output from chpldoc sphinx project");
 }
