@@ -635,28 +635,44 @@ function setupGraphSelectionPane() {
   });
 
   $(window).ready(function(){
-    // we don't know the width of the graph selection pane until the graphs are
-    // added ot the graphlist. Once that is done figure out where to position
-    // the graph display. This is needed since the graph selection pane is
-    // 'fixed' meaning it's outside the normal flow and other elements act like
-    // it doesn't exist so we have to manualy move the graph display to avoid
-    // overlap. This doesn't change after page load.
-    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
-    $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
-
+    setDygraphPanePos();
     setGraphListHeight();
     setGraphSelectionPanePos();
   });
 
   $(window).resize(function(){
+    setDygraphPanePos();
     setGraphListHeight();
     setGraphSelectionPanePos();
   });
 
-  // set the selection panes horizontal positional based on the scroll so the
-  // selection pane isn't always visible when scrolling horizontally
+  // We don't know the width of the graph selection pane until the list of
+  // graph names are added. Once that is done figure out the position of pane
+  // that holds the dygraphs. This is needed since the graph selection pane
+  // is 'fixed' meaning it's outside the normal flow and other elements act
+  // like it doesn't exist so we have to manually move the graph display to
+  // avoid overlap. After the page is setup, the graph selection pane size
+  // only changes if the browser zoom changes.
+  function setDygraphPanePos() {
+    var selectPaneWidth = parseInt($("#graphSelectionPane").outerWidth());
+    $('#graphdisplay').css({ 'margin-left': selectPaneWidth });
+  }
+
+  // set the selection pane's horizontal positional based on the scroll so the
+  // selection pane isn't always visible when scrolling horizontally. Some
+  // browsers allow scrolling past the edge of the screen so we limit the
+  // scroll amount to prevent weird overlaps.
   function setGraphSelectionPanePos() {
-    $('#graphSelectionPane').css({ 'left': -$(window).scrollLeft() });
+    // number of pixels hidden from view to the left visible window
+    var scrollLeft = $(window).scrollLeft();
+    // number of pixels hidden from view ('true' page size - visible amount)
+    var numHiddenPixels = $(document).width() - $(window).width();
+
+    scrollLeft = Math.max(0, scrollLeft);
+    scrollLeft = Math.min(numHiddenPixels, scrollLeft);
+
+    // move pane the opposite of scrolling so it moves out of view
+    $('#graphSelectionPane').css({ 'left': -scrollLeft });
   }
 
   // determine the height to use for the graphlist. We want it to use most of
