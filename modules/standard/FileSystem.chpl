@@ -427,6 +427,29 @@ proc sameFile(file1: file, file2: file): bool {
   return result;
 }
 
+/* Create a symbolic link pointing to actual named sym.  May generate an error
+   message.
+   err: a syserr used to indicate if an error occurred during creation
+   actual: the source file to be linked
+   symLink: the location the symbolic link should live
+*/
+proc symlink(out err: syserr, actual: string, symLink: string) {
+  extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
+
+  err = chpl_fs_symlink(actual.c_str(), symLink.c_str());
+}
+
+/* Create a symbolic link pointing to actual named sym.  May generate an error
+   message.
+   actual: the source file to be linked
+   symLink: the location the symbolic link should live
+*/
+proc symlink(actual: string, symLink: string) {
+  var err:syserr = ENOERR;
+  symlink(err, actual, symLink);
+  if err != ENOERR then ioerror(err, "in symLink " + actual, symLink);
+}
+
 /* Returns an integer representing the current permissions of the file specified
    by name.  May generate an error message.
    err: a syserr used to indicate if an error occurred during this function
