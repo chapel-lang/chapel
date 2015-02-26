@@ -602,8 +602,13 @@ function perfGraphInit() {
   fselect.appendChild(o);
   for (var i = 0; i < perfSuites.length; i++) {
     var o = document.createElement('option');
-    o.innerHTML = perfSuites[i].suite;
-    o.setAttribute('value', perfSuites[i].suite);
+    var suiteName = perfSuites[i].suite;
+    if (suiteName.trim() === '<empty>') {
+      suiteName = '';
+      o.disabled = true;
+    }
+    o.innerHTML = suiteName.replace(/ /g, '&nbsp');
+    o.setAttribute('value', suiteName);
     fselect.appendChild(o);
   }
   suiteMenu.appendChild(f);
@@ -986,6 +991,9 @@ function findSelectedSuite() {
       graphsInSuite[curGraph.suites[suiteIndex]] += allGraphs[i].title;
     }
   }
+
+  // if no graphs were selected, return no suite sentinel
+  if (displayedGraphs.length === 0) { return NO_SUITE; }
 
   // see if the currently selected representation  matches any of the suites
   for (var suite in graphsInSuite) {
