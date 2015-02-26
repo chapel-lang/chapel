@@ -89,6 +89,9 @@ third-party-chpldoc-venv: FORCE
 chpldoc: compiler third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
 
+clean-modules-docs:
+	cd modules && $(MAKE) clean-documentation
+
 modules-docs-only:
 	cd modules && $(MAKE) documentation
 
@@ -96,6 +99,10 @@ modules-docs: chpldoc
 # Call `make modules-docs-only` as part of the recipe instead of as a
 # dependency so parallel make executions correctly build chpldoc first.
 	$(MAKE) modules-docs-only
+
+module-docs: modules-docs
+
+docs: modules-docs
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
