@@ -72,9 +72,9 @@ function getNextDivs(afterDiv, afterLDiv) {
   var beforeLDiv = null;
   if (afterDiv && afterLDiv &&
       afterDiv.nextSibling && afterLDiv.nextSibling) {
-        beforeDiv = afterDiv.nextSibling.nextSibling;
-        beforeLDiv = afterLDiv.nextSibling.nextSibling;
-      }
+    beforeDiv = afterDiv.nextSibling.nextSibling;
+    beforeLDiv = afterLDiv.nextSibling.nextSibling;
+  }
 
   // create the graph/legend divs and spacers
   var div = document.createElement('div');
@@ -180,7 +180,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     // each configuration of a series. e.g. 'series (conf1) series(conf2)' are
     // the same color and have the same stroke pattern
     graphOptions.colors = genSeriesColors(graphSeries);
-    graphOptions.series = genPerSeriesStrokePattern(graphSeries);
+    graphOptions.series = genPerSeriesStrokePattern(graphSeries, configurations);
 
     // set the initial visibility based on which configs are selected
     var disabledConfs = getCheckedConfigurations(false);
@@ -333,13 +333,26 @@ function updateAnnotationsSeries(g) {
 }
 
 
+// reset the stoke pattern for all graphs based on the currently displayed
+// configurations
+function resetStrokePattern() {
+  var curConfigs = getCheckedConfigurations();
+
+  applyFnToAllGraphs(function(g) {
+    var graphSeries = g.getLabels().slice(1);
+    var seriesOpts = genPerSeriesStrokePattern(graphSeries, curConfigs);
+    g.updateOptions({ series: seriesOpts });
+  });
+}
+
+
 // generate an object with an element for each series whose value is the stroke
 // pattern for that series. Takes graphsSeries, which is the list of series for
 // the graph and should not contain the 'Date'. Tries to use a different
 // pattern for each configuration, but wraps around if there are more
 // configurations than patterns. There's no need to use this function if
 // multi-confs aren't being used, but it will work (all solid lines) if it is.
-function genPerSeriesStrokePattern(graphSeries) {
+function genPerSeriesStrokePattern(graphSeries, configs) {
 
   // available stroke patterns for multi-conf, null means solid line
   var SOLID_LINE = null;
@@ -348,8 +361,8 @@ function genPerSeriesStrokePattern(graphSeries) {
   var seriesOptions = {};
   for (var i = 0; i < graphSeries.length; i++) {
     seriesOptions[graphSeries[i]] = {'strokePattern': SOLID_LINE};
-    for (var j = 0; j < configurations.length; j++) {
-      if (graphSeries[i].endsWith(configurations[j])) {
+    for (var j = 0; j < configs.length; j++) {
+      if (graphSeries[i].endsWith(configs[j])) {
         var strokePattern = strokePatterns[j%strokePatterns.length];
         seriesOptions[graphSeries[i]] = {'strokePattern': strokePattern};
       }
@@ -584,6 +597,15 @@ function perfGraphInit() {
           setConfigurationVisibility(g);
         });
       };
+    }
+    if (configurations.length >= 3) {
+      var strokePatternToggle = document.createElement('input');
+      strokePatternToggle.type = 'button';
+      strokePatternToggle.value = 'Reset Stoke Patterns';
+      toggleConf.appendChild(strokePatternToggle);
+      strokePatternToggle.onclick = function() {
+        resetStrokePattern();
+      }
     }
   } else {
     toggleConf.textContent = '';
