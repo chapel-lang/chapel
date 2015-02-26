@@ -283,7 +283,7 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
     sphinxDir.c_str(), "/build/doctrees -W ",
     sphinxDir.c_str(), "/source ", outputDir.c_str());
   mysystem(cmd, "building html output from chpldoc sphinx project");
-  printf(astr("HTML files are at: ", outputDir.c_str(), "\n"));
+  printf("HTML files are at: %s\n", outputDir.c_str());
   printf("Begin by opening index.html in a browser.\n");
 }
 
