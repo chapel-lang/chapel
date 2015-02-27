@@ -56,6 +56,8 @@ qioerr chpl_fs_remove(const char* name);
 qioerr chpl_fs_samefile(int* ret, qio_file_t* file1, qio_file_t* file2);
 qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2);
 
+qioerr chpl_fs_symlink(const char* orig, const char* linkName);
+
 qioerr chpl_fs_viewmode(int* ret, const char* name);
 
 #endif

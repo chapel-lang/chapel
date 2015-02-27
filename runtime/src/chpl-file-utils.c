@@ -259,6 +259,16 @@ qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2) {
   return err;
 }
 
+/* creates a symlink named linkName to the file orig */
+qioerr chpl_fs_symlink(const char* orig, const char* linkName) {
+  qioerr err = 0;
+  int exitStatus = symlink(orig, linkName);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+
+}
+
 /* Returns the current permissions on a file specified by name */
 qioerr chpl_fs_viewmode(int* ret, const char* name) {
   struct stat buf;
