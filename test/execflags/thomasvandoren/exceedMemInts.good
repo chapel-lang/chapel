@@ -1,1 +1,1 @@
-<internal>: error: halt reached - casting uint(64) > max(uint(32)) to uint(32)
+<internal>: error: halt reached - casting uint(64) with a value greater than the maximum of uint(32) to uint(32)
