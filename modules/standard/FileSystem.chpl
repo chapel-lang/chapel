@@ -426,3 +426,27 @@ proc sameFile(file1: file, file2: file): bool {
   if err != ENOERR then ioerror(err, "in sameFile " + file1.path, file2.path);
   return result;
 }
+
+/* Returns an integer representing the current permissions of the file specified
+   by name.  May generate an error message.
+   err: a syserr used to indicate if an error occurred during this function
+   name: the name of the file that you want to know the permissions of.
+*/
+proc viewMode(out err: syserr, name: string): int {
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
+
+  var ret:c_int;
+  err = chpl_fs_viewmode(ret, name.c_str());
+  return ret;
+}
+
+/* Returns an integer representing the current permissions of the file specified
+   by name.  May generate an error message.
+   name: the name of the file that you want to know the permissions of.
+*/
+proc viewMode(name: string): int {
+  var err:syserr = ENOERR;
+  var result = viewMode(err, name);
+  if err != ENOERR then ioerror(err, "in viewMode", name);
+  return result;
+}
