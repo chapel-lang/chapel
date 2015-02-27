@@ -55,7 +55,12 @@ void docs(void) {
     // Open the directory to store the docs
 
     // This is the final location for the output format (e.g. the html files.).
-    std::string docsOutputDir = (strlen(fDocsFolder) > 0) ? fDocsFolder : "docs";
+    std::string docsOutputDir;
+    if (strlen(fDocsFolder) > 0) {
+      docsOutputDir = fDocsFolder;
+    } else {
+      docsOutputDir = astr(getCwd(), "/docs");
+    }
 
     // Root of the sphinx project and generated rst files. If
     // --docs-save-sphinx is not specified, it will be a temp dir.
@@ -288,7 +293,6 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
     sphinxDir.c_str(), "/source ", outputDir.c_str());
   mysystem(cmd, "building html output from chpldoc sphinx project");
   printf("HTML files are at: %s\n", outputDir.c_str());
-  printf("Begin by opening index.html in a browser.\n");
 }
 
 
