@@ -1,12 +1,4 @@
-extern proc memcpy(a:[], b, len);
-
-proc string.toBytes() {
-   var b : [1..this.length] uint(8);
-   memcpy(b, this, this.length);
-   return b;
-}
-
-const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".toBytes();
+const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n";
 var table : [1..128] uint(8);
 
 proc main(args: [] string) {
@@ -18,10 +10,10 @@ proc main(args: [] string) {
   var r = inFile.reader(locking=false);
 
   // initialize complement table
-  for i in 1..pairs.size by 2 {
-    table[pairs[i]] = pairs[i+1];      // uppercase
-    if pairs[i] != newLineChar then
-      table[pairs[i] + 32] = pairs[i+1]; // lowercase
+  for i in 0..#pairs.length by 2 {
+    table[pairs.buff[i]] = pairs.buff[i+1];      // uppercase
+    if pairs.buff[i] != newLineChar then
+      table[pairs.buff[i] + 32] = pairs.buff[i+1]; // lowercase
   }
 
   var numRead  : int;
