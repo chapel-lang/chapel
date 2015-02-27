@@ -384,11 +384,6 @@ Inherits 'general'
 Reviewed 2015-02-27
 ===================
 
-Compilation timeout (2015-02-17)
-Normally takes ~10s to compile. Started timing out (300s) on 2015-02-17.
-(happened on: xe-wb.prgenv-gnu, xe-wb.prgenv-pgi, xc-wb.prgenv-pgi)
---------------------------------------------------------------------------------
-
 
 === sporadic failures below ===
 
@@ -513,8 +508,8 @@ Reviewed 2015-02-27
 
 === sporadic failures below ===
 
-unresolved call on ||(0,0) in Types.chpl (bradc)
-------------------------------------------------
+unresolved call on ||(0,0) in Types.chpl and related crazy errors (bradc)
+-------------------------------------------------------------------------
 All tests fail to compile. (2015-02-15..2015-02-16, 2015-02-19)
 
 
