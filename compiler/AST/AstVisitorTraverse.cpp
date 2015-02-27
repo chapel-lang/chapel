@@ -79,11 +79,6 @@ void AstVisitorTraverse::exitFnSym(FnSymbol* node)
 
 }
 
-void AstVisitorTraverse::visitIpeSym(IpeSymbol* node)
-{
-
-}
-
 void AstVisitorTraverse::visitLabelSym(LabelSymbol* node)
 {
 

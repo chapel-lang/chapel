@@ -620,7 +620,7 @@ bool isTypeExpr(Expr* expr)
       SymExpr* right = toSymExpr(call->get(2));
       VarSymbol* var = toVarSymbol(right->var);
 
-      if (var->hasFlag(FLAG_TYPE_VARIABLE))
+      if (var->isType())
         return true;
 
       if (var->immediate)

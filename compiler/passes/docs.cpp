@@ -17,13 +17,11 @@
  * limitations under the License.
  */
 
-#include <algorithm>
-#include <functional>
 #include <map>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <iterator>
+#include <sstream>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -35,13 +33,8 @@
 #include "docs.h"
 #include "mysystem.h"
 #include "stringutil.h"
-#include "scopeResolve.h"
 #include "AstToText.h"
-
-int NUMTABS = 0;
-
-static std::map<std::string, std::string> outputMap;
-// If we were using C++11 then this could be an unordered_map
+#include "AstPrintDocs.h"
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -58,73 +51,34 @@ static int compareClasses(const void *v1, const void* v2) {
 void docs(void) {
 
   if (fDocs) {
-    // To handle inheritance, we need to look up parent classes and records.
-    // In order to be successful when looking up these parents, the import
-    // expressions should be accurately accounted for.
-    addToSymbolTable(gDefExprs);
-    processImportExprs();
-
-    // Create a map of structural names to their expected chpldoc output
-    if (fDocsTextOnly) {
-      outputMap["class"] = "Class: ";
-      outputMap["record"] = "Record: ";
-      outputMap["config"] = "config ";
-    } else {
-      outputMap["class"] = ".. class:: ";
-      outputMap["record"] = ".. record:: ";
-      outputMap["module"] = ".. module:: ";
-      outputMap["module comment prefix"] = ":synopsis: ";
-      outputMap["iter func"] = ".. iterfunction:: ";
-      outputMap["iter method"] = ".. itermethod:: ";
-      outputMap["func"] = ".. function:: ";
-      outputMap["method"] = ".. method:: ";
-      outputMap["config"] = ".. data:: config ";
-      outputMap["global"] = ".. data:: ";
-      outputMap["field"] = ".. attribute:: ";
-    }
-
     // Open the directory to store the docs
     std::string docsDir = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
-    std::string folderName = docsDir;
+    std::string docsFolderName = docsDir;
 
     if (!fDocsTextOnly) {
-      folderName = generateSphinxProject(docsDir);
+      docsFolderName = generateSphinxProject(docsDir);
     }
 
-    mkdir(folderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    mkdir(docsFolderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+
     
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
-        std::string filename = mod->filename;
-
-        if (mod->modTag == MOD_INTERNAL) {
-          filename = "internal-modules/";
-        } else if (mod ->modTag == MOD_STANDARD) {
-          filename = "standard-modules/";
-        } else {
-          size_t location = filename.rfind("/");
-          if (location != std::string::npos) {
-            filename = filename.substr(0, location + 1);
-          } else {
-            filename = "";
-          }
-        }
-        filename = folderName + "/" + filename;
-        createDocsFileFolders(filename);
-        
         if (isNotSubmodule(mod)) {
-          // Creates files for each top level module
-          if (!fDocsTextOnly)
-            filename = filename + mod->name + ".rst";
-          else
-            filename = filename + mod->name + ".txt";
-          std::ofstream file(filename.c_str(), std::ios::out);
-          if (!fDocsTextOnly) {
-            file << ".. default-domain:: chpl" << std::endl << std::endl;
-          }
-          printModule(&file, mod, mod->name);
-          file.close();
+          std::ofstream *file = openFileFromMod(mod, docsFolderName);
+
+          AstPrintDocs *docsVisitor = new AstPrintDocs(file);
+          mod->accept(docsVisitor);
+          delete docsVisitor;
+
+          // Comment the above three lines and uncomment the following line to
+          // get the old category based output (or alphabetical). Note that
+          // this will be restored (hopefully soon)... (thomasvandoren, 2015-02-22)
+          //
+          // printModule(file, mod, 0);
+
+          file->close();
         }
       }
     }
@@ -143,75 +97,19 @@ bool isNotSubmodule(ModuleSymbol *mod) {
           strcmp("_root", mod->defPoint->parentSymbol->name) == 0);
 }
 
-void printFields(std::ofstream *file, AggregateType *cl) {
+void printFields(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
   for (int i = 1; i <= cl->fields.length; i++) {
     if (VarSymbol *var = toVarSymbol(((DefExpr *)cl->fields.get(i))->sym)) {
-      if (!var->hasFlag(FLAG_NO_DOC) &&
-          !var->hasFlag(FLAG_SUPER_CLASS)) {
-        // Don't document the super class field, we don't want to know about it
-        // Also, don't document this field if it has a "no doc" pragma attached
-        // to it
-        printTabs(file);
-        *file << outputMap["field"];
-        // For rst, this will insert '.. attribute:: ' here
-        // For plain text, nothing will be inserted
-
-        printVarStart(file, var);
-        if (var->defPoint->exprType != NULL) {
-          *file << ": ";
-          var->defPoint->exprType->prettyPrint(file);
-          // TODO: Make type output prettier
-        }
-        if (var->defPoint->init != NULL) {
-          *file << " = ";
-          var->defPoint->init->prettyPrint(file);
-        }
-        *file << std::endl;
-        printVarDocs(file, var);
-      }
+      var->printDocs(file, tabs);
     }
   }
 }
 
-void inheritance(Vec<AggregateType*> *list, AggregateType *cl) {
-  for_alist(expr, cl->inherits) {
-    AggregateType* pt = discoverParentAndCheck(expr, cl);
-
-    list->add_exclusive(pt);
-    inheritance(list, pt);
-  }
-}
-
-void printClass(std::ofstream *file, AggregateType *cl) {
+void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
   if (!cl->symbol->hasFlag(FLAG_NO_DOC) && ! cl->isUnion()) {
-    printTabs(file);
+    cl->printDocs(file, tabs);
 
-    if (cl->isClass()) {
-      *file << outputMap["class"];
-    } else if (cl->isRecord()) {
-      *file << outputMap["record"];
-    }
-  
-    NUMTABS++;
-    *file << cl->symbol->name << std::endl;
-
-    // In rst mode, ensure there is an empty line between the class/record
-    // signature and its description or the next directive.
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-
-    if (cl->doc != NULL) {
-      ltrimAndPrintLines(cl->doc, file);
-      *file << std::endl;
-
-      // In rst mode, ensure there is an empty line between the class/record
-      // description and the next directive.
-      if (!fDocsTextOnly) {
-        *file << std::endl;
-      }
-    }
-    printFields(file, cl);
+    printFields(file, cl, tabs + 1);
 
     // In rst mode, add an additional line break after the attributes and
     // before the next directive.
@@ -228,67 +126,8 @@ void printClass(std::ofstream *file, AggregateType *cl) {
       // We only want to print methods defined within the class under the
       // class header
       if (fn->isPrimaryMethod())
-        printFunction(file, fn, true);
+        fn->printDocs(file, tabs + 1);
     }
-    
-    Vec<AggregateType*> list;
-    inheritance(&list, cl);
-
-    if (fDocsAlphabetize)
-      qsort(list.v, list.n, sizeof(list.v[0]), compareClasses);
-    
-    forv_Vec(AggregateType, c, list) {
-      printTabs(file);
-      *file << "inherited from " << c->symbol->name;
-      *file << std::endl;
-      NUMTABS++;
-      printFields(file, c);
-    
-      forv_Vec(FnSymbol, fn, c->methods) {
-        printFunction(file, fn, true);
-       
-      }
-      NUMTABS--;
-      *file << std::endl;
-    }
-    NUMTABS--;
-  }
-}
-
-void printVarStart(std::ofstream *file, VarSymbol *var) {
-  if (var->hasFlag(FLAG_TYPE_VARIABLE))
-    *file << "type ";
-  else if (var->isConstant())
-    *file << "const ";
-  else if (var->isParameter())
-    *file << "param ";
-  else 
-    *file << "var ";
-  
-  *file << var->name;
-}
-
-void printVarType(std::ofstream *file, VarSymbol *var) {  
-  if (var->defPoint->exprType != NULL) {
-    *file << ": ";
-    var->defPoint->exprType->prettyPrint(file);
-    // TODO: Make type output prettier
-  }
-  *file << std::endl;
-}
-
-void printVarDocs(std::ofstream *file, VarSymbol *var) {
-  // TODO: Do we want to parse the output here to make it indent nicely?
-  NUMTABS++;
-  if (var->doc != NULL) {
-    ltrimAndPrintLines(var->doc, file);
-  }
-  NUMTABS--;
-}
-
-void printTabs(std::ofstream *file) {
-  for (int i = 1; i <= NUMTABS; i++) {
-    *file << "   ";
   }
 }
 
@@ -308,66 +147,22 @@ bool devOnlyModule(ModuleSymbol *mod) {
   return mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD;
 }
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
+void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
   if (!mod->hasFlag(FLAG_NO_DOC)) {
-    // Print the module directive first, for .rst mode. This will associate the
-    // Module: <name> title with the module. If the .. module:: directive comes
-    // after the title, sphinx will complain about a duplicate id error.
-    if (!fDocsTextOnly) {
-      *file << outputMap["module"] << name << std::endl;
-      if (mod->doc != NULL) {
-        NUMTABS++;
-        printTabs(file);
-        *file << outputMap["module comment prefix"];
-
-        // Grab first line of comment for synopsis.
-        std::string firstLine = firstNonEmptyLine(mod->doc);
-        *file << firstLine << std::endl;
-        NUMTABS--;
-      }
-      *file << std::endl;
-    }
-
-    printTabs(file);
-    *file << "Module: " << name << std::endl;
-    if (!fDocsTextOnly) {
-      int length = strlen("Module: ") + strlen(name.c_str());
-      for (int i = 0; i < length; i++) {
-        *file << "=";
-      }
-      *file << std::endl;
-      // Make the length of this equal to "Module: " + name.length
-    }
-    NUMTABS++;
-    if (mod->doc != NULL) {
-      // Only print tabs for text only mode. The .rst prefers not to have the
-      // tabs for module level comments and leading whitespace removed.
-      if (fDocsTextOnly) {
-        ltrimAndPrintLines(mod->doc, file);
-      } else {
-        NUMTABS--;
-        ltrimAndPrintLines(mod->doc, file);
-        *file << std::endl;
-        NUMTABS++;
-      }
-    }
-    // For non-rst mode, revert to the original tab level.
-    if(!fDocsTextOnly) {
-      NUMTABS--;
-    }
+    mod->printDocs(file, tabs);
 
     Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
     if (fDocsAlphabetize)
       qsort(configs.v, configs.n, sizeof(configs.v[0]), compareNames);
     forv_Vec(VarSymbol, var, configs) {
-      printGlobal(file, var, true);
+      var->printDocs(file, tabs + 1);
     }
 
     Vec<VarSymbol*> variables = mod->getTopLevelVariables();
     if (fDocsAlphabetize)
       qsort(variables.v, variables.n, sizeof(variables.v[0]), compareNames);
     forv_Vec(VarSymbol, var, variables) {
-      printGlobal(file, var, false);
+      var->printDocs(file, tabs + 1);
     }
     Vec<FnSymbol*> fns = mod->getTopLevelFunctions(fDocsIncludeExterns);
     // If alphabetical option passed, fDocsAlphabetizes the output
@@ -380,7 +175,7 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       // We want methods on classes that are defined at the module level to be
       // printed at the module level
       if (!devOnlyFunction(fn) || fn->isSecondaryMethod()) {
-        printFunction(file, fn, false);
+        fn->printDocs(file, tabs + 1);
       }
     }
 
@@ -389,145 +184,23 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, std::string name) {
       qsort(classes.v, classes.n, sizeof(classes.v[0]), compareClasses);
 
     forv_Vec(AggregateType, cl, classes) {
-      printClass(file, cl);
+      printClass(file, cl, tabs + 1);
     }
 
     Vec<ModuleSymbol*> mods = mod->getTopLevelModules();
     if (fDocsAlphabetize)
       qsort(mods.v, mods.n, sizeof(mods.v[0]), compareNames);
   
-    forv_Vec(ModuleSymbol, md, mods) {
+    forv_Vec(ModuleSymbol, subMod, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
-      if (!devOnlyModule(md))
-        printModule(file, md, name + "." +  md->name);
+      if (!devOnlyModule(subMod)) {
+        subMod->addPrefixToName(mod->docsName() + ".");
+        printModule(file, subMod, tabs + 1);
+      }
     }
-    if (fDocsTextOnly)
-      NUMTABS--;
   }
 }
 
-void printGlobal(std::ofstream *file, VarSymbol *global, bool config) {
-  if (!global->hasFlag(FLAG_NO_DOC)) {
-    printTabs(file);
-    *file << outputMap[config ? "config" : "global"];
-    printVarStart(file, global);
-    printVarType(file, global);
-
-    // For .rst mode, put a line break after the .. data:: directive and
-    // its description text.
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-
-    printVarDocs(file, global);
-  }
-}
-
-void printFunction(std::ofstream *file, FnSymbol *fn, bool method) {
-  if (!fn->hasFlag(FLAG_NO_DOC)) {
-    printTabs(file);
-    NUMTABS++;
-    bool iterator = fn->hasFlag(FLAG_ITERATOR_FN);
-    if (method) {
-      if (iterator) {
-        *file << outputMap["iter method"];
-      } else {
-        *file << outputMap["method"];
-      }
-    } else {
-      if (iterator) {
-        *file << outputMap["iter func"];
-      } else {
-        *file << outputMap["func"];
-      }
-    }
-    if (fn->hasFlag(FLAG_INLINE)) {
-      *file << "inline ";
-    } else if (fn->hasFlag(FLAG_EXPORT)) {
-      *file << "export ";
-    } else if (fn->hasFlag(FLAG_EXTERN)) {
-      // Do nothing.  Being extern is an implementation detail.
-    }
-
-    if (iterator) {
-      *file << "iter ";
-    } else {
-      *file << "proc ";
-    }
-    AstToText *fnInfo = new AstToText();
-    fnInfo->appendNameAndFormals(fn);
-    *file << fnInfo->text();
-    delete fnInfo;
-    /*
-    // if fn is not primary method
-    //   get type name from 'this' argument
-    //   output it + '.' before fn->name
-    if (fn->isSecondaryMethod()) {
-      INT_ASSERT (fn->numFormals() > 1);
-      ArgSymbol *myTypeHolder = fn->getFormal(2);
-      INT_ASSERT (myTypeHolder->hasFlag(FLAG_ARG_THIS));
-      Expr *typeExpr = myTypeHolder->typeExpr;
-      BlockStmt *body = toBlockStmt(typeExpr);
-      INT_ASSERT (body);
-      UnresolvedSymExpr *typeName = toUnresolvedSymExpr(body->body.tail);
-      INT_ASSERT (typeName);
-      *file << typeName->unresolved << ".";
-    }
-    *file << fn->name;
-    if (!fn->hasFlag(FLAG_NO_PARENS))
-      *file << "(";
-    if (fn->numFormals() > 0) {
-      // TODO: add flag to compiler to turn on docs dev only output
-      if (strcmp(fn->getFormal(1)->name, "_mt") == 0) {
-        for (int i = 3; i < fn->numFormals(); i++) {
-          ArgSymbol *cur = fn->getFormal(i);
-          printArg(file, cur);
-          *file << ", ";
-        }
-        if (fn->numFormals() != 2) {
-          ArgSymbol *cur = fn->getFormal(fn->numFormals());
-          printArg(file, cur);
-        }
-      } else {
-        for (int i = 1; i < fn->numFormals(); i++) {
-          ArgSymbol *cur = fn->getFormal(i);
-          printArg(file, cur);
-          *file << ", ";
-        }
-        ArgSymbol *cur = fn->getFormal(fn->numFormals());
-        printArg(file, cur);
-      }
-    }
-    if (!fn->hasFlag(FLAG_NO_PARENS))
-      *file << ")";
-    */
-    switch (fn->retTag) {
-    case RET_REF:
-      *file << " ref"; break;
-    case RET_PARAM:
-      *file << " param"; break;
-    case RET_TYPE:
-      *file << " type"; break;
-    default: break;
-    }
-    if (fn->retExprType != NULL) {
-      *file << ": ";
-      fn->retExprType->body.tail->prettyPrint(file);
-      // TODO: better type output
-    }
-    *file << std::endl;
-
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-
-    if (fn->doc != NULL) {
-      ltrimAndPrintLines(fn->doc, file);
-      *file << std::endl;
-    }
-    NUMTABS--;
-  }
-}
 
 void createDocsFileFolders(std::string filename) {
   size_t dirCutoff = filename.find("/");
@@ -585,121 +258,37 @@ void generateSphinxOutput(std::string dirpath) {
   mysystem(cmd, "building html output from chpldoc sphinx project");
 }
 
-/* trim from start
- *
- * From: http://stackoverflow.com/a/217605
- */
-static inline std::string ltrim(std::string s) {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
-  return s;
-}
 
-/*
- * Return true if 's' is empty or only has whitespace characters.
- */
-static inline bool isEmpty(std::string s) {
-  return s.end() == std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace)));
-}
+std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
+  std::string filename = mod->filename;
 
-/*
- * Erase 'count' number of characters from beginning of each line in 's'. Just
- * ltrim() the first line, though.
- */
-static std::string erase(std::string s, int count) {
-  std::stringstream sStream(s);
-  std::string line;
-  bool first = true;
-  std::string result = std::string("");
-  while (std::getline(sStream, line)) {
-    if (first) {
-      result += ltrim(line);
-      result += std::string("\n");
-      first = false;
-      continue;
-    }
-
-    // Check that string has at least 'count' characters to erase. If there are
-    // fewer than 'count', erase all characters in line.
-    size_t endIndex;
-    if (line.length() >= (size_t)count) {
-      endIndex = count;
+  if (mod->modTag == MOD_INTERNAL) {
+    filename = "internal-modules/";
+  } else if (mod ->modTag == MOD_STANDARD) {
+    filename = "standard-modules/";
+  } else {
+    size_t location = filename.rfind("/");
+    if (location != std::string::npos) {
+      filename = filename.substr(0, location + 1);
     } else {
-      endIndex = line.length();
+      filename = "";
     }
-
-    line.erase(line.begin(), line.begin() + endIndex);
-    result += line;
-    result += std::string("\n");
   }
-  return result;
+  filename = docsFolderName + "/" + filename;
+  createDocsFileFolders(filename);
+
+  // Creates files for each top level module.
+  if (fDocsTextOnly) {
+    filename = filename + mod->name + ".txt";
+  } else {
+    filename = filename + mod->name + ".rst";
+  }
+
+  return filename;
 }
 
-/*
- * Returns first non empty line of the string. "Empty lines" are those with no
- * characters or only whitespace characters.
- */
-static std::string firstNonEmptyLine(std::string s) {
-  std::stringstream sStream(s);
-  std::string line;
-  std::string result;
-  while (std::getline(sStream, line)) {
-    if (!isEmpty(line)) {
-      result = ltrim(line);
-      break;
-    }
-  }
-  return result;
-}
 
-/*
- * Iterate through string, skipping the first line, finding the minimum amount
- * of whitespace before each line.
- *
- * FIXME: Find minimum prefix also if every single line begins with
- *        "\s+*\s". (thomasvandoren, 2015-02-04)
- */
-static int minimumPrefix(std::string s) {
-  std::stringstream sStream(s);
-  std::string line;
-  bool first = true;
-  int minPrefix = INT_MAX;
-  int currentPrefix;
-  while (std::getline(sStream, line)) {
-    // Skip the first line. It is a special case that often has been trimmed to
-    // some extent.
-    if (first) {
-      first = false;
-      continue;
-    }
-
-    // If line only contains blanks, do not include it in this
-    // computation. Especially in the case that the string is empty.
-    if (isEmpty(line)) {
-      continue;
-    }
-
-    // Find the first non-space character. Record if it is the new minimum.
-    currentPrefix = std::find_if(line.begin(), line.end(), std::not1(std::ptr_fun<int, int>(std::isspace))) - line.begin();
-    if (currentPrefix < minPrefix) {
-      minPrefix = currentPrefix;
-    }
-  }
-  return minPrefix;
-}
-
-/*
- * Iterate through all lines of s. Print tabs before each line, ltrim the
- * lines, and print them.
- */
-void ltrimAndPrintLines(std::string s, std::ofstream *file) {
-  int minPrefix = minimumPrefix(s);
-  std::string trimmedS = erase(s, minPrefix);
-
-  std::stringstream sStream(trimmedS);
-  std::string line;
-  while (std::getline(sStream, line)) {
-    printTabs(file);
-    *file << line;
-    *file << std::endl;
-  }
+std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsFolderName) {
+  std::string filename = filenameFromMod(mod, docsFolderName);
+  return new std::ofstream(filename.c_str(), std::ios::out);
 }
