@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+import os, stat, sys
+
+os.chmod("foo.txt", stat.S_IRUSR | stat.S_IWUSR);
+# set foo.txt to user rw, no other permissions
+os.chmod("bar.txt", stat.S_IRWXU);
+# set bar.txt to user rwx, no other permissions
+
+with open(sys.argv[2], 'w') as fp:
+    if os.stat("foo.txt").st_mode != os.stat("bar.txt").st_mode:
+        fp.write("didn't match\n")
+    else:
+        fp.write("did match\n")

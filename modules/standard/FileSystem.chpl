@@ -179,9 +179,14 @@ proc copyFile(src: string, dest: string) {
    dest: the destination of the permissions.
 */
 proc copyMode(out err: syserr, src: string, dest: string) {
-  extern proc chpl_fs_copyMode(src: c_string, dest: c_string): syserr;
-
-  err = chpl_fs_copyMode(src.c_str(), dest.c_str());
+  // Gets the mode from the source file.
+  var srcMode = viewMode(err, src);
+  // If any error occurred, we want to be the one reporting it, so as not
+  // to bleed implementation details.  If we found one when viewing the
+  // source's mode, we should return immediately.
+  if err != ENOERR then return;
+  // Sets the mode of the destination to the source's mode.
+  chmod(err, dest, srcMode);
 }
 
 /* Copies the permissions of the file indicated by src to the file indicated
@@ -193,7 +198,7 @@ proc copyMode(out err: syserr, src: string, dest: string) {
 proc copyMode(src: string, dest: string) {
   var err: syserr = ENOERR;
   copyMode(err, src, dest);
-  if err != ENOERR then ioerror(err, "in copyMode", src);
+  if err != ENOERR then ioerror(err, "in copyMode " + src, dest);
 }
 
 /* Returns the current working directory for the current locale.
