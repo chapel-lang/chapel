@@ -199,6 +199,7 @@ public:
   virtual bool       isConstValWillNotChange()                 const;
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
+  virtual bool       isType()                                  const;
 
   const char* doc;
 
