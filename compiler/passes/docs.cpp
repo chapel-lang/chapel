@@ -20,9 +20,9 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <sstream>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sstream>
 
 #include "AstPrintDocs.h"
 #include "AstToText.h"
