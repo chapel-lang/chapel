@@ -35,7 +35,7 @@ clean: FORCE
 
 cleanall: FORCE
 
-clobber: FORCE
+clobber: FORCE clean-documentation
 	rm -rf standard/gen
 
 depend:
@@ -57,11 +57,15 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 MODULES_TO_DOCUMENT = \
 	standard/Random.chpl \
+	standard/Buffers.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
 	@echo "HTML files are at \$$CHPL_HOME/modules/docs/html/build/html/."
+
+clean-documentation:
+	rm -rf ./docs
 
 FORCE:
 
