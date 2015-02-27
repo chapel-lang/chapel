@@ -1296,6 +1296,50 @@ module ChapelRange {
   //# Parallel Iterators
   //#
 
+  iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
+                                              !localeModelHasSublocales
+  {
+    if ! isBoundedRange(this) {
+      compilerError("parallel iteration is not supported over unbounded ranges");
+    }
+    if this.isAmbiguous() {
+      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+    }
+    if debugChapelRange {
+      writeln("*** In range standalone iterator:");
+    }
+
+    const v = this.length;
+    const numChunks = if __primitive("task_get_serial") then
+                      1 else _computeNumChunks(v);
+
+    if debugChapelRange {
+      writeln("*** RI: length=", v, " numChunks=", numChunks);
+    }
+
+    if v == 0 {
+      return;
+    }
+
+    if numChunks == 1 {
+      for i in this {
+        yield i;
+      }
+    } else {
+      coforall chunk in 0..#numChunks {
+        const (lo, hi) = _computeBlock(v, numChunks, chunk, v-1);
+        const len = hi - (lo-1);
+        var low = orderToIndex(lo);
+        var high = (low:strType + stride * (len - 1):strType):idxType;
+        if stride < 0 then low <=> high;
+        const r = if stridable then low..high by stride else low..high;
+        for i in r {
+          yield i;
+        }
+      }
+    }
+  }
+
   iter range.these(param tag: iterKind) where tag == iterKind.leader
   {
     if ! isBoundedRange(this) then
