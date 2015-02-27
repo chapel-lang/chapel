@@ -65,6 +65,31 @@ module DefaultSparse {
       }
     }
 
+    iter these(param tag: iterKind) where tag == iterKind.standalone {
+      const numElems = nnz;
+      const numChunks = _computeNumChunks(numElems): numElems.type;
+      if debugDefaultSparse {
+        writeln("DefaultSparseDom standalone: ", numChunks, " chunks, ",
+                numElems, " elems");
+      }
+
+      // split our numElems elements over numChunks tasks
+      if numChunks <= 1 {
+        // ... except if 1, just use the current thread
+        for i in 1..numElems {
+          yield indices(i);
+        }
+      } else {
+        coforall chunk in 1..numChunks {
+          const (startIx, endIx) =
+            _computeChunkStartEnd(numElems, numChunks, chunk);
+          for i in startIx..endIx {
+            yield indices(i);
+          }
+        }
+      }
+    }
+
     iter these(param tag: iterKind) where tag == iterKind.leader {
       const numElems = nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
@@ -279,8 +304,31 @@ module DefaultSparse {
     }
 
     iter these() ref {
-      for e in data[1..dom.nnz] do yield e;
+      for i in 1..dom.nnz do yield data[i];
     }
+
+    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+      const numElems = dom.nnz;
+      const numChunks = _computeNumChunks(numElems): numElems.type;
+      if debugDefaultSparse {
+        writeln("DefaultSparseArr standalone: ", numChunks, " chunks, ",
+                numElems, " elems");
+      }
+      if numChunks <= 1 {
+        for i in 1..numElems {
+          yield data[i];
+        }
+      } else {
+        coforall chunk in 1..numChunks {
+          const (startIx, endIx) =
+            _computeChunkStartEnd(numElems, numChunks, chunk);
+          for i in startIx..endIx {
+            yield data[i];
+          }
+        }
+      }
+    }
+
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
       // forward to the leader iterator on our domain
@@ -297,7 +345,7 @@ module DefaultSparse {
       if debugDefaultSparse then
         writeln("DefaultSparseArr follower: ", startIx, "..", endIx);
 
-      for e in data[startIx..endIx] do yield e;
+      for i in startIx..endIx do yield data[i];
     }
 
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {

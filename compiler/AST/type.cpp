@@ -29,7 +29,7 @@
 #include "intlimits.h"
 #include "ipe.h"
 #include "misc.h"
-#include "passes.h" // for isWideString
+#include "passes.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
@@ -550,6 +550,12 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
       fn->addFlag(FLAG_METHOD_PRIMARY);
     }
   }
+
+  if (VarSymbol* var = toVarSymbol(def->sym)) {
+    // Identify VarSymbol as class/record member.
+    var->makeField();
+  }
+
   if (def->parentSymbol || def->list)
     def->remove();
   if (tail)
@@ -706,7 +712,6 @@ void AggregateType::codegenDef() {
   } else {
     if( outfile ) {
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -823,7 +828,6 @@ void AggregateType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -1166,6 +1170,89 @@ Symbol* AggregateType::getField(int i) {
   return toDefExpr(fields.get(i))->sym;
 }
 
+
+void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
+  // TODO: Include unions... (thomasvandoren, 2015-02-25)
+  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << this->symbol->name;
+  *file << this->docsSuperClass();
+  *file << std::endl;
+
+  // In rst mode, ensure there is an empty line between the class/record
+  // signature and its description or the next directive.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+
+    // In rst mode, ensure there is an empty line between the class/record
+    // description and the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+/*
+ * Returns super class string for documentation. If super class exists, returns
+ * ": <super class name>".
+ */
+std::string AggregateType::docsSuperClass() {
+  if (this->inherits.length > 0) {
+    std::vector<std::string> superClassNames;
+
+    for_alist(expr, this->inherits) {
+      if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
+        superClassNames.push_back(use->unresolved);
+      } else {
+        INT_FATAL(expr, "Expected UnresolvedSymExpr for all member of inherits alist.");
+      }
+    }
+
+    if (superClassNames.empty()) {
+      return "";
+    }
+
+    // If there are super classes, join them into a single comma delimited
+    // string prefixed with a colon.
+    std::string superClasses = " : " + superClassNames.front();
+    for (unsigned int i = 1; i < superClassNames.size(); i++) {
+      superClasses += ", " + superClassNames.at(i);
+    }
+    return superClasses;
+  } else {
+    return "";
+  }
+}
+
+
+std::string AggregateType::docsDirective() {
+  if (fDocsTextOnly) {
+    if (this->isClass()) {
+      return "Class: ";
+    } else if (this->isRecord()) {
+      return "Record: ";
+    }
+  } else {
+    if (this->isClass()) {
+      return ".. class:: ";
+    } else if (this->isRecord()) {
+      return ".. record:: ";
+    }
+  }
+  return "";
+}
+
+
 void initRootModule() {
   rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
   rootModule->filename = astr("<internal>");
@@ -1323,9 +1410,6 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL(dtStringCopy, gStringCopy, "_nullString");
   gStringCopy->cname = "NULL";
   gStringCopy->addFlag(FLAG_EXTERN);
-
-  dtString = createPrimitiveType( "string", "chpl_string");
-  dtString->defaultValue = NULL;
 
   dtSymbol = createPrimitiveType( "symbol", "_symbol");
 
@@ -1492,40 +1576,36 @@ void initChplProgram(DefExpr* objectDef) {
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
 
+// Appends a VarSymbol to the root module and gives it the bool immediate
+// matching 'value'. For use in initCompilerGlobals.
+static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
+  rootModule->block->insertAtTail(new DefExpr(globalVar));
+  if (value) {
+    globalVar->immediate = new Immediate;
+    *globalVar->immediate = *gTrue->immediate;
+  } else {
+    globalVar->immediate = new Immediate;
+    *globalVar->immediate = *gFalse->immediate;
+  }
+}
+
 void initCompilerGlobals() {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
   gBoundsChecking->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gBoundsChecking));
-  if (fNoBoundsChecks) {
-    gBoundsChecking->immediate = new Immediate;
-    *gBoundsChecking->immediate = *gFalse->immediate;
-  } else {
-    gBoundsChecking->immediate = new Immediate;
-    *gBoundsChecking->immediate = *gTrue->immediate;
-  }
+  setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
+
+  gCastChecking = new VarSymbol("castChecking", dtBool);
+  gCastChecking->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gCastChecking, !fNoCastChecks);
 
   gPrivatization = new VarSymbol("_privatization", dtBool);
   gPrivatization->addFlag(FLAG_PARAM);
-  rootModule->block->insertAtTail(new DefExpr(gPrivatization));
-  if (fNoPrivatization || fLocal) {
-    gPrivatization->immediate = new Immediate;
-    *gPrivatization->immediate = *gFalse->immediate;
-  } else {
-    gPrivatization->immediate = new Immediate;
-    *gPrivatization->immediate = *gTrue->immediate;
-  }
+  setupBoolGlobal(gPrivatization, !(fNoPrivatization || fLocal));
 
   gLocal = new VarSymbol("_local", dtBool);
   gLocal->addFlag(FLAG_PARAM);
-  rootModule->block->insertAtTail(new DefExpr(gLocal));
-  if (fLocal) {
-    gLocal->immediate = new Immediate;
-    *gLocal->immediate = *gTrue->immediate;
-  } else {
-    gLocal->immediate = new Immediate;
-    *gLocal->immediate = *gFalse->immediate;
-  }
+  setupBoolGlobal(gLocal, fLocal);
 
   // defined and maintained by the runtime
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
@@ -1601,10 +1681,6 @@ bool is_complex_type(Type *t) {
 
 bool is_enum_type(Type *t) {
   return toEnumType(t);
-}
-
-bool is_string_type(Type *t) {
-  return t == dtString;
 }
 
 int get_width(Type *t) {
@@ -1788,20 +1864,12 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
   GenInfo* info = gGenInfo;
   GenRet ret;
   if (fHeterogeneous) {
-    // strings are special
-    if (toPrimitiveType(typesym) == dtString) {
-      if( info->cfile )
-        ret.c = std::string("-") + typesym->cname;
-      else
-        INT_FATAL("TODO: genTypeStructureIndex llvm strings");
-    } else {
-      if( info->cfile )
-        ret.c = genChplTypeEnumString(typesym);
-      else {
+    if( info->cfile )
+      ret.c = genChplTypeEnumString(typesym);
+    else {
 #ifdef HAVE_LLVM
-        ret = info->lvt->getValue(genChplTypeEnumString(typesym));
+      ret = info->lvt->getValue(genChplTypeEnumString(typesym));
 #endif
-      }
     }
   } else {
     if( info->cfile )
@@ -1930,7 +1998,6 @@ bool needsCapture(Type* t) {
       is_imag_type(t) ||
       is_complex_type(t) ||
       is_enum_type(t) ||
-      is_string_type(t) ||
       t == dtStringC ||
       isClass(t) ||
       isRecord(t) ||

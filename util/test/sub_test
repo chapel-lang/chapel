@@ -1533,7 +1533,14 @@ for testname in testsrc:
               execOptRedirect = args[redirIdx + 1]
               args.pop(redirIdx+1)
               args.pop(redirIdx)
-              if redirectin == None or redirectin == "/dev/null":
+              if redirectin == None:
+                  # It is a little unfortunate that we compile the test only to skip it here.
+                  # In order to prevent this, the logic for combining all the places execpopts
+                  # come from and checking for '<' would have to be factored out or duplicated
+                  print('[Skipping test with stdin redirection ("<") in execopts since '
+                        '-nostdinredirect is given {0}/{1}]'.format(localdir, test_filename))
+                  break;
+              elif redirectin == "/dev/null":
                 if os.access(execOptRedirect, os.R_OK):
                   redirectin = execOptRedirect
                   redirectin_set_in_loop = True

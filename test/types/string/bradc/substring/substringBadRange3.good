@@ -1,3 +1,1 @@
-str.substring(3..2) = 
-str.substring(1..0) = 
-str.substring(1..-1) = 
+substringBadRange3.chpl:3: error: halt reached - tring to slice a string with a range of size 0

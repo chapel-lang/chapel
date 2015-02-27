@@ -78,7 +78,7 @@ class c_ptr {
 
 inline proc =(ref a:c_ptr, b:c_ptr) { __primitive("=", a, b); }
 
-inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, nil); }
+inline proc =(ref a:c_ptr, b:_nilType) { __primitive("=", a, c_nil); }
 
 inline proc _cast(type t, x) where t:c_ptr && x:_nilType {
   return __primitive("cast", t, x);
@@ -87,6 +87,9 @@ inline proc _cast(type t, x) where t:c_ptr && x.type:c_ptr {
   return __primitive("cast", t, x);
 }
 inline proc _cast(type t, x) where t:c_void_ptr && x.type:c_ptr {
+  return __primitive("cast", t, x);
+}
+inline proc _cast(type t, x) where t:c_ptr && x.type:c_void_ptr {
   return __primitive("cast", t, x);
 }
 
@@ -112,10 +115,10 @@ inline proc ==(a: c_void_ptr, b: c_ptr) {
   return __primitive("ptr_eq", a, b);
 }
 inline proc ==(a: c_ptr, b: _nilType) {
-  return __primitive("ptr_eq", a, nil);
+  return __primitive("ptr_eq", a, c_nil);
 }
 inline proc ==(a: _nilType, b: c_ptr) {
-  return __primitive("ptr_eq", nil, b);
+  return __primitive("ptr_eq", c_nil, b);
 }
 
 inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
@@ -128,10 +131,10 @@ inline proc !=(a: c_void_ptr, b: c_ptr) {
   return __primitive("ptr_neq", a, b);
 }
 inline proc !=(a: c_ptr, b: _nilType) {
-  return __primitive("ptr_neq", a, nil);
+  return __primitive("ptr_neq", a, c_nil);
 }
 inline proc !=(a: _nilType, b: c_ptr) {
-  return __primitive("ptr_neq", nil, b);
+  return __primitive("ptr_neq", c_nil, b);
 }
 
 inline proc _cond_test(x: c_ptr) return x != c_nil;

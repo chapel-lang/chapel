@@ -17,566 +17,768 @@
  * limitations under the License.
  */
 
-// Chapel Strings
-module String {
+pragma "no use ChapelStandard"
+
+/*
+ * NOTES:
+ *
+ * - An empty string is represented by the default bufferType value
+ *   which is always considered to be a string literal.  It will never
+ *   be freed or reference counted.  Another option would be to use a
+ *   special NULL extern symbol.  Unfortunately, since _defaultOf()
+ *   currently does not work for types with "ignore noinit", we'd
+ *   still have to handle the default bufferType value, so it would not
+ *   be worth it to use NULL.  If the situation changes, it might be
+ *   worth reconsidering (also taking into consideration the runtime
+ *   functions that back this).
+ *
+ * - Not all operations support interaction with the bufferType, e.g.,
+ *   relational operations.  I chose to implement the ones I thought
+ *   were commonly used like concatenation and assignment.  When this
+ *   becomes the default, the compiler should automatically coerce the
+ *   rest.
+ *
+ * - It is assumed the bufferType is a local-only type, so we never
+ *   make a remote copy of one passed in by the user, though remote
+ *   copies are made of internal bufferType variables.
+ *
+ */
+
+module BaseStringType {
   use CString;
+  use SysCTypes;
 
-  pragma "default string value" extern var defaultStringValue: string = noinit;
+  type bufferType = c_ptr(uint(8));
+  param bufferTypeString = "c_ptr(uint(8))":c_string;
+  param min_alloc_size: int = 16;
 
-  // The following method is called by the compiler to determine the default
-  // value of a given type.  For strings, this should return the value
-  // defined above.
-  // strings will be records, so param is not possible for them
-  inline proc _defaultOf(type t) where t: string return defaultStringValue;
+  extern type chpl_mem_descInt_t;
 
-  // String concatenation
-  inline proc +(s: string, x: string) {
-    var cs = __primitive("string_concat", s.c_str(), x.c_str());
-    const ret = toString(cs);
-    // toString steals the c_string_copy, so no need to free it here.
-    return ret;
+  // We use this as a shortcut to get at here.id without actually constructing
+  // a locale object. Used when determining if we should make a remote transfer.
+  // This extern is also defined in ChapelLocale, but if it isn't defined here
+  // as well we will get a duplicate symbol error. I believe this is due to
+  // module load ordering issues.
+  // TODO: make a proc in ChapelLocale that returns this rather than using the extern
+  extern var chpl_nodeID: chpl_nodeID_t;
+
+  // TODO: hook into chpl_here_alloc and friends somehow
+  // The runtime exits on errors for these
+  pragma "insert line file info"
+  extern proc chpl_mem_alloc(size: size_t,
+                             description: chpl_mem_descInt_t): c_void_ptr;
+
+  pragma "insert line file info"
+  extern proc chpl_mem_calloc(number: size_t, size: size_t,
+                              description: chpl_mem_descInt_t) : c_void_ptr;
+
+  pragma "insert line file info"
+  extern proc chpl_mem_realloc(ptr: c_ptr, size: size_t,
+                               description: chpl_mem_descInt_t) : c_void_ptr;
+
+  pragma "insert line file info"
+  extern proc chpl_mem_free(ptr: c_ptr): void;
+
+  extern const CHPL_RT_MD_STRING_COPY_REMOTE: chpl_mem_descInt_t;
+  extern const CHPL_RT_MD_STRING_COPY_DATA: chpl_mem_descInt_t;
+
+  // TODO: maybe remove this one, mostly used as a helper for me to make sure I
+  // get the signature right.
+  inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
+                                   src_addr: bufferType, len: size_t) {
+    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len);
   }
 
-  inline proc +(s: c_string, x: string) {
-    var cs = __primitive("string_concat", s, x.c_str());
-    const ret = toString(cs);
-    // toString steals the c_string_copy, so no need to free it here.
-    return ret;
+  proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: int): bufferType {
+      const dest = chpl_mem_alloc(safe_cast(size_t, len+1), CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
+      chpl_string_comm_get(dest, src_loc_id, src_addr, safe_cast(size_t, len));
+      dest[len] = 0;
+      return dest;
   }
 
-  inline proc +(s: string, x: c_string) {
-    var cs = __primitive("string_concat", s.c_str(), x);
-    const ret = toString(cs);
-    // toString steals the c_string_copy, so no need to free it here.
-    return ret;
-  }
+  extern proc memmove(destination: c_ptr, const source: c_ptr, num: size_t);
 
-  inline proc +(s: string, x: numeric)
-    return s + x:string;
+  // pointer arithmetic used for strings
+  inline proc +(a: c_ptr, b: int(?w)) return __primitive("+", a, b);
 
-  inline proc +(x: numeric, s: string)
-    return x:string + s;
-
-  inline proc +(s: string, x: enumerated)
-    return s + x:string;
-
-  inline proc +(x: enumerated, s: string)
-    return x:string + s;
-
-  inline proc +(s: string, x: bool)
-    return s + x:string;
-
-  inline proc +(x: bool, s: string)
-    return x:string + s;
-
-  proc typeToString(type t) param {
-    return __primitive("typeToString", t);
-  }
-  
-  proc typeToString(x) param {
-    compilerError("typeToString()'s argument must be a type, not a value");
-  }
-
-  // This implies that the *representation* of strings is shared.
-  // If strings are reimplemented as classes or records, a less trivial
-  // implementation for assignment will become necessary.
-  inline proc =(ref a: string, b: string) { __primitive("move", a, b); }
-
-  inline proc ==(a: string, b: string) return (__primitive("string_compare", a.c_str(), b.c_str()) == 0);
-  inline proc !=(a: string, b: string) return (__primitive("string_compare", a.c_str(), b.c_str()) != 0);
-
-
-  inline proc <=(a: string, b: string) return a.c_str()<=b.c_str();
-  inline proc >=(a: string, b: string) return a.c_str()>=b.c_str();
-  inline proc <(a: string, b: string) return a.c_str()<b.c_str();
-  inline proc >(a: string, b: string) return a.c_str()>b.c_str();
-
-  //
-  // primitive string functions and methods
-  //
-  inline proc ascii(a: string) return ascii(a.c_str());
-  inline proc string.length return this.c_str().length;
-  inline proc string.size return this.length;
-  inline proc string.substring(i: int) {
-    var cs = this.c_str().substring(i);
-    const ret = toString(cs);
-    // toString steals the returned c_string_copy, so no need to free it.
-    return ret;
-  }
-  inline proc string.substring(r: range(?)) {
-    var cs = this.c_str().substring(r);
-    const ret = toString(cs);
-    // toString steals the returned c_string_copy, so no need to free it.
-    return ret;
-  }
-  
-  inline proc _string_contains(a: string, b: string)
-    return _string_contains(a.c_str(), b.c_str());
-
-  /* args: any number of strings
-     return: Returns true if this starts with one of the strings specified in args
-   */
-  inline proc string.startsWith(args ...?k):bool {
-    for param i in 1..k {
-      if (this.substring(0..args(i).length) == args(i))
-        then return true;
-    }
-    return false;
-  }
-
-  
-  /* Returns the index of the first occurrence of a substring within a string,
-      or 0 if the substring is not in the string.
-   */
-  inline proc string.indexOf(substring:string):int
-    return this.c_str().indexOf(substring.c_str());
-  inline proc string.indexOf(substring:c_string):int
-    return this.c_str().indexOf(substring);
-  
-  // cast to and from Chapel strings use c_string
-  pragma "compiler generated"
-  inline proc _cast(type t, x) where t == string {
-    var cs = _cast(c_string_copy, x);
-    // Note, this uses a non-allocating toString(), and steals cs (no need to free).
-    const ret = toString(cs);
-    return ret;
-  }
-
-  // The "compiler generated" flag is used, because this cast has to be weaker
-  // than the c_string-to-enum cast generated in buildDefaultFunctions().
-  // The circularity is caused by the built-in c_string-to-string coercion.
-  // TODO: If string literals were all actually chpl_strings, then I think the
-  // coercion (and this cruft) could be removed.
-  pragma "compiler generated"
-  inline proc _cast(type t, x: string) where isEnumType(t)
-    return _cast(t, x.c_str());
-
-  inline proc _cast(type t, x: string) where isBoolType(t) || isNumericType(t)
-    return _cast(t, x.c_str());
-
-  //
-  // casts from c_string to bool types
-  //
-  inline proc _cast(type t, x:c_string) where isBoolType(t)
-  {
-    pragma "insert line file info"
-    extern proc c_string_to_chpl_bool(x:c_string) : bool;
-    return c_string_to_chpl_bool(x) : t;
-  }
-
-  //
-  // casts from c_string to integer types
-  //
-  pragma "insert line file info"
-  extern proc c_string_to_int8_t  (x:c_string) : int(8); 
-  pragma "insert line file info"
-  extern proc c_string_to_int16_t (x:c_string) : int(16);
-  pragma "insert line file info"
-  extern proc c_string_to_int32_t (x:c_string) : int(32);
-  pragma "insert line file info"
-  extern proc c_string_to_int64_t (x:c_string) : int(64);
-  pragma "insert line file info"
-  extern proc c_string_to_uint8_t (x:c_string) : uint(8); 
-  pragma "insert line file info"
-  extern proc c_string_to_uint16_t(x:c_string) : uint(16);
-  pragma "insert line file info"
-  extern proc c_string_to_uint32_t(x:c_string) : uint(32);
-  pragma "insert line file info"
-  extern proc c_string_to_uint64_t(x:c_string) : uint(64);
-
-  inline proc _cast(type t, x:c_string) where t == int(8)
-    return c_string_to_int8_t(x);
-  inline proc _cast(type t, x:c_string) where t == int(16)
-    return c_string_to_int16_t(x);
-  inline proc _cast(type t, x:c_string) where t == int(32)
-    return c_string_to_int32_t(x);
-  inline proc _cast(type t, x:c_string) where t == int(64)
-    return c_string_to_int64_t(x);
-  inline proc _cast(type t, x:c_string) where t == uint(8)
-    return c_string_to_uint8_t(x);
-  inline proc _cast(type t, x:c_string) where t == uint(16)
-    return c_string_to_uint16_t(x);
-  inline proc _cast(type t, x:c_string) where t == uint(32)
-    return c_string_to_uint32_t(x);
-  inline proc _cast(type t, x:c_string) where t == uint(64)
-    return c_string_to_uint64_t(x);
-
-  //
-  // casts from c_string to real/imag types
-  //
-  pragma "insert line file info"
-  extern proc c_string_to_real32(x:c_string) : real(32);
-  pragma "insert line file info"
-  extern proc c_string_to_real64(x:c_string) : real(64);
-  pragma "insert line file info"
-  extern proc c_string_to_imag32(x:c_string) : imag(32);
-  pragma "insert line file info"
-  extern proc c_string_to_imag64(x:c_string) : imag(64);
-  
-  inline proc _cast(type t, x:c_string) where t == real(32)
-    return c_string_to_real32(x);
-  inline proc _cast(type t, x:c_string) where t == real(64)
-    return c_string_to_real64(x);
-  inline proc _cast(type t, x:c_string) where t == imag(32)
-    return c_string_to_imag32(x);
-  inline proc _cast(type t, x:c_string) where t == imag(64)
-    return c_string_to_imag64(x);
-
-  //
-  // casts from c_string to complex types
-  //
-  pragma "insert line file info"
-  extern proc c_string_to_complex64(x:c_string) : complex(64);
-  pragma "insert line file info"
-  extern proc c_string_to_complex128(x:c_string) : complex(128);
-
-  inline proc _cast(type t, x:c_string) where t == complex(64)
-    return c_string_to_complex64(x);
-  inline proc _cast(type t, x:c_string) where t == complex(128)
-    return c_string_to_complex128(x);
-
-  //
-  // casts from complex
-  //
-  inline proc _cast(type t, x: complex(?w)) where t == c_string_copy {
-    if isnan(x.re) || isnan(x.im) then
-      return __primitive("string_copy", "nan");
-    var re = (x.re):c_string_copy;
-    var im: c_string_copy;
-    var op: c_string;
-    if x.im < 0 {
-      im = (-x.im):c_string_copy;
-      op = " - ";
-    } else if im == "-0.0" {
-      im = "0.0":c_string_copy;
-      op = " - ";
-    } else {
-      im = (x.im):c_string_copy;
-      op = " + ";
-    }
-    // TODO: Add versions of the concatenation operator that consume their
-    // c_string_copy arg or args.
-    var ts0 = re + op;
-    chpl_free_c_string_copy(re);
-    var ts1 = ts0 + im;
-    chpl_free_c_string_copy(ts0);
-    chpl_free_c_string_copy(im);
-    const ret = ts1 + "i";
-    chpl_free_c_string_copy(ts1);
-    return ret;
-  }
-  // TODO: This is only in place to support test code in types/string/sungeun.
-  // Nor user nor module code should use this cast, because it strips ownership
-  // from the c_string_copy returned by the above cast without first arranging
-  // for its disposal.
-  inline proc _cast(type t, x:complex(?w)) where t == c_string
-    return _cast(c_string_copy, x);
-
-  
-  pragma "init copy fn"
-  inline proc chpl__initCopy(a)
-    where a.type == c_string || a.type == c_string_copy {
-    // Currently, string representations are shared.
-    // (See note on proc =(a:string, b:string) above.)
-      return a;
-  }
-  
-  proc chpldev_refToString(ref arg) {
-  
-    //
-    // print out the address of class references as well
-    //
-    proc chpldev_classToString(x: object)
-      return " (class = " + __primitive("ref to string", x) + ")";
-    proc chpldev_classToString(x) return "";
-  
-    return __primitive("ref to string", arg) + chpldev_classToString(arg);
-  }
-  
+  config param debugStrings = false;
 }
 
-// C strings
-// extern type c_string; is a built-in primitive type
-//
-// In terms of how they are used, c_strings are a "close to the metal"
-// representation, being in essence the common NUL-terminated C string.
-//
-// C string copies
-// extern type c_string_copy is also a built-in primitive type.
-// It is the same as a c_string, but in its case represents "owned" data.
-// Low-level routines that allocate string data off the heap and return a deep
-// copy (including string_copy, string_concat, string_index and string_select)
-// have the return type of c_string_copy to denote that ownership.
-//
-// The difference is ignored by the C compiler, but Chapel treats them as
-// different types.  This difference allows us to have two versions of
-// toString: one makes a copy of its c_string argument, the other simply
-// pointer-copies its c_string_copy argument.  Both effectively return an
-// "owned" C string, which is how the internal chpl_string type is currently
-// interpreted.  (The new record-based string implementation has different
-// rules, but still makes use of the distinction between unowned c_strings and
-// owned c_string_copies.
-module CString {
+// Chapel Strings
+module String {
+  use BaseStringType;
+  use StringCasts;
 
-  // The following method is called by the compiler to determine the default
-  // value of a given type.
-  inline proc _defaultOf(type t) param where t: c_string return "":c_string;
-  inline proc _defaultOf(type t) where t == c_string_copy return _nullString;
-
-  inline proc toString(cstr:c_string):string {
-    return __primitive("string_from_c_string", cstr, 0, 0);
-  }
-  inline proc toString(cstr:c_string, len:int):string {
-    return __primitive("string_from_c_string", cstr, 1, len);
+  inline proc chpl_debug_string_print(s: c_string) {
+    if debugStrings {
+      extern proc printf(format: c_string, x...);
+      printf("%s\n", s);
+    }
   }
 
-  // These routines consume the c_string_copy argument.  In terms of MM, this
-  // is the same as if the caller had called chpl_free_string_copy()
-  extern proc string_from_c_string_copy(ref cstrc:c_string_copy,
-                                        hasLen:bool, len:int) : string;
-  inline proc toString(ref cstrc:c_string_copy) : string {
-    return string_from_c_string_copy(cstrc, false, 0);
-  }
-  inline proc toString(ref cstrc:c_string_copy, len:int) : string {
-    return string_from_c_string_copy(cstrc, true, len);
+  pragma "string record"
+  pragma "ignore noinit"
+  pragma "no default functions"
+  record string {
+    var len: int = 0; // length of string in bytes
+    var _size: int = 0; // size of the buffer we own
+    var buff: bufferType = nil;
+    // I can almost get away without this, but other things get verbose.
+    // This causes us to get padded out to a word boundary :(
+    const owned: bool = true;
+
+    /*
+    proc string(buff: bufferType, length: int, size: int, owned: bool = true) {
+      reinitString(buff, length, size);
+    }*/
+
+    proc ref ~string() {
+      if owned && !this.isEmptyString() {
+        on this {
+          chpl_mem_free(this.buff);
+        }
+      }
+    }
+
+    // This is assumed to be called from this.locale
+    proc ref reinitString(buf: bufferType, s_len: int, size: int,
+                          needToCopy:bool = true) {
+      if debugStrings then
+        chpl_debug_string_print("in string.reinitString()");
+
+      if this.isEmptyString() {
+        if (s_len == 0) || (buf == nil) then return; // nothing to do
+      }
+
+      // If the this.buff is longer than buf, then reuse the buffer
+      if s_len != 0 {
+        if needToCopy {
+          if s_len+1 > this._size {
+            // free the old buffer
+            if this.owned && this.len != 0 then
+              on this do chpl_mem_free(this.buff);
+            // allocate a new buffer
+            this.buff = chpl_mem_alloc(safe_cast(size_t, s_len+1),
+                                       CHPL_RT_MD_STRING_COPY_DATA):bufferType;
+            this.buff[s_len] = 0;
+            this._size = s_len+1;
+          }
+          memmove(this.buff, buf, safe_cast(size_t, s_len));
+        } else {
+          this.buff = buf;
+          this._size = size;
+        }
+      } else {
+        // free the old buffer
+        if this.owned && this.len != 0 then chpl_mem_free(this.buff);
+        this.buff = nil;
+        this._size = 0;
+      }
+
+      this.len = s_len;
+
+      if debugStrings then
+        chpl_debug_string_print("leaving string.reinitString()");
+    }
+
+    inline proc c_str(): c_string {
+      if debugStrings then
+        chpl_debug_string_print("in .c_str()");
+
+      if this.locale.id != chpl_nodeID then
+        halt("Cannot call .c_str() on a remote string");
+
+      if debugStrings then
+        chpl_debug_string_print("leaving .c_str()");
+
+      return this.buff:c_string;
+    }
+
+    inline proc length return len;
+    //inline proc size return len;
+
+    // Steals ownership of string.buff. This is unsafe and you probably don't
+    // want to use it. I'd like to figure out how to get rid of it entirely.
+    proc _steal_buffer() : bufferType {
+      const ret = this.buff;
+      this.buff = nil;
+      this.len = 0;
+      this._size = 0;
+      return ret;
+    }
+
+    iter these() : string {
+      for i in 1..this.len {
+        yield this[i];
+      }
+    }
+
+    proc this(i: int) : string {
+      var ret: string;
+      if i == 0 || i > this.len then halt("index out of bounds of string");
+
+      ret._size = min_alloc_size;
+      ret.len = 1;
+      ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+                                CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+
+      var remoteThis = this.locale.id != chpl_nodeID;
+      if remoteThis {
+        chpl_string_comm_get(ret.buff, this.locale.id, this.buff, safe_cast(size_t, this.len));
+      } else {
+        ret.buff[0] = this.buff[i-1];
+      }
+      ret.buff[1] = 0;
+
+      return ret;
+    }
+
+    // TODO: I wasn't very good about caching variables locally in this one.
+    proc this(r: range(?)) : string {
+      var ret: string;
+      if this.len == 0 then return ret;
+
+      //TODO: halt()s should use string.writef at some point.
+      if r.hasLowBound() {
+        if r.low <= 0 then
+          halt("range out of bounds of string");
+          //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+      }
+      if r.hasHighBound() {
+        if r.high < 0 || r.high:int > this.len then
+          halt("range out of bounds of string");
+          //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+      }
+
+      var r2 = r[1:r.idxType..#this.len];
+      if r2.size <= 0 {
+        halt("tring to slice a string with a range of size 0");
+        //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+      } else {
+        ret.len = r2.size:int;
+      }
+      ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
+      ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+                                CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+
+      var thisBuff: bufferType;
+      var remoteThis = this.locale.id != chpl_nodeID;
+      if remoteThis {
+        // TODO: Could to an optimization here and only pull down the data
+        // between r2.low and r2.high. Indexing for the copy below gets a bit
+        // more complex when that is performed though.
+        thisBuff = copyRemoteBuffer(this.locale.id, this.buff, this.len);
+      } else {
+        thisBuff = this.buff;
+      }
+
+      for (r2_i, i) in zip(r2, 0..) {
+        ret.buff[i] = thisBuff[r2_i-1];
+      }
+      ret.buff[ret.len] = 0;
+
+      if remoteThis then chpl_mem_free(thisBuff);
+
+      return ret;
+    }
+
+    // Returns a string containing the character at the given index of
+    // the string, or an empty string if the index is out of bounds.
+    inline proc substring(i: int) {
+      compilerError("substring removed: use string[index]");
+    }
+
+    // Returns a string containing the string sliced by the given
+    // range, or an empty string if the range does not overlap.
+    inline proc substring(r: range) {
+      compilerError("substring removed: use string[range]");
+    }
+
+    inline proc isEmptyString() {
+      return this.len == 0; // this should be enough of a check
+    }
+
+    proc writeThis(f: Writer) {
+      compilerWarning("not implemented: writeThis");
+      /*
+      if !this.isEmptyString() {
+        if (this.locale.id != chpl_nodeID) {
+          var tcs = copyRemoteBuffer(this.locale, this.buff, this.len);
+          f.write(tcs);
+          free_baseType(tcs);
+        } else {
+          f.write(this.buff);
+        }
+      }
+      */
+    }
+
+    // TODO: could use a multi-pattern search or some variant when there are
+    // multiple needles
+    proc startsWith(needles: string ...) : bool {
+      for needle in needles {
+        if needle.isEmptyString() then return true;
+        if needle.len > this.len then continue;
+
+        for i in 0:int..#needle.len {
+          if needle.buff[i] != this.buff[i] then break;
+          if i == needle.len-1 then return true;
+        }
+      }
+      return false;
+    }
+
+    // Returns the index of the first occurrence of a substring within a
+    // string or 0 if the substring is not in the string.
+    //TODO: this could be a much better string search
+    //      (Boyer-Moore-Horspool|any thing other than brute force)
+    proc find(needle: string) : int {
+      const nlen = needle.len;
+      const thisLen = this.len;
+      if nlen == 0 then return 1; //TODO: should this always be 0?
+      if thisLen == 0 then return 0;
+      if nlen > thisLen then return 0;
+
+      var ret: int = 0;
+      // needle.len is <= than this.len, so go to the home locale
+      on this {
+        var localNeedle: string;
+        if needle.locale.id != chpl_nodeID {
+          localNeedle = needle; // assignment makes it local
+        } else {
+          localNeedle = new string(owned=false);
+          localNeedle.reinitString(needle.buff, needle.len,
+                                   needle._size, needToCopy=false);
+        }
+        const lastPossible = (this.len-localNeedle.len)+1;
+        for i in 0..#lastPossible {
+          for j in 0..#localNeedle.len {
+            if this.buff[i+j] != localNeedle.buff[j] then break;
+            if j == localNeedle.len-1 then ret = i+1;
+          }
+          if ret != 0 then break;
+        }
+      }
+      return ret;
+    }
   }
 
-  // WARNING: The bytes pointed to by the c_string return value are still owned
-  // by the "this" operand.  The returned c_string should not be freed!
-  inline proc string.c_str():c_string {
-    return __primitive("c_string_from_string", this);
+  pragma "donor fn"
+  pragma "auto copy fn"
+    // We'd like this to be by ref, but doing so leads to an internal
+    // compiler error.  See
+    // $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
+    /*inline*/ proc chpl__autoCopy(/*ref*/ s: string) {
+    if debugStrings then
+      chpl_debug_string_print("in autoCopy()");
+
+    pragma "no auto destroy"
+    var ret: string;
+    if !s.isEmptyString() {
+      ret.buff = chpl_mem_alloc(safe_cast(size_t, s.len+1),
+                                CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+      memmove(ret.buff, s.buff, safe_cast(size_t, s.len));
+      ret.len = s.len;
+      ret._size = s.len+1;
+      ret.buff[ret.len] = 0;
+    }
+
+    if debugStrings then
+      chpl_debug_string_print("leaving autoCopy()");
+    return ret;
   }
 
-  inline proc ==(param s0: c_string, param s1: c_string) param {
-    return __primitive("string_compare", s0, s1) == 0;
+  /*
+   * NOTES: Just a word on memory allocation in the generated code.
+   * Any function that returns a string copies the returned value
+   * including the c_string via a call to chpl__initCopy().  The
+   * copied value is returned, and the original is destroyed on the
+   * way out.  I'd really like to figure out a way to pass back the
+   * original string without copying it.  I think I might be able to
+   * do it by putting some sort of flag in the string record that is
+   * used by initCopy().
+   */
+  pragma "init copy fn"
+  /*inline*/ proc chpl__initCopy(ref s: string) {
+    if debugStrings then
+      chpl_debug_string_print("in initCopy()");
+
+    var ret: string;
+    if !s.isEmptyString() {
+      const slen = s.len; // cache the remote copy of len
+      if s.locale.id == chpl_nodeID {
+        if debugStrings then
+          chpl_debug_string_print("  local initCopy");
+        ret.buff = chpl_mem_alloc(safe_cast(size_t, s.len+1),
+                                  CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+        memmove(ret.buff, s.buff, safe_cast(size_t, s.len));
+        ret.buff[s.len] = 0;
+      } else {
+        if debugStrings then
+          chpl_debug_string_print("  remote initCopy: "+s.locale.id:c_string);
+        ret.buff = copyRemoteBuffer(s.locale.id, s.buff, slen);
+      }
+      ret.len = slen;
+      ret._size = slen+1;
+    }
+
+    if debugStrings then
+        chpl_debug_string_print("leaving initCopy()");
+    return ret;
   }
 
-  inline proc ==(s0: c_string, s1: c_string) {
-    return __primitive("string_compare", s0, s1) == 0;
+  //
+  // Assignment functions
+  //
+  proc =(ref lhs: string, rhs: string) {
+    if debugStrings then
+      chpl_debug_string_print("in proc =()");
+
+    inline proc helpMe(ref lhs: string, rhs: string) {
+      if rhs.locale.id == chpl_nodeID {
+        if debugStrings then
+          chpl_debug_string_print("  rhs local");
+        lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
+      } else {
+        if debugStrings then
+          chpl_debug_string_print("  rhs remote: "+rhs.locale.id:c_string);
+        const len = rhs.len; // cache the remote copy of len
+        var remote_buf:bufferType = nil;
+        if len != 0 then
+          remote_buf = copyRemoteBuffer(rhs.locale.id, rhs.buff, len);
+        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
+      }
+    }
+
+    // TODO: using 'here' requires constructing a locale record even though we
+    //       are just going to use it's id
+    if lhs.locale.id == chpl_nodeID then {
+      if debugStrings then
+        chpl_debug_string_print("  lhs local");
+      helpMe(lhs, rhs);
+    }
+    else {
+      if debugStrings then
+        chpl_debug_string_print("  lhs remote: "+lhs.locale.id:c_string);
+      on lhs do helpMe(lhs, rhs);
+    }
+
+    if debugStrings then
+      chpl_debug_string_print("leaving proc =()");
   }
 
-  inline proc ==(s0: string, s1: c_string) {
-    return __primitive("string_compare", s0.c_str(), s1) == 0;
+  proc =(ref lhs: string, rhs_c: c_string) {
+    if debugStrings then
+      chpl_debug_string_print("in proc =() c_string");
+
+    const hereId = chpl_nodeID;
+    // Make this some sort of local check once we have local types/vars
+    if (rhs_c.locale.id != hereId) || (lhs.locale.id != hereId) then
+      halt("Cannot assign a remote c_string to a string.");
+
+    const len = rhs_c.length;
+    const buff:bufferType = rhs_c:bufferType;
+    lhs.reinitString(buff, len, len+1, needToCopy=true);
+
+    if debugStrings then
+      chpl_debug_string_print("leaving proc =() c_string");
   }
 
-  inline proc ==(s0: c_string, s1: string) {
-    return __primitive("string_compare", s0, s1.c_str()) == 0;
+  //
+  // Concatenation
+  //
+  proc +(s0: string, s1: string) {
+    if debugStrings then
+      chpl_debug_string_print("in proc +()");
+
+    // cache lengths locally
+    const s0len = s0.len;
+    if s0len == 0 then return s1;
+    const s1len = s1.len;
+    if s1len == 0 then return s0;
+
+    var ret: string;
+    ret.len = s0len + s1len;
+    ret._size = ret.len+1;
+    ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+                              CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+
+    const hereId = chpl_nodeID;
+    const s0remote = s0.locale.id != hereId;
+    if s0remote {
+      chpl_string_comm_get(ret.buff, s0.locale.id,
+                           s0.buff, safe_cast(size_t, s0len));
+    } else {
+      memmove(ret.buff, s0.buff, safe_cast(size_t, s0len));
+    }
+
+    const s1remote = s1.locale.id != hereId;
+    if s1remote {
+      chpl_string_comm_get(ret.buff+s0len, s1.locale.id,
+                           s1.buff, safe_cast(size_t, s1len));
+    } else {
+      memmove(ret.buff+s0len, s1.buff, safe_cast(size_t, s1len));
+    }
+    ret.buff[ret.len] = 0;
+
+    if debugStrings then
+      chpl_debug_string_print("leaving proc +()");
+    return ret;
   }
 
-  inline proc !=(param s0: c_string, param s1: c_string) param {
-    return __primitive("string_compare", s0, s1) != 0;
+  inline proc _concat_helper(s: string, cs: c_string, param stringFirst: bool) {
+    if debugStrings then
+      chpl_debug_string_print("in proc +() string+c_string");
+
+    const hereId = chpl_nodeID;
+    if cs.locale.id != hereId then
+      halt("Cannot concatenate a remote c_string.");
+
+    if cs == _defaultOf(c_string) then return s;
+    if s.isEmptyString() then return cs:string;
+
+    var ret: string;
+    const slen = s.len;
+    ret.len = slen + cs.length;
+    ret._size = ret.len+1;
+    ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+                              CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+    const sremote = s.locale.id != hereId;
+    var sbuff = if sremote
+                  then copyRemoteBuffer(s.locale.id, s.buff, slen)
+                  else s.buff;
+
+    if stringFirst {
+      memmove(ret.buff, sbuff, safe_cast(size_t, slen));
+      memmove(ret.buff+slen, cs:bufferType, safe_cast(size_t, cs.length));
+    } else {
+      memmove(ret.buff, cs:bufferType, safe_cast(size_t, cs.length));
+      memmove(ret.buff+cs.length, sbuff, safe_cast(size_t, slen));
+    }
+
+    ret.buff[ret.len] = 0;
+
+    if sremote then chpl_mem_free(sbuff);
+
+    if debugStrings then
+      chpl_debug_string_print("leaving proc +() string+c_string");
+    return ret;
   }
 
-  inline proc !=(s0: c_string, s1: c_string) {
-    return __primitive("string_compare", s0, s1) != 0;
+  //TODO: figure out how to remove the concats between
+  //      string and c_string[_copy]
+  // promotion of c_string to string is masking this issue I think.
+  proc +(s: string, cs: c_string) where isParam(cs) {
+    //compilerWarning("adding c_string to string");
+    return _concat_helper(s, cs, stringFirst=true);
   }
 
-  inline proc !=(s0: string, s1: c_string) {
-    return __primitive("string_compare", s0.c_str(), s1) != 0;
+  proc +(cs: c_string, s: string) where isParam(cs) {
+    //compilerWarning("adding string to c_string");
+    return _concat_helper(s, cs, stringFirst=false);
   }
 
-  inline proc !=(s0: c_string, s1: string) {
-    return __primitive("string_compare", s0, s1.c_str()) != 0;
+  // c_string_copy ones dont free right now... should they?
+  proc +(s: string, /*ref*/ cs: c_string_copy) where isParam(cs) {
+    //compilerWarning("adding c_string_copy to string");
+    return _concat_helper(s, cs, stringFirst=true);
   }
 
-  inline proc <=(a: c_string, b: c_string) {
-    return (__primitive("string_compare", a, b) <= 0);
+  proc +(/*ref*/ cs: c_string_copy, s: string) where isParam(cs) {
+    //compilerWarning("adding string to c_string_copy");
+    return _concat_helper(s, cs, stringFirst=false);
   }
 
-  inline proc <=(param a: c_string, param b: c_string) param {
-    return (__primitive("string_compare", a, b) <= 0);
+  //
+  // Concatenation with other types is done by casting to string
+  //
+  inline proc concatHelp(s: string, x:?t) where t != string {
+    var cs = x:string;
+    const ret = s + cs;
+    return ret;
   }
 
-  inline proc >=(a: c_string, b: c_string) {
-    return (__primitive("string_compare", a, b) >= 0);
+  inline proc concatHelp(x:?t, s: string) where t != string  {
+    var cs = x:string;
+    const ret = cs + s;
+    return ret;
   }
 
-  inline proc >=(param a: c_string, param b: c_string) param {
-    return (__primitive("string_compare", a, b) >= 0);
+  inline proc +(s: string, x: numeric) return concatHelp(s, x);
+  inline proc +(x: numeric, s: string) return concatHelp(x, s);
+  inline proc +(s: string, x: enumerated) return concatHelp(s, x);
+  inline proc +(x: enumerated, s: string) return concatHelp(x, s);
+  inline proc +(s: string, x: bool) return concatHelp(s, x);
+  inline proc +(x: bool, s: string) return concatHelp(x, s);
+
+  //
+  // Relational operators
+  // TODO: all relational ops other than == and != are broken for unicode
+  // TODO: It may be faster to work on a.locale or b.locale if a or b is large
+  //
+  inline proc _strcmp(a: string, b:string) : int {
+    // Assumes a and b are on same locale and not empty
+    var idx: int = 0;
+    while (idx < a.len) && (idx < b.len) {
+      if a.buff[idx] != b.buff[idx] then return a.buff[idx]:int - b.buff[idx];
+      idx += 1;
+    }
+    return 0;
   }
 
-  inline proc <(a: c_string, b: c_string) {
-    return (__primitive("string_compare", a, b) < 0);
+  proc ==(a: string, b: string) : bool {
+    inline proc doEq(a: string, b:string) {
+      if a.len != b.len then return false;
+      if a.len == 0 then return true;
+      return _strcmp(a, b) == 0;
+    }
+    if a.locale.id == b.locale.id {
+      return doEq(a, b);
+    } else {
+      // TODO: any away to do something like this?
+      //       var localA = makeLocal(a);
+      //       var localB = makeLocal(b);
+      var localA: string;
+      if a.locale.id != chpl_nodeID {
+        localA = a; // assignment makes it local
+      } else {
+        localA = new string(owned=false);
+        localA.reinitString(a.buff, a.len,
+                            a._size, needToCopy=false);
+      }
+
+      var localB: string;
+      if b.locale.id != chpl_nodeID {
+        localB = b; // assignment makes it local
+      } else {
+        localB = new string(owned=false);
+        localB.reinitString(b.buff, b.len,
+                            b._size, needToCopy=false);
+      }
+
+      return doEq(localA, localB);
+    }
   }
 
-  inline proc <(param a: c_string, param b: c_string) param {
-    return (__primitive("string_compare", a, b) < 0);
+  inline proc !=(a: string, b: string) : bool {
+    return !(a == b);
   }
 
-  inline proc >(a: c_string, b: c_string) {
-    return (__primitive("string_compare", a, b) > 0);
+  inline proc <(a: string, b: string) : bool {
+    inline proc doLt(a: string, b:string) {
+      if b.len == 0 then return false;
+      if a.len == 0 then return true;
+      return _strcmp(a, b) < 0;
+    }
+    if a.locale.id == b.locale.id {
+      return doLt(a, b);
+    } else {
+      var localA: string;
+      if a.locale.id != chpl_nodeID {
+        localA = a; // assignment makes it local
+      } else {
+        localA = new string(owned=false);
+        localA.reinitString(a.buff, a.len,
+                            a._size, needToCopy=false);
+      }
+
+      var localB: string;
+      if b.locale.id != chpl_nodeID {
+        localB = b; // assignment makes it local
+      } else {
+        localB = new string(owned=false);
+        localB.reinitString(b.buff, b.len,
+                            b._size, needToCopy=false);
+      }
+
+      return doLt(localA, localB);
+    }
   }
 
-  inline proc >(param a: c_string, param b: c_string) param {
-    return (__primitive("string_compare", a, b) > 0);
+  inline proc >(a: string, b: string) : bool {
+    inline proc doGt(a: string, b:string) {
+      if a.len == 0 then return false;
+      if b.len == 0 then return true;
+      return _strcmp(a, b) > 0;
+    }
+    if a.locale.id == b.locale.id {
+      return doGt(a, b);
+    } else {
+      var localA: string;
+      if a.locale.id != chpl_nodeID {
+        localA = a; // assignment makes it local
+      } else {
+        localA = new string(owned=false);
+        localA.reinitString(a.buff, a.len,
+                            a._size, needToCopy=false);
+      }
+
+      var localB: string;
+      if b.locale.id != chpl_nodeID {
+        localB = b; // assignment makes it local
+      } else {
+        localB = new string(owned=false);
+        localB.reinitString(b.buff, b.len,
+                            b._size, needToCopy=false);
+      }
+
+      return doGt(localA, localB);
+    }
   }
 
-  inline proc =(ref a: c_string, b: c_string) {
-    __primitive("=", a, b);
+  inline proc <=(a: string, b: string) : bool {
+    return !(a > b);
+  }
+  inline proc >=(a: string, b: string) : bool {
+    return !(a < b);
   }
 
-  inline proc =(ref a: c_string, b: string) {
-    __primitive("=", a, b.c_str());
+  //
+  // writef
+  //
+  proc writef(foo) {
+    var f = openmem();
+
+    f.close();
   }
 
-  inline proc =(ref a: string, b: c_string) {
-    __primitive("=", a, toString(b));
+
+  //
+  // Casts (casts to & from other primitive types are in StringCasts)
+  //
+
+  // :(
+  inline proc _cast(type t, cs: c_string) where t == bufferType {
+    return __primitive("cast", t, cs);
   }
 
-  // Create a fresh copy of the RHS string, first releasing the LHS.
-  inline proc =(ref a: c_string_copy, b: c_string) {
-    chpl_free_c_string_copy(a);
-    var c = __primitive("string_copy", b);
-    __primitive("=", a, c);
-  }
-  // Assume ownership of data brought by the RHS, first releasing the LHS.
-  inline proc =(ref a: c_string_copy, b: c_string_copy) {
-    chpl_free_c_string_copy(a);
-    __primitive("=", a, b);
-  }
-
-  inline proc _cast(type t, x: c_string) where t == string {
-    return toString(x);
-  }
-
-  inline proc _cast(type t, ref x: c_string_copy) where t == string {
-    return toString(x);
-  }
-
-  inline proc _cast(type t, x: string) where t == c_string {
-    return x.c_str();
-  }
-
-  inline proc _cast(type t, x: string) where t == c_string_copy {
-    return __primitive("string_copy", x);
-  }
-
-  // A c_string_copy can always be used as a c_string.
-  inline proc _cast(type t, x: c_string_copy) where t == c_string {
+  // :( (for debugStrings)
+  inline proc _cast(type t, x) where t:c_string && x.type:bufferType {
     return __primitive("cast", t, x);
   }
 
-  extern proc chpl_bool_to_c_string(x:bool) : c_string;
-  inline proc _cast(type t, x: bool(?w)) where t == c_string {
-    return chpl_bool_to_c_string(x:bool);
-  }
-  inline proc _cast(type t, x: bool(?w)) where t == c_string_copy {
-    return __primitive("string_copy", chpl_bool_to_c_string(x:bool));
+  // :(
+  inline proc _cast(type t, cs: c_string_copy) where t == bufferType {
+    return __primitive("cast", t, cs);
   }
 
-  inline proc _cast(type t, x:enumerated) where t == c_string_copy {
-    // Use the compiler-generated enum to c_string conversion.
-    var cs = _cast(c_string, x);
-    return __primitive("string_copy", cs);
+  // Cast from bufferType to string
+  // TODO: I don't like this, but cant get rid of it without doing something
+  //       with making dtString the type for literals I think...
+  inline proc _cast(type t, cs: c_string) where t == string {
+    if debugStrings then
+      chpl_debug_string_print("in _cast() c_string->string");
+
+    if cs.locale.id != chpl_nodeID then
+      halt("Cannot cast a remote c_string to string.");
+
+    var ret: string;
+    ret.len = cs.length;
+    ret._size = ret.len+1;
+    if ret.len != 0 then ret.buff = __primitive("string_copy", cs): bufferType;
+
+    if debugStrings then
+      chpl_debug_string_print("leaving _cast() c_string->string");
+    return ret;
   }
-
-  inline proc _cast(type t, x:integral) where t == c_string_copy {
-    extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy ;
-    return integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
-  }
-
-  extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy ;
-  //
-  // casts from real
-  //
-  inline proc _cast(type t, x:real(?w)) where t == c_string_copy {
-    return real_to_c_string_copy(x:real(64), false);
-  }
-  // TODO: This is only in place to support test code in types/string/sungeun.
-  // Nor user nor module code should use this cast, because it strips ownership
-  // from the c_string_copy returned by the above cast without first arranging
-  // for its disposal.
-  inline proc _cast(type t, x:real(?w)) where t == c_string
-    return _cast(c_string_copy, x);
-
-  //
-  // casts from imag
-  //
-  inline proc _cast(type t, x:imag(?w)) where t == c_string_copy {
-    // The Chapel version of the imag --> real cast smashes it flat rather than
-    // just stripping off the "i".  See ChapelBase:965.
-    var r = __primitive("cast", real(64), x);
-    return real_to_c_string_copy(r, true);
-  }
-  // TODO: This is only in place to support test code in types/string/sungeun.
-  // Nor user nor module code should use this cast, because it strips ownership
-  // from the c_string_copy returned by the above cast without first arranging
-  // for its disposal.
-  inline proc _cast(type t, x:imag(?w)) where t == c_string
-    return _cast(c_string_copy, x);
-
-  // Only support param c_string concatenation (for now)
-  inline proc +(param a: c_string, param b: c_string) param
-    return __primitive("string_concat", a, b);
-
-  inline proc +(param s: c_string, param x: integral) param
-    return __primitive("string_concat", s, x:c_string);
-
-  inline proc +(param x: integral, param s: c_string) param
-    return __primitive("string_concat", x:c_string, s);
-
-  inline proc +(param s: c_string, param x: enumerated) param
-    return __primitive("string_concat", s, x:c_string);
-
-  inline proc +(param x: enumerated, param s: c_string) param
-    return __primitive("string_concat", x:c_string, s);
-
-  inline proc +(param s: c_string, param x: bool) param
-    return __primitive("string_concat", s, x:c_string);
-
-  inline proc +(param x: bool, param s: c_string) param
-    return __primitive("string_concat", x:c_string, s);
-
-  inline proc +(a: c_string, b: c_string)
-    return __primitive("string_concat", a, b);
-
-  proc c_string.writeThis(x: Writer) {
-    x.write(this);
-  }
-  // The c_string_copy version is required, since apparently coercions are not
-  // applied to "this".
-  proc c_string_copy.writeThis(x: Writer) {
-    x.write(this:c_string);
-  }
-
-
-  //
-  // primitive c_string functions and methods
-  //
-  inline proc ascii(param a: c_string) param return __primitive("ascii", a);
-  inline proc ascii(a: c_string) return __primitive("ascii", a);
-  inline proc c_string.length return __primitive("string_length", this);
-  inline proc c_string.size return this.length;
-  inline proc c_string.substring(i: int)
-    return __primitive("string_index", this, i);
-  inline proc c_string.substring(r: range(?)) {
-    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
-    var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
-    return __primitive("string_select", this, lo, hi, r2.stride);
-  }
-
-  inline proc _string_contains(a: string, b: string)
-    return __primitive("string_contains", a, b);
-
-  inline proc param c_string.length param
-    return __primitive("string_length", this);
-  inline proc _string_contains(param a: c_string, param b: c_string) param
-    return __primitive("string_contains", a, b);
-
-  /* Returns the index of the first occurrence of a substring within a string,
-     or 0 if the substring is not in the string.
-  */
-  inline proc c_string.indexOf(substring:c_string):int
-    return string_index_of(this, substring);
-  extern proc string_index_of(haystack:c_string, needle:c_string):int;
-
-  // Use with care.  Not for the weak.
-  inline proc chpl_free_c_string_copy(ref cs: c_string_copy) {
-    pragma "insert line file info"
-    extern proc chpl_rt_free_c_string(ref cs: c_string_copy);
-    if (cs != _nullString) then chpl_rt_free_c_string(cs);
-    // cs = _nullString;
-  }
-
 }
-

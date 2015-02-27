@@ -59,10 +59,11 @@ proc main() {
   }
 
   var f = openfd(1);                           // open a stdout file descriptor
-  var w = f.writer(iokind.native, locking=false);  // get a lock-free writer
+  var w = f.writer(/*iokind.native, */locking=false);  // get a lock-free writer
 
-  w.writef("P4\n");                            // write the file header
-  w.writef("%i %i\n", n, n);
+  var error: syserr;
+  w.writef("P4\n", error);                            // write the file header
+  w.writef("%i %i\n", n, n, error);
 
   w.write(image);                              // write out the image
 }

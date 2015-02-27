@@ -1169,6 +1169,11 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
   ti.max_bytes = SSIZE_MAX;
   ti.ret_bytes = -1;
 
+  if( !ptr || len == 0 ) {
+    err = 0;
+    return err;
+  }
+
   if( qio_glocale_utf8 == 0 ) {
     qio_set_glocale();
   }

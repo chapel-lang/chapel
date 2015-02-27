@@ -58,8 +58,9 @@ static void cullAutoDestroyFlags()
       if (ts->hasFlag(FLAG_ARRAY) ||
           ts->hasFlag(FLAG_DOMAIN) ||
           ts->hasFlag(FLAG_SYNC) ||
-          ts->hasFlag(FLAG_SINGLE))
+          ts->hasFlag(FLAG_SINGLE)) {
         ret->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
       // Do we need to add other record-wrapped types here?  Testing will tell.
 
       // NOTE 1: When the value of a record field is established in a default
@@ -241,7 +242,7 @@ static bool stmtDefinesAnAutoDestroyedVariable(Expr* stmt) {
         // flag, presumably before the type was known, that should not in
         // fact be auto-destroyed.  Don't gum things up by collecting them.
         if (autoDestroyMap.get(var->type) != 0) {
-          if (var->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+          if (var->isType() == false) {
             retval = true;
           }
         }
@@ -503,7 +504,7 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
         }
       }
     }
-  }            
+  }
 }
 
 
@@ -733,13 +734,6 @@ fixupDestructors() {
                 new CallExpr(PRIM_MOVE, tmp,
                   new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
           fn->insertBeforeReturnAfterLabel(new CallExpr(autoDestroyFn, tmp));
-        } else if (field->type == dtString && !ct->symbol->hasFlag(FLAG_TUPLE)) {
-// Temporary expedient: Leak strings like crazy.
-//          VarSymbol* tmp = newTemp("_field_destructor_tmp_", dtString);
-//          fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-//          fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
-//            new CallExpr(PRIM_GET_MEMBER_VALUE, fn->_this, field)));
-//          fn->insertBeforeReturnAfterLabel(callChplHereFree(tmp));
         }
       }
 
@@ -780,7 +774,7 @@ static void insertGlobalAutoDestroyCalls() {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)
         if (VarSymbol* var = toVarSymbol(def->sym))
-          if (!var->isParameter() && !var->hasFlag(FLAG_TYPE_VARIABLE))
+          if (!var->isParameter() && !var->isType())
             if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
               if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
                 SET_LINENO(var);

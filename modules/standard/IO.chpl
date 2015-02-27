@@ -147,7 +147,7 @@ extern const QIO_HINT_PARALLEL:c_int;
 extern const QIO_HINT_DIRECT:c_int;
 extern const QIO_HINT_NOREUSE:c_int;
 
-/** NONE means normal operation, nothing special
+/*  NONE means normal operation, nothing special
     to hint. Expect to use NONE most of the time.
     The other hints can be bitwise-ORed in.
  */
@@ -156,18 +156,18 @@ const IOHINT_NONE = 0:c_int;
 /** RANDOM means we expect random access to a file */
 const IOHINT_RANDOM = QIO_HINT_RANDOM;
 
-/** SEQUENTAL means expect sequential access. On
+/*  SEQUENTIAL means expect sequential access. On
     Linux, this should double the readahead.
  */
 const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
 
-/** CACHED means we expect the entire file
+/*  CACHED means we expect the entire file
     to be cached and/or we pull it in all at
     once. May request readahead on the entire file.
  */
 const IOHINT_CACHED = QIO_HINT_CACHED;
 
-/** PARALLEL means that we expect to have many
+/*  PARALLEL means that we expect to have many
     channels working with this file in parallel.
     It might change the reading/writing implementation
     to something more efficient in that scenario.
@@ -226,6 +226,7 @@ extern record iostyle { // aka qio_style_t
                              and nonprinting characters c = \uABCD
      QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end
    */
+  /* */
   var string_format:uint(8) = 0;
   // numeric scanning/printing choices
   var base:uint(8) = 0;
@@ -266,8 +267,8 @@ extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, co
 
 // Same as qio_file_open_access in, except this time we pass though our
 // struct that will initilize the file with the appropriate functions for that FS
-extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string,
-                                     access:string, iohints:c_int, /*const*/ ref style:iostyle,
+extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
+                                     access:c_string, iohints:c_int, /*const*/ ref style:iostyle,
                                      fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
@@ -510,6 +511,7 @@ extern type fdflag_t = c_int;
 
 /* Access hints describe how a file will be used.
    These can help optimize. These might be:
+
   QIO_METHOD_DEFAULT,
   QIO_METHOD_READWRITE,
   QIO_METHOD_P_READWRITE,
@@ -520,7 +522,7 @@ extern type fdflag_t = c_int;
   QIO_HINT_BANDWIDTH,
   QIO_HINT_CACHED,
   QIO_HINT_NOREUSE
-}
+
 */
 extern type iohints = c_int;
 
@@ -644,7 +646,7 @@ proc file.getPath(out error:syserr) : string {
     if !error {
       // This uses the version of toString that steals its operand.
       // No need to free.
-      ret = toString(tmp2);
+      ret = tmp2:string;
     } else {
       ret = "unknown";
     }
@@ -702,20 +704,20 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
   // hdfs://<host>:<port>/<path>
   proc parse_hdfs_path(path:string): (string, int, string) {
 
-    var hostidx_start = path.indexOf("//");
-    var new_str = path.substring(hostidx_start+2..path.length);
-    var hostidx_end = new_str.indexOf(":");
-    var host = new_str.substring(0..hostidx_end-1);
+    var hostidx_start = path.find("//");
+    var new_str = path[hostidx_start+2..path.length];
+    var hostidx_end = new_str.find(":");
+    var host = new_str[0..hostidx_end-1];
 
-    new_str = new_str.substring(hostidx_end+1..new_str.length);
+    new_str = new_str[hostidx_end+1..new_str.length];
 
-    var portidx_end = new_str.indexOf("/");
-    var port = new_str.substring(0..portidx_end-1);
+    var portidx_end = new_str.find("/");
+    var port = new_str[0..portidx_end-1];
 
     //the file path is whatever we have left
-    var file_path = new_str.substring(portidx_end+1..new_str.length);
+    var file_path = new_str[portidx_end+1..new_str.length];
 
-    return (host, port:int, file_path);
+    return (host, /*port:int*/0, file_path);
   }
 
   var local_style = style;
@@ -822,7 +824,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     e2 = qio_file_path_for_fd(fd, path);
     if e2 then path = "unknown".c_str();
     // FIX ME: could use a toString() that doesn't allocate space
-    ioerror(err, "in openfd", toString(path));
+    ioerror(err, "in openfd", path:string);
   }
   return ret;
 }
@@ -843,7 +845,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
     if e2 then path = "unknown".c_str();
-    ioerror(err, "in openfp", toString(path));
+    ioerror(err, "in openfp", path:string);
     // c_string path leaked, but ioerror will exit
   }
   return ret;
@@ -952,7 +954,7 @@ record ioChar {
   }
 }
 
-// Note: This returns a c_string_copy.
+//TODO strings: make it return a string...
 // The caller has responsibility for freeing the returned string.
 inline proc _cast(type t, x: ioChar) where t == c_string_copy {
   return qio_encode_to_string(x.ch);
@@ -971,17 +973,13 @@ record ioNewline {
   }
 }
 
-inline proc _cast(type t, x: ioNewline) where t == c_string {
+inline proc _cast(type t, x: ioNewline) where t == string {
   return "\n";
-}
-
-inline proc _cast(type t, x: ioNewline) where t == c_string_copy {
-  return __primitive("string_copy", "\n");
 }
 
 // Used to represent a constant string we want to read or write...
 record ioLiteral {
-  var val: c_string;
+  var val: string;
   var ignoreWhiteSpace: bool = true;
   proc writeThis(f: Writer) {
     // Normally this is handled explicitly in read/write.
@@ -989,12 +987,8 @@ record ioLiteral {
   }
 }
 
-inline proc _cast(type t, x: ioLiteral) where t == c_string {
+inline proc _cast(type t, x: ioLiteral) where t == string {
   return x.val;
-}
-
-inline proc _cast(type t, x: ioLiteral) where t == c_string_copy {
-  return __primitive("string_copy", x.val);
 }
 
 // Used to represent some number of bits we want to read or write...
@@ -1007,10 +1001,9 @@ record ioBits {
   }
 }
 
-inline proc _cast(type t, x: ioBits) where t == c_string {
+inline proc _cast(type t, x: ioBits) where t == string {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
-  // FIX ME: should this be copied?
-  return ret.c_str();
+  return ret;
 }
 
 
@@ -1023,7 +1016,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = toString(tmp_path);
+      path = tmp_path:string;
       offset = tmp_offset;
     }
   }
@@ -1039,7 +1032,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = toString(tmp_path);
+      path = tmp_path:string;
       offset = tmp_offset;
     }
   }
@@ -1254,9 +1247,9 @@ proc _isIoPrimitiveType(type t) param return
  proc _isIoPrimitiveTypeOrNewline(type t) param return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
 
-const _trues: 1*c_string  = ("true",);
-const _falses: 1*c_string = ("false",);
-const _i = "i";
+const _trues: 1*c_string  = ("true":c_string,);
+const _falses: 1*c_string = ("false":c_string,);
+const _i = "i":c_string;
 
 // Read routines for all primitive types.
 proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr where _isIoPrimitiveType(t) {
@@ -1324,7 +1317,7 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
     // FIX ME: Should deprecate the t == c_string path, because we always
     // return an "owned" char* buffer (or NULL).
-    x = toString(tx);
+    x = tx:string;
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -1437,7 +1430,7 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
     // TODO: Deprecate the c_string return type, since this routine always
     // returns an "owned" string thingy.  Using the c_string return type will
     // cause leaks.
-    x = toString(tx);
+    x = tx:string;
     return ret;
   } else if isEnumType(t) {
     var i:enum_mintype(t);
@@ -1493,7 +1486,7 @@ inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t, param kind:i
     return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     //writeln("in scan literal ", x.val);
-    return qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length: ssize_t, x.ignoreWhiteSpace);
+    return qio_channel_scan_literal(false, _channel_internal, x.val.c_str(), x.val.length: ssize_t, x.ignoreWhiteSpace);
     //e = qio_channel_scan_literal(false, _channel_internal, x.val, x.val.length, x.ignoreWhiteSpace);
     //writeln("Scanning literal ", x.val,  " yeilded error ", e);
     //return e;
@@ -1525,7 +1518,7 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
   } else if t == ioChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    return qio_channel_print_literal(false, _channel_internal, x.val, x.val.length:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, x.val.c_str(), x.val.length:ssize_t);
   } else if t == ioBits {
     return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
@@ -1586,17 +1579,15 @@ proc _args_to_proto(args ...?k,
                     preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handlling so maybe we don't care.
-  var err_args:c_string;
+  var err_args: string;
   for param i in 1..k {
-    var name:c_string;
+    var name: string;
     if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:c_string_copy;
-    // FIX ME: leak c_string due to concatenation
-    // Actually, don't fix me.  Fix concatenation to consume its c_string_copy args.
-    err_args += preArg + name + ":" + typeToString(args(i).type);
+    else name = "x" + i:string;
+    err_args += preArg + name + ":" + typeToString(args(i).type):string;
     if i != k then err_args += ", ";
   }
-  const ret = toString(err_args);
+  const ret = err_args:string;
   return ret;
 }
 
@@ -1771,7 +1762,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 
     this.unlock();
 
-    str_out = toString(tx);
+    str_out = tx:string;
   }
 
   return !error;
@@ -2057,6 +2048,7 @@ record ItemReader {
   }*/
 }
 
+/* */
 proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   if writing then compilerError(".itemReader on write-only channel");
   return new ItemReader(ItemType, kind, locking, this);
@@ -3644,7 +3636,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     var gotlen:int(64);
     var ts: c_string_copy;
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
-    s = toString(ts);
+    s = ts:string;
   }
  
   if ! error {

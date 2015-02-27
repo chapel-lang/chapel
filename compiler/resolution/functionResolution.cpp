@@ -232,8 +232,8 @@ Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promot
 //#
 //# Static Function Declarations
 //#
-static bool hasRefField(Type *type);
 #ifndef HILDE_MM
+static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
 #endif
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
@@ -416,6 +416,7 @@ void ResolutionCandidate::computeSubstitutions() {
   computeGenericSubs(substitutions, fn, alignedActuals);
 }
 
+#ifndef HILDE_MM
 static bool hasRefField(Type *type) {
   if (isPrimitiveType(type)) return false;
   if (type->symbol->hasFlag(FLAG_OBJECT_CLASS)) return false;
@@ -432,7 +433,6 @@ static bool hasRefField(Type *type) {
   return true;
 }
 
-#ifndef HILDE_MM
 static bool typeHasRefField(Type *type) {
   if (AggregateType *ct = toAggregateType(type)) {
     for_fields(field, ct) {
@@ -909,7 +909,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
       fn->retType = fn->retType->refType;
     }
     fn->retExprType->remove();
-    if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->iteratorInfo) {
+    if (fn->isIterator() && !fn->iteratorInfo) {
       protoIteratorClass(fn);
     }
   }
@@ -1279,10 +1279,11 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   if (// isLcnSymbol(actualSym) && // What does this exclude?
       actualType == dtStringC && formalType == dtString)
     return true;
+  //if (formalType == dtString && actualType == dtStringCopy)
+  //  return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
     return true;
-  if (formalType == dtString && actualType == dtStringCopy)
-    return true;
+
   return false;
 }
 
@@ -1486,6 +1487,7 @@ computeGenericSubs(SymbolMap &subs,
           // non-param formals with string literal default expressions
           // (see fix_def_expr() and hack_resolve_types() in
           // normalize.cpp).
+
           if ((formal->type == dtAny) && (!formal->hasFlag(FLAG_PARAM)) &&
               (type == dtStringC) &&
               (alignedActuals.v[i]->type == dtStringC) &&
@@ -5452,7 +5454,7 @@ requiresImplicitDestroy(CallExpr* call) {
         // These are special functions where we don't want to destroy
         // the result
         !fn->hasFlag(FLAG_NO_IMPLICIT_COPY) &&
-        !fn->hasFlag(FLAG_ITERATOR_FN) &&
+        !fn->isIterator() &&
         !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
         !fn->hasFlag(FLAG_DONOR_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN) &&
@@ -6067,7 +6069,7 @@ replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn) {
   if (SymExpr* se = toSymExpr(ast)) {
     if (se->var == fn->setter->sym) {
       se->var = gTrue;
-      if (fn->hasFlag(FLAG_ITERATOR_FN))
+      if (fn->isIterator())
         USR_WARN(fn, "setter argument is not supported in iterators");
     }
   }
@@ -6163,7 +6165,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
 
 
 static void buildValueFunction(FnSymbol* fn) {
-  if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
+  if (!fn->isIterator()) {
     FnSymbol* copy;
     bool valueFunctionExists = fn->valueFunction;
     if (!valueFunctionExists) {
@@ -6256,7 +6258,7 @@ resolveFns(FnSymbol* fn) {
   //
   // mark leaders for inlining
   //
-  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+  if (fn->isIterator()) {
     for_formals(formal, fn) {
       if (formal->type == gLeaderTag->type &&
           paramMap.get(formal) == gLeaderTag) {
@@ -6314,7 +6316,7 @@ resolveFns(FnSymbol* fn) {
   // todo: convert this to an assertion; perhaps factor out the common code
   // with the above.
   //
-  if (fn->hasFlag(FLAG_ITERATOR_FN) &&
+  if (fn->isIterator() &&
       !fn->hasFlag(FLAG_INLINE_ITERATOR))
   {
     for_formals(formal, fn) {
@@ -6331,7 +6333,7 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
-  if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->iteratorInfo) {
+  if (fn->isIterator() && !fn->iteratorInfo) {
     protoIteratorClass(fn);
   }
 
@@ -7356,7 +7358,7 @@ static void insertReturnTemps() {
                 ((fn->retType->getValType() &&
                   isSyncType(fn->retType->getValType())) ||
                  isSyncType(fn->retType) ||
-                 fn->hasFlag(FLAG_ITERATOR_FN))) {
+                 fn->isIterator())) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
               call->insertBefore(sls);
               reset_ast_loc(sls, call);

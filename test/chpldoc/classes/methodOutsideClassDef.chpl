@@ -16,3 +16,12 @@ proc Foo.externalMeth1() {
 proc Foo.externalMeth2() {
 
 }
+
+/* Declares one primary and one secondary method... */
+record Bar {
+  /* A primary method declaration. */
+  proc internal() {}
+}
+
+/* A secondary method declaration. */
+proc Bar.external() {}

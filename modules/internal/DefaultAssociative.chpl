@@ -147,7 +147,42 @@ module DefaultAssociative {
         }
       }
     }
-  
+ 
+    iter these(param tag: iterKind) where tag == iterKind.standalone {
+      if debugDefaultAssoc {
+        writeln("*** In associative domain standalone iterator");
+      }
+      // We are simply slicing up the table here.  Trying to do something
+      //  more intelligent (like evenly dividing up the full slots, led
+      //  to poor speed ups.
+      const numIndices = tableSize;
+      const numChunks = _computeNumChunks(numIndices);
+
+      if debugAssocDataPar {
+        writeln("### numChunks=", numChunks, ", numIndices=", numIndices);
+      }
+
+      if numChunks == 1 {
+        for slot in 0..numIndices-1 {
+          if table[slot].status == chpl__hash_status.full {
+            yield table[slot].idx;
+          }
+        }
+      } else {
+        coforall chunk in 0..#numChunks {
+          const (lo, hi) = _computeBlock(numIndices, numChunks,
+                                         chunk, numIndices-1);
+          if debugAssocDataPar then
+            writeln("*** chunk: ", chunk, " owns ", lo..hi);
+          for slot in lo..hi {
+            if table[slot].status == chpl__hash_status.full {
+              yield table[slot].idx;
+            }
+          }
+        }
+      }
+    }
+ 
     iter these(param tag: iterKind) where tag == iterKind.leader {
       if debugDefaultAssoc then
         writeln("*** In domain leader code:");
@@ -528,7 +563,36 @@ module DefaultAssociative {
         yield dsiAccess(slot);
       }
     }
-  
+
+    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+      if debugDefaultAssoc {
+        writeln("*** In associative array standalone iterator");
+      }
+      const numIndices = dom.tableSize;
+      const numChunks = _computeNumChunks(numIndices);
+      if numChunks == 1 {
+        for slot in 0..#numIndices {
+          if dom.table[slot].status == chpl__hash_status.full {
+            yield data[slot];
+          }
+        }
+      } else {
+        coforall chunk in 0..#numChunks {
+          const (lo, hi) = _computeBlock(numIndices, numChunks,
+                                         chunk, numIndices-1);
+          if debugAssocDataPar {
+            writeln("In associative array standalone iterator: chunk = ", chunk);
+          }
+          var table = dom.table;
+          for slot in lo..hi {
+            if dom.table[slot].status == chpl__hash_status.full {
+              yield data[slot];
+            }
+          }
+        }
+      }
+    }
+
     iter these(param tag: iterKind) where tag == iterKind.leader {
       for followThis in dom.these(tag) do
         yield followThis;
@@ -684,16 +748,21 @@ module DefaultAssociative {
   
   // Use djb2 (Dan Bernstein in comp.lang.c)
   inline proc chpl__defaultHash(x : string): int(64) {
-    return chpl__defaultHash(x.c_str());
-  }
-
-  inline proc chpl__defaultHash(x : c_string): int(64) {
     var hash: int(64) = 0;
-    for c in 1..(x.length) {
-      hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
+    for c in 0..#(x.length) {
+      hash = ((hash << 5) + hash) ^ x.base[c];
     }
     return _gen_key(hash);
   }
+
+  // TODO strings: can remove defaultHash(c_string)?
+  //inline proc chpl__defaultHash(x : c_string): int(64) {
+  //  var hash: int(64) = 0;
+  //  for c in 1..(x.length) {
+  //    hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
+  //  }
+  //  return _gen_key(hash);
+  //}
   
   inline proc chpl__defaultHash(l : []) {
       var hash : int(64) = 0;
