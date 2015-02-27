@@ -187,6 +187,8 @@ for (my $i = 0; $i < @values; $i++ ) {
   print "extern type $typelhs";
   if(not $DOCONLY) {
     print "= $typerhs";
+  } else {
+    print "= integral";
   }
   print ";\n";
   if( $typelhs eq "c_ptr" ) {
