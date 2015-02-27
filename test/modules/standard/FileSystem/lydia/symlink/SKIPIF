@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Try to make a link.  If it fails, don't do this test.
+
+ln -s foo.txt blahblahblah.txt
+
+if [ ! -e blahblahblah.txt ] ; then
+    echo "True"
+elif [ ! -L blahblahblah.txt ] ; then
+    rm blahblahblah.txt
+    echo "True"
+else
+    rm blahblahblah.txt
+    echo "False"
+fi
