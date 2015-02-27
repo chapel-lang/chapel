@@ -53,7 +53,6 @@ MODULES_TO_DOCUMENT = \
 
 documentation:
 	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
-	@echo "HTML files are at \$$CHPL_HOME/modules/docs/."
 
 FORCE:
 
