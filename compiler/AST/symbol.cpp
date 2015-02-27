@@ -81,6 +81,7 @@ VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
 VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
+VarSymbol *gCastChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gNodeID = NULL;
@@ -309,14 +310,22 @@ bool VarSymbol::isParameter() const {
 }
 
 
+bool VarSymbol::isType() const {
+  return hasFlag(FLAG_TYPE_VARIABLE);
+}
+
+
 std::string VarSymbol::docsDirective() {
   std::string result;
   if (fDocsTextOnly) {
     result = "";
   } else {
-    // TODO: If this is a type (i.e. this->hasFlag(FLAG_TYPE_VARIABLE)), use
-    //       ".. type:: " as directive. (thomasvandoren, 2015-02-21)
-    if (this->isField) {
+    // Global type aliases become type directives. Types that are also fields
+    // could be generics, so let them be treated as regular fields (i.e. use
+    // the attribute directive).
+    if (this->isType() && !this->isField) {
+      result = ".. type:: ";
+    } else if (this->isField) {
       result = ".. attribute:: ";
     } else {
       result = ".. data:: ";
@@ -334,7 +343,7 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   this->printTabs(file, tabs);
   *file << this->docsDirective();
 
-  if (this->hasFlag(FLAG_TYPE_VARIABLE)) {
+  if (this->isType()) {
     *file << "type ";
   } else if (this->isConstant()) {
     *file << "const ";
@@ -675,7 +684,7 @@ GenRet VarSymbol::codegen() {
     // for LLVM
 
     // Handle extern type variables.
-    if( hasFlag(FLAG_EXTERN) && hasFlag(FLAG_TYPE_VARIABLE) ) {
+    if( hasFlag(FLAG_EXTERN) && isType() ) {
       // code generate the type.
       GenRet got = typeInfo();
       return got;
@@ -823,7 +832,7 @@ void VarSymbol::codegenGlobalDef() {
 
     if( this->hasFlag(FLAG_EXTERN) ) {
       // Make sure that it already exists in the layered value table.
-      if( hasFlag(FLAG_TYPE_VARIABLE) ) {
+      if( isType() ) {
         llvm::Type* t = info->lvt->getType(cname);
         if( ! t ) {
           // TODO should be USR_FATAL

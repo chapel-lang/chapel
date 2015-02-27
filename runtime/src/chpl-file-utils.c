@@ -258,3 +258,17 @@ qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2) {
   }
   return err;
 }
+
+/* Returns the current permissions on a file specified by name */
+qioerr chpl_fs_viewmode(int* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = (int)(buf.st_mode&(S_IRWXU | S_IRWXG | S_IRWXO | S_ISUID | S_ISGID | S_ISVTX));
+  // Stylistic decision: while we have the capacity to make sure all we're
+  // getting are the permissions bits in module code, sending that extra
+  // information strikes me as unnecessary, since we don't intend to use it at
+  // the module level in other circumstances.
+  return 0;
+}

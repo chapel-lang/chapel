@@ -199,6 +199,7 @@ public:
   virtual bool       isConstValWillNotChange()                 const;
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
+  virtual bool       isType()                                  const;
 
   const char* doc;
 
@@ -581,6 +582,7 @@ extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
+extern VarSymbol *gCastChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;
