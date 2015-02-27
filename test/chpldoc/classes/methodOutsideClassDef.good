@@ -8,3 +8,12 @@ Module: methodOutsideClassDef
    proc Foo.externalMeth2()
       This method has a comment attached to it 
 
+   Record: Bar
+      Declares one primary and one secondary method... 
+
+      proc internal()
+         A primary method declaration. 
+
+   proc Bar.external()
+      A secondary method declaration. 
+
