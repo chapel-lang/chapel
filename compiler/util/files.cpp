@@ -132,7 +132,6 @@ static const char* getTempDir() {
 
 
 const char* makeTempDir(const char* dirPrefix) {
-  // FIXME: This doesn't really work, yet. It mainly just replicates old behavior.
   const char* tmpdirprefix = astr(getTempDir(), "/", dirPrefix);
   const char* tmpdirsuffix = ".deleteme";
 
