@@ -262,7 +262,10 @@ std::string generateSphinxProject(std::string dirpath) {
   return std::string(moddir);
 }
 
-/* Call `make html` from inside sphinx project. */
+/*
+ * Invoke sphinx-build using sphinxDir to find conf.py and rst sources, and
+ * outputDir for generated html files.
+ */
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   // The virtualenv active and sphinx-build scripts are in:
   //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/
