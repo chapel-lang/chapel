@@ -103,7 +103,6 @@ tags
 /test/chpldoc/compflags/folder/myDocs
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
-/test/chpldoc/compflags/folder/my-sphinx
 
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
