@@ -232,8 +232,8 @@ Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promot
 //#
 //# Static Function Declarations
 //#
-static bool hasRefField(Type *type);
 #ifndef HILDE_MM
+static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
 #endif
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
@@ -416,6 +416,7 @@ void ResolutionCandidate::computeSubstitutions() {
   computeGenericSubs(substitutions, fn, alignedActuals);
 }
 
+#ifndef HILDE_MM
 static bool hasRefField(Type *type) {
   if (isPrimitiveType(type)) return false;
   if (type->symbol->hasFlag(FLAG_OBJECT_CLASS)) return false;
@@ -432,7 +433,6 @@ static bool hasRefField(Type *type) {
   return true;
 }
 
-#ifndef HILDE_MM
 static bool typeHasRefField(Type *type) {
   if (AggregateType *ct = toAggregateType(type)) {
     for_fields(field, ct) {
