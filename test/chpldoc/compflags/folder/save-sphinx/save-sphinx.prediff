@@ -5,6 +5,3 @@ set -e
 (cd my-sphinx && \
     echo * source/modules/*) > $2 || \
         echo "ERROR cat-ing my-sphinx/* files" >> $2
-
-# Delete the dirs, so start_test does not descend into them...
-rm -rf docs/ my-sphinx/
