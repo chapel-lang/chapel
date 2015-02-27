@@ -20,7 +20,6 @@
 #include "ipeCheckReturn.h"
 
 #include "expr.h"
-#include "IpeSymbol.h"
 #include "misc.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -200,152 +199,6 @@ static void checkReturn(CallExpr*  expr, Type* type, bool isLastStmt)
   }
 }
 
-#if 0
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-
-static Type* returnTypeForExpr(Expr* expr)
-{
-  AstDumpToNode logger(stdout, 3);
-
-  printf("returnTypeForExpr\n");
-  printf("   ");
-  expr->accept(&logger);
-  printf("\n\n");
-
-
-  Type* retval = dtVoid;
-
-  if (expr == 0)
-  {
-    INT_ASSERT(false);
-  }
-
-  // This must appear after WhileDoStmt etc
-  else if (BlockStmt* bs = toBlockStmt(expr))
-  {
-    if ((bs->blockTag & BLOCK_SCOPELESS) != 0)
-    {
-      printf("   Walking the body\n");
-
-      for_alist(stmt, bs->body)
-      {
-        Type* returnType = returnTypeForExpr(stmt);
-
-        if (false)
-        {
-
-        }
-
-        else if (returnType == 0)
-        {
-
-        }
-
-        else if (retval     == 0)
-        {
-          retval = returnType;
-        }
-
-        else
-        {
-          INT_ASSERT(false);
-        }
-      }
-    }
-  }
-
-  else if (CallExpr* callExpr = toCallExpr(expr))
-  {
-    if (callExpr->primitive)
-      retval = callExpr->primitive->returnInfo(callExpr);
-    else
-    {
-      SymExpr* funExpr = toSymExpr(callExpr->baseExpr);
-      INT_ASSERT(funExpr);
-
-      FnSymbol*  fnSym = toFnSymbol(funExpr->var);
-      INT_ASSERT(fnSym);
-
-      BlockStmt* bs    = fnSym->retExprType;
-      INT_ASSERT(bs);
-      INT_ASSERT(bs->length() == 1);
-
-      retval = typeForExpr(bs->body.only());
-
-      INT_ASSERT(retval);
-    }
-  }
-
-#if 0
-  else if (SymExpr* value = toSymExpr(expr))
-  {
-    if (false)
-      ;
-
-    else if (TypeSymbol* type = toTypeSymbol(value->var))
-      retval = type->type;
-
-    // Var/Arg in user level modules
-    else if (IpeSymbol*  sym  = toIpeSymbol(value->var))
-      retval = sym->type;
-
-    // Immediates
-    else if (VarSymbol*  var  = toVarSymbol(value->var))
-      retval = var->type;
-
-    // Formals for internal functions
-    else if (ArgSymbol*  arg  = toArgSymbol(value->var))
-      retval = arg->type;
-  }
-
-  else if (CallExpr* callExpr = toCallExpr(expr))
-  {
-    if (callExpr->primitive)
-      retval = callExpr->primitive->returnInfo(callExpr);
-    else
-    {
-      SymExpr* funExpr = toSymExpr(callExpr->baseExpr);
-      INT_ASSERT(funExpr);
-
-      FnSymbol*  fnSym = toFnSymbol(funExpr->var);
-      INT_ASSERT(fnSym);
-
-      BlockStmt* bs    = fnSym->retExprType;
-      INT_ASSERT(bs);
-      INT_ASSERT(bs->length() == 1);
-
-      retval = typeForExpr(bs->body.only());
-    }
-  }
-#endif
-
-  else
-  {
-    AstDumpToNode logger(stdout, 3);
-
-    printf("returnTypeForExpr(Expr*)  expr not handled\n");
-    printf("   ");
-    expr->accept(&logger);
-    printf("\n\n");
-  }
-
-  if (retval != 0)
-  {
-    printf("retval\n");
-    printf("   ");
-    retval->accept(&logger);
-    printf("\n\n");
-    printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-  }
-
-  return retval;
-}
-#endif
-
 static Type* typeForExpr(Expr* expr)
 {
   Type* retval = 0;
@@ -363,17 +216,9 @@ static Type* typeForExpr(Expr* expr)
     else if (TypeSymbol* type = toTypeSymbol(value->var))
       retval = type->type;
 
-    // Var/Arg in user level modules
-    else if (IpeSymbol*  sym  = toIpeSymbol(value->var))
+    // Var/Arg in user level modules and Immediates
+    else if (LcnSymbol*  sym  = toLcnSymbol(value->var))
       retval = sym->type;
-
-    // Immediates
-    else if (VarSymbol*  var  = toVarSymbol(value->var))
-      retval = var->type;
-
-    // Formals for internal functions
-    else if (ArgSymbol*  arg  = toArgSymbol(value->var))
-      retval = arg->type;
   }
 
   else if (CallExpr* callExpr = toCallExpr(expr))

@@ -317,13 +317,13 @@ module DefaultRectangular {
           const rStride = ranges(i).stride:strType,
                 fStride = followThis(i).stride:strType;
           if ranges(i).stride > 0 {
-            const low = ranges(i).low + followThis(i).low*rStride,
-                  high = ranges(i).low + followThis(i).high*rStride,
+            const low = ranges(i).alignedLow + followThis(i).low*rStride,
+                  high = ranges(i).alignedLow + followThis(i).high*rStride,
                   stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           } else {
-            const low = ranges(i).high + followThis(i).high*rStride,
-                  high = ranges(i).high + followThis(i).low*rStride,
+            const low = ranges(i).alignedHigh + followThis(i).high*rStride,
+                  high = ranges(i).alignedHigh + followThis(i).low*rStride,
                   stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           }

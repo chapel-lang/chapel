@@ -117,6 +117,7 @@ bool fNoBoundsChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
+bool fNoCastChecks = false;
 bool fMungeUserIdents = true;
 bool fEnableTaskTracking = false;
 
@@ -178,6 +179,7 @@ bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
 char fDocsFolder[256] = "";
 bool fDocsTextOnly = false;
+bool fDocsIncludeExterns = true;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -549,6 +551,7 @@ static void turnOffChecks(const ArgumentState* state, const char* unused) {
   fNoBoundsChecks = true;
   fNoLocalChecks  = true;
   fNoStackChecks  = true;
+  fNoCastChecks = true;
 }
 
 static void handleStackCheck(const ArgumentState* state, const char* unused) {
@@ -587,6 +590,7 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoLocalChecks = true;
   fNoNilChecks = true;
   fNoStackChecks = true;
+  fNoCastChecks = true;
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
   specializeCCode = true;
@@ -720,6 +724,7 @@ static ArgumentDescription arg_desc[] = {
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},
+ {"cast-checks", ' ', NULL, "Enable [disable] checks in safe_cast calls", "n", &fNoCastChecks, NULL, NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
@@ -751,6 +756,7 @@ static ArgumentDescription arg_desc[] = {
  {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
  {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, setCommentLabel},
  {"docs-dir", ' ', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
+ // {"docs-externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL}, // Commented out because we aren't sure we want it yet.
  {"docs-text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},

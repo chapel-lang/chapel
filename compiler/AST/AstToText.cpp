@@ -59,10 +59,7 @@ void AstToText::appendNameAndFormals(FnSymbol* fn)
 
 void AstToText::appendName(FnSymbol* fn)
 {
-  if (developer == true)
-    mText += fn->name;
-
-  else if (fn->hasFlag(FLAG_MODULE_INIT))
+  if (fn->hasFlag(FLAG_MODULE_INIT))
   {
     INT_ASSERT(strncmp(fn->name, "chpl__init_",      11) == 0);
 
@@ -100,6 +97,10 @@ void AstToText::appendName(FnSymbol* fn)
       appendClassName(fn);
     }
 
+    else if (fn->isPrimaryMethod())
+    {
+      mText += fn->name;
+    }
     else
     {
       appendClassName(fn);
@@ -344,7 +345,7 @@ void AstToText::appendFormalType(ArgSymbol* arg)
       if (typeExprCopiedFromDefaultExpr(arg) == false)
       {
         mText += ": ";
-        appendExpr(arg->typeExpr->body.get(1));
+        appendExpr(arg->typeExpr->body.get(1), true);
       }
     }
 
@@ -537,7 +538,7 @@ bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
           if (moveSrc->numActuals() == 1)
           {
             mText  += ": ";
-            appendExpr(moveSrc);
+            appendExpr(moveSrc, true);
             mText  += ".type ";
 
             retval =  true;
@@ -582,7 +583,7 @@ void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
 
         else
         {
-          appendExpr(expr);
+          appendExpr(expr, false);
         }
       }
       else
@@ -616,9 +617,9 @@ void AstToText::appendFormalDefault(ArgSymbol* arg)
         mText += " = ";
 
         if (SymExpr* sym = toSymExpr(expr))
-          appendExpr(sym, true);
+          appendExpr(sym, false, true);
         else
-          appendExpr(expr);
+          appendExpr(expr, false);
       }
     }
 
@@ -720,22 +721,22 @@ ArgSymbol* AstToText::formalGet(FnSymbol* fn, int oneBasedIndex) const
 *                                                                           *
 ************************************* | ************************************/
 
-void AstToText::appendExpr(Expr* expr)
+void AstToText::appendExpr(Expr* expr, bool printingType)
 {
   if      (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
     appendExpr(sel);
 
   else if (SymExpr*           sel = toSymExpr(expr))
-    appendExpr(sel, false);
+    appendExpr(sel, printingType, false);
 
   else if (CallExpr*          sel = toCallExpr(expr))
-    appendExpr(sel);
+    appendExpr(sel, printingType);
 
   else if (DefExpr*           sel = toDefExpr(expr))
-    appendExpr(sel);
+    appendExpr(sel, printingType);
 
   else if (NamedExpr*         sel = toNamedExpr(expr))
-    appendExpr(sel);
+    appendExpr(sel, printingType);
 
   else
   {
@@ -750,7 +751,7 @@ void AstToText::appendExpr(UnresolvedSymExpr* expr)
   appendExpr(expr->unresolved);
 }
 
-void AstToText::appendExpr(SymExpr* expr, bool quoteStrings)
+void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
 {
   if (VarSymbol* var = toVarSymbol(expr->var))
   {
@@ -841,7 +842,7 @@ void AstToText::appendExpr(SymExpr* expr, bool quoteStrings)
   }
 }
 
-void AstToText::appendExpr(CallExpr* expr)
+void AstToText::appendExpr(CallExpr* expr, bool printingType)
 {
   if (expr->primitive == 0)
   {
@@ -853,7 +854,7 @@ void AstToText::appendExpr(CallExpr* expr)
       if     (strcmp(fnName, "!")                            == 0)
       {
         mText += "!";
-        appendExpr(expr->get(1));
+        appendExpr(expr->get(1), printingType);
       }
 
       // UnaryOp negate
@@ -861,25 +862,30 @@ void AstToText::appendExpr(CallExpr* expr)
                expr->numActuals()                            == 1)
       {
         mText += "-";
-        appendExpr(expr->get(1));
+        appendExpr(expr->get(1), printingType);
       }
 
       else if (strcmp(fnName, "_cast")                        == 0)
       {
-        appendExpr(expr->get(2));
+        appendExpr(expr->get(2), printingType);
         mText += ": ";
-        appendExpr(expr->get(1));
+        appendExpr(expr->get(1), printingType);
       }
 
       else if (strcmp(fnName, "chpl__atomicType")             == 0)
       {
         mText += "atomic";
-        appendExpr(expr->get(1));
+        appendExpr(expr->get(1), printingType);
       }
 
       else if (strcmp(fnName, "chpl__ensureDomainExpr")       == 0)
       {
-        appendExpr(expr->get(1));
+        appendExpr(expr->get(1), printingType);
+        for (int index = 2; index <= expr->numActuals(); index++)
+        {
+          mText += ", ";
+          appendExpr(expr->get(index), printingType);
+        }
       }
 
       else if (strcmp(fnName, "chpl__buildDomainRuntimeType") == 0)
@@ -895,7 +901,7 @@ void AstToText::appendExpr(CallExpr* expr)
             if (strcmp(sym1->unresolved, "defaultDist") == 0)
             {
               mText += "domain(";
-              appendExpr(sym2);
+              appendExpr(sym2, printingType);
               mText += ")";
             }
 
@@ -918,7 +924,7 @@ void AstToText::appendExpr(CallExpr* expr)
             if (arg1 != 0 && arg2 != 0 && strcmp(arg1->name, "defaultDist") == 0)
             {
               mText += "domain(";
-              appendExpr(sym2);
+              appendExpr(sym2, printingType);
               mText += ")";
             }
 
@@ -927,6 +933,25 @@ void AstToText::appendExpr(CallExpr* expr)
               // NOAKES 2015/02/05  Debugging support.
               // Might become ASSERT in the future
               mText += "AppendExpr.Call01";
+            }
+          }
+
+          else if (isUnresolvedSymExpr(expr->get(1)) && isSymExpr(expr->get(2)))
+          {
+            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
+            SymExpr*   sym2 = toSymExpr(expr->get(2));
+            if (strcmp(sym1->unresolved, "defaultDist") == 0)
+            {
+              mText += "domain(";
+              appendExpr(sym2, printingType);
+              mText += ")";
+            }
+
+            else
+            {
+              // Lydia 2015/02/17 Debugging support.
+              // Might become ASSERT in the future
+              mText += "AppendExpr.Call10";
             }
           }
 
@@ -950,21 +975,31 @@ void AstToText::appendExpr(CallExpr* expr)
       else if (strcmp(fnName, "chpl__buildArrayRuntimeType") == 0)
       {
         mText += "[";
-        appendExpr(expr->get(1));
-        mText += "] ";
+        appendExpr(expr->get(1), printingType);
+        mText += "]";
 
         if (expr->numActuals() == 2)
-          appendExpr(expr->get(2));
+        {
+          mText += " ";
+          appendExpr(expr->get(2), printingType);
+        }
       }
 
       else if (strcmp(fnName, "_build_tuple")                == 0)
-        appendExpr(expr, "");
+        appendExpr(expr, "", printingType);
 
       else if (strcmp(fnName, "chpl__buildIndexType")        == 0)
-        appendExpr(expr, "index");
+        appendExpr(expr, "index", printingType);
 
       else if (strcmp(fnName, "range")                       == 0)
-        appendExpr(expr, "range");
+        appendExpr(expr, "range", printingType);
+
+      else if (strcmp(fnName, "chpl_build_bounded_range")    == 0)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += "..";
+        appendExpr(expr->get(2), printingType);
+      }
 
       else if (strcmp(fnName, ".")                           == 0)
       {
@@ -979,13 +1014,13 @@ void AstToText::appendExpr(CallExpr* expr)
 
             if (strcmp(sym1->name, "this") == 0)
             {
-              appendExpr(symExpr2);
+              appendExpr(symExpr2, printingType);
             }
             else
             {
-              appendExpr(symExpr1);
+              appendExpr(symExpr1, printingType);
               mText += '.';
-              appendExpr(symExpr2);
+              appendExpr(symExpr2, printingType);
             }
           }
 
@@ -995,13 +1030,13 @@ void AstToText::appendExpr(CallExpr* expr)
 
             if (strcmp(sym1->name, "this") == 0)
             {
-              appendExpr(symExpr2);
+              appendExpr(symExpr2, printingType);
             }
             else
             {
-              appendExpr(symExpr1);
+              appendExpr(symExpr1, printingType);
               mText += '.';
-              appendExpr(symExpr2);
+              appendExpr(symExpr2, printingType);
             }
           }
 
@@ -1015,9 +1050,9 @@ void AstToText::appendExpr(CallExpr* expr)
         }
         else
         {
-          appendExpr(expr->get(1));
+          appendExpr(expr->get(1), printingType);
           mText += '.';
-          appendExpr(expr->get(2));
+          appendExpr(expr->get(2), printingType);
         }
       }
 
@@ -1041,15 +1076,36 @@ void AstToText::appendExpr(CallExpr* expr)
       }
 
       // NOAKES 2015/02/09 Treating all calls with 2 actuals as binary operators
+      // Lydia 2015/02/17 ... except homogenuous tuple inner workings.
       else if (expr->numActuals() == 2)
       {
-        appendExpr(expr->get(1));
-        appendExpr(expr->baseExpr);
-        appendExpr(expr->get(2));
+        UnresolvedSymExpr* name     = toUnresolvedSymExpr(expr->baseExpr);
+        if (printingType && strcmp(name->unresolved, "*") == 0)
+        {
+          // This is not a multiply, it's the symbol for a homogenuous tuple.
+
+          // I found that some multiplies would match this (even though they
+          // really should be PRIM_MULT), so we must rely on context to
+          // differentiate between the two cases: if we're in a type expression,
+          // either something has gone terribly wrong or a homogenuous tuple is
+          // intended.  If we're in another expression, it's more likely to be
+          // a multiply.
+          appendExpr(expr->get(1), printingType);
+          mText += "*(";
+          appendExpr(expr->get(2), printingType);
+          mText += ")";
+        }
+
+        else
+        {
+          appendExpr(expr->get(1), printingType);
+          appendExpr(expr->baseExpr, printingType);
+          appendExpr(expr->get(2), printingType);
+        }
       }
 
       else
-        appendExpr(expr, fnName);
+        appendExpr(expr, fnName, printingType);
     }
 
     else if (isSymExpr(expr->baseExpr))
@@ -1063,15 +1119,15 @@ void AstToText::appendExpr(CallExpr* expr)
 
       else if (expr->numActuals() == 1)
       {
-        appendExpr(expr->baseExpr);
+        appendExpr(expr->baseExpr, printingType);
         mText += '(';
-        appendExpr(expr->get(1));
+        appendExpr(expr->get(1), printingType);
         mText += ')';
       }
 
       else
       {
-        appendExpr(expr->baseExpr);
+        appendExpr(expr->baseExpr, printingType);
         mText += '(';
 
         for (int i = 1; i <= expr->numActuals(); i++)
@@ -1079,7 +1135,7 @@ void AstToText::appendExpr(CallExpr* expr)
           if (i > 1)
             mText += ", ";
 
-          appendExpr(expr->get(i));
+          appendExpr(expr->get(i), printingType);
         }
 
         mText += ')';
@@ -1098,7 +1154,7 @@ void AstToText::appendExpr(CallExpr* expr)
   {
     if (expr->isPrimitive(PRIM_TYPEOF))
     {
-      appendExpr(expr->get(1));
+      appendExpr(expr->get(1), printingType);
       mText += ".type ";
     }
     else
@@ -1110,7 +1166,7 @@ void AstToText::appendExpr(CallExpr* expr)
   }
 }
 
-void AstToText::appendExpr(DefExpr* expr)
+void AstToText::appendExpr(DefExpr* expr, bool printingType)
 {
   mText += '?';
 
@@ -1128,14 +1184,14 @@ void AstToText::appendExpr(DefExpr* expr)
   }
 }
 
-void AstToText::appendExpr(NamedExpr* expr)
+void AstToText::appendExpr(NamedExpr* expr, bool printingType)
 {
   mText += expr->name;
   mText += " = ";
-  appendExpr(expr->actual);
+  appendExpr(expr->actual, printingType);
 }
 
-void AstToText::appendExpr(CallExpr* expr, const char* fnName)
+void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType)
 {
   appendExpr(fnName);
   mText += '(';
@@ -1145,7 +1201,7 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName)
     if (i > 1)
       mText += ", ";
 
-    appendExpr(expr->get(i));
+    appendExpr(expr->get(i), printingType);
   }
 
   mText += ')';

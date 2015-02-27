@@ -17,15 +17,19 @@
  * limitations under the License.
  */
 
+#include <ostream>
+#include <sstream>
+#include <string>
+
 #include "baseAST.h"
 
 #include "astutil.h"
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"
-#include "IpeSymbol.h"
 #include "log.h"
 #include "ParamForLoop.h"
+#include "parser.h"
 #include "passes.h"
 #include "runpasses.h"
 #include "stmt.h"
@@ -33,7 +37,6 @@
 #include "symbol.h"
 #include "type.h"
 #include "WhileStmt.h"
-#include "yy.h"
 
 static void cleanModuleList();
 
@@ -74,8 +77,8 @@ void printStatistics(const char* pass) {
   int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kExternBlockStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
-  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nIpeSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
-  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kIpeSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
+  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
+  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nAggregateType;
   int kType = kPrimitiveType+kEnumType+kAggregateType;
 
@@ -279,6 +282,10 @@ BaseAST::BaseAST(AstTag type) :
   }
 }
 
+
+const std::string BaseAST::tabText = "   ";
+
+
 BaseAST::~BaseAST() { 
 }
 
@@ -430,10 +437,6 @@ const char* BaseAST::astTagAsString() const {
       retval = "ArgSymbol";
       break;
 
-    case E_IpeSymbol:
-      retval = "IpeSymbol";
-      break;
-
     case E_TypeSymbol:
       retval = "TypeSymbol";
       break;
@@ -464,6 +467,34 @@ const char* BaseAST::astTagAsString() const {
   }
 
   return retval;
+}
+
+
+void BaseAST::printTabs(std::ostream *file, unsigned int tabs) {
+  for (unsigned int i = 0; i < tabs; i++) {
+    *file << this->tabText;
+  }
+}
+
+
+// This method is the same for several subclasses of BaseAST, so it is defined
+// her on BaseAST. 'doc' is not defined as a member of BaseAST, so it must be
+// taken as an argument here.
+//
+// TODO: Can BaseAST define a 'doc' member? What if `chpl --doc` went away and
+//       `chpldoc` was compiled with a special #define (e.g. -DCHPLDOC) so the
+//       'doc' member and all doc-related methods would only be available to
+//       chpldoc? (thomasvandoren, 2015-02-21)
+void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs) {
+  if (doc != NULL) {
+    std::stringstream sStream(ltrimAllLines(doc));
+    std::string line;
+    while (std::getline(sStream, line)) {
+      this->printTabs(file, tabs);
+      *file << line;
+      *file << std::endl;
+    }
+  }
 }
 
 

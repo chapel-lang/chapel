@@ -41,9 +41,10 @@ files_wo_copy=$(find $source_dirs \
     -name \*.lex -o \
     -name \*.y -o \
     -name \*.ypp | \
-    grep -v compiler/parser/lex.yy.cpp | \
-    grep -v compiler/parser/chapel.tab.h | \
-    grep -v compiler/parser/chapel.tab.cpp | \
+    grep -v compiler/include/bison-chapel.h  | \
+    grep -v compiler/include/flex-chapel.h   | \
+    grep -v compiler/parser/bison-chapel.cpp | \
+    grep -v compiler/parser/flex-chapel.cpp  | \
     grep -v compiler/passes/reservedSymbolNames.h | \
     grep -v modules/standard/gen/ | \
     xargs grep -i -L "${copyright_pattern}")

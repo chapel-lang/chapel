@@ -26,6 +26,7 @@
 #include "type.h"
 
 #include <bitset>
+#include <iostream>
 #include <vector>
 
 //
@@ -110,6 +111,7 @@ public:
   virtual bool       isConstValWillNotChange()                 const;
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
+          bool       isRenameable()                            const;
 
   virtual void       codegenDef();
 
@@ -205,6 +207,15 @@ public:
   void codegenDef();
   // global vars are different ...
   void codegenGlobalDef();
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+  void makeField();
+
+private:
+
+  virtual std::string docsDirective();
+  bool isField;
 };
 
 /******************************** | *********************************
@@ -382,6 +393,12 @@ class FnSymbol : public Symbol {
   bool            isMethod()                                   const;
   bool            isPrimaryMethod()                            const;
   bool            isSecondaryMethod()                          const;
+  bool            isIterator()                                 const;
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
 };
 
 /******************************** | *********************************
@@ -455,8 +472,16 @@ public:
   // LLVM uses this for extern C blocks.
   ExternBlockInfo*     extern_info;
 
+  virtual void         printDocs(std::ostream *file, unsigned int tabs);
+          void         addPrefixToName(std::string prefix);
+          std::string  docsName();
+
 private:
   void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
+
+  // Used when documenting submodules.
+  std::string          moduleNamePrefix;
+;
 
 };
 
@@ -556,6 +581,7 @@ extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gTryToken; // try token for conditional function resolution
 extern VarSymbol *gBoundsChecking;
+extern VarSymbol *gCastChecking;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;

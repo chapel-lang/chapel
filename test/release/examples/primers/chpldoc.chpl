@@ -10,13 +10,12 @@
 // Creating and accessing the documentation:
 
 // To generate the documentation for this and any source file, you may either
-// compile using the command 'chpldoc <sourceName.chpl>' for documentation only
-// or using the command 'chpl --docs <sourceName.chpl>' to create both 
-// documentation and an executable.
+// compile using the command 'chpldoc <sourceName.chpl>' or using the command
+// 'chpl --docs <sourceName.chpl>'.
 
 // The documentation files will be found in a special folder created by the 
 // chpldoc tool.  If you are compiling a Chapel file that is deeper than your
-// current directory, this heirarchy will be reflected within the documentation
+// current directory, this hierarchy will be reflected within the documentation
 // folder.
 // (i.e. foo/bar.chpl will generate documentation within docs/foo/)
 
@@ -25,7 +24,7 @@
 // Documentation within the code:
 
 /*
-  Multiline comments found before a method are associated with that method
+  Multiline comments found before a function are associated with that function
   as long as there are no code blocks between them.
 */
 
@@ -36,18 +35,31 @@ proc commented(val: int): string {
 }
 
 /*
-  The method can be a stub and still output its comment
+  The function can be a stub and still output its comment
 */
 proc stub(val): bool {
-  /* Comments within the method body are ignored */
+  /* Comments within the function body are ignored */
 }
 
 // Single line comments are also ignored.  However, this does not prevent 
-// the display of the method itself.
+// the display of the function itself.
 proc uncommented() {
   /*
-    Longer comments within the method body are also ignored
+    Longer comments within the function body are also ignored
   */
+}
+
+/*
+  To prevent the display of a particular function, class, record, specified
+  module, or global variable, simply preface it with:
+  pragma "no doc"
+*/
+pragma "no doc"
+proc undocumented() {
+  // This function won't be in the final output.
+
+  // Once Chapel has support for marking symbol as private, that can be used
+  // to squash documentation instead.
 }
 
 /*
@@ -74,8 +86,8 @@ module Defined {
   }
 
   /*
-    If a class inherits from another class, those fields, methods, and their
-    comments are output in both the super and the subclass
+    If a class inherits from another class, the inheritance is shown
+    in the signature.
   */
   class Bar : Foo {
 

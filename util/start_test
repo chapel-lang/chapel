@@ -89,6 +89,7 @@
 #   -memleaks
 #   -no-chpl-home-warn                Do not show warning when start_test invoked outside CHPL_HOME
 #   -progress                         Print pass/fail to stderr for each test. Does not work for directories.
+#   -test-root                        Absolute path to test dir. Set when test dir is not under CHPL_HOME.
 #   -junit-xml                        Create jUnit XML style report.
 #   -junit-xml-file <file>            Path to store jUnit XML report. When set, -junit-xml is implied.
 #   -junit-remove-prefix <prefix>     Remove <prefix> from all tests in jUnit report.
@@ -644,7 +645,8 @@ endif
 if ($?CHPL_TEST_UTIL_DIR) then
     set utildir = "$CHPL_TEST_UTIL_DIR"
 else
-    set utildir = "$CHPL_HOME/util"
+    set start_test_dir = `dirname $0`
+    set utildir = `cd $start_test_dir/../util && pwd`
     setenv CHPL_TEST_UTIL_DIR $utildir
 endif
 if (! -d $utildir || ! -x $utildir) then
@@ -732,6 +734,7 @@ set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
 set progress = 0
+set testRootDir = ""
 set junit_xml = 0
 set junit_xml_file = 0
 set junit_remove_prefix = 0
@@ -862,7 +865,7 @@ while ( $#argv > 0 )
     case --performance-configs:
     case -performance-configs:
         shift
-        set genGraphOpts = "$genGraphOpts --multiple-configurations $argv[1]"
+        set genGraphOpts = "$genGraphOpts --configs $argv[1]"
         shift
         breaksw
     case --compperformance:
@@ -988,6 +991,12 @@ while ( $#argv > 0 )
         shift
         set progress = 1
         breaksw
+    case -test-root:
+    case --test-root:
+        shift
+        set testRootDir = $argv[1]
+        shift
+        breaksw
     case -junit-xml:
     case --junit-xml:
         shift
@@ -1046,6 +1055,7 @@ while ( $#argv > 0 )
         echo "          -memleaks <file>"
         echo "          -no-chpl-home-warn"
         echo "          -progress"
+        echo "          -test-root"
         echo "          -junit-xml"
         echo "          -junit-xml-file <file>  (implies -junit-xml)"
         echo "          -junit-remove-prefix <prefix>"
@@ -1073,6 +1083,10 @@ end
 
 if ($optionerr == 1) then
     exit 1
+endif
+
+if ($testRootDir != "") then
+    setenv CHPL_TEST_ROOT_DIR "$testRootDir"
 endif
 
 set invocationDir = "$cwd"
@@ -1377,7 +1391,7 @@ if ($performance || $compperformance) then
 
   # the name of the .dat file to store the sha (store in env var for gengraphs)
   set shaDatFileName = "perfSha"
-  set shaDatFilePath = "$perfdir/$shaDatFileName.dat"
+  set shaDatFilePath = "$datdir/$shaDatFileName.dat"
   setenv CHPL_TEST_SHA_DAT_FILE "$shaDatFilePath"
 
   echo "[Saving current git sha to $shaDatFilePath]" |& $tee -a $logfile
@@ -1899,6 +1913,10 @@ if ($junit_xml_file != 0) then
 endif
 if ($junit_remove_prefix != 0) then
     set junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
+else if ($testRootDir != "") then
+    # If --test-root was thrown, also remove it from the junit report (in case
+    # something slipped through in sub_test).
+    set junit_args = "$junit_args --remove-prefix=$testRootDir"
 endif
 if ($suppressions != "") then
     set junit_args = "$junit_args --suppress=$suppressions"

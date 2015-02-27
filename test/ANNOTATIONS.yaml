@@ -1,24 +1,29 @@
 # The format for this file is as follows:
 #
-# group:
-#   mm/dd/yy:
-#     - example annotation 1
-#     - example annotation 2
-#   mm/dd/yy:
-#     - text: example annotation 3
-#       host: [hostname1, hostname2]
-#
 # all:
 #   mm/dd/yy:
-#     - example annotation 5
+#     - example annotation 1
 #
-# where group is the base name of the .graph file that attached set of
-# annotations should apply to. When the long form of an annotation is used
-# (when text and host are specified) the annotation is only added to the graphs
-# if the current hostname is in the host list. 'all' is a special group where
-# any annotations are added to to every single graph.
+# group:
+#   mm/dd/yy:
+#     - example annotation 2
+#     - example annotation 3
+#   mm/dd/yy:
+#     - text: example annotation 4
+#       host: [hostname1, hostname2]
+#
+#
+# where 'group' is the base name of the .graph file that attached set
+# of annotations should apply to.  'all' is a special group where any
+# annotations are added to to every single graph.
+#
+# When the long form of an annotation is used (where 'text:' and
+# 'host:' are specified), the annotation is only added to the graphs
+# if the current hostname is in the host list.  Note that in this
+# form, the 'host:' line does not (cannot) have a leading '-' sign.
 #
 # Groups are listed in case insensitive alphabetical order
+#
 
 all:
   10/14/13:
@@ -52,6 +57,9 @@ all:
     - simplify some locale model interactions with the runtime
   01/16/15:
     - move chpl_getLocaleID into the modules
+  02/12/15:
+    - text: zombie process on chap04 was causing noise
+      host: chap04
 
 AllCompTime:
   11/09/14:

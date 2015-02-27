@@ -59,18 +59,26 @@ typedef enum {
 
 // Find the default tmp directory. Try getting the tmp dir from the
 // ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
-static const char* getTmpDir() {
-  int i;
-  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
-  for (i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
-    const char* curDir = getenv(possibleDirsInEnv[i]);
-    if (curDir != NULL) {
-      return curDir;
-    }
-  }
-#ifdef P_tmpdir
-  return P_tmpdir;
-#endif
+static const char* getTmpDir(void) {
+// TODO Elliot (02/15/15): I'm temporarily disabling this logic and just using
+// '/tmp' to see if it resolves the single local xc perf testing failures. We
+// set TMPDIR in one of our common scripts. We then make that dir on the login
+// node, but not on the compute nodes, so the program can't actually put it's
+// output anywhere. If this resolves the issues, I'll update the launcher to
+// do something smarter like create the temp dir before running and remove it
+// afterwards.
+//
+//  int i;
+//  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
+//  for (i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
+//    const char* curDir = getenv(possibleDirsInEnv[i]);
+//    if (curDir != NULL) {
+//      return curDir;
+//    }
+//  }
+//#ifdef P_tmpdir
+//  return P_tmpdir;
+//#endif
   return "/tmp";
 }
 
@@ -279,18 +287,15 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       sprintf(stdoutFileNoFmt, "%s.%s.out", argv[0], "$SLURM_JOB_ID");
     }
 
+    // We have slurm use the real output file to capture slurm errors/timeouts
+    // We only redirect the program output to the tmp file
+    fprintf(slurmFile, "#SBATCH --output=%s\n", stdoutFile);
+
     // If we're buffering the output, set the temp output file name.
     // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
       sprintf(tmpStdoutFile,      "%s/%s.%s.out", tmpDir, argv[0], "%j");
       sprintf(tmpStdoutFileNoFmt, "%s/%s.%s.out", tmpDir, argv[0], "$SLURM_JOB_ID");
-    }
-
-    // set actual output file based on if we're buffering stdout
-    if (bufferStdout != NULL) {
-      fprintf(slurmFile, "#SBATCH --output=%s\n", tmpStdoutFile);
-    } else {
-      fprintf(slurmFile, "#SBATCH --output=%s\n", stdoutFile);
     }
 
     // add the srun command and the (possibly wrapped) binary name.
@@ -299,7 +304,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // add any arguments passed to the launcher to the binary 
     for (i=1; i<argc; i++) {
-      fprintf(slurmFile, " '%s'", argv[i]);
+      fprintf(slurmFile, "'%s' ", argv[i]);
+    }
+
+    // buffer program output to the tmp stdout file
+    if (bufferStdout != NULL) {
+      fprintf(slurmFile, "&> %s", tmpStdoutFileNoFmt);
     }
     fprintf(slurmFile, "\n");
 
@@ -307,7 +317,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // to copy the output to the actual output file. The <tmpDir> output
     // will only exist on one node, ignore failures on the other nodes
     if (bufferStdout != NULL) {
-      fprintf(slurmFile, "srun mv %s %s 2>/dev/null\n", tmpStdoutFileNoFmt, stdoutFileNoFmt);
+      fprintf(slurmFile, "cat %s >> %s\n", tmpStdoutFileNoFmt, stdoutFileNoFmt);
+      fprintf(slurmFile, "rm  %s &> /dev/null\n", tmpStdoutFileNoFmt);
     }
 
     // close the batch file and change permissions 

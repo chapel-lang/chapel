@@ -1,39 +1,39 @@
 Module: externTest
-   extern proc method1()
+   Module: externTest.Other
+      proc inside
+         Comment for method inside module 
+
+      proc commentless
+      proc hasArg(val: int)
+         Comment for method with an argument inside module 
+
+      proc hasArgCommentless(val: int)
+      proc hasReturnType(): int
+         This method has a return type 
+
+      proc hasReturnTypeCommentless(): int
+      proc hasReturnTypeAndArg(val: int): int
+         This method has a return type and an argument 
+
+      proc hasReturnTypeAndArgCommentless(val: int): int
+   proc method1()
       Comment for method1 
 
-   extern proc commentless()
-   extern proc hasArg(val: int)
+   proc commentless()
+   proc hasArg(val: int)
       Comment for method with an argument 
 
-   extern proc hasArgCommentless(val: int)
-   extern proc longComment()
+   proc hasArgCommentless(val: int)
+   proc longComment()
       This comment is rather long
       And spans for
       Multiple lines 
 
-   extern proc hasReturnType(): int
+   proc hasReturnType(): int
       This method has a return type 
 
-   extern proc hasReturnTypeCommentless(): int
-   extern proc hasReturnTypeAndArg(val: int): int
+   proc hasReturnTypeCommentless(): int
+   proc hasReturnTypeAndArg(val: int): int
       This method has a return type and an argument 
 
-   extern proc hasReturnTypeAndArgCommentless(val: int): int
-   Module: externTest.Other
-      extern proc inside
-         Comment for method inside module 
-
-      extern proc commentless
-      extern proc hasArg(val: int)
-         Comment for method with an argument inside module 
-
-      extern proc hasArgCommentless(val: int)
-      extern proc hasReturnType(): int
-         This method has a return type 
-
-      extern proc hasReturnTypeCommentless(): int
-      extern proc hasReturnTypeAndArg(val: int): int
-         This method has a return type and an argument 
-
-      extern proc hasReturnTypeAndArgCommentless(val: int): int
+   proc hasReturnTypeAndArgCommentless(val: int): int

@@ -298,7 +298,7 @@ static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
       if (isReferenceType(ovar->type)) {
         VarSymbol* deref = newTemp(ovar->name, ovar->type->getValType());
         tlStmt->insertBefore(new DefExpr(deref));
-        tlStmt->insertBefore(new_Expr("'move'(%S, 'deref'(%S))", deref, ovar));
+        tlStmt->insertBefore("'move'(%S, 'deref'(%S))", deref, ovar);
         actual = deref;
       }
       tlCall->insertAtTail(actual);
@@ -377,8 +377,8 @@ static void extractFromLeaderYield(CallExpr* lcCall, int ix,
   // did not work for me. So we generate leadIdx.x1 etc.  -vass 7'2014
   char buf[16];  sprintf(buf, "x%d", ix);
 
-  lcCall->insertBefore(new_Expr("'move'(%S, '.v'(%S,%S))",
-                                dest, leadIdx, new_StringSymbol(buf)));
+  lcCall->insertBefore("'move'(%S, '.v'(%S,%S))",
+                       dest, leadIdx, new_StringSymbol(buf));
 }
 
 static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
@@ -879,7 +879,7 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       CallExpr* buildTuple = new CallExpr("_build_tuple", newOrigRet);
       for (int ix = 0; ix < numExtraArgs; ix++)
         buildTuple->insertAtTail(new SymExpr(extraFormals[ix]));
-      rcall->insertBefore(new_Expr("'move'(%S,%E)", retSym, buildTuple));
+      rcall->insertBefore("'move'(%S,%E)", retSym, buildTuple);
       rcall->insertAtTail(new SymExpr(retSym));
 
     } else if (FnSymbol* tfn = resolvedToTaskFun(rcall)) {

@@ -38,11 +38,14 @@
 #include "stringutil.h"
 #include "type.h"
 
+#include "AstToText.h"
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
 
 #include <cstdlib>
 #include <inttypes.h>
+#include <iostream>
+#include <sstream>
 #include <stdint.h>
 
 //
@@ -78,6 +81,7 @@ VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
 VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
+VarSymbol *gCastChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gNodeID = NULL;
@@ -150,6 +154,10 @@ bool Symbol::isParameter() const {
   return false;
 }
 
+bool Symbol::isRenameable() const {
+  return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
+}
+
 
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;
@@ -203,6 +211,7 @@ bool Symbol::isImmediate() const {
   return false;
 }
 
+
 /******************************** | *********************************
 *                                                                   *
 * Common base class for ArgSymbol and VarSymbol.                    *
@@ -249,7 +258,8 @@ VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
-  doc(NULL)
+  doc(NULL),
+  isField(false)
 {
   gVarSymbols.add(this);
 }
@@ -298,6 +308,80 @@ bool VarSymbol::isConstValWillNotChange() const {
 bool VarSymbol::isParameter() const {
   return hasFlag(FLAG_PARAM) || immediate;
 }
+
+
+std::string VarSymbol::docsDirective() {
+  std::string result;
+  if (fDocsTextOnly) {
+    result = "";
+  } else {
+    // TODO: If this is a type (i.e. this->hasFlag(FLAG_TYPE_VARIABLE)), use
+    //       ".. type:: " as directive. (thomasvandoren, 2015-02-21)
+    if (this->isField) {
+      result = ".. attribute:: ";
+    } else {
+      result = ".. data:: ";
+    }
+  }
+  return this->hasFlag(FLAG_CONFIG) ? result + "config " : result;
+}
+
+
+void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_SUPER_CLASS)) {
+      return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+
+  if (this->hasFlag(FLAG_TYPE_VARIABLE)) {
+    *file << "type ";
+  } else if (this->isConstant()) {
+    *file << "const ";
+  } else if (this->isParameter()) {
+    *file << "param ";
+  } else {
+    *file << "var ";
+  }
+
+  *file << this->name;
+
+  if (this->defPoint->exprType != NULL) {
+    *file << ": ";
+    this->defPoint->exprType->prettyPrint(file);
+  }
+
+  if (this->defPoint->init != NULL) {
+    *file << " = ";
+    this->defPoint->init->prettyPrint(file);
+  }
+
+  *file << std::endl;
+
+  // For .rst mode, put a line break after the .. data:: directive and
+  // its description text.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+/*
+ * For docs, when VarSymbol is used for class fields, identify them as such by
+ * calling this function.
+ */
+void VarSymbol::makeField() {
+  this->isField = true;
+}
+
 
 #ifdef HAVE_LLVM
 static
@@ -2271,6 +2355,93 @@ bool FnSymbol::isSecondaryMethod() const {
   return isMethod() && !isPrimaryMethod();
 }
 
+
+// This function or method is an iterator (as opposed to a procedure).
+bool FnSymbol::isIterator() const {
+  return hasFlag(FLAG_ITERATOR_FN);
+}
+
+
+std::string FnSymbol::docsDirective() {
+  if (fDocsTextOnly) {
+    return "";
+  }
+
+  if (this->isMethod() && this->isIterator()) {
+    return ".. itermethod:: ";
+  } else if (this->isIterator()) {
+    return ".. iterfunction:: ";
+  } else if (this->isMethod()) {
+    return ".. method:: ";
+  } else {
+    return ".. function:: ";
+  }
+}
+
+
+void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  // Print the rst directive, if one is needed.
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+
+  // Print inline/export. Externs do not get a prefix, since the user doesn't
+  // care whether it's an extern or not (they just want to use the function).
+  if (this->hasFlag(FLAG_INLINE)) {
+    *file << "inline ";
+  } else if (this->hasFlag(FLAG_EXPORT)) {
+    *file << "export ";
+  }
+
+  // Print iter/proc.
+  if (this->isIterator()) {
+    *file << "iter ";
+  } else {
+    *file << "proc ";
+  }
+
+  // Print name and arguments.
+  AstToText *info = new AstToText();
+  info->appendNameAndFormals(this);
+  *file << info->text();
+  delete info;
+
+  // Print return intent, if one exists.
+  switch (this->retTag) {
+  case RET_REF:
+    *file << " ref";
+    break;
+  case RET_PARAM:
+    *file << " param";
+    break;
+  case RET_TYPE:
+    *file << " type";
+    break;
+  default:
+    break;
+  }
+
+  // Print return type.
+  if (this->retExprType != NULL) {
+    *file << ": ";
+    this->retExprType->body.tail->prettyPrint(file);
+  }
+  *file << std::endl;
+
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+  }
+}
+
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -2333,7 +2504,9 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     initFn(NULL),
     filename(NULL),
     doc(NULL),
-    extern_info(NULL) {
+    extern_info(NULL),
+    moduleNamePrefix("")
+{
 
   block->parentSymbol = this;
   registerModule(this);
@@ -2459,6 +2632,72 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
 
   return classes;
 }
+
+
+void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  // Print the module directive first, for .rst mode. This will associate the
+  // Module: <name> title with the module. If the .. module:: directive comes
+  // after the title, sphinx will complain about a duplicate id error.
+  if (!fDocsTextOnly) {
+    *file << ".. default-domain:: chpl" << std::endl << std::endl;
+    *file << ".. module:: " << this->docsName() << std::endl;
+
+    if (this->doc != NULL) {
+      this->printTabs(file, tabs + 1);
+      *file << ":synopsis: ";
+      *file << firstNonEmptyLine(this->doc);
+      *file << std::endl;
+    }
+    *file << std::endl;
+  }
+
+  this->printTabs(file, tabs);
+  const char *moduleTitle = astr("Module: ", this->docsName().c_str());
+  *file << moduleTitle << std::endl;
+
+  if (!fDocsTextOnly) {
+    int length = tabs * this->tabText.length() + strlen(moduleTitle);
+    for (int i = 0; i < length; i++) {
+      *file << "=";
+    }
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    // Only print tabs for text only mode. The .rst prefers not to have the
+    // tabs for module level comments and leading whitespace removed.
+    unsigned int t = tabs;
+    if (fDocsTextOnly) {
+      t += 1;
+    }
+
+    this->printDocsDescription(this->doc, file, t);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+/*
+ * Append 'prefix' to existing module name prefix.
+ */
+void ModuleSymbol::addPrefixToName(std::string prefix) {
+  this->moduleNamePrefix += prefix;
+}
+
+
+/*
+ * Returns name of module, including any prefixes that have been set.
+ */
+std::string ModuleSymbol::docsName() {
+  return this->moduleNamePrefix + this->name;
+}
+
 
 // This is intended to be called by getTopLevelConfigsVars and
 // getTopLevelVariables, since the code for them would otherwise be roughly

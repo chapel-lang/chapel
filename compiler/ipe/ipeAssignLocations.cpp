@@ -21,7 +21,6 @@
 
 #include "AstDumpToNode.h"
 #include "expr.h"
-#include "IpeSymbol.h"
 #include "misc.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -30,7 +29,7 @@
 static int   assignLocations(Symbol*       symbol,    int depth, int offset);
 static int   assignLocations(ModuleSymbol* module,    int depth, int offset);
 static int   assignLocations(FnSymbol*     fn,        int depth, int offset);
-static int   assignLocations(IpeSymbol*    symbol,    int depth, int offset);
+static int   assignLocations(LcnSymbol*    symbol,    int depth, int offset);
 
 static int   assignLocations(Expr*         expr,      int depth, int offset);
 
@@ -72,7 +71,7 @@ static int assignLocations(Symbol* symbol, int depth, int offset)
   if (false)
     ;
 
-  else if (IpeSymbol*    sym = toIpeSymbol(symbol))
+  else if (LcnSymbol*    sym = toLcnSymbol(symbol))
     offset = assignLocations(sym, depth, offset);
 
   else if (FnSymbol*     sym = toFnSymbol(symbol))
@@ -106,12 +105,12 @@ static int assignLocations(FnSymbol* fn, int depth, int offset)
   for (int i = 1; i <= fn->formals.length; i++)
   {
     DefExpr*   defExpr = 0;
-    IpeSymbol* formal  = 0;
+    LcnSymbol* formal  = 0;
 
     defExpr = toDefExpr(fn->formals.get(i));
     INT_ASSERT(defExpr);
 
-    formal  = toIpeSymbol(defExpr->sym);
+    formal  = toLcnSymbol(defExpr->sym);
     INT_ASSERT(formal);
 
     offset = assignLocations(formal, depth, offset);
@@ -122,8 +121,8 @@ static int assignLocations(FnSymbol* fn, int depth, int offset)
   return offset;
 }
 
-// NOAKES 2015/01/26: IpeSymbol is currently of fixed size 8
-static int assignLocations(IpeSymbol* symbol, int depth, int offset)
+// NOAKES 2015/01/26: LcnSymbol is currently of fixed size 8
+static int assignLocations(LcnSymbol* symbol, int depth, int offset)
 {
   symbol->locationSet(depth, offset);
 

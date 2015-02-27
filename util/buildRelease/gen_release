@@ -150,9 +150,6 @@ if ($no_clone == 0) {
 
 chdir "$archive_dir";
 
-print "Generating the bison/flex files...\n";
-system("cd compiler/parser && make lex.yy.cpp > /dev/null");
-
 print "Creating the examples directory...\n";
 system("cp -r test/release/examples .");
 system("cd util && cp start_test ../examples/");

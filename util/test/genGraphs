@@ -46,7 +46,7 @@ parser.add_option('-u', '--numericX', dest='numericX',
                   help='expect numbers (e.g. revisions), not dates,' +
                        ' for the X axis',
                   action='store_true', default=False)
-parser.add_option('-m', '--multiple-configurations', dest='multiConf',
+parser.add_option('-m', '--configs', dest='multiConf',
                   help='comma separated list of configurations. ":v" after a '
                        'configuration makes it visible by default. e.g '
                        '"local:v,--no-local:v" will create graphs with series '
@@ -1001,9 +1001,9 @@ def main():
                     graphList.append((l, [currSuite]))
             else:
                 # parse for suite name
-                ls = l[1:].split(':')
+                ls = l[1:].split(': ')
                 if ls[0].strip() == 'suite':
-                    currSuite = ls[1].strip()
+                    currSuite = ls[1].rstrip()
                     graphInfo.suites.append(currSuite)
                     numSuites += 1
                     if verbose:
