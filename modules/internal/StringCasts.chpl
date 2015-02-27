@@ -1,9 +1,4 @@
 module StringCasts {
-  // TODO: any way to make this work?
-  // cant have string constants outside of functions, we run into errors as
-  // ChapelLocale hasnt been parsed yet.
-  //const _true_s: string = "true";
-  //const _false_s: string = "false";
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they
   // would use a tagged union return val as well.
@@ -11,19 +6,18 @@ module StringCasts {
   //
   // Bool
   //
-  proc _cast(type t, x: bool) where t == string {
+  const _true_s: string = "true";
+  const _false_s: string = "false";
+
+  inline proc _cast(type t, x: bool) where t == string {
     if (x) {
-      const _true_s: string = "true";
       return _true_s;
     } else {
-      const _false_s: string = "false";
       return _false_s;
     }
   }
 
   proc _cast(type t, x: string) where t == bool {
-      const _true_s: string = "true";
-      const _false_s: string = "false";
     if (x == _true_s) {
       return true;
     } else if (x == _false_s) {
@@ -38,15 +32,14 @@ module StringCasts {
   //
   proc _cast(type t, x: integral) where t == string {
     //TODO: switch to using qio's writef somehow
-    //TODO: I think this might be broken anyways? cast to int64 feels wrong
     extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy ;
     extern proc strlen(const str: c_string_copy) : size_t;
 
     var csc = integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
 
     var ret: string;
-    ret.base = csc:c_ptr(uint(8));
-    ret.len = strlen(csc);
+    ret.buff = csc:c_ptr(uint(8));
+    ret.len = safe_cast(int, strlen(csc));
     ret._size = ret.len+1;
 
     return ret;
@@ -100,8 +93,8 @@ module StringCasts {
     var csc = real_to_c_string_copy(x:real(64), isImag);
 
     var ret: string;
-    ret.base = csc:c_ptr(uint(8));
-    ret.len = strlen(csc);
+    ret.buff = csc:c_ptr(uint(8));
+    ret.len = safe_cast(int, strlen(csc));
     ret._size = ret.len+1;
 
     return ret;
@@ -187,10 +180,28 @@ module StringCasts {
   }
 
   //
+  // enumerated
+  //
+  // TODO: do we support string->enum?
+  inline proc _cast(type t, x:enumerated) where t == string {
+    extern proc strlen(const str: c_string) : size_t;
+
+    // Use the compiler-generated enum to c_string conversion.
+    var cs = _cast(c_string, x);
+
+    var ret = new string(owned=false);
+    ret.buff = cs:c_ptr(uint(8));
+    ret.len = safe_cast(int, strlen(cs));
+    ret._size = ret.len+1;
+
+    return ret;
+  }
+
+  //
   // Badness
   //
   // TODO: I *really* dont like this
-  // Other casts to strings use the baseType
+  // Other casts to strings use the bufferType
   inline proc _cast(type t, x) where t == string && x.type != c_string && x.type != string {
     compilerError("_cast ":c_string+typeToString(x.type)+"->c_string->string":c_string);
   }

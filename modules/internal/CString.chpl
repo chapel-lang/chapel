@@ -384,7 +384,7 @@ module CString {
   inline proc c_string.length return __primitive("string_length", this);
   inline proc c_string.size return this.length;
 
-  inline proc c_string.substring(i: uint)
+  inline proc c_string.substring(i: int)
     return __primitive("string_index", this, i);
 
   inline proc c_string.substring(r: range(?)) {

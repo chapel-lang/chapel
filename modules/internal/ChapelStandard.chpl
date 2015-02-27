@@ -27,7 +27,6 @@ module ChapelStandard {
   use ChapelBase;
   use CString;
   use String;
-  use StringCasts;
   use MemConsistency;
   use Atomics;
   use NetworkAtomics;
