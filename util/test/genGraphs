@@ -1001,9 +1001,9 @@ def main():
                     graphList.append((l, [currSuite]))
             else:
                 # parse for suite name
-                ls = l[1:].split(':')
+                ls = l[1:].split(': ')
                 if ls[0].strip() == 'suite':
-                    currSuite = ls[1].strip()
+                    currSuite = ls[1].rstrip()
                     graphInfo.suites.append(currSuite)
                     numSuites += 1
                     if verbose:

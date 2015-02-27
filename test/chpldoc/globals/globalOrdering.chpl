@@ -1,10 +1,10 @@
-/* I should be first */
+/* hello */
 config var goop: bool;
-/* I should be third */
+/* I'm thirty five. */
 param after = 35;
-/* I should be fourth */
+/* I fluctuate. Guess what I am? */
 var fluctuates: int;
-/* I should be second */
+/* Who am I? */
 config const resorted = "what's in a name";
-/* I'm last */
+/* Run! */
 const running = false;
