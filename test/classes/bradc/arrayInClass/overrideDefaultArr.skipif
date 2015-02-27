@@ -1,0 +1,3 @@
+# Bounds-checking is turned off when --fast is tossed, so this test will not
+# generate the expected error message in that case.
+COMPOPTS <= --fast
