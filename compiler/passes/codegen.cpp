@@ -1097,7 +1097,7 @@ codegen_config() {
     fprintf(outfile, "initConfigVarTable();\n");
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1150,7 +1150,7 @@ codegen_config() {
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (3);
         args[0] = info->builder->CreateLoad(
             new_StringSymbol(var->name)->codegen().val);

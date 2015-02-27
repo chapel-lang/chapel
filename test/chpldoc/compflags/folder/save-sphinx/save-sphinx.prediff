@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -e
+
+(cd my-sphinx && \
+    echo * source/modules/*) > $2 || \
+        echo "ERROR cat-ing my-sphinx/* files" >> $2

@@ -17,7 +17,6 @@
 
 IPE_SRCS =                           \
            ipeDriver.cpp             \
-           ipeReplaceVariables.cpp   \
            ipeResolve.cpp            \
            ipeCheckReturn.cpp        \
            ipeInlinePrimitives.cpp   \
@@ -25,7 +24,6 @@ IPE_SRCS =                           \
            ipeEvaluate.cpp           \
                                      \
            IpeEnvironment.cpp        \
-           IpeSymbol.cpp             \
            VisibleSymbol.cpp         \
                                      \
            ScopeBase.cpp             \

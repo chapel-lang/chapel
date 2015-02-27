@@ -146,7 +146,7 @@ module ChapelIteratorSupport {
   }
 
   inline proc _toStandalone(x) {
-    _toStandalone(x.these());
+    return _toStandalone(x.these());
   }
 
 

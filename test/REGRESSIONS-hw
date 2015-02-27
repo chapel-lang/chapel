@@ -28,15 +28,16 @@ any
 ==========================================
 xe.*
 Inherits 'x?.*'
-Reviewed 2015-02-17
+Reviewed 2015-02-23
 ==========================================
 
 === sporadic issues ===
 
 Sporadic compilation timeouts (XE test system is less powerful)
 (happens most often when compiler=cray)
-(Thomas tried moving to eslogin node.)
+(Thomas tried moving to eslogin node; compilation timeouts still present 2015-02-18)
 ---------------------------------------------------------------
+[Error: Timed out compilation for release/examples/benchmarks/hpcc/hpl] (2015-02-22 xe.mpi.cray)
 [Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: *)]
 [Error: Timed out compilation for release/examples/benchmarks/miniMD/miniMD (compopts: *)]
 [Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *)]
@@ -84,13 +85,13 @@ Reviewed 2015-02-17
 ==========================================
 x?.ugni.*
 Inherits 'x?.*' and 'no-local'
-Reviewed 2015-02-17
+Reviewed 2015-02-23
 ==========================================
 
 
 === sporadic failures below ===
 
-Out of memory (2015-02-01, 2015-02-15)
+Out of memory (2015-02-01, 2015-02-15, 2015-02-22 xe-ugni-gnu)
 --------------------------------------
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 1)]
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 2, execopts: 1)]
@@ -98,7 +99,8 @@ Out of memory (2015-02-01, 2015-02-15)
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
 
 
-Out of memory (2015-02-02, 2015-02-15)
+Out of memory (2015-02-02, 2015-02-15, 2015-02-20, 2015-02-22 xe.ugni.gnu)
+(tcmalloc: allocation failed)
 --------------------------------------
 [Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
 
@@ -109,6 +111,15 @@ floating point issues (2015-02-02, 2015-02-15)
 [Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
 [Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
 
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
+
+floating point issues (2015-02-02, 2015-02-15)
+Some of these were due to the ordering of atomic operations not being guaranteed.  
+Greg put in a fix #87 on 2015-02-19 that appears to resolve the problem for the main lulesh test.
+Add cases from above that appear to be passing consistenty and close out this category 
+  if they remain fixed thru the spring release.
+----------------------------------------------
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 3)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
@@ -118,8 +129,7 @@ floating point issues (2015-02-02, 2015-02-15)
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 4)]
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 5)]
 
-[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 3)]
-[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 2, execopts: 3)]
+
 
 
 ==========================================
@@ -164,7 +174,7 @@ On Cray systems, it is unclear how file systems interact with KNCs.
 ==========================================
 xc.llvm
 Inherits 'x?.*' and 'llvm'
-Reviewed 2015-02-17
+Reviewed 2015-02-18
 ==========================================
 
 
@@ -182,23 +192,6 @@ Reviewed 2015-02-17
 ====================================================
 
 
-================================
-perf.xc.*
-Inherits 'perf*'
-Reviewed 2015-02-17
-================================
-
-
-============================================
-perf.xc.{no-local,local}.*
-Inherits 'perf.xc.*'
-Reviewed 2015-02-17
-============================================
-
-chpl_launchcmd issue (2015-02-14, elliot, thomas)
-ValueError: [Error: output file from job (id: 707527) does not exist at: $CHPL_HOME/test/.../chapel-test-???/test_output.log]
------------------------------------------------------------------------------------------------------------------------------
-All tests fail to find perf keys.
 
 
 ################################################################################
@@ -219,20 +212,16 @@ Reviewed 2015-02-17
 
 xc.aries.cray.aprun
 xc.aries.cray.slurm
-xc.aries.gnu.aprun
 xc.aries.gnu.slurm
 xc.aries.intel.aprun
 xc.aries.intel.slurm
 xc.aries.pgi.aprun
 xc.aries.pgi.slurm
 xc.mpi.cray.slurm
-xc.mpi.gnu.aprun
 xc.mpi.gnu.slurm
-xc.mpi.intel.aprun
 xc.mpi.intel.slurm
 xc.mpi.pgi.aprun
 xc.mpi.pgi.slurm
-xc.none.cray.aprun
 xc.none.cray.slurm
 xc.none.gnu.aprun
 xc.none.gnu.slurm
@@ -244,7 +233,6 @@ xc.ugni.gnu.aprun
 xc.ugni.gnu.slurm
 xc.ugni.intel.aprun
 xc.ugni.intel.slurm
-xe.gemini.cray
 xe.gemini.gnu
 xe.gemini.intel
 xe.gemini.pgi
@@ -256,14 +244,26 @@ xe.none.cray
 xe.none.gnu
 xe.none.intel
 xe.none.pgi
-xe.ugni.gnu
 xe.ugni.intel
+
+
+===========================================
+xc.aries.gnu.aprun
+Inherits 'x?.*.gnu*' and 'x?.aries.*'
+Reviewed 2015-02-23
+===========================================
+
+=== sporadic issues ===
+
+Missing output file (2015-02-23)
+-------------------
+[Error matching program output for release/examples/hello3-datapar]
 
 
 ===========================================
 xc.mpi.cray.aprun
 Inherits 'x?.*.cray*' and 'x?.mpi.*'
-Reviewed 2015-02-17
+Reviewed 2015-02-18
 ===========================================
 
 === sporadic issues ===
@@ -272,10 +272,87 @@ Differences in floating point numbers
 -------------------------------------
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (2015-02-14)
 
+Missing output file (2015-02-18)
+--------------------------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
 
 aprun: Apid <id>: Apid <id> RCA ec_node_unavailable event received for nid <nid>
 --------------------------------------------------------------------------------
 [Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (2015-02-14)
+
+
+===========================================
+xc.mpi.gnu.aprun
+Inherits 'x?.*.gnu*' and 'x?.gnu.*'
+Reviewed 2015-02-18
+===========================================
+
+=== sporadic issues ===
+
+Missing output file (2015-02-18)
+--------------------------------
+[Error matching program output for release/examples/benchmarks/hpcc/variants/stream-promoted]
+
+
+===========================================
+xc.mpi.intel.aprun
+Inherits 'x?.*.intel*' and 'x?.mpi.*'
+Reviewed 2015-02-23
+===========================================
+
+=== sporadic issues ===
+
+Missing output file (2015-02-22)
+-------------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 2, execopts: 2)]
+
+===========================================
+xc.none.cray.aprun
+Inherits 'x?.*.cray*' and 'x?.none.*'
+Reviewed 2015-02-19
+===========================================
+
+=== sporadic issues ===
+
+Missing output file (2015-02-18,)
+--------------------------------
+[Error matching program output for release/examples/hello5-taskpar]
+
+
+===========================================
+xe.gemini.cray
+Inherits 'x?.*.cray*' and 'x?.gemini.*'
+Reviewed 2015-02-23
+===========================================
+
+=== sporadic issues ===
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1)]
+
+
+===========================================
+xe.ugni.gnu
+Inherits 'x?.*.gnu*' and 'x?.ugni.*'
+Reviewed 2015-02-19
+===========================================
+
+=== sporadic issues ===
+
+tcmalloc allocation failure (2015-02-19..)
+---------------------------
+[Error matching program output for release/examples/benchmarks/hpcc/ra (compopts: 1)]
+
+
+################################################################################
+# Hardware-specific configurations inherited from 'perf*' appear below.
+# Entries should be in alphabetical order.
+################################################################################
+
+
+================================
+perf.xc.*
+Inherits 'perf*'
+Reviewed 2015-02-17
+================================
 
 
 ==================================================
@@ -317,12 +394,30 @@ Sporadic execution timeout
 ===========================================
 perf.xc.16.ugni.gnu
 Inherits 'perf.xc.*'
-Reviewed 2015-02-17
+Reviewed 2015-02-22
 ===========================================
 
 Segfault
 --------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-01-31..)
+
+=== sporadic issues ===
+
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)] (2015-02-19, 2015-02-22)
+
+
+
+============================================
+perf.xc.{no-local,local}.*
+Inherits 'perf.xc.*'
+Reviewed 2015-02-22
+============================================
+
+(The launchcmd issue was apparently resolved 2015-02-17)
+
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_forloop_3] (2015-02-18..)
+[Error: Timed out executing program studies/shootout/nbody/bradc/nbody-blc-slice] (2015-02-18..)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans] (2015-02-18..)
 
 
 ============================================
@@ -342,7 +437,7 @@ Reviewed 2015-02-17
 ============================================
 perf.xc.local.intel
 Inherits 'perf.xc.{no-local,local}.*' and '*intel*'
-Reviewed 2015-02-17
+Reviewed 2015-02-20
 ============================================
 
 Files sadSerial.output.bin and output.bin differ
@@ -355,13 +450,13 @@ Wrong output
 Checking for /one two( zero){6}/ on line 28... FAILURE.
 line 28:  one one nine nine nine nine nine nine
 -------------------------------------------------------
-[Error matching performance keys for studies/shootout/chameneos-redux/hannah/chameneos-redux-cas] (2015-02-15)
+[Error matching performance keys for studies/shootout/chameneos-redux/hannah/chameneos-redux-cas] (2015-02-15..2015-02-19)
 
 
 ============================================
 perf.xc.local.pgi
 Inherits 'perf.xc.{no-local,local}.*' and '*pgi*'
-Reviewed 2015-02-17
+Reviewed 2015-02-20
 ============================================
 
 Fails due to module install vs. setchplenv.* script being outside $CHPL_HOME (2015-02-15 first run, thomas)
@@ -370,23 +465,26 @@ Shouldn't run for perf testing; also doesn't work with binary installs
 [Error found checking setchplenv.* scripts.]
 
 
-ra-atomics.chpl:87: error: Out of memory allocating "array elements" (2015-02-15, first run)
+ra-atomics.chpl:87: error: Out of memory allocating "array elements" (2015-02-15, first run, 2015-02-20)
 --------------------------------------------------------------------------------------------
 [Error matching performance keys for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
 
 
-ValueError: [Error: output file from job (id: 725394) does not exist at: ... (2015-02-14, elliot, thomas)
---> Elliot fixed the output log issue for 2015-02-18 (should reveal actual errors)
----------------------------------------------------------------------------------------------------------
-[Error matching performance keys for studies/shootout/nbody/bradc/nbody-blc-slice]
-[Error matching performance keys for studies/shootout/nbody/sidelnik/nbody_forloop_3]
+(launchcmd problem resolved; Started matching perf keys for these two tests on 2015-02-18..)
+--------------------------------------------------------------
+[Error: Timed out executing program studies/shootout/nbody/bradc/nbody-blc-slice]
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_forloop_3]
 
 
 ============================================
 perf.xc.no-local.gnu
 Inherits 'perf.xc.{no-local,local}.*' and '*gnu*'
-Reviewed 2015-02-17
 ============================================
 
-Lots of failures due to the missing output logs (mentioned above).
---> Elliot fixed, should be better (ie start showing real errors) on 2015-02-18
+=== sporadic issues ===
+
+Differing whitespace
+--------------------
+[Error matching performance keys for io/vass/time-write (compopts: 1)]
+
+

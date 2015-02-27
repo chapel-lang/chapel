@@ -33,6 +33,9 @@
 #ifndef _BASEAST_H_
 #define _BASEAST_H_
 
+#include <ostream>
+#include <string>
+
 #include "map.h"
 #include "vec.h"
 
@@ -50,7 +53,6 @@
   macro(ModuleSymbol) sep                          \
   macro(VarSymbol)    sep                          \
   macro(ArgSymbol)    sep                          \
-  macro(IpeSymbol)    sep                          \
   macro(TypeSymbol)   sep                          \
   macro(FnSymbol)     sep                          \
   macro(EnumSymbol)   sep                          \
@@ -73,6 +75,7 @@
 class AstVisitor;
 class Expr;
 class GenRet;
+class LcnSymbol;
 class Symbol;
 class Type;
 
@@ -135,7 +138,6 @@ enum AstTag {
   E_ModuleSymbol,
   E_VarSymbol,
   E_ArgSymbol,
-  E_IpeSymbol,
   E_TypeSymbol,
   E_FnSymbol,
   E_EnumSymbol,
@@ -225,6 +227,11 @@ public:
   int               id;         // Unique ID
   astlocT           astloc;     // Location of this node in the source code
 
+  void                printTabs(std::ostream *file, unsigned int tabs);
+  virtual void        printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
+
+  static  const       std::string tabText;
+
 protected:
                     BaseAST(AstTag type);
   virtual          ~BaseAST();
@@ -309,7 +316,6 @@ def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
 def_is_ast(VarSymbol)
 def_is_ast(ArgSymbol)
-def_is_ast(IpeSymbol)
 def_is_ast(TypeSymbol)
 def_is_ast(FnSymbol)
 def_is_ast(EnumSymbol)
@@ -349,7 +355,6 @@ def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
 def_to_ast(VarSymbol)
 def_to_ast(ArgSymbol)
-def_to_ast(IpeSymbol)
 def_to_ast(TypeSymbol)
 def_to_ast(FnSymbol)
 def_to_ast(EnumSymbol)
@@ -369,6 +374,16 @@ def_to_ast(CForLoop);
 def_to_ast(ParamForLoop);
 
 #undef def_to_ast
+
+static inline LcnSymbol* toLcnSymbol(BaseAST* a)
+{
+  return isLcnSymbol(a) ? (LcnSymbol*) a : NULL;
+}
+
+static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
+{
+  return isLcnSymbol(a) ? (const LcnSymbol*) a : NULL;
+}
 
 //
 // traversal macros
