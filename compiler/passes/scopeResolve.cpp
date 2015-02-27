@@ -613,7 +613,7 @@ static void build_type_constructor(AggregateType* ct) {
         //
         // if formal is generic
         //
-        if (field->hasFlag(FLAG_TYPE_VARIABLE) || 
+        if (field->isType() || 
             field->hasFlag(FLAG_PARAM)         || 
             (!exprType && !init)) {
 
@@ -621,7 +621,7 @@ static void build_type_constructor(AggregateType* ct) {
 
           fn->insertFormalAtTail(arg);
 
-          if (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE))
+          if (field->hasFlag(FLAG_PARAM) || field->isType())
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
                                           new_StringSymbol(field->name), arg));
@@ -887,7 +887,7 @@ static void build_constructor(AggregateType* ct) {
     bool hadInit = init;
 
     if (init) {
-      if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
+      if (!field->isType() && !exprType) {
         // init && !exprType
         VarSymbol* tmp = newTemp();
 
@@ -906,12 +906,12 @@ static void build_constructor(AggregateType* ct) {
       }
 
     } else if (hadType && 
-               !field->hasFlag(FLAG_TYPE_VARIABLE) && 
+               !field->isType() && 
                !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
     }
 
-    if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
+    if (!field->isType() && !field->hasFlag(FLAG_PARAM)) {
       if (hadType)
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
       else if (init)
@@ -932,7 +932,7 @@ static void build_constructor(AggregateType* ct) {
         arg->typeExpr = toBlockStmt(exprType);
     }
 
-    if (field->hasFlag(FLAG_TYPE_VARIABLE))
+    if (field->isType())
       // Args with this flag are removed after resolution.
       // Note that in the default type constructor, this flag is also applied
       // (along with FLAG_GENERIC) to arguments whose type is unknown, but would
@@ -1027,7 +1027,7 @@ static ArgSymbol* create_generic_arg(VarSymbol* field)
   // Translate an unknown field type into an unspecified arg type.
   if (!exprType && arg->type == dtUnknown)
   {
-    if (! field->hasFlag(FLAG_TYPE_VARIABLE))
+    if (! field->isType())
       arg->addFlag(FLAG_GENERIC);
     arg->type = dtAny;
   }

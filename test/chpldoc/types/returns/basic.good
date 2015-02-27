@@ -1,4 +1,29 @@
 Module: basic
+   Module: basic.Other
+      proc inside(): int
+         Comment for method inside module 
+
+      proc insideCommentless(): int
+      proc body(): real
+         Comment for method with a body inside module 
+
+      proc bodyCommentless(): real
+      proc hasArg(val: int): real
+         Comment for method with an argument inside module 
+
+      proc hasArgCommentless(val: int): real
+      proc argAndBody(val: int): bool
+         Comment for method with argument and body inside module 
+
+      proc argAndBodyCommentless(val: int): bool
+      proc implicit()
+         This proc has an implicit return type 
+
+      proc implicitCommentless()
+      proc returnStatement()
+         This proc has an implicit return type and a return statement 
+
+      proc returnCommentless()
    proc method1(): string
       Comment for method1 
 
@@ -28,28 +53,3 @@ Module: basic
       This proc has an implicit return type and a return statement 
 
    proc returnCommentless()
-   Module: basic.Other
-      proc inside(): int
-         Comment for method inside module 
-
-      proc insideCommentless(): int
-      proc body(): real
-         Comment for method with a body inside module 
-
-      proc bodyCommentless(): real
-      proc hasArg(val: int): real
-         Comment for method with an argument inside module 
-
-      proc hasArgCommentless(val: int): real
-      proc argAndBody(val: int): bool
-         Comment for method with argument and body inside module 
-
-      proc argAndBodyCommentless(val: int): bool
-      proc implicit()
-         This proc has an implicit return type 
-
-      proc implicitCommentless()
-      proc returnStatement()
-         This proc has an implicit return type and a return statement 
-
-      proc returnCommentless()

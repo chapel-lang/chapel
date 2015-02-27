@@ -24,7 +24,6 @@
 #endif
 
 #include "chpl-file-utils.h"
-#include "qio.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -210,4 +209,83 @@ qioerr chpl_fs_remove(const char* name) {
   if (exitStatus)
     err = qio_mkerror_errno();
   return err;
+}
+
+qioerr chpl_fs_samefile(int* ret, qio_file_t* file1, qio_file_t* file2) {
+  qioerr err = 0;
+  struct stat f1;
+  struct stat f2;
+
+  int exitStatus = fstat(file1->fd, &f1);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  exitStatus = fstat(file2->fd, &f2);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+  } else {
+    if (f1.st_dev == f2.st_dev && f1.st_ino == f2.st_ino) {
+      // The files had the same device and inode numbers.  Return true
+      *ret = 1;
+    } else {
+      // At least one of these was different.  Return false;
+      *ret = 0;
+    }
+  }
+
+  return err;
+}
+
+qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2) {
+  qioerr err = 0;
+  struct stat f1;
+  struct stat f2;
+
+  int exitStatus = stat(file1, &f1);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  exitStatus = stat(file2, &f2);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+  } else {
+    if (f1.st_dev == f2.st_dev && f1.st_ino == f2.st_ino) {
+      // The files had the same device and inode numbers.  Return true
+      *ret = 1;
+    } else {
+      // At least one of these was different.  Return false;
+      *ret = 0;
+    }
+  }
+  return err;
+}
+
+/* creates a symlink named linkName to the file orig */
+qioerr chpl_fs_symlink(const char* orig, const char* linkName) {
+  qioerr err = 0;
+  int exitStatus = symlink(orig, linkName);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+
+}
+
+/* Returns the current permissions on a file specified by name */
+qioerr chpl_fs_viewmode(int* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = (int)(buf.st_mode&(S_IRWXU | S_IRWXG | S_IRWXO | S_ISUID | S_ISGID | S_ISVTX));
+  // Stylistic decision: while we have the capacity to make sure all we're
+  // getting are the permissions bits in module code, sending that extra
+  // information strikes me as unnecessary, since we don't intend to use it at
+  // the module level in other circumstances.
+  return 0;
 }

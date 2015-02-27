@@ -1,16 +1,4 @@
 Module: fullyCommented
-   proc method1()
-      Comment for method1 
-
-   proc body()
-      Comment for method with a body 
-
-   proc hasArg(val: int)
-      Comment for method with an argument 
-
-   proc argAndBody(val: int)
-      Comment for method with argument and body 
-
    Module: fullyCommented.Other
       proc inside
          Comment for method inside module 
@@ -23,4 +11,16 @@ Module: fullyCommented
 
       proc argAndBody(val: int)
          Comment for method with argument and body inside module 
+
+   proc method1()
+      Comment for method1 
+
+   proc body()
+      Comment for method with a body 
+
+   proc hasArg(val: int)
+      Comment for method with an argument 
+
+   proc argAndBody(val: int)
+      Comment for method with argument and body 
 
