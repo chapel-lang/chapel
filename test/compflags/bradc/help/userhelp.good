@@ -100,6 +100,8 @@ Documentation Options:
       --docs-dir <dirname>            Sets the documentation directory to
                                       <dirname>
       --docs-text-only                Generate text only documentation
+      --docs-save-sphinx <directory>  Save generated Sphinx project in
+                                      directory
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
