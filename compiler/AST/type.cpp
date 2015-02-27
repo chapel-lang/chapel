@@ -1581,40 +1581,36 @@ void initChplProgram(DefExpr* objectDef) {
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
 
+// Appends a VarSymbol to the root module and gives it the bool immediate
+// matching 'value'. For use in initCompilerGlobals.
+static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
+  rootModule->block->insertAtTail(new DefExpr(globalVar));
+  if (value) {
+    globalVar->immediate = new Immediate;
+    *globalVar->immediate = *gTrue->immediate;
+  } else {
+    globalVar->immediate = new Immediate;
+    *globalVar->immediate = *gFalse->immediate;
+  }
+}
+
 void initCompilerGlobals() {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
   gBoundsChecking->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gBoundsChecking));
-  if (fNoBoundsChecks) {
-    gBoundsChecking->immediate = new Immediate;
-    *gBoundsChecking->immediate = *gFalse->immediate;
-  } else {
-    gBoundsChecking->immediate = new Immediate;
-    *gBoundsChecking->immediate = *gTrue->immediate;
-  }
+  setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
+
+  gCastChecking = new VarSymbol("castChecking", dtBool);
+  gCastChecking->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gCastChecking, !fNoCastChecks);
 
   gPrivatization = new VarSymbol("_privatization", dtBool);
   gPrivatization->addFlag(FLAG_PARAM);
-  rootModule->block->insertAtTail(new DefExpr(gPrivatization));
-  if (fNoPrivatization || fLocal) {
-    gPrivatization->immediate = new Immediate;
-    *gPrivatization->immediate = *gFalse->immediate;
-  } else {
-    gPrivatization->immediate = new Immediate;
-    *gPrivatization->immediate = *gTrue->immediate;
-  }
+  setupBoolGlobal(gPrivatization, !(fNoPrivatization || fLocal));
 
   gLocal = new VarSymbol("_local", dtBool);
   gLocal->addFlag(FLAG_PARAM);
-  rootModule->block->insertAtTail(new DefExpr(gLocal));
-  if (fLocal) {
-    gLocal->immediate = new Immediate;
-    *gLocal->immediate = *gTrue->immediate;
-  } else {
-    gLocal->immediate = new Immediate;
-    *gLocal->immediate = *gFalse->immediate;
-  }
+  setupBoolGlobal(gLocal, fLocal);
 
   // defined and maintained by the runtime
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
