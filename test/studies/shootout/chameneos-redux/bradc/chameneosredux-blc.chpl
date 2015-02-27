@@ -394,7 +394,7 @@ proc spellInt(n) {
   // TODO: would be nice to replace this with a character iterator?
   //
   for i in 1..s.length do
-    write(" ", (s.substring(i):int):Digit);
+    write(" ", (s[i]:int):Digit);
   writeln();
 }
 
