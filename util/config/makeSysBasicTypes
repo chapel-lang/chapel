@@ -6,6 +6,18 @@ $utildirname = dirname($0);
 
 $COMPILE = undef;
 @compilelines = ();
+
+$DOCONLY = 0;
+
+foreach(@ARGV) {
+  if(/^-h/) {
+    print "Usage: makeSysBasicTypes [--doc]\n";
+    print " outputs to stdout\n";
+  } elsif (/^--doc/) {
+    $DOCONLY = 1;
+  }
+}
+
 #print STDERR "Running $utildirname/compileline --compile\n";
 open(CCMD, "$utildirname/compileline --compile |") or die "can't open compileline: $!\n";
 while(<CCMD>) {
@@ -172,7 +184,11 @@ for (my $i = 0; $i < @values; $i++ ) {
   my $typerhs = maxToType($v);
   push(@rhstypes, $typerhs);
   print "/* The type corresponding to the C $ctype type */\n";
-  print "extern type $typelhs = $typerhs;\n";
+  print "extern type $typelhs";
+  if(not $DOCONLY) {
+    print "= $typerhs";
+  }
+  print ";\n";
   if( $typelhs eq "c_ptr" ) {
     $handled_c_ptr = 1;
   }
