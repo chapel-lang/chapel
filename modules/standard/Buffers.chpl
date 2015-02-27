@@ -82,17 +82,19 @@ module BufferInternals {
    This module provides :record:`bytes` and :record:`buffer` types which
    can be used to manage memory regions.
 
-   A :record:`bytes` is a contiguous memory region - really a C
-   pointer, length, along with information necessary to free
-   the memory region when it is no longer used.
+   A :record:`bytes` is a contiguous memory region - really a data structure
+   containing a pointer, length, and also the information necessary to free the
+   memory region when it is no longer used.
 
    A :record:`buffer` consists of a sequence views into :record:`bytes`
    objects. A :record:`bytes` object might be shared by several
    :record:`buffer` objects. 
 
-   These types should be safe to use multi-locale. These types should free
-   their memory after the last user of that memory goes out of scope. They are
-   currently reference counted but that may not always be the case.
+   These types should be safe to use in a multi-locale context. These types
+   should free their memory after the last user of that memory goes out of
+   scope. They are currently reference counted but that may not always be the
+   case.
+
  */
 module Buffers {
   use BufferInternals; // TODO -- non-exporting use
@@ -100,8 +102,11 @@ module Buffers {
   // Now define the Chapel types using the originals..
 
   /* This type represents a contiguous sequence of bytes.
-     This sequence of bytes is represented with a C
-     pointer and length and is currently reference counted. */
+     This sequence of bytes is represented with a C pointer and length and is
+     currently reference counted.  Note that this record contains private
+     fields in addition to the home field. 
+
+   */
   pragma "ignore noinit"
   record bytes {
     /* The home locale storing the data */
@@ -117,6 +122,10 @@ module Buffers {
     this.home = here;
   }
   /*
+
+     defaultOf appears to be unnecessary since the initializer
+     in the class takes care of it.
+
   inline proc _defaultOf(type t): t where t == bytes {
     var ret:bytes = noinit;
     ret.home = here;
@@ -223,8 +232,10 @@ module Buffers {
 
 
   /* This type represents a particular location with a buffer.
-     Use buffer methods like :proc:`buffer.start` and :proc:`buffer.advance`
-     to create and manipulate :record:`buffer_iterator` s.
+     Use buffer methods like :proc:`buffer.start` and :proc:`buffer.advance` to
+     create and manipulate :record:`buffer_iterator` s.  Note that this record
+     contains private fields in addition to the home field. 
+
    */
   pragma "ignore noinit"
   record buffer_iterator {
@@ -260,8 +271,12 @@ module Buffers {
 
   // FUTURE -- we could create const buffers
   // with a boolean type param
+
   /* A buffer which can contain multiple memory regions
-     (that is, multiple regions of :record:`bytes` objects). */
+     (that is, multiple regions of :record:`bytes` objects).  Note that this
+     record contains private fields in addition to the home field. 
+
+   */
   pragma "ignore noinit"
   record buffer {
     /* The home locale storing the data */
@@ -290,6 +305,9 @@ module Buffers {
     if error then ioerror(error, "in buffer constructor");
   }
   /*
+     defaultOf appears to be unnecessary since the initializer
+     in the class takes care of it.
+
   inline proc _defaultOf(type t): t where t == buffer {
     var ret:buffer = noinit;
     ret.home = here;
@@ -540,7 +558,7 @@ module Buffers {
     }
     return ret;
   }
-  /* :return: a :record:`buffer_range` for the entiretiy of a buffer */
+  /* :return: a :record:`buffer_range` for the entirety of a buffer */
   proc buffer.all():buffer_range {
     return new buffer_range(this.start(), this.end());
   }
