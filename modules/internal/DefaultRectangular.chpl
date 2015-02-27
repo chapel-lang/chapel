@@ -766,7 +766,11 @@ module DefaultRectangular {
     }
   
     proc dsiReindex(d: DefaultRectangularDom) {
-      var alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
+      var alias : DefaultRectangularArr(eltType=eltType, rank=d.rank,
+                                        idxType=d.idxType,
+                                        stridable=d.stridable);
+      on this {
+      alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                            idxType=d.idxType,
                                            stridable=d.stridable,
                                            dom=d, noinit_data=true,
@@ -779,6 +783,7 @@ module DefaultRectangular {
       alias.origin = origin:d.idxType;
       alias.computeFactoredOffs();
       alias.initShiftedData();
+      }
       return alias;
     }
     
@@ -802,8 +807,9 @@ module DefaultRectangular {
     }
   
     proc dsiSlice(d: DefaultRectangularDom) {
-      var alias : this.type;
-
+      var alias : DefaultRectangularArr(eltType=eltType, rank=rank,
+                                        idxType=idxType,
+                                        stridable=d.stridable);
       on this {
         alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                              idxType=idxType,
@@ -831,7 +837,11 @@ module DefaultRectangular {
     }
   
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
-      var alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
+      var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
+                                        idxType=idxType,
+                                        stridable=newStridable);
+      on this {
+      alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
                                            idxType=idxType,
                                            stridable=newStridable,
                                            dom=d, noinit_data=true);
@@ -852,11 +862,13 @@ module DefaultRectangular {
       }
       alias.computeFactoredOffs();
       alias.initShiftedData();
+      }
       return alias;
     }
   
     proc dsiReallocate(d: domain) {
       if (d._value.type == dom.type) {
+        on this {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
@@ -878,6 +890,7 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
         //numelm = copy.numelm;
         delete copy;
+        }
       } else {
         halt("illegal reallocation");
       }
