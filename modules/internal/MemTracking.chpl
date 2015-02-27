@@ -76,13 +76,13 @@ module MemTracking
     if (here.id != 0) {
       // These c_strings are going to be leaked
       if s_memLog.len != 0 then
-        ret_memLog = copyRemoteBuffer(s_memLog.home.id,
-                                      s_memLog.base,
+        ret_memLog = copyRemoteBuffer(s_memLog.locale.id,
+                                      s_memLog.buff,
                                       s_memLog.len);
       else ret_memLog = nil;
       if s_memLeaksLog.len != 0 then
-        ret_memLeaksLog = copyRemoteBuffer(s_memLeaksLog.home.id,
-                                           s_memLeaksLog.base,
+        ret_memLeaksLog = copyRemoteBuffer(s_memLeaksLog.locale.id,
+                                           s_memLeaksLog.buff,
                                            s_memLeaksLog.len);
       else ret_memLeaksLog = nil;
     } else {

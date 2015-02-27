@@ -91,16 +91,17 @@ returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
-static Type*
-returnInfoUInt64(CallExpr* call) {
-  return dtUInt[INT_SIZE_64];
-}
-
 /*
 static Type*
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return dtUInt[INT_SIZE_32];
 }
+
+static Type*
+returnInfoUInt64(CallExpr* call) {
+  return dtUInt[INT_SIZE_64];
+}
+
 
 static Type*
 returnInfoReal32(CallExpr* call) {
@@ -566,7 +567,7 @@ initPrimitive() {
   prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
   prim_def("string_concat", returnInfoStringCopy, true, true);
-  prim_def("string_length", returnInfoUInt64);
+  prim_def("string_length", returnInfoDefaultInt);
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoStringCopy, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);

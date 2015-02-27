@@ -22,36 +22,45 @@ pragma "no use ChapelStandard"
 /*
  * NOTES:
  *
- * - An empty string is represented by the default baseType value
+ * - An empty string is represented by the default bufferType value
  *   which is always considered to be a string literal.  It will never
  *   be freed or reference counted.  Another option would be to use a
  *   special NULL extern symbol.  Unfortunately, since _defaultOf()
  *   currently does not work for types with "ignore noinit", we'd
- *   still have to handle the default baseType value, so it would not
+ *   still have to handle the default bufferType value, so it would not
  *   be worth it to use NULL.  If the situation changes, it might be
  *   worth reconsidering (also taking into consideration the runtime
  *   functions that back this).
  *
- * - Not all operations support interaction with the baseType, e.g.,
+ * - Not all operations support interaction with the bufferType, e.g.,
  *   relational operations.  I chose to implement the ones I thought
  *   were commonly used like concatenation and assignment.  When this
  *   becomes the default, the compiler should automatically coerce the
  *   rest.
  *
- * - It is assumed the baseType is a local-only type, so we never
+ * - It is assumed the bufferType is a local-only type, so we never
  *   make a remote copy of one passed in by the user, though remote
- *   copies are made of internal baseType variables.
+ *   copies are made of internal bufferType variables.
  *
  */
 
 module BaseStringType {
   use CString;
+  use SysCTypes;
 
   type bufferType = c_ptr(uint(8));
   param bufferTypeString = "c_ptr(uint(8))":c_string;
-  param min_alloc_size: uint = 16;
+  param min_alloc_size: int = 16;
 
   extern type chpl_mem_descInt_t;
+
+  // We use this as a shortcut to get at here.id without actually constructing
+  // a locale object. Used when determining if we should make a remote transfer.
+  // This extern is also defined in ChapelLocale, but if it isn't defined here
+  // as well we will get a duplicate symbol error. I believe this is due to
+  // module load ordering issues.
+  // TODO: make a proc in ChapelLocale that returns this rather than using the extern
+  extern var chpl_nodeID: chpl_nodeID_t;
 
   // TODO: hook into chpl_here_alloc and friends somehow
   // The runtime exits on errors for these
@@ -80,27 +89,17 @@ module BaseStringType {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len);
   }
 
-  proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: size_t): bufferType {
-      const dest = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
-      chpl_string_comm_get(dest, src_loc_id, src_addr, len);
+  proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: int): bufferType {
+      const dest = chpl_mem_alloc(safe_cast(size_t, len+1), CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
+      chpl_string_comm_get(dest, src_loc_id, src_addr, safe_cast(size_t, len));
       dest[len] = 0;
       return dest;
   }
 
-  // TODO: I think this could be better
-  inline proc makeLocal(x: string) : string {
-    if x.home.id != here.id {
-      var localX: string = x;
-      return localX;
-    }
-    return x;
-  }
-
   extern proc memmove(destination: c_ptr, const source: c_ptr, num: size_t);
 
-  // pointer arithmatic used for strings
+  // pointer arithmetic used for strings
   inline proc +(a: c_ptr, b: int(?w)) return __primitive("+", a, b);
-  inline proc +(a: c_ptr, b: uint(?w)) return __primitive("+", a, b);
 
   config param debugStrings = false;
 }
@@ -121,41 +120,29 @@ module String {
   pragma "ignore noinit"
   pragma "no default functions"
   record string {
-    var base: bufferType;
-    var len: uint; // length of string in bytes
-    var _size: uint; // size of the buffer we own
-    var home: locale; // this does not change through assignment
+    var len: int = 0; // length of string in bytes
+    var _size: int = 0; // size of the buffer we own
+    var buff: bufferType = nil;
+    // I can almost get away without this, but other things get verbose.
+    // This causes us to get padded out to a word boundary :(
+    const owned: bool = true;
 
-    proc string() {
-      if debugStrings then
-        chpl_debug_string_print("in string()");
-
-      this.home = here;
-
-      if debugStrings then
-        chpl_debug_string_print("leaving string()");
-    }
+    /*
+    proc string(buff: bufferType, length: int, size: int, owned: bool = true) {
+      reinitString(buff, length, size);
+    }*/
 
     proc ref ~string() {
-      if debugStrings then
-        chpl_debug_string_print("in ~string()");
-
-      if !this.isEmptyString() {
-        if debugStrings then
-          chpl_debug_string_print("  freeing base: "+this.base:c_string);
-        on this.home {
-          chpl_mem_free(this.base);
+      if owned && !this.isEmptyString() {
+        on this {
+          chpl_mem_free(this.buff);
         }
       }
-
-      if debugStrings then
-        chpl_debug_string_print("leaving ~string()");
     }
 
-    // This is assumed to be called from this.home
-    proc ref reinitString(buf: bufferType, s_len:uint) {
-      assert(buf.locale.id == here.id);
-      assert(this.home.id == here.id);
+    // This is assumed to be called from this.locale
+    proc ref reinitString(buf: bufferType, s_len: int, size: int,
+                          needToCopy:bool = true) {
       if debugStrings then
         chpl_debug_string_print("in string.reinitString()");
 
@@ -163,22 +150,28 @@ module String {
         if (s_len == 0) || (buf == nil) then return; // nothing to do
       }
 
-      // If the this.base is longer than buf, then reuse the buffer
+      // If the this.buff is longer than buf, then reuse the buffer
       if s_len != 0 {
-        if s_len+1 > this._size {
-          // free the old buffer
-          if this.len != 0 then
-            on home do chpl_mem_free(this.base);
-          // allocate a new buffer
-          this.base = chpl_mem_alloc(s_len+1, CHPL_RT_MD_STRING_COPY_DATA):bufferType;
-          this._size = s_len+1;
+        if needToCopy {
+          if s_len+1 > this._size {
+            // free the old buffer
+            if this.owned && this.len != 0 then
+              on this do chpl_mem_free(this.buff);
+            // allocate a new buffer
+            this.buff = chpl_mem_alloc(safe_cast(size_t, s_len+1),
+                                       CHPL_RT_MD_STRING_COPY_DATA):bufferType;
+            this.buff[s_len] = 0;
+            this._size = s_len+1;
+          }
+          memmove(this.buff, buf, safe_cast(size_t, s_len));
+        } else {
+          this.buff = buf;
+          this._size = size;
         }
-        memmove(this.base, buf, s_len);
-        this.base[s_len] = 0;
       } else {
         // free the old buffer
-        if this.len != 0 then chpl_mem_free(this.base);
-        this.base = nil;
+        if this.owned && this.len != 0 then chpl_mem_free(this.buff);
+        this.buff = nil;
         this._size = 0;
       }
 
@@ -192,23 +185,23 @@ module String {
       if debugStrings then
         chpl_debug_string_print("in .c_str()");
 
-      if this.home.id != here.id then
+      if this.locale.id != chpl_nodeID then
         halt("Cannot call .c_str() on a remote string");
 
       if debugStrings then
         chpl_debug_string_print("leaving .c_str()");
 
-      return this.base:c_string;
+      return this.buff:c_string;
     }
 
     inline proc length return len;
     //inline proc size return len;
 
-    // Steals ownership of string.base. This is unsafe and you probably don't
+    // Steals ownership of string.buff. This is unsafe and you probably don't
     // want to use it. I'd like to figure out how to get rid of it entirely.
-    proc _steal_base() : bufferType {
-      const ret = this.base;
-      this.base = nil;
+    proc _steal_buffer() : bufferType {
+      const ret = this.buff;
+      this.buff = nil;
       this.len = 0;
       this._size = 0;
       return ret;
@@ -220,21 +213,22 @@ module String {
       }
     }
 
-    proc this(i: uint) : string {
+    proc this(i: int) : string {
       var ret: string;
       if i == 0 || i > this.len then halt("index out of bounds of string");
 
       ret._size = min_alloc_size;
       ret.len = 1;
-      ret.base = chpl_mem_alloc(ret._size, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+      ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+                                CHPL_RT_MD_STRING_COPY_DATA): bufferType;
 
-      var remoteThis = this.home.id != here.id;
+      var remoteThis = this.locale.id != chpl_nodeID;
       if remoteThis {
-        chpl_string_comm_get(ret.base, this.home.id, this.base, this.len);
+        chpl_string_comm_get(ret.buff, this.locale.id, this.buff, safe_cast(size_t, this.len));
       } else {
-        ret.base[0] = this.base[i-1];
+        ret.buff[0] = this.buff[i-1];
       }
-      ret.base[1] = 0;
+      ret.buff[1] = 0;
 
       return ret;
     }
@@ -251,7 +245,7 @@ module String {
           //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
       }
       if r.hasHighBound() {
-        if r.high < 0 || r.high:uint > this.len then
+        if r.high < 0 || r.high:int > this.len then
           halt("range out of bounds of string");
           //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
       }
@@ -261,28 +255,29 @@ module String {
         halt("tring to slice a string with a range of size 0");
         //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
       } else {
-        ret.len = r2.size:uint;
+        ret.len = r2.size:int;
       }
       ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
-      ret.base = chpl_mem_alloc(ret._size, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+      ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+                                CHPL_RT_MD_STRING_COPY_DATA): bufferType;
 
-      var thisBase: bufferType;
-      var remoteThis = this.home.id != here.id;
+      var thisBuff: bufferType;
+      var remoteThis = this.locale.id != chpl_nodeID;
       if remoteThis {
         // TODO: Could to an optimization here and only pull down the data
         // between r2.low and r2.high. Indexing for the copy below gets a bit
         // more complex when that is performed though.
-        thisBase = copyRemoteBuffer(this.home.id, this.base, this.len);
+        thisBuff = copyRemoteBuffer(this.locale.id, this.buff, this.len);
       } else {
-        thisBase = this.base;
+        thisBuff = this.buff;
       }
 
       for (r2_i, i) in zip(r2, 0..) {
-        ret.base[i] = thisBase[r2_i-1];
+        ret.buff[i] = thisBuff[r2_i-1];
       }
-      ret.base[ret.len] = 0;
+      ret.buff[ret.len] = 0;
 
-      if remoteThis then chpl_mem_free(thisBase);
+      if remoteThis then chpl_mem_free(thisBuff);
 
       return ret;
     }
@@ -307,12 +302,12 @@ module String {
       compilerWarning("not implemented: writeThis");
       /*
       if !this.isEmptyString() {
-        if (this.home.id != here.id) {
-          var tcs = copyRemoteBuffer(this.home, this.base, this.len);
+        if (this.locale.id != chpl_nodeID) {
+          var tcs = copyRemoteBuffer(this.locale, this.buff, this.len);
           f.write(tcs);
           free_baseType(tcs);
         } else {
-          f.write(this.base);
+          f.write(this.buff);
         }
       }
       */
@@ -322,11 +317,11 @@ module String {
     // multiple needles
     proc startsWith(needles: string ...) : bool {
       for needle in needles {
-        if needle.len == 0 then return true;
+        if needle.isEmptyString() then return true;
         if needle.len > this.len then continue;
 
-        for i in 0..#needle.len {
-          if needle.base[i] != this.base[i] then break;
+        for i in 0:int..#needle.len {
+          if needle.buff[i] != this.buff[i] then break;
           if i == needle.len-1 then return true;
         }
       }
@@ -337,22 +332,29 @@ module String {
     // string or 0 if the substring is not in the string.
     //TODO: this could be a much better string search
     //      (Boyer-Moore-Horspool|any thing other than brute force)
-    proc find(s: string) : uint {
-      const slen = s.len;
+    proc find(needle: string) : int {
+      const nlen = needle.len;
       const thisLen = this.len;
-      if slen == 0 then return 1; //TODO: should this always be 0?
+      if nlen == 0 then return 1; //TODO: should this always be 0?
       if thisLen == 0 then return 0;
-      if slen > thisLen then return 0;
+      if nlen > thisLen then return 0;
 
-      var ret: uint = 0;
-      // s.base is shorter than this.base, so go to the home locale
-      on this.home {
-        const sLocal = makeLocal(s);
-        const lastPossible = (this.len-sLocal.len)+1;
-        for i in 0:uint..#lastPossible {
-          for j in 0:uint..#sLocal.len {
-            if this.base[i+j] != sLocal.base[j] then break;
-            if j == sLocal.len-1 then ret = i+1;
+      var ret: int = 0;
+      // needle.len is <= than this.len, so go to the home locale
+      on this {
+        var localNeedle: string;
+        if needle.locale.id != chpl_nodeID {
+          localNeedle = needle; // assignment makes it local
+        } else {
+          localNeedle = new string(owned=false);
+          localNeedle.reinitString(needle.buff, needle.len,
+                                   needle._size, needToCopy=false);
+        }
+        const lastPossible = (this.len-localNeedle.len)+1;
+        for i in 0..#lastPossible {
+          for j in 0..#localNeedle.len {
+            if this.buff[i+j] != localNeedle.buff[j] then break;
+            if j == localNeedle.len-1 then ret = i+1;
           }
           if ret != 0 then break;
         }
@@ -373,12 +375,12 @@ module String {
     pragma "no auto destroy"
     var ret: string;
     if !s.isEmptyString() {
-      ret.home = s.home;
-      ret.base = chpl_mem_alloc(s.len+1, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
-      memmove(ret.base, s.base, s.len);
+      ret.buff = chpl_mem_alloc(safe_cast(size_t, s.len+1),
+                                CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+      memmove(ret.buff, s.buff, safe_cast(size_t, s.len));
       ret.len = s.len;
       ret._size = s.len+1;
-      ret.base[ret.len] = 0;
+      ret.buff[ret.len] = 0;
     }
 
     if debugStrings then
@@ -404,16 +406,17 @@ module String {
     var ret: string;
     if !s.isEmptyString() {
       const slen = s.len; // cache the remote copy of len
-      if s.home.id == here.id {
+      if s.locale.id == chpl_nodeID {
         if debugStrings then
           chpl_debug_string_print("  local initCopy");
-        ret.base = chpl_mem_alloc(s.len+1, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
-        memmove(ret.base, s.base, s.len);
-        ret.base[s.len] = 0;
+        ret.buff = chpl_mem_alloc(safe_cast(size_t, s.len+1),
+                                  CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+        memmove(ret.buff, s.buff, safe_cast(size_t, s.len));
+        ret.buff[s.len] = 0;
       } else {
         if debugStrings then
-          chpl_debug_string_print("  remote initCopy: "+s.home.id:c_string);
-        ret.base = copyRemoteBuffer(s.home.id, s.base, slen);
+          chpl_debug_string_print("  remote initCopy: "+s.locale.id:c_string);
+        ret.buff = copyRemoteBuffer(s.locale.id, s.buff, slen);
       }
       ret.len = slen;
       ret._size = slen+1;
@@ -432,31 +435,31 @@ module String {
       chpl_debug_string_print("in proc =()");
 
     inline proc helpMe(ref lhs: string, rhs: string) {
-      if rhs.home.id == here.id {
+      if rhs.locale.id == chpl_nodeID {
         if debugStrings then
           chpl_debug_string_print("  rhs local");
-        lhs.reinitString(rhs.base, rhs.len);
+        lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
       } else {
         if debugStrings then
-          chpl_debug_string_print("  rhs remote: "+rhs.home.id:c_string);
+          chpl_debug_string_print("  rhs remote: "+rhs.locale.id:c_string);
         const len = rhs.len; // cache the remote copy of len
-        // TODO: reuse the base from copyRemoteBuffer()
         var remote_buf:bufferType = nil;
         if len != 0 then
-          remote_buf = copyRemoteBuffer(rhs.home.id, rhs.base, len);
-        lhs.reinitString(remote_buf, len);
-        if len != 0 then chpl_mem_free(remote_buf);
+          remote_buf = copyRemoteBuffer(rhs.locale.id, rhs.buff, len);
+        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
       }
     }
 
-    if lhs.home.id == here.id then {
+    // TODO: using 'here' requires constructing a locale record even though we
+    //       are just going to use it's id
+    if lhs.locale.id == chpl_nodeID then {
       if debugStrings then
         chpl_debug_string_print("  lhs local");
       helpMe(lhs, rhs);
     }
     else {
       if debugStrings then
-        chpl_debug_string_print("  lhs remote: "+lhs.home.id:c_string);
+        chpl_debug_string_print("  lhs remote: "+lhs.locale.id:c_string);
       on lhs do helpMe(lhs, rhs);
     }
 
@@ -468,14 +471,14 @@ module String {
     if debugStrings then
       chpl_debug_string_print("in proc =() c_string");
 
-    const hereId = here.id;
+    const hereId = chpl_nodeID;
     // Make this some sort of local check once we have local types/vars
-    if (rhs_c.locale.id != hereId) || (lhs.home.id != hereId) then
+    if (rhs_c.locale.id != hereId) || (lhs.locale.id != hereId) then
       halt("Cannot assign a remote c_string to a string.");
 
     const len = rhs_c.length;
     const buff:bufferType = rhs_c:bufferType;
-    lhs.reinitString(buff, len);
+    lhs.reinitString(buff, len, len+1, needToCopy=true);
 
     if debugStrings then
       chpl_debug_string_print("leaving proc =() c_string");
@@ -497,22 +500,26 @@ module String {
     var ret: string;
     ret.len = s0len + s1len;
     ret._size = ret.len+1;
-    ret.base = chpl_mem_alloc(ret._size, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+    ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+                              CHPL_RT_MD_STRING_COPY_DATA): bufferType;
 
-    const s0remote = s0.home.id != here.id;
+    const hereId = chpl_nodeID;
+    const s0remote = s0.locale.id != hereId;
     if s0remote {
-      chpl_string_comm_get(ret.base, s0.home.id, s0.base, s0len);
+      chpl_string_comm_get(ret.buff, s0.locale.id,
+                           s0.buff, safe_cast(size_t, s0len));
     } else {
-      memmove(ret.base, s0.base, s0len);
+      memmove(ret.buff, s0.buff, safe_cast(size_t, s0len));
     }
 
-    const s1remote = s1.home.id != here.id;
+    const s1remote = s1.locale.id != hereId;
     if s1remote {
-      chpl_string_comm_get(ret.base+s0len, s1.home.id, s1.base, s1len);
+      chpl_string_comm_get(ret.buff+s0len, s1.locale.id,
+                           s1.buff, safe_cast(size_t, s1len));
     } else {
-      memmove(ret.base+s0len, s1.base, s1len);
+      memmove(ret.buff+s0len, s1.buff, safe_cast(size_t, s1len));
     }
-    ret.base[ret.len] = 0;
+    ret.buff[ret.len] = 0;
 
     if debugStrings then
       chpl_debug_string_print("leaving proc +()");
@@ -523,7 +530,8 @@ module String {
     if debugStrings then
       chpl_debug_string_print("in proc +() string+c_string");
 
-    if cs.locale.id != here.id then
+    const hereId = chpl_nodeID;
+    if cs.locale.id != hereId then
       halt("Cannot concatenate a remote c_string.");
 
     if cs == _defaultOf(c_string) then return s;
@@ -533,23 +541,24 @@ module String {
     const slen = s.len;
     ret.len = slen + cs.length;
     ret._size = ret.len+1;
-    ret.base = chpl_mem_alloc(ret._size, CHPL_RT_MD_STRING_COPY_DATA): bufferType;
-    const sremote = s.home.id != here.id;
-    var sbase = if sremote
-                  then copyRemoteBuffer(s.home.id, s.base, slen)
-                  else s.base;
+    ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+                              CHPL_RT_MD_STRING_COPY_DATA): bufferType;
+    const sremote = s.locale.id != hereId;
+    var sbuff = if sremote
+                  then copyRemoteBuffer(s.locale.id, s.buff, slen)
+                  else s.buff;
 
     if stringFirst {
-      memmove(ret.base, sbase, slen);
-      memmove(ret.base+slen, cs:bufferType, cs.length);
+      memmove(ret.buff, sbuff, safe_cast(size_t, slen));
+      memmove(ret.buff+slen, cs:bufferType, safe_cast(size_t, cs.length));
     } else {
-      memmove(ret.base, cs:bufferType, cs.length);
-      memmove(ret.base+cs.length, sbase, slen);
+      memmove(ret.buff, cs:bufferType, safe_cast(size_t, cs.length));
+      memmove(ret.buff+cs.length, sbuff, safe_cast(size_t, slen));
     }
 
-    ret.base[ret.len] = 0;
+    ret.buff[ret.len] = 0;
 
-    if sremote then chpl_mem_free(sbase);
+    if sremote then chpl_mem_free(sbuff);
 
     if debugStrings then
       chpl_debug_string_print("leaving proc +() string+c_string");
@@ -558,7 +567,7 @@ module String {
 
   //TODO: figure out how to remove the concats between
   //      string and c_string[_copy]
-  //      Not as bad with the isParam clause
+  // promotion of c_string to string is masking this issue I think.
   proc +(s: string, cs: c_string) where isParam(cs) {
     //compilerWarning("adding c_string to string");
     return _concat_helper(s, cs, stringFirst=true);
@@ -605,13 +614,13 @@ module String {
   //
   // Relational operators
   // TODO: all relational ops other than == and != are broken for unicode
-  // TODO: It may be faster to work on a.home or b.home if a or b is large
+  // TODO: It may be faster to work on a.locale or b.locale if a or b is large
   //
   inline proc _strcmp(a: string, b:string) : int {
     // Assumes a and b are on same locale and not empty
-    var idx: uint = 0;
+    var idx: int = 0;
     while (idx < a.len) && (idx < b.len) {
-      if a.base[idx] != b.base[idx] then return a.base[idx]:int - b.base[idx];
+      if a.buff[idx] != b.buff[idx] then return a.buff[idx]:int - b.buff[idx];
       idx += 1;
     }
     return 0;
@@ -623,11 +632,30 @@ module String {
       if a.len == 0 then return true;
       return _strcmp(a, b) == 0;
     }
-    if a.home.id == b.home.id {
+    if a.locale.id == b.locale.id {
       return doEq(a, b);
     } else {
-      var localA = makeLocal(a);
-      var localB = makeLocal(b);
+      // TODO: any away to do something like this?
+      //       var localA = makeLocal(a);
+      //       var localB = makeLocal(b);
+      var localA: string;
+      if a.locale.id != chpl_nodeID {
+        localA = a; // assignment makes it local
+      } else {
+        localA = new string(owned=false);
+        localA.reinitString(a.buff, a.len,
+                            a._size, needToCopy=false);
+      }
+
+      var localB: string;
+      if b.locale.id != chpl_nodeID {
+        localB = b; // assignment makes it local
+      } else {
+        localB = new string(owned=false);
+        localB.reinitString(b.buff, b.len,
+                            b._size, needToCopy=false);
+      }
+
       return doEq(localA, localB);
     }
   }
@@ -642,11 +670,27 @@ module String {
       if a.len == 0 then return true;
       return _strcmp(a, b) < 0;
     }
-    if a.home.id == b.home.id {
+    if a.locale.id == b.locale.id {
       return doLt(a, b);
     } else {
-      var localA = makeLocal(a);
-      var localB = makeLocal(b);
+      var localA: string;
+      if a.locale.id != chpl_nodeID {
+        localA = a; // assignment makes it local
+      } else {
+        localA = new string(owned=false);
+        localA.reinitString(a.buff, a.len,
+                            a._size, needToCopy=false);
+      }
+
+      var localB: string;
+      if b.locale.id != chpl_nodeID {
+        localB = b; // assignment makes it local
+      } else {
+        localB = new string(owned=false);
+        localB.reinitString(b.buff, b.len,
+                            b._size, needToCopy=false);
+      }
+
       return doLt(localA, localB);
     }
   }
@@ -657,11 +701,27 @@ module String {
       if b.len == 0 then return true;
       return _strcmp(a, b) > 0;
     }
-    if a.home.id == b.home.id {
+    if a.locale.id == b.locale.id {
       return doGt(a, b);
     } else {
-      var localA = makeLocal(a);
-      var localB = makeLocal(b);
+      var localA: string;
+      if a.locale.id != chpl_nodeID {
+        localA = a; // assignment makes it local
+      } else {
+        localA = new string(owned=false);
+        localA.reinitString(a.buff, a.len,
+                            a._size, needToCopy=false);
+      }
+
+      var localB: string;
+      if b.locale.id != chpl_nodeID {
+        localB = b; // assignment makes it local
+      } else {
+        localB = new string(owned=false);
+        localB.reinitString(b.buff, b.len,
+                            b._size, needToCopy=false);
+      }
+
       return doGt(localA, localB);
     }
   }
@@ -674,7 +734,17 @@ module String {
   }
 
   //
-  // Casts (casts to / from other primitive types are in StringCasts)
+  // writef
+  //
+  proc writef(foo) {
+    var f = openmem();
+
+    f.close();
+  }
+
+
+  //
+  // Casts (casts to & from other primitive types are in StringCasts)
   //
 
   // :(
@@ -692,20 +762,20 @@ module String {
     return __primitive("cast", t, cs);
   }
 
-  // Cast from baseType to string
-  // TODO: I dont like this, but cant get rid of it without doing something
+  // Cast from bufferType to string
+  // TODO: I don't like this, but cant get rid of it without doing something
   //       with making dtString the type for literals I think...
   inline proc _cast(type t, cs: c_string) where t == string {
     if debugStrings then
       chpl_debug_string_print("in _cast() c_string->string");
 
-    if cs.locale.id != here.id then
+    if cs.locale.id != chpl_nodeID then
       halt("Cannot cast a remote c_string to string.");
 
     var ret: string;
     ret.len = cs.length;
     ret._size = ret.len+1;
-    if ret.len != 0 then ret.base = __primitive("string_copy", cs): bufferType;
+    if ret.len != 0 then ret.buff = __primitive("string_copy", cs): bufferType;
 
     if debugStrings then
       chpl_debug_string_print("leaving _cast() c_string->string");
