@@ -311,18 +311,18 @@ module GMP {
     proc BigInt(num:int) {
       mpz_init_set_si(this.mpz, safe_cast(c_long, num));
     }
-    proc BigInt(str:string, base:c_int=0) {
+    proc BigInt(str:string, base:int=0) {
       var e:c_int;
-      e = mpz_init_set_str(this.mpz, str.c_str(), base);
+      e = mpz_init_set_str(this.mpz, str.c_str(), safe_cast(c_int, base));
       if e {
         mpz_clear(this.mpz);
         halt("Error initializing big integer: bad format");
       }
     }
-    proc BigInt(str:string, base:c_int=0, out error:syserr) {
+    proc BigInt(str:string, base:int=0, out error:syserr) {
       var e:c_int;
       error = ENOERR;
-      e = mpz_init_set_str(this.mpz, str.c_str(), base);
+      e = mpz_init_set_str(this.mpz, str.c_str(), safe_cast(c_int, base));
       if e {
         mpz_clear(this.mpz);
         error = EFORMAT;
@@ -397,9 +397,9 @@ module GMP {
     {
       on this do mpz_set_d(this.mpz, num);
     }
-    proc set_str(str:string, base:c_int=0)
+    proc set_str(str:string, base:int=0)
     {
-      on this do mpz_set_str(this.mpz, str.c_str(), base);
+      on this do mpz_set_str(this.mpz, str.c_str(), safe_cast(c_int, base));
     }
     proc swap(a:BigInt)
     {
@@ -447,11 +447,11 @@ module GMP {
       }
       return (safe_cast(int, exp), dbl);
     }
-    proc get_str(base:c_int=10):string
+    proc get_str(base:int=10):string
     {
       var ret:string;
       on this {
-        var tmp = chpl_gmp_mpz_get_str(base, this.mpz);
+        var tmp = chpl_gmp_mpz_get_str(safe_cast(c_int, base), this.mpz);
         ret = toString(tmp);
       }
       return ret;
@@ -769,7 +769,7 @@ module GMP {
         if ncopy then delete n_;
       }
     }
-    proc divisible_p(d:BigInt):c_int
+    proc divisible_p(d:BigInt):int
     {
       var ret:c_int;
       on this {
@@ -777,25 +777,25 @@ module GMP {
         ret=mpz_divisible_p(this.mpz, d_.mpz);
         if dcopy then delete d_;
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc divisible_ui_p(d:uint):c_int
+    proc divisible_ui_p(d:uint):int
     {
       var ret:c_int;
       on this {
         ret=mpz_divisible_ui_p(this.mpz, safe_cast(c_ulong, d));
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc divisible_2exp_p(b:uint):c_int
+    proc divisible_2exp_p(b:uint):int
     {
       var ret:c_int;
       on this {
         mpz_divisible_2exp_p(this.mpz, safe_cast(c_ulong, b));
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc congruent_p(c:BigInt, d:BigInt):c_int
+    proc congruent_p(c:BigInt, d:BigInt):int
     {
       var ret:c_int;
       on this {
@@ -805,17 +805,17 @@ module GMP {
         if ccopy then delete c_;
         if dcopy then delete d_;
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc congruent_ui_p(c:uint, d:uint):c_int
+    proc congruent_ui_p(c:uint, d:uint):int
     {
       var ret:c_int;
       on this {
         ret=mpz_congruent_ui_p(this.mpz, safe_cast(c_ulong, c), safe_cast(c_ulong, d));
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc congruent_2exp_p(c:BigInt, b:uint):c_int
+    proc congruent_2exp_p(c:BigInt, b:uint):int
     {
       var ret:c_int;
       on this {
@@ -823,7 +823,7 @@ module GMP {
         ret=mpz_congruent_2exp_p(this.mpz, c, safe_cast(c_ulong, b));
         if ccopy then delete c_;
       }
-      return ret;
+      return safe_cast(int, ret);
     }
 
 
@@ -866,7 +866,7 @@ module GMP {
     }
 
     // Root Extraction Functions
-    proc root(a:BigInt, n:uint):c_int
+    proc root(a:BigInt, n:uint):int
     {
       var ret:c_int;
       on this {
@@ -874,7 +874,7 @@ module GMP {
         ret=mpz_root(this.mpz, a_.mpz, safe_cast(c_ulong, n));
         if acopy then delete a_;
       }
-      return ret;
+      return safe_cast(int, ret);
     }
     // this gets root, rem gets remainder.
     proc mpz_rootrem(rem:BigInt, u:BigInt, n:uint)
@@ -912,31 +912,31 @@ module GMP {
         if acopy then delete a_;
       }
     }
-    proc perfect_power_p():c_int
+    proc perfect_power_p():int
     {
       var ret:c_int;
       on this {
         ret=mpz_perfect_power_p(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc perfect_square():c_int
+    proc perfect_square():int
     {
       var ret:c_int;
       on this {
         ret=mpz_perfect_square(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
 
     // Number Theoretic Functions
-    proc probab_prime_p(reps: c_int):c_int
+    proc probab_prime_p(reps: int):int
     {
       var ret:c_int;
       on this {
-        ret=mpz_probab_prime_p(this.mpz, reps);
+        ret=mpz_probab_prime_p(this.mpz, safe_cast(c_int, reps));
       }
-      return ret;
+      return safe_cast(int, ret);
     }
     proc nextprime(a: BigInt)
     {
@@ -1004,7 +1004,7 @@ module GMP {
         if acopy then delete a_;
       }
     }
-    proc invert(a: BigInt, b: BigInt):c_int
+    proc invert(a: BigInt, b: BigInt):int
     {
       var ret:c_int;
       on this {
@@ -1014,7 +1014,7 @@ module GMP {
         if acopy then delete a_;
         if bcopy then delete b_;
       }
-      return ret;
+      return safe_cast(int, ret);
     }
 
     // jacobi, legendre, kronecker are procedures outside this class.
@@ -1088,7 +1088,7 @@ module GMP {
  
 
     // Comparison Functions
-    proc cmp(b:BigInt):c_int
+    proc cmp(b:BigInt):int
     {
       var ret:c_int;
       on this {
@@ -1096,33 +1096,33 @@ module GMP {
         ret=mpz_cmp(this.mpz,b_.mpz);
         if bcopy then delete b_;
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc cmp_d(b:c_double):c_int
+    proc cmp_d(b:c_double):int
     {
       var ret:c_int;
       on this {
         ret=mpz_cmp_d(this.mpz,b);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc cmp_si(b:int):c_int
+    proc cmp_si(b:int):int
     {
       var ret:c_int;
       on this {
         ret=mpz_cmp_si(this.mpz, safe_cast(c_long, b));
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc cmp_ui(b:uint):c_int
+    proc cmp_ui(b:uint):int
     {
       var ret:c_int;
       on this {
         ret=mpz_cmp_ui(this.mpz, safe_cast(c_ulong, b));
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc cmpabs(b:BigInt):c_int
+    proc cmpabs(b:BigInt):int
     {
       var ret:c_int;
       on this {
@@ -1130,31 +1130,31 @@ module GMP {
         ret=mpz_cmpabs(this.mpz,b_.mpz);
         if acopy then delete b_;
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc cmpabs_d(b:c_double):c_int
+    proc cmpabs_d(b:c_double):int
     {
       var ret:c_int;
       on this {
         ret=mpz_cmpabs_d(this.mpz,b);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc cmp_abs_ui(b:uint):c_int
+    proc cmp_abs_ui(b:uint):int
     {
       var ret:c_int;
       on this {
         ret=mpz_cmpabs_ui(this.mpz, safe_cast(c_ulong, b));
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc sgn():c_int
+    proc sgn():int
     {
       var ret:c_int;
       on this {
         ret=mpz_sgn(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
 
     // Logical and Bit Manipulation Functions
@@ -1248,85 +1248,85 @@ module GMP {
         mpz_combit(this.mpz, safe_cast(c_ulong, bit_index));
       }
     }
-    proc tstbit(bit_index:uint):c_int
+    proc tstbit(bit_index:uint):int
     {
       var ret:c_int;
       on this {
         ret = mpz_tstbit(this.mpz, safe_cast(c_ulong, bit_index));
       }
-      return ret;
+      return safe_cast(int, ret);
     }
 
     // Miscellaneous Functions
-    proc fits_ulong_p():c_int
+    proc fits_ulong_p():int
     {
       var ret:c_int;
       on this {
         ret = mpz_fits_ulong_p(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc fits_slong_p():c_int
+    proc fits_slong_p():int
     {
       var ret:c_int;
       on this {
         ret = mpz_fits_ulong_p(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc fits_uint_p():c_int
+    proc fits_uint_p():int
     {
       var ret:c_int;
       on this {
         ret = mpz_fits_uint_p(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc fits_sint_p():c_int
+    proc fits_sint_p():int
     {
       var ret:c_int;
       on this {
         ret = mpz_fits_sint_p(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc fits_ushort_p():c_int
+    proc fits_ushort_p():int
     {
       var ret:c_int;
       on this {
         ret = mpz_fits_ushort_p(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc fits_sshort_p():c_int
+    proc fits_sshort_p():int
     {
       var ret:c_int;
       on this {
         ret = mpz_fits_sshort_p(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc odd_p():c_int
+    proc odd_p():int
     {
       var ret:c_int;
       on this {
         ret = mpz_odd_p(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc even_p():c_int
+    proc even_p():int
     {
       var ret:c_int;
       on this {
         ret = mpz_even_p(this.mpz);
       }
-      return ret;
+      return safe_cast(int, ret);
     }
-    proc sizeinbase(base:c_int):size_t
+    proc sizeinbase(base:int):size_t
     {
       var ret:size_t;
       on this {
-        ret = mpz_sizeinbase(this.mpz, base);
+        ret = mpz_sizeinbase(this.mpz, safe_cast(c_int, base));
       }
       return ret;
     }
@@ -1374,7 +1374,7 @@ module GMP {
   }
 
 
-  proc jacobi(a: BigInt, b: BigInt):c_int
+  proc jacobi(a: BigInt, b: BigInt):int
   {
     var ret:c_int;
     on a {
@@ -1382,9 +1382,9 @@ module GMP {
       ret=mpz_jacobi(a.mpz, b_.mpz);
       if bcopy then delete b_;
     }
-    return ret;
+    return safe_cast(int, ret);
   }
-  proc legendre(a: BigInt, p: BigInt):c_int
+  proc legendre(a: BigInt, p: BigInt):int
   {
     var ret:c_int;
     on a {
@@ -1392,9 +1392,9 @@ module GMP {
       ret=mpz_legendre(a.mpz, p_.mpz);
       if pcopy then delete p_;
     }
-    return ret;
+    return safe_cast(int, ret);
   }
-  proc kronecker(a: BigInt, b: BigInt):c_int
+  proc kronecker(a: BigInt, b: BigInt):int
   {
     var ret:c_int;
     on a {
@@ -1402,39 +1402,39 @@ module GMP {
       ret=mpz_kronecker(a.mpz, b_.mpz);
       if bcopy then delete b_;
     }
-    return ret;
+    return safe_cast(int, ret);
   }
-  proc kronecker_si(a: BigInt, b: int):c_int
+  proc kronecker_si(a: BigInt, b: int):int
   {
     var ret:c_int;
     on a {
       ret=mpz_kronecker_si(a.mpz, safe_cast(c_long, b));
     }
-    return ret;
+    return safe_cast(int, ret);
   }
-  proc kronecker_ui(a: BigInt, b: uint):c_int
+  proc kronecker_ui(a: BigInt, b: uint):int
   {
     var ret:c_int;
     on a {
       ret=mpz_kronecker_ui(a.mpz, safe_cast(c_ulong, b));
     }
-    return ret;
+    return safe_cast(int, ret);
   }
-  proc si_kronecker(a: int, b: BigInt):c_int
+  proc si_kronecker(a: int, b: BigInt):int
   {
     var ret:c_int;
     on b {
       ret=mpz_si_kronecker(safe_cast(c_long, a), b.mpz);
     }
-    return ret;
+    return safe_cast(int, ret);
   }
-  proc ui_kronecker(a: uint, b: BigInt):c_int
+  proc ui_kronecker(a: uint, b: BigInt):int
   {
     var ret:c_int;
     on b {
       ret=mpz_ui_kronecker(safe_cast(c_ulong, a), b.mpz);
     }
-    return ret;
+    return safe_cast(int, ret);
   }
 
   class GMPRandom {
