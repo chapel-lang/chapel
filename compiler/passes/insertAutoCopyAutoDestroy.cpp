@@ -95,7 +95,14 @@ static int debug = 0;
 // Dataflow analysis is used to propagate this constraint backwards, in case
 // ownership is transferred out of a block along one path but not another.
 // The sets used for flow analysis are:
-//  GEN  -- The set of symbols whose ownership transitions to true by the end of
+//  live -- This set is created and updated locally to a given block.  It is
+//          used to track the current liveness state within a block and does
+//          not participate in global flow analysis.  It is really only needed
+//          for the step that inserts autoCopy calls; but since the flag update
+//          routines are shared between initial population of the GEN and KILL
+//          sets and the later traversal to add autoCopy calls, we maintain the
+//          live set in both.
+//  GEN  -- The set of symbols whose ownership transitions to true anywhere in
 //          the block.
 //  KILL -- The set of symbols whose ownership transitions to false anywhere in
 //          the block.
@@ -103,47 +110,63 @@ static int debug = 0;
 //          (after forward flow analysis).
 //  OUT  -- The set of symbols that are owned at the end of the block (after
 //          forward flow analysis); the complement of the set of symbols that
-//           must not be owned at the end of the block (after backward flow).
+//          must not be owned at the end of the block (after backward flow).
+//
+// After global flow analysis, live is initialized to IN[i].  AST elements that
+// create ownership cause the corresponding bit(s) to transition to true and
+// AST elements that consume ownership cause it to transition to false.  At the
+// end of any block i, the invariant live == IN[i] + GEN[i] - KILL[i] should hold.
 //
 // GEN[i] contains a true bit corresponding to each symbol that is constructed
 // in that block.  We expect that symbol is constructed only once, so if IN[i]
 // and GEN[i] have a true bit in the same position, we can flag an internal
 // error.  This condition is unlikely, so at best it should be added as a
-// verify check.  After forward flow analysis, GEN[i] is initialized to IN[i]
-// to show that ownership has reached this block from another 
+// verify check.  
 //
 // KILL[i] contains a true bit corresponding to each symbol whose ownership is
-// consumed in that block.  We keep a separate list of aliases.  When any
-// member of that set of aliases is consumed, all members of the set are added
-// to KILL[i].
+// consumed in that block.  
+//
+// aliases -- We keep a separate list of aliases.  When any member of that set
+// of aliases is consumed, all members of the set are added to KILL[i].
 //
 // We start by performing forward flow analysis to establish the value of IN.
-// Within each block, OUT[i] <- IN[i] - KILL[i] + GEN[i].
+// Within each block, 
+//  OUT[i] <- IN[i] + GEN[i] - KILL[i]. (1)
 // IN[i] is the intersection of OUT[pred(i)] for all predecessors of block i.
 //
 // For a block that contains a constructor followed by a destructor for the
-// same symbol j, GEN[i,j] will be false and KILL[i,j] will be true.
+// same symbol j, GEN[i,j] will be true and KILL[i,j] will be true.  In the
+// within-block forward flow equation (1), we assume that if a gen and kill of
+// the same symbol appear in the same block, the gen precedes the kill.  That
+// implies a general assumption that the value of a symbol cannot be used
+// before it has been defined, and that symbols are not reused (SA form).
 // For a block that contains a destructor followed by a constructor for the
-// same symbol j, GEN[i,j] and KILL[i,j] will both be true.
+// same symbol j, GEN[i,j] and KILL[i,j] will both be true (and live at the
+// beginning and end of the block will be false).
 //
-// For backward flow, we compute OUT[i] as the intersection of IN[succ(i)] for
-// all successors of block i.  (No information is propagated backward through
-// the blocks, so this can be done in one iteration.)  
+// We perform backward flow to establosh the value of OUT.  With in each block,
+//  IN[i] <- OUT[i] + KILL[i] - GEN[i]. (2)
+// We compute OUT[i] as the intersection of IN[succ(i)] for all successors of
+// block i.
 //
 // After forward flow analysis, we traverse blocks again and add autoCopy calls
 // where a symexpr is unowned (at that point in the flow) but being passed to
 // an argument that consumes it.  (Consumers expect the corresonding operand to
 // be owned; the autoCopy call adds the required ownership.)  Note that adding
-// an autoCopy to an operand does not change GEN[i] or KILL[i], so the results
-// of forward flow do not have to be recomputed after this pass.
+// an autoCopy to an operand does not change OUT set for that block even though
+// it adds a bit to the GEN set, because an autoCopy always corresponds to an
+// AST element that behaves as a kill.  Therefore, we don't have to update OUT
+// sets before performing the backward flow.
 //
-// For any symbol that remains owned at the end of block i where its OUT[i] is
-// false, we add a destructor call so that the results of forward and backward
-// flow agree.  Each added destructor call effectively sets the corresponding
-// KILL[i,j] and clears the corresponding GEN[i,j].  If we update these flow
-// sets during this pass, then we could check IN[i] - KILL[i] + GEN[i] ==
-// OUT[i].  But since we are iterating on the difference between these two
-// bitsets (i.e. OUT - (IN - KILL + GEN)), the test becomes a tautology.
+// For backward flow, the OUT set of any terminal block is set to all zeroes,
+// and this is propagated back through the flow graph using equation (2)
+// above.  Then we use the forward flow equation (1) to compute the live set at
+// the end of the same block.  Subtracting OUT from this gives the set of
+// symbols that have to be killed before the end of that block, i.e.:
+//  to_kill = IN[i] + GEN[i] - KILL[i] - OUT[i]. (3)
+// A destructor call is added for each of this symbols in the reverse of their
+// declaration order.  Each added destructor call effectively sets the
+// corresponding KILL[i,j] and clears the corresponding GEN[i,j].  
 //
 
 #include "passes.h" // The main routine is declared here.
@@ -291,6 +314,35 @@ AliasVectorMap::merge(Symbol* orig, Symbol* alias)
 }
 
 //######################### End of AliasVectorMap #########################
+
+//######################### Alias list utilities #########################
+// Optimization note: When optimization is turned on, GCC is probably smart
+// enough to inline and coalesce adjacent loops (see e.g. the adjacent calls to
+// resetAliasList and setAliasList at the end of processConsumer), even without
+// the "inline" hint.  If so, inlining these by hand would be a waste of time.
+
+static inline void
+setAliasList(BitVec* bits, SymbolVector& aliasList,
+             SymbolIndexMap& symbolIndex)
+{
+  for_vector(Symbol, alias, aliasList)
+  {
+    size_t index = symbolIndex[alias];
+    bits->set(index);
+  }
+}
+
+
+static inline void
+resetAliasList(BitVec* bits, SymbolVector& aliasList,
+               SymbolIndexMap& symbolIndex)
+{
+  for_vector(Symbol, alias, aliasList)
+  {
+    size_t index = symbolIndex[alias];
+    bits->reset(index);
+  }
+}
 
 
 //############################## Predicates ##############################
@@ -484,6 +536,10 @@ static bool isFlowStmt(Expr* stmt)
 {
   // A goto is definitely a jump.
   if (isGotoStmt(stmt))
+    return true;
+
+  // A conditional acts like a jump statement.
+  if (isCondStmt(stmt))
     return true;
 
   // A return primitive works like a jump. (Nothing should appear after it.)
@@ -693,7 +749,7 @@ static Expr* getLastNonflowStatement(BasicBlock* bb)
 
 
 static void processCreator(SymExpr* se, 
-                           BitVec* gen,
+                           BitVec* gen, BitVec* live,
                            const AliasVectorMap& aliases,
                            SymbolIndexMap& symbolIndex)
 {
@@ -733,15 +789,13 @@ static void processCreator(SymExpr* se,
   // the flow sets -- either all are owned or none are.  This will save time
   // and space.
   SymbolVector* aliasList = aliases.at(sym);
-  for_vector(Symbol, alias, *aliasList)
-  {
-    size_t index = symbolIndex[alias];
-    gen->set(index);
-  }
+  setAliasList(gen, *aliasList, symbolIndex);
+  setAliasList(live, *aliasList, symbolIndex);
 }
 
 
-static void processBitwiseCopy(SymExpr* se, BitVec* gen, BitVec* kill,
+static void processBitwiseCopy(SymExpr* se,
+                               BitVec* gen, BitVec* live, BitVec* kill,
                                const AliasVectorMap& aliases,
                                SymbolIndexMap& symbolIndex)
 {
@@ -758,7 +812,7 @@ static void processBitwiseCopy(SymExpr* se, BitVec* gen, BitVec* kill,
 
   // Copy ownership state from RHS.
   size_t rindex = symbolIndex[rsym];
-  bool owned = gen->get(rindex);
+  bool owned = live->get(rindex);
 
   // If the two alias lists are identical, then the two symbols are in the
   // same alias clique.  Otherwise, ownership is being transferred out of one
@@ -766,30 +820,24 @@ static void processBitwiseCopy(SymExpr* se, BitVec* gen, BitVec* kill,
   // the kill bit for each member of the RHS clique.
   if (laliasList != raliasList)
   {
-    for_vector(Symbol, ralias, *raliasList)
-    {
-      size_t index = symbolIndex[ralias];
-      gen->reset(index);
-      kill->set(index);
-    }
+    resetAliasList(live, *raliasList, symbolIndex);
+    setAliasList(kill, *raliasList, symbolIndex);
   }
 
   // Now set the gen bit for each member of the lhs clique, but only if the RHS
   // was owned.
   if (owned)
   {
-    for_vector(Symbol, lalias, *laliasList)
-    {
-      size_t index = symbolIndex[lalias];
-      gen->set(index);
-    }
+    setAliasList(gen, *laliasList, symbolIndex);
+    setAliasList(live, *laliasList, symbolIndex);
   }
 }
 
 
 // If this call acts like a destructor, then add the symbols it affects to the
 // kill set and remove them from the gen set.
-static void processConsumer(SymExpr* se, BitVec* gen, BitVec* kill,
+static void processConsumer(SymExpr* se, 
+                            BitVec* live, BitVec* kill,
                             const AliasVectorMap& aliases,
                             SymbolIndexMap& symbolIndex)
 {
@@ -800,17 +848,13 @@ static void processConsumer(SymExpr* se, BitVec* gen, BitVec* kill,
   // need to look up one arbitrarily and then run the list.
   Symbol* sym = se->var;
   SymbolVector* aliasList = aliases.at(sym);
-  for_vector(Symbol, alias, *aliasList)
-  {
-    size_t index = symbolIndex[alias];
-    gen->reset(index);
-    kill->set(index);
-  }
+  resetAliasList(live, *aliasList, symbolIndex);
+  setAliasList(kill, *aliasList, symbolIndex);
 }
 
 
 static void computeTransitions(SymExprVector& symExprs,
-                               BitVec* gen, BitVec* kill,
+                               BitVec* gen, BitVec* live, BitVec* kill,
                                AliasVectorMap& aliases,
                                SymbolIndexMap& symbolIndex)
 {
@@ -823,13 +867,13 @@ static void computeTransitions(SymExprVector& symExprs,
       continue;
 
     if (isCreated(se))
-      processCreator(se, gen, aliases, symbolIndex);
+      processCreator(se, gen, live, aliases, symbolIndex);
 
     if (bitwiseCopyArg(se, symbolIndex) == 1)
-      processBitwiseCopy(se, gen, kill, aliases, symbolIndex);
+      processBitwiseCopy(se, gen, live, kill, aliases, symbolIndex);
 
     if (isConsumed(se))
-      processConsumer(se, gen, kill, aliases, symbolIndex);
+      processConsumer(se, live, kill, aliases, symbolIndex);
   }
 }
 
@@ -840,7 +884,8 @@ static void computeTransitions(SymExprVector& symExprs,
 // to determine where ownership is created or transferred.  When constructors
 // become methods, we'll key off the CONSTRUCTOR flag and modify the state of
 // the first (receiver) argument.
-static void computeTransitions(BasicBlock& bb, BitVec* gen, BitVec* kill,
+static void computeTransitions(BasicBlock& bb,
+                               BitVec* gen, BitVec* live, BitVec* kill,
                                AliasVectorMap& aliases,
                                SymbolIndexMap& symbolIndex)
 {
@@ -852,7 +897,7 @@ static void computeTransitions(BasicBlock& bb, BitVec* gen, BitVec* kill,
     SymExprVector symExprs;
     collectSymExprsSTL(expr, symExprs);
 
-    computeTransitions(symExprs, gen, kill, aliases, symbolIndex);
+    computeTransitions(symExprs, gen, live, kill, aliases, symbolIndex);
   }
 }
 
@@ -865,7 +910,10 @@ static void computeTransitions(FnSymbol* fn,
   size_t nbbs = fn->basicBlocks->size();
   for (size_t i = 0; i < nbbs; ++i)
   {
-    computeTransitions(*(*fn->basicBlocks)[i], GEN[i], KILL[i], aliases, symbolIndex);
+    // On the first pass, we compute live and then throw it away.
+    BitVec* live = new BitVec(GEN[i]->size());
+    computeTransitions(*(*fn->basicBlocks)[i], GEN[i], live, KILL[i], aliases, symbolIndex);
+    delete live;
   }
 }
 
@@ -959,7 +1007,8 @@ static void insertAutoCopy(SymExpr* se)
 }
 
 
-static void insertAutoCopy(SymExprVector& symExprs, BitVec* gen, BitVec* kill,
+static void insertAutoCopy(SymExprVector& symExprs,
+                           BitVec* gen, BitVec* live, BitVec* kill,
                            const AliasVectorMap& aliases,
                            SymbolIndexMap& symbolIndex)
 {
@@ -971,30 +1020,33 @@ static void insertAutoCopy(SymExprVector& symExprs, BitVec* gen, BitVec* kill,
     if (symbolIndex.find(sym) == symbolIndex.end())
       continue;
 
-    // Set a bit in the gen set if this is a constructor.
+    // Set a bit in the live set if this is a constructor.
     if (isCreated(se))
-      processCreator(se, gen, aliases, symbolIndex);
+      processCreator(se, gen, live, aliases, symbolIndex);
 
     // Pass ownership to this symbol if it is the result of a bitwise copy.
     if (bitwiseCopyArg(se, symbolIndex) == 1)
-      processBitwiseCopy(se, gen, kill, aliases, symbolIndex);
+      processBitwiseCopy(se, gen, live, kill, aliases, symbolIndex);
 
     if (isConsumed(se))
     {
-      // If the gen bit is set for this symbol, we can leave it as a move and
+      // If the live bit is set for this symbol, we can leave it as a move and
       // transfer ownership.  Otherwise, we need to insert an autoCopy.
       size_t index = symbolIndex[sym];
-      if (!gen->get(index))
+      if (!live->get(index))
+      {
         insertAutoCopy(se);
+        gen->set(index);
+      }
 
-      processConsumer(se, gen, kill, aliases, symbolIndex);
+      processConsumer(se, live, kill, aliases, symbolIndex);
     }
   }
 }
 
 
 static void insertAutoCopy(BasicBlock& bb,
-                           BitVec* gen, BitVec* kill,
+                           BitVec* gen, BitVec* live, BitVec* kill,
                            const SymbolVector& symbols,
                            SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
@@ -1004,7 +1056,7 @@ static void insertAutoCopy(BasicBlock& bb,
     SymExprVector symExprs;
     collectSymExprsSTL(expr, symExprs);
 
-    insertAutoCopy(symExprs, gen, kill, aliases, symbolIndex);
+    insertAutoCopy(symExprs, gen, live, kill, aliases, symbolIndex);
   }
 }                          
 
@@ -1022,14 +1074,17 @@ static void insertAutoCopy(FnSymbol* fn,
     // We need to insert an autodestroy call for each symbol that is owned
     // (live) at the end of the block but is unowned (dead) in the OUT set.
     BasicBlock& bb = *(*fn->basicBlocks)[i];
-    // For this block traversal, we initialize GEN[i] = IN[i].
-    // We don't care about the local kill, so we just use a new one.
-    // (We could compare new with old as a sanity check following the traversal.)
-    BitVec* local_gen = new BitVec(*IN[i]);
-    BitVec* local_kill = new BitVec(KILL[i]->size());
-    insertAutoCopy(bb, local_gen, local_kill, symbols, symbolIndex, aliases);
-    delete local_kill; local_kill = 0;
-    delete local_gen; local_gen = 0;
+    // For this block traversal, we initialize live = IN[i].
+    BitVec* live = new BitVec(*IN[i]);
+    // We use temporaries for the gen and kill sets.  The results of
+    // global flow analysis should yield the same values, and this allows us to
+    // test that assertion.
+    BitVec* gen = new BitVec(GEN[i]->size());
+    BitVec* kill = new BitVec(KILL[i]->size());
+    insertAutoCopy(bb, gen, live, kill, symbols, symbolIndex, aliases);
+    delete kill; kill = 0;
+    delete live; live = 0;
+    delete gen; gen = 0;
   }
 }
 
@@ -1068,24 +1123,13 @@ static void insertAutoDestroy(BasicBlock* bb, BitVec* to_kill,
 
       // Remove this symbol and all its aliases from the kill set.
       SymbolVector* aliasList = aliases.at(sym);
-      for_vector(Symbol, alias, *aliasList)
-      {
-        size_t index = symbolIndex[alias];
-        to_kill->reset(index);
-      }
+      resetAliasList(to_kill, *aliasList, symbolIndex);
 
       FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
       if (autoDestroy == NULL)
         // This type does not have a destructor, so we don't have a add an
         // autoDestroy call for it.
         continue;
-
-#if 0
-      // For now, we ignore internally reference-counted types.  We'll add the
-      // code to manage those later.
-      if (isRefCountedType(sym->type))
-        continue;
-#endif
 
       CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
 
@@ -1119,31 +1163,91 @@ static void insertAutoDestroy(FnSymbol* fn,
 }
 
 
+static void forwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
+                                 FlowSet& GEN, FlowSet& KILL,
+                                 FlowSet& IN, FlowSet& OUT,
+                                 const AliasVectorMap& aliases,
+                                 SymbolIndexMap& symbolIndex)
+{
+  size_t nbbs = bbs.size();
+  bool changed;
+  do {
+    changed = false;
+
+    for (size_t i = 0; i < nbbs; ++i)
+    {
+      if (bbs[i]->ins.size() == 0)
+      {
+        // This is an initial block because it has no predecessors
+        // Its IN set must be empty.
+        IN[i]->clear();
+      }
+      else
+      {
+        BitVec* in = IN[i];
+        for_vector(BasicBlock, succ, bbs[i]->outs)
+          *in &= *IN[succ->id];
+      }
+      BitVec new_out = *IN[i] + *GEN[i] - *KILL[i];
+      if (new_out != *OUT[i])
+      {
+#if 0
+        // I assume we don't have to propagate aliases in forward flow, because
+        // the bits in an alias clique are always set or reset in concert.  If
+        // that assumption breaks down (because the membership in a clique
+        // changes from block to block), then we either need to maintain
+        // separate alias lists for each block or just re-run the block-wise
+        // analysis.
+        BitVec* added = new_out - *OUT[i];
+        propagateAliases(added, new_out, aliases, symbolIndex);
+#endif
+        *OUT[i] = new_out;
+        changed = true;
+      }
+    }
+  } while (changed);
+}
+
+
 // In backward flow, we adjust the out set so it is the intersection of the IN
 // sets of its successors.  If the block is a terminal block (a block with no
 // successors), however, we set its OUT to all zeroes.  This forces ownership to
 // be driven to zero before the function is exited.
 // This analysis will work correctly even if the function has multiple exits.
+//
+// Backward flow through the blocks allows the destruction of temporaries to
+// flow backward to the end of the block in which they are last used.  
 static void backwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
+                                  FlowSet& GEN, FlowSet& KILL,
                                   FlowSet& IN, FlowSet& OUT)
 {
   size_t nbbs = bbs.size();
-  for (size_t i = 0; i < nbbs; ++i)
-  {
-    if (bbs[i]->outs.size() == 0)
+  bool changed;
+  do {
+    changed = false;
+
+    for (size_t i = nbbs; i-- > 0; )
     {
-      // This is a terminal block because it has no successors.
-      // Its OUT set must be empty.
-      OUT[i]->clear();
+      if (bbs[i]->outs.size() == 0)
+      {
+        // This is a terminal block because it has no successors.
+        // Its OUT set must be empty.
+        OUT[i]->clear();
+      }
+      else
+      {
+        BitVec* out = OUT[i];
+        for_vector(BasicBlock, succ, bbs[i]->outs)
+          *out &= *IN[succ->id];
+      }
+      BitVec new_in = *OUT[i] + *KILL[i] - *GEN[i];
+      if (new_in != *IN[i])
+      {
+        *IN[i] = new_in;
+        changed = true;
+      }
     }
-    else
-    {
-      BitVec* out = OUT[i];
-      out->set();
-      for_vector(BasicBlock, succ, bbs[i]->outs)
-        *out &= *IN[succ->id];
-    }
-  }
+  } while (changed);
 }
 
 
@@ -1195,11 +1299,10 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   }
 #endif
 
-  // We can reuse the existing forward flow analysis to compute how ownership
-  // flows through the basic blocks.
   // The OUT sets are initially all ones.
   for(size_t i = 0; i < nbbs; ++i) OUT[i]->set();
-  BasicBlock::forwardFlowAnalysis(fn, GEN, KILL, IN, OUT, true);
+  forwardFlowOwnership(*fn->basicBlocks, GEN, KILL, IN, OUT,
+                       aliases, symbolIndex);
 
 #if DEBUG_AMM
   if (debug > 0)
@@ -1219,7 +1322,7 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   // block.
   // Also, kills are propagated backward, so that a variable owned on one path
   // into a node is owned on all such paths.
-  backwardFlowOwnership(*fn->basicBlocks, IN, OUT);
+  backwardFlowOwnership(*fn->basicBlocks, GEN, KILL, IN, OUT);
 
 #if DEBUG_AMM
   if (debug > 0)
