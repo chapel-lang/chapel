@@ -1322,13 +1322,13 @@ module GMP {
       }
       return safe_cast(int, ret);
     }
-    proc sizeinbase(base:int):size_t
+    proc sizeinbase(base:int):uint
     {
       var ret:size_t;
       on this {
         ret = mpz_sizeinbase(this.mpz, safe_cast(c_int, base));
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
 
     // left out integer random functions
@@ -1340,13 +1340,13 @@ module GMP {
         mpz_realloc2(this.mpz, safe_cast(c_ulong, nbits));
       }
     }
-    proc get_limbn(n:mp_size_t):mp_limb_t
+    proc get_limbn(n:uint):uint
     {
       var ret:mp_limb_t;
       on this {
-        ret = mpz_getlimbn(this.mpz, n);
+        ret = mpz_getlimbn(this.mpz, safe_cast(mp_size_t, n));
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
     proc size():size_t
     {
