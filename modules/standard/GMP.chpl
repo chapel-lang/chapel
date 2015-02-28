@@ -393,9 +393,9 @@ module GMP {
     {
       set_si(safe_cast(c_long, num));
     }
-    proc set_d(num:c_double)
+    proc set_d(num:real)
     {
-      on this do mpz_set_d(this.mpz, num);
+      on this do mpz_set_d(this.mpz, num: c_double);
     }
     proc set_str(str:string, base:int=0)
     {
@@ -429,14 +429,14 @@ module GMP {
       on this do x = mpz_get_si(this.mpz);
       return safe_cast(int, x);
     }
-    proc get_d():c_double
+    proc get_d():real
     {
       var x:c_double;
       on this do x = mpz_get_d(this.mpz);
-      return x;
+      return x:real;
     }
     // returns (exponent, double)
-    proc get_d_2exp():(int, c_double)
+    proc get_d_2exp():(int, real)
     {
       var exp:c_long;
       var dbl:c_double;
@@ -445,7 +445,7 @@ module GMP {
         dbl = mpz_get_d_2exp(tmp, this.mpz);
         exp = tmp;
       }
-      return (safe_cast(int, exp), dbl);
+      return (safe_cast(int, exp), dbl: real);
     }
     proc get_str(base:int=10):string
     {
@@ -1098,11 +1098,11 @@ module GMP {
       }
       return safe_cast(int, ret);
     }
-    proc cmp_d(b:c_double):int
+    proc cmp_d(b:real):int
     {
       var ret:c_int;
       on this {
-        ret=mpz_cmp_d(this.mpz,b);
+        ret=mpz_cmp_d(this.mpz, b: c_double);
       }
       return safe_cast(int, ret);
     }
@@ -1132,11 +1132,11 @@ module GMP {
       }
       return safe_cast(int, ret);
     }
-    proc cmpabs_d(b:c_double):int
+    proc cmpabs_d(b:real):int
     {
       var ret:c_int;
       on this {
-        ret=mpz_cmpabs_d(this.mpz,b);
+        ret=mpz_cmpabs_d(this.mpz, b: c_double);
       }
       return safe_cast(int, ret);
     }
