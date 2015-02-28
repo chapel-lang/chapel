@@ -151,12 +151,36 @@ proc copy(src: string, dest: string, metadata: bool = false) {
    dest: the destination of the contents.
 */
 proc copyFile(out err: syserr, src: string, dest: string) {
+  // This implementation is based off of the python implementation for copyfile,
+  // with some slight differences.
+
   // Check if the files are the same, error if yes
-  // Make sure src exists - though if it doesn't, we can just create
-  // an empty file.
+  if (sameFile(err, src, dest)) {
+    err = EOPNOTSUPP;
+    return;
+    // Operation is not supported, since the two arguments are the same file.
+  }
+  if (err == ENOENT) {
+    err = ENOERR;
+    // We don't care if one of those files did not exist before, we'll create
+    // or overwrite dest anyways.
+  }
+
   // Make sure dest is not a weird file (like a pipe)
   // Open src for reading, open dest for writing
+  var srcFile = open(src, iomode.r);
+  var destFile = open(dest, iomode.cw);
+  var srcChnl = srcFile.reader();
+  var destChnl = destFile.writer();
   // read in, write out.
+  var line: string;
+  while (srcChnl.readline(line)) {
+    destChnl.write(line);
+  }
+  destChnl.flush();
+
+  srcFile.close();
+  destFile.close();
 }
 
 /* Copies the contents of the file indicated by src into the file indicated
