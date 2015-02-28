@@ -48,7 +48,6 @@ module FFTW {
 
   // Since the calls to FFTW are the same, pull the extern declarations out.
   // TODO : This should be cleaned up further and made consistent across the file
-  // TODO : NP : I'm dropping this back to pointers, because I don't know how to cast arrays.
   extern proc fftw_plan_dft_r2c(rank: c_int, 
       n,  // BLC: having trouble being specific
       in1: [],
@@ -120,6 +119,21 @@ module FFTW {
   proc cleanup() {
     extern proc fftw_cleanup();
     cleanup();
+  }
+
+
+  // Multi-threaded setup routines below
+  proc init_threads() : c_int {
+    extern proc fftw_init_threads() : c_int;
+    return fftw_init_threads();
+  }
+  proc cleanup_threads() {
+    extern proc fftw_cleanup_threads();
+    fftw_cleanup_threads();
+  }
+  proc plan_with_nthreads(n : c_int) {
+    extern proc fftw_plan_with_nthreads(n : c_int);
+    fftw_plan_with_nthreads(n);
   }
 
 
