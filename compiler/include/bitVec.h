@@ -26,9 +26,11 @@ class BitVec {
   size_t in_size;
   size_t ndata;
 
+  ~BitVec();
   BitVec(size_t in_size);
   BitVec(const BitVec& rhs);
-  ~BitVec();
+  void operator=(const BitVec& rhs) { this->copy(rhs); }
+
   void clear();
   bool get(size_t i) const;
   bool operator[](size_t i) const { return get(i); }
@@ -57,6 +59,16 @@ class BitVec {
   bool any() const;
   bool none() const;
 };
+
+inline bool operator==(const BitVec& a, const BitVec& b)
+{
+  return a.equals(b);
+}
+
+inline bool operator!=(const BitVec& a, const BitVec& b)
+{
+  return ! a.equals(b);
+}
 
 inline BitVec operator+(const BitVec& a, const BitVec& b)
 {
