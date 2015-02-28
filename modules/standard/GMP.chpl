@@ -308,8 +308,8 @@ module GMP {
     proc BigInt(init2:bool, nbits:uint) {
       mpz_init2(this.mpz, safe_cast(c_ulong, nbits));
     }
-    proc BigInt(num:c_long) {
-      mpz_init_set_si(this.mpz, num);
+    proc BigInt(num:int) {
+      mpz_init_set_si(this.mpz, safe_cast(c_long, num));
     }
     proc BigInt(str:string, base:c_int=0) {
       var e:c_int;
@@ -385,13 +385,13 @@ module GMP {
     {
       on this do mpz_set_ui(this.mpz, safe_cast(c_ulong, num));
     }
-    proc set_si(num:c_long)
+    proc set_si(num:int)
     {
-      on this do mpz_set_si(this.mpz, num);
+      on this do mpz_set_si(this.mpz, safe_cast(c_long, num));
     }
-    proc set(num:c_long)
+    proc set(num:int)
     {
-      set_si(num);
+      set_si(safe_cast(c_long, num));
     }
     proc set_d(num:c_double)
     {
@@ -423,11 +423,11 @@ module GMP {
       on this do x = mpz_get_ui(this.mpz);
       return safe_cast(uint, x);
     }
-    proc get_si():c_long
+    proc get_si():int
     {
       var x:c_long;
       on this do x = mpz_get_si(this.mpz);
-      return x;
+      return safe_cast(int, x);
     }
     proc get_d():c_double
     {
@@ -436,7 +436,7 @@ module GMP {
       return x;
     }
     // returns (exponent, double)
-    proc get_d_2exp():(c_long, c_double)
+    proc get_d_2exp():(int, c_double)
     {
       var exp:c_long;
       var dbl:c_double;
@@ -445,7 +445,7 @@ module GMP {
         dbl = mpz_get_d_2exp(tmp, this.mpz);
         exp = tmp;
       }
-      return (exp,dbl);
+      return (safe_cast(int, exp), dbl);
     }
     proc get_str(base:c_int=10):string
     {
@@ -512,11 +512,11 @@ module GMP {
         if bcopy then delete b_;
       }
     }
-    proc mul_si(a:BigInt, b:c_long)
+    proc mul_si(a:BigInt, b:int)
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_mul_si(this.mpz, a_.mpz, b);
+        mpz_mul_si(this.mpz, a_.mpz, safe_cast(c_long, b));
         if acopy then delete a_;
       }
     }
@@ -1106,11 +1106,11 @@ module GMP {
       }
       return ret;
     }
-    proc cmp_si(b:c_long):c_int
+    proc cmp_si(b:int):c_int
     {
       var ret:c_int;
       on this {
-        ret=mpz_cmp_si(this.mpz,b);
+        ret=mpz_cmp_si(this.mpz, safe_cast(c_long, b));
       }
       return ret;
     }
@@ -1404,11 +1404,11 @@ module GMP {
     }
     return ret;
   }
-  proc kronecker_si(a: BigInt, b: c_long):c_int
+  proc kronecker_si(a: BigInt, b: int):c_int
   {
     var ret:c_int;
     on a {
-      ret=mpz_kronecker_si(a.mpz, b);
+      ret=mpz_kronecker_si(a.mpz, safe_cast(c_long, b));
     }
     return ret;
   }
@@ -1420,11 +1420,11 @@ module GMP {
     }
     return ret;
   }
-  proc si_kronecker(a: c_long, b: BigInt):c_int
+  proc si_kronecker(a: int, b: BigInt):c_int
   {
     var ret:c_int;
     on b {
-      ret=mpz_si_kronecker(a, b.mpz);
+      ret=mpz_si_kronecker(safe_cast(c_long, a), b.mpz);
     }
     return ret;
   }
