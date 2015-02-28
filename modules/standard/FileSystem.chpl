@@ -173,6 +173,36 @@ proc exists(name: string): bool {
   return ret;
 }
 
+proc getUID(out err: syserr, name: string): int {
+  extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
+
+  var result: c_int;
+  err = chpl_fs_get_uid(result, name.c_str());
+  return result;
+}
+
+proc getUID(name: string): int {
+  var err: syserr = ENOERR;
+  var ret = getUID(err, name);
+  if err != ENOERR then ioerror(err, "in getUID");
+  return ret;
+}
+
+proc getGID(out err: syserr, name: string): int {
+  extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
+
+  var result: c_int;
+  err = chpl_fs_get_gid(result, name.c_str());
+  return result;
+}
+
+proc getGID(name: string): int {
+  var err: syserr = ENOERR;
+  var ret = getGID(err, name);
+  if err != ENOERR then ioerror(err, "in getGID");
+  return ret;
+}
+
 /* Returns true if the name corresponds to a directory, false otherwise.
    err: a syserr used to indicate if an error occurred
    name: a string that could be the name of a directory.

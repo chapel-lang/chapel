@@ -1,0 +1,23 @@
+#!/bin/bash
+
+file_user=$(python -c 'import os ; print(os.stat("getting.chpl").st_uid)')
+file_group=$(python -c 'import os ; print(os.stat("getting.chpl").st_gid)')
+
+output_usr=$(head -n 1 $2)
+output_group=$(tail -n 1 $2)
+
+# get the output from the file.
+
+if [ "${file_usr}" = "${output_usr}" ] ; then
+    echo "user id matched" > $2
+else
+    echo "expected $file_user, was $output_usr" > $2
+fi
+# Want to override previous contents of .out.tmp file, since the id will differ
+# depending on who runs it and where.
+
+if [ "${file_group}\n" = "${output_group}" ] ; then
+    echo "group id matched" >> $2
+else
+    echo "expected $file_group, was $output_group" >> $2
+fi
