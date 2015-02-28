@@ -381,9 +381,9 @@ module GMP {
         }
       }
     }
-    proc set_ui(num:c_ulong)
+    proc set_ui(num:uint)
     {
-      on this do mpz_set_ui(this.mpz, num);
+      on this do mpz_set_ui(this.mpz, safe_cast(c_ulong, num));
     }
     proc set_si(num:c_long)
     {
@@ -468,11 +468,11 @@ module GMP {
         if bcopy then delete b_;
       }
     }
-    proc add_ui(a:BigInt, b:c_ulong)
+    proc add_ui(a:BigInt, b:uint)
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_add_ui(this.mpz, a_.mpz, b);
+        mpz_add_ui(this.mpz, a_.mpz, safe_cast(c_ulong, b));
         if acopy then delete a_;
       }
     }
@@ -486,19 +486,19 @@ module GMP {
         if bcopy then delete b_;
       }
     }
-    proc sub_ui(a:BigInt, b:c_ulong)
+    proc sub_ui(a:BigInt, b:uint)
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_sub_ui(this.mpz, a_.mpz, b);
+        mpz_sub_ui(this.mpz, a_.mpz, safe_cast(c_ulong, b));
         if acopy then delete a_;
       }
     }
-    proc ui_sub(a:c_ulong, b:BigInt)
+    proc ui_sub(a:uint, b:BigInt)
     {
       on this {
         var (bcopy,b_) = b.maybeCopy();
-        mpz_ui_sub(this.mpz, a, b_.mpz);
+        mpz_ui_sub(this.mpz, safe_cast(c_ulong, a), b_.mpz);
         if bcopy then delete b_;
       }
     }
@@ -538,11 +538,11 @@ module GMP {
         if bcopy then delete b_;
       }
     }
-    proc addmul_ui(a:BigInt, b:c_ulong)
+    proc addmul_ui(a:BigInt, b:uint)
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_addmul_ui(this.mpz, a_.mpz, b);
+        mpz_addmul_ui(this.mpz, a_.mpz, safe_cast(c_ulong, b));
         if acopy then delete a_;
       }
     }
@@ -564,11 +564,11 @@ module GMP {
         if acopy then delete a_;
       }
     }
-    proc mul_2exp(a:BigInt, b:c_ulong)
+    proc mul_2exp(a:BigInt, b:uint)
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_mul_2exp(this.mpz, a_.mpz, b);
+        mpz_mul_2exp(this.mpz, a_.mpz, safe_cast(c_ulong, b));
         if acopy then delete a_;
       }
     }
@@ -639,45 +639,48 @@ module GMP {
         if dcopy then delete d_;
       }
     }
-    proc div_q_ui(param rounding:Round, n:BigInt, d:c_ulong):c_ulong
+    proc div_q_ui(param rounding:Round, n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
       on this {
         var (ncopy,n_) = n.maybeCopy();
+        const cd = safe_cast(c_ulong, d);
         select rounding {
-          when Round.UP   do ret=mpz_cdiv_q_ui(this.mpz, n_.mpz, d);
-          when Round.DOWN do ret=mpz_fdiv_q_ui(this.mpz, n_.mpz, d);
-          when Round.ZERO do ret=mpz_tdiv_q_ui(this.mpz, n_.mpz, d);
+          when Round.UP   do ret=mpz_cdiv_q_ui(this.mpz, n_.mpz, cd);
+          when Round.DOWN do ret=mpz_fdiv_q_ui(this.mpz, n_.mpz, cd);
+          when Round.ZERO do ret=mpz_tdiv_q_ui(this.mpz, n_.mpz, cd);
         }
         if ncopy then delete n_;
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
-    proc div_r_ui(param rounding:Round, n:BigInt, d:c_ulong):c_ulong
+    proc div_r_ui(param rounding:Round, n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
       on this {
         var (ncopy,n_) = n.maybeCopy();
+        const cd = safe_cast(c_ulong, d);
         select rounding {
-          when Round.UP   do ret=mpz_cdiv_r_ui(this.mpz, n_.mpz, d);
-          when Round.DOWN do ret=mpz_fdiv_r_ui(this.mpz, n_.mpz, d);
-          when Round.ZERO do ret=mpz_tdiv_r_ui(this.mpz, n_.mpz, d);
+          when Round.UP   do ret=mpz_cdiv_r_ui(this.mpz, n_.mpz, cd);
+          when Round.DOWN do ret=mpz_fdiv_r_ui(this.mpz, n_.mpz, cd);
+          when Round.ZERO do ret=mpz_tdiv_r_ui(this.mpz, n_.mpz, cd);
         }
         if ncopy then delete n_;
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
     // this gets quotient, r gets remainder
-    proc div_qr_ui(param rounding:Round, r:BigInt, n:BigInt, d:c_ulong):c_ulong
+    proc div_qr_ui(param rounding:Round, r:BigInt, n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
+      const cd = safe_cast(c_ulong, d);
       on this {
         var (rcopy,r_) = r.maybeCopy();
         var (ncopy,n_) = n.maybeCopy();
         select rounding {
-          when Round.UP   do ret=mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d);
-          when Round.DOWN do ret=mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d);
-          when Round.ZERO do ret=mpz_tdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, d);
+          when Round.UP   do ret=mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
+          when Round.DOWN do ret=mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
+          when Round.ZERO do ret=mpz_tdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
         }
         if rcopy {
           r.set(r_);
@@ -685,42 +688,45 @@ module GMP {
         }
         if ncopy then delete n_;
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
-    proc div_ui(param rounding:Round, n:BigInt, d:c_ulong):c_ulong
+    proc div_ui(param rounding:Round, n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
+      const cd = safe_cast(c_ulong, d);
       on this {
         var (ncopy,n_) = n.maybeCopy();
         select rounding {
-          when Round.UP   do ret=mpz_cdiv_ui(this.mpz, n_.mpz, d);
-          when Round.DOWN do ret=mpz_fdiv_ui(this.mpz, n_.mpz, d);
-          when Round.ZERO do ret=mpz_tdiv_ui(this.mpz, n_.mpz, d);
+          when Round.UP   do ret=mpz_cdiv_ui(this.mpz, n_.mpz, cd);
+          when Round.DOWN do ret=mpz_fdiv_ui(this.mpz, n_.mpz, cd);
+          when Round.ZERO do ret=mpz_tdiv_ui(this.mpz, n_.mpz, cd);
         }
         if ncopy then delete n_;
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
-    proc div_q_2exp(param rounding:Round, n:BigInt, b:c_ulong)
+    proc div_q_2exp(param rounding:Round, n:BigInt, b:uint)
     {
       on this {
         var (ncopy,n_) = n.maybeCopy();
+        const cb = safe_cast(c_ulong, b);
         select rounding {
-          when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, b);
-          when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n_.mpz, b);
-          when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n_.mpz, b);
+          when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, cb);
+          when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n_.mpz, cb);
+          when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n_.mpz, cb);
         }
         if ncopy then delete n_;
       }
     }
-    proc div_r_2exp(param rounding:Round, n:BigInt, b:c_ulong)
+    proc div_r_2exp(param rounding:Round, n:BigInt, b:uint)
     {
       on this {
         var (ncopy,n_) = n.maybeCopy();
+        const cb = safe_cast(c_ulong, b);
         select rounding {
-          when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, b);
-          when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n_.mpz, b);
-          when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n_.mpz, b);
+          when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, cb);
+          when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n_.mpz, cb);
+          when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n_.mpz, cb);
         }
         if ncopy then delete n_;
       }
@@ -735,15 +741,15 @@ module GMP {
         if dcopy then delete d_;
       }
     }
-    proc mod_ui(n:BigInt, d:c_ulong):c_ulong
+    proc mod_ui(n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
       on this {
         var (ncopy,n_) = n.maybeCopy();
-        ret=mpz_mod(this.mpz, n_.mpz, d);
+        ret=mpz_mod(this.mpz, n_.mpz, safe_cast(c_ulong, d));
         if ncopy then delete n_;
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
     proc divexact(n:BigInt, d:BigInt)
     {
@@ -755,11 +761,11 @@ module GMP {
         if dcopy then delete d_;
       }
     }
-    proc divexact_ui(n:BigInt, d:c_ulong)
+    proc divexact_ui(n:BigInt, d:uint)
     {
       on this {
         var (ncopy,n_) = n.maybeCopy();
-        mpz_divexact(this.mpz, n_.mpz, d);
+        mpz_divexact(this.mpz, n_.mpz, safe_cast(c_ulong, d));
         if ncopy then delete n_;
       }
     }
@@ -773,19 +779,19 @@ module GMP {
       }
       return ret;
     }
-    proc divisible_ui_p(d:c_ulong):c_int
+    proc divisible_ui_p(d:uint):c_int
     {
       var ret:c_int;
       on this {
-        ret=mpz_divisible_ui_p(this.mpz, d);
+        ret=mpz_divisible_ui_p(this.mpz, safe_cast(c_ulong, d));
       }
       return ret;
     }
-    proc divisible_2exp_p(b:c_ulong):c_int
+    proc divisible_2exp_p(b:uint):c_int
     {
       var ret:c_int;
       on this {
-        mpz_divisible_2exp_p(this.mpz, b);
+        mpz_divisible_2exp_p(this.mpz, safe_cast(c_ulong, b));
       }
       return ret;
     }
@@ -801,20 +807,20 @@ module GMP {
       }
       return ret;
     }
-    proc congruent_ui_p(c:c_ulong, d:c_ulong):c_int
+    proc congruent_ui_p(c:uint, d:uint):c_int
     {
       var ret:c_int;
       on this {
-        ret=mpz_congruent_ui_p(this.mpz, c, d);
+        ret=mpz_congruent_ui_p(this.mpz, safe_cast(c_ulong, c), safe_cast(c_ulong, d));
       }
       return ret;
     }
-    proc congruent_2exp_p(c:BigInt, b:c_ulong):c_int
+    proc congruent_2exp_p(c:BigInt, b:uint):c_int
     {
       var ret:c_int;
       on this {
         var (ccopy,c_) = c.maybeCopy();
-        ret=mpz_congruent_2exp_p(this.mpz, c, b);
+        ret=mpz_congruent_2exp_p(this.mpz, c, safe_cast(c_ulong, b));
         if ccopy then delete c_;
       }
       return ret;
@@ -834,49 +840,49 @@ module GMP {
         if mcopy then delete m_;
       }
     }
-    proc powm_ui(base:BigInt, exp:c_ulong, mod:BigInt)
+    proc powm_ui(base:BigInt, exp:uint, mod:BigInt)
     {
       on this {
         var (bcopy,b_) = base.maybeCopy();
         var (mcopy,m_) = mod.maybeCopy();
-        mpz_powm_ui(this.mpz, b_.mpz, exp, m_.mpz);
+        mpz_powm_ui(this.mpz, b_.mpz, safe_cast(c_ulong, exp), m_.mpz);
         if bcopy then delete b_;
         if mcopy then delete m_;
       }
     }
-    proc pow_ui(base:BigInt, exp:c_ulong)
+    proc pow_ui(base:BigInt, exp:uint)
     {
       on this {
         var (bcopy,b_) = base.maybeCopy();
-        mpz_pow_ui(this.mpz, b_.mpz, exp);
+        mpz_pow_ui(this.mpz, b_.mpz, safe_cast(c_ulong, exp));
         if bcopy then delete b_;
       }
     }
-    proc ui_pow_ui(base:c_ulong, exp:c_ulong)
+    proc ui_pow_ui(base:uint, exp:uint)
     {
       on this {
-        mpz_ui_pow_ui(this.mpz, base, exp);
+        mpz_ui_pow_ui(this.mpz, safe_cast(c_ulong, base), safe_cast(c_ulong, exp));
       }
     }
 
     // Root Extraction Functions
-    proc root(a:BigInt, n:c_ulong):c_int
+    proc root(a:BigInt, n:uint):c_int
     {
       var ret:c_int;
       on this {
         var (acopy,a_) = a.maybeCopy();
-        ret=mpz_root(this.mpz, a_.mpz, n);
+        ret=mpz_root(this.mpz, a_.mpz, safe_cast(c_ulong, n));
         if acopy then delete a_;
       }
       return ret;
     }
     // this gets root, rem gets remainder.
-    proc mpz_rootrem(rem:BigInt, u:BigInt, n:c_ulong)
+    proc mpz_rootrem(rem:BigInt, u:BigInt, n:uint)
     {
       on this {
         var (rcopy,r_) = rem.maybeCopy();
         var (ucopy,u_) = u.maybeCopy();
-        mpz_rootrem(this.mpz, r_.mpz, u_.mpz, n);
+        mpz_rootrem(this.mpz, r_.mpz, u_.mpz, safe_cast(c_ulong, n));
         if rcopy {
           rem.set(r_);
           delete r_;
@@ -950,11 +956,11 @@ module GMP {
         if bcopy then delete b_;
       }
     }
-    proc gcd_ui(a: BigInt, b: c_ulong)
+    proc gcd_ui(a: BigInt, b: uint)
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_gcd_ui(this.mpz, a_.mpz, b);
+        mpz_gcd_ui(this.mpz, a_.mpz, safe_cast(c_ulong, b));
         if acopy then delete a_;
       }
     }
@@ -990,11 +996,11 @@ module GMP {
         if bcopy then delete b_;
       }
     }
-    proc lcm_ui(a: BigInt, b: c_ulong)
+    proc lcm_ui(a: BigInt, b: uint)
     {
       on this {
         var (acopy,a_) = a.maybeCopy();
-        mpz_lcm_ui(this.mpz, a_.mpz, b);
+        mpz_lcm_ui(this.mpz, a_.mpz, safe_cast(c_ulong, b));
         if acopy then delete a_;
       }
     }
@@ -1013,7 +1019,7 @@ module GMP {
 
     // jacobi, legendre, kronecker are procedures outside this class.
 
-    proc remove(a: BigInt, f: BigInt):c_ulong
+    proc remove(a: BigInt, f: BigInt):uint
     {
       var ret:c_ulong;
       on this {
@@ -1023,56 +1029,56 @@ module GMP {
         if acopy then delete a_;
         if fcopy then delete f_;
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
-    proc fac_ui(a: c_ulong)
+    proc fac_ui(a: uint)
     {
       on this {
-        mpz_fac_ui(this.mpz, a);
+        mpz_fac_ui(this.mpz, safe_cast(c_ulong, a));
       }
     }
-    proc bin_ui(n: BigInt, k: c_ulong)
+    proc bin_ui(n: BigInt, k: uint)
     {
       on this {
         var (ncopy,n_) = n.maybeCopy();
-        mpz_bin_ui(this.mpz, n_.mpz, k);
+        mpz_bin_ui(this.mpz, n_.mpz, safe_cast(c_ulong, k));
         if ncopy then delete n_;
       }
     }
-    proc bin_uiui(n: c_ulong, k: c_ulong)
+    proc bin_uiui(n: uint, k: uint)
     {
       on this {
-        mpz_bin_uiui(this.mpz, n, k);
+        mpz_bin_uiui(this.mpz, safe_cast(c_ulong, n), safe_cast(c_ulong, k));
       }
     }
-    proc fib_ui(n: c_ulong)
+    proc fib_ui(n: uint)
     {
       on this {
-        mpz_fib_ui(this.mpz, n);
+        mpz_fib_ui(this.mpz, safe_cast(c_ulong, n));
       }
     }
-    proc fib2_ui(fnsub1: BigInt, n: c_ulong)
+    proc fib2_ui(fnsub1: BigInt, n: uint)
     {
       on this {
         var (fcopy,f_) = fnsub1.maybeCopy();
-        mpz_fib2_ui(this.mpz, f_.mpz, n);
+        mpz_fib2_ui(this.mpz, f_.mpz, safe_cast(c_ulong, n));
         if fcopy {
           fnsub1.set(f_);
           delete f_;
         }
       }
     }
-    proc lucnum_ui(n: c_ulong)
+    proc lucnum_ui(n: uint)
     {
       on this {
-        mpz_lucnum_ui(this.mpz, n);
+        mpz_lucnum_ui(this.mpz, safe_cast(c_ulong, n));
       }
     }
-    proc lucnum2_ui(lnsub1: BigInt, n: c_ulong)
+    proc lucnum2_ui(lnsub1: BigInt, n: uint)
     {
       on this {
         var (fcopy,f_) = lnsub1.maybeCopy();
-        mpz_lucnum2_ui(this.mpz, f_.mpz, n);
+        mpz_lucnum2_ui(this.mpz, f_.mpz, safe_cast(c_ulong, n));
         if fcopy {
           lnsub1.set(f_);
           delete f_;
@@ -1108,11 +1114,11 @@ module GMP {
       }
       return ret;
     }
-    proc cmp_ui(b:c_ulong):c_int
+    proc cmp_ui(b:uint):c_int
     {
       var ret:c_int;
       on this {
-        ret=mpz_cmp_ui(this.mpz,b);
+        ret=mpz_cmp_ui(this.mpz, safe_cast(c_ulong, b));
       }
       return ret;
     }
@@ -1134,11 +1140,11 @@ module GMP {
       }
       return ret;
     }
-    proc cmp_abs_ui(b:c_ulong):c_int
+    proc cmp_abs_ui(b:uint):c_int
     {
       var ret:c_int;
       on this {
-        ret=mpz_cmpabs_ui(this.mpz,b);
+        ret=mpz_cmpabs_ui(this.mpz, safe_cast(c_ulong, b));
       }
       return ret;
     }
@@ -1190,15 +1196,15 @@ module GMP {
         if acopy then delete a_;
       }
     }
-    proc popcount():c_ulong
+    proc popcount():uint
     {
       var ret:c_ulong;
       on this {
         ret = mpz_popcount(this.mpz);
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
-    proc hamdist(b:BigInt)
+    proc hamdist(b:BigInt):uint
     {
       var ret:c_ulong;
       on this {
@@ -1206,47 +1212,47 @@ module GMP {
         ret=mpz_hamdist(this.mpz, b_.mpz);
         if bcopy then delete b_;
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
-    proc scan0(starting_bit:c_ulong):c_ulong
+    proc scan0(starting_bit:uint):uint
     {
       var ret:c_ulong;
       on this {
-        ret = mpz_scan0(this.mpz, starting_bit);
+        ret = mpz_scan0(this.mpz, safe_cast(c_ulong, starting_bit));
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
-    proc scan1(starting_bit:c_ulong):c_ulong
+    proc scan1(starting_bit:uint):uint
     {
       var ret:c_ulong;
       on this {
-        ret = mpz_scan1(this.mpz, starting_bit);
+        ret = mpz_scan1(this.mpz, safe_cast(c_ulong, starting_bit));
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
-    proc setbit(bit_index:c_ulong)
+    proc setbit(bit_index:uint)
     {
       on this {
-        mpz_setbit(this.mpz, bit_index);
+        mpz_setbit(this.mpz, safe_cast(c_ulong, bit_index));
       }
     }
-    proc clrbit(bit_index:c_ulong)
+    proc clrbit(bit_index:uint)
     {
       on this {
-        mpz_clrbit(this.mpz, bit_index);
+        mpz_clrbit(this.mpz, safe_cast(c_ulong, bit_index));
       }
     }
-    proc combit(bit_index:c_ulong)
+    proc combit(bit_index:uint)
     {
       on this {
-        mpz_combit(this.mpz, bit_index);
+        mpz_combit(this.mpz, safe_cast(c_ulong, bit_index));
       }
     }
-    proc tstbit(bit_index:c_ulong):c_int
+    proc tstbit(bit_index:uint):c_int
     {
       var ret:c_int;
       on this {
-        ret = mpz_tstbit(this.mpz, bit_index);
+        ret = mpz_tstbit(this.mpz, safe_cast(c_ulong, bit_index));
       }
       return ret;
     }
@@ -1328,10 +1334,10 @@ module GMP {
     // left out integer random functions
     // these are in the GMPRandom class.
 
-    proc realloc2(nbits:c_ulong)
+    proc realloc2(nbits:uint)
     {
       on this {
-        mpz_realloc2(this.mpz, nbits);
+        mpz_realloc2(this.mpz, safe_cast(c_ulong, nbits));
       }
     }
     proc get_limbn(n:mp_size_t):mp_limb_t
@@ -1406,11 +1412,11 @@ module GMP {
     }
     return ret;
   }
-  proc kronecker_ui(a: BigInt, b: c_ulong):c_int
+  proc kronecker_ui(a: BigInt, b: uint):c_int
   {
     var ret:c_int;
     on a {
-      ret=mpz_kronecker_ui(a.mpz, b);
+      ret=mpz_kronecker_ui(a.mpz, safe_cast(c_ulong, b));
     }
     return ret;
   }
@@ -1422,11 +1428,11 @@ module GMP {
     }
     return ret;
   }
-  proc ui_kronecker(a: c_ulong, b: BigInt):c_int
+  proc ui_kronecker(a: uint, b: BigInt):c_int
   {
     var ret:c_int;
     on b {
-      ret=mpz_ui_kronecker(a, b.mpz);
+      ret=mpz_ui_kronecker(safe_cast(c_ulong, a), b.mpz);
     }
     return ret;
   }
@@ -1442,15 +1448,15 @@ module GMP {
     {
       gmp_randinit_mt(this.state);
     }
-    proc GMPRandom(a: BigInt, c: c_ulong, m2exp: c_ulong)
+    proc GMPRandom(a: BigInt, c: uint, m2exp: uint)
     {
       var (acopy,a_) = a.maybeCopy();
-      gmp_randinit_lc_2exp(this.state, a_.mpz, c, m2exp);
+      gmp_randinit_lc_2exp(this.state, a_.mpz, safe_cast(c_ulong, c), safe_cast(c_ulong, m2exp));
       if acopy then delete a_;
     }
-    proc GMPRandom(size: c_ulong)
+    proc GMPRandom(size: uint)
     {
-      gmp_randinit_lc_2exp_esize(this.state, size);
+      gmp_randinit_lc_2exp_esize(this.state, safe_cast(c_ulong, size));
     }
     proc GMPRandom(a: GMPRandom)
     {
@@ -1472,33 +1478,33 @@ module GMP {
         if scopy then delete s_;
       }
     }
-    proc seed(seed: c_ulong)
+    proc seed(seed: uint)
     {
       on this {
-        gmp_randseed_ui(this.state, seed);
+        gmp_randseed_ui(this.state, safe_cast(c_ulong, seed));
       }
     }
-    proc urandomb_ui(nbits: c_ulong):c_ulong
-    {
-      var ret: c_ulong;
-      on this {
-        ret=gmp_urandomb_ui(this.state, nbits);
-      }
-      return ret;
-    }
-    proc urandomm_ui(n: c_ulong):c_ulong
+    proc urandomb_ui(nbits: uint):uint
     {
       var ret: c_ulong;
       on this {
-        ret=gmp_urandomm_ui(this.state, n);
+        ret=gmp_urandomb_ui(this.state, safe_cast(c_ulong, nbits));
       }
-      return ret;
+      return safe_cast(uint, ret);
     }
-    proc urandomb(r: BigInt, nbits: c_ulong)
+    proc urandomm_ui(n: uint):uint
+    {
+      var ret: c_ulong;
+      on this {
+        ret=gmp_urandomm_ui(this.state, safe_cast(c_ulong, n));
+      }
+      return safe_cast(uint, ret);
+    }
+    proc urandomb(r: BigInt, nbits: uint)
     {
       on this {
         var (rcopy,r_) = r.maybeCopy();
-        mpz_urandomb(r_.mpz, this.state, nbits);
+        mpz_urandomb(r_.mpz, this.state, safe_cast(c_ulong, nbits));
         if rcopy {
           r.set(r_);
           delete r_;
@@ -1518,11 +1524,11 @@ module GMP {
         if ncopy then delete n_;
       }
     }
-    proc rrandomb(r: BigInt, nbits: c_ulong)
+    proc rrandomb(r: BigInt, nbits: uint)
     {
       on this {
         var (rcopy,r_) = r.maybeCopy();
-        mpz_rrandomb(r_.mpz, this.state, nbits);
+        mpz_rrandomb(r_.mpz, this.state, safe_cast(c_ulong, nbits));
         if rcopy {
           r.set(r_);
           delete r_;
