@@ -123,7 +123,14 @@ proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
   copyFile(err, src, dest);
   if err != ENOERR then return;
   copyMode(err, src, dest);
-  // TODO: Still needs to change the owner and group.
+  if err != ENOERR then return;
+  // Get uid and gid from src
+  var uid = getUid(err, src);
+  if err != ENOERR then return;
+  var gid = getGid(err, src);
+  if err != ENOERR then return;
+  // Change uid and gid to that of the src
+  chown(err, dest, uid, gid);
 }
 
 /* Copies the contents and permissions of the file indicated by src into
