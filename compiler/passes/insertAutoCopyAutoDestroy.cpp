@@ -83,7 +83,7 @@ static int debug = 0;
 // steps:
 // 1. Gather local (argument and variable) symbols and build a vector and index
 //    of these.
-// 2. Traverse each block to populate the GEN and KILL sets and the alias map.
+// 2. Traverse each block to populate the PROD and CONS sets and the alias map.
 // 3. Perform forward flow analysis to determine which symbols are owned at the
 //    beginning of each block.  Traverse each block again and add autoCopy
 //    calls so symbols passed to receptor arguments are always owned.
@@ -99,13 +99,14 @@ static int debug = 0;
 //          used to track the current liveness state within a block and does
 //          not participate in global flow analysis.  It is really only needed
 //          for the step that inserts autoCopy calls; but since the flag update
-//          routines are shared between initial population of the GEN and KILL
+//          routines are shared between initial population of the PROD and CONS
 //          sets and the later traversal to add autoCopy calls, we maintain the
 //          live set in both.
-//  GEN  -- The set of symbols whose ownership transitions to true anywhere in
+//  PROD  -- The set of symbols whose ownership transitions to true anywhere in
 //          the block.
-//  KILL -- The set of symbols whose ownership transitions to false anywhere in
+//  CONS -- The set of symbols whose ownership transitions to false anywhere in
 //          the block.
+//  USE  -- The set of symbols used (read) within the given block.
 //  IN   -- The set of symbols that are owned at the beginning of the block
 //          (after forward flow analysis).
 //  OUT  -- The set of symbols that are owned at the end of the block (after
@@ -115,37 +116,37 @@ static int debug = 0;
 // After global flow analysis, live is initialized to IN[i].  AST elements that
 // create ownership cause the corresponding bit(s) to transition to true and
 // AST elements that consume ownership cause it to transition to false.  At the
-// end of any block i, the invariant live == IN[i] + GEN[i] - KILL[i] should hold.
+// end of any block i, the invariant live == IN[i] + PROD[i] - CONS[i] should hold.
 //
-// GEN[i] contains a true bit corresponding to each symbol that is constructed
+// PROD[i] contains a true bit corresponding to each symbol that is constructed
 // in that block.  We expect that symbol is constructed only once, so if IN[i]
-// and GEN[i] have a true bit in the same position, we can flag an internal
+// and PROD[i] have a true bit in the same position, we can flag an internal
 // error.  This condition is unlikely, so at best it should be added as a
 // verify check.  
 //
-// KILL[i] contains a true bit corresponding to each symbol whose ownership is
+// CONS[i] contains a true bit corresponding to each symbol whose ownership is
 // consumed in that block.  
 //
 // aliases -- We keep a separate list of aliases.  When any member of that set
-// of aliases is consumed, all members of the set are added to KILL[i].
+// of aliases is consumed, all members of the set are added to CONS[i].
 //
 // We start by performing forward flow analysis to establish the value of IN.
 // Within each block, 
-//  OUT[i] <- IN[i] + GEN[i] - KILL[i]. (1)
+//  OUT[i] <- IN[i] + PROD[i] - CONS[i]. (1)
 // IN[i] is the intersection of OUT[pred(i)] for all predecessors of block i.
 //
 // For a block that contains a constructor followed by a destructor for the
-// same symbol j, GEN[i,j] will be true and KILL[i,j] will be true.  In the
-// within-block forward flow equation (1), we assume that if a gen and kill of
-// the same symbol appear in the same block, the gen precedes the kill.  That
+// same symbol j, PROD[i,j] will be true and CONS[i,j] will be true.  In the
+// within-block forward flow equation (1), we assume that if a prod and cons of
+// the same symbol appear in the same block, the prod precedes the cons.  That
 // implies a general assumption that the value of a symbol cannot be used
 // before it has been defined, and that symbols are not reused (SA form).
 // For a block that contains a destructor followed by a constructor for the
-// same symbol j, GEN[i,j] and KILL[i,j] will both be true (and live at the
+// same symbol j, PROD[i,j] and CONS[i,j] will both be true (and live at the
 // beginning and end of the block will be false).
 //
 // We perform backward flow to establosh the value of OUT.  With in each block,
-//  IN[i] <- OUT[i] + KILL[i] - GEN[i]. (2)
+//  IN[i] <- OUT[i] + CONS[i] - PROD[i]. (2)
 // We compute OUT[i] as the intersection of IN[succ(i)] for all successors of
 // block i.
 //
@@ -154,19 +155,19 @@ static int debug = 0;
 // an argument that consumes it.  (Consumers expect the corresonding operand to
 // be owned; the autoCopy call adds the required ownership.)  Note that adding
 // an autoCopy to an operand does not change OUT set for that block even though
-// it adds a bit to the GEN set, because an autoCopy always corresponds to an
-// AST element that behaves as a kill.  Therefore, we don't have to update OUT
+// it adds a bit to the PROD set, because an autoCopy always corresponds to an
+// AST element that behaves as a consume.  Therefore, we don't have to update OUT
 // sets before performing the backward flow.
 //
 // For backward flow, the OUT set of any terminal block is set to all zeroes,
 // and this is propagated back through the flow graph using equation (2)
 // above.  Then we use the forward flow equation (1) to compute the live set at
 // the end of the same block.  Subtracting OUT from this gives the set of
-// symbols that have to be killed before the end of that block, i.e.:
-//  to_kill = IN[i] + GEN[i] - KILL[i] - OUT[i]. (3)
+// symbols that have to be consumeed before the end of that block, i.e.:
+//  to_cons = IN[i] + PROD[i] - CONS[i] - OUT[i]. (3)
 // A destructor call is added for each of this symbols in the reverse of their
 // declaration order.  Each added destructor call effectively sets the
-// corresponding KILL[i,j] and clears the corresponding GEN[i,j].  
+// corresponding CONS[i,j] and clears the corresponding PROD[i,j].  
 //
 
 #include "passes.h" // The main routine is declared here.
@@ -450,6 +451,54 @@ static int bitwiseCopyArg(SymExpr* se,
     }
   }
   return 0;
+}
+
+
+// Returns true if the given SymExpr is being read.
+// We use a simple form here that ignores references.
+// If it turns out that we need reference tracking, we should use the version
+// from copyPropagation.cpp.
+static bool isUsed(SymExpr* se)
+{
+  // We are only interested in CallExprs here (not DefExprs, e.g.)
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+  {
+    if (call->isResolved())
+    {
+      // Any use within a function call is assumed to be a read,
+      // except if the argument has out intent.
+      ArgSymbol* formal = actual_to_formal(se);
+      if (formal->intent & INTENT_FLAG_OUT)
+        return false;
+
+      return true;
+    }
+    else
+    {
+      // This is a primitive.
+      switch(call->primitive->tag)
+      {
+       default:
+        // Assume that, generally speaking, that a primitive reads its argument.
+        return true;
+
+       case PRIM_MOVE:
+       case PRIM_ASSIGN:
+        {
+          // The LHS of a move or assign is defined (not used).
+          Expr* lhs = call->get(1);
+          if (lhs == se)
+          {
+            return false;
+          }
+          return true;
+        }
+        break;
+      }
+    }
+  }
+
+  return false;
 }
 
 
@@ -749,7 +798,7 @@ static Expr* getLastNonflowStatement(BasicBlock* bb)
 
 
 static void processCreator(SymExpr* se, 
-                           BitVec* gen, BitVec* live,
+                           BitVec* prod, BitVec* live,
                            const AliasVectorMap& aliases,
                            SymbolIndexMap& symbolIndex)
 {
@@ -758,11 +807,11 @@ static void processCreator(SymExpr* se,
   size_t index = symbolIndex[sym];
 
   // We expect that each symbol gets constructed only once, so if we are
-  // about to set a bit in the gen set, it cannot already be true.
+  // about to set a bit in the prod set, it cannot already be true.
   // If this assumption turns out to be false, it means we are reusing
   // symbols.  That case can be accommodated, but it means we should
   // insert a destructor call ahead of the symbol's reinitialization.
-  if (gen->get(index))
+  if (prod->get(index))
     if (fWarnOwnership)
       USR_WARN(sym, "Reinitialization of sym");
 
@@ -789,13 +838,13 @@ static void processCreator(SymExpr* se,
   // the flow sets -- either all are owned or none are.  This will save time
   // and space.
   SymbolVector* aliasList = aliases.at(sym);
-  setAliasList(gen, *aliasList, symbolIndex);
+  setAliasList(prod, *aliasList, symbolIndex);
   setAliasList(live, *aliasList, symbolIndex);
 }
 
 
 static void processBitwiseCopy(SymExpr* se,
-                               BitVec* gen, BitVec* live, BitVec* kill,
+                               BitVec* prod, BitVec* live, BitVec* cons,
                                const AliasVectorMap& aliases,
                                SymbolIndexMap& symbolIndex)
 {
@@ -816,45 +865,57 @@ static void processBitwiseCopy(SymExpr* se,
 
   // If the two alias lists are identical, then the two symbols are in the
   // same alias clique.  Otherwise, ownership is being transferred out of one
-  // clique into the other.  When that happens, we clear the gen bit and set
-  // the kill bit for each member of the RHS clique.
+  // clique into the other.  When that happens, we clear the prod bit and set
+  // the cons bit for each member of the RHS clique.
   if (laliasList != raliasList)
   {
     resetAliasList(live, *raliasList, symbolIndex);
-    setAliasList(kill, *raliasList, symbolIndex);
+    setAliasList(cons, *raliasList, symbolIndex);
   }
 
-  // Now set the gen bit for each member of the lhs clique, but only if the RHS
+  // Now set the produce bit for each member of the lhs clique, but only if the RHS
   // was owned.
   if (owned)
   {
-    setAliasList(gen, *laliasList, symbolIndex);
+    setAliasList(prod, *laliasList, symbolIndex);
     setAliasList(live, *laliasList, symbolIndex);
   }
 }
 
 
+// If thsi call uses the given symbol, then add that symbol and all its aliases
+// to the use set.
+static void processUser(SymExpr* se, BitVec* use,
+                        const AliasVectorMap& aliases,
+                        SymbolIndexMap& symbolIndex)
+{
+  // All members of an alias clique point to the same SymbolVector, so we only
+  // need to look up one arbitrarily and then run the list.
+  Symbol* sym = se->var;
+  SymbolVector* aliasList = aliases.at(sym);
+  setAliasList(use, *aliasList, symbolIndex);
+}
+
+
 // If this call acts like a destructor, then add the symbols it affects to the
-// kill set and remove them from the gen set.
+// cons set and remove them from the prod set.
 static void processConsumer(SymExpr* se, 
-                            BitVec* live, BitVec* kill,
+                            BitVec* live, BitVec* cons,
                             const AliasVectorMap& aliases,
                             SymbolIndexMap& symbolIndex)
 {
-  // Add all members of an alias clique to the kill set and remove them from
-  // the gen set.
-
   // All members of an alias clique point to the same SymbolVector, so we only
   // need to look up one arbitrarily and then run the list.
   Symbol* sym = se->var;
   SymbolVector* aliasList = aliases.at(sym);
   resetAliasList(live, *aliasList, symbolIndex);
-  setAliasList(kill, *aliasList, symbolIndex);
+  setAliasList(cons, *aliasList, symbolIndex);
 }
 
 
 static void computeTransitions(SymExprVector& symExprs,
-                               BitVec* gen, BitVec* live, BitVec* kill,
+                               BitVec* prod, BitVec* live,
+                               BitVec* use, BitVec* cons,
                                AliasVectorMap& aliases,
                                SymbolIndexMap& symbolIndex)
 {
@@ -867,13 +928,16 @@ static void computeTransitions(SymExprVector& symExprs,
       continue;
 
     if (isCreated(se))
-      processCreator(se, gen, live, aliases, symbolIndex);
+      processCreator(se, prod, live, aliases, symbolIndex);
 
     if (bitwiseCopyArg(se, symbolIndex) == 1)
-      processBitwiseCopy(se, gen, live, kill, aliases, symbolIndex);
+      processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
+
+    if (isUsed(se))
+      processUser(se, use, aliases, symbolIndex);
 
     if (isConsumed(se))
-      processConsumer(se, live, kill, aliases, symbolIndex);
+      processConsumer(se, live, cons, aliases, symbolIndex);
   }
 }
 
@@ -885,7 +949,8 @@ static void computeTransitions(SymExprVector& symExprs,
 // become methods, we'll key off the CONSTRUCTOR flag and modify the state of
 // the first (receiver) argument.
 static void computeTransitions(BasicBlock& bb,
-                               BitVec* gen, BitVec* live, BitVec* kill,
+                               BitVec* prod, BitVec* live,
+                               BitVec* use, BitVec* cons,
                                AliasVectorMap& aliases,
                                SymbolIndexMap& symbolIndex)
 {
@@ -897,13 +962,13 @@ static void computeTransitions(BasicBlock& bb,
     SymExprVector symExprs;
     collectSymExprsSTL(expr, symExprs);
 
-    computeTransitions(symExprs, gen, live, kill, aliases, symbolIndex);
+    computeTransitions(symExprs, prod, live, use, cons, aliases, symbolIndex);
   }
 }
 
 
 static void computeTransitions(FnSymbol* fn,
-                               FlowSet& GEN, FlowSet& KILL,
+                               FlowSet& PROD, FlowSet& USE, FlowSet& CONS,
                                AliasVectorMap& aliases,
                                SymbolIndexMap& symbolIndex)
 {
@@ -911,8 +976,9 @@ static void computeTransitions(FnSymbol* fn,
   for (size_t i = 0; i < nbbs; ++i)
   {
     // On the first pass, we compute live and then throw it away.
-    BitVec* live = new BitVec(GEN[i]->size());
-    computeTransitions(*(*fn->basicBlocks)[i], GEN[i], live, KILL[i], aliases, symbolIndex);
+    BitVec* live = new BitVec(PROD[i]->size());
+    computeTransitions(*(*fn->basicBlocks)[i], PROD[i], live, USE[i], CONS[i],
+                       aliases, symbolIndex);
     delete live;
   }
 }
@@ -1008,7 +1074,7 @@ static void insertAutoCopy(SymExpr* se)
 
 
 static void insertAutoCopy(SymExprVector& symExprs,
-                           BitVec* gen, BitVec* live, BitVec* kill,
+                           BitVec* prod, BitVec* live, BitVec* cons,
                            const AliasVectorMap& aliases,
                            SymbolIndexMap& symbolIndex)
 {
@@ -1022,11 +1088,11 @@ static void insertAutoCopy(SymExprVector& symExprs,
 
     // Set a bit in the live set if this is a constructor.
     if (isCreated(se))
-      processCreator(se, gen, live, aliases, symbolIndex);
+      processCreator(se, prod, live, aliases, symbolIndex);
 
     // Pass ownership to this symbol if it is the result of a bitwise copy.
     if (bitwiseCopyArg(se, symbolIndex) == 1)
-      processBitwiseCopy(se, gen, live, kill, aliases, symbolIndex);
+      processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
 
     if (isConsumed(se))
     {
@@ -1036,17 +1102,17 @@ static void insertAutoCopy(SymExprVector& symExprs,
       if (!live->get(index))
       {
         insertAutoCopy(se);
-        gen->set(index);
+        prod->set(index);
       }
 
-      processConsumer(se, live, kill, aliases, symbolIndex);
+      processConsumer(se, live, cons, aliases, symbolIndex);
     }
   }
 }
 
 
 static void insertAutoCopy(BasicBlock& bb,
-                           BitVec* gen, BitVec* live, BitVec* kill,
+                           BitVec* prod, BitVec* live, BitVec* cons,
                            const SymbolVector& symbols,
                            SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
@@ -1056,13 +1122,13 @@ static void insertAutoCopy(BasicBlock& bb,
     SymExprVector symExprs;
     collectSymExprsSTL(expr, symExprs);
 
-    insertAutoCopy(symExprs, gen, live, kill, aliases, symbolIndex);
+    insertAutoCopy(symExprs, prod, live, cons, aliases, symbolIndex);
   }
 }                          
 
 
 static void insertAutoCopy(FnSymbol* fn,
-                              FlowSet& GEN, FlowSet& KILL,
+                              FlowSet& PROD, FlowSet& CONS,
                               FlowSet& IN, FlowSet& OUT,
                               const SymbolVector& symbols,
                               SymbolIndexMap& symbolIndex,
@@ -1076,22 +1142,22 @@ static void insertAutoCopy(FnSymbol* fn,
     BasicBlock& bb = *(*fn->basicBlocks)[i];
     // For this block traversal, we initialize live = IN[i].
     BitVec* live = new BitVec(*IN[i]);
-    // We use temporaries for the gen and kill sets.  The results of
+    // We use temporaries for the prod and cons sets.  The results of
     // global flow analysis should yield the same values, and this allows us to
     // test that assertion.
-    BitVec* gen = new BitVec(GEN[i]->size());
-    BitVec* kill = new BitVec(KILL[i]->size());
-    insertAutoCopy(bb, gen, live, kill, symbols, symbolIndex, aliases);
-    delete kill; kill = 0;
+    BitVec* prod = new BitVec(PROD[i]->size());
+    BitVec* cons = new BitVec(CONS[i]->size());
+    insertAutoCopy(bb, prod, live, cons, symbols, symbolIndex, aliases);
+    delete cons; cons = 0;
     delete live; live = 0;
-    delete gen; gen = 0;
+    delete prod; prod = 0;
   }
 }
 
 
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
-static void insertAutoDestroy(BasicBlock* bb, BitVec* to_kill, 
+static void insertAutoDestroy(BasicBlock* bb, BitVec* to_cons, 
                               const SymbolVector& symbols,
                               SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
@@ -1115,15 +1181,15 @@ static void insertAutoDestroy(BasicBlock* bb, BitVec* to_kill,
   // For each true bit in the bit vector, add an autodestroy call.
   // But destroying one member of an alias list destroys them all.
   SET_LINENO(stmt);
-  for (size_t j = 0; j < to_kill->size(); ++j)
+  for (size_t j = 0; j < to_cons->size(); ++j)
   {
-    if (to_kill->get(j))
+    if (to_cons->get(j))
     {
       Symbol* sym = symbols[j];
 
-      // Remove this symbol and all its aliases from the kill set.
+      // Remove this symbol and all its aliases from the cons set.
       SymbolVector* aliasList = aliases.at(sym);
-      resetAliasList(to_kill, *aliasList, symbolIndex);
+      resetAliasList(to_cons, *aliasList, symbolIndex);
 
       FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
       if (autoDestroy == NULL)
@@ -1145,7 +1211,7 @@ static void insertAutoDestroy(BasicBlock* bb, BitVec* to_kill,
 
 
 static void insertAutoDestroy(FnSymbol* fn,
-                              FlowSet& GEN, FlowSet& KILL,
+                              FlowSet& PROD, FlowSet& CONS,
                               FlowSet& IN, FlowSet& OUT,
                               const SymbolVector& symbols,
                               SymbolIndexMap& symbolIndex,
@@ -1157,19 +1223,83 @@ static void insertAutoDestroy(FnSymbol* fn,
     // We need to insert an autodestroy call for each symbol that is owned
     // (live) at the end of the block but is unowned (dead) in the OUT set.
     BasicBlock* bb = (*fn->basicBlocks)[i];
-    BitVec to_kill = *IN[i] + *GEN[i] - *KILL[i] - *OUT[i];
-    insertAutoDestroy(bb, &to_kill, symbols, symbolIndex, aliases);
+    BitVec to_cons = *IN[i] + *PROD[i] - *CONS[i] - *OUT[i];
+    insertAutoDestroy(bb, &to_cons, symbols, symbolIndex, aliases);
+  }
+}
+
+
+// We use backward flow to determine the last block in each execution path in
+// which a given symbol is used.
+// We only care about the last use: we assume that either variables are not
+// redefined (single-assignment) or an owned variable is properly consumed
+// where it is redefined.
+//
+// First, we use IN and OUT as temporary sets to flow future use backwards.  If
+// a use in one block sets the corresponding OUT bit in a preceding block, that
+// means the preceding block is not the last use.  All OUT sets are initially
+// empty.  Then we compute:
+//  IN[i] = OUT[i] + USE[i]
+//  OUT[i] += IN[j], for every j a successor of block i.
+//  and iterate.
+// Next, we cull bits from the USE set in blocks where there is a correponding
+// OUT bit:
+//  USE[i] -= OUT[i]
+//
+static void backwardFlowUse(const BasicBlock::BasicBlockVector& bbs,
+                            FlowSet& USE, FlowSet& IN, FlowSet& OUT)
+{
+  size_t nbbs = bbs.size();
+
+  // Assume that IN and OUT are both empty.
+
+  bool changed;
+  do {
+    changed = false;
+
+    for (size_t i = nbbs; i--; )
+    {
+      if (bbs[i]->outs.size() == 0)
+      {
+        OUT[i]->clear();
+      }
+      else
+      {
+        BitVec* out = OUT[i];
+        for_vector(BasicBlock, succ, bbs[i]->outs)
+          *out |= *IN[succ->id];
+      }
+      
+      BitVec new_in = *OUT[i] + *USE[i];
+      if (new_in != *IN[i])
+      {
+        *IN[i] = new_in;
+        changed = true;
+      }
+    }
+  } while (changed);
+
+  // Now remove bits from USE[i] where OUT[i] is also true.
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    *USE[i] -= *OUT[i];
   }
 }
 
 
 static void forwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
-                                 FlowSet& GEN, FlowSet& KILL,
-                                 FlowSet& IN, FlowSet& OUT,
-                                 const AliasVectorMap& aliases,
-                                 SymbolIndexMap& symbolIndex)
+                                 FlowSet& PROD, FlowSet& USE, FlowSet& CONS,
+                                 FlowSet& IN, FlowSet& OUT)
 {
   size_t nbbs = bbs.size();
+
+  // The IN sets are initially all zeroes and the OUT sets are initially all ones.
+  for(size_t i = 0; i < nbbs; ++i)
+  {
+    IN[i]->clear();
+    OUT[i]->set();
+  }
+
   bool changed;
   do {
     changed = false;
@@ -1178,26 +1308,30 @@ static void forwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
     {
       if (bbs[i]->ins.size() == 0)
       {
-        // This is an initial block because it has no predecessors
+        // This is an initial block because it has no predecessors.
         // Its IN set must be empty.
         IN[i]->clear();
       }
       else
       {
+        // Otherwise, the in set is the intersection of the OUTs of its predecessors.
         BitVec* in = IN[i];
-        for_vector(BasicBlock, succ, bbs[i]->outs)
-          *in &= *IN[succ->id];
+        in->set();
+        for_vector(BasicBlock, pred, bbs[i]->ins)
+          *in &= *OUT[pred->id];
       }
-      BitVec new_out = *IN[i] + *GEN[i] - *KILL[i];
+
+
+      BitVec new_out = *IN[i] + *PROD[i] - *CONS[i] - *USE[i];
       if (new_out != *OUT[i])
       {
 #if 0
-        // I assume we don't have to propagate aliases in forward flow, because
+        // We don't have to propagate aliases in forward flow, because
         // the bits in an alias clique are always set or reset in concert.  If
         // that assumption breaks down (because the membership in a clique
         // changes from block to block), then we either need to maintain
         // separate alias lists for each block or just re-run the block-wise
-        // analysis.
+        // analysis -- whichever appears to be cheaper.
         BitVec* added = new_out - *OUT[i];
         propagateAliases(added, new_out, aliases, symbolIndex);
 #endif
@@ -1209,6 +1343,12 @@ static void forwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
 }
 
 
+// Backward flow is no longer needed.  The computation of the last-use takes
+// care of determining the point at which autoDestroy calls need to be
+// inserted.  Those calls are consumers, so ownership of a given symbol does
+// not propagate out of a block that contains a corresponding USE bit.
+// Owned symbols are eagerly destroyed in a block where their USE bit is true.
+#if 0
 // In backward flow, we adjust the out set so it is the intersection of the IN
 // sets of its successors.  If the block is a terminal block (a block with no
 // successors), however, we set its OUT to all zeroes.  This forces ownership to
@@ -1218,7 +1358,7 @@ static void forwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
 // Backward flow through the blocks allows the destruction of temporaries to
 // flow backward to the end of the block in which they are last used.  
 static void backwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
-                                  FlowSet& GEN, FlowSet& KILL,
+                                  FlowSet& PROD, FlowSet& CONS,
                                   FlowSet& IN, FlowSet& OUT)
 {
   size_t nbbs = bbs.size();
@@ -1240,7 +1380,7 @@ static void backwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
         for_vector(BasicBlock, succ, bbs[i]->outs)
           *out &= *IN[succ->id];
       }
-      BitVec new_in = *OUT[i] + *KILL[i] - *GEN[i];
+      BitVec new_in = *OUT[i] + *CONS[i] - *PROD[i];
       if (new_in != *IN[i])
       {
         *IN[i] = new_in;
@@ -1249,6 +1389,7 @@ static void backwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
     }
   } while (changed);
 }
+#endif
 
 
 // Insert autoDestroy calls in a function as needed.                                  
@@ -1279,30 +1420,39 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
 
   size_t nbbs = fn->basicBlocks->size();
   size_t size = symbols.size();
-  FlowSet GEN;
-  FlowSet KILL;
+  FlowSet PROD;
+  FlowSet USE;
+  FlowSet CONS;
   FlowSet IN;
   FlowSet OUT;
 
-  createFlowSet(GEN, nbbs, size);
-  createFlowSet(KILL, nbbs, size);
+  createFlowSet(PROD, nbbs, size);
+  createFlowSet(USE,  nbbs, size);
+  createFlowSet(CONS, nbbs, size);
   createFlowSet(IN,   nbbs, size);
   createFlowSet(OUT,  nbbs, size);
 
-  computeTransitions(fn, GEN, KILL, aliases, symbolIndex);
+  computeTransitions(fn, PROD, USE, CONS, aliases, symbolIndex);
 
 #if DEBUG_AMM
   if (debug > 0)
   {
-    printf("GEN:\n"); BasicBlock::printBitVectorSets(GEN);
-    printf("KILL:\n"); BasicBlock::printBitVectorSets(KILL);
+    printf("PROD:\n"); BasicBlock::printBitVectorSets(PROD);
+    printf("USE:\n"); BasicBlock::printBitVectorSets(USE);
+    printf("CONS:\n"); BasicBlock::printBitVectorSets(CONS);
   }
 #endif
 
-  // The OUT sets are initially all ones.
-  for(size_t i = 0; i < nbbs; ++i) OUT[i]->set();
-  forwardFlowOwnership(*fn->basicBlocks, GEN, KILL, IN, OUT,
-                       aliases, symbolIndex);
+  backwardFlowUse(*fn->basicBlocks, USE, IN, OUT);
+
+#if DEBUG_AMM
+  if (debug > 0)
+  {
+    printf("USE:\n"); BasicBlock::printBitVectorSets(USE);
+  }
+#endif
+
+  forwardFlowOwnership(*fn->basicBlocks, PROD, USE, CONS, IN, OUT);
 
 #if DEBUG_AMM
   if (debug > 0)
@@ -1312,17 +1462,18 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   }
 #endif
 
-  insertAutoCopy(fn, GEN, KILL, IN, OUT, symbols, symbolIndex, aliases);
+  insertAutoCopy(fn, PROD, CONS, IN, OUT, symbols, symbolIndex, aliases);
 
+#if 0
   // We need our own equation for backward flow.
   // Backward flow determines where ownership must be given up through a
   // delete, by making the OUT set the AND of all its successor INs and the IN
-  // be no greater than OUT | KILL (that is, every symbol owned at the
-  // beginning of the block (IN) must either appear in OUT or be killed in the
+  // be no greater than OUT | CONS (that is, every symbol owned at the
+  // beginning of the block (IN) must either appear in OUT or be consed in the
   // block.
-  // Also, kills are propagated backward, so that a variable owned on one path
+  // Also, consumptions are propagated backward, so that a variable owned on one path
   // into a node is owned on all such paths.
-  backwardFlowOwnership(*fn->basicBlocks, GEN, KILL, IN, OUT);
+  backwardFlowOwnership(*fn->basicBlocks, PROD, CONS, IN, OUT);
 
 #if DEBUG_AMM
   if (debug > 0)
@@ -1331,13 +1482,15 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
     printf("OUT:\n"); BasicBlock::printBitVectorSets(OUT);
   }
 #endif
+#endif
 
-  insertAutoDestroy(fn, GEN, KILL, IN, OUT, symbols, symbolIndex, aliases);
+  insertAutoDestroy(fn, PROD, CONS, IN, OUT, symbols, symbolIndex, aliases);
 
-  destroyFlowSet(GEN);
-  destroyFlowSet(KILL);
-  destroyFlowSet(IN);
   destroyFlowSet(OUT);
+  destroyFlowSet(IN);
+  destroyFlowSet(CONS);
+  destroyFlowSet(USE);
+  destroyFlowSet(PROD);
 }
 
 
