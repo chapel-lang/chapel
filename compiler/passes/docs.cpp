@@ -17,24 +17,25 @@
  * limitations under the License.
  */
 
-#include <map>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <iterator>
 #include <sstream>
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "driver.h"
-#include "passes.h"
-#include "symbol.h"
-#include "expr.h"
-#include "stmt.h"
-#include "docs.h"
-#include "mysystem.h"
-#include "stringutil.h"
-#include "AstToText.h"
 #include "AstPrintDocs.h"
+#include "AstToText.h"
+#include "driver.h"
+#include "expr.h"
+#include "files.h"
+#include "mysystem.h"
+#include "passes.h"
+#include "stmt.h"
+#include "symbol.h"
+#include "stringutil.h"
+
+#include "docs.h"
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -52,21 +53,46 @@ void docs(void) {
 
   if (fDocs) {
     // Open the directory to store the docs
-    std::string docsDir = (strlen(fDocsFolder) != 0) ? fDocsFolder : "docs";
-    std::string docsFolderName = docsDir;
 
-    if (!fDocsTextOnly) {
-      docsFolderName = generateSphinxProject(docsDir);
+    // This is the final location for the output format (e.g. the html files.).
+    std::string docsOutputDir;
+    if (strlen(fDocsFolder) > 0) {
+      docsOutputDir = fDocsFolder;
+    } else {
+      docsOutputDir = astr(getCwd(), "/docs");
     }
 
-    mkdir(docsFolderName.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    // Root of the sphinx project and generated rst files. If
+    // --docs-save-sphinx is not specified, it will be a temp dir.
+    std::string docsTempDir = "";
+    std::string docsSphinxDir;
+    if (strlen(fDocsSphinxDir) > 0) {
+      docsSphinxDir = fDocsSphinxDir;
+    } else {
+      docsTempDir = makeTempDir("chpldoc-");
+      docsSphinxDir = docsTempDir;
+    }
 
-    
+    // The location of intermediate rst files.
+    std::string docsRstDir;
+    if (fDocsTextOnly) {
+      // For text-only mode, the output and working location is the same.
+      docsRstDir = docsOutputDir;
+    } else {
+      // For rst mode, the working location is somewhere inside the temp dir.
+      docsRstDir = generateSphinxProject(docsSphinxDir);
+    }
+
+    // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
+    mkdir(docsRstDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    mkdir(docsOutputDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+
+
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!mod->hasFlag(FLAG_NO_DOC) && !devOnlyModule(mod)) {
         if (isNotSubmodule(mod)) {
-          std::ofstream *file = openFileFromMod(mod, docsFolderName);
+          std::ofstream *file = openFileFromMod(mod, docsRstDir);
 
           AstPrintDocs *docsVisitor = new AstPrintDocs(file);
           mod->accept(docsVisitor);
@@ -84,7 +110,11 @@ void docs(void) {
     }
 
     if (!fDocsTextOnly) {
-      generateSphinxOutput(docsDir);
+      generateSphinxOutput(docsSphinxDir, docsOutputDir);
+    }
+
+    if (docsTempDir.length() > 0) {
+      deleteDir(docsTempDir.c_str());
     }
   }
 }
@@ -221,45 +251,52 @@ void createDocsFileFolders(std::string filename) {
  * should be placed.
  */
 std::string generateSphinxProject(std::string dirpath) {
-  // FIXME: This ought to be done in a TMPDIR, unless --save-rst is
-  //        provided... (thomasvandoren, 2015-01-29)
-
   // Create the output dir under the docs output dir.
-  const char * htmldir = astr(dirpath.c_str(), "/html");
+  const char * sphinxDir = dirpath.c_str();
 
   // Ensure output directory exists.
-  const char * mkdirCmd = astr("mkdir -p ", htmldir);
+  const char * mkdirCmd = astr("mkdir -p ", sphinxDir);
   mysystem(mkdirCmd, "creating docs output dir");
 
   // Copy the sphinx template into the output dir.
   const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
-  const char * cmd = astr("cp -r ", sphinxTemplate, " ", htmldir, "/");
+  const char * cmd = astr("cp -r ", sphinxTemplate, " ", sphinxDir, "/");
   mysystem(cmd, "copying chpldoc sphinx template");
 
-  const char * moddir = astr(htmldir, "/source/modules");
+  const char * moddir = astr(sphinxDir, "/source/modules");
   return std::string(moddir);
 }
 
-/* Call `make html` from inside sphinx project. */
-void generateSphinxOutput(std::string dirpath) {
-  const char * htmldir = astr(dirpath.c_str(), "/html");
-
-  // The virtualenv activate script is at:
-  //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/activate
-  const char * activate = astr(
+/*
+ * Invoke sphinx-build using sphinxDir to find conf.py and rst sources, and
+ * outputDir for generated html files.
+ */
+void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
+  // The virtualenv active and sphinx-build scripts are in:
+  //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/
+  const char * venvBinDir = astr(
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
-    CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/activate");
+    CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/");
+  const char * activate = astr(venvBinDir, "activate");
+  const char * sphinxBuild = astr(venvBinDir, "sphinx-build");
 
-  // Run: `. $activate && cd $htmldir && $CHPL_MAKE html`
+  // Run:
+  //   . $activate &&
+  //     sphinx-build -b html
+  //     -d $sphinxDir/build/doctrees -W
+  //     $sphinxDir/source $outputDir
+  const char * cmdPrefix = astr(". ", activate, " && ");
   const char * cmd = astr(
-    ". ", activate,
-    " && cd ", htmldir, " && ",
-    CHPL_MAKE, " html");
+    cmdPrefix,
+    sphinxBuild, " -b html -d ",
+    sphinxDir.c_str(), "/build/doctrees -W ",
+    sphinxDir.c_str(), "/source ", outputDir.c_str());
   mysystem(cmd, "building html output from chpldoc sphinx project");
+  printf("HTML files are at: %s\n", outputDir.c_str());
 }
 
 
-std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
+std::string filenameFromMod(ModuleSymbol *mod, std::string docsWorkDir) {
   std::string filename = mod->filename;
 
   if (mod->modTag == MOD_INTERNAL) {
@@ -274,7 +311,7 @@ std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
       filename = "";
     }
   }
-  filename = docsFolderName + "/" + filename;
+  filename = docsWorkDir + "/" + filename;
   createDocsFileFolders(filename);
 
   // Creates files for each top level module.
@@ -288,7 +325,7 @@ std::string filenameFromMod(ModuleSymbol *mod, std::string docsFolderName) {
 }
 
 
-std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsFolderName) {
-  std::string filename = filenameFromMod(mod, docsFolderName);
+std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsWorkDir) {
+  std::string filename = filenameFromMod(mod, docsWorkDir);
   return new std::ofstream(filename.c_str(), std::ios::out);
 }

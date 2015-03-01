@@ -320,6 +320,9 @@ OPTIONS
   --docs-text-only  Specify that documents should use a text output file
                     format rather than HTML.
 
+  --docs-save-sphinx <directory>  Save generated Sphinx project in
+                                  directory.
+
   Compilation Trace Options
 
   --[no-]print-commands  Prints the system commands that the compiler 

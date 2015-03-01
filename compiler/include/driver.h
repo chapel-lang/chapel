@@ -150,6 +150,7 @@ extern bool fDocsAlphabetize;
 extern char fDocsCommentLabel[256];
 extern char fDocsFolder[256];
 extern bool fDocsTextOnly;
+extern char fDocsSphinxDir[256];
 extern bool fDocsIncludeExterns;
 extern char defaultDist[256];
 extern char mainModuleName[256];
