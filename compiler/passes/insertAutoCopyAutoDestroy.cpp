@@ -454,48 +454,26 @@ static int bitwiseCopyArg(SymExpr* se,
 }
 
 
-// Returns true if the given SymExpr is being read.
+// Returns true if the given SymExpr is being accessed.
+// Writes as well as reads return true, so the "last use" of a variable will be
+// its definition if it is never read.
 // We use a simple form here that ignores references.
 // If it turns out that we need reference tracking, we should use the version
 // from copyPropagation.cpp.
 static bool isUsed(SymExpr* se)
 {
   // We are only interested in CallExprs here (not DefExprs, e.g.)
-  if (CallExpr* call = toCallExpr(se->parentExpr))
+  if (isCallExpr(se->parentExpr))
   {
-    if (call->isResolved())
-    {
-      // Any use within a function call is assumed to be a read,
-      // except if the argument has out intent.
-      ArgSymbol* formal = actual_to_formal(se);
-      if (formal->intent & INTENT_FLAG_OUT)
-        return false;
-
-      return true;
-    }
-    else
-    {
-      // This is a primitive.
-      switch(call->primitive->tag)
-      {
-       default:
-        // Assume that, generally speaking, that a primitive reads its argument.
-        return true;
-
-       case PRIM_MOVE:
-       case PRIM_ASSIGN:
-        {
-          // The LHS of a move or assign is defined (not used).
-          Expr* lhs = call->get(1);
-          if (lhs == se)
-          {
-            return false;
-          }
-          return true;
-        }
-        break;
-      }
-    }
+    return true;
+  }
+  else if (isDefExpr(se->parentExpr))
+  {
+    return false;
+  }
+  else
+  {
+    INT_FATAL(se, "A SymExpr appears in an unexpected context.");
   }
 
   return false;
@@ -1259,17 +1237,27 @@ static void backwardFlowUse(const BasicBlock::BasicBlockVector& bbs,
 
     for (size_t i = nbbs; i--; )
     {
+      // Compute the OUT set for block i.
+      // A true bit means that the symbol is used on all paths out of that block.
       if (bbs[i]->outs.size() == 0)
       {
+        // This is a terminal block, so the symbol is not used in any successor
+        // block (because there are none).
         OUT[i]->clear();
       }
       else
       {
-        BitVec* out = OUT[i];
+        // Otherwise, OUT is the union of the IN sets in all successor blocks.
+        // (If the last use of a symbol is in one or more successor branches,
+        // it must flow through this block.
+        BitVec& out = *OUT[i];
+        out.clear();
         for_vector(BasicBlock, succ, bbs[i]->outs)
-          *out |= *IN[succ->id];
+          out |= *IN[succ->id];
       }
-      
+
+      // Within a block, a bit in IN transitions to true if the symbol is used
+      // within that block.
       BitVec new_in = *OUT[i] + *USE[i];
       if (new_in != *IN[i])
       {
@@ -1279,10 +1267,24 @@ static void backwardFlowUse(const BasicBlock::BasicBlockVector& bbs,
     }
   } while (changed);
 
-  // Now remove bits from USE[i] where OUT[i] is also true.
+  // Now recompute IN as the union of the OUTs of its predecessors.
+  // The last use of a symbol (on a given branch) is where this IN is true and
+  // OUT for the same block is false.
   for (size_t i = 0; i < nbbs; ++i)
   {
-    *USE[i] -= *OUT[i];
+    if (bbs[i]->ins.size() == 0)
+    {
+      IN[i]->clear();
+    }
+    else
+    {
+      BitVec& in = *IN[i];
+      in.clear();
+      for_vector(BasicBlock, pred, bbs[i]->ins)
+        in |= *OUT[pred->id];
+    }
+
+    *USE[i] = *IN[i] - *OUT[i];
   }
 }
 
@@ -1340,6 +1342,20 @@ static void forwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
       }
     }
   } while (changed);
+
+  // We set the OUT set of any terminal block to all zeroes, to force cleanup
+  // of any variables that are unused at that point. 
+  // TODO: Try disabling this and see if it is needed after reworking the USE
+  // computation.
+#if 1
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    if (bbs[i]->outs.size() == 0)
+    {
+      OUT[i]->clear();
+    }
+  }
+#endif
 }
 
 
