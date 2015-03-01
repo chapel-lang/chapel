@@ -87,17 +87,6 @@ void ensureDirExists(const char* dirname, const char* explanation) {
 }
 
 
-/* Returns the current working directory. */
-const char* getCwd() {
-  char cwd[PATH_MAX];
-  if (const char* result = getcwd(cwd, PATH_MAX)) {
-    return result;
-  } else {
-    return "";
-  }
-}
-
-
 static void removeSpacesFromString(char* str)
 {
   char* src = str;
@@ -940,6 +929,21 @@ static int sys_getcwd(char** path_out)
   return 0;
 }
 
+
+/*
+ * Returns the current working directory. Does not report failures. Use
+ * sys_getcwd() if you need error reports.
+ */
+const char* getCwd() {
+  const char* result = getcwd(NULL, PATH_MAX);
+  if (result) {
+    return result;
+  } else {
+    return "";
+  }
+}
+
+
 // Find the path to the running program
 // (or return NULL if we couldn't figure it out).
 // The return value must be freed by the caller.
@@ -1040,4 +1044,3 @@ bool isSameFile(const char* pathA, const char* pathB)
 
   return false;
 }
-
