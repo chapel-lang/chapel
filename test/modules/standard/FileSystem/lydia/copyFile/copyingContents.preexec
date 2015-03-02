@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+import os, stat
+
+os.chmod("foo.txt", stat.S_IRUSR);
+# I need a better way to ensure that foo.txt has permissions that will be
+# distinct from the file that is created.

@@ -109,10 +109,14 @@ proc chown(name: string, uid: int, gid: int) {
   if err != ENOERR then ioerror(err, "in chown", name);
 }
 
+// FUTURE WORK:
+// When basename and joinPath are supported, enable dest to be a directory.
+
 /* Copies the contents and permissions of the file indicated by src into
-   the file or directory dest.  If dest is a directory, will create or
-   overwrite a file with the same basename as src in dest.  If metadata is
-   set to true, will also copy the metadata of the file to be copied.
+   the file or directory dest.  If dest is a directory, will return an error via
+   the out parameter.  If metadata is set to true, will also copy the metadata
+   of the file to be copied.  Other errors may also be returned via the out
+   parameter.
    err: a syserr used to indicate if an error occurred
    src: the source file whose contents and permissions are to be copied
    dest: the destination directory or file of the contents and permissions.
@@ -120,24 +124,35 @@ proc chown(name: string, uid: int, gid: int) {
              source file.
 */
 proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
-  copyFile(err, src, dest);
+  var destFile = dest;
+  if (isDir(err, destFile)) {
+    // destFile = joinPath(destFile, basename(src));
+    err = EISDIR;
+    // Supporting a destination directory requires getting the basename from
+    // the src (because we're using the same name) and joining it with the
+    // provided destination directory.  Both of those operations are part of
+    // the string portion, so we aren't supporting it just yet.
+    return;
+  } else {
+    if err != ENOERR then return;
+  }
+  copyFile(err, src, destFile);
   if err != ENOERR then return;
-  copyMode(err, src, dest);
+  copyMode(err, src, destFile);
   if err != ENOERR then return;
   // Get uid and gid from src
-  var uid = getUid(err, src);
+  var uid = getUID(err, src);
   if err != ENOERR then return;
-  var gid = getGid(err, src);
+  var gid = getGID(err, src);
   if err != ENOERR then return;
   // Change uid and gid to that of the src
-  chown(err, dest, uid, gid);
+  chown(err, destFile, uid, gid);
 }
 
 /* Copies the contents and permissions of the file indicated by src into
-   the file or directory dest.  If dest is a directory, will create or
-   overwrite a file with the same basename as src in dest.  If metadata is
-   set to true, will also copy the metadata of the file to be copied.  May
-   generate an error message.
+   the file or directory dest.  If dest is a directory, will generate an error
+   message.  If metadata is set to true, will also copy the metadata of the
+   file to be copied.  May generate other error messages.
    src: the source file whose contents and permissions are to be copied
    dest: the destination directory or file of the contents and permissions.
    metadata: a boolean indicating whether to copy metadata associated with the
@@ -160,20 +175,34 @@ proc copy(src: string, dest: string, metadata: bool = false) {
 proc copyFile(out err: syserr, src: string, dest: string) {
   // This implementation is based off of the python implementation for copyfile,
   // with some slight differences.
+  if (!exists(src)) {
+    err = ENOENT;
+    // Source didn't exist, we can't copy it.
+    return;
+  }
+  if (isDir(err, src) || isDir(err, dest)) {
+    // If the source is a directory, the user has made a mistake, so return an
+    // error.  The same is true if the destination is a directory.
+    err = EISDIR;
+    return;
+  }
 
-  // Check if the files are the same, error if yes
-  if (sameFile(err, src, dest)) {
+  if (err == ENOENT) {
+    err = ENOERR;
+    // We don't care if dest did not exist before, we'll create or overwrite it
+    // anyways.  We already know src exists.
+  } else if (sameFile(err, src, dest)) {
+    // Check if the files are the same, error if yes
+
+    // Don't need to check if they're the same file when we know dest didn't
+    // exist.
     err = EOPNOTSUPP;
     return;
     // Operation is not supported, since the two arguments are the same file.
   }
-  if (err == ENOENT) {
-    err = ENOERR;
-    // We don't care if one of those files did not exist before, we'll create
-    // or overwrite dest anyways.
-  }
 
   // Make sure dest is not a weird file (like a pipe)
+
   // Open src for reading, open dest for writing
   var srcFile = open(src, iomode.r);
   var destFile = open(dest, iomode.cw);
