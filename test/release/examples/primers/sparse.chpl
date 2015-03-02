@@ -176,8 +176,6 @@ writeln();
 //
 // ...reductions can be taken...
 //
-writeln("FOO");
-writeln(spsArr);
 var sparseSum = + reduce spsArr;
 var denseSum = + reduce [ij in dnsDom] spsArr(ij);
 

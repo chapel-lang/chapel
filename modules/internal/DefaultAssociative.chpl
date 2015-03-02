@@ -746,11 +746,12 @@ module DefaultAssociative {
     return _gen_key(u:int(64));
   }
   
+  // TODO: maybe move this into Strings.chpl
   // Use djb2 (Dan Bernstein in comp.lang.c)
   inline proc chpl__defaultHash(x : string): int(64) {
     var hash: int(64) = 0;
     for c in 0..#(x.length) {
-      hash = ((hash << 5) + hash) ^ x.base[c];
+      hash = ((hash << 5) + hash) ^ x.buff[c];
     }
     return _gen_key(hash);
   }
