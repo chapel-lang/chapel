@@ -37,6 +37,9 @@ qioerr chpl_fs_cwd(const char** working_dir);
 
 qioerr chpl_fs_exists(int* ret, const char* name);
 
+qioerr chpl_fs_get_uid(int* ret, const char* name);
+qioerr chpl_fs_get_gid(int* ret, const char* name);
+
 qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag);
 
 qioerr chpl_fs_is_dir(int* ret, const char* name);
@@ -55,6 +58,8 @@ qioerr chpl_fs_remove(const char* name);
 
 qioerr chpl_fs_samefile(int* ret, qio_file_t* file1, qio_file_t* file2);
 qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2);
+
+qioerr chpl_fs_symlink(const char* orig, const char* linkName);
 
 qioerr chpl_fs_viewmode(int* ret, const char* name);
 

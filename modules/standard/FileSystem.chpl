@@ -173,6 +173,54 @@ proc exists(name: string): bool {
   return ret;
 }
 
+/* Returns the group id associated with the file or directory specified by
+   name.  Returns any errors that occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred
+   name: a string used to indicate the file in question
+*/
+proc getGID(out err: syserr, name: string): int {
+  extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
+
+  var result: c_int;
+  err = chpl_fs_get_gid(result, name.c_str());
+  return result;
+}
+
+/* Returns the group id associated with the file or directory specified by
+   name.  May generate an error message.
+   name: a string used to indicate the file in question
+*/
+proc getGID(name: string): int {
+  var err: syserr = ENOERR;
+  var ret = getGID(err, name);
+  if err != ENOERR then ioerror(err, "in getGID");
+  return ret;
+}
+
+/* Returns the user id associated with the file or directory specified by
+   name.  Returns any errors that occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred
+   name: a string used to indicate the file in question
+*/
+proc getUID(out err: syserr, name: string): int {
+  extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
+
+  var result: c_int;
+  err = chpl_fs_get_uid(result, name.c_str());
+  return result;
+}
+
+/* Returns the user id associated with the file or directory specified by
+   name.  May generate an error message.
+   name: a string used to indicate the file in question
+*/
+proc getUID(name: string): int {
+  var err: syserr = ENOERR;
+  var ret = getUID(err, name);
+  if err != ENOERR then ioerror(err, "in getUID");
+  return ret;
+}
+
 /* Returns true if the name corresponds to a directory, false otherwise.
    err: a syserr used to indicate if an error occurred
    name: a string that could be the name of a directory.
@@ -425,6 +473,29 @@ proc sameFile(file1: file, file2: file): bool {
   var result = sameFile(err, file1, file2);
   if err != ENOERR then ioerror(err, "in sameFile " + file1.path, file2.path);
   return result;
+}
+
+/* Create a symbolic link pointing to oldName named newName.  May generate an
+   error message.
+   err: a syserr used to indicate if an error occurred during creation
+   oldName: the source file to be linked
+   newName: the location the symbolic link should live
+*/
+proc symlink(out err: syserr, oldName: string, newName: string) {
+  extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
+
+  err = chpl_fs_symlink(oldName.c_str(), newName.c_str());
+}
+
+/* Create a symbolic link pointing to oldName named sym.  May generate an error
+   message.
+   oldName: the source file to be linked
+   newName: the location the symbolic link should live
+*/
+proc symlink(oldName: string, newName: string) {
+  var err:syserr = ENOERR;
+  symlink(err, oldName, newName);
+  if err != ENOERR then ioerror(err, "in symlink " + oldName, newName);
 }
 
 /* Returns an integer representing the current permissions of the file specified
