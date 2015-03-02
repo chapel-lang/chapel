@@ -75,7 +75,7 @@ Expr* ipeResolve(Expr* expr, IpeScope* scope, IpeVars* vars)
   }
 
   if (false)
-    retval = false;
+    retval = NULL;
 
   else if (SymExpr*           sel = toSymExpr(expr))
     retval = resolve(sel, scope, vars);
