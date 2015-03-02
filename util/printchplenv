@@ -137,39 +137,39 @@ def print_mode(mode='list'):
         for pkg in all_3p_pkgs.split(' '):
             if pkg == 'dlmalloc':
                 print_var('  CHPL_DLMALLOC_UNIQ_CFG_PATH',
-                          chpl_dlmalloc_configs.get_uniq_cfg_path(),
+                          chpl_3p_dlmalloc_configs.get_uniq_cfg_path(),
                           mode, filters=('runtime',))
-                link_args_3p.extend(chpl_dlmalloc_configs.get_link_args())
+                link_args_3p.extend(chpl_3p_dlmalloc_configs.get_link_args())
             elif pkg == 'gmp':
                 print_var('  CHPL_GMP_UNIQ_CFG_PATH',
-                          chpl_gmp_configs.get_uniq_cfg_path(),
+                          chpl_3p_gmp_configs.get_uniq_cfg_path(),
                           mode, filters=('runtime',))
-                link_args_3p.extend(chpl_gmp_configs.get_link_args())
+                link_args_3p.extend(chpl_3p_gmp_configs.get_link_args())
             elif pkg == 'hwloc':
                 print_var('  CHPL_HWLOC_UNIQ_CFG_PATH',
-                          chpl_hwloc_configs.get_uniq_cfg_path(),
+                          chpl_3p_hwloc_configs.get_uniq_cfg_path(),
                           mode, filters=('runtime',))
-                link_args_3p.extend(chpl_hwloc_configs.get_link_args())
+                link_args_3p.extend(chpl_3p_hwloc_configs.get_link_args())
             elif pkg == 'massivethreads':
                 print_var('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH',
-                          chpl_massivethreads_configs.get_uniq_cfg_path(),
+                          chpl_3p_massivethreads_configs.get_uniq_cfg_path(),
                           mode, filters=('runtime',))
-                link_args_3p.extend(chpl_massivethreads_configs.get_link_args())
+                link_args_3p.extend(chpl_3p_massivethreads_configs.get_link_args())
             elif pkg == 'qthreads':
                 print_var('  CHPL_QTHREAD_UNIQ_CFG_PATH',
-                          chpl_qthreads_configs.get_uniq_cfg_path(),
+                          chpl_3p_qthreads_configs.get_uniq_cfg_path(),
                           mode, filters=('runtime',))
-                link_args_3p.extend(chpl_qthreads_configs.get_link_args())
+                link_args_3p.extend(chpl_3p_qthreads_configs.get_link_args())
             elif pkg == 're2':
                 print_var('  CHPL_RE2_UNIQ_CFG_PATH',
-                          chpl_re2_configs.get_uniq_cfg_path(),
+                          chpl_3p_re2_configs.get_uniq_cfg_path(),
                           mode, filters=('runtime',))
-                link_args_3p.extend(chpl_re2_configs.get_link_args())
+                link_args_3p.extend(chpl_3p_re2_configs.get_link_args())
             elif pkg == 'tcmalloc':
                 print_var('  CHPL_TCMALLOC_UNIQ_CFG_PATH',
-                          chpl_tcmalloc_configs.get_uniq_cfg_path(),
+                          chpl_3p_tcmalloc_configs.get_uniq_cfg_path(),
                           mode, filters=('runtime',))
-                link_args_3p.extend(chpl_tcmalloc_configs.get_link_args())
+                link_args_3p.extend(chpl_3p_tcmalloc_configs.get_link_args())
 
         link_args_3p_dedup=[]
         for arg in reversed(link_args_3p):

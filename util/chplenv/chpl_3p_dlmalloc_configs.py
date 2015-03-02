@@ -3,9 +3,11 @@ import utils
 from utils import memoize
 import third_party_utils
 
+@memoize
 def get_uniq_cfg_path():
     return third_party_utils.default_uniq_cfg_path()
 
+@memoize
 def get_link_args():
-    return third_party_utils.default_get_link_args('tcmalloc', '',
-                                                   ['libtcmalloc_minimal.la'])
+    return third_party_utils.default_get_link_args('dlmalloc',
+                                                   libs=['-ldlmalloc'])
