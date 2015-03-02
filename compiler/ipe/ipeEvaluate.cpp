@@ -371,7 +371,6 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
   bool     handled = false;
   IpeValue retval;
 
-
   if (gDebugLevelCalls > 0)
   {
     AstDumpToNode logger(stdout, 3);
@@ -383,6 +382,8 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     callExpr->accept(&logger);
     printf("\n\n");
   }
+
+  retval.iValue  = 0;
 
   if (false)
   {
