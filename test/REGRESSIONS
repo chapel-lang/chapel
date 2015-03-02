@@ -52,10 +52,26 @@ general
 Reviewed 2015-02-27
 ===================
 
-extra output in chpldoc (2015-02-27, tvandoren)
+assert src != dst failure (2015-02-28, michael)
+(gasnet.numa, dist-block)
 -----------------------------------------------
-[Error matching compiler output for chpldoc/classes/methodOutsideClassDef]
+[Error matching program output for distributions/robust/arithmetic/basics/test_reshape]
 
+assert src != dst failure (2015-02-28, michael)
+(linux32, fifo, gnu.darwin, verify, linux64, no-local, gasnet.fifo, memleaks, cygwin64, cygwin32)
+-----------------------------------------------------------------------------
+[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
+[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
+[Error matching program output for studies/madness/common/test_diff]
+[Error matching program output for studies/madness/common/test_gaxpy]
+[Error matching program output for studies/madness/common/test_likepy]
+[Error matching program output for studies/madness/common/test_mul]
+[Error matching program output for studies/madness/common/test_showboxes]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_diff (compopts: 1)]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy (compopts: 1)]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_mul]
+[Error matching program output for studies/madness/dinan/mad_chapel/test_showboxes]
 
 ===================
 linux64
@@ -84,21 +100,6 @@ GMP [u]int(64)/32-bit c_[u]long mismatches (since first run, 2014-11-12)
 Seg fault since first run (2014-12-07)
 --------------------------------------
 [Error matching compiler output for users/vass/type-tests.isSubtype]
-
-memmax/memthreshold flags are C types; should be Chapel types (2014-11-12)
---------------------------------------------------------------------------
-[Error matching program output for execflags/ferguson/help2]
-[Error matching program output for execflags/shannon/configs/help/configVar-Dash]
-[Error matching program output for execflags/shannon/configs/help/configVarHelp]
-[Error matching program output for execflags/shannon/configs/help/configVarModStrings1]
-[Error matching program output for execflags/shannon/configs/help/configVarModStrings2]
-[Error matching program output for execflags/shannon/configs/help/configVarSetOver]
-[Error matching program output for execflags/shannon/configs/help/configVarSetTwoTypes]
-[Error matching program output for execflags/shannon/configs/help/configVarTwoModules]
-[Error matching program output for execflags/shannon/configs/help/varNameEnumQM]
-[Error matching program output for execflags/shannon/configs/help/varNameQMark]
-[Error matching program output for execflags/shannon/help]
-[Error matching program output for memory/shannon/memmaxIntOnly]
 
 different amounts of memory leaked on 32-bit platforms (2014-11-12, first run)
 ------------------------------------------------------------------------------
@@ -130,10 +131,6 @@ darwin
 Inherits 'general'
 Reviewed 2015-02-27
 ===================
-
-output mismatch 'no change' (2015-02-26, lydia)
------------------------------------------------
-[Error matching program output for modules/standard/FileSystem/fsouza/chown/nothing]
 
 
 ===================
@@ -200,10 +197,6 @@ Inherits 'general'
 Reviewed 2015-02-26
 ===================
 
-retired future doesn't trip bounds check with --fast (2015-02-26, hilde)
-------------------------------------------------------------------------
-[Error matching program output for classes/bradc/arrayInClass/overrideDefaultArr]
-
 
 ===================
 memleaks.examples
@@ -232,6 +225,69 @@ Inherits 'general'
 Reviewed 2015-02-27
 ===================
 
+Invalid read of size 1 (2015-02-28, lydia/thomas)
+-------------------------------------------------
+[Error matching compiler output for chpldoc/basics/disconnectedComment]
+[Error matching compiler output for chpldoc/basics/empty]
+[Error matching compiler output for chpldoc/basics/fullyCommented]
+[Error matching compiler output for chpldoc/basics/hello]
+[Error matching compiler output for chpldoc/basics/longerComments]
+[Error matching compiler output for chpldoc/basics/nestFunctions]
+[Error matching compiler output for chpldoc/basics/parenthesesLess]
+[Error matching compiler output for chpldoc/basics/sparselyCommented]
+[Error matching compiler output for chpldoc/classes/basic (compopts: 1)]
+[Error matching compiler output for chpldoc/classes/fieldInheritance]
+[Error matching compiler output for chpldoc/classes/fields]
+[Error matching compiler output for chpldoc/classes/inheritance]
+[Error matching compiler output for chpldoc/classes/methods]
+[Error matching compiler output for chpldoc/classes/multipleInheritance]
+[Error matching compiler output for chpldoc/classes/paramFields]
+[Error matching compiler output for chpldoc/compflags/comment/basic (compopts: 1)]
+[Error matching compiler output for chpldoc/compflags/comment/specifiedDefault (compopts: 1)]
+[Error matching compiler output for chpldoc/globals/constants]
+[Error matching compiler output for chpldoc/globals/globalOrdering]
+[Error matching compiler output for chpldoc/globals/paramVars]
+[Error matching compiler output for chpldoc/globals/typeVars]
+[Error matching compiler output for chpldoc/globals/variables]
+[Error matching compiler output for chpldoc/intents]
+[Error matching compiler output for chpldoc/iterators]
+[Error matching compiler output for chpldoc/linkage-spec/exportTest]
+[Error matching compiler output for chpldoc/linkage-spec/externTest]
+[Error matching compiler output for chpldoc/linkage-spec/inlineTest]
+[Error matching compiler output for chpldoc/module/config]
+[Error matching compiler output for chpldoc/module/defaultModule]
+[Error matching compiler output for chpldoc/module/module]
+[Error matching compiler output for chpldoc/module/nestModules (compopts: 1)]
+[Error matching compiler output for chpldoc/module/nestWithFns]
+[Error matching compiler output for chpldoc/module/ordering]
+[Error matching compiler output for chpldoc/module/sameName2]
+[Error matching compiler output for chpldoc/module/sameName]
+[Error matching compiler output for chpldoc/module/surroundingModule]
+[Error matching compiler output for chpldoc/multifile]
+[Error matching compiler output for chpldoc/nodoc/noDocPlease (compopts: 1)]
+[Error matching compiler output for chpldoc/types/arguments/arrays]
+[Error matching compiler output for chpldoc/types/arguments/domains]
+[Error matching compiler output for chpldoc/types/arguments/explicitImplicit]
+[Error matching compiler output for chpldoc/types/arguments/methodCall]
+[Error matching compiler output for chpldoc/types/arguments/queried]
+[Error matching compiler output for chpldoc/types/arguments/recordsAndClasses]
+[Error matching compiler output for chpldoc/types/arguments/tuples]
+[Error matching compiler output for chpldoc/types/config/basic]
+[Error matching compiler output for chpldoc/types/fields/arrays]
+[Error matching compiler output for chpldoc/types/fields/basic]
+[Error matching compiler output for chpldoc/types/fields/domains]
+[Error matching compiler output for chpldoc/types/fields/recordsAndClasses]
+[Error matching compiler output for chpldoc/types/fields/tuples]
+[Error matching compiler output for chpldoc/types/fields/typevar]
+[Error matching compiler output for chpldoc/types/fields/usesTypeVar]
+[Error matching compiler output for chpldoc/types/returns/arrays]
+[Error matching compiler output for chpldoc/types/returns/basic]
+[Error matching compiler output for chpldoc/types/returns/domains]
+[Error matching compiler output for chpldoc/types/returns/recordsAndClasses]
+[Error matching compiler output for chpldoc/types/returns/tuples]
+[Error matching compiler output for chpldoc/variableArguments]
+[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)]
+
 Conditional jump or move depends on uninitialised value(s) (2015-02-22, lydia)
 ------------------------------------------------------------------------------
 [Error matching compiler output for chpldoc/compflags/comment/loseComments (compopts: 1)]
@@ -241,19 +297,13 @@ conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 [Error matching program output for io/tzakian/recordReader/test]
 [Error matching program output for regexp/ferguson/rechan]
 
-consistent compilation timeouts
--------------------------------
-[Error: Timed out compilation for functions/iterators/vass/yield-arrays-var-nonvar]
-[Error: Timed out compilation for functions/iterators/vass/standaloneForallIntents] (first seen 2015-01-20)
-
-
 === sporadic failures below ===
 
 sporadic invalid write of size 8 in dl_lookup_symbol->do_lookup_x,
 read of size 8 in dl_name_match_p
 -----------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-05, 2015-01-12..)
-[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..2015-02-18, 2015-02-19)
+[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..2015-02-18, 2015-02-19, 2015-02-28)
 
 sporadic execution timeout
 --------------------------
@@ -283,11 +333,6 @@ numa
 Inherits 'general'
 Reviewed 2015-02-27
 ===================
-
-numbering change based on changes to code (2015-02-26, diten)
--------------------------------------------------------------
-[Error matching .bad file for classes/bradc/arrayInClass/genericArrayInClass-otharrs-inline-iterators (compopts: 1)]
-
 
 
 ===================
@@ -376,6 +421,7 @@ gasnet.numa
 Inherits 'gasnet*' and 'numa'
 Reviewed 2015-02-27
 =============================
+
 
 
 ===================
