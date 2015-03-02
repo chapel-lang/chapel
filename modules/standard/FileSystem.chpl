@@ -173,6 +173,11 @@ proc exists(name: string): bool {
   return ret;
 }
 
+/* Returns the user id associated with the file or directory specified by
+   name.  Returns an errors that occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred
+   name: a string used to indicate the file in question
+*/
 proc getUID(out err: syserr, name: string): int {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
 
@@ -181,6 +186,10 @@ proc getUID(out err: syserr, name: string): int {
   return result;
 }
 
+/* Returns the user id associated with the file or directory specified by
+   name.  Returns an errors that occurred via an out parameter.
+   name: a string used to indicate the file in question
+*/
 proc getUID(name: string): int {
   var err: syserr = ENOERR;
   var ret = getUID(err, name);
@@ -188,6 +197,11 @@ proc getUID(name: string): int {
   return ret;
 }
 
+/* Returns the group id associated with the file or directory specified by
+   name.  Returns an errors that occurred via an out parameter.
+   err: a syserr used to indicate if an error occurred
+   name: a string used to indicate the file in question
+*/
 proc getGID(out err: syserr, name: string): int {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
 
@@ -196,6 +210,10 @@ proc getGID(out err: syserr, name: string): int {
   return result;
 }
 
+/* Returns the group id associated with the file or directory specified by
+   name.  Returns an errors that occurred via an out parameter.
+   name: a string used to indicate the file in question
+*/
 proc getGID(name: string): int {
   var err: syserr = ENOERR;
   var ret = getGID(err, name);
