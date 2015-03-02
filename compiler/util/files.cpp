@@ -377,7 +377,7 @@ void testInputFiles(int numFilenames, char* filename[]) {
 
   inputFilenames[i] = NULL;
 
-  if (!foundChplSource)
+  if (!foundChplSource && fUseIPE == false)
     USR_FATAL("Command line contains no .chpl source files");
 }
 

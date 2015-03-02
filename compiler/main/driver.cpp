@@ -972,7 +972,8 @@ int main(int argc, char* argv[]) {
     recordCodeGenStrings(argc, argv);
   } // astlocMarker scope
 
-  printStuff(argv[0]);
+  if (fUseIPE == false)
+    printStuff(argv[0]);
 
   if (rungdb)
     runCompilerInGDB(argc, argv);
