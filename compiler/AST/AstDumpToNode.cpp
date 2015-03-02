@@ -33,10 +33,10 @@
 #include "type.h"
 #include "WhileDoStmt.h"
 
-bool           AstDumpToNode::compact = false;
-const char*    AstDumpToNode::delimitEnter = "#<"; // or { } or ( ) etc.
-const char*    AstDumpToNode::delimitExit  = ">";
-bool           AstDumpToNode::showNodeIDs  = true;
+bool        AstDumpToNode::compact      = false;
+const char* AstDumpToNode::delimitEnter = "#<"; // or { } or ( ) etc.
+const char* AstDumpToNode::delimitExit  = ">";
+bool        AstDumpToNode::showNodeIDs  = true;
 
 void AstDumpToNode::view(const char* passName, int passNum)
 {
@@ -139,7 +139,9 @@ bool AstDumpToNode::close()
 void AstDumpToNode::writeLongString(const char* msg, const char* arg) const
 {
   static const size_t longStringLength = 36;
+
   fputs(msg, mFP);
+
   if (compact || strlen(arg) >= longStringLength)
     fputs(arg, mFP);
   else
@@ -149,19 +151,19 @@ void AstDumpToNode::writeLongString(const char* msg, const char* arg) const
 // Print the node ID, only if desired i.e. if showNodeIDs.
 // spaceBefore, spaceAfter matter only when showNodeIds.
 void AstDumpToNode::writeNodeID(BaseAST* node,
-                                bool spaceBefore,
-                                bool spaceAfter) const
+                                bool     spaceBefore,
+                                bool     spaceAfter) const
 {
-  if (!showNodeIDs)
-    return;
+  if (showNodeIDs)
+  {
+    const char* sb = spaceBefore ? " " : "";
+    const char* sa = spaceAfter  ? " " : "";
 
-  const char* sb = spaceBefore ? " " : "";
-  const char* sa = spaceAfter  ? " " : "";
-
-  if (compact)
-    fprintf(mFP, "%s%d%s",   sb, node->id, sa);
-  else
-    fprintf(mFP, "%s%12d%s", sb, node->id, sa);
+    if (compact)
+      fprintf(mFP, "%s%d%s",   sb, node->id, sa);
+    else
+      fprintf(mFP, "%s%12d%s", sb, node->id, sa);
+  }
 }
 
 void AstDumpToNode::enterNode(BaseAST* node) const
@@ -187,8 +189,10 @@ void AstDumpToNode::enterNodeSym(Symbol* node, const char* name) const
 void AstDumpToNode::exitNode(BaseAST* node, bool addNewline) const
 {
   fputs(delimitExit, mFP);
-  if (addNewline) fputc('\n', mFP);
-}  
+
+  if (addNewline)
+    fputc('\n', mFP);
+}
 
 bool AstDumpToNode::enterModSym(ModuleSymbol* node)
 {
@@ -212,7 +216,6 @@ bool AstDumpToNode::enterModSym(ModuleSymbol* node)
 
     enterNode(node);
     fprintf(mFP, " %s", node->name);
-    exitNode(node);
 
     mOffset = mOffset + 2;
 
@@ -231,11 +234,11 @@ void AstDumpToNode::exitModSym(ModuleSymbol* node)
 {
   if (node->modUseList.n > 0)
   {
-    fprintf(mFP, "\n");
+    fputc('\n', mFP);
 
     newline();
 
-    fprintf(mFP, "ModUseList:");
+    fputs("ModUseList:", mFP);
 
     forv_Vec(ModuleSymbol, mod, node->modUseList)
     {
@@ -654,15 +657,29 @@ bool AstDumpToNode::enterParamForLoop(ParamForLoop* node)
 
 bool AstDumpToNode::enterDefExpr(DefExpr* node)
 {
+  bool isSimple = true;
+
   enterNode(node);
 
-  if (node->sym             != 0 &&
-      node->exprType        == 0 &&
-      node->init            == 0 &&
-      isFnSymbol(node->sym) == false)
+  if (node->sym                 != 0 &&
+      node->exprType            == 0 &&
+      node->init                == 0 &&
+      isModuleSymbol(node->sym) == false &&
+      isFnSymbol(node->sym)     == false &&
+      isArgSymbol(node->sym)    == false)
   {
     fputs(compact ? " sym: " : " sym:      ", mFP);
+
+    if (compact == false)
+      mOffset = mOffset + 43;
+
     node->sym->accept(this);
+
+    if (compact == false)
+      mOffset = mOffset - 43;
+
+    // NOAKES 2015/02/16 Need better logic for this
+    isSimple = false;
   }
   else
   {
@@ -698,10 +715,13 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
       mOffset = mOffset - 10;
     }
 
-    mOffset = mOffset - 2;
+    mOffset  = mOffset - 2;
 
-    newline();
+    isSimple = false;
   }
+
+  if (isSimple == false)
+    newline();
 
   exitNode(node);
 
@@ -923,6 +943,7 @@ void AstDumpToNode::visitSymExpr(SymExpr* node)
   Symbol* sym = node->var;
 
   enterNode(node);
+
   if (compact)
   {
     fputc(' ', mFP);
@@ -933,6 +954,7 @@ void AstDumpToNode::visitSymExpr(SymExpr* node)
     fputs(" var:  ", mFP);
     writeSymbol(sym);
   }
+
   exitNode(node);
 }
 
@@ -1179,6 +1201,21 @@ bool AstDumpToNode::enterArgSym(ArgSymbol* node)
     mOffset = mOffset - 14;
   }
 
+  if (node->depth() >= 0)
+  {
+    newline();
+    fprintf(mFP, "depth:     %4d", node->depth());
+
+    newline();
+    fprintf(mFP, "offset:    %4d", node->offset());
+  }
+
+  if (node->flags.any() == true)
+  {
+    newline();
+    writeFlags(mFP, node);
+  }
+
   mOffset = mOffset - 2;
   newline();
   exitNode(node);
@@ -1246,20 +1283,27 @@ void AstDumpToNode::visitVarSym(VarSymbol* node)
 // "module." or "class::" is applicable, "" otherwise
 // beware it may return a static buffer
 static const char* symPrefixString(Symbol* sym) {
-  static char symPrefixBuffer[1024];
+  const char* retval = "";
 
-  if (!sym)
-    return "";
+  if (sym != NULL)
+  {
+    static char symPrefixBuffer[1024];
 
-  Symbol* parent = sym->defPoint ? sym->defPoint->parentSymbol : NULL;
-  if (isModuleSymbol(parent))
-    sprintf(symPrefixBuffer, "%s.", parent->name);
-  else if (isTypeSymbol(parent))
-    sprintf(symPrefixBuffer, "%s::", parent->name);
-  else
-    symPrefixBuffer[0] = '\0';
+    Symbol* parent = sym->defPoint ? sym->defPoint->parentSymbol : NULL;
 
-  return symPrefixBuffer;
+    if (isModuleSymbol(parent))
+      sprintf(symPrefixBuffer, "%s.",  parent->name);
+
+    else if (isTypeSymbol(parent))
+      sprintf(symPrefixBuffer, "%s::", parent->name);
+
+    else
+      symPrefixBuffer[0] = '\0';
+
+    retval = symPrefixBuffer;
+  }
+
+  return retval;
 }
 
 
@@ -1278,16 +1322,16 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       ;
 
     else if (sym == 0)
-      sprintf(name, "??:NULL");
+      sprintf(name, "??.NULL");
 
     else if (mod->name == 0 && sym->name == 0)
-      sprintf(name, "??:??");
+      sprintf(name, "??.??");
 
     else if (mod->name != 0 && sym->name == 0)
-      sprintf(name, "%s:??", mod->name);
+      sprintf(name, "%s.??", mod->name);
 
     else if (mod->name == 0 && sym->name != 0)
-      sprintf(name, "??:%s", sym->name);
+      sprintf(name, "??.%s", sym->name);
 
     else
       sprintf(name, "%s.%s", mod->name, sym->name);
@@ -1295,10 +1339,10 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   else
   {
     if (sym->name == 0)
-      sprintf(name, "NULL:??");
+      sprintf(name, "NULL.??");
 
     else
-      sprintf(name, "NULL:%s", sym->name);
+      sprintf(name, "NULL.%s", sym->name);
   }
 
 
@@ -1308,18 +1352,32 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   }
 
-  else if (isArgSymbol(sym) == true)
+  else if (ArgSymbol* arg = toArgSymbol(sym))
   {
+    int len = -1;
+
     enterNodeSym(sym, name);
 
     if (sym->type != 0)
     {
-      writeType(sym->type);
+      len = writeType(sym->type);
     }
 
-    if (!compact) writeFlags(mFP, sym);
-    exitNode(sym);
+    if (compact == false && arg->depth() >= 0)
+    {
+      if (len > 0 && len < 45)
+      {
+        for (int i = len; i < 45; i++)
+          fputc(' ', stdout);
+      }
 
+      fprintf(mFP, " depth: %2d offset: %4d", arg->depth(), arg->offset());
+    }
+
+    if (!compact)
+      writeFlags(mFP, sym);
+
+    exitNode(sym);
   }
 
   else if (isEnumSymbol(sym) == true)
@@ -1331,9 +1389,10 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       writeType(sym->type);
     }
 
-    if (!compact) writeFlags(mFP, sym);
-    exitNode(sym);
+    if (!compact)
+      writeFlags(mFP, sym);
 
+    exitNode(sym);
   }
 
   else if (isFnSymbol(sym) == true)
@@ -1346,9 +1405,10 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       writeType(sym->type);
     }
 
-    if (!compact) writeFlags(mFP, sym);
-    exitNode(sym);
+    if (!compact)
+      writeFlags(mFP, sym);
 
+    exitNode(sym);
   }
 
   else if (isLabelSymbol(sym) == true)
@@ -1360,9 +1420,10 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       writeType(sym->type);
     }
 
-    if (!compact) writeFlags(mFP, sym);
-    exitNode(sym);
+    if (!compact)
+      writeFlags(mFP, sym);
 
+    exitNode(sym);
   }
 
   else if (isModuleSymbol(sym) == true)
@@ -1374,7 +1435,9 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       writeType(sym->type);
     }
 
-    if (!compact) writeFlags(mFP, sym);
+    if (!compact)
+      writeFlags(mFP, sym);
+
     exitNode(sym);
   }
 
@@ -1387,7 +1450,9 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       writeType(sym->type);
     }
 
-    if (!compact) writeFlags(mFP, sym);
+    if (!compact)
+      writeFlags(mFP, sym);
+
     exitNode(sym);
   }
 
@@ -1398,14 +1463,27 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     if (var->immediate == 0)
     {
-      if (sym->type == 0)
+      int len = -1;
+
+      if (sym->type == 0 && var->depth() < 0)
       {
         fprintf(mFP, "name: %s", name);
       }
       else
       {
         writeLongString("name: ", name);
-        writeType(sym->type);
+        len = writeType(sym->type);
+      }
+
+      if (compact == false && var->depth() >= 0)
+      {
+        if (len > 0 && len < 45)
+        {
+          for (int i = len; i < 45; i++)
+            fputc(' ', stdout);
+        }
+
+        fprintf(mFP, " depth: %2d offset: %4d", var->depth(), var->offset());
       }
     }
     else
@@ -1441,7 +1519,9 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       }
     }
 
-    if (!compact) writeFlags(mFP, sym);
+    if (!compact)
+      writeFlags(mFP, sym);
+
     exitNode(sym);
   }
 }
@@ -1581,10 +1661,16 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
   mNeedSpace = true;
 }
 
-void AstDumpToNode::writeType(Type* type, bool announce) const
+int AstDumpToNode::writeType(Type* type, bool announce) const
 {
+  int len = -1;
+
   if (announce)
+  {
     fputs(compact ? " type: " : " type:   ", mFP);
+
+    len = (compact == true) ? 7 : 9;
+  }
 
   if (false)
     ;
@@ -1608,6 +1694,8 @@ void AstDumpToNode::writeType(Type* type, bool announce) const
       fputc(' ', mFP);
       fputs(t->symbol->name, mFP);
       exitNode(type);
+
+      len = 20 + 12 + 1 + strlen(t->symbol->name) + 1;
     }
   }
 
@@ -1643,6 +1731,8 @@ void AstDumpToNode::writeType(Type* type, bool announce) const
 
   else
     USR_FATAL("This cannot happen");
+
+  return len;
 }
 
 void AstDumpToNode::writeField(const char* msg, int offset, BaseAST* field) {
