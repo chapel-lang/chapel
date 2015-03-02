@@ -17,9 +17,3 @@
 
 GEN_CFLAGS += -I$(HWLOC_INCLUDE_DIR)
 GEN_LFLAGS += -L$(HWLOC_LIB_DIR) -Wl,-rpath,$(HWLOC_LIB_DIR)
-
-LIBS += -lhwloc
-
-ifeq ($(CHPL_MAKE_HWLOC_NUMA),numa)
-LIBS += -lnuma
-endif
