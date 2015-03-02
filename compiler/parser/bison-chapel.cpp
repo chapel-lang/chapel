@@ -4578,14 +4578,14 @@ yyreduce:
 
 /* Line 1821 of yacc.c  */
 #line 404 "chapel.ypp"
-    { (yyval.pblockstmt) = new BlockStmt();     resetTempID(); }
+    { (yyval.pblockstmt) = new BlockStmt();                                  resetTempID(); }
     break;
 
   case 4:
 
 /* Line 1821 of yacc.c  */
 #line 405 "chapel.ypp"
-    { (yyvsp[(1) - (2)].pblockstmt)->appendChapelStmt((yyvsp[(2) - (2)].pblockstmt)); resetTempID(); }
+    { (yyvsp[(1) - (2)].pblockstmt)->appendChapelStmt((yyvsp[(2) - (2)].pblockstmt)); context->generatedStmt = (yyvsp[(1) - (2)].pblockstmt); resetTempID(); }
     break;
 
   case 6:
