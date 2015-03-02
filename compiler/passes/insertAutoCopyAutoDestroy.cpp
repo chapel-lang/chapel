@@ -1249,11 +1249,16 @@ static void backwardFlowUse(const BasicBlock::BasicBlockVector& bbs,
       {
         // Otherwise, OUT is the union of the IN sets in all successor blocks.
         // (If the last use of a symbol is in one or more successor branches,
-        // it must flow through this block.
+        // it must flow through this block.)
+        // In this computation, we ignore back edges, because that would move
+        // the last use of a symbol defined within the loop past the end of the
+        // loop (which is not what we want).
         BitVec& out = *OUT[i];
         out.clear();
         for_vector(BasicBlock, succ, bbs[i]->outs)
-          out |= *IN[succ->id];
+          // TODO: bb IDs are stored as ints (not uints). Change that.
+          if (succ->id > (int) i) // Ignore self- and back-edges.
+            out |= *IN[succ->id];
       }
 
       // Within a block, a bit in IN transitions to true if the symbol is used
