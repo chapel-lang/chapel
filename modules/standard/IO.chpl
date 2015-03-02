@@ -1247,8 +1247,8 @@ proc _isIoPrimitiveType(type t) param return
  proc _isIoPrimitiveTypeOrNewline(type t) param return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
 
-const _trues: 1*c_string  = ("true":c_string,);
-const _falses: 1*c_string = ("false":c_string,);
+const _trues: 1*string  = ("true":string,);
+const _falses: 1*string = ("false":string,);
 const _i = "i":c_string;
 
 // Read routines for all primitive types.
@@ -1261,14 +1261,14 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
     err = EFORMAT;
 
     for i in 1..num {
-      err = qio_channel_scan_literal(false, _channel_internal, _trues(i), (_trues(i).length):ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, _trues(i).c_str(), (_trues(i).length):ssize_t, 1);
       if !err {
         got = true;
         break;
       } else if err == EEOF {
         break;
       }
-      err = qio_channel_scan_literal(false, _channel_internal, _falses(i), (_falses(i).length):ssize_t, 1);
+      err = qio_channel_scan_literal(false, _channel_internal, _falses(i).c_str(), (_falses(i).length):ssize_t, 1);
       if !err {
         got = false;
         break;
@@ -1341,9 +1341,9 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
 proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
-      return qio_channel_print_literal(false, _channel_internal, _trues(1), _trues(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, _trues(1).c_str(), _trues(1).length:ssize_t);
     } else {
-      return qio_channel_print_literal(false, _channel_internal, _falses(1), _falses(1).length:ssize_t);
+      return qio_channel_print_literal(false, _channel_internal, _falses(1).c_str(), _falses(1).length:ssize_t);
     }
   } else if isIntegralType(t) {
     // handles int types
