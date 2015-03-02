@@ -135,6 +135,7 @@ removeWrapRecords() {
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (Type* type = getWrapRecordBaseType(var->type))
       if (!var->defPoint->parentSymbol->hasFlag(FLAG_REF)) {
+        var->type = type;
 
         // record-wrapped types should be local fields
         if (TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol)) {
@@ -145,13 +146,12 @@ removeWrapRecords() {
                 ts->hasFlag(FLAG_HEAP))) {
               const char* bundlePrefix = "_class_locals";
               if (strncmp(ts->name, bundlePrefix, strlen(bundlePrefix))) {
-                if (isArrayClass(var->type)) {
+                if (isArrayClass(type)) {
                   var->addFlag(FLAG_LOCAL_FIELD);
                 }
               }
           }
         }
-        var->type = type;
       }
   }
   forv_Vec(ArgSymbol, arg, gArgSymbols) {

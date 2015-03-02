@@ -149,7 +149,7 @@ int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
-bool fLocalFields = true;
+bool fIgnoreLocalClasses = false;
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
 bool fieeefloat = true;
 bool report_inlining = false;
@@ -589,6 +589,7 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoChecks = true;
   fNoBoundsChecks = true;
   fNoLocalChecks = true;
+  fIgnoreLocalClasses = false;
   fNoNilChecks = true;
   fNoStackChecks = true;
   fNoCastChecks = true;
@@ -616,6 +617,7 @@ static void setBaselineFlag(const ArgumentState* state, const char* unused) {
   fNoTupleCopyOpt = true;
   fNoPrivatization = true;
   fNoOptimizeOnClauses = true;
+  fIgnoreLocalClasses = true;
   fConditionalDynamicDispatchLimit = 0;
 }
 
@@ -693,7 +695,6 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", NULL},
- {"local-fields", ' ', NULL, "Enable [disable] local fields", "N", &fLocalFields, NULL, NULL},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
@@ -705,6 +706,7 @@ static ArgumentDescription arg_desc[] = {
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
+ {"ignore-local-classes", ' ', NULL, "Disable [enable] local classes", "n", &fIgnoreLocalClasses, NULL, NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},

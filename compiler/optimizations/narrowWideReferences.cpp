@@ -480,7 +480,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
 
             if (member->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
                 member->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-              if (!fLocalFields || !member->var->hasFlag(FLAG_LOCAL_FIELD)) {
+              if (fIgnoreLocalClasses || !member->var->hasFlag(FLAG_LOCAL_FIELD)) {
                 addNarrowDep(member->var, sym);
               } else {
                 wi->getMemberValueFields.add(def);
@@ -646,6 +646,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_CAST) && call->get(2) == use) ||
+          (call->isPrimitive(PRIM_DYNAMIC_CAST)) ||
           (call->isPrimitive(PRIM_CAST_TO_VOID_STAR) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_ARRAY_GET) && call->get(1) == use) ||
           (call->isPrimitive(PRIM_ARRAY_GET_VALUE)) ||
@@ -774,10 +775,6 @@ narrowSym(Symbol* sym, WideInfo* wi,
           // TODO: prune
           wi->exprsToWiden.push_back(use);
         }
-        continue;
-      }
-      if (call->isPrimitive(PRIM_DYNAMIC_CAST)) {
-        addNarrowDep(toSymExpr(call->get(2))->var, sym);
         continue;
       }
       if (call->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER)) {
@@ -917,7 +914,7 @@ narrowWideReferences() {
 
   insertWideReferenceTemps(*widenMap);
 
-  if (fLocalFields) {
+  if (!fIgnoreLocalClasses) {
     handleLocalFields(defMap, useMap);
   }
 

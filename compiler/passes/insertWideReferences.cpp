@@ -472,9 +472,18 @@ static void widenClasses()
     //
     // do not change the class field in a wide class type
     //
-    if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol))
+    if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
       if (ts->hasFlag(FLAG_WIDE_CLASS))
         continue;
+      if (def->sym->hasFlag(FLAG_LOCAL_FIELD)) {
+        if (!(isClass(def->sym->type))) {
+          USR_WARN("\"local field\" flag applied to non-class field %s (%s) in type %s\n",
+              def->sym->cname, def->sym->type->symbol->cname, ts->cname);
+        }
+      }
+    } else if (def->sym->hasFlag(FLAG_LOCAL_FIELD)) {
+      USR_WARN("\"local field\" flag applied to non-field %s\n", def->sym->cname);
+    }
 
     //
     // do not change super class field - it's really a record
