@@ -129,7 +129,12 @@ def print_mode(mode='list'):
         stdout.write('CHPL_MAKE_LAUNCHER_SUBDIR=')
         print_mode('launcher')
 
-        third_party_pkgs = chpl_home+'/util/chplenv/third-party-pkgs'
+        if chpl_home:
+            util_dir = os.path.join(chpl_home, 'util')
+        else:
+            util_dir = os.path.abspath(os.path.dirname(__file__))
+        third_party_pkgs = os.path.join(util_dir, 'chplenv', 'third-party-pkgs')
+
         all_3p_pkgs=subprocess.Popen([third_party_pkgs],
                                      stdout=subprocess.PIPE).communicate()[0].strip()
 
