@@ -1131,8 +1131,8 @@ static void doNarrowing(SymExprTypeMap& widenMap)
         if (wi->sym->type->getField("_val")->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           if (!wi->valIsWide) {
             EFFECT_PRINTF("\tNarrowed value of ref %d: ", wi->sym->id);
-            EFFECT_PRINTF("%s -> %s\n", wi->sym->type->symbol->cname, narrowRefWideMap[wi->sym->type]->symbol->cname);
-            wi->sym->type = narrowRefWideMap[wi->sym->type];
+            EFFECT_PRINTF("%s -> %s\n", wi->sym->type->symbol->cname, wideToNarrowRefMap[wi->sym->type]->symbol->cname);
+            wi->sym->type = wideToNarrowRefMap[wi->sym->type];
           }
         }
       }

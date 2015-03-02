@@ -559,7 +559,7 @@ static void buildWideRefMap()
         row->addFlag(FLAG_REF);
         theProgram->block->insertAtTail(new DefExpr(row));
         refToWideClass->fields.insertAtTail(new DefExpr(new VarSymbol("_val", wide)));
-        narrowRefWideMap[refToWideClass] = ts->type;
+        wideToNarrowRefMap[refToWideClass] = ts->type;
       }
 
       // Create __wide__refs for each ref type.
