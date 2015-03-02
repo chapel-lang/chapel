@@ -54,9 +54,9 @@ proc assert(test: bool) {
 */
 proc assert(test: bool, args ...?numArgs) {
   if !test {
-    var tmpstring: c_string;
+    var tmpstring: string;
     tmpstring.write((...args));
-    __primitive("chpl_error", "assert failed - " + tmpstring);
+    __primitive("chpl_error", "assert failed - " + tmpstring.c_str());
   }
 }
 
