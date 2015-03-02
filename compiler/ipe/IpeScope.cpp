@@ -168,7 +168,9 @@ void IpeScope::describe(int offset, bool recursiveP) const
 
       if (strlen(typeName) < 10)
       {
-        for (int j = 0; j <= 10 - strlen(typeName); j++)
+        int spaces = 10 - strlen(typeName);
+
+        for (int j = 0; j <= spaces; j++)
           fputc(' ', stdout);
       }
 
@@ -228,7 +230,9 @@ void IpeScope::describe(int offset, bool recursiveP) const
 
       if (strlen(typeName) < 10)
       {
-        for (int j = 0; j <= 10 - strlen(typeName); j++)
+        int spaces = 10 - strlen(typeName);
+
+        for (int j = 0; j <= spaces; j++)
           fputc(' ', stdout);
       }
 
