@@ -1,23 +1,27 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-file_user=$(python -c 'import os ; print(os.stat("getting.chpl").st_uid)')
-file_group=$(python -c 'import os ; print(os.stat("getting.chpl").st_gid)')
+import os, sys
 
-output_usr=$(head -n 1 $2)
-output_group=$(tail -n 1 $2)
+file_usr = os.stat("getting.chpl").st_uid
+file_group = os.stat("getting.chpl").st_gid
 
-# get the output from the file.
+output_usr=""
+output_group=""
 
-if [ "${file_usr}" = "${output_usr}" ] ; then
-    echo "user id matched" > $2
-else
-    echo "expected $file_user, was $output_usr" > $2
-fi
-# Want to override previous contents of .out.tmp file, since the id will differ
-# depending on who runs it and where.
+with open(sys.argv[2], 'r') as fp:
+    # get the output from the Chapel program as integers (to be comparable)
+    output_usr = int(fp.readline())
+    output_group = int(fp.readline())
 
-if [ "${file_group}\n" = "${output_group}" ] ; then
-    echo "group id matched" >> $2
-else
-    echo "expected $file_group, was $output_group" >> $2
-fi
+with open(sys.argv[2], 'w') as fp:
+    if output_usr == file_usr :
+        fp.write("user id matched\n")
+    else :
+        fp.write("expected " + str(file_usr) + " was " + str(output_usr) + "\n")
+
+    # Want to override previous contents of .out.tmp file, since the id will
+    # differ depending on who runs it and where.
+    if output_group == file_group :
+        fp.write("group id matched\n")
+    else :
+        fp.write("expected " + str(file_group) + " was " + str(output_group) + "\n")
