@@ -139,12 +139,12 @@ void IpeScope::describe(int offset, bool recursiveP) const
 
     if      (isTypeSymbol(mSymbols[i]))
     {
-      printf("%s     %3d: type %26s %s\n", pad, i, "", symName);
+      printf("%s   %3d: type %26s %s\n", pad, i, "", symName);
     }
 
     else if (isFnSymbol(mSymbols[i]) == true)
     {
-      printf("%s     %3d: func %21s %s\n", pad, i, "", symName);
+      printf("%s   %3d: func %26s %s\n", pad, i, "", symName);
     }
 
     else if (VarSymbol* sym = toVarSymbol(mSymbols[i]))

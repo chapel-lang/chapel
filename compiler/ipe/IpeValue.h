@@ -28,6 +28,8 @@ union IpeValue
   long          iValue;
   double        rValue;
 
+  const char*   sValue;
+
   IpeValue*     valuePtr;
   IpeModule*    modulePtr;
   IpeProcedure* procedurePtr;

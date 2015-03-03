@@ -43,8 +43,11 @@ static IpeValue evaluate(BlockStmt*    expr, IpeVars* vars);
 static IpeValue evaluate(CondStmt*     expr, IpeVars* vars);
 static IpeValue evaluate(WhileDoStmt*  expr, IpeVars* vars);
 
-static bool     isPrint(FnSymbol* fn);
-static void     ipePrint(IpeValue value, Type* type);
+static bool     isPrint (FnSymbol* fn);
+static bool     isPrint2(FnSymbol* fn);
+
+static void     ipePrint(IpeValue msg,   IpeValue value, Type* type);
+static void     ipePrint(IpeValue value,                 Type* type);
 
 /************************************ | *************************************
 *                                                                           *
@@ -296,6 +299,8 @@ static IpeValue evaluateCall(CallExpr* callExpr, IpeVars* vars)
 
   proc->ensureBodyResolved();
 
+  retval.iValue = 0;
+
   if (gDebugLevelCalls > 0)
   {
     proc->describe(3);
@@ -345,20 +350,30 @@ static IpeValue evaluateCall(CallExpr* callExpr, IpeVars* vars)
       value = ipeEvaluate(callExpr->get(i), vars);
     }
 
-
     IpeVars::store(formal, value, locals);
   }
 
-  if (isPrint(fnSymbol) == false)
-  {
-    retval = evaluate(fnSymbol->body, locals);
-  }
-  else
+  if (isPrint(fnSymbol) == true)
   {
     DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(1));
     ArgSymbol* formal  = toArgSymbol(defExpr->sym);
 
     ipePrint(locals->valueGet(0), formal->type);
+    retval.iValue = 0;
+  }
+
+  else if (isPrint2(fnSymbol) == true)
+  {
+    DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(2));
+    ArgSymbol* formal  = toArgSymbol(defExpr->sym);
+
+    ipePrint(locals->valueGet(0), locals->valueGet(1), formal->type);
+    retval.iValue = 0;
+  }
+
+  else
+  {
+    retval = evaluate(fnSymbol->body, locals);
   }
 
   IpeVars::deallocate(locals);
@@ -776,14 +791,17 @@ static IpeValue evaluate(VarSymbol* sym, IpeVars* env)
     INT_ASSERT(type->symbol);
     INT_ASSERT(type->symbol->name);
 
-    if      (strcmp(type->symbol->name, "bool") == 0)
+    if      (strcmp(type->symbol->name, "bool")     == 0)
       retval.iValue = imm->v_bool;
 
-    else if (strcmp(type->symbol->name, "int")  == 0)
+    else if (strcmp(type->symbol->name, "int")      == 0)
       retval.iValue = imm->v_int64;
 
-    else if (strcmp(type->symbol->name, "real") == 0)
+    else if (strcmp(type->symbol->name, "real")     == 0)
       retval.rValue = imm->v_float64;
+
+    else if (strcmp(type->symbol->name, "c_string") == 0)
+      retval.sValue = imm->v_string;
 
     else
     {
@@ -815,6 +833,45 @@ static bool isPrint(FnSymbol* fn)
   }
 
   return retval;
+}
+
+static bool isPrint2(FnSymbol* fn)
+{
+  bool retval = false;
+
+  if (strcmp(fn->name, "print2") == 0)
+  {
+    if (ModuleSymbol* mod = fn->getModule())
+      retval = (strcmp(mod->name, "ChapelBase") == 0) ? true : false;
+  }
+
+  return retval;
+}
+
+static void ipePrint(IpeValue msg,   IpeValue value, Type* type)
+{
+  printf("     ");
+  fputs(msg.sValue, stdout);
+
+  if      (type == dtBool)
+  {
+    printf("%s\n", (value.iValue) ? " true" : "false");
+  }
+
+  else if (type == dtInt[INT_SIZE_64])
+  {
+    printf("%5ld\n", value.iValue);
+  }
+
+  else if (type == dtReal[FLOAT_SIZE_64])
+  {
+    printf("%6.2f\n", value.rValue);
+  }
+
+  else
+  {
+    printf("???\n");
+  }
 }
 
 static void ipePrint(IpeValue value, Type* type)
