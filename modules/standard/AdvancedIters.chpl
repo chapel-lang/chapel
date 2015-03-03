@@ -24,6 +24,9 @@ Angeles Navarro. PGAS 2011: Fifth Conference on Partitioned Global
 Address Space Programming Models, October 2011.
 */
 
+/*
+   An atomic test-and-set lock.
+*/
 record vlock {
   var l: atomic bool;
   proc lock() {
@@ -34,12 +37,17 @@ record vlock {
   }
 }
 
+/*
+   A config param to control debugging output.
+*/
 config param debugAdvancedIters:bool=false;
 
 //************************* Dynamic iterator
 
-// Serial iterator 
-
+/*
+   The serial version of the dynamic iterator.
+   Essentially identical to the default range iterator.
+*/
 iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 
   if debugAdvancedIters then 
@@ -50,8 +58,22 @@ iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 
 // Parallel iterator
 
-// Leader iterator
+/*
+   The parallel leader for the dynamic iterator.
 
+   :arg c: The range to iterate over. The length of the range must be greater than zero.
+
+   :arg chunkSize: The size of chunks to be yielded to each thread. Must be greater than zero.
+   :type chunkSize: int
+
+   :arg numTasks: The number of tasks to use. Must be >= zero.
+   :type numTasks: int
+
+   If this iterator cannot make use of more than one task, no tasks are created.
+
+   Otherwise, this iterator will yield chunks of the specified size to each
+   thread until all indices in the range have been yielded.
+*/
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int=0) 
 where tag == iterKind.leader
 {
@@ -107,6 +129,7 @@ where tag == iterKind.leader
 }
 
 // Follower
+pragma "no doc"
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int, followThis) 
 where tag == iterKind.follower
 {
@@ -121,6 +144,7 @@ where tag == iterKind.follower
 
 
 //************************* Guided iterator
+
 //Serial iterator 
 iter guided(c:range(?), numTasks:int=0) {
 
