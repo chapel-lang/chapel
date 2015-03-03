@@ -101,7 +101,7 @@ void parse() {
     printModuleSearchPath();
   }
 
-  {
+  if (fUseIPE == false) {
     int         filenum       = 0;
     const char* inputFilename = 0;
 

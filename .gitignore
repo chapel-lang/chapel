@@ -103,6 +103,7 @@ tags
 /test/chpldoc/compflags/folder/myDocs
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
+/test/chpldoc/compflags/folder/save-sphinx/my-sphinx
 
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
@@ -229,6 +230,7 @@ tags
 
 /test/localeModels/gbt/maxTaskPar.good
 
+/test/memory/gbt/test-memLog.memLog.*
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log
 
@@ -304,6 +306,11 @@ tags
 /test/studies/amr/**/*.tmp.save
 /test/studies/dijkstra/RtsGraph_out.txt
 
+/test/studies/hpcc/CommDiags/ra.chpl
+/test/studies/hpcc/CommDiags/raAtomics.chpl
+/test/studies/hpcc/CommDiags/stream.chpl
+/test/studies/hpcc/CommDiags/streamEP.chpl
+/test/studies/hpcc/CommDiags/hpl.chpl
 /test/studies/hpcc/FFT/bradc/dfft
 /test/studies/hpcc/FFT/bradc/*.txt
 /test/studies/hpcc/FFT/bradc/fft
@@ -343,6 +350,7 @@ tags
 /test/studies/ssca2/graphio/graphio.2.ev2_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.start_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.weight_snapshot.data
+/test/studies/ssca2/performance/SSCA2_kernels.chpl
 /test/studies/ssca2/rachels/SSCA2_main.RMAT.good
 /test/studies/ssca2/rachels/SSCA2_main.1Dtorus.good
 /test/studies/ssca2/rachels/SSCA2_main.2Dtorus.good
