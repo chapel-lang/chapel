@@ -118,7 +118,7 @@ module FFTW {
   }
   proc cleanup() {
     extern proc fftw_cleanup();
-    cleanup();
+    fftw_cleanup();
   }
 
 
