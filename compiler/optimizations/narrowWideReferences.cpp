@@ -316,6 +316,10 @@ typedef MapElem<Symbol*,WideInfo*> WideInfoMapElem;
 // The map from symbols to wideInfo objects.
 //
 static WideInfoMap* wideInfoMap;
+
+//
+// vectors later used to insert checks for local field assignment
+//
 static std::vector<CallExpr*> setMemberLocalFields;
 static std::vector<SymExpr*>  getMemberLocalFields;
 
@@ -388,6 +392,10 @@ narrowField(Symbol* field, WideInfo* wi) {
     return;
   }
 
+  //
+  // Coforall bundled args are assigned to once. If the RHS of that assignment
+  // is narrow, then the arg could be narrow (unless that arg is a ref).
+  //
   if (!strcmp(ts->name, "_class_localscoforall_fn")) {
     if (isRef(field)) {
       wi->mustBeWide = true;
@@ -397,7 +405,6 @@ narrowField(Symbol* field, WideInfo* wi) {
 
   if (ts->hasFlag(FLAG_WIDE_REF) ||
       ts->hasFlag(FLAG_WIDE_CLASS)) {
-    DEBUG_PRINTF("Field %s(%d) in %s is a ref or class, must be wide\n", field->cname, field->id, ts->cname);
     wi->mustBeWide = true;
     return;
   }
@@ -495,6 +502,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
               if (fIgnoreLocalClasses || !member->var->hasFlag(FLAG_LOCAL_FIELD)) {
                 addNarrowDep(member->var, sym);
               } else {
+                // Attempt to optimize for local class fields
                 wi->getMemberValueFields.push_back(def);
               }
             }
@@ -519,20 +527,21 @@ narrowSym(Symbol* sym, WideInfo* wi,
             // ddatas with class elements have their elements automatically widened.
             // The LHS of moves should be a wide class.
 
-            SymExpr* se = toSymExpr(rhs->get(1));
+            SymExpr* dataClass = toSymExpr(rhs->get(1));
 
-            addNarrowDep(se->var, sym);
+            // If the data class is wide, then the LHS will be wide
+            addNarrowDep(dataClass->var, sym);
 
-            // Get the narrow data class type
-            Type* rtype = se->var->type;
-            if (se->var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+            // Get the narrow type of the data class
+            Type* rtype = dataClass->var->type;
+            if (rtype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
               rtype = rtype->getField("addr")->type;
             }
+            INT_ASSERT(rtype->symbol->hasFlag(FLAG_DATA_CLASS));
 
-            // TODO: Fix once we have narrow elements
+            // TODO: Revisit once we have narrow elements
             //
             // Get the element type and check its wideness
-            INT_ASSERT(rtype->symbol->hasFlag(FLAG_DATA_CLASS));
             if (TypeSymbol* ts = getDataClassType(rtype->symbol)) {
               if (ts->hasFlag(FLAG_WIDE_CLASS)) {
                 if (isRef(sym)) {
@@ -545,12 +554,13 @@ narrowSym(Symbol* sym, WideInfo* wi,
             continue;
           }
           if (rhs->isPrimitive(PRIM_DEREF)) {
-            // If the ref stores a narrow _val, the lhs of this move can also
+            // If the ref stores a narrow _val, the LHS of this move can also
             // be narrow.
-            SymExpr* se = toSymExpr(rhs->get(1));
-            if (WideInfo* nw = wideInfoMap->get(se->var)) {
+            SymExpr* ref = toSymExpr(rhs->get(1));
+            if (WideInfo* nw = wideInfoMap->get(ref->var)) {
               nw->destsToNarrow.push_back(def);
-              addNarrowDep(se->var, sym);
+              // if the ref is wide, the LHS should be wide
+              addNarrowDep(ref->var, sym);
             }
             continue;
           }
@@ -567,8 +577,11 @@ narrowSym(Symbol* sym, WideInfo* wi,
           if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
               rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
             Symbol* member = getSvecSymbol(rhs);
+            SymExpr* base = toSymExpr(rhs->get(1));
+
+            // Unable to get the desired member symbol
             if (member == NULL) {
-              Type* ty = rhs->get(1)->getValType();
+              Type* ty = base->getValType();
 
               // For star tuples we'll use the first field
               if (ty->symbol->hasFlag(FLAG_STAR_TUPLE)) {
@@ -581,10 +594,8 @@ narrowSym(Symbol* sym, WideInfo* wi,
               addNarrowDep(member, sym);
             }
 
-            if (SymExpr* se = toSymExpr(rhs->get(1))) {
-              if (isWideType(se->var)) {
-                addNarrowDep(toSymExpr(rhs->get(1))->var, sym);
-              }
+            if (isWideType(base->var)) {
+              addNarrowDep(base->var, sym);
             }
             continue;
           }
@@ -594,7 +605,10 @@ narrowSym(Symbol* sym, WideInfo* wi,
             continue;
           }
           if (rhs->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-            // For now, we assume everything returned from a virtual method is wide.
+            // The returned type from a virtual method call needs to be of the
+            // same wideness for all related calls for casts to work correctly.
+            // Future work could involve syncing the return types to
+            // 'all narrow' or 'all wide'.
             wi->mustBeWide = true;
             return;
           }
@@ -645,6 +659,10 @@ narrowSym(Symbol* sym, WideInfo* wi,
         continue;
       }
     }
+#ifdef PRINT_NARROW_ANALYSIS
+    DEBUG_PRINTF("No case to narrow def %d %s in %s", wi->sym->id, wi->sym->cname, se->getModule()->cname);
+    print_view(se->getStmtExpr());
+#endif
   }
 
   DEBUG_PRINTF("\tdone with defs\n");
@@ -764,9 +782,10 @@ narrowSym(Symbol* sym, WideInfo* wi,
       }
       if (call->isPrimitive(PRIM_RETURN)) {
         FnSymbol* fn = toFnSymbol(call->parentSymbol);
+
         if (!isWideType(fn->retType->symbol))
-          // already narrow, so skip it.
           continue;
+
         wi->fnToNarrow = fn;
         INT_ASSERT(fn);
         // The return type of virtual functions currently needs to be wide in
@@ -1041,9 +1060,8 @@ static void resolveHelper(WideInfo* wi) {
     }
 
     //
-    // If this variable is wide, then the value wrapped by these references
-    // also need to be wide. Since the value in those references is wide,
-    // the destination of a dereference also needs to be wide.
+    // If this variable is wide, then references to this variable
+    // also need to be wide.
     //
     if (wi->refsToNarrow.size() > 0) {
       DEBUG_PRINTF("%s (%d) in %s is wide, these refs must be:\n", wi->sym->cname, wi->sym->id, wi->sym->getModule()->cname);
@@ -1058,6 +1076,7 @@ static void resolveHelper(WideInfo* wi) {
       } else DEBUG_PRINTF("\n");
     }
 
+    // If this is a wide ref, the destination of a deref also needs to be wide.
     if (isRef(wi->sym)) {
       if (wi->destsToNarrow.size() > 0) {
         DEBUG_PRINTF("Ref %s (%d) in %s is wide, these dests must be:\n", wi->sym->cname, wi->sym->id, wi->sym->getModule()->cname); 
@@ -1077,7 +1096,7 @@ static void resolveHelper(WideInfo* wi) {
       DEBUG_PRINTF("Propagating ref %d in %s\n", wi->sym->id, wi->sym->getModule()->cname);
     }
 
-    // ref that could be narrow
+    // refs to this variable should wrap a narrow _val.
     for_vector(Symbol, se, wi->refsToNarrow) {
       WideInfo* nwi = wideInfoMap->get(se);
       DEBUG_PRINTF("REF %s (%d): val is ", nwi->sym->cname, nwi->sym->id);
@@ -1173,8 +1192,6 @@ static void doNarrowing(SymExprTypeMap& widenMap)
 }
 
 
-// TODO: It looks like we're narrowing args that will be in a virtual method call, 
-// which is not resolved and can't be used here...?
 static void pruneNarrowedActuals(SymExprTypeMap& widenMap)
 {
   //
@@ -1233,7 +1250,7 @@ static void insertWideReferenceTemps(SymExprTypeMap& widenMap)
       Expr* stmt = key->getStmtExpr();
       SET_LINENO(stmt);
       Symbol* tmp = newTemp(value);
-      DEBUG_PRINTF("Made temp %d for %d\n", tmp->id, key->var->id);
+      DEBUG_PRINTF("Made wide temp %d for %d\n", tmp->id, key->var->id);
       stmt->insertBefore(new DefExpr(tmp));
       key->replace(new SymExpr(tmp));
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, key));
@@ -1264,7 +1281,7 @@ static void moveAddressSourcesToTemp()
         call->insertBefore(new DefExpr(tmp));
         call->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->get(2)->remove()));
         call->insertAtTail(tmp);
-        DEBUG_PRINTF("TEMP: %d\n", tmp->id);
+        DEBUG_PRINTF("Made move temp: %d\n", tmp->id);
       }
     }
   }
@@ -1275,21 +1292,39 @@ static void moveAddressSourcesToTemp()
 // for these SymExprs.
 //
 static void insertNodeComparison(Expr* stmt, SymExpr* lhs, SymExpr* rhs) {
+  VarSymbol* left = newTemp(NODE_ID_TYPE);
+  stmt->insertBefore(new DefExpr(left));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(left), new CallExpr(PRIM_WIDE_GET_NODE, lhs->copy())));
+
+  VarSymbol* right = newTemp(NODE_ID_TYPE);
+  stmt->insertBefore(new DefExpr(right));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(right), new CallExpr(PRIM_WIDE_GET_NODE, rhs->copy())));
+
   stmt->insertBefore(new CondStmt(new CallExpr(PRIM_NOTEQUAL,
-    new CallExpr(PRIM_WIDE_GET_NODE, lhs->copy()),
-    new CallExpr(PRIM_WIDE_GET_NODE, rhs->copy())),
+                                  new SymExpr(left),
+                                  new SymExpr(right)),
     new CallExpr(PRIM_RT_ERROR, new_StringSymbol("Attempted to assign to local class field with remote class"))));
 }
 
 static void handleLocalFields(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                               Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  // TODO:
-  //   - errors/warnings for "local field" pragma usage
+  //
+  // Currently the local field optimization only takes effect for
+  // PRIM_GET_MEMBER_VALUE. Because the field is left wide, references
+  // to the field (from PRIM_GET_MEMBER) need to wrap a wide value.
+  // Future work may involve making the field a narrow type.
+  //
   form_Map(WideInfoMapElem, e, *wideInfoMap) {
     WideInfo* wi = e->value;
     if (!wi->mustBeWide) {
       for_vector(SymExpr, se, wi->getMemberValueFields) {
         // TODO: try to skip inside local fn?
+        //
+        // We left the LHS of the PRIM_GET_MEMBER_VALUE expr as narrow during
+        // the resolving stage. Make a wide temporary and use it as the LHS
+        // of the expression. Then, assign to the old LHS using this wide temp.
+        // This is very similar to the handling of local blocks.
+        //
         SET_LINENO(se);
         VarSymbol* var = newTemp(astr("wide_", se->var->name), wi->wideType);
         Expr* stmt = toExpr(se)->getStmtExpr();
@@ -1297,6 +1332,8 @@ static void handleLocalFields(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 
         stmt->insertBefore(new DefExpr(var));
         stmt->insertAfter(new CallExpr(PRIM_MOVE, se->copy(), var));
+
+        // assert that the wide temp is local
         if (!fNoLocalChecks) {
           stmt->insertAfter(new CallExpr(PRIM_LOCAL_CHECK, new SymExpr(var)));
         }
@@ -1305,6 +1342,16 @@ static void handleLocalFields(Map<Symbol*,Vec<SymExpr*>*>& defMap,
       }
     }
   }
+  //
+  // Add checks for simple assignment to local fields. Users could get around
+  // these checks with the use of reference variables. My current thinking is
+  // that we'll catch anything when the actual optimization takes place.
+  // If a local field somehow becomes remote but the optimization never takes
+  // place, then we haven't lost anything.
+  //
+  // The right thing to do here would to somehow look for potential definitions
+  // across functions.
+  //
   if (!fNoLocalChecks) {
     for_vector(SymExpr, se, getMemberLocalFields) {
       for_defs(def, defMap, se->var) {
