@@ -45,7 +45,7 @@ def print_mode(mode='list'):
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
 
-    get_module_lcd = ( (chpl_home == chpl_module_home) and (chpl_home != '') and
+    get_module_lcd = ( utils.using_chapel_module() and
                      (mode == 'runtime' or mode == 'make') )
     if m != 'compiler' and m != 'launcher':
         target_arch = chpl_arch.get('target', mode == 'make', get_module_lcd)
