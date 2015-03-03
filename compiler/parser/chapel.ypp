@@ -83,8 +83,8 @@
   };
 
   struct IntentExpr {
-    ArgSymbol* first;
-    Expr*      second;
+    Expr*  first;
+    Expr*  second;
   };
 
   // The lexer only uses pch.
@@ -1383,9 +1383,12 @@ intent_expr:
       ArgSymbol* tiMark = tiMarkForIntent($1);
       if (!tiMark)
         USR_FATAL_CONT($2, "Unsupported intent in with clause");
-      $$.first = tiMark;
+      $$.first = new SymExpr(tiMark);
       $$.second = $2;
     }
+// todo: allow user-defined reductions like in reduce_expr:
+// | expr             TREDUCE ident_expr  { $$.first = $1, $$.second = $3; }
+| reduce_scan_op_expr TREDUCE ident_expr  { $$.first = $1, $$.second = $3; }
 ;
 
 io_expr:
