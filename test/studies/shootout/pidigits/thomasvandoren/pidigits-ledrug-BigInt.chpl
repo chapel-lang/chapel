@@ -57,7 +57,7 @@ iter genDigits(numDigits) {
 
   // Helper function to extract the nth digit.
   proc extractDigit(nth: uint) {
-    tmp1.mul_ui(numer, safe_cast(c_ulong, nth));
+    tmp1.mul_ui(numer, nth);
     tmp2.add(tmp1, accum);
     tmp1.div_q(Round.ZERO, tmp2, denom);
 
