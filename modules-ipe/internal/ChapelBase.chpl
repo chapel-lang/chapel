@@ -75,11 +75,16 @@ module ChapelBase
   inline proc _cond_test(x : bool) : bool return x;
   inline proc _cond_test(x : int ) : bool return x != 0;
 
+
   //
-  // Trivial skeletons to enable resolution to internal "print" functions
+  // These are implemented within the interpreter
   //
 
-  proc print(x : bool) : void { }
-  proc print(x : int)  : void { }
-  proc print(x : real) : void { }
+  extern proc print (x : bool) : void;
+  extern proc print (x : int)  : void;
+  extern proc print (x : real) : void;
+
+  extern proc print2(format : c_string, x : bool) : void;
+  extern proc print2(format : c_string, x : int)  : void;
+  extern proc print2(format : c_string, x : real) : void;
 }
