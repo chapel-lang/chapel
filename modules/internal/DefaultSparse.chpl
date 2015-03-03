@@ -289,7 +289,7 @@ module DefaultSparse {
     }
 
     iter these() ref {
-      for e in data[1..dom.nnz] do yield e;
+      for i in 1..dom.nnz do yield data[i];
     }
 
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
@@ -300,15 +300,15 @@ module DefaultSparse {
                 numElems, " elems");
       }
       if numChunks <= 1 {
-        for e in data[1..numElems] {
-          yield e;
+        for i in 1..numElems {
+          yield data[i];
         }
       } else {
         coforall chunk in 1..numChunks {
           const (startIx, endIx) =
             _computeChunkStartEnd(numElems, numChunks, chunk);
-          for e in data[startIx..endIx] {
-            yield e;
+          for i in startIx..endIx {
+            yield data[i];
           }
         }
       }
@@ -330,7 +330,7 @@ module DefaultSparse {
       if debugDefaultSparse then
         writeln("DefaultSparseArr follower: ", startIx, "..", endIx);
 
-      for e in data[startIx..endIx] do yield e;
+      for i in startIx..endIx do yield data[i];
     }
 
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {

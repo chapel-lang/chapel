@@ -305,8 +305,8 @@ class CSRDom: BaseSparseDom {
     if (d != 2) {
       compilerError("dimIter(1, ...) not supported on CSR domains");
     }
-    for c in colIdx[rowStart(ind)..rowStop(ind)] do
-      yield c;
+    for i in rowStart[ind]..rowStop[ind] do
+      yield colIdx[i];
   }
 }
 
@@ -340,7 +340,7 @@ class CSRArr: BaseArr {
   }
 
   iter these() ref {
-    for e in data[1..dom.nnz] do yield e;
+    for i in 1..dom.nnz do yield data[i];
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
@@ -360,7 +360,7 @@ class CSRArr: BaseArr {
     if debugCSR then
       writeln("CSRArr follower: ", startIx, "..", endIx);
 
-    for e in data[startIx..endIx] do yield e;
+    for i in startIx..endIx do yield data[i];
   }
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {

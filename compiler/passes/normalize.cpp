@@ -360,7 +360,7 @@ checkUseBeforeDefs() {
           if (VarSymbol* vs = toVarSymbol(def->sym))
           {
             // All type aliases are taken as defined.
-            if (vs->hasFlag(FLAG_TYPE_VARIABLE))
+            if (vs->isType())
               defined.set_add(def->sym);
             // All variables of type 'void' are treated as defined.
             if (vs->typeInfo() == dtVoid)
@@ -766,7 +766,7 @@ static TypeSymbol* resolveTypeAlias(SymExpr* se)
     // Unless we can find a new se to check.
     if (VarSymbol* vs = toVarSymbol(sym))
     {
-      if (vs->hasFlag(FLAG_TYPE_VARIABLE))
+      if (vs->isType())
       {
         // We expect to find its definition in the init field of its declaration.
         DefExpr* def = vs->defPoint;
@@ -945,7 +945,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // handle type aliases
   //
-  if (var->hasFlag(FLAG_TYPE_VARIABLE)) {
+  if (var->isType()) {
     INT_ASSERT(init);
     INT_ASSERT(!type);
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__typeAliasInit", init->copy())));
@@ -1155,7 +1155,7 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
         block->insertAtTail(new CallExpr("=", typeTemp, init->remove()));
         block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
       } else {
-        if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
+        if (constTemp->isType())
           block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
                                            new CallExpr(PRIM_TYPEOF, typeTemp)));
         else

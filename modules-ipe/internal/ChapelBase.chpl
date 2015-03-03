@@ -74,4 +74,12 @@ module ChapelBase
   //
   inline proc _cond_test(x : bool) : bool return x;
   inline proc _cond_test(x : int ) : bool return x != 0;
+
+  //
+  // Trivial skeletons to enable resolution to internal "print" functions
+  //
+
+  proc print(x : bool) : void { }
+  proc print(x : int)  : void { }
+  proc print(x : real) : void { }
 }
