@@ -135,7 +135,10 @@ Mail chapel-developers@ for review and merge
 
 * When you believe your pull request is ready for review, send it to a member
   of the core Chapel team (or chapel-developers_ if there isn't an obvious
-  person to review it).
+  person to review it). Even the developers that have write access to the
+  Chapel repository need to have all non-trivial changes reviewed. Developers
+  who have been given write access can merge trivial changes (e.g. small bug
+  fixes, documentation changes) without review.
 
 .. note::
 
