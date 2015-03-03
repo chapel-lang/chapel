@@ -104,14 +104,14 @@ public:
   Vec<CallExpr*> callsToRemove; // calls to remove if sym is narrowed
 
   // TODO: replace with global lists
-  Vec<SymExpr*> getMemberValueFields;
+  std::vector<SymExpr*> getMemberValueFields;
 
   // If this sym can be narrow, then references to it can be narrow
-  Vec<Symbol*> refsToNarrow;
+  std::vector<Symbol*> refsToNarrow;
 
-  // If a ref to a wide class becomes a ref to a narrow class,
-  // then these symbols can be narrow as well.
-  Vec<SymExpr*> destsToNarrow;
+  // Used when the symbol is a ref. If the wrapped _val can be narrow, then
+  // destinations of a deref can also be narrow.
+  std::vector<SymExpr*> destsToNarrow;
 
   WideInfo() : sym(NULL), mustBeWide(false), valIsWide(false), fnToNarrow(NULL) { }
   WideInfo(Symbol* isym) : sym(isym), mustBeWide(false), valIsWide(false), fnToNarrow(NULL) {
@@ -159,14 +159,26 @@ class CallGraph {
         }
       }
       root->children.insert(buildChildren(chpl_gen_main));
+
       for_set(Node, n, root->children) {
         root->transitive.insert(n);
       }
 
-      // build the transitive closure starting without any on-clauses
+      // build the transitive closure
       buildTransitive(root);
       cleanVisited();
+
+      // compute the on-depth of each function.
+      // "on-depth" is the possible number of parent on-functions in the
+      // static callgraph
       computeOnDepth(root);
+    }
+
+    ~CallGraph() {
+      for (FnNodeMap::iterator it = vertices.begin(); it != vertices.end(); it++) {
+        delete it->second;
+      }
+      delete root;
     }
 
     void print() {
@@ -466,7 +478,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
               if (member->var->hasFlag(FLAG_LOCAL_FIELD)) {
                 getMemberLocalFields.push_back(def);
               }
-              nw->refsToNarrow.add(sym);
+              nw->refsToNarrow.push_back(sym);
             }
             continue;
           }
@@ -483,7 +495,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
               if (fIgnoreLocalClasses || !member->var->hasFlag(FLAG_LOCAL_FIELD)) {
                 addNarrowDep(member->var, sym);
               } else {
-                wi->getMemberValueFields.add(def);
+                wi->getMemberValueFields.push_back(def);
               }
             }
             continue;
@@ -537,7 +549,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
             // be narrow.
             SymExpr* se = toSymExpr(rhs->get(1));
             if (WideInfo* nw = wideInfoMap->get(se->var)) {
-              nw->destsToNarrow.add(def);
+              nw->destsToNarrow.push_back(def);
               addNarrowDep(se->var, sym);
             }
             continue;
@@ -546,8 +558,8 @@ narrowSym(Symbol* sym, WideInfo* wi,
             // If the src type is narrow, the _val of this ref can be narrow
             if (SymExpr* src = toSymExpr(rhs->get(1))) {
               if (WideInfo* nw = wideInfoMap->get(src->var)) {
-                nw->refsToNarrow.add(sym);
-                wi->destsToNarrow.add(src);
+                nw->refsToNarrow.push_back(sym);
+                wi->destsToNarrow.push_back(src);
               }
             }
             continue;
@@ -596,7 +608,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
             if (isRef(sym)) {
               if (WideInfo* next = wideInfoMap->get(fn->getReturnSymbol())) {
                 DEBUG_PRINTF("refsToNarrow: %d -> %d\n", fn->getReturnSymbol()->id, sym->id);
-                next->refsToNarrow.add(sym);
+                next->refsToNarrow.push_back(sym);
               }
             }
             continue;
@@ -611,9 +623,9 @@ narrowSym(Symbol* sym, WideInfo* wi,
             if (isRef(sym)) {
               if (rhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
                   isRef(rhs->var)) {
-                wideInfoMap->get(rhs->var)->refsToNarrow.add(sym);
+                wideInfoMap->get(rhs->var)->refsToNarrow.push_back(sym);
                 if (isRef(rhs->var)) {
-                  wi->refsToNarrow.add(rhs->var);
+                  wi->refsToNarrow.push_back(rhs->var);
                 }
               }
             }
@@ -635,7 +647,10 @@ narrowSym(Symbol* sym, WideInfo* wi,
     }
   }
 
+  DEBUG_PRINTF("\tdone with defs\n");
+
   for_uses(use, useMap, sym) {
+    DEBUG_PRINTF("use: \n");
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
       if ((call->isPrimitive(PRIM_MOVE)) ||
           (call->isPrimitive(PRIM_ASSIGN)) ||
@@ -673,8 +688,10 @@ narrowSym(Symbol* sym, WideInfo* wi,
            (call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_ALLOC) ||
             call->isResolved()->hasFlag(FLAG_LOCALE_MODEL_FREE)) &&
            call->get(1)==use) ||
-          (isOpEqualPrim(call)) )
+          (isOpEqualPrim(call)) ) {
+            DEBUG_PRINTF("\tskipped in use primitive block\n");
         continue;
+          }
       if (call->isResolved()) {
         // pruneNarrowedActuals will clean up
         DEBUG_PRINTF("call: widening expr %d\n", sym->id);
@@ -809,6 +826,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
     setWide(wi, use, "use fail to narrow");
     return;
   }
+  DEBUG_PRINTF("\tdone with uses\n");
 }
 
 
@@ -824,6 +842,7 @@ narrowArg(ArgSymbol* arg, WideInfo* wi,
 {
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
   INT_ASSERT(fn);
+  DEBUG_PRINTF("narrowArg: %s (%d)\n", arg->cname, arg->id);
   forv_Vec(FnSymbol, indirectlyCalledFn, ftableVec) {
     if (fn == indirectlyCalledFn) {
       DEBUG_PRINTF("%s called from ftableVec\n", arg->cname);
@@ -844,11 +863,17 @@ narrowArg(ArgSymbol* arg, WideInfo* wi,
       INT_ASSERT(actual);
       if (isWideType(actual->var)) {
         DEBUG_PRINTF("\targdep %d->%d\n", actual->var->id, arg->id);
+        // if the actual can be narrow, this arg could be narrow
         addNarrowDep(actual->var, arg);
+
+        // widen the actual if the arg is wide
+        // Note: narrowSym would usually handle this, but it seems that
+        // for some variables the use in the call isn't in the useMap.
+        wideInfoMap->get(actual->var)->exprsToWiden.push_back(actual);
         
         // sync _val wideness
-        wi->refsToNarrow.add(actual->var);
-        wideInfoMap->get(actual->var)->refsToNarrow.add(arg);
+        wi->refsToNarrow.push_back(actual->var);
+        wideInfoMap->get(actual->var)->refsToNarrow.push_back(arg);
       }
     }
 
@@ -926,6 +951,7 @@ narrowWideReferences() {
   }
   delete wideInfoMap; wideInfoMap = 0;
   delete widenMap; widenMap = 0;
+  delete graph;
 
   freeDefUseMaps(defMap, useMap);
 
@@ -1019,10 +1045,10 @@ static void resolveHelper(WideInfo* wi) {
     // also need to be wide. Since the value in those references is wide,
     // the destination of a dereference also needs to be wide.
     //
-    if (wi->refsToNarrow.length() > 0) {
+    if (wi->refsToNarrow.size() > 0) {
       DEBUG_PRINTF("%s (%d) in %s is wide, these refs must be:\n", wi->sym->cname, wi->sym->id, wi->sym->getModule()->cname);
     }
-    forv_Vec(Symbol, se, wi->refsToNarrow) {
+    for_vector(Symbol, se, wi->refsToNarrow) {
       WideInfo* nwi = wideInfoMap->get(se);
       DEBUG_PRINTF("REF %s (%d)", nwi->sym->cname, nwi->sym->id);
       if (!nwi->valIsWide) {
@@ -1033,10 +1059,10 @@ static void resolveHelper(WideInfo* wi) {
     }
 
     if (isRef(wi->sym)) {
-      if (wi->destsToNarrow.length() > 0) {
+      if (wi->destsToNarrow.size() > 0) {
         DEBUG_PRINTF("Ref %s (%d) in %s is wide, these dests must be:\n", wi->sym->cname, wi->sym->id, wi->sym->getModule()->cname); 
       }
-      forv_Vec(SymExpr, se, wi->destsToNarrow) {
+      for_vector(SymExpr, se, wi->destsToNarrow) {
         WideInfo* nwi = wideInfoMap->get(se->var);
         DEBUG_PRINTF("DEST %s (%d)", nwi->sym->cname, nwi->sym->id);
         if (!nwi->mustBeWide) {
@@ -1047,12 +1073,12 @@ static void resolveHelper(WideInfo* wi) {
       }
     }
   } else {
-    if (wi->refsToNarrow.length() > 0) {
+    if (wi->refsToNarrow.size() > 0) {
       DEBUG_PRINTF("Propagating ref %d in %s\n", wi->sym->id, wi->sym->getModule()->cname);
     }
 
     // ref that could be narrow
-    forv_Vec(Symbol, se, wi->refsToNarrow) {
+    for_vector(Symbol, se, wi->refsToNarrow) {
       WideInfo* nwi = wideInfoMap->get(se);
       DEBUG_PRINTF("REF %s (%d): val is ", nwi->sym->cname, nwi->sym->id);
       if (wi->valIsWide) DEBUG_PRINTF("wide");
@@ -1067,11 +1093,11 @@ static void resolveHelper(WideInfo* wi) {
     }
 
     if (wi->valIsWide) {
-      if (wi->destsToNarrow.length() > 0) {
+      if (wi->destsToNarrow.size() > 0) {
         DEBUG_PRINTF("Widening dests of %d\n", wi->sym->id);
       }
 
-      forv_Vec(SymExpr, se, wi->destsToNarrow) {
+      for_vector(SymExpr, se, wi->destsToNarrow) {
         WideInfo* nwi = wideInfoMap->get(se->var);
         DEBUG_PRINTF("DEST: %d", se->var->id);
         if (!nwi->mustBeWide) {
@@ -1262,7 +1288,7 @@ static void handleLocalFields(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   form_Map(WideInfoMapElem, e, *wideInfoMap) {
     WideInfo* wi = e->value;
     if (!wi->mustBeWide) {
-      forv_Vec(SymExpr, se, wi->getMemberValueFields) {
+      for_vector(SymExpr, se, wi->getMemberValueFields) {
         // TODO: try to skip inside local fn?
         SET_LINENO(se);
         VarSymbol* var = newTemp(astr("wide_", se->var->name), wi->wideType);
