@@ -10,7 +10,6 @@ __all__ = [
     'chpl_compiler',
     'chpl_gmp',
     'chpl_hwloc',
-    'chpl_hwloc_numa',
     'chpl_launcher',
     'chpl_llvm',
     'chpl_locale_model',
@@ -19,5 +18,14 @@ __all__ = [
     'chpl_tasks',
     'chpl_threads',
     'chpl_timers',
-    'chpl_wide_pointers'
+    'chpl_wide_pointers',
+    'utils',
+    # third-party package configuration helpers
+    'chpl_3p_dlmalloc_configs',
+    'chpl_3p_gmp_configs',
+    'chpl_3p_hwloc_configs',
+    'chpl_3p_massivethreads_configs',
+    'chpl_3p_qthreads_configs',
+    'chpl_3p_re2_configs',
+    'chpl_3p_tcmalloc_configs'
 ]
