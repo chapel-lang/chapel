@@ -301,6 +301,21 @@ module GMP {
     ZERO = 0
   }
 
+  /*
+    All methods on BigInt work with Chapel types. Many of them use the gmp
+    functions directly, wich use C types. Runtime checks are used to ensure the
+    Chapel types can safely be cast to the C types (e.g. when casting a Chapel
+    uint it checks that it fits in the C ulong which could be a 32bit type if
+    running on linux32 platform).
+
+    The checks are controlled by --[no-]cast-checks, --fast, etc.
+
+    TODO: When a Chapel will not safely cast to a C type, it would be better to
+    promte the Chapel value to a BigInt, then run the operation on that
+    BigInt. This would make the BigInt interface consistent across all
+    platforms (already true today) _and_ always work regardless of platform
+    (not true today).
+   */
   class BigInt {
     var mpz:mpz_t;
 
