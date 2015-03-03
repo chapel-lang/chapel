@@ -19,6 +19,7 @@ __all__ = [
     'chpl_threads',
     'chpl_timers',
     'chpl_wide_pointers',
+    'utils',
     # third-party package configuration helpers
     'chpl_3p_dlmalloc_configs',
     'chpl_3p_gmp_configs',
