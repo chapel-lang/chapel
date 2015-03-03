@@ -137,7 +137,11 @@ removeWrapRecords() {
       if (!var->defPoint->parentSymbol->hasFlag(FLAG_REF)) {
         var->type = type;
 
-        // record-wrapped types should be local fields
+        //
+        // record-wrapped arrays should be local fields
+        // TODO: Domains don't work generally due to some case in Sparse.
+        // What about dist classes?
+        //
         if (TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol)) {
           if (!(ts->hasFlag(FLAG_REF) ||
                 ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE) ||
