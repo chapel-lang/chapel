@@ -13,10 +13,13 @@ import chpl_locale_model
 #
 @memoize
 def default_uniq_cfg_path():
+    chpl_home = os.environ.get('CHPL_HOME', '')
+    chpl_module_home = os.environ.get('CHPL_MODULE_HOME', '')
+    arch_get_lcd = (chpl_home == chpl_module_home) and (chpl_home != '')
     return '{0}-{1}-{2}'.format(chpl_platform.get('target'),
                                 chpl_compiler.get('target'),
                                 chpl_arch.get('target', map_to_compiler=True,
-                                              get_lcd=False))
+                                              get_lcd=arch_get_lcd))
 
 #
 # Return libraries and other options mentioned in the old_library and
