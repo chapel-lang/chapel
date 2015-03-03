@@ -1183,6 +1183,18 @@ for testname in testsrc:
         #
         # Compile (with timeout)
         #
+        # compilation timeout defaults to 2 * execution timeout.
+        # This is to quiet compilation timeouts in some oversubscribed test
+        # configurations (since they are generating a lot of testing noise, but
+        # don't represent a real issue.)
+        #
+        # TODO (Elliot 02/27/15): Ideally what we want is separate options for
+        # compiler and testing timeout, but that's more work to thread through
+        # sub_test right now and this is causing a lot of noise in nightly
+        # testing. Hopefully this is just a temporary work around and I'll
+        # remember to add the cleaner solution soon.
+        #
+        comptimeout = 2*timeout
         sys.stdout.write('[Executing compiler %s'%(cmd))
         if args:
             sys.stdout.write(' %s'%(' '.join(args)))
@@ -1190,7 +1202,7 @@ for testname in testsrc:
         sys.stdout.flush()
         if useTimedExec:
             wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
-            p = subprocess.Popen([timedexec, str(timeout), wholecmd],
+            p = subprocess.Popen([timedexec, str(comptimeout), wholecmd],
                                  stdin=open(compstdin, 'r'),
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
@@ -1211,7 +1223,7 @@ for testname in testsrc:
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
             try:
-                output = SuckOutputWithTimeout(p.stdout, timeout)
+                output = SuckOutputWithTimeout(p.stdout, comptimeout)
             except ReadTimeoutException:
                 sys.stdout.write('%s[Error: Timed out compilation for %s/%s'%
                                  (futuretest, localdir, test_filename))
@@ -1533,7 +1545,14 @@ for testname in testsrc:
               execOptRedirect = args[redirIdx + 1]
               args.pop(redirIdx+1)
               args.pop(redirIdx)
-              if redirectin == None or redirectin == "/dev/null":
+              if redirectin == None:
+                  # It is a little unfortunate that we compile the test only to skip it here.
+                  # In order to prevent this, the logic for combining all the places execpopts
+                  # come from and checking for '<' would have to be factored out or duplicated
+                  print('[Skipping test with stdin redirection ("<") in execopts since '
+                        '-nostdinredirect is given {0}/{1}]'.format(localdir, test_filename))
+                  break;
+              elif redirectin == "/dev/null":
                 if os.access(execOptRedirect, os.R_OK):
                   redirectin = execOptRedirect
                   redirectin_set_in_loop = True

@@ -101,35 +101,60 @@ static void removeSpacesFromString(char* str)
 }
 
 
+/*
+ * Find the default tmp directory. Try getting the tmp dir from the ISO/IEC
+ * 9945 env var options first, then P_tmpdir, then "/tmp".
+ */
+static const char* getTempDir() {
+  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
+  for (unsigned int i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
+    const char* curDir = getenv(possibleDirsInEnv[i]);
+    if (curDir != NULL) {
+      return curDir;
+    }
+  }
+#ifdef P_tmpdir
+  return P_tmpdir;
+#endif
+  return "/tmp";
+}
+
+
+const char* makeTempDir(const char* dirPrefix) {
+  const char* tmpdirprefix = astr(getTempDir(), "/", dirPrefix);
+  const char* tmpdirsuffix = ".deleteme";
+
+  pid_t mypid = getpid();
+#ifdef DEBUGTMPDIR
+  mypid = 0;
+#endif
+
+  char mypidstr[MAX_CHARS_PER_PID];
+  snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
+
+  struct passwd* passwdinfo = getpwuid(geteuid());
+  const char* userid;
+  if (passwdinfo == NULL) {
+    userid = "anon";
+  } else {
+    userid = passwdinfo->pw_name;
+  }
+  char* myuserid = strdup(userid);
+  removeSpacesFromString(myuserid);
+
+  const char* tmpDir = astr(tmpdirprefix, myuserid, mypidstr, tmpdirsuffix);
+  ensureDirExists(tmpDir, "making temporary directory");
+
+  free(myuserid); myuserid = NULL;
+
+  return tmpDir;
+}
+
 static void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
     if (tmpdirname == NULL) {
-      const char* tmpdirprefix = "/tmp/chpl-";
-      const char* tmpdirsuffix = ".deleteme";
-
-      pid_t mypid = getpid();
-#ifdef DEBUGTMPDIR
-      mypid = 0;
-#endif
-
-      char mypidstr[MAX_CHARS_PER_PID];
-      snprintf(mypidstr, MAX_CHARS_PER_PID, "-%d", (int)mypid);
-
-      struct passwd* passwdinfo = getpwuid(geteuid());
-      const char* userid;
-      if (passwdinfo == NULL) {
-        userid = "anon";
-      } else {
-        userid = passwdinfo->pw_name;
-      }
-      char* myuserid = strdup(userid);
-      removeSpacesFromString(myuserid);
-
-      tmpdirname = astr(tmpdirprefix, myuserid, mypidstr, tmpdirsuffix);
+      tmpdirname = makeTempDir("chpl-");
       intDirName = tmpdirname;
-      ensureDirExists(intDirName, "making temporary directory");
-
-      free(myuserid); myuserid = NULL;
     }
   } else {
     if (intDirName != saveCDir) {
@@ -137,6 +162,12 @@ static void ensureTmpDirExists() {
       ensureDirExists(saveCDir, "ensuring --savec directory exists");
     }
   }
+}
+
+
+void deleteDir(const char* dirname) {
+  const char* cmd = astr("rm -rf ", dirname);
+  mysystem(cmd, astr("removing directory: ", dirname));
 }
 
 
@@ -155,10 +186,7 @@ void deleteTmpDir() {
         strcmp(tmpdirname, "//") == 0) {
       INT_FATAL("tmp directory name looks fishy");
     }
-    const char* rmdircommand = "rm -r ";
-    const char* command = astr(rmdircommand, tmpdirname);
-
-    mysystem(command, "removing temporary directory");
+    deleteDir(tmpdirname);
     tmpdirname = NULL;
   }
 #endif
@@ -349,7 +377,7 @@ void testInputFiles(int numFilenames, char* filename[]) {
 
   inputFilenames[i] = NULL;
 
-  if (!foundChplSource)
+  if (!foundChplSource && fUseIPE == false)
     USR_FATAL("Command line contains no .chpl source files");
 }
 
@@ -901,6 +929,21 @@ static int sys_getcwd(char** path_out)
   return 0;
 }
 
+
+/*
+ * Returns the current working directory. Does not report failures. Use
+ * sys_getcwd() if you need error reports.
+ */
+const char* getCwd() {
+  const char* result = getcwd(NULL, PATH_MAX);
+  if (result) {
+    return result;
+  } else {
+    return "";
+  }
+}
+
+
 // Find the path to the running program
 // (or return NULL if we couldn't figure it out).
 // The return value must be freed by the caller.
@@ -1001,4 +1044,3 @@ bool isSameFile(const char* pathA, const char* pathB)
 
   return false;
 }
-

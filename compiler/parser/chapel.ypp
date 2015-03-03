@@ -401,8 +401,8 @@ program:
 
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
-                                       { $$ = new BlockStmt();     resetTempID(); }
-| toplevel_stmt_ls toplevel_stmt       { $1->appendChapelStmt($2); resetTempID(); }
+                                       { $$ = new BlockStmt();                                  resetTempID(); }
+| toplevel_stmt_ls toplevel_stmt       { $1->appendChapelStmt($2); context->generatedStmt = $1; resetTempID(); }
 ;
 
 // Switch between plain statements and those preceeded by pragmas

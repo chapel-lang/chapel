@@ -20,8 +20,8 @@ use lib "$FindBin::Bin";
 use nightlysubs;
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail@cray.com";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all@cray.com";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
 $replymail = "chapel-developers\@lists.sourceforge.net";
 
 $valgrind = 0;
@@ -430,11 +430,6 @@ if ($parnodefile eq "") {
   $permlog = "<invalid use of permlog>";
   $permsum = "<invalid use of permsum>";
 }
-
-#
-# make "prev" logs if they don't already exist
-#
-ensureSummaryExists($prevsummary);
 
 
 $somethingfailed = 0;

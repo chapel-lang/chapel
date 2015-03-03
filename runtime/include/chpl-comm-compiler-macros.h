@@ -46,8 +46,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        int ln, c_string fn)
 {
   if (chpl_nodeID == node) {
-    if (raddr != addr)
-      chpl_memcpy(addr, raddr, elemSize*len);
+    chpl_memcpy(addr, raddr, elemSize*len);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);

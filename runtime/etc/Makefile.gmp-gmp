@@ -15,6 +15,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GEN_LFLAGS += -L$(GMP_LIB_DIR) -Wl,-rpath -Wl,$(GMP_LIB_DIR)
-LIBS += -lgmp
+GEN_LFLAGS += -L$(GMP_LIB_DIR) -Wl,-rpath,$(GMP_LIB_DIR)
 

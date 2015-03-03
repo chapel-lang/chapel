@@ -15,7 +15,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GEN_LFLAGS += -L$(RE2_LIB_DIR) -Wl,-rpath -Wl,$(RE2_LIB_DIR)
-LIBS += -lre2 -lpthread
-
+GEN_LFLAGS += -L$(RE2_LIB_DIR) -Wl,-rpath,$(RE2_LIB_DIR)
 LD=$(CXX)

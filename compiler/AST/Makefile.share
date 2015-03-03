@@ -48,6 +48,8 @@ AST_SRCS =                                          \
            AstDumpToHtml.cpp                        \
            AstDumpToNode.cpp                        \
                                                     \
+           AstPrintDocs.cpp                         \
+                                                    \
            AstToText.cpp                            \
                                                     \
            CollapseBlocks.cpp                       \

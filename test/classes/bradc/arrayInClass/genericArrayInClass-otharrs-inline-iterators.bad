@@ -3,7 +3,7 @@ obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is req
 obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
-obj/ChapelArray.c: In function 'coforall_fn9':
+obj/ChapelArray.c: In function 'coforall_fn7':
 obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
 obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
 obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required

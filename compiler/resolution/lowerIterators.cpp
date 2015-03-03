@@ -43,7 +43,7 @@ static void nonLeaderParCheck()
   // check for parallel constructs in non-leader iterators
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
+    if (fn->isIterator() && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
       nonLeaderParCheckInt(fn, true);
     }
   }
@@ -151,7 +151,7 @@ static void computeRecursiveIteratorSet() {
   forv_Vec(FnSymbol, iter, gFnSymbols)
   {
     // And select just the iterators.
-    if (!iter->hasFlag(FLAG_ITERATOR_FN))
+    if (!iter->isIterator())
       continue;
 
     // Determine if the iterator calls itself, either directly or indirectly.
@@ -793,7 +793,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
 //
 static void localizeIteratorReturnSymbols() {
   forv_Vec(FnSymbol, iterFn, gFnSymbols) {
-    if (iterFn->inTree() && iterFn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (iterFn->inTree() && iterFn->isIterator()) {
       Vec<BaseAST*> asts;
       collect_asts(iterFn, asts);
       localizeReturnSymbols(iterFn, asts);
@@ -822,7 +822,7 @@ yieldArraysByRef() {
     // Watch out for *initializations* of 'ret' - they look similar.
     if (call->isPrimitive(PRIM_MOVE)) {
       if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) {
-        if (fn->hasFlag(FLAG_ITERATOR_FN) &&
+        if (fn->isIterator() &&
             fn->hasFlag(FLAG_SPECIFIED_RETURN_TYPE))
         {
           Symbol* ret = fn->getReturnSymbol();
@@ -1610,6 +1610,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
   forLoop->replace(body);
 }
 
+
 static void
 expandForLoop(ForLoop* forLoop) {
   SymExpr*   se2      = forLoop->iteratorGet();
@@ -1629,6 +1630,22 @@ expandForLoop(ForLoop* forLoop) {
   } else {
     // This code handles zippered iterators, dynamic iterators, and any other
     // iterator that cannot be inlined.
+
+    // When expanding a single-loop iterator with a single yield, the generated
+    // code looks like:
+    //   zip1(_iterator1); zip1(_iterator2);
+    //   idx2 = getValue(_iterator2); idx1 = getValue(_iterator1);
+    //   bool more1 = hasMore(iterator1);
+    //   for (init(_iterator1), init(_iterator2); more1; incr(_iterator1), incr(_iterator2)) {
+    //     zip2(_iterator);
+    //     // Bounds checks inserted here.
+    //     zip3(_iterator1); zip3(_iterator2);
+    //     more = hasMore(itertor1);
+    //   }
+    //   zip4(_iterator2); zip4(_iterator1);
+    // In zippered iterators, each clause may contain multiple calls to zip1(),
+    // getValue(), etc.  These are inserted in the order shown.
+
     SET_LINENO(forLoop);
 
     Vec<Symbol*> iterators;
@@ -1731,11 +1748,16 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAtHead(buildIteratorCall(NULL, ZIP2, iterators.v[i], children));
     }
 
+    // 2015-02-23 hilde:
+    // TODO: I think this wants to be insertBefore, and moved before the call
+    // to getValue is inserted.  Check the order in the generated code to see
+    // if this is the case.
     forLoop->insertAtHead(index->defPoint->remove());
 
-    // Even for zippered iterators we only have one conditional test for the
-    // loop. This takes that conditional and puts it into the test segment of
-    // the c for loop.
+    // Ensure that the test clause for completely unbounded loops contains
+    // something.
+    // testBlock is only non-NULL if isBoundedIterator() evaluates to true for
+    // at least one of the iterators being zippered together.
     if (testBlock == NULL) {
       testBlock = new BlockStmt();
 
@@ -1748,23 +1770,42 @@ expandForLoop(ForLoop* forLoop) {
     // scope to another if done in mid-transformation.
     CForLoop* cforLoop = CForLoop::buildWithBodyFrom(forLoop);
 
+    // Even for zippered iterators we only have one conditional test for the
+    // loop. This takes that conditional and puts it into the test segment of
+    // the c for loop.  Code in the initBlock and incrBlock clauses are each a
+    // concatenation of the init() and incr() calls for all iterators being
+    // zippered together.  The init() and incr() calls appear in the same order
+    // as the iterators appear in the zip(,,) tuple.
     cforLoop->loopHeaderSet(initBlock, testBlock, incrBlock);
 
     forLoop->replace(cforLoop);
   }
 }
 
+
+// Find all iterator constructs 
+// Select those whose _getIterator() functions have the FLAG_ITERATOR_INLINE.
+// Inline the selected iterators at their call sites.
 static void
 inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol) {
-      if (ForLoop* forLoop = toForLoop(block)) {
-        Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
-        FnSymbol* ifn      = iterator->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+    // Skip blocks that are no longer in the tree.
+    if (block->parentSymbol == NULL)
+      continue;
 
-        if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
-          expandIteratorInline(forLoop);
-        }
+    if (ForLoop* forLoop = toForLoop(block)) {
+      Symbol*   iterator = toSymExpr(forLoop->iteratorGet())->var;
+      // The _getIterator function is stashed in the defaultInitializer field
+      // of the iterator class.
+      FnSymbol* getIterFn = iterator->type->defaultInitializer;
+      // The operand of the getIterator function is an iterator record.
+      Type* irecord = getIterFn->getFormal(1)->type;
+      // The original iterator function is stored in the defaultInitializer
+      // field of an iterator record.
+      FnSymbol* ifn      = irecord->defaultInitializer;
+
+      if (ifn->hasFlag(FLAG_INLINE_ITERATOR)) {
+        expandIteratorInline(forLoop);
       }
     }
   }
@@ -2132,7 +2173,7 @@ void lowerIterators() {
   computeRecursiveIteratorSet();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (fn->isIterator()) {
       fn->collapseBlocks();
 
       removeUnnecessaryGotos(fn);
@@ -2157,7 +2198,7 @@ void lowerIterators() {
   inlineIterators();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (fn->isIterator()) {
       fn->collapseBlocks();
       removeUnnecessaryGotos(fn);
     }
@@ -2174,7 +2215,7 @@ void lowerIterators() {
   fragmentLocalBlocks();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (fn->isIterator()) {
       // This collapseBlocks call is required for lowerIterator to inline
       // advance() into zip[1-4]
       fn->collapseBlocks();
