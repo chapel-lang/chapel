@@ -267,8 +267,8 @@ extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, co
 
 // Same as qio_file_open_access in, except this time we pass though our
 // struct that will initilize the file with the appropriate functions for that FS
-extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string,
-                                     access:string, iohints:c_int, /*const*/ ref style:iostyle,
+extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
+                                     access:c_string, iohints:c_int, /*const*/ ref style:iostyle,
                                      fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
