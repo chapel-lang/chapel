@@ -25,7 +25,7 @@ def get_chpl_home():
 @memoize
 def using_chapel_module():
     chpl_home = os.environ.get('CHPL_HOME', '')
-    if chpl_home != None:
+    if chpl_home is not None:
         return chpl_home == os.environ.get('CHPL_MODULE_HOME', '')
     return False
 
