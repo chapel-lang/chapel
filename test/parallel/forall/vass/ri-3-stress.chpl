@@ -1,10 +1,10 @@
 // Stress test for parallel correctness.
 
 config var
-  r = 100000, // how many times to repeat
+  r = 30000,  // how many times to repeat
   t = 16,     // how many tasks to issue concurrently
   y = 6,      // how many times to yield from the follower
-  f = 0;      // frequency of reports, 0 if none
+  f = 5000;   // frequency of reports, 0 if none
 
 var nErr = 0;
 
