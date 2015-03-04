@@ -66,6 +66,7 @@ extern proc chpl_cstderr():_file;
 pragma "no doc"
 extern proc chpl_cnullfile():_file;
 
+// chpldoc TODO - docs for syserr don't show up
 /* A type storing an error code or an error message.
    A syserr can be compared using == or != to an err_t (ie integer error code)
    or to another syserr. A syserr can be cast to or from an err_t. It can be
