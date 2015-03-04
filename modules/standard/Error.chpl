@@ -27,7 +27,7 @@
    The IO module uses these routines in a way that supports error inspection
    and also rapid prototyping. Most routines in the IO module have two forms.
    In one form, an error (of type syserr) is returned in an out error argument.
-   In the second form, no error is returned, an instead the task will halt
+   In the second form, no error is returned, and instead the task will halt
    with a fatal error if an error is encountered.
    
  */
@@ -69,7 +69,6 @@ proc quote_string(s:string, len:ssize_t) {
 
    :arg error: the error object
    :arg msg: extra information to print after the error description
-   :returns: does not return if there was an error
  */
 proc ioerror(error:syserr, msg:string)
 {
@@ -90,7 +89,6 @@ proc ioerror(error:syserr, msg:string)
    :arg error: the error object
    :arg msg: extra information to print after the error description
    :arg path: a path to print out that is related to the error
-   :returns: does not return if there was an error
  */
 proc ioerror(error:syserr, msg:string, path:string)
 {
@@ -110,13 +108,10 @@ proc ioerror(error:syserr, msg:string, path:string)
    along with the path and file offset related to the error. For example, this
    routine might indicate a file format error at a particular location.
 
-   This routine .
-
    :arg error: the error object
    :arg msg: extra information to print after the error description
    :arg path: a path to print out that is related to the error
    :arg offset: an offset to print out that is related to the error
-   :returns: does not return if there was an error
  */
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
 {
@@ -145,7 +140,6 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
    :arg msg: extra information to print after the error description
    :arg path: a path to print out that is related to the error
    :arg offset: an offset to print out that is related to the error
-   :returns: does not return
  */
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64))
 {
