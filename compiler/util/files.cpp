@@ -115,8 +115,9 @@ static const char* getTempDir() {
   }
 #ifdef P_tmpdir
   return P_tmpdir;
-#endif
+#else
   return "/tmp";
+#endif
 }
 
 
@@ -377,7 +378,7 @@ void testInputFiles(int numFilenames, char* filename[]) {
 
   inputFilenames[i] = NULL;
 
-  if (!foundChplSource)
+  if (!foundChplSource && fUseIPE == false)
     USR_FATAL("Command line contains no .chpl source files");
 }
 

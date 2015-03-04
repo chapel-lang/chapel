@@ -400,6 +400,11 @@ BlockStmt::isForLoop() const {
 }
 
 bool
+BlockStmt::isCoforallLoop() const {
+  return false;
+}
+
+bool
 BlockStmt::isCForLoop() const {
   return false;
 }
