@@ -256,6 +256,11 @@ bool ForLoop::isForLoop() const
   return true;
 }
 
+// TODO (Elliot 03/03/15): coforall loops are currently represented
+// as ForLoops in the compiler. This is a start at distinguishing
+// them. Note that for coforall loops, this method and isForLoop
+// with both return true. Eventually CoforallLoop should become it's
+// own class that shares a common parent with ForLoop.
 bool ForLoop::isCoforallLoop() const
 {
   return mIndex->var->hasFlag(FLAG_COFORALL_INDEX_VAR);
