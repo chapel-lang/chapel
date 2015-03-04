@@ -6251,6 +6251,8 @@ resolveFns(FnSymbol* fn) {
       }
       if (formal->type == gStandaloneTag->type &&
           paramMap.get(formal) == gStandaloneTag) {
+        // need to do the following before 'fn' gets resolved
+        stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
         // Standalone iterators are always inlined.
         fn->addFlag(FLAG_INLINE_ITERATOR);
       }
