@@ -312,6 +312,7 @@ static int  processIdentifier(yyscan_t scanner) {
 
 static int processToken(yyscan_t scanner, int t) {
   YYSTYPE* yyLval = yyget_lval(scanner);
+  size_t   remain = sizeof(captureString) - 1;
 
   countToken(yyget_text(scanner));
 
@@ -319,11 +320,15 @@ static int processToken(yyscan_t scanner, int t) {
 
   if (captureTokens) {
     if (t == TASSIGN ||
-        t == TDOTDOTDOT)
-      strncat(captureString, " ",                 sizeof(captureString) - 1);
+        t == TDOTDOTDOT) {
+      strncat(captureString, " ",                 remain);
+      remain = remain - 1;
+    }
 
-    if (t != TLCBR)
-      strncat(captureString, yyget_text(scanner), sizeof(captureString) - 1);
+    if (t != TLCBR) {
+      strncat(captureString, yyget_text(scanner), remain);
+      remain = remain - strlen(yyget_text(scanner));
+    }
 
     if (t == TCOMMA  ||
         t == TPARAM  ||
@@ -336,8 +341,10 @@ static int processToken(yyscan_t scanner, int t) {
         t == TREF    ||
         t == TCOLON  ||
         t == TASSIGN ||
-        t == TRSBR)
-      strncat(captureString, " ",                 sizeof(captureString) - 1);
+        t == TRSBR) {
+      strncat(captureString, " ",                 remain);
+      remain = remain - 1;
+    }
   }
 
   // If the stack has a value then we must be in externmode.
@@ -366,9 +373,16 @@ static int processStringLiteral(yyscan_t scanner, const char* q) {
   countToken(astr(q, yyLval->pch, q));
 
   if (captureTokens) {
-    strncat(captureString, yyText,      sizeof(captureString) - 1);
-    strncat(captureString, yyLval->pch, sizeof(captureString) - 1);
-    strncat(captureString, yyText,      sizeof(captureString) - 1);
+    size_t remain = sizeof(captureString) - 1;
+
+    strncat(captureString, yyText,      remain);
+    remain = remain - strlen(yyText);
+
+    strncat(captureString, yyLval->pch, remain);
+    remain = remain - strlen(yyLval->pch);
+
+    strncat(captureString, yyText,      remain);
+    remain = remain - strlen(yyText);
   }
 
   return STRINGLITERAL;
