@@ -747,6 +747,9 @@ static int processBlockComment(yyscan_t scanner) {
     }
 
     yyLval->pch = astr(wholeComment.c_str());
+
+  } else {
+    yyLval->pch = NULL;
   }
 
   countMultiLineComment(stringBuffer);
