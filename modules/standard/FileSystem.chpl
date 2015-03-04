@@ -134,6 +134,11 @@ proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
     // the string portion, so we aren't supporting it just yet.
     return;
   } else {
+    if (err == ENOENT) {
+      // Destination didn't exist before.  We'd be overwriting it anyways, so
+      // we don't care.
+      err = ENOERR;
+    }
     if err != ENOERR then return;
   }
   copyFile(err, src, destFile);
