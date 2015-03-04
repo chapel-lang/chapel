@@ -258,8 +258,10 @@ inline proc c_ptrTo(arr: []) where isRectangularArr(arr) {
    :returns: a pointer to the argument passed by reference
 
  */
-inline proc c_ptrTo(ref x:?t):c_ptr(t) { if isArrayType(t) then
-  compilerError("c_ptrTo unsupported array type", 2); if isDomainType(t) then
+inline proc c_ptrTo(ref x:?t):c_ptr(t) {
+  if isArrayType(t) then
+    compilerError("c_ptrTo unsupported array type", 2);
+  if isDomainType(t) then
     compilerError("c_ptrTo domain type not supported", 2);
   // Other cases should be avoided, e.g. sync vars
   return c_pointer_return(x); }
@@ -481,7 +483,7 @@ extern const EDOM:err_t;
 /* Disc quota exceeded. A write system call to an ordinary file, the creation
    of a directory or symbolic link, or the creation of a directory entry failed
    because the user's quota of disk blocks was exhausted, or the allocation of
-   an inode for a newly cre- ated file failed because the user's quota of inodes
+   an inode for a newly created file failed because the user's quota of inodes
    was exhausted. (POSIX.1)
  */
 extern const EDQUOT:err_t;
@@ -509,13 +511,13 @@ extern const EHOSTDOWN:err_t;
  */
 extern const EHOSTUNREACH:err_t;
 
-/* Identifier removed.  An IPC identifier was removed while the current
-   process was waiting on it.  (POSIX.1)
+/* Identifier removed. An IPC identifier was removed while the current
+   process was waiting on it. (POSIX.1)
  */
 extern const EIDRM:err_t;
 
 /*
-   Illegal byte sequence.  While decoding a multibyte character the function
+   Illegal byte sequence. While decoding a multibyte character the function
    came along an invalid or an incomplete sequence of bytes or the given wide
    character is invalid.
 
@@ -524,39 +526,39 @@ extern const EIDRM:err_t;
  */
 extern const EILSEQ:err_t;
 
-/* Operation now in progress.   An operation that takes a long time to complete
+/* Operation now in progress. An operation that takes a long time to complete
    (such as a connect system call) was attempted on a non-blocking object.
    (POSIX.1)
   */
 extern const EINPROGRESS:err_t;
 
-/* Interrupted system call.  An asynchronous signal (such as SIGINT or SIGQUIT)
+/* Interrupted system call. An asynchronous signal (such as SIGINT or SIGQUIT)
    was caught by the process during the execution of an interruptible function.
    If the signal handler performs a normal return, the interrupted system call
    will seem to have returned the error condition. (POSIX.1)
 */
 extern const EINTR:err_t;
 
-/* Invalid argument.  Some invalid argument was supplied.  (For example,
+/* Invalid argument. Some invalid argument was supplied. (For example,
    specifying an undefined signal to a signal system call or a kill system
    call). (POSIX.1)
 */
 extern const EINVAL:err_t;
 
-/* Input/output error.  Some physical input or output error occurred.  This
+/* Input/output error. Some physical input or output error occurred. This
    error will not be reported until a subsequent operation on the same file
    descriptor and may be lost (over written) by any subsequent errors. (POSIX.1)
   */
 extern const EIO:err_t;
 
-/* Socket is already connected.  A connect system call was made on an already
+/* Socket is already connected. A connect system call was made on an already
    connected socket; or, a sendto or sendmsg system call on a connected socket
    specified a destination when already connected. (POSIX.1)
 */
 extern const EISCONN:err_t;
 
 /* Is a directory. An attempt was made to open a directory with write mode
-   specified.  (POSIX.1)
+   specified. (POSIX.1)
  */
 extern const EISDIR:err_t;
 
@@ -599,17 +601,17 @@ extern const ELIBSCN:err_t;
 /* Cannot exec a shared library directly (linux only) */
 extern const ELIBEXEC:err_t;
 
-/* Too many levels of symbolic links.  A path name lookup involved more than 32
-   (MAXSYMLINKS) symbolic links.  (POSIX.1)
+/* Too many levels of symbolic links. A path name lookup involved more than 32
+   (MAXSYMLINKS) symbolic links. (POSIX.1)
   */
 extern const ELOOP:err_t;
 
 /* Wrong medium type (linux only) */
 extern const EMEDIUMTYPE:err_t;
 
-/* Too many open files.  Maximum number of file descriptors allowable in the
+/* Too many open files. Maximum number of file descriptors allowable in the
    process has been reached and requests for an open cannot be satisfied until
-   at least one has been closed.  The getdtablesize system call will obtain the
+   at least one has been closed. The getdtablesize system call will obtain the
    current limit. (POSIX.1)
 */
 extern const EMFILE:err_t;
@@ -619,7 +621,7 @@ extern const EMFILE:err_t;
   */
 extern const EMLINK:err_t;
 
-/* Message too long.  A message sent on a socket was larger than the internal 
+/* Message too long. A message sent on a socket was larger than the internal 
    message buffer or some other network limit. (POSIX.1)
  */
 extern const EMSGSIZE:err_t;
@@ -628,12 +630,12 @@ extern const EMSGSIZE:err_t;
  */
 extern const EMULTIHOP:err_t;
 
-/* File name too long.  A component of a path name exceeded {NAME_MAX} charac-
-   ters, or an entire path name exceeded {PATH_MAX} characters. (POSIX.1)
+/* File name too long. A component of a path name exceeded {NAME_MAX}
+   characters, or an entire path name exceeded {PATH_MAX} characters. (POSIX.1)
  */
 extern const ENAMETOOLONG:err_t;
 
-/* Network is down.  A socket operation encountered a dead network. (POSIX.1) */
+/* Network is down. A socket operation encountered a dead network. (POSIX.1) */
 extern const ENETDOWN:err_t;
 
 /* Network dropped connection on reset. The host you were connected to crashed
@@ -641,18 +643,18 @@ extern const ENETDOWN:err_t;
   */
 extern const ENETRESET:err_t;
 
-/* Network is unreachable.  A socket operation was attempted to an unreachable
+/* Network is unreachable. A socket operation was attempted to an unreachable
    network. (POSIX.1)
  */
 extern const ENETUNREACH:err_t;
 
-/* Too many open files in system.  Maximum number of open files allowable on 
+/* Too many open files in system. Maximum number of open files allowable on 
    the system has been reached and requests for an open cannot be satisfied
    until at least one has been closed. (POSIX.1)
  */
 extern const ENFILE:err_t;
 
-/* No buffer space available.  An operation on a socket or pipe was not
+/* No buffer space available. An operation on a socket or pipe was not
    performed because the system lacked sufficient buffer space or because a
    queue was full. (POSIX.1 XSI STREAMS option)
   */
@@ -662,18 +664,18 @@ extern const ENOBUFS:err_t;
  */
 extern const ENODATA:err_t;
 
-/* Operation not supported by device.  An attempt was made to apply an
+/* Operation not supported by device. An attempt was made to apply an
    inappropriate function to a device, for example, trying to read a write-only
    device such as a printer. (POSIX.1)
  */
 extern const ENODEV:err_t;
 
-/* No such file or directory.  A component of a specified pathname did not
+/* No such file or directory. A component of a specified pathname did not
    exist, or the pathname was an empty string. (POSIX.1)
  */
 extern const ENOENT:err_t;
 
-/* Exec format error.  A request was made to execute a file that, although it
+/* Exec format error. A request was made to execute a file that, although it
    has the appropriate permissions, was not in the format required for an
    executable file. (POSIX.1)
  */
@@ -682,7 +684,7 @@ extern const ENOEXEC:err_t;
 /* Required key not available (linux only) */
 extern const ENOKEY:err_t;
 
-/* No locks available.  A system-imposed limit on the number of simultaneous 
+/* No locks available. A system-imposed limit on the number of simultaneous 
   file locks was reached. (POSIX.1)
  */
 extern const ENOLCK:err_t;
@@ -696,13 +698,13 @@ extern const ENOMEDIUM:err_t;
 
 /* Cannot allocate memory. The new process image required more memory than
    was allowed by the hardware or by system-imposed memory management
-   constraints.  A lack of swap space is normally temporary; however, a lack of
-   core is not.  Soft limits may be increased to their corresponding hard
+   constraints. A lack of swap space is normally temporary; however, a lack of
+   core is not. Soft limits may be increased to their corresponding hard
    limits. (POSIX.1)
  */
 extern const ENOMEM:err_t;
 
-/* No message of desired type.  An IPC message queue does not contain a message
+/* No message of desired type. An IPC message queue does not contain a message
    of the desired type, or a message catalog does not contain the requested
    message. (POSIX.1)
  */
@@ -716,12 +718,12 @@ extern const ENONET:err_t;
  */
 extern const ENOPKG:err_t;
 
-/* Protocol not available.  A bad option or level was specified in a
+/* Protocol not available. A bad option or level was specified in a
    getsockopt or setsockopt system call. (POSIX.1)
   */
 extern const ENOPROTOOPT:err_t;
 
-/* No space left on device.  A write system call to an ordinary file, the
+/* No space left on device. A write system call to an ordinary file, the
    creation of a directory or symbolic link, or the creation of a directory
    entry failed because no more disk blocks were available on the file system,
    or the allocation of an inode for a newly created file failed because no
@@ -735,7 +737,7 @@ extern const ENOSR:err_t;
 /* Not a STREAM (POSIX.1 XSI STREAMS option) */
 extern const ENOSTR:err_t;
 
-/* Function not implemented.  Attempted a system call that is not available on 
+/* Function not implemented. Attempted a system call that is not available on 
    this system. (POSIX.1)
  */
 extern const ENOSYS:err_t;
@@ -746,14 +748,14 @@ extern const ENOSYS:err_t;
  */
 extern const ENOTBLK:err_t;
 
-/* Socket is not connected.  An request to send or receive data was disallowed
+/* Socket is not connected. An request to send or receive data was disallowed
    because the socket was not connected and (when sending on a datagram socket)
    no address was supplied. (POSIX.1)
  */
 extern const ENOTCONN:err_t;
 
-/* Not a directory.  A component of the specified pathname existed, but it was
-   not a directory, when a directory was expected.  (POSIX.1)
+/* Not a directory. A component of the specified pathname existed, but it was
+   not a directory, when a directory was expected. (POSIX.1)
  */
 extern const ENOTDIR:err_t;
 
@@ -768,53 +770,53 @@ extern const ENOTEMPTY:err_t;
 /* Socket operation on non-socket. (POSIX.1) */
 extern const ENOTSOCK:err_t;
 
-/* Operation not supported.  The attempted operation is not supported for the
-   type of object referenced.  Usually this occurs when a file descriptor
+/* Operation not supported. The attempted operation is not supported for the
+   type of object referenced. Usually this occurs when a file descriptor
    refers to a file or socket that cannot support this operation, for example,
-   trying to accept a connection on a datagram socket.  (POSIX.1)
+   trying to accept a connection on a datagram socket. (POSIX.1)
  */
 extern const ENOTSUP:err_t;
 
-/* Inappropriate ioctl for device.      A control function (e.g. ioctl system
+/* Inappropriate ioctl for device. A control function (e.g. ioctl system
    call) was attempted for a file or special device for which the operation was
-   inappropriate.  (POSIX.1)
+   inappropriate. (POSIX.1)
  */
 extern const ENOTTY:err_t;
 
 /* Name not unique on network (linux only) */
 extern const ENOTUNIQ:err_t;
 
-/* Device not configured.  Input or output on a special file referred to a
+/* Device not configured. Input or output on a special file referred to a
    device that did not exist, or made a request beyond the limits of the
-   device.      This error may also occur when, for example, a tape drive is
+   device. This error may also occur when, for example, a tape drive is
    not online or no disk pack is loaded on a drive. (POSIX.1)
  */
 extern const ENXIO:err_t;
 
-/* Operation not supported.  The attempted operation is not supported for the
-  type of object referenced.  Usually this occurs when a file descriptor refers
+/* Operation not supported. The attempted operation is not supported for the
+  type of object referenced. Usually this occurs when a file descriptor refers
   to a file or socket that cannot support this operation, for example, trying
   to accept a connection on a datagram socket. (POSIX.1)
   */
 extern const EOPNOTSUPP:err_t;
 
-/* Value too large to be stored in data type.  A numerical result of the
+/* Value too large to be stored in data type. A numerical result of the
    function was too large to be stored in the caller provided space. (POSIX.1)
  */
 extern const EOVERFLOW:err_t;
 
-/* Operation not permitted.  An attempt was made to perform an operation
+/* Operation not permitted. An attempt was made to perform an operation
    limited to processes with appropriate privileges or to the owner of a file
    or other resources. (POSIX.1)
  */
 extern const EPERM:err_t;
 
-/* Protocol family not supported.  The protocol family has not been configured
+/* Protocol family not supported. The protocol family has not been configured
    into the system or no implementation for it exists. (linux, FreeBSD)
  */
 extern const EPFNOSUPPORT:err_t;
 
-/* Broken pipe.  A write on a pipe, socket or FIFO for which there is no 
+/* Broken pipe. A write on a pipe, socket or FIFO for which there is no 
    process to read the data. (POSIX.1)
  */
 extern const EPIPE:err_t;
@@ -824,18 +826,18 @@ extern const EPIPE:err_t;
  */
 extern const EPROTO:err_t;
 
-/* Protocol not supported.  The protocol has not been configured into the
+/* Protocol not supported. The protocol has not been configured into the
    system or no implementation for it exists. (POSIX.1)
  */
 extern const EPROTONOSUPPORT:err_t;
 
-/* Protocol wrong type for socket.  A protocol was specified that does not sup-
-   port the semantics of the socket type requested.  For example, you cannot
+/* Protocol wrong type for socket. A protocol was specified that does not sup-
+   port the semantics of the socket type requested. For example, you cannot
    use the ARPA Internet UDP protocol with type SOCK_STREAM. (POSIX.1)
  */
 extern const EPROTOTYPE:err_t;
 
-/* Result too large.  A numerical result of the function was too large to fit 
+/* Result too large. A numerical result of the function was too large to fit 
    in the available space (perhaps exceeded precision). (POSIX.1, C99)
  */
 extern const ERANGE:err_t;
@@ -852,36 +854,36 @@ extern const EREMOTEIO:err_t;
 /* Interrupted system call should be restarted (linux only) */
 extern const ERESTART:err_t;
 
-/* Read-only file system.  An attempt was made to modify a file or directory on
+/* Read-only file system. An attempt was made to modify a file or directory on
    a file system that was read-only at the time. (POSIX.1)
  */
 extern const EROFS:err_t;
 
-/* Can't send after socket shutdown.  A request to send data was disallowed
+/* Can't send after socket shutdown. A request to send data was disallowed
    because the socket had already been shut down with a previous shutdown system
    call.
  */
 extern const ESHUTDOWN:err_t;
 
-/* Illegal seek.  An lseek system call was issued on a socket, pipe or FIFO. 
+/* Illegal seek. An lseek system call was issued on a socket, pipe or FIFO. 
    (POSIX.1)
  */
 extern const ESPIPE:err_t;
 
-/* Socket type not supported.  The support for the socket type has not been
+/* Socket type not supported. The support for the socket type has not been
    configured into the system or no implementation for it exists. 
    (linux, FreeBSD)
  */
 extern const ESOCKTNOSUPPORT:err_t;
 
-/* No such process.  No process could be found corresponding to that specified 
+/* No such process. No process could be found corresponding to that specified 
    by the given process ID. (POSIX.1)
  */
 extern const ESRCH:err_t;
 
-/* Stale NFS file handle.  An attempt was made to access an open file (on an 
+/* Stale NFS file handle. An attempt was made to access an open file (on an 
    NFS file system) which is now unavailable as referenced by the file
-   descriptor.  This may indicate the file was deleted on the NFS server or
+   descriptor. This may indicate the file was deleted on the NFS server or
    some other catastrophic event occurred. (POSIX.1)
  */
 extern const ESTALE:err_t;
@@ -894,12 +896,12 @@ extern const ESTRPIPE:err_t;
 extern const ETIME:err_t;
 
 /* Operation timed out. A connect or send system call failed because the 
-   connected party did not properly respond after a period of time.  (The
+   connected party did not properly respond after a period of time. (The
    timeout period is dependent on the communication protocol.) (POSIX.1)
  */
 extern const ETIMEDOUT:err_t;
 
-/* Text file busy.  The new process was a pure procedure (shared text) file 
+/* Text file busy. The new process was a pure procedure (shared text) file 
    which was open for writing by another process, or while the pure procedure
    file was being executed an open system call requested write access. (POSIX.1)
  */
@@ -920,7 +922,7 @@ extern const EUSERS:err_t;
  */
 extern const EWOULDBLOCK:err_t;
 
-/* Cross-device link.  A hard link to a file on another file system was 
+/* Cross-device link. A hard link to a file on another file system was 
    attempted. (POSIX.1)
  */
 extern const EXDEV:err_t;
