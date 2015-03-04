@@ -727,6 +727,8 @@ qioerr qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohint
     if( fd == -1 ) return qio_mkerror_errno();
   }
 
+  if( fd < 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "invalid file descriptor");
+
   err = qio_int_to_err(sys_fstat(fd, &stats));
   if( err ) return err;
 
