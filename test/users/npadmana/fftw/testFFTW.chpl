@@ -151,3 +151,5 @@ runtest(3, "arr3d.dat");
 if (usethread) {
   cleanup_threads();
 }
+cleanup();
+
