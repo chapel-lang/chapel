@@ -145,6 +145,7 @@ proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
   if err != ENOERR then return;
   copyMode(err, src, destFile);
   if err != ENOERR then return;
+
   // Get uid and gid from src
   var uid = getUID(err, src);
   if err != ENOERR then return;
@@ -166,7 +167,7 @@ proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
 proc copy(src: string, dest: string, metadata: bool = false) {
   var err: syserr = ENOERR;
   copy(err, src, dest, metadata);
-  if err != ENOERR then ioerror(err, "in copy", src);
+  if err != ENOERR then ioerror(err, "in copy(" + src + ", " + dest + ")");
 }
 
 /* Copies the contents of the file indicated by src into the file indicated
@@ -179,7 +180,10 @@ proc copy(src: string, dest: string, metadata: bool = false) {
 */
 proc copyFile(out err: syserr, src: string, dest: string) {
   // This implementation is based off of the python implementation for copyfile,
-  // with some slight differences.
+  // with some slight differences.  That implementation was found at:
+  // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
+  // I did not look at the other functions in that file, except for copyfileobj
+  // (which copyfile called).
   if (!exists(src)) {
     err = ENOENT;
     // Source didn't exist, we can't copy it.
@@ -201,27 +205,30 @@ proc copyFile(out err: syserr, src: string, dest: string) {
 
     // Don't need to check if they're the same file when we know dest didn't
     // exist.
-    err = EOPNOTSUPP;
+    err = EINVAL;
     return;
-    // Operation is not supported, since the two arguments are the same file.
+    // The second argument is invalid if the two arguments are the same.
   }
 
-  // Make sure dest is not a weird file (like a pipe)
+  // Lydia note (03/04/2014): These enclosing curly braces are to avoid the bug
+  // found in test/io/lydia/outArgEarlyExit*.future.  When those futures are
+  // resolved, the braces should be removed.
+  {
+    // Open src for reading, open dest for writing
+    var srcFile = open(src, iomode.r);
+    var destFile = open(dest, iomode.cw);
+    var srcChnl = srcFile.reader();
+    var destChnl = destFile.writer();
+    // read in, write out.
+    var line: string;
+    while (srcChnl.readline(line)) {
+      destChnl.write(line);
+    }
+    destChnl.flush();
 
-  // Open src for reading, open dest for writing
-  var srcFile = open(src, iomode.r);
-  var destFile = open(dest, iomode.cw);
-  var srcChnl = srcFile.reader();
-  var destChnl = destFile.writer();
-  // read in, write out.
-  var line: string;
-  while (srcChnl.readline(line)) {
-    destChnl.write(line);
+    srcFile.close();
+    destFile.close();
   }
-  destChnl.flush();
-
-  srcFile.close();
-  destFile.close();
 }
 
 /* Copies the contents of the file indicated by src into the file indicated
@@ -234,7 +241,7 @@ proc copyFile(out err: syserr, src: string, dest: string) {
 proc copyFile(src: string, dest: string) {
   var err: syserr = ENOERR;
   copyFile(err, src, dest);
-  if err != ENOERR then ioerror(err, "in copyFile", src);
+  if err != ENOERR then ioerror(err, "in copyFile(" + src + ", " + dest + ")");
 }
 
 /* Copies the permissions of the file indicated by src to the file indicated

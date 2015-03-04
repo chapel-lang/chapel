@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+
+import os, sys
+
+with open(sys.argv[2], 'ab') as fp:
+    # The two files should have differing executable permissions
+    if os.stat("foo.txt").st_mode != os.stat("bar.txt").st_mode:
+        fp.write("mode didn't match\n")
+    else:
+        fp.write("mode did match\n")
+
+    if os.stat("foo.txt").st_uid != os.stat("bar.txt").st_uid:
+        fp.write("owner didn't match\n")
+    else:
+        fp.write("owner did match\n")
+
+    if os.stat("foo.txt").st_gid != os.stat("bar.txt").st_gid:
+        fp.write("group didn't match\n")
+    else:
+        fp.write("group did match\n")
