@@ -320,10 +320,10 @@ static int processToken(yyscan_t scanner, int t) {
   if (captureTokens) {
     if (t == TASSIGN ||
         t == TDOTDOTDOT)
-      strncat(captureString, " ", sizeof(captureString));
+      strncat(captureString, " ",                 sizeof(captureString) - 1);
 
     if (t != TLCBR)
-      strncat(captureString, yyget_text(scanner), sizeof(captureString));
+      strncat(captureString, yyget_text(scanner), sizeof(captureString) - 1);
 
     if (t == TCOMMA  ||
         t == TPARAM  ||
@@ -337,7 +337,7 @@ static int processToken(yyscan_t scanner, int t) {
         t == TCOLON  ||
         t == TASSIGN ||
         t == TRSBR)
-      strncat(captureString, " ", sizeof(captureString));
+      strncat(captureString, " ",                 sizeof(captureString) - 1);
   }
 
   // If the stack has a value then we must be in externmode.
@@ -366,9 +366,9 @@ static int processStringLiteral(yyscan_t scanner, const char* q) {
   countToken(astr(q, yyLval->pch, q));
 
   if (captureTokens) {
-    strncat(captureString, yyText, sizeof(captureString));
-    strncat(captureString, yyLval->pch, sizeof(captureString));
-    strncat(captureString, yyText, sizeof(captureString));
+    strncat(captureString, yyText,      sizeof(captureString) - 1);
+    strncat(captureString, yyLval->pch, sizeof(captureString) - 1);
+    strncat(captureString, yyText,      sizeof(captureString) - 1);
   }
 
   return STRINGLITERAL;
@@ -434,7 +434,7 @@ static int processExtern(yyscan_t scanner) {
   countToken(yyText);
 
   if (captureTokens) {
-    strncat(captureString, yyText, sizeof(captureString));
+    strncat(captureString, yyText, sizeof(captureString) - 1);
   }
 
   // Push a state to record that "extern" has been seen
@@ -460,7 +460,7 @@ static int processExternCode(yyscan_t scanner) {
   countToken(astr(yyLval->pch));
 
   if (captureTokens) {
-    strncat(captureString, yyLval->pch, sizeof(captureString));
+    strncat(captureString, yyLval->pch, sizeof(captureString) - 1);
   }
 
   return EXTERNCODE;
