@@ -601,6 +601,60 @@ static bool isFlowStmt(Expr* stmt)
 //########################################################################
 
 
+//########################################################################
+//# Scope utilities
+//#
+//# TODO: See if these are defined elsewhere.
+//#
+
+
+static BlockStmt* getScopeBlock(Expr* expr)
+{
+  // If this is a DefExpr and the symbol is a formal, then we use the body of
+  // the function as the scope block.
+  if (DefExpr* def = toDefExpr(expr))
+  {
+    if (isArgSymbol(def->sym))
+      return toFnSymbol(def->parentSymbol)->body;
+
+    // Fall through.
+    // That is, we treat DefExprs containing VarSymbols like any other
+    // expression and search for scopes using the loop below.
+  }
+
+  // Traverse all scopes containing this expression, up to the root.
+  while (expr)
+  {
+    BlockStmt* block = toBlockStmt(expr);
+    if (block && ! (block->blockTag & BLOCK_SCOPELESS))
+      // This is a scoped block containing the Expr, so this is what we want.
+      return block;
+
+    expr = expr->parentExpr;
+  }
+
+  INT_FATAL(expr, "Expression is not associated with any scope.");
+  return NULL;
+}
+
+
+// Returns true if expr is a parent expr of other; false otherwise.
+// The comparison is not strict (an Expr be its own parent);
+// use equality to disambiguate.
+static bool isParentExpr(Expr* expr, Expr* other)
+{
+  while (other)
+  {
+    if (other == expr)
+      return true;
+
+    other = other->parentExpr;
+  }
+  return false;
+}
+
+
+//########################################################################
 //#
 //# Add FLAG_RETURN_VALUE_IS_NOT_OWNED to those functions that return
 //# records that already existed before the function was invoked.
@@ -631,6 +685,7 @@ static void addFlagReturnValueNotOwned()
 }
 
 
+//########################################################################
 //#
 //# extractSymbols
 //#
@@ -712,6 +767,14 @@ static void createAlias(SymExpr* se, AliasVectorMap& aliases)
   Symbol* lsym = lhs->var;
   Symbol* rsym = rhs->var;
 
+  // All members of an alias clique must belong to the same scope.  Otherwise,
+  // the destruction of one in an inner scope may cause the the one still
+  // accessible in an outer scope to become corrupted (read-after-free).
+  BlockStmt* lscope = getScopeBlock(lsym->defPoint);
+  BlockStmt* rscope = getScopeBlock(rsym->defPoint);
+  if (lscope != rscope)
+    return;
+
   // Merge aliases whether or not they are live.
   aliases.merge(rsym, lsym);
 }
@@ -777,8 +840,6 @@ static void populateAliases(FnSymbol* fn,
 //   Find the block (scope) in which it is declared.
 //   Look up the bbID for the final bb in that scope.
 //   Set the corresponding bit: EXIT[bbID]->set(symbolID)
-
-
 static void
 computeScopeToLastBBIDMap(FnSymbol* fn,
                           std::map<BlockStmt*, size_t>&scopeToLastBBIDMap)
@@ -789,15 +850,9 @@ computeScopeToLastBBIDMap(FnSymbol* fn,
   {
     for_vector(Expr, expr, bbs[i]->exprs)
     {
-      // Traverse all scopes containing this expression, up to the root.
-      while (expr)
-      {
-        if (BlockStmt* scope = toBlockStmt(expr))
-        {
-          scopeToLastBBIDMap[scope] = i;
-        }
-        expr = expr->parentExpr;
-      }
+      BlockStmt* scope = getScopeBlock(expr);
+      if (scope)
+        scopeToLastBBIDMap[scope] = i;
     }
   }
 }
@@ -826,32 +881,7 @@ static void computeExits(FnSymbol* fn, SymbolIndexMap& symbolIndex,
 
     // Look for the closest scope block enclosing the DefExpr.
     // Is there a utility for this?
-    Expr* expr = def->parentExpr;
-    BlockStmt* block = NULL;
-    if (isArgSymbol(sym))
-    {
-      // If the symbol is a formal, then we use the body of the function as the
-      // scope block.
-      block = fn->body;
-    }
-    else
-    {
-      // Otherwise, search up though enclosing block expressions (statements)
-      // for a scoped block.
-      while (expr)
-      {
-        block = toBlockStmt(expr);
-        if (block && ! (block->blockTag & BLOCK_SCOPELESS))
-          // This is a scoped block containing the DefExpr, so good.
-          break;
-        expr = expr->parentExpr;
-      }
-    }
-
-    // An assert is actually useful here, to distinguish failing because no
-    // scope was found from failing because there was no entry for it in the
-    // map.
-    INT_ASSERT(block);
+    BlockStmt* block = getScopeBlock(def);
 
     // Workaround: Some passes leave shrapnel in the tree, including DefExprs
     // for symbols that are never accessed.  We would normally expect to find a
@@ -997,26 +1027,46 @@ static void processBitwiseCopy(SymExpr* se,
   SymbolVector* laliasList = aliases.at(lsym);
   SymbolVector* raliasList = aliases.at(rsym);
 
-  // Copy ownership state from RHS.
   size_t rindex = symbolIndex[rsym];
-  bool owned = live->get(rindex);
+  size_t lindex = symbolIndex[lsym];
+
+  // Ownership is shared if the symbols are in the same alias class.
+  // Ownership is transferred to the lhs if the lhs is in an outer scope.
+  // Ownership is not transferred nor shared if the lhs is in an inner scope.
 
   // If the two alias lists are identical, then the two symbols are in the
-  // same alias clique.  Otherwise, ownership is being transferred out of one
-  // clique into the other.  When that happens, we clear the prod bit and set
-  // the cons bit for each member of the RHS clique.
-  if (laliasList != raliasList)
+  // same alias clique.  In that case, ownership is shared.
+  if (laliasList == raliasList)
   {
-    resetAliasList(live, *raliasList, symbolIndex);
-    setAliasList(cons, *raliasList, symbolIndex);
+    // We set and reset the live bits for the members of an alias set in concert,
+    // so all we do here is assert that that has been done correctly.
+    INT_ASSERT(live->get(lindex) == live->get(rindex));
   }
-
-  // Now set the produce bit for each member of the lhs clique, but only if the RHS
-  // was owned.
-  if (owned)
+  else
   {
-    setAliasList(prod, *laliasList, symbolIndex);
-    setAliasList(live, *laliasList, symbolIndex);
+    // Otherwise, the symbols are in different cliques.
+    BlockStmt* lscope = getScopeBlock(lsym->defPoint);
+    BlockStmt* rscope = getScopeBlock(rsym->defPoint);
+    if (isParentExpr(lscope, rscope))
+    {
+      bool owned = live->get(rindex);
+
+      // lsym is defined in an outer scope, so we can transfer ownership from
+      // rsym's clique to lsym's clique.
+      // When that happens, we clear the live bit and set
+      // the cons bit for each member of the RHS clique, 
+      // and then set the live and prod bits for each member of the LHS clique.
+      resetAliasList(live, *raliasList, symbolIndex);
+      setAliasList(cons, *raliasList, symbolIndex);
+
+      // Now set the produce bit for each member of the lhs clique, but only if the RHS
+      // was owned.
+      if (owned)
+      {
+        setAliasList(prod, *laliasList, symbolIndex);
+        setAliasList(live, *laliasList, symbolIndex);
+      }
+    }
   }
 }
 
