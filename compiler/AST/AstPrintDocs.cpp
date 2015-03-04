@@ -78,6 +78,12 @@ bool AstPrintDocs::enterFnSym(FnSymbol* node) {
 
 
 bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
+  // If a module is not supposed to be documented, do not traverse into it (and
+  // skip the documentation).
+  if (node->hasFlag(FLAG_NO_DOC)) {
+      return false;
+  }
+
   // If this is a sub module (i.e. other modules were entered and not yet
   // exited before this one), ensure the docs naming is correct.
   if (!this->moduleNames.empty()) {
@@ -98,6 +104,12 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
 
 
 void AstPrintDocs::exitModSym(ModuleSymbol* node) {
+  // If module is not supposed to be documented, it was not traversed into or
+  // documented, so exit early from this method.
+  if (node->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
   // Remove the current module from stack of names.
   assert(!this->moduleNames.empty());
   this->moduleNames.pop();

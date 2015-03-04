@@ -64,6 +64,14 @@ module Foo {
     var showMe: bool;
     // This is the only field that should be printed
   }
+
+  /* This is an undocumented module. */
+  pragma "no doc"
+  module invisible {
+
+    /* This class is undocumented, since its module is undocumented. */
+    class MyC {}
+  }
 }
 
 pragma "no doc"
