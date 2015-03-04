@@ -3,7 +3,7 @@ import sys, os
 
 import chpl_arch, chpl_compiler, chpl_platform, utils
 from utils import memoize
-from chplenv import chpl_3p_gmp_configs
+import chpl_3p_gmp_configs
 
 @memoize
 def get():
