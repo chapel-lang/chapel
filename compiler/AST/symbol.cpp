@@ -1213,7 +1213,8 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmType(NULL),
     llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
-    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL)
+    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+  doc(NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)

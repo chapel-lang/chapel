@@ -164,12 +164,12 @@ void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
     *file << std::endl;
   }
 
-  // if (this->symbol->doc != NULL) {
-  //   this->printDocsDescription(this->symbol->doc, file, tabs + 1);
-  //   if (!fDocsTextOnly) {
-  //     *file << std::endl;
-  //   }
-  // }
+  if (this->symbol->doc != NULL) {
+    this->printDocsDescription(this->symbol->doc, file, tabs + 1);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
 }
 
 
