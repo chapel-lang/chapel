@@ -569,10 +569,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   }
 
   Vec<Symbol*> symSet;
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   Vec<SymExpr*> symExprs;
-  collect_asts(rootModule, asts);
-  forv_Vec(BaseAST, ast, asts) {
+  collect_asts_STL(rootModule, asts);
+  for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (def->parentSymbol) {
         if (isLcnSymbol(def->sym)) {

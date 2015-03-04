@@ -25,6 +25,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "oldCollectors.h"
 #include "build.h"
 #include "expr.h"
 #include "stlUtil.h"

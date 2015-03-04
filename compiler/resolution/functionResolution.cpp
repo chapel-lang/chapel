@@ -27,6 +27,7 @@
 #include "resolution.h"
 
 #include "astutil.h"
+#include "oldCollectors.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"

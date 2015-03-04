@@ -48,11 +48,11 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 //
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
 
-  collect_asts(fn, asts);
+  collect_asts_STL(fn, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
@@ -283,10 +283,10 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   do {
     change = false;
     forv_Vec(FnSymbol, fn, nestedFunctions) {
-      Vec<BaseAST*> asts;
-      collect_top_asts(fn, asts);
+      std::vector<BaseAST*> asts;
+      collect_top_asts_STL(fn, asts);
       SymbolMap* uses = args_map.get(fn);
-      forv_Vec(BaseAST, ast, asts) {
+      for_vector(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isResolved()) {
             if (FnSymbol* fcall = call->findFnSymbol()) {

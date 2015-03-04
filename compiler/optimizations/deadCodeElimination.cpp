@@ -21,6 +21,7 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "oldCollectors.h"
 #include "bb.h"
 #include "expr.h"
 #include "ForLoop.h"

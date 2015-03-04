@@ -25,6 +25,7 @@
 //
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "build.h"
 #include "expr.h"
 #include "passes.h"
@@ -170,9 +171,9 @@ static void flatten_primary_methods(FnSymbol* fn) {
 
 static void change_cast_in_where(FnSymbol* fn) {
   if (fn->where) {
-    Vec<BaseAST*> asts;
-    collect_asts(fn->where, asts);
-    forv_Vec(BaseAST, ast, asts) {
+    std::vector<BaseAST*> asts;
+    collect_asts_STL(fn->where, asts);
+    for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed("_cast")) {
           call->primitive = primitives[PRIM_IS_SUBTYPE];
@@ -185,25 +186,25 @@ static void change_cast_in_where(FnSymbol* fn) {
 
 
 void cleanup(void) {
-  Vec<BaseAST*> asts;
-  collect_asts(rootModule, asts);
+  std::vector<BaseAST*> asts;
+  collect_asts_STL(rootModule, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     SET_LINENO(ast);
     if (DefExpr* def = toDefExpr(ast)) {
       normalize_nested_function_expressions(def);
     }
   }
 
-  forv_Vec(BaseAST, ast, asts) {
-    SET_LINENO(ast);
-    if (BlockStmt* block = toBlockStmt(ast)) {
+  for_vector(BaseAST, ast1, asts) {
+    SET_LINENO(ast1);
+    if (BlockStmt* block = toBlockStmt(ast1)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list)
         flatten_scopeless_block(block);
-    } else if (CallExpr* call = toCallExpr(ast)) {
+    } else if (CallExpr* call = toCallExpr(ast1)) {
       if (call->isNamed("_build_tuple"))
         destructureTupleAssignment(call);
-    } else if (DefExpr* def = toDefExpr(ast)) {
+    } else if (DefExpr* def = toDefExpr(ast1)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         flatten_primary_methods(fn);
         change_cast_in_where(fn);

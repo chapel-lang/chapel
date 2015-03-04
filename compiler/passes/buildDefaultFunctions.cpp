@@ -18,6 +18,7 @@
  */
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "build.h"
 #include "expr.h"
 #include "passes.h"
@@ -61,9 +62,9 @@ void buildDefaultFunctions() {
 
   SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
 
-  Vec<BaseAST*> asts;
-  collect_asts(rootModule, asts);
-  forv_Vec(BaseAST, ast, asts) {
+  std::vector<BaseAST*> asts;
+  collect_asts_STL(rootModule, asts);
+  for_vector(BaseAST, ast, asts) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
       // Here we build default functions that are always generated (even when
       // the type symbol has FLAG_NO_DEFAULT_FUNCTIONS attached).
@@ -215,9 +216,9 @@ static FnSymbol* function_exists(const char* name,
 static void build_getter(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
-    Vec<BaseAST*> asts;
-    collect_asts(fn, asts);
-    forv_Vec(BaseAST, ast, asts) {
+    std::vector<BaseAST*> asts;
+    collect_asts_STL(fn, asts);
+    for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed(field->name) && call->numActuals() == 2) {
           if (call->get(1)->typeInfo() == dtMethodToken &&

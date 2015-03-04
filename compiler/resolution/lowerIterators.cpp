@@ -20,6 +20,7 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "oldCollectors.h"
 #include "CForLoop.h"
 #include "expr.h"
 #include "ForLoop.h"

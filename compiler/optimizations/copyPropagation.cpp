@@ -921,14 +921,13 @@ static void computeKillSets(FnSymbol* fn,
     BasicBlock* bb2 = (*fn->basicBlocks)[i];
 
     // Collect up the set of symbols killed in this block in killSet.
-    // You were here!!!
     std::set<Symbol*> killSet;
     for_vector(Expr, expr, bb2->exprs)
     {
-      Vec<SymExpr*> symExprs;
-      collectSymExprs(expr, symExprs);
+      std::vector<SymExpr*> symExprs;
+      collectSymExprsSTL(expr, symExprs);
 
-      forv_Vec(SymExpr, se, symExprs)
+      for_vector(SymExpr, se, symExprs)
       {
         // Invalidate a symbol if it is redefined.
         if (isDef(se))
@@ -1309,14 +1308,14 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 
 
 size_t singleAssignmentRefPropagation(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
-  collect_asts(fn, asts);
+  std::vector<BaseAST*> asts;
+  collect_asts_STL(fn, asts);
 
   Vec<Symbol*> refSet;
   Vec<Symbol*> refVec;
   Vec<SymExpr*> symExprs;
   // Walk the asts in this function, and build lists of reference variables and sym exprs.
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
       if (isReferenceType(var->type)) {
         refVec.add(var);

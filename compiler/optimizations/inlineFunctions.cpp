@@ -161,13 +161,13 @@ static CallExpr* findRefTempInit(SymExpr* se) {
 //
 static void
 inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemoveRefTempSet) {
-  Vec<CallExpr*> calls;
+  std::vector<CallExpr*> calls;
 
   inlinedSet.set_add(fn);
 
-  collectFnCalls(fn, calls);
+  collectFnCallsSTL(fn, calls);
 
-  forv_Vec(CallExpr, call, calls) {
+  for_vector(CallExpr, call, calls) {
     if (call->parentSymbol) {
       FnSymbol* fn = call->isResolved();
       if (fn->hasFlag(FLAG_INLINE)) {

@@ -20,6 +20,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "oldCollectors.h"
 #include "expr.h"
 #include "resolution.h"
 #include "resolveIntents.h"
