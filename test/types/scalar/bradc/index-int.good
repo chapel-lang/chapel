@@ -1,0 +1,1 @@
+index-int.chpl:1: error: int(64) does not support indexing

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -159,7 +159,7 @@ narrowField(Symbol* field, WideInfo* wi) {
     return;
   }
   if (ts->hasFlag(FLAG_REF) ||
-      ts->hasFlag(FLAG_WIDE) ||
+      ts->hasFlag(FLAG_WIDE_REF) ||
       ts->hasFlag(FLAG_WIDE_CLASS)) {
     wi->mustBeWide = true;
     return;
@@ -174,10 +174,10 @@ narrowField(Symbol* field, WideInfo* wi) {
 //       if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(2) == use) {
 //         SymExpr* base = toSymExpr(call->get(1));
 //         SymExpr* rhs = toSymExpr(call->get(3));
-//         if (base->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+//         if (base->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
 //             base->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
 //           addNarrowDep(base->var, field);
-//         if (rhs->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+//         if (rhs->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
 //             rhs->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
 //           addNarrowDep(rhs->var, field);
 //         continue;
@@ -203,7 +203,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
           Map<Symbol*,Vec<SymExpr*>*>& useMap)
 {
   bool isWideObj = sym->type->symbol->hasFlag(FLAG_WIDE_CLASS);
-  bool isWideRef = sym->type->symbol->hasFlag(FLAG_WIDE);
+  bool isWideRef = sym->type->symbol->hasFlag(FLAG_WIDE_REF);
   INT_ASSERT(isWideObj ^ isWideRef);
 
   // This scans the definitions of the given symbol and weeds out calls that can
@@ -220,7 +220,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
           if (rhs->isPrimitive(PRIM_GET_MEMBER)) {
             INT_ASSERT(isWideRef);
             SymExpr* base = toSymExpr(rhs->get(1));
-            if (base->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+            if (base->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
                 base->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
               addNarrowDep(base->var, sym);
             continue;
@@ -228,24 +228,24 @@ narrowSym(Symbol* sym, WideInfo* wi,
           if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             SymExpr* base = toSymExpr(rhs->get(1));
             SymExpr* member = toSymExpr(rhs->get(2));
-            if (base->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+            if (base->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
                 base->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
               addNarrowDep(base->var, sym);
-            if (member->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+            if (member->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
                 member->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
               addNarrowDep(member->var, sym);
             continue;
           }
           if (rhs->isPrimitive(PRIM_STRING_COPY)) {
             SymExpr* se = toSymExpr(rhs->get(1));
-            if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+            if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
                 se->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
               addNarrowDep(se->var, sym);
             continue;
           }
           if (rhs->isPrimitive(PRIM_CAST)) {
             SymExpr* se = toSymExpr(rhs->get(2));
-            if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+            if (se->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
                 se->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))
               addNarrowDep(se->var, sym);
             continue;
@@ -253,14 +253,14 @@ narrowSym(Symbol* sym, WideInfo* wi,
           if (FnSymbol* fn = rhs->isResolved()) {
             if (fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC))
               continue;
-            if ((isWideRef && fn->retType->symbol->hasFlag(FLAG_WIDE)) ||
+            if ((isWideRef && fn->retType->symbol->hasFlag(FLAG_WIDE_REF)) ||
                 (isWideObj && fn->retType->symbol->hasFlag(FLAG_WIDE_CLASS)))
               addNarrowDep(fn->getReturnSymbol(), sym);
             continue;
           }
         }
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
-          if ((isWideRef && rhs->var->type->symbol->hasFlag(FLAG_WIDE)) ||
+          if ((isWideRef && rhs->var->type->symbol->hasFlag(FLAG_WIDE_REF)) ||
               (isWideObj && rhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS)))
             addNarrowDep(rhs->var, sym);
           continue;
@@ -323,7 +323,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
       }
       if (call->isPrimitive(PRIM_RETURN)) {
         FnSymbol* fn = toFnSymbol(call->parentSymbol);
-        if (!fn->retType->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+        if (!fn->retType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
           // already narrow, so skip it.
           continue;
         wi->fnToNarrow = fn;
@@ -394,7 +394,7 @@ narrowArg(ArgSymbol* arg, WideInfo* wi,
     } else {
       SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
       INT_ASSERT(actual);
-      if (actual->var->type->symbol->hasFlag(FLAG_WIDE) ||
+      if (actual->var->type->symbol->hasFlag(FLAG_WIDE_REF) ||
           actual->var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         addNarrowDep(actual->var, arg);
       }
@@ -459,13 +459,13 @@ static void populateWideInfoMap()
 {
   // Insert all wide variables and arguments into wideInfoMap.
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->type->symbol->hasFlag(FLAG_WIDE) ||
+    if (var->type->symbol->hasFlag(FLAG_WIDE_REF) ||
         var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       wideInfoMap->put(var, new WideInfo(var));
     }
   }
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (arg->type->symbol->hasFlag(FLAG_WIDE) ||
+    if (arg->type->symbol->hasFlag(FLAG_WIDE_REF) ||
         arg->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       wideInfoMap->put(arg, new WideInfo(arg));
     }
@@ -576,14 +576,14 @@ static void printNarrowEffectSummary()
 {
 #ifdef PRINT_NARROW_EFFECT_SUMMARY
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->type->symbol->hasFlag(FLAG_WIDE) ||
+    if (var->type->symbol->hasFlag(FLAG_WIDE_REF) ||
         var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       wideCount++;
     }
   }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (arg->type->symbol->hasFlag(FLAG_WIDE) ||
+    if (arg->type->symbol->hasFlag(FLAG_WIDE_REF) ||
         arg->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       wideCount++;
     }
@@ -625,7 +625,7 @@ static void moveAddressSourcesToTemp()
 {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+      if ((call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
            call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           call->get(2)->typeInfo() == call->get(1)->getValType()->getField("addr")->type) {

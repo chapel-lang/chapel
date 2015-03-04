@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -194,7 +194,8 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
 //
 char** chpl_bundle_exec_args(int argc, char *const argv[],
                               int largc, char *const largv[]) {
-  int len = argc+largc+1;
+  int len = argc+largc+2;
+  int newargc = 0;
   char **newargv = chpl_mem_allocMany(len, sizeof(char*),
                                       CHPL_RT_MD_COMMAND_BUFFER, -1, "");
   if (!newargv) {
@@ -202,18 +203,25 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
   }
 
   newargv[len-1] = NULL;
+  newargv[len-2] = NULL;
 
+  // add any launcher args
   if (largc > 0) {
-    // launcher args
     memcpy(newargv, largv, largc*sizeof(char *));
+    newargc = largc;
   }
   if (argc > 0) {
-    // binary
+    // if there is a wrapper, add it after the launcher args
+    if (strcmp(chpl_get_real_binary_wrapper(), "") != 0) {
+      newargv[newargc++] = (char *) chpl_get_real_binary_wrapper();
+    }
+
+    // add the _real binary (after launchers args or wrapper)
     chpl_compute_real_binary_name(argv[0]);
-    newargv[largc] = (char *) chpl_get_real_binary_name();
+    newargv[newargc++] = (char *) chpl_get_real_binary_name();
     if (argc > 1) {
-      // other args (skip binary name)
-      memcpy(newargv+largc+1, argv+1, (argc-1)*sizeof(char *));
+      // add args passed to main (skip original binary) after _real binary
+      memcpy(newargv+newargc, argv+1, (argc-1)*sizeof(char *));
     }
   }
 
@@ -365,7 +373,7 @@ void chpl_compute_real_binary_name(const char* argv0) {
   int exe_length = strlen(launcher_exe_suffix);
   int length;
   const char* real_suffix = getenv("CHPL_LAUNCHER_SUFFIX");
-  
+
   if (NULL == real_suffix) {
     real_suffix = launcher_real_suffix;
   }
@@ -384,6 +392,21 @@ void chpl_compute_real_binary_name(const char* argv0) {
   strncpy(cursor, argv0, length);
   cursor += length;
   strcpy(cursor, launcher_real_suffix);
+}
+
+// Undocumented means to wrap the _real binary. Useful for things like timing
+// the _real executable or running it through some other program. Note that
+// this will not work with launchers that add arguments after the first
+// positional argument expecting it to be the binary. e.g. amudprun adds
+// __AMUDP_SLAVE_PROCESS__* and the hostname:port. Returns the value of
+// CHPL_LAUNCHER_REAL_WRAPPER if set, "" otherwise
+const char* chpl_get_real_binary_wrapper(void) {
+  const char* real_wrapper = getenv("CHPL_LAUNCHER_REAL_WRAPPER");
+  if (real_wrapper != NULL) {
+    return real_wrapper;
+  } else {
+    return "";
+  }
 }
 
 const char* chpl_get_real_binary_name(void) {

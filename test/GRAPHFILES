@@ -22,8 +22,8 @@ studies/shootout/meteor/kbrady/meteor.graph
 release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
-studies/hpcc/STREAM.graph
-studies/hpcc/STREAM_fragmented.graph
+studies/hpcc/STREAM_study.graph
+studies/hpcc/STREAM_study_fragmented.graph
 release/examples/benchmarks/hpcc/ra.graph
 release/examples/benchmarks/hpcc/hpl.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
@@ -65,10 +65,11 @@ performance/compiler/bradc/AllCompTime.graph
 memleaks.graph
 studies/jacobi/jacobi.graph
 performance/elliot/no-op.graph
+performance/bharshbarg/forall-dom-range.graph
 # suite: HPC Challenge
-studies/hpcc/STREAM_fragmented.graph
-studies/hpcc/STREAM.graph
-studies/hpcc/STREAM_promote.graph
+studies/hpcc/STREAM_study_fragmented.graph
+studies/hpcc/STREAM_study.graph
+studies/hpcc/STREAM_study_promote.graph
 # suite: Performance Graphs (TEPS, GB/s, etc.)
 release/examples/benchmarks/hpcc/stream_performance.graph
 release/examples/benchmarks/hpcc/ra_performance.graph
@@ -76,10 +77,9 @@ release/examples/benchmarks/hpcc/stream-ep_performance.graph
 release/examples/benchmarks/hpcc/ptrans_performance.graph
 release/examples/benchmarks/hpcc/fft_performance.graph
 release/examples/benchmarks/hpcc/hpl_performance.graph
-studies/hpcc/STREAM_performance.graph
+studies/hpcc/STREAM_study_performance.graph
 release/examples/benchmarks/ssca2/performance.graph
 # suite: DOE proxy apps
-studies/lulesh/sungeun/lulesh.sungeun.graph
 studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 # suite: Shootout benchmarks
@@ -125,6 +125,7 @@ arrays/diten/arrayPerformance-1d.graph
 arrays/diten/time_iterate.graph
 arrays/diten/time_array_vs_tuple.graph
 arrays/diten/time_array_vs_ddata.graph
+performance/bharshbarg/forall-dom-range.graph
 arrays/lydia/time_access.graph
 performance/bradc/parOpEquals.graph
 performance/sungeun/copy_to_local.graph
@@ -175,6 +176,14 @@ memleaksfull.graph
 studies/jacobi/jacobi.graph
 # suite: Startup tracking
 performance/elliot/no-op.graph
+# suite: MAX_LOGICAL comparison
+npb/ep/ep.graph
+npb/ep/ep-b.graph
+release/examples/benchmarks/hpcc/hpl.graph
+studies/hpcc/STREAM_study_fragmented.graph
+studies/shootout/fannkuch-redux/fannkuch-redux.graph
+studies/shootout/spectral-norm/spectralnorm.graph
+studies/shootout/mandelbrot/mandelbrot.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
@@ -182,14 +191,9 @@ spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
 # suite: Colorado State University 
-studies/colostate/Jacobi-2D-Diamond-Tiling.graph          
-studies/colostate/Jacobi-2D-NaiveParallel.graph
-studies/colostate/Jacobi-2D-Inlined-Diamond-Tiling.graph  
-studies/colostate/Jacobi-2D-Serial.graph
-studies/colostate/Jacobi-3D-Diamond-Tiling.graph          
-studies/colostate/Jacobi-3D-Naive-Parallel.graph
-studies/colostate/Jacobi-3D-Inlined-Diamond-Tiling.graph  
-studies/colostate/Jacobi-3D-Serial.graph
-studies/colostate/cfd-mini-serial.graph
+studies/colostate/Jacobi-1D.graph
+studies/colostate/Jacobi-2D.graph
+studies/colostate/cfd-mini.graph
+studies/colostate/jacobi-unroll.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph

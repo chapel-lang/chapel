@@ -1,0 +1,158 @@
+\documentclass[10pt,twoside,titlepage]{../../spec}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage{times}
+%\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage[nottoc]{tocbibind}
+\usepackage{multirow}
+\usepackage{enumitem}
+\input{../../chapel_testing}
+\input{../../chapel_listing}
+\input{../../syntax_listing}
+
+%% High section numbers require different number widths
+\usepackage[titles]{tocloft}
+\setlength{\cftchapnumwidth}{1.3em}
+\setlength{\cftsecnumwidth}{2.6em}
+\setlength{\cftsubsecnumwidth}{3.9em}
+\setlength{\cftsubsubsecnumwidth}{5.2em}
+\setlength{\cftsubsecindent}{1.7em}
+\setlength{\cftsubsubsecindent}{4.3em}
+
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex,
+            bookmarks,
+            plainpages=false,
+            breaklinks,
+            pdftitle={Constructors Proposal},
+            pdfauthor={Tom Hildebrandt, Cray Inc, 901 Fifth Avenue Suite 1000, Seattle, WA 98164},
+           ]{hyperref}
+\else
+\usepackage[ps2pdf]{hyperref}
+\fi
+
+\newcommand{\ie}{\emph{i.e.}}
+\newcommand{\eg}{\emph{e.g.}}
+
+\newenvironment{TODO} {
+\begin{quote}
+{\it TODO:}
+}{
+\end{quote}
+}
+
+\newenvironment{example}{
+\begin{quote}
+{\it Example}.
+}{
+\end{quote}
+}
+
+\newenvironment{chapelexample}[1]{
+\begin{quote}
+{\it Example (#1)}.
+}{
+\end{quote}
+}
+
+\newenvironment{note}{
+\begin{quote}
+{\it Implementors' note}.
+}{
+\end{quote}
+}
+
+\newenvironment{rationale}{
+\begin{quote}
+{\it Rationale}.
+}{
+\end{quote}
+}
+
+\newenvironment{openissue}{
+\begin{quote}
+{\it Open issue}.
+}{
+\end{quote}
+}
+
+\newenvironment{future}{
+\begin{quote}
+{\it Future}.
+}{
+\end{quote}
+}
+
+\newcommand{\rsec}[1]
+           {\S\ref{#1}}
+
+% courtesy: http://www.iam.ubc.ca/~newbury/tex/page-set-up.html
+\newcommand{\sekshun}[1]
+           {
+             \chapter{#1}
+             \markboth{Constructors Proposal}{#1}
+           }
+
+\oddsidemargin 0.0in
+\evensidemargin 0.0in
+\textwidth 6.5in
+\headheight 0.2in
+\topmargin 0in
+\headsep 0.3in
+\textheight 8.5in
+
+\title{Constructors Proposal}
+
+\author{Tom Hildebrandt\\
+Cray, Inc.\\
+901 Fifth Avenue, Suite 1000\\
+Seattle, WA 98164}
+
+\date{Sep 30, 2014}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+\begin{document}
+
+\pagestyle{myheadings}
+%\markboth{Constructors Proposal}
+%\pagenumbering{roman}
+
+\setlength{\parindent}{0in}
+\setlength{\parskip}{4mm plus2mm minus1mm}
+
+\sekshun{Constructors Proposal}
+
+This document proposes a few modifications to Chapel's syntax and implementation to
+better support its object model and to improve its execution efficiency.
+These modifications take into account last year's review of the User-Managed Memory (UMM)
+model, and recent additions to the language to support reference variables.
+
+To help with planning, relative priorities and estimated difficulties are associated
+with the recommended changes.
+
+\input{Introduction}
+\newpage
+\input{Objects}
+\newpage
+\input{Declarations}
+\newpage
+\input{Constructors}
+\newpage
+\input{Noinit}
+\appendix
+\sekshun{Appendices}
+\label{Appendices}
+\input{Changes}
+\newpage
+\input{Examples}
+\newpage
+\input{Notes}
+
+\end{document}

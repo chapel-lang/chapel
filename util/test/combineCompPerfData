@@ -134,20 +134,18 @@ def main():
     percentTimeCompiling = (totalTimeCompiling/elapsedTestTime) * 100
 
     # remove the colons in the compiler pass keys
-    perfKeysString = perfKeysString.rstrip()
-    allOutputPerfKeys = perfKeysString.replace(' :', ' (all)')
-    releaseExampleOutputPerfKeys = perfKeysString.replace(' :', ' (examples)')
+    perfKeysString = perfKeysString.rstrip().replace(' :', '')
     # combine the date, and each averaged value
     allOutputPerfValues = date + '\t' + '\t'.join(allCombinedValues)
     releaseExampleOutputPerfValues = date + '\t' + '\t'.join(releaseExampleCombinedValues)
 
     # create the dat file for the timings for all tests
-    datFile = os.path.join(outDir, 'compilerPerformance-all.dat')
-    writeToDatFile(datFile, allOutputPerfKeys, allOutputPerfValues)
+    datFile = os.path.join(outDir, 'all', 'compilerPerformance.dat')
+    writeToDatFile(datFile, perfKeysString, allOutputPerfValues)
 
     # create the dat file for the timings for release/examples tests
-    datFile = os.path.join(outDir, 'compilerPerformance-examples.dat')
-    writeToDatFile(datFile, releaseExampleOutputPerfKeys, releaseExampleOutputPerfValues)
+    datFile = os.path.join(outDir, 'examples', 'compilerPerformance.dat')
+    writeToDatFile(datFile, perfKeysString, releaseExampleOutputPerfValues)
 
     # convert elapsedTestTime and totalTimeCompiling to hours from seconds
     totalTimeCompiling /= 3600.0
@@ -174,7 +172,9 @@ def main():
 # helper function to write perfkeys and perfvalues out to a file. Create the
 # file if it does not exist and append if it does
 def writeToDatFile (datFile, perfKeys, perfValues):
-
+    basedir = os.path.dirname(datFile)
+    if not os.path.isdir(basedir):
+        os.makedirs(basedir)
     try:
         if os.path.exists(datFile) :
             outfile = open(datFile, 'a+')

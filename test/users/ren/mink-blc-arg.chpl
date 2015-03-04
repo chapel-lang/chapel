@@ -37,7 +37,7 @@ class mink : ReduceScanOp {
   }
 }
 
-var A: [i in 1..n] int = i;
+var A = [i in 1..n] i;
 var minimums = mink(k=5) reduce A;
   
 

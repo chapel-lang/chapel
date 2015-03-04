@@ -11,7 +11,7 @@
 extern "C" {
   #include <stdlib.h>
   #include <stdio.h>
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
   #include "stdchplrt.h"
 #endif
   #include "qio_regexp.h"

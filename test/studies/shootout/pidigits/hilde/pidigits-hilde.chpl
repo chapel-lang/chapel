@@ -71,12 +71,14 @@ proc pidigits
 
 proc next_term(k:uint)
 {
-  var y2:uint = 2 * k + 1;
+  var y2_tmp:uint = 2 * k + 1,
+    y2 = safe_cast(c_ulong, y2_tmp),
+    ck = safe_cast(c_ulong, k);
 
   mpz_mul_2exp(tmp1, numer, 1:c_ulong);
   mpz_add(accum, accum, tmp1);		// accum <- accum + numer * 2
   mpz_mul_ui(accum, accum, y2);		// accum <- accum * (2k+1)
-  mpz_mul_ui(numer, numer, k);		// numer <- numer * k
+  mpz_mul_ui(numer, numer, ck);		// numer <- numer * k
   mpz_mul_ui(denom, denom, y2);		// denom <- denom * (2k+1)
 }
 
@@ -102,7 +104,7 @@ proc extract_digit : int
 
 proc eliminate_digit(d: uint)
 {
-  mpz_submul_ui(accum, denom, d);
+  mpz_submul_ui(accum, denom, safe_cast(c_ulong, d));
   mpz_mul_ui(accum, accum, 10);
   mpz_mul_ui(numer, numer, 10);
 }

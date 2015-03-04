@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,7 @@
 #include "qio.h"
 
 #include "bswap.h"
+#include "error.h"
 
 // true 1 false 0   __bool_true_false_are_defined
 #include <stdbool.h>
@@ -656,7 +657,8 @@ qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const ch
     QIO_GET_CONSTANT_ERROR(err, ENOSYS, "missing wctype.h");
 #endif
   }
-  assert(0);
+  *chr = 0; // Makes GCC stop complaining about *chr not being set in other locations
+  chpl_internal_error("qio_decode_char_buf");
   QIO_RETURN_CONSTANT_ERROR(EILSEQ, ""); // this should never be reached.
 }
 

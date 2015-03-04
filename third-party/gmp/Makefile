@@ -8,10 +8,6 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 #
 # set up the directories
 #
-GMP_ABS_DIR = $(shell pwd)
-GMP_INSTALL_DIR = $(GMP_ABS_DIR)/$(GMP_INSTALL_SUBDIR)
-GMP_BUILD_DIR = $(GMP_ABS_DIR)/$(GMP_BUILD_SUBDIR)
-GMP_DIR = $(GMP_ABS_DIR)
 GMP_UNPACKED_DIR = gmp-$(GMP_VERSION)
 GMP_TARBALL = $(GMP_UNPACKED_DIR)a.tar.bz2
 
@@ -31,6 +27,17 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_CFG_OPTIONS += --enable-static --disable-shared
 endif
 
+#
+# On 32bit platforms (i.e. when CHPL_TARGET_PLATFORM ends with 32), set
+# ABI=32. Because we are setting CFLAGS in the ./configure step, it will not
+# auto-detect ABI=32.
+#
+CHPL_GMP_ABI_ARG =
+ifneq (, $(filter %32,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_GMP_ABI_ARG = ABI=32
+endif
+
+GMP_MAKEFILE = $(GMP_BUILD_SUBDIR)/Makefile
 
 default: all
 
@@ -48,18 +55,26 @@ clobber: FORCE
 $(GMP_UNPACKED_DIR):
 	cd $(GMP_DIR) && tar --bzip2 -xf $(GMP_TARBALL)
 
-gmp-config: $(GMP_UNPACKED_DIR) FORCE
-	mkdir -p $(GMP_BUILD_DIR)
-	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS) $(CHPL_GMP_CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CXXFLAGS) $(CHPL_GMP_CXXFLAGS)' --prefix=$(GMP_INSTALL_DIR) $(CHPL_GMP_CFG_OPTIONS)
+$(GMP_BUILD_SUBDIR):
+	mkdir -p $@
 
-gmp-build: FORCE
+gmp-config:
+	$(MAKE) $(GMP_MAKEFILE)
+
+$(GMP_MAKEFILE): $(GMP_BUILD_SUBDIR) $(GMP_UNPACKED_DIR)
+	cd $(GMP_BUILD_DIR) && $(GMP_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS) $(CHPL_GMP_CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CXXFLAGS) $(CHPL_GMP_CXXFLAGS)' $(CHPL_GMP_ABI_ARG) --prefix=$(GMP_INSTALL_DIR) $(CHPL_GMP_CFG_OPTIONS)
+
+gmp-build:
+	$(MAKE) $(GMP_H_FILE)
+
+$(GMP_H_FILE): $(GMP_MAKEFILE)
 	cd $(GMP_BUILD_DIR) && $(MAKE)
 ifneq ($(CHPL_MAKE_TARGET_ARCH),knc)
 	cd $(GMP_BUILD_DIR) && $(MAKE) check
 endif
 	cd $(GMP_BUILD_DIR) && $(MAKE) install
 
-gmp: gmp-config gmp-build
+gmp: $(GMP_H_FILE)
 
 FORCE:
 

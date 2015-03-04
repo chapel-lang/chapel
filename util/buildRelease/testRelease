@@ -1,8 +1,9 @@
 #!/usr/bin/env perl
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
+$replymail = "chapel-developers\@lists.sourceforge.net";
 
 $printusage = 1;
 $debug = 1;
@@ -38,6 +39,9 @@ chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
     $debugmail = "$user\@cray.com";
+    if ($debug == 1) {
+        $replymail = $debugemail;
+    }
 }
 
 if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
@@ -48,6 +52,7 @@ if ($cronrecipient ne "") {
     print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
     $failuremail = $cronrecipient;
     $allmail = $cronrecipient;
+    $replymail = $cronrecipient;
 }
 
 
@@ -61,20 +66,8 @@ if (exists($ENV{"BUILD_URL"})) {
 }
 
 
-$platform = `uname -s`;
+$platform = `$ENV{'CHPL_HOME'}/util/chplenv/chpl_platform.py --host`;
 chomp($platform);
-$platform = lc($platform);
-if ($platform eq "linux") {
-    $machine = `uname -m`;
-    chomp($machine);
-    if ($machine eq "x86_64") {
-        $platform = "linux64";
-    } else {
-        $platform = "linux32";
-    }
-} elsif ($platform =~ /^cygwin/) {
-    $platform = "cygwin";
-}
 
 
 #
@@ -97,12 +90,20 @@ if ($debug == 1) {
 
 
 #
-# set mail options
+# set mail options. Default to util/test/send_email.py, if available and
+# working. If not available or not working, default to 'mail'.
 #
 $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
-    $mailer = "Mail";
+    $chplsendemail = "$chplhomedir/util/test/send_email.py";
+    `$chplsendemail --help >/dev/null 2>&1`;
+    if ($? == 0) {
+        $mailer = "$chplsendemail --header=Reply-To=$replymail,Precedence=bulk";
+    } else {
+        $mailer = "mail";
+    }
 }
+print "\$mailer = $mailer\n";
 
 $somethingfailed = 0;
 

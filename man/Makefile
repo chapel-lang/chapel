@@ -23,7 +23,7 @@ clean:
 	rm $(TARGETS)
 
 man1/%.1: %.txt Makefile
-	mkdir -pv $(shell dirname $@)
+	mkdir -p $(shell dirname $@)
 	$(TXT2MAN) -s 1 -I locale -I pthreads -I "on blocks" -I"Compiler Information Options" -I"Compilation Trace Options" -I"Module Processing Options" -I"Parallelism Control Options" -I"Optimization Control Options" -I"Run-time Semantic Check Options" -I "C Code Generation Options" -I"C Code Compilation Options" -I "LLVM Code Generation Options" -B"h" -B"c" -B"o" -B"cpp" -B"--no-cpp-lines" -I "Miscellaneous Options" -I "Documentation Options" -t $* -r $(VERSION) $< > $@
 
 %.ps: man1/%.1

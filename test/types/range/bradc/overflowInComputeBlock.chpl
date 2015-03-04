@@ -1,2 +1,3 @@
-config const n = 1073741823;
-writeln( + reduce [1..n] 1);
+type tp = int(16);
+config const n = max(tp)-1;
+writeln( + reduce [1:tp..n:tp] (1:tp));

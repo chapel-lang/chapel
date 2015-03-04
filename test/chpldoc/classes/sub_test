@@ -1,6 +1,10 @@
-$CHPL_HOME/util/test/sub_test $1
-touch NOEXEC
-$CHPL_HOME/util/test/sub_test $1doc
-rm NOEXEC
+#!/usr/bin/env bash
+set -e
 
-exit $?
+$CHPL_HOME/util/test/sub_test $1
+
+if [ -x "$(which ${1}doc 2>/dev/null)" ] ; then
+    $CHPL_HOME/util/test/sub_test $1doc
+else
+    echo "[Skipping ${1}doc version of tests. ${1}doc is not available.]"
+fi

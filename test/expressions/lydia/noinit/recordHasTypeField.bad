@@ -1,2 +1,0 @@
-warning: type foo(int(64)) does not currently support noinit, using default initialization
-(i = 7)

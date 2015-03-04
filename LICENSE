@@ -27,7 +27,7 @@ The Chapel implementation is composed of two categories of code:
      vim              vim-based syntax coloring                    VIM
 
    third-party/
-     creoleparser     used to generate Chapel documentation        MIT/new BSD
+     chpldoc-venv     python packages supporting chpldoc           see third-party/README
      dlmalloc         alternative memory allocator option          public domain
      dygraphs         Javascript graph generator and display       MIT
      gasnet           portable communication library               BSD-like
@@ -71,7 +71,7 @@ The Chapel implementation is composed of two categories of code:
      vim              only used if a user modifies their vim environment
 
    third-party/
-     creoleparser     only used when running 'chpldoc'/'chpl --docs'
+     chpldoc-venv     only used when running 'chpldoc'/'chpl --docs'
      dlmalloc         only used when CHPL_MEM is 'dlmalloc'
      dygraphs         only used to make and display performance graphs
      gasnet           only used when CHPL_COMM is 'gasnet'

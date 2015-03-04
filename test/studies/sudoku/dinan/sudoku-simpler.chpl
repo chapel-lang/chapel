@@ -62,7 +62,7 @@ proc main() {
 
   // Count up the remaining blanks
   var nSpots = 0;
-  [num in board] if num == 0 then nSpots += 1;
+  [num in board with (ref nSpots)] if num == 0 then nSpots += 1; // race
 
   if nSpots == 0 then 
     writeln("\nPuzzle solved:\n\n", board);

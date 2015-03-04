@@ -1,8 +1,0 @@
-Module: domains
-   Class: fullOfDomains
-      var baseCase: domain(1)
-          This field contains a one dimensional array 
-      var twoDimension: domain(2)
-          This field contains a two dimensional array 
-      inherited from object
-

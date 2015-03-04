@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -54,6 +54,11 @@ symbolFlag( FLAG_BASE_DIST , ypr, "base dist" , ncm )
 symbolFlag( FLAG_BEGIN , npr, "begin" , ncm )
 symbolFlag( FLAG_BEGIN_BLOCK , npr, "begin block" , ncm )
 symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tuple functions")
+
+// When resolution encounters the def of the variable 'chpl__iter',
+// as indicated by this flag, it launches into enacting forall intents
+// for the forall loop that this variable was created for.
+symbolFlag( FLAG_CHPL__ITER , npr, "chpl__iter", "used as a marker to implement forall intents" )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL , npr, "cobegin or coforall" , ncm )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL_BLOCK , npr, "cobegin or coforall block" , ncm )
 symbolFlag( FLAG_COERCE_TEMP , npr, "coerce temp" , "a temporary that was stores the result of a coercion" )
@@ -141,7 +146,9 @@ symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a par
 symbolFlag( FLAG_MAYBE_TYPE , npr, "maybe type" , "symbol can resolve to a type" )
 symbolFlag( FLAG_MEMORY_ORDER_TYPE , ypr, "memory order type" , "type implementing memory order (normally called memory_order)" )
 symbolFlag( FLAG_METHOD , npr, "method" , "function that is a method" )
+symbolFlag( FLAG_METHOD_PRIMARY , npr, "primary method" , "function that is a method and defined in type declaration" )
 symbolFlag( FLAG_MODIFIES_CONST_FIELDS , npr, "modifies const fields" , "... of 'this' argument" )
+symbolFlag( FLAG_MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
 symbolFlag( FLAG_MODULE_INIT , npr, "module init" , "a module init function" )
 // This flag marks the result of an autoCopy as necessary.
 // Necessary autoCopies are not removed by the removeUnnecessaryAutoCopyCalls optimization.
@@ -152,6 +159,7 @@ symbolFlag( FLAG_NO_AUTO_DESTROY , ypr, "no auto destroy" , ncm )
 symbolFlag( FLAG_NO_CODEGEN , ypr, "no codegen" , "do not generate e.g. C code defining this symbol" )
 symbolFlag( FLAG_NO_COPY , ypr, "no copy" , "do not apply chpl__initCopy to initialization of a variable" )
 symbolFlag( FLAG_NO_DEFAULT_FUNCTIONS , ypr, "no default functions" , ncm )
+symbolFlag( FLAG_NO_DOC, ypr, "no doc", "do not generate chpldoc documentation for this symbol" )
 symbolFlag( FLAG_NO_IMPLICIT_COPY , ypr, "no implicit copy" , "function does not require autoCopy/autoDestroy" )
 symbolFlag( FLAG_NO_INSTANTIATION_LIMIT , ypr, "no instantiation limit", "The instantiation limit is not checked for this function" )
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
@@ -196,6 +204,7 @@ symbolFlag( FLAG_PRIVATIZED_CLASS , ypr, "privatized class" , "privatized array 
 symbolFlag( FLAG_PROMOTION_WRAPPER , npr, "promotion wrapper" , ncm )
 symbolFlag( FLAG_RANGE , ypr, "range" , "indicates that this type can be iterated" )
 symbolFlag( FLAG_RECURSIVE_ITERATOR , npr, "recursive iterator" , "iterators which call themselves" )
+symbolFlag( FLAG_REDUCESCANOP , ypr, "ReduceScanOp" , "the ReduceScanOp class" )
 symbolFlag( FLAG_REF , ypr, "ref" , ncm )
 symbolFlag( FLAG_REF_FOR_CONST_FIELD_OF_THIS , npr, "reference to a const field of 'this'" , ncm )
 symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
@@ -224,12 +233,11 @@ symbolFlag( FLAG_TRIVIAL_ASSIGNMENT, ypr, "trivial assignment", "an assignment w
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
-symbolFlag( FLAG_USER_NAMED , npr, "user named" , "named by the user" /* so leave it alone */ )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )
 // Used to mark where a compiler generated flag was removed (but is desired
 // elsewhere).
 symbolFlag( FLAG_WAS_COMPILER_GENERATED, npr, "was compiler generated", "used to be marked compiler generated")
-symbolFlag( FLAG_WIDE , npr, "wide" , ncm )
+symbolFlag( FLAG_WIDE_REF , npr, "wide" , ncm )
 symbolFlag( FLAG_WIDE_CLASS , npr, "wide class" , ncm )
 symbolFlag( FLAG_WRAPPER , npr, "wrapper" , "wrapper function" )
 symbolFlag( FLAG_WRAP_WRITTEN_FORMAL , npr, "wrap written formal" , "formal argument for wrapper for out/inout intent" )

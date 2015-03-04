@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -105,6 +105,12 @@ inline proc c_free(data: c_ptr) {
 inline proc ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
   return __primitive("ptr_eq", a, b);
 }
+inline proc ==(a: c_ptr, b: c_void_ptr) {
+  return __primitive("ptr_eq", a, b);
+}
+inline proc ==(a: c_void_ptr, b: c_ptr) {
+  return __primitive("ptr_eq", a, b);
+}
 inline proc ==(a: c_ptr, b: _nilType) {
   return __primitive("ptr_eq", a, nil);
 }
@@ -115,6 +121,12 @@ inline proc ==(a: _nilType, b: c_ptr) {
 inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
   return __primitive("ptr_neq", a, b);
 }
+inline proc !=(a: c_ptr, b: c_void_ptr) {
+  return __primitive("ptr_neq", a, b);
+}
+inline proc !=(a: c_void_ptr, b: c_ptr) {
+  return __primitive("ptr_neq", a, b);
+}
 inline proc !=(a: c_ptr, b: _nilType) {
   return __primitive("ptr_neq", a, nil);
 }
@@ -122,20 +134,20 @@ inline proc !=(a: _nilType, b: c_ptr) {
   return __primitive("ptr_neq", nil, b);
 }
 
-inline proc _cond_test(x: c_ptr) return x != nil;
+inline proc _cond_test(x: c_ptr) return x != c_nil;
 
-inline proc !(x: c_ptr) return x == nil;
+inline proc !(x: c_ptr) return x == c_nil;
 extern proc c_pointer_return(ref x:?t):c_ptr(t);
 
-inline proc c_ptrTo(arr: []) where isRectangularArr(arr) && arr.rank == 1 {
+inline proc c_ptrTo(arr: []) where isRectangularArr(arr) {
   return c_pointer_return(arr[arr.domain.low]);
 }
 inline proc c_ptrTo(ref x:?t):c_ptr(t)
 {
   if isArrayType(t) then
-    compilerError("c_ptrTo unsupported array type");
+    compilerError("c_ptrTo unsupported array type", 2);
   if isDomainType(t) then
-    compilerError("c_ptrTo domain type not supported");
+    compilerError("c_ptrTo domain type not supported", 2);
   // Other cases should be avoided, e.g. sync vars
   return c_pointer_return(x);
 }

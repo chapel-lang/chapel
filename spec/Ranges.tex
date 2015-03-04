@@ -442,6 +442,23 @@ produces an empty range, matching the default value for a
 \label{Ranges_Common_Operations}
 \index{ranges!operations}
 
+All operations on a range return a new range rather than modifying the existing one.  This
+supports a coding style in which all ranges are \emph{immutable} (i.e. declared
+as \chpl{const}).  
+
+\begin{rationale}
+
+The intention is to provide ranges as immutable objects.
+
+Immutable objects may be cached without
+creating coherence concerns.  They are also inherently thread-safe.  In terms of
+implementation, immutable objects are created in a consistent state and stay that way:
+Outside of constructors, internal consistency checks can be dispensed with.
+
+These are the same arguments as were used to justify making strings immutable in Java and C\#.
+
+\end{rationale}
+
 %REVIEW: vass: this should really be implicit conversion
 % and apply uniformly, like e.g. numeric implicit conversions.
 %If needed, define also explicit range conversions.
@@ -487,6 +504,13 @@ A range can be used as an iterator expression in a loop. This is legal
 only if the range is iterable. In this case the loop iterates over the
 members of the range's represented sequence, in the order defined by
 the sequence. If the range is empty, no iterations are executed.
+
+\begin{craychapel}
+An attempt to iterate over a range causes an error if adding stride to
+the range's last index overflows its index type, i.e. if the sum is
+greater than the index type's maximum value, or smaller than its
+minimum value.
+\end{craychapel}
 
 \subsubsection{Iterating over Unbounded Ranges in Zippered Iterations}
 \label{Iterating_over_Unbounded_Ranges_in_Zippered_Iterations}

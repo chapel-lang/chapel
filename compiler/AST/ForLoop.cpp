@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,10 +20,98 @@
 #include "ForLoop.h"
 
 #include "astutil.h"
+#include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
 
 #include <algorithm>
+
+/************************************ | *************************************
+*                                                                           *
+* Helper functions to optimize anonymous range iteration                    *
+*                                                                           *
+************************************* | ************************************/
+
+/*
+ * Attempts to replace iteration over simple anonymous ranges with calls to
+ * direct iterators that take low, high and stride as arguments. This is to
+ * avoid the cost of constructing ranges, and if the stride is known at compile
+ * time, provide a more optimized iterator that uses "<, <=, >, or >=" as the
+ * relational operator.
+ *
+ * This is only meant to replace anonymous range iteration for "simple" bounded
+ * ranges. Simple means it's a range of the form "low..high" or "low..high by
+ * stride". Anything more complex is ignored with the thinking that this should
+ * optimize the most common range iterators, but it could be expanded to handle
+ * more cases.
+ *
+ * An alternative is to update scalar replacement of aggregates to work on
+ * ranges, which should be able to achieve similar results as this optimization
+ * while handling all ranges, including non-anonymous ranges.
+ *
+ * Will optimize things like:
+ * - "for i in 1..10"
+ * - "for i in 1..10+1"
+ * - "var lo=1, hi=10;for i in lo..hi"
+ * - "for i in 1..10 by 2"
+ * - "for (i, j) in zip(1..10 by 2, 1..10 by -2)"
+ * - "for (i, j) in zip(A, 1..10 by 2)" // will optimize range iter still
+ * - "coforall i in 1..10 by 2"         // works for coforalls as well
+ *
+ * Will not optimize ranges like:
+ * - "for in in (1..)"             // doesn't handle unbounded ranges
+ * - "for i in 1..10 by 2 by 2"    // doesn't handle more than one by operator
+ * - "for i in 1..10 align 2"      // doesn't handle align operator
+ * - "for i in 1..#10"             // doesn't handle # operator
+ * - "var r = 1..10"; for i in r"  // not an anonymous range
+ * - "forall i in 1..10"           // does not get applied to foralls
+ *
+ * Note that this function is pretty fragile because it relies on names of
+ * functions/iterators as well as the arguments and order of those
+ * functions/iterators but there's not really a way around it this early in
+ * compilation. If the iterator can't be replaced, it is left unchanged.
+ */
+static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
+{
+  CallExpr* range = NULL;
+  Expr* stride = NULL;
+  if (CallExpr* call = toCallExpr(iteratorExpr))
+  {
+    // grab the stride if we have a strided range
+    if (call->isNamed("chpl_by"))
+    {
+      range = toCallExpr(call->get(1)->copy());
+      stride = toExpr(call->get(2)->copy());
+    }
+    // assume the call is the range (checked below) and set default stride
+    else
+    {
+      range = call;
+      stride = new SymExpr(new_IntSymbol(1));
+    }
+    // see if we're looking at a builder for a bounded range. the builder is
+    // iteratable since range has these() iterators
+    if (range && range->isNamed("chpl_build_bounded_range"))
+    {
+      // replace the range construction with a direct range iterator
+      Expr* low = range->get(1)->copy();
+      Expr* high = range->get(2)->copy();
+      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high, stride));
+    }
+  }
+}
+
+static void optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
+{
+  if (!zippered)
+    tryToReplaceWithDirectRangeIterator(iteratorExpr);
+  // for zippered iterators, try to replace each iterator of the tuple
+  else
+    if (CallExpr* call = toCallExpr(iteratorExpr))
+      if (call->isNamed("_build_tuple"))
+        for_actuals(actual, call)
+          tryToReplaceWithDirectRangeIterator(actual);
+}
 
 /************************************ | *************************************
 *                                                                           *
@@ -35,26 +123,29 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  Expr*      iteratorExpr,
                                  BlockStmt* body,
                                  bool       coforall,
-                                 bool       zippered) 
+                                 bool       zippered)
 {
   VarSymbol*   index         = newTemp("_indexOfInterest");
   VarSymbol*   iterator      = newTemp("_iterator");
   CallExpr*    iterInit      = 0;
   CallExpr*    iterMove      = 0;
-  ForLoop*     loop          = new ForLoop(body, index, iterator);
+  ForLoop*     loop          = new ForLoop(index, iterator, body);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
-  BlockStmt*   retval        = buildChapelStmt();
+  BlockStmt*   retval        = new BlockStmt();
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
   // Unzippered loop, treat all objects (including tuples) the same
-  if (zippered == false) 
+  if (zippered == false)
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
 
   // Expand tuple to a tuple containing appropriate iterators for each value.
-  else 
+  else
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
+
+  // try to optimize anonymous range iteration, replaces iterExpr in place
+  optimizeAnonymousRangeIteration(iteratorExpr, zippered);
 
   index->addFlag(FLAG_INDEX_OF_INTEREST);
 
@@ -69,9 +160,9 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 
   if (coforall)
     index->addFlag(FLAG_COFORALL_INDEX_VAR);
-  
-  loop->continueLabel = continueLabel;
-  loop->breakLabel    = breakLabel;
+
+  loop->mContinueLabel = continueLabel;
+  loop->mBreakLabel    = breakLabel;
 
   loop->insertAtTail(new DefExpr(continueLabel));
 
@@ -89,55 +180,24 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
   return retval;
 }
 
-BlockStmt* ForLoop::buildCForLoop(CallExpr* call, BlockStmt* body) 
-{
-  // Regular loop setup
-  ForLoop*     loop          = new ForLoop(call, body);
-  LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
-  BlockStmt*   retval        = buildChapelStmt();
-
-  // C for loops have the form:
-  //   __primitive("C for loop", initExpr, testExpr, incrExpr)
-  //
-  // This simply wraps the init, test, and incr expr with block stmts
-  call->get(1)->replace(new BlockStmt(call->get(1)->copy()));
-  call->get(2)->replace(new BlockStmt(call->get(2)->copy()));
-  call->get(3)->replace(new BlockStmt(call->get(3)->copy()));
-
-  loop->continueLabel = continueLabel;
-  loop->breakLabel    = breakLabel;
-
-  loop->insertAtTail(new DefExpr(continueLabel));
-
-  retval->insertAtTail(loop);
-  retval->insertAtTail(new DefExpr(breakLabel));
-
-  return retval;
-}
-
 /************************************ | *************************************
 *                                                                           *
 * Instance methods                                                          *
 *                                                                           *
 ************************************* | ************************************/
 
-ForLoop::ForLoop()
+ForLoop::ForLoop() : LoopStmt(0)
 {
-
+  mIndex    = 0;
+  mIterator = 0;
 }
 
-ForLoop::ForLoop(CallExpr*  cforInfo,
-                 BlockStmt* initBody) : BlockStmt(initBody)
+ForLoop::ForLoop(VarSymbol* index,
+                 VarSymbol* iterator,
+                 BlockStmt* initBody) : LoopStmt(initBody)
 {
-  blockInfoSet(cforInfo);
-}
-
-ForLoop::ForLoop(BlockStmt* initBody,
-                 VarSymbol* index,
-                 VarSymbol* iterator) : BlockStmt(initBody)
-{
-  blockInfoSet(new CallExpr(PRIM_BLOCK_FOR_LOOP, index, iterator));
+  mIndex    = new SymExpr(index);
+  mIterator = new SymExpr(iterator);
 }
 
 ForLoop::~ForLoop()
@@ -145,27 +205,20 @@ ForLoop::~ForLoop()
 
 }
 
-ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal) 
+ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
   SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  CallExpr*  blockInfo = blockInfoGet();
   ForLoop*   retval    = new ForLoop();
 
-  retval->astloc        = astloc;
-  retval->blockTag      = blockTag;
+  retval->astloc         = astloc;
+  retval->blockTag       = blockTag;
 
-  retval->breakLabel    = breakLabel;
-  retval->continueLabel = continueLabel;
+  retval->mBreakLabel    = mBreakLabel;
+  retval->mContinueLabel = mContinueLabel;
 
-  if (blockInfo != 0)
-    retval->blockInfoSet(blockInfo->copy(map, true));
-
-  if (modUses   != 0)
-    retval->modUses = modUses->copy(map, true);
-
-  if (byrefVars != 0)
-    retval->byrefVars = byrefVars->copy(map, true);
+  retval->mIndex         = mIndex->copy(map, true),
+  retval->mIterator      = mIterator->copy(map, true);
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -176,249 +229,169 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   return retval;
 }
 
-GenRet ForLoop::codegen() 
+BlockStmt* ForLoop::copyBody()
 {
-  GenInfo* info    = gGenInfo;
-  FILE*    outfile = info->cfile;
-  GenRet   ret;
+  SymbolMap map;
 
-  codegenStmt(this);
-
-  if (outfile)
-  {
-    CallExpr*   blockInfo = blockInfoGet();
-    BlockStmt*  initBlock = toBlockStmt(blockInfo->get(1));
-
-    // These copy calls are needed or else values get code generated twice.
-    std::string init      = codegenCForLoopHeader(initBlock->copy());
-
-    BlockStmt*  testBlock = toBlockStmt(blockInfo->get(2));
-    std::string test      = codegenCForLoopHeader(testBlock->copy());
-
-    // wrap the test with paren. Could probably check if it already has
-    // outer paren to make the code a little cleaner.
-    if (test != "") 
-      test = "(" + test + ")";
-
-    BlockStmt*  incrBlock = toBlockStmt(blockInfo->get(3));
-    std::string incr      = codegenCForLoopHeader(incrBlock->copy());
-    std::string hdr       = "for (" + init + "; " + test + "; " + incr + ") ";
-
-    info->cStatements.push_back(hdr);
-
-    if (this != getFunction()->body)
-      info->cStatements.push_back("{\n");
-
-    body.codegen("");
-
-    if (this != getFunction()->body) 
-    {
-      std::string end  = "}";
-      CondStmt*   cond = toCondStmt(parentExpr);
-
-      if (!cond || !(cond->thenStmt == this && cond->elseStmt))
-        end += "\n";
-
-      info->cStatements.push_back(end);
-    }
-  } 
-
-  else 
-  {
-#ifdef HAVE_LLVM
-    llvm::Function*   func          = info->builder->GetInsertBlock()->getParent();
-
-    llvm::BasicBlock* blockStmtInit = NULL;
-    llvm::BasicBlock* blockStmtBody = NULL;
-    llvm::BasicBlock* blockStmtEnd  = NULL;
-
-    BlockStmt*        initBlock     = toBlockStmt(blockInfoGet()->get(1));
-    BlockStmt*        testBlock     = toBlockStmt(blockInfoGet()->get(2));
-    BlockStmt*        incrBlock     = toBlockStmt(blockInfoGet()->get(3));
-
-    assert(initBlock && testBlock && incrBlock);
-
-    getFunction()->codegenUniqueNum++;
-
-    blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
-    blockStmtEnd  = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
-
-    // In order to track more easily with the C backend and because mem2reg should optimize 
-    // all of these cases, we generate a for loop as the same as 
-    // if(cond) do { body; step; } while(cond).
-
-    // Create the init basic block
-    blockStmtInit = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_c_for_init"));
-
-    func->getBasicBlockList().push_back(blockStmtInit);
-
-    // Insert an explicit branch from the current block to the init block
-    info->builder->CreateBr(blockStmtInit);
-
-    // Now switch to the init block for code generation
-    info->builder->SetInsertPoint(blockStmtInit);
-
-    // Code generate the init block.
-    initBlock->body.codegen("");
-
-    // Add the loop condition to figure out if we run the loop at all.
-    GenRet       test0      = codegenCForLoopCondition(testBlock);
-    llvm::Value* condValue0 = test0.val;
-
-    // Normalize it to boolean
-    if (condValue0->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
-      condValue0 = info->builder->CreateICmpNE(condValue0,
-                                               llvm::ConstantInt::get(condValue0->getType(), 0),
-                                               FNAME("condition"));
-
-    // Create the conditional branch
-    info->builder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
-    
-    // Now add the body.
-    func->getBasicBlockList().push_back(blockStmtBody);
-
-    info->builder->SetInsertPoint(blockStmtBody);
-    info->lvt->addLayer();
-
-    body.codegen("");
-
-    info->lvt->removeLayer();
-    
-    incrBlock->body.codegen("");
-
-    GenRet       test1      = codegenCForLoopCondition(testBlock);
-    llvm::Value* condValue1 = test1.val;
-
-    // Normalize it to boolean
-    if (condValue1->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
-      condValue1 = info->builder->CreateICmpNE(condValue1,
-                                               llvm::ConstantInt::get(condValue1->getType(), 0),
-                                               FNAME("condition"));
-
-    // Create the conditional branch
-    info->builder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
-
-    func->getBasicBlockList().push_back(blockStmtEnd);
-
-    info->builder->SetInsertPoint(blockStmtEnd);
-
-    if (blockStmtBody) INT_ASSERT(blockStmtBody->getParent() == func);
-    if (blockStmtEnd ) INT_ASSERT(blockStmtEnd->getParent()  == func);
-#endif
-  }
-
-  INT_ASSERT(!byrefVars); // these should not persist past parallel()
-
-  return ret;
+  return copyBody(&map);
 }
 
-// This function is used to codegen the init, test, and incr segments of c for
-// loops. In c for loops instead of using statements comma operators must be
-// used. So for the init instead of generating something like:
-//   i = 4;
-//   j = 4;
-//
-// We need to generate:
-// i = 4, j = 4
-std::string ForLoop::codegenCForLoopHeader(BlockStmt* block) 
+BlockStmt* ForLoop::copyBody(SymbolMap* map)
 {
-  GenInfo*    info = gGenInfo;
-  std::string seg  = "";
+  BlockStmt* retval = new BlockStmt();
 
-  for_alist(expr, block->body) 
-  {
-    CallExpr* call = toCallExpr(expr);
+  retval->astloc   = astloc;
+  retval->blockTag = blockTag;
 
-    // Generate defExpr normally (they always get codegenned at the top of a
-    // function currently, if that changes this code will probably be wrong.)
-    if (DefExpr* defExpr = toDefExpr(expr)) 
-    {
-      defExpr->codegen();
-    }
+  for_alist(expr, body)
+    retval->insertAtTail(expr->copy(map, true));
 
-    // If inlining is off, the init, test, and incr are just functions and we
-    // need to generate them inline so we use codegenValue. The semicolon is
-    // added so it can be replaced with the comma later. If inlinining is on
-    // the test will be a <= and it also needs to be codegenned with
-    // codegenValue.
-    //
-    // TODO when the test operator is user specifiable and not just <= this
-    // will need to be updated to include all possible conditionals. (I'm
-    // imagining we'll want a separate function that can check if a primitive
-    // is a conditional as I think we'll need that info elsewhere.)
-    else if (call && (call->isResolved() || isRelationalOperator(call))) 
-    {
-      std::string callStr = codegenValue(call).c;
+  update_symbols(retval, map);
 
-      if (callStr != "") 
-      {
-        seg += callStr + ';';
-      }
-    }
-
-    // Similar to above, generate symExprs
-    else if (SymExpr* symExpr = toSymExpr(expr)) 
-    {
-      std::string symStr = codegenValue(symExpr).c;
-
-      if (symStr != "") 
-      {
-        seg += symStr + ';';
-      }
-    }
-
-    // Everything else is just a bunch of statements. We do normal codegen() on
-    // them which ends up putting whatever got codegenned into CStatements. We
-    // pop all of those back off (note that the order we pop and attach to our
-    // segment is important.)
-    else 
-    {
-      int prevStatements = (int) info->cStatements.size();
-
-      expr->codegen();
-
-      int newStatements  = (int) info->cStatements.size() - prevStatements;
-
-      for (std::vector<std::string>::iterator it = info->cStatements.end() - newStatements;
-           it != info->cStatements.end();
-           ++it) 
-      {
-        seg += *it;
-      }
-
-      info->cStatements.erase(info->cStatements.end() - newStatements,
-                              info->cStatements.end());
-    }
-  }
-
-  // replace all the semicolons (from "statements") with commas
-  std::replace(seg.begin(), seg.end(), ';', ',');
-
-  // remove all the newlines
-  seg.erase(std::remove(seg.begin(), seg.end(), '\n'), seg.end());
-
-  // remove the last character if any were generated (it's a trailing comma
-  // since we previously had an appropriate "trailing" semicolon
-  if (seg.size () > 0)  seg.resize (seg.size () - 1);
-
-  return seg;
+  return retval;
 }
 
-GenRet ForLoop::codegenCForLoopCondition(BlockStmt* block)
+bool ForLoop::isForLoop() const
+{
+  return true;
+}
+
+SymExpr* ForLoop::indexGet() const
+{
+  return mIndex;
+}
+
+SymExpr* ForLoop::iteratorGet() const
+{
+  return mIterator;
+}
+
+CallExpr* ForLoop::blockInfoGet() const
+{
+  printf("Migration: ForLoop   %12d Unexpected call to blockInfoGet()\n", id);
+
+  return 0;
+}
+
+CallExpr* ForLoop::blockInfoSet(CallExpr* expr)
+{
+  printf("Migration: ForLoop   %12d Unexpected call to blockInfoSet()\n", id);
+
+  return 0;
+}
+
+bool ForLoop::deadBlockCleanup()
+{
+  bool retval = false;
+
+  INT_ASSERT(false);
+
+  return retval;
+}
+
+void ForLoop::verify()
+{
+  BlockStmt::verify();
+
+  if (BlockStmt::blockInfoGet() != 0)
+    INT_FATAL(this, "ForLoop::verify. blockInfo is not NULL");
+
+  if (mIndex    == 0)
+    INT_FATAL(this, "ForLoop::verify. index     is NULL");
+
+  if (mIterator == 0)
+    INT_FATAL(this, "ForLoop::verify. iterator  is NULL");
+
+  if (modUses   != 0)
+    INT_FATAL(this, "ForLoop::verify. modUses   is not NULL");
+
+  if (byrefVars != 0)
+    INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
+}
+
+GenRet ForLoop::codegen()
 {
   GenRet ret;
 
-#ifdef HAVE_LLVM
-  for_alist(expr, block->body) 
-  {
-    ret = expr->codegen();
-  }
-
-  return codegenValue(ret);
-
-#else
+  INT_FATAL(this, "ForLoop::codegen This should be unreachable");
 
   return ret;
+}
 
-#endif
+void ForLoop::accept(AstVisitor* visitor)
+{
+  if (visitor->enterForLoop(this) == true)
+  {
+    for_alist(next_ast, body)
+      next_ast->accept(visitor);
+
+    if (indexGet()    != 0)
+      indexGet()->accept(visitor);
+
+    if (iteratorGet() != 0)
+      iteratorGet()->accept(visitor);
+
+    if (modUses)
+      modUses->accept(visitor);
+
+    if (byrefVars)
+      byrefVars->accept(visitor);
+
+    visitor->exitForLoop(this);
+  }
+}
+
+void ForLoop::replaceChild(Expr* oldAst, Expr* newAst)
+{
+  if (oldAst == mIndex)
+  {
+    SymExpr* se = toSymExpr(newAst);
+    // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
+    INT_ASSERT(!newAst || se);
+    mIndex = se;
+  }
+  else if (oldAst == mIterator)
+  {
+    SymExpr* se = toSymExpr(newAst);
+    // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
+    INT_ASSERT(!newAst || se);
+    mIterator = se;
+  }
+  else
+    LoopStmt::replaceChild(oldAst, newAst);
+}
+
+Expr* ForLoop::getFirstExpr()
+{
+  Expr* retval = 0;
+
+  if (mIndex         != 0)
+    retval = mIndex;
+
+  else if (mIterator != 0)
+    retval = mIterator;
+
+  else if (body.head != 0)
+    retval = body.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* ForLoop::getNextExpr(Expr* expr)
+{
+  Expr* retval = this;
+
+  if (expr == mIndex && mIterator != NULL)
+    retval = mIterator;
+
+  else if (expr == mIndex    && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  else if (expr == mIterator && body.head != NULL)
+    retval = body.head->getFirstExpr();
+
+  return retval;
 }

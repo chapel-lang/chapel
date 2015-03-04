@@ -1,12 +1,21 @@
+# Note: Do _not_ change this file just to make the test 'passCheck' stop
+# failing. That test serves as a sentinel to alert you that compiler
+# performance is broken. Simply fixing that test does _not_ fix compiler
+# performance testing.
+#
+# For now you can just ping Elliot when a pass changes, he's happy to fix
+# compiler performance testing. Passes don't change often so this shouldn't be
+# a big deal, but if it becomes an issue we can try to come up with a better
+# solution. See passCheck.prediff for more details.
 init :
 parse :
 checkParsed :
+docs :
 readExternC :
 expandExternArrayCalls :
 cleanup :
 scopeResolve :
 flattenClasses :
-docs :
 normalize :
 checkNormalized :
 buildDefaultFunctions :

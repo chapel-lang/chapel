@@ -25,7 +25,6 @@ are as follows:
 \hspace{1pc} & \chpl{AdvancedIters} & Advanced iterator functions \\
              & \chpl{BitOps} & Bit manipulation routines \\
              & \chpl{Norm}   & Routines for computing vector and matrix norms \\
-             & \chpl{Random} & Random number generation routines \\
              & \chpl{Search} & Generic searching routines \\
              & \chpl{Sort} & Generic sorting routines \\
              & \chpl{Time} & Types and routines related to time \\
@@ -794,107 +793,6 @@ proc norm(x: [])
 \begin{protobody}
 Compute the default norm on array \chpl{x}.  For a 1D array this is
 the 2-norm, for a 2D array, this is the Frobenius norm.
-\end{protobody}
-
-
-\subsection{Random}
-\label{Random}
-\index{modules!optional!Random@\chpl{Random}}
-
-The module \chpl{Random} supports the generation of pseudo-random
-values and streams of values.  The current interface is minimal and
-should be expected to grow and evolve over time.  In particular, we
-expect to support other pseudo-random number generation algorithms,
-more random value types (\eg, int), and both serial and parallel
-iterators over the RandomStream class.
-
-\begin{protohead}
-class RandomStream
-proc RandomStream(seed: int(64), param parSafe: bool = true)
-proc RandomStream(seedGenerator: SeedGenerator = SeedGenerator.currentTime,
-                 param parSafe: bool = true)
-\end{protohead}
-\begin{protobody}
-Implements a pseudo-random stream of values based on a seed value.
-The current implementation generates the values using a linear
-congruential generator.  In future versions of this module, the
-RandomStream class will offer a wider variety of algorithms for
-generating pseudo-random values.
-
-To construct a RandomStream class, the seed may be explicitly passed.
-It must be an odd integer between $1$ and $2^{46}-1$.  Alternatively,
-the RandomStream class can be constructed by passing a value of the
-enumerated type SeedGenerator to choose an algorithm to use to set the
-seed.  If neither a seed nor a SeedGenerator value is passed to the
-RandomStream class, the seed will be initialized based on the current
-time in microseconds (rounded via modular arithmetic to the nearest
-odd integer between $1$ and $2^{46}-1$.
-
-The parSafe parameter defaults to true and allows for safe use of this
-class by concurrent tasks.  This can be overridden when calling
-methods to make them safe when called by concurrent tasks.  This
-mechanism allows for lower overhead calls when there is no threat of
-concurrent calls, but correct calls when there is.
-\end{protobody}
-
-\begin{protohead}
-enum SeedGenerator { currentTime };
-\end{protohead}
-\begin{protobody}
-Values of this enumerated type may be used to choose a method for
-initializing the seed in the RandomStream class.  The only value
-supported at present is \chpl{currentTime} which can be used to
-initialize the seed based on the current time in microseconds (rounded
-via modular arithmetic to the nearest odd integer between $1$ and
-$2^{46}-1$.
-\end{protobody}
-
-\begin{protohead}
-proc RandomStream.fillRandom(x:[?D], param parSafe = this.parSafe)
-\end{protohead}
-\begin{protobody}
-Fill the argument array, \chpl{x}, with the next $|$\chpl{D}$|$ values
-of the pseudo-random stream in row-major order.  The array must be an
-array of real(64), imag(64), or complex(128) elements.  For complex
-arrays, each complex element is initialized with two values from the
-stream of random numbers.
-\end{protobody}
-
-\begin{protohead}
-proc RandomStream.skipToNth(in n: integral, param parSafe = this.parSafe)
-\end{protohead}
-\begin{protobody}
-Skips ahead or back to the \chpl{n}-th value in the
-random stream.  The value of n is assumed to be positive, such that
-\chpl{n}~==~1 represents the initial value in the stream.
-\end{protobody}
-
-\begin{protohead}
-proc RandomStream.getNext(param parSafe = this.parSafe): real
-\end{protohead}
-\begin{protobody}
-Returns the next value in the random stream as a real.
-\end{protobody}
-
-\begin{protohead}
-proc RandomStream.getNth(n: integral, param parSafe = this.parSafe): real
-\end{protohead}
-\begin{protobody}
-Returns the \chpl{n}-th value in the random stream as a real.  Equivalent to
-calling \chpl{skipToNth(n)} followed by \chpl{getNext()}.
-\end{protobody}
-
-\begin{protohead}
-proc fillRandom(x:[], initseed: int(64))
-\end{protohead}
-\begin{protobody}
-A routine provided for convenience to support the functionality of the
-fillRandom method (above) without explicitly constructing an instance
-of the \chpl{RandomStream} class.  This is useful for filling a single
-array or multiple arrays which require no coherence between them.
-The \chpl{initseed} argument corresponds to the \chpl{seed} member of
-the \chpl{RandomStream} class.  If unspecified, the default for the
-class will be used.
 \end{protobody}
 
 

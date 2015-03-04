@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -463,6 +463,7 @@ qioerr qbuffer_memset(qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end, 
 #define qio_calloc(nmemb, size) chpl_mem_allocManyZero(nmemb, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
 #define qio_realloc(ptr, size) chpl_mem_realloc(ptr, size, CHPL_RT_MD_IO_BUFFER, __LINE__, __FILE__)
 #define qio_free(ptr) chpl_mem_free(ptr, __LINE__, __FILE__)
+#define qio_memcpy(dest, src, num) chpl_memcpy(dest, src, num)
 
 static inline char* qio_strdup(const char* ptr)
 {
@@ -481,6 +482,7 @@ typedef chpl_bool qio_bool;
 #define qio_free(ptr) free(ptr)
 #define sys_free(ptr) free(ptr)
 #define qio_strdup(ptr) strdup(ptr)
+#define qio_memcpy(dest, src, num) memcpy(dest, src, num)
 
 typedef bool qio_bool;
 

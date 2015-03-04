@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -161,7 +161,6 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
     }
   }
   switch (qsub) {
-  case pbspro:
   case unknown:
     if (generate_qsub_script) {
       fprintf(qsubScript, "#PBS -l mppwidth=%d\n", numLocales);
@@ -171,6 +170,19 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
       length += snprintf(optionString + length, maxOptLength - length,
                          " -l mppwidth=%d -l mppnppn=%d -l mppdepth=%d",
                          numLocales, procsPerNode, numCoresPerLocale);
+    }
+    break;
+  case pbspro:
+    if (generate_qsub_script) {
+      // We always want to use scatter since we use one PE per node
+      fprintf(qsubScript, "#PBS -l place=scatter\n");
+      fprintf(qsubScript, "#PBS -l select=%d:ncpus=%d\n", numLocales, numCoresPerLocale);
+    } else {
+      // We always want to use scatter since we use one PE per node
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -l place=scatter");
+      length += snprintf(optionString + length, maxOptLength - length,
+                         " -l select=%d:ncpus=%d", numLocales, numCoresPerLocale);
     }
     break;
   case moab:
@@ -303,7 +315,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
     if (verbosity > 2) {
       fprintf(expectFile, "send \"aprun -q %s%d ",
               getNumLocalesStr(), 1 /* only run on one locale */);
-      fprintf(expectFile, "ls %s\\n\"\n", chpl_get_real_binary_name());
+      fprintf(expectFile, "ls %s %s\\n\"\n",
+          chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
       fprintf(expectFile, "expect {\n");
       fprintf(expectFile, "  \"failed: chdir\" {send_user "
               "\"error: %s must be launched from and/or stored on a "

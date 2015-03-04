@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,13 +22,17 @@
 #include "astutil.h"
 #include "bb.h"
 #include "bitVec.h"
+#include "CForLoop.h"
 #include "dominator.h"
 #include "expr.h"
+#include "ForLoop.h"
+#include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "timer.h"
+#include "WhileStmt.h"
 
 #include <algorithm>
 #include <set>
@@ -39,7 +43,7 @@
 //#define debugHoisting
 #ifdef debugHoisting
   #define printDebug(string) printf string
-#else 
+#else
   #define printDebug(string) //do nothing
 #endif
 
@@ -48,11 +52,11 @@
 
 #ifdef detailedTiming
   #define startTimer(timer) timer.start()
-  #define stopTimer(timer) timer.stop()
+  #define stopTimer(timer)  timer.stop()
 #else
-  #define startTimer(timer) //do nothing 
-  #define stopTimer(timer) //do nothing 
-#endif 
+  #define startTimer(timer) // do nothing
+  #define stopTimer(timer)  // do nothing
+#endif
 
 
 Timer allOperandsAreLoopInvariantTimer;
@@ -69,128 +73,115 @@ Timer overallTimer;
 
 #define MAX_NUM_ALIASES 200000
 
-//TODO The alias analysis is extremely conservative. Beyond possibly not hoisting 
-//things that can be, it is also a performance issue because you have a lot more 
-//definitions to consider before declaration something invariant. 
+//TODO The alias analysis is extremely conservative. Beyond possibly not hoisting
+//things that can be, it is also a performance issue because you have a lot more
+//definitions to consider before declaration something invariant.
 
-//TODO some other possible optimizations are if you're looking at an outer 
-//loop in a nest you can ignore everything inside the inner loop(s) since you 
+//TODO some other possible optimizations are if you're looking at an outer
+//loop in a nest you can ignore everything inside the inner loop(s) since you
 //already know they can't be hoisted
 
- 
+
 /*
 * This is really just a wrapper for the collection of basic blocks that
-* make up a loop. However, it also stores the header, and builds the bit 
+* make up a loop. However, it also stores the header, and builds the bit
 * representation as the loop is built to save time. The bit representation
-* and the bit representation of the exits can be gotten, putting them 
-* in a centralized location. 
+* and the bit representation of the exits can be gotten, putting them
+* in a centralized location.
 */
 class Loop {
-
-  private:
+private:
     std::vector<BasicBlock*>* loopBlocks;
-    BasicBlock* header;
-    BitVec* bitBlocks;
-    BitVec* bitExits;
+    BasicBlock*               header;
+    BitVec*                   bitBlocks;
+    BitVec*                   bitExits;
 
-  public: 
+public:
     Loop(int nBlocks) {
       loopBlocks = new std::vector<BasicBlock*>;
-      bitBlocks = new BitVec(nBlocks); 
-      bitExits = new BitVec(nBlocks);
+      bitBlocks  = new BitVec(nBlocks);
+      bitExits   = new BitVec(nBlocks);
     }
-    
+
     ~Loop() {
       delete loopBlocks;
-      loopBlocks = 0;
       delete bitBlocks;
-      bitBlocks = 0;
       delete bitExits;
-      bitExits = 0;      
     }
-    
-    // This function exists to place an expr in the 
-    // "preheader" of the loop, 
+
+    // This function exists to place an expr in the
+    // "preheader" of the loop,
     void insertBefore(Expr* expr) {
-      if(header->exprs.size() != 0) {
+      if (header->exprs.size() != 0) {
         // find the first expr in the header, and get it's parent expr (for
         // most cases it will be the surrounding block statement of the loop)
-        if(BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
-          if(blockStmt->isLoop()) {
+        if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
+          if (blockStmt->isLoopStmt()) {
             blockStmt->insertBefore(expr->remove());
-          } else {
-            // for c for loops, the header is the test segment of the c for loop
-            // primitive which is still in the primitive. In this case we need
-            // to first get the primitive and then get its parent which will be
-            // the surrounding block stmt of the loop.
-            if (CallExpr* call = toCallExpr(blockStmt->parentExpr)) {
-              if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) {
-                if (BlockStmt* outer = toBlockStmt(call->parentExpr)) {
-                  if (outer->blockInfoGet() == call) {
-                    outer->insertBefore(expr->remove());
-                  }
-                }
-              }
-            }
+
+          } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
+            CForLoop* cforLoop = CForLoop::loopForClause(blockStmt);
+
+            cforLoop->insertBefore(expr->remove());
           }
         }
       }
     }
-    
+
     //Set the header, and insert the header into the loop blocks
     void setHeader(BasicBlock* setHeader) {
       header = setHeader;
       insertBlock(setHeader);
     }
-    
+
     //add all the blocks from other loop to this loop
     void combine(Loop* otherLoop) {
       for_vector(BasicBlock, block, *otherLoop->getBlocks()) {
         insertBlock(block);
       }
     }
-    
+
     //insert a block and update the bit representation
     void insertBlock(BasicBlock* block) {
       //if this block is already in the loop, do nothing
       if(bitBlocks->test(block->id)) {
         return;
       }
-    
+
       //add the block to the list of blocks and to the bit representation
       loopBlocks->push_back(block);
       bitBlocks->set(block->id);
     }
-    
+
     //check if a block is in the loop based on block id
     bool contains(int i) {
       return bitBlocks->test(i);
     }
-    
-    //check if a block is in the loop 
+
+    //check if a block is in the loop
     bool contains(BasicBlock* block) {
       return bitBlocks->test(block->id);
     }
-    
-    //get the header block 
+
+    //get the header block
     BasicBlock* getHeader() {
       return header;
     }
-    
-    //get the actual blocks in the loop 
+
+    //get the actual blocks in the loop
     std::vector<BasicBlock*>* getBlocks() {
       return loopBlocks;
     }
-    
+
     //get the bitvector that represents the blocks in the loop
     BitVec* getBitBlocks() {
       return bitBlocks;
     }
-    
+
     //get the bitvector that represents the exit blocks
     //the exit blocks are the blocks that have a next basic
-    //block that is outside of the loop. 
-    BitVec* getBitExits() {    
+    //block that is outside of the loop.
+    BitVec* getBitExits() {
       bitExits->reset();
       for_vector(BasicBlock, block, *loopBlocks) {
         for_vector(BasicBlock, out, block->outs) {
@@ -201,7 +192,7 @@ class Loop {
       }
       return bitExits;
     }
-    
+
     //return the number of blocks in the loop
     unsigned size() {
       return loopBlocks->size();
@@ -545,22 +536,22 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
               }
             }
           }
-        } 
+        }
       }
-    
+
       //Check each symExpr to see if its a use and or def and add to the appropriate lists
       std::vector<SymExpr*> symExprs;
       collectSymExprsSTL(expr, symExprs);
       for_vector(SymExpr, symExpr, symExprs) {
         if(symExpr->parentSymbol) {
-          if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+          if(isLcnSymbol(symExpr->var)) {
             localMap[symExpr] = block->id;
             int result = isDefAndOrUse(symExpr);
-            //Add defs 
+            //Add defs
             if(result & 1) {
               addDefOrUse(localDefMap, symExpr->var, symExpr);
             }
-            //add uses 
+            //add uses
             if(result & 2) {
               addDefOrUse(localUseMap, symExpr->var, symExpr);
             }
@@ -582,7 +573,7 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
         }
       }
     }
-  }   
+  }
 }
 
 
@@ -731,17 +722,17 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
   //as it seems unlikely that anybody would be willing to wait the 2+ hours it
   //takes for a program to actual compile. However, if compilation times become
   //unpredictable a compiler flag can be added. With less conservative analysis
-  //though, this threshold should be eliminated. 
+  //though, this threshold should be eliminated.
   int numAliases = 0;
-  //compute the map of aliases for each symbol 
+  //compute the map of aliases for each symbol
   startTimer(computeAliasTimer);
   std::map<Symbol*, std::set<Symbol*> > aliases;
 
   //Compute the aliases for the function's parameters. Any args passed by ref
-  //can potentially alias each other. 
+  //can potentially alias each other.
   for_alist(formal1, fn->formals) {
     for_alist(formal2, fn->formals) {
-      if(formal1 == formal2) 
+      if(formal1 == formal2)
         continue;
       if(ArgSymbol* arg1 = toArgSymbol(toDefExpr(formal1)->sym)) {
         if(ArgSymbol* arg2 = toArgSymbol(toDefExpr(formal2)->sym)) {
@@ -758,10 +749,10 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     //if there are too many aliases, just return. Since nothing has been added
     //to the list of invariants, nothing will be hoisted from the current fn
     if(numAliases > MAX_NUM_ALIASES) {
-#ifdef detailedTiming 
+#ifdef detailedTiming
        FILE* tooManyAliasesFile = fopen(astr(CHPL_HOME,"/LICMaliases.txt"), "a");
        fprintf(tooManyAliasesFile, "Skipping fn %s %d of module %s %d "
-           "because there were too many aliases\n", fn->name, fn->id, 
+           "because there were too many aliases\n", fn->name, fn->id,
            fn->getModule()->name, fn->getModule()->id);
 
        fclose(tooManyAliasesFile);
@@ -769,29 +760,29 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
       stopTimer(computeAliasTimer);
       return;
     }
- 
+
     for_vector(Expr, expr, block2->exprs) {
       if(CallExpr* call = toCallExpr(expr)) {
         Symbol* rhs = rhsAlias(call);
         if(rhs != NULL) {
           Symbol* lhs = NULL;
-          if(call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) 
+          if(call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
             lhs = toSymExpr(call->get(1))->var;
           else
             lhs = toSymExpr(call->get(2))->var;
-        
+
           for_set(Symbol, rhsAlias, aliases[rhs]) {
             printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id,
               rhsAlias->name, rhsAlias->id));
-            
+
             aliases[rhsAlias].insert(lhs);
             aliases[lhs].insert(rhsAlias);
             numAliases += 2;
           }
-          printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id, rhs->name, 
+          printDebug(("%s %d aliases %s %d\n", lhs->name, lhs->id, rhs->name,
             rhs->id));
-          
-          aliases[rhs].insert(lhs); 
+
+          aliases[rhs].insert(lhs);
           aliases[lhs].insert(rhs);
           numAliases += 2;
         }
@@ -799,26 +790,26 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     }
   }
   stopTimer(computeAliasTimer);
-  
-  //calculate the actual defs of a symbol including the defs of 
-  //its aliases. If there are no defs or we have a constant, 
+
+  //calculate the actual defs of a symbol including the defs of
+  //its aliases. If there are no defs or we have a constant,
   //add it to the list of invariants
   startTimer(calculateActualDefsTimer);
-  std::set<SymExpr*> loopInvariantOperands;  
+  std::set<SymExpr*> loopInvariantOperands;
   std::set<SymExpr*> loopInvariantInstructions;
   std::map<SymExpr*, std::set<SymExpr*> > actualDefs;
   for_vector(SymExpr, symExpr, loopSymExprs) {
-  
+
     //skip already known invariants
     if(loopInvariantOperands.count(symExpr) == 1) {
       continue;
     }
-    
-    //mark all the const operands 
+
+    //mark all the const operands
     if(isConst(symExpr)) {
       loopInvariantOperands.insert(symExpr);
-    }    
-        
+    }
+
     //calculate defs of the aliases
     if(aliases.count(symExpr->var) == 1) {
       for_set(Symbol, symbol, aliases[symExpr->var]) {
@@ -827,22 +818,22 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
           for_vector(SymExpr, aliasSymExpr, *localDefMap[symbol]) {
             if(CallExpr* call = toCallExpr(aliasSymExpr->parentExpr)) {
               if(symExpr->var == rhsAlias(call)) {
-                //do nothing 
+                //do nothing
               }
               else if(aliases[symExpr->var].count(rhsAlias(call)) == 0) {
                 actualDefs[symExpr].insert(aliasSymExpr);
-              }  
+              }
             }
           }
         }
       }
-    }    
-   
+    }
+
     // We have to note that for records if a field is deffed then the record
     // itself is also deffed. This is handled in buildDefUseMaps for normal
     // variables but we have to handle when a variable aliases a record's field
     // and the alias is deffed.
-    if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+    if(isLcnSymbol(symExpr->var)) {
       // if the current variable is a record
       if(AggregateType* ct = toAggregateType(symExpr->var->type->symbol->type)) {
         if(isRecord(symExpr->var->type->symbol->type)) {
@@ -1019,7 +1010,7 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
   
   BitVec* bitExits = loop->getBitExits();
    
-  for(int i = 0; i < bitExits->size(); i++) {
+  for(size_t i = 0; i < bitExits->size(); i++) {
     if(bitExits->test(i)) {
       if(dominates(defBlock, i, dominators) == false) {
         return false;
@@ -1056,16 +1047,16 @@ static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols
 
 
 /*
- * Collects the uses and defs of symbols the baseAST 
- * and checks for any synchronization variables such as 
- * atomics, syncs, and singles. 
+ * Collects the uses and defs of symbols the baseAST
+ * and checks for any synchronization variables such as
+ * atomics, syncs, and singles.
  */
 static bool containsSynchronizationVar(BaseAST* ast) {
   std::vector<SymExpr*> symExprs;
   collectSymExprsSTL(ast, symExprs);
   for_vector(SymExpr, symExpr, symExprs) {
-    
-    if(isVarSymbol(symExpr->var) || isArgSymbol(symExpr->var)) {
+
+    if(isLcnSymbol(symExpr->var)) {
       Type* symType = symExpr->var->type;
       Type* valType = symType->getValType();
       if (isSyncType(symType) || isAtomicType(symType) ||
@@ -1147,10 +1138,15 @@ void loopInvariantCodeMotion(void) {
 
     //build the basic blocks, where the first bb is the entry block 
     startTimer(buildBBTimer);
-    buildBasicBlocks(fn);
+
+    BasicBlock::buildBasicBlocks(fn);
+
     std::vector<BasicBlock*> basicBlocks = *fn->basicBlocks;
+
     BasicBlock* entryBlock = basicBlocks[0];
+
     unsigned nBlocks = basicBlocks.size();
+
     stopTimer(buildBBTimer);
     
     //compute the dominators 

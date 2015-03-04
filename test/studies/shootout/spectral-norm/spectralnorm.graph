@@ -1,6 +1,6 @@
-perfkeys: real, real, real, real, real, real, real, real
-graphkeys: barrier, blockdist, spectralnorm, two-at-a-time, two-at-a-time-barrier, no-reduction, release, brad version
-files: spectralnorm.dat, spectralnorm_2.dat, spectral-norm.dat, spectral-norm-double-time.dat, spectral-norm-barrier.dat, spectral-norm-no-reduct.dat, spectralnorm-release.dat, spectralnorm-blc.dat
+perfkeys: real, real, real, real, real, real, real, real, real
+graphkeys: barrier, blockdist, spectralnorm, two-at-a-time, two-at-a-time-barrier, no-reduction, release, brad version, MAX_LOGICAL release
+files: spectralnorm.dat, spectralnorm_2.dat, spectral-norm.dat, spectral-norm-double-time.dat, spectral-norm-barrier.dat, spectral-norm-no-reduct.dat, spectralnorm-release.dat, spectralnorm-blc.dat, spectralnorm-MAXLOGICAL.dat
 graphtitle: Spectral Norm Shootout Benchmark
 ylabel: Time (seconds)
 graphname: spectralnorm

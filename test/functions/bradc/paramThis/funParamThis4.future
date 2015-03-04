@@ -1,0 +1,10 @@
+bug: an error message is not reported for ambiguous methods with different this-intents
+
+Theses methods in class C:
+
+  proc ref foo() ...
+  proc foo() ...
+
+should both be applicable in the call c.foo().
+Currently the compiler picks the second of them,
+whereas it should report an ambiguity.

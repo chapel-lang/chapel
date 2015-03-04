@@ -1,0 +1,12 @@
+bug: chpldoc documents symbols at scopes where it should not
+
+A poorly written module with "side effects" -- i.e. loops, begins, etc at the
+module scope -- is not handled correctly by chpldoc. chpldoc traverses and
+documents symbols that are part of the loop scope or conditional scope.
+
+The begin and cobegin are traversed, which is incorrect. If/When begin and
+cobegin have their own AST nodes and visitor methods, it will be easier to
+block their traversal.
+
+Also, a number of tmp and iterator vars show up in the module scope. Presumably
+these come from the the loops, and it would be nice to stifle them somehow.

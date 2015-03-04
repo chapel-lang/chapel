@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,6 +43,8 @@ public:
   //
   static  void     view(const char* passName, int passNum);
 
+                   AstDump(FILE* fp);
+                  ~AstDump();
 
   //
   // These functions are the "implementation" interface for the
@@ -52,32 +54,46 @@ public:
   // declared public so that they can be invoked by the AST nodes
   // themselves
   //
-  virtual bool     enterArgSym    (ArgSymbol*         node);
+  virtual bool     enterArgSym      (ArgSymbol*         node);
 
-  virtual bool     enterCallExpr  (CallExpr*          node);
-  virtual void     exitCallExpr   (CallExpr*          node);
+  virtual bool     enterCallExpr    (CallExpr*          node);
+  virtual void     exitCallExpr     (CallExpr*          node);
 
-  virtual bool     enterDefExpr   (DefExpr*           node);
+  virtual bool     enterDefExpr     (DefExpr*           node);
 
-  virtual bool     enterNamedExpr (NamedExpr*         node);
-  virtual void     exitNamedExpr  (NamedExpr*         node);
+  virtual bool     enterNamedExpr   (NamedExpr*         node);
+  virtual void     exitNamedExpr    (NamedExpr*         node);
 
-  virtual void     visitSymExpr   (SymExpr*           node);
+  virtual void     visitSymExpr     (SymExpr*           node);
 
-  virtual void     visitUsymExpr  (UnresolvedSymExpr* node);
+  virtual void     visitUsymExpr    (UnresolvedSymExpr* node);
 
-  virtual bool     enterBlockStmt (BlockStmt*         node);
-  virtual void     exitBlockStmt  (BlockStmt*         node);
+  virtual bool     enterBlockStmt   (BlockStmt*         node);
+  virtual void     exitBlockStmt    (BlockStmt*         node);
 
-  virtual bool     enterCondStmt  (CondStmt*          node);
+  virtual bool     enterWhileDoStmt (WhileDoStmt*       node);
+  virtual void     exitWhileDoStmt  (WhileDoStmt*       node);
 
-  virtual void     visitEblockStmt(ExternBlockStmt*   node);
+  virtual bool     enterDoWhileStmt (DoWhileStmt*       node);
+  virtual void     exitDoWhileStmt  (DoWhileStmt*       node);
 
-  virtual bool     enterGotoStmt  (GotoStmt*          node);
+  virtual bool     enterCForLoop    (CForLoop*          node);
+  virtual void     exitCForLoop     (CForLoop*          node);
+
+  virtual bool     enterForLoop     (ForLoop*           node);
+  virtual void     exitForLoop      (ForLoop*           node);
+
+  virtual bool     enterParamForLoop(ParamForLoop*      node);
+  virtual void     exitParamForLoop (ParamForLoop*      node);
+
+  virtual bool     enterCondStmt    (CondStmt*          node);
+
+  virtual void     visitEblockStmt  (ExternBlockStmt*   node);
+
+  virtual bool     enterGotoStmt    (GotoStmt*          node);
 
 private:
                    AstDump();
-                  ~AstDump();
 
   bool             open(const ModuleSymbol* module, const char* passName, int passNum);
   bool             close();
@@ -101,6 +117,7 @@ private:
   FILE*            mFP;             // The FILE* to the log file if the file is open
   int              mIndent;         // The indentation level.  Increments for each BlockStmt
   bool             mNeedSpace;      // Control inter-token spaces
+  bool             mDontCloseFP;    // true if mFP is owned by the user
 };
 
 #endif

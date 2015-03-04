@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,6 @@
 
 // DefaultRectangular.chpl
 //
-pragma "no use ChapelStandard"
 module DefaultRectangular {
 
   config const dataParTasksPerLocale = 0;
@@ -39,6 +38,7 @@ module DefaultRectangular {
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
+  config param assertNoSlicing = false;
   
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool)
@@ -191,10 +191,9 @@ module DefaultRectangular {
           coforall chunk in 0..#numChunks { // make sure coforall on can trigger
             on here.getChild(chunk) {
               if debugDataParNuma {
-                extern proc chpl_task_getSubloc(): chpl_sublocID_t;
-                if chunk!=chpl_task_getSubloc() then
+                if chunk!=chpl_getSubloc() then
                   writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
-                          ", on "+chpl_task_getSubloc()+") ***");
+                          ", on "+chpl_getSubloc()+") ***");
               }
               // Divide the locale's tasks approximately evenly
               // among the sublocales
@@ -304,8 +303,10 @@ module DefaultRectangular {
       proc anyStridable(rangeTuple, param i: int = 1) param
         return if i == rangeTuple.size then rangeTuple(i).stridable
                else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
-  
-      chpl__testPar("default rectangular domain follower invoked on ", followThis);
+
+      if chpl__testParFlag then
+        chpl__testPar("default rectangular domain follower invoked on ", followThis);
+
       if debugDefaultDist then
         writeln("In domain follower code: Following ", followThis);
       param stridable = this.stridable || anyStridable(followThis);
@@ -316,13 +317,13 @@ module DefaultRectangular {
           const rStride = ranges(i).stride:strType,
                 fStride = followThis(i).stride:strType;
           if ranges(i).stride > 0 {
-            const low = ranges(i).low + followThis(i).low*rStride,
-                  high = ranges(i).low + followThis(i).high*rStride,
+            const low = ranges(i).alignedLow + followThis(i).low*rStride,
+                  high = ranges(i).alignedLow + followThis(i).high*rStride,
                   stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           } else {
-            const low = ranges(i).high + followThis(i).high*rStride,
-                  high = ranges(i).high + followThis(i).low*rStride,
+            const low = ranges(i).alignedHigh + followThis(i).high*rStride,
+                  high = ranges(i).alignedHigh + followThis(i).low*rStride,
                   stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           }
@@ -701,8 +702,21 @@ module DefaultRectangular {
         return sum;
       } else {
         var sum = if earlyShiftData then 0:idxType else origin;
-        for param i in 1..rank do
-          sum += ind(i) * blk(i);
+
+        // If the user asserts that there is no slicing in their program,
+        // then blk(rank) == 1. Knowing this, we need not multiply the final
+        // ind(...) by anything. This may lead to performance improvements for
+        // array accesses.
+        if assertNoSlicing {
+          for param i in 1..rank-1 {
+            sum += ind(i) * blk(i);
+          }
+          sum += ind(rank);
+        } else {
+          for param i in 1..rank {
+            sum += ind(i) * blk(i);
+          }
+        }
         if !earlyShiftData then sum -= factoredOffs;
         return sum;
       }
@@ -1043,11 +1057,13 @@ module DefaultRectangular {
         writeln("\tlocal get() from ", B._value.locale.id);
       const dest = this.theData;
       const src = B._value.theData;
-      __primitive("chpl_comm_get",
+      if dest != src {
+        __primitive("chpl_comm_get",
                   __primitive("array_get", dest, getDataIndex(Alo)),
                   B._value.data.locale.id,
                   __primitive("array_get", src, B._value.getDataIndex(Blo)),
                   len);
+      }
     } else if B._value.data.locale.id==here.id {
       if debugDefaultDistBulkTransfer then
         writeln("\tlocal put() to ", this.locale.id);

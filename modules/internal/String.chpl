@@ -1,23 +1,21 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-pragma "no use ChapelStandard"
 
 // Chapel Strings
 module String {
@@ -33,21 +31,21 @@ module String {
 
   // String concatenation
   inline proc +(s: string, x: string) {
-    const cs = __primitive("string_concat", s.c_str(), x.c_str());
+    var cs = __primitive("string_concat", s.c_str(), x.c_str());
     const ret = toString(cs);
     // toString steals the c_string_copy, so no need to free it here.
     return ret;
   }
 
   inline proc +(s: c_string, x: string) {
-    const cs = __primitive("string_concat", s, x.c_str());
+    var cs = __primitive("string_concat", s, x.c_str());
     const ret = toString(cs);
     // toString steals the c_string_copy, so no need to free it here.
     return ret;
   }
 
   inline proc +(s: string, x: c_string) {
-    const cs = __primitive("string_concat", s.c_str(), x);
+    var cs = __primitive("string_concat", s.c_str(), x);
     const ret = toString(cs);
     // toString steals the c_string_copy, so no need to free it here.
     return ret;
@@ -100,13 +98,13 @@ module String {
   inline proc string.length return this.c_str().length;
   inline proc string.size return this.length;
   inline proc string.substring(i: int) {
-    const cs = this.c_str().substring(i);
+    var cs = this.c_str().substring(i);
     const ret = toString(cs);
     // toString steals the returned c_string_copy, so no need to free it.
     return ret;
   }
   inline proc string.substring(r: range(?)) {
-    const cs = this.c_str().substring(r);
+    var cs = this.c_str().substring(r);
     const ret = toString(cs);
     // toString steals the returned c_string_copy, so no need to free it.
     return ret;
@@ -138,7 +136,7 @@ module String {
   // cast to and from Chapel strings use c_string
   pragma "compiler generated"
   inline proc _cast(type t, x) where t == string {
-    const cs = _cast(c_string_copy, x);
+    var cs = _cast(c_string_copy, x);
     // Note, this uses a non-allocating toString(), and steals cs (no need to free).
     const ret = toString(cs);
     return ret;
@@ -258,13 +256,13 @@ module String {
     }
     // TODO: Add versions of the concatenation operator that consume their
     // c_string_copy arg or args.
-    const ts0 = re + op;
-    chpl_free_c_string(re);
-    const ts1 = ts0 + im;
-    chpl_free_c_string(ts0);
-    chpl_free_c_string(im);
+    var ts0 = re + op;
+    chpl_free_c_string_copy(re);
+    var ts1 = ts0 + im;
+    chpl_free_c_string_copy(ts0);
+    chpl_free_c_string_copy(im);
     const ret = ts1 + "i";
-    chpl_free_c_string(ts1);
+    chpl_free_c_string_copy(ts1);
     return ret;
   }
   // TODO: This is only in place to support test code in types/string/sungeun.
@@ -275,9 +273,9 @@ module String {
     return _cast(c_string_copy, x);
 
   
-  pragma "compiler generated"
   pragma "init copy fn"
-  inline proc chpl__initCopy(a) {
+  inline proc chpl__initCopy(a)
+    where a.type == c_string || a.type == c_string_copy {
     // Currently, string representations are shared.
     // (See note on proc =(a:string, b:string) above.)
       return a;
@@ -334,12 +332,12 @@ module CString {
 
   // These routines consume the c_string_copy argument.  In terms of MM, this
   // is the same as if the caller had called chpl_free_string_copy()
-  extern proc string_from_c_string_copy(cstrc:c_string_copy,
+  extern proc string_from_c_string_copy(ref cstrc:c_string_copy,
                                         hasLen:bool, len:int) : string;
-  inline proc toString(cstrc:c_string_copy) : string {
+  inline proc toString(ref cstrc:c_string_copy) : string {
     return string_from_c_string_copy(cstrc, false, 0);
   }
-  inline proc toString(cstrc:c_string_copy, len:int) : string {
+  inline proc toString(ref cstrc:c_string_copy, len:int) : string {
     return string_from_c_string_copy(cstrc, true, len);
   }
 
@@ -427,13 +425,13 @@ module CString {
 
   // Create a fresh copy of the RHS string, first releasing the LHS.
   inline proc =(ref a: c_string_copy, b: c_string) {
-    chpl_free_c_string(a);
+    chpl_free_c_string_copy(a);
     var c = __primitive("string_copy", b);
     __primitive("=", a, c);
   }
   // Assume ownership of data brought by the RHS, first releasing the LHS.
   inline proc =(ref a: c_string_copy, b: c_string_copy) {
-    chpl_free_c_string(a);
+    chpl_free_c_string_copy(a);
     __primitive("=", a, b);
   }
 
@@ -441,7 +439,7 @@ module CString {
     return toString(x);
   }
 
-  inline proc _cast(type t, x: c_string_copy) where t == string {
+  inline proc _cast(type t, ref x: c_string_copy) where t == string {
     return toString(x);
   }
 
@@ -573,9 +571,9 @@ module CString {
   extern proc string_index_of(haystack:c_string, needle:c_string):int;
 
   // Use with care.  Not for the weak.
-  inline proc chpl_free_c_string(cs: c_string_copy) {
+  inline proc chpl_free_c_string_copy(ref cs: c_string_copy) {
     pragma "insert line file info"
-    extern proc chpl_rt_free_c_string(cs: c_string_copy);
+    extern proc chpl_rt_free_c_string(ref cs: c_string_copy);
     if (cs != _nullString) then chpl_rt_free_c_string(cs);
     // cs = _nullString;
   }

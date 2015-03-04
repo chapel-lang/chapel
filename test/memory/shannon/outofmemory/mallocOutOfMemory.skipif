@@ -1,2 +1,5 @@
 # Valgrind fails on this test, so let us skip it.
-CHPL_TEST_VGRND_COMP == on
+CHPL_TEST_VGRND_EXE == on
+# Both cygwin and darwin fail to define ulimit or anything similar
+CHPL_HOST_PLATFORM == darwin
+CHPL_HOST_PLATFORM <= cygwin

@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -82,6 +82,25 @@ third-party-try-gmp: FORCE
 	-@if [ -z "$$CHPL_GMP" ]; then \
 	cd third-party && $(MAKE) try-gmp; \
 	fi
+
+third-party-chpldoc-venv: FORCE
+	cd third-party && $(MAKE) chpldoc-venv
+
+chpldoc: compiler third-party-chpldoc-venv
+	cd compiler && $(MAKE) chpldoc
+
+clean-module-docs:
+	cd modules && $(MAKE) clean-documentation
+
+module-docs-only:
+	cd modules && $(MAKE) documentation
+
+module-docs: chpldoc
+# Call `make module-docs-only` as part of the recipe instead of as a
+# dependency so parallel make executions correctly build chpldoc first.
+	$(MAKE) module-docs-only
+
+docs: module-docs
 
 clean: FORCE
 	cd compiler && $(MAKE) clean

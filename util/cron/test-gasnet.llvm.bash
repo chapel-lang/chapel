@@ -9,4 +9,4 @@ source $CWD/common-llvm.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.llvm"
 
-$CWD/nightly -cron ${nightly_args}
+$CWD/nightly -cron -examples ${nightly_args}

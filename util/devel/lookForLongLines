@@ -7,7 +7,7 @@
 
 pushd $CHPL_HOME >& /dev/null
 
-find compiler -wholename "*/.svn" -prune -o -name lex.yy.cpp -prune -o -name chapel.tab.cpp -prune -o -name chapel.tab.h -prune -o \( -name \*.lex -o -name \*.y -o -name \*.ypp -o -name \*.h -o -name \*.c -o -name \*.cpp \) -exec grep -n --with-filename -P '^.{81,}' {} \;
+find compiler -wholename "*/.svn" -prune -o -name flex-chapel.cpp -prune -o -name bison-chapel.cpp -prune -o -name bison-chapel.h -prune -o \( -name \*.lex -o -name \*.y -o -name \*.ypp -o -name \*.h -o -name \*.c -o -name \*.cpp \) -exec grep -n --with-filename -P '^.{81,}' {} \;
 
 find runtime -wholename "*/.svn" -prune -o \( -name \*.h -o -name \*.c -o -name \*.cpp \) -exec grep -n --with-filename -P '^.{81,}' {} \;
 

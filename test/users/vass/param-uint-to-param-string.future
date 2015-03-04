@@ -1,4 +1,0 @@
-bug: casting a uint param to string treats the uint as int
-
-Currently I get maxU2string == "-2147483648".
-The type and writeln() of a uint param work correctly.

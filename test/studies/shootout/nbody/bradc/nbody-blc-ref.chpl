@@ -76,7 +76,7 @@ record NBodySystem {
     // TODO: Can we use a triangular iterator without hurting performance
     for i in 1..numbodies {
       for j in i+1..numbodies {
-        refvar b1 = bodies[i],
+        ref b1 = bodies[i],
                b2 = bodies[j];
 
         const dpos = b1.pos - b2.pos,
@@ -99,12 +99,12 @@ record NBodySystem {
     // TODO: want to use triangular iterator here too, except that we need
     // code in between the two loops
     for i in 1..numbodies {
-      refvar b1 = bodies[i];
+      ref b1 = bodies[i];
 
       e += 0.5 * b1.mass * sumOfSquares(b1.v);
 
       for j in i+1..numbodies {
-        refvar b2 = bodies[j];
+        ref b2 = bodies[j];
 
         e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));
       }

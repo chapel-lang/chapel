@@ -350,7 +350,8 @@ proc verify() {
 proc checksum(i, X1) {
   var chk : complex;
   serial {
-    [j in 1..1024] chk += X1((5*j) % nx, (3*j) % ny, j % nz);
+    // 'with' => no race - in 'serial'
+    [j in 1..1024 with (ref chk)] chk += X1((5*j) % nx, (3*j) % ny, j % nz);
   }
   chk = chk / ((nx * ny * nz) + 0i);
   sums(i) = chk;

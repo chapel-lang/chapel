@@ -8,4 +8,4 @@ source $CWD/common-tcmalloc.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="tcmalloc"
 
-$CWD/nightly -cron -no-futures
+$CWD/nightly -cron

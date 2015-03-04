@@ -7,4 +7,4 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chap03"
 
-$CWD/nightly -cron -performance-description 'default --genGraphOpts "-m default -m qthreads"' -numtrials 5 -startdate 08/21/07
+$CWD/nightly -cron -performance -numtrials 5 -startdate 08/21/07

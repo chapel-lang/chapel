@@ -1,3 +1,7 @@
 # skip this test on the XT because it is capable of creating lots of threads
 CHPL_TARGET_PLATFORM == cray-xt
 CHPL_TASKS != fifo
+# Valgrind testing sets CHPL_RT_NUM_THREADS_PER_LOCALE, so skip this test
+CHPL_TEST_VGRND_EXE == on
+# Cygwin doesn't allow you to set the number of threads, so skip this test.
+CHPL_HOST_PLATFORM <= cygwin

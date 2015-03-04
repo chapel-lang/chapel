@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,12 +31,14 @@
 
 #include "sys_basic.h"
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
 #include "qio.h"
 #include "qbuffer.h"
+
+#include "error.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -520,7 +522,7 @@ qio_hint_t choose_io_method(qio_file_t* file, qio_hint_t hints, qio_hint_t defau
       method = QIO_METHOD_PREADPWRITE;
 
     // Read and write
-    if((fdflags & QIO_FDFLAG_WRITEABLE)  && 
+    if((fdflags & QIO_FDFLAG_READABLE)   &&
         (fdflags & QIO_FDFLAG_WRITEABLE) &&
         file->fsfns->preadv && file->fsfns->pwritev)
       method = QIO_METHOD_PREADPWRITE;
@@ -1304,7 +1306,7 @@ qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_st
 // string_out must be freed by the caller.
 qioerr qio_file_path_for_fd(fd_t fd, const char** string_out)
 {
-#ifdef __linux__
+#if defined(__linux__) || defined(__CYGWIN__)
   char pathbuf[500];
   qioerr err;
   const char* result;
@@ -1509,7 +1511,9 @@ qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
   // adding to the qbuffer the file data.
   // We do not check cached_start since we might have moved
   // the mark_stack along with changing cached_start
-  assert( ch->cached_end == expect_end );
+  if ( ch->cached_end != expect_end ) {
+    chpl_internal_error("_qio_channel_makebuffer_unlocked() failed");
+  }
 
   ch->mark_stack[0] = qbuffer_start_offset(&ch->buf);
 
@@ -1671,7 +1675,7 @@ qioerr qio_relative_path(const char** path_out, const char* cwd, const char* pat
     tmp[j++] = '/';
   }
   // Now, copy the path after last_common_slash, including trailing '\0'
-  memcpy(&tmp[j], &path[last_common_slash + 1], after_len+1);
+  qio_memcpy(&tmp[j], &path[last_common_slash + 1], after_len+1);
 
   *path_out = tmp;
   return 0;
@@ -2674,7 +2678,7 @@ qioerr _qio_unbuffered_write(qio_channel_t* ch, const void* ptr, ssize_t len_in,
   if( method == QIO_METHOD_MMAP &&
       ch->file->mmap && _right_mark_start(ch) + len <= ch->file->mmap->len) {
     // Copy the data to the mmap.
-    memcpy( VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), ptr, len);
+    qio_memcpy( VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), ptr, len);
     _add_right_mark_start(ch, len);
   } else {
     while( len > 0 ) {
@@ -2765,7 +2769,7 @@ qioerr _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_
       _right_mark_start(ch) + len <= ch->file->mmap->len) {
     // As long as we're using an I/O method that seeks on every read,
     // copy the data out of the mmap.
-    memcpy( ptr, VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), len);
+    qio_memcpy( ptr, VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), len);
     _add_right_mark_start(ch, len);
   } else {
     while( len > 0 ) {
@@ -3591,7 +3595,7 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   
   //printf("WRITE BITS REALIGNALIGNED WRITING %llx %i\n", (long long int) part_one_bits, (int) (8*to_copy));
   // memcpy will work because part_one_bits is big endian now.
-  memcpy(ch->cached_cur, &part_one_bits_be, to_copy);
+  qio_memcpy(ch->cached_cur, &part_one_bits_be, to_copy);
   ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
 
   // Remove junk from the top of tmp_bits, so only bottom tmp_live bits are set.
@@ -3791,7 +3795,7 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   to_copy = (7 + value_part) / 8;
 
   buf = 0;
-  memcpy(&buf, ch->cached_cur, to_copy);
+  qio_memcpy(&buf, ch->cached_cur, to_copy);
   ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
 
   // now we've set the top several bytes of buf.
@@ -3818,7 +3822,8 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   if( to_copy == sizeof(qio_bitbuffer_t) ) to_copy = 0;
 
   buf = 0;
-  if( to_copy ) memcpy(&buf, ch->cached_cur, to_copy);
+  if( to_copy )
+    qio_memcpy(&buf, ch->cached_cur, to_copy);
   tmp_read = to_copy;
   part_two = 8*to_copy;
 

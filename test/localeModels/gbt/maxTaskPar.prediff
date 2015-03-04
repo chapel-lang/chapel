@@ -37,7 +37,7 @@ function cores_from_proc_cpuinfo() {
 }
 
 case $target in
-  linux*|cray-xc|cray-xe|cygwin)
+  linux*|cray-xc|cray-xe|cygwin*)
     case $locModel-$tasks in
       numa-qthreads)
         hwld=$( $CHPL_HOME/util/config/compileline --libraries |

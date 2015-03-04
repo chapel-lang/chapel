@@ -8,6 +8,8 @@ gen
 *.o
 *.pyc
 *.tmp
+TAGS
+tags
 
 # Top level ignores.
 /BUILD_VERSION
@@ -22,7 +24,6 @@ gen
 
 # Compiler ignores.
 /compiler/BROWSE
-/compiler/TAGS
 /compiler/chpl
 /compiler/ifa/prim_data.cpp
 /compiler/ifa/prim_data.h
@@ -31,17 +32,8 @@ gen
 /compiler/main/BUILD_VERSION
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
-/compiler/parser/chapel.output
-/compiler/parser/chapel.tab.cpp
-/compiler/parser/chapel.tab.h
-/compiler/parser/modulefinder.tab.c
-/compiler/parser/modulefinder.tab.h
-/compiler/parser/modulefinder.lex.yy.c
-/compiler/parser/lex.yy.cpp
-/compiler/parser/lex.yy.h
-/compiler/parser/modulefinder
+/compiler/parser/bison-chapel.output
 /compiler/passes/reservedSymbolNames.h
-/compiler/tags
 
 # Doc ignores.
 /doc/**/*.aux
@@ -67,11 +59,11 @@ gen
 /man/man1/chpl.1
 
 # Modules ignores.
+/modules/docs
 /modules/internal/tasks/muxed
 /modules/internal/threads/soft-threads
 
 # Runtime ignores.
-/runtime/TAGS
 /runtime/etc/Makefile.comm-ugni
 /runtime/etc/Makefile.threads-soft-threads
 /runtime/include/chpl_rt_utils.h
@@ -83,7 +75,6 @@ gen
 /runtime/src/tasks/muxed
 /runtime/src/threads/soft-threads
 /runtime/src/timers/
-/runtime/tags
 
 # Spec ignores.
 /spec/*.aux
@@ -108,11 +99,11 @@ gen
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
 
 /test/chpldoc/**/docs
-/test/chpldoc/**/*.good
 
 /test/chpldoc/compflags/folder/myDocs
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
+/test/chpldoc/compflags/folder/save-sphinx/my-sphinx
 
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
@@ -154,8 +145,68 @@ gen
 /test/compflags/waynew/*.h
 /test/compflags/waynew/chplmake.out
 
+/test/distributions/dm/hplx.exec.out.tmp.orig
+
+/test/distributions/robust/arithmetic/basics/test_array_assignment.good
+/test/distributions/robust/arithmetic/basics/test_array_iteration1.good
+/test/distributions/robust/arithmetic/basics/test_array_of_distributed_array1.good
+/test/distributions/robust/arithmetic/basics/test_array_swap.good
+/test/distributions/robust/arithmetic/basics/test_class_of_distributed_array.good
+/test/distributions/robust/arithmetic/basics/test_distributed_array_of_array1.good
+/test/distributions/robust/arithmetic/basics/test_distributed_array_of_array2.good
+/test/distributions/robust/arithmetic/basics/test_distributed_array_of_distributed_array1.good
+/test/distributions/robust/arithmetic/basics/test_distributed_array_of_record1.good
+/test/distributions/robust/arithmetic/basics/test_distributed_array_of_record2.good
+/test/distributions/robust/arithmetic/basics/test_domain_assignment.good
+/test/distributions/robust/arithmetic/basics/test_domain_iteration1.good
+/test/distributions/robust/arithmetic/basics/test_infer_array_type.good
+/test/distributions/robust/arithmetic/basics/test_promotion1.good
+/test/distributions/robust/arithmetic/basics/test_promotion2.good
+/test/distributions/robust/arithmetic/basics/test_promotion3.good
+/test/distributions/robust/arithmetic/basics/test_record_of_distributed_array.good
+/test/distributions/robust/arithmetic/basics/test_reduce1.good
+/test/distributions/robust/arithmetic/basics/test_reshape.good
+/test/distributions/robust/arithmetic/basics/test_scan1.good
+/test/distributions/robust/arithmetic/basics/test_strided_serial_iteration.good
+/test/distributions/robust/arithmetic/collapsing/test_array_rank_change1.good
+/test/distributions/robust/arithmetic/collapsing/test_domain_rank_change1.good
+/test/distributions/robust/arithmetic/collapsing/test_domain_rank_change_OOB.good
+/test/distributions/robust/arithmetic/modules/test_module_Norm.good
+/test/distributions/robust/arithmetic/modules/test_module_Random.good
+/test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic.comm-gasnet.good
+/test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record.comm-gasnet.good
+/test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple.comm-gasnet.good
+/test/distributions/robust/arithmetic/performance/multilocale/alloc.good
+/test/distributions/robust/arithmetic/performance/multilocale/alloc_all.good
+/test/distributions/robust/arithmetic/performance/multilocale/assign.good
+/test/distributions/robust/arithmetic/performance/multilocale/assignAlias.good
+/test/distributions/robust/arithmetic/performance/multilocale/assignSlice.good
+/test/distributions/robust/arithmetic/performance/multilocale/reduce.good
+/test/distributions/robust/arithmetic/performance/multilocale/reduceAlias.good
+/test/distributions/robust/arithmetic/performance/multilocale/reduceSlice.good
+/test/distributions/robust/arithmetic/reindexing/test_array_alias1.good
+/test/distributions/robust/arithmetic/reindexing/test_array_alias2.good
+/test/distributions/robust/arithmetic/reindexing/test_array_alias3.good
 /test/distributions/robust/arithmetic/reindexing/test_reindexing6.good
+/test/distributions/robust/arithmetic/reindexing/test_strided_reindex1.good
 /test/distributions/robust/arithmetic/reindexing/test_strided_reindex2.good
+/test/distributions/robust/arithmetic/resizing/test_domain_resize1.good
+/test/distributions/robust/arithmetic/slicing/test_array_slicing1.good
+/test/distributions/robust/arithmetic/slicing/test_array_slicing2.good
+/test/distributions/robust/arithmetic/slicing/test_array_slicing3.good
+/test/distributions/robust/arithmetic/slicing/test_domain_slicing1.good
+/test/distributions/robust/arithmetic/slicing/test_strided_slice1.good
+/test/distributions/robust/arithmetic/slicing/test_strided_slice2.good
+/test/distributions/robust/arithmetic/trivial/test_domain_plus_minus_index.good
+/test/distributions/robust/arithmetic/trivial/test_dot_domain.good
+/test/distributions/robust/arithmetic/trivial/test_dot_expand.good
+/test/distributions/robust/arithmetic/trivial/test_dot_exterior.good
+/test/distributions/robust/arithmetic/trivial/test_dot_interior.good
+/test/distributions/robust/arithmetic/trivial/test_dot_numIndices.good
+/test/distributions/robust/arithmetic/trivial/test_dot_translate.good
+/test/distributions/robust/arithmetic/trivial/test_tuple_to_array.good
+/test/distributions/robust/arithmetic/trivial/test_writeln.good
+
 /test/domains/shannon/OUTPUT
 
 /test/execflags/bradc/callStackSize.good
@@ -176,44 +227,35 @@ gen
 /test/io/ferguson/asserteof.test.nums
 /test/io/ferguson/error.data
 /test/io/ferguson/binary-output.bin
-/test/io/fsouza/chdir/destination
-/test/io/fsouza/chown/file.txt
-/test/io/fsouza/isdir/my_file
-/test/io/fsouza/isfile/my_file
-/test/io/lydia/chmod/file
-/test/io/lydia/exists/broken_link
-/test/io/lydia/exists/dir_link
-/test/io/lydia/exists/file
-/test/io/lydia/exists/file_link
-/test/io/lydia/isLink/my_file
-/test/io/lydia/isLink/my_link_dir
-/test/io/lydia/isLink/my_link_file
 
 /test/localeModels/gbt/maxTaskPar.good
 
+/test/memory/gbt/test-memLog.memLog.*
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log
 
 /test/modules/gbt/printchplenv.good
+/test/modules/standard/FileSystem/fsouza/chdir/destination
+/test/modules/standard/FileSystem/fsouza/chown/file.txt
+/test/modules/standard/FileSystem/fsouza/isdir/my_dir
+/test/modules/standard/FileSystem/fsouza/isdir/my_file
+/test/modules/standard/FileSystem/fsouza/isfile/my_dir
+/test/modules/standard/FileSystem/fsouza/isfile/my_file
+/test/modules/standard/FileSystem/lydia/chmod/dir
+/test/modules/standard/FileSystem/lydia/chmod/file
+/test/modules/standard/FileSystem/lydia/exists/broken_link
+/test/modules/standard/FileSystem/lydia/exists/dir
+/test/modules/standard/FileSystem/lydia/exists/dir_link
+/test/modules/standard/FileSystem/lydia/exists/file
+/test/modules/standard/FileSystem/lydia/exists/file_link
+/test/modules/standard/FileSystem/lydia/exists/going_away
+/test/modules/standard/FileSystem/lydia/isLink/my_dir
+/test/modules/standard/FileSystem/lydia/isLink/my_file
+/test/modules/standard/FileSystem/lydia/isLink/my_link_dir
+/test/modules/standard/FileSystem/lydia/isLink/my_link_file
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/modules/standard/machine/numCores.good
-/test/modules/standard/memory/countMemory/countMemory.bradc-lnx.good
-/test/modules/standard/memory/countMemory/countMemory.chap01.good
-/test/modules/standard/memory/countMemory/countMemory.chap02.good
-/test/modules/standard/memory/countMemory/countMemory.chap03.good
-/test/modules/standard/memory/countMemory/countMemory.chap04.good
-/test/modules/standard/memory/countMemory/countMemory.chap05.good
-/test/modules/standard/memory/countMemory/countMemory.chap06.good
-/test/modules/standard/memory/countMemory/countMemory.chap07.good
-/test/modules/standard/memory/countMemory/countMemory.chap08.good
-/test/modules/standard/memory/countMemory/countMemory.chap09.good
-/test/modules/standard/memory/countMemory/countMemory.chap10.good
-/test/modules/standard/memory/countMemory/countMemory.chap11.good
-/test/modules/standard/memory/countMemory/countMemory.chap12.good
-/test/modules/standard/memory/countMemory/countMemory.chap13.good
-/test/modules/standard/memory/countMemory/countMemory.chap14.good
-/test/modules/standard/memory/countMemory/countMemory.lnx-vass.good
-/test/modules/standard/memory/countMemory/countMemory.stemp7.good
+/test/modules/standard/memory/countMemory/countMemory.*.good
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
 /test/multilocale/numLocales/bradc/testVerboseFlag.good
@@ -256,13 +298,19 @@ gen
 /test/release/examples/primers/varargs
 /test/release/examples/primers/test.bin
 
-/test/spec/
+/test/runtime/gbt/numThreadsSymbolicLogical.good
+/test/runtime/gbt/numThreadsSymbolicPhysical.good
 
 /test/studies/590o/alexco/*.txt
 /test/studies/amr/**/_output
 /test/studies/amr/**/*.tmp.save
 /test/studies/dijkstra/RtsGraph_out.txt
 
+/test/studies/hpcc/CommDiags/ra.chpl
+/test/studies/hpcc/CommDiags/raAtomics.chpl
+/test/studies/hpcc/CommDiags/stream.chpl
+/test/studies/hpcc/CommDiags/streamEP.chpl
+/test/studies/hpcc/CommDiags/hpl.chpl
 /test/studies/hpcc/FFT/bradc/dfft
 /test/studies/hpcc/FFT/bradc/*.txt
 /test/studies/hpcc/FFT/bradc/fft
@@ -302,6 +350,7 @@ gen
 /test/studies/ssca2/graphio/graphio.2.ev2_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.start_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.weight_snapshot.data
+/test/studies/ssca2/performance/SSCA2_kernels.chpl
 /test/studies/ssca2/rachels/SSCA2_main.RMAT.good
 /test/studies/ssca2/rachels/SSCA2_main.1Dtorus.good
 /test/studies/ssca2/rachels/SSCA2_main.2Dtorus.good
@@ -349,6 +398,8 @@ gen
 /third-party/hwloc/hwloc-1.7.2
 /third-party/llvm/llvm
 /third-party/re2/re2
+/third-party/qthread/qthread-1.10/autom4te.cache/
+/third-party/qthread/qthread-1.10/config.h.in
 
 # Util ignores.
 /util/pastPerformance/ra.dat

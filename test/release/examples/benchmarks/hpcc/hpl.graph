@@ -1,6 +1,6 @@
-perfkeys: Execution time =
-graphkeys: hpl
-files: hpl.dat
+perfkeys: Execution time =, Execution time =
+graphkeys: hpl, hpl MAX_LOGICAL
+files: hpl.dat, hplMaxLogical.dat
 graphtitle: HPCC HPL Performance
 ylabel: Time (seconds)
 graphname: hpl

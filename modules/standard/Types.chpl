@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -381,11 +381,16 @@ proc numBytes(type t) param return numBits(t)/8;
 // min(type) -- returns the minimum value a type can store
 //
 
-proc min(type t) where t == bool
-  return false;
+proc min(type t) param  where isBool(t)      return false: t;
 
-proc min(type t) where isIntegralType(t) || isFloatType(t)
-  return __primitive( "_min", t);
+proc min(type t) param  where t == int(8)    return 0x80: t;
+proc min(type t) param  where t == int(16)   return 0x8000: t;
+proc min(type t) param  where t == int(32)   return 0x80000000: t;
+proc min(type t) param  where t == int(64)   return 0x8000000000000000: t;
+
+proc min(type t) param  where isUint(t)      return 0: t;
+
+proc min(type t) where isFloatType(t)        return __primitive( "_min", t);
 
 proc min(type t) where isComplexType(t) {
   var x: t;
@@ -398,11 +403,19 @@ proc min(type t) where isComplexType(t) {
 // max(type) -- returns the maximum value a type can store
 //
 
-proc max(type t) where t == bool
-  return true;
+proc max(type t) param  where isBool(t)      return true: t;
 
-proc max(type t) where isIntegralType(t) || isFloatType(t)
-  return __primitive( "_max", t);
+proc max(type t) param  where t == int(8)    return 0x7f: t;
+proc max(type t) param  where t == int(16)   return 0x7fff: t;
+proc max(type t) param  where t == int(32)   return 0x7fffffff: t;
+proc max(type t) param  where t == int(64)   return 0x7fffffffffffffff: t;
+
+proc max(type t) param  where t == uint(8)   return 0xff: t;
+proc max(type t) param  where t == uint(16)  return 0xffff: t;
+proc max(type t) param  where t == uint(32)  return 0xffffffff: t;
+proc max(type t) param  where t == uint(64)  return 0xffffffffffffffff: t;
+
+proc max(type t) where isFloatType(t)        return __primitive( "_max", t);
 
 proc max(type t) where isComplexType(t) {
   var x: t;
@@ -437,6 +450,61 @@ proc numBits(type t: enumerated) param {
   return numBits(enum_mintype(t));
 }
 
+//
+// safe up/down casts between all integral types
+// performs the minimum number of runtime checks - uint(8)->uint(64) won't
+// perform any checks for example
+//
+inline proc safe_cast(type T, val: integral) : T where isUintType(T) {
+  if castChecking {
+    if isIntType(val.type) {
+      // int(?) -> uint(?)
+      if val < 0 then // runtime check
+        halt("casting "+typeToString(val.type)+" less than 0 to "+typeToString(T));
+    }
+
+    if max(val.type):uint > max(T):uint {
+      // [u]int(?) -> uint(?)
+      if (val:uint > max(T):uint) then // runtime check
+        halt("casting "+typeToString(val.type)+" with a value greater than the maximum of "+
+             typeToString(T)+" to "+typeToString(T));
+    }
+  }
+  return val:T;
+}
+
+inline proc safe_cast(type T, val: integral) : T where isIntType(T) {
+  if castChecking {
+    if max(val.type):uint > max(T):uint {
+      // this isUintType check lets us avoid a runtime check for val < 0
+      if isUintType(val.type) {
+        // uint(?) -> int(?)
+        if val:uint > max(T):uint then // runtime check
+          halt("casting "+typeToString(val.type)+" with a value greater than the maximum of "+
+               typeToString(T)+" to "+typeToString(T));
+      } else {
+        // int(?) -> int(?)
+        // max(T) <= max(int), so cast to int is safe
+        if val:int > max(T):int then // runtime check
+          halt("casting "+typeToString(val.type)+" with a value greater than the maximum of "+
+               typeToString(T)+" to "+typeToString(T));
+      }
+    }
+    if isIntType(val.type) {
+      if min(val.type):int < min(T):int {
+        // int(?) -> int(?)
+        if val:int < min(T):int then // runtime check
+          halt("casting "+typeToString(val.type)+" with a value less than the minimum of "+
+               typeToString(T)+" to "+typeToString(T));
+      }
+    }
+  }
+  return val:T;
+}
+
+proc safe_cast(type T, val) {
+  compilerError("safe_cast is only supported between integrals");
+}
 
 //
 // identity functions (for reductions)

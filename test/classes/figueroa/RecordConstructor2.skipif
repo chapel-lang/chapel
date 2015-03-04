@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+# There is different behavior when --baseline is tossed, due to
+# fNoRemoveCopyCalls preventing removeUnnecessaryAutoCopyCalls() from running.
+# Given that the compiler may remove autoCopy calls as long as it can prove they
+# are not needed, the change in behavior is acceptable.
+# On the other hand, the dependence of this behavior on the hidden call to
+# initialize() makes it difficult to reason about.  The automatic call to
+# initialize() should be deprecated.
+# Also, if autoCopy calls are inserted only where they are needed, then the
+# removeUnnecessaryAutoCopyCalls() pass can go away, and this skipif will also
+# be unnecessary.
+
+import os
+
+compopts = os.getenv('COMPOPTS', '')
+print('--baseline' in compopts or '--no-remove-copy-calls' in compopts)
