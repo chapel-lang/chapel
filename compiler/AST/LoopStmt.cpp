@@ -55,7 +55,7 @@ void LoopStmt::continueLabelSet(LabelSymbol* sym)
   mContinueLabel = sym;
 }
 
-LoopStmt*LoopStmt::findEnclosingLoop(Expr* expr)
+LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr)
 {
   LoopStmt* retval = NULL;
 
@@ -63,7 +63,7 @@ LoopStmt*LoopStmt::findEnclosingLoop(Expr* expr)
     retval = loop;
 
   else if (expr->parentExpr)
-    retval = LoopStmt::findEnclosingLoop(expr->parentExpr);
+    retval = findEnclosingLoop(expr->parentExpr);
 
   else
     retval = NULL;
