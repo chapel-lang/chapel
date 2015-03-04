@@ -27,6 +27,19 @@ Chapel has many features that can be used to correctly synchronize tasks:
   \item shared variables safe for multiple tasks to access, including \chpl{sync}, \chpl{single}, and \chpl{atomic} variables
 \end{itemize}
 
+Design Principles
+
+We used the following design principles in developing the memory consistency
+model for Chapel.
+
+1. Sequential programs have program order semantics. Programs that are totally sequential cannot have data races and should execute in the natural order.
+
+2. Chapel's fork-join constructs, introduce additional order dependencies. Operations within a task cannot behave as though they started before the task started. Similarly, all operations in a task must be completed by the time the task has completed.
+
+3. Distributed memory programs have the same memory consistency model as local programs. The Chapel language seeks to allow a single description of an algorithm to work with different data distributions. This property enables a single programs to scale from few cores to many cores. A result of this property is that an expression of a program must be correct whether it is working on local or distributed data.
+
+4. Chapel's memory model should be as relaxed as possible to achieve the above design principles. At the same time, sequential consistency should be available to programmers when requested.
+
 See \textit{A Primer on Memory Consistency and Cache Coherence} by Sorin,
 Daniel J. and Hill, Mark D. and Wood, David A. for more background information
 on memory consistency models. This section will proceed in a manner inspired by the $XC$ memory model described there.
