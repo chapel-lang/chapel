@@ -107,6 +107,8 @@ static int debug = 0;
 //  CONS -- The set of symbols whose ownership transitions to false anywhere in
 //          the block.
 //  USE  -- The set of symbols used (read) within the given block.
+//  EXIT -- The set of symbols whose end-of-scope coincides with the end of
+//          this block.
 //  IN   -- The set of symbols that are owned at the beginning of the block
 //          (after forward flow analysis).
 //  OUT  -- The set of symbols that are owned at the end of the block (after
@@ -173,6 +175,7 @@ static int debug = 0;
 #include "passes.h" // The main routine is declared here.
 
 #include "bb.h"
+#include "stmt.h"
 #include "expr.h"
 #include "symbol.h"
 #include "bitVec.h"
@@ -723,6 +726,127 @@ static void populateAliases(FnSymbol* fn,
 }
 
 
+//////////////////////////////////////////////////////////////////////////
+// computeExits
+//
+// For each symbol in our symbol set, find the basic block whose end coincides
+// with the end-of-scope for that symbol.
+// We do this by creating a map from blocks to basic block IDs: scope -> bbID.
+// We traverse the statements in each basic block and for each block
+// expression containing that statement, the corresponding index is updated to
+// the index ofthe current basic block.  When this pass is complete, each
+// element of the map will contain the ID of the final BB the lies entirely
+// within the scope it defines.
+// Then, for each symbol in our symbol set,
+//   Find the block (scope) in which it is declared.
+//   Look up the bbID for the final bb in that scope.
+//   Set the corresponding bit: EXIT[bbID]->set(symbolID)
+
+
+static void
+computeScopeToLastBBIDMap(FnSymbol* fn,
+                          std::map<BlockStmt*, size_t>&scopeToLastBBIDMap)
+{
+  size_t nbbs = fn->basicBlocks->size();
+  BasicBlock::BasicBlockVector& bbs = *fn->basicBlocks;
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    for_vector(Expr, expr, bbs[i]->exprs)
+    {
+      // Traverse all scopes containing this expression, up to the root.
+      while (expr)
+      {
+        if (BlockStmt* scope = toBlockStmt(expr))
+        {
+          scopeToLastBBIDMap[scope] = i;
+        }
+        expr = expr->parentExpr;
+      }
+    }
+  }
+}
+
+
+// We need to find the DefExprs corresponding to each symbol on our list, so
+// just traverse all DefExprs in the function and then look up the ones we're
+// interested in.
+static void computeExits(FnSymbol* fn, SymbolIndexMap& symbolIndex,
+                         std::map<BlockStmt*, size_t>&scopeToLastBBIDMap,
+                         FlowSet& EXIT)
+{
+  std::vector<DefExpr*> defExprs;
+  collectDefExprsSTL(fn, defExprs);
+  for_vector(DefExpr, def, defExprs)
+  {
+    Symbol* sym = def->sym;
+    SymbolIndexMap::iterator simelt = symbolIndex.find(sym);
+
+    // We only care about symbols in our selected set.
+    if (simelt == symbolIndex.end())
+      continue;
+
+    // Get the symbol index out of the symbolIndexMap element.
+    size_t symID = simelt->second;
+
+    // Look for the closest scope block enclosing the DefExpr.
+    // Is there a utility for this?
+    Expr* expr = def->parentExpr;
+    BlockStmt* block = NULL;
+    if (isArgSymbol(sym))
+    {
+      // If the symbol is a formal, then we use the body of the function as the
+      // scope block.
+      block = fn->body;
+    }
+    else
+    {
+      // Otherwise, search up though enclosing block expressions (statements)
+      // for a scoped block.
+      while (expr)
+      {
+        block = toBlockStmt(expr);
+        if (block && ! (block->blockTag & BLOCK_SCOPELESS))
+          // This is a scoped block containing the DefExpr, so good.
+          break;
+        expr = expr->parentExpr;
+      }
+    }
+
+    // An assert is actually useful here, to distinguish failing because no
+    // scope was found from failing because there was no entry for it in the
+    // map.
+    INT_ASSERT(block);
+
+    // Workaround: Some passes leave shrapnel in the tree, including DefExprs
+    // for symbols that are never accessed.  We would normally expect to find a
+    // last basic block for every DefExpr, but if the DefExpr appears in a
+    // block that contains no executable statements, then because basic block
+    // analysis harvests only statements (not DefExprs), that block never has a
+    // last BBID established for it.
+    // The workaround can be removed if we make sure that DefExprs for symbols
+    // that are never actually accessed are removed from the treee before we
+    // reach this point in the translation.
+    std::map<BlockStmt*, size_t>::iterator item = scopeToLastBBIDMap.find(block);
+    if (item != scopeToLastBBIDMap.end())
+    {
+      size_t bbID = item->second;
+      EXIT[bbID]->set(symID);
+    }
+  }
+}
+
+
+static void computeExits(FnSymbol* fn, SymbolIndexMap& symbolIndex,
+                         FlowSet& EXIT)
+{
+  std::map<BlockStmt*, size_t> scopeToLastBBIDMap;
+
+  computeScopeToLastBBIDMap(fn, scopeToLastBBIDMap);
+
+  computeExits(fn, symbolIndex, scopeToLastBBIDMap, EXIT);
+}
+
+
 //
 // computeTransitions
 //
@@ -1080,6 +1204,9 @@ static void insertAutoCopy(SymExprVector& symExprs,
       if (!live->get(index))
       {
         insertAutoCopy(se);
+        // We can set the bit in the PROD set to show that ownership is
+        // produced, but since it is consumed immediately, the state of OUT and
+        // the rest of the forward-flowed bitsets is unchanged.
         prod->set(index);
       }
 
@@ -1295,17 +1422,10 @@ static void backwardFlowUse(const BasicBlock::BasicBlockVector& bbs,
 
 
 static void forwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
-                                 FlowSet& PROD, FlowSet& USE, FlowSet& CONS,
+                                 FlowSet& PROD, FlowSet& CONS, FlowSet& EXIT,
                                  FlowSet& IN, FlowSet& OUT)
 {
   size_t nbbs = bbs.size();
-
-  // The IN sets are initially all zeroes and the OUT sets are initially all ones.
-  for(size_t i = 0; i < nbbs; ++i)
-  {
-    IN[i]->clear();
-    OUT[i]->set();
-  }
 
   bool changed;
   do {
@@ -1321,15 +1441,27 @@ static void forwardFlowOwnership(const BasicBlock::BasicBlockVector& bbs,
       }
       else
       {
-        // Otherwise, the in set is the intersection of the OUTs of its predecessors.
+        // Otherwise, the in set is the intersection of the OUTs of its
+        // predecessors.
+        // We ignore back-edges, so that ownership can flow through loop constructs.
         BitVec* in = IN[i];
         in->set();
         for_vector(BasicBlock, pred, bbs[i]->ins)
-          *in &= *OUT[pred->id];
+          // Ignore back-edges.  We assume that the entry point of a loop
+          // always has a lower-numbered ID than the exit.
+          if (pred->id < (int) i)
+            *in &= *OUT[pred->id];
       }
 
-
-      BitVec new_out = *IN[i] + *PROD[i] - *CONS[i] - *USE[i];
+      // This means: ownership reaches the end of a block if it enters or is
+      // produced in the block and it is not consumed within the block.  Also,
+      // if this is the last block in which the variable of interest is in
+      // scope, an autoDestroy will be inserted, so in that case ownership does
+      // not survive to the end of the block.
+      // There is an implicit assumption here that if a producer and consumer
+      // of the same variable appear within the same block, then the producer
+      // precedes the consumer.  But then, the other ordering makes no sense.
+      BitVec new_out = *IN[i] + *PROD[i] - *CONS[i] - *EXIT[i];
       if (new_out != *OUT[i])
       {
 #if 0
@@ -1443,24 +1575,28 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   size_t size = symbols.size();
   FlowSet PROD;
   FlowSet USE;
+  FlowSet EXIT;
   FlowSet CONS;
   FlowSet IN;
   FlowSet OUT;
 
   createFlowSet(PROD, nbbs, size);
   createFlowSet(USE,  nbbs, size);
+  createFlowSet(EXIT, nbbs, size);
   createFlowSet(CONS, nbbs, size);
   createFlowSet(IN,   nbbs, size);
   createFlowSet(OUT,  nbbs, size);
 
   computeTransitions(fn, PROD, USE, CONS, aliases, symbolIndex);
+  computeExits(fn, symbolIndex, EXIT);
 
 #if DEBUG_AMM
   if (debug > 0)
   {
     printf("PROD:\n"); BasicBlock::printBitVectorSets(PROD);
-    printf("USE:\n"); BasicBlock::printBitVectorSets(USE);
     printf("CONS:\n"); BasicBlock::printBitVectorSets(CONS);
+    printf("USE:\n"); BasicBlock::printBitVectorSets(USE);
+    printf("EXIT:\n"); BasicBlock::printBitVectorSets(EXIT);
   }
 #endif
 
@@ -1473,7 +1609,7 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   }
 #endif
 
-  forwardFlowOwnership(*fn->basicBlocks, PROD, USE, CONS, IN, OUT);
+  forwardFlowOwnership(*fn->basicBlocks, PROD, CONS, EXIT, IN, OUT);
 
 #if DEBUG_AMM
   if (debug > 0)
@@ -1510,6 +1646,7 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   destroyFlowSet(OUT);
   destroyFlowSet(IN);
   destroyFlowSet(CONS);
+  destroyFlowSet(EXIT);
   destroyFlowSet(USE);
   destroyFlowSet(PROD);
 }
