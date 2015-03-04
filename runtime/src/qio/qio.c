@@ -683,6 +683,7 @@ qioerr qio_mmap_initial(qio_file_t* file)
 
     if( file->fdflags & QIO_FDFLAG_WRITEABLE ) prot |= PROT_WRITE;
 
+    // This check is (only) important for 32-bit systems.
     if( len > SSIZE_MAX ) return QIO_ENOMEM;
 
     // mmap the initial length of the file.
@@ -2170,6 +2171,7 @@ qioerr _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
     prot = PROT_READ;
     if( ch->flags & QIO_FDFLAG_WRITEABLE ) prot |= PROT_WRITE;
 
+    // This check is (only) important for 32-bit systems.
     if( len > SSIZE_MAX ) QIO_RETURN_CONSTANT_ERROR(EOVERFLOW, "overflow in mmap");
 
     err = qio_int_to_err(sys_mmap(NULL, len, prot, MAP_SHARED, ch->file->fd, map_start, &data));
