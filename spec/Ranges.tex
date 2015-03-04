@@ -442,6 +442,23 @@ produces an empty range, matching the default value for a
 \label{Ranges_Common_Operations}
 \index{ranges!operations}
 
+All operations on a range return a new range rather than modifying the existing one.  This
+supports a coding style in which all ranges are \emph{immutable} (i.e. declared
+as \chpl{const}).  
+
+\begin{rationale}
+
+The intention is to provide ranges as immutable objects.
+
+Immutable objects may be cached without
+creating coherence concerns.  They are also inherently thread-safe.  In terms of
+implementation, immutable objects are created in a consistent state and stay that way:
+Outside of constructors, internal consistency checks can be dispensed with.
+
+These are the same arguments as were used to justify making strings immutable in Java and C\#.
+
+\end{rationale}
+
 %REVIEW: vass: this should really be implicit conversion
 % and apply uniformly, like e.g. numeric implicit conversions.
 %If needed, define also explicit range conversions.

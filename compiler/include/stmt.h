@@ -89,6 +89,7 @@ public:
 
   virtual bool        isParamForLoop()                             const;
   virtual bool        isForLoop()                                  const;
+  virtual bool        isCoforallLoop()                             const;
   virtual bool        isCForLoop()                                 const;
 
   virtual void        checkConstLoops();
