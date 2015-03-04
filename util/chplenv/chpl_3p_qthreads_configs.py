@@ -15,4 +15,5 @@ def get_link_args():
                                                    ucp=get_uniq_cfg_path(),
                                                    libs=['libqthread_chpl.la',
                                                          '-lchpl',
-                                                         'libqthread.la'])
+                                                         'libqthread.la',
+                                                         '-lrt'])
