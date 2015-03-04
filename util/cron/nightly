@@ -431,11 +431,6 @@ if ($parnodefile eq "") {
   $permsum = "<invalid use of permsum>";
 }
 
-#
-# make "prev" logs if they don't already exist
-#
-ensureSummaryExists($prevsummary);
-
 
 $somethingfailed = 0;
 

@@ -31,6 +31,12 @@ $crontab = $ARGV[13];
 $testdirs = $ARGV[14];
 $debug = $ARGV[15];
 
+
+# Ensure the "previous" summary exists, e.g. if this is the first run of the
+# configuration they won't.
+ensureSummaryExists($prevsummary);
+
+
 #
 # sort output
 #

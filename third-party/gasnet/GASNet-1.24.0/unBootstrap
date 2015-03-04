@@ -1,0 +1,43 @@
+#!/bin/sh
+#   $Source: bitbucket.org:berkeleylab/gasnet.git/unBootstrap $
+# Terms of use are as specified in license.txt
+# Description:
+# This scripts undoes the effects of a "Bootstrap", 
+#  removing all the automatically generated files and
+#  returning the source tree back to a fully "clean" state
+
+rm -Rf autom4te*.cache
+rm -f Makefile.in              \
+      configure                \
+      gasnet_config.h.in       \
+      gasnet_config.h.in~      \
+      aclocal.m4               \
+      config.status            \
+      stamp-h.in               \
+      config-aux/Makefile.in   \
+      config-aux/Makefile      \
+      ibv-conduit/Makefile.in  \
+      ibv-conduit/contrib/Makefile.in \
+      mpi-conduit/Makefile.in  \
+      mpi-conduit/contrib/Makefile.in   \
+      mxm-conduit/Makefile.in \
+      mxm-conduit/contrib/Makefile.in \
+      portals4-conduit/Makefile.in  \
+      gemini-conduit/Makefile.in \
+      gemini-conduit/contrib/Makefile.in   \
+      aries-conduit/Makefile.in \
+      aries-conduit/contrib/Makefile.in   \
+      pami-conduit/Makefile.in \
+      pami-conduit/contrib/Makefile.in   \
+      smp-conduit/Makefile.in  \
+      udp-conduit/Makefile.in  \
+      shmem-conduit/Makefile.in \
+      template-conduit/Makefile.in \
+      other/Makefile.in        \
+      other/ammpi/Makefile.in  \
+      other/amudp/Makefile.in  \
+      other/contrib/Makefile.in \
+      other/fca/Makefile.in \
+      other/firehose/Makefile.in \
+      other/testspawn/Makefile.in \
+      tests/Makefile

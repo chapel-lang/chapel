@@ -7,17 +7,7 @@ Module: multipleInheritance
       proc hair()
          One of Father's methods 
 
-   Class: Child
+   Class: Child : Mother, Father
       proc nose()
          A method all its own 
-
-      inherited from Mother
-         proc eyes()
-            One of Mother's methods 
-
-
-      inherited from Father
-         proc hair()
-            One of Father's methods 
-
 

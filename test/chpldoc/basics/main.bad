@@ -1,0 +1,21 @@
+Module: main
+   This is the only valid doc string in this modules. 
+   Record: beginR
+      This should not be documented 
+
+      var beginX: int
+         And neither should this. 
+   var _cobeginCount
+   Record: cobeginR
+      This should not be documented 
+
+      var cobeginX: int
+         And neither should this. 
+   var tmp
+   var _indexOfInterest
+   var _iterator
+   var _coforallCount
+   var _indexOfInterest
+   var _iterator
+   proc foo()
+   iter bar()

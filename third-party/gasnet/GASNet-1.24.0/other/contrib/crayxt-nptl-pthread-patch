@@ -1,0 +1,29 @@
+--- pthread.h	2007-09-10 01:35:36.000000000 -0500
++++ pthread.h	2007-09-10 01:36:38.000000000 -0500
+@@ -62,7 +62,7 @@
+ 
+ /* Mutex initializers.  */
+ #define PTHREAD_MUTEX_INITIALIZER \
+-  { }
++  { { 0 } }
+ #ifdef __USE_GNU
+ # if __WORDSIZE == 64
+ #  define PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP \
+@@ -140,7 +140,7 @@
+ 
+ 
+ /* Conditional variable handling.  */
+-#define PTHREAD_COND_INITIALIZER { }
++#define PTHREAD_COND_INITIALIZER { { 0 } }
+ 
+ 
+ /* Cleanup buffers */
+@@ -657,7 +657,7 @@
+ 
+ /* Function used in the macros.  */
+ struct __jmp_buf_tag;
+-extern int __sigsetjmp (struct __jmp_buf_tag __env[1], int __savemask) __THROW;
++extern int __sigsetjmp (struct __jmp_buf_tag *__env, int __savemask) __THROW;
+ 
+ 
+ /* Mutex handling.  */

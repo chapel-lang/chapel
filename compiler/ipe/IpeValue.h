@@ -20,11 +20,19 @@
 #ifndef _IPE_VALUE_H_
 #define _IPE_VALUE_H_
 
+class IpeModule;
+class IpeProcedure;
+
 union IpeValue
 {
-  bool   bValue;
-  long   iValue;
-  double rValue;
+  long          iValue;
+  double        rValue;
+
+  const char*   sValue;
+
+  IpeValue*     valuePtr;
+  IpeModule*    modulePtr;
+  IpeProcedure* procedurePtr;
 };
 
 #endif

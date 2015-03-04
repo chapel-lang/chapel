@@ -909,7 +909,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
       fn->retType = fn->retType->refType;
     }
     fn->retExprType->remove();
-    if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->iteratorInfo) {
+    if (fn->isIterator() && !fn->iteratorInfo) {
       protoIteratorClass(fn);
     }
   }
@@ -5452,7 +5452,7 @@ requiresImplicitDestroy(CallExpr* call) {
         // These are special functions where we don't want to destroy
         // the result
         !fn->hasFlag(FLAG_NO_IMPLICIT_COPY) &&
-        !fn->hasFlag(FLAG_ITERATOR_FN) &&
+        !fn->isIterator() &&
         !fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) &&
         !fn->hasFlag(FLAG_DONOR_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN) &&
@@ -6067,7 +6067,7 @@ replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn) {
   if (SymExpr* se = toSymExpr(ast)) {
     if (se->var == fn->setter->sym) {
       se->var = gTrue;
-      if (fn->hasFlag(FLAG_ITERATOR_FN))
+      if (fn->isIterator())
         USR_WARN(fn, "setter argument is not supported in iterators");
     }
   }
@@ -6163,7 +6163,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
 
 
 static void buildValueFunction(FnSymbol* fn) {
-  if (!fn->hasFlag(FLAG_ITERATOR_FN)) {
+  if (!fn->isIterator()) {
     FnSymbol* copy;
     bool valueFunctionExists = fn->valueFunction;
     if (!valueFunctionExists) {
@@ -6236,6 +6236,23 @@ static void resolveReturnType(FnSymbol* fn)
 
 }
 
+// Simple wrappers to check if a function is a specific type of iterator
+static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
+  if (fn->isIterator()) {
+    for_formals(formal, fn) {
+      if (formal->type == iterTag->type && paramMap.get(formal) == iterTag) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+static bool isLeaderIterator(FnSymbol* fn) {
+  return isIteratorOfType(fn, gLeaderTag);
+}
+static bool isStandaloneIterator(FnSymbol* fn) {
+  return isIteratorOfType(fn, gStandaloneTag);
+}
 
 void
 resolveFns(FnSymbol* fn) {
@@ -6254,19 +6271,12 @@ resolveFns(FnSymbol* fn) {
     return;
 
   //
-  // mark leaders for inlining
+  // Mark leader and standalone parallel iterators for inlining. Also stash a
+  // pristine copy of the iterator (required by forall intents)
   //
-  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-    for_formals(formal, fn) {
-      if (formal->type == gLeaderTag->type &&
-          paramMap.get(formal) == gLeaderTag) {
-        // Leader iterators are always inlined.
-        fn->addFlag(FLAG_INLINE_ITERATOR);
-        // need to do the following before 'fn' gets resolved
-        stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
-        break;
-      }
-    }
+  if (isLeaderIterator(fn) || isStandaloneIterator(fn)) {
+    fn->addFlag(FLAG_INLINE_ITERATOR);
+    stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
   }
 
   if (fn->retTag == RET_REF) {
@@ -6306,32 +6316,7 @@ resolveFns(FnSymbol* fn) {
     }
   }
 
-  //
-  // mark leaders and standalone parallel iterators for inlining
-  //
-  // The original computation used to be here, now we do it earlier,
-  // here we only verify that we did not miss a leader.
-  // todo: convert this to an assertion; perhaps factor out the common code
-  // with the above.
-  //
-  if (fn->hasFlag(FLAG_ITERATOR_FN) &&
-      !fn->hasFlag(FLAG_INLINE_ITERATOR))
-  {
-    for_formals(formal, fn) {
-      if (formal->type == gLeaderTag->type &&
-          paramMap.get(formal) == gLeaderTag) {
-        // oops
-        INT_ASSERT(false);
-      }
-      if (formal->type == gStandaloneTag->type &&
-          paramMap.get(formal) == gStandaloneTag) {
-        // Standalone iterators are always inlined.
-        fn->addFlag(FLAG_INLINE_ITERATOR);
-      }
-    }
-  }
-
-  if (fn->hasFlag(FLAG_ITERATOR_FN) && !fn->iteratorInfo) {
+  if (fn->isIterator() && !fn->iteratorInfo) {
     protoIteratorClass(fn);
   }
 
@@ -7356,7 +7341,7 @@ static void insertReturnTemps() {
                 ((fn->retType->getValType() &&
                   isSyncType(fn->retType->getValType())) ||
                  isSyncType(fn->retType) ||
-                 fn->hasFlag(FLAG_ITERATOR_FN))) {
+                 fn->isIterator())) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
               call->insertBefore(sls);
               reset_ast_loc(sls, call);

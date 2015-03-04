@@ -127,6 +127,7 @@ static void findOuterVars(BlockStmt* block, SymbolMap& uses) {
   }
 }
 
+// Not to be invoked upon a reduce intent.
 static void setShadowVarFlags(VarSymbol* svar, IntentTag intent) {
   if (intent & INTENT_FLAG_CONST)
     svar->addFlag(FLAG_CONST);
@@ -153,39 +154,82 @@ static void setShadowVarFlags(VarSymbol* svar, IntentTag intent) {
 static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
                              int& numShadowVars, int& totOuterVars,
                              std::vector<Symbol*>& outerVars,
-                             std::vector<Symbol*>& shadowVars)
+                             std::vector<Symbol*>& shadowVars,
+                             std::vector<Symbol*>& reduceGVars)
 {
   numShadowVars = totOuterVars = 0;
+  // we will have at most that many elements
+  // todo instead have a single vector holding 3 Symbol*
+  //      plus perhaps "isReduce" and "pruneit" booleans
+  const int maxVars = uses.n;
+  outerVars.reserve(maxVars);
+  shadowVars.reserve(maxVars);
+  reduceGVars.reserve(maxVars);
 
   form_Map(SymbolMapElem, e, uses) {
-    if (e->value != markPruned) {
-      totOuterVars++;
-      Symbol* ovar = e->key;
-      // If ovar is a reference, e.g. an index variable of
-      // a 'var' iterator, we do not want to force
-      // that ref type onto 'svar'. Otherwise the generated
-      // code will store into *svar without initializing svar
-      // first. Todo: what if ovar is a domain?
-      Type* valtype = ovar->type->getValType();
-      IntentTag tiIntent = INTENT_BLANK;
-      ArgSymbol* tiMarker = toArgSymbol(e->value);
-      if (tiMarker)
+    if (e->value == markPruned)
+      continue;
+
+    totOuterVars++;
+    Symbol* ovar = e->key;
+    // If ovar is a reference, e.g. an index variable of
+    // a 'var' iterator, we do not want to force
+    // that ref type onto 'svar'. Otherwise the generated
+    // code will store into *svar without initializing svar
+    // first. Todo: what if ovar is a domain?
+    Type* valtype = ovar->type->getValType();
+
+    //
+    // Distinguish the following cases for the outer variable 'ovar':
+    //
+    //   (C1) e->value == markUnspecified
+    //        ==> ovar is not listed in the 'with' clause
+    //
+    //   (C2) e->value is one of "tiMark" ArgSymbols
+    //        ==> get the forall intent from that tiMark
+    //
+    //   (C3) e->value is a "chpl__reduceGlob" VarSymbol
+    //        ==> it is a reduce intent
+    //
+    // If (C1) or (C2), we may want to "prune" this variable,
+    // i.e. do not handle it under a forall intent, instead
+    // resort to the usual lexical scoping.
+    //
+    // If we do not prune, we compute (ovar, svar, globalOp)
+    // to push onto our lists.
+    //
+    bool isUnspec = (e->value == markUnspecified);
+    VarSymbol* svar;
+    VarSymbol* globalOp = isUnspec ? NULL : toVarSymbol(e->value);
+    bool isReduce = globalOp != NULL;
+    IntentTag tiIntent = INTENT_BLANK;
+
+    if (!isReduce) {
+      ArgSymbol* tiMarker = NULL;
+
+      // Compute the intent
+      if (isUnspec) {
+        // start with blank intent
+      } else {
+        tiMarker = toArgSymbol(e->value);
+        INT_ASSERT(tiMarker);
         tiIntent = tiMarker->intent;
-      else
-        INT_ASSERT(e->value == markUnspecified);
-      if (ovar->type == dtMethodToken)
-        // If we do not prune MT, _toLeader(..., _mt...) does not get resolved.
-        // See e.g. parallel/taskPar/figueroa/taskParallel.chpl
-        // Note: concreteIntent() does not work for MT.
-        tiIntent = INTENT_REF;
-      else
+      }
+
+      bool isMethodToken = ovar->type == dtMethodToken;
+      // concreteIntent() does not work for MT.
+      if (!isMethodToken)
         tiIntent = concreteIntent(tiIntent, valtype);
 
-      // We resort to the usual lexical scoping in a few cases,
-      // for various reasons.
+      // See if we want to prune it.
       bool pruneit = false;
+
       if (tiIntent == INTENT_REF) {
-        // for efficiency or for MT
+        // for efficiency
+        pruneit = true;
+      } else if (isMethodToken) {
+        // If MT is present, _toLeader(..., _mt...) does not get resolved.
+        // See e.g. parallel/taskPar/figueroa/taskParallel.chpl
         pruneit = true;
       } else if (isSyncType(ovar->type) || isAtomicType(ovar->type)) {
         // Currently we need it because sync variables do not get tupled
@@ -206,15 +250,26 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
 
       if (pruneit) {
         e->value = markPruned;  // our loops ignore such case explicitly
-      } else {
-        VarSymbol* svar = new VarSymbol(ovar->name, valtype);
-        setShadowVarFlags(svar, tiIntent); // instead of arg intents
-        outerVars.push_back(ovar);
-        shadowVars.push_back(svar);
-        e->value = svar;
-        numShadowVars++;
+        continue; // form_Map(uses)
       }
+    }  // if !isReduce
+    
+    svar = new VarSymbol(ovar->name, valtype);
+    if (isReduce) {
+      if (ovar->hasFlag(FLAG_CONST))
+        USR_FATAL_CONT(defChplIter,
+          "reduce intent is applied to a 'const' variable %s", ovar->name);
+      // The shadow variable will assume the reference from the leadIdx tuple.
+      svar->addFlag(FLAG_REF_VAR);
+      svar->type = valtype->getRefType();
+    } else {
+      setShadowVarFlags(svar, tiIntent); // instead of arg intents
     }
+    outerVars.push_back(ovar);
+    shadowVars.push_back(svar);
+    reduceGVars.push_back(globalOp);
+    e->value = svar;
+    numShadowVars++;
   }
 }
 
@@ -263,9 +318,10 @@ checkForRecordsWithArrayFields(Expr* ref, std::vector<Symbol*>& outerVars) {
 // (The leader will be converted to accept them during resolution.)
 static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
                                   std::vector<Symbol*>& outerVars,
-                                  std::vector<Symbol*>& shadowVars)
+                                  std::vector<Symbol*>& shadowVars,
+                                  std::vector<Symbol*>& reduceGVars)
 {
-  // Find that call to _toLeader or _toLeaderZip,
+  // Find that call to _toLeader() or similar,
   // starting from DefExpr of chpl__iter...
   CallExpr* tlCall = NULL;
   for (Expr* seekExpr = serIterSym->defPoint->next; seekExpr;
@@ -284,18 +340,25 @@ static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
   Expr* tlStmt = tlCall->getStmtExpr();
   // .. and add the actuals.
   for (size_t idx = 0; idx < outerVars.size(); idx++) {
-    Symbol* ovar = outerVars[idx];
-    Symbol* svar = shadowVars[idx];
+    Symbol* ovar  = outerVars[idx];
+    Symbol* svar  = shadowVars[idx];
+    Symbol* globalOp = reduceGVars[idx];
+    bool isReduce = globalOp != NULL;
 
-    // keep in sync with shadowForRefIntents()
-    if (svar->hasFlag(FLAG_REF_VAR)) {
+    // keep in sync with setupShadowVarForRefIntents()
+    if (!isReduce && svar->hasFlag(FLAG_REF_VAR)) {
       // createShadowVars() keeps 'const ref'-intent vars, drops 'ref'-vars
       INT_ASSERT(svar->hasFlag(FLAG_CONST));
-      // nothing to be done here - we will rely on lexical scoping
+      // Nothing to be done here - we will rely on lexical scoping.
+      // Separately, ensure that we did not miss a reduction intent:
+      INT_ASSERT(!globalOp);
     } else {
       Symbol* actual = ovar;
-      // If it is a reference, dereference it. E.g. m-lsms.chpl -nl 1.
-      if (isReferenceType(ovar->type)) {
+      if (isReduce) {
+        // pass chpl__reduceGlob insetad
+        actual = globalOp;
+      } else if (isReferenceType(ovar->type)) {
+        // If it is a reference, dereference it. E.g. m-lsms.chpl (-nl 1?).
         VarSymbol* deref = newTemp(ovar->name, ovar->type->getValType());
         tlStmt->insertBefore(new DefExpr(deref));
         tlStmt->insertBefore("'move'(%S, 'deref'(%S))", deref, ovar);
@@ -309,8 +372,11 @@ static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
 
 
 // Returns true if this variable has been taken care of.
-static bool shadowForRefIntents(CallExpr* lcCall, Symbol* ovar, Symbol* svar) {
+static bool setupShadowVarForRefIntents(CallExpr* lcCall,
+                                        Symbol* ovar, Symbol* svar)
+{
   // keep in sync with addActualsTo_toLeader()
+  // this function is invoked only when !isReduce
   if (svar->hasFlag(FLAG_REF_VAR)) {
     // createShadowVars() keeps 'const ref'-intent vars, drops 'ref'-vars
     INT_ASSERT(svar->hasFlag(FLAG_CONST));
@@ -384,7 +450,8 @@ static void extractFromLeaderYield(CallExpr* lcCall, int ix,
 static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
                            int numLeaderActuals,
                            std::vector<Symbol*>& outerVars,
-                           std::vector<Symbol*>& shadowVars)
+                           std::vector<Symbol*>& shadowVars,
+                           std::vector<Symbol*>& reduceGVars)
 {
   // ForallLeaderArgs: detuple what the leader yields.
   // (The leader will be converted to yield a tuple during resolution.)
@@ -400,15 +467,20 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
 
   // Then, for the shadow vars.
   for (size_t idx = 0; idx < outerVars.size(); idx++) {
-    Symbol* ovar = outerVars[idx];
-    Symbol* svar = shadowVars[idx];
-    bool needToExtract = !shadowForRefIntents(lcCall, ovar, svar);
-    if (needToExtract) {
+    Symbol* ovar     = outerVars[idx];
+    Symbol* svar     = shadowVars[idx];
+    Symbol* globalOp = reduceGVars[idx];
+    bool isReduce    = globalOp != NULL;
+    if (!isReduce && setupShadowVarForRefIntents(lcCall, ovar, svar)) {
+      // handled
+    } else {
+      // non-ref or reduce intents
       INT_ASSERT(numLeaderActuals > 0);
       lcCall->insertBefore(new DefExpr(svar));
       extractFromLeaderYield(lcCall, ++ix, svar, leadIdxSym);
+      if (!isReduce)
 #ifndef HILDE_MM
-      svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
 #endif
     }
   }
@@ -664,23 +736,32 @@ void implementForallIntents1(DefExpr* defChplIter)
 
   // Create shadow variables. We keep the vectors to ensure consistent
   // iteration order in for_vector(outerVars) vs. for_vector(shadowVars).
-  // Todo: initialize the vectors with capacity=uses->n, i.e. max #vars.
   std::vector<Symbol*> outerVars;
   std::vector<Symbol*> shadowVars;
+
+  // Reduction-intent-related 'globalOp' variables, when non-NULL:
+  // A 'globalOp' is an instance of a ReduceScanOp subclass.
+  // It is created right before the forall, then threaded through and
+  // yielded out of the leader as 'localOp'.
+  // After the forall, outerVar = globalOp.generate().
+  // Todo: these are so infrequent, store them e.g. in SymbolMaps instead?
+  std::vector<Symbol*> reduceGVars;
+
   int numShadowVars, totOuterVars1;
   SET_LINENO(forallBody1);
   createShadowVars(defChplIter, uses1, numShadowVars, totOuterVars1,
-                   outerVars, shadowVars);
+                   outerVars, shadowVars, reduceGVars);
 
   if (numShadowVars > 0) {
     int numLeaderActuals; // set in addActualsTo_toLeader()
 
     checkForRecordsWithArrayFields(defChplIter, outerVars);
 
-    addActualsTo_toLeader(serIterSym, numLeaderActuals, outerVars, shadowVars);
+    addActualsTo_toLeader(serIterSym, numLeaderActuals,
+                          outerVars, shadowVars, reduceGVars);
 
     detupleLeadIdx(leadIdxSym, leadIdxCopySym, numLeaderActuals,
-                   outerVars, shadowVars);
+                   outerVars, shadowVars, reduceGVars);
 
     // replace outer vars with shadows in the loop body
     replaceVarUses(forallBody1, uses1);
@@ -704,8 +785,6 @@ void implementForallIntents1(DefExpr* defChplIter)
 
     forallBody2->byrefVars->remove();
   }
-
-  // todo: do we need to deallocate 'uses'?
 }
 
 
@@ -839,13 +918,57 @@ static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   origRet->defPoint->remove();
 }
 
+static void setupRedRefs(FnSymbol* fn, bool nested,
+                         Expr*& redRef1, Expr*& redRef2)
+{
+  if (redRef1) return;
+
+  // We will insert new ASTs at the beginning of 'fn' -> before 'redRef1',
+  // and at the end of 'fn' -> before 'redRef2'.
+  redRef1 = new CallExpr("redRef1");
+  redRef2 = new CallExpr("redRef2");
+  if (nested) {
+    fn->insertAtHead(redRef1);
+  } else {
+    // Be cute - add new stuff past the defs of 'ret' and 'origRet'.
+    fn->body->body.head->next->insertAfter(redRef1);
+  }
+  // insert before _downEndCount
+  // by inserting before return then moving one up past _downEndCount
+  fn->insertBeforeReturn(redRef2);
+  CallExpr* dc = toCallExpr(redRef2->prev);
+  INT_ASSERT(dc && dc->isNamed("_downEndCount"));
+  dc->insertBefore(redRef2->remove());
+}
+
+static void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
+  if (!redRef1) return;
+  redRef1->remove();
+  redRef2->remove();
+  redRef1 = redRef2 = NULL;
+}
+
+// like isArrayClass()
+static bool isReduceOp(Type* type) {
+  if (type->symbol->hasFlag(FLAG_REDUCESCANOP))
+    return true;
+  forv_Vec(Type, t, type->dispatchParents)
+    if (isReduceOp(t))
+      return true;
+  return false;
+}
+
+static const char* astrArg(int ix, const char* add1) {
+  return astr("x", istr(ix+1), "_", add1);
+}
+
 //
 // Propagate 'extraActuals' through the task constructs, implementing
 // task intents. See the header comment for extendLeader().
 //
 static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
                                      int numExtraArgs, Symbol* extraActuals[],
-                                     bool nested)
+                                     bool reduceArgs[], bool nested)
 {
   FnSymbol* fn = call->isResolved();
   INT_ASSERT(fn); // callee's responsibility
@@ -854,21 +977,62 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
     INT_ASSERT(!(fn->getReturnSymbol() == gVoid || fn->retType == dtVoid));
   }
 
+  Expr *redRef1 = NULL, *redRef2 = NULL;
   Symbol* extraFormals[numExtraArgs];
+  Symbol* shadowVars[numExtraArgs];
+  bool gotNestedReduce = false;
+
   for (int ix = 0; ix < numExtraArgs; ix++) {
     Symbol*     eActual = extraActuals[ix];
+    bool        isReduce = nested ? reduceArgs[ix] :
+        // todo: eliminate potential false positives
+        // i.e. when there is a proper outer variable of a ReduceScanOp type
+        isReduceOp(eActual->type);
+    if (!nested) reduceArgs[ix] = isReduce;
+
     // Use named args to disambiguate from the already-existing iterator args,
     // just in case. This necessitates toNamedExpr() in handleCaptureArgs().
-    const char* eName   = nested ? eActual->name :
-      strcmp(eActual->name, "_tuple_expand_tmp_")
-      ? astr("_x", istr(ix+1), "_", eActual->name) // uniquify arg name
-      : astr("_x", istr(ix+1), "_tet");
+    const char* eName   =
+      isReduce ? astrArg(ix, "reduceParent") :
+        nested ? eActual->name :
+          strcmp(eActual->name, "_tuple_expand_tmp_") ?
+            astrArg(ix, eActual->name) // uniquify arg name
+            : astrArg(ix, "tet");
   
     ArgSymbol*  eFormal = new ArgSymbol(INTENT_BLANK, eName, eActual->type);
     extraFormals[ix] = eFormal;
     call->insertAtTail(new NamedExpr(eName, new SymExpr(eActual)));
     fn->insertFormalAtTail(eFormal);
+
+    // In leader outside any taskFn just use reduceParent.
+    // Todo: also skip if there are no other taskFns or yields in 'fn'.
+    if (isReduce && nested) {
+      // We shouldn't bother with all this when it is not a task function.
+      INT_ASSERT(isTaskFun(fn));
+      gotNestedReduce = true;
+      setupRedRefs(fn, nested, redRef1, redRef2);
+      ArgSymbol* parentOp = eFormal; // the reduceParent arg
+      VarSymbol* currOp   = new VarSymbol(astrArg(ix, "reduceCurr"));
+      VarSymbol* svar     = new VarSymbol(astrArg(ix, "shadowVar"));
+      redRef1->insertBefore(new DefExpr(currOp));
+      redRef1->insertBefore("'move'(%S, clone(%S,%S))", // init
+                            currOp, gMethodToken, parentOp);
+      redRef1->insertBefore(new DefExpr(svar));
+      redRef1->insertBefore("'move'(%S, identity(%S,%S))", // init
+                            svar, gMethodToken, currOp);
+      redRef2->insertBefore("accumulate(%S,%S,%S)",
+                            gMethodToken, currOp, svar);
+      redRef2->insertBefore("chpl__reduceCombine(%S,%S)", parentOp, currOp);
+      redRef2->insertBefore("chpl__cleanupLocalOp(%S,%S)", parentOp, currOp);
+      // use currOp instead of parentOp for yielding and passing to taskFns
+      extraFormals[ix] = currOp;
+      shadowVars[ix]   = svar;
+    } else {
+      shadowVars[ix] = NULL;
+    }
   }
+
+  cleanupRedRefs(redRef1, redRef2);
 
   // Propagate recursively into task functions and yields.
   std::vector<CallExpr*> rCalls;
@@ -878,9 +1042,35 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       // Make a tuple that includes the extra args.
       Expr* origRetArg = rcall->get(1)->remove();
       VarSymbol* newOrigRet = localizeYieldForExtendLeader(origRetArg, rcall);
-      CallExpr* buildTuple = new CallExpr("_build_tuple", newOrigRet);
-      for (int ix = 0; ix < numExtraArgs; ix++)
-        buildTuple->insertAtTail(new SymExpr(extraFormals[ix]));
+      // We need to yield references to svars as part of tuples,
+      // hence the _allow_ref version. However, with some promotion wrappers
+      // e.g. npb/is/diten/is.chpl, this hits the bug that autoCopy on a tuple
+      // with a ref component dereferences that component.
+      // So we avoid _allow_ref if we do not have reduce intents.
+      const char* buildName =
+        gotNestedReduce ? "_build_tuple_always_allow_ref" : "_build_tuple";
+      CallExpr* buildTuple = new CallExpr(buildName, newOrigRet);
+
+      // add tuple components
+      for (int ix = 0; ix < numExtraArgs; ix++) {
+        bool isReduce = reduceArgs[ix];
+        Symbol* svar = shadowVars[ix];
+        if (isReduce && !svar)
+          // Currently we do not create a shadow var for yields in this case.
+          USR_FATAL(rcall, "yields outside of task constructs in the leader or standalone iterator are not supported with reduce intents");
+        Symbol* tFormal;
+        if (isReduce) {
+          // pass 'svar' by reference
+          VarSymbol* sref = new VarSymbol(astrArg(ix, "svarRef"));
+          rcall->insertBefore(new DefExpr(sref));
+          rcall->insertBefore("'move'(%S, 'addr of'(%S))", sref, svar);
+          tFormal = sref;
+        } else {
+          tFormal = extraFormals[ix];
+        }
+        buildTuple->insertAtTail(new SymExpr(tFormal));
+      }
+
       rcall->insertBefore("'move'(%S,%E)", retSym, buildTuple);
       rcall->insertAtTail(new SymExpr(retSym));
 
@@ -892,8 +1082,12 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       // OTOH our normal call verification should suffice: it will fail
       // the first propagated call if a second call propagates to same tfn.
       INT_ASSERT(tfn->defPoint->parentSymbol == fn);
+      // Reduce intents do not make sense when a 'begin' outlives the iterator.
+      if (tfn->hasFlag(FLAG_BEGIN))
+        USR_FATAL_CONT(tfn, "reduce intents are not implemented with leader and standalone iterators that include 'begin' statement(s)");
       // Propagate the extra args recursively into 'tfn'.
-      propagateExtraLeaderArgs(rcall, retSym, numExtraArgs, extraFormals, true);
+      propagateExtraLeaderArgs(rcall, retSym, numExtraArgs,
+                               extraFormals, reduceArgs, true);
     }
   }
 }
@@ -929,24 +1123,27 @@ static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall) {
   FnSymbol* iterFn = copyLeaderFn(origIterFn, /*ignore_isResolved:*/false);
   toSymExpr(call->baseExpr)->var = iterFn;
 
-  int numExtraArgs = origToLeaderCall->numActuals()-1;
-  INT_ASSERT(numExtraArgs > 0); // we shouldn't be doing all this otherwise
-  Expr* origArg = origToLeaderCall->get(1);
-  Symbol* extraActuals[numExtraArgs];
-  for (int ix = 0; ix < numExtraArgs; ix++) {
-    origArg = origArg->next;
-    SymExpr* origSE = toSymExpr(origArg);
-    INT_ASSERT(origSE); // if it is not a symbol, still need to make it happen
-    extraActuals[ix] = origSE->var;
-  }
-
   // Setup the new return/yield symbol.
   VarSymbol* retSym  = newTemp("ret"); // its type is to be inferred
   Symbol* origRetSym = iterFn->replaceReturnSymbol(retSym, /*newRetType*/NULL);
   origRetSym->defPoint->insertBefore(new DefExpr(retSym));
   origRetSym->name = "origRet";
 
-  propagateExtraLeaderArgs(call, retSym, numExtraArgs, extraActuals, false);
+  int numExtraArgs = origToLeaderCall->numActuals()-1;
+  INT_ASSERT(numExtraArgs > 0); // we shouldn't be doing all this otherwise
+  Expr* origArg = origToLeaderCall->get(1);
+  Symbol* extraActuals[numExtraArgs];
+  bool    reduceArgs[numExtraArgs];   // computed in propagateExtraLeaderArgs
+  for (int ix = 0; ix < numExtraArgs; ix++) {
+    origArg = origArg->next;
+    SymExpr* origSE = toSymExpr(origArg);
+    INT_ASSERT(origSE); // if it is not a symbol, still need to make it happen
+    extraActuals[ix] = origSE->var;
+  }
+  INT_ASSERT(!origArg->next); // we should have processed all args
+
+  propagateExtraLeaderArgs(call, retSym, numExtraArgs,
+                           extraActuals, reduceArgs, false);
 
   checkAndRemoveOrigRetSym(origRetSym, iterFn);
 }

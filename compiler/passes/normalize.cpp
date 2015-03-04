@@ -85,7 +85,7 @@ void normalize() {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
       // violations should have caused USR_FATAL in semanticChecks.cpp
-      INT_ASSERT(fn && fn->hasFlag(FLAG_ITERATOR_FN));
+      INT_ASSERT(fn && fn->isIterator());
     }
     if (call->isPrimitive(PRIM_DELETE)) {
       SET_LINENO(call);
@@ -360,7 +360,7 @@ checkUseBeforeDefs() {
           if (VarSymbol* vs = toVarSymbol(def->sym))
           {
             // All type aliases are taken as defined.
-            if (vs->hasFlag(FLAG_TYPE_VARIABLE))
+            if (vs->isType())
               defined.set_add(def->sym);
             // All variables of type 'void' are treated as defined.
             if (vs->typeInfo() == dtVoid)
@@ -591,7 +591,7 @@ static void normalize_returns(FnSymbol* fn) {
   Vec<CallExpr*> calls;
   int numVoidReturns = 0;
   int numYields = 0;
-  bool isIterator = fn->hasFlag(FLAG_ITERATOR_FN);
+  bool isIterator = fn->isIterator();
   collectMyCallExprs(fn, calls, fn); // ones not in a nested function
   forv_Vec(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN)) {
@@ -673,7 +673,7 @@ static void normalize_returns(FnSymbol* fn) {
       // because it adds initialization code that is later removed.  
       // Also, we want arrays returned from iterators to behave like
       // references, so we add the 'var' return intent here.
-      if (fn->hasFlag(FLAG_ITERATOR_FN) &&
+      if (fn->isIterator() &&
           returnTypeIsArray(retExprType))
         // Treat iterators returning arrays as if they are always returned by ref.
         fn->retTag = RET_REF;
@@ -768,7 +768,7 @@ static TypeSymbol* resolveTypeAlias(SymExpr* se)
     // Unless we can find a new se to check.
     if (VarSymbol* vs = toVarSymbol(sym))
     {
-      if (vs->hasFlag(FLAG_TYPE_VARIABLE))
+      if (vs->isType())
       {
         // We expect to find its definition in the init field of its declaration.
         DefExpr* def = vs->defPoint;
@@ -952,7 +952,7 @@ fix_def_expr(VarSymbol* var) {
   //
   // handle type aliases
   //
-  if (var->hasFlag(FLAG_TYPE_VARIABLE)) {
+  if (var->isType()) {
     INT_ASSERT(init);
     INT_ASSERT(!type);
     stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__typeAliasInit", init->copy())));
@@ -1169,7 +1169,7 @@ static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, V
         block->insertAtTail(new CallExpr("=", typeTemp, init->remove()));
         block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
       } else {
-        if (constTemp->hasFlag(FLAG_TYPE_VARIABLE))
+        if (constTemp->isType())
           block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
                                            new CallExpr(PRIM_TYPEOF, typeTemp)));
         else

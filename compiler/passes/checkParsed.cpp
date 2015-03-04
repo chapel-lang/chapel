@@ -141,7 +141,7 @@ checkFunction(FnSymbol* fn) {
 
   Vec<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
-  bool isIterator = fn->hasFlag(FLAG_ITERATOR_FN);
+  bool isIterator = fn->isIterator();
   bool notInAFunction = !isIterator && (fn->getModule()->initFn == fn);
   int numVoidReturns = 0, numNonVoidReturns = 0, numYields = 0;
 

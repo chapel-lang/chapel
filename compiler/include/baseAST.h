@@ -33,6 +33,9 @@
 #ifndef _BASEAST_H_
 #define _BASEAST_H_
 
+#include <ostream>
+#include <string>
+
 #include "map.h"
 #include "vec.h"
 
@@ -224,6 +227,11 @@ public:
   int               id;         // Unique ID
   astlocT           astloc;     // Location of this node in the source code
 
+  void                printTabs(std::ostream *file, unsigned int tabs);
+  virtual void        printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
+
+  static  const       std::string tabText;
+
 protected:
                     BaseAST(AstTag type);
   virtual          ~BaseAST();
@@ -323,6 +331,7 @@ bool isWhileDoStmt(const BaseAST* a);
 bool isDoWhileStmt(const BaseAST* a);
 bool isParamForLoop(const BaseAST* a);
 bool isForLoop(const BaseAST* a);
+bool isCoforallLoop(const BaseAST* a);
 bool isCForLoop(const BaseAST* a);
 
 //
@@ -423,6 +432,11 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
       AST_CALL_CHILD(stmt, WhileStmt,    condExprGet(),  call, __VA_ARGS__);   \
                                                                                \
     } else if (stmt->isForLoop()      == true) {                               \
+      AST_CALL_LIST (stmt, ForLoop,      body,           call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ForLoop,      indexGet(),     call, __VA_ARGS__);   \
+      AST_CALL_CHILD(stmt, ForLoop,      iteratorGet(),  call, __VA_ARGS__);   \
+                                                                               \
+    } else if (stmt->isCoforallLoop() == true) {                               \
       AST_CALL_LIST (stmt, ForLoop,      body,           call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, ForLoop,      indexGet(),     call, __VA_ARGS__);   \
       AST_CALL_CHILD(stmt, ForLoop,      iteratorGet(),  call, __VA_ARGS__);   \
