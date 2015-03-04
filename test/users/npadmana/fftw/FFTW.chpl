@@ -250,8 +250,8 @@ module FFTW {
   module C_FFTW {
     extern proc fftw_plan_dft(rank: c_int, 
                               n,  // BLC: having trouble being specific
-                              in1: [] fftw_complex, 
-                              out1: [] fftw_complex, 
+                              in1: [] complex(128), 
+                              out1: [] complex(128), 
                               sign : c_int, c_flags : c_uint) : fftw_plan;
 
     extern proc fftw_plan_dft_r2c(rank: c_int, 
