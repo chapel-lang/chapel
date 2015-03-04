@@ -379,6 +379,8 @@ static bool isCreated(SymExpr* se)
           if (AggregateType* at = toAggregateType(retType))
             if (at->isClass())
               return false;
+          if (fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+            return false;
         }
         else
         {
@@ -514,7 +516,11 @@ static bool isConsumed(SymExpr* se)
 
        case PRIM_RETURN:
         // Returns act like destructors.
-        return true;
+        // Unless the enclosing function is marked to the contrary.
+        if (se->parentSymbol->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+          return false;
+        else
+          return true;
 
        case PRIM_MOVE:
        case PRIM_ASSIGN:
@@ -593,6 +599,36 @@ static bool isFlowStmt(Expr* stmt)
 //#
 //# End of predicates
 //########################################################################
+
+
+//#
+//# Add FLAG_RETURN_VALUE_IS_NOT_OWNED to those functions that return
+//# records that already existed before the function was invoked.
+//# Such functions will not have autoCopy on their return value
+//# and their callers will consider the returned records un-owned.
+//#
+
+static bool returnsPreExistingRecord(FnSymbol* fn)
+{
+  // For now, only flag a function if:
+  //  - it is a field accessor
+  //  - it returns a record, including array/domain/dmap
+  //
+  // We allow these accessors be on records, too, not just classes.
+
+  if (!fn->hasFlag(FLAG_FIELD_ACCESSOR))
+    return false;
+  if (!isRecord(fn->retType))
+    return false;
+  return true;
+}
+
+static void addFlagReturnValueNotOwned()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+    if (returnsPreExistingRecord(fn))
+      fn->addFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
+}
 
 
 //#
@@ -1654,6 +1690,8 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
 
 void insertAutoCopyAutoDestroy()
 {
+  addFlagReturnValueNotOwned();
+
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
     // Function prototypes have no body, so we skip them.
