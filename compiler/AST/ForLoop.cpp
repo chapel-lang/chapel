@@ -256,6 +256,11 @@ bool ForLoop::isForLoop() const
   return true;
 }
 
+bool ForLoop::isCoforallLoop() const
+{
+  return mIndex->var->hasFlag(FLAG_COFORALL_INDEX_VAR);
+}
+
 SymExpr* ForLoop::indexGet() const
 {
   return mIndex;
