@@ -82,7 +82,7 @@ removeWrapRecords() {
   }
 
   //
-  // remove actuals bound to _valueType formals.
+  // Remove actuals bound to _valueType formals.
   //
   compute_call_sites();
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -96,7 +96,29 @@ removeWrapRecords() {
   }
 
   //
-  // remove all uses of _valueType formals, and then the formal itself.
+  // Remove all uses of _valueType formals, and then the formal itself.
+  //
+  // We need to complete the above action on all functions/formals first,
+  // before proceeding to the following loop.  Otherwise in the following
+  // scenario:
+  //
+  //   proc fun1(..., _valueType) {
+  //     ...
+  //     tmp = fun2(..., _valueType); <-- need to preserve this call.
+  //     ...
+  //   }
+  //
+  // Suppose we process fun1() before fun2().  In that case, the code below
+  // would remove the indicated call because _valueType still appears as an
+  // argument.  Most likely, that call is a call to the compiler-generated
+  // default constructor for a record-wrapped type.  It needs to be preserved
+  // in its reduced form, e.g. _construct_array(_value).  If the call is
+  // removed entirely, then the array tmp is never initialized, and the program
+  // computes garbage.
+  // In this revised formulation, all _valueType formals and their
+  // corresponding actual arguments are removed first.  Then, the call to
+  // fun2() no longer contains a reference to the _valueType argument of
+  // fun1(), so it is preserved as desired.
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     for_formals(formal, fn) {
