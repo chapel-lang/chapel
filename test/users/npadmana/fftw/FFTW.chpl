@@ -312,33 +312,33 @@ module FFTW {
   pragma "no doc"
   module C_FFTW {
     extern proc fftw_plan_dft(rank: c_int, 
-        n,  // BLC: having trouble being specific
-        in1: [] fftw_complex, 
-        out1: [] fftw_complex, 
-        sign : c_int, c_flags : c_uint) : fftw_plan;
+                              n,  // BLC: having trouble being specific
+                              in1: [] fftw_complex, 
+                              out1: [] fftw_complex, 
+                              sign : c_int, c_flags : c_uint) : fftw_plan;
 
-  extern proc fftw_plan_dft_r2c(rank: c_int, 
-      n,  // BLC: having trouble being specific
-      in1: [],
-      out1: [], 
-      c_flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_r2c(rank: c_int, 
+                                  n,  // BLC: having trouble being specific
+                                  in1: [],
+                                  out1: [], 
+                                  c_flags : c_uint) : fftw_plan;
 
-  extern proc fftw_plan_dft_c2r(rank: c_int, 
-      n,  // BLC: having trouble being specific
-      in1: [],
-      out1: [],
-      c_flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_c2r(rank: c_int, 
+                                  n,  // BLC: having trouble being specific
+                                  in1: [],
+                                  out1: [],
+                                  c_flags : c_uint) : fftw_plan;
 
     extern proc fftw_execute(const plan : fftw_plan);
-
+    
     extern proc fftw_destroy_plan(plan : fftw_plan);
-
+    
     extern proc fftw_cleanup();
-
+    
     extern proc fftw_init_threads() : c_int;
-
+    
     extern proc fftw_cleanup_threads();
-
+    
     extern proc fftw_plan_with_nthreads(n : c_int);
   }
 }
