@@ -71,8 +71,13 @@ void AstPrintDocs::exitAggrType(AggregateType* node) {
 }
 
 
+void AstPrintDocs::visitPrimType(PrimitiveType* node) {
+  node->printDocs(this->file, this->tabs);
+}
+
+
 bool AstPrintDocs::enterFnSym(FnSymbol* node) {
-  node->printDocs(file, this->tabs);
+  node->printDocs(this->file, this->tabs);
   return false;
 }
 
