@@ -62,7 +62,7 @@
 // Count statistics
 //
 #ifdef PRINT_NARROW_EFFECT_SUMMARY
-int narrowCount = 0, wideCount = 0;
+static int narrowCount = 0, wideCount = 0;
 #endif
 
 static inline bool isWideType(Symbol* sym) {
@@ -86,7 +86,7 @@ public:
   Symbol* sym;
   bool mustBeWide;
 
-  Type* wideType; // The original wide type of the symbol
+  AggregateType* wideType; // The original wide type of the symbol
 
   //
   // For references, we want to know the wideness of the type it
@@ -116,8 +116,16 @@ public:
   WideInfo() : sym(NULL), mustBeWide(false), valIsWide(false), fnToNarrow(NULL) { }
   WideInfo(Symbol* isym) : sym(isym), mustBeWide(false), valIsWide(false), fnToNarrow(NULL) {
     if (isWideType(sym)) {
-      wideType = sym->type;
+      wideType = toAggregateType(sym->type);
     }
+  }
+
+  void setWide(SymExpr* se, const char* msg) {
+#ifdef PRINT_NARROW_ANALYSIS
+    DEBUG_PRINTF("%d %s %s in %s", sym->id, sym->cname, msg, se->getModule()->cname);
+    print_view(se->getStmtExpr());
+#endif
+    mustBeWide = true;
   }
 };
 
@@ -386,7 +394,7 @@ narrowField(Symbol* field, WideInfo* wi) {
   TypeSymbol* ts = toTypeSymbol(field->defPoint->parentSymbol);
 
   // TODO: What about other bundled args?
-  if (!strcmp(ts->name, "_class_localson_fn")) {
+  if (strcmp(ts->name, "_class_localson_fn") == 0) {
     DEBUG_PRINTF("Field %s(%d) in 'on' bundled args must be wide\n", field->cname, field->id);
     wi->mustBeWide = true;
     return;
@@ -396,7 +404,7 @@ narrowField(Symbol* field, WideInfo* wi) {
   // Coforall bundled args are assigned to once. If the RHS of that assignment
   // is narrow, then the arg could be narrow (unless that arg is a ref).
   //
-  if (!strcmp(ts->name, "_class_localscoforall_fn")) {
+  if (strcmp(ts->name, "_class_localscoforall_fn") == 0) {
     if (isRef(field)) {
       wi->mustBeWide = true;
     }
@@ -436,13 +444,6 @@ narrowField(Symbol* field, WideInfo* wi) {
 //   }
 }
 
-static void setWide(WideInfo* wi, SymExpr* se, const char* msg) {
-#ifdef PRINT_NARROW_ANALYSIS
-  DEBUG_PRINTF("%d %s %s in %s", wi->sym->id, wi->sym->cname, msg, se->getModule()->cname);
-  print_view(se->getStmtExpr());
-#endif
-  wi->mustBeWide = true;
-}
 
 //
 // Analyze symbols (variables and arguments) to mark them with the
@@ -645,13 +646,13 @@ narrowSym(Symbol* sym, WideInfo* wi,
             }
           continue;
         } else {
-          setWide(wi, def, "def fail to narrow");
+          wi->setWide(def, "def fail to narrow");
           return;
         }
       } else if(isOpEqualPrim(call)) {
         continue;
       } else if (call->isResolved() &&
-                 !strcmp(call->isResolved()->name, "=")) // A flag should be
+                 strcmp(call->isResolved()->name, "=") == 0) // A flag should be
                                                          // used to distinguish
                                                          // assignment
                                                          // operators.
@@ -729,7 +730,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
         } else {
           // coforall bundled args are assigned to once, so we can easily
           // reason about their wideness.
-          if (!strcmp(base->var->type->symbol->cname, "_class_localscoforall_fn")) {
+          if (strcmp(base->var->type->symbol->cname, "_class_localscoforall_fn") == 0) {
             DEBUG_PRINTF("trying to narrow coforall arg: %d -> %d\n", sym->id, member->var->id);
             addNarrowDep(sym, member->var);
           } else {
@@ -842,7 +843,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
         return;
       }
     }
-    setWide(wi, use, "use fail to narrow");
+    wi->setWide(use, "use fail to narrow");
     return;
   }
   DEBUG_PRINTF("\tdone with uses\n");
@@ -906,14 +907,13 @@ narrowArg(ArgSymbol* arg, WideInfo* wi,
 static bool usedInOn(Symbol* sym, Map<Symbol*, Vec<SymExpr*>*> &useMap, CallGraph* graph) {
   for_uses(use, useMap, sym) {
     if (FnSymbol* fn = toFnSymbol(use->parentSymbol)) {
-      if (CallGraph::Node* n = graph->vertices[fn]) {
-        if (n->onDepth != 0 ||
-            fn->hasFlag(FLAG_ON_BLOCK) ||
-            fn->hasFlag(FLAG_ON)) {
-              DEBUG_PRINTF("ON: %s used in %s (%d): %d\n", sym->cname, fn->cname, fn->id, n->onDepth);
-              return true;
-        }
-      } else return true;
+      CallGraph::Node* n = graph->vertices[fn];
+      if (n->onDepth != 0 ||
+          fn->hasFlag(FLAG_ON_BLOCK) ||
+          fn->hasFlag(FLAG_ON)) {
+            DEBUG_PRINTF("ON: %s used in %s (%d): %d\n", sym->cname, fn->cname, fn->id, n->onDepth);
+            return true;
+      }
     }
   }
   return false;
