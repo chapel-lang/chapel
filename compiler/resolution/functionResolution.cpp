@@ -6163,8 +6163,6 @@ static void resolveReturnType(FnSymbol* fn)
 }
 
 // Simple wrappers to check if a function is a specific type of iterator
-// TODO (Elliot 03/03/15): These should become methods on FnSymbol, especially
-// if they become useful anywhere else.
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   if (fn->isIterator()) {
     for_formals(formal, fn) {
@@ -6199,14 +6197,12 @@ resolveFns(FnSymbol* fn) {
     return;
 
   //
-  // mark leaders and standalone parallel iterators for inlining
+  // Mark leader and standalone parallel iterators for inlining. Also stash a
+  // pristine copy of the iterator (required by forall intents)
   //
-  if (isLeaderIterator(fn)) {
+  if (isLeaderIterator(fn) || isStandaloneIterator(fn)) {
     fn->addFlag(FLAG_INLINE_ITERATOR);
-    // need to do the following before 'fn' gets resolved
     stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
-  } else if (isStandaloneIterator(fn)) {
-    fn->addFlag(FLAG_INLINE_ITERATOR);
   }
 
   if (fn->retTag == RET_REF) {
