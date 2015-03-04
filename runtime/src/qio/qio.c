@@ -3586,6 +3586,9 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
 
+  // ch->bit_buffer_bits should never exceed the sizeof the bitbuffer
+  assert(0 <= tmp_live && tmp_live <= 8*sizeof(qio_bitbuffer_t));
+
   // We've got > 64 bits to write.
   part_one = 8*sizeof(qio_bitbuffer_t) - tmp_live;
   part_two = nbits - part_one;
@@ -3660,6 +3663,9 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
   tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
   if( tmp_live == 0 ) tmp_bits = 0;
+
+  // ch->bit_buffer_bits should never exceed the sizeof the bitbuffer
+  assert(0 <= tmp_live && tmp_live <= 8*sizeof(qio_bitbuffer_t));
 
   //printf("In write bits slow\n");
 
