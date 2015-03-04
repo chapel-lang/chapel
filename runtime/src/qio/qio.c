@@ -683,6 +683,7 @@ qioerr qio_mmap_initial(qio_file_t* file)
 
     if( file->fdflags & QIO_FDFLAG_WRITEABLE ) prot |= PROT_WRITE;
 
+    // This check is (only) important for 32-bit systems.
     if( len > SSIZE_MAX ) return QIO_ENOMEM;
 
     // mmap the initial length of the file.
@@ -726,6 +727,8 @@ qioerr qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohint
     fd = fileno(fp);
     if( fd == -1 ) return qio_mkerror_errno();
   }
+
+  if( fd < 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "invalid file descriptor");
 
   err = qio_int_to_err(sys_fstat(fd, &stats));
   if( err ) return err;
@@ -2168,6 +2171,7 @@ qioerr _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
     prot = PROT_READ;
     if( ch->flags & QIO_FDFLAG_WRITEABLE ) prot |= PROT_WRITE;
 
+    // This check is (only) important for 32-bit systems.
     if( len > SSIZE_MAX ) QIO_RETURN_CONSTANT_ERROR(EOVERFLOW, "overflow in mmap");
 
     err = qio_int_to_err(sys_mmap(NULL, len, prot, MAP_SHARED, ch->file->fd, map_start, &data));
@@ -3582,6 +3586,9 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
 
+  // ch->bit_buffer_bits should never exceed the sizeof the bitbuffer
+  assert(0 <= tmp_live && tmp_live <= 8*sizeof(qio_bitbuffer_t));
+
   // We've got > 64 bits to write.
   part_one = 8*sizeof(qio_bitbuffer_t) - tmp_live;
   part_two = nbits - part_one;
@@ -3656,6 +3663,9 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
   tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
   if( tmp_live == 0 ) tmp_bits = 0;
+
+  // ch->bit_buffer_bits should never exceed the sizeof the bitbuffer
+  assert(0 <= tmp_live && tmp_live <= 8*sizeof(qio_bitbuffer_t));
 
   //printf("In write bits slow\n");
 
