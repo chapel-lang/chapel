@@ -3,3 +3,5 @@ Module: hasGlobalTypes
    type first = bool
    type second = int(64)
       This type has an associated comment and a value 
+   type MyT
+      This is an opaque type from external source. 
