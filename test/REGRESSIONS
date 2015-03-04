@@ -59,7 +59,7 @@ Reviewed 2015-03-02
 ===================
 
 assert src != dst failure (2015-02-28, michael)
-(gasnet.fifo, memleaks, cygwin64, cygwin32, gasnet-fast, xe-wb.gnu, xc-wb.gnu, gasnet-everything)
+(cygwin64, cygwin32, gasnet-fast, xe-wb.gnu, xc-wb.gnu)
 -----------------------------------------------------------------------------
 [Error matching program output for studies/madness/aniruddha/madchap/test_diff]
 [Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
@@ -75,7 +75,7 @@ assert src != dst failure (2015-02-28, michael)
 [Error matching program output for studies/madness/dinan/mad_chapel/test_showboxes]
 
 some sort of failure in refactoring of third-party scripts (2015-03-04, gbt)
-(linux32, darwin, fifo, gnu.darwin, fast, baseline, verify, linux64, no-local, numa)
+(linux32, darwin, fifo, gnu.darwin, fast, baseline, verify, linux64, no-local, numa, gasnet.fifo, memleaks, gasnet-everything)
 ----------------------------------------------------------------------------
 [Error matching compiler output for runtime/thomasvandoren/rtLibDirWarningsWithDeveloper]
 [Error matching compiler output for runtime/thomasvandoren/rtLibDirWarningsWithModuleAndDeveloper]
