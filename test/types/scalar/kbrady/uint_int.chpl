@@ -1,7 +1,7 @@
-writeln(safe_cast(int, min(uint(64))));
+writeln(min(uint(64)).safeCast(int));
 
-writeln(safe_cast(int, max(uint(8))));
-writeln(safe_cast(int, max(uint(16))));
-writeln(safe_cast(int, max(uint(32))));
-writeln(safe_cast(int, max(int):uint));
-writeln(safe_cast(int, max(uint(64))));
+writeln(max(uint(8)).safeCast(int));
+writeln(max(uint(16)).safeCast(int));
+writeln(max(uint(32)).safeCast(int));
+writeln((max(int):uint).safeCast(int));
+writeln(max(uint(64)).safeCast(int));
