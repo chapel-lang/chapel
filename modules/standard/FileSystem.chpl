@@ -120,8 +120,9 @@ proc chown(name: string, uid: int, gid: int) {
    err: a syserr used to indicate if an error occurred
    src: the source file whose contents and permissions are to be copied
    dest: the destination file for the contents and permissions.
-   metadata: a boolean indicating whether to copy metadata associated with the
-             source file.
+   metadata: a boolean indicating whether to copy metadata (uid, gid, time of
+             last access and time of modification) associated with the source
+             file.
 */
 proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
   var destFile = dest;
@@ -150,6 +151,7 @@ proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
     extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): syserr;
 
     // Copies the access time, and time of last modification.
+    // Does not copy uid, gid, or mode
     err = chpl_fs_copy_metadata(src.c_str(), dest.c_str());
 
     // Get uid and gid from src
@@ -163,13 +165,14 @@ proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
 }
 
 /* Copies the contents and permissions of the file indicated by src into
-   the file or directory dest.  If dest is a directory, will generate an error
+   the file or directory dest.  If dest is a directory, will halt with an error
    message.  If metadata is set to true, will also copy the metadata of the
-   file to be copied.  May generate other error messages.
+   file to be copied.  May halt with other error messages.
    src: the source file whose contents and permissions are to be copied
    dest: the destination file for the contents and permissions.
-   metadata: a boolean indicating whether to copy metadata associated with the
-             source file.
+   metadata: a boolean indicating whether to copy metadata (uid, gid, time of
+             last access and time of modification) associated with the source
+             file.
 */
 proc copy(src: string, dest: string, metadata: bool = false) {
   var err: syserr = ENOERR;
@@ -224,13 +227,18 @@ proc copyFile(out err: syserr, src: string, dest: string) {
     // Open src for reading, open dest for writing
     var srcFile = open(src, iomode.r);
     var destFile = open(dest, iomode.cw);
-    var srcChnl = srcFile.reader();
-    var destChnl = destFile.writer();
+    var srcChnl = srcFile.reader(kind=ionative, locking=false);
+    var destChnl = destFile.writer(kind=ionative, locking=false);
     // read in, write out.
-    var line: string;
-    while (srcChnl.readline(line)) {
-      destChnl.write(line);
+    var line: [0..1023] uint(8);
+    var numRead: int = 0;
+    while (srcChnl.readline(line, numRead=numRead, error=err)) {
+      destChnl.write(line[0..#numRead]);
+      if numRead != line.size {
+        break;
+      }
     }
+    if err == EEOF then err = ENOERR;
     destChnl.flush();
 
     srcFile.close();
@@ -240,8 +248,8 @@ proc copyFile(out err: syserr, src: string, dest: string) {
 
 /* Copies the contents of the file indicated by src into the file indicated
    by dest, replacing dest if it already exists (and is different than src).
-   If the dest is not writable or src and dest are the same file, generates
-   an error.  Does not copy metadata.  May generate an error message.
+   If the dest is not writable or src and dest are the same file, halts with
+   an error.  Does not copy metadata.  May halt with an error message.
    src: the source file whose contents are to be copied.
    dest: the destination of the contents.
 */
@@ -269,8 +277,8 @@ proc copyMode(out err: syserr, src: string, dest: string) {
 }
 
 /* Copies the permissions of the file indicated by src to the file indicated
-   by dest, leaving contents, owner and group unaffected.  May generate an error
-   message.
+   by dest, leaving contents, owner and group unaffected.  May halt with an
+   error message.
    src: the source file whose permissions are to be copied.
    dest: the destination of the permissions.
 */
