@@ -65,7 +65,7 @@
 module FFTW {
 
   use SysCTypes;
-  use "fftw3.h";
+  use "fftw3.h", "-lfftw3";
 
 
   // Define the various planner flags

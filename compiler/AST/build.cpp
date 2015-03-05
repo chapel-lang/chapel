@@ -372,10 +372,23 @@ static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
 static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
   if (SymExpr* se = toSymExpr(module)) {
     if (VarSymbol* var = toVarSymbol(se->var)) {
+      //
+      // If we're 'use'ing a literal string...
+      //
       if (var->isImmediate()) {
         Immediate* imm = var->immediate;
         if (imm->const_kind == CONST_KIND_STRING) {
-          testInputFile(imm->v_string);
+          //
+          // And it starts with -l, treat it as a library specifier
+          //
+          if (strncmp(imm->v_string, "-l", 2) == 0) {
+            addLibInfo(astr(imm->v_string));
+          } else {
+            //
+            // otherwise, treat it as an input file
+            //
+            testInputFile(imm->v_string);
+          }
           return list;
         }
       }
