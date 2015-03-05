@@ -46,7 +46,9 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
   // since we don't want to require src/dst to have a particular alignment.
 
   // Next, get the data itself.
-  chpl_gen_comm_get( ret->data, src_locale, src_data, sizeof(uint8_t), CHPL_TYPE_uint8_t, src_len, -1, "<internal>");
+  if( src_data ) {
+    chpl_gen_comm_get( ret->data, src_locale, src_data, sizeof(uint8_t), CHPL_TYPE_uint8_t, src_len, -1, "<internal>");
+  }
 
   // Great! All done.
   return ret; 

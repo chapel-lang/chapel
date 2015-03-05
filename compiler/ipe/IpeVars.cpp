@@ -229,7 +229,7 @@ void IpeVars::describe(IpeVars* env, int offset)
           typeName = sSymbols[i]->type->symbol->name;
 
         if (sym->immediate != 0)
-          printf("%s   %3d: imm   (%s)", pad, i, typeName);
+          printf("%s   %3d: const (%s)", pad, i, typeName);
 
         else if (sym->hasFlag(FLAG_CONST))
           printf("%s   %3d: const (%s)", pad, i, typeName);
@@ -248,45 +248,30 @@ void IpeVars::describe(IpeVars* env, int offset)
             fputc(' ', stdout);
         }
 
-        fputs("   ",   stdout);
+        printf("        %4d %-24s ", sym->offset(), symName);
 
-        if (sym->immediate == 0)
+        if (sSymbols[i]->type == dtInt[INT_SIZE_64])
         {
-          printf("%4d ", sym->offset());
+          int* ptr = (int*) (((char*) sRootData) + sym->offset());
 
-          fputs("     ", stdout);
-          printf("%-24s ", symName);
-
-          if (sSymbols[i]->type == dtInt[INT_SIZE_64])
-          {
-            int* ptr = (int*) (((char*) sRootData) + sym->offset());
-
-            printf("%6d", *ptr);
-          }
-
-          else if (sSymbols[i]->type == dtReal[FLOAT_SIZE_64])
-          {
-            double* ptr = (double*) (((char*) sRootData) + sym->offset());
-
-            printf("%9.2f", *ptr);
-          }
-
-          else if (sSymbols[i]->type == dtBools[BOOL_SIZE_SYS])
-          {
-            int* ptr = (int*) (((char*) sRootData) + sym->offset());
-
-            printf(" %s", (*ptr == 1) ? " true" : "false");
-          }
-
-          fputc('\n',    stdout);
+          printf("%6d", *ptr);
         }
-        else
+
+        else if (sSymbols[i]->type == dtReal[FLOAT_SIZE_64])
         {
-          fputs(pad, stdout);
-          fputs("       ", stdout);
-          fputs(symName, stdout);
-          fputc('\n',    stdout);
+          double* ptr = (double*) (((char*) sRootData) + sym->offset());
+
+          printf("%9.2f", *ptr);
         }
+
+        else if (sSymbols[i]->type == dtBools[BOOL_SIZE_SYS])
+        {
+          int* ptr = (int*) (((char*) sRootData) + sym->offset());
+
+          printf(" %s", (*ptr == 1) ? " true" : "false");
+        }
+
+        fputc('\n',    stdout);
       }
 
       else if (isFnSymbol(sSymbols[i]) == true)

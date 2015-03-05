@@ -121,20 +121,3 @@ var parallelSeededUnsafe = new RandomStream(seed, false);
 // Commented out for deterministic testing output.
 //writeln(parallelUnsafe.getNext());
 //writeln(parallelSeededUnsafe.getNext());
-
-
-//
-// It can also be changed on a case by case basis.
-//
-var unsafeNext: real;
-var unsafeNth: real;
-cobegin with (ref unsafeNext, ref unsafeNth) {
-  // These operations can occur in part or in full in any order;
-  // it is unpredictable what value unsafeNext will hold.
-  unsafeNext = randStreamSeeded.getNext(false);
-  randStreamSeeded.skipToNth(8, false);
-  unsafeNth = randStreamSeeded.getNth(1, false);
-}
-// Commented out for deterministic testing output.
-//writeln(unsafeNext);
-//writeln(unsafeNth);

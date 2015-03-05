@@ -234,6 +234,10 @@ Push your changes to your feature branch on GitHub
 
     git push origin <branch_name>
 
+    # or if you don't like typing your complicated branch name,
+    # you can use this command to push the current branch:
+    git push origin HEAD
+
     # if you forgot your branch name, you can get it by running
     git branch
 

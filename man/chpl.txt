@@ -120,6 +120,8 @@ OPTIONS
                     currently a rather conservative pass in the sense that 
                     it may not identify all code that is truly invariant.
 
+  --[no-]ignore-local-classes   Disable [enable] local classes
+
   --[no-]inline     Enable [disable] function inlining.
 
   --[no-]inline-iterators   Enable [disable] iterator inlining. When
@@ -198,7 +200,7 @@ OPTIONS
   --[no-]stack-checks   Enable [disable] run-time checking for stack
                     overflow.
 
-  --[no-]cast-checks   Enable [disable] run-time checks in safe_cast calls for
+  --[no-]cast-checks   Enable [disable] run-time checks in safeCast calls for
                     casts that wouldn't preserve the logical value being cast.
 
   C Code Generation Options

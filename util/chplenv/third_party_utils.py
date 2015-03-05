@@ -16,7 +16,7 @@ def default_uniq_cfg_path():
     return '{0}-{1}-{2}'.format(chpl_platform.get('target'),
                                 chpl_compiler.get('target'),
                                 chpl_arch.get('target', map_to_compiler=True,
-                                              get_lcd=False))
+                                              get_lcd=utils.using_chapel_module()))
 
 #
 # Return libraries and other options mentioned in the old_library and

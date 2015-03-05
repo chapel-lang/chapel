@@ -149,6 +149,7 @@ int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
+bool fIgnoreLocalClasses = false;
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
 bool fieeefloat = true;
 bool report_inlining = false;
@@ -589,6 +590,7 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoChecks = true;
   fNoBoundsChecks = true;
   fNoLocalChecks = true;
+  fIgnoreLocalClasses = false;
   fNoNilChecks = true;
   fNoStackChecks = true;
   fNoCastChecks = true;
@@ -616,6 +618,7 @@ static void setBaselineFlag(const ArgumentState* state, const char* unused) {
   fNoTupleCopyOpt = true;
   fNoPrivatization = true;
   fNoOptimizeOnClauses = true;
+  fIgnoreLocalClasses = true;
   fConditionalDynamicDispatchLimit = 0;
 }
 
@@ -704,6 +707,7 @@ static ArgumentDescription arg_desc[] = {
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
+ {"ignore-local-classes", ' ', NULL, "Disable [enable] local classes", "N", &fIgnoreLocalClasses, NULL, NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
@@ -725,7 +729,7 @@ static ArgumentDescription arg_desc[] = {
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},
- {"cast-checks", ' ', NULL, "Enable [disable] checks in safe_cast calls", "n", &fNoCastChecks, NULL, NULL},
+ {"cast-checks", ' ', NULL, "Enable [disable] checks in safeCast calls", "n", &fNoCastChecks, NULL, NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},

@@ -117,6 +117,7 @@ extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fGenIDS;
 extern bool fLocal;
+extern bool fIgnoreLocalClasses;
 extern bool fHeterogeneous;
 extern bool fieeefloat;
 extern int  fMaxCIdentLen;

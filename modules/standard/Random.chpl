@@ -86,8 +86,6 @@ module Random {
 
   /* Internal TODOs for developers:
 
-     - is the parSafe on each of the three main calls overkill?
-
      - should RandomStream be parameterized by the type to return?
        it seems odd that currently getNext() and getNth() return
        reals always...
@@ -210,41 +208,46 @@ class RandomStream {
     RandomStreamPrivate_init(seed);
   }
 
+  pragma "no doc"
+  proc RandomStreamPrivate_getNext_noLock() {
+    RandomStreamPrivate_count += 1;
+    return RandomPrivate_randlc(RandomStreamPrivate_cursor);
+  }
+
   /*
     Returns the next value in the random stream as a `real(64)`
 
-    :arg parSafe: Permits :param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :param:`this.parSafe <RandomStream.parSafe>`.
-    :type parSafe: bool
-
     :returns: The next value in the random stream as a `real(64)`.
    */
-  proc getNext(param parSafe: bool = this.parSafe): real(64) {
+  proc getNext(): real(64) {
     if parSafe then
       RandomStreamPrivate_lock$ = true;
-    RandomStreamPrivate_count += 1;
-    const result = RandomPrivate_randlc(RandomStreamPrivate_cursor);
+    const result = RandomStreamPrivate_getNext_noLock();
     if parSafe then
       RandomStreamPrivate_lock$;
     return result;
   }
+
+  pragma "no doc"
+  proc RandomStreamPrivate_skipToNth_noLock(n: integral) {
+    RandomStreamPrivate_count = n;
+    RandomStreamPrivate_cursor = RandomPrivate_randlc_skipto(seed, n);
+  }
+
 
   /*
     Advances/rewinds the stream to the `n`-th value in the sequence.
 
     :arg n: The position in the stream to skip to.  Must be non-negative.
     :type n: integral
-
-    :arg parSafe: Permits :param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :param:`this.parSafe <RandomStream.parSafe>`.
-    :type parSafe: bool
    */
 
-  proc skipToNth(n: integral, param parSafe: bool = this.parSafe) {
+  proc skipToNth(n: integral) {
     if n <= 0 then
       halt("RandomStream.skipToNth(n) called with non-positive 'n' value", n);
     if parSafe then
       RandomStreamPrivate_lock$ = true;
-    RandomStreamPrivate_count = n;
-    RandomStreamPrivate_cursor = RandomPrivate_randlc_skipto(seed, n);
+    RandomStreamPrivate_skipToNth_noLock(n);
     if parSafe then
       RandomStreamPrivate_lock$;
   }
@@ -257,19 +260,16 @@ class RandomStream {
     :arg n: The position in the stream to skip to.  Must be non-negative.
     :type n: integral
 
-    :arg parSafe: Permits :param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :param:`this.parSafe <RandomStream.parSafe>`.
-    :type parSafe: bool
-
     :returns: The `n`-th value in the random stream as a `real(64)`.
   */
 
-  proc getNth(n: integral, param parSafe: bool = this.parSafe): real(64) {
+  proc getNth(n: integral): real(64) {
     if (n <= 0) then 
       halt("RandomStream.getNth(n) called with non-positive 'n' value", n);
     if parSafe then
       RandomStreamPrivate_lock$ = true;
-    skipToNth(n, parSafe=false);
-    const result = getNext(parSafe=false);
+    RandomStreamPrivate_skipToNth_noLock(n);
+    const result = RandomStreamPrivate_getNext_noLock();
     if parSafe then
       RandomStreamPrivate_lock$;
     return result;
@@ -284,20 +284,17 @@ class RandomStream {
 
     :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128).
     :type arr: [] T
-
-    :arg parSafe: Permits :param:`RandomStream.parSafe` to be overridden for this call.  Defaults to :param:`this.parSafe <RandomStream.parSafe>`.
-    :type parSafe: bool
   */
 
-  proc fillRandom(arr: [], param parSafe: bool = this.parSafe) {
+  proc fillRandom(arr: []) {
     if arr.eltType != complex && arr.eltType != real && arr.eltType != imag then
       compilerError("RandomStream.fillRandom is only defined for real(64), imag(64), and complex(128) arrays");
-    forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType, parSafe)) do
+    forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
       x = r;
   }
 
   pragma "no doc"
-  proc iterate(D: domain, type resultType=real, param parSafe: bool = this.parSafe) {
+  proc iterate(D: domain, type resultType=real) {
     if resultType != complex && resultType != real && resultType != imag then
       compilerError("RandomStream.iterate is only defined for real(64), imag(64), and complex(128) result types");
     param cplxMultiplier = if resultType == complex then 2 else 1;
@@ -306,7 +303,7 @@ class RandomStream {
     const start = RandomStreamPrivate_count;
     // NOTE: Not bothering to check to see if D.numIndices can fit into int(64)
     RandomStreamPrivate_count += cplxMultiplier * D.numIndices:int(64);
-    skipToNth(RandomStreamPrivate_count, parSafe=false);
+    RandomStreamPrivate_skipToNth_noLock(RandomStreamPrivate_count);
     if parSafe then
       RandomStreamPrivate_lock$;
     return RandomPrivate_iterate(resultType, D, seed, start);
