@@ -301,8 +301,8 @@ type mismatches in generated C code (2015-03-05, ben)
 [Error matching compiler output for classes/bradc/arrayInClass/genericArrayInClass-arith]
 [Error matching compiler output for classes/bradc/arrayInClass/genericArrayInClass-otharrs (compopts: 1)]
 
-we're leaking more memory than we did before (2015-03-05, ben/hilde?)
----------------------------------------------------------------------
+we're leaking more memory than we did before (2015-03-05, ben)
+--------------------------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
 
 gets wrong output (2015-03-03, gbt)
@@ -322,8 +322,8 @@ Inherits 'general'
 Reviewed 2015-03-02
 ===================
 
-more memory leaks than expected (2015-03-05, ben/hilde?)
---------------------------------------------------------
+more memory leaks than expected (2015-03-05, ben)
+-------------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
 
 
@@ -339,6 +339,10 @@ gasnet*
 Inherits 'no-local'
 Reviewed 2015-03-01
 ===================
+
+fast forks became normal forks with no-local improvements (2015-03-05, ben)
+---------------------------------------------------------------------------
+[Error matching program output for modules/sungeun/init/printInitCommCounts (compopts: 1)]
 
 === sporadic failures below ===
 
@@ -384,10 +388,6 @@ gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
 Reviewed 2015-03-01
 =============================
-
-number of initial comm counts went up (2015-03-05, ???)
--------------------------------------------------------
-[Error matching program output for modules/sungeun/init/printInitCommCounts (compopts: 1)]
 
 === sporadic failures below ===
 
@@ -452,6 +452,12 @@ xe-wb.*
 Inherits 'x?-wb.*'
 Reviewed 2015-03-01
 ===================
+
+=== sporadic failures below ===
+
+sporadic compilation timeouts
+-----------------------------
+[Error: Timed out compilation for arrays/bradc/localSlices/localsliceOOB2] (2015-03-05)
 
 
 =======================
@@ -603,6 +609,9 @@ new test times out (2015-03-03, vass)
 -------------------------------------
 [Error: Timed out executing program parallel/forall/vass/ri-3-stress (compopts: 1)]
 
+missing docs/chpldoc.txt output (2015-03-05, tvandoren)
+-------------------------------------------------------
+[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)]
 
 ============================
 x?-wb.host.prgenv-cray
@@ -615,6 +624,8 @@ Reviewed 2015-03-01
 sporadic unresolved call on ||(0,0) in Types.chpl and related errors (bradc)
 ----------------------------------------------------------------------------
 All tests fail to compile. (2015-02-15..2015-02-16, 2015-02-19)
+
+
 
 
 ===================
@@ -929,8 +940,8 @@ Inherits 'cygwin*' and '*32'
 Reviewed 2015-03-01
 ===========================
 
-Compiler segfault (2015-02-22, lydia)
--------------------------------------
+Compiler segfault (2015-02-22, mike)
+------------------------------------
 [Error matching compiler output for chpldoc/compflags/comment/loseComments (compopts: 1)]
 
 "got == expect[i]" assertion error
