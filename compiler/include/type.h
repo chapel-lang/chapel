@@ -190,6 +190,11 @@ class PrimitiveType : public Type {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
   int codegenStructure(FILE* outfile, const char* baseoffset);
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
 };
 
 

@@ -2102,7 +2102,13 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
       if (!de->init) {
         Symbol* vs = de->sym;
         PrimitiveType* pt = new PrimitiveType(NULL);
-        DefExpr* newde = new DefExpr(new TypeSymbol(vs->name, pt));
+
+        TypeSymbol* ts = new TypeSymbol(vs->name, pt);
+        if (VarSymbol* theVs = toVarSymbol(vs)) {
+          ts->doc = theVs->doc;
+        }
+        DefExpr* newde = new DefExpr(ts);
+
         de->replace(newde);
         de = newde;
       }

@@ -108,7 +108,7 @@ module FFTW {
     :type nthreads: int
    */
   proc plan_with_nthreads(nthreads: int) {
-    C_FFTW.fftw_plan_with_nthreads(safe_cast(c_int, nthreads));
+    C_FFTW.fftw_plan_with_nthreads(nthreads.safeCast(c_int));
   }
 
 
@@ -147,9 +147,9 @@ module FFTW {
 
     var dims: rank*c_int;
     for param i in 1..rank do
-      dims(i) = safe_cast(c_int, input.domain.dim(i).size);
+      dims(i) = input.domain.dim(i).size.safeCast(c_int);
 
-    return C_FFTW.fftw_plan_dft(safe_cast(c_int, rank), dims, input, 
+    return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, input, 
                                      output, sign, flags);
   }
 
