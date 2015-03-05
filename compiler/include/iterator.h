@@ -20,8 +20,8 @@
 #ifndef _ITERATOR_H_
 #define _ITERATOR_H_
 #include "vec.h"
-#include "baseAST.h"
 
+class BaseAST;
 class AggregateType;
 class FnSymbol;
 class CallExpr;
