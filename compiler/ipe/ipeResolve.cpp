@@ -73,8 +73,10 @@ Expr* ipeResolve(Expr* expr, IpeScope* scope, IpeVars* vars)
     scope->describe(3);
     printf("\n\n");
 
+#if 0
     IpeVars::describe(vars, 3);
     printf("\n\n");
+#endif
   }
 
   if (false)
@@ -171,8 +173,10 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
     scope->describe(3);
     printf("\n\n");
 
+#if 0
     IpeVars::describe(vars, 3);
     printf("\n\n");
+#endif
   }
 
   if      (TypeSymbol*   sel    = toTypeSymbol(defExpr->sym))
@@ -607,7 +611,24 @@ static Expr* selectFunc(UnresolvedSymExpr*  funName,
     }
   }
 
-  INT_ASSERT(varProcedure != 0);
+  if (varProcedure == 0)
+  {
+    AstDumpToNode logger(stdout, 3);
+
+    printf("selectFunc: Failed to find an exact match\n");
+    printf("   ");
+    funName->accept(&logger);
+    printf("\n\n");
+
+    for (size_t i = 0; i < actualTypes.size(); i++)
+    {
+      printf("   ");
+      actualTypes[i]->accept(&logger);
+      printf("\n");
+    }
+
+    INT_ASSERT(false);
+  }
 
   retval = new SymExpr(varProcedure);
 
