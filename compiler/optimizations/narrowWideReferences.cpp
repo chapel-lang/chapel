@@ -1201,6 +1201,10 @@ static void pruneWidenMap(SymExprTypeMap& widenMap)
   // Prune the map of expressions to widen because of arguments that
   // have been narrowed.
   //
+  // For every narrow ArgSymbol, use corresponding actuals as keys
+  // to set the value to null in the widenMap. If the value is null,
+  // a wide temporary will not be made for the actual.
+  //
   form_Map(WideInfoMapElem, e, *wideInfoMap) {
     WideInfo* wi = e->value;
     if (!wi->mustBeWide) {
@@ -1215,6 +1219,13 @@ static void pruneWidenMap(SymExprTypeMap& widenMap)
       }
     }
   }
+
+
+  //
+  // For every SymExpr remaining in the widenMap that is used
+  // in PRIM_SET_MEMBER, set the value to null if the member
+  // is narrow.
+  //
   form_Map(SymExprTypeMapElem, e, widenMap) {
     SymExpr* key = e->key;
     Type* value = e->value;
