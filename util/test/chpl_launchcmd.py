@@ -284,8 +284,6 @@ class AbstractJob(object):
             status = job_status(job_id, output_file)
             while status != 'C':
                 if not alreadyRunning and status == 'R':
-                    # It would be great, at this point, to have 'start_test'
-                    # print a message "execution started". Unclear how to.
                     alreadyRunning = True
                     exec_start_time = time.time()
                 time.sleep(.5)
