@@ -1,5 +1,0 @@
-Module: empty
-   proc noComment()
-   proc noBody()
-   proc noBodyButArgs(num: int(64), bleah: bool)
-   proc noCommentButArgs(num: real(64), fleas: bool)

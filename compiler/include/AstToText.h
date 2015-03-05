@@ -125,21 +125,27 @@ private:
   //
   // Formatting the expressions found in formals (skeleton)
   //
-  void                   appendExpr(Expr*              expr);
+  void                   appendExpr(Expr*              expr,
+                                    bool               printingType);
 
   void                   appendExpr(UnresolvedSymExpr* expr);
 
   void                   appendExpr(SymExpr*           expr,
+                                    bool               printingType,
                                     bool               quoteStrings);
 
-  void                   appendExpr(CallExpr*          expr);
+  void                   appendExpr(CallExpr*          expr,
+                                    bool               printingType);
 
   void                   appendExpr(CallExpr*          expr,
-                                    const char*        fnName);
+                                    const char*        fnName,
+                                    bool               printingType);
 
-  void                   appendExpr(DefExpr*           expr);
+  void                   appendExpr(DefExpr*           expr,
+                                    bool               printingType);
 
-  void                   appendExpr(NamedExpr*         expr);
+  void                   appendExpr(NamedExpr*         expr,
+                                    bool               printingType);
 
   void                   appendExpr(const char*        name);
 

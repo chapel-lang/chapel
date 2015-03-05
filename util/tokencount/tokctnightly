@@ -4,7 +4,7 @@ use Cwd 'abs_path';
 use File::Basename;
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
 $replymail = "chapel-developers\@lists.sourceforge.net";
 
 $printusage = 0;

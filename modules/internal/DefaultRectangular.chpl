@@ -317,13 +317,13 @@ module DefaultRectangular {
           const rStride = ranges(i).stride:strType,
                 fStride = followThis(i).stride:strType;
           if ranges(i).stride > 0 {
-            const low = ranges(i).low + followThis(i).low*rStride,
-                  high = ranges(i).low + followThis(i).high*rStride,
+            const low = ranges(i).alignedLow + followThis(i).low*rStride,
+                  high = ranges(i).alignedLow + followThis(i).high*rStride,
                   stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           } else {
-            const low = ranges(i).high + followThis(i).high*rStride,
-                  high = ranges(i).high + followThis(i).low*rStride,
+            const low = ranges(i).alignedHigh + followThis(i).high*rStride,
+                  high = ranges(i).alignedHigh + followThis(i).low*rStride,
                   stride = (rStride * fStride):idxType;
             block(i) = low..high by stride;
           }
@@ -534,7 +534,9 @@ module DefaultRectangular {
     var str: rank*chpl__signedType(idxType);
     var origin: idxType;
     var factoredOffs: idxType;
+    pragma "local field"
     var data : _ddata(eltType);
+    pragma "local field"
     var shiftedData : _ddata(eltType);
     var noinit_data: bool = false;
     //var numelm: int = -1; // for correctness checking
@@ -764,7 +766,11 @@ module DefaultRectangular {
     }
   
     proc dsiReindex(d: DefaultRectangularDom) {
-      var alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
+      var alias : DefaultRectangularArr(eltType=eltType, rank=d.rank,
+                                        idxType=d.idxType,
+                                        stridable=d.stridable);
+      on this {
+      alias = new DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                            idxType=d.idxType,
                                            stridable=d.stridable,
                                            dom=d, noinit_data=true,
@@ -777,6 +783,7 @@ module DefaultRectangular {
       alias.origin = origin:d.idxType;
       alias.computeFactoredOffs();
       alias.initShiftedData();
+      }
       return alias;
     }
     
@@ -800,32 +807,41 @@ module DefaultRectangular {
     }
   
     proc dsiSlice(d: DefaultRectangularDom) {
-      var alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
-                                           idxType=idxType,
-                                           stridable=d.stridable,
-                                           dom=d, noinit_data=true);
-      alias.data = data;
-      //alias.numelm = numelm;
-      alias.blk = blk;
-      alias.str = str;
-      alias.origin = origin;
-      for param i in 1..rank {
-        alias.off(i) = d.dsiDim(i).low;
-        // NOTE: Not bothering to check to see if the abs(..) expression
-        //  can fit into idxType
-        if str(i) > 0 {
-          alias.origin += blk(i) * (d.dsiDim(i).low - off(i)) / str(i):idxType;
-        } else {
-          alias.origin -= blk(i) * (d.dsiDim(i).low - off(i)) / abs(str(i)):idxType;
+      var alias : DefaultRectangularArr(eltType=eltType, rank=rank,
+                                        idxType=idxType,
+                                        stridable=d.stridable);
+      on this {
+        alias = new DefaultRectangularArr(eltType=eltType, rank=rank,
+                                             idxType=idxType,
+                                             stridable=d.stridable,
+                                             dom=d, noinit_data=true);
+        alias.data = data;
+        //alias.numelm = numelm;
+        alias.blk = blk;
+        alias.str = str;
+        alias.origin = origin;
+        for param i in 1..rank {
+          alias.off(i) = d.dsiDim(i).low;
+          // NOTE: Not bothering to check to see if the abs(..) expression
+          //  can fit into idxType
+          if str(i) > 0 {
+            alias.origin += blk(i) * (d.dsiDim(i).low - off(i)) / str(i):idxType;
+          } else {
+            alias.origin -= blk(i) * (d.dsiDim(i).low - off(i)) / abs(str(i)):idxType;
+          }
         }
+        alias.computeFactoredOffs();
+        alias.initShiftedData();
       }
-      alias.computeFactoredOffs();
-      alias.initShiftedData();
       return alias;
     }
   
     proc dsiRankChange(d, param newRank: int, param newStridable: bool, args) {
-      var alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
+      var alias : DefaultRectangularArr(eltType=eltType, rank=newRank,
+                                        idxType=idxType,
+                                        stridable=newStridable);
+      on this {
+      alias = new DefaultRectangularArr(eltType=eltType, rank=newRank,
                                            idxType=idxType,
                                            stridable=newStridable,
                                            dom=d, noinit_data=true);
@@ -846,11 +862,13 @@ module DefaultRectangular {
       }
       alias.computeFactoredOffs();
       alias.initShiftedData();
+      }
       return alias;
     }
   
     proc dsiReallocate(d: domain) {
       if (d._value.type == dom.type) {
+        on this {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
@@ -872,6 +890,7 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
         //numelm = copy.numelm;
         delete copy;
+        }
       } else {
         halt("illegal reallocation");
       }
@@ -1057,11 +1076,13 @@ module DefaultRectangular {
         writeln("\tlocal get() from ", B._value.locale.id);
       const dest = this.theData;
       const src = B._value.theData;
-      __primitive("chpl_comm_get",
+      if dest != src {
+        __primitive("chpl_comm_get",
                   __primitive("array_get", dest, getDataIndex(Alo)),
                   B._value.data.locale.id,
                   __primitive("array_get", src, B._value.getDataIndex(Blo)),
                   len);
+      }
     } else if B._value.data.locale.id==here.id {
       if debugDefaultDistBulkTransfer then
         writeln("\tlocal put() to ", this.locale.id);

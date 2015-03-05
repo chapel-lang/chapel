@@ -17,13 +17,35 @@
  * limitations under the License.
  */
 
+%option outfile="flex-chapel.cpp"
+%option header-file="../include/flex-chapel.h"
+
 %option noyywrap
 %option nounput
 
+/* These options create a re-entrant scanner that returns
+     an integer to indicate the token type
+     a  bison-style YYSTYPE by reference. The value will always be in yylval->pch.
+     a  bison-style YYLTYPE by reference.
+
+     i.e. int yylex(YYSTYPE*, YYLTYPE*, yyscan_t yyscanner);
+*/
+
+%option reentrant
+%option bison-bridge
+%option bison-locations
+
+/*
+   Provide a condition stack
+   This is used to alter the handling of "{" when it appears immediately after "extern"
+*/
+
+%option stack
+
 %{
 
-#include "yy.h"
-#include "chapel.tab.h"
+#include "bison-chapel.h"
+#include "parser.h"
 
 #include <cstdio>
 
@@ -38,17 +60,20 @@
 // And redefine it to call our exit routine:
 #define exit(x) clean_exit(x)
 
-static int  processToken(int t);
-static int  processStringLiteral(const char* q);
-static int  processExtern();
-static int  processExternCode();
+static int  processIdentifier(yyscan_t scanner);
+static int  processToken(yyscan_t scanner, int t);
+static int  processStringLiteral(yyscan_t scanner, const char* q);
+static int  processExtern(yyscan_t scanner);
+static int  processExternCode(yyscan_t scanner);
 
-static void processWhitespace(const char* tabOrSpace);
+static void processWhitespace(yyscan_t scanner);
 
-static void processSingleLineComment();
-static void processMultiLineComment();
+static int  processSingleLineComment(yyscan_t scanner);
+static int  processBlockComment(yyscan_t scanner);
 
-static void processInvalidToken();
+static void processInvalidToken(yyscan_t scanner);
+
+static bool yy_has_state(yyscan_t scanner);
 
 %}
 
@@ -76,159 +101,156 @@ floatLiteral     {floatLiteral1}|{floatLiteral2}|{floatLiteral3}
 
 %%
 
-align            return processToken(TALIGN);
-atomic           return processToken(TATOMIC);
-begin            return processToken(TBEGIN);
-break            return processToken(TBREAK);
-by               return processToken(TBY);
-class            return processToken(TCLASS);
-cobegin          return processToken(TCOBEGIN);
-coforall         return processToken(TCOFORALL);
-config           return processToken(TCONFIG);
-const            return processToken(TCONST);
-continue         return processToken(TCONTINUE);
-delete           return processToken(TDELETE);
-dmapped          return processToken(TDMAPPED);
-do               return processToken(TDO);
-domain           return processToken(TDOMAIN);
-else             return processToken(TELSE);
-enum             return processToken(TENUM);
-export           return processToken(TEXPORT);
-extern           return processExtern();
-for              return processToken(TFOR);
-forall           return processToken(TFORALL);
-if               return processToken(TIF);
-in               return processToken(TIN);
-index            return processToken(TINDEX);
-inline           return processToken(TINLINE);
-inout            return processToken(TINOUT);
-iter             return processToken(TITER);
-label            return processToken(TLABEL);
-lambda           return processToken(TLAMBDA);
-let              return processToken(TLET);
-local            return processToken(TLOCAL);
-module           return processToken(TMODULE);
-new              return processToken(TNEW);
-nil              return processToken(TNIL);
-noinit           return processToken(TNOINIT);
-on               return processToken(TON);
-otherwise        return processToken(TOTHERWISE);
-out              return processToken(TOUT);
-param            return processToken(TPARAM);
-zip              return processToken(TZIP);
-pragma           return processToken(TPRAGMA);
-__primitive      return processToken(TPRIMITIVE);
-proc             return processToken(TPROC);
-record           return processToken(TRECORD);
-reduce           return processToken(TREDUCE);
-ref              return processToken(TREF);
-return           return processToken(TRETURN);
-scan             return processToken(TSCAN);
-select           return processToken(TSELECT);
-serial           return processToken(TSERIAL);
-single           return processToken(TSINGLE);
-sparse           return processToken(TSPARSE);
-subdomain        return processToken(TSUBDOMAIN);
-sync             return processToken(TSYNC);
-then             return processToken(TTHEN);
-type             return processToken(TTYPE);
-union            return processToken(TUNION);
-use              return processToken(TUSE);
-var              return processToken(TVAR);
-when             return processToken(TWHEN);
-where            return processToken(TWHERE);
-while            return processToken(TWHILE);
-with             return processToken(TWITH);
-yield            return processToken(TYIELD);
+align            return processToken(yyscanner, TALIGN);
+atomic           return processToken(yyscanner, TATOMIC);
+begin            return processToken(yyscanner, TBEGIN);
+break            return processToken(yyscanner, TBREAK);
+by               return processToken(yyscanner, TBY);
+class            return processToken(yyscanner, TCLASS);
+cobegin          return processToken(yyscanner, TCOBEGIN);
+coforall         return processToken(yyscanner, TCOFORALL);
+config           return processToken(yyscanner, TCONFIG);
+const            return processToken(yyscanner, TCONST);
+continue         return processToken(yyscanner, TCONTINUE);
+delete           return processToken(yyscanner, TDELETE);
+dmapped          return processToken(yyscanner, TDMAPPED);
+do               return processToken(yyscanner, TDO);
+domain           return processToken(yyscanner, TDOMAIN);
+else             return processToken(yyscanner, TELSE);
+enum             return processToken(yyscanner, TENUM);
+export           return processToken(yyscanner, TEXPORT);
+extern           return processExtern(yyscanner);
+for              return processToken(yyscanner, TFOR);
+forall           return processToken(yyscanner, TFORALL);
+if               return processToken(yyscanner, TIF);
+in               return processToken(yyscanner, TIN);
+index            return processToken(yyscanner, TINDEX);
+inline           return processToken(yyscanner, TINLINE);
+inout            return processToken(yyscanner, TINOUT);
+iter             return processToken(yyscanner, TITER);
+label            return processToken(yyscanner, TLABEL);
+lambda           return processToken(yyscanner, TLAMBDA);
+let              return processToken(yyscanner, TLET);
+local            return processToken(yyscanner, TLOCAL);
+module           return processToken(yyscanner, TMODULE);
+new              return processToken(yyscanner, TNEW);
+nil              return processToken(yyscanner, TNIL);
+noinit           return processToken(yyscanner, TNOINIT);
+on               return processToken(yyscanner, TON);
+otherwise        return processToken(yyscanner, TOTHERWISE);
+out              return processToken(yyscanner, TOUT);
+param            return processToken(yyscanner, TPARAM);
+zip              return processToken(yyscanner, TZIP);
+pragma           return processToken(yyscanner, TPRAGMA);
+__primitive      return processToken(yyscanner, TPRIMITIVE);
+proc             return processToken(yyscanner, TPROC);
+record           return processToken(yyscanner, TRECORD);
+reduce           return processToken(yyscanner, TREDUCE);
+ref              return processToken(yyscanner, TREF);
+return           return processToken(yyscanner, TRETURN);
+scan             return processToken(yyscanner, TSCAN);
+select           return processToken(yyscanner, TSELECT);
+serial           return processToken(yyscanner, TSERIAL);
+single           return processToken(yyscanner, TSINGLE);
+sparse           return processToken(yyscanner, TSPARSE);
+subdomain        return processToken(yyscanner, TSUBDOMAIN);
+sync             return processToken(yyscanner, TSYNC);
+then             return processToken(yyscanner, TTHEN);
+type             return processToken(yyscanner, TTYPE);
+union            return processToken(yyscanner, TUNION);
+use              return processToken(yyscanner, TUSE);
+var              return processToken(yyscanner, TVAR);
+when             return processToken(yyscanner, TWHEN);
+where            return processToken(yyscanner, TWHERE);
+while            return processToken(yyscanner, TWHILE);
+with             return processToken(yyscanner, TWITH);
+yield            return processToken(yyscanner, TYIELD);
 
-"_"              return processToken(TUNDERSCORE);
+"_"              return processToken(yyscanner, TUNDERSCORE);
 
-"="              return processToken(TASSIGN);
-"+="             return processToken(TASSIGNPLUS);
-"-="             return processToken(TASSIGNMINUS);
-"*="             return processToken(TASSIGNMULTIPLY);
-"/="             return processToken(TASSIGNDIVIDE);
-"**="            return processToken(TASSIGNEXP);
-"%="             return processToken(TASSIGNMOD);
-"&="             return processToken(TASSIGNBAND);
-"|="             return processToken(TASSIGNBOR);
-"^="             return processToken(TASSIGNBXOR);
-"&&="            return processToken(TASSIGNLAND);
-"||="            return processToken(TASSIGNLOR);
-"<<="            return processToken(TASSIGNSL);
-">>="            return processToken(TASSIGNSR);
+"="              return processToken(yyscanner, TASSIGN);
+"+="             return processToken(yyscanner, TASSIGNPLUS);
+"-="             return processToken(yyscanner, TASSIGNMINUS);
+"*="             return processToken(yyscanner, TASSIGNMULTIPLY);
+"/="             return processToken(yyscanner, TASSIGNDIVIDE);
+"**="            return processToken(yyscanner, TASSIGNEXP);
+"%="             return processToken(yyscanner, TASSIGNMOD);
+"&="             return processToken(yyscanner, TASSIGNBAND);
+"|="             return processToken(yyscanner, TASSIGNBOR);
+"^="             return processToken(yyscanner, TASSIGNBXOR);
+"&&="            return processToken(yyscanner, TASSIGNLAND);
+"||="            return processToken(yyscanner, TASSIGNLOR);
+"<<="            return processToken(yyscanner, TASSIGNSL);
+">>="            return processToken(yyscanner, TASSIGNSR);
 
-"=>"             return processToken(TALIAS);
+"=>"             return processToken(yyscanner, TALIAS);
 
-"<=>"            return processToken(TSWAP);
+"<=>"            return processToken(yyscanner, TSWAP);
 
-{floatLiteral}   return processToken(REALLITERAL);
+"#"              return processToken(yyscanner, THASH);
+".."             return processToken(yyscanner, TDOTDOT);
+"..."            return processToken(yyscanner, TDOTDOTDOT);
 
-"#"              return processToken(THASH);
-".."             return processToken(TDOTDOT);
-"..."            return processToken(TDOTDOTDOT);
+"&&"             return processToken(yyscanner, TAND);
+"||"             return processToken(yyscanner, TOR);
+"!"              return processToken(yyscanner, TNOT);
 
-"&&"             return processToken(TAND);
-"||"             return processToken(TOR);
-"!"              return processToken(TNOT);
+"&"              return processToken(yyscanner, TBAND);
+"|"              return processToken(yyscanner, TBOR);
+"^"              return processToken(yyscanner, TBXOR);
+"~"              return processToken(yyscanner, TBNOT);
 
-"&"              return processToken(TBAND);
-"|"              return processToken(TBOR);
-"^"              return processToken(TBXOR);
-"~"              return processToken(TBNOT);
+"<<"             return processToken(yyscanner, TSHIFTLEFT);
+">>"             return processToken(yyscanner, TSHIFTRIGHT);
 
-"<<"             return processToken(TSHIFTLEFT);
-">>"             return processToken(TSHIFTRIGHT);
+"=="             return processToken(yyscanner, TEQUAL);
+"!="             return processToken(yyscanner, TNOTEQUAL);
+"<="             return processToken(yyscanner, TLESSEQUAL);
+">="             return processToken(yyscanner, TGREATEREQUAL);
+"<"              return processToken(yyscanner, TLESS);
+">"              return processToken(yyscanner, TGREATER);
 
-"=="             return processToken(TEQUAL);
-"!="             return processToken(TNOTEQUAL);
-"<="             return processToken(TLESSEQUAL);
-">="             return processToken(TGREATEREQUAL);
-"<"              return processToken(TLESS);
-">"              return processToken(TGREATER);
+"+"              return processToken(yyscanner, TPLUS);
+"-"              return processToken(yyscanner, TMINUS);
+"*"              return processToken(yyscanner, TSTAR);
+"/"              return processToken(yyscanner, TDIVIDE);
+"%"              return processToken(yyscanner, TMOD);
+"--"             return processToken(yyscanner, TMINUSMINUS);
+"++"             return processToken(yyscanner, TPLUSPLUS);
 
-"+"              return processToken(TPLUS);
-"-"              return processToken(TMINUS);
-"*"              return processToken(TSTAR);
-"/"              return processToken(TDIVIDE);
-"%"              return processToken(TMOD);
-"--"             return processToken(TMINUSMINUS);
-"++"             return processToken(TPLUSPLUS);
+"**"             return processToken(yyscanner, TEXP);
 
-"**"             return processToken(TEXP);
+":"              return processToken(yyscanner, TCOLON);
+";"              return processToken(yyscanner, TSEMI);
+","              return processToken(yyscanner, TCOMMA);
+"."              return processToken(yyscanner, TDOT);
+"("              return processToken(yyscanner, TLP);
+")"              return processToken(yyscanner, TRP);
+"["              return processToken(yyscanner, TLSBR);
+"]"              return processToken(yyscanner, TRSBR);
+<externmode>"{"  return processExternCode(yyscanner);
+<INITIAL>"{"     return processToken(yyscanner, TLCBR);
+"}"              return processToken(yyscanner, TRCBR);
+"<~>"            return processToken(yyscanner, TIO);
+"?"              return processToken(yyscanner, TQUESTION);
 
-":"              return processToken(TCOLON);
-";"              return processToken(TSEMI);
-","              return processToken(TCOMMA);
-"."              return processToken(TDOT);
-"("              return processToken(TLP);
-")"              return processToken(TRP);
-"["              return processToken(TLSBR);
-"]"              return processToken(TRSBR);
-<externmode>"{"  return processExternCode();
-<INITIAL>"{"     return processToken(TLCBR);
-"}"              return processToken(TRCBR);
-"<~>"            return processToken(TIO);
+{intLiteral}     return processToken(yyscanner, INTLITERAL);
+{floatLiteral}   return processToken(yyscanner, REALLITERAL);
 
+{intLiteral}i    return processToken(yyscanner, IMAGLITERAL);
+{floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
 
-"?"              return processToken(TQUESTION);
+{ident}          return processIdentifier(yyscanner);
+"\""             return processStringLiteral(yyscanner, "\"");
+"\'"             return processStringLiteral(yyscanner, "\'");
 
-{ident}          return processToken(TIDENT);
-{intLiteral}     return processToken(INTLITERAL);
-{intLiteral}i    return processToken(IMAGLITERAL);
-{floatLiteral}i  return processToken(IMAGLITERAL);
+"//"             return processSingleLineComment(yyscanner);
+"/*"             return processBlockComment(yyscanner);
 
-"\""             return processStringLiteral("\"");
-"\'"             return processStringLiteral("\'");
+\n               return processNewline(yyscanner);
 
-[ \t\r]          processWhitespace(yytext);
-\n               processNewline();
-
-"//"             processSingleLineComment();
-
-"/*"             processMultiLineComment();
-
-.                processInvalidToken();
+[ \t\r]          processWhitespace(yyscanner);
+.                processInvalidToken(yyscanner);
 
 %%
 
@@ -250,30 +272,27 @@ static void  newString();
 static void  addString(const char* str);
 static void  addChar(char c);
 static void  addCharString(char c);
-static int   getNextYYChar();
+
+static int   getNextYYChar(yyscan_t scanner);
 
 static int   stringBuffLen = 0;
 static int   stringLen     = 0;
 static char* stringBuffer  = NULL;
 
-void lexerScanString(const char* string) {
-  yy_scan_string(string);
-}
+int processNewline(yyscan_t scanner) {
+  YYLTYPE* yyLloc = yyget_lloc(scanner);
 
-void lexerResetFile() {
-  YY_NEW_FILE;
-}
-
-void processNewline() {
   chplLineno++;
 
-  yylloc.first_column = 0;
-  yylloc.last_column  = 0;
+  yyLloc->first_column = 0;
+  yyLloc->last_column  = 0;
 
-  yylloc.first_line   = chplLineno;
-  yylloc.last_line    = chplLineno;
+  yyLloc->first_line   = chplLineno;
+  yyLloc->last_line    = chplLineno;
 
   countNewline();
+
+  return YYLEX_NEWLINE;
 }
 
 /************************************ | *************************************
@@ -282,16 +301,34 @@ void processNewline() {
 *                                                                           *
 ************************************* | ************************************/
 
-static int processToken(int t) {
-  countToken(yytext);
+static int  processIdentifier(yyscan_t scanner) {
+  YYSTYPE* yyLval = yyget_lval(scanner);
+  int      retval = processToken(scanner, TIDENT);
+
+  yyLval->pch = astr(yyget_text(scanner));
+
+  return retval;
+}
+
+static int processToken(yyscan_t scanner, int t) {
+  YYSTYPE* yyLval = yyget_lval(scanner);
+  size_t   remain = sizeof(captureString) - 1;
+
+  countToken(yyget_text(scanner));
+
+  yyLval->pch = yyget_text(scanner);
 
   if (captureTokens) {
     if (t == TASSIGN ||
-        t == TDOTDOTDOT)
-      strcat(captureString, " ");
+        t == TDOTDOTDOT) {
+      strncat(captureString, " ",                 remain);
+      remain = remain - 1;
+    }
 
-    if (t != TLCBR)
-      strcat(captureString, yytext);
+    if (t != TLCBR) {
+      strncat(captureString, yyget_text(scanner), remain);
+      remain = remain - strlen(yyget_text(scanner));
+    }
 
     if (t == TCOMMA  ||
         t == TPARAM  ||
@@ -304,12 +341,17 @@ static int processToken(int t) {
         t == TREF    ||
         t == TCOLON  ||
         t == TASSIGN ||
-        t == TRSBR)
-      strcat(captureString, " ");
+        t == TRSBR) {
+      strncat(captureString, " ",                 remain);
+      remain = remain - 1;
+    }
   }
 
-  /* processToken means we are parsing Chapel */
-  BEGIN(INITIAL);
+  // If the stack has a value then we must be in externmode.
+  // Return to INITIAL
+  if (yy_has_state(scanner) == true) {
+    yy_pop_state(scanner);
+  }
 
   return t;
 }
@@ -320,35 +362,46 @@ static int processToken(int t) {
 *                                                                           *
 ************************************* | ************************************/
 
-static char* eatStringLiteral(const char* startChar);
+static char* eatStringLiteral(yyscan_t scanner, const char* startChar);
 
-static int processStringLiteral(const char* q) {
-  yylval.pch = eatStringLiteral(q);
+static int processStringLiteral(yyscan_t scanner, const char* q) {
+  const char* yyText = yyget_text(scanner);
+  YYSTYPE*    yyLval = yyget_lval(scanner);
 
-  countToken(astr(q, yylval.pch, q));
+  yyLval->pch = eatStringLiteral(scanner, q);
+
+  countToken(astr(q, yyLval->pch, q));
 
   if (captureTokens) {
-    strcat(captureString, yytext);
-    strcat(captureString, yylval.pch);
-    strcat(captureString, yytext);
-  }
+    size_t remain = sizeof(captureString) - 1;
 
-  /* string literals only in Chapel */
-  BEGIN(INITIAL);
+    strncat(captureString, yyText,      remain);
+    remain = remain - strlen(yyText);
+
+    strncat(captureString, yyLval->pch, remain);
+    remain = remain - strlen(yyLval->pch);
+
+    strncat(captureString, yyText,      remain);
+    remain = remain - strlen(yyText);
+  }
 
   return STRINGLITERAL;
 }
 
-static char* eatStringLiteral(const char* startChar) {
+static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
+  char*      yyText  = yyget_text(scanner);
+  YYLTYPE*   yyLloc  = yyget_lloc(scanner);
   const char startCh = *startChar;
   int        c       = 0;
 
   newString();
 
-  while ((c = getNextYYChar()) != startCh && c != 0) {
+  while ((c = getNextYYChar(scanner)) != startCh && c != 0) {
     if (c == '\n') {
-      yytext[0] = '\0';
-      yyerror("end-of-line in a string literal without a preceeding backslash");
+      ParserContext context(scanner);
+
+      yyText[0] = '\0';
+      yyerror(yyLloc, &context, "end-of-line in a string literal without a preceeding backslash");
     } else {
       if (startCh == '\'' && c == '\"') {
         addCharString('\\');
@@ -358,10 +411,10 @@ static char* eatStringLiteral(const char* startChar) {
     }
 
     if (c == '\\') {
-      c = getNextYYChar();
+      c = getNextYYChar(scanner);
 
       if (c == '\n') {
-        processNewline();
+        processNewline(scanner);
         addCharString('n');
       } else if (c != 0) {
         addCharString(c);
@@ -372,7 +425,9 @@ static char* eatStringLiteral(const char* startChar) {
   } /* eat up string */
 
   if (c == 0) {
-    yyerror("EOF in string");
+    ParserContext context(scanner);
+
+    yyerror(yyLloc, &context, "EOF in string");
   }
 
   return stringBuffer;
@@ -384,14 +439,20 @@ static char* eatStringLiteral(const char* startChar) {
 *                                                                           *
 ************************************* | ************************************/
 
-static int processExtern() {
-  countToken(yytext);
+static int processExtern(yyscan_t scanner) {
+  const char* yyText = yyget_text(scanner);
+  YYSTYPE*    yyLval = yyget_lval(scanner);
+
+  yyLval->pch = yyget_text(scanner);
+
+  countToken(yyText);
 
   if (captureTokens) {
-    strcat(captureString, yytext);
+    strncat(captureString, yyText, sizeof(captureString) - 1);
   }
 
-  BEGIN(externmode);
+  // Push a state to record that "extern" has been seen
+  yy_push_state(externmode, scanner);
 
   return TEXTERN;
 }
@@ -402,26 +463,24 @@ static int processExtern() {
 *                                                                           *
 ************************************* | ************************************/
 
-static char* eatExternCode();
+static char* eatExternCode(yyscan_t scanner);
 
 // When the lexer calls this function, it has already consumed the first '{'
-static int processExternCode() {
-  yylval.pch = eatExternCode();
+static int processExternCode(yyscan_t scanner) {
+  YYSTYPE* yyLval = yyget_lval(scanner);
 
-  countToken(astr(yylval.pch));
+  yyLval->pch = eatExternCode(scanner);
+
+  countToken(astr(yyLval->pch));
 
   if (captureTokens) {
-    strcat(captureString, yylval.pch);
+    strncat(captureString, yyLval->pch, sizeof(captureString) - 1);
   }
-
-  /* only one { } block is special */
-
-  BEGIN(INITIAL);
 
   return EXTERNCODE;
 }
 
-static char* eatExternCode() {
+static char* eatExternCode(yyscan_t scanner) {
   const int in_code                          = 0;
   const int in_single_quote                  = 1;
   const int in_single_quote_backslash        = 2;
@@ -430,6 +489,8 @@ static char* eatExternCode() {
   const int in_single_line_comment           = 5;
   const int in_single_line_comment_backslash = 6;
   const int in_multi_line_comment            = 7;
+
+  YYLTYPE*  yyLloc                           = yyget_lloc(scanner);
 
   int       depth                            = 1;
   int       c                                = 0;
@@ -449,31 +510,33 @@ static char* eatExternCode() {
   // Now, append the C code until we get to a }.
   while (depth > 0) {
     lastc = c;
-    c     = getNextYYChar();
+    c     = getNextYYChar(scanner);
 
     if (c == 0) {
+      ParserContext context(scanner);
+
       switch (state) {
         case in_code:
           // there was no match to the {
-          yyerror("Missing } in extern block");
+          yyerror(yyLloc, &context, "Missing } in extern block");
           break;
 
         case in_single_quote:
         case in_single_quote_backslash:
-          yyerror("Runaway \'string\' in extern block");
+          yyerror(yyLloc, &context, "Runaway \'string\' in extern block");
           break;
 
         case in_double_quote:
         case in_double_quote_backslash:
-          yyerror("Runaway \"string\" in extern block");
+          yyerror(yyLloc, &context, "Runaway \"string\" in extern block");
           break;
 
         case in_single_line_comment:
-          yyerror("Missing newline after extern block // comment");
+          yyerror(yyLloc, &context, "Missing newline after extern block // comment");
           break;
 
         case in_multi_line_comment:
-          yyerror("Runaway /* comment */ in extern block");
+          yyerror(yyLloc, &context, "Runaway /* comment */ in extern block");
           break;
       }
       break;
@@ -482,7 +545,7 @@ static char* eatExternCode() {
     addChar(c);
 
     if (c == '\n')
-      processNewline();
+      processNewline(scanner);
 
     // Now update state (are we in a comment? a string?)
     switch (state) {
@@ -524,7 +587,7 @@ static char* eatExternCode() {
         if (c == '\\')
           state = in_double_quote_backslash;
 
-        else if ( c == '"')
+        else if (c == '"')
           state = in_code;
 
         break;
@@ -548,14 +611,17 @@ static char* eatExternCode() {
         break;
 
       case in_multi_line_comment:
-        if( lastc == '*' && c == '/' ) state = in_code;
+        if (lastc == '*' && c == '/')
+          state = in_code;
         break;
     }
   }
 
   //save the C String
   //eliminate the final '{'
-  if (stringLen >=1) stringLen -= 1;
+  if (stringLen >= 1)
+    stringLen -= 1;
+
   stringBuffer[stringLen] = '\0';
 
   return stringBuffer;
@@ -567,38 +633,38 @@ static char* eatExternCode() {
 *                                                                           *
 ************************************* | ************************************/
 
-static void processWhitespace(const char* tabOrSpace) {
+static void processWhitespace(yyscan_t scanner) {
   // might eventually want to keep track of column numbers and do
   // something here
 }
 
-
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
 
-static void processSingleLineComment() {
-  int c;
+static int processSingleLineComment(yyscan_t scanner) {
+  YYSTYPE* yyLval = yyget_lval(scanner);
+  int      c      = 0;
 
   newString();
-
   countCommentLine();
 
-  while (1) {
-    while ( (c = getNextYYChar()) != '\n' && c != 0) {
-      addChar(c);
-    }    /* eat up text of comment */
-
-    countSingleLineComment(stringBuffer);
-
-    if (c != 0) {
-      processNewline();
-    }
-
-    break;
+  // Read until the end of the line
+  while ((c = getNextYYChar(scanner)) != '\n' && c != 0) {
+    addChar(c);
   }
+
+  countSingleLineComment(stringBuffer);
+
+  if (c != 0) {
+    processNewline(scanner);
+  }
+
+  yyLval->pch = astr(stringBuffer);
+
+  return YYLEX_SINGLE_LINE_COMMENT;
 }
 
 /************************************ | *************************************
@@ -607,32 +673,30 @@ static void processSingleLineComment() {
 *                                                                           *
 ************************************* | ************************************/
 
-static void processMultiLineComment() {
+static int processBlockComment(yyscan_t scanner) {
+  YYSTYPE*    yyLval       = yyget_lval(scanner);
+  YYLTYPE*    yyLloc       = yyget_lloc(scanner);
+
+  int         len          = strlen(fDocsCommentLabel);
+  int         labelIndex   = (len >= 2) ? 2 : 0;
+
   int         c            = 0;
   int         lastc        = 0;
   int         depth        = 1;
-  int         labelIndex   = 0;
-  int         len          = 0;
   std::string wholeComment = "";
 
   newString();
   countCommentLine();
 
-  len = strlen(fDocsCommentLabel);
-
-  if (len >= 2) {
-    labelIndex = 2;
-  }
-
   while (depth > 0) {
     int lastlastc = lastc;
 
     lastc = c;
-    c     = getNextYYChar();
+    c     = getNextYYChar(scanner);
 
     if (c == '\n') {
       countMultiLineComment(stringBuffer);
-      processNewline();
+      processNewline(scanner);
 
       if (fDocs && labelIndex == len) {
         wholeComment += stringBuffer;
@@ -640,7 +704,6 @@ static void processMultiLineComment() {
       }
 
       newString();
-
       countCommentLine();
     } else {
       if ((labelIndex < len) && (labelIndex != -1)) {
@@ -660,7 +723,9 @@ static void processMultiLineComment() {
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
     } else if (c == 0) {
-      yyerror( "EOF in comment" );
+      ParserContext context(scanner);
+
+      yyerror(yyLloc, &context, "EOF in comment");
     }
   }
 
@@ -695,12 +760,17 @@ static void processMultiLineComment() {
       location = wholeComment.find("\\x09");
     }
 
-    yylloc.comment = (char*) astr(wholeComment.c_str());
+    yyLval->pch = astr(wholeComment.c_str());
+
+  } else {
+    yyLval->pch = NULL;
   }
 
   countMultiLineComment(stringBuffer);
 
   newString();
+
+  return YYLEX_BLOCK_COMMENT;
 }
 
 /************************************ | *************************************
@@ -709,8 +779,11 @@ static void processMultiLineComment() {
 *                                                                           *
 ************************************* | ************************************/
 
-static void processInvalidToken() {
-  yyerror("Invalid token");
+static void processInvalidToken(yyscan_t scanner) {
+  ParserContext context(scanner);
+  YYLTYPE*      yyLloc = yyget_lloc(scanner);
+
+  yyerror(yyLloc, &context, "Invalid token");
 }
 
 /************************************ | *************************************
@@ -726,7 +799,7 @@ static void newString() {
   stringLen = 0;
 
   if (stringBuffLen) {
-    stringBuffer[stringLen] = '\0';
+    stringBuffer[0] = '\0';
   }
 }
 
@@ -748,7 +821,7 @@ static void addCharMaybeEscape(char c, bool canEscape) {
   int charlen = escape ? 4 : 1; // convert nonasci to \xNN
 
   if (stringLen + charlen + 1 > stringBuffLen) {
-    stringBuffLen = 2*(stringBuffLen + charlen);
+    stringBuffLen = 2 * (stringBuffLen + charlen);
     stringBuffer  = (char*) realloc(stringBuffer,
                                     stringBuffLen * sizeof(char));
   }
@@ -770,8 +843,8 @@ static char toHex(char c) {
   return (0 <= c && c <= 9) ? '0' + c : 'A' + (c - 10);
 }
 
-static int getNextYYChar() {
-  int retval = yyinput();
+static int getNextYYChar(yyscan_t scanner) {
+  int retval = yyinput(scanner);
 
   if (retval == EOF) {
     retval = 0;
@@ -780,3 +853,18 @@ static int getNextYYChar() {
   return retval;
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static bool yy_has_state(yyscan_t yyscanner)
+{
+  // This is only to suppress a compiler warning
+  (void) yy_top_state;
+
+  struct yyguts_t * yyg = (struct yyguts_t*) yyscanner;
+
+  return yyg->yy_start_stack_ptr > 0;
+}

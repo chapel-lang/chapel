@@ -27,6 +27,7 @@ Optimization Control Options:
       --[no-]loop-invariant-code-motion
                                       Enable [disable] loop invariant code
                                       motion
+      --[no-]ignore-local-classes     Disable [enable] local classes
       --[no-]inline                   Enable [disable] function inlining
       --[no-]inline-iterators         Enable [disable] iterator inlining
       --[no-]live-analysis            Enable [disable] live variable analysis
@@ -58,6 +59,8 @@ Run-time Semantic Check Options:
       --[no-]local-checks             Enable [disable] local block checking
       --[no-]nil-checks               Enable [disable] nil checking
       --[no-]stack-checks             Enable [disable] stack overflow checking
+      --[no-]cast-checks              Enable [disable] checks in safeCast
+                                      calls
 
 C Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation
@@ -98,6 +101,8 @@ Documentation Options:
       --docs-dir <dirname>            Sets the documentation directory to
                                       <dirname>
       --docs-text-only                Generate text only documentation
+      --docs-save-sphinx <directory>  Save generated Sphinx project in
+                                      directory
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands

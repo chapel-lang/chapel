@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, shutil, time, math, re
+import sys, os, shutil, time, math, re, stat
 from optparse import OptionParser
 
 import fileReadHelp
@@ -46,7 +46,7 @@ parser.add_option('-u', '--numericX', dest='numericX',
                   help='expect numbers (e.g. revisions), not dates,' +
                        ' for the X axis',
                   action='store_true', default=False)
-parser.add_option('-m', '--multiple-configurations', dest='multiConf',
+parser.add_option('-m', '--configs', dest='multiConf',
                   help='comma separated list of configurations. ":v" after a '
                        'configuration makes it visible by default. e.g '
                        '"local:v,--no-local:v" will create graphs with series '
@@ -1001,9 +1001,9 @@ def main():
                     graphList.append((l, [currSuite]))
             else:
                 # parse for suite name
-                ls = l[1:].split(':')
+                ls = l[1:].split(': ')
                 if ls[0].strip() == 'suite':
-                    currSuite = ls[1].strip()
+                    currSuite = ls[1].rstrip()
                     graphInfo.suites.append(currSuite)
                     numSuites += 1
                     if verbose:
@@ -1059,6 +1059,18 @@ def main():
             # files were copied over. This is used to see if we should sync the
             # files over to sourceforge.
             sys.stdout.write('Created SUCCESS file\n')
+            #
+            # recursively chmod the html/ directory for access via web servers
+            #  - for directories, chmod u+rwx and go+rx
+            #  - for directories, chmod go+r
+            #
+            for root, dirs, files in os.walk(outdir):
+                os.chmod(root, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+                for momo in dirs:
+                    os.chmod(os.path.join(root, momo), stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+                for momo in files:
+                    os.chmod(os.path.join(root, momo), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+
 
     return 0
 

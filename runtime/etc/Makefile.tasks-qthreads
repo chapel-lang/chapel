@@ -16,10 +16,4 @@
 # limitations under the License.
 
 GEN_CFLAGS += -I$(QTHREAD_INCLUDE_DIR)
-GEN_LFLAGS += -L$(QTHREAD_LIB_DIR) -Wl,-rpath -Wl,$(QTHREAD_LIB_DIR)
-
-LIBS += -lqthread_chpl -lchpl -lqthread -lpthread
-
-ifneq ($(CHPL_MAKE_PLATFORM), darwin)
-  LIBS += -lrt
-endif
+GEN_LFLAGS += -L$(QTHREAD_LIB_DIR) -Wl,-rpath,$(QTHREAD_LIB_DIR)

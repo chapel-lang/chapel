@@ -59,7 +59,7 @@ subChar(Symbol* sym, const char* ch, const char* x) {
 }
 
 static void legalizeName(Symbol* sym) {
-  if (sym->hasFlag(FLAG_EXTERN))
+  if (!sym->isRenameable())
     return;
   for (const char* ch = sym->cname; *ch != '\0'; ch++) {
     switch (*ch) {
@@ -541,14 +541,18 @@ static void protectNameFromC(Symbol* sym) {
   }
 
   //
-  // Let's assume we only have to rename user symbols and that we've
-  // done a good job of protecting our internal and standard module
-  // symbols.  This has the advantage of not having to take special
-  // pains to keep from renaming things like chpl_string and uint64_t
-  // (which perhaps should arguably also have FLAG_EXTERN, but don't
-  // consistently seem to today; and adding FLAG_EXTERN to them seems
-  // to result in it getting propagated to type aliases and such in
-  // ways that caused headaches for me).
+  // For now, we only rename our user and standard symbols.  Internal
+  // modules symbols should arguably similarly be protected, to ensure
+  // that we haven't inadvertantly used a name that some user library
+  // will; most file-level symbols should be protected by 'chpl_' or
+  // somesuch, but of course local symbols may not be, and can cause
+  // conflicts (at present, a local variable named 'socket' would).
+  // The challenges to handling MOD_INTERNAL symbols in the same way
+  // today is that things like chpl_string and uint64_t should not be
+  // renamed, and should arguably have FLAG_EXTERN on them; however,
+  // putting it on them causes it to bleed over onto type aliases in a
+  // way that breaks things and wasn't easy to fix.  So this remains
+  // a TODO (currently in Brad's court).
   //
   ModuleSymbol* symMod = sym->getModule();
   if (symMod->modTag == MOD_INTERNAL) {
@@ -560,7 +564,7 @@ static void protectNameFromC(Symbol* sym) {
   // outside of Chapel is relying on it to have a certain name and we
   // need to respect that.
   //
-  if (sym->hasFlag(FLAG_EXPORT) || sym->hasFlag(FLAG_EXTERN)) {
+  if (!sym->isRenameable()) {
     return;
   }
 
@@ -685,7 +689,7 @@ static void codegen_header() {
   // mangle type names if they clash with other types
   //
   forv_Vec(TypeSymbol, ts, types) {
-    if (!ts->hasFlag(FLAG_EXTERN))
+    if (ts->isRenameable())
       ts->cname = uniquifyName(ts->cname, &cnames);
   }
   uniquifyNameCounts.clear();
@@ -728,7 +732,7 @@ static void codegen_header() {
   // constants, or other global variables
   //
   forv_Vec(VarSymbol, var, globals) {
-    if (!var->hasFlag(FLAG_EXTERN))
+    if (var->isRenameable())
       var->cname = uniquifyName(var->cname, &cnames);
   }
   uniquifyNameCounts.clear();
@@ -738,7 +742,7 @@ static void codegen_header() {
   // global variables, or other functions
   //
   forv_Vec(FnSymbol, fn, functions) {
-    if (!fn->hasFlag(FLAG_USER_NAMED))
+    if (fn->isRenameable())
       fn->cname = uniquifyName(fn->cname, &cnames);
   }
   uniquifyNameCounts.clear();
@@ -1093,7 +1097,7 @@ codegen_config() {
     fprintf(outfile, "initConfigVarTable();\n");
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1146,7 +1150,7 @@ codegen_config() {
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (3);
         args[0] = info->builder->CreateLoad(
             new_StringSymbol(var->name)->codegen().val);

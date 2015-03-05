@@ -25,7 +25,7 @@ Recommended Settings
    release.  This is the parent of the directory containing this file.
    For example:
 
-        export CHPL_HOME=~/chapel-1.10.0
+        export CHPL_HOME=~/chapel-1.11.0
 
    [This, and all other examples in Chapel READMEs, assumes you're
     using the 'bash' shell.  If using 'csh' or 'tcsh', mentally change

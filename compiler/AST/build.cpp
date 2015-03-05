@@ -144,9 +144,16 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
 
 BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
                            BlockStmt* stmt) {
-  if (DefExpr* def = toDefExpr(stmt->body.first()))
-    addPragmaFlags(def->sym, pragmas);
-  else if (pragmas->n > 0) {
+  bool error = false;
+  for_alist(expr, stmt->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      addPragmaFlags(def->sym, pragmas);
+    } else {
+      error = true;
+      break;
+    }
+  }
+  if (error && pragmas->n > 0) {
     USR_FATAL_CONT(stmt, "cannot attach pragmas to this statement");
     USR_PRINT(stmt, "   %s \"%s\"",
               pragmas->n == 1 ? "pragma" : "starting with pragma",
@@ -293,7 +300,7 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
   if (!strcmp("locale", member))
     // MAGIC: "x.locale" member access expressions are rendered as
     // chpl_localeID_to_locale(_wide_get_node(x)).
-    return new CallExpr("chpl_localeID_to_locale", 
+    return new CallExpr("chpl_localeID_to_locale",
                         new CallExpr(PRIM_WIDE_GET_LOCALE, base));
   else
     return new CallExpr(".", base, new_StringSymbol(member));
@@ -489,7 +496,7 @@ buildExternBlockStmt(const char* c_code) {
   return buildChapelStmt(new ExternBlockStmt(c_code));
 }
 
-ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, char* docs) {
+ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filename, const char* docs) {
   ModuleSymbol* mod = new ModuleSymbol(name, currentModuleType, block);
   if (currentFileNamedOnCommandLine) {
     mod->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
@@ -804,7 +811,7 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
   VarSymbol* leaderIterator = newTemp("_leaderIterator");
   leaderIterator->addFlag(FLAG_EXPR_TEMP);
   lifn->insertAtTail(new DefExpr(leaderIterator));
-  
+
   if( !zippered ) {
     lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", lifnIterator)));
   } else {
@@ -884,7 +891,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
 
 
 //
-// This is a helper function that takes a chpl_buildArrayRuntimeType(...) 
+// This is a helper function that takes a chpl_buildArrayRuntimeType(...)
 // CallExpr and converts it into a forall loop expression.  See the
 // commit messages of r20820 and the commit that added this comment
 // for (a few) more details.
@@ -962,6 +969,83 @@ buildFollowLoop(VarSymbol* iter,
   return followBlock;
 }
 
+// Do whatever is needed for a reduce intent.
+// Return the globalOp symbol.
+static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
+                                 Expr* reduceOp, Expr* reduceVar,
+                                 Expr* otherROp)
+{
+  // Otherwise reduceVar->copy() may not be adequate.
+  INT_ASSERT(isUnresolvedSymExpr(reduceVar));
+
+  VarSymbol* globalOp = newTemp("chpl__reduceGlob");
+  iterRec->defPoint->insertBefore(new DefExpr(globalOp));
+  reduceOp->replace(new SymExpr(globalOp));
+  if (otherROp)
+    otherROp->replace(new SymExpr(globalOp));
+
+  // globalOp = new reduceOp(eltType = reduceVar.type)
+  Expr* eltType = new NamedExpr("eltType",
+                    new_Expr("'typeof'(%E)", reduceVar->copy()));
+  iterRec->defPoint->insertBefore(new_Expr("'move'(%S, 'new'(%E(%E)))",
+                                           globalOp, reduceOp, eltType));
+  // reduceVar = globalOp.generate(); delete globalOp;
+  parLoop->insertAfter("'delete'(%S)", globalOp);
+  parLoop->insertAfter(new_Expr("'='(%E,.(%S, 'generate')())",
+                                reduceVar->copy(), globalOp));
+}
+
+// Setup for forall intents
+static void setupForallIntents(CallExpr* withClause,
+                               CallExpr* otherWith,
+                               VarSymbol* iterRec,
+                               VarSymbol* leadIdx,
+                               VarSymbol* leadIdxCopy,
+                               BlockStmt* parLoop)
+{
+  // To iterate over two withClause in parallel.
+  Expr* otherActual = otherWith ? otherWith->argList.head : NULL;
+  Expr* otherNext   = otherActual ? otherActual->next : NULL;
+
+  // Handle reduce intents, if any.
+  // Keep in sync with markOuterVarsWithIntents().
+  bool markerTurn = true;
+  Expr* reduceOp = NULL;
+  Expr* otherROp = NULL;
+  for_actuals(actual, withClause) {
+    if (markerTurn) {
+      markerTurn = false;
+      if (SymExpr* se = toSymExpr(actual)) {
+        ArgSymbol* tiMarker =  toArgSymbol(se->var);
+        INT_ASSERT(tiMarker); // confirm my thinking
+      } else {
+        reduceOp = actual;
+        if (otherActual) otherROp = otherActual;
+      }
+    } else {
+      markerTurn = true;
+      if (reduceOp) {
+        setupOneReduceIntent(iterRec, parLoop, reduceOp, actual, otherROp);
+        reduceOp = NULL;
+        otherROp = NULL;
+      }
+    }
+    // Advance the iteration over otherWith.
+    otherActual = otherNext;
+    otherNext = otherNext ? otherNext->next: NULL;
+  }
+  INT_ASSERT(markerTurn);
+  INT_ASSERT(!reduceOp);
+  INT_ASSERT(!otherROp);
+  INT_ASSERT(!otherActual);
+
+  // ForallLeaderArgs: stash references so we know where things are.
+  INT_ASSERT(withClause->isPrimitive(PRIM_FORALL_LOOP));
+  withClause->insertAtHead(leadIdxCopy); // 3rd arg
+  withClause->insertAtHead(leadIdx);     // 2nd arg
+  withClause->insertAtHead(iterRec);     // 1st arg
+}
+
 /*
  * Build a forall loop that has only one level instead of a nested leader
  * follower loop. This single level loop will be handled similarily to
@@ -983,13 +1067,6 @@ buildStandaloneForallLoopStmt(Expr* indices,
   saIdx->addFlag(FLAG_INDEX_VAR);
   saIdxCopy->addFlag(FLAG_INDEX_VAR);
 
-  // ForallLeaderArgs: stash references so we know where things are.
-  CallExpr* byref_vars = loopBody->byrefVars;
-  INT_ASSERT(byref_vars->isPrimitive(PRIM_FORALL_LOOP));
-  byref_vars->insertAtHead(saIdxCopy); // 3rd arg
-  byref_vars->insertAtHead(saIdx);     // 2nd arg
-  byref_vars->insertAtHead(iterRec);   // 1st arg
-
   BlockStmt* SABlock = buildChapelStmt();
 
   SABlock->insertAtTail(new DefExpr(iterRec));
@@ -1007,6 +1084,8 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABody->insertAtTail(loopBody);
   SABlock->insertAtTail(SABody);
   SABlock->insertAtTail("_freeIterator(%S)", saIter);
+  setupForallIntents(loopBody->byrefVars, NULL,
+                     iterRec, saIdx, saIdxCopy, SABody);
   return SABlock;
 }
 
@@ -1019,13 +1098,18 @@ buildStandaloneForallLoopStmt(Expr* indices,
  *
  * When both versions are created, it will end up as a normalized form of:
  *
- * if (chpl__tryToken)
- *   for idx in iter(standalone)
- *     do body(idx);
+ * if chpl__tryToken then
+ *   for idx in iter(standalone) do
+ *     body(idx);
  * else
- *   for block in iter(leader) do
- *     for idx in iter(follower, block) do
- *       body(idx);
+ *   for block in iter(leader) {
+ *     if doing fast follower then
+ *       for idx in iter(follower, block, fast=true) do
+ *         body(idx);
+ *     else
+ *       for idx in iter(follower, block) do
+ *         body(idx);
+ *   }
  */
 BlockStmt*
 buildForallLoopStmt(Expr*      indices,
@@ -1083,16 +1167,9 @@ buildForallLoopStmt(Expr*      indices,
   iterRec->addFlag(FLAG_EXPR_TEMP);
   iterRec->addFlag(FLAG_CHPL__ITER);
 
-  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-
-  // ForallLeaderArgs: stash references so we know where things are.
-  byref_vars->insertAtHead(leadIdxCopy); // 3rd arg
-  byref_vars->insertAtHead(leadIdx);     // 2nd arg
-  byref_vars->insertAtHead(iterRec);     // 1st arg
 
   resultBlock->insertAtTail(new DefExpr(iterRec));
   resultBlock->insertAtTail(new DefExpr(leadIter));
@@ -1165,6 +1242,9 @@ buildForallLoopStmt(Expr*      indices,
 
   resultBlock->insertAtTail(leadForLoop);
   resultBlock->insertAtTail("_freeIterator(%S)", leadIter);
+  setupForallIntents(byref_vars,
+                     loopBodyForFast ? loopBodyForFast->byrefVars : NULL,
+                     iterRec, leadIdx, leadIdxCopy, leadForLoop);
 
   if (!zippered) {
     BlockStmt* SALoop = buildStandaloneForallLoopStmt(indices,
@@ -1518,7 +1598,7 @@ backPropagateInitsTypes(BlockStmt* stmts) {
 }
 
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, char* docs) {
+BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* docs) {
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
@@ -1583,7 +1663,12 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, char* docs) {
 
 
 DefExpr*
-buildClassDefExpr(const char* name, Type* type, Expr* inherit, BlockStmt* decls, Flag isExtern, char *docs) {
+buildClassDefExpr(const char* name,
+                  Type*       type,
+                  Expr*       inherit,
+                  BlockStmt*  decls,
+                  Flag        isExtern,
+                  const char* docs) {
   AggregateType* ct = toAggregateType(type);
   INT_ASSERT(ct);
   TypeSymbol* ts = new TypeSymbol(name, ct);
@@ -1702,7 +1787,7 @@ FnSymbol* buildLambda(FnSymbol *fn) {
 // Replaces the dummy function name "_" with the real name, sets the 'this'
 // intent tag. For methods, it also adds a method tag and "this" declaration.
 FnSymbol*
-buildFunctionSymbol(FnSymbol*   fn, 
+buildFunctionSymbol(FnSymbol*   fn,
                     const char* name,
                     IntentTag   thisTag,
                     const char* class_name)
@@ -1716,7 +1801,7 @@ buildFunctionSymbol(FnSymbol*   fn,
   if (class_name)
   {
     fn->_this = new ArgSymbol(thisTag,
-                              "this", 
+                              "this",
                               dtUnknown,
                               new UnresolvedSymExpr(class_name));
 
@@ -1735,12 +1820,12 @@ buildFunctionSymbol(FnSymbol*   fn,
 // Called like:
 // buildFunctionDecl($4, $6, $7, $8, $9, @$.comment);
 BlockStmt*
-buildFunctionDecl(FnSymbol*  fn,
-                  RetTag     optRetTag,
-                  Expr*      optRetType,
-                  Expr*      optWhere,
-                  BlockStmt* optFnBody,
-                  char*      docs)
+buildFunctionDecl(FnSymbol*   fn,
+                  RetTag      optRetTag,
+                  Expr*       optRetType,
+                  Expr*       optWhere,
+                  BlockStmt*  optFnBody,
+                  const char* docs)
 {
   fn->retTag = optRetTag;
 
@@ -1779,7 +1864,7 @@ buildFunctionDecl(FnSymbol*  fn,
         fn->body->insertAtTail(expr->remove());
       }
 
-    } 
+    }
     else
     {
       fn->insertAtTail(optFnBody);
@@ -2033,7 +2118,13 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
       if (!de->init) {
         Symbol* vs = de->sym;
         PrimitiveType* pt = new PrimitiveType(NULL);
-        DefExpr* newde = new DefExpr(new TypeSymbol(vs->name, pt));
+
+        TypeSymbol* ts = new TypeSymbol(vs->name, pt);
+        if (VarSymbol* theVs = toVarSymbol(vs)) {
+          ts->doc = theVs->doc;
+        }
+        DefExpr* newde = new DefExpr(ts);
+
         de->replace(newde);
         de = newde;
       }

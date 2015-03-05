@@ -28,20 +28,6 @@
 class Timer;
 
 
-// For versions of bison beyond 2.3, this struct and the following
-// two defines should be moved back into chapel.ypp into a %code requires
-// block so that YYLTYPE is near the YYLLOC_DEFAULT definition.
-struct YYLTYPE {
-  int   first_line;
-  int   first_column;
-  int   last_line;
-  int   last_column;
-  char* comment;
-};
-
-#define YYLTYPE_IS_DECLARED 1
-#define YYLTYPE_IS_TRIVIAL  1
-
 extern int  instantiation_limit;
 
 // optimization control flags
@@ -59,6 +45,7 @@ extern bool fNoLiveAnalysis;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
 extern bool fNoStackChecks;
+extern bool fNoCastChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
@@ -130,6 +117,7 @@ extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
 extern bool fGenIDS;
 extern bool fLocal;
+extern bool fIgnoreLocalClasses;
 extern bool fHeterogeneous;
 extern bool fieeefloat;
 extern int  fMaxCIdentLen;
@@ -163,6 +151,8 @@ extern bool fDocsAlphabetize;
 extern char fDocsCommentLabel[256];
 extern char fDocsFolder[256];
 extern bool fDocsTextOnly;
+extern char fDocsSphinxDir[256];
+extern bool fDocsIncludeExterns;
 extern char defaultDist[256];
 extern char mainModuleName[256];
 extern bool printSearchDirs;

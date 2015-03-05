@@ -1,2 +1,2 @@
 use FileSystem;
-writeln(cwd());
+writeln(here.cwd());

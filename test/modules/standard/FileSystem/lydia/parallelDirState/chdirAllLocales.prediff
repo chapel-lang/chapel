@@ -1,0 +1,5 @@
+#!/bin/bash
+
+parentDir=${PWD}
+
+echo "`sed "s%$parentDir%%g" $2`" > $2

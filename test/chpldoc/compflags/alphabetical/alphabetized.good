@@ -1,0 +1,24 @@
+Module: alphabetized
+   proc alpha()
+      This method should be first 
+
+   proc beta()
+      This method should be second 
+
+   proc boat()
+      This method should be third 
+
+   proc dog()
+      This method should come before its plural 
+
+   proc dogs()
+      This method should come after its singular 
+
+   proc identical(val: int)
+      This method will probably come before its twin, although line number 
+      will determine exact placement 
+
+   proc identical(val: real)
+      This method will probably come after its twin, although line number 
+      will determine exact placement 
+

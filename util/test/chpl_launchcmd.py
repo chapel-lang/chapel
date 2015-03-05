@@ -286,8 +286,8 @@ class AbstractJob(object):
                 if not alreadyRunning and status == 'R':
                     alreadyRunning = True
                     exec_start_time = time.time()
-                status = job_status(job_id, output_file)
                 time.sleep(.5)
+                status = job_status(job_id, output_file)
 
             exec_time = time.time() - exec_start_time
             # Note that this time isn't very accurate as we don't get the exact
@@ -558,7 +558,7 @@ class AbstractJob(object):
         parser = argparse.ArgumentParser(
             description=__doc__,
             formatter_class=OurFormatter)
-        parser.add_argument('-v', '--verbose', action='store_true',
+        parser.add_argument('--CHPL_LAUNCHCMD_DEBUG', action='store_true', dest='verbose',
                             default=('CHPL_LAUNCHCMD_DEBUG' in os.environ),
                             help=('Verbose output. Setting CHPL_LAUNCHCMD_DEBUG '
                                   'in environment also enables verbose output.'))
@@ -567,7 +567,7 @@ class AbstractJob(object):
         parser.add_argument('--n', help='Placeholder')
         parser.add_argument('--walltime', type=cls._cli_walltime,
                             help='Timeout as walltime for qsub.')
-        parser.add_argument('--hostlist',
+        parser.add_argument('--CHPL_LAUNCHCMD_HOSTLIST', dest='hostlist',
                             help=('Optional hostlist specification for reserving '
                                   'specific nodes. Can also be set with env var '
                                   'CHPL_LAUNCHCMD_HOSTLIST'))
@@ -925,6 +925,12 @@ class SlurmJob(AbstractJob):
         with open(input_file, 'w') as fp:
             fp.write(sys.stdin.read())
         env['SLURM_STDINMODE'] = input_file
+
+        # We could use stdout buffering for other configurations too, but I
+        # don't think there's any need. Currently, single locale perf testing
+        # is the only config that has any tests that produce a lot of output
+        if os.getenv('CHPL_TEST_PERF') != None and self.num_locales <= 1:
+            env['CHPL_LAUNCHER_SLURM_BUFFER_STDOUT'] = 'true'
 
         cmd = self.test_command[:]
         # Add --nodelist into the command line
