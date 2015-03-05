@@ -86,8 +86,6 @@ module Random {
 
   /* Internal TODOs for developers:
 
-     - is the parSafe on each of the three main calls overkill?
-
      - should RandomStream be parameterized by the type to return?
        it seems odd that currently getNext() and getNth() return
        reals always...
