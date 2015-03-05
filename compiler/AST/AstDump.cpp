@@ -451,6 +451,7 @@ void AstDump::visitEblockStmt(ExternBlockStmt* node) {
 // GotoStmt
 //
 bool AstDump::enterGotoStmt(GotoStmt* node) {
+  newline();
   switch (node->gotoTag) {
     case GOTO_NORMAL:      write("goto");           break;
     case GOTO_BREAK:       write("break");          break;
