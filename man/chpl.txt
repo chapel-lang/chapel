@@ -120,6 +120,8 @@ OPTIONS
                     currently a rather conservative pass in the sense that 
                     it may not identify all code that is truly invariant.
 
+  --[no-]ignore-local-classes   Disable [enable] local classes
+
   --[no-]inline     Enable [disable] function inlining.
 
   --[no-]inline-iterators   Enable [disable] iterator inlining. When
