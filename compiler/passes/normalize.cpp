@@ -25,7 +25,6 @@
 #include "passes.h"
 
 #include "astutil.h"
-#include "oldCollectors.h"
 #include "build.h"
 #include "expr.h"
 #include "stlUtil.h"
@@ -69,7 +68,7 @@ static void clone_for_parameterized_primitive_formals(FnSymbol* fn,
 static void replace_query_uses(ArgSymbol* formal,
                                DefExpr*   def,
                                CallExpr*  query,
-                               Vec<SymExpr*>& symExprs);
+                               std::vector<SymExpr*>& symExprs);
 static void add_to_where_clause(ArgSymbol* formal,
                                 Expr*      expr,
                                 CallExpr*  query);
@@ -291,9 +290,9 @@ static void transformLogicalShortCircuit()
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
 void normalize(BaseAST* base) {
-  Vec<CallExpr*> calls;
-  collectCallExprs(base, calls);
-  forv_Vec(CallExpr, call, calls) {
+  std::vector<CallExpr*> calls;
+  collectCallExprsSTL(base, calls);
+  for_vector(CallExpr, call, calls) {
     processSyntacticDistributions(call);
   }
 
@@ -311,13 +310,13 @@ void normalize(BaseAST* base) {
   }
 
   calls.clear();
-  collectCallExprs(base, calls);
-  forv_Vec(CallExpr, call, calls) {
-    applyGetterTransform(call);
-    insert_call_temps(call);
+  collectCallExprsSTL(base, calls);
+  for_vector(CallExpr, call1, calls) {
+    applyGetterTransform(call1);
+    insert_call_temps(call1);
   }
-  forv_Vec(CallExpr, call, calls) {
-    call_constructor_for_class(call);
+  for_vector(CallExpr, call2, calls) {
+    call_constructor_for_class(call2);
   }
 }
 
@@ -338,12 +337,12 @@ checkUseBeforeDefs() {
       ModuleSymbol* mod = fn->getModule();
       Vec<const char*> undeclared;
       Vec<Symbol*> undefined;
-      Vec<BaseAST*> asts;
+      std::vector<BaseAST*> asts;
       Vec<Symbol*> defined;
 
       // Walk the asts in this function.
-      collect_asts_postorder(fn, asts);
-      forv_Vec(BaseAST, ast, asts) {
+      collect_asts_postorder_STL(fn, asts);
+      for_vector(BaseAST, ast, asts) {
         // Adds definitions (this portion could probably be made into a
         // separate function - see loopInvariantCodeMotion and copyPropagation)
         if (CallExpr* call = toCallExpr(ast)) {
@@ -587,12 +586,12 @@ static void normalize_returns(FnSymbol* fn) {
 
   CallExpr* theRet = NULL; // Contains the return if it is unique.
   Vec<CallExpr*> rets;
-  Vec<CallExpr*> calls;
+  std::vector<CallExpr*> calls;
   int numVoidReturns = 0;
   int numYields = 0;
   bool isIterator = fn->isIterator();
-  collectMyCallExprs(fn, calls, fn); // ones not in a nested function
-  forv_Vec(CallExpr, call, calls) {
+  collectMyCallExprsSTL(fn, calls, fn); // ones not in a nested function
+  for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN)) {
       rets.add(call);
       theRet = call;
@@ -1288,13 +1287,13 @@ static void fixup_array_formals(FnSymbol* fn) {
         // Replace the type expression with "_array" to make it generic.
         arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
 
-        Vec<SymExpr*> symExprs;
-        collectSymExprs(fn, symExprs);
+        std::vector<SymExpr*> symExprs;
+        collectSymExprsSTL(fn, symExprs);
 
         // If we have an element type, replace reference to its symbol with
         // "arg.eltType", so we use the instantiated element type.
         if (queryEltType) {
-          forv_Vec(SymExpr, se, symExprs) {
+          for_vector(SymExpr, se, symExprs) {
             if (se->var == queryEltType->sym)
               se->replace(new CallExpr(".", arg, new_StringSymbol("eltType")));
           }
@@ -1318,7 +1317,7 @@ static void fixup_array_formals(FnSymbol* fn) {
         if (queryDomain) {
           // Array type is built using a domain.
           // If we match the domain symbol, replace it with arg._dom.
-          forv_Vec(SymExpr, se, symExprs) {
+          for_vector(SymExpr, se, symExprs) {
             if (se->var == queryDomain->sym)
               se->replace(new CallExpr(".", arg, new_StringSymbol("_dom")));
           }
@@ -1328,7 +1327,7 @@ static void fixup_array_formals(FnSymbol* fn) {
 
           VarSymbol* tmp = newTemp("reindex");
           tmp->addFlag(FLAG_EXPR_TEMP);
-          forv_Vec(SymExpr, se, symExprs) {
+          for_vector(SymExpr, se, symExprs) {
             if (se->var == arg)
               se->var = tmp;
           }
@@ -1387,9 +1386,9 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
   FnSymbol* newfn = fn->copy(&map);
   Symbol* newsym = map.get(def->sym);
   newsym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
-  Vec<SymExpr*> symExprs;
-  collectSymExprs(newfn, symExprs);
-  forv_Vec(SymExpr, se, symExprs) {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(newfn, symExprs);
+  for_vector(SymExpr, se, symExprs) {
     if (se->var == newsym)
       se->var = new_IntSymbol(width);
   }
@@ -1398,8 +1397,8 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
 
 static void
 replace_query_uses(ArgSymbol* formal, DefExpr* def, CallExpr* query,
-                   Vec<SymExpr*>& symExprs) {
-  forv_Vec(SymExpr, se, symExprs) {
+                   std::vector<SymExpr*>& symExprs) {
+  for_vector(SymExpr, se, symExprs) {
     if (se->var == def->sym) {
       if (formal->variableExpr) {
         CallExpr* parent = toCallExpr(se->parentExpr);
@@ -1446,9 +1445,9 @@ fixup_query_formals(FnSymbol* fn) {
     if (!formal->typeExpr)
       continue;
     if (DefExpr* def = toDefExpr(formal->typeExpr->body.tail)) {
-      Vec<SymExpr*> symExprs;
-      collectSymExprs(fn, symExprs);
-      forv_Vec(SymExpr, se, symExprs) {
+      std::vector<SymExpr*> symExprs;
+      collectSymExprsSTL(fn, symExprs);
+      for_vector(SymExpr, se, symExprs) {
         if (se->var == def->sym)
           se->replace(new CallExpr(PRIM_TYPEOF, formal));
       }
@@ -1505,8 +1504,8 @@ fixup_query_formals(FnSymbol* fn) {
       }
       if (queried) {
         bool isTupleType = false;
-        Vec<SymExpr*> symExprs;
-        collectSymExprs(fn, symExprs);
+        std::vector<SymExpr*> symExprs;
+        collectSymExprsSTL(fn, symExprs);
         if (call->isNamed("_build_tuple")) {
           add_to_where_clause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_StringSymbol("size")));
           call->baseExpr->replace(new SymExpr(dtTuple->symbol));
