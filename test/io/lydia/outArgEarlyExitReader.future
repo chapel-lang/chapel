@@ -8,12 +8,14 @@ early exit case the channel and file in question were (to the user's
 perspective) not even in existence.  Thus, when they were destroyed, the program
 would segfault.
 
-This behavior does not occur with --devel, nor with only a channel writer,
+This segfault does not occur with --devel, nor with only a channel writer,
 nor with returning a value via a return statement (instead of an out argument).
 However, with --devel a channel writer will fail with the same behavior.
 
-Upon resolution of this future, please add a compopts file to test both --devel
-and --no-devel mode.
+Since the behavior is attempting to free a structure that has not been allocated
+and the segfault does not always occur (though the additional free is always
+present), this future is only tested under valgrind.  When it starts to pass,
+please remove the skipif.
 
 Tom's AMM branch does not exhibit this behavior, so when that gets merged into
 trunk, this future should be resolved.
