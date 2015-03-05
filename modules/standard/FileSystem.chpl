@@ -119,7 +119,7 @@ proc chown(name: string, uid: int, gid: int) {
    parameter.
    err: a syserr used to indicate if an error occurred
    src: the source file whose contents and permissions are to be copied
-   dest: the destination directory or file of the contents and permissions.
+   dest: the destination file for the contents and permissions.
    metadata: a boolean indicating whether to copy metadata associated with the
              source file.
 */
@@ -146,13 +146,15 @@ proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
   copyMode(err, src, destFile);
   if err != ENOERR then return;
 
-  // Get uid and gid from src
-  var uid = getUID(err, src);
-  if err != ENOERR then return;
-  var gid = getGID(err, src);
-  if err != ENOERR then return;
-  // Change uid and gid to that of the src
-  chown(err, destFile, uid, gid);
+  if (metadata) {
+    // Get uid and gid from src
+    var uid = getUID(err, src);
+    if err != ENOERR then return;
+    var gid = getGID(err, src);
+    if err != ENOERR then return;
+    // Change uid and gid to that of the src
+    chown(err, destFile, uid, gid);
+  }
 }
 
 /* Copies the contents and permissions of the file indicated by src into
@@ -160,7 +162,7 @@ proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
    message.  If metadata is set to true, will also copy the metadata of the
    file to be copied.  May generate other error messages.
    src: the source file whose contents and permissions are to be copied
-   dest: the destination directory or file of the contents and permissions.
+   dest: the destination file for the contents and permissions.
    metadata: a boolean indicating whether to copy metadata associated with the
              source file.
 */
