@@ -33,6 +33,8 @@ Optimization Control Options:
       --[no-]live-analysis            Enable [disable] live variable analysis
       --[no-]optimize-loop-iterators  Enable [disable] optimization of
                                       iterators composed of a single loop
+      --[no-]vectorize                Enable [disable] generation of
+                                      vectorization hints
       --[no-]optimize-on-clauses      Enable [disable] optimization of on
                                       clauses
       --optimize-on-clause-limit <limit>

@@ -19,9 +19,12 @@
 
 #ifndef _ITERATOR_H_
 #define _ITERATOR_H_
+#include "vec.h"
+#include "baseAST.h"
 
 class AggregateType;
 class FnSymbol;
+class CallExpr;
 
 enum IteratorTag { 
   it_iterator, 
@@ -50,6 +53,7 @@ public:
   FnSymbol*      incr;
 };
 
+CallExpr* isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts);
 void lowerIterator(FnSymbol* fn);
 
 #endif
