@@ -153,11 +153,9 @@ module FFTW {
                                      output, sign, flags);
   }
 
-  // Real-to-complex and complex-to-real planning routines
-  // There are two cases that we treat independently here : in-place and out-of-place transforms
-
-  // Since the calls to FFTW are the same, pull the extern declarations out.
-  // TODO : This should be cleaned up further and made consistent across the file
+  // Real-to-complex and complex-to-real planning routines There are
+  // two cases that we treat independently here : in-place and
+  // out-of-place transforms
 
   // Out-of-place routines
   proc plan_dft_r2c(input : [] real(64), output : [] complex(128), flags :c_uint) : fftw_plan
