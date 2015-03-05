@@ -147,6 +147,11 @@ proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
   if err != ENOERR then return;
 
   if (metadata) {
+    extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): syserr;
+
+    // Copies the access time, and time of last modification.
+    err = chpl_fs_copy_metadata(src.c_str(), dest.c_str());
+
     // Get uid and gid from src
     var uid = getUID(err, src);
     if err != ENOERR then return;
