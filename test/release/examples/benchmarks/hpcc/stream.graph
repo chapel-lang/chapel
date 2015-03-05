@@ -1,5 +1,5 @@
 perfkeys: min =, avg =
 files: hpcc-stream.dat, hpcc-stream.dat
-graphtitle: Global STREAM Performance
+graphtitle: Global STREAM Time
 ylabel: Time (seconds)
 graphname: global-stream
