@@ -1388,18 +1388,22 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
     quoted_cols += elipses_size;
   }
 
-  ti->ret_columns = quoted_cols;
-  ti->ret_chars = quoted_chars;
-  ti->ret_bytes = quoted_bytes;
-  ti->ret_truncated_at_byte = i;
-  ti->ret_truncated = overfull;
+  if( ti ) {
+    ti->ret_columns = quoted_cols;
+    ti->ret_chars = quoted_chars;
+    ti->ret_bytes = quoted_bytes;
+    ti->ret_truncated_at_byte = i;
+    ti->ret_truncated = overfull;
+  }
   return 0;
 error:
-  ti->ret_columns = -1;
-  ti->ret_chars = -1;
-  ti->ret_bytes = -1;
-  ti->ret_truncated_at_byte = -1;
-  ti->ret_truncated = -1;
+  if( ti ) {
+    ti->ret_columns = -1;
+    ti->ret_chars = -1;
+    ti->ret_bytes = -1;
+    ti->ret_truncated_at_byte = -1;
+    ti->ret_truncated = -1;
+  }
   return err;
 }
 

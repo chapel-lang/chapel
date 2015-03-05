@@ -6238,6 +6238,23 @@ static void resolveReturnType(FnSymbol* fn)
 
 }
 
+// Simple wrappers to check if a function is a specific type of iterator
+static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
+  if (fn->isIterator()) {
+    for_formals(formal, fn) {
+      if (formal->type == iterTag->type && paramMap.get(formal) == iterTag) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+static bool isLeaderIterator(FnSymbol* fn) {
+  return isIteratorOfType(fn, gLeaderTag);
+}
+static bool isStandaloneIterator(FnSymbol* fn) {
+  return isIteratorOfType(fn, gStandaloneTag);
+}
 
 void
 resolveFns(FnSymbol* fn) {
@@ -6256,19 +6273,12 @@ resolveFns(FnSymbol* fn) {
     return;
 
   //
-  // mark leaders for inlining
+  // Mark leader and standalone parallel iterators for inlining. Also stash a
+  // pristine copy of the iterator (required by forall intents)
   //
-  if (fn->isIterator()) {
-    for_formals(formal, fn) {
-      if (formal->type == gLeaderTag->type &&
-          paramMap.get(formal) == gLeaderTag) {
-        // Leader iterators are always inlined.
-        fn->addFlag(FLAG_INLINE_ITERATOR);
-        // need to do the following before 'fn' gets resolved
-        stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
-        break;
-      }
-    }
+  if (isLeaderIterator(fn) || isStandaloneIterator(fn)) {
+    fn->addFlag(FLAG_INLINE_ITERATOR);
+    stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
   }
 
   if (fn->retTag == RET_REF) {
@@ -6304,31 +6314,6 @@ resolveFns(FnSymbol* fn) {
       resolveCall(cast);
       if (cast->isResolved()) {
         resolveFns(cast->isResolved());
-      }
-    }
-  }
-
-  //
-  // mark leaders and standalone parallel iterators for inlining
-  //
-  // The original computation used to be here, now we do it earlier,
-  // here we only verify that we did not miss a leader.
-  // todo: convert this to an assertion; perhaps factor out the common code
-  // with the above.
-  //
-  if (fn->isIterator() &&
-      !fn->hasFlag(FLAG_INLINE_ITERATOR))
-  {
-    for_formals(formal, fn) {
-      if (formal->type == gLeaderTag->type &&
-          paramMap.get(formal) == gLeaderTag) {
-        // oops
-        INT_ASSERT(false);
-      }
-      if (formal->type == gStandaloneTag->type &&
-          paramMap.get(formal) == gStandaloneTag) {
-        // Standalone iterators are always inlined.
-        fn->addFlag(FLAG_INLINE_ITERATOR);
       }
     }
   }

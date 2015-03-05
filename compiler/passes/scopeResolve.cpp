@@ -1085,15 +1085,13 @@ static void move_constructor_to_outer(FnSymbol* fn, AggregateType* outerType)
 *                                                                           *
 ************************************* | ************************************/
 
-static LoopStmt* findOuterLoop(Expr* stmt);
-
 static void resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
     SET_LINENO(gs);
 
     if (SymExpr* label = toSymExpr(gs->label)) {
       if (label->var == gNil) {
-        LoopStmt* loop = findOuterLoop(gs);
+        LoopStmt* loop = LoopStmt::findEnclosingLoop(gs);
 
         if (!loop)
           USR_FATAL(gs, "break or continue is not in a loop");
@@ -1116,10 +1114,10 @@ static void resolveGotoLabels() {
 
     } else if (UnresolvedSymExpr* label = toUnresolvedSymExpr(gs->label)) {
       const char* name = label->unresolved;
-      LoopStmt*   loop = findOuterLoop(gs);
+      LoopStmt*   loop = LoopStmt::findEnclosingLoop(gs);
 
       while (loop && (!loop->userLabel || strcmp(loop->userLabel, name))) {
-        loop = findOuterLoop(loop->parentExpr);
+        loop = LoopStmt::findEnclosingLoop(loop->parentExpr);
       }
 
       if (!loop) {
@@ -1136,21 +1134,6 @@ static void resolveGotoLabels() {
         INT_FATAL(gs, "unexpected goto type");
     }
   }
-}
-
-static LoopStmt* findOuterLoop(Expr* stmt) {
-  LoopStmt* retval = 0;
-
-  if (LoopStmt* loop = toLoopStmt(stmt))
-    retval = loop;
-
-  else if (stmt->parentExpr)
-    retval = findOuterLoop(stmt->parentExpr);
-
-  else
-    retval = 0;
-
-  return retval;
 }
 
 /************************************ | *************************************
