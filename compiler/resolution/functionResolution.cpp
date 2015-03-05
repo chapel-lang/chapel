@@ -27,7 +27,7 @@
 #include "resolution.h"
 
 #include "astutil.h"
-#include "oldCollectors.h"
+#include "stlUtil.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
@@ -4217,10 +4217,10 @@ createFunctionAsValue(CallExpr *call) {
     thisMethod->insertFormalAtTail(newFormal);
   }
 
-  Vec<CallExpr*> calls;
-  collectCallExprs(captured_fn, calls);
+  std::vector<CallExpr*> calls;
+  collectCallExprsSTL(captured_fn, calls);
 
-  forv_Vec(CallExpr, cl, calls) {
+  for_vector(CallExpr, cl, calls) {
     if (cl->isPrimitive(PRIM_YIELD)) {
       USR_FATAL_CONT(cl, "Iterators not allowed in first class functions");
     }
@@ -4279,9 +4279,9 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent /* = NULL*/) {
 //
 static bool
 usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
-  Vec<BaseAST*> asts;
-  collect_asts(fn, asts);
-  forv_Vec(BaseAST, ast, asts) {
+  std::vector<BaseAST*> asts;
+  collect_asts_STL(fn, asts);
+  for_vector(BaseAST, ast, asts) {
     if (toCallExpr(ast)) {
       CallExpr *call = toCallExpr(ast);
 
@@ -7905,9 +7905,9 @@ static void replaceReturnedValuesWithRuntimeTypes()
 }
 
 
-static void replaceInitPrims(Vec<BaseAST*>& asts)
+static void replaceInitPrims(std::vector<BaseAST*>& asts)
 {
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       // We are only interested in INIT primitives.
       if (call->isPrimitive(PRIM_INIT)) {
@@ -7995,12 +7995,12 @@ static void replaceInitPrims(Vec<BaseAST*>& asts)
 
 
 static void insertRuntimeInitTemps() {
-  Vec<BaseAST*> asts;
-  collect_asts_postorder(rootModule, asts);
+  std::vector<BaseAST*> asts;
+  collect_asts_postorder_STL(rootModule, asts);
 
   // Collect asts which are definitions of VarSymbols that are type variables
   // and are flagged as runtime types.
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (isVarSymbol(def->sym) &&
           def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
@@ -8020,8 +8020,8 @@ static void insertRuntimeInitTemps() {
 
   replaceInitPrims(asts);
 
-  forv_Vec(BaseAST, ast, asts) {
-    if (SymExpr* se = toSymExpr(ast)) {
+  for_vector(BaseAST, ast1, asts) {
+    if (SymExpr* se = toSymExpr(ast1)) {
 
       // remove dead type expressions
       if (se->getStmtExpr() == se)
