@@ -9,7 +9,7 @@
 \end{openissue}
 
 In this section, we describe Chapel's memory consistency model. This memory
-consistency model is in spirit of the Sequantial Consistency for Data Race free
+consistency model is in spirit of the Sequential Consistency for Data Race free
 programs model adopted by C11, C++11, Java, and UPC. In particular, correct
 programs will use synchronization constructs when tasks communicate with each
 other. The model does not define the behavior of incorrect programs with data
@@ -35,11 +35,11 @@ model for Chapel.
 
 1. Sequential programs have program order semantics. Programs that are totally sequential cannot have data races and should execute in the natural order.
 
-2. Chapel's fork-join constructs, introduce additional order dependencies. Operations within a task cannot behave as though they started before the task started. Similarly, all operations in a task must be completed by the time the task has completed.
+2. Chapel's fork-join constructs, introduce additional order dependencies. Operations within a task cannot behave as though they started before the task started. Similarly, all operations in a task must appear to be completed by the time the task has completed.
 
-3. Distributed memory programs have the same memory consistency model as local programs. The Chapel language seeks to allow a single description of an algorithm to work with different data distributions. This property enables a single programs to scale from few cores to many cores. A result of this property is that an expression of a program must be correct whether it is working on local or distributed data.
+3. Distributed memory programs have the same memory consistency model as local programs. The Chapel language seeks to allow a single description of an algorithm to work with different data distributions. A result of this property is that an expression of a program must be correct whether it is working on local or distributed data.
 
-4. Chapel's memory model should be as relaxed as possible to achieve the above design principles. At the same time, sequential consistency should be available to programmers when requested.
+4. Chapel's memory model should be as relaxed as possible to achieve the above design principles. In particular, making all operations provide sequential consistency is not likely to enable good performance. At the same time, sequential consistency should be available to programmers when requested.
 
 See \textit{A Primer on Memory Consistency and Cache Coherence} by Sorin,
 Daniel J. and Hill, Mark D. and Wood, David A. for more background information
@@ -78,7 +78,7 @@ We will use the following notation:
 \begin{itemize}
   \item $L(a)$ indicates a local or remote \textit{load} from a variable at address $a$
   \item $S(a)$ indicates a local or remote \textit{store} to a variable at address $a$
-  \item $A(a,o)$ indicates a local or remote \textit{atomic operation} on a variable at address $a$ with ordering constraint $o$. $o$ can be relaxed, acquire, release, or sequential consistency (SC).
+  \item $A(a,o)$ indicates a local or remote \textit{atomic operation} on a variable at address $a$ with ordering constraint $o$. $o$ can be relaxed, acquire, release, or sequential consistency (SC). These atomic operations must be completed at once (ie atomically) and so it is not possible to read an intemediate state from an atomic operation, even with relaxed consistency. 
   \item $A(a)$ indicates an \textit{atomic operation} on a variable at address $a$ with sequential consistency (SC) ordering constraint
   \item $L(a)$, $S(a)$, and $A(a,o)$ are also called \textit{memory operations}
   \item $X <_p Y$ indicates that $X$ preceeds $Y$ in program order
