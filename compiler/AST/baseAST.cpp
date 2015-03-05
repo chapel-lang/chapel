@@ -635,6 +635,13 @@ bool isForLoop(const BaseAST* a)
   return (stmt != 0 && stmt->isForLoop()) ? true : false;
 }
 
+bool isCoforallLoop(const BaseAST* a)
+{
+  const BlockStmt* stmt = toConstBlockStmt(a);
+
+  return (stmt != 0 && stmt->isCoforallLoop()) ? true : false;
+}
+
 bool isCForLoop(const BaseAST* a)
 {
   const BlockStmt* stmt = toConstBlockStmt(a);

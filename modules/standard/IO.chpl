@@ -1567,7 +1567,13 @@ inline proc channel.read(ref args ...?k,
     this.lock();
     for param i in 1..k {
       if !error {
-        error = _read_one_internal(_channel_internal, kind, args[i]);
+        if args[i].locale == here {
+          error = _read_one_internal(_channel_internal, kind, args[i]);
+        } else {
+          var tmp:args[i].type;
+          error = _read_one_internal(_channel_internal, kind, tmp);
+          args[i] = tmp;
+        }
       }
     }
     this.unlock();

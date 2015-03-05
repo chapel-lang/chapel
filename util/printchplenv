@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import optparse, os
+import optparse, os, subprocess
 from sys import stdout
 
 from chplenv import *
@@ -45,7 +45,7 @@ def print_mode(mode='list'):
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
 
-    get_module_lcd = ( (chpl_home == chpl_module_home) and (chpl_home != '') and
+    get_module_lcd = ( utils.using_chapel_module() and
                      (mode == 'runtime' or mode == 'make') )
     if m != 'compiler' and m != 'launcher':
         target_arch = chpl_arch.get('target', mode == 'make', get_module_lcd)
@@ -100,10 +100,6 @@ def print_mode(mode='list'):
 
     hwloc = chpl_hwloc.get()
     print_var('CHPL_HWLOC', hwloc, mode, 'hwloc', ('runtime',))
-    # only 'make' needs this value (for linking user programs)
-    if mode == 'make' and hwloc == 'hwloc':
-        hwloc_numa = chpl_hwloc_numa.get()
-        print_var('  CHPL_HWLOC_NUMA', hwloc_numa, mode, filters=('runtime',))
 
     regexp = chpl_regexp.get()
     print_var('CHPL_REGEXP', regexp, mode, 're', ('runtime',))
@@ -132,6 +128,58 @@ def print_mode(mode='list'):
         print_mode('runtime')
         stdout.write('CHPL_MAKE_LAUNCHER_SUBDIR=')
         print_mode('launcher')
+
+        link_args_3p = []
+
+        print_var('  CHPL_DLMALLOC_UNIQ_CFG_PATH',
+                  chpl_3p_dlmalloc_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if target_mem == 'dlmalloc':
+            link_args_3p.extend(chpl_3p_dlmalloc_configs.get_link_args())
+
+        print_var('  CHPL_GMP_UNIQ_CFG_PATH',
+                  chpl_3p_gmp_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        link_args_3p.extend(chpl_3p_gmp_configs.get_link_args(gmp))
+
+        print_var('  CHPL_HWLOC_UNIQ_CFG_PATH',
+                  chpl_3p_hwloc_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if hwloc == 'hwloc':
+            link_args_3p.extend(chpl_3p_hwloc_configs.get_link_args())
+
+        print_var('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH',
+                  chpl_3p_massivethreads_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if tasks == 'massivethreads':
+            link_args_3p.extend(chpl_3p_massivethreads_configs.get_link_args())
+
+        print_var('  CHPL_QTHREAD_UNIQ_CFG_PATH',
+                  chpl_3p_qthreads_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if tasks == 'qthreads':
+            link_args_3p.extend(chpl_3p_qthreads_configs.get_link_args())
+
+        print_var('  CHPL_RE2_UNIQ_CFG_PATH',
+                  chpl_3p_re2_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if regexp == 're2':
+            link_args_3p.extend(chpl_3p_re2_configs.get_link_args())
+
+        print_var('  CHPL_TCMALLOC_UNIQ_CFG_PATH',
+                  chpl_3p_tcmalloc_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if target_mem == 'tcmalloc':
+            link_args_3p.extend(chpl_3p_tcmalloc_configs.get_link_args())
+
+        link_args_3p_dedup=[]
+        for arg in reversed(link_args_3p):
+            if arg not in link_args_3p_dedup:
+                link_args_3p_dedup.append(arg)
+        print_var('  CHPL_THIRD_PARTY_LINK_ARGS',
+                  ' '.join(reversed(link_args_3p_dedup)),
+                  mode, filters=('runtime',))
+
     elif m == 'compiler' or m == 'runtime' or m == 'launcher':
         stdout.write('\n')
 

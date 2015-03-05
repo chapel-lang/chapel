@@ -16,4 +16,4 @@
 # limitations under the License.
 
 GEN_CFLAGS += -I$(DLMALLOC_INCLUDE_DIR)
-LIBS += -L$(DLMALLOC_LIB_DIR) -ldlmalloc
+GEN_LFLAGS += -L$(DLMALLOC_LIB_DIR)

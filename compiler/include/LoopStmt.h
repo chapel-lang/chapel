@@ -33,6 +33,8 @@ public:
   LabelSymbol*           continueLabelGet()                           const;
   void                   continueLabelSet(LabelSymbol* sym);
 
+  static LoopStmt*       findEnclosingLoop(Expr* expr);
+
 protected:
                          LoopStmt(BlockStmt* initBody);
   virtual               ~LoopStmt();
