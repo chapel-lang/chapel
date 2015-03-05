@@ -273,7 +273,7 @@ std::string generateSphinxProject(std::string dirpath) {
  */
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
-  // based on the install path in third-party/chpldoc-venv/ dir.
+  // based on the install path in the third-party/chpldoc-venv/ dir.
   const char * venvDir = astr(
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
     CHPL_TARGET_PLATFORM, "/chpldoc-virtualenv");
