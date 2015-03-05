@@ -155,7 +155,7 @@ void IpeScope::describe(int offset, bool recursiveP) const
         typeName = mSymbols[i]->type->symbol->name;
 
       if (sym->immediate != 0)
-        printf("%s   %3d: imm   (%s)", pad, i, typeName);
+        printf("%s   %3d: const (%s)", pad, i, typeName);
 
       else if (sym->hasFlag(FLAG_CONST))
         printf("%s   %3d: const (%s)", pad, i, typeName);
@@ -174,16 +174,9 @@ void IpeScope::describe(int offset, bool recursiveP) const
           fputc(' ', stdout);
       }
 
-      fputs("   ",   stdout);
+      printf("   %4d %4d %s", sym->depth(), sym->offset(), symName);
 
-      if (sym->immediate == 0)
-        printf("%4d %4d ", sym->depth(), sym->offset());
-      else
-        printf("          ");
-
-      fputs(symName, stdout);
-
-      if (sym->immediate == 0 && sym->depth() == 0 && sym->offset() >= 0)
+      if (sym->depth() == 0 && sym->offset() >= 0)
       {
         IpeValue value = IpeVars::fetch(sym, NULL);
 

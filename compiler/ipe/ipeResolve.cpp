@@ -65,12 +65,15 @@ Expr* ipeResolve(Expr* expr, IpeScope* scope, IpeVars* vars)
   {
     AstDumpToNode logger(stdout, 3);
 
-    printf("   ipeResolve\n");
+    printf("ipeResolve\n");
     printf("   ");
     expr->accept(&logger);
     printf("\n\n");
 
     scope->describe(3);
+    printf("\n\n");
+
+    IpeVars::describe(vars, 3);
     printf("\n\n");
   }
 
@@ -166,6 +169,9 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
     printf("\n\n");
 
     scope->describe(3);
+    printf("\n\n");
+
+    IpeVars::describe(vars, 3);
     printf("\n\n");
   }
 
@@ -467,7 +473,7 @@ static Expr* resolve(CallExpr* callExpr, IpeScope* scope, IpeVars* vars)
     if (symbols.count() == 0)
     {
       // New modules should be resolved relative to root
-      ipeResolve(findModuleDefinition(modName), gGlobalScope, vars);
+      ipeResolve(findModuleDefinition(modName), gRootScope, vars);
 
       // Fetch the modName again. It will be found this time.
       symbols = scope->visibleSymbols(modName);
