@@ -997,6 +997,7 @@ static void populateWideInfoMap()
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->type->symbol->hasFlag(FLAG_WIDE_REF) ||
         arg->type->symbol->hasFlag(FLAG_REF) ||
+        arg->type->symbol->hasFlag(FLAG_DATA_CLASS) ||
         arg->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       wideInfoMap->put(arg, new WideInfo(arg));
     }
