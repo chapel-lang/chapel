@@ -30,7 +30,17 @@ module ChapelBase
   inline proc =  (ref a : real, b : real) : void { __primitive("=", a, b); }
 
   //
-  // Basic arithmetic operators
+  // Basic unary arithmetic operators
+  //
+
+  inline proc + (a : int ) : int  return a;
+  inline proc + (a : real) : real return a;
+
+  inline proc - (a : int ) : int  return __primitive("u-", a);
+  inline proc - (a : real) : real return __primitive("u-", a);
+
+  //
+  // Basic binary arithmetic operators
   //
   inline proc +  (    a : int,  b : int ) : int  return __primitive("+",  a, b);
   inline proc -  (    a : int,  b : int ) : int  return __primitive("-",  a, b);
@@ -38,9 +48,9 @@ module ChapelBase
   inline proc /  (    a : int,  b : int ) : int  return __primitive("/",  a, b);
 
   inline proc +  (    a : real, b : real) : real return __primitive("+",  a, b);
-  inline proc -  (    a : real, b : real) : real return __primitive("+",  a, b);
-  inline proc *  (    a : real, b : real) : real return __primitive("+",  a, b);
-  inline proc /  (    a : real, b : real) : real return __primitive("+",  a, b);
+  inline proc -  (    a : real, b : real) : real return __primitive("-",  a, b);
+  inline proc *  (    a : real, b : real) : real return __primitive("*",  a, b);
+  inline proc /  (    a : real, b : real) : real return __primitive("/",  a, b);
 
   //
   // Equality comparison on primitive types
@@ -68,6 +78,29 @@ module ChapelBase
   inline proc >= (    a : int,  b : int ) : bool return __primitive(">=", a, b);
   inline proc >= (    a : real, b : real) : bool return __primitive(">=", a, b);
 
+  //
+  // Absolute value
+  //
+
+  proc abs(a : int) : int
+  {
+    var retval : int = a;
+
+    if (a < 0) then
+      retval = a * -1;
+
+    return retval;
+  }
+
+  proc abs(a : real) : real
+  {
+    var retval : real = a;
+
+    if (a < 0.0) then
+      retval = a * -1.0;
+
+    return retval;
+  }
 
   //
   // Support for implicit boolean conversion for conditional expressions
