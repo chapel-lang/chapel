@@ -907,13 +907,14 @@ narrowArg(ArgSymbol* arg, WideInfo* wi,
 static bool usedInOn(Symbol* sym, Map<Symbol*, Vec<SymExpr*>*> &useMap, CallGraph* graph) {
   for_uses(use, useMap, sym) {
     if (FnSymbol* fn = toFnSymbol(use->parentSymbol)) {
-      CallGraph::Node* n = graph->vertices[fn];
-      if (n->onDepth != 0 ||
-          fn->hasFlag(FLAG_ON_BLOCK) ||
-          fn->hasFlag(FLAG_ON)) {
-            DEBUG_PRINTF("ON: %s used in %s (%d): %d\n", sym->cname, fn->cname, fn->id, n->onDepth);
-            return true;
-      }
+      if (CallGraph::Node* n = graph->vertices[fn]) {
+        if (n->onDepth != 0 ||
+            fn->hasFlag(FLAG_ON_BLOCK) ||
+            fn->hasFlag(FLAG_ON)) {
+              DEBUG_PRINTF("ON: %s used in %s (%d): %d\n", sym->cname, fn->cname, fn->id, n->onDepth);
+              return true;
+        }
+      } else return true;
     }
   }
   return false;
