@@ -1,0 +1,13 @@
+bug: Early exit from function with out arg that uses a channel causes seg fault
+
+This is a memory management bug that has been tracked into our callDestructors
+pass.  If an out argument was assigned to before exiting the function then
+destructor calls for the channel and file were always inserted before the
+function returned, even though in the early exit case the channel and file in
+question were (to the user's perspective) not even in existence.  Thus, when
+they were destroyed, the program would segfault.
+
+See also outArgEarlyExit[ Reader | Writer ] for individual odd behavior.
+
+Tom's AMM branch does not exhibit this behavior, so when that gets merged into
+trunk, this future should be resolved.

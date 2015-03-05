@@ -115,8 +115,9 @@ static const char* getTempDir() {
   }
 #ifdef P_tmpdir
   return P_tmpdir;
-#endif
+#else
   return "/tmp";
+#endif
 }
 
 

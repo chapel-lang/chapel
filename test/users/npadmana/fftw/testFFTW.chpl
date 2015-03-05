@@ -20,7 +20,7 @@ proc runtest(param ndim : int, fn : string) {
   var D : domain(ndim);
   // Define ranges here
   var rD,cD,reD,imD : domain(ndim,int,true); 
-  var A,B,goodA,goodB : [D] fftw_complex;
+  var A,B,goodA,goodB : [D] complex;
   {
     var f = open(fn,iomode.r).reader(kind=iokind.little);
     for ii in 1..ndim {
@@ -36,12 +36,12 @@ proc runtest(param ndim : int, fn : string) {
     if (ndim == 3) {
       D = {0.. #dims(1),0.. #dims(2), 0.. #dims(ndim)};
     }
-    for (r,c) in goodA {
-      f.read(r);
-      c = 0;
+    for val in goodA {
+      f.read(val.re);
+      val.im = 0;
     }
-    for (r,c) in goodB {
-      f.read(r); f.read(c);
+    for val in goodB {
+      f.read(val);
     }
     f.close();
     writeln("Data read...");
@@ -107,28 +107,28 @@ proc runtest(param ndim : int, fn : string) {
 
   // Testing r2c and c2r
   var rA : [D] real(64); // No padding for an out-of place transform
-  var cB : [cD] fftw_complex;
+  var cB : [cD] complex;
   fwd = plan_dft_r2c(rA,cB,FFTW_ESTIMATE);
   rev = plan_dft_c2r(cB,rA,FFTW_ESTIMATE);
-  rA[D] = re(goodA);
+  rA[D] = goodA.re;
   execute(fwd);
   printcmp(cB,goodB[cD]);
   execute(rev);
   rA /= norm;
-  printcmp(rA[D],re(goodA));
+  printcmp(rA[D],goodA.re);
   destroy_plan(fwd);
   destroy_plan(rev);
   // In place transform
   var rA2 : [rD] real(64);
   fwd = plan_dft_r2c(D,rA2,FFTW_ESTIMATE);
   rev = plan_dft_c2r(D,rA2,FFTW_ESTIMATE);
-  rA2[D] = re(goodA);
+  rA2[D] = goodA.re;
   execute(fwd);
-  printcmp(rA2[reD],re(goodB[cD]));
-  printcmp(rA2[imD],im(goodB[cD]));
+  printcmp(rA2[reD],goodB[cD].re);
+  printcmp(rA2[imD],goodB[cD].im);
   execute(rev);
   rA2 /= norm;
-  printcmp(rA2[D],re(goodA));
+  printcmp(rA2[D],goodA.re);
   destroy_plan(fwd);
   destroy_plan(rev);
 
@@ -151,3 +151,5 @@ runtest(3, "arr3d.dat");
 if (usethread) {
   cleanup_threads();
 }
+cleanup();
+
