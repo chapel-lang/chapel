@@ -286,8 +286,8 @@ class AbstractJob(object):
                 if not alreadyRunning and status == 'R':
                     alreadyRunning = True
                     exec_start_time = time.time()
-                status = job_status(job_id, output_file)
                 time.sleep(.5)
+                status = job_status(job_id, output_file)
 
             exec_time = time.time() - exec_start_time
             # Note that this time isn't very accurate as we don't get the exact

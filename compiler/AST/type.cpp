@@ -145,6 +145,43 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
   return 1;
 }
 
+
+void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
+  // Only print extern types.
+  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << "type ";
+  *file << this->symbol->name;
+  *file << std::endl;
+
+  // For .rst mode, put a line break after the .. data:: directive and
+  // its description text.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->symbol->doc != NULL) {
+    this->printDocsDescription(this->symbol->doc, file, tabs + 1);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+std::string PrimitiveType::docsDirective() {
+  if (!fDocsTextOnly) {
+    return ".. type:: ";
+  } else {
+    return "";
+  }
+}
+
+
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
 }

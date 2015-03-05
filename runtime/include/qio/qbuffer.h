@@ -500,7 +500,6 @@ typedef bool qio_bool;
       (size_t) count <= (SIZE_MAX / sizeof(type)) ) { \
     /* check that count is positive and small enough to go on the stack */ \
     if( (ssize_t) count >= 0 && \
-        (ssize_t) count <= SSIZE_MAX && \
         (size_t) count <= (sizeof(onstack)/sizeof(type)) ) { \
       ptr = onstack; \
     } else { \
