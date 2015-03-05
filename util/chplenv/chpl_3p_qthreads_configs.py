@@ -18,6 +18,6 @@ def get_link_args():
                                                       '-lchpl',
                                                       'libqthread.la'])
     if ( chpl_compiler.get('target').startswith('cray-prgenv') and
-         chpl_llvm.get() == 'llvm' ):
+         chpl_llvm.get() != 'none' ):
         link_args.append('-lrt')
     return link_args
