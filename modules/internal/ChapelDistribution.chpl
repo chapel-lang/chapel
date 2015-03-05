@@ -93,10 +93,11 @@ module ChapelDistribution {
     inline proc incRefCount(cnt=1) {
       if debugDistRefCount {
         extern proc printf(fmt: c_string, arg...);
-        const nucnt = _distCnt.read();
-        printf("----- INC count was %ld\n", cnt);
+        const cnt = _distCnt.read();
+        printf("----- INC _distCnt (%016lx) was %ld\n",
+               __primitive("cast", uint(64), this), cnt);
         if cnt < 0 || cnt > 1000 then
-            halt("distribution reference count is bogus!");
+            halt("_distCnt is bogus!");
       }
       compilerAssert(!noRefCount);
       _distCnt.inc(cnt);
@@ -107,9 +108,10 @@ module ChapelDistribution {
       const cnt = _distCnt.dec();
       if debugDistRefCount {
         extern proc printf(fmt: c_string, arg...);
-        printf("----- DEC count now %ld\n", cnt);
+        printf("----- DEC _distCnt (%016lx) now %ld\n",
+               __primitive("cast", uint(64), this), cnt);
         if cnt < 0 || cnt > 1000 then
-            halt("distribution reference count is bogus!");
+            halt("_distCnt is bogus!");
       }
       return cnt;
     }
@@ -200,6 +202,14 @@ module ChapelDistribution {
     }
   
     inline proc incRefCount(cnt=1) {
+      if debugDomRefCount {
+        extern proc printf(fmt: c_string, arg...);
+        const cnt = _domCnt.read();
+        printf("----- INC _domCnt (%016lx) was %ld\n", 
+               __primitive("cast", uint(64), this), cnt);
+        if cnt < 0 || cnt > 10000 then
+          halt("_domCnt is bogus!");
+      }
       compilerAssert(!noRefCount);
       _domCnt.inc(cnt);
     }
@@ -207,8 +217,13 @@ module ChapelDistribution {
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
       const cnt = _domCnt.dec(); //_domCnt.fetchSub(1)-1;
-      if cnt < 0 then
-          halt("domain reference count is negative!");
+      if debugDomRefCount {
+        extern proc printf(fmt: c_string, arg...);
+        printf("----- DEC _domCnt (%016lx) now %ld\n", 
+               __primitive("cast", uint(64), this), cnt);
+        if cnt < 0 || cnt > 10000 then
+            halt("_domCnt is bogus!");
+      }
       return cnt;
     }
 
@@ -373,6 +388,14 @@ module ChapelDistribution {
     }
   
     inline proc incRefCount(cnt=1) {
+      if debugArrRefCount {
+        extern proc printf(fmt: c_string, arg...);
+        const cnt = _arrCnt.read();
+        printf("----- INC _arrCnt (%016lx) was %ld\n", 
+               __primitive("cast", uint(64), this), cnt);
+        if cnt < 0 || cnt > 10000 then
+          halt("_arrCnt is bogus!");
+      }
       compilerAssert(!noRefCount);
       _arrCnt.inc(cnt);
     }
@@ -380,8 +403,13 @@ module ChapelDistribution {
     inline proc decRefCount() {
       compilerAssert(!noRefCount);
       const cnt = _arrCnt.dec(); //_arrCnt.fetchSub(1)-1;
-      if cnt < 0 then
-          halt("array reference count is negative!");
+      if debugArrRefCount {
+        extern proc printf(fmt: c_string, arg...);
+        printf("----- DEC _arrCnt (%016lx) now %ld\n", 
+               __primitive("cast", uint(64), this), cnt);
+        if cnt < 0 || cnt > 10000 then
+            halt("_arrCnt is bogus!");
+      }
       return cnt;
     }
 

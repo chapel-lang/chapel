@@ -2,7 +2,7 @@
 Chapel Compiler Release: README
 ===============================
 
-This is the 1.10.0 release of the Chapel compiler, intended to give
+This is the 1.11.0 release of the Chapel compiler, intended to give
 potential users a look at what we're doing and the opportunity to
 provide us with feedback.  See the LICENSE file for the release's
 licensing terms.
@@ -21,7 +21,7 @@ capabilities in the interest of a simple and clean build.
 1) Make sure that your shell is in the directory containing this
    README file.  For example:
 
-        cd ~/chapel-1.10.0
+        cd ~/chapel-1.11.0
 
 
 2) Set up your environment to use Chapel in "Quick Start" mode.

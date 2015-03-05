@@ -1315,11 +1315,13 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
-  dtVoid                               = createInternalType ("void", "void");
+  dtVoid                               = createInternalType ("void",     "void");
 
-  dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool", "chpl_bool");
-  dtInt[INT_SIZE_64]                   = createPrimitiveType("int",  "int64_t");
-  dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real", "_real64");
+  dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
+  dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
+  dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
+
+  dtStringC                            = createPrimitiveType("c_string", "c_string" );
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -1344,11 +1346,14 @@ void initPrimitiveTypes() {
   dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", 0.0, FLOAT_SIZE_64);
+  dtStringC->defaultValue              = new_StringSymbol("");
 
   dtBool                               = dtBools[BOOL_SIZE_SYS];
 
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
+
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   gTryToken = new VarSymbol("chpl__tryToken", dtBool);
 
@@ -1398,10 +1403,6 @@ void initPrimitiveTypes() {
 
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
-
-  dtStringC = createPrimitiveType( "c_string", "c_string" );
-  dtStringC->defaultValue = new_StringSymbol("");
-  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtStringCopy = createPrimitiveType( "c_string_copy", "c_string_copy" );
   dtStringCopy->defaultValue = gOpaque;
