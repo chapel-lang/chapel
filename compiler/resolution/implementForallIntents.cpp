@@ -479,9 +479,11 @@ static void detupleLeadIdx(Symbol* leadIdxSym, Symbol* leadIdxCopySym,
       lcCall->insertBefore(new DefExpr(svar));
       extractFromLeaderYield(lcCall, ++ix, svar, leadIdxSym);
       if (!isReduce)
+      {
 #ifndef HILDE_MM
         svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
 #endif
+      }
     }
   }
 
