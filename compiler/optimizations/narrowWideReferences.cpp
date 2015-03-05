@@ -343,7 +343,7 @@ static void resolveHelper(WideInfo* wi);
 static void doNarrowing(SymExprTypeMap&);
 static void handleLocalFields(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                               Map<Symbol*,Vec<SymExpr*>*>& useMap);
-static void pruneNarrowedActuals(SymExprTypeMap&);
+static void pruneWidenMap(SymExprTypeMap&);
 static void printNarrowEffectSummary();
 static void insertWideReferenceTemps(SymExprTypeMap&);
 static void moveAddressSourcesToTemp();
@@ -661,8 +661,8 @@ narrowSym(Symbol* sym, WideInfo* wi,
       }
     }
 #ifdef PRINT_NARROW_ANALYSIS
-    DEBUG_PRINTF("No case to narrow def %d %s in %s", wi->sym->id, wi->sym->cname, se->getModule()->cname);
-    print_view(se->getStmtExpr());
+    DEBUG_PRINTF("No case to narrow def %d %s in %s", wi->sym->id, wi->sym->cname, def->getModule()->cname);
+    print_view(def->getStmtExpr());
 #endif
   }
 
@@ -712,7 +712,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
         continue;
           }
       if (call->isResolved()) {
-        // pruneNarrowedActuals will clean up
+        // pruneWidenMap will clean up
         DEBUG_PRINTF("call: widening expr %d\n", sym->id);
         wi->exprsToWiden.push_back(use);
         continue;
@@ -733,6 +733,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
           if (strcmp(base->var->type->symbol->cname, "_class_localscoforall_fn") == 0) {
             DEBUG_PRINTF("trying to narrow coforall arg: %d -> %d\n", sym->id, member->var->id);
             addNarrowDep(sym, member->var);
+            wi->exprsToWiden.push_back(use);
           } else {
             // For all other types, we assume the fields are wide.
             DEBUG_PRINTF("set: widening expr %d\n", sym->id);
@@ -953,7 +954,7 @@ narrowWideReferences() {
 
   doNarrowing(*widenMap);
 
-  pruneNarrowedActuals(*widenMap);
+  pruneWidenMap(*widenMap);
 
   printNarrowEffectSummary();
 
@@ -1193,7 +1194,7 @@ static void doNarrowing(SymExprTypeMap& widenMap)
 }
 
 
-static void pruneNarrowedActuals(SymExprTypeMap& widenMap)
+static void pruneWidenMap(SymExprTypeMap& widenMap)
 {
   //
   // Prune the map of expressions to widen because of arguments that
@@ -1209,6 +1210,20 @@ static void pruneNarrowedActuals(SymExprTypeMap& widenMap)
           SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
           widenMap.put(actual, NULL);
           DEBUG_PRINTF("PRUNE: %d\n", actual->var->id);
+        }
+      }
+    }
+  }
+  form_Map(SymExprTypeMapElem, e, widenMap) {
+    SymExpr* key = e->key;
+    Type* value = e->value;
+    if (value) {
+      if (CallExpr* call = toCallExpr(key->parentExpr)) {
+        if (call->isPrimitive(PRIM_SET_MEMBER)) {
+          SymExpr* member = toSymExpr(call->get(2));
+          if (!isWideType(member->var)) {
+            widenMap.put(key, NULL);
+          }
         }
       }
     }
