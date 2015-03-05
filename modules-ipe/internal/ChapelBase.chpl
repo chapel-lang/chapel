@@ -87,7 +87,7 @@ module ChapelBase
     var retval : int = a;
 
     if (a < 0) then
-      retval = a * -1;
+      retval = 0 - a;
 
     return retval;
   }
@@ -97,7 +97,7 @@ module ChapelBase
     var retval : real = a;
 
     if (a < 0.0) then
-      retval = a * -1.0;
+      retval = 0.0 - a;
 
     return retval;
   }
