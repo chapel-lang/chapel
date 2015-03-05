@@ -58,36 +58,6 @@ general
 Reviewed 2015-03-02
 ===================
 
-assert src != dst failure (2015-02-28, michael)
-(cygwin64, cygwin32, gasnet-fast, xe-wb.gnu, xc-wb.gnu)
------------------------------------------------------------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/test_diff]
-[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for studies/madness/common/test_diff]
-[Error matching program output for studies/madness/common/test_gaxpy]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/common/test_mul]
-[Error matching program output for studies/madness/common/test_showboxes]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_diff (compopts: 1)]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy (compopts: 1)]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_mul]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_showboxes]
-
-some sort of failure in refactoring of third-party scripts (2015-03-04, gbt)
-(linux32, darwin, fifo, gnu.darwin, fast, baseline, verify, linux64, no-local, numa, gasnet.fifo, memleaks, gasnet-everything)
-----------------------------------------------------------------------------
-[Error matching compiler output for runtime/thomasvandoren/rtLibDirWarningsWithDeveloper]
-[Error matching compiler output for runtime/thomasvandoren/rtLibDirWarningsWithModuleAndDeveloper]
-[Error matching compiler output for runtime/thomasvandoren/rtLibDirWarningsWithModule]
-[Error matching compiler output for runtime/thomasvandoren/rtLibDirWarnings]
-[Warning: Did not recognize GMP value: ]
-[Warning: Did not recognize GMP value: ]
-[Warning: Did not recognize GMP value: ]
-[Warning: Did not recognize GMP value: ]
-
-
-
 
 ****************************************************************************
 *                          Principal platforms                             *
@@ -138,6 +108,10 @@ timeout (2015-02-05, first run) - (elliot/michael)
 [Error Timed out executing regexp test ./regexp_channel_test Regexp Channels Test]
 [Error Timed out executing regexp test ./regexp_test Regexp Test]
 
+Chapel string passed to external routine (2015-03-05, kyleb)
+------------------------------------------------------------
+[Error matching compiler output for memory/bradc/allocBig]
+
 
 ===================
 darwin
@@ -165,49 +139,6 @@ Inherits 'general'
 Reviewed 2015-03-02
 ===================
 
-re2 missing pthread routines? (2015-03-04, gbt)
------------------------------------------------
-[Error cannot locate compiler output comparison file release/examples/benchmarks/miniMD/miniMD.simple.perfkeys.good]
-[Error cannot locate compiler output comparison file release/examples/benchmarks/miniMD/miniMD.simple-nolocal.perfkeys.good]
-[Error cannot locate compiler output comparison file release/examples/benchmarks/miniMD/miniMD.simple-block.perfkeys.good]
-[Error cannot locate compiler output comparison file release/examples/benchmarks/miniMD/miniMD.stencil.perfkeys.good]
-[Error cannot locate compiler output comparison file release/examples/benchmarks/miniMD/explicit/miniMD.explicit.perfkeys.good]
-[Error matching compiler output for release/examples/benchmarks/shootout/spectralnorm]
-[Error matching compiler output for release/examples/benchmarks/shootout/meteor-fast]
-[Error matching compiler output for release/examples/benchmarks/shootout/meteor]
-[Error matching compiler output for release/examples/benchmarks/shootout/mandelbrot]
-[Error matching compiler output for release/examples/benchmarks/shootout/nbody]
-[Error cannot locate compiler output comparison file release/examples/benchmarks/lulesh/lulesh.default.perfkeys.good]
-[Error cannot locate compiler output comparison file release/examples/benchmarks/lulesh/lulesh.block.perfkeys.good]
-[Error cannot locate compiler output comparison file release/examples/benchmarks/lulesh/lulesh.default-dense.perfkeys.good]
-[Error cannot locate compiler output comparison file release/examples/benchmarks/lulesh/lulesh.block-dense.perfkeys.good]
-[Error matching compiler output for studies/shootout/k-nucleotide/bharshbarg/knucleotide-chaining]
-[Error matching compiler output for studies/shootout/k-nucleotide/bharshbarg/knucleotide-associative]
-[Error matching compiler output for studies/shootout/nbody/bradc/nbody-blc-slicie]
-[Error matching compiler output for studies/shootout/nbody/bradc/nbody-blc-zip]
-[Error matching compiler output for studies/shootout/nbody/bradc/nbody-blc-ref]
-[Error matching compiler output for studies/shootout/nbody/bradc/nbody-blc]
-[Error matching compiler output for studies/shootout/mandelbrot/lydia/mandelbrot-unzipped]
-[Error matching compiler output for studies/shootout/mandelbrot/perfComp/mandelbrot-MAXLOGICAL]
-[Error matching compiler output for studies/shootout/mandelbrot/ferguson/mandelbrot-stdout-putchar]
-[Error matching compiler output for studies/shootout/mandelbrot/ferguson/mandelbrot-stdout]
-[Error matching compiler output for studies/shootout/mandelbrot/bradc/mandelbrot-blc]
-[Error matching compiler output for studies/shootout/mandelbrot/bharshbarg/mandelbrot-unrolled]
-[Error matching compiler output for studies/shootout/spectral-norm/perfComp/spectralnorm-MAXLOGICAL]
-[Error matching compiler output for studies/shootout/spectral-norm/bradc/spectralnorm-blc]
-[Error matching compiler output for studies/shootout/regex-dna/bharshbarg/regexdna]
-[Error matching compiler output for studies/shootout/fasta/kbrady/fasta-qio]
-[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
-[Error matching compiler output for studies/shootout/fannkuch-redux/kbrady/fannkuch-redux]
-[Error matching compiler output for studies/shootout/meteor/kbrady/meteor-parallel]
-[Error matching compiler output for studies/shootout/meteor/kbrady/meteor-implicit-domain]
-[Error matching compiler output for studies/shootout/meteor/kbrady/meteor-parallel-alt]
-[Error matching compiler output for studies/shootout/meteor/kbrady/meteor]
-[Error matching compiler output for studies/lulesh/bradc/lulesh-dense (compopts: 1)]
-[Error: Timed out executing program performance/bharshbarg/range-forall (execopts: 2)]
-[Error matching compiler output for io/vass/time-write (compopts: 1)]
-
-
 
 ===================
 perf.bradc-lnx
@@ -220,6 +151,11 @@ consistent failure due to insane memory usage (should get better with strings)
 [Error matching performance keys for io/vass/time-write (compopts: 1)] (2014-11-01)
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
+test changed to be slower (2015-03-05, elliot)
+----------------------------------------------
+[Error: Timed out executing program performance/bharshbarg/range-forall (execopts: 2)]
+
+
 
 ===================
 perf.chap03
@@ -230,6 +166,10 @@ Reviewed 2015-03-02
 consistent failure due to insane memory usage (should get better with strings)
 ------------------------------------------------------------------------------
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
+
+test changed to be slower (2015-03-05, elliot)
+----------------------------------------------
+[Error: Timed out executing program performance/bharshbarg/range-forall (execopts: 2)]
 
 
 ===================
@@ -354,6 +294,17 @@ Inherits 'general'
 Reviewed 2015-03-02
 ===================
 
+type mismatches in generated C code (2015-03-05, ben)
+-----------------------------------------------------
+[Error matching .bad file for classes/bradc/arrayInClass/genericArrayInClass-otharrs-inline-iterators (compopts: 1)] 
+[Error matching compiler output for classes/bradc/arrayInClass/arrayOfArithInClass]
+[Error matching compiler output for classes/bradc/arrayInClass/genericArrayInClass-arith]
+[Error matching compiler output for classes/bradc/arrayInClass/genericArrayInClass-otharrs (compopts: 1)]
+
+we're leaking more memory than we did before (2015-03-05, ben/hilde?)
+---------------------------------------------------------------------
+[Error matching program output for memory/sungeun/refCount/domainMaps]
+
 gets wrong output (2015-03-03, gbt)
 -----------------------------------
 [Error matching program output for localeModels/gbt/maxTaskPar]
@@ -370,6 +321,10 @@ no-local
 Inherits 'general'
 Reviewed 2015-03-02
 ===================
+
+more memory leaks than expected (2015-03-05, ben/hilde?)
+--------------------------------------------------------
+[Error matching program output for memory/sungeun/refCount/domainMaps]
 
 
 =================================
@@ -430,6 +385,10 @@ Inherits 'gasnet*' and 'fifo'
 Reviewed 2015-03-01
 =============================
 
+number of initial comm counts went up (2015-03-05, ???)
+-------------------------------------------------------
+[Error matching program output for modules/sungeun/init/printInitCommCounts (compopts: 1)]
+
 === sporadic failures below ===
 
 sporadic execution timeouts
@@ -444,6 +403,11 @@ gasnet.llvm
 Inherits 'gasnet*' and 'llvm'
 Reviewed 2015-03-02
 =============================
+
+internal error (2015-03-05, ben)
+--------------------------------
+[Error matching compiler output for extern/ferguson/externblock/ptr]
+
 
 
 =============================
@@ -711,6 +675,7 @@ third-party linkage issues (2015-03-04, gbt)
 --------------------------------------------
 *** pretty much everything ***
 
+
 ===================
 xc.*
 Inherits 'x?.*'
@@ -739,8 +704,8 @@ Inherits 'xe.*'
 === sporadic failures below ===
 
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)] (last seen 2015-03-04 on xe.ugni.gnu)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (last seen 2015-02-28 on xe.ugni.gnu and xe.ugni.intel)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (last seen 2015-03-03 on xe.ugni.gnu)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (last seen 2015-03-05 on xe.ugni.intel)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (last seen 2015-03-05 on xe.ugni.intel)
 
 
 ==========================================
@@ -857,8 +822,10 @@ Reviewed 2015-03-01
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)] (2015-02-19, 2015-02-22..2015-02-23, 2015-02-25, 2015-02-27..2015-02-28)
-[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-05..)
+[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD
+(compopts: 1)] (2015-03-05..)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: *)] (2015-02-19, 2015-02-22..2015-02-23, 2015-02-25, 2015-02-27..2015-02-28, 2015-03-05..)
 
 
 ==================================
@@ -932,10 +899,6 @@ Inherits 'general'
 Reviewed 2015-03-02
 ===================
 
-new test results in pthread_mutex_init() failed (2015-03-03, vass)
-------------------------------------------------------------------
-[Error matching program output for parallel/forall/vass/ri-3-stress (compopts: 1)]
-
 check_channel assertion failure
 -------------------------------
 [Error matching C regexp test ./regexp_channel_test Regexp Channels Test]
@@ -945,6 +908,11 @@ QIO strcmp(got, expect) assertion error
 [Error matching program output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
 
 === sporadic failures below ===
+
+sporadic pthread_mutex_init() failure in new test (vass)
+--------------------------------------------------------
+[Error matching program output for parallel/forall/vass/ri-3-stress (compopts: 1)] (last seen: 2015-03-03 cygwin32)
+
 
 sporadic pthread_cond_init failed
 ---------------------------------
