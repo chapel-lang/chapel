@@ -26,9 +26,11 @@ class BitVec {
   size_t in_size;
   size_t ndata;
 
+  ~BitVec();
   BitVec(size_t in_size);
   BitVec(const BitVec& rhs);
-  ~BitVec();
+  void operator=(const BitVec& rhs) { this->copy(rhs); }
+
   void clear();
   bool get(size_t i) const;
   bool operator[](size_t i) const { return get(i); }
@@ -37,8 +39,10 @@ class BitVec {
   void intersection(const BitVec& other);
   
   // Synonyms for disjunction (union) and (conjunction) intersection above.
-  void operator|=(BitVec& other) { this->disjunction(other); }
-  void operator&=(BitVec& other) { this->intersection(other); }
+  void operator|=(const BitVec& other) { this->disjunction(other); }
+  void operator+=(const BitVec& other) { this->disjunction(other); }
+  void operator&=(const BitVec& other) { this->intersection(other); }
+  void operator-=(const BitVec& other);
 
   // Added functionality to make this compatible with std::bitset and thus 
   // boosts dynamic bitset if that gets into the STL, or we start using boost
@@ -57,6 +61,24 @@ class BitVec {
   bool any() const;
   bool none() const;
 };
+
+inline void
+BitVec::operator-=(const BitVec& other)
+{
+  BitVec not_other(other);
+  not_other.flip();
+  this->intersection(not_other);
+}
+
+inline bool operator==(const BitVec& a, const BitVec& b)
+{
+  return a.equals(b);
+}
+
+inline bool operator!=(const BitVec& a, const BitVec& b)
+{
+  return ! a.equals(b);
+}
 
 inline BitVec operator+(const BitVec& a, const BitVec& b)
 {
