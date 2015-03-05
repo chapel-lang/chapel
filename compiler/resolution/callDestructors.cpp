@@ -20,7 +20,6 @@
 #include "passes.h"
 
 #include "astutil.h"
-#include "oldCollectors.h"
 #include "expr.h"
 #include "resolution.h"
 #include "resolveIntents.h"
@@ -268,11 +267,11 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
       isSymExpr(stmt)  == false &&
       isCallExpr(stmt) == false &&
       isGotoStmt(stmt) == false) {
-    Vec<GotoStmt*> gotoStmts;
+    std::vector<GotoStmt*> gotoStmts;
 
-    collectGotoStmts(stmt, gotoStmts);
+    collectGotoStmtsSTL(stmt, gotoStmts);
 
-    forv_Vec(GotoStmt, gotoStmt, gotoStmts) {
+    for_vector(GotoStmt, gotoStmt, gotoStmts) {
       if (gotoExitsBlock(gotoStmt, block)) {
         forv_Vec(VarSymbol, var, vars) {
           if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
@@ -439,15 +438,15 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
   newFn->retType = dtVoid;
   fn->defPoint->insertBefore(new DefExpr(newFn));
 
-  Vec<SymExpr*> symExprs;
-  collectSymExprs(newFn, symExprs);
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(newFn, symExprs);
 
   // In the body of the function, replace references to the original
   // ret symbol with copies of the return value reference.  A local
   // deref temp is inserted if needed.  The result is fed through a
   // call to the useFn -- effectively sucking the use function call
   // inside the clone function.
-  forv_Vec(SymExpr, se, symExprs) {
+  for_vector(SymExpr, se, symExprs) {
     if (se->var == ret) {
       CallExpr* move = toCallExpr(se->parentExpr);
       if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
@@ -624,9 +623,9 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
     use = *useMap.get(lhs);
   } else {
     for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
-      Vec<SymExpr*> symExprs;
-      collectSymExprs(stmt, symExprs);
-      forv_Vec(SymExpr, se, symExprs) {
+      std::vector<SymExpr*> symExprs;
+      collectSymExprsSTL(stmt, symExprs);
+      for_vector(SymExpr, se, symExprs) {
         if (se->var == lhs) {
           use.add(se);
         }

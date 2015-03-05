@@ -21,7 +21,6 @@
 #include "optimizations.h"
 
 #include "astutil.h"
-#include "oldCollectors.h"
 #include "bb.h"
 #include "expr.h"
 #include "ForLoop.h"
@@ -124,11 +123,11 @@ void deadVariableElimination(FnSymbol* fn) {
 // Removes expression statements that have no effect.
 //
 void deadExpressionElimination(FnSymbol* fn) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
 
-  collect_asts(fn, asts);
+  collect_asts_STL(fn, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     Expr* exprAst = toExpr(ast);
 
     if (exprAst == 0) {
@@ -215,18 +214,18 @@ void deadCodeElimination(FnSymbol* fn) {
       Expr*         expr        = bb->exprs[i];
       bool          isEssential = bb->marks[i];
 
-      Vec<BaseAST*> asts;
+      std::vector<BaseAST*> asts;
 
-      collect_asts(expr, asts);
+      collect_asts_STL(expr, asts);
 
-      forv_Vec(BaseAST, ast, asts) {
+      for_vector(BaseAST, ast, asts) {
         if (Expr* sub = toExpr(ast)) {
           exprMap[sub] = expr;
         }
       }
 
       if (isEssential == false) {
-        forv_Vec(BaseAST, ast, asts) {
+        for_vector(BaseAST, ast, asts) {
           if (CallExpr* call = toCallExpr(ast)) {
             // mark assignments to global variables as essential
             if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
@@ -248,11 +247,11 @@ void deadCodeElimination(FnSymbol* fn) {
   }
 
   forv_Vec(Expr, expr, workSet) {
-    Vec<SymExpr*> symExprs;
+    std::vector<SymExpr*> symExprs;
 
-    collectSymExprs(expr, symExprs);
+    collectSymExprsSTL(expr, symExprs);
 
-    forv_Vec(SymExpr, se, symExprs) {
+    for_vector(SymExpr, se, symExprs) {
       if (UD.count(se) != 0) {
         Vec<SymExpr*>* defs = UD[se];
 
