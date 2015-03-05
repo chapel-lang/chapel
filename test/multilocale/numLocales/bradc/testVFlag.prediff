@@ -8,11 +8,12 @@ target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
 # Build a .good file; the lines are:
 # - .launcher-$CHPL_LAUNCHER, with ' EXECOPTS' replaced with $EXECOPTS
 #   (the leading space allows separating this from the command line in
-#   the .goodstart, for readability, while still matching correctly in
-#   all cases)
+#   the .goodstart, for readability).  We then remove any resulting
+#   trailing space.
 # - .comm-$CHPL_COMM, with 'UNAME' replaced by the result of 'uname -n'
 # - .goodstop, which is the expected program output
-sed "s# EXECOPTS#$EXECOPTS#" < $1.launcher-$launcher.goodstart > $1.good
+sed -e "s# EXECOPTS#$EXECOPTS#" -e 's/ $//' \
+    < $1.launcher-$launcher.goodstart > $1.good
 sed "s/UNAME/$uname/" < $1.comm-$CHPL_COMM.goodcont >> $1.good
 cat $1.goodstop >> $1.good
 
@@ -41,4 +42,3 @@ case $launcher in
   aprun) sed -e "s/ -d[1-9][0-9]* / -dN /" $2 > $2.tmp &&
          mv $2.tmp $2;;
 esac
-
