@@ -1470,7 +1470,12 @@ void makeBinaryLLVM(void) {
     std::string errorInfo;
     tool_output_file output (preOptFilename.c_str(),
                              errorInfo,
-                             sys::fs::F_None);
+#if HAVE_LLVM_VER >= 34
+                             sys::fs::F_None
+#else
+                             raw_fd_ostream::F_Binary
+#endif
+                             );
     WriteBitcodeToFile(info->module, output.os());
     output.keep();
     output.os().flush();
@@ -1479,7 +1484,12 @@ void makeBinaryLLVM(void) {
   std::string errorInfo;
   tool_output_file output (moduleFilename.c_str(),
                            errorInfo,
-                           sys::fs::F_None);
+#if HAVE_LLVM_VER >= 34
+                             sys::fs::F_None
+#else
+                             raw_fd_ostream::F_Binary
+#endif
+                           );
  
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
