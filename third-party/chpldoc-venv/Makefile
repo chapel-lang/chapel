@@ -52,11 +52,14 @@ $(CHPLDOC_VENV_VIRTUALENV_DIR): $(CHPLDOC_VENV_VIRTUALENV)
 create-virtualenv: $(CHPLDOC_VENV_VIRTUALENV_DIR)
 
 # Install requirements.txt inside virtualenv. Use sphinx-build executable to
-# indicate success or failure.
+# indicate success or failure. Call virtualenv --relocatable <virtualenv_dir>
+# after installing, which takes the hardcoded paths out of the installed
+# "python binaries".
 $(CHPLDOC_VENV_SPHINX_BUILD): $(CHPLDOC_VENV_VIRTUALENV_DIR)
 	export PATH=$(CHPLDOC_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPLDOC_VENV_VIRTUALENV_DIR) && \
-	pip install -U --force-reinstall -r requirements.txt
+	pip install -U --force-reinstall -r requirements.txt && \
+	$(CHPLDOC_VENV_VIRTUALENV) --relocatable $(CHPLDOC_VENV_VIRTUALENV_DIR)
 
 # Phony convenience target for install python packages.
 install-requirements: rm-sphinx-build $(CHPLDOC_VENV_SPHINX_BUILD)

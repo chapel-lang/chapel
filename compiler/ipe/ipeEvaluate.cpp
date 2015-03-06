@@ -67,8 +67,10 @@ IpeValue ipeEvaluate(Expr* expr, IpeVars* vars)
     expr->accept(&logger);
     printf("\n\n");
 
+#if 0
     IpeVars::describe(vars, 3);
     printf("\n\n");
+#endif
   }
 
   if (false)
@@ -472,6 +474,35 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     handled        = true;
   }
 
+  else if (callExpr->isPrimitive(PRIM_UNARY_MINUS) == true)
+  {
+    if (gDebugLevelCalls > 1)
+    {
+      AstDumpToNode logger(stdout, 3);
+
+      printf("   PRIM_UNARY_MINUS\n");
+      printf("   ");
+      callExpr->accept(&logger);
+      printf("\n\n");
+    }
+
+    Type*    type = callExpr->typeInfo();
+    IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
+
+    if (strcmp(type->symbol->name, "int") == 0)
+    {
+      retval.iValue = -1 * arg1.iValue;
+    }
+
+    else if (strcmp(type->symbol->name, "real") == 0)
+    {
+      retval.rValue = -1.0 * arg1.rValue;
+    }
+
+    handled       = true;
+  }
+
+
   else if (callExpr->isPrimitive(PRIM_ADD) == true)
   {
     if (gDebugLevelCalls > 1)
@@ -491,9 +522,6 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     if (strcmp(type->symbol->name, "int") == 0)
     {
       retval.iValue = arg1.iValue + arg2.iValue;
-
-      if (gDebugLevelCalls > 1)
-        printf("   PRIM_ADD    %3ld = %3ld + %3ld\n", retval.iValue, arg1.iValue, arg2.iValue);
     }
 
     else if (strcmp(type->symbol->name, "real") == 0)

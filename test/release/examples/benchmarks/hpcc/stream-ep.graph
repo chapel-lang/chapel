@@ -1,5 +1,5 @@
 perfkeys: max (seconds) =, avg (seconds) =, min (seconds) =
 files: hpcc-stream-ep.dat, hpcc-stream-ep.dat, hpcc-stream-ep.dat
-graphtitle: HPCC STREAM-EP Performance
+graphtitle: HPCC STREAM-EP Time
 ylabel: Time (seconds)
 graphname: hpcc-stream-ep

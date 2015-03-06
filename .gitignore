@@ -243,6 +243,8 @@ tags
 /test/modules/standard/FileSystem/fsouza/isfile/my_file
 /test/modules/standard/FileSystem/lydia/chmod/dir
 /test/modules/standard/FileSystem/lydia/chmod/file
+/test/modules/standard/FileSystem/lydia/copy/bar.txt
+/test/modules/standard/FileSystem/lydia/copyFile/bar.txt
 /test/modules/standard/FileSystem/lydia/exists/broken_link
 /test/modules/standard/FileSystem/lydia/exists/dir
 /test/modules/standard/FileSystem/lydia/exists/dir_link
@@ -253,6 +255,7 @@ tags
 /test/modules/standard/FileSystem/lydia/isLink/my_file
 /test/modules/standard/FileSystem/lydia/isLink/my_link_dir
 /test/modules/standard/FileSystem/lydia/isLink/my_link_file
+/test/modules/standard/FileSystem/lydia/symlink/bar.txt
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/modules/standard/machine/numCores.good
 /test/modules/standard/memory/countMemory/countMemory.*.good

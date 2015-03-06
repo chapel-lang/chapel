@@ -143,7 +143,7 @@ void ipeRun()
   replModule        = initializeRepl(gRootVars);
   replScope         = replModule->scope();
 
-#if 1
+#if 0
   printf("\n\n");
   gRootScope->describe(3);
   printf("\n\n");
