@@ -1,0 +1,10 @@
+Module: OuterMod
+   This module has a comment, but uncommented first method 
+   proc outerFn()
+   proc outerCommented()
+      The second method is commented 
+
+   Module: OuterMod.Inner
+      proc innerFn()
+         This module has no comment, but it's inner function does! 
+

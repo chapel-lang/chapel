@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,9 +25,12 @@
 #define _BSD_SOURCE
 #endif
 
-#ifndef _DARWIN_C_SOURCE
 // to get NI_MAXHOST or NI_MAXSERV
+#ifndef _DARWIN_C_SOURCE
 #define _DARWIN_C_SOURCE
+#endif
+#ifndef _NETBSD_SOURCE
+#define _NETBSD_SOURCE
 #endif
 
 // AIX needs _ALL_SOURCE
@@ -48,9 +51,17 @@
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
 #endif
-#ifndef _FILE_OFFSET_BITS
-#define _FILE_OFFSET_BITS 64
-#endif
+
+//
+// The following breaks #include of "glob.h" with the Cray CCE
+// compiler and also complicates things for the #inclusion of dirent.h
+// with most PrgEnv-* options on Crays, as seen in chpldirent.h.
+// As I understand it, Michael added this in order to permit the
+// support of files larger than 4GB.
+//
+//#ifndef _FILE_OFFSET_BITS
+//#define _FILE_OFFSET_BITS 64
+//#endif
 
 #ifdef __GNUC__
 #define ___always_inline inline __attribute__((__always_inline__))

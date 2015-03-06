@@ -9,10 +9,10 @@ proc go() {
   var my_ptr_copy = returnit(my_ptr);
   var it_ptr_copy = returnit(it_ptr);
 
-  assert(my_ptr == my_ptr);
+  assert(my_ptr != c_nil);
   assert(my_ptr == my_ptr_copy);
 
-  assert(it_ptr == it_ptr);
+  assert(c_nil != it_ptr);
   assert(it_ptr == it_ptr_copy);
 
   assert(my_ptr != it_ptr);

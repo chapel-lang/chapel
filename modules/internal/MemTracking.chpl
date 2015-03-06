@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,28 +19,41 @@
 
 // MemTracking.chpl
 //
-pragma "no use ChapelStandard"
 module MemTracking
 {
   config const
     memTrack: bool = false,
-    memStats: bool = false, 
+    memStats: bool = false,
     memLeaks: bool = false,
     memLeaksTable: bool = false,
-    memMax: size_t = 0,
-    memThreshold: size_t = 0,
+    memMax: uint = 0,
+    memThreshold: uint = 0,
     memLog: c_string = "";
-  const s_memLog = toString(memLog);
 
   pragma "no auto destroy"
   config const
     memLeaksLog: c_string = "";
-  const s_memLeaksLog = toString(memLeaksLog);
+
+  // Safely cast to size_t instances of memMax and memThreshold.
+  const cMemMax = memMax.safeCast(size_t),
+    cMemThreshold = memThreshold.safeCast(size_t);
+
+  // Globally accessible copy of the corresponding c_string consts
+  use NewString;
+  const s_memLog: string_rec = memLog;
+  const s_memLeaksLog: string_rec = memLeaksLog;
 
   //
   // This communicates the settings of the various memory tracking
   // config consts to the runtime code that actually implements the
   // memory tracking.
+  //
+  // This function is a little tricky as it is called from every
+  // locale from the runtime.  Recall that c_string is considered a
+  // local-only data type, so we must use some tricks to copy the
+  // c_string from locale 0 to the remote locales.  We use the globals
+  // s_memLog and s_memLeaksLog to create global Chapel strings to
+  // make them available to all locales.
   //
   export
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
@@ -55,29 +68,23 @@ module MemTracking
     ret_memStats = memStats;
     ret_memLeaks = memLeaks;
     ret_memLeaksTable = memLeaksTable;
-    ret_memMax = memMax;
-    ret_memThreshold = memThreshold;
-    // The following is an abuse of a hack used to copy strings to
-    // remote locales.  When strings are implemented as records,
-    // XXX.locale.id should be replaced by 'here.id' as noted below.
-    //
-    // HACK: For some reason, when accessing a member field of a
-    // string (.locale is the only such field), the string is copied
-    // from the remote locale into a temporary.  Here we abuse that by
-    // accessing the locale id.  The subsequent assignment to 'ts' is
-    // from the compiler inserted temporary.
-    if s_memLog.locale.id /* here.id */ != 0 {
-      // Remote strings must be copied before accessing c_str()
-      const ts = s_memLog;
-      ret_memLog = ts.c_str();
+    ret_memMax = cMemMax;
+    ret_memThreshold = cMemThreshold;
+
+    if (here.id != 0) {
+      // These c_strings are going to be leaked
+      if s_memLog.len != 0 then
+        ret_memLog = remoteStringCopy(s_memLog.home.id,
+                                      s_memLog.base,
+                                      s_memLog.len);
+      else ret_memLog = "";
+      if s_memLeaksLog.len != 0 then
+        ret_memLeaksLog = remoteStringCopy(s_memLeaksLog.home.id,
+                                           s_memLeaksLog.base,
+                                           s_memLeaksLog.len);
+      else ret_memLeaksLog = "";
     } else {
       ret_memLog = memLog;
-    }
-    if s_memLeaksLog.locale.id /* here.id */ != 0 {
-      // Remote strings must be copied before accessing c_str()
-      const ts = s_memLeaksLog;
-      ret_memLeaksLog = ts.c_str();
-    } else {
       ret_memLeaksLog = memLeaksLog;
     }
   }

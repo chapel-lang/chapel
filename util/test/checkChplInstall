@@ -21,6 +21,14 @@
 # consistent and available on all nodes in distributed systems, unlike $TMPDIR
 # which tends to be an in-memory filesystem exclusive to each node.
 #
+# To use something other than $HOME/.chpl, set the CHPL_CHECK_INSTALL_DIR
+# environment variable.
+#
+# To have the start_test logs printed when one or more tests fail, set
+# CHPL_CHECK_INSTALL_PRINT_ERROR to "true". The log file will be kept in
+# $CHPL_CHECK_INSTALL_DIR when there are failures, regardless of the print
+# error setting.
+#
 # There is an undocumented --debug flag, which is useful for development. It
 # produces more verbose output and does not delete the temporary working
 # directory when the script exits.
@@ -195,6 +203,11 @@ case $success in
         exit 0
         ;;
     false|*)
+        # Print the log file if CHPL_CHECK_INSTALL_PRINT_ERROR is set to true.
+        if [ "${CHPL_CHECK_INSTALL_PRINT_ERROR}" = "true" ] ; then
+            cat $test_output_log
+        fi
+
         echo "Found issues with chpl installation."
         echo "  chpl path: ${CHPL_BIN}"
         echo "  CHPL_HOME: ${CHPL_HOME}"

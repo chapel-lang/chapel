@@ -1,14 +1,14 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,7 +46,7 @@ endif
 # CHPL_MAKE_THREADS="pthreads"
 # CHPL_MAKE_LAUNCHER="amudprun"
 # CHPL_MAKE_TIMERS="generic"
-# CHPL_MAKE_HOST_MEM="default"
+# CHPL_MAKE_HOST_MEM="cstdlib"
 # CHPL_MAKE_TARGET_MEM="dlmalloc"
 # CHPL_MAKE_MAKE="gmake"
 # CHPL_MAKE_ATOMICS="intrinsics"
@@ -130,7 +130,6 @@ endif
 #
 THIRD_PARTY_DIR = $(CHPL_MAKE_HOME)/third-party
 
-include $(THIRD_PARTY_DIR)/creoleparser/Makefile.include
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
 include $(THIRD_PARTY_DIR)/dlmalloc/Makefile.include
 include $(THIRD_PARTY_DIR)/massivethreads/Makefile.include
@@ -140,6 +139,7 @@ include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
+include $(THIRD_PARTY_DIR)/chpldoc-venv/Makefile.include
 
 -include $(THIRD_PARTY_DIR)/Makefile.devel.include
 
@@ -160,7 +160,7 @@ printplatform:
 	@echo "CHPL_MAKE_THREADS         = $(CHPL_MAKE_THREADS)"
 	@echo "CHPL_MAKE_TIMERS          = $(CHPL_MAKE_TIMERS)"
 	@echo "CHPL_MAKE_COMM            = $(CHPL_MAKE_COMM)"
-	@echo "CHPL_MAKE_COMM_SUBSTRATE  = $(CHPL_MAKE_COMM_SUBSTRATE)"    
+	@echo "CHPL_MAKE_COMM_SUBSTRATE  = $(CHPL_MAKE_COMM_SUBSTRATE)"
 	@echo "CHPL_MAKE_LAUNCHER        = $(CHPL_MAKE_LAUNCHER)"
 	@echo "CHPL_MAKE_MEM             = $(CHPL_MAKE_MEM)"
 	@echo "CHPL_MAKE_ATOMICS         = $(CHPL_MAKE_ATOMICS)"
@@ -199,15 +199,15 @@ LIB_LN_DIR = lib/$(CHPL_MAKE_LAUNCHER_SUBDIR)
 CHPL_BIN_DIR = $(CHPL_MAKE_HOME)/bin/$(CHPL_MAKE_HOST_PLATFORM)
 CHPL = $(CHPL_BIN_DIR)/chpl$(EXE_SUFFIX)
 CHPLDOC = $(CHPL_BIN_DIR)/chpldoc$(EXE_SUFFIX)
+CHPLIPE = $(CHPL_BIN_DIR)/chpl-ipe$(EXE_SUFFIX)
 
 
 #
 # default tools
-# 
+#
 ifndef CHPL_TAGS_UTIL
 ifeq ($(CHPL_EDITOR),vim)
 CHPL_TAGS_UTIL = ctags
-CHPL_TAGS_FLAGS := -w
 CHPL_TAGS_FILE = tags
 CHPL_TAGS_APPEND_FLAG = -a
 else
@@ -230,7 +230,7 @@ ECHO = echo
 #
 # by default, no executable suffix
 #
-EXE_SUFFIX = 
+EXE_SUFFIX =
 
 
 #

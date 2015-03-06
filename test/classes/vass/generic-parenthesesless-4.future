@@ -1,6 +1,0 @@
-bug: compiler reports an error incorrectly
-
-The same as generic-parenthesesless-3.future,
-except the error I am getting is this:
-
-  generic-parenthesesless-4.chpl:10: error: type mismatch in assignment from chpl__fcf_type__MT_C_int to int

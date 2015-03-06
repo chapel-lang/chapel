@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -57,7 +57,7 @@ extern record qio_regexp_string_piece_t {
 extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
 
 extern proc qio_regexp_match(ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
-extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string, ref replaced_len:int(64)):int(64);
+extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string_copy, ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied
@@ -85,7 +85,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   return ret;
 }
 
-/** Compile a regular expression and retrieve an error code if compilation
+/*  Compile a regular expression and retrieve an error code if compilation
     failed.
  */
 proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp {
@@ -118,7 +118,7 @@ proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=
  *** easier/cheaper to use a c_string here and provide a custom
  *** constructor.
  ***/
-/** Regular expression search routines also can work with
+/*  Regular expression search routines also can work with
     a stringPart, which refers to a substring within another
     string.
  */
@@ -128,12 +128,13 @@ record stringPart {
   var from:string;
 }
 
-/** The reMatch record records a regular expression search match
+/*  The reMatch record records a regular expression search match
     or a capture group.
     Regular expression search routines normally return one of these.
     Also, this type can be passed as a capture group argument.
     Lastly, something of type reMatch can be checked for a match
-    in a simple if statement, as in:
+    in a simple if statement, as in::
+
       var m:reMatch = ....;
       if m then do_something_if_matched();
       if !m then do_something_if_not_matched();
@@ -156,7 +157,7 @@ proc _to_reMatch(ref p:qio_regexp_string_piece_t):reMatch {
 inline proc !(m: reMatch) return !m.matched;
 inline proc _cond_test(m: reMatch) return m.matched;
 
-/** Use someString.substring(anReMatch) to extract the part
+/*  Use someString.substring(anReMatch) to extract the part
     of a string matching a regular expression or capture group.
  */
 proc string.substring(m:reMatch) {
@@ -164,7 +165,7 @@ proc string.substring(m:reMatch) {
   else return "";
 }
 
-/** This class represents a compiled regular expression. Regular expressions
+/*  This class represents a compiled regular expression. Regular expressions
     are cached on a per-thread basis and are reference counted.
     To create a compiled regular expression, use the compile function.
   */
@@ -205,7 +206,7 @@ record regexp {
 
   // Note - we would only need one version of these routines
   // if we had args ...?k supporting 0 args, or if tuples support zero length
-  /** Search within the passed text (which must be a string or a stringPart)
+  /*  Search within the passed text (which must be a string or a stringPart)
       for the first match at any offset to this regular expression. Returns a
       match object. This routine will try matching the regular expression at
       different offsets until a match is found. If you want to only match at
@@ -244,7 +245,7 @@ record regexp {
     }
     return ret;
   }
-  /** Search for the first match at any offset without returning any capture
+  /*  Search for the first match at any offset without returning any capture
       groups.
     */
   proc search(text: ?t):reMatch
@@ -275,13 +276,14 @@ record regexp {
     return ret;
   }
 
-  /** Check for a match to this regular expression at the start of the
+  /*  Check for a match to this regular expression at the start of the
       passed text. As with regexp.search, the capture group arguments
       here can be strings or any type that can reasonably cast from string. If
       a capture group was not matched, the corresponding argument will get the
       default value for its type.
 
-      You can do
+      You can do::
+
        if myregexp.match("some string") {
          ... do something if matched;
        }
@@ -344,7 +346,7 @@ record regexp {
   }
 
 
-  /** Split the text by occurrences of this regular expression.
+  /* Split the text by occurrences of this regular expression.
      If capturing parentheses are used in pattern, then the text of all
      groups in the pattern are also returned as part of the resulting array.
      If maxsplit is nonzero, at most maxsplit splits occur, and the
@@ -416,8 +418,9 @@ record regexp {
     }
   }
   /* Enumerates matches in the string as well as capture groups.
+
      Returns tuples of reMatch objects, the 1st is always
-      the match for the whole pattern and the rest are the capture groups.
+     the match for the whole pattern and the rest are the capture groups.
    */
   iter matches(text: ?t, param captures=0, maxmatches: int = max(int)) 
     where t == string || t == stringPart 
@@ -467,7 +470,7 @@ record regexp {
     else pos = 0;
     endpos = pos + text.length;
 
-    var replaced:c_string;
+    var replaced:c_string_copy;
     var nreplaced:int; 
     var replaced_len:int(64); 
     if t == stringPart {
@@ -475,9 +478,7 @@ record regexp {
     } else {
       nreplaced = qio_regexp_replace(_regexp, repl.c_str(), repl.length, text.c_str(), text.length, pos, endpos, global, replaced, replaced_len);
     }
-    // FIX ME: could use a toString() that doesn't allocate space
     const ret = toString(replaced);
-    chpl_free_c_string(replaced);
     return (ret, nreplaced);
   }
   proc sub(repl:string, text: ?t, global = true )
@@ -549,11 +550,9 @@ proc chpl__initCopy(x: regexp) {
 inline proc _cast(type t, x: regexp) where t == string {
   var pattern: string;
   on x.home {
-    var cs: c_string;
+    var cs: c_string_copy;
     qio_regexp_get_pattern(x._regexp, cs);
-    // FIX ME: could use a toString() that doesn't allocate space
     pattern = toString(cs);
-    chpl_free_c_string(cs);
   }
   return pattern;
 }

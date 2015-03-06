@@ -1,9 +1,0 @@
-bug: uninitialized variables when using opaque extern type 
-
-Some C compilers complain, something like
-error: ‘_formal_type_tmp_’ is used uninitialized in this function
-
-in fact _formal_type_tmp_ is unused in the 'test' function.
-
-This variable is an opaque extern type.
-

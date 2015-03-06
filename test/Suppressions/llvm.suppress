@@ -1,0 +1,2 @@
+# GMP and LLVM do not work together (yet).
+release/examples/benchmarks/shootout/pidigits

@@ -4,16 +4,23 @@
 #
 # Compare the compilation output and .bad files, ignoring line numbers
 # in error/warning warning messages arising from module code.
+# Also ignore chpl version differences.
 #
 
 badfile=$1
 tmpfile=$2
 
-badtmp=`mktemp`
-tmptmp=`mktemp`
+badtmp=`mktemp "bad.XXXXXX"`
+tmptmp=`mktemp "tmp.XXXXXX"`
 
-sed -e "\|CHPL_HOME/modules|s/:[0-9]\+:/:nnnn:/" $badfile > $badtmp
-sed -e "\|CHPL_HOME/modules|s/:[0-9]\+:/:nnnn:/" $tmpfile > $tmptmp
+command='
+  \|CHPL_HOME/modules|s/:[0-9:]*:/:nnnn:/
+  s/chpl Version [0-9a-f.-]*$/chpl Version mmmm/
+  s/internal error: \([A-Z][A-Z][A-Z]\)[0-9][0-9][0-9][0-9] chpl Version mmmm/internal error: \1nnnn chpl Version mmmm/
+'
+
+sed -e "$command" $badfile > $badtmp
+sed -e "$command" $tmpfile > $tmptmp
 
 diff $badtmp $tmptmp
 result=$?

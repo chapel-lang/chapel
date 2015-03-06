@@ -40,6 +40,8 @@ run into.
 # OMITTED: users/csep524/userDefReduceSlim.future
 #  b/c mutiple errors in the user code and hard to quantify what is wrong
 #
+# OMITTED: users/ferguson/override_overload.future
+#  b/c I really don't know how to describe it.
 
 General (see also portability section at the bottom of this file)
 -----------------------------------------------------------------
@@ -58,13 +60,8 @@ General (see also portability section at the bottom of this file)
   # modules/diten/module_use_hides_size_var.future
   # types/records/sungeun/chapelTypes/record_array.future
   # extern/vass/c_sublocid_any.inner-extern.future
-  # extern/vass/c_sublocid_any.mod-ne.future
-- Names in a Chapel program can collide with name used by the back-end
-  compiler and libraries.
-  # classes/vass/duplicate-virtual-method-ok-1.future
-  # trivial/figueroa/UnmangledSymbols.future
-  # users/vass/global-j1.future
 - There are several internal memory leaks:
+  # memory/figueroa/StringLeaks5.future
   # memory/figueroa/LeakedMemory6.future
   - All strings are leaked
   - Privatized domains and arrays (i.e., those that use the standard
@@ -72,9 +69,9 @@ General (see also portability section at the bottom of this file)
   - Non-default domain maps may be leaked
   - Data associated with iterators may be leaked
   - Data accessed in 'on' and/or 'begin' statements may be leaked
-  - Sync and single variable record members may be leaked
-  # memory/vass/memleak-array-of-records-1.future
 - Separate compilation of Chapel files is not supported.
+  # separate_compilation/jturner/array.future
+  # separate_compilation/jturner/use_array.future
   # separate_compilation/jturner/use_classextern.future
   # separate_compilation/jturner/use_classextern2.future
   # separate_compilation/jturner/use_fcfunc.future
@@ -95,21 +92,25 @@ Types, Params, Variables, and Consts
 - Enum types always represented using the smallest integer type
   available, even if the enum values require a larger integer.
   # functions/bradc/resolution/badEnumDispatch.future
+- Cannot define a method on sized types.
+  # users/ferguson/int32method.future
 - Invoking a method directly on an enum constant results in a compiler error
   # types/enum/vass/enum-receiver-1.future
-- Methods on atomic type ignore the memory_order argument.
 - The default value for the locale type is incorrect.
   # types/locale/bradc/defaultLocaleVal.future
   # multilocale/sungeun/locale_default.future
 - Type inferred for a variable initialized to 'nil' is not 'object'
   # classes/deitz/test_infer_nil.future
 - Multiple configuration parameters with different types declared in a
-  single statement result in an internal error.
+  single statement result in an internal compiler error.
   # functions/bradc/paramFnNonParamArgs/multConfigTypes.future
 - When setting a config variable that shares an initializer on the
   command line, the new value is incorrectly propagated to the other
   variables.
   # execflags/bradc/configShareInit.future
+- When setting a boolean config variable on the command line, using a
+  space as the delimiter results in an "Unexpected flag" error.
+  # execflags/thomasvandoren/configVarBooleanSpaceAfter.future
 - Variables that rely on each other for initialization
   and/or type inference may result in an internal compiler error.
   # functions/deitz/test_outoforder.future
@@ -119,7 +120,6 @@ Types, Params, Variables, and Consts
   # domains/bradc/modDomQuery.future
   # domains/bradc/assignConstDom.future
   # classes/bradc/arrayInClass/arrayDomInClassRecord-illegal.future
-  # statements/bradc/loops/modifyIndices.future
   # types/records/const-checking/todo-multiple-asgn-errors.future
 
 
@@ -165,9 +165,6 @@ Statements and Expressions
   local execution.
   # multilocale/local/sungeun/local_privatization.future
   # users/jglewis/locClassSegFault.future
-- Query expressions for primitive type bit-sizes results in an
-  internal compiler error.
-  # users/vass/crash5insertAfter.future
 
 
 Modules
@@ -179,13 +176,21 @@ Modules
   # modules/diten/mutualuse.future
   # modules/diten/mutualuse2.future
   # modules/diten/mutualuse3.future
+- Modules that use another module that uses a begin statement in its
+  initialization result in an internal compiler error.
+  # parallel/begin/vass/begin-in-module-init.future
 - Constructor calls with the same name in different modules are not
   properly resolved.
   # trivial/jturner/module_class_name_clash.future
+- Cannot call new for a type defined in another module without
+  explicitly using the module.
+  # users/ferguson/module_new.future
 
 
 Functions and Iterators
 -----------------------
+# OMITTED: classes/bradc/arrayInClass/genericArrayInClass-otharrs-inline-iterators.future
+#  b/c can't really describe this in a way that would be useful
 - Invalid where clauses may result in an internal compiler error.
   # functions/bradc/resolution/uintParamInWhere.future
 - Querying the type of a function is not supported and currently
@@ -201,21 +206,22 @@ Functions and Iterators
   # functions/vass/return-type-function-failure.future
 - Array-of-array formal argument declarations do not work.
   # arrays/bradc/arrayOfArrayArg.future
+- Arrays returned from a var function result in memory corruption.
+  # arrays/vass/setter-assigned-to-a-var.future
 - Function argument with type tuple of generic class results in a
   compiler assertion.
   # functions/diten/fnGenericTupleArg.future
   # functions/vass/arg-is-tuple-with-generic-class.future
+- Actual arguments for formals with out intent do not follow implicit
+  conversion rules and must match exactly in type.
+  # functions/vass/out-intent-desired.future
 - Sync and single vars incorrectly passed to generic ref intent arguments.
-  # functions/vass/sync-by-ref.future
-  # users/vass/type-tests.todo.future
+  # types/sync/vass/ref-sync-2.future
 - Sync and single variables in records are not properly copied out
   when the record is passed as an out or inout argument.
   # types/single/sungeun/writeRecordInOutProc.future
   # types/sync/sungeun/writeRecordInOutProc.future
   # types/sync/sungeun/writeRecordOutProc.future
-- Generic formals whose actuals are of sync type are instantiated as
-  the base type.
-  # types/sync/vass/generic-sync-1.future
 - Parentheses-less function without curly braces enclosing the body
   fail to parse correctly.
   # parsing/vass/parenthesis-less-function-string.future
@@ -247,23 +253,73 @@ Functions and Iterators
   # functions/vass/closure-outlives-captured-vars.future
 - Recursive iterators may not work correctly.
   # functions/iterators/vass/recursive-iterator-in-expr-context.future
+  # studies/madness/aniruddha/madchap/recordBug/test_likepy.future
+- Parallel recursive iterators are not supported.
+  # functions/iterators/tzakian/par_iter_recursive.future
 - Iterators in records cannot change fields in that record.
   # functions/deitz/iterators/test_record_iterator.future
 - The implicit 'setter' argument does not work in var iterators.
   # functions/deitz/iterators/iterator_uses_setter.future
   # functions/deitz/iterators/test_promote_var_function_and_iterate.future
-- Iterators yielding locale types result in an internal error.
+- The implicit 'setter' argument used in the where clause of a
+  function or method declaration does not work.
+  # functions/bharshbarg/setterInWhere.future
+  # functions/sungeun/setterFnInWhere.future
+  # functions/sungeun/setterMtInWhere.future
+- The implicit 'setter' argument passed to other functions may be
+  incorrect.
+  # functions/vass/setter-passed-to-another-fun.future
+- Iterators yielding locale types result in an internal compiler
+  error.
   # functions/iterators/sungeun/iterInClass.future
 - A forall loop with an iteratable expression that does not provide
-  leader/follower iterators cause an internal error.
+  leader/follower iterators cause an internal compiler error.
   # functions/iterators/vass/forall-without-leaderfollower.future
+- Function return point analysis is conservative.
+  # functions/deitz/test_return1.future
+  # trivial/preston/gcd.future
+- Methods defined in a function lose their association to the type
+  they were defined for.
+  # functions/kbrady/proc_scoping.future
+- Missing function body at declaration results in an internal compiler
+  error.
+  # functions/lydia/syntax-error-unclear-message.future
+  # functions/lydia/syntax-error-unclear-message2.future
+- Function arguments of type 'const ref' should be allowed to have
+  default values.
+  # functions/sungeun/const_ref_arg_default_value.future
 
 
 Strings
 -------
-- String assignment across locales is by reference rather than value.
+- String assignment across locales is sometimes by reference and
+  sometimes by value.
   # distributions/bradc/block1Dlocale.future
   # multilocale/diten/needMultiLocales/remoteString3.future
+  # multilocale/sungeun/rvf/stringType.future
+- Casting from complex to string mishandles -0.0i
+  # types/complex/diten/complexCastToString.future
+- Implcit conversion of a param c_string to string does not work.
+  # types/string/diten/c_stringParamInfer.future
+- Implicit conversion of c_string to string does not work for ref,
+  out, or inout intents.
+  # types/string/sungeun/c_string/intents.future
+- Implicit conversion of string literals returned from functions does
+  not work.
+  # types/string/sungeun/c_string/returnString.future
+- c_string variable are sometimes copied to remote locales.
+  # types/string/sungeun/c_string/multilocale/c_str_on_remote_global_string.future
+  # types/string/sungeun/c_string/multilocale/remote_assign_c_string.future
+  # types/string/sungeun/c_string/multilocale/remote_assign_global_c_string.future
+- Calling string.c_str() on a non-local string results in a runtime error.
+  # types/string/sungeun/c_string/multilocale/c_str_on_remote_string.future
+- Changes to a string used in a begin statement are not visible from
+  the begin body.
+  # types/string/sungeun/stringInBegin.future
+- Unable to resolve return type for casts between an enum type and
+  string if the enum is declared in the function and the string is
+  passed in as a type parameter.
+  # types/enum/sungeun/cast_enum_weird_4.future
 
 
 Tuples
@@ -287,6 +343,10 @@ Tuples
 - Tuple expanded list enclosed in parenthesis does not result in a
   tuple.
   # functions/vass/return-of-tuple-expansion-2.future
+- Cannot return a non-lvalue tuple from a var function even when
+  implicit 'setter' argument is false.
+  # functions/bharshbarg/setterBranch.future
+  # functions/bharshbarg/setterInFunction.future
 - Cannot iterate over heterogeneous tuples
   # types/tuple/sungeun/iteration/heteroTupleOfArrays.future
   # types/tuple/sungeun/iteration/heteroTupleOfDomains.future
@@ -296,6 +356,10 @@ Tuples
   # types/tuple/sungeun/iteration/iteratable.future
 - Param loops over a tuple of tuples results in an internal compiler error.
   # users/holtbg/tupleOfTupleIteration.future
+- Reference tuples do not work.
+  # variables/kbrady/ref-in-tuple.future
+- References cannot be members of classes or records.
+  # variables/kbrady/ref-member.future
 
 
 Ranges
@@ -360,6 +424,15 @@ Classes, Records, and Unions
   # classes/sungeun/inheritance_noUse_typeVar4.future
   # classes/sungeun/inheritance_param1.future
   # classes/sungeun/inheritance_typeVar1.future
+- User-defined constructors and destructors are not robust.
+  # users/murai/test_nested_class_constructor.future
+  # classes/bradc/initialize-secondary.future
+  # classes/vass/nested-class-with-user-defined-constructor-1.future
+  # classes/constructors/base-class-generic-args.future
+- Copy constructors are not properly implemented.
+  # types/records/sungeun/constructor2.future
+  # users/vass/km/array-of-records-crash-1.explicit-type.future
+  # users/vass/km/array-of-records-crash-1.future
 - Generic methods called with params actuals may result in "unresolved
   call" error at compile time or incorrect generated code.
   # classes/vass/generic-method-with-param-arg-1.future
@@ -367,11 +440,7 @@ Classes, Records, and Unions
   # classes/vass/generic-method-with-param-arg-3.future
 - Function resolution may be overly conservative for methods of subclasses.
   # classes/bradc/compilerErrorInMethod/testClear.future
-- User-defined constructors and destructors are not robust.
-  # users/murai/test_nested_class_constructor.future
-  # classes/bradc/initialize-secondary.future
-  # classes/vass/nested-class-with-user-defined-constructor-1.future
-  # classes/constructors/base-class-generic-args.future
+  # classes/diten/subclassMethodCall.future
 - User-defined copy constructors are not supported.
   # classes/diten/test_destructor3.future
 - Declaring class members using type aliases may result in unresolved
@@ -379,7 +448,7 @@ Classes, Records, and Unions
   # arrays/deitz/part5/test_array_type_field_type.future 
   # classes/diten/type_order_problem.future
   # types/records/bharshbarger/nestedRecordInClass2.future
-- Cannot call 'new' on type aliases for classes and records
+- Cannot call 'new' on type variables for classes and records
   # types/typedefs/tzakian/classConstructorsFromTypes.future
 - Iterator methods may not obey dynamic dispatch.
   # trivial/jturner/iter_overload_simple.future
@@ -387,8 +456,10 @@ Classes, Records, and Unions
 - Ambiguous definitions of class methods that are overridden in a
   subclass result in an internal compiler error.
   # classes/vass/duplicate-virtual-method-error-2.future
-- Classes nested in procedures may result in a compile time error.
+- Classes or records nested in procedures or iterators may result in a
+  compile time error.
   # classes/vass/jglewis-class-in-function.future
+  # users/ferguson/record-in-iterator.future
 - Non-sync arguments to default constructors that expect sync vars are
   not properly coerced to sync type.
   # classes/hannah/coercingIntToSyncIntOnConstructor.future
@@ -397,9 +468,10 @@ Classes, Records, and Unions
   # users/ferguson/recordEquivalence.future
 - Array alias arguments to constructors fail to compile.
   # arrays/diten/constructorArrayAliasReindex.future
-- Atomics are not passed to constructors by ref by default
+- Atomics are not passed by ref by default
   # functions/bradc/intents/test_construct_atomic_intent.future
-- Using a comparison operator with a record and 'nil' results in an
+  # functions/iterators/tzakian/atomic_pass_by_ref_leader_follower_iterator.future
+- Using a comparison operator with a record and 'nil' resulots in an
   internal compiler error.
   # types/records/sungeun/recordNotNil1.future
   # types/records/sungeun/recordNotNil2.future
@@ -417,6 +489,11 @@ Classes, Records, and Unions
 - Records passed by ref intent to dynamically dispatched methods do
   not work.
   # users/kassner/dynDispatchRefRecordArg.future
+- Classes arguments passed to out, inout, and ref intent formals
+  result in a compiler internal error.
+  # classes/vass/ref-like-intents/inout-subclass.future
+  # classes/vass/ref-like-intents/out-subclass.future
+  # classes/vass/ref-like-intents/ref-subclass.future
 - Printing of a string field in a record in a class does not work.
   # types/records/sungeun/stringInRecordInClass.future
   # types/string/sungeun/string2InRecordInClass.future
@@ -436,7 +513,7 @@ Classes, Records, and Unions
   in a back-end C compiler error.
   # types/records/bharshbarger/recordArrCmp.future
   # types/records/bharshbarger/recordDomArrCmp.future
-- Type select on unions is not implemented.
+- There's no way to determine which field of a union is "active".
 
 
 Domain Maps, Domains and Arrays
@@ -448,6 +525,9 @@ Domain Maps, Domains and Arrays
   # studies/hpcc/HPL/vass/bug.future
 - Distributed domain maps are currently only supported for dense,
   rectangular domains.
+- Assignment to domain maps with declared domains not supported for
+  all domain map types.
+  # distributions/deitz/test_distribution_syntax2.future
 - PrivateDist must be used at the top-level scope.
   # distributions/sungeun/misc/useDummyDist.future
 - Subset checks on subdomains is not implemented.
@@ -481,6 +561,8 @@ Domain Maps, Domains and Arrays
 - Sparse domain/array slicing is not supported.
   # arrays/stonea/sliceSparseSubdomain.future
   # sparse/bradc/sliceWithDense.future
+- Associative domain/array slicing is not supported.
+  # users/ferguson/assoc-slice.future
 - Associative domain clear() does not reset values of arrays declared
   over the domain.
   # domains/sungeun/assoc/clear.future
@@ -554,10 +636,6 @@ Data Parallelism
   # functions/iterators/bradc/badzip/rangeSizeMismatch.future
 - Domain promotion results in a race condition.
   # have not futurized yet (see REGRESSIONS domains/sungeun/assoc/minus_equals.chpl)
-- Parallel (forall) domain iteration ignores alignment of the ranges
-  used to declare the domain.
-  # domains/vass/aligned-domain-forall.future
-  # arrays/vass/slice-align-bug-1.future
 - Arrays and domains of different ranks can be zippered serially.
 - Reductions and scans of arrays of arrays may result in errors.
   # arrays/sungeun/array_of_arrays/bxor_reduce.future
@@ -565,6 +643,10 @@ Data Parallelism
   # arrays/sungeun/array_of_arrays/sum_reduce.future
   # trivial/sidelnik/reduction.future
   # studies/shootout/nbody/sidelnik/nbody_fullreduction.future
+- Reduction type definitions nested in classes or records cannot be
+  used directly outside of enclosing class or record's scope.
+  # users/ferguson/histogram/reductionex_class.future
+  # users/ferguson/histogram/reductionex_record.future
 - Reductions zippered arrays of mismatched rank result in a compile time error.
   # arrays/diten/reduce2Dwith3D.future
   # arrays/diten/reduce3Dwith2D.future
@@ -579,6 +661,9 @@ Data Parallelism
   # domains/sungeun/sparse/plus_equals.future
 - Task intents to not work for coforalls and cobegins used in iterators.
   # TODO: are there any futures?  better wording?
+- Class or record fields used with ref task intents result in an
+  internal compiler error.
+  # parallel/taskPar/vass/field-in-task-ref-clause.future
 - Iterating over a range where bound+stride overflows the index type
   overflows can result in incorrect execution.
 - Overloaded xor used in a reduction may result in an internal
@@ -623,8 +708,8 @@ Input and Output
   # multilocale/bradc/needMultiLocales/writeThisUsingOn.future
   # distributions/vass/dmap-writeln-default-value.future
 - Calling writeln() of function names should be illegal, but currently
-  results in unexpected output, obscure error messages, or compiler
-  internal errors.
+  results in unexpected output, obscure error messages, or internal
+  compiler errors.
   # io/sungeun/funcPtr1.future
   # io/sungeun/funcPtr2.future
   # io/sungeun/funcPtr3.future
@@ -642,6 +727,7 @@ Optimizations
   # functions/sungeun/promotionWithNoInline.future
 - Disabling inlining may cause incorrect code to be generated.
   # SEE NIGHTLY BASELINE TESTING NOTES
+  # functions/deitz/nested/test_nested_var_iterator3.future
 - Disabling inlining with -t results in a compiler seg fault.
   # compflags/diten/noInlineAndHtml.future
 
@@ -652,6 +738,10 @@ Miscellaneous
 #  b/c the future is terse, and I have no idea what is wrong
 # OMITTED: memory/shannon/memstatEquals.future
 #  b/c it's pretty benign and probably will not cause a problem
+# OMITTED: modules/bradc/mainRoutineSurprise/M2.future
+#  b/c it's not clear if this is a bug or a feature request
+# OMITTED: types/scalar/tmacd/fatal.future
+#  b/c it's a bit difficult to describe.
 - Nil extern class references not properly handled.
   # users/ferguson/extern_class_test.future
 - Boolean literals do not preserve their sizes.
@@ -665,7 +755,8 @@ Miscellaneous
 - An array variable and function that share the same name at the same
   scope result in one of the two being arbitrarily chosen.
   # functions/bradc/resolution/arrayVsFn.future
-- Leaving off () when calling exit results in an internal error.
+- Leaving off () when calling exit results in an internal compiler
+  error.
   # exits/sungeun/exitWithNoParensNoArgs.future
 - Compiler warning mechanism not always type-checked correctly.
   # users/vass/tuple-crash-1.future
@@ -701,13 +792,19 @@ Performance
 - Many provably local variables are unnecessarily widen for
   multilocale execution
   # performance/bradc/refArgIsWide.future
-- Reference counting of arrays, domains, and distributions is overly
-  conservative.
-  # performance/hilde/coforallOnByRef.future
 - Task creation for coforall/cobegin statements can be better optimized.
   # multilocale/lydia/checkNumTasks.future
 - Mechanisms for program tear-down can be better optimized.
   # parallel/taskPar/sungeun/endCountTest.future
+
+
+chpldoc
+-------
+- chpldoc comments that are not closed with using the specified
+  comment style are not detected.
+  # chpldoc/compflags/comment/badClose.future
+- Queried types are not properly handled by chpldoc.
+  # chpldoc/types/arguments/queried.future
 
 
 Developer
@@ -719,15 +816,21 @@ Developer
 - User defined chpl__initCopy() function are ignored in the
   removeUnnecessaryAutoCopyCalls pass.
   # classes/hilde/alwaysOverrideCopyInit.future
-- The "no auto destroy" pragma is not properly propagated to
-  temporaries.
-  # performance/hilde/userSync.future
 - The "no copy" and "no auto destroy" pragmas used with variable
-  declarations with specified types result in an internal error.
+  declarations with specified types result in an internal compiler
+  error.
   # trivial/sungeun/pragmas/noCopyNoDestroyPragma.future
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaArray.future
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaArrayWithInit.future
   # trivial/sungeun/pragmas/noCopyNoDestroyPragmaWithInit.future
+
+
+LLVM (experimental)
+-------------------
+- Extern C blocks do not properly handle C "void *" types.
+  # extern/tzakian/void_ptr.future
+- The LLVM backend does not properly handle C macros (and for that
+  reason will not work with GMP)
 
 
 Multi-locale/GASNet executions
@@ -738,14 +841,22 @@ Multi-locale/GASNet executions
 Portability
 -----------
 
+cygwin:
+- cygwin builds may demonstrate portability issues.
+- The qthreads tasking layer is not supported.
+
 OS/X:
+- For older version (e.g., leopard), the qthreads tasking layer is not
+  supported.
 - Static linking not supported.
 
 PGI compilers:
+- Chapel generated identifier names may be too long.
 - Floating point literals of -0.0 may not work as intended.
 
 Intel compilers:
 - Floating point literals of -0.0 may not work as intended.
+- Static linking may not work.
 
 IEEE floating-point standard conformance:
   The --ieee-float flag is implemented by passing appropriate flags to

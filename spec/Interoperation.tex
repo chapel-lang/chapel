@@ -171,7 +171,7 @@ C Type & Chapel Type & C Type & Chapel Type & C Type & Chapel Type \\
 \tt int16\_t & \tt int(16) & \tt uint16\_t & \tt uint(16) & \tt \_real64 & \tt real(64) \\
 \tt int32\_t & \tt int(32) & \tt uint32\_t & \tt uint(32) & \tt \_imag32 & \tt imag(32) \\
 \tt int64\_t & \tt int(64) & \tt uint64\_t & \tt uint(64) & \tt \_imag64 & \tt imag(64) \\
-\tt chpl\_bool & \tt bool & \tt  const char* & \tt string \\
+\tt chpl\_bool & \tt bool & \tt  const char* & \tt c\_string \\
 \tt \_complex64 & \tt complex(64) & \tt \_complex128 & \tt complex(128) \\
 \end{tabular}
 
@@ -252,7 +252,10 @@ Within the Chapel declaration, some or all of the fields from the C
 structure may be omitted.  The order of these fields need not match
 the order they were specified within the C code.  Any fields that are
 not specified (or that cannot be specified because there is no
-equivalent Chapel type) cannot be referenced within the Chapel code.
+equivalent Chapel type) cannot be referenced within the Chapel code.  Some
+effort is made to preserve the values of the undefined fields when copying
+these structs but Chapel cannot guarantee the contents or memory story of
+fields of which it has no knowledge.
 
 A C header file containing the struct's definition in C must be specified on the
 chpl compiler command line.  Note that currently only typdef'd C structures are
@@ -419,7 +422,7 @@ C varargs functions can be declared using
 Chapel's \sntx{variable-argument-expression} syntax (\chpl{...}).  For example,
 the C \chpl{printf} function can be declared in Chapel as
 \begin{chapel}
-       extern proc printf(fmt: string, vals...?numvals): int;
+       extern proc printf(fmt: c_string, vals...?numvals): int;
 \end{chapel}
 
 External C functions or macros that accept type arguments can also be

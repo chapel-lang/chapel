@@ -5,7 +5,7 @@
    based on C++ RE2 implementation by Alexey Zolotov
 */
 
-proc main() {
+proc main(args: [] string) {
   var variants = [
     "agggtaaa|tttaccct",
     "[cgt]gggtaaa|tttaccc[acg]",

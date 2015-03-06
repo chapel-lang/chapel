@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -74,11 +74,13 @@ template <class K, class C> class MapElem {
   K     key;
   C     value;
   bool operator==(MapElem &e) { return e.key == key; }
-  operator unsigned int(void) { return (unsigned int)(uintptr_t)key; }
-  MapElem(unsigned int x) { assert(!x); key = 0; }
-  MapElem(K akey, C avalue) : key(akey), value(avalue) {}
-  MapElem(MapElem &e) : key(e.key), value(e.value) {}
-  MapElem() : key(0) {}
+
+  operator uintptr_t()     { return (uintptr_t) key; }
+
+  MapElem()                 : key(0)                     { }
+  MapElem(K akey, C avalue) : key(akey),  value(avalue)  { }
+  MapElem(MapElem &e)       : key(e.key), value(e.value) { }
+  MapElem(unsigned long x)                               { assert(!x); key = 0; }
 };
 
 template <class K, class C> class Map : public Vec<MapElem<K,C> > {

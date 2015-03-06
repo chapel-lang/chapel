@@ -240,6 +240,9 @@ proc createRandomGraph() {
   //
   // create a random number stream
   //
+  // Note: example usage of the standard module Random can be found in
+  // the primer randomNumbers.chpl, located in the current directory.
+  //
   use Random;
   var myRandNums = new RandomStream(seed=314159265);
 

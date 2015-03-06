@@ -27,8 +27,8 @@ are discussed in~\rsec{Generic_Types}.
 A class is defined with the following syntax:
 \begin{syntax}
 class-declaration-statement:
-  external-class-declaration-statement
   simple-class-declaration-statement
+  external-class-declaration-statement
 
 simple-class-declaration-statement:
   `class' identifier class-inherit-list[OPT] { class-statement-list[OPT] }
@@ -655,10 +655,11 @@ reads the field \chpl{name} and assigns the value to the variable
 \index{getter method!class}
 \index{methods!class!getter}
 
-All field accesses are resolved via getters that are variable
-methods~(\rsec{Variable_Functions}) defined in the class with the same
-name as the field.  The default getter is defined to simply return the
-field if the user does not redefine it.
+All field accesses are performed via getters.  A getter is a method without
+parentheses with the same name as the field. It is defined in the field's class
+and has a \chpl{ref} return intent (\rsec{Ref_Return_Intent}).  If the program
+does not define it, the default getter, which simply returns the field, is
+provided.
 
 \begin{chapelexample}{getterSetter.chpl}
 In the code

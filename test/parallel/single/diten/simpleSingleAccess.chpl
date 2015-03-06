@@ -11,7 +11,7 @@ proc foo() {
 
 proc bar() {
   a; // wait for single var "a" to get set;
-  writeln("'a' got set. It is: ", a);
+  writeln("'a' got set. It is: ", a.readFF());
 }
 
 cobegin {

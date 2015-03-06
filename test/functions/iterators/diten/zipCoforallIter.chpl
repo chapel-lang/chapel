@@ -9,4 +9,4 @@ for (i, j) in zip(f(4), f(4)) {
   x += i + j;
 }
 
-writeln(x);
+writeln(x.readFF());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -190,8 +190,9 @@ Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 
 bool isTypeExpr(Expr* expr);
 
+Symbol* getSvecSymbol(CallExpr* call);
+
 // move to resolve when scope resolution is put in resolution directory
 BlockStmt* getVisibilityBlock(Expr* expr);
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 #endif

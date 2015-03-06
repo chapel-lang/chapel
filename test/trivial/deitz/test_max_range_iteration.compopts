@@ -1,0 +1,2 @@
+-suseOptimizedRangeIterators=true --bounds-checks     # test_max_range_iteration.optimized.bounds-checks.good
+-suseOptimizedRangeIterators=false                    # test_max_range_iteration.unoptimized.good

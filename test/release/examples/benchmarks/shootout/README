@@ -17,6 +17,7 @@ At present, this directory contains the following codes:
     mandelbrot.chpl     : Plots the mandelbrot set [-1.5-i,0.5+i] on a bitmap
     meteor.chpl         : Performs a parallel search for all solutions to a
                           puzzle
+    meteor-fast.chpl    : A less readable, but much faster version of meteor.
     nbody.chpl          : Performs an n-body simulation of the Jovian planets
     pidigits.chpl       : Computes digits of pi using GMP, if available
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix

@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,11 @@ endif
 THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)
 # NOTE: If any of these builds fail, we won't stop building
 third-party-pkgs:
-	@for p in $(THIRD_PARTY_PKGS); do \
-		$(MAKE) -C $(THIRD_PARTY_DIR) $$p; \
-	done
+ifneq (, $(THIRD_PARTY_PKGS))
+ifneq (, $(filter $(THIRD_PARTY_PKGS),hwloc))
+	$(MAKE) -C $(THIRD_PARTY_DIR) hwloc
+endif
+	$(MAKE) -C $(THIRD_PARTY_DIR) $(THIRD_PARTY_PKGS)
+endif
 
+.NOTPARALLEL:

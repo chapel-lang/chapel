@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -103,10 +103,12 @@ llvm::Constant* codegenSizeofLLVM(llvm::Type* type);
 llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);
 
 llvm::Value* createTempVarLLVM(llvm::IRBuilder<>* builder, llvm::Type* type, const char* name);
-llvm::Value *convertValueToType(llvm::IRBuilder<> *builder, LLVM_TARGET_DATA * targetData, llvm::Value *value, llvm::Type *newType, bool isSigned = false);
+llvm::Value *convertValueToType(llvm::IRBuilder<> *builder, LLVM_TARGET_DATA * targetData, llvm::Value *value, llvm::Type *newType, bool isSigned = false, bool force = false);
 PromotedPair convertValuesToLarger(llvm::IRBuilder<> *builder, llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);
 
+int64_t getTypeSizeInBytes(LLVM_TARGET_DATA * layout, llvm::Type* ty);
 bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes);
+uint64_t getTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t offset);
 
 #endif //HAVE_LLVM
 

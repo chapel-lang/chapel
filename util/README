@@ -3,21 +3,27 @@ Chapel Utility Directory
 ========================
 
 This directory contains utility scripts that are intended to be useful
-to end-users.  The current contents of the directory are as follows:
+to end-users or the Chapel build/test itself.
 
-   printchplenv    : helper script that prints your set/inferred env vars
+The following are designed for beginning users (see $CHPL_HOME/README
+for details):
 
-   setchplenv.bash : bash shell quick-start settings (see $CHPL_HOME/README)
-   setchplenv.csh  : csh/tcsh quick-start settings   (see $CHPL_HOME/README)
-   setchplenv.fish : fish shell quick-start settings (see $CHPL_HOME/README)
-   setchplenv.sh   : sh quick-start settings         (see $CHPL_HOME/README)
+   quickstart/      :
+     setchplenv.*   : quick-start source scripts for minimal Chapel environments
 
-   start_test      : the kickoff script for the Chapel testing system
+The following are for more experienced users:
 
-   update-sources  : a script designed to help update Chapel sources as
-                     the language evolves
+   ./
+     chpltags       : a script to generate tags files for Chapel source code
+     printchplenv   : a script to print your set/inferred Chapel environment
+     setchplenv.*   : commands for setting up a production Chapel environment
+     start_test     : the script for invoking the Chapel testing system
 
-   chplenv/        : helper scripts for inferring CHPL_* variables if unset
-   config/         : helper scripts for configuring the Chapel build
-   docs/           : helper scripts for chpldocs mode
-   test/           : helper scripts for the testing system
+
+The following are for use by developers or other Chapel scripts:
+
+   build_configs.py : a helper script to build Chapel configurations
+   chplenv/         : helper scripts for inferring CHPL_* variables if unset
+   config/          : helper scripts for configuring the Chapel build
+   docs/            : helper scripts for chpldocs mode
+   test/            : helper scripts for the testing system

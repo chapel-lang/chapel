@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -24,17 +24,12 @@
 
 typedef DIR* DIRptr;
 
-#ifndef __USE_FILE_OFFSET64
 typedef struct dirent* direntptr;
-#else
-#ifdef __REDIRECT
-typedef struct dirent* direntptr;
-#else
-typedef struct dirent64* direntptr;
-#endif
-#endif
 
-#define chpl_rt_direntptr_getname(x) ((x)->d_name)
+static inline
+const char* chpl_rt_direntptr_getname(direntptr d) {
+    return d->d_name;
+}
 
 //
 // Note: This is not portable; more generally, need to use lstat() or similar;

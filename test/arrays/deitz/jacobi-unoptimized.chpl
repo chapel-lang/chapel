@@ -31,7 +31,7 @@ while (delta > epsilon) {
   }
   delta = 0.0;
   forall (i,j) in R {
-    delta = max(delta, Temp(i,j)-A(i,j));
+    delta = max(delta.readFE(), Temp(i,j)-A(i,j));
     A(i,j) = Temp(i,j);
   }
   iteration += 1;

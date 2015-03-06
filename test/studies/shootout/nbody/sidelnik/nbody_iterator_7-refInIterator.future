@@ -1,0 +1,11 @@
+bug: ref vars in iterators break for --baseline testing
+
+It seems that when we have refvars in iterators, we get a segfault
+when compiling with --baseline.  I suspect that this is due to the
+fact that the iterators are represented by objects and we don't
+support ref vars in objects at present.  I believe that this only
+shows up in --baseline for this test because the objects are optimized
+away for non-baseline testing.  I suspect that with effort, one could
+write an iterator that showed this behavior with non-baseline testing
+if the compiler couldn't get rid of the class (e.g., by using multiple
+yields and/or loops, perhaps?)

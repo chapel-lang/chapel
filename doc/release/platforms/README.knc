@@ -1,0 +1,146 @@
+==================================
+Initial support for Intel Xeon Phi
+==================================
+
+This README describes how to build Chapel for Intel Xeon Phi, Knights
+Corner (KNC).
+
+The initial implementation runs in self-hosted mode only.  That is,
+the entire Chapel program runs on the KNC co-processor.  For
+multilocale, GASNet must use the MPI conduit (segment everything) as
+all communication must bounce through the host processor.
+
+-------------------
+Current Limitations
+-------------------
+
+Currently, only the Intel compiler supports compilation for KNC
+(CHPL_TARGET_COMPILER=intel or cray-prgenv-intel).
+
+There are a number of Chapel configurations that are not supported for
+KNC builds:
+
+- CHPL_MEM=tcmalloc (lfence not supported)
+- CHPL_REGEXP=re2 (sfence not supported)
+- CHPL_HWLOC=hwloc (build issues)
+- CHPL_GMP=system (not supported)
+- GASNet builds can only use non-native substrates such as mpi or udp.
+
+Most of these setting are set as the default for KNC builds.
+
+---------------
+Getting started
+---------------
+
+For vanilla Intel compiler:
+---------------------------
+
+- Set CHPL_TARGET_COMPILER=intel and CHPL_TARGET_ARCH=knc.
+
+- Build Chapel as normal.  Running printchplenv should look something
+  like this:
+
+  CHPL_HOST_PLATFORM: linux64
+  CHPL_HOST_COMPILER: gnu
+  CHPL_TARGET_PLATFORM: linux64
+  CHPL_TARGET_COMPILER: intel
+  CHPL_TARGET_ARCH: knc
+  CHPL_LOCALE_MODEL: flat
+  CHPL_COMM: none
+  CHPL_TASKS: fifo
+  CHPL_LAUNCHER: none
+  CHPL_TIMERS: generic
+  CHPL_MEM: cstdlib
+  CHPL_MAKE: gmake
+  CHPL_ATOMICS: intrinsics
+  CHPL_GMP: none
+  CHPL_HWLOC: none
+  CHPL_REGEXP: none
+  CHPL_WIDE_POINTERS: struct
+  CHPL_LLVM: none
+  CHPL_AUX_FILESYS: none
+
+- Build your Chapel program as normal.
+
+  % /path/to/chpl hello.chpl
+
+For Cray XC:
+------------
+
+For Cray machines, only the aprun launcher is supported.  In addition,
+CHPL_TASKS=muxed and CHPL_COMM=ugni are not supported.
+
+- Log into a Cray XC with KNC nodes.  Set CHPL_HOST_PLATFORM=cray-xc.
+
+- Load the proper modules. The order in which you do these module
+  commands matters.
+
+  - First, swap in the Intel PE module.  For example, if you have the
+    Cray PE module loaded:
+
+    % module swap PrgEnv-cray PrgEnv-intel
+
+  - Unload libsci (unsupported) and any craype processor type modules:
+
+    % module unload cray-libsci atp craype-sandybridge craype-ivybridge
+
+  - Load the KNC craype module:
+
+    % module load craype-intel-knc
+
+  - Unload any craype-hugepages module you have loaded, for example:
+
+    % module unload craype-hugepages2M
+
+- Build Chapel as normal.  Running printchplenv should look something
+  like this:
+
+  CHPL_HOST_PLATFORM: cray-xc
+  CHPL_HOST_COMPILER: gnu
+  CHPL_TARGET_PLATFORM: cray-xc
+  CHPL_TARGET_COMPILER: cray-prgenv-intel
+  CHPL_TARGET_ARCH: knc
+  CHPL_LOCALE_MODEL: flat
+  CHPL_COMM: gasnet
+    CHPL_COMM_SUBSTRATE: mpi
+    CHPL_GASNET_SEGMENT: everything
+  CHPL_TASKS: fifo
+  CHPL_LAUNCHER: aprun
+  CHPL_TIMERS: generic
+  CHPL_MEM: cstdlib
+  CHPL_MAKE: gmake
+  CHPL_ATOMICS: intrinsics
+    CHPL_NETWORK_ATOMICS: none
+  CHPL_GMP: gmp
+  CHPL_HWLOC: none
+  CHPL_REGEXP: none
+  CHPL_WIDE_POINTERS: struct
+  CHPL_LLVM: none
+  CHPL_AUX_FILESYS: none
+
+- Build your Chapel program as normal.
+
+  % /path/to/chpl hello.chpl
+
+- Request some nodes with KNCs.  You can get the node numbers using
+  cnselect:
+
+  % cnselect -e name.eq.Xeon_Phi
+
+    or
+
+  % cnselect -e name.eq.MIC
+
+- Next, use qsub to request the nodes.  For example, to request nodes
+  12-16 for interactive using PBSPro:
+
+  % qsub -I -lmppwidth=5,mppnppn=1,mppnodes=\"12-16\"
+
+- Change to your working directory:
+
+  % cd $PBS_O_WORKDIR
+
+- Run your program as you would normally.
+
+  % ./a.out -nl 5
+

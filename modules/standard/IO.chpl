@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -147,7 +147,7 @@ extern const QIO_HINT_PARALLEL:c_int;
 extern const QIO_HINT_DIRECT:c_int;
 extern const QIO_HINT_NOREUSE:c_int;
 
-/** NONE means normal operation, nothing special
+/*  NONE means normal operation, nothing special
     to hint. Expect to use NONE most of the time.
     The other hints can be bitwise-ORed in.
  */
@@ -156,18 +156,18 @@ const IOHINT_NONE = 0:c_int;
 /** RANDOM means we expect random access to a file */
 const IOHINT_RANDOM = QIO_HINT_RANDOM;
 
-/** SEQUENTAL means expect sequential access. On
+/*  SEQUENTIAL means expect sequential access. On
     Linux, this should double the readahead.
  */
 const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
 
-/** CACHED means we expect the entire file
+/*  CACHED means we expect the entire file
     to be cached and/or we pull it in all at
     once. May request readahead on the entire file.
  */
 const IOHINT_CACHED = QIO_HINT_CACHED;
 
-/** PARALLEL means that we expect to have many
+/*  PARALLEL means that we expect to have many
     channels working with this file in parallel.
     It might change the reading/writing implementation
     to something more efficient in that scenario.
@@ -226,6 +226,7 @@ extern record iostyle { // aka qio_style_t
                              and nonprinting characters c = \uABCD
      QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end
    */
+  /* */
   var string_format:uint(8) = 0;
   // numeric scanning/printing choices
   var base:uint(8) = 0;
@@ -266,8 +267,8 @@ extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, co
 
 // Same as qio_file_open_access in, except this time we pass though our
 // struct that will initilize the file with the appropriate functions for that FS
-extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string,
-                                     access:string, iohints:c_int, /*const*/ ref style:iostyle,
+extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
+                                     access:c_string, iohints:c_int, /*const*/ ref style:iostyle,
                                      fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
@@ -281,13 +282,6 @@ extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
-
-extern proc qio_chdir(name: c_string):syserr;
-extern proc qio_chown(name: c_string, uid: c_int, gid: c_int):syserr;
-extern proc qio_cwd(ref working_dir:c_string):syserr;
-extern proc qio_file_rename(oldname: c_string, newname: c_string):syserr;
-extern proc qio_file_remove(name: c_string):syserr;
-extern proc qio_mkdir(name: c_string, mode: int, parents: bool):syserr;
 
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
@@ -341,13 +335,13 @@ extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
 extern proc qio_free_string(arg:c_string);
 
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
+extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):syserr;
+extern proc qio_file_path_for_fp(fp:_file, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):syserr;
+extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string_copy):syserr;
 pragma "no prototype" // FIXME
-extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):syserr;
+extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string_copy, path_in:c_string):syserr;
 
 extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
 pragma "no prototype" // FIXME
@@ -360,7 +354,7 @@ extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_ch
 extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):syserr;
 extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):syserr;
 
-extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
 extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
@@ -384,14 +378,17 @@ extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, co
 extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):syserr;
 
 extern proc qio_nbytes_char(chr:int(32)):c_int;
-extern proc qio_encode_to_string(chr:int(32)):c_string;
+extern proc qio_encode_to_string(chr:int(32)):c_string_copy;
 extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
 
 extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):syserr;
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):syserr;
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
-extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
+// Note, the returned ptr argument behaves like an allocated c_string
+// (i.e. c_string_copy).  It should be freed by the caller, or stored and freed
+// later.
+extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipws:c_int):syserr;
@@ -514,6 +511,7 @@ extern type fdflag_t = c_int;
 
 /* Access hints describe how a file will be used.
    These can help optimize. These might be:
+
   QIO_METHOD_DEFAULT,
   QIO_METHOD_READWRITE,
   QIO_METHOD_P_READWRITE,
@@ -524,10 +522,11 @@ extern type fdflag_t = c_int;
   QIO_HINT_BANDWIDTH,
   QIO_HINT_CACHED,
   QIO_HINT_NOREUSE
-}
+
 */
 extern type iohints = c_int;
 
+/* TODO: document file record. */
 pragma "ignore noinit"
 record file {
   var home: locale = here;
@@ -590,6 +589,7 @@ proc file.unlock() {
 // File style cannot be modified after the file is created;
 // this prevents race conditions;
 // channel style is protected by channel lock, can be modified.
+pragma "no doc"
 proc file._style:iostyle {
   check();
 
@@ -599,72 +599,6 @@ proc file._style:iostyle {
     qio_file_get_style(_file_internal, local_style);
     ret = local_style;
   }
-  return ret;
-}
-
-/* Change the current working directory to the specified name. Returns any
-   errors that occurred via an out parameter.
-   err: a syserr used to indicate if an error occurred
-   name: a string indicating a new directory
-*/
-proc chdir(out err: syserr, name: string) {
-  err = qio_chdir(name.c_str());
-}
-
-/* Change the current working directory to the specified name. Generates an
-   error if one occurred.
-   name: a string indicating a new directory
-*/
-proc chdir(name: string) {
-  var err: syserr = ENOERR;
-  chdir(err, name);
-  if err then ioerror(err, "in chdir", name);
-}
-
-/* Changes one or both of the owner and group id of the named file to the
-   specified values.  If uid or gid are -1, the value in question will remain
-   unchanged.
-   err: a syserr used to indicate if an error occurred
-   name: the name of the file to be changed.
-   uid: user id to use as new owner, or -1 if it should remain the same.
-   gid: group id to use as the new group owner, or -1 if it should remain the
-        same.
-*/
-proc chown(out err: syserr, name: string, uid: int, gid: int) {
-  err = qio_chown(name.c_str(), uid:c_int, gid:c_int);
-}
-
-/* Changes one or both of the owner and group id of the named file to the
-   specified values.  If uid or gid are -1, the value in question will remain
-   unchanged. Generates an error if one occurred.
-   name: the name of the file to be changed.
-   uid: user id to use as new owner, or -1 if it should remain the same.
-   gid: group id to use as the new group owner, or -1 if it should remain the
-        same.
-*/
-proc chown(name: string, uid: int, gid: int) {
-  var err: syserr = ENOERR;
-  chown(err, name, uid, gid);
-  if err then ioerror(err, "in chown", name);
-}
-
-/* Returns the current working directory.
-   err: a syserr used to indicate if an error occurred
-*/
-proc cwd(out err: syserr): string {
-  var tmp:c_string, ret:string;
-  err = qio_cwd(tmp);
-  if err then return "";
-  ret = toString(tmp);
-  chpl_free_c_string(tmp);
-  return ret;
-}
-
-/* Returns the current working directory. Generates an error if one occurred. */
-proc cwd(): string {
-  var err: syserr = ENOERR;
-  var ret = cwd(err);
-  if err then ioerror(err, "in cwd");
   return ret;
 }
 
@@ -702,17 +636,17 @@ proc file.getPath(out error:syserr) : string {
   check();
   var ret:string;
   on this.home {
-    var tmp:c_string;
-    var tmp2:c_string;
+    var tmp:c_string_copy;
+    var tmp2:c_string_copy;
     error = qio_file_path(_file_internal, tmp);
     if !error {
       error = qio_shortest_path(_file_internal, tmp2, tmp);
     }
-    chpl_free_c_string(tmp);
+    chpl_free_c_string_copy(tmp);
     if !error {
-      // FIX ME: could use a toString() that doesn't allocate space
+      // This uses the version of toString that steals its operand.
+      // No need to free.
       ret = toString(tmp2);
-      chpl_free_c_string(tmp2);
     } else {
       ret = "unknown";
     }
@@ -744,66 +678,6 @@ proc file.length():int(64) {
   }
   if err then ioerror(err, "in file.length()");
   return len;
-}
-
-/* These are constant values of the form S_I[R | W | X][USR | GRP | OTH],
-   S_IRWX[U | G | O], S_ISUID, S_ISGID, or S_ISVTX, where R corresponds to
-   readable, W corresponds to writable, X corresponds to executable, USR and
-   U correspond to user, GRP and G correspond to group, OTH and O correspond
-   to other, directly tied to the C idea of these constants.  They are intended
-   for use with functions that alter the permissions of files or directories.
-*/
-extern const S_IRUSR: int;
-extern const S_IWUSR: int;
-extern const S_IXUSR: int;
-extern const S_IRWXU: int;
-
-extern const S_IRGRP: int;
-extern const S_IWGRP: int;
-extern const S_IXGRP: int;
-extern const S_IRWXG: int;
-
-extern const S_IROTH: int;
-extern const S_IWOTH: int;
-extern const S_IXOTH: int;
-extern const S_IRWXO: int;
-
-extern const S_ISUID: int;
-extern const S_ISGID: int;
-extern const S_ISVTX: int;
-
-/* Attempt to create a directory with the given path.  If parents is true,
-   will attempt to create any directory in the path that did not previously
-   exist.  Returns any errors that occurred via an out parameter
-   err: a syserr used to indicate if an error occurred
-   name: the name of the directory to be created, fully specified.
-   mode: an integer representing the permissions desired for the file
-         in question.  See description of the provided constants for potential
-         values.
-   parents: a boolean indicating if parent directories should be created.
-            If set to false, any nonexistent parent will cause an error to
-            occur.
-*/
-proc mkdir(out err: syserr, name: string, mode: int = 511,
-           parents: bool=false) {
-  err = qio_mkdir(name.c_str(), mode, parents);
-}
-
-/* Attempt to create a directory with the given path.  If parents is true,
-   will attempt to create any directory in the path that did not previously
-   exist.  Generates an error if one occurred.
-   name: the name of the directory to be created, fully specified.
-   mode: an integer representing the permissions desired for the file
-         in question.  See description of the provided constants for potential
-         values.
-   parents: a boolean indicating if parent directories should be created.
-            If set to false, any nonexistent parent will cause an error to
-            occur.
-*/
-proc mkdir(name: string, mode: int = 511, parents: bool=false) {
-  var err: syserr = ENOERR;
-  mkdir(err, name, mode, parents);
-  if err then ioerror(err, "in mkdir", name);
 }
 
 // these strings are here (vs in _modestring)
@@ -855,22 +729,69 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       var fs:c_void_ptr;
       error = hdfs_connect(fs, host.c_str(), port);
       if error then ioerror(error, "Unable to connect to HDFS", host);
+      /* TODO: This code is an alternative to the above line, which breaks the
+         function's original invariant of not generating errors within itself.
+         This is better style and should still work, but we can't be certain
+         until we test it and aren't capable of testing HDFS at this point.
+         When further work with HDFS is done, please test and edit this function
+         to behave appropriately by removing the above line and replacing it
+         with the following three. (2015-02-04, lydia)
+
+      if error then return ret;
+      // connect fully specifies the error message so all we'd need to do is
+      // return.
+      */
       error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
       // Since we don't have an auto-destructor for this, we actually need to make
       // the reference count 1 on this FS after we open this file so that we will
       // disconnect once we close this file.
       hdfs_do_release(fs);
       if error then ioerror(error, "Unable to open file in HDFS", url);
+      /* TODO: The above line breaks the function's original invariant of not
+         generating errors within itself.  It is better style to remove this
+         line.  Doing so should still work, but we can't be certain until we
+         test it and aren't capable of testing HDFS at this point.  When
+         further work with HDFS is done, please test and edit this function to
+         behave appropriately by removing the above line (2015-02-04, lydia)
+
+      */
     } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
       error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
       if error then ioerror(error, "Unable to open URL", url);
+      /* TODO: The above line breaks the function's original invariant of not
+         generating errors within itself.  It is better style to remove this
+         line.  Doing so should still work, but we can't be certain until we
+         test it and aren't capable of regularly testing curl at this point.
+         When further work with auxiliary file systems are done, please test and
+         edit this function to behave appropriately by removing the above line
+         (2015-02-04, lydia)
+
+      */
     } else {
       ioerror(ENOENT:syserr, "Invalid URL passed to open");
+      /* TODO: This code is an alternative to the above line, which breaks the
+         function's original invariant of not generating errors within itself.
+         This is better style and should still work, but we can't be certain
+         until we test it and aren't capable of testing HDFS at this point.
+         When further work with HDFS is done, please test and edit this function
+         to behave appropriately by removing the above line and replacing it
+         with the following one. (2015-02-04, lydia)
+
+      error = ENOENT:syserr; // Invalid URL provided
+      */
     }
   } else {
     if (path == "") then
       ioerror(ENOENT:syserr, "in open: Both path and url were path");
+    /* TODO: The above two lines breaks the function's original invariant of not
+       generating errors within itself.  It is better style to remove these
+       lines.  Doing so should still work, but we can't be certain until we
+       test it and aren't capable of regularly testing auxiliary file systems at
+       this point.  When further work with auxiliary file systems are done,
+       please test and edit this function to behave appropriately by removing
+       the above two lines. (2015-02-04, lydia)
 
+    */
     error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
   }
 
@@ -898,7 +819,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   var err:syserr = ENOERR;
   var ret = openfd(fd, err, hints, style);
   if err {
-    var path:c_string;
+    var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path);
     if e2 then path = "unknown".c_str();
@@ -920,7 +841,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   var err:syserr = ENOERR;
   var ret = openfp(fp, err, hints, style);
   if err {
-    var path:c_string;
+    var path:c_string_copy;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path);
     if e2 then path = "unknown".c_str();
@@ -958,42 +879,6 @@ proc openmem(style:iostyle = defaultIOStyle()):file {
   var ret = openmem(err, style);
   if err then ioerror(err, "in openmem");
   return ret;
-}
-
-/* Renames the file specified by oldname to newname, returning an error
-   if one occurred.  The file is not opened during this operation.
-   error: a syserr used to indicate if an error occurred during renaming.
-   oldname: current name of the file
-   newname: name which should refer to the file in the future.*/
-proc rename(out error: syserr, oldname, newname: string) {
-  error = qio_file_rename(oldname.c_str(), newname.c_str());
-}
-
-/* Renames the file specified by oldname to newname, generating an error
-   if one occurred.  The file is not opened during this operation.
-   oldname: current name of the file
-   newname: name which should refer to the file in the future.*/
-proc rename(oldname, newname: string) {
-  var err:syserr = ENOERR;
-  rename(err, oldname, newname);
-  if err then ioerror(err, "in rename", oldname);
-}
-
-/* Removes the file or directory specified by name, returning an error
-   if one occurred via an out parameter.
-   err: a syserr used to indicate if an error occurred during removal
-   name: the name of the file/directory to remove */
-proc remove(out err: syserr, name: string) {
-  err = qio_file_remove(name.c_str());
-}
-
-/* Removes the file or directory specified by name, generating an error
-   if one occurred.
-   name: the name of the file/directory to remove */
-proc remove(name: string) {
-  var err:syserr = ENOERR;
-  remove(err, name);
-  if err then ioerror(err, "in remove", name);
 }
 
 /* in the future, this will be an interface.
@@ -1057,7 +942,10 @@ record ioChar {
     halt("ioChar.writeThis must be written in Writer subclasses");
   }
 }
-inline proc _cast(type t, x: ioChar) where t == c_string {
+
+// Note: This returns a c_string_copy.
+// The caller has responsibility for freeing the returned string.
+inline proc _cast(type t, x: ioChar) where t == c_string_copy {
   return qio_encode_to_string(x.ch);
 }
 
@@ -1073,8 +961,13 @@ record ioNewline {
     f.write("\n");
   }
 }
+
 inline proc _cast(type t, x: ioNewline) where t == c_string {
   return "\n";
+}
+
+inline proc _cast(type t, x: ioNewline) where t == c_string_copy {
+  return __primitive("string_copy", "\n");
 }
 
 // Used to represent a constant string we want to read or write...
@@ -1088,8 +981,11 @@ record ioLiteral {
 }
 
 inline proc _cast(type t, x: ioLiteral) where t == c_string {
-  // FIX ME: should this be copied?
   return x.val;
+}
+
+inline proc _cast(type t, x: ioLiteral) where t == c_string_copy {
+  return __primitive("string_copy", x.val);
 }
 
 // Used to represent some number of bits we want to read or write...
@@ -1415,14 +1311,11 @@ proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr w
   } else if (t == c_string) || (t == string) {
     // handle c_string and string
     var len:int(64);
-    var tx: c_string;
+    var tx: c_string_copy;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    if t == c_string then x = tx;
-    else {
-      // FIX ME: could use a toString() that doesn't allocate space
-      x = toString(tx);
-      chpl_free_c_string(tx);
-    }
+    // FIX ME: Should deprecate the t == c_string path, because we always
+    // return an "owned" char* buffer (or NULL).
+    x = toString(tx);
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
@@ -1530,14 +1423,12 @@ inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byt
   } else if (t == c_string) || (t == string) {
     // handle c_string and string
     var len:int(64);
-    var tx: c_string;
+    var tx: c_string_copy;
     var ret = qio_channel_read_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, tx, len, -1);
-    if t == c_string then x = tx;
-    else {
-      // FIX ME: could use a toString() that doesn't allocate space
-      x = toString(tx);
-      chpl_free_c_string(tx);
-    }
+    // TODO: Deprecate the c_string return type, since this routine always
+    // returns an "owned" string thingy.  Using the c_string return type will
+    // cause leaks.
+    x = toString(tx);
     return ret;
   } else if isEnumType(t) {
     var i:enum_mintype(t);
@@ -1666,7 +1557,7 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
-inline proc channel.read(inout args ...?k,
+inline proc channel.read(ref args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
@@ -1674,7 +1565,13 @@ inline proc channel.read(inout args ...?k,
     this.lock();
     for param i in 1..k {
       if !error {
-        error = _read_one_internal(_channel_internal, kind, args[i]);
+        if args[i].locale == here {
+          error = _read_one_internal(_channel_internal, kind, args[i]);
+        } else {
+          var tmp:args[i].type;
+          error = _read_one_internal(_channel_internal, kind, tmp);
+          args[i] = tmp;
+        }
       }
     }
     this.unlock();
@@ -1686,18 +1583,17 @@ proc _args_to_proto(args ...?k,
                     preArg:string) {
   // FIX ME: lot of potential leaking going on here with string concat
   // But this is used for error handlling so maybe we don't care.
-  var err_args:c_string = "";
+  var err_args:c_string;
   for param i in 1..k {
     var name:c_string;
     if i <= _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:c_string;
+    else name = "x" + i:c_string_copy;
     // FIX ME: leak c_string due to concatenation
+    // Actually, don't fix me.  Fix concatenation to consume its c_string_copy args.
     err_args += preArg + name + ":" + typeToString(args(i).type);
     if i != k then err_args += ", ";
   }
-  // FIX ME: could use a toString() that doesn't allocate space
   const ret = toString(err_args);
-  chpl_free_c_string(err_args);
   return ret;
 }
 
@@ -1713,7 +1609,7 @@ inline proc channel.read(ref args ...?k):bool {
     return false;
   }
 }
-proc channel.read(inout args ...?k,
+proc channel.read(ref args ...?k,
                   style:iostyle,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
@@ -1837,7 +1733,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
   on this.home {
     var ret:c_string;
     var lenread:int(64);
-    var tx:c_string;
+    var tx:c_string_copy;
     var lentmp:int(64);
     var actlen:int(64);
     var uselen:ssize_t;
@@ -1873,7 +1769,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
     this.unlock();
 
     str_out = toString(tx);
-    chpl_free_c_string(tx);
   }
 
   return !error;
@@ -2123,6 +2018,7 @@ proc channel.modifyStyle(f:func(iostyle, iostyle))
 }
 */
 
+/* TODO: document ItemReader record. */
 record ItemReader {
   type ItemType;
   param kind:iokind;
@@ -2158,6 +2054,7 @@ record ItemReader {
   }*/
 }
 
+/* */
 proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   if writing then compilerError(".itemReader on write-only channel");
   return new ItemReader(ItemType, kind, locking, this);
@@ -3743,10 +3640,9 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
   var s:string;
   if ! error {
     var gotlen:int(64);
-    var ts: c_string;
+    var ts: c_string_copy;
     error = qio_channel_read_string(false, iokind.native, stringStyleExactLen(len), _channel_internal, ts, gotlen, len:ssize_t);
     s = toString(ts);
-    chpl_free_c_string(ts);
   }
  
   if ! error {
@@ -3776,7 +3672,7 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
 }
 
 
-/** Sets arg to the string of a match.
+/*  Sets arg to the string of a match.
     If arg is not a string, the match will be coerced to a arg.type.
 
     Assumes that the channel has been marked before where
@@ -3817,7 +3713,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
 }
 
 
-/** Search for an offset in the channel matching the
+/*  Search for an offset in the channel matching the
     passed regular expression, possibly pulling out capture groups.
     If there is a match, leaves the channel position at the
     match. If there is no match, the channel position will be
@@ -3869,7 +3765,7 @@ proc channel.search(re:regexp):reMatch
   return ret;
 }
 
-/** Like channel.search but assigning capture groups to arguments.
+/*  Like channel.search but assigning capture groups to arguments.
  */
 proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 {
@@ -4023,17 +3919,22 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch
 
 
 /* Enumerates matches in the string as well as capture groups.
+
    Returns tuples of reMatch objects, the 1st is always
-    the match for the whole pattern.
+   the match for the whole pattern.
+
    At the time each match is returned, the channel position is
-    at the start of that match. Note though that you would have
-    to advance to get to the position of a capture group.
+   at the start of that match. Note though that you would have
+   to advance to get to the position of a capture group.
+
    After returning each match, advances to just after that
-    match and looks for another match. Thus, it will not return
-    overlapping matches.
+   match and looks for another match. Thus, it will not return
+   overlapping matches.
+
    In the end, leaves the channel position at the end of the
-    last reported match (if we ran out of maxmatches)
-    or at the end of the channel (if we no longer matched)
+   last reported match (if we ran out of maxmatches)
+   or at the end of the channel (if we no longer matched)
+
    Holds the channel lock for the duration of the search.
  */
 iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))

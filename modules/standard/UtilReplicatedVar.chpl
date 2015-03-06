@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -69,6 +69,8 @@ Use it as above, except modify the variable declarations as follows:
 
 See also rcExample() and rcExampleOverLocales() in this file.
 */
+
+/* */
 
 use ReplicatedDist;
 

@@ -1,54 +1,36 @@
 Module: chpldoc
-   proc commented(val: int(64)): string
+   proc commented(val: int): string
       
-  Multiline comments found before a method are associated with that method
-  as long as there are no code blocks between them.
-
+      Multiline comments found before a function are associated with that function
+      as long as there are no code blocks between them.
 
    proc stub(val): bool
       
-  The method can be a stub and still output its comment
-
+      The function can be a stub and still output its comment
 
    proc uncommented()
-
    Module: chpldoc.Defined
       
-  If the source code defines a module, it can also have a comment associated
-  with it
-
+      If the source code defines a module, it can also have a comment associated
+      with it
       Class: Foo
          
-    And classes can display their comments, too
-  
-         var a: int(64)
-            
-      Including the comments associated with their fields
-    
-         proc getA(): int(64)
-            
-      And class specific methods
-    
-
-         inherited from object
-
-      Class: Bar
+         And classes can display their comments, too
          
-    If a class inherits from another class, those fields, methods, and their
-    comments are output in both the super and the subclass
-  
-         proc setA(newVal: int(64))
 
-         inherited from Foo
-            var a: int(64)
-               
-      Including the comments associated with their fields
-    
-            proc getA(): int(64)
-               
-      And class specific methods
-    
+         var a: int
+            
+            Including the comments associated with their fields
+            
+         proc getA(): int
+            
+            And class specific methods
+            
 
+      Class: Bar : Foo
+         
+         If a class inherits from another class, the inheritance is shown
+         in the signature.
+         
 
-         inherited from object
-
+         proc setA(newVal: int)

@@ -3,4 +3,4 @@ var ssi: sync sync int;
 
 si = 1;
 ssi = si;
-writeln(ssi);
+writeln(ssi.readFE().readFE());

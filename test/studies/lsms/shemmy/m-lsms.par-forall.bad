@@ -1,0 +1,3 @@
+[[ LSMS ]]
+Problem size = [5, 5, 5]
+m-lsms.par-forall.chpl:67: error: halt reached - array index out of bounds: (NNN)

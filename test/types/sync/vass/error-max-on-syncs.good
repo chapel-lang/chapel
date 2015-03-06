@@ -1,0 +1,2 @@
+error-max-on-syncs.chpl:8: In function 'test':
+error-max-on-syncs.chpl:10: error: max() and min() are not allowed on sync/single/atomic arguments - apply readFE/readFF/read() to those arguments first

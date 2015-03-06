@@ -1,31 +1,24 @@
 ===================================
-google-perftools for Chapel release
+gperftools for Chapel release
 ===================================
 
-This copy of google-perftools is being released with Chapel for
-convenience and uses a snapshot of google-perftools obtained from Google
-at: http://code.google.com/p/google-perftools/
+This copy of gperftools is being released with Chapel for convenience, and uses
+a snapshot of gperftools obtained from Google at:
+  http://code.google.com/p/gperftools/
 
 Note that Chapel only uses the tcmalloc memory allocator provided by the
-google-perftools distribution. The other tools are neither built nor
-used by Chapel.
+gperftools distribution. The other tools are neither built nor used by Chapel.
 
-Any Chapel issues that seem to be related to google-perftools should be
-directed to the Chapel team at chapel-bugs@lists.sourceforge.net, as the
-cause is most likely due to Chapel's use of google-perftools and not the
-google-perftools library itself.
+Any Chapel issues that seem to be related to gperftools should be directed to
+the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause is most
+likely due to Chapel's use of gperftools and not the gperftools library itself.
 
-The modifications that we have made to the official google-perftools 1.7
+The modifications that we have made to the official gperftools 2.2
 release are as follows:
 
 * Change the default large allocation reporting threshold to 0, so that
   by default tcmalloc does not produce a message no matter how large an
   allocation is.
-* Add a function to disable all but the specified entry in the table of
-  system allocators.  This can be called after a user-supplied system
-  allocator is registered, in order to turn off all the others and thus
-  guarantee that tcmalloc only uses memory from the user-supplied one.
-  Files affected: src/system-alloc.h, src/system-alloc.cc
 * Add the LIBC_MALLOC_OVERRIDE preprocessor constant, which controls
   whether or not tcmalloc overrides (intercepts) calls to the regular
   libc malloc interface functions.  Add a --enable-libc-malloc-override
@@ -37,11 +30,11 @@ release are as follows:
 The structure of this directory is as follows:
 
 ./
-  Makefile               : a Makefile to help build google-perftools for
+  Makefile               : a Makefile to help build gperftools for
                            Chapel's use
   README                 : this file
-  google-perftools-1.7/  : the google-perftools release, with Chapel's
+  gperftools-2.2/        : the gperftools release, with Chapel's
                            changes applied
-  install/               : as google-perftools is built it will be
-                           installed here: 
+  install/               : as gperftools is built it will be
+                           installed here:
                            $CHPL_TARGET_PLATFORM/{bin,include,lib,share}

@@ -20,6 +20,7 @@ module unitTest {
       s0 = "s0";
       coforall loc in Locales do on loc do if doCorrectnessTest then writeln(s0);
     }
+    stdout.flush();
     checkMemLeaks(m0);
   }
 

@@ -1,6 +1,6 @@
 config const n: uint(64) = max(uint(64));
 
-const r = 1..n by n/2;
+const r = 0..2*(n/3) by n/3;
 
 writeln("r is: ", r);
 

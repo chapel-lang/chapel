@@ -6,4 +6,4 @@ coforall i in 1..4 {
     s += 1;
   }
 }
-writeln(s);
+writeln(s.readFF());

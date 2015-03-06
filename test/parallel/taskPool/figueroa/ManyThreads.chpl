@@ -27,4 +27,4 @@ proc foo (x) {
 
 coforall i in 1..numThreads do
   foo (i);
-writeln ("total is ", total);
+writeln ("total is ", total.readFF());

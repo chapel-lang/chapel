@@ -1,5 +1,0 @@
-ref-sync-1.chpl:8: In function 'MYPROC':
-ref-sync-1.chpl:9: warning: int(64)
-started MYPROC
-read the FORMAL
-SVAR isFull: false

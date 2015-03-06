@@ -58,12 +58,13 @@ NUMA Locale Model
 In the NUMA locale model, the processor is split into NUMA domains
 and cores within a domain have faster access to local memory.
 
-The NUMA locale model is supported using the qthreads tasking layer.
-While other tasking layers are also functionally correct using the NUMA locale 
-model, they are not NUMA aware.  In addition, the Portable Hardware Locality
-library (hwloc) is used to map sublocales to NUMA domains. For more
-information about qthreads and about tuning parameters such as the number of
-qthread shepherds per locale, please see $CHPL_HOME/doc/README.tasks.
+The NUMA locale model is supported most fully when qthreads tasking is
+used.  While other tasking layers are also functionally correct using
+the NUMA locale model, they are not NUMA aware.  In addition, the
+Portable Hardware Locality library (hwloc) is used with qthreads to map
+sublocales to NUMA domains. For more information about qthreads and
+about tuning parameters such as the number of qthread shepherds per
+locale, please see $CHPL_HOME/doc/README.tasks.
 
 To use the NUMA locale model:
 
@@ -81,16 +82,21 @@ To use the NUMA locale model:
     chpl -o jacobi $CHPL_HOME/examples/programs/jacobi.chpl
 
 
-When CHPL_LOCALE_MODEL is numa the following defaults are inferred:
+* Qthreads thread scheduling
 
-    CHPL_TASKS=qthreads
-    CHPL_HWLOC=hwloc
+When qthreads tasking is used, different Qthreads thread schedulers are
+selected depending upon the CHPL_LOCALE_MODEL setting.  For the flat
+locale model the "nemesis" thread scheduler is used, and for the NUMA
+locale model the "sherwood" thread scheduler is used.  This selection is
+done at the time the Qthreads third-party package is built, and cannot
+be adjusted later, either at user compile time or at execution time.
 
 
 ---------------------------------------
 Caveats for using the NUMA locale model
 ---------------------------------------
 
-* Explicit memory allocation for NUMA domains is not yet implemented
-* Distributed arrays other than Block do not yet map iteration to NUMA domains
+* Explicit memory allocation for NUMA domains is not yet implemented.
+* Distributed arrays other than Block do not yet map iterations to NUMA
+  domains.
 * Performance for NUMA has not been optimized.

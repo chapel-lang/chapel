@@ -14,5 +14,9 @@ true
 true
 28
 true
+the full bit is: false
+the full bit is: true
+readXX returns: 28
+readXX returns: true
 35
 true

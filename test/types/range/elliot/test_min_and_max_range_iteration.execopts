@@ -1,0 +1,4 @@
+--rangeType=posInt
+--rangeType=negInt
+--rangeType=posUint
+--rangeType=negUint

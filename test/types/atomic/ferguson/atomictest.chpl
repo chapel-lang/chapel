@@ -3,6 +3,7 @@ config const showRace = false;
 
 proc test(param width, n_max:int ) {
   var n:uint(width) = max(uint(width));
+  n -= 1; // don't go to max(type) since that will overflow the range iterator
   if n_max:uint(64) < n:uint(64) then n = n_max:uint(width);
 
   const mult:uint(width) = 10;
@@ -14,7 +15,7 @@ proc test(param width, n_max:int ) {
   if showRace {
     var x:uint(width);
     x = zero;
-    forall i in one..n {
+    forall i in one..n with (ref x) { // race is intentional
       x += one;
     }
     writeln("X is ", x," (vs. ", n, ")");

@@ -1,0 +1,87 @@
+==============
+File Utilities
+==============
+
+Disclaimer:
+Work in this area is not complete; if and when you notice a particular function
+is missing, you may wish to scan the following email conversation to determine
+if the function in question is on our radar.  If it is not, or you wish to
+discuss its implementation and direction, please feel free to contact us.
+The file interface conversation:
+    http://sourceforge.net/p/chapel/mailman/message/32800541/
+Ways to contact us:
+    http://chapel.cray.com/community.html
+
+
+In addition to the ability to open, close, read from, and write to a file,
+Chapel provides functions for the following utilities:
+
+chdir(name: string):
+   Change the current working directory of the current locale to the specified
+   'name'. Generates an error message if one occurred.
+
+   Note: this is not safe within a parallel context.  A chdir call in one task
+   will affect the current working directory of all tasks for that locale.
+
+chown(name: string, uid: int, gid: int):
+   Changes one or both of the owner and group id of the named file to the
+   specified values.  If 'uid' or 'gid' are -1, the value in question will
+   remain unchanged. Generates an error message if one occurred.
+
+cwd():
+   Returns the current working directory for the current locale.
+
+   Note: another task on this locale can change the current working
+   directory from underneath this task, so use caution when making use
+   of this function in a parallel environment.
+
+In support of mkdir and future file permission operations, Chapel has
+additionally provided support for octal integers, which start with the sequence
+0o or 0O (the number zero followed by either a capital or lowercase letter o).
+
+Also provided are the following constants, which are directly tied to the C
+definition.  They can be combined and sent as arguments to mkdir.
+
+Constant| Description                                           |
+-----------------------------------------------------------------
+S_IRUSR |                                                       |
+S_IWUSR |                                                       |
+S_IXUSR | User readable, writeable, or executable, respectively |
+-----------------------------------------------------------------
+S_IRGRP |                                                       |
+S_IWGRP |                                                       |
+S_IXGRP | Group readable, writeable, or executable, respectively|
+-----------------------------------------------------------------
+S_IROTH |                                                       |
+S_IWOTH |                                                       |
+S_IXOTH | Other readable, writeable, or executable, respectively|
+-----------------------------------------------------------------
+S_IRWXU |                                                       |
+S_IRWXG | Readable, writeable, and executable for user, group,  |
+S_IRWXO | and other, respectively                               |
+-----------------------------------------------------------------
+S_ISUID |                                                       |
+S_ISGID | Set user or group ID on execute of file, respectively |
+-----------------------------------------------------------------
+S_ISVTX | Sticky bit                                            |
+-----------------------------------------------------------------
+
+mkdir(name: string, mode: int = 0o777, parents: bool=false):
+   Attempt to create a directory with the given 'name'.  If 'parents' is true,
+   will attempt to create any directory in the path that did not previously
+   exist.  Will generate an error message if one occurred.
+
+   Important note: In the case where 'parents' is true, there is a potential
+   security vulnerability.  The existence of each parent directory is checked
+   before attempting to create it, and it is possible for an attacker to create
+   the directory in between the check and the intentional creation.  If this
+   should occur, an error message about creating a directory that already exists
+   will be generated.
+
+rename(oldname, newname: string):
+   Renames the file specified by 'oldname' to 'newname', generating an error
+   message if one occurred.  The file is not opened during this operation.
+
+remove(name: string):
+   Removes the file or directory specified by 'name', generating an error
+   message if one occurred.

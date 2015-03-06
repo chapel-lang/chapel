@@ -1,1 +1,1 @@
-sync-type-1.chpl:1: warning: sync int(64)
+sync-type-1.chpl:1: error: sync int(64)

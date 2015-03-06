@@ -2,7 +2,7 @@
 Chapel Compiler Release: README
 ===============================
 
-This is the 1.10.0 release of the Chapel compiler, intended to give
+This is the 1.11.0 release of the Chapel compiler, intended to give
 potential users a look at what we're doing and the opportunity to
 provide us with feedback.  See the LICENSE file for the release's
 licensing terms.
@@ -21,14 +21,14 @@ capabilities in the interest of a simple and clean build.
 1) Make sure that your shell is in the directory containing this
    README file.  For example:
 
-        cd ~/chapel-1.10.0
+        cd ~/chapel-1.11.0
 
 
 2) Set up your environment to use Chapel in "Quick Start" mode.
 
    If you use...                         then type...
 
-   ...a bash-compatible shell (bash)     source util/quickstart/setchplenv.bash
+   ...a bash-compatible shell (bash/zsh) source util/quickstart/setchplenv.bash
    ...a csh-compatible shell (csh/tcsh)  source util/quickstart/setchplenv.csh
    ...the fish shell (fish)              . util/quickstart/setchplenv.fish
    ...the Bourne shell (sh)              . util/quickstart/setchplenv.sh
@@ -54,13 +54,15 @@ capabilities in the interest of a simple and clean build.
 
         make
 
+   Parallel build execution (e.g. `gmake -j`) is supported.
+
 4) csh/tcsh users only: Update your shell's path cache using:
 
         rehash
 
 
 5) To ensure you have installed Chapel properly, you can optionally
-   run an automatic sanity check using few example programs:
+   run an automatic sanity check using a few example programs:
 
         gmake check
 

@@ -1,5 +1,5 @@
 var x = 5;
-const refvar y = x;
+const ref y = x;
 writeln(x, ' ', y);
 var z = y;
 writeln(x, ' ', y, ' ', z);

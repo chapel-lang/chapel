@@ -1,0 +1,2 @@
+9223372036854775797..9223372036854775807
+test_max_range_iteration.chpl:4: error: halt reached - Iteration over a bounded range may be incorrect due to overflow.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,6 @@
 
 // DefaultOpaque.chpl
 //
-pragma "no use ChapelStandard"
 module DefaultOpaque {
   
   class DefaultOpaqueDom: BaseOpaqueDom {
@@ -115,18 +114,14 @@ module DefaultOpaque {
   
     proc dsiAccess(ind : idxType) ref : eltType
       return anarray.dsiAccess(ind);
-    
-    proc dsiTargetLocDom() {
-      compilerError("targetLocDom is unsupported by opaque domains");
-    }
 
     proc dsiTargetLocales() {
       compilerError("targetLocales is unsupported by opaque domains");
     }
 
-    proc dsiOneLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param return true;
 
-    proc dsiGetLocalSubdomain() {
+    proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
   

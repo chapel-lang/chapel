@@ -1,0 +1,40 @@
+\section{Introduction}
+
+The original design for Chapel anticipated that memory management would be handled
+by garbage collection.  However, efficient distributed-memory garbage collection
+algorithms have not been forthcoming.  In the mean time, the desire to support a growing
+number of users by keeping memory leakage within practical bounds has forced the
+implementation to provide some means for reclaiming memory.  
+
+Since memory reclamation was not part of the original design, its implementation is somewhat
+ad hoc.  A review of the memory management elements in use in the Chapel compiler revealed
+that most of the necessary elements are present in some form.  But since these have not
+been applied uniformly across all types, memory is still leaked.
+
+To provide the user full control over memory management, the compiler needs to be modified
+to call UMM support routines at all the necessary places in the code.  These consist
+of two particular constructors (the zero-args constructor and the copy-constructor),
+assignment and the destructor.  It is hoped that by applying these calls in a consistent
+manner, type-specific handling of memory management can be removed and the compiler
+rendered simpler.
+
+Since the Chapel implementation of user-managed memory was added after the initial design,
+the specification needs to be updated to integrate this concept with the descriptions of
+object creation, copying and destruction.  This proposal restates the object
+model as it relates to the current Chapel implementation, and makes recommendations on how
+the existing specification should be updated.  In addition, it provides recommendations for
+syntactical and semantical modifications that may make that model more usable.
+
+The remainder of this document is organized as follows: Section \rsec{Objects} discusses
+the object life-cycle and provides a brief overview of the User-Managed Memory model.  It
+also contains general information common to the other sections.  Section
+\rsec{Declarations} presents the proposed syntax and semantics for variable and field
+declarations outside the context of a constructor definition, highlighting how this
+differs from the current implementation.  Section \rsec{Constructors} presents the
+proposed syntax and semantics for constructors, highlighting how this differs from the
+current implementation.
+
+Appendices are provided for quick reference.  Appendix \rsec{Changes} provides a summary of the
+proposed changes.  Appendix \rsec{Examples} gives examples including declarations for the
+fundamental types provided by Chapel.
+

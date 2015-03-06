@@ -25,23 +25,35 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
           echo " "
 
           echo "Updating PATH to include..."
-          PATH="$MYPATH":"$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util
+          PATH="$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM:"$CHPL_HOME"/util:"$MYPATH"
           export PATH
           echo "                           ...$CHPL_HOME"/bin/$CHPL_HOST_PLATFORM
           echo "                       and ...$CHPL_HOME"/util
           echo " "
 
           echo "Updating MANPATH to include..."
-          MANPATH="$MYMANPATH":"$CHPL_HOME"/man
+          MANPATH="$CHPL_HOME"/man:"$MYMANPATH"
           export MANPATH
           echo "                           ...$CHPL_HOME"/man
           echo " "
+
+          echo "Setting CHPL_COMM to..."
+          CHPL_COMM=none
+          export CHPL_COMM
+          echo "                           ...none"
+          echo ""
 
           echo "Setting CHPL_TASKS to..."
           CHPL_TASKS=fifo
           export CHPL_TASKS
           echo "                           ...fifo"
           echo " "
+
+#          echo "Setting CHPL_MEM to..."
+#          CHPL_MEM=cstdlib
+#          export CHPL_MEM
+#          echo "                           ...cstdlib"
+#          echo " "
 
           echo "Setting CHPL_GMP to..."
           CHPL_GMP=none

@@ -6,5 +6,5 @@ proc main {
   s$ **= 3;
   s$ >>= 2;
   s$ -= 1;
-  writeln(s$);
+  writeln(s$.readFF());
 }

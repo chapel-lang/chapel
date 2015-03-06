@@ -41,8 +41,8 @@ An implicit conversion occurs at each of the following program locations:
       to the type of the corresponding actual argument, if the formal's
       intent is \chpl{out}.
 
-\item The return or yield expression within a non-variable function is converted
-      to the return type of that function.
+\item The return or yield expression within a function without a \chpl{ref}
+      return intent is converted to the return type of that function.
 
 \item The condition of a conditional expression,
       conditional statement, while-do or do-while loop statement

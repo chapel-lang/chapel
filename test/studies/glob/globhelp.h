@@ -4,18 +4,32 @@
 // from qio runtime
 #include "sys.h"
 
-#define glob_num(glb) glb.gl_pathc
-#define glob_index(glb,i) glb.gl_pathv[i]
+static inline
+size_t glob_num(const glob_t glb) {
+    return glb.gl_pathc;
+}
 
-#define wordexp_num(glb) glb.we_wordc
-#define wordexp_index(glb,i) glb.we_wordv[i]
+static inline
+const char* glob_index(const glob_t glb, size_t i) {
+    return glb.gl_pathv[i];
+}
+
+static inline
+size_t wordexp_num(const wordexp_t wexp) {
+    return wexp.we_wordc;
+}
+
+static inline
+const char* wordexp_index(const wordexp_t wexp, size_t i) {
+    return wexp.we_wordv[i];
+}
 
 // to make --cc-warnings happy
-int chpl_glob(const char* pattern, int flags, glob_t* ret_glob);
+int chpl_study_glob(const char* pattern, int flags, glob_t* ret_glob);
 int chpl_wordexp(const char* pattern, int flags, wordexp_t* ret_glob);
 int chpl_isdir(const char* path);
 
-int chpl_glob(const char* pattern, int flags, glob_t* ret_glob)
+int chpl_study_glob(const char* pattern, int flags, glob_t* ret_glob)
 {
   int err;
   err = glob(pattern, flags, NULL, ret_glob);

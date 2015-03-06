@@ -2,17 +2,35 @@
 
 if [ -f SKIPIF ]
 then
-  if [ "1" == `$CHPL_HOME/util/test/testEnv SKIPIF` ]
+  if [ -x SKIPIF ]
   then
-    exit 1
+    skip=`./SKIPIF`
+    if [ "1" == "$skip" -o "True" == "$skip" ]
+    then
+      exit 1
+    fi
+  else
+    if [ "1" == `$CHPL_HOME/util/test/testEnv SKIPIF` ]
+    then
+      exit 1
+    fi
   fi
 fi
 
 if [ -f $1 ]
 then
-  if [ "1" == `$CHPL_HOME/util/test/testEnv $1` ]
+  if [ -x $1 ]
   then
-    exit 1
+    skip = `$1`
+    if [ "1" == "$skip" -o "True" == "$skip" ]
+    then
+      exit 1
+    fi
+  else
+    if [ "1" == `$CHPL_HOME/util/test/testEnv $1` ]
+    then
+      exit 1
+    fi
   fi
 fi
 

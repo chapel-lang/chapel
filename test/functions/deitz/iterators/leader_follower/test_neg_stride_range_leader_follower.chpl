@@ -1,8 +1,8 @@
-var D: domain((int,int));
+var D: domain((int,int), parSafe=false);
 
 var lock: sync bool;
 
-forall (i,j) in zip(1..7 by -1, 0..) {
+forall (i,j) in zip(1..7 by -1, 0..) with (ref D) {
   lock = true;
   D += (i,j);
   lock;
@@ -11,7 +11,7 @@ forall (i,j) in zip(1..7 by -1, 0..) {
 writeln(D.sorted());
 D.clear();
 
-forall (i,j) in zip(1..7 by -2, 0..) {
+forall (i,j) in zip(1..7 by -2, 0..) with (ref D) {
   lock = true;
   D += (i,j);
   lock;
@@ -20,7 +20,7 @@ forall (i,j) in zip(1..7 by -2, 0..) {
 writeln(D.sorted());
 D.clear();
 
-forall (i,j) in zip(1..4, 1..7 by -2) {
+forall (i,j) in zip(1..4, 1..7 by -2) with (ref D) {
   lock = true;
   D += (i,j);
   lock;
@@ -29,7 +29,7 @@ forall (i,j) in zip(1..4, 1..7 by -2) {
 writeln(D.sorted());
 D.clear();
 
-forall (i,j) in zip({1..7 by -1}, 0..) {
+forall (i,j) in zip({1..7 by -1}, 0..) with (ref D) {
   lock = true;
   D += (i,j);
   lock;
@@ -38,7 +38,7 @@ forall (i,j) in zip({1..7 by -1}, 0..) {
 writeln(D.sorted());
 D.clear();
 
-forall (i,j) in zip({1..7 by -2}, 0..) {
+forall (i,j) in zip({1..7 by -2}, 0..) with (ref D) {
   lock = true;
   D += (i,j);
   lock;
@@ -47,7 +47,7 @@ forall (i,j) in zip({1..7 by -2}, 0..) {
 writeln(D.sorted());
 D.clear();
 
-forall (i,j) in zip({1..4}, {1..7 by -2}) {
+forall (i,j) in zip({1..4}, {1..7 by -2}) with (ref D) {
   lock = true;
   D += (i,j);
   lock;

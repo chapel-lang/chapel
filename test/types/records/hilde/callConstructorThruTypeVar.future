@@ -1,0 +1,5 @@
+feature request: Use a type variable/argument as the base for a contructor call.
+
+This currently works with a type variable but not a type argument.
+
+

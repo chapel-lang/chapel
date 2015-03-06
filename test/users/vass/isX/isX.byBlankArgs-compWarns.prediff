@@ -1,0 +1,12 @@
+#!/bin/bash
+
+outfile=$2
+
+# trim line numbers etc.
+cat $2 \
+| sed 's@^isX\.[a-zA-Z-]*\.chpl:[0-9]*: @@;
+       s@^warning: @@;
+       /^In function .test.:/d' \
+> $outfile.tmp
+
+mv $outfile.tmp $outfile

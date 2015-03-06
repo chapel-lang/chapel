@@ -44,6 +44,8 @@ benchmarks/
 
 primers/
   arrays         : rectangular domains/arrays; slicing; iteration; reallocation
+  arrayVectorOps : vector-like operations on rectangular arrays
+  associative    : associative domains and arrays; set operations
   atomics        : atomic variables and operations on them
   chpldoc        : the comment-based documentation generation feature
   classes        : classes and objects; dynamic dispatch; 'this' and 'these'
@@ -56,6 +58,7 @@ primers/
   locales        : multiple locales, on clauses, multi-locale task parallelism
   opaque         : opaque domains and arrays; graph-based data structures
   procedures     : defining and calling procedures in Chapel
+  randomNumbers  : use of the standard module Random
   ranges         : ranges; .., #, by operators; range iteration; range slicing
   reductions     : minloc, maxloc, + and && array reductions
   slices         : array slicing and reindexing; iterators

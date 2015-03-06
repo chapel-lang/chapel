@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -654,7 +654,9 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
-  chpl__testPar("Block domain follower invoked on ", followThis);
+  if chpl__testParFlag then
+    chpl__testPar("Block domain follower invoked on ", followThis);
+
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
   for param i in 1..rank {
@@ -927,10 +929,12 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       return if i == rangeTuple.size then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
-  if fast then
-    chpl__testPar("Block array fast follower invoked on ", followThis);
-  else
-    chpl__testPar("Block array non-fast follower invoked on ", followThis);
+  if chpl__testParFlag {
+    if fast then
+      chpl__testPar("Block array fast follower invoked on ", followThis);
+    else
+      chpl__testPar("Block array non-fast follower invoked on ", followThis);
+  }
 
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
@@ -1382,10 +1386,6 @@ proc BlockArr.doiBulkTransfer(B) {
   }
   if debugBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
 }
-    
-proc BlockArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc BlockArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
@@ -1393,11 +1393,11 @@ proc BlockArr.dsiTargetLocales() {
 
 // Block subdomains are continuous
 
-proc BlockArr.dsiOneLocalSubdomain() param return true;
+proc BlockArr.dsiHasSingleLocalSubdomain() param return true;
 
 // returns the current locale's subdomain
 
-proc BlockArr.dsiGetLocalSubdomain() {
+proc BlockArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
 }
 

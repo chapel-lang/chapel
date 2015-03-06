@@ -1,6 +1,6 @@
 perfkeys: Execution time =, Execution time =
 graphkeys: RA, RA w/atomics
 files: hpcc-ra.dat, hpcc-ra-atomics.dat
-graphtitle: HPCC RA Performance
+graphtitle: HPCC RA Time
 ylabel: Time (seconds)
 graphname: hpcc-ra

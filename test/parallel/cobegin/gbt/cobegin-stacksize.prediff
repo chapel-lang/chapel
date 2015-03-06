@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+
+# A prediff is needed because the failure mode for this test is slightly
+# different depending on the configuration. The signal is sometimes different,
+# valgrind has extra output, etc.
+
+import sys, re
+
+outfile = sys.argv[2]
+with open(outfile, 'r') as fp:
+  content = fp.read()
+
+failmatch = '.*(timedexec: target program died with signal).*'
+match = re.match( failmatch, content, re.IGNORECASE|re.DOTALL)
+if match:
+  content = match.group(1) + '\n'
+
+with open(outfile, 'w') as fp:
+  fp.write(content)
+

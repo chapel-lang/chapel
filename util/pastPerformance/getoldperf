@@ -61,6 +61,11 @@ if ($perfdir eq "") {
 
 $somethingfailed = 0;
 
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+$num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`;
+chomp($num_procs);
+
 #
 # make temp directory
 #
@@ -86,7 +91,7 @@ mysystem("cd $tmpdir && svn export -q -r '{$svndate}' $svnroot chapel", "svn che
 #
 # make compiler
 #
-mysystem("cd $chapeldir && make", "making compiler", 1, 1);
+mysystem("cd $chapeldir && make -j$num_procs", "making compiler", 1, 1);
 
 #
 # run tests

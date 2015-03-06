@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os
 
-import chpl_arch, chpl_platform
+import chpl_arch, chpl_platform, chpl_compiler
 from utils import memoize
 
 @memoize
@@ -10,7 +10,11 @@ def get():
     if not tasks_val:
         arch_val = chpl_arch.get('target', get_lcd=True)
         platform_val = chpl_platform.get()
-        if arch_val == 'knc' or platform_val == 'cygwin':
+        compiler_val = chpl_compiler.get('target')
+        if (arch_val == 'knc' or
+                platform_val.startswith('cygwin') or
+                platform_val.startswith('netbsd') or
+                compiler_val == 'cray-prgenv-cray'):
             tasks_val = 'fifo'
         else:
             tasks_val = 'qthreads'

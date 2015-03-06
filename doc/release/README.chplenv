@@ -9,12 +9,12 @@ overriding the default settings.  To check the values of the Chapel
 environment variables that are set or can be inferred, run the script:
 $CHPL_HOME/util/printchplenv
 
-The setchplenv.* scripts in the $CHPL_HOME/util/ directory contain
-commands that set the following variables for various shells and host
-platforms when they are sourced from the $CHPL_HOME directory.
-Frequent Chapel users may want to add the following settings to their
-shell's dotfile(s) but for getting started the setchplenv.* scripts 
-should suffice. 
+The setchplenv.* source scripts in the $CHPL_HOME/util/quickstart/ and
+$CHPL_HOME/util/ directories contain commands that set the following
+variables for various shells and host platforms when they are sourced
+from the $CHPL_HOME directory.  Frequent Chapel users may want to add
+such settings to their shell's dotfile(s); but for getting started the
+setchplenv.* scripts can be convenient.
 
 --------------------
 Recommended Settings
@@ -25,7 +25,7 @@ Recommended Settings
    release.  This is the parent of the directory containing this file.
    For example:
 
-        export CHPL_HOME=~/chapel-1.10.0
+        export CHPL_HOME=~/chapel-1.11.0
 
    [This, and all other examples in Chapel READMEs, assumes you're
     using the 'bash' shell.  If using 'csh' or 'tcsh', mentally change
@@ -44,7 +44,8 @@ Recommended Settings
    be set explicitly.  The strings for our currently-supported host
    platforms are as follows:
 
-        cygwin       : Cygwin (Windows) platforms
+        cygwin32     : x86 Cygwin (Windows) platforms
+        cygwin64     : x86_64 Cygwin (Windows) platforms
         darwin       : Macintosh OS X platforms
         linux32      : 32-bit Linux platforms
         linux64      : 64-bit Linux platforms
@@ -184,7 +185,7 @@ Optional Settings
         * If CHPL_COMM is set, no attempt to set a useful value will be made,
           CHPL_TARGET_ARCH will be 'unknown'.
 
-        * If CHPL_TARGET_PLATFORM is 'darwin', 'linux*', or 'cygwin'
+        * If CHPL_TARGET_PLATFORM is 'darwin', 'linux*', or 'cygwin*'
           CHPL_TARGET_ARCH will be 'native', passing the responsibility off to
           the backend C compiler to detect the specifics of the hardware.
 
@@ -196,10 +197,21 @@ Optional Settings
 
         platform              make utility
         --------              ------------
-        cygwin, darwin    ->  make
+        cygwin*, darwin   ->  make
         linux32, linux64  ->  gmake if available, otherwise make
         other             ->  gmake
 
+
+*  Optionally, set the CHPL_MODULE_PATH environment variable to provide a list
+   of directories to be added to the module search path.  The value of this
+   environment variable should be a colon-separated list of directory paths.
+
+   The module search path is used to satisfy 'use' statements in the Chapel
+   program.  The complete search path can be displayed using the compiler option
+   --print-search-dirs.  It will also include the compiler's standard module
+   search paths, those introduced by the -M flag on the command line and
+   directories containing the .chpl files named explicitly on the compiler
+   command line.
 
 *  Optionally, set the CHPL_LOCALE_MODEL environment variable to
    indicate the locale model you want to use.  Current options are:
@@ -220,12 +232,17 @@ Optional Settings
    options are:
 
    CHPL_TASKS:
-        fifo           : run tasks to completion, in FIFO order
         qthreads       : run tasks using Sandia's Qthreads package
+        fifo           : run tasks to completion, in FIFO order
         massivethreads : run tasks using U Tokyo's MassiveThreads package
 
-   if unset, CHPL_TASKS defaults to "fifo" unless CHPL_LOCALE_MODEL is
-   set to "numa", in which case CHPL_TASKS defaults to "qthreads".
+   If CHPL_TASKS is not set it defaults to "qthreads" unless the target
+   platform is "knc" or "cygwin*".  For those two it defaults to "fifo".
+
+   Note that the Chapel util/quickstart/setchplenv.* source scripts
+   set CHPL_TASKS to 'fifo' to reduce build-time and third-party
+   dependences, while the util/setchplenv.* versions leave it unset,
+   resulting in the behavior described just above.
 
    See README.tasks for more information about executing using the
    various CHPL_TASKS options.
@@ -247,11 +264,11 @@ Optional Settings
 *  Optionally, the CHPL_MEM environment variable can be used to select
    a memory management layer.  Current options are:
 
-        default  : use the standard C malloc/free commands
+        cstdlib  : use the standard C malloc/free commands
         dlmalloc : use Doug Lea's memory allocation package
         tcmalloc : use the tcmalloc package from Google Performance Tools
 
-   If unset, CHPL_MEM defaults to "default" unless CHPL_COMM is
+   If unset, CHPL_MEM defaults to "cstdlib" unless CHPL_COMM is
    gasnet and you are using the fast or large segments.  See
    README.multilocale for more information on GASNet segments.
 
@@ -306,10 +323,17 @@ Optional Settings
        none   : do not build GMP support into the Chapel runtime
        gmp    : use the GMP distribution bundled with Chapel in third-party
 
-   If unset, CHPL_GMP defaults to "system" if you are on a Cray system,
-   "gmp" if you've already built the third-party installation of GMP for
-   your installation, and "none" otherwise.  Note that the bundled GMP
-   distribution may not build on all platforms supported by Chapel.
+   If unset, Chapel will attempt to build GMP using CHPL_TARGET_COMPILER
+   (noting that the bundled version may not be supported by all compilers).
+   Based on the outcome, Chapel will default to:
+
+       gmp    : if the build was successful
+       system : if unsuccessful and CHPL_TARGET_PLATFORM is cray-x*
+       none   : otherwise
+
+   Note that the Chapel util/quickstart/setchplenv.* source scripts
+   set CHPL_GMP to 'none' while the util/setchplenv.* versions leave
+   it unset, resulting in the behavior described just above.
 
 
 *  Optionally, the CHPL_HWLOC environment variable can select between
@@ -320,10 +344,11 @@ Optional Settings
        hwloc  : use the hwloc distribution bundled with Chapel in
                 third-party
 
-   If unset, CHPL_HWLOC defaults to "hwloc" if you've already built the
-   third-party installation of hwloc for your installation, and "none"
-   otherwise.  Note that the bundled hwloc distribution may not build
-   on all platforms supported by Chapel.
+   If unset, CHPL_HWLOC defaults to "hwloc" if CHPL_TASKS is qthreads,
+   unless the target platform is knc.  In all other cases it defaults to
+   "none".  Note that the bundled hwloc distribution will not build on
+   some targets (Mac, for example), but the CHPL_HWLOC default does not
+   reflect that.
 
 
 *  Optionally, the CHPL_REGEXP environment variable can be used to
@@ -334,10 +359,16 @@ Optional Settings
        re2  : use the re2 distribution in third-party
        none : do not support regular expression operations
 
-   If unset, CHPL_REGEXP defaults to "re2" if you've already installed 
-   regular expression support in third-party and "none" otherwise.
-   Note that the bundled re2 distribution may not build on all
-   platforms supported by Chapel.
+   If unset, Chapel will attempt to build RE2 using CHPL_TARGET_COMPILER
+   (noting that the bundled version may not be supported by all compilers).
+   Based on the outcome, Chapel will default to:
+
+       re2  : if the build was successful
+       none : otherwise
+
+   Note that the Chapel util/quickstart/setchplenv.* source scripts
+   set CHPL_REGEXP to 'none' while the util/setchplenv.* versions
+   leave it unset, resulting in the behavior described just above.
 
 
 *  Optionally, the CHPL_AUX_FILESYS environment variable can be used to
@@ -346,11 +377,14 @@ Optional Settings
 
        none : only support traditional Linux filesystems
        hdfs : also support HDFS filesystems
+       curl : also support CURL as a filesystem interface
 
    If unset, CHPL_AUX_FILESYS defaults to "none".
 
    See $CHPL_HOME/doc/technotes/README.hdfs for more information about
    HDFS support.
+   See $CHPL_HOME/doc/technotes/README.curl for more information about
+   CURL support.
 
 
 *  Optionally, the CHPL_LLVM environment variable can be used to

@@ -598,7 +598,7 @@ as \chpl{Node(int)}.
 \index{constructors!type constructors}
 
 A type constructor is automatically created for each class or record.
-A type constructor is a type function (\rsec{Type_Functions}) that has
+A type constructor is a type function (\rsec{Type_Return_Intent}) that has
 the same name as the class or record.  It takes one argument per the
 class's or record's generic field, including fields inherited from the
 superclasses, if any.
@@ -796,11 +796,13 @@ program from which the function containing the call is called.
 Compilation halts if a \chpl{compilerError} is encountered whereas it
 will continue after encountering a \chpl{compilerWarning}.
 
-Note that when a variable function is called in a context where the
-implicit \chpl{setter} argument is true or false, both versions of the
-variable function are resolved by the compiler.  Consequently,
-the \chpl{setter} argument cannot be effectively used to guard a
-compiler diagnostic statements.
+\begin{craychapel}
+Note that when a function with a \chpl{ref} return intent is called in a
+context where the implicit \chpl{setter} argument is true or false, both
+versions of the function are resolved by the compiler.  Consequently, the
+\chpl{setter} argument cannot be effectively used to guard a compiler
+diagnostic statements.
+\end{craychapel}
 
 \begin{chapelexample}{compilerDiagnostics.chpl}
 The following code shows an example of using user-defined compiler

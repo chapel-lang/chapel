@@ -2,7 +2,7 @@ use SysBasic;
 
 proc doDebugWrite(x, y):err_t {
   writeln("Debug Write: ", x, y);
-  return chpl_int_to_err(1);
+  return qio_int_to_err(1);
 }
 
 proc test(arg:string, out error:err_t):bool {
@@ -12,6 +12,7 @@ proc test(arg:string, out error:err_t):bool {
       error = doDebugWrite("test ", arg);
     }
   }
+  return error==ENOERR;
 }
 
 var e:err_t = ENOERR;

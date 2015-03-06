@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+#
+# Note that this test will fail if the setgid bit is set on this
+# directory and the group id is different than the effective group id.
+#
+
+set -e
+
+file_user=$(python -c 'import os ; print(os.stat("file.txt").st_uid)')
+file_group=$(python -c 'import os ; print(os.stat("file.txt").st_gid)')
+
+expected_file_group=$(cat file.gid)
+expected_file_user=$(cat file.uid)
+rm -f file.gid file.uid || :
+
+if [ "${file_user}" = "${expected_file_user}" -a "${file_group}" = "${expected_file_group}" ] ; then
+  echo "no change" >> $2
+else
+  echo "Expected uid ${expected_file_user}, actual uid ${file_user}" >> $2
+  echo "Expected gid ${expected_file_group}, actual gid ${file_group}" >> $2
+fi

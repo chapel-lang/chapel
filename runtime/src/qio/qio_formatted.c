@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,7 @@
  */
 
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
@@ -1383,18 +1383,22 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
     quoted_cols += elipses_size;
   }
 
-  ti->ret_columns = quoted_cols;
-  ti->ret_chars = quoted_chars;
-  ti->ret_bytes = quoted_bytes;
-  ti->ret_truncated_at_byte = i;
-  ti->ret_truncated = overfull;
+  if( ti ) {
+    ti->ret_columns = quoted_cols;
+    ti->ret_chars = quoted_chars;
+    ti->ret_bytes = quoted_bytes;
+    ti->ret_truncated_at_byte = i;
+    ti->ret_truncated = overfull;
+  }
   return 0;
 error:
-  ti->ret_columns = -1;
-  ti->ret_chars = -1;
-  ti->ret_bytes = -1;
-  ti->ret_truncated_at_byte = -1;
-  ti->ret_truncated = -1;
+  if( ti ) {
+    ti->ret_columns = -1;
+    ti->ret_chars = -1;
+    ti->ret_bytes = -1;
+    ti->ret_truncated_at_byte = -1;
+    ti->ret_truncated = -1;
+  }
   return err;
 }
 
@@ -1668,6 +1672,10 @@ qioerr _peek_number_unlocked(qio_channel_t* restrict ch, number_reading_state_t*
       s->digits_start = qio_channel_offset_unlocked(ch) - 1;
     } else if( s->allow_base && chr == 'x' ) {
       s->gotbase = s->usebase = 16;
+      NEXT_CHR;
+      START_DIGITS;
+    } else if( s->allow_base && chr == 'o' ) {
+      s->gotbase = s->usebase = 8;
       NEXT_CHR;
       START_DIGITS;
     } else if( s->allow_base && chr == 'b' ) {
@@ -2062,6 +2070,31 @@ qioerr qio_channel_scan_imag(const int threadsafe, qio_channel_t* restrict ch, v
   return qio_channel_scan_float_or_imag(false, ch, out, len, true);
 }
 
+// core of ltoa for arbitrary base.
+// Fills in tmp from right to left
+// Returns the number of positions in tmp to skip to get to number.
+// Returns -1 on buffer overflow.
+// supports up to base 36.
+static inline int _ltoa_convert(char *tmp, int tmplen, uint64_t num, int base, int uppercase)
+{
+  int at;
+  int digit;
+  char ch;
+  tmp[tmplen-1] = '\0';
+  for( at = tmplen-2; at >= 0; at-- ) {
+    // Get the remainder mod base
+    digit = num % base;
+    // Divide by base
+    num /= base;
+    // Compute the character to use
+    if( base <= 10 || digit < 10 ) ch = '0' + digit;
+    else ch = ((uppercase)?('A'):('a')) + digit - 10;
+    // Set the character.
+    tmp[at] = ch;
+    if( num == 0 ) break;
+  }
+  return at;
+}
 
 // dst must have room (at most 65 bytes for binary + '\0')
 // Returns the number of characters written (not including '\0')
@@ -2072,32 +2105,33 @@ static
 int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
           int base, const qio_style_t* restrict style)
 {
-  char tmp[22]; // enough room for largest 64-bit number base 10.
+  char tmp[65]; // enough room for largest 64-bit number base 2.
   int tmp_len=0;
+  int tmp_skip=0;
   char b=0;
-  int i,shift=0;
+  int i;
   int width;
   int ret_width;
 
-  if( base == 2 ) {
+  // Optimize conversions for supported bases
+  if( base == 2 )
+    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 2, 0);
+  else if( base == 8 )
+    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 8, 0);
+  else if( base == 10 )
+    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 10, 0);
+  else if( base == 16 )
+    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 16, style->uppercase);
+  else
+    tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, base, style->uppercase);
 
-    // Pass any zero digits.
-    for( shift = 0; (num >> 63) == 0 && shift < 63; shift++, num <<= 1 ) ;
-
-    // Our number will be 64-shift digits.
-    width = 64 - shift;
-  } else {
-    if( base == 16 ) {
-      if( style->uppercase ) 
-        width = snprintf(tmp, 22, "%" PRIX64, num);
-      else 
-        width = snprintf(tmp, 22, "%" PRIx64, num);
-    } else if ( base == 10 ) {
-      width = snprintf(tmp, 22, "%" PRIu64, num);
-    } else return -1;
-    tmp_len = width;
-    if( width < 0 ) return -1;
+  if (tmp_skip < 0) {
+    // Internal buffer too small.  Increase size of tmp[].
+    return -1;
   }
+
+  tmp_len = sizeof(tmp) - 1 - tmp_skip;
+  width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
@@ -2126,6 +2160,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
     dst[i++] = '0';
     width--;
     if( base == 2 ) b = style->uppercase?'B':'b';
+    if( base == 8 ) b = style->uppercase?'O':'o';
     else if( base == 16 ) b = style->uppercase?'X':'x';
     dst[i++] = b;
     width--;
@@ -2139,14 +2174,8 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   }
 
   // now output the digits.
-  if( base == 2 ) {
-    for( ; shift < 64; shift++, num <<= 1 ) {
-      dst[i++] = '0' + (num >> 63);
-    }
-  } else {
-    memcpy(dst + i, tmp, tmp_len);
-    i += tmp_len;
-  }
+  qio_memcpy(dst + i, tmp+tmp_skip, tmp_len);
+  i += tmp_len;
 
   // Now if we're left justified we might need padding.
   if( style->leftjustify && width < style->min_width_columns) {
@@ -2423,7 +2452,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
   }
 
   // now output the digits
-  memcpy(dst + i, buf + j, buf_len);
+  qio_memcpy(dst + i, buf + j, buf_len);
   i += buf_len;
 
   if( needs_i ) {
@@ -3331,7 +3360,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
   return err;
 }
 
-c_string qio_encode_to_string(int32_t chr)
+c_string_copy qio_encode_to_string(int32_t chr)
 {
   int nbytes;
   char* buf;
@@ -3653,7 +3682,7 @@ qioerr qio_conv_parse(c_string fmt,
 
 
     // Read a base flag
-    if( istype(fmt[i], "bdxXjh'\"") ) {
+    if( istype(fmt[i], "bdxXjho'\"") ) {
       base_flag = fmt[i];
       i++;
     }
@@ -3806,6 +3835,7 @@ qioerr qio_conv_parse(c_string fmt,
       if( plus_flag ) style_out->showplus = 1;
 
       if( base_flag == 'b' ) style_out->base = 2;
+      else if( base_flag == 'o' ) style_out->base = 8;
       else if( base_flag == 'd' ) style_out->base = 10;
       else if( base_flag == 'x' ) {
         style_out->base = 16;

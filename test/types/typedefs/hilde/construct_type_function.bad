@@ -1,0 +1,2 @@
+construct_type_function.chpl:15: error: 'new' must be followed by a type expression
+construct_type_function.chpl:20: error: 'new' must be followed by a type expression
