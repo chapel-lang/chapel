@@ -1040,6 +1040,9 @@ module DefaultRectangular {
       Blo(i) = Bdims(i).first;
   
     const len = dom.dsiNumIndices:int(32);
+
+    if len == 0 then return;
+
     if debugBulkTransfer {
       pragma "no prototype"
       extern proc sizeof(type x): int;
