@@ -1354,6 +1354,11 @@ static void insertAutoDestroy(FnSymbol* fn,
                               SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
 {
+  // We need to re-run BB analysis, so that inserted autoCopy() calls are added
+  // to their respective basic blocks.
+  BasicBlock::buildBasicBlocks(fn);
+  BasicBlock::ignoreUnreachableBlocks(fn);
+
   size_t nbbs = fn->basicBlocks->size();
   for (size_t i = 0; i < nbbs; i++)
   {
