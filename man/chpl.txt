@@ -120,6 +120,8 @@ OPTIONS
                     currently a rather conservative pass in the sense that 
                     it may not identify all code that is truly invariant.
 
+  --[no-]ignore-local-classes   Disable [enable] local classes
+
   --[no-]inline     Enable [disable] function inlining.
 
   --[no-]inline-iterators   Enable [disable] iterator inlining. When
@@ -173,6 +175,10 @@ OPTIONS
   --tuple-copy-limit  Limit on the size of tuples considered for the
                       tuple copy optimization. The default value is 8.
 
+  --[no-]use-noinit               Enable [disable] ability to skip default
+                                  initialization through the keyword
+                                  noinit
+
   Run-time Semantic Check Options
 
   --no-checks       Turns off many run-time checks, equivalent to:
@@ -194,6 +200,9 @@ OPTIONS
   --[no-]stack-checks   Enable [disable] run-time checking for stack
                     overflow.
 
+  --[no-]cast-checks   Enable [disable] run-time checks in safeCast calls for
+                    casts that wouldn't preserve the logical value being cast.
+
   C Code Generation Options
 
   --[no-]codegen     Enable [disable] generating C code and the binary
@@ -210,6 +219,17 @@ OPTIONS
                     except when set to 0. The default is 0, except when
                     $CHPL_TARGET_COMPILER indicates a PGI compiler (pgi or
                     cray-prgenv-pgi), in which case the default is 1020.
+
+  --[no-]munge-user-idents   By default, chpl munges all user
+                    identifiers in the generated C code in order to
+                    minimize the chances of conflict with an
+                    identifier or keyword in C (in the current
+                    implementation, this is done by appending '_chpl'
+                    to the identifier). This flag provides the ability
+                    to disable this munging. Note that whichever mode,
+                    the flag is in, chpl may perform
+                    additional munging in order to implement Chapel
+                    semantics in C, or for other reasons.
 
   --savec <dir>      Saves the compiler-generated C code in the specified 
                     directory, creating the directory if it does not already
@@ -302,13 +322,23 @@ OPTIONS
   --docs-text-only  Specify that documents should use a text output file
                     format rather than HTML.
 
+  --docs-save-sphinx <directory>  Save generated Sphinx project in
+                                  directory.
+
   Compilation Trace Options
 
   --[no-]print-commands  Prints the system commands that the compiler 
                     executes in order to compile the Chapel program.
 
   --[no-]print-passes    Prints the compiler passes during compilation and the
-                    amount of wall clock time required for the pass.
+                    amount of wall clock time required for the pass. After
+                    compilation is complete two tables are produced that
+                    provide more detail of how time is spent in each pass
+                    (compiling, verifying, and memory management) and the
+                    percentage of the total time that is attributed to each
+                    pass. The first table is sorted by pass and the second
+                    table is sorted by the time for the pass in descending
+                    order.
 
   --print-passes-file <filename>   Saves the compiler passes and the amount of
                     wall clock time required for the pass to <filename>. An 
@@ -359,6 +389,12 @@ OPTIONS
                      a configuration parameter in the code. For
                      boolean configuration variables, the value can
                      be omitted, causing the default value to be toggled.
+
+  --[no-]task-tracking  Enable [disable] the Chapel-implemented task tracking
+                     table that supports the execution-time -b / -t flags.
+                     This option is currently only useful when $CHPL_TASKS
+                     is set or inferred to 'fifo' and adds compilation-time
+                     overhead when it will not be used, so is off by default.
 
   --[no-]warn-const-loops  Enable [disable] warnings for 'while' loops
                      whose condition is a 'const' variable, because such
@@ -550,4 +586,4 @@ SEE ALSO
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT
-  Copyright (c) 2004-2014 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)
+  Copyright (c) 2004-2015 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)

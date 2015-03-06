@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,11 +20,6 @@
 //
 // FIFO implementation of Chapel tasking interface
 //
-
-#ifdef __OPTIMIZE__
-// Turn assert() into a no op if the C compiler defines the macro above.
-#define NDEBUG
-#endif
 
 #include "chplrt.h"
 #include "chpl_rt_utils_static.h"
@@ -199,7 +194,7 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
   // in order to ensure fairness and thus progress.  If we're not, we
   // can spin-wait.
   suspend_using_cond = (chpl_thread_getNumThreads() >=
-                        chpl_getNumPUsOnThisNode());
+                        chpl_getNumLogicalCpus(true));
 
   while (s->is_full != want_full) {
     if (!suspend_using_cond) {
@@ -850,12 +845,13 @@ uint32_t chpl_task_getMaxPar(void) {
   uint32_t maxThreads;
 
   //
-  // We expect that even if the cores have multiple hardware threads,
-  // cache and pipeline conflicts will typically prevent applications
-  // from gaining by using them.  So, we just return the lesser of the
-  // number of cores, and whatever the threading layer says it can do.
+  // We expect that even if the physical CPUs have multiple hardware
+  // threads, cache and pipeline conflicts will typically prevent
+  // applications from gaining by using them.  So, we just return the
+  // lesser of the number of physical CPUs and whatever the threading
+  // layer says it can do.
   //
-  max = (uint32_t) chpl_getNumCoresOnThisNode();
+  max = (uint32_t) chpl_getNumPhysicalCpus(true);
   maxThreads = chpl_thread_getMaxThreads();
   if (maxThreads < max && maxThreads > 0)
     max = maxThreads;
@@ -863,11 +859,7 @@ uint32_t chpl_task_getMaxPar(void) {
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void) {
-#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
-  return CHPL_LOCALE_MODEL_NUM_SUBLOCALES;
-#else
   return 0;
-#endif
 }
 
 chpl_task_prvData_t* chpl_task_getPrvData(void) {

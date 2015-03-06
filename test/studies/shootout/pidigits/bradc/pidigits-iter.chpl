@@ -86,4 +86,13 @@ iter gen_digits(numDigits) {
     mpz_mul_ui(accum, accum, 10);          // accum *= 10
     mpz_mul_ui(numer, numer, 10);          // numer *= 10
   }
+
+  //
+  // Free memory associated with multi-precision valuesx
+  //
+  mpz_clear(tmp2);
+  mpz_clear(tmp1);
+  mpz_clear(denom);
+  mpz_clear(accum);
+  mpz_clear(numer);
 }

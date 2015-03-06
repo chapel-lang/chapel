@@ -1,6 +1,6 @@
 use Random, Time;
 
-config const n: int = 100000;
+config const n: int = 30000;
 config const randSeed: int = 11;
 
 class Runner {

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+correctRes="${PWD} on locale 1
+${PWD}/foo on locale 1
+${PWD} on locale 0
+${PWD}/foo on locale 1"
+if [ "`cat $2`" = "${correctRes}" ]; then
+	echo ok > $2
+fi

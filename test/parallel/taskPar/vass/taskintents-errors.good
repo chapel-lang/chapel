@@ -1,0 +1,4 @@
+taskintents-errors.chpl:10: error: illegal lvalue in assignment
+taskintents-errors.chpl:22: error: illegal lvalue in assignment
+taskintents-errors.chpl:46: error: illegal lvalue in assignment
+taskintents-errors.chpl:58: error: illegal lvalue in assignment

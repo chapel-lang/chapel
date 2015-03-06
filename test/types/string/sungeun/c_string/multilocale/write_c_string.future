@@ -1,0 +1,6 @@
+bug: c_string variables should not be used with write
+
+c_strings are only valid in the locale they were created on. Trying to write
+one from a locale other than the channel's home will cause a the use of a bad
+pointer. We should disallow the use of c_string in our IO system. If users
+really want to print one they can cast to string.

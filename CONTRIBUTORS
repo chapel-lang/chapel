@@ -9,21 +9,23 @@ language:
 Contributors to the current release
 -----------------------------------
 Kyle Brady, Cray Inc.
+Daniel Buettner, LTS
 Brad Chamberlain, Cray Inc.
 Sung-Eun Choi, Cray Inc.
 Lydia Duncan, Cray Inc.
 Michael Ferguson, LTS
-Akihiro Hayashi, Rice University
+Ben Harshbarger, Cray Inc.
 Tom Hildebrandt, Cray Inc.
 David Iten, Cray Inc.
-Rafael Larrosa Jiminez, University of Malaga
 Vassily Litvinov, Cray Inc.
-Jun Nakashima, University of Tokyo
-Elliot Ronaghan, Cray Inc./Moravian College
-Brandon Ross, University at Buffalo
+Tom MacDonald, Cray Inc.
+Michael Noakes, Cray Inc.
+Elliot Ronaghan, Cray Inc.
+Francisco Souza, individual contributor
 Greg Titus, Cray Inc.
 Thomas Van Doren, Cray Inc.
 Chris Wailes, Indiana University
+Tim Zakian, Cray Inc./Indiana University
 
 Contributors to previous releases
 ---------------------------------
@@ -40,25 +42,27 @@ Roxana Diaconescu, CalTech
 James Dinan, Cray Inc./The Ohio State University
 Martha Dumler, Cray Inc.
 Saliya Ekanayake, Indiana University
-Samuel Figueroa, Cray Inc.
-Roald Frederickx, personal
+Samuel Figueroa, Cray Inc. (*)
+Roald Frederickx, individual contributor
 Alexey Gokhberg, Unicorn Enterprises SA
 Paul Hargrove, Lawrence Berkeley National Laboratory
-Ben Harshbarger, Cray Inc./University of Washington
+Akihiro Hayashi, Rice University
 Hannah Hemmaplardh, Cray Inc./University of Washington
-Steven Hemmy, Cray Inc.
-Shannon Hoffswell, Cray Inc.
-Mary Beth Hribar, Cray Inc.
-Mark James, JPL
+Steven Hemmy, Cray Inc./University of Wisconsin
+Shannon Hoffswell, Cray Inc. (*)
+Mary Beth Hribar, Cray Inc. (*)
 Mackale Joyner, Cray Inc./Rice University
 Jessica Jueckstock, MITRE
 John Koenig, Cray Inc.
+Rafael Larrosa Jiminez, University of Malaga
 Matthew Lentz, University of Maryland
 Juan Lopez, University of Malaga
 Maria Angeles Navarro, University of Malaga
+Jun Nakashima, University of Tokyo
 Jacob Nelson, Cray Inc./University of Washington
 John Plevyak, Cray Inc.
 Lee Prokowich, Cray Inc.
+Brandon Ross, University at Buffalo
 Sara Salem, Cairo University
 Alberto Sanz, University of Malaga
 Albert Sidelnik, Cray Inc./University of Illinois, Urbana-Champaign
@@ -66,14 +70,34 @@ Darren Smith, University of Maryland
 Rachel Sobel, Cray Inc./University of Washington
 Srinivas Sridharan, University of Notre Dame/ORNL
 Andy Stone, Cray Inc./University of Colorado
-Chris Swenson
+Chris Swenson, individual contributor
 Jonathan Turner, Cray Inc./CU Boulder
 Wayne Wong, Cray Inc.
 Joe Yan, University of Maryland
-Tim Zakian, Cray Inc./Indiana University
-Hans Zima, CalTech/JPL
 
 
 We are also grateful to our many enthusiastic and vocal users for
 helping us continually improve the quality of the Chapel language and
 compiler.
+
+
+
+
+
+
+-----
+
+* = Note that due to a conversion mistake when moving our source
+    repository from SVN/SourceForge to Git/GitHub, some past
+    contributors' names were mapped to an incorrect name in the Git
+    repository.
+
+    For all intents and purposes, any commits that are
+    attributed to...             should actually be attributed to...
+    ----------------             -----------------------------------
+    ...Tito Figueroa             ...Samuel Figueroa
+    ...MaryBeth Seekamp          ...Mary Beth Hribar
+    ...Charles Shannon Hendrix   ...Shannon Hoffswell
+
+    These mistakes have been annotated in the repository itself via
+    git-notes indicating the "Actual Commit Author."

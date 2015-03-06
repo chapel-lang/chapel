@@ -1,6 +1,6 @@
-perfkeys: real, real, real, real, real
-graphkeys: meteor, meteor-parallel, meteor-implicit-domain, meteor-parallel-alt, release version
-files: meteor.dat, meteor-parallel.dat, meteor-implicit-domain.dat, meteor-parallel-alt.dat, meteor-release.dat
+perfkeys: real, real, real, real, real, real
+graphkeys: meteor, meteor-parallel, meteor-implicit-domain, meteor-parallel-alt, release version, fast release version
+files: meteor.dat, meteor-parallel.dat, meteor-implicit-domain.dat, meteor-parallel-alt.dat, meteor-release.dat, meteor-fast-release.dat
 graphtitle: Meteor Shootout Benchmark (n=2098)
 ylabel: Time (seconds)
 graphname: meteor

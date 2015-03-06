@@ -1,7 +1,5 @@
 $CHPL_HOME/modules/internal/DefaultRectangular.chpl:: note: instantiated range(idxType = int(64), boundedType = bounded, stridable = false)
-$CHPL_HOME/modules/internal/DefaultRectangular.chpl:: note: instantiated _unknown(idxType = int(64), boundedType = bounded, stridable = false)
+$CHPL_HOME/modules/internal/ChapelRange.chpl:: note: instantiated _unknown(idxType = int(64), boundedType = bounded, stridable = false)
 $CHPL_HOME/modules/internal/ChapelRange.chpl:: note: instantiated _unknown(idxType = int(64), boundedType = boundedLow, stridable = false)
 $CHPL_HOME/modules/internal/ChapelRange.chpl:: note: instantiated range(idxType = int(64), boundedType = boundedLow, stridable = false)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:: note: instantiated _unknown(idxType = int(64), boundedType = bounded, stridable = true)
-$CHPL_HOME/modules/internal/ChapelRange.chpl:: note: instantiated range(idxType = int(64), boundedType = bounded, stridable = true)
 9223372036854775797..9223372036854775807

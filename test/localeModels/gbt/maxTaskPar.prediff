@@ -6,23 +6,44 @@ target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
 locModel=$($CHPL_HOME/util/chplenv/chpl_locale_model.py)
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 
+function cores_from_proc_cpuinfo() {
+  if [[ -f /proc/cpuinfo ]] ; then
+    #
+    # Assumptions about /proc/cpuinfo:
+    # - There is a separate "processor" block for each logical CPU.
+    # - The CPUs are heterogeneous in terms of both cores/socket and
+    #   logical CPUs/core.  (This is true now but someday won't be!)
+    # - The "cpu cores" entry gives physical CPUs/socket.
+    # - The "siblings" entry gives logical CPUs/socket.
+    # - If either "cpu cores" or "siblings" entries are not present,
+    #   each processor block is assumed to represent a hardware core.
+    #   (This is broken in cygwin at least sometimes.)   Otherwise,
+    #   "siblings"/"cpu cores" is the logical/physical CPU ratio.
+    #
+    numPUs=$( grep -c '^processor[[:space:]]\+: ' /proc/cpuinfo )
+    numCores1=$( grep -m 1 '^cpu cores[[:space:]]\+: ' /proc/cpuinfo |
+                 sed 's/^[^[:digit:]]*\([[:digit:]]\+\).*$/\1/' )
+    numSibs1=$( grep -m 1 '^siblings[[:space:]]\+: ' /proc/cpuinfo |
+                sed 's/^[^[:digit:]]*\([[:digit:]]\+\).*$/\1/' )
+    if [[ -z $numCores1 || -z $numSibs1 ]] ; then
+      numCores=$numPUs
+    else
+      sibsPerCore=$(( $numSibs1 / $numCores1 ))
+      numCores=$(( $numPUs / $sibsPerCore ))
+    fi
+  else
+    numCores=0
+  fi
+}
+
 case $target in
-  linux*|cray-xc|cray-xe)
+  linux*|cray-xc|cray-xe|cygwin*)
     case $locModel-$tasks in
-      *-fifo|*-massivethreads|flat-qthreads)
-        numPUs=$( grep -c '^processor[[:space:]]\+: ' /proc/cpuinfo )
-        numCores1=$( grep -m 1 '^cpu cores[[:space:]]\+: ' /proc/cpuinfo |
-                     sed 's/^[^0-9]*\([0-9]\+\).*$/\1/' )
-        numSibs1=$( grep -m 1 '^siblings[[:space:]]\+: ' /proc/cpuinfo |
-                    sed 's/^[^0-9]*\([0-9]\+\).*$/\1/' )
-        sibsPerCore=$(( $numSibs1 / $numCores1 ))
-        numCores=$(( $numPUs / $sibsPerCore ))
-        echo $numCores > $1.good;;
       numa-qthreads)
-        hwld=$( $CHPL_HOME/util/config/compileline --libraries |
-                tr ' ' '\n' |
-                grep '^[-]L.*/hwloc/install/' |
-                sed -e 's,^-L,,' -e 's,/lib$,,' )
+        ucp=$( $CHPL_HOME/util/printchplenv --make |
+               grep HWLOC_UNIQ_CFG_PATH |
+               cut -d= -f2 )
+        hwld=$CHPL_HOME/third-party/hwloc/install/$ucp
         if [[ -n $hwld && -d $hwld/bin ]] ; then
           numNuma=$( $hwld/bin/lstopo --only numa | wc -l )
           numCores=$( $hwld/bin/lstopo --only cores | wc -l )
@@ -31,7 +52,7 @@ case $target in
             echo $(( $numCores / $numNuma )) >> $1.good
           done
         else
-          echo Need hwloc lstopo utility, but do not have it > $1.good
+          echo Could not find hwloc lstopo utility > $1.good
         fi;;
       flat-muxed)
         launcher=$($CHPL_HOME/util/chplenv/chpl_launcher.py)
@@ -44,12 +65,14 @@ case $target in
         fi
         echo $(( $numPUs * 16 )) > $1.good;;
       *)
-        echo Unexpected configuration $target-$locModel-$tasks > $1.good;;
+        cores_from_proc_cpuinfo
+        echo $numCores > $1.good;;
     esac;;
 
   darwin)
     echo $( sysctl -n hw.physicalcpu ) > $1.good;;
 
   *)
-    echo Unexpected target $target > $1.good;;
+    cores_from_proc_cpuinfo
+    echo $numCores > $1.good;;
 esac

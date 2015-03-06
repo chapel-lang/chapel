@@ -84,6 +84,16 @@ locales less one.
 %% Returns the number of threads which are currently idle on this locale.
 %% \end{protobody}
 
+\index{predefined functions!maxTaskPar@\chpl{maxTaskPar}}
+\index{locales!maxTaskPar@\chpl{maxTaskPar}}
+\begin{protohead}
+proc locale.maxTaskPar: int(32);
+\end{protohead}
+\begin{protobody}
+Returns an estimate of the maximum parallelism available for tasks
+on a given locale.
+\end{protobody}
+
 \index{predefined functions!name@\chpl{name}}
 \index{locales!name@\chpl{name}}
 \begin{protohead}
@@ -99,7 +109,7 @@ Returns the name of the locale.
 proc locale.numCores: int;
 \end{protohead}
 \begin{protobody}
-Returns the number of processor cores available on a given locale.
+Returns the number of logical CPUs available on a given locale.
 \end{protobody}
 
 \index{predefined functions!physicalMemory@\chpl{physicalMemory}}

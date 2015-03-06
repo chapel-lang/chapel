@@ -44,7 +44,8 @@ proc main {
   //==== Advection velocity ====
   //  var velocity = readVelocity("parameters.txt");
   var velocity: dimension*real;
-  [d in dimensions] velocity(d) = 0.5 + 0.5**d;
+  [d in dimensions with (ref velocity)] // could also be 'for param d'
+    velocity(d) = 0.5 + 0.5**d;
 
 
 

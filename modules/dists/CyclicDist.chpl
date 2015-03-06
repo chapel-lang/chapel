@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -1153,19 +1153,15 @@ proc CyclicArr.doiBulkTransferFromDR(Barg)
       }
     }
 }
-    
-proc CyclicArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc CyclicArr.dsiTargetLocales() {
-  return dom.dist.targetLocales;
+  return dom.dist.targetLocs;
 }
 
 // Cyclic subdomains are represented as a single domain
 
-proc CyclicArr.dsiOneLocalSubdomain() param return true;
+proc CyclicArr.dsiHasSingleLocalSubdomain() param return true;
 
-proc CyclicArr.dsiGetLocalSubdomain() {
+proc CyclicArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
 }

@@ -243,10 +243,13 @@ variable at task creation time.  Within the lexical scope of the
 forall statement or expression, the variable name references the
 captured value instead of the original value.
 
-A formal can be given the \chpl{ref} intent explicitly by listing it
-in the optional \sntx{task-intent-clause}. For variables of most
-types, this enables the task construct to modify the original variable
-or to read the original variable's value after concurrent modifications.
+A formal can be given another intent explicitly by listing it
+with that intent in the optional \sntx{task-intent-clause}.
+For example, for variables of most types, the \chpl{ref} intent allows
+the body of the forall loop to modify the corresponding original
+variable or to read its updated value after concurrent modifications.
+The \chpl{in} intent is a way to obtain task-private variables
+in a forall loop.
 
 \begin{rationale}
 A forall statement or expression may create tasks in its implementation.
@@ -255,12 +258,13 @@ affect the behavior of a task construct such as a \chpl{coforall} loop.
 \end{rationale}
 
 \begin{future}
-As with task intents, we would like to make other intents available
-for use in a \sntx{task-intent-clause} of a forall statement or expression.
-For example, an \chpl{in} intent would be a way to obtain
-task-private variables in a forall loop.
-In addition, we would like to introduce "reduction" intents
+We would like to introduce "reduction" intents
 that will let us implement reductions using forall intents.
+\end{future}
+
+\begin{future}
+As with task intents, we may want to disallow some intents,
+for example \chpl{inout} and \chpl{out}.
 \end{future}
 
 
@@ -565,7 +569,8 @@ arrays:
 \hline
 {\bf Config Const} & {\bf Type} & {\bf Default} \\
 \hline
-\chpl{dataParTasksPerLocale} & \chpl{int} & Number of cores per locale \\
+\chpl{dataParTasksPerLocale} & \chpl{int} &
+top level \chpl{.maxTaskPar}~(see~\rsec{Locale_Methods}) \\
 \chpl{dataParIgnoreRunningTasks} & \chpl{bool} & \chpl{true} \\
 \chpl{dataParMinGranularity} & \chpl{int} & \chpl{1} \\
 \hline
@@ -591,5 +596,6 @@ the specified value.
 
 For distributed domains and arrays that have these same configuration
 constants (\eg, Block and Cyclic distributions), these same
-global configuration constants are used to specify their default
-behavior within each locale (\rsec{Block_Dist},~\rsec{Cyclic_Dist}).
+module level configuration constants are used to specify their
+default behavior within each locale
+(see \rsec{Block_Dist} and \rsec{Cyclic_Dist}).

@@ -16,6 +16,11 @@ record taskPrivateData {
   var tid$: sync chpl_taskID_t = chpl_nullTaskID;
   var x: int;
   var y: [0..#numLocales] real;
+
+  // need our version of writeThis so we can print the sync field
+  proc writeThis(x: Writer) {
+    x.write("(", tid$.readXX(), ": ", x, "  ", y, ")");
+  }
 };
 
 inline proc =(ref a: chpl_taskID_t, b: chpl_taskID_t) { __primitive("=", a, b); }

@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,7 @@
 #include "expr.h"
 #include "passes.h"
 #include "primitive.h"
-#include "../resolution/resolution.h"
+#include "resolution.h"
 
 //
 // Static function declarations.
@@ -41,6 +41,7 @@ static void check_afterResolution(); // Checks to be performed after every pass
                                      // following resolution.
 static void check_afterCallDestructors(); // Checks to be performed after every
                                           // pass following callDestructors.
+static void check_afterLowerIterators();
 static void checkAggregateTypes(); // Checks that class and record types have
                                    // default initializers and default type
                                    // constructors.
@@ -49,6 +50,7 @@ static void checkResolveRemovedPrims(void); // Checks that certain primitives
 static void checkTaskRemovedPrims(); // Checks that certain primitives are
                                      // removed after task functions are
                                      // created.
+static void checkLowerIteratorsRemovedPrims();
 static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
 static void checkAutoCopyMap();
@@ -186,6 +188,7 @@ void check_lowerIterators()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 //  check_afterResolution(); // Oho! Iterator functions do not obey the invariant
   // checked in checkReturnPaths() [semanticChecks.cpp:250].
   // So check_afterResolution has been disabled in this and all subsequent post-pass
@@ -199,6 +202,7 @@ void check_parallel()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
   // Suggestion: Ensure parallelization applied (if not --local).
 }
 
@@ -207,6 +211,7 @@ void check_prune()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
   // Suggestion: Ensure no dead classes or functions.
 }
 
@@ -215,6 +220,7 @@ void check_complex2record()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
   // Suggestion: Ensure no more constants or variables of complex type.
 }
 
@@ -223,6 +229,7 @@ void check_bulkCopyRecords()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_removeUnnecessaryAutoCopyCalls()
@@ -230,6 +237,7 @@ void check_removeUnnecessaryAutoCopyCalls()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
   // Suggestion: Ensure no unnecessary autoCopy calls.
 }
 
@@ -238,6 +246,7 @@ void check_inlineFunctions()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_scalarReplace()
@@ -245,6 +254,7 @@ void check_scalarReplace()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
   // Suggestion: Ensure no constant expresions.
 }
 
@@ -253,6 +263,7 @@ void check_refPropagation()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_copyPropagation()
@@ -260,13 +271,15 @@ void check_copyPropagation()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
-}
+  check_afterLowerIterators();}
+
 
 void check_deadCodeElimination()
 {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators(); 
   // Suggestion: Ensure no dead code.
 }
 
@@ -275,6 +288,7 @@ void check_removeWrapRecords()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
   // Suggestion: Ensure no more wrap records.
 }
 
@@ -283,6 +297,7 @@ void check_removeEmptyRecords()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
   // Suggestion: Ensure no empty records.
 }
 
@@ -291,6 +306,7 @@ void check_localizeGlobals()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_loopInvariantCodeMotion()
@@ -298,6 +314,7 @@ void check_loopInvariantCodeMotion()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_prune2()
@@ -305,6 +322,7 @@ void check_prune2()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
   // Suggestion: Ensure no dead classes or functions.
 }
 
@@ -313,9 +331,18 @@ void check_returnStarTuplesByRefArgs()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_insertWideReferences()
+{
+  check_afterEveryPass();
+  check_afterNormalization();
+  check_afterCallDestructors();
+  check_afterLowerIterators();
+}
+
+void check_narrowWideReferences()
 {
   check_afterEveryPass();
   check_afterNormalization();
@@ -327,6 +354,7 @@ void check_optimizeOnClauses()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_addInitCalls()
@@ -334,6 +362,7 @@ void check_addInitCalls()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_insertLineNumbers()
@@ -341,6 +370,7 @@ void check_insertLineNumbers()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_codegen()
@@ -422,6 +452,12 @@ static void check_afterCallDestructors()
 }
 
 
+static void check_afterLowerIterators()
+{
+  checkLowerIteratorsRemovedPrims();
+}
+
+
 //
 // Checks that class and record types have a default initializer and a default
 // type constructor.
@@ -463,6 +499,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_QUERY_PARAM_FIELD:
         case PRIM_QUERY_TYPE_FIELD:
         case PRIM_ERROR:
+        case PRIM_FORALL_LOOP:
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");
           break;
@@ -487,6 +524,22 @@ checkTaskRemovedPrims()
        case PRIM_BLOCK_BEGIN_ON:
        case PRIM_BLOCK_COBEGIN_ON:
        case PRIM_BLOCK_COFORALL_ON:
+        if (call->parentSymbol)
+          INT_FATAL("Primitive should no longer be in AST");
+        break;
+       default:
+        break;
+      }
+}
+
+static void 
+checkLowerIteratorsRemovedPrims()
+{
+  forv_Vec(CallExpr, call, gCallExprs)
+    if (call->primitive)
+      switch(call->primitive->tag)
+      {
+       case PRIM_YIELD:
         if (call->parentSymbol)
           INT_FATAL("Primitive should no longer be in AST");
         break;
@@ -584,7 +637,7 @@ checkRetTypeMatchesRetVarType()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (fn->hasFlag(FLAG_ITERATOR_FN))
+    if (fn->isIterator())
       // Iterators break this rule.
       // retType is the type of the iterator record
       // The return value type is the type of the index the iterator returns.

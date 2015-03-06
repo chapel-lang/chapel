@@ -168,7 +168,7 @@ proc createBMP(bitmap:[] RGB, height: uint(32), width: uint(32), filename: strin
   w.write(image.fileHeader);
   w.write(image.dibHeader);
 
-  for h in 0..height-1 by -1 {
+  for h in 0..(height-1):int by -1 {
     w.write(bitmap[h*width..#width]);
     w.write(pad);
   }

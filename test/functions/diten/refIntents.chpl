@@ -1,8 +1,3 @@
-proc swap(ref l: sync, ref r: sync) {
-  l <=> r;
-  writeln("End of swap(", typeToString(l.type), ")");
-}
-
 proc swap(ref l: ?t, ref r: t) {
   l <=> r;
   writeln("End of swap(", typeToString(t), ")");

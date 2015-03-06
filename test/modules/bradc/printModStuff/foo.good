@@ -21,6 +21,8 @@ Parsing module files:
   subdir4/subdir/bax.chpl
   ./bah.chpl
   $CHPL_HOME/modules/standard/startInitCommDiags.chpl
+  $CHPL_HOME/modules/standard/NewString.chpl
+  $CHPL_HOME/modules/standard/Assert.chpl
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/Math.chpl
   $CHPL_HOME/modules/standard/stopInitCommDiags.chpl

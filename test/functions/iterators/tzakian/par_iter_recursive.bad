@@ -1,3 +1,3 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:2091: error: unable to resolve return type of function '_toLeader'
+$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:: error: unable to resolve return type of function '_toLeader'
 par_iter_recursive.chpl:10: In iterator 'countdown':
 par_iter_recursive.chpl:13: error: called recursively at this point

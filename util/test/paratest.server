@@ -41,7 +41,7 @@ $pwd = `pwd`; chomp $pwd;
 $client_script = "$pwd/../util/test/paratest.client";
 $summary_len = 2;
 $sleep_time = 1;                       # polling time (sec) to distribute work
-$incl_futures = 0;
+$futures_mode = 0;
 $filedist = 0;
 $node_para = 1;				                 # the number of tasks to run on each node
 $valgrind = 0;
@@ -49,6 +49,9 @@ $memleaks = "/dev/null";
 $memleaksflag = 0;
 $show_all_errors = 0;
 $suppressions = "";
+$junit_xml = 0;
+$junit_xml_file = "";
+$junit_remove_prefix = "";
 # Once a node has timed out, we don't send it any more work, so this timeout 
 # should be set higher than the time needed to process the largest directory.
 # -1 means "never time out".
@@ -248,21 +251,20 @@ sub feed_nodes {
                     $execopts = "\\\"$execopts\\\"";
                 }
                 # If the command line gets too long, consider using xargs
-                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $incl_futures $valgrind $memleaksflag $compopts $execopts";
+                $rem_cmd = "$rem_exec_cmd $client_script $readyid $pwd $testdir $chplenv $futures_mode $valgrind $memleaksflag $compopts $execopts";
                 if ($verbose) {
                     systemd ($rem_cmd);
                 } else {
                     systemd ("$rem_cmd 2>&1 | grep -i 'Error in paratest.client:'");
                 }
-                $partial_errors = `grep -a "^\\[Error" $logfile`;
-                if ($partial_errors =~ /^\[Error/) {
-                    @errors = split /^/m, $partial_errors;
-                    if ($show_all_errors) {
-                        print "\n:( \n @errors";
-                    } else {
-                        chomp $errors[0];
-                        print "\n:( " . $errors[0] . "\n";
-                    }
+                $pe_command = $show_all_errors
+                  # print Error lines; terminate when we reach Test Summary
+                  ? '/^\\[Error/p; /^\\[Test Summary/q'
+                  # once an Error line is seen, print it and terminate
+                  : '/^\\[Error/{p;q}';
+                $partial_errors = `sed -n '$pe_command' $logfile`;
+                if ($partial_errors) {
+                    print "\n:( $partial_errors";
                 } else {
                     print ":)";
                 }
@@ -334,6 +336,24 @@ sub feed_nodes {
 }
 
 
+sub generate_junit_xml {
+    $junit_args = "--start-test-log=$fin_logfile";
+    if (!($junit_xml_file eq "")) {
+        $junit_args = "$junit_args --junit-xml=$junit_xml_file"
+    }
+    if (!($junit_remove_prefix eq "")) {
+        $junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
+    }
+    if (!($suppressions eq "")) {
+        $junit_args = "$junit_args --suppress=$suppressions";
+    }
+    if ($junit_xml == 1) {
+        print "[Generating jUnit XML report]\n";
+        systemd("$pwd/../util/test/convert_start_test_log_to_junit_xml.py $junit_args");
+    }
+}
+
+
 # Signal that all nodes are free to do some work by writing their
 # synchronization files for them initially.
 sub nodes_free {
@@ -401,8 +421,15 @@ sub find_subdirs {
         # When attached to a directory name, skips it and all descendents if the condition is true.
         my $skipfilen = "$targetdir/$filen.skipif";
         if (-e "$skipfilen") {
-            print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
-            next unless `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` == 0;
+            my $skip;
+            if (-x "$skipfilen") {
+                print "$skipfilen = " . `$skipfilen` if $debug;
+                $skip = `$skipfilen`;
+            } else {
+                print "$ENV{CHPL_HOME}/util/test/testEnv $skipfilen = " . `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen` if $debug;
+                $skip = `$ENV{CHPL_HOME}/util/test/testEnv $skipfilen`;
+            }
+            next if $skip > '0' or $skip =~ m/true/i;
         }
 	    if ($debug) {for ($i=0; $i<$level; $i++)  {print "    ";}}
 	    push @founddirs, find_subdirs ("$targetdir/$filen", $level+1);
@@ -462,6 +489,9 @@ sub print_help {
     print "    -suppress f: f is a file with the tests to suppress using filterSuppressions.\n";  
     print "    -valgrind  : pass -valgrind to start_test.\n";
     print "    -timeout  t: t is the max time to wait after last directory is served.\n";
+    print "    -junit-xml : Create jUnit test report.\n";
+    print "    -junit-xml-file f: Put jUnit test report at location 'f' (implies -junit-xml).\n";
+    print "    -junit-remove-prefix p: Remove prefix 'p' from all tests in junit report.\n";
 }
 
 
@@ -481,7 +511,7 @@ sub main {
         if (/^-compopts/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $compopts = $ARGV[0];
+                $compopts = "$compopts $ARGV[0]";
             } else {
                 print "missing -compopts arg\n";
                 exit (8);
@@ -489,7 +519,7 @@ sub main {
         } elsif (/^-execopts/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $execopts = $ARGV[0];
+                $execopts = "$execopts $ARGV[0]";
             } else {
                 print "missing -execopts arg\n";
                 exit (8);
@@ -504,8 +534,17 @@ sub main {
                 print "missing -dirfile arg\n";
                 exit (8);
             }
+         # "undocumented" option, only meant to be used by other scripts
+        } elsif (/^-futures-mode/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $futures_mode = $ARGV[0];
+            } else {
+                print "missing -futures-mode arg\n";
+                exit (8);
+            }
         } elsif (/^-futures/) {
-            $incl_futures = 1;
+            $futures_mode = 1;
         } elsif (/^-logfile/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
@@ -558,7 +597,26 @@ sub main {
         } elsif (/^-valgrind/) {
             $valgrind = 1;
         } elsif (/^-show-all-errors/) {
-	   $show_all_errors = 1;
+            $show_all_errors = 1;
+        } elsif (/^-junit-xml$/) {
+            $junit_xml = 1;
+        } elsif (/^-junit-xml-file/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $junit_xml_file = $ARGV[0];
+                $junit_xml = 1;
+            } else {
+                print "missing -junit-xml-file arg\n";
+                exit (8);
+            }
+        } elsif (/^-junit-remove-prefix/) {
+            shift @ARGV;
+            if ($#ARGV >= 0) {
+                $junit_remove_prefix = $ARGV[0];
+            } else {
+                print "missing -junit-remove-prefix arg\n";
+                exit (8);
+            }
         } elsif (/^-help|^-h/) {
             print_help;
             exit (9);
@@ -570,6 +628,10 @@ sub main {
     }
 
     die "Error: CHPL_HOME must be set\n" unless defined $ENV{CHPL_HOME};
+
+# Set some more environment variables so they can be tested by skipif
+    $ENV{'COMPOPTS'} = $compopts;
+    $ENV{'EXECOPTS'} = $execopts;
 
     if (defined $nodefile) {
         open nodefile or die "Cannot open node file '$nodefile'\n";
@@ -606,7 +668,7 @@ sub main {
             next if /^$|^\#/;
             chomp;
             if ($filedist) {
-                push @testdir_list, find_files( $_, 0, !$incl_futures, 0);
+                push @testdir_list, find_files( $_, 0, !$futures_mode, 0);
             } else {
                 push @testdir_list, $_;
             }
@@ -621,7 +683,7 @@ sub main {
         chdir $cwd;
         if ($filedist) {
 	    print "[Collecting test files in $cwd]\n";
-            @testdir_list = find_files (".", 0, !$incl_futures, 1);
+            @testdir_list = find_files (".", 0, !$futures_mode, 1);
         } else {
 	    print "[Collecting test directories in $cwd]\n";
             @testdir_list = find_subdirs (".", 0);
@@ -660,6 +722,9 @@ sub main {
         unlink $synchfile if (-e $synchfile);
     }
     rmdir $synchdir;
+
+    # generate jUnit report
+    generate_junit_xml();
 }
 
 

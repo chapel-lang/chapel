@@ -2,6 +2,5 @@ opEquals.chpl:1: warning: whole-domain assignment has been serialized (see note 
 opEquals.chpl:2: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 opEquals.chpl:3: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 opEquals.chpl:4: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-opEquals.chpl:6: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-opEquals.chpl:12: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
-opEquals.chpl:15: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+opEquals.chpl:18: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+opEquals.chpl:19: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)

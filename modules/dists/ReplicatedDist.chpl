@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -652,18 +652,14 @@ proc ReplicatedArr.dsiRankChange(sliceDef: ReplicatedDom,
 
   return result;
 }
-    
-proc ReplicatedArr.dsiTargetLocDom() {
-  return dom.dist.targetLocales.domain;
-}
 
 proc ReplicatedArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
-proc ReplicatedArr.dsiOneLocalSubdomain() param  return true;
+proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 
-proc ReplicatedArr.dsiGetLocalSubdomain() {
+proc ReplicatedArr.dsiLocalSubdomain() {
   return localArrs[here.id].myDom.domLocalRep;
 }
 

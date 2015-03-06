@@ -91,6 +91,20 @@ Makefiles support the following targets:
 Each target processes all subdirectories then the current directory.
 
 
+----------------
+Makefile Options
+----------------
+
+The Chapel makefiles have a few options that enable or disable optimization,
+debugging support, profiling, and backend C compiler warnings. The variables
+are described below. Set the value to 1 to enable the feature.
+
+    DEBUG     : Generate debug information (e.g. add -g to C compiler).
+    OPTIMIZE  : Enable optimizations (e.g. add -O3 to C compiler).
+    PROFILE   : Enable profiling support (e.g. add -pg to C compiler).
+    WARNINGS  : Promote backend C compiler warnings to errors.
+
+
 --------------------------
 Platform-specific Settings
 --------------------------

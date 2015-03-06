@@ -7,8 +7,8 @@ begin {
 sing$ = 4;
 sing2$;
 writeln("Task 2 done!");
-writeln(sing$);
-writeln(sing2$);
+writeln(sing$.readFF());
+writeln(sing2$.readFF());
 
 proc waitOn() {
   sing$; // waits until the single variable is full

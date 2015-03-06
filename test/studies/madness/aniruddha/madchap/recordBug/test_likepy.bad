@@ -1,0 +1,9 @@
+./FTree.chpl:128: In function 'initialize':
+./FTree.chpl:132: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+./MRA.chpl:433: In function 'norm2':
+./MRA.chpl:436: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
+./FTree.chpl:32: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+
+
+
+internal error: compiler generated error

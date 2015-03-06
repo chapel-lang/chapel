@@ -1,0 +1,12 @@
+#!/bin/bash
+
+correctRes="${PWD}/task1/0
+${PWD}/task1/0
+${PWD}/task1/1
+${PWD}/task1/2
+${PWD}/task1/3
+${PWD}/task1/4
+${PWD}/task1/5"
+if [ "`cat $2`" = "${correctRes}" ]; then
+	echo ok > $2
+fi

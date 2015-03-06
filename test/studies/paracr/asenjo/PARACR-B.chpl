@@ -141,7 +141,7 @@ proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j, msg="")
 proc Check()
 {
   var ERROR: real = 0.00001;
-  forall i in Dom
+  forall i in Dom with (ref error)
     {
       if(i==1){
 	if (abs(B[i]*X[i] + C[i]*X[i+1] - D[i]) > ERROR)

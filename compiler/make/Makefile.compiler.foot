@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -50,7 +50,7 @@ echocompilerdir:
 # pattern-based rules
 #
 
-$(OBJ_SUBDIR)/%.o: %.cpp $(OBJ_SUBDIR_MADE)
+$(OBJ_SUBDIR)/%.o: %.cpp $(OBJ_SUBDIR_MADE) $(OBJ_PREREQS)
 	$(CXX) -c $(COMP_CXXFLAGS) -o $@ $<
 
 FORCE:

@@ -12,6 +12,10 @@ unsetenv CHPLDEVTMP
 
 set mymake = $argv[1]
 
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+set num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`
+
 #
 # execute actions specified in README
 #
@@ -25,7 +29,7 @@ if ($tmpstatus != 0) then
     echo "ERROR: source of setchplenv.csh failed"
     exit($tmpstatus)
 endif
-$mymake
+$mymake -j$num_procs
 set tmpstatus = $status
 if ($tmpstatus != 0) then
     echo "ERROR: make failed"
@@ -56,13 +60,29 @@ if ($tmpstatus != 0) then
     exit($tmpstatus)
 endif
 
+# Calculate expected version string from version_num.h.
+set major=`cat compiler/main/version_num.h | grep MAJOR_VERSION | cut -f3 -d' ' | sed 's/\"//g'`
+set minor=`cat compiler/main/version_num.h | grep MINOR_VERSION | cut -f3 -d' ' | sed 's/\"//g'`
+set patch=`cat compiler/main/version_num.h | grep UPDATE_VERSION | cut -f3 -d' ' | sed 's/\"//g'`
+set expected_version_string="$major.$minor.$patch"
+
+# Test chpl --version for expected string version.
+set version_string = `chpl --version | grep 'Version' | cut -d' ' -f 3`
+set versionstatus = $status
+if ($versionstatus != 0) then
+    echo "ERROR: execution of chpl --version failed"
+    exit($versionstatus)
+endif
+if ($version_string != "$expected_version_string") then
+    echo "ERROR: unexpected version string, received '$version_string' expected '$expected_version_string'"
+    exit(1)
+endif
 
 #
 # run make in examples directory
 #
-set nprocs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`
 cd examples
-$mymake -j$nprocs
+$mymake -j$num_procs
 cd ..
 
 

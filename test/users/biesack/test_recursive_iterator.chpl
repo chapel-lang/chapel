@@ -9,7 +9,7 @@ module missing_return_bug {
     return new Branch(a, b);
   }
   iter leaves(tree : Node) : int {
-    type select tree {
+    select tree.type {
       when ValueNode do {
         yield tree.value;
       }

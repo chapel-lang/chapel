@@ -13,7 +13,7 @@ module unitTest {
     }
 
     writeln("=== promotion");
-    f(); // call once to allocate I/O buffers
+    f(); // call once to allocate I/O buffers and task data
     const m0 = allMemoryUsed();
     {
       f(); // call again to measure

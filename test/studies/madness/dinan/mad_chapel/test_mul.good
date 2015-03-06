@@ -5,32 +5,32 @@ Mad Chapel -- Multiplication Test
 Multiplying F1*Unity ...
 
 Evaluating F*Unity on [0, 1]:
- -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 1.0e-32
- -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 9.7e-33
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-1.6e-15
- -- 0.30:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-4.9e-10
- -- 0.40:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-4.2e-07
- -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934 err=-2.0e-07
- -- 0.60:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-4.2e-07
- -- 0.70:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-4.9e-10
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-1.6e-15
- -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 9.7e-33
- -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 1.0e-32
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-0.00000000
+ -- 0.30:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-0.00000000
+ -- 0.40:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-0.00000042
+ -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934 err=-0.00000020
+ -- 0.60:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-0.00000042
+ -- 0.70:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-0.00000000
+ -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
 
 Multiplying F1*F1 ...
 
 Evaluating F*F on [0, 1]:
- -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err=-2.2e-54
- -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err=-7.6e-35
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-1.2e-19
- -- 0.30:  F_numeric()=-0.00000000  f_analytic()= 0.00000001 err=-8.7e-09
- -- 0.40:  F_numeric()= 0.00080886  f_analytic()= 0.02846034 err=-2.8e-02  > thresh
- -- 0.50:  F_numeric()= 17.84123467  f_analytic()= 4.22388934 err= 1.4e+01  > thresh
- -- 0.60:  F_numeric()= 0.00080886  f_analytic()= 0.02846034 err=-2.8e-02  > thresh
- -- 0.70:  F_numeric()=-0.00000000  f_analytic()= 0.00000001 err=-8.7e-09
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-1.2e-19
- -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err=-7.6e-35
- -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err=-2.2e-54
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err=-0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err=-0.00000000
+ -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-0.00000000
+ -- 0.30:  F_numeric()=-0.00000000  f_analytic()= 0.00000001 err=-0.00000001
+ -- 0.40:  F_numeric()= 0.00080886  f_analytic()= 0.02846034 err=-0.02765149  > thresh
+ -- 0.50:  F_numeric()= 17.84123467  f_analytic()= 4.22388934 err= 13.61734533  > thresh
+ -- 0.60:  F_numeric()= 0.00080886  f_analytic()= 0.02846034 err=-0.02765149  > thresh
+ -- 0.70:  F_numeric()=-0.00000000  f_analytic()= 0.00000001 err=-0.00000001
+ -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err=-0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err=-0.00000000
 
 ======================================================================
 
@@ -39,32 +39,32 @@ Evaluating F*F on [0, 1]:
 Multiplying F2*Unity ...
 
 Evaluating F*Unity on [0, 1]:
- -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001 err= 2.2e-08
- -- 0.10:  F_numeric()= 0.02846071  f_analytic()= 0.02846034 err= 3.7e-07
- -- 0.20:  F_numeric()= 4.22388933  f_analytic()= 4.22388934 err=-1.2e-08
- -- 0.30:  F_numeric()= 0.02846057  f_analytic()= 0.02846035 err= 2.2e-07
- -- 0.40:  F_numeric()= 0.02845993  f_analytic()= 0.02846035 err=-4.2e-07
- -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934 err=-2.0e-07
- -- 0.60:  F_numeric()= 0.02845993  f_analytic()= 0.02846035 err=-4.2e-07
- -- 0.70:  F_numeric()= 0.02846057  f_analytic()= 0.02846035 err= 2.2e-07
- -- 0.80:  F_numeric()= 4.22388933  f_analytic()= 4.22388934 err=-1.2e-08
- -- 0.90:  F_numeric()= 0.02846071  f_analytic()= 0.02846034 err= 3.7e-07
- -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001 err= 2.2e-08
+ -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001 err= 0.00000002
+ -- 0.10:  F_numeric()= 0.02846071  f_analytic()= 0.02846034 err= 0.00000037
+ -- 0.20:  F_numeric()= 4.22388933  f_analytic()= 4.22388934 err=-0.00000001
+ -- 0.30:  F_numeric()= 0.02846057  f_analytic()= 0.02846035 err= 0.00000022
+ -- 0.40:  F_numeric()= 0.02845993  f_analytic()= 0.02846035 err=-0.00000042
+ -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934 err=-0.00000020
+ -- 0.60:  F_numeric()= 0.02845993  f_analytic()= 0.02846035 err=-0.00000042
+ -- 0.70:  F_numeric()= 0.02846057  f_analytic()= 0.02846035 err= 0.00000022
+ -- 0.80:  F_numeric()= 4.22388933  f_analytic()= 4.22388934 err=-0.00000001
+ -- 0.90:  F_numeric()= 0.02846071  f_analytic()= 0.02846034 err= 0.00000037
+ -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001 err= 0.00000002
 
 Multiplying F2*F2 ...
 
 Evaluating F*F on [0, 1]:
- -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000001 err=-8.7e-09
- -- 0.10:  F_numeric()= 0.00081159  f_analytic()= 0.02846034 err=-2.8e-02  > thresh
- -- 0.20:  F_numeric()= 17.84124075  f_analytic()= 4.22388934 err= 1.4e+01  > thresh
- -- 0.30:  F_numeric()= 0.00081038  f_analytic()= 0.02846035 err=-2.8e-02  > thresh
- -- 0.40:  F_numeric()= 0.00080886  f_analytic()= 0.02846035 err=-2.8e-02  > thresh
- -- 0.50:  F_numeric()= 17.84123467  f_analytic()= 4.22388934 err= 1.4e+01  > thresh
- -- 0.60:  F_numeric()= 0.00080886  f_analytic()= 0.02846035 err=-2.8e-02  > thresh
- -- 0.70:  F_numeric()= 0.00081038  f_analytic()= 0.02846035 err=-2.8e-02  > thresh
- -- 0.80:  F_numeric()= 17.84124075  f_analytic()= 4.22388934 err= 1.4e+01  > thresh
- -- 0.90:  F_numeric()= 0.00081159  f_analytic()= 0.02846034 err=-2.8e-02  > thresh
- -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000001 err=-8.7e-09
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000001 err=-0.00000001
+ -- 0.10:  F_numeric()= 0.00081159  f_analytic()= 0.02846034 err=-0.02764875  > thresh
+ -- 0.20:  F_numeric()= 17.84124075  f_analytic()= 4.22388934 err= 13.61735141  > thresh
+ -- 0.30:  F_numeric()= 0.00081038  f_analytic()= 0.02846035 err=-0.02764997  > thresh
+ -- 0.40:  F_numeric()= 0.00080886  f_analytic()= 0.02846035 err=-0.02765149  > thresh
+ -- 0.50:  F_numeric()= 17.84123467  f_analytic()= 4.22388934 err= 13.61734533  > thresh
+ -- 0.60:  F_numeric()= 0.00080886  f_analytic()= 0.02846035 err=-0.02765149  > thresh
+ -- 0.70:  F_numeric()= 0.00081038  f_analytic()= 0.02846035 err=-0.02764997  > thresh
+ -- 0.80:  F_numeric()= 17.84124075  f_analytic()= 4.22388934 err= 13.61735141  > thresh
+ -- 0.90:  F_numeric()= 0.00081159  f_analytic()= 0.02846034 err=-0.02764875  > thresh
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000001 err=-0.00000001
 
 ======================================================================
 
@@ -73,32 +73,32 @@ Evaluating F*F on [0, 1]:
 Multiplying F3*Unity ...
 
 Evaluating F*Unity on [0, 1]:
- -- 0.00:  F_numeric()= 1.41421260  f_analytic()= 1.41421356 err=-9.6e-07
- -- 0.10:  F_numeric()= 1.58113892  f_analytic()= 1.58113883 err= 9.2e-08
- -- 0.20:  F_numeric()= 1.82574182  f_analytic()= 1.82574186 err=-4.0e-08
- -- 0.30:  F_numeric()= 2.23606780  f_analytic()= 2.23606798 err=-1.8e-07
- -- 0.40:  F_numeric()= 3.16227798  f_analytic()= 3.16227766 err= 3.2e-07
- -- 0.50:  F_numeric()= 191059.03957307  f_analytic()= 0.00000000 err= 1.9e+05  > thresh
- -- 0.60:  F_numeric()= 3.16227798  f_analytic()= 3.16227766 err= 3.2e-07
- -- 0.70:  F_numeric()= 2.23606780  f_analytic()= 2.23606798 err=-1.8e-07
- -- 0.80:  F_numeric()= 1.82574182  f_analytic()= 1.82574186 err=-4.0e-08
- -- 0.90:  F_numeric()= 1.58113892  f_analytic()= 1.58113883 err= 9.2e-08
- -- 1.00:  F_numeric()= 1.41421260  f_analytic()= 1.41421356 err=-9.6e-07
+ -- 0.00:  F_numeric()= 1.41421260  f_analytic()= 1.41421356 err=-0.00000096
+ -- 0.10:  F_numeric()= 1.58113892  f_analytic()= 1.58113883 err= 0.00000009
+ -- 0.20:  F_numeric()= 1.82574182  f_analytic()= 1.82574186 err=-0.00000004
+ -- 0.30:  F_numeric()= 2.23606780  f_analytic()= 2.23606798 err=-0.00000018
+ -- 0.40:  F_numeric()= 3.16227798  f_analytic()= 3.16227766 err= 0.00000032
+ -- 0.50:  F_numeric()= 191059.03957307  f_analytic()= 0.00000000 err= 191059.03957307  > thresh
+ -- 0.60:  F_numeric()= 3.16227798  f_analytic()= 3.16227766 err= 0.00000032
+ -- 0.70:  F_numeric()= 2.23606780  f_analytic()= 2.23606798 err=-0.00000018
+ -- 0.80:  F_numeric()= 1.82574182  f_analytic()= 1.82574186 err=-0.00000004
+ -- 0.90:  F_numeric()= 1.58113892  f_analytic()= 1.58113883 err= 0.00000009
+ -- 1.00:  F_numeric()= 1.41421260  f_analytic()= 1.41421356 err=-0.00000096
 
 Multiplying F3*F3 ...
 
 Evaluating F*F on [0, 1]:
- -- 0.00:  F_numeric()= 1.99995678  f_analytic()= 1.41421356 err= 5.9e-01  > thresh
- -- 0.10:  F_numeric()= 2.50000492  f_analytic()= 1.58113883 err= 9.2e-01  > thresh
- -- 0.20:  F_numeric()= 3.33332980  f_analytic()= 1.82574186 err= 1.5e+00  > thresh
- -- 0.30:  F_numeric()= 4.99999011  f_analytic()= 2.23606798 err= 2.8e+00  > thresh
- -- 0.40:  F_numeric()= 10.00002594  f_analytic()= 3.16227766 err= 6.8e+00  > thresh
- -- 0.50:  F_numeric()= 32212277009.22813797  f_analytic()= 0.00000000 err= 3.2e+10  > thresh
- -- 0.60:  F_numeric()= 10.00002594  f_analytic()= 3.16227766 err= 6.8e+00  > thresh
- -- 0.70:  F_numeric()= 4.99999011  f_analytic()= 2.23606798 err= 2.8e+00  > thresh
- -- 0.80:  F_numeric()= 3.33332980  f_analytic()= 1.82574186 err= 1.5e+00  > thresh
- -- 0.90:  F_numeric()= 2.50000492  f_analytic()= 1.58113883 err= 9.2e-01  > thresh
- -- 1.00:  F_numeric()= 1.99995678  f_analytic()= 1.41421356 err= 5.9e-01  > thresh
+ -- 0.00:  F_numeric()= 1.99995678  f_analytic()= 1.41421356 err= 0.58574322  > thresh
+ -- 0.10:  F_numeric()= 2.50000492  f_analytic()= 1.58113883 err= 0.91886609  > thresh
+ -- 0.20:  F_numeric()= 3.33332980  f_analytic()= 1.82574186 err= 1.50758794  > thresh
+ -- 0.30:  F_numeric()= 4.99999011  f_analytic()= 2.23606798 err= 2.76392214  > thresh
+ -- 0.40:  F_numeric()= 10.00002594  f_analytic()= 3.16227766 err= 6.83774828  > thresh
+ -- 0.50:  F_numeric()= 32212277009.22813797  f_analytic()= 0.00000000 err= 32212277009.22813797  > thresh
+ -- 0.60:  F_numeric()= 10.00002594  f_analytic()= 3.16227766 err= 6.83774828  > thresh
+ -- 0.70:  F_numeric()= 4.99999011  f_analytic()= 2.23606798 err= 2.76392214  > thresh
+ -- 0.80:  F_numeric()= 3.33332980  f_analytic()= 1.82574186 err= 1.50758794  > thresh
+ -- 0.90:  F_numeric()= 2.50000492  f_analytic()= 1.58113883 err= 0.91886609  > thresh
+ -- 1.00:  F_numeric()= 1.99995678  f_analytic()= 1.41421356 err= 0.58574322  > thresh
 
 ======================================================================
 
@@ -107,29 +107,29 @@ Evaluating F*F on [0, 1]:
 Multiplying F4*Unity ...
 
 Evaluating F*Unity on [0, 1]:
- -- 0.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 4.0e-15
- -- 0.10:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 1.1e-15
- -- 0.20:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 6.7e-16
- -- 0.30:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.0e+00
- -- 0.40:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 4.4e-16
- -- 0.50:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 4.0e-15
- -- 0.60:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 1.1e-15
- -- 0.70:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 6.7e-16
- -- 0.80:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.0e+00
- -- 0.90:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 4.4e-16
- -- 1.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err=-4.4e-16
+ -- 0.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.10:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.20:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.30:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.40:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.50:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.60:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.70:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.80:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.90:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 1.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err=-0.00000000
 
 Multiplying F4*F4 ...
 
 Evaluating F*F on [0, 1]:
- -- 0.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 4.0e-15
- -- 0.10:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 1.1e-15
- -- 0.20:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 6.7e-16
- -- 0.30:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.0e+00
- -- 0.40:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 4.4e-16
- -- 0.50:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 4.0e-15
- -- 0.60:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 1.1e-15
- -- 0.70:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 6.7e-16
- -- 0.80:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.0e+00
- -- 0.90:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 4.4e-16
- -- 1.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err=-4.4e-16
+ -- 0.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.10:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.20:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.30:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.40:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.50:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.60:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.70:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.80:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.90:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 1.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err=-0.00000000

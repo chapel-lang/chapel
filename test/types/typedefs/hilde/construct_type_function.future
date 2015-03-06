@@ -1,0 +1,8 @@
+feature request: Allow the type returned from a type function to be used in a "new" statement.
+
+Given Chapel's support of type functions, it seems natural to be able to
+construct an object based on the type returned from such a function.
+
+I think most of the mechanism for this is in place, but at least the semantic
+check in checkPrimNew() in the checkNormalized pass must be modified to also
+accept type functions as specifying a type.

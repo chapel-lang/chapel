@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,6 @@
 
 // ChapelArray.chpl
 //
-pragma "no use ChapelStandard"
 module ChapelArray {
 
   use ChapelBase; // For opaque type.
@@ -874,6 +873,11 @@ module ChapelArray {
       return member(i);
     }
 
+    proc newAlias() {
+      var x = _value;
+      return _newDomain(x);
+    }
+
     /*
        Returns true if this domain is a subset of 'super'
     */
@@ -1324,6 +1328,8 @@ module ChapelArray {
     proc _dom return _getDomain(_value.dom);
     proc rank param return this.domain.rank;
   
+    // When 'this' is 'const', so is the returned l-value.
+    pragma "reference to const when const this"
     inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
@@ -1331,9 +1337,11 @@ module ChapelArray {
         return _value.dsiAccess(i(1));
     }
   
+    pragma "reference to const when const this"
     inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
   
+    pragma "reference to const when const this"
     inline proc localAccess(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
@@ -1341,17 +1349,19 @@ module ChapelArray {
         return _value.dsiLocalAccess(i(1));
     }
   
+    pragma "reference to const when const this"
     inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
+  
     //
     // requires dense domain implementation that returns a tuple of
     // ranges via the getIndices() method; domain indexing is difficult
     // in the domain case because it has to be implemented on a
     // domain-by-domain basis; this is not terribly difficult in the
     // dense case because we can represent a domain by a tuple of
-    // ranges, but in the sparse case, is there a general
-    // representation?
+    // ranges, but in the sparse case, is there a general representation?
     //
+    pragma "reference to const when const this"
     proc this(d: domain) {
       if d.rank == rank then
         return this((...d.getIndices()));
@@ -1365,6 +1375,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
   
+    pragma "reference to const when const this"
     proc this(ranges: range(?) ...rank) {
       if boundsChecking then
         checkSlice((... ranges));
@@ -1381,6 +1392,7 @@ module ChapelArray {
       return _newArray(a);
     }
   
+    pragma "reference to const when const this"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
         checkRankChange(args);
@@ -1401,9 +1413,10 @@ module ChapelArray {
         if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
     }
-
+  
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
+    pragma "reference to const when const this"
     proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...r));
@@ -1411,6 +1424,7 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(dom);
     }
   
+    pragma "reference to const when const this"
     proc localSlice(d: domain) where _value.type: DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...d.getIndices()));
@@ -1426,12 +1440,14 @@ module ChapelArray {
       return A;
     }
   
+    pragma "reference to const when const this"
     proc localSlice(r: range(?)... rank) {
       if boundsChecking then
         checkSlice((...r));
       return _value.dsiLocalSlice(r);
     }
   
+    pragma "reference to const when const this"
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
@@ -1515,39 +1531,34 @@ module ChapelArray {
   
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
-    // the locale grid domain
-    proc targetLocDom() {
-      return _value.dsiTargetLocDom();
-    }
-
     // the locale grid
     proc targetLocales() {
       return _value.dsiTargetLocales();
     }
 
     // can the subdomain be represented as a single domain?
-    proc oneLocalSubdomain() param {
-      return _value.dsiOneLocalSubdomain();
+    proc hasSingleLocalSubdomain() param {
+      return _value.dsiHasSingleLocalSubdomain();
     }
 
     // fetches the subdomain for the current locale
     //
     // Also note that localSlice(dom) produces a slice of a domain/array 
     // that's assumed to be local
-    proc getLocalSubdomain() {
-      if !_value.dsiOneLocalSubdomain() then
+    proc localSubdomain() {
+      if !_value.dsiHasSingleLocalSubdomain() then
         compilerError("Array's local domain is not a single domain");
-      return _value.dsiGetLocalSubdomain();
+      return _value.dsiLocalSubdomain();
     }
     
     // if the subdomain cannot be represented as a single domain, 
     // the multiple domains are yielded by an iterator.
     // yield a domain so the user can use procs like expand/exterior/etc.
-    iter getLocalSubdomains() {
-      if _value.dsiOneLocalSubdomain() then 
-        yield _value.dsiGetLocalSubdomain();
+    iter localSubdomains() {
+      if _value.dsiHasSingleLocalSubdomain() then 
+        yield _value.dsiLocalSubdomain();
       else 
-        for d in _value.dsiGetLocalSubdomains() do yield d;
+        for d in _value.dsiLocalSubdomains() do yield d;
     }
 
     proc chpl__isDense1DArray() param {
@@ -1940,18 +1951,49 @@ module ChapelArray {
         if !b.member(e) then newDom.add(e);
     return newDom;
   }
+
+  /*
+     We remove elements in the RHS domain from those in the LHS domain only if
+     they exist. If an element in the RHS is not present in the LHS, no error
+     occurs.
+  */
+  proc -=(ref a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in b do
+      if a.member(e) then
+        a.remove(e);
+  }
   
   proc |(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     return a + b;
   }
 
+  proc |=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in b do
+      a.add(e);
+  }
+
+  proc +=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    a |= b;
+  }
+
+  /*
+     We remove elements in the RHS domain from those in the LHS domain only if
+     they exist. If an element in the RHS is not present in the LHS, no error
+     occurs.
+  */
   proc &(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
     var newDom : a.type;
 
     serial !newDom._value.parSafe do 
-      forall k in a do
+      forall k in a with (ref newDom) do // no race - in 'serial'
         if b.member(k) then newDom += k;
     return newDom;
+  }
+
+  proc &=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in a do
+      if !b.member(e) then
+        a.remove(e);
   }
 
   proc ^(a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
@@ -1965,6 +2007,19 @@ module ChapelArray {
     }
 
     return newDom;
+  }
+
+  /*
+     We remove elements in the RHS domain from those in the LHS domain only if
+     they exist. If an element in the RHS is not present in the LHS, it is
+     added to the LHS.
+  */
+  proc ^=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
+    for e in a do
+      if b.member(e) then
+        a.remove(e);
+      else
+        a.add(e);
   }
   //
   // Helper functions
@@ -2267,6 +2322,13 @@ module ChapelArray {
       // default initalizer is a forall expr. E.g. arrayInClassRecord.chpl.
       return;
 
+    if a._value == b._value {
+      // Do nothing for A = A but we could generate a warning here
+      // since it is probably unintended. We need this check here in order
+      // to avoid memcpy(x,x) which happens inside doiBulkTransfer.
+      return;
+    }
+
     if boundsChecking then
       checkArrayShapesUponAssignment(a, b);
   
@@ -2427,270 +2489,7 @@ module ChapelArray {
   iter linearize(Xs) {
     for x in Xs do yield x;
   }
-  
-  //
-  // module support for iterators
-  //
-  proc iteratorIndex(ic: _iteratorClass) {
-    ic.advance();
-    return ic.getValue();
-  }
-  
-  pragma "expand tuples with values"
-  proc iteratorIndex(t: _tuple) {
-    pragma "expand tuples with values"
-    proc iteratorIndexHelp(t: _tuple, param dim: int) {
-      if dim == t.size then
-        return _build_tuple_always_allow_ref(iteratorIndex(t(dim)));
-      else
-        return _build_tuple_always_allow_ref(iteratorIndex(t(dim)),
-                                             (...iteratorIndexHelp(t, dim+1)));
-    }
-  
-    return iteratorIndexHelp(t, 1);
-  }
-  
-  proc iteratorIndexType(x) type {
-    pragma "no copy" var ic = _getIterator(x);
-    pragma "no copy" var i = iteratorIndex(ic);
-    _freeIterator(ic);
-    return i.type;
-  }
-  
-  proc _iteratorRecord.writeThis(f: Writer) {
-    var first: bool = true;
-    for e in this {
-      if !first then
-        f.write(" ");
-      else
-        first = false;
-      f.write(e);
-    }
-  }
-  
-  proc =(ref ic: _iteratorRecord, xs) {
-    for (e, x) in zip(ic, xs) do
-      e = x;
-  }
-  
-  proc =(ref ic: _iteratorRecord, x: iteratorIndexType(ic)) {
-    for e in ic do
-      e = x;
-  }
-  
-  inline proc _getIterator(x) {
-    return _getIterator(x.these());
-  }
-  
-  inline proc _getIterator(ic: _iteratorClass)
-    return ic;
-  
-  proc _getIterator(type t) {
-    compilerError("cannot iterate over a type");
-  }
-  
-  inline proc _getIteratorZip(x) {
-    return _getIterator(x);
-  }
-  
-  inline proc _getIteratorZip(x: _tuple) {
-    inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
-      if dim == x.size then
-        return (_getIterator(x(dim)),);
-      else
-        return (_getIterator(x(dim)), (..._getIteratorZipInternal(x, dim+1)));
-    }
-    if x.size == 1 then
-      return _getIterator(x(1));
-    else
-      return _getIteratorZipInternal(x, 1);
-  }
-  
-  proc _checkIterator(type t) {
-    compilerError("cannot iterate over a type");
-  }
-  
-  inline proc _checkIterator(x) {
-    return x;
-  }
-  
-  inline proc _freeIterator(ic: _iteratorClass) {
-    chpl_here_free(__primitive("cast_to_void_star", ic));
-  }
-  
-  inline proc _freeIterator(x: _tuple) {
-    for param i in 1..x.size do
-      _freeIterator(x(i));
-  }
-  
-  pragma "no implicit copy"
-  inline proc _toLeader(iterator: _iteratorClass)
-    return chpl__autoCopy(__primitive("to leader", iterator));
-  
-  inline proc _toLeader(ir: _iteratorRecord) {
-    pragma "no copy" var ic = _getIterator(ir);
-    pragma "no copy" var leader = _toLeader(ic);
-    _freeIterator(ic);
-    return leader;
-  }
-  
-  inline proc _toLeader(x)
-    return _toLeader(x.these());
-  
-  inline proc _toLeaderZip(x)
-    return _toLeader(x);
-  
-  inline proc _toLeaderZip(x: _tuple)
-    return _toLeader(x(1));
-  
-  //
-  // return true if any iterator supports fast followers
-  //
-  proc chpl__staticFastFollowCheck(x) param {
-    pragma "no copy" const lead = x;
-    if isDomain(lead) || isArray(lead) then
-      return chpl__staticFastFollowCheck(x, lead);
-    else
-      return false;
-  }  
-  
-  proc chpl__staticFastFollowCheck(x, lead) param {
-    return false;
-  }
-  
-  proc chpl__staticFastFollowCheck(x: [], lead) param {
-    return x._value.dsiStaticFastFollowCheck(lead._value.type);
-  }
-  
-  proc chpl__staticFastFollowCheckZip(x: _tuple) param {
-    pragma "no copy" const lead = x(1);
-    if isDomain(lead) || isArray(lead) then
-      return chpl__staticFastFollowCheckZip(x, lead);
-    else
-      return false;
-  } 
-  
-  proc chpl__staticFastFollowCheckZip(x, lead) param {
-    return chpl__staticFastFollowCheck(x, lead);
-  }
-  
-  proc chpl__staticFastFollowCheckZip(x: _tuple, lead, param dim = 1) param {
-    if x.size == dim then
-      return chpl__staticFastFollowCheckZip(x(dim), lead);
-    else
-      return chpl__staticFastFollowCheckZip(x(dim), lead) || chpl__staticFastFollowCheckZip(x, lead, dim+1);
-  }
-  
-  //
-  // return true if all iterators that support fast followers can use
-  // their fast followers
-  //
-  proc chpl__dynamicFastFollowCheck(x) {
-    return chpl__dynamicFastFollowCheck(x, x);
-  }
-  
-  proc chpl__dynamicFastFollowCheck(x, lead) {
-    return true;
-  }
-  
-  proc chpl__dynamicFastFollowCheck(x: [], lead) {
-    if chpl__staticFastFollowCheck(x, lead) then
-      return x._value.dsiDynamicFastFollowCheck(lead);
-    else
-      return false;
-  }
-  
-  proc chpl__dynamicFastFollowCheckZip(x: _tuple) {
-    return chpl__dynamicFastFollowCheckZip(x, x(1));
-  }
-  
-  proc chpl__dynamicFastFollowCheckZip(x, lead) {
-    return chpl__dynamicFastFollowCheck(x, lead);
-  }
-  
-  proc chpl__dynamicFastFollowCheckZip(x: _tuple, lead, param dim = 1) {
-    if x.size == dim then
-      return chpl__dynamicFastFollowCheckZip(x(dim), lead);
-    else
-      return chpl__dynamicFastFollowCheckZip(x(dim), lead) && chpl__dynamicFastFollowCheckZip(x, lead, dim+1);
-  }
-  
-  pragma "no implicit copy"
-  inline proc _toFollower(iterator: _iteratorClass, leaderIndex)
-    return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex));
-  
-  inline proc _toFollower(ir: _iteratorRecord, leaderIndex) {
-    pragma "no copy" var ic = _getIterator(ir);
-    pragma "no copy" var follower = _toFollower(ic, leaderIndex);
-    _freeIterator(ic);
-    return follower;
-  }
-  
-  inline proc _toFollower(x, leaderIndex) {
-    return _toFollower(x.these(), leaderIndex);
-  }
-  
-  inline proc _toFollowerZip(x, leaderIndex) {
-    return _toFollower(x, leaderIndex);
-  }
-  
-  inline proc _toFollowerZip(x: _tuple, leaderIndex) {
-    return _toFollowerZipInternal(x, leaderIndex, 1);
-  }
 
-  inline proc _toFollowerZipInternal(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size then
-      return (_toFollower(x(dim), leaderIndex),);
-    else
-      return (_toFollower(x(dim), leaderIndex),
-              (..._toFollowerZipInternal(x, leaderIndex, dim+1)));
-  }
-
-  pragma "no implicit copy"
-  inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
-    return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, true));
-  }
-  
-  inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex, fast: bool) {
-    pragma "no copy" var ic = _getIterator(ir);
-    pragma "no copy" var follower = _toFastFollower(ic, leaderIndex, fast=true);
-    _freeIterator(ic);
-    return follower;
-  }
-  
-  pragma "no implicit copy"
-  inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex) {
-    return _toFollower(iterator, leaderIndex);
-  }
-  
-  inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex) {
-    return _toFollower(ir, leaderIndex);
-  }
-  
-  inline proc _toFastFollower(x, leaderIndex) {
-    if chpl__staticFastFollowCheck(x) then
-      return _toFastFollower(x.these(), leaderIndex, fast=true);
-    else
-      return _toFollower(x.these(), leaderIndex);
-  }
-  
-  inline proc _toFastFollowerZip(x, leaderIndex) {
-    return _toFastFollower(x, leaderIndex);
-  }
-  
-  inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
-    return _toFastFollowerZip(x, leaderIndex, 1);
-  }
-  
-  inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size-1 then
-      return (_toFastFollowerZip(x(dim), leaderIndex),
-              _toFastFollowerZip(x(dim+1), leaderIndex));
-    else
-      return (_toFastFollowerZip(x(dim), leaderIndex),
-              (..._toFastFollowerZip(x, leaderIndex, dim+1)));
-  }
-  
   pragma "init copy fn"
   proc chpl__initCopy(a: _distribution) {
     pragma "no copy" var b = chpl__autoCopy(a.clone());

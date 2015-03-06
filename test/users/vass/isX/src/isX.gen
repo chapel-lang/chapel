@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# This script generates this file:
+
+srcDir=`dirname $0`
+
+function doit() {
+  local tag=$1; shift
+  local output=isX.$tag.chpl
+  echo generating $output 1>&2
+
+  {
+    echo // DO NOT EDIT - THIS FILE IS GENERATED AUTOMATICALLY //
+    echo
+    cat $srcDir/isX.$tag.decls-chpl
+    $srcDir/isX.$tag.py
+  } \
+  > $output
+}
+
+doit module-writeln
+doit byBlankArgs-compWarns

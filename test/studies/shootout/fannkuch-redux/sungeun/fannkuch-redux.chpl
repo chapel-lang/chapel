@@ -45,7 +45,7 @@ proc main() {
 
   begin maxflips = fannkuch();
 
-  writeln("Pfannkuchen(", N, ") = ", maxflips);
+  writeln("Pfannkuchen(", N, ") = ", maxflips.readFF());
 }
 
 proc fannkuch() {

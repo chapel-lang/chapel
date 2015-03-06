@@ -1,0 +1,2 @@
+This test is nondeterministic and can't be run; the code seems worth keeping around
+but we can't test it without additional effort to make it deterministic.

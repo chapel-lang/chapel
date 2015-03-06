@@ -10,34 +10,35 @@ unfamiliar with it.
 Dependencies
 ------------
 
-The Curl functionality in Chapel is dependent on libcurl. For information on how to
-install libcurl, see: http://curl.haxx.se/docs/install.html
+The Curl functionality in Chapel is dependent on libcurl. For information on how
+to install libcurl, see: http://curl.haxx.se/docs/install.html
 
-The environment variables CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS must be
-set to point to the include and lib directories for libcurl respectively. More
+The environment variables CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS must be set to
+point to the include and lib directories for libcurl respectively. More
 information on these variables can be found in README.auxIO
 
-Note: If libcurl is installed system wide you should not need to set these variables. 
+Note: If libcurl is installed system-wide you should not need to set these
+variables.
 
 
 Enabling Curl Support
 ---------------------
 
-Once you have ensured that libcurl is installed, and have the two variables above
-defined, set the environment variable CHPL_AUX_FILESYS to 'curl' to enable Curl
-support:
+Once you have ensured that libcurl is installed, and have the two variables
+above defined, set the environment variable CHPL_AUX_FILESYS to 'curl' to enable
+Curl support:
 
     export CHPL_AUX_FILESYS=curl
 
 Then, rebuild Chapel by executing 'make' from $CHPL_HOME
 
-Note: if Curl support is not enabled (which is the default), all
-features described below will compile successfully but will result in
-an error at runtime, saying: "No Curl Support".
+Note: if Curl support is not enabled (which is the default), all features
+described below will compile successfully but will result in an error at
+runtime, saying: "No Curl Support".
 
-For information on how to enable and use Curl while also using other auxiliary IO
-extensions, as well as how to setup the CHPL_AUXIO_INCLUDE and CHPL_AUXIO_LIBS
-environment variables see README.auxIO in this directory.
+For information on how to enable and use Curl while also using other auxiliary
+IO extensions, as well as how to setup the CHPL_AUXIO_INCLUDE and
+CHPL_AUXIO_LIBS environment variables see README.auxIO in this directory.
 
 
 Using Curl Support in Chapel
@@ -45,55 +46,60 @@ Using Curl Support in Chapel
 
 There are two interfaces exposed to the user:
  (1) A standard file I/O interface
- (2) Bindings to libcurls curl_easy_setopt and curl_easy_perform
+ (2) Bindings to libcurl's curl_easy_setopt and curl_easy_perform
 
 Interface 1:
-    Since we  do not support multiple readers on the same Curl handle, it is recommended
-    that the user use openreader() and openwriter() in order to open up channels on a
-    URL. Examples, of how openreader() and openwriter() work can be found below.
-    You may also open up a curl handle on a URL via open(url=..., mode=...), and then
-    open up channels, or use the second interface described below to set options on
-    that handle before opening up a channel on the handle (note that in this case the
-    user must ensure that they are not opening multiple channels on the same handle).
+  Since we do not support multiple readers on the same Curl handle, it is
+  recommended that the user use openreader() and openwriter() in order to open
+  up channels on a URL. Examples of how openreader() and openwriter() work can
+  be found below.  You may also open up a curl handle on a URL via
+  open(url=..., mode=...), and then open up channels, or use the second
+  interface described below to set options on that handle before opening up a
+  channel on the handle (note that in this case the user must ensure that they
+  are not opening multiple channels on the same handle).
 
-    Note: The URL is the last parameter to open and openurl(). Therefore when you
+  Note: The URL is the last parameter to open and openurl(). Therefore when you
     are opening a URL if you are not using all of the parameters for open() or
     openreader/writer, you MUST specify all arguments by name, e.g.,
-    open(url=..., iomode.r) will result in a compile time error. You would, instead, need
-    to call it as open(url=..., mode=iomode.r). 
+    open(url=..., iomode.r) will result in a compile time error. You would,
+    instead, need to call it as open(url=..., mode=iomode.r).
 
 Interface 2:
-  Many times when we are connecting to a URL (FTP, IMAP, SMTP, HTTP) we have to give
-  extra information to the Curl handle. This is done via the setopt() interface.
-  Documentation on the various options, as well as the functions that I reference
-  below can be found here: http://curl.haxx.se/libcurl/c/libcurl-easy.html
+  Many times when we are connecting to a URL (FTP, IMAP, SMTP, HTTP) we have to
+  give extra information to the Curl handle. This is done via the setopt()
+  interface.  Documentation on the various options, as well as the functions
+  that I reference below can be found here:
+  http://curl.haxx.se/libcurl/c/libcurl-easy.html
+
     Types:
      - slist
        - This corresponds to curl_slist in libcurl.
-       - The user is responsible for freeing the slist after they have used it, via
-         slist.free()
+       - The user is responsible for freeing the slist after they have used it,
+         via slist.free()
     Methods:
      - slist.append(str:string)
-       - This appends the string <str> to the slist, and is the same as in C using libcurl
-       slist = curl_slist_append(slist, <str>);
+       - This appends the string <str> to the slist, and is the same as in C
+         using libcurl
+         slist = curl_slist_append(slist, <str>);
      - slist.free()
-       - This frees the slist. The user is responsible for calling this after they
-         have used the slist.
-       - The user is responsible for ensuring that no ongoing connection can be using
-         the slist at the time that slist.free() is called (For an example of this,
-         see Example 7).
+       - This frees the slist. The user is responsible for calling this after
+         they have used the slist.
+       - The user is responsible for ensuring that no ongoing connection can be
+         using the slist at the time that slist.free() is called (For an example
+         of this, see Example 7).
      - file.setopt(curloption, arg):bool
        - Corresponds to curl_easy_setopt()
        - arg is one of (int|string|bool|slist)
-       - the curloption parameters correspond to the respective CURLOPTION parameters,
-         however, they are lowercase versions of the CURL parameters. These can be
-         found here: http://curl.haxx.se/libcurl/c/curl_easy_setopt.html 
+       - the curloption parameters correspond to the respective CURLOPTION
+         parameters, however, they are lowercase versions of the CURL
+         parameters. These can be found here:
+         http://curl.haxx.se/libcurl/c/curl_easy_setopt.html
      - file.setop((curloption, arg), ...)
        - Takes any number of tuples of the form: (curloption, arg)
          and for each tuple, sets <curloption> to the value <arg>.
      - file.perform():bool
-       - Corresponds to curl_easy_perform()
- where the file has been opened up by specifying that url=<some url>.
+       - Corresponds to curl_easy_perform() where the file has been opened up
+         by specifying that url=<some url>.
 
 Calling close() on the file will disconnect the underlying Curl handle.
 
@@ -101,7 +107,7 @@ Calling close() on the file will disconnect the underlying Curl handle.
 Here are some simple code snippets demonstrating these two interfaces:
 
 Example 1:
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 // This example uses the first interface
 
 var writer = openwriter("out.txt");
@@ -113,10 +119,10 @@ var str:string;
 // While we can read a line from example.com, write it to 'out.txt'
 while(reader.readline(str)) do
   writer.write(str);
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 Example 2:
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 // This example uses the first interface
 var str:string;
 var reader = openreader(url="http://example.com");
@@ -127,10 +133,10 @@ reader.close();
 var writer = openwriter("http://127.0.0.1:1080");
 writer.write(str);
 writer.close();
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 Example 3:
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 // Open a file on our local file system
 var f = openwriter("out.txt");
 // Now get a curl handle
@@ -141,13 +147,14 @@ var str:string;
 c.readstring(str);
 f.write(str);
 
-// Disconnect and free the curl handle and channel, and close the local file and channel
+// Disconnect and free the curl handle and channel, and close the local file and
+// channel
 c.close();
 f.close();
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 Example 4:
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 // This example uses the second interface
 
 // Open a file with a curl handle as the internal file
@@ -156,11 +163,11 @@ var c = open(url="http://example.com", mode=iomode.r);
 c.perform(); // This will print to stdout
 // disconnect and free the curl handle
 c.close();
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 Example 5:
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 // This example uses the second interface + the first interface
 
 var c = open(url="http://example.com", mode=iomode.r);
@@ -174,11 +181,11 @@ reader.readstring(str);
 writeln(str);
 reader.close();
 c.close();
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 
 Example 6:
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 // Connect to an IMAP site, and fetch mail from the inbox
 config const username = "user";
 config const password = "xxxx";
@@ -199,13 +206,14 @@ write(str);
 
 reader.close();
 handle.close();
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 Example 7:
-------------------------------------------------------------------------------------
-// This example shows a more complex example of how the two interfaces can work together:
-// We use the second (setopt) interface to set the various options we need on a given
-// curl handle, and then open a writer on that handle to write out via curl.
+--------------------------------------------------------------------------------
+// This example shows a more complex example of how the two interfaces can work
+// together: We use the second (setopt) interface to set the various options we
+// need on a given curl handle, and then open a writer on that handle to write
+// out via curl.
 
 config const url      = "smtp goes here";
 
@@ -249,8 +257,8 @@ writer.write(arr);
 
 // recipients.free(); // BAD: This will free the data while it is in use!
 writer.close();
-// Note here how we free the slist AFTER we close the writer. This way we can ensure
-// that we do not free data that is currently in use by curl.
+// Note here how we free the slist AFTER we close the writer. This way we can
+// ensure that we do not free data that is currently in use by curl.
 recipients.free();
 handle.close();
-------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------

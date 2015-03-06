@@ -27,7 +27,7 @@ The Chapel implementation is composed of two categories of code:
      vim              vim-based syntax coloring                    VIM
 
    third-party/
-     creoleparser     used to generate Chapel documentation        MIT/new BSD
+     chpldoc-venv     python packages supporting chpldoc           see third-party/README
      dlmalloc         alternative memory allocator option          public domain
      dygraphs         Javascript graph generator and display       MIT
      gasnet           portable communication library               BSD-like
@@ -45,9 +45,24 @@ The Chapel implementation is composed of two categories of code:
    licensing terms, refer to etc/README, third-party/README, and the
    README and license files in the subdirectories listed above.
 
-   Note that most of these packages are not used by Chapel unless
-   specifically requested.  The following table summarizes the
-   conditions under which each package is used:
+   Note that most of these packages are not used by Chapel unless specifically
+   requested.  There are some exceptions to this rule, as of the 1.10 release:
+
+      - Outside of quickstart mode, we attempt to build and include re2 and gmp,
+        leaving their respective environment variables set if building them
+        completed successfully.  This can be disabled by setting the relevant
+        environment variable to 'none'.  Details about quickstart mode can be
+        found in the top-level README.
+
+      - For all platforms, with the exception of 'cygwin' and 'knc', our default
+        tasking layer is 'qthreads', with hwloc included.  On the other
+        platforms our default is 'fifo'.  Unless the relevant environment
+        variable was set for hwloc, settings CHPL_TASKS to a tasking layer other
+        than 'qthreads' will turn off the use of hwloc.  For a description of
+        other tasking options, please see README.tasks
+
+   The following table summarizes the conditions under which each package is
+   used (see README.chplenv for details on CHPL_* settings):
 
    directory/package  when used
    -----------------  ----------------------------------------------------
@@ -56,16 +71,19 @@ The Chapel implementation is composed of two categories of code:
      vim              only used if a user modifies their vim environment
 
    third-party/
-     creoleparser     only used when running 'chpldoc'/'chpl --docs'
+     chpldoc-venv     only used when running 'chpldoc'/'chpl --docs'
      dlmalloc         only used when CHPL_MEM is 'dlmalloc'
      dygraphs         only used to make and display performance graphs
      gasnet           only used when CHPL_COMM is 'gasnet'
-     gmp              only used when CHPL_GMP is 'gmp' 
-     hwloc            only used when CHPL_HWLOC is 'hwloc'
+     gmp              where possible, used by default or when CHPL_GMP is 'gmp'
+     hwloc            used by default on most platforms, or when CHPL_HWLOC is
+                      'hwloc'
      llvm             only used when CHPL_LLVM is 'llvm'
      massivethreads   only used when CHPL_TASKS is 'massivethreads'
-     qthread          only used when CHPL_TASKS is 'qthreads'
-     re2              only used when CHPL_REGEXP is 're2'
+     qthread          used by default on most platforms, or when CHPL_TASKS is
+                      'qthreads'
+     re2              where possible, used by default or when CHPL_REGEXP is
+                      're2'
      tcmalloc         only used when CHPL_MEM is 'tcmalloc'
      txt2man          only used by developers to create the Chapel man page
      utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings

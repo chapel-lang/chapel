@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ ! -d "foo" ]; then
+   mkdir foo
+fi
+
+if [ ! -d "foo/bar" ]; then
+   mkdir foo/bar
+fi

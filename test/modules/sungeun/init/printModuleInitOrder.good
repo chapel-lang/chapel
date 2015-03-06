@@ -7,6 +7,8 @@ Initializing Modules:
     Atomics
     NetworkAtomics
     AtomicsCommon
+    NewString
+     BaseStringType
     ChapelThreads
     ChapelTuple
     ChapelRange
@@ -32,7 +34,7 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ChapelDynDispHack
-    Types
+    Assert
     CommDiagnostics
    printModuleInitOrder
     moduleInitTest

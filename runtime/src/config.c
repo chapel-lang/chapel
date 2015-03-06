@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -488,6 +488,8 @@ chpl_bool chpl_config_has_value(c_string v, c_string m) {
 }
 
 
+// Returning a c_string here is thread-safe because config consts
+// are constant for the duration of the program.
 c_string chpl_config_get_value(c_string v, c_string m) { 
   return lookupSetValue(v, m);
 }

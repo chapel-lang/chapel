@@ -1,0 +1,4 @@
+Module: hello
+   proc hello()
+      This method prints out a greeting.
+

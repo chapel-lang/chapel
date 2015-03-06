@@ -1,6 +1,6 @@
-extern proc chpl_mem_allocMany(number, size, description, userCode=true, lineno=-1, filename=""): opaque;
-extern proc chpl_mem_realloc(ptr, size, description, lineno=-1, filename=""): opaque;
-extern proc chpl_mem_free(ptr, userCode=true, lineno=-1, filename="");
+extern proc chpl_mem_allocMany(number, size, description, userCode=true, lineno=-1, filename:c_string=""): opaque;
+extern proc chpl_mem_realloc(ptr, size, description, lineno=-1, filename:c_string=""): opaque;
+extern proc chpl_mem_free(ptr, userCode=true, lineno=-1, filename:c_string="");
 
 extern proc resetMemStat();
 extern proc printMemStat(lineno=-1, filename="");

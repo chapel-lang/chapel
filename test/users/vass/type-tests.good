@@ -63,12 +63,12 @@ type-tests.chpl:27: warning: atomic is a class:  false
 type-tests.chpl:27: warning: atomic is a record: false
 type-tests.chpl:27: warning: atomic is a union:  false
 type-tests.chpl:27: warning: atomic is an atomic
-type-tests.chpl:31: warning: sync - class:  false
-type-tests.chpl:31: warning: sync - record: false
-type-tests.chpl:31: warning: sync - union:  false
-type-tests.chpl:31: warning: sync is sync
-type-tests.chpl:32: warning: single - class:  false
-type-tests.chpl:32: warning: single - record: false
-type-tests.chpl:32: warning: single - union:  false
-type-tests.chpl:32: warning: single is single
-type-tests.chpl:33: error: done
+type-tests.chpl:28: warning: sync is a class:  false
+type-tests.chpl:28: warning: sync is a record: false
+type-tests.chpl:28: warning: sync is a union:  false
+type-tests.chpl:28: warning: sync is a sync
+type-tests.chpl:29: warning: single is a class:  false
+type-tests.chpl:29: warning: single is a record: false
+type-tests.chpl:29: warning: single is a union:  false
+type-tests.chpl:29: warning: single is a single
+type-tests.chpl:30: error: done

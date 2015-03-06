@@ -15,4 +15,4 @@ cobegin {
   syncvar.writeXF(17);
 }
 
-writeln ("syncvar is now ", syncvar);
+writeln ("syncvar is now ", syncvar.readFF());

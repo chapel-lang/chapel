@@ -6,6 +6,8 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 ifdef CHPL_DEVELOPER
 DEBUG=1
 export DEBUG
+WARNINGS=1
+export WARNINGS
 else
 OPTIMIZE=1
 export OPTIMIZE
@@ -13,10 +15,10 @@ endif
 
 default: all
 
-all: creoleparser dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
+all: chpldoc-venv dlmalloc gasnet gmp hwloc qthread tcmalloc llvm
 
 clean: FORCE
-	cd creoleparser && $(MAKE) clean
+	cd chpldoc-venv && $(MAKE) clean
 	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
@@ -28,7 +30,7 @@ clean: FORCE
 	cd tcmalloc && $(MAKE) clean
 
 cleanall: FORCE
-	cd creoleparser && $(MAKE) cleanall
+	cd chpldoc-venv && $(MAKE) cleanall
 	cd dlmalloc && $(MAKE) cleanall
 	cd gasnet && $(MAKE) cleanall
 	cd gmp && $(MAKE) cleanall
@@ -40,7 +42,7 @@ cleanall: FORCE
 	cd tcmalloc && $(MAKE) cleanall
 
 clobber: FORCE
-	cd creoleparser && $(MAKE) clobber
+	cd chpldoc-venv && $(MAKE) clobber
 	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
@@ -53,9 +55,9 @@ clobber: FORCE
 
 depend:
 
-creoleparser: $(CREOLEPARSER_INSTALL_DIR)
-$(CREOLEPARSER_INSTALL_DIR):
-	cd creoleparser && $(MAKE)
+chpldoc-venv: $(CHPLDOC_VENV_SPHINX_BUILD)
+$(CHPLDOC_VENV_SPHINX_BUILD):
+	cd chpldoc-venv && $(MAKE)
 
 dlmalloc: $(DLMALLOC_INSTALL_DIR)
 $(DLMALLOC_INSTALL_DIR):
@@ -66,8 +68,18 @@ gasnet: $(GASNET_INSTALL_DIR)
 $(GASNET_INSTALL_DIR):
 	cd gasnet && $(MAKE) && $(MAKE) post-install
 
-gmp: $(GMP_INSTALL_DIR)
-$(GMP_INSTALL_DIR):
+try-gmp: FORCE
+ifeq ($(wildcard $(GMP_BUILD_DIR)),)
+	@echo "Speculatively attempting to build gmp"
+	-@$(MAKE) gmp
+else
+ifeq ($(wildcard $(GMP_H_FILE)),)
+	$(info Speculative build of gmp squashed due to previous failures.)
+endif
+endif
+
+gmp: $(GMP_H_FILE)
+$(GMP_H_FILE):
 	cd gmp && $(MAKE)
 
 hwloc: $(HWLOC_INSTALL_DIR)
@@ -94,7 +106,18 @@ $(TCMALLOC_INSTALL_DIR):
 llvm: FORCE
 	cd llvm && $(MAKE)
 
-re2: FORCE
+try-re2: FORCE
+ifeq ($(wildcard $(RE2_BUILD_DIR)),)
+	@echo "Speculatively attempting to build re2"
+	-@$(MAKE) re2
+else
+ifeq ($(wildcard $(RE2_H_FILE)),)
+	$(info Speculative build of re2 squashed due to previous failures.)
+endif
+endif
+
+re2: $(RE2_H_FILE)
+$(RE2_H_FILE):
 	cd re2 && $(MAKE)
 
 -include Makefile.devel

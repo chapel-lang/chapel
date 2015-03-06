@@ -1,2 +1,2 @@
 test_var_function_return_expr.chpl:3: In function 'foo':
-test_var_function_return_expr.chpl:4: error: illegal return expression in var function
+test_var_function_return_expr.chpl:4: error: illegal expression to return by ref

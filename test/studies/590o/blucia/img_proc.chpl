@@ -59,7 +59,7 @@ proc main() {
   
   const fx = freader.read(int), fy = freader.read(int); 
   const FilterDom = {0..((fx*fy)-1)};
-  const Filter : [FilterDom] real;
+  var Filter : [FilterDom] real;
   for i in FilterDom do{
     freader.read(Filter(i));
   }

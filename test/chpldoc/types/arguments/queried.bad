@@ -1,4 +1,0 @@
-Module: queried
-   proc queried(x: <DefExprType>)
-       This proc queries the type of its argument 
-

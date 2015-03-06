@@ -53,19 +53,20 @@ Currently supported launchers include:
 A specific launcher can be explicitly requested by setting the CHPL_LAUNCHER
 environment variable. If left unset, a default is picked as follows:
 
-  CHPL_PLATFORM=cray-xc, cray-xe, cray-xk, or cray-xt.
+  if CHPL_PLATFORM=cray-xc, cray-xe, cray-xk, or cray-xt:
+  + both aprun and srun in user's path -> none
   + aprun in user's path        -> aprun
   + srun in user's path         -> slurm-srun
   (otherwise)                   -> none
 
-  CHPL_COMM=gasnet...
+  otherwise if CHPL_COMM=gasnet:
   + CHPL_COMM_SUBSTRATE=ibv     -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=mpi     -> gasnetrun_mpi
   + CHPL_COMM_SUBSTRATE=mxm     -> gasnetrun_ibv
   + CHPL_COMM_SUBSTRATE=udp     -> amudprun
   (otherwise)                   -> none
 
-  (otherwise)                   -> none
+  otherwise:                    -> none
 
 If the launcher binary does not work for your system (due to an
 installation-specific configuration, e.g.), you can often use the -v
@@ -110,18 +111,16 @@ SLURM notes
 
 Prerequisites: 
  
-  To use native SLURM, CHPL_LAUNCHER should automatically be set to
-  slurm-srun so long as srun is found in your path. Note that if srun
-  and aprun are found in your path the launcher defaults to none. If
-  this is the case you must set CHPL_LAUNCHER to slurm-srun manually. 
+  To use native SLURM, set:
 
-  To use SLURM using GASNet over Infiniband), you need to define the
-  following environment variable:
+    export CHPL_LAUNCHER=slurm-srun
+
+  This will happen automatically if srun is found in your path, but
+  not when both srun and aprun are found in your path.
+
+  To use SLURM using GASNet over Infiniband, set:
 
     export CHPL_LAUNCHER=slurm-gasnetrun_ibv
-
-  To specify GASNet over Infiniband, set:
-
     export CHPL_COMM=gasnet
     export CHPL_COMM_SUBSTRATE=ibv
 

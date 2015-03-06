@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "LoopStmt.h"
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -73,13 +74,11 @@ static bool enableModuleUsesCache = false;
 
 //
 // The aliasFieldSet is a set of names of fields for which arrays may
-// be passed in by named argument as aliases, as in new C(A=>GA) (see 
+// be passed in by named argument as aliases, as in new C(A=>GA) (see
 // test/arrays/deitz/test_array_alias_field.chpl).
 //
 static Vec<const char*> aliasFieldSet;
 
-static void     addToSymbolTable(Vec<DefExpr*>& defs);
-static void     processImportExprs();
 static void     addClassToHierarchy(AggregateType* ct);
 
 static void addRecordDefaultConstruction();
@@ -172,7 +171,7 @@ void scopeResolve() {
         SET_LINENO(fn->_this);
 
         TypeSymbol* ts = toTypeSymbol(lookup(sym, sym->unresolved));
-        
+
         if (!ts) {
           USR_FATAL(fn, "cannot resolve base type for method '%s'", fn->name);
         }
@@ -212,13 +211,13 @@ void scopeResolve() {
 *                                                                           *
 ************************************* | ************************************/
 
-static void addToSymbolTable(Vec<DefExpr*>& defs) {
+void addToSymbolTable(Vec<DefExpr*>& defs) {
   forv_Vec(DefExpr, def, defs)
   {
-    // If the symbol is a compiler-generated variable, function or label,
+    // If the symbol is a compiler-generated variable or a label,
     // do not add it to the symbol table.
     if (def->sym->hasFlag(FLAG_TEMP) ||
-        def->sym->hasFlag(FLAG_COMPILER_GENERATED))
+        isLabelSymbol(def->sym))
       continue;
 
     BaseAST* scope = getScope(def);
@@ -240,7 +239,7 @@ static void addToSymbolTable(Vec<DefExpr*>& defs) {
             (!newFn || (!newFn->_this && newFn->hasFlag(FLAG_NO_PARENS)))) {
           USR_FATAL(sym,
                     "'%s' has multiple definitions, redefined at:\n  %s",
-                    sym->name, 
+                    sym->name,
                     def->sym->stringLoc());
         }
       }
@@ -263,7 +262,7 @@ static void addToSymbolTable(Vec<DefExpr*>& defs) {
 static ModuleSymbol* getUsedModule(Expr* expr);
 static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall);
 
-static void processImportExprs() {
+void processImportExprs() {
   // handle "use mod;" where mod is a module
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_USE)) {
@@ -370,7 +369,7 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
 *                                                                           *
 ************************************* | ************************************/
 
-static void addClassToHierarchy(AggregateType*       ct, 
+static void addClassToHierarchy(AggregateType*       ct,
                                 Vec<AggregateType*>* localSeen);
 
 static void addClassToHierarchy(AggregateType* ct) {
@@ -379,7 +378,7 @@ static void addClassToHierarchy(AggregateType* ct) {
   return addClassToHierarchy(ct, &localSeen);
 }
 
-static void addClassToHierarchy(AggregateType*       ct, 
+static void addClassToHierarchy(AggregateType*       ct,
                                 Vec<AggregateType*>* localSeen) {
   static Vec<AggregateType*> globalSeen; // classes already in hierarchy
 
@@ -395,37 +394,7 @@ static void addClassToHierarchy(AggregateType*       ct,
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, ct->inherits) {
-    UnresolvedSymExpr* se  = toUnresolvedSymExpr(expr);
-
-    INT_ASSERT(se);
-
-    //    printf("looking up %s\n", se->unresolved);
-    Symbol*            sym = lookup(expr, se->unresolved);
-    TypeSymbol*        ts  = toTypeSymbol(sym);
-
-    if (!ts)
-      USR_FATAL(expr, "Illegal super class");
-
-    //    printf("found it in %s\n", sym->getModule()->name);
-    AggregateType* pt = toAggregateType(ts->type);
-
-    if (!pt)
-      USR_FATAL(expr, "Illegal super class %s", ts->name);
-
-    if (isUnion(ct) && isUnion(pt))
-      USR_FATAL(expr, "Illegal inheritance involving union type");
-
-    if (isRecord(ct) && isClass(pt))
-      USR_FATAL(expr, "Record %s inherits from class %s",
-                ct->symbol->name, pt->symbol->name);
-
-    if (isClass(ct) && isRecord(pt))
-      // <hilde> Possible language change: Allow classes to inherit
-      // fields and methods from records.
-      USR_FATAL(expr,
-                "Class %s inherits from record %s",
-                ct->symbol->name,
-                pt->symbol->name);
+    AggregateType* pt = discoverParentAndCheck(expr, ct);
 
     localSeen->set_add(ct);
 
@@ -470,6 +439,41 @@ static void addClassToHierarchy(AggregateType*       ct,
       }
     }
   }
+}
+
+AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* child) {
+  UnresolvedSymExpr* se  = toUnresolvedSymExpr(storesName);
+
+  INT_ASSERT(se);
+
+  Symbol*            sym = lookup(storesName, se->unresolved);
+  TypeSymbol*        ts  = toTypeSymbol(sym);
+
+  //    printf("looking up %s\n", se->unresolved);
+  if (!ts)
+    USR_FATAL(storesName, "Illegal super class");
+
+  //    printf("found it in %s\n", sym->getModule()->name);
+  AggregateType* pt = toAggregateType(ts->type);
+
+  if (!pt)
+    USR_FATAL(storesName, "Illegal super class %s", ts->name);
+  if (isUnion(child) && isUnion(pt))
+    USR_FATAL(storesName, "Illegal inheritance involving union type");
+
+  if (isRecord(child) && isClass(pt))
+    USR_FATAL(storesName, "Record %s inherits from class %s",
+              child->symbol->name, pt->symbol->name);
+
+  if (isClass(child) && isRecord(pt))
+    // <hilde> Possible language change: Allow classes to inherit
+    // fields and methods from records.
+    USR_FATAL(storesName,
+              "Class %s inherits from record %s",
+              child->symbol->name,
+              pt->symbol->name);
+
+  return pt;
 }
 
 void add_root_type(AggregateType* ct)
@@ -526,7 +530,7 @@ static void addRecordDefaultConstruction()
     }
   }
 }
- 
+
 
 /************************************ | *************************************
 *                                                                           *
@@ -538,7 +542,7 @@ static void       build_constructor(AggregateType* ct);
 static ArgSymbol* create_generic_arg(VarSymbol* field);
 static void       insert_implicit_this(FnSymbol*         fn,
                                        Vec<const char*>& fieldNamesSet);
-static void       move_constructor_to_outer(FnSymbol*      fn, 
+static void       move_constructor_to_outer(FnSymbol*      fn,
                                             AggregateType* outerType);
 
 void build_constructors(AggregateType* ct)
@@ -609,7 +613,7 @@ static void build_type_constructor(AggregateType* ct) {
         //
         // if formal is generic
         //
-        if (field->hasFlag(FLAG_TYPE_VARIABLE) || 
+        if (field->isType() || 
             field->hasFlag(FLAG_PARAM)         || 
             (!exprType && !init)) {
 
@@ -617,7 +621,7 @@ static void build_type_constructor(AggregateType* ct) {
 
           fn->insertFormalAtTail(arg);
 
-          if (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE))
+          if (field->hasFlag(FLAG_PARAM) || field->isType())
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
                                           new_StringSymbol(field->name), arg));
@@ -883,7 +887,7 @@ static void build_constructor(AggregateType* ct) {
     bool hadInit = init;
 
     if (init) {
-      if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !exprType) {
+      if (!field->isType() && !exprType) {
         // init && !exprType
         VarSymbol* tmp = newTemp();
 
@@ -902,12 +906,12 @@ static void build_constructor(AggregateType* ct) {
       }
 
     } else if (hadType && 
-               !field->hasFlag(FLAG_TYPE_VARIABLE) && 
+               !field->isType() && 
                !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
     }
 
-    if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM)) {
+    if (!field->isType() && !field->hasFlag(FLAG_PARAM)) {
       if (hadType)
         init = new CallExpr("_createFieldDefault", exprType->copy(), init);
       else if (init)
@@ -928,7 +932,7 @@ static void build_constructor(AggregateType* ct) {
         arg->typeExpr = toBlockStmt(exprType);
     }
 
-    if (field->hasFlag(FLAG_TYPE_VARIABLE))
+    if (field->isType())
       // Args with this flag are removed after resolution.
       // Note that in the default type constructor, this flag is also applied
       // (along with FLAG_GENERIC) to arguments whose type is unknown, but would
@@ -1023,7 +1027,7 @@ static ArgSymbol* create_generic_arg(VarSymbol* field)
   // Translate an unknown field type into an unspecified arg type.
   if (!exprType && arg->type == dtUnknown)
   {
-    if (! field->hasFlag(FLAG_TYPE_VARIABLE))
+    if (! field->isType())
       arg->addFlag(FLAG_GENERIC);
     arg->type = dtAny;
   }
@@ -1060,8 +1064,9 @@ static void move_constructor_to_outer(FnSymbol* fn, AggregateType* outerType)
   fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK,
                                                    "_mt",
                                                    dtMethodToken)));
-
   fn->addFlag(FLAG_METHOD);
+
+  fn->addFlag(FLAG_METHOD_PRIMARY);
 
   Expr* insertPoint = outerType->symbol->defPoint;
 
@@ -1077,39 +1082,39 @@ static void move_constructor_to_outer(FnSymbol* fn, AggregateType* outerType)
 *                                                                           *
 ************************************* | ************************************/
 
-static BlockStmt* find_outer_loop(Expr* stmt);
-
 static void resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
     SET_LINENO(gs);
 
     if (SymExpr* label = toSymExpr(gs->label)) {
       if (label->var == gNil) {
-        BlockStmt* loop = find_outer_loop(gs);
+        LoopStmt* loop = LoopStmt::findEnclosingLoop(gs);
 
         if (!loop)
           USR_FATAL(gs, "break or continue is not in a loop");
 
         if (gs->gotoTag == GOTO_BREAK) {
-          Symbol* breakLabel = loop->breakLabel;
+          Symbol* breakLabel = loop->breakLabelGet();
 
           INT_ASSERT(breakLabel);
           gs->label->replace(new SymExpr(breakLabel));
+
         } else if (gs->gotoTag == GOTO_CONTINUE) {
-          Symbol* continueLabel = loop->continueLabel;
+          Symbol* continueLabel = loop->continueLabelGet();
           INT_ASSERT(continueLabel);
 
           gs->label->replace(new SymExpr(continueLabel));
+
         } else
           INT_FATAL(gs, "unexpected goto type");
       }
 
     } else if (UnresolvedSymExpr* label = toUnresolvedSymExpr(gs->label)) {
       const char* name = label->unresolved;
-      BlockStmt*  loop = find_outer_loop(gs);
+      LoopStmt*   loop = LoopStmt::findEnclosingLoop(gs);
 
       while (loop && (!loop->userLabel || strcmp(loop->userLabel, name))) {
-        loop = find_outer_loop(loop->parentExpr);
+        loop = LoopStmt::findEnclosingLoop(loop->parentExpr);
       }
 
       if (!loop) {
@@ -1117,28 +1122,16 @@ static void resolveGotoLabels() {
       }
 
       if (gs->gotoTag == GOTO_BREAK)
-        label->replace(new SymExpr(loop->breakLabel));
+        label->replace(new SymExpr(loop->breakLabelGet()));
 
       else if (gs->gotoTag == GOTO_CONTINUE)
-        label->replace(new SymExpr(loop->continueLabel));
+        label->replace(new SymExpr(loop->continueLabelGet()));
 
       else
         INT_FATAL(gs, "unexpected goto type");
     }
   }
 }
-
-static BlockStmt* find_outer_loop(Expr* stmt) {
-  if (BlockStmt* block = toBlockStmt(stmt))
-    if (block->isLoop())
-      return block;
-
-  if (stmt->parentExpr)
-    return find_outer_loop(stmt->parentExpr);
-
-  return NULL;
-}
-
 
 /************************************ | *************************************
 *                                                                           *

@@ -1,7 +1,0 @@
-bug: compiler crashes with an assertion: Cannot call insertAfter on Expr not in a list [expr.cpp:146]
-
-It trips over something in test1() in the normalize pass.
-This currently happens even if test1() is not invoked from anywhere.
-Ditto for test2().
-
-// test1() and test2() differ only in what they return.

@@ -172,7 +172,7 @@ proc main() {
     // compare the solution as calculated by the parallel algorithm against the
     // solution from the serial algorithm
     var passed = true;
-    forall (i,j) in myLocales.domain {
+    forall (i,j) in myLocales.domain with (ref passed) { // race when "&= true"
         var slice = A[i,j].dom;
 
         if & reduce(A[i,j].data == data(slice)) then {

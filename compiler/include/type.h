@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -60,7 +60,7 @@ public:
   virtual GenRet   codegen();
   virtual bool     inTree();
   virtual Type*    typeInfo();
-  virtual void     verify(); 
+  virtual void     verify();
 
   virtual void     codegenDef();
   virtual void     codegenPrototype();
@@ -120,7 +120,7 @@ class EnumType : public Type {
 
   EnumType();
   ~EnumType();
-  void verify(); 
+  void verify();
   virtual void    accept(AstVisitor* visitor);
   DECLARE_COPY(EnumType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -151,7 +151,7 @@ class AggregateType : public Type {
 
   AggregateType(AggregateTag initTag);
   ~AggregateType();
-  void verify(); 
+  void verify();
   virtual void    accept(AstVisitor* visitor);
   DECLARE_COPY(AggregateType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
@@ -172,18 +172,29 @@ class AggregateType : public Type {
   bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
   bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
   bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
+  std::string docsSuperClass();
 };
 
 
 class PrimitiveType : public Type {
  public:
   PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
-  void verify(); 
+  void verify();
   virtual void    accept(AstVisitor* visitor);
   DECLARE_COPY(PrimitiveType);
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
   int codegenStructure(FILE* outfile, const char* baseoffset);
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
 };
 
 
@@ -219,7 +230,7 @@ TYPE_EXTERN PrimitiveType* dtImag[FLOAT_SIZE_NUM];
 TYPE_EXTERN Type* dtComplex[COMPLEX_SIZE_NUM];
 TYPE_EXTERN PrimitiveType* dtString;
 TYPE_EXTERN PrimitiveType* dtSymbol;
-TYPE_EXTERN PrimitiveType* dtFile; 
+TYPE_EXTERN PrimitiveType* dtFile;
 TYPE_EXTERN PrimitiveType* dtOpaque;
 TYPE_EXTERN PrimitiveType* dtTaskID;
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
@@ -241,18 +252,21 @@ TYPE_EXTERN AggregateType* dtLocale;
 TYPE_EXTERN AggregateType* dtLocaleID;
 TYPE_EXTERN AggregateType* dtMainArgument;
 
-TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string.
+TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
+TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
+TYPE_EXTERN std::map<Type*, Type*> wideToNarrowRefMap; // reference of wide class to reference of narrow class
 
-void initChplProgram(void);
-void initPrimitiveTypes(void);
-void initTheProgram(void);
-void initCompilerGlobals(void);
+void     initRootModule();
+void     initPrimitiveTypes();
+DefExpr* defineObjectClass();
+void     initChplProgram(DefExpr* objectDef);
+void     initCompilerGlobals();
 
 bool is_void_type(Type*);
 bool is_bool_type(Type*);

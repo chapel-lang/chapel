@@ -122,7 +122,12 @@ struct chpl_task_list {
     chpl_task_list_p next;
 };
 
+pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
+
+chpl_qthread_tls_t chpl_qthread_process_tls = {
+  PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
+  NULL, 0, NULL, 0 };
 
 chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
   PRV_DATA_IMPL_VAL(c_sublocid_any_val, false),
@@ -157,77 +162,41 @@ void chpl_task_yield(void)
 void chpl_sync_lock(chpl_sync_aux_t *s)
 {
     aligned_t l;
+    chpl_bool uncontested_lock = true;
 
     PROFILE_INCR(profile_sync_lock, 1);
 
-    l = qthread_incr(&s->lockers_in, 1);
-
-    // Yield if somebody else has the lock. If the current task can't get the
-    // lock then it can't make progress until the lock is released, so let
-    // somebody else do some work. It might be better to yield only after X
-    // number of failures to acquire the lock for cases where the lock would be
-    // released "soon", but we didn't see any performance impacts of doing it
-    // every time.
     //
-    // A core issue is that it's possible that a task scheduled on the same
-    // worker could be the one responsible for unlocking the sync var. For
-    // instance if a task locked the sync var, then does a chpl_task_yield, it
-    // could now be scheduled to run after the current task so this task must
-    // yield in order to prevent deadlock. However, if the task that will
-    // unlock is on another worker, then a spinloop would result in lower
-    // latency. That tension between deadlock avoidance and latency
-    // minimization is what pushes us to even consider spinning in addition to
-    // yielding, and to worry about how much of it we should do.
+    // To prevent starvation due to never switching away from a task that is
+    // spinning while doing readXX() on a sync variable, yield if this sync var
+    // has a "lot" of uncontested locks. Note that the uncontested locks do not
+    // have to be consecutive. Also note that the number of uncontested locks
+    // is a lossy counter. Currently a "lot" is defined as ~100 uncontested
+    // locks, with care taken to not yield on the first uncontested lock.
     //
     // If real qthreads sync vars were used, it's possible this wouldn't be
     // needed.
-    while (l != s->lockers_out) qthread_yield();
+    //
+
+    l = qthread_incr(&s->lockers_in, 1);
+
+    while (l != s->lockers_out) {
+        uncontested_lock = false;
+        qthread_yield();
+    }
+
+    if (uncontested_lock) {
+        if ((++s->uncontested_locks & 0x5F) == 0) {
+            qthread_yield();
+        }
+    }
 }
 
 void chpl_sync_unlock(chpl_sync_aux_t *s)
 {
     PROFILE_INCR(profile_sync_unlock, 1);
 
-    // Give other tasks that might be waiting on a sync var a chance to run.
-    // Currently this is every 1024 unlocks. [x % 2n == x & (2n - 1)] This
-    // number was chosen with trial and error and is a good balance of
-    // not hurting performance and allowing progress. Determined by modifying
-    // the value over several days and examining performance and correctness
-    // testing.
-    //
-    // It's possible that two tasks can deadlock if they are both on the same
-    // worker and the running task relies on the work the second task is
-    // supposed to do to make progress. The first task will never yield
-    // automatically, so this forces a yield on sync var unlock every so often
-    // to allow progress.
-    //
-    // Consider this example:
-    //
-    // var alreadySet: [1..10] bool;
-    // while (syncVar.readXX() != 10) {
-    //   for i in 1..10 {
-    //     if alreadySet[i] == false then
-    //       begin syncVar += 1;
-    //     alreadySet[i] = true;
-    //   }
-    // }
-    //
-    // Some of the incrementing tasks might get placed on the same worker as
-    // the task waiting for the syncVar to be 10. That task will never yield,
-    // so the value would never get set to 10 and we'd be stuck in the loop
-    //
-    // qthread_yield is used over chpl_task_yield. chpl_task_yield just adds
-    // calling a sched yield if there are no shepherds. If we don't have any
-    // shepherds we are either setting up or tearing down in which case the
-    // pthread unlock will guarantee progress. When qthread_yield() is called
-    // from a non-qthread it's just a no-op.
-    //
-    // I believe this is still necessary even if we used real qthread sync
-    // vars. As the second task would never get a chance to try and acquire the
-    // lock, so other tasks wouldn't know a task is waiting on the sync var.
-    if ((qthread_incr(&s->lockers_out, 1) & 0x3FF) == 0x3FF) {
-        qthread_yield();
-    }
+    qthread_incr(&s->lockers_out, 1);
 }
 
 static inline void about_to_block(int32_t  lineno,
@@ -468,13 +437,13 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
     hwpar = 0;
 
     // User set chapel level env var (CHPL_RT_NUM_THREADS_PER_LOCALE)
-    // This is limited to numPusPerLocale
+    // This is limited to the number of logical CPUs on the node.
     if (numThreadsPerLocale != 0) {
         int32_t numPUsPerLocale;
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_getNumPUsOnThisNode();
+        numPUsPerLocale = chpl_getNumLogicalCpus(true);
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             if (verbosity >= 2) {
                 printf("QTHREADS: Reduced numThreadsPerLocale=%d to %d "
@@ -493,7 +462,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
     }
     // User did not set chapel or qthreads vars -- our default
     else {
-        hwpar = chpl_getNumCoresOnThisNode();
+        hwpar = chpl_getNumPhysicalCpus(true);
     }
 
     // hwpar will only be <= 0 if the user set QT_NUM_SHEPHERDS and/or
@@ -507,7 +476,7 @@ static int32_t setupAvailableParallelism(int32_t maxThreads) {
 
         // If there is more parallelism requested than the number of cores, set the
         // worker unit to pu, otherwise core.
-        if (hwpar > chpl_getNumCoresOnThisNode()) {
+        if (hwpar > chpl_getNumPhysicalCpus(true)) {
           chpl_qt_setenv("WORKER_UNIT", "pu", 0);
         } else {
           chpl_qt_setenv("WORKER_UNIT", "core", 0);
@@ -585,6 +554,8 @@ void chpl_task_init(void)
     int32_t   commMaxThreads;
     int32_t   hwpar;
     pthread_t initer;
+
+    chpl_qthread_process_pthread = pthread_self();
 
     commMaxThreads = chpl_comm_getMaxThreads();
 
@@ -713,9 +684,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              int               lineno,
                              c_string          filename)
 {
-    qthread_shepherd_id_t const here_shep_id = qthread_shep();
     chpl_bool serial_state = chpl_task_getSerial();
-    chpl_qthread_wrapper_args_t wrapper_args = 
+    chpl_qthread_wrapper_args_t wrapper_args =
         {chpl_ftable[fid], arg, filename, lineno, false,
          PRV_DATA_IMPL_VAL(subloc, serial_state) };
 
@@ -724,11 +694,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     PROFILE_INCR(profile_task_addToTaskList,1);
 
     if (serial_state) {
-        syncvar_t ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-        qthread_fork_syncvar_copyargs_to(chapel_wrapper, &wrapper_args,
-                                         sizeof(chpl_qthread_wrapper_args_t), &ret,
-                                         here_shep_id);
-        qthread_syncvar_readFF(NULL, &ret);
+        // call the function directly.
+        (chpl_ftable[fid])(arg);
     } else if (subloc == c_sublocid_any) {
         qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
                               sizeof(chpl_qthread_wrapper_args_t), NULL);
@@ -803,7 +770,16 @@ chpl_taskID_t chpl_task_getId(void)
 
 void chpl_task_sleep(int secs)
 {
-    sleep(secs); // goes into the syscall interception system
+    if (qthread_shep() == NO_SHEPHERD) {
+        sleep(secs);
+    } else {
+        qtimer_t t = qtimer_create();
+        qtimer_start(t);
+        do {
+            qthread_yield();
+            qtimer_stop(t);
+        } while (qtimer_secs(t) < secs);
+    }
 }
 
 /* The get- and setSerial() methods assume the beginning of the task-local
@@ -840,22 +816,7 @@ c_sublocid_t chpl_task_getNumSublocales(void)
     // FIXME: What we really want here is the number of NUMA
     // sublocales we are supporting.  For now we use the number of
     // shepherds as a proxy for that.
-
-#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
-#if CHPL_LOCALE_MODEL_NUM_SUBLOCALES < 0
-#error Forced number of sublocales cannot be negative.
-#endif
-    if (CHPL_LOCALE_MODEL_NUM_SUBLOCALES == 0) {
-        return 0;
-    } else {
-        c_sublocid_t num_sublocs = (c_sublocid_t) qthread_num_shepherds();
-        return ((num_sublocs < CHPL_LOCALE_MODEL_NUM_SUBLOCALES)
-                ? num_sublocs
-                : CHPL_LOCALE_MODEL_NUM_SUBLOCALES);
-    }
-#else
     return (c_sublocid_t) qthread_num_shepherds();
-#endif
 }
 
 size_t chpl_task_getCallStackSize(void)

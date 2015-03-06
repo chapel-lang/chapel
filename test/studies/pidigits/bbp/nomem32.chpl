@@ -8,8 +8,6 @@
 // so it can compute only the first 4 million digits of Pi or so.
 //
 //
-extern proc printf(s...);
-
 use Time;
 
 config param perfTest = false;
@@ -144,7 +142,7 @@ proc print_digits(in d, in nd: I2)
     i -= 1;
     write_digit(tmp[i]);
   }
-  printf("\t");
+  write("\t");
 }
 
 proc write_out()

@@ -1,0 +1,15 @@
+language: c
+compiler:
+  - gcc
+
+  # TODO: Fix clang build issue and enable for smoke tests.
+  # (thomasvandoren, 2014-09-08)
+  # - clang
+before_script:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq bc tcsh
+script:
+  - ./util/buildRelease/smokeTest
+env:
+  - CHPL_DEVELOPER=true
+  - NIGHTLY_TEST_SETTINGS=true

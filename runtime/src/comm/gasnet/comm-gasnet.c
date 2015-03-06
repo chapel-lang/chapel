@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -185,7 +185,7 @@ static void fork_wrapper(fork_t *f) {
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
                                           CHPL_RT_MD_COMM_FORK_RECV_INFO, 0, 0);
-  memcpy(f, buf, nbytes);
+  chpl_memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
@@ -202,7 +202,7 @@ static void fork_large_wrapper(fork_t* f) {
   // employed here is one way around the problem, and a
   // more appealing solution would be to use a union.
   void* f_arg;
-  memcpy(&f_arg, f->arg, sizeof(void*));
+  chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
   chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
@@ -221,7 +221,7 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
                                           CHPL_RT_MD_COMM_FORK_RECV_LARGE_INFO,
                                           0, 0);
-  memcpy(f, buf, nbytes);
+  chpl_memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
@@ -241,7 +241,7 @@ static void AM_fork_nb(gasnet_token_t  token,
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
                                           CHPL_RT_MD_COMM_FORK_RECV_NB_INFO,
                                           0, 0);
-  memcpy(f, buf, nbytes);
+  chpl_memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
@@ -253,7 +253,7 @@ static void fork_nb_large_wrapper(fork_t* f) {
 
   // See "A note on strict aliasing" in fork_large_wrapper
   void* f_arg;
-  memcpy(&f_arg, f->arg, sizeof(void*));
+  chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
   chpl_comm_get(arg, f->caller, f_arg,
                 f->arg_size, -1 /*typeIndex: unused*/, 1, 0, "fork large");
@@ -270,7 +270,7 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
                                           CHPL_RT_MD_COMM_FORK_RECV_NB_LARGE_INFO,
                                           0, 0);
-  memcpy(f, buf, nbytes);
+  chpl_memcpy(f, buf, nbytes);
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
@@ -289,7 +289,7 @@ static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handl
 
 static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_t* pbp = buf;
-  memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
+  chpl_memcpy(chpl_private_broadcast_table[pbp->id], pbp->data, pbp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -298,7 +298,7 @@ static void AM_priv_bcast(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void AM_priv_bcast_large(gasnet_token_t token, void* buf, size_t nbytes) {
   priv_bcast_large_t* pblp = buf;
-  memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
+  chpl_memcpy((char*)chpl_private_broadcast_table[pblp->id]+pblp->offset, pblp->data, pblp->size);
 
   // Signal that the handler has completed
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
@@ -310,8 +310,8 @@ static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
   void* f_arg;
   
   // See "A note on strict aliasing" in fork_large_wrapper
-  memcpy(&f, buf, sizeof(fork_t*));
-  memcpy(&f_arg, f->arg, sizeof(void*));
+  chpl_memcpy(&f, buf, sizeof(fork_t*));
+  chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
   chpl_mem_free(f_arg, 0, 0);
   chpl_mem_free(f, 0, 0);
@@ -335,7 +335,7 @@ static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
 static int bcast_seginfo_done = 0;
 static void AM_bcast_seginfo(gasnet_token_t token, void *buf, size_t nbytes) {
   assert(nbytes == sizeof(gasnet_seginfo_t)*gasnet_nodes());
-  memcpy(seginfo_table, buf, nbytes);
+  chpl_memcpy(seginfo_table, buf, nbytes);
   gasnett_local_wmb();
   bcast_seginfo_done = 1;
 }
@@ -395,14 +395,21 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
   return (chpl_comm_nb_handle_t) ret;
 }
 
-int chpl_comm_nb_handle_is_complete(chpl_comm_nb_handle_t h)
+int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 {
   return ((void*)h) == NULL;
 }
 
-void chpl_comm_nb_wait_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
+  assert(NULL == GASNET_INVALID_HANDLE);  // serious confusion if not so
   gasnet_wait_syncnb_some((gasnet_handle_t*) h, nhandles);
+}
+
+int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
+{
+  assert(NULL == GASNET_INVALID_HANDLE);  // serious confusion if not so
+  return gasnet_try_syncnb_some((gasnet_handle_t*) h, nhandles) == GASNET_OK;
 }
 
 int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
@@ -648,7 +655,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
                                           0, 0);
   if (payloadSize <= gasnet_AMMaxMedium()) {
     priv_bcast_t* pbp = chpl_mem_allocMany(1, payloadSize, CHPL_RT_MD_COMM_PRIVATE_BROADCAST_DATA, 0, 0);
-    memcpy(pbp->data, chpl_private_broadcast_table[id], size);
+    chpl_memcpy(pbp->data, chpl_private_broadcast_table[id], size);
     pbp->id = id;
     pbp->size = size;
     for (node = 0; node < chpl_numNodes; node++) {
@@ -675,7 +682,7 @@ void chpl_comm_broadcast_private(int id, int32_t size, int32_t tid) {
         thissize = maxsize;
       pblp->offset = offset;
       pblp->size = thissize;
-      memcpy(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
+      chpl_memcpy(pblp->data, (char*)chpl_private_broadcast_table[id]+offset, thissize);
       for (node = 0; node < chpl_numNodes; node++) {
         if (node != chpl_nodeID) {
           pblp->ack = &done[node];
@@ -978,10 +985,10 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
 
     if (passArg) {
       if (arg_size)
-        memcpy(&(info->arg), arg, arg_size);
+        chpl_memcpy(&(info->arg), arg, arg_size);
       GASNET_Safe(gasnet_AMRequestMedium0(node, FORK, info, info_size));
     } else {
-      memcpy(&(info->arg), &arg, sizeof(void*));
+      chpl_memcpy(&(info->arg), &arg, sizeof(void*));
       GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_LARGE, info, info_size));
     }
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
@@ -1019,13 +1026,13 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
   info->arg_size = arg_size;
   if (passArg) {
     if (arg_size)
-      memcpy(&(info->arg), arg, arg_size);
+      chpl_memcpy(&(info->arg), arg, arg_size);
   } else {
     // If the arg bundle is too large to fit in fork_t (i.e. passArg == false), 
     // Copy the args into auxilliary memory and pass a pointer to this instead.
     argCopy = chpl_mem_allocMany(1, arg_size,
                                  CHPL_RT_MD_COMM_FORK_SEND_NB_LARGE_ARG, 0, 0);
-    memcpy(argCopy, arg, arg_size);
+    chpl_memcpy(argCopy, arg, arg_size);
     *(void**)(&(info->arg)) = argCopy;
   }
 
@@ -1086,7 +1093,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
       INIT_DONE_OBJ(done, 1);
 
       if (arg_size)
-        memcpy(&(info->arg), arg, arg_size);
+        chpl_memcpy(&(info->arg), arg, arg_size);
       GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_FAST, info, info_size));
       // NOTE: We still have to wait for the handler to complete
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
@@ -1166,7 +1173,7 @@ void chpl_resetCommDiagnosticsHere() {
 
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_sync_lock(&chpl_comm_diagnostics_sync);
-  memcpy(cd, &chpl_comm_commDiagnostics, sizeof(chpl_commDiagnostics));
+  chpl_memcpy(cd, &chpl_comm_commDiagnostics, sizeof(chpl_commDiagnostics));
   chpl_sync_unlock(&chpl_comm_diagnostics_sync);
 }
 
@@ -1178,20 +1185,24 @@ uint64_t chpl_numCommNBGets(void) {
   return chpl_comm_commDiagnostics.get_nb;
 }
 
-uint64_t chpl_numCommTestNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb_test;
-}
-
-uint64_t chpl_numCommWaitNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb_wait;
-}
-
 uint64_t chpl_numCommPuts(void) {
   return chpl_comm_commDiagnostics.put;
 }
 
 uint64_t chpl_numCommNBPuts(void) {
   return chpl_comm_commDiagnostics.put_nb;
+}
+
+uint64_t chpl_numCommTestNB(void) {
+  return chpl_comm_commDiagnostics.test_nb;
+}
+
+uint64_t chpl_numCommWaitNB(void) {
+  return chpl_comm_commDiagnostics.wait_nb;
+}
+
+uint64_t chpl_numCommTryNB(void) {
+  return chpl_comm_commDiagnostics.try_nb;
 }
 
 uint64_t chpl_numCommFastForks(void) {

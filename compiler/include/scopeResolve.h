@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,12 +19,29 @@
 
 #ifndef SCOPE_RESOLVE_H
 #define SCOPE_RESOLVE_H
+#include "astutil.h"
 
 class AggregateType;
 
 
 void build_constructors(AggregateType* ct);
 void add_root_type(AggregateType* ct);
+
+// The docs pass would like to use the following functions to resolve
+// inheritance issues.
+
+// Lydia note:
+// Unfortunately, the implementation of addToSymbolTable seems to rely on
+// only being called once in the compiler.  At the moment, it does not seem
+// worth diving into whether the early usage of addToSymbolTable would cause
+// other problems for the scopeResolve pass (because documenting the source
+// code doesn't *need* to also generate an executable and we don't have another
+// case that would benefit from early usage).  A motivated soul could look into
+// this issue and thus allow both docs() and scopeResolve() to call this
+// function.
+void    addToSymbolTable(Vec<DefExpr*>& defs);
+void    processImportExprs();
+AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* child);
 
 #ifdef HAVE_LLVM
 

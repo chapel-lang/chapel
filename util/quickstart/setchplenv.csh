@@ -25,16 +25,22 @@ setenv CHPL_HOST_PLATFORM `"$CHPL_HOME/util/chplenv/chpl_platform.py"`
 echo "to $CHPL_HOST_PLATFORM"
 
 echo -n "Updating PATH "
-setenv PATH "$MYPATH":"$CHPL_HOME/bin/$CHPL_HOST_PLATFORM":"$CHPL_HOME/util"
+setenv PATH "$CHPL_HOME/bin/$CHPL_HOST_PLATFORM":"$CHPL_HOME/util":"$MYPATH"
 echo "to include $CHPL_HOME/bin/$CHPL_HOST_PLATFORM"
 echo    "                     and $CHPL_HOME/util"
 
 echo -n "Updating MANPATH "
-setenv MANPATH "$MYMANPATH":"$CHPL_HOME"/man
+setenv MANPATH "$CHPL_HOME"/man:"$MYMANPATH"
 echo "to include $CHPL_HOME/man"
+
+echo "Setting CHPL_COMM to none"
+setenv CHPL_COMM none
 
 echo "Setting CHPL_TASKS to fifo"
 setenv CHPL_TASKS fifo
+
+#echo "Setting CHPL_MEM to cstdlib"
+#setenv CHPL_MEM cstdlib
 
 echo "Setting CHPL_GMP to none"
 setenv CHPL_GMP none

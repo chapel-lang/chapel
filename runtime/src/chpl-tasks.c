@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@
 //
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chplsys.h"
 #include "chpl-tasks.h"
 #include "error.h"
 
@@ -45,23 +46,36 @@ int32_t chpl_task_getenvNumThreadsPerLocale(void)
     return num;
 
   if ((p = getenv("CHPL_RT_NUM_THREADS_PER_LOCALE")) != NULL) {
-    if (sscanf(p, "%" SCNi32, &num) != 1)
-      chpl_warning("Cannot parse CHPL_RT_NUM_THREADS_PER_LOCALE environment "
-                   "variable", 0, NULL);
-    if (num < 0) {
-      chpl_error("CHPL_RT_NUM_THREADS_PER_LOCALE must be >= 0", 0, NULL);
-      num = 0;
+    int32_t lim = chpl_comm_getMaxThreads();
+
+    if (strcmp(p, "MAX_PHYSICAL") == 0) {
+      num = chpl_getNumPhysicalCpus(true);
+      if (lim > 0 && lim < num)
+        num = lim;
+    }
+    else if (strcmp(p, "MAX_LOGICAL") == 0) {
+      num = chpl_getNumLogicalCpus(true);
+      if (lim > 0 && lim < num)
+        num = lim;
     }
     else {
-      int32_t lim = chpl_comm_getMaxThreads();
-      if (lim > 0 && num > lim) {
-        char msg[200];
-        snprintf(msg, sizeof(msg),
-                 "CHPL_RT_NUM_THREADS_PER_LOCALE = %" PRIi32 " is too large; "
-                 "limit is %" PRIi32,
-                 num, lim);
-        chpl_warning(msg, 0, NULL);
-        num = lim;
+      if (sscanf(p, "%" SCNi32, &num) != 1)
+        chpl_warning("Cannot parse CHPL_RT_NUM_THREADS_PER_LOCALE environment "
+                     "variable", 0, NULL);
+      if (num < 0) {
+        chpl_error("CHPL_RT_NUM_THREADS_PER_LOCALE must be >= 0", 0, NULL);
+        num = 0;
+      }
+      else {
+        if (lim > 0 && num > lim) {
+          char msg[200];
+          snprintf(msg, sizeof(msg),
+                   "CHPL_RT_NUM_THREADS_PER_LOCALE = %" PRIi32 " is too large; "
+                   "limit is %" PRIi32,
+                   num, lim);
+          chpl_warning(msg, 0, NULL);
+          num = lim;
+        }
       }
     }
   }

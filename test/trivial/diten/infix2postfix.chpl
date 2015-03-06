@@ -45,10 +45,8 @@ proc infix2postfix(str: string) {
   operDom += "*"; operDom += "/";
   operDom += "(";
 
-  const prec: [operDom] int;
-  prec("+") = 0; prec("-") = 0;
-  prec("*") = 1; prec("/") = 1;
-  prec("(") = -1;
+  const prec: [operDom] int =
+    [ "+" => 0, "-" => 0, "*" => 1, "/" => 1, "(" => -1 ];
 
   var post: string = "";
   var stack: Stack;

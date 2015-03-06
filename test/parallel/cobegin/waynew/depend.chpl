@@ -25,4 +25,4 @@ cobegin {
   a = 1;
 }
 
-writeln("d is ", d);
+writeln("d is ", d.readFF());

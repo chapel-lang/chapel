@@ -1,0 +1,9 @@
+bug: Name lookup during resolution is incorrect
+
+The visibility of function names during resolution is different from that used in the
+scopeResolve pass, and also does not provide the behavior outlined in the specification.
+
+In the test case, the constructor for the user's definition of range should be called in
+preference to the range constructor in ChapelRange.chpl.  That means that the type of r
+should be the user's version of range, and the output should be a representation of a
+range within a record, not just a bare range.

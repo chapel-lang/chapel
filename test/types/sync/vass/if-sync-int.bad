@@ -1,0 +1,1 @@
+if-sync-int.chpl:6: error: type '_syncvar(int(64))' used in if or while condition

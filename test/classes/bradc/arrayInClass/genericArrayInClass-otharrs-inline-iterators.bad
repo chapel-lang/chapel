@@ -1,76 +1,72 @@
-In file included from obj/_main.c:18:
-obj/DefaultRectangular.c: In function 'dsiReallocate13':
-obj/DefaultRectangular.c:12102: error: used struct type value where scalar is required
-obj/DefaultRectangular.c:12107: error: used struct type value where scalar is required
-obj/DefaultRectangular.c:12120: error: used struct type value where scalar is required
-obj/DefaultRectangular.c:12125: error: used struct type value where scalar is required
-In file included from obj/_main.c:20:
-obj/ChapelArray.c: In function 'coforall_fn11':
-obj/ChapelArray.c:9175: error: used struct type value where scalar is required
-obj/ChapelArray.c:9180: error: used struct type value where scalar is required
-obj/ChapelArray.c:9193: error: used struct type value where scalar is required
-obj/ChapelArray.c:9198: error: used struct type value where scalar is required
-obj/ChapelArray.c: In function 'coforall_fn21':
-obj/ChapelArray.c:15152: error: used struct type value where scalar is required
-obj/ChapelArray.c:15157: error: used struct type value where scalar is required
-obj/ChapelArray.c:15170: error: used struct type value where scalar is required
-obj/ChapelArray.c:15175: error: used struct type value where scalar is required
-In file included from obj/_main.c:24:
+obj/DefaultRectangular.c: In function 'dsiReallocate11':
+obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultRectangular.c:nnnn: error: used struct type value where scalar is required
+obj/ChapelArray.c: In function 'coforall_fn7':
+obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
+obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
+obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
+obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
+obj/ChapelArray.c: In function 'coforall_fn17':
+obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
+obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
+obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
+obj/ChapelArray.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c: In function '_backupArray7':
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultAssociative.c: In function '_backupArray8':
-obj/DefaultAssociative.c:40738: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:40743: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:40756: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:40761: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:41191: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:41196: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:41209: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:41214: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultAssociative.c: In function '_backupArray9':
-obj/DefaultAssociative.c:42244: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:42249: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:42262: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:42267: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:42697: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:42702: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:42715: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:42720: error: used struct type value where scalar is required
-obj/DefaultAssociative.c: In function '_backupArray10':
-obj/DefaultAssociative.c:43750: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:43755: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:43768: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:43773: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:44203: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:44208: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:44221: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:44226: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c: In function '_preserveArrayElement7':
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultAssociative.c: In function '_preserveArrayElement8':
-obj/DefaultAssociative.c:61400: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:61405: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:61418: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:61423: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultAssociative.c: In function '_preserveArrayElement9':
-obj/DefaultAssociative.c:61610: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:61615: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:61628: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:61633: error: used struct type value where scalar is required
-obj/DefaultAssociative.c: In function '_preserveArrayElement10':
-obj/DefaultAssociative.c:61820: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:61825: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:61838: error: used struct type value where scalar is required
-obj/DefaultAssociative.c:61843: error: used struct type value where scalar is required
-In file included from obj/_main.c:25:
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultAssociative.c:nnnn: error: used struct type value where scalar is required
 obj/DefaultSparse.c: In function 'sparseShiftArray3':
-obj/DefaultSparse.c:3982: error: used struct type value where scalar is required
-obj/DefaultSparse.c:3987: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4000: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4005: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4180: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4185: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4198: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4203: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4286: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4291: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4304: error: used struct type value where scalar is required
-obj/DefaultSparse.c:4309: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
+obj/DefaultSparse.c:nnnn: error: used struct type value where scalar is required
 gmake: *** [obj/genericArrayInClass-otharrs-inline-iterators.tmp] Error 1
 error: compiling generated source

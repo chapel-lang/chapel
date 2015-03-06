@@ -1,4 +1,4 @@
-perfkeys:  Time in seconds =
-files: ep.B.dat
-graphkeys: runtime - B
+perfkeys:  Time in seconds =, Time in seconds =
+files: ep.B.dat, ep.B.maxLogical.dat
+graphkeys: runtime - B, MAX_LOGICAL - B
 graphtitle: NAS Parallel Benchmarks: EP timings - size B

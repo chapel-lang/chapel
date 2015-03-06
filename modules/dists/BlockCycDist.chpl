@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -791,20 +791,16 @@ proc BlockCyclicArr.dsiSlice(d: BlockCyclicDom) {
 proc BlockCyclicArr.dsiReindex(dom) {
   compilerError("reindexing not yet implemented for Block-Cyclic");
 }
-    
-proc BlockCyclicArr.dsiTargetLocDom() {
-  return dom.dist.targetLocDom;
-}
 
 proc BlockCyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
-proc BlockCyclicArr.dsiOneLocalSubdomain() param return false;
+proc BlockCyclicArr.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
-iter BlockCyclicArr.dsiGetLocalSubdomains() {
+iter BlockCyclicArr.dsiLocalSubdomains() {
   for i in myLocArr.indexDom.myStarts {
     var temp : rank*range(idxType);
     const blockSizes = myLocArr.indexDom.globDom.dist.blocksize;

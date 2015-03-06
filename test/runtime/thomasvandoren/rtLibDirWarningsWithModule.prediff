@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#
+# Run the compiler with CHPL_MODULE_HOME == CHPL_HOME and opposite gmp value.
+
+export CHPL_MODULE_HOME=$CHPL_HOME
+./rerun_compiler_with_opposite_gmp.bash $@

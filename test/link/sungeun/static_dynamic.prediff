@@ -27,7 +27,7 @@ for l in chpl_env.split('\n'):
     var = env[0].strip()
     if var != '':
         val = env[1].strip()
-    if var=='CHPL_TARGET_COMPILER':
+    if var=='CHPL_TARGET_PLATFORM':
         if val.find('cray-x')==0:
             defaultLinkStyle='statically'
             
