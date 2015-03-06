@@ -602,6 +602,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
             continue;
           }
           if (rhs->isPrimitive(PRIM_STRING_FROM_C_STRING)) {
+            // By making such strings wide, we seem to avoid more memory leaks.
             wi->mustBeWide = true;
             continue;
           }
@@ -617,8 +618,19 @@ narrowSym(Symbol* sym, WideInfo* wi,
             if (fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC))
               continue;
             bool retIsWide = isWideType(fn->retType->symbol);
-            if (retIsWide && (isWideObj)) {
+
+            //
+            // The LHS should follow the wideness of the returned type if:
+            // - the LHS is a class
+            // - both the LHS and return type are refs
+            //
+            // If the function returns a class and the LHS is a reference,
+            // then that reference will be narrow.
+            //
+            if (retIsWide) {
+              if (isWideObj || (isRef(fn->getReturnSymbol()) && isRef(sym))) {
                 addNarrowDep(fn->getReturnSymbol(), sym);
+              }
             }
             if (isRef(sym)) {
               if (WideInfo* next = wideInfoMap->get(fn->getReturnSymbol())) {
