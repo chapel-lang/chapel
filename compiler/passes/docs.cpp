@@ -73,6 +73,10 @@ void docs(void) {
       docsSphinxDir = docsTempDir;
     }
 
+    // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
+    mkdir(docsSphinxDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    mkdir(docsOutputDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+
     // The location of intermediate rst files.
     std::string docsRstDir;
     if (fDocsTextOnly) {
@@ -82,11 +86,6 @@ void docs(void) {
       // For rst mode, the working location is somewhere inside the temp dir.
       docsRstDir = generateSphinxProject(docsSphinxDir);
     }
-
-    // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
-    mkdir(docsRstDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
-    mkdir(docsOutputDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
-
 
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
@@ -253,10 +252,6 @@ void createDocsFileFolders(std::string filename) {
 std::string generateSphinxProject(std::string dirpath) {
   // Create the output dir under the docs output dir.
   const char * sphinxDir = dirpath.c_str();
-
-  // Ensure output directory exists.
-  const char * mkdirCmd = astr("mkdir -p ", sphinxDir);
-  mysystem(mkdirCmd, "creating docs output dir");
 
   // Copy the sphinx template into the output dir.
   const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
