@@ -312,7 +312,7 @@ void closeInputFile(FILE* infile) {
 }
 
 
-static const char** inputFilenames = {NULL};
+static const char** inputFilenames = NULL;
 static int numInputFiles = 0;
 
 
@@ -343,7 +343,7 @@ bool isChplSource(const char* filename) {
   return retval;
 }
 
-static bool isRecognizedSource(char* filename) {
+static bool isRecognizedSource(const char* filename) {
   return (isCSource(filename) ||
           isCHeader(filename) ||
           isObjFile(filename) ||
@@ -352,12 +352,13 @@ static bool isRecognizedSource(char* filename) {
 
 
 void testInputFiles(int numFilenames, char* filename[]) {
-  int i, j = numInputFiles;
+  int cursor = numInputFiles;
   char achar;
   numInputFiles += numFilenames;
-  inputFilenames = (const char**)realloc(inputFilenames, (numInputFiles+1)*sizeof(char*));
+  inputFilenames = (const char**)realloc(inputFilenames, 
+                                         (numInputFiles+1)*sizeof(char*));
 
-  for (i = 0; i < numFilenames; i++, j++) {
+  for (int i = 0; i < numFilenames; i++, cursor++) {
     if (!isRecognizedSource(filename[i])) {
       USR_FATAL(astr("file '",
                      filename[i],
@@ -375,10 +376,10 @@ void testInputFiles(int numFilenames, char* filename[]) {
       closeInputFile(testfile);
     }
 
-    inputFilenames[j] = astr(filename[i]);
+    inputFilenames[cursor] = astr(filename[i]);
   }
 
-  inputFilenames[j] = NULL;
+  inputFilenames[cursor] = NULL;
 
   if (!foundChplSource && fUseIPE == false)
     USR_FATAL("Command line contains no .chpl source files");
