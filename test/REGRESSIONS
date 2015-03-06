@@ -241,10 +241,6 @@ Inherits 'general'
 Reviewed 2015-03-01
 ===================
 
-Conditional jump or move depends on uninitialised value(s) (2015-02-22, mike)
------------------------------------------------------------------------------
-[Error matching compiler output for chpldoc/compflags/comment/loseComments (compopts: 1)]
-
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
