@@ -19,10 +19,10 @@ valgrind can be used to pinpoint the error.  For example, I see:
 ==4201== 
 
 Note that a segfault will not necessarily occur, since an uninitialized value
-may still look like a value pointer within a valid segment.  I also noted that
-when CHPL_LOCALE_MODEL=numa, due to recent changes in LICM, the problem with
-zippered iterator inlining is uncovered by the C compiler, which make it
-slightly easier to debug.  Sample error messages look like:
+may still look like a value pointer within a valid segment.
+
+When CHPL_LOCALE_MODEL=numa, wide pointers are inserted. For this configuration,
+this test used to fail when compiling the generated C code with output like:
 
   In file included from obj/_main.c:25:
   obj/DefaultSparse.c: In function ‘sparseShiftArray3’:
@@ -30,6 +30,9 @@ slightly easier to debug.  Sample error messages look like:
   obj/DefaultSparse.c:3981: error: used struct type value where scalar is required
   obj/DefaultSparse.c:3994: error: used struct type value where scalar is required
   etc.
+
+This occurred due to conservative widening of references. Improvements to the
+'narrowWideReferences' pass resolved these compilation errors.
 
 This problem is isolated to zippered iterator inlining.  With iterator inlining
 turned off, the test runs as expected.  (See the companion test

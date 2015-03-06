@@ -832,6 +832,9 @@ narrowSym(Symbol* sym, WideInfo* wi,
         continue;
       }
     }
+    if (isCondStmt(use->parentExpr)) {
+      continue;
+    }
     //
     // It's not clear to me (bradcray) why falling through to this
     // point has traditionally meant "this case must be wide"; this
