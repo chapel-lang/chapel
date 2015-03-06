@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -52,12 +52,14 @@ enum Flag {
 # define symbolFlag(NAME,PRAGMA,MAPNAME,COMMENT) NAME,
 # include "flags_list.h"
 # undef symbolFlag
-  NUM_FLAGS
+  NUM_FLAGS,
+  FLAG_FIRST = FLAG_UNKNOWN + 1, // index of the first flag
+  FLAG_LAST  = NUM_FLAGS - 1     // index of the last flag
 };
 
 // only meaningful flags are allowed
 #define CHECK_FLAG(FLAG) \
-  INT_ASSERT(FLAG_UNKNOWN < (FLAG) && (FLAG) < NUM_FLAGS)
+  INT_ASSERT(FLAG_FIRST <= (FLAG) && (FLAG) <= FLAG_LAST)
 
 
 Flag pragma2flag(const char* str);

@@ -3,6 +3,14 @@
 # These C tests don't conform to -Wall
 unset CHPL_DEVELOPER
 
+# Normalize $CHPL_HOME to fix problems with symbolic links
+SAVE_HOME=$CHPL_HOME
+export CHPL_HOME=`readlink -f $CHPL_HOME`
+if [ "x$CHPL_HOME" = "x" ]
+then
+  export CHPL_HOME=$SAVE_HOME
+fi
+
 CC=gcc
 CXX=g++
 DEFS=`$CHPL_HOME/util/config/compileline --includes-and-defines`
@@ -55,7 +63,7 @@ else
   OPTS="-static"
 fi
 
-DEPS="$OPTS -Wall -DSIMPLE_TEST $DEFS $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c $RSRC/regexp/re2/re2-interface.cc $RE2INCLS $RE2LIB -lpthread"
+DEPS="$OPTS -Wall -DCHPL_RT_UNIT_TEST $DEFS $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c $RSRC/regexp/re2/re2-interface.cc $RE2INCLS $RE2LIB -lpthread"
 
 T1="$CXX $DEPS -g regexp_test.cc -o regexp_test"
 T2="$CXX $DEPS -g regexp_channel_test.cc -o regexp_channel_test"
@@ -71,12 +79,15 @@ runtest() {
   EXE=$1
   DESC=$2
   echo Running $EXE
-  $EXE > /dev/null
+  `$CHPL_HOME/util/test/timedexec 500 $EXE > /dev/null`
   RETVAL=$?
   if [ $RETVAL -eq 0 ]
   then
     echo "[Success matching C regexp test $EXE $DESC]"
     rm $EXE
+  elif [ $RETVAL -eq 222 ]
+  then
+    echo "[Error Timed out executing regexp test $EXE $DESC]"
   else
     echo "[Error matching C regexp test $EXE $DESC]"
   fi

@@ -18,7 +18,7 @@ def get(flag='host'):
 
             # true if tcmalloc is compatible with the target compiler
             #if (not (platform_val == 'cray-xc' and arch_val == 'knc') and
-            #        (platform_val != "cygwin") and
+            #        (not platform_val.startswith("cygwin")) and
             #        any(sub in chpl_compiler.get('target') for sub in tcmallocCompat)):
             #    return 'tcmalloc'
             if comm_val == 'gasnet':

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -147,7 +147,7 @@ extern const QIO_HINT_PARALLEL:c_int;
 extern const QIO_HINT_DIRECT:c_int;
 extern const QIO_HINT_NOREUSE:c_int;
 
-/** NONE means normal operation, nothing special
+/*  NONE means normal operation, nothing special
     to hint. Expect to use NONE most of the time.
     The other hints can be bitwise-ORed in.
  */
@@ -156,18 +156,18 @@ const IOHINT_NONE = 0:c_int;
 /** RANDOM means we expect random access to a file */
 const IOHINT_RANDOM = QIO_HINT_RANDOM;
 
-/** SEQUENTAL means expect sequential access. On
+/*  SEQUENTIAL means expect sequential access. On
     Linux, this should double the readahead.
  */
 const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
 
-/** CACHED means we expect the entire file
+/*  CACHED means we expect the entire file
     to be cached and/or we pull it in all at
     once. May request readahead on the entire file.
  */
 const IOHINT_CACHED = QIO_HINT_CACHED;
 
-/** PARALLEL means that we expect to have many
+/*  PARALLEL means that we expect to have many
     channels working with this file in parallel.
     It might change the reading/writing implementation
     to something more efficient in that scenario.
@@ -226,6 +226,7 @@ extern record iostyle { // aka qio_style_t
                              and nonprinting characters c = \uABCD
      QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end
    */
+  /* */
   var string_format:uint(8) = 0;
   // numeric scanning/printing choices
   var base:uint(8) = 0;
@@ -266,8 +267,8 @@ extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, co
 
 // Same as qio_file_open_access in, except this time we pass though our
 // struct that will initilize the file with the appropriate functions for that FS
-extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string,
-                                     access:string, iohints:c_int, /*const*/ ref style:iostyle,
+extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
+                                     access:c_string, iohints:c_int, /*const*/ ref style:iostyle,
                                      fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
@@ -510,6 +511,7 @@ extern type fdflag_t = c_int;
 
 /* Access hints describe how a file will be used.
    These can help optimize. These might be:
+
   QIO_METHOD_DEFAULT,
   QIO_METHOD_READWRITE,
   QIO_METHOD_P_READWRITE,
@@ -520,10 +522,11 @@ extern type fdflag_t = c_int;
   QIO_HINT_BANDWIDTH,
   QIO_HINT_CACHED,
   QIO_HINT_NOREUSE
-}
+
 */
 extern type iohints = c_int;
 
+/* TODO: document file record. */
 pragma "ignore noinit"
 record file {
   var home: locale = here;
@@ -586,6 +589,7 @@ proc file.unlock() {
 // File style cannot be modified after the file is created;
 // this prevents race conditions;
 // channel style is protected by channel lock, can be modified.
+pragma "no doc"
 proc file._style:iostyle {
   check();
 
@@ -638,7 +642,7 @@ proc file.getPath(out error:syserr) : string {
     if !error {
       error = qio_shortest_path(_file_internal, tmp2, tmp);
     }
-    chpl_free_c_string(tmp);
+    chpl_free_c_string_copy(tmp);
     if !error {
       // This uses the version of toString that steals its operand.
       // No need to free.
@@ -725,22 +729,69 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
       var fs:c_void_ptr;
       error = hdfs_connect(fs, host.c_str(), port);
       if error then ioerror(error, "Unable to connect to HDFS", host);
+      /* TODO: This code is an alternative to the above line, which breaks the
+         function's original invariant of not generating errors within itself.
+         This is better style and should still work, but we can't be certain
+         until we test it and aren't capable of testing HDFS at this point.
+         When further work with HDFS is done, please test and edit this function
+         to behave appropriately by removing the above line and replacing it
+         with the following three. (2015-02-04, lydia)
+
+      if error then return ret;
+      // connect fully specifies the error message so all we'd need to do is
+      // return.
+      */
       error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
       // Since we don't have an auto-destructor for this, we actually need to make
       // the reference count 1 on this FS after we open this file so that we will
       // disconnect once we close this file.
       hdfs_do_release(fs);
       if error then ioerror(error, "Unable to open file in HDFS", url);
+      /* TODO: The above line breaks the function's original invariant of not
+         generating errors within itself.  It is better style to remove this
+         line.  Doing so should still work, but we can't be certain until we
+         test it and aren't capable of testing HDFS at this point.  When
+         further work with HDFS is done, please test and edit this function to
+         behave appropriately by removing the above line (2015-02-04, lydia)
+
+      */
     } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
       error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
       if error then ioerror(error, "Unable to open URL", url);
+      /* TODO: The above line breaks the function's original invariant of not
+         generating errors within itself.  It is better style to remove this
+         line.  Doing so should still work, but we can't be certain until we
+         test it and aren't capable of regularly testing curl at this point.
+         When further work with auxiliary file systems are done, please test and
+         edit this function to behave appropriately by removing the above line
+         (2015-02-04, lydia)
+
+      */
     } else {
       ioerror(ENOENT:syserr, "Invalid URL passed to open");
+      /* TODO: This code is an alternative to the above line, which breaks the
+         function's original invariant of not generating errors within itself.
+         This is better style and should still work, but we can't be certain
+         until we test it and aren't capable of testing HDFS at this point.
+         When further work with HDFS is done, please test and edit this function
+         to behave appropriately by removing the above line and replacing it
+         with the following one. (2015-02-04, lydia)
+
+      error = ENOENT:syserr; // Invalid URL provided
+      */
     }
   } else {
     if (path == "") then
       ioerror(ENOENT:syserr, "in open: Both path and url were path");
+    /* TODO: The above two lines breaks the function's original invariant of not
+       generating errors within itself.  It is better style to remove these
+       lines.  Doing so should still work, but we can't be certain until we
+       test it and aren't capable of regularly testing auxiliary file systems at
+       this point.  When further work with auxiliary file systems are done,
+       please test and edit this function to behave appropriately by removing
+       the above two lines. (2015-02-04, lydia)
 
+    */
     error = qio_file_open_access(ret._file_internal, path.c_str(), _modestring(mode).c_str(), hints, local_style);
   }
 
@@ -1506,7 +1557,7 @@ inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t, param kind:
 
 /* Returns true if we read all the args,
    false if we encountered EOF (or possibly another error and didn't halt)*/
-inline proc channel.read(inout args ...?k,
+inline proc channel.read(ref args ...?k,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
@@ -1514,7 +1565,13 @@ inline proc channel.read(inout args ...?k,
     this.lock();
     for param i in 1..k {
       if !error {
-        error = _read_one_internal(_channel_internal, kind, args[i]);
+        if args[i].locale == here {
+          error = _read_one_internal(_channel_internal, kind, args[i]);
+        } else {
+          var tmp:args[i].type;
+          error = _read_one_internal(_channel_internal, kind, tmp);
+          args[i] = tmp;
+        }
       }
     }
     this.unlock();
@@ -1552,7 +1609,7 @@ inline proc channel.read(ref args ...?k):bool {
     return false;
   }
 }
-proc channel.read(inout args ...?k,
+proc channel.read(ref args ...?k,
                   style:iostyle,
                   out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
@@ -1961,6 +2018,7 @@ proc channel.modifyStyle(f:func(iostyle, iostyle))
 }
 */
 
+/* TODO: document ItemReader record. */
 record ItemReader {
   type ItemType;
   param kind:iokind;
@@ -1996,6 +2054,7 @@ record ItemReader {
   }*/
 }
 
+/* */
 proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   if writing then compilerError(".itemReader on write-only channel");
   return new ItemReader(ItemType, kind, locking, this);
@@ -3613,7 +3672,7 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
 }
 
 
-/** Sets arg to the string of a match.
+/*  Sets arg to the string of a match.
     If arg is not a string, the match will be coerced to a arg.type.
 
     Assumes that the channel has been marked before where
@@ -3654,7 +3713,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
 }
 
 
-/** Search for an offset in the channel matching the
+/*  Search for an offset in the channel matching the
     passed regular expression, possibly pulling out capture groups.
     If there is a match, leaves the channel position at the
     match. If there is no match, the channel position will be
@@ -3706,7 +3765,7 @@ proc channel.search(re:regexp):reMatch
   return ret;
 }
 
-/** Like channel.search but assigning capture groups to arguments.
+/*  Like channel.search but assigning capture groups to arguments.
  */
 proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 {
@@ -3860,17 +3919,22 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch
 
 
 /* Enumerates matches in the string as well as capture groups.
+
    Returns tuples of reMatch objects, the 1st is always
-    the match for the whole pattern.
+   the match for the whole pattern.
+
    At the time each match is returned, the channel position is
-    at the start of that match. Note though that you would have
-    to advance to get to the position of a capture group.
+   at the start of that match. Note though that you would have
+   to advance to get to the position of a capture group.
+
    After returning each match, advances to just after that
-    match and looks for another match. Thus, it will not return
-    overlapping matches.
+   match and looks for another match. Thus, it will not return
+   overlapping matches.
+
    In the end, leaves the channel position at the end of the
-    last reported match (if we ran out of maxmatches)
-    or at the end of the channel (if we no longer matched)
+   last reported match (if we ran out of maxmatches)
+   or at the end of the channel (if we no longer matched)
+
    Holds the channel lock for the duration of the search.
  */
 iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))

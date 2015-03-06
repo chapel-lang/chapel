@@ -60,12 +60,6 @@ General (see also portability section at the bottom of this file)
   # modules/diten/module_use_hides_size_var.future
   # types/records/sungeun/chapelTypes/record_array.future
   # extern/vass/c_sublocid_any.inner-extern.future
-  # extern/vass/c_sublocid_any.mod-ne.future
-- Names in a Chapel program can collide with name used by the back-end
-  compiler and libraries.
-  # classes/vass/duplicate-virtual-method-ok-1.future
-  # trivial/figueroa/UnmangledSymbols.future
-  # users/vass/global-j1.future
 - There are several internal memory leaks:
   # memory/figueroa/StringLeaks5.future
   # memory/figueroa/LeakedMemory6.future
@@ -171,9 +165,6 @@ Statements and Expressions
   local execution.
   # multilocale/local/sungeun/local_privatization.future
   # users/jglewis/locClassSegFault.future
-- Query expressions for primitive type bit-sizes results in an
-  internal compiler error.
-  # users/vass/crash5insertAfter.future
 
 
 Modules
@@ -522,7 +513,7 @@ Classes, Records, and Unions
   in a back-end C compiler error.
   # types/records/bharshbarger/recordArrCmp.future
   # types/records/bharshbarger/recordDomArrCmp.future
-- Type select on unions is not implemented.
+- There's no way to determine which field of a union is "active".
 
 
 Domain Maps, Domains and Arrays
@@ -645,10 +636,6 @@ Data Parallelism
   # functions/iterators/bradc/badzip/rangeSizeMismatch.future
 - Domain promotion results in a race condition.
   # have not futurized yet (see REGRESSIONS domains/sungeun/assoc/minus_equals.chpl)
-- Parallel (forall) domain iteration ignores alignment of the ranges
-  used to declare the domain.
-  # domains/vass/aligned-domain-forall.future
-  # arrays/vass/slice-align-bug-1.future
 - Arrays and domains of different ranks can be zippered serially.
 - Reductions and scans of arrays of arrays may result in errors.
   # arrays/sungeun/array_of_arrays/bxor_reduce.future

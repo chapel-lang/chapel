@@ -1,0 +1,2 @@
+# Suppress segfaults when using Cray CCE compiler and CHPL_COMM=none.
+release/examples/benchmarks/shootout/meteor-fast

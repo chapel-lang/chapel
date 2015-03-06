@@ -1,1 +1,11 @@
-#Because valgrind's out of memory message differs:
+# These tests fail on legitimate instructions like
+#   lock xadd %dl,(%rax)
+#
+# This seems like valgrind bug 307106,
+# which is supposedly fixed in valgrind 3.9.0
+#   http://lwn.net/Articles/572790/
+#   https://bugs.kde.org/show_bug.cgi?id=307106
+#
+# whereas we are running valgrind 3.8.1.
+types/atomic/ferguson/atomictest
+types/atomic/sungeun/atomic_vars

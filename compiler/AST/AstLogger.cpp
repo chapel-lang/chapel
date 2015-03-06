@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -114,6 +114,41 @@ bool AstLogger::enterBlockStmt(BlockStmt* node) {
 }
 
 void AstLogger::exitBlockStmt(BlockStmt* node) {
+}
+
+bool AstLogger::enterWhileDoStmt(WhileDoStmt* node) {
+  return true;
+}
+
+void AstLogger::exitWhileDoStmt(WhileDoStmt* node) {
+}
+
+bool AstLogger::enterDoWhileStmt(DoWhileStmt* node) {
+  return true;
+}
+
+void AstLogger::exitDoWhileStmt(DoWhileStmt* node) {
+}
+
+bool AstLogger::enterCForLoop(CForLoop* node) {
+  return true;
+}
+
+void AstLogger::exitCForLoop(CForLoop* node) {
+}
+
+bool AstLogger::enterForLoop(ForLoop* node) {
+  return true;
+}
+
+void AstLogger::exitForLoop(ForLoop* node) {
+}
+
+bool AstLogger::enterParamForLoop(ParamForLoop* node) {
+  return true;
+}
+
+void AstLogger::exitParamForLoop(ParamForLoop* node) {
 }
 
 bool AstLogger::enterCondStmt(CondStmt* node) {

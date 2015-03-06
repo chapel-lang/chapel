@@ -19,6 +19,3 @@ module unload $knc_conflicts
 # Setup environment to build knc.
 export CHPL_TARGET_COMPILER=intel
 export CHPL_TARGET_ARCH=knc
-
-suppression_file=$CWD/../../test/Suppressions/knc.suppress
-nightly_args="-suppress ${suppression_file}"

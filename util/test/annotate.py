@@ -1,5 +1,5 @@
 import socket, time
-import cgi
+import json
 from collections import defaultdict
 
 import yaml
@@ -18,8 +18,9 @@ _annotation_format = """{{\
  series: "{series}",\
  x: "{x}",\
  shortText: {shortText},\
- text: "{x}: {text}",\
+ text: {text},\
  cssClass: "blackAnnotation",\
+ tickHeight: 2, \
  attachAtBottom: true\
 }}"""
 
@@ -52,11 +53,13 @@ def get(data, graph, series, start, end):
   formatted = []
   for i, date in enumerate(sorted(matches.keys()), start=1):
     date_string = time.strftime(_csv_date_format, date)
+    ann_text = json.dumps('{0}: {1}'.format(date_string,
+      r'\n'.join(matches[date])))
     formatted.append(_annotation_format.format(
         series = series,
         x = date_string,
         shortText = i,
-        text = r'\n'.join(matches[date]),
+        text = ann_text,
     ))
 
   return formatted
@@ -69,7 +72,7 @@ def _find_annotations(graph, matches, data, start, end):
         for ann in annotations:
           if isinstance(ann, dict):
             if _hostname in ann['host']:
-              matches[date].append(cgi.escape(ann['text'], True))
+              matches[date].append(ann['text'])
           else:
-            matches[date].append(cgi.escape(ann, True))
+            matches[date].append(ann)
 

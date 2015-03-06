@@ -1,0 +1,5 @@
+bug: non-methods should not support 'this' intents
+
+This test case exhibits behavior that we now think should be illegal:
+Applying 'this' intents to non-methods.  Discussed on email with
+Mike and Vass on Monday, Feb 9, 2015.

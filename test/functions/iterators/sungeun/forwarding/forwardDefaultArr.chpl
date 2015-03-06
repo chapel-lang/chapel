@@ -32,7 +32,7 @@ iter myThese(param tag: iterKind, followThis, A,
 }
 
 var i = 0.0;
-forall a in A {
+forall a in A with (ref i) {  // race
   a = i;
   i += 0.25;
   if noisy then writeln(a);

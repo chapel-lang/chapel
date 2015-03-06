@@ -2,3 +2,4 @@
 --filename=lmeshes/sedov2cube.lmesh --doTiming=false
 --elemsPerEdge=2 --doTiming=false
 --filename=lmeshes/sedov15oct.lmesh --doTiming=false  # lulesh-sedov15oct.good
+--elemsPerEdge=3 --doTiming=false                     # lulesh-3cube.good

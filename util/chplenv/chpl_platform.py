@@ -34,8 +34,8 @@ def get(flag='host'):
         # uname() -> (system, node, release, version, machine, processor)
         uname = platform.uname()
         platform_val = uname[0].lower().replace('_', '')
+        machine = uname[4]
         if platform_val == 'linux':
-            machine = uname[4]
             if machine == 'x86_64':
                 build_64_as_32 = os.environ.get('CHPL_BUILD_X86_64_AS_32')
                 if build_64_as_32 == "1":
@@ -47,7 +47,15 @@ def get(flag='host'):
             else:
                 platform_val = "linux32"
         elif platform_val.startswith("cygwin"):
-            platform_val = "cygwin"
+            if machine == 'x86_64':
+                platform_val = "cygwin64"
+            else:
+                platform_val = "cygwin32"
+        elif platform_val.startswith('netbsd'):
+            if machine == 'amd64':
+                platform_val = 'netbsd64'
+            else:
+                platform_val = 'netbsd32'
 
     return platform_val
 

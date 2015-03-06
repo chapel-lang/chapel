@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        int ln, c_string fn)
 {
   if (chpl_nodeID == node) {
-    memcpy(addr, raddr, elemSize*len);
+    chpl_memcpy(addr, raddr, elemSize*len);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
@@ -94,7 +94,7 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        int ln, c_string fn)
 {
   if (chpl_nodeID == node) {
-    memcpy(raddr, addr, elemSize*len);
+    chpl_memcpy(raddr, addr, elemSize*len);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_put(addr, node, raddr, elemSize, typeIndex, len, ln, fn);

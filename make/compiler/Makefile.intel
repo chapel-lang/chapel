@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -55,7 +55,7 @@ RUNTIME_CFLAGS = -std=c99 $(CFLAGS) -wr181,188
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS = -std=c99 -fp-model strict -wr592
 # NOTE: These are only supported for Linux
-GEN_STATIC_FLAG = -Bstatic
+GEN_STATIC_FLAG = -static-intel -static-libgcc -static
 GEN_DYNAMIC_FLAG = -Bdynamic
 LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared

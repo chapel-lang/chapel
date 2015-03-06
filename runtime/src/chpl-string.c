@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -57,7 +57,7 @@ void chpl_gen_comm_wide_string_get(void* addr,
 {
   // This part just copies the descriptor.
   if (chpl_nodeID == node) {
-    memcpy(addr, raddr, elemSize*len);
+    chpl_memcpy(addr, raddr, elemSize*len);
   } else {
     chpl_gen_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
   }
@@ -93,17 +93,6 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno,
   len = strlen(from) + 1;
   x->addr = chpl_mem_calloc(len, CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
   strncpy((char*)x->addr, from, len);
-#if 0
-  // This is moot.
-  // The draft C specification (ISO-IEC:9899-TC3 Sep 2007) says, "The strlen
-  // function returns the number of characters that precede the terminating
-  // null character."  From which we may deduce that the following "if" clause
-  // never fires.  It is -- by the definition of strlen() -- false.
-  if (*((len-1)+(char*)x->addr) != '\0')
-    chpl_internal_error("String missing terminating NUL.");
-  // OTOH, if "len" is passed in rather than computed here, it would be a
-  // worthwhile check.
-#endif
   x->size = len;    // This size includes the terminating NUL.
 }
 
@@ -122,7 +111,7 @@ chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_stri
   chpl_macro_tmp =
       chpl_mem_calloc(x->size, CHPL_RT_MD_GET_WIDE_STRING, lineno, filename);
   if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
-    memcpy(chpl_macro_tmp, x->addr, x->size);
+    chpl_memcpy(chpl_macro_tmp, x->addr, x->size);
   else
     chpl_gen_comm_get((void*) &(*chpl_macro_tmp),
                   chpl_rt_nodeFromLocaleID(x->locale),
@@ -143,7 +132,7 @@ void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t le
 
   s = (char*)chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_COPY_DATA,
                               lineno, filename);
-  memcpy(s, str, len);
+  chpl_memcpy(s, str, len);
   s[len] = '\0';
   *ret = s;
 }
@@ -151,12 +140,12 @@ void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t le
 // The input is a c_string_copy, which always owns the bytes it points to.
 // On return, the string data is no longer owned by the c_string_copy
 // argument.  It is owned by the returned chpl_string instead.
-// TODO: Would really like "str" to be passed by reference, so we can set it to
-// zero after we usurp its contents.
+// TODO: This should be inlined.
 chpl_string
-string_from_c_string_copy(c_string_copy str, int haslen, int64_t len)
+string_from_c_string_copy(c_string_copy* str, int haslen, int64_t len)
 {
-  chpl_string result = str;
+  chpl_string result = *str;
+  *str = NULL;
   return result;
 }
 
@@ -173,28 +162,10 @@ void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int 
   if( ! haslen ) len = strlen(str);
 
   s = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_COPY_DATA, lineno, filename);
-  memcpy(s, str, len);
+  chpl_memcpy(s, str, len);
   s[len] = '\0';
 
   ret->addr = s;
-  ret->size = len + 1; // this size includes the terminating NUL
-}
-
-// TODO: Would really like "str" to be passed by reference, so we can set it to
-// zero after we usurp its contents.
-void wide_string_from_c_string_copy(chpl____wide_chpl_string *ret, c_string_copy str,
-                                    int haslen, int64_t len,
-                                    int32_t lineno, chpl_string filename)
-{
-  ret->locale = chpl_gen_getLocaleID();
-  if( str == NULL ) {
-    ret->addr = NULL;
-    ret->size = 0;
-    return;
-  }
-  if( ! haslen ) len = strlen(str);
-
-  ret->addr = str;
   ret->size = len + 1; // this size includes the terminating NUL
 }
 
@@ -206,10 +177,13 @@ void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, chpl_
 void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int32_t lineno, chpl_string filename)
 {
   if( chpl_nodeID != chpl_rt_nodeFromLocaleID(str->locale) ) {
-    chpl_error("cannot create a C string from a remote string",
-               lineno, filename);
+    // TODO: ret gets leaked
+    chpl_comm_wide_get_string(ret, str,
+                              -CHPL_TYPE_chpl_string,
+                              lineno, filename);
+  } else {
+    *ret = str->addr;
   }
-  *ret = str->addr;
 }
 
 //

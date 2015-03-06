@@ -42,6 +42,13 @@ import tempfile
 import time
 import xml.etree.ElementTree
 
+# Add the chplenv dir to the python path.
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_arch
+
+
 __all__ = ('main')
 
 
@@ -70,9 +77,6 @@ class AbstractJob(object):
 
     # argument name for specifying number of nodes (i.e. nodes, mppwidth)
     num_nodes_resource = None
-
-    # arugment name for specifying number of processing elements per node (i.e. mppnppn)
-    processing_elems_per_node_resource = None
 
     # argument name for specifying number of cpus (i.e. mppdepth)
     num_cpus_resource = None
@@ -161,6 +165,61 @@ class AbstractJob(object):
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
+    @property
+    def knc(self):
+        """Returns True when testing KNC (Xeon Phi).
+
+        :rtype: bool
+        :returns: True when testing KNC
+        """
+        return chpl_arch.get('target') == 'knc'
+
+    def _qsub_command_base(self, output_file):
+        """Returns base qsub command, without any resource listing.
+
+        :type output_file: str
+        :arg output_file: combined stdout/stderr output file location
+
+        :rtype: list
+        :returns: qsub command as list of strings
+        """
+        submit_command =  [self.submit_bin, '-V', '-N', self.job_name,
+                           '-j', 'oe', '-o', output_file]
+        if self.walltime is not None:
+            submit_command.append('-l')
+            submit_command.append('walltime={0}'.format(self.walltime))
+
+        return submit_command
+
+    def _qsub_command(self, output_file):
+        """Returns qsub command list. This implementation is the default that works for
+        standard mpp* options. Subclasses can implement versions that meet their needs.
+
+        :type output_file: str
+        :arg output_file: combined stdout/stderr output file location
+
+        :rtype: list
+        :returns: qsub command as list of strings
+        """
+        submit_command = self._qsub_command_base(output_file)
+
+        if self.num_locales >= 0:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_nodes_resource, self.num_locales))
+        if self.hostlist is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.hostlist_resource, self.hostlist))
+        if self.num_cpus_resource is not None:
+            submit_command.append('-l')
+            submit_command.append('{0}={1}'.format(
+                self.num_cpus_resource, self.num_cpus))
+
+        logging.debug('qsub command: {0}'.format(submit_command))
+        return submit_command
+
+
     def run(self):
         """Run batch job in subprocess and wait for job to complete. When finished,
         returns output as string.
@@ -170,9 +229,10 @@ class AbstractJob(object):
         """
         with _temp_dir() as working_dir:
             output_file = os.path.join(working_dir, 'test_output.log')
+            input_file = os.path.join(working_dir, 'test_input')
             testing_dir = os.getcwd()
 
-            job_id = self.submit_job(testing_dir, output_file)
+            job_id = self.submit_job(testing_dir, output_file, input_file)
             logging.info('Test has been queued (job id: {0}). Waiting for output...'.format(job_id))
 
             # TODO: The while condition here should look for jobs that become held,
@@ -194,30 +254,51 @@ class AbstractJob(object):
             #
             #       (thomasvandoren, 2014-04-09)
 
-            def is_done(job_id, output_file):
-                """Returns True when one of two events occur:
+            def job_status(job_id, output_file):
+                """Returns the status of the job specified by job_id
 
-                 1) status(job_id) returns 'C' indicating the job is complete.
+                 The status is determined by calling status(job_id). If that
+                 call is successful the result is returned. The exact code
+                 returned is up to status(job_id) but it must support 'C' for
+                 complete, 'Q' for queued/waiting to run, and 'R' for running 
 
-                 2) status(job_id) raises a ValueError, which can indicate that the
-                    job has completed *and* been dequeued, AND the output file
-                    exists. If the output file exists and the job has been
-                    dequeued, it is safe to assume it completed.
+                 status(job_id) can raise a ValueError, which can indicate that
+                 the job has completed *and* been dequeued. If the output file
+                 exists and the job has been dequeued, it is safe to assume it
+                 completed. Otherwise we raise the error
                 """
                 try:
                     job_status = self.status(job_id)
-                    return job_status == 'C'
+                    return job_status
                 except ValueError as ex:
                     # ValueError may indicate that the job completed and was
                     # dequeued before we last checked the status. If the output
                     # file exists, assume success. Otherwise re raise error
                     # message.
                     if os.path.exists(output_file):
-                        return True
+                        return 'C'
                     raise
 
-            while not is_done(job_id, output_file):
-                time.sleep(1.0)
+            exec_start_time = time.time()
+            alreadyRunning = False
+            status = job_status(job_id, output_file)
+            while status != 'C':
+                if not alreadyRunning and status == 'R':
+                    alreadyRunning = True
+                    exec_start_time = time.time()
+                time.sleep(.5)
+                status = job_status(job_id, output_file)
+
+            exec_time = time.time() - exec_start_time
+            # Note that this time isn't very accurate as we don't get the exact
+            # start or end time, however this does give a better estimate than
+            # timing the whole binary for cases where the time in the queue is
+            # large. It tends to be a second or two larger than real exec time
+            exec_time_file = os.environ.get('CHPL_LAUNCHCMD_EXEC_TIME_FILE')
+            if exec_time_file != None:
+                with open(exec_time_file, 'w') as fp:
+                    fp.write('{0:3f}'.format(exec_time))
+
             logging.debug('{0} reports job {1} as complete.'.format(
                 self.status_bin, job_id))
 
@@ -227,6 +308,13 @@ class AbstractJob(object):
                 raise ValueError('[Error: output file from job (id: {0}) does not exist at: {1}]'.format(
                     job_id, output_file))
 
+            # try removing the file stdin was copied to, might not exist
+            logging.debug('removing stdin file.')
+            try:
+                os.unlink(input_file)
+            except OSError:
+                pass
+
             logging.debug('Reading output file.')
             with open(output_file, 'r') as fp:
                 output = fp.read()
@@ -234,7 +322,7 @@ class AbstractJob(object):
 
         return output
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Submit a new job using ``testing_dir`` as the working dir and
         ``output_file`` as the location for the output. Returns the job id on
         success. AbstractJob does not implement this method. It is the
@@ -331,34 +419,9 @@ class AbstractJob(object):
                 self.submit_bin, self.job_name, self.num_locales,
                 self.walltime, output_file))
 
-        # TODO: create self._qsub_command property. (thomasvandoren, 2014-07-23)
-        submit_command = [self.submit_bin, '-V', '-N', self.job_name, '-j', 'oe',
-                          '-o', output_file]
-        if self.num_locales >= 0:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.num_nodes_resource, self.num_locales))
-        if self.walltime is not None:
-            submit_command.append('-l')
-            submit_command.append('walltime={0}'.format(self.walltime))
-        if self.hostlist is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.hostlist_resource, self.hostlist))
-        if self.num_cpus_resource is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.num_cpus_resource, self.num_cpus))
-        if self.processing_elems_per_node_resource is not None:
-            submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.processing_elems_per_node_resource, 1))
-
-        logging.debug('submit command to run: {0}'.format(submit_command))
-
         logging.debug('Opening {0} subprocess.'.format(self.submit_bin))
         submit_proc = subprocess.Popen(
-            submit_command,
+            self._qsub_command(output_file),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -412,10 +475,10 @@ class AbstractJob(object):
         method. It is the responsibility of the sub class.
 
         :type job_id: str
-        :arg job_id: pbs job id
+        :arg job_id: job id
 
         :rtype: str
-        :returns: qsub job status
+        :returns: job status
         """
         raise NotImplementedError('status class method is implemented by sub classes.')
 
@@ -495,14 +558,16 @@ class AbstractJob(object):
         parser = argparse.ArgumentParser(
             description=__doc__,
             formatter_class=OurFormatter)
-        parser.add_argument('-v', '--verbose', action='store_true',
-                            help='Verbose output.')
+        parser.add_argument('--CHPL_LAUNCHCMD_DEBUG', action='store_true', dest='verbose',
+                            default=('CHPL_LAUNCHCMD_DEBUG' in os.environ),
+                            help=('Verbose output. Setting CHPL_LAUNCHCMD_DEBUG '
+                                  'in environment also enables verbose output.'))
         parser.add_argument('-nl', '--numLocales', type=int, default=-1,
                             help='Number locales.')
         parser.add_argument('--n', help='Placeholder')
         parser.add_argument('--walltime', type=cls._cli_walltime,
                             help='Timeout as walltime for qsub.')
-        parser.add_argument('--hostlist',
+        parser.add_argument('--CHPL_LAUNCHCMD_HOSTLIST', dest='hostlist',
                             help=('Optional hostlist specification for reserving '
                                   'specific nodes. Can also be set with env var '
                                   'CHPL_LAUNCHCMD_HOSTLIST'))
@@ -511,7 +576,7 @@ class AbstractJob(object):
 
         # Allow hostlist to be set in environment variable CHPL_LAUNCHCMD_HOSTLIST.
         if args.hostlist is None:
-            args.hostlist = os.environ.get('CHPL_LAUNCHCMD_HOSTLIST')
+            args.hostlist = os.environ.get('CHPL_LAUNCHCMD_HOSTLIST') or None
 
         # It is bad form to use a two character argument with only a single
         # dash. Unfortunately, we support it. And unfortunately, python argparse
@@ -595,7 +660,6 @@ class MoabJob(AbstractJob):
     status_bin = 'qstat'
     hostlist_resource = 'hostlist'
     num_nodes_resource = 'nodes'
-    processing_elems_per_node_resource = None
     num_cpus_resource = None
 
     @classmethod
@@ -621,7 +685,7 @@ class MoabJob(AbstractJob):
             logging.error('XML output: {0}'.format(output))
             raise
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Launch job using qsub and return job id.
 
         :type testing_dir: str
@@ -643,14 +707,7 @@ class PbsProJob(AbstractJob):
     status_bin = 'qstat'
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
-    processing_elems_per_node_resource = 'mppnppn'
-
-    # If CHPL_PBSPRO_NO_MPPDEPTH is set in the environment, set class attribute
-    # to None. Otherwise, default to mppdepth.
-    #
-    # This allows callers to optionally disable this particular setting, which
-    # can conflict with the hostlist/mppnodes setting.
-    num_cpus_resource = 'mppdepth' if 'CHPL_PBSPRO_NO_MPPDEPTH' not in os.environ else None
+    num_cpus_resource = 'ncpus'
 
     @property
     def job_name(self):
@@ -664,6 +721,20 @@ class PbsProJob(AbstractJob):
         job_name = super_name[-15:]
         logging.info('PBSPro job name is: {0}'.format(job_name))
         return job_name
+
+    @property
+    def select_suffix(self):
+        """Returns suffix for select expression based instance attributes. For example,
+        if self.knc is True, returns `:accelerator_model=Xeon_Phi` so reservation will
+        target KNC nodes. Returns empty string when self.knc is False.
+
+        :rtype: str
+        :returns: select expression suffix, or empty string
+        """
+        if self.knc:
+            return ':accelerator_model=Xeon_Phi'
+        else:
+            return ''
 
     @classmethod
     def status(cls, job_id):
@@ -705,7 +776,52 @@ class PbsProJob(AbstractJob):
             raise ValueError('Could not find {0} pattern in header line: {1}'.format(
                 pattern.pattern, header_line))
 
-    def submit_job(self, testing_dir, output_file):
+    def _qsub_command(self, output_file):
+        """Returns qsub command list using select/place syntax for resource
+        lists (as opposed to the deprecated and often disabled mpp* options).
+
+        :type output_file: str
+        :arg output_file: combined stdout/stderr output file location
+
+        :rtype: list
+        :returns: qsub command as list of strings
+        """
+        submit_command = self._qsub_command_base(output_file)
+        select_stmt = None
+
+        # Always use place=scatter to get 1 PE per node (mostly). Equivalent
+        # to mppnppn=1.
+        select_pattern = 'place=scatter,select={0}'
+
+        # When comm=none sub_test/start_test passes -nl -1 (i.e. num locales
+        # is -1). For the tests to work, reserve one node and the regular
+        # ncpus (this does not happen by default).
+        num_locales = self.num_locales
+        if num_locales == -1:
+            num_locales = 1
+
+        if self.hostlist is not None:
+            # This relies on the caller to use the correct select syntax.
+            select_stmt = select_pattern.format(self.hostlist)
+        elif num_locales > 0:
+            select_stmt = select_pattern.format(num_locales)
+
+            # Do not set ncpus for knc. If running on knc, cpus are not needed
+            # on the system. Someday support for heterogeneous applications may
+            # exist, in which case ncpus will need to be set. For now, assume
+            # program will be launched onto knc only.
+            if self.num_cpus_resource is not None and not self.knc:
+                select_stmt += ':{0}={1}'.format(
+                    self.num_cpus_resource, self.num_cpus)
+
+        if select_stmt is not None:
+            select_stmt += self.select_suffix
+            submit_command += ['-l', select_stmt]
+
+        logging.debug('qsub command: {0}'.format(submit_command))
+        return submit_command
+
+    def submit_job(self, testing_dir, output_file, input_file):
         """Launch job using qsub and return job id.
 
         :type testing_dir: str
@@ -725,9 +841,8 @@ class SlurmJob(AbstractJob):
 
     submit_bin = None
     status_bin = 'squeue'
-    hostlist_resource = None
+    hostlist_resource = 'nodelist'
     num_nodes_resource = None
-    processing_elems_per_node_resource = None
     num_cpus_resource = None
 
     @classmethod
@@ -735,10 +850,10 @@ class SlurmJob(AbstractJob):
         """Query job status using squeue.
 
         :type job_id: str
-        :arg job_id: pbs job id
+        :arg job_id: squeue job id
 
         :rtype: str
-        :returns: qsub job status
+        :returns: squeue job status
         """
         squeue_command = [
             'squeue',
@@ -769,6 +884,8 @@ class SlurmJob(AbstractJob):
         failure_statuses = ['CANCELLED', 'FAILED', 'TIMEOUT',
                             'BOOT_FAIL', 'NODE_FAIL', 'PREEMPTED']
 
+        queued_statuses = ['CONFIGURING', 'PENDING']
+
         status_parts = stdout.split(' ')
         if len(status_parts) == 2:
             status = status_parts[1].strip()
@@ -780,12 +897,14 @@ class SlurmJob(AbstractJob):
             elif status in failure_statuses:
                 logging.info('Job finished with status: {0}'.format(status))
                 return 'C'
+            elif status in queued_statuses:
+                return 'Q'
             else:
                 return 'R'  # running
         else:
             raise ValueError('Could not parse output from squeue: {0}'.format(stdout))
 
-    def submit_job(self, testing_dir, output_file):
+    def submit_job(self, testing_dir, output_file, input_file):
         """Launch job using executable. Set CHPL_LAUNCHER_USE_SBATCH=true in
         environment to avoid using expect script. The executable will create a
         sbatch script and submit it. Parse and return the job id after job is
@@ -803,12 +922,23 @@ class SlurmJob(AbstractJob):
         env = os.environ.copy()
         env['CHPL_LAUNCHER_USE_SBATCH'] = 'true'
         env['CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME'] = output_file
+        with open(input_file, 'w') as fp:
+            fp.write(sys.stdin.read())
+        env['SLURM_STDINMODE'] = input_file
 
+        # We could use stdout buffering for other configurations too, but I
+        # don't think there's any need. Currently, single locale perf testing
+        # is the only config that has any tests that produce a lot of output
+        if os.getenv('CHPL_TEST_PERF') != None and self.num_locales <= 1:
+            env['CHPL_LAUNCHER_SLURM_BUFFER_STDOUT'] = 'true'
+
+        cmd = self.test_command[:]
+        # Add --nodelist into the command line
         if self.hostlist is not None:
-            env['SLURM_JOB_NODELIST'] = self.hostlist
+            cmd.append('--{0}={1}'.format(
+                self.hostlist_resource, self.hostlist))
 
         # Add --walltime back into the command line.
-        cmd = self.test_command[:]
         if self.walltime is not None:
             cmd.append('--walltime')
             cmd.append(self.walltime)

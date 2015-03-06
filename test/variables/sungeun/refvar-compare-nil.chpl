@@ -1,4 +1,4 @@
-refvar rx: int;
+ref rx: int;
 
 writeln(rx==nil);
 

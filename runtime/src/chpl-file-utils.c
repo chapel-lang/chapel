@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,17 +19,17 @@
 
 #define _FILE_UTILS_C
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
 #include "chpl-file-utils.h"
-#include "qio.h"
 
 #include <stdio.h>
 #include <errno.h>
 #include <sys/param.h> // MAXPATHLEN
 #include <sys/stat.h>
+#include <utime.h> // Defines utimbuf and utime()
 
 
 qioerr chpl_fs_chdir(const char* name) {
@@ -56,6 +56,27 @@ qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   return err;
 }
 
+qioerr chpl_fs_copy_metadata(const char* source, const char* dest) {
+  qioerr err = 0;
+  struct stat oldTimes;
+  struct utimbuf times;
+  int exitStatus = stat(source, &oldTimes);
+  if (exitStatus == -1) {
+    // Hopefully an error will not occur (as we have checked that the
+    // file exists when we perform the other operations on it).  But just in
+    // case, check it here.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  times.actime = oldTimes.st_atime;  // The access time
+  times.modtime = oldTimes.st_mtime; // The modification time
+  exitStatus = utime(dest, &times);  // Set the times for dest.
+  if (exitStatus == -1) {
+    err = qio_mkerror_errno();
+  }
+  return err;
+}
+
 // This routine returns a malloc'd string (through the working_dir pointer)
 // that must be deallocated by the caller.
 qioerr chpl_fs_cwd(const char** working_dir) {
@@ -69,6 +90,43 @@ qioerr chpl_fs_cwd(const char** working_dir) {
   else
     *working_dir = pathbuf;
   return err;
+}
+
+qioerr chpl_fs_exists(int* ret, const char* name) {
+  qioerr err = 0;
+  struct stat buf;
+  // Stat will attempt to follow all symbolic links.  If the link is broken,
+  // this means we will detect it and return false.
+  int exitStatus = stat(name, &buf);
+  if (exitStatus == -1 && errno == ENOENT) {
+    // File or directory does not exist, return false
+    *ret = 0;
+  } else if (exitStatus) {
+    // Another error occurred.  Return it.
+    err = qio_mkerror_errno();
+  } else {
+    // The file or directory exists, return true
+    *ret = 1;
+  }
+  return err;
+}
+
+qioerr chpl_fs_get_uid(int* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = buf.st_uid;
+  return 0;
+}
+
+qioerr chpl_fs_get_gid(int* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = buf.st_gid;
+  return 0;
 }
 
 qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag) {
@@ -138,7 +196,11 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
           // to create it.
           exitStatus = mkdir(tmp, mode);
         }
-        if (exitStatus) {
+        // EEXIST could occur from the mkdir call above if the directory came
+        // into existence between when we checked and when we tried to create
+        // it.  There's really nothing to be done about it, so skip it and
+        // continue on.
+        if (exitStatus && errno != EEXIST) {
           // We encountered an error making a parent directory or during the
           // stat call to determine if we need to make a directory.  We will
           // encounter errors for every step after this, so return this one
@@ -150,6 +212,11 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
     }
     tmp[len] = '\0';
     exitStatus = mkdir(tmp, mode);
+    if (exitStatus && errno == EEXIST) {
+      // If we encounted EEXIST when creating the last directory, ignore it.
+      // This behavior is consistent with the command line mkdir -p behavior.
+      exitStatus = 0;
+    }
   }
   if (exitStatus) {
     err = qio_mkerror_errno();
@@ -175,4 +242,83 @@ qioerr chpl_fs_remove(const char* name) {
   if (exitStatus)
     err = qio_mkerror_errno();
   return err;
+}
+
+qioerr chpl_fs_samefile(int* ret, qio_file_t* file1, qio_file_t* file2) {
+  qioerr err = 0;
+  struct stat f1;
+  struct stat f2;
+
+  int exitStatus = fstat(file1->fd, &f1);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  exitStatus = fstat(file2->fd, &f2);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+  } else {
+    if (f1.st_dev == f2.st_dev && f1.st_ino == f2.st_ino) {
+      // The files had the same device and inode numbers.  Return true
+      *ret = 1;
+    } else {
+      // At least one of these was different.  Return false;
+      *ret = 0;
+    }
+  }
+
+  return err;
+}
+
+qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2) {
+  qioerr err = 0;
+  struct stat f1;
+  struct stat f2;
+
+  int exitStatus = stat(file1, &f1);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  exitStatus = stat(file2, &f2);
+  if (exitStatus) {
+    // An error occurred.  Return it.
+    err = qio_mkerror_errno();
+  } else {
+    if (f1.st_dev == f2.st_dev && f1.st_ino == f2.st_ino) {
+      // The files had the same device and inode numbers.  Return true
+      *ret = 1;
+    } else {
+      // At least one of these was different.  Return false;
+      *ret = 0;
+    }
+  }
+  return err;
+}
+
+/* creates a symlink named linkName to the file orig */
+qioerr chpl_fs_symlink(const char* orig, const char* linkName) {
+  qioerr err = 0;
+  int exitStatus = symlink(orig, linkName);
+  if (exitStatus)
+    err = qio_mkerror_errno();
+  return err;
+
+}
+
+/* Returns the current permissions on a file specified by name */
+qioerr chpl_fs_viewmode(int* ret, const char* name) {
+  struct stat buf;
+  int exitStatus = stat(name, &buf);
+  if (exitStatus)
+    return qio_mkerror_errno();
+  *ret = (int)(buf.st_mode&(S_IRWXU | S_IRWXG | S_IRWXO | S_ISUID | S_ISGID | S_ISVTX));
+  // Stylistic decision: while we have the capacity to make sure all we're
+  // getting are the permissions bits in module code, sending that extra
+  // information strikes me as unnecessary, since we don't intend to use it at
+  // the module level in other circumstances.
+  return 0;
 }

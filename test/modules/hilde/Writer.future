@@ -1,4 +1,32 @@
-bug: Parameter type name resolves to punned module name.
+bug: User definition of 'Writer' module breaks internal modules
+
+When code defines a module named 'Writer' like this (whether
+explicitly, or implicitly from the filename, as in this case), it
+causes the internal modules to break because their references to
+'Writer' resolve to this user module rather than to the 'Writer' class
+defined within internal module 'ChapelIO'.
+
+This problem can be fixed by having all the internal modules that want
+to refer to 'Writer' use 'ChapelIO' (the module where 'Writer' is
+currently defined) in an appropriate scope, but this feels
+onerous/unfortunate.
+
+For me this test raises the following questions: Why is a user module
+being considered prior to the class in an internal module?  Is it
+related to the choice to not have internal modules 'use' other
+internal modules by default?  Should 'Writer' even be defined in an
+internal module?  (is it part of the language or the library?)  Should
+symbols defined within internal modules bind more closely than user
+modules?
+
+The original .future proposed doing symbol resolution in a
+context-specific way, but personally I don't think this is the path we
+want to take for Chapel (different namespaces for modules vs. types
+vs. ...).
+
+
+Here's the original message for archival purposes:
+---------------------------------------------------
 
 This test case fails because it contains use-before def of a class (type) name
 and there is a module name (that of the test itself) which matches the desired

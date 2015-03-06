@@ -1,0 +1,2 @@
+ref-to-const-domain.chpl:5: error: Cannot set a non-const reference to a const value.
+ref-to-const-domain.chpl:10: error: Cannot set a non-const reference to a const value.

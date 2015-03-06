@@ -1,0 +1,15 @@
+on-nil.chpl:19: Warning: an 'on' statement with a literal expression never moves to another locale.
+on-nil.chpl:21: Warning: an 'on' statement with a literal expression never moves to another locale.
+on-nil.chpl:23: Warning: an 'on nil' statement never moves to another locale.
+on-nil.chpl:40: Warning: an 'on' statement with a literal expression never moves to another locale.
+PART 1
+on 0.0: LOCALE1
+on "hello": LOCALE1
+on nil: LOCALE1
+PART 2
+on x: LOCALE1
+on 3+4: LOCALE2
+PART 3a
+on loc: LOCALE2
+PART 3b
+on obj: LOCALE2

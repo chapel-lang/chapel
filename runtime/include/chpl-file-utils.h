@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define _FILE_UTILS_H_
 
 #include "qio_error.h"
+#include "qio.h"
 #include "sys_basic.h"
 
 
@@ -32,7 +33,14 @@ qioerr chpl_fs_chmod(const char* name, int mode);
 
 qioerr chpl_fs_chown(const char* name, int uid, int gid);
 
+qioerr chpl_fs_copy_metadata(const char* source, const char* dest);
+
 qioerr chpl_fs_cwd(const char** working_dir);
+
+qioerr chpl_fs_exists(int* ret, const char* name);
+
+qioerr chpl_fs_get_uid(int* ret, const char* name);
+qioerr chpl_fs_get_gid(int* ret, const char* name);
 
 qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag);
 
@@ -50,5 +58,11 @@ qioerr chpl_fs_rename(const char* oldname, const char* newname);
 // Removes the file specified, returning a qioerr if one occurred
 qioerr chpl_fs_remove(const char* name);
 
+qioerr chpl_fs_samefile(int* ret, qio_file_t* file1, qio_file_t* file2);
+qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2);
+
+qioerr chpl_fs_symlink(const char* orig, const char* linkName);
+
+qioerr chpl_fs_viewmode(int* ret, const char* name);
 
 #endif

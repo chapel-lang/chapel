@@ -1,2 +1,2 @@
-const refvar y = 5;
+const ref y = 5;
 writeln(y);

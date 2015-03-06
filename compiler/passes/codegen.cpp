@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -61,7 +61,7 @@ subChar(Symbol* sym, const char* ch, const char* x) {
 }
 
 static void legalizeName(Symbol* sym) {
-  if (sym->hasFlag(FLAG_EXTERN))
+  if (!sym->isRenameable())
     return;
   for (const char* ch = sym->cname; *ch != '\0'; ch++) {
     switch (*ch) {
@@ -288,6 +288,8 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
         }
       }
     }
+    if (types.n == 0 || maxVMT == 0)
+      fprintf(hdrfile, "(chpl_fn_p)0");
     fprintf(hdrfile, "\n};\n");
   } else {
 #ifdef HAVE_LLVM
@@ -364,27 +366,33 @@ compareSymbol(const void* v1, const void* v2) {
 // given a name and up to two sets of names, return a name that is in
 // neither set and add the name to the first set; the second set may
 // be omitted; the returned name to be capped at fMaxCIdentLen if non-0
+// less how much can be added to it - maxCNameAddedChars
 //
 // the unique numbering is based on the map uniquifyNameCounts which
 // can be cleared to reset
 //
 int fMaxCIdentLen = 0;
 static const int maxUniquifyAddedChars = 25;
+// keep in sync with AggregateType::classStructName()
+static const int maxCNameAddedChars = 20;
 static char* longCNameReplacementBuffer = NULL;
 static Map<const char*, int> uniquifyNameCounts;
 static const char* uniquifyName(const char* name,
                                 Vec<const char*>* set1,
                                 Vec<const char*>* set2 = NULL) {
   const char* newName = name;
-  if (fMaxCIdentLen > 0 && (int)(strlen(newName)) > fMaxCIdentLen) {
+  if (fMaxCIdentLen > 0 &&
+      (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
+  {
     // how much of the name to preserve
-    int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars;
+    int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
     if (!longCNameReplacementBuffer) {
       longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
       longCNameReplacementBuffer[prefixLen] = '\0';
     }
     strncpy(longCNameReplacementBuffer, newName, prefixLen);
     INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
+    longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
     name = newName = astr(longCNameReplacementBuffer);
   }
   while (set1->set_in(newName) || (set2 && set2->set_in(newName))) {
@@ -415,7 +423,7 @@ static inline bool shouldCodegenAggregate(AggregateType* ct)
   //   we do visit.
   if( isClass(ct) ) { // is it actually a class?
     if( ct->symbol->hasFlag(FLAG_REF) ||
-        ct->symbol->hasFlag(FLAG_WIDE) ||
+        ct->symbol->hasFlag(FLAG_WIDE_REF) ||
         ct->symbol->hasFlag(FLAG_DATA_CLASS)) return true;
     else return false;
   }
@@ -524,6 +532,87 @@ static void codegen_header_compilation_config() {
 }
 
 
+static void protectNameFromC(Symbol* sym) {
+  //
+  // Symbols that start with 'chpl_' were presumably named by the
+  // implementation (compiler, internal modules, runtime) and
+  // sufficiently unique to not require further munging.
+  //
+  if (strncmp(sym->cname, "chpl_", 5) == 0) {
+    return;
+  }
+
+  //
+  // For now, we only rename our user and standard symbols.  Internal
+  // modules symbols should arguably similarly be protected, to ensure
+  // that we haven't inadvertantly used a name that some user library
+  // will; most file-level symbols should be protected by 'chpl_' or
+  // somesuch, but of course local symbols may not be, and can cause
+  // conflicts (at present, a local variable named 'socket' would).
+  // The challenges to handling MOD_INTERNAL symbols in the same way
+  // today is that things like chpl_string and uint64_t should not be
+  // renamed, and should arguably have FLAG_EXTERN on them; however,
+  // putting it on them causes it to bleed over onto type aliases in a
+  // way that breaks things and wasn't easy to fix.  So this remains
+  // a TODO (currently in Brad's court).
+  //
+  ModuleSymbol* symMod = sym->getModule();
+  if (symMod->modTag == MOD_INTERNAL) {
+    return;
+  }
+
+  //
+  // If this symbol is exported of an extern symbol then someone
+  // outside of Chapel is relying on it to have a certain name and we
+  // need to respect that.
+  //
+  if (!sym->isRenameable()) {
+    return;
+  }
+
+  //
+  // Walk from the symbol up to its enclosing module.  If the symbol
+  // is declared within an extern declaration, we should preserve its
+  // name for similar reasons.
+  //
+  if (sym != symMod) {
+    Symbol* parentSym = sym->defPoint->parentSymbol;
+    while (parentSym != symMod) {
+      if (parentSym->hasFlag(FLAG_EXTERN)) {
+        return;
+      }
+      parentSym = parentSym->defPoint->parentSymbol;
+    }
+  }
+
+  //
+  // For the sake of clarity, let's also avoid renaming arguments of
+  // exported functions.
+  //
+  if (toArgSymbol(sym)) {
+    Symbol* parentSym = sym->defPoint->parentSymbol;
+    if (parentSym->hasFlag(FLAG_EXPORT)) {
+      return;
+    }
+  }
+
+  //
+  // Rename the symbol
+  //
+  const char* oldName = sym->cname;
+  const char* newName = astr(oldName, "_chpl");
+  sym->cname = newName;
+  //
+  // Can we free this given how we create names?  free() doesn't like
+  // const char*, I don't want to just cast it away, and I'm not
+  // certain we can assume it isn't aliased to someting else, like
+  // sym->name...  In other cases, we seem to leak old names as
+  // well... :P
+  //
+  //  free(oldName);
+}
+
+
 // TODO: Split this into a number of smaller routines.<hilde>
 static void codegen_header() {
   GenInfo* info = gGenInfo;
@@ -569,10 +658,40 @@ static void codegen_header() {
 
 
   //
+  // by default, mangle all Chapel symbols to avoid clashing with C
+  // identifiers.  This can be disabled via the --munge-user-idents
+  // flag.
+  //
+  if (fMungeUserIdents) {
+    forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(VarSymbol, sym, gVarSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(ArgSymbol, sym, gArgSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(TypeSymbol, sym, gTypeSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(FnSymbol, sym, gFnSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(EnumSymbol, sym, gEnumSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(LabelSymbol, sym, gLabelSymbols) {
+      protectNameFromC(sym);
+    }
+  }
+
+
+  //
   // mangle type names if they clash with other types
   //
   forv_Vec(TypeSymbol, ts, types) {
-    if (!ts->hasFlag(FLAG_EXTERN))
+    if (ts->isRenameable())
       ts->cname = uniquifyName(ts->cname, &cnames);
   }
   uniquifyNameCounts.clear();
@@ -615,7 +734,7 @@ static void codegen_header() {
   // constants, or other global variables
   //
   forv_Vec(VarSymbol, var, globals) {
-    if (!var->hasFlag(FLAG_EXTERN))
+    if (var->isRenameable())
       var->cname = uniquifyName(var->cname, &cnames);
   }
   uniquifyNameCounts.clear();
@@ -625,7 +744,7 @@ static void codegen_header() {
   // global variables, or other functions
   //
   forv_Vec(FnSymbol, fn, functions) {
-    if (!fn->hasFlag(FLAG_USER_NAMED))
+    if (fn->isRenameable())
       fn->cname = uniquifyName(fn->cname, &cnames);
   }
   uniquifyNameCounts.clear();
@@ -667,8 +786,8 @@ static void codegen_header() {
           if (!strncmp(def->sym->cname, "_t", 2))
             def->sym->cname = astr("T", def->sym->cname + 2);
         } else {
-          // temp name is _tmp
-          if (!strcmp(def->sym->cname, "_tmp"))
+          // temp name is tmp
+          if (!strcmp(def->sym->cname, "tmp"))
             def->sym->cname = astr("T");
         }
       }
@@ -980,7 +1099,7 @@ codegen_config() {
     fprintf(outfile, "initConfigVarTable();\n");
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -1033,7 +1152,7 @@ codegen_config() {
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (var->hasFlag(FLAG_CONFIG) && !var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (3);
         args[0] = info->builder->CreateLoad(
             new_StringSymbol(var->name)->codegen().val);

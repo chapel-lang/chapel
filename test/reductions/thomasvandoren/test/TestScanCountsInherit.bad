@@ -1,0 +1,4 @@
+TestScanCountsInherit.chpl:8: In function 'chpl__scan1':
+../scanCountsInherit.chpl:13: error: unresolved type specifier 'scanCountsInherit(eltType=type int(64))'
+../scanCountsInherit.chpl:13: note: candidates are: scanCountsInherit
+../scanCountsInherit.chpl:13: note: did you forget the 'new' keyword?

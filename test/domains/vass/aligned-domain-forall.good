@@ -1,9 +1,9 @@
-Do  [1..3 by 3 align 0, 1..5 by 3 align 2]
+Do  {1..3 by 3 align 0, 1..5 by 3 align 2}
 Dp  (3, 2)
 Dp  (3, 5)
 Ds  (3, 2)
 Ds  (3, 5)
-Eo  [1..3 by 3 align 0, 1..5 by 3 align 2]
+Eo  {1..3 by 3 align 0, 1..5 by 3 align 2}
 Ep  (3, 2)
 Ep  (3, 5)
 Es  (3, 2)

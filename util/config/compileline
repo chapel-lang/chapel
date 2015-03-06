@@ -29,6 +29,12 @@ if( defined $ENV{"CHPL_HOME"} ) {
 
 $ENV{"CHPL_MAKE_HOME"} = $chpl_home_dir;
 
+$make = `$chpl_home_dir/util/chplenv/chpl_make.py`;
+chomp($make);
+
+# Do not print directory changes.
+$make = "$make --no-print-directory";
+
 sub mysystem {
   my $cmd = shift;
   # Run $cmd but filter out e.g. make[2]: lines
@@ -44,17 +50,19 @@ sub mysystem {
 
 for my $arg (@ARGV) {
   if( $arg eq "--home" ) {
-    print $chpl_home_dir . "\n";
+      print $chpl_home_dir . "\n";
+  } elsif( $arg eq "--make" ) {
+      print $make . "\n";
   } elsif( $arg eq "--compile" ) {
-    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline");
+    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline");
   } elsif ( $arg eq "--includes-and-defines" ) {
-    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines");
+    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines");
   } elsif( $arg eq "--libraries" ) {
-    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printlibraries");
+    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printlibraries");
   } elsif( $arg eq "--main.o" ) {
-    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino");
+    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino");
   } elsif( $arg eq "--llvm-install-dir" ) {
-    mysystem("make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall");
+    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall");
   } elsif( $arg =~ /[^-=][^=]*=[^=]+/ ) {
     ($key, $val) = split('=', $arg, 2);
     $ENV{$key} = $val;

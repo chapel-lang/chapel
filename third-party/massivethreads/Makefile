@@ -5,14 +5,6 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-#
-# set up the directories
-#
-MASSIVETHREADS_ABS_DIR = $(shell pwd)
-MASSIVETHREADS_INSTALL_DIR = $(MASSIVETHREADS_ABS_DIR)/$(MASSIVETHREADS_INSTALL_SUBDIR)
-MASSIVETHREADS_BUILD_DIR = $(MASSIVETHREADS_ABS_DIR)/$(MASSIVETHREADS_BUILD_SUBDIR)
-MASSIVETHREADS_DIR = $(MASSIVETHREADS_ABS_DIR)
-
 default: all
 
 all: massivethreads
@@ -38,3 +30,5 @@ massivethreads-build: FORCE
 massivethreads: massivethreads-config massivethreads-build
 
 FORCE:
+
+.NOTPARALLEL:

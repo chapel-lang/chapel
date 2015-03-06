@@ -25,7 +25,7 @@ Recommended Settings
    release.  This is the parent of the directory containing this file.
    For example:
 
-        export CHPL_HOME=~/chapel-1.10.0
+        export CHPL_HOME=~/chapel-1.11.0
 
    [This, and all other examples in Chapel READMEs, assumes you're
     using the 'bash' shell.  If using 'csh' or 'tcsh', mentally change
@@ -44,7 +44,8 @@ Recommended Settings
    be set explicitly.  The strings for our currently-supported host
    platforms are as follows:
 
-        cygwin       : Cygwin (Windows) platforms
+        cygwin32     : x86 Cygwin (Windows) platforms
+        cygwin64     : x86_64 Cygwin (Windows) platforms
         darwin       : Macintosh OS X platforms
         linux32      : 32-bit Linux platforms
         linux64      : 64-bit Linux platforms
@@ -184,7 +185,7 @@ Optional Settings
         * If CHPL_COMM is set, no attempt to set a useful value will be made,
           CHPL_TARGET_ARCH will be 'unknown'.
 
-        * If CHPL_TARGET_PLATFORM is 'darwin', 'linux*', or 'cygwin'
+        * If CHPL_TARGET_PLATFORM is 'darwin', 'linux*', or 'cygwin*'
           CHPL_TARGET_ARCH will be 'native', passing the responsibility off to
           the backend C compiler to detect the specifics of the hardware.
 
@@ -196,7 +197,7 @@ Optional Settings
 
         platform              make utility
         --------              ------------
-        cygwin, darwin    ->  make
+        cygwin*, darwin   ->  make
         linux32, linux64  ->  gmake if available, otherwise make
         other             ->  gmake
 
@@ -236,7 +237,7 @@ Optional Settings
         massivethreads : run tasks using U Tokyo's MassiveThreads package
 
    If CHPL_TASKS is not set it defaults to "qthreads" unless the target
-   platform is "knc" or "cygwin".  For those two it defaults to "fifo".
+   platform is "knc" or "cygwin*".  For those two it defaults to "fifo".
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_TASKS to 'fifo' to reduce build-time and third-party

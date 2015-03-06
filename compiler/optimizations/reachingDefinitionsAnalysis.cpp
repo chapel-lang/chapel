@@ -1,21 +1,23 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <vector>
 
 #include "optimizations.h"
 
@@ -36,7 +38,9 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
                             std::vector<BitVec*>& IN) {
   Vec<Symbol*> locals;
   Map<Symbol*,int> localMap;
-  buildLocalsVectorMap(fn, locals, localMap);
+
+  BasicBlock::buildLocalsVectorMap(fn, locals, localMap);
+
   buildDefUseSets(locals, fn, defSet, useSet);
 
   //
@@ -46,9 +50,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
   // buildDefUseMaps, but is computed from the defSet in this more
   // efficient manner
   //
-  int localDefs[locals.n];
-  for (int i = 0; i < locals.n; i++)
-    localDefs[i] = 0;
+  std::vector<int> localDefs(locals.n);
   forv_Vec(SymExpr, se, defSet) {
     if (se) {
       localDefs[localMap.get(se->var)]++;
@@ -104,19 +106,19 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
 
 #ifdef DEBUG_REACHING
   list_view(fn);
-  printBasicBlocks(fn);
-  printDefsVector(defs, defMap);
-  printf("KILL:\n"); printBitVectorSets(KILL);
-  printf("GEN:\n"); printBitVectorSets(GEN);
-  printf("IN:\n"); printBitVectorSets(IN);
-  printf("OUT:\n"); printBitVectorSets(OUT);
+  BasicBlock::printBasicBlocks(fn);
+  BasicBlock::printDefsVector(defs, defMap);
+  printf("KILL:\n"); BasicBlock::printBitVectorSets(KILL);
+  printf("GEN:\n");  BasicBlock::printBitVectorSets(GEN);
+  printf("IN:\n");   BasicBlock::printBitVectorSets(IN);
+  printf("OUT:\n");  BasicBlock::printBitVectorSets(OUT);
 #endif
 
-  forwardFlowAnalysis(fn, GEN, KILL, IN, OUT, false);
+  BasicBlock::forwardFlowAnalysis(fn, GEN, KILL, IN, OUT, false);
 
 #ifdef DEBUG_REACHING
-  printf("IN:\n"); printBitVectorSets(IN);
-  printf("OUT:\n"); printBitVectorSets(OUT);
+  printf("IN:\n");  BasicBlock::printBitVectorSets(IN);
+  printf("OUT:\n"); BasicBlock::printBitVectorSets(OUT);
 #endif
 
   for_vector(BitVec, gen, GEN)

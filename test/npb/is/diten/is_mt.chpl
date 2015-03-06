@@ -247,7 +247,7 @@ proc fullVerify() {
       }
     }
 
-    [i in 0..D.numIndices-2]
+    [i in 0..D.numIndices-2 with (ref failures)] // no race - in 'serial'
       if (keyArray(i) > keyArray(i+1)) then failures += 1;
   }
 

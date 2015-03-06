@@ -1,0 +1,11 @@
+PART 1
+on 0.0: LOCALE1
+on "hello": LOCALE1
+on nil: LOCALE1
+PART 2
+on x: LOCALE1
+on 3+4: LOCALE2
+PART 3a
+on loc: LOCALE1
+PART 3b
+on obj: LOCALE1

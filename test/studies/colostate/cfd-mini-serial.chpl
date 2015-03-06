@@ -135,7 +135,7 @@ module CFD_mini {
                                          7*(old_data[b,0,z,y-1,x] +
                                            old_data[b,0,z,y,x]) + 
                                          old_data[b,0,z,y+1,x]);
-       FluxCache[1,z,y,x] = factor1*  (old_data[b,0,z,y-2,x] + 
+       FluxCache[1,z,y,x] = factor1*  (old_data[b,1,z,y-2,x] + 
                                          7*(old_data[b,1,z,y-1,x] +
                                            old_data[b,1,z,y,x]) + 
                                          old_data[b,1,z,y+1,x]);

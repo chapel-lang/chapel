@@ -1,0 +1,11 @@
+Module: hasGlobalConstants
+   This module has some global scoped constants. 
+   const first: int
+   const second = 16
+   const third: bool = false
+   const fourth: int
+      This constant has an associated comment and a type 
+   const fifth = 16
+      This constant has an associated comment and a value 
+   const sixth: bool = false
+      This constant has an associated comment, a type, and a value 

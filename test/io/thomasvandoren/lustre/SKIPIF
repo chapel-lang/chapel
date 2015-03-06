@@ -1,1 +1,6 @@
-CHPL_AUX_FILESYS >= lustre
+#!/usr/bin/env python
+
+"""Skip test if lustre is not set in CHPL_AUX_FILESYS."""
+
+import os
+print('lustre' not in os.environ.get('CHPL_AUX_FILESYS', ''))

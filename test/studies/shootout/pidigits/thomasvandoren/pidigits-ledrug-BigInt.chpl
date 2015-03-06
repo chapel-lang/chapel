@@ -26,7 +26,7 @@ iter genDigits(numDigits) {
     tmp1 = new BigInt(),
     tmp2 = new BigInt();
 
-  var digit, k: c_ulong;
+  var digit, k: uint(64);
 
   for i in 1..numDigits {
     do {
@@ -56,7 +56,7 @@ iter genDigits(numDigits) {
   }
 
   // Helper function to extract the nth digit.
-  proc extractDigit(nth: c_ulong) {
+  proc extractDigit(nth: uint) {
     tmp1.mul_ui(numer, nth);
     tmp2.add(tmp1, accum);
     tmp1.div_q(Round.ZERO, tmp2, denom);

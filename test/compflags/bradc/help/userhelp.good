@@ -27,6 +27,7 @@ Optimization Control Options:
       --[no-]loop-invariant-code-motion
                                       Enable [disable] loop invariant code
                                       motion
+      --[no-]ignore-local-classes     Disable [enable] local classes
       --[no-]inline                   Enable [disable] function inlining
       --[no-]inline-iterators         Enable [disable] iterator inlining
       --[no-]live-analysis            Enable [disable] live variable analysis
@@ -48,6 +49,9 @@ Optimization Control Options:
                                       optimization
       --tuple-copy-limit <limit>      Limit on the size of tuples considered
                                       for optimization
+      --[no-]use-noinit               Enable [disable] ability to skip default
+                                      initialization through the keyword
+                                      noinit
 
 Run-time Semantic Check Options:
       --no-checks                     Disable all following run-time checks
@@ -55,12 +59,16 @@ Run-time Semantic Check Options:
       --[no-]local-checks             Enable [disable] local block checking
       --[no-]nil-checks               Enable [disable] nil checking
       --[no-]stack-checks             Enable [disable] stack overflow checking
+      --[no-]cast-checks              Enable [disable] checks in safeCast
+                                      calls
 
 C Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation
       --[no-]cpp-lines                [Don't] Generate #line annotations
       --max-c-ident-len               Maximum length of identifiers in
                                       generated code, 0 for unlimited
+      --[no-]munge-user-idents        [Don't] Munge user identifiers to avoid
+                                      naming conflicts with external code
       --savec <directory>             Save generated C code in directory
 
 C Code Compilation Options:
@@ -93,6 +101,8 @@ Documentation Options:
       --docs-dir <dirname>            Sets the documentation directory to
                                       <dirname>
       --docs-text-only                Generate text only documentation
+      --docs-save-sphinx <directory>  Save generated Sphinx project in
+                                      directory
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
@@ -111,6 +121,7 @@ Miscellaneous Options:
       --[no-]print-callstack-on-error print the Chapel call stack leading to
                                       each error or warning
   -s, --set <name>[=<value>]          Set config param value
+      --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions
       --[no-]warn-special             Enable [disable] special warnings

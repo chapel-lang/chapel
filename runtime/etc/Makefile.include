@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -59,10 +59,12 @@ printcompileline:
 	@echo $(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
 
 printlibraries:
-	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) -lchpl -lm $(LIBS)
+	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
+	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
 
 printlinkline:
-	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) -lchpl -lm $(LIBS)
+	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
+	      -lchpl -lm $(LIBS) $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
 
 
 printmaino:

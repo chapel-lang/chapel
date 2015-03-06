@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,11 +20,6 @@
 //
 // FIFO implementation of Chapel tasking interface
 //
-
-#ifdef __OPTIMIZE__
-// Turn assert() into a no op if the C compiler defines the macro above.
-#define NDEBUG
-#endif
 
 #include "chplrt.h"
 #include "chpl_rt_utils_static.h"
@@ -864,11 +859,7 @@ uint32_t chpl_task_getMaxPar(void) {
 }
 
 c_sublocid_t chpl_task_getNumSublocales(void) {
-#ifdef CHPL_LOCALE_MODEL_NUM_SUBLOCALES
-  return CHPL_LOCALE_MODEL_NUM_SUBLOCALES;
-#else
   return 0;
-#endif
 }
 
 chpl_task_prvData_t* chpl_task_getPrvData(void) {
