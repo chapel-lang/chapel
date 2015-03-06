@@ -633,13 +633,18 @@ narrowSym(Symbol* sym, WideInfo* wi,
             bool isObj = isWideObj || isClass(sym->type);
             bool rhsIsWide = isWideType(rhs->var);
             if (rhsIsWide) {
+              // For 'class = x', the LHS has to be wide if the RHS is wide.
               if (isObj) {
                 addNarrowDep(rhs->var, sym);
               }
+
+              // If the RHS is a wide ref, the LHS must also be wide.
               if (isRef(rhs->var) && isRef(sym)) {
                 addNarrowDep(rhs->var, sym);
               }
             }
+
+            // This handles the 'ref = class' case.
             if (isRef(sym)) {
               if (rhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
                   isRef(rhs->var)) {
