@@ -1243,7 +1243,8 @@ namespace {
 
         for(Function::use_iterator UI = F->use_begin(), UE = F->use_end();
                 UI!=UE; ) {
-          User *Old = *UI; //UI->getUser();
+          Use &U = *UI;
+          User *Old = U.getUser(); //UI->getUser(); //*UI; //UI->getUser();
           ++UI;
           CallSite CS(Old);
           if (CS.getInstruction()) {
