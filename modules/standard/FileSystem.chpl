@@ -233,6 +233,19 @@ proc copyFile(out err: syserr, src: string, dest: string) {
     var line: [0..1023] uint(8);
     var numRead: int = 0;
     while (srcChnl.readline(line, numRead=numRead, error=err)) {
+      // From mppf:
+      // If you want it to be faster, we can make it only buffer once (sharing
+      // the bytes read into memory between the two channels). To do that you'd
+      // do something like this (in a loop):
+
+      // srcReader.mark
+      // srcReader.advance( buffer size )
+      // srcReader.beginPeekBuffer to get the current buffer (qio_channel_begin_peek_buffer)
+      // dstWriter.putBuffer with the buffer we got (qio_channel_put_buffer)
+      // srcReader.endPeekBuffer
+
+      // Some of these routines don't exist with Chapel wrappers now
+
       destChnl.write(line[0..#numRead]);
       if numRead != line.size {
         break;
