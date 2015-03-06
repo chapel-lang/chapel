@@ -690,6 +690,16 @@ proc symlink(oldName: string, newName: string) {
   if err != ENOERR then ioerror(err, "in symlink " + oldName, newName);
 }
 
+/* Sets the file creation mask of the current process to mask, and returns
+   the previous value of the file creation mask.
+   mask: the file creation mask to use now.
+*/
+proc umask(mask: int): int {
+  extern proc chpl_fs_umask(mask: mode_t): mode_t;
+
+  return chpl_fs_umask(mask.safeCast(mode_t));
+}
+
 /* Returns an integer representing the current permissions of the file specified
    by name.  May generate an error message.
    err: a syserr used to indicate if an error occurred during this function
