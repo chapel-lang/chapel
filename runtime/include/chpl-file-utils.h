@@ -53,6 +53,10 @@ qioerr chpl_fs_is_link(int* ret, const char* name);
 // returning a qioerr if not.
 qioerr chpl_fs_mkdir(const char* name, int mode, int parents);
 
+// Takes a path string and resolves and removes all "/../", "/./", and
+// symbolic links.
+qioerr chpl_fs_realpath(const char* path, const char **shortened);
+
 // Renames the file from oldname to newname, returning a qioerr if one
 // occured.
 qioerr chpl_fs_rename(const char* oldname, const char* newname);
