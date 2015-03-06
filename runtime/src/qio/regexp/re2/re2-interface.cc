@@ -256,8 +256,9 @@ const char* qio_regexp_error(const qio_regexp_t* regexp)
   return qio_strdup(re2->error().c_str());
 }
 
-qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_len, int64_t startpos, int64_t endpos, int anchor, qio_regexp_string_piece_t* submatch, int64_t nsubmatch)
+qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_len, int64_t startpos, int64_t endpos, int anchor, qio_regexp_string_piece_t* submatch, int64_t nsubmatch_in)
 {
+  ssize_t nsubmatch = nsubmatch_in;
   StringPiece textp(text, text_len);
   bool ret;
   RE2::Anchor ranchor = RE2::UNANCHORED;
@@ -266,7 +267,7 @@ qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_l
   RE2* re = (RE2*) regexp->regexp;
 
   // RE2 uses int for ncaptures
-  if( nsubmatch > INT_MAX || nsubmatch < 0 )
+  if( nsubmatch_in > INT_MAX || nsubmatch_in > SSIZE_MAX || nsubmatch_in < 0 )
     return false;
 
   if( anchor == QIO_REGEXP_ANCHOR_UNANCHORED ) ranchor = RE2::UNANCHORED;
@@ -382,10 +383,10 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   FileSearchInfo ci;
   bool found = false;
   int i;
-  int use_captures = ncaptures;
+  ssize_t use_captures = ncaptures;
   MAYBE_STACK_SPACE(FilePiece, caps_onstack);
 
-  if( ncaptures > INT_MAX || ncaptures < 0 )
+  if( ncaptures > INT_MAX || ncaptures > SSIZE_MAX || ncaptures < 0 )
     QIO_GET_CONSTANT_ERROR(err, EINVAL, "invalid number of captures");
 
   start_offset = offset = qio_channel_offset_unlocked(ch);

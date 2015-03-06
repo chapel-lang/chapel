@@ -493,32 +493,62 @@ typedef bool qio_bool;
 #define MAYBE_STACK_SPACE(type,onstack) \
   type onstack[MAX_ON_STACK/sizeof(type)]
 
+/* Allocate nelms*elemsize bytes or use the stack
+   or return NULL if nelems <= max_no_allocate.
+ */
+static inline
+void* qio_allocate_if_more(ssize_t max_elems_no_allocate,
+                           ssize_t nelems,
+                           size_t elemsize,
+                           int* usestack) {
+  if( nelems <= max_elems_no_allocate ) {
+    *usestack = 1;
+    return NULL;
+  } else if( nelems < 0 ) {
+    assert(0 && "negative count in MAYBE_STACK_ALLOC");
+    *usestack = 0;
+    return NULL;
+  } else if( (size_t) nelems >= (SIZE_MAX / elemsize) ) {
+    assert(0 && "size overflow in MAYBE_STACK_ALLOC");
+    *usestack = 0;
+    return NULL;
+  } else {
+    *usestack = 0;
+    return qio_malloc(nelems*elemsize);
+  }
+}
+
+     
 #define MAYBE_STACK_ALLOC(type, count, ptr, onstack) \
 { \
-  /* check for integer overflow or negative count */ \
-  if( count >= 0 && \
-      (size_t) count <= (SIZE_MAX / sizeof(type)) ) { \
-    /* check that count is positive and small enough to go on the stack */ \
-    if( (ssize_t) count >= 0 && \
-        (size_t) count <= (sizeof(onstack)/sizeof(type)) ) { \
+  int usestack = 0; \
+  void* allocated = NULL; \
+  /* error if count is larger than size_t */ \
+  /* callers should always be passing in ssize_t. */ \
+  if( sizeof(count) > sizeof(ssize_t) ) { \
+    ptr = NULL; \
+    assert(0 && "bad call to MAYBE_STACK_ALLOC"); \
+  } else { \
+    /* decide whether not to allocate and maybe allocate */ \
+    allocated = qio_allocate_if_more(sizeof(onstack)/sizeof(type), \
+                                     count, sizeof(type), &usestack); \
+    if( usestack ) { \
       ptr = onstack; \
     } else { \
-      ptr = (type*) qio_malloc(count*sizeof(type)); \
+      ptr = (type*) allocated; \
     } \
-  } else { \
-    /* handle integer overflow */ \
-    ptr = NULL; \
-    assert(0 && "size overflow in MAYBE_STACK_ALLOC"); \
   } \
 }
 
 
-#define MAYBE_STACK_FREE(ptr, onstack) \
-{ \
-  if (ptr && ptr != onstack) { \
-    qio_free(ptr); \
-  } \
+static inline
+void MAYBE_STACK_FREE(void* ptr, void* onstack)
+{
+  if (ptr && ptr != onstack) {
+    qio_free(ptr);
+  }
 }
+
 
 #define VOID_PTR_DIFF(a,b) (((intptr_t) (a)) - ((intptr_t) (b)))
 #define VOID_PTR_ADD(ptr,amt) ((void*)(((char*) (ptr)) + (amt)))
