@@ -109,6 +109,198 @@ proc chown(name: string, uid: int, gid: int) {
   if err != ENOERR then ioerror(err, "in chown", name);
 }
 
+// FUTURE WORK:
+// When basename and joinPath are supported, enable dest to be a directory.
+
+/* Copies the contents and permissions of the file indicated by src into
+   the file or directory dest.  If dest is a directory, will return an error via
+   the out parameter.  If metadata is set to true, will also copy the metadata
+   of the file to be copied.  Other errors may also be returned via the out
+   parameter.
+   err: a syserr used to indicate if an error occurred
+   src: the source file whose contents and permissions are to be copied
+   dest: the destination file for the contents and permissions.
+   metadata: a boolean indicating whether to copy metadata (uid, gid, time of
+             last access and time of modification) associated with the source
+             file.
+*/
+proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
+  var destFile = dest;
+  if (isDir(err, destFile)) {
+    // destFile = joinPath(destFile, basename(src));
+    err = EISDIR;
+    // Supporting a destination directory requires getting the basename from
+    // the src (because we're using the same name) and joining it with the
+    // provided destination directory.  Both of those operations are part of
+    // the string portion, so we aren't supporting it just yet.
+    return;
+  } else {
+    if (err == ENOENT) {
+      // Destination didn't exist before.  We'd be overwriting it anyways, so
+      // we don't care.
+      err = ENOERR;
+    }
+    if err != ENOERR then return;
+  }
+  copyFile(err, src, destFile);
+  if err != ENOERR then return;
+  copyMode(err, src, destFile);
+  if err != ENOERR then return;
+
+  if (metadata) {
+    extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): syserr;
+
+    // Copies the access time, and time of last modification.
+    // Does not copy uid, gid, or mode
+    err = chpl_fs_copy_metadata(src.c_str(), dest.c_str());
+
+    // Get uid and gid from src
+    var uid = getUID(err, src);
+    if err != ENOERR then return;
+    var gid = getGID(err, src);
+    if err != ENOERR then return;
+    // Change uid and gid to that of the src
+    chown(err, destFile, uid, gid);
+  }
+}
+
+/* Copies the contents and permissions of the file indicated by src into
+   the file or directory dest.  If dest is a directory, will halt with an error
+   message.  If metadata is set to true, will also copy the metadata of the
+   file to be copied.  May halt with other error messages.
+   src: the source file whose contents and permissions are to be copied
+   dest: the destination file for the contents and permissions.
+   metadata: a boolean indicating whether to copy metadata (uid, gid, time of
+             last access and time of modification) associated with the source
+             file.
+*/
+proc copy(src: string, dest: string, metadata: bool = false) {
+  var err: syserr = ENOERR;
+  copy(err, src, dest, metadata);
+  if err != ENOERR then ioerror(err, "in copy(" + src + ", " + dest + ")");
+}
+
+/* Copies the contents of the file indicated by src into the file indicated
+   by dest, replacing dest if it already exists (and is different than src).
+   If the dest is not writable or src and dest are the same file, generates
+   an error.  Does not copy metadata.
+   err: a syserr used to indicate if an error occurred
+   src: the source file whose contents are to be copied.
+   dest: the destination of the contents.
+*/
+proc copyFile(out err: syserr, src: string, dest: string) {
+  // This implementation is based off of the python implementation for copyfile,
+  // with some slight differences.  That implementation was found at:
+  // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
+  // I did not look at the other functions in that file, except for copyfileobj
+  // (which copyfile called).
+  if (!exists(src)) {
+    err = ENOENT;
+    // Source didn't exist, we can't copy it.
+    return;
+  }
+  if (isDir(err, src) || isDir(err, dest)) {
+    // If the source is a directory, the user has made a mistake, so return an
+    // error.  The same is true if the destination is a directory.
+    err = EISDIR;
+    return;
+  }
+
+  if (err == ENOENT) {
+    err = ENOERR;
+    // We don't care if dest did not exist before, we'll create or overwrite it
+    // anyways.  We already know src exists.
+  } else if (sameFile(err, src, dest)) {
+    // Check if the files are the same, error if yes
+
+    // Don't need to check if they're the same file when we know dest didn't
+    // exist.
+    err = EINVAL;
+    return;
+    // The second argument is invalid if the two arguments are the same.
+  }
+
+  // Lydia note (03/04/2014): These enclosing curly braces are to avoid the bug
+  // found in test/io/lydia/outArgEarlyExit*.future.  When those futures are
+  // resolved, the braces should be removed.
+  {
+    // Open src for reading, open dest for writing
+    var srcFile = open(src, iomode.r);
+    var destFile = open(dest, iomode.cw);
+    var srcChnl = srcFile.reader(kind=ionative, locking=false);
+    var destChnl = destFile.writer(kind=ionative, locking=false);
+    // read in, write out.
+    var line: [0..1023] uint(8);
+    var numRead: int = 0;
+    while (srcChnl.readline(line, numRead=numRead, error=err)) {
+      // From mppf:
+      // If you want it to be faster, we can make it only buffer once (sharing
+      // the bytes read into memory between the two channels). To do that you'd
+      // do something like this (in a loop):
+
+      // srcReader.mark
+      // srcReader.advance( buffer size )
+      // srcReader.beginPeekBuffer to get the current buffer (qio_channel_begin_peek_buffer)
+      // dstWriter.putBuffer with the buffer we got (qio_channel_put_buffer)
+      // srcReader.endPeekBuffer
+
+      // Some of these routines don't exist with Chapel wrappers now
+
+      destChnl.write(line[0..#numRead]);
+      if numRead != line.size {
+        break;
+      }
+    }
+    if err == EEOF then err = ENOERR;
+    destChnl.flush();
+
+    srcFile.close();
+    destFile.close();
+  }
+}
+
+/* Copies the contents of the file indicated by src into the file indicated
+   by dest, replacing dest if it already exists (and is different than src).
+   If the dest is not writable or src and dest are the same file, halts with
+   an error.  Does not copy metadata.  May halt with an error message.
+   src: the source file whose contents are to be copied.
+   dest: the destination of the contents.
+*/
+proc copyFile(src: string, dest: string) {
+  var err: syserr = ENOERR;
+  copyFile(err, src, dest);
+  if err != ENOERR then ioerror(err, "in copyFile(" + src + ", " + dest + ")");
+}
+
+/* Copies the permissions of the file indicated by src to the file indicated
+   by dest, leaving contents, owner and group unaffected.
+   err: a syserr used to indicate if an error occurred
+   src: the source file whose permissions are to be copied.
+   dest: the destination of the permissions.
+*/
+proc copyMode(out err: syserr, src: string, dest: string) {
+  // Gets the mode from the source file.
+  var srcMode = viewMode(err, src);
+  // If any error occurred, we want to be the one reporting it, so as not
+  // to bleed implementation details.  If we found one when viewing the
+  // source's mode, we should return immediately.
+  if err != ENOERR then return;
+  // Sets the mode of the destination to the source's mode.
+  chmod(err, dest, srcMode);
+}
+
+/* Copies the permissions of the file indicated by src to the file indicated
+   by dest, leaving contents, owner and group unaffected.  May halt with an
+   error message.
+   src: the source file whose permissions are to be copied.
+   dest: the destination of the permissions.
+*/
+proc copyMode(src: string, dest: string) {
+  var err: syserr = ENOERR;
+  copyMode(err, src, dest);
+  if err != ENOERR then ioerror(err, "in copyMode " + src, dest);
+}
+
 /* Returns the current working directory for the current locale.
    err: a syserr used to indicate if an error occurred
 

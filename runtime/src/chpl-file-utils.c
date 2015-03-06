@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <sys/param.h> // MAXPATHLEN
 #include <sys/stat.h>
+#include <utime.h> // Defines utimbuf and utime()
 
 
 qioerr chpl_fs_chdir(const char* name) {
@@ -52,6 +53,27 @@ qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   int exitStatus = chown(name, uid, gid);
   if (exitStatus)
     err = qio_mkerror_errno();
+  return err;
+}
+
+qioerr chpl_fs_copy_metadata(const char* source, const char* dest) {
+  qioerr err = 0;
+  struct stat oldTimes;
+  struct utimbuf times;
+  int exitStatus = stat(source, &oldTimes);
+  if (exitStatus == -1) {
+    // Hopefully an error will not occur (as we have checked that the
+    // file exists when we perform the other operations on it).  But just in
+    // case, check it here.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  times.actime = oldTimes.st_atime;  // The access time
+  times.modtime = oldTimes.st_mtime; // The modification time
+  exitStatus = utime(dest, &times);  // Set the times for dest.
+  if (exitStatus == -1) {
+    err = qio_mkerror_errno();
+  }
   return err;
 }
 
