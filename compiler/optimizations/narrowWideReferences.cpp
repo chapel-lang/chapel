@@ -632,8 +632,13 @@ narrowSym(Symbol* sym, WideInfo* wi,
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
             bool isObj = isWideObj || isClass(sym->type);
             bool rhsIsWide = isWideType(rhs->var);
-            if (rhsIsWide && (isRef(sym) || isObj)) {
-              addNarrowDep(rhs->var, sym);
+            if (rhsIsWide) {
+              if (isObj) {
+                addNarrowDep(rhs->var, sym);
+              }
+              if (isRef(rhs->var) && isRef(sym)) {
+                addNarrowDep(rhs->var, sym);
+              }
             }
             if (isRef(sym)) {
               if (rhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
