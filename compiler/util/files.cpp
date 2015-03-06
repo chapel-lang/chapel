@@ -313,7 +313,6 @@ void closeInputFile(FILE* infile) {
 
 
 static const char** inputFilenames = NULL;
-static int numInputFiles = 0;
 
 
 static bool checkSuffix(const char* filename, const char* suffix) {
@@ -351,14 +350,15 @@ static bool isRecognizedSource(const char* filename) {
 }
 
 
-void testInputFiles(int numFilenames, char* filename[]) {
+void testInputFiles(int numNewFilenames, char* filename[]) {
+  static int numInputFiles = 0;
   int cursor = numInputFiles;
   char achar;
-  numInputFiles += numFilenames;
+  numInputFiles += numNewFilenames;
   inputFilenames = (const char**)realloc(inputFilenames, 
                                          (numInputFiles+1)*sizeof(char*));
 
-  for (int i = 0; i < numFilenames; i++, cursor++) {
+  for (int i = 0; i < numNewFilenames; i++, cursor++) {
     if (!isRecognizedSource(filename[i])) {
       USR_FATAL(astr("file '",
                      filename[i],
