@@ -4,7 +4,7 @@
 #include "expr.h"
 #include "codegen.h"
 #include "symbol.h"
-#include "../main/version.h"
+//#include "../main/version_num.h"
 #include "vec.h"
 #include "type.h"
 #include "alist.h"

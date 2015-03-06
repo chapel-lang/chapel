@@ -1213,9 +1213,8 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 ********************************* | ********************************/
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
-  Symbol(E_TypeSymbol, init_name, init_type)
+  Symbol(E_TypeSymbol, init_name, init_type),
 #ifdef HAVE_LLVM
-    ,
     llvmType(NULL),
     llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
     llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
@@ -2531,12 +2530,11 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     initFn(NULL),
     filename(NULL),
     doc(NULL),
-    extern_info(NULL),
-    moduleNamePrefix("")
 #ifdef HAVE_LLVM
-    ,
-    llvmDINameSpace(NULL)
+    extern_info(NULL),
+    llvmDINameSpace(NULL),
 #endif
+    moduleNamePrefix("")
 {
 
   block->parentSymbol = this;
