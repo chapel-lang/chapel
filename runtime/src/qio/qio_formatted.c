@@ -1751,6 +1751,7 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
   ssize_t signed_len;
   number_reading_state_t st;
   int64_t amount;
+  ssize_t alloc_size;
   int64_t start;
   char* end;
   char* buf = NULL;
@@ -1781,7 +1782,13 @@ qioerr qio_channel_scan_int(const int threadsafe, qio_channel_t* restrict ch, vo
   if( qio_err_to_int(err) == EEOF && st.end > 0 ) err = 0; // we tolerate EOF if there's data.
   if( err ) goto error;
 
-  MAYBE_STACK_ALLOC(char, amount + 1, buf, buf_onstack);
+  if( amount + 1 > SSIZE_MAX ) {
+    QIO_GET_CONSTANT_ERROR(err, ERANGE, "number too long");
+    goto error;
+  }
+
+  alloc_size = amount + 1;
+  MAYBE_STACK_ALLOC(char, alloc_size, buf, buf_onstack);
   if( ! buf ) {
     err = QIO_ENOMEM;
     goto error;
@@ -1891,6 +1898,7 @@ qioerr qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restr
   double num = 0.0;
   number_reading_state_t st;
   int64_t amount;
+  ssize_t alloc_size;
   int64_t start;
   char* end_conv;
   char* buf = NULL;
@@ -1945,7 +1953,13 @@ qioerr qio_channel_scan_float_or_imag(const int threadsafe, qio_channel_t* restr
   }
   //printf("got amount %lli\n", (long long int) amount);
 
-  MAYBE_STACK_ALLOC(char, amount + 4, buf, buf_onstack);
+  if( amount + 4 > SSIZE_MAX ) {
+    QIO_GET_CONSTANT_ERROR(err, ERANGE, "number too long");
+    goto error;
+  }
+
+  alloc_size = amount + 4;
+  MAYBE_STACK_ALLOC(char, alloc_size, buf, buf_onstack);
   if( ! buf ) {
     err = QIO_ENOMEM;
     goto error;
@@ -2197,7 +2211,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
 static
 int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, const qio_style_t* restrict style )
 {
-  int buf_sz = 32;
+  ssize_t buf_sz = 32;
   char* buf = NULL;
   MAYBE_STACK_SPACE(char, buf_onstack);
   int buf_len;
@@ -2483,7 +2497,7 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
   uint64_t num=0;
   int64_t num_s=0;
   int isneg;
-  int max = 70; // room enough for binary output. (1 '\0', 2 0b, 1 +-, 64 bits)
+  ssize_t max = 70; // room enough for binary output. (1 '\0', 2 0b, 1 +-, 64 bits)
   int signed_len;
   int base;
   char* tmp = NULL;
@@ -2616,7 +2630,7 @@ error:
 static
 qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, bool imag)
 {
-  int max = MAX_DOUBLE_DIGITS;
+  ssize_t max = MAX_DOUBLE_DIGITS;
   char* buf = NULL;
   MAYBE_STACK_SPACE(char, buf_onstack);
   int got;
@@ -2967,8 +2981,8 @@ qioerr qio_channel_print_complex(const int threadsafe,
                                  const void* restrict im_ptr,
                                  size_t len)
 {
-  int re_max = MAX_DOUBLE_DIGITS;
-  int im_max = MAX_DOUBLE_DIGITS;
+  ssize_t re_max = MAX_DOUBLE_DIGITS;
+  ssize_t im_max = MAX_DOUBLE_DIGITS;
   char* re_buf = NULL;
   char* im_buf = NULL;
   MAYBE_STACK_SPACE(char, re_buf_onstack);
