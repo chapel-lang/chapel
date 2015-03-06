@@ -6,6 +6,7 @@ use Cwd 'abs_path';
 $cwd = abs_path(dirname(__FILE__));
 $chplhomedir = abs_path("$cwd/../..");
 
+
 # Mailing lists.
 $failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
