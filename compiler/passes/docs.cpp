@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include <errno.h>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -73,10 +74,14 @@ void docs(void) {
       docsSphinxDir = docsTempDir;
     }
 
-    // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
-    const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
-    mkdir(docsRstDir.c_str(), dirPerms);
-    mkdir(docsOutputDir.c_str(), dirPerms);
+    // Make the intermediate dir and output dir. If either fail, do not
+    // continue, simply exit this function.
+    if (!makeDir(docsSphinxDir.c_str())) {
+      return;
+    }
+    if (!makeDir(docsOutputDir.c_str())) {
+      return;
+    }
 
     // The location of intermediate rst files.
     std::string docsRstDir;
@@ -245,6 +250,18 @@ void createDocsFileFolders(std::string filename) {
     dirCutoff = shorter.find("/");
   }
 }
+
+
+static bool makeDir(const char* dirpath) {
+  static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
+  mkdir(dirpath, dirPerms);
+  if (errno != 0 && errno != EEXIST) {
+    perror(dirpath);
+    return false;
+  }
+  return true;
+}
+
 
 /* 
  * Create new sphinx project at given location and return path where .rst files
