@@ -84,8 +84,8 @@ void docs(void) {
     }
 
     // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
-    mkdir(docsRstDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
-    mkdir(docsOutputDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    mkdir(docsRstDir.c_str(), 0777);
+    mkdir(docsOutputDir.c_str(), 0777);
 
 
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
