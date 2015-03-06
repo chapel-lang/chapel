@@ -602,8 +602,6 @@ narrowSym(Symbol* sym, WideInfo* wi,
             continue;
           }
           if (rhs->isPrimitive(PRIM_STRING_FROM_C_STRING)) {
-            // The destination string need not be wide if we're initializing from
-            // a c_string.
             wi->mustBeWide = true;
             continue;
           }
