@@ -368,7 +368,6 @@ static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
 }
 
 
-
 static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
   CallExpr* newUse = new CallExpr(PRIM_USE, module);
   addModuleToSearchList(newUse, module);
