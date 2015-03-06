@@ -368,19 +368,30 @@ static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
 }
 
 
+
+static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
+  CallExpr* newUse = new CallExpr(PRIM_USE, module);
+  addModuleToSearchList(newUse, module);
+  if (list == NULL) {
+    return buildChapelStmt(newUse);
+  } else {
+    list->insertAtTail(newUse);
+    return list;
+  }
+}
+
 //
-// Given an argument from a 'use' statement, process that argument.  
-// - If it's a string literal, we assume it's either a "-llib" flag,
-//   or a filename like "foo.h", "foo.c", "foo.o", etc.  
+// Given an argument from a 'use' statement, process that argument
+// if it's a string (returning whether or not it was).  
+//
+// If it's a string literal, we assume it's either a "-llib" flag,
+// or a filename like "foo.h", "foo.c", "foo.o", etc.  
 //   - Peel off the former and pass them to addLibInfo(), the same
 //     function that handles command line -l flags.
 //   - Otherwise, assume it's the latter and pass it to our input
 //     file handler (which itself handles cases it doesn't recognize.
 //
-// - Otherwise, we assume it's a module identifier, as we've always
-//   done and add it to the 'list' argument
-//
-static BlockStmt* processUseArg(BaseAST* arg, BlockStmt* list) {
+static bool processUseOfString(BaseAST* arg) {
   //
   // If we're 'use'ing a literal string...
   //
@@ -404,32 +415,44 @@ static BlockStmt* processUseArg(BaseAST* arg, BlockStmt* list) {
           // In this case, we've consumed everything necessary, so
           // just return the list to the callsite
           //
-          return list;
+          return true;
         }
       }
     }
   }
-  //
-  // Otherwise, assume that this is a traditional module 'use'
-  //
-  CallExpr* newUse = new CallExpr(PRIM_USE, arg);
-  addModuleToSearchList(newUse, arg);
-  if (list == NULL) {
-    return buildChapelStmt(newUse);
-  } else {
-    list->insertAtTail(newUse);
-    return list;
-  }
+  return false;
 }
 
 
+//
+// Build a 'use' statement
+//
 BlockStmt* buildUseStmt(CallExpr* args) {
   BlockStmt* list = NULL;
-  for_actuals(expr, args)
-    list = processUseArg(expr->remove(), list);
-  if (list == NULL) {
-    return new BlockStmt(new CallExpr(PRIM_NOOP));
+
+  //
+  // Iterate over the expressions being used, processing them
+  //
+  for_actuals(expr, args) {
+    Expr* useArg = expr->remove();
+    //
+    // if this is a string argument to 'use', process it
+    //
+    if (!processUseOfString(useArg)) {
+      //
+      // Otherwise, handle it in the traditional way
+      //
+      list = buildUseList(useArg, list);
+    }
   }
+
+  //
+  // If all of them are consumed, replace the use statement by a no-op
+  //
+  if (list == NULL) {
+    list = new BlockStmt(new CallExpr(PRIM_NOOP));
+  }
+  
   return list;
 }
 
