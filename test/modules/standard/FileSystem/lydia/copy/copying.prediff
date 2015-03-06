@@ -22,12 +22,14 @@ with open(sys.argv[2], 'ab') as fp:
     else:
         fp.write("group did match\n")
 
-    if abs(fooStat.st_atime - barStat.st_atime) > .5:
+    if abs(fooStat.st_atime - barStat.st_atime) > 1:
+        # we care about the time to a second, not to a fraction of a second
+        # which may be reported
         fp.write("Expected access time of " + str(fooStat.st_atime) + ", was " + str(barStat.st_atime) + "\n")
     else:
         fp.write("access time did match\n")
 
-    if abs(fooStat.st_mtime - barStat.st_mtime) > .5:
+    if abs(fooStat.st_mtime - barStat.st_mtime) > 1:
         fp.write("Expected modification time of " + str(fooStat.st_mtime) + ", was " + str(barStat.st_mtime) + "\n")
     else:
         fp.write("modification time did match\n")

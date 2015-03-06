@@ -74,8 +74,9 @@ void docs(void) {
     }
 
     // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
-    mkdir(docsSphinxDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
-    mkdir(docsOutputDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
+    mkdir(docsRstDir.c_str(), dirPerms);
+    mkdir(docsOutputDir.c_str(), dirPerms);
 
     // The location of intermediate rst files.
     std::string docsRstDir;
