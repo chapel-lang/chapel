@@ -247,9 +247,6 @@ proc copyFile(out err: syserr, src: string, dest: string) {
       // Some of these routines don't exist with Chapel wrappers now
 
       destChnl.write(line[0..#numRead]);
-      if numRead != line.size {
-        break;
-      }
     }
     if err == EEOF then err = ENOERR;
     destChnl.flush();
