@@ -31,7 +31,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
-#include "view.h"
 
 static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt);
 
@@ -369,12 +368,24 @@ static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
 }
 
 
-static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
-  if (SymExpr* se = toSymExpr(module)) {
+//
+// Given an argument from a 'use' statement, process that argument.  
+// - If it's a string literal, we assume it's either a "-llib" flag,
+//   or a filename like "foo.h", "foo.c", "foo.o", etc.  
+//   - Peel off the former and pass them to addLibInfo(), the same
+//     function that handles command line -l flags.
+//   - Otherwise, assume it's the latter and pass it to our input
+//     file handler (which itself handles cases it doesn't recognize.
+//
+// - Otherwise, we assume it's a module identifier, as we've always
+//   done and add it to the 'list' argument
+//
+static BlockStmt* processUseArg(BaseAST* arg, BlockStmt* list) {
+  //
+  // If we're 'use'ing a literal string...
+  //
+  if (SymExpr* se = toSymExpr(arg)) {
     if (VarSymbol* var = toVarSymbol(se->var)) {
-      //
-      // If we're 'use'ing a literal string...
-      //
       if (var->isImmediate()) {
         Immediate* imm = var->immediate;
         if (imm->const_kind == CONST_KIND_STRING) {
@@ -389,13 +400,20 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
             //
             testInputFile(imm->v_string);
           }
+          //
+          // In this case, we've consumed everything necessary, so
+          // just return the list to the callsite
+          //
           return list;
         }
       }
     }
   }
-  CallExpr* newUse = new CallExpr(PRIM_USE, module);
-  addModuleToSearchList(newUse, module);
+  //
+  // Otherwise, assume that this is a traditional module 'use'
+  //
+  CallExpr* newUse = new CallExpr(PRIM_USE, arg);
+  addModuleToSearchList(newUse, arg);
   if (list == NULL) {
     return buildChapelStmt(newUse);
   } else {
@@ -405,12 +423,12 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 }
 
 
-BlockStmt* buildUseStmt(CallExpr* modules) {
+BlockStmt* buildUseStmt(CallExpr* args) {
   BlockStmt* list = NULL;
-  for_actuals(expr, modules)
-    list = buildUseList(expr->remove(), list);
+  for_actuals(expr, args)
+    list = processUseArg(expr->remove(), list);
   if (list == NULL) {
-    return new BlockStmt(new CallExpr("chpl_noop"));
+    return new BlockStmt(new CallExpr(PRIM_NOOP));
   }
   return list;
 }
