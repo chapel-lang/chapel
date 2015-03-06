@@ -14,5 +14,6 @@ LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGe
 LLVM_CXXFLAGS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --cxxflags | sed 's/ -O[0-4s] / /') -pthread -DHAVE_LLVM
 LLVM_CFLAGS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --cflags | sed 's/ -O[0-4s] / /') -pthread -DHAVE_LLVM
 LLVM_INCLUDES=-I$(LLVM_INCLUDE_DIR) -I$(LLVM_CLANG_CODEGEN_INCLUDE_DIR)
-LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS) -lz -lpthread -ldl
+# -lcurses needed with LLVM 3.5.1 on Mac OS 10.10
+LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS) -lz -lpthread -ldl -lcurses
 
