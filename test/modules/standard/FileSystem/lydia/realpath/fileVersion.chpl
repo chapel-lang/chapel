@@ -1,4 +1,5 @@
 use FileSystem;
+use Path;
 use IO;
 
 var filename = "../realpath/./blahblahblah.txt";

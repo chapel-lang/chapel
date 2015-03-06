@@ -558,60 +558,6 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   if err != ENOERR then ioerror(err, "in mkdir", name);
 }
 
-/* Returns the canonical path specified, eliminating symbolic links.  If an
-   error occurred, it will be returned via the out parameter.
-   err: a syserr used to indicate if an error occurred during this operation.
-   name: a string representing a valid path.
-*/
-proc realPath(out err: syserr, name: string): string {
-  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string_copy): syserr;
-
-  var res: c_string_copy;
-  err = chpl_fs_realpath(name.c_str(), res);
-  return toString(res);
-}
-
-/* Returns the canonical path specified, eliminating symbolic links.  May
-   halt with an error message.
-   name: a string representing a valid path.
-*/
-proc realPath(name: string): string {
-  var err: syserr = ENOERR;
-  var ret = realPath(err, name);
-  if err != ENOERR then ioerror(err, "in realPath of", name);
-  return ret;
-}
-
-/* Returns the canonical path referred to by the file record, eliminating
-   symbolic links.  If an error occurred, it will be returned via the out
-   parameter.
-   err: a syserr used to indicate if an error occurred during this operation.
-*/
-proc file.realPath(out err: syserr): string {
-  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string_copy): syserr;
-
-  var res: c_string_copy;
-
-  if (is_c_nil(_file_internal)) {
-    // This file is referencing a null file.  We'll get a segfault if we
-    // continue.
-    err = EBADF;
-    return "";
-  }
-  err = chpl_fs_realpath_file(_file_internal, res);
-  return toString(res);
-}
-
-/* Returns the canonical path referred to by the file record, eliminating
-   symbolic links.
-*/
-proc file.realPath(): string {
-  var err: syserr = ENOERR;
-  var ret = realPath(err);
-  if err != ENOERR then ioerror(err, "in file.realPath");
-  return ret;
-}
-
 /* Renames the file specified by oldname to newname, returning an error
    if one occurred.  The file is not opened during this operation.
    error: a syserr used to indicate if an error occurred during renaming.
