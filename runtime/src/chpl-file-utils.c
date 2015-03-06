@@ -309,6 +309,10 @@ qioerr chpl_fs_symlink(const char* orig, const char* linkName) {
 
 }
 
+mode_t chpl_fs_umask(mode_t mask) {
+  return umask(mask);
+}
+
 /* Returns the current permissions on a file specified by name */
 qioerr chpl_fs_viewmode(int* ret, const char* name) {
   struct stat buf;
