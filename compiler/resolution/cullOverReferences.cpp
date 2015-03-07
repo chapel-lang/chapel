@@ -108,7 +108,15 @@ void cullOverReferences() {
             SymExpr* base = toSymExpr(call->baseExpr);
             base->var = copy;
             VarSymbol* tmp = newTemp(copy->retType);
-            move->insertBefore(new DefExpr(tmp));
+            // Danger, Will Robinson! We are about to take the address of this
+            // temporary.  The temporary must remain in-scope for as long as
+            // anything referred to in the return value of the original 'fn'.
+            // We need to select a scope that contains all uses of the original
+            // LHS se, and put the declaration for our temp variable there --
+            // to make sure that the deref temp does not go out of scope before
+            // references to it do.  Note #1.
+            // For now, we just use the declaration scope of the original se.
+            se->var->defPoint->insertAfter(new DefExpr(tmp));
 #ifndef HILDE_MM
             // Why is this here?
             // Marking variables for autocopy/autodestroy ought to be done in
@@ -182,3 +190,19 @@ void cullOverReferences() {
     }
   }
 }
+
+
+//########################################################################
+//# NOTES
+//#
+//# Note #1: In places where the return value of a setter is immediately
+//# dereferenced, we get code that looks like this:
+//#      (875642 'move' tmp[954861](875648 call dsiAccess[875924] call_tmp[875634] i[875526]))
+//#      (954865 'move' call_tmp[875531](954863 'addr of' tmp[954861]))
+//#      (875650 'move' ret[875535](875652 'deref' call_tmp[875531]))
+//# i.e. a getter followed by 'addr of' followed by 'deref'.
+//# A later pass apparently knows how to collapse this out, but it creates
+//# problems for AMM (as implemented).  It would probably be good to follow
+//# the setter -> getter replacement with a pass that looks for this kind of
+//# no-op and removes them.
+//#
