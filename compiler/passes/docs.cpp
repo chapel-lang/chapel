@@ -60,7 +60,7 @@ void docs(void) {
     if (strlen(fDocsFolder) > 0) {
       docsOutputDir = fDocsFolder;
     } else {
-      docsOutputDir = astr(getCwd(), "/docs");
+      docsOutputDir = std::string(astr(getCwd(), "/docs"));
     }
 
     // Root of the sphinx project and generated rst files. If
