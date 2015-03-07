@@ -154,11 +154,9 @@ isSafeToDeref(Symbol* ref,
 static bool isSufficientlyConst(ArgSymbol* arg) {
   Type* argvaltype = arg->getValType();
 
-  if (argvaltype->symbol->hasFlag(FLAG_ARRAY)) {
-    // Arg is an array, so it's sufficiently constant (because this
-    // refers to the descriptor, not the array's values\n");
-    return true;
-  }
+  if (isRecordWrappedType(argvaltype))
+    INT_ASSERT(arg->intent == INTENT_CONST_IN  &&
+               !arg->type->symbol->hasFlag(FLAG_REF));
 
   //
   // See if this argument is 'const in'; if it is, it's a good
