@@ -51,6 +51,7 @@
 
 module FFTW_MT {
   use FFTW;
+  use "-lfftw3_threads", "-lpthread";
 
   /*
     By default, this module will call init_FFTW_MT() and
