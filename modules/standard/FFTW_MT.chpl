@@ -52,30 +52,60 @@
 module FFTW_MT {
   use FFTW;
 
+  /*
+    By default, this module will call init_FFTW_MT() and
+    plan_with_nthreads() as part of its initialization.  Users can
+    diable this by setting autoInitFFTW_MT at compile-time, in which
+    case, they will need to make the calls manually.
+  */
+  config param autoInitFFTW_MT = true;
+
+  if autoInitFFTW_MT {
+    //
+    // If we're auto-initializing, when this module is used, it
+    // calls init_FFTW_MT() and plan_with_nthreads().
+    //
+    init_FFTW_MT();
+    plan_with_nthreads();
+  }
+
+
   //
-  // If this module is used, it should init_threads() upon start-up on
-  // all locales and request here.maxTaskPar threads by default.
+  // TODO: If users don't like the "on all locales" property, we
+  // could consider making this a method on locale later to permit
+  // either calling here.init_FFTW_MT or Locales.init_FFTW_MT...
   //
-  coforall loc in Locales {
-    on loc do {
-      if (C_FFTW.fftw_init_threads() == 0) then
-        halt("Failed to properly initialize FFTW threads on locale ", here.id);
+  // TODO: Incorporate a better error handling story
+  //
+  /*
+    Initialize the FFTW_MT module.  This has the effect of calling
+    fftw_init_threads() on all locales.  This routine halts the Chapel
+    program if any of the calls generate an error.
+  */
+  proc init_FFTW_MT() {
+    coforall loc in Locales {
+      on loc do {
+        if (C_FFTW.fftw_init_threads() == 0) then
+          halt("Failed to properly initialize FFTW threads on locale ", 
+               here.id);
+      }
     }
   }
-  plan_with_nthreads(here.maxTaskPar);
 
 
   /*
     Registers the number of threads to use for multi-threaded FFTW
-    plans on all locales.
+    plans on all locales.  If fewer than one thread is requested, each
+    locale will default to here.maxTaskPar threads.
 
     :arg nthreads: The number of threads to use.
     :type nthreads: int
-   */
-  proc plan_with_nthreads(nthreads: int) {
+  */
+  proc plan_with_nthreads(nthreads: int = 0) {
     coforall loc in Locales {
       on loc do {
-        C_FFTW.fftw_plan_with_nthreads(nthreads.safeCast(c_int));
+        const myNThreads = if nthreads < 1 then here.maxTaskPar else nthreads;
+        C_FFTW.fftw_plan_with_nthreads(myNThreads.safeCast(c_int));
       }
     }
   }
