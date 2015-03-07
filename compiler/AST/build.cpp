@@ -450,7 +450,7 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   // If all of them are consumed, replace the use statement by a no-op
   //
   if (list == NULL) {
-    list = new BlockStmt(new CallExpr(PRIM_NOOP));
+    list = buildChapelStmt(new CallExpr(PRIM_NOOP));
   }
   
   return list;
