@@ -411,7 +411,7 @@ static void processUseOfString(const char* str) {
   // If the string starts with -l, treat it as a library specifier
   //
   if (strncmp(str, "-l", 2) == 0) {
-    addLibInfo(astr(str));
+    addLibInfo(str);
   } else {
     //
     // otherwise, treat it as an input file
