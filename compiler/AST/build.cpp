@@ -380,46 +380,47 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 }
 
 //
-// Given an argument from a 'use' statement, process that argument
-// if it's a string (returning whether or not it was).  
-//
-// If it's a string literal, we assume it's either a "-llib" flag,
+// Given a string literal argument from a 'use' statement, process
+// that argument.  We assume it's either a "-llib" flag,
 // or a filename like "foo.h", "foo.c", "foo.o", etc.  
-//   - Peel off the former and pass them to addLibInfo(), the same
-//     function that handles command line -l flags.
-//   - Otherwise, assume it's the latter and pass it to our input
-//     file handler (which itself handles cases it doesn't recognize.
 //
-static bool processUseOfString(BaseAST* arg) {
+// - For the former, pass to addLibInfo(), the same function that
+//   handles command line -l flags.
+//
+// - Otherwise, assume it's the latter and pass it to our input file
+//   handler (which itself handles cases it doesn't recognize).
+//
+static void processUseOfString(const char* str) {
+  // If the string starts with -l, treat it as a library specifier
   //
-  // If we're 'use'ing a literal string...
-  //
-  if (SymExpr* se = toSymExpr(arg)) {
+  if (strncmp(str, "-l", 2) == 0) {
+    addLibInfo(astr(str));
+  } else {
+    //
+    // otherwise, treat it as an input file
+    //
+    testInputFile(str);
+  }
+}
+
+
+//
+// A helper function that's useful in a few places in this file to
+// conditionally convert an Expr to a 'const char*' in the event that
+// it's an immediate string.
+//
+static const char* toImmediateString(Expr* expr) {
+  if (SymExpr* se = toSymExpr(expr)) {
     if (VarSymbol* var = toVarSymbol(se->var)) {
       if (var->isImmediate()) {
         Immediate* imm = var->immediate;
         if (imm->const_kind == CONST_KIND_STRING) {
-          //
-          // And it starts with -l, treat it as a library specifier
-          //
-          if (strncmp(imm->v_string, "-l", 2) == 0) {
-            addLibInfo(astr(imm->v_string));
-          } else {
-            //
-            // otherwise, treat it as an input file
-            //
-            testInputFile(imm->v_string);
-          }
-          //
-          // In this case, we've consumed everything necessary, so
-          // just return the list to the callsite
-          //
-          return true;
+          return imm->v_string;
         }
       }
     }
   }
-  return false;
+  return NULL;
 }
 
 
@@ -434,10 +435,13 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   //
   for_actuals(expr, args) {
     Expr* useArg = expr->remove();
+
     //
     // if this is a string argument to 'use', process it
     //
-    if (!processUseOfString(useArg)) {
+    if (const char* str = toImmediateString(useArg)) {
+      processUseOfString(str);
+    } else {
       //
       // Otherwise, handle it in the traditional way
       //
@@ -560,6 +564,7 @@ ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filena
 
   return mod;
 }
+
 
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
