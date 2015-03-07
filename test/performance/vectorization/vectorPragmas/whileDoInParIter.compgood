@@ -1,0 +1,2 @@
+Adding CHPL_PRAGMA_IVDEP to CForLoop for InvokeLeaderFollower:15
+Adding CHPL_PRAGMA_IVDEP to WhileDoStmt for InvokeStandalone:17

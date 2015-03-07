@@ -1,0 +1,1 @@
+InvokeIters.chpl --no-checks --vectorize --report-order-independent-loops

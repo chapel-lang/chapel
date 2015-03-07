@@ -497,10 +497,9 @@ typedef bool qio_bool;
 { \
   /* check for integer overflow or negative count */ \
   if( count >= 0 && \
-      (size_t) count <= (SIZE_MAX / sizeof(type)) ) { \
+      (uint64_t) count <= (SIZE_MAX / sizeof(type)) ) { \
     /* check that count is positive and small enough to go on the stack */ \
-    if( (ssize_t) count >= 0 && \
-        (size_t) count <= (sizeof(onstack)/sizeof(type)) ) { \
+    if( (size_t) count <= (sizeof(onstack)/sizeof(type)) ) { \
       ptr = onstack; \
     } else { \
       ptr = (type*) qio_malloc(count*sizeof(type)); \

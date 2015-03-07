@@ -42,6 +42,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "WhileStmt.h"
+#include "stlUtil.h"
 
 #include "../ifa/prim_data.h"
 
@@ -6176,6 +6177,9 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
 static bool isLeaderIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gLeaderTag);
 }
+static bool isFollowerIterator(FnSymbol* fn) {
+  return isIteratorOfType(fn, gFollowerTag);
+}
 static bool isStandaloneIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gStandaloneTag);
 }
@@ -6195,6 +6199,29 @@ resolveFns(FnSymbol* fn) {
 
   if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
     return;
+
+  //
+  // Mark serial loops that yield inside of follower and standalone iterators
+  // as order independent. By using a forall loop, a user is asserting that
+  // their loop is order independent. Here we just mark the serial loops inside
+  // of the "follower" with this information. Note that only loops that yield
+  // are marked since other loops are not necessarily order independent. Only
+  // the inner most loop of a loop nest will be marked.
+  //
+  if (isFollowerIterator(fn) || isStandaloneIterator(fn)) {
+    std::vector<CallExpr*> callExprs;
+    collectCallExprsSTL(fn->body, callExprs);
+
+    for_vector(CallExpr, call, callExprs) {
+      if (call->isPrimitive(PRIM_YIELD)) {
+        if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
+          if (loop->isCoforallLoop() == false) {
+            loop->orderIndependentSet(true);
+          }
+        }
+      }
+    }
+  }
 
   //
   // Mark leader and standalone parallel iterators for inlining. Also stash a
