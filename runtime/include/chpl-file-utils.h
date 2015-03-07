@@ -24,6 +24,7 @@
 #include "qio.h"
 #include "sys_basic.h"
 
+#include "sys/stat.h"
 
 qioerr chpl_fs_chdir(const char* name);
 
@@ -32,6 +33,8 @@ qioerr chpl_fs_chdir(const char* name);
 qioerr chpl_fs_chmod(const char* name, int mode);
 
 qioerr chpl_fs_chown(const char* name, int uid, int gid);
+
+qioerr chpl_fs_copy_metadata(const char* source, const char* dest);
 
 qioerr chpl_fs_cwd(const char** working_dir);
 
@@ -60,6 +63,8 @@ qioerr chpl_fs_samefile(int* ret, qio_file_t* file1, qio_file_t* file2);
 qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2);
 
 qioerr chpl_fs_symlink(const char* orig, const char* linkName);
+
+mode_t chpl_fs_umask(mode_t mask);
 
 qioerr chpl_fs_viewmode(int* ret, const char* name);
 

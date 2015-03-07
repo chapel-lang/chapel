@@ -137,6 +137,11 @@ OPTIONS
                     aggressively optimize iterators that are defined in terms
                     of a single loop. By default this is enabled.
 
+  --[no-]vectorize                Enable [disable] generating vectorization
+                    hints for target compiler. If enabled, hints will always be
+                    generated, but the effects will vary based on the target
+                    compiler.
+
   --[no-]optimize-on-clauses   Enable [disable] optimization of on
                                clauses in which qualifying on
                                statements may be optimized in the
