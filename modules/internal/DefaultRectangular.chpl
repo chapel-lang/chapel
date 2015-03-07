@@ -151,6 +151,104 @@ module DefaultRectangular {
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, idxType, 0:idxType))
+      where tag == iterKind.standalone && !localeModelHasSublocales {
+      if debugDefaultDist {
+        writeln("*** In domain standalone code:");
+      }
+      const numTasks = if tasksPerLocale == 0 then here.maxTaskPar
+                       else tasksPerLocale;
+      if debugDefaultDist {
+        writeln("    numTasks=", numTasks, " (", ignoreRunning,
+                "), minIndicesPerTask=", minIndicesPerTask);
+      }
+      const (numChunks, parDim) = if __primitive("task_get_serial") then
+                                  (1, -1) else
+                                  _computeChunkStuff(numTasks,
+                                                     ignoreRunning,
+                                                     minIndicesPerTask,
+                                                     ranges);
+      if debugDefaultDist {
+        writeln("    numChunks=", numChunks, " parDim=", parDim,
+                " ranges(", parDim, ").length=", ranges(parDim).length);
+      }
+
+      if debugDataPar {
+        writeln("### numTasksPerLoc = ", numTasks, "\n" +
+                "### ignoreRunning = ", ignoreRunning, "\n" +
+                "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+                "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
+                "### nranges = ", ranges);
+      }
+
+      if numChunks == 1 {
+        if rank == 1 {
+          for i in ranges(1) {
+            yield i;
+          }
+        } else {
+          for i in these_help(1) {
+            yield i;
+          }
+        }
+      } else {
+        var locBlock: rank*range(idxType);
+        for param i in 1..rank {
+          locBlock(i) = offset(i)..#(ranges(i).length);
+        }
+        if debugDefaultDist {
+          writeln("*** DI: locBlock = ", locBlock);
+        }
+        coforall chunk in 0..#numChunks {
+          var followMe: rank*range(idxType) = locBlock;
+          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+                                        numChunks, chunk,
+                                        locBlock(parDim).high,
+                                        locBlock(parDim).low,
+                                        locBlock(parDim).low);
+          followMe(parDim) = lo..hi;
+          if debugDefaultDist {
+            writeln("*** DI[", chunk, "]: followMe = ", followMe);
+          }
+          var block: rank*range(idxType=idxType, stridable=stridable);
+          if stridable {
+            type strType = chpl__signedType(idxType);
+            for param i in 1..rank {
+              const rStride = ranges(i).stride:strType,
+                    fStride = followThis(i).stride:strType;
+              if ranges(i).stride > 0 {
+                const low = ranges(i).alignedLow + followMe(i).low*rStride,
+                      high = ranges(i).alignedLow + followMe(i).high*rStride,
+                      stride = (rStride * fStride):idxType;
+                block(i) = low..high by stride;
+              } else {
+                const low = ranges(i).alignedHigh + followMe(i).high*rStride,
+                      high = ranges(i).alignedHigh + followMe(i).low*rStride,
+                      stride = (rStride * fStride):idxType;
+                block(i) = low..high by stride;
+              }
+            }
+          } else {
+            for  param i in 1..rank do
+              block(i) = ranges(i).low+followMe(i).low:idxType..ranges(i).low+followMe(i).high:idxType;
+          }
+          if rank == 1 {
+            for i in zip((...block)) {
+              yield i;
+            }
+          } else {
+            for i in these_help(1, block) {
+              yield i;
+            }
+          }
+        }
+      }
+    }
+
+    iter these(param tag: iterKind,
+               tasksPerLocale = dataParTasksPerLocale,
+               ignoreRunning = dataParIgnoreRunningTasks,
+               minIndicesPerTask = dataParMinGranularity,
+               offset=createTuple(rank, idxType, 0:idxType))
       where tag == iterKind.leader {
 
       const numSublocs = here.getChildCount();
@@ -628,7 +726,21 @@ module DefaultRectangular {
           yield dsiAccess(i);
       }
     }
-  
+
+    iter these(param tag: iterKind,
+               tasksPerLocale = dataParTasksPerLocale,
+               ignoreRunning = dataParIgnoreRunningTasks,
+               minIndicesPerTask = dataParMinGranularity)
+      ref where tag == iterKind.standalone {
+      if debugDefaultDist {
+        writeln("*** In array standalone code");
+      }
+      for i in dom.these(iterKind.standalone, tasksPerLocale,
+                         ignoreRunning, minIndicesPerTask) {
+        yield dsiAccess(i);
+      }
+    }
+ 
     iter these(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
