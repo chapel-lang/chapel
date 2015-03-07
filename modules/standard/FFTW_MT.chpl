@@ -93,10 +93,15 @@ module FFTW_MT {
   }
 
 
+  //
+  // TODO: As with the previous routine, we could consider making
+  // this a method on locales if users want.
+  //
   /*
     Registers the number of threads to use for multi-threaded FFTW
     plans on all locales.  If fewer than one thread is requested, each
-    locale will default to here.maxTaskPar threads.
+    locale will default to here.maxTaskPar threads.  Note that this
+    routine can be called multiple times, overwriting previous values.
 
     :arg nthreads: The number of threads to use.
     :type nthreads: int
