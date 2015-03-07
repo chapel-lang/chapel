@@ -399,23 +399,18 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 //
 // Given a string literal argument from a 'use' statement, process
 // that argument.  We assume it's either a "-llib" flag,
-// or a filename like "foo.h", "foo.c", "foo.o", etc.  
+// or a source filename like "foo.h", "foo.c", "foo.o", etc.  
 //
 // - For the former, pass to addLibInfo(), the same function that
 //   handles command line -l flags.
 //
-// - Otherwise, assume it's the latter and pass it to our input file
+// - Otherwise, assume it's the latter and pass it to our source file
 //   handler (which itself handles cases it doesn't recognize).
 //
-static void processUseOfString(const char* str) {
-  // If the string starts with -l, treat it as a library specifier
-  //
+static void processStringInUseStmt(const char* str) {
   if (strncmp(str, "-l", 2) == 0) {
     addLibInfo(str);
   } else {
-    //
-    // otherwise, treat it as an input file
-    //
     addSourceFile(str);
   }
 }
@@ -428,7 +423,7 @@ BlockStmt* buildUseStmt(CallExpr* args) {
   BlockStmt* list = NULL;
 
   //
-  // Iterate over the expressions being used, processing them
+  // Iterate over the expressions being 'use'd, processing them
   //
   for_actuals(expr, args) {
     Expr* useArg = expr->remove();
@@ -437,7 +432,7 @@ BlockStmt* buildUseStmt(CallExpr* args) {
     // if this is a string argument to 'use', process it
     //
     if (const char* str = toImmediateString(useArg)) {
-      processUseOfString(str);
+      processStringInUseStmt(str);
     } else {
       //
       // Otherwise, handle it in the traditional way
