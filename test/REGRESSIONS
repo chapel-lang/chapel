@@ -103,10 +103,6 @@ Inherits '*32'
 Reviewed 2015-03-06
 ===================
 
-failure in new test (2015-03-06, lydia)
----------------------------------------
-[Error matching program output for modules/standard/FileSystem/lydia/copy/copying]
-
 timeout (2015-02-05, first run) - (elliot/michael)
 --------------------------------------------------
 [Error Timed out executing regexp test ./regexp_channel_test Regexp Channels Test]
@@ -377,6 +373,10 @@ gasnet.fifo
 Inherits 'gasnet*' and 'fifo'
 Reviewed 2015-03-06
 =============================
+
+segfault (2015-03-07, ???)
+--------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/cast]
 
 === sporadic failures below ===
 
@@ -653,22 +653,22 @@ Inherits 'x?.*'
 Reviewed 2015-03-02
 ===================
 
+"no default server name" errors with aprun/qsub (2015-03-07, tvandoren/ellitot)
+-------------------------------------------------------------------------------
+*** all aprun configurations ***
+
+
 ===================
 xe.*
 Inherits 'x?.*'
 Reviewed 2015-03-02
 ===================
 
-"pbs_iff cannot connect to host" issues (2015-03-06)
-(xe.none.pgi, xe.ugni.gnu, xe.ugni.intel, xe.mpi.intel)
--------------------------------------------------------
-*** a few dozen tests fail in each configuration ***
-
 === sporadic failures below ===
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)] (last seen 2015-03-06 on xe.mpi.pgi and xc.mpi.pgi.slurm)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)] (last seen 2015-03-07 on xe.ugni.gnu)
 
 
 ===================
@@ -693,7 +693,7 @@ Reviewed 2015-03-02
 sporadic execution timeouts
 ---------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (last seen 2015-03-05 on xe.ugni.intel)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (last seen 2015-03-05 on xe.ugni.intel)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (last seen 2015-03-07 on xe.ugni.gnu)
 
 
 ==========================================
@@ -759,7 +759,7 @@ consistent timeouts (2015-02-18)
 sporadic execution timeouts
 ---------------------------
 [Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (last seen 2015-03-06 on perf.xc.16.ugni-qthreads.gnu and perf.xc.16.aries.gnu)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: *)] (last seen 2015-03-06 on perf.xc.16.aries.gnu)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: *)] (last seen 2015-03-07 on perf.xc.16.ugni.gnu)
 
 sporadic glibc panics (ben)
 ---------------------------
@@ -907,6 +907,7 @@ QIO strcmp(got, expect) assertion error
 sporadic pthread_cond_init failed
 ---------------------------------
 [Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (2015-02-25..2015-03-04)
+[Error matching program output for reductions/diten/testSerialReductions (compopts: 1)] (2015-03-06..
 
 sporadic execution timeout
 --------------------------
@@ -918,6 +919,10 @@ cygwin32
 Inherits 'cygwin*' and '*32'
 Reviewed 2015-03-05
 ===========================
+
+new test fails on 32-bit platforms (2015-03-06, lydia)
+------------------------------------------------------
+[Error matching program output for modules/standard/FileSystem/lydia/copy/copying]
 
 "got == expect[i]" assertion error
 ----------------------------------
@@ -937,7 +942,7 @@ Consistent execution timouts
 
 sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..2015-02-18, 2015-02-20..2015-02-22, 2015-02-24, 2015-03-01..)
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..2015-02-18, 2015-02-20..2015-02-22, 2015-02-24, 2015-03-01..2015-03-06)
 
 
 ================================
@@ -950,6 +955,7 @@ QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
 
+===
 
 
 ****************************************************************************
