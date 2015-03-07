@@ -26,7 +26,9 @@
 
 #include "llvm/Config/llvm-config.h"
 
-#if   LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=5 )
+#if   LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=6 )
+#define HAVE_LLVM_VER 36
+#elif  LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=5 )
 #define HAVE_LLVM_VER 35
 #elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=4 )
 #define HAVE_LLVM_VER 34
@@ -109,6 +111,21 @@ PromotedPair convertValuesToLarger(llvm::IRBuilder<> *builder, llvm::Value *valu
 int64_t getTypeSizeInBytes(LLVM_TARGET_DATA * layout, llvm::Type* ty);
 bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes);
 uint64_t getTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t offset);
+
+// And create a type for a metadata operand 
+#if HAVE_LLVM_VER >= 36
+#define LLVM_METADATA_OPERAND_TYPE llvm::Metadata
+static inline llvm::ConstantAsMetadata* llvm_constant_as_metadata(llvm::Constant* C)
+{
+  return llvm::ConstantAsMetadata::get(C);
+}
+#else
+#define LLVM_METADATA_OPERAND_TYPE llvm::Value
+static inline llvm::Constant* llvm_constant_as_metadata(llvm::Constant* C)
+{
+  return C;
+}
+#endif
 
 #endif //HAVE_LLVM
 
