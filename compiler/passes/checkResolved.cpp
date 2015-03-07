@@ -141,7 +141,8 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 
           // For arrays/domains/distributions, we just converted all 'ref' args
           // to 'const in'. So we will count those cases as definitions, too.
-          // Todo: distinguish between what was 'ref' vs. 'const ref'.
+          // This is a workaround until we get initialization right.
+          // Todo also: distinguish between what was 'ref' vs. 'const ref'.
           if (se->var == ret &&
               isRecordWrappedType(arg->type) &&
               arg->intent == INTENT_CONST_IN)
