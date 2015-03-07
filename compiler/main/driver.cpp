@@ -985,7 +985,7 @@ int main(int argc, char* argv[]) {
   if (runlldb)
     runCompilerInLLDB(argc, argv);
 
-  testInputFiles(sArgState.nfile_arguments, sArgState.file_argument);
+  addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
   if (fUseIPE == false) {
     if (fDocs == false && strcmp(sArgState.program_name, "chpldoc") == 0)

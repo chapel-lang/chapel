@@ -350,7 +350,7 @@ static bool isRecognizedSource(const char* filename) {
 }
 
 
-void testInputFiles(int numNewFilenames, char* filename[]) {
+void addSourceFiles(int numNewFilenames, char* filename[]) {
   static int numInputFiles = 0;
   int cursor = numInputFiles;
   char achar;
@@ -385,9 +385,9 @@ void testInputFiles(int numNewFilenames, char* filename[]) {
     USR_FATAL("Command line contains no .chpl source files");
 }
 
-void testInputFile(const char* filename) {
+void addSourceFile(const char* filename) {
   char* filenamearr[1] = {(char*)filename};
-  testInputFiles(1, filenamearr);
+  addSourceFiles(1, filenamearr);
 }
 
 

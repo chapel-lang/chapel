@@ -416,7 +416,7 @@ static void processUseOfString(const char* str) {
     //
     // otherwise, treat it as an input file
     //
-    testInputFile(str);
+    addSourceFile(str);
   }
 }
 
