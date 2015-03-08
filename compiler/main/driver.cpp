@@ -28,6 +28,7 @@
 #include "chpl.h"
 #include "config.h"
 #include "countTokens.h"
+#include "docsDriver.h"
 #include "files.h"
 #include "ipe.h"
 #include "log.h"
@@ -177,13 +178,6 @@ bool userSetCppLineno = false;
 int num_constants_per_variable = 1;
 char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
-bool fDocs = false;
-bool fDocsAlphabetize = false;
-char fDocsCommentLabel[256] = "";
-char fDocsFolder[256] = "";
-bool fDocsTextOnly = false;
-char fDocsSphinxDir[256] = "";
-bool fDocsIncludeExterns = true;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
 bool printModuleFiles = false;
@@ -324,20 +318,6 @@ static void setupChplHome(const char* argv0) {
     free(guess);
 
   parseCmdLineConfig("CHPL_HOME", astr("\"", CHPL_HOME, "\""));
-}
-
-static void setCommentLabel(const ArgumentState* arg_state, const char* label) {
-  assert(label != NULL);
-  size_t len = strlen(label);
-  if (len != 0) {
-    if (len > sizeof(fDocsCommentLabel)) {
-      USR_FATAL("the label is too large!");
-    }else if (label[0] != '/' || label[1] != '*') {
-      USR_FATAL("comment label should start with /*");
-    } else {
-      strcpy(fDocsCommentLabel, label);
-    }
-  }
 }
 
 
@@ -760,15 +740,6 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
-
- {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
- {"docs", ' ', NULL, "Runs documentation on the source file", "N", &fDocs, "CHPL_DOC", NULL },
- {"docs-alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
- {"docs-comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, setCommentLabel},
- {"docs-dir", ' ', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
- // {"docs-externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL}, // Commented out because we aren't sure we want it yet.
- {"docs-text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
- {"docs-save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},  // "CHPL_SAVE_SPHINX_DIR", NULL
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
