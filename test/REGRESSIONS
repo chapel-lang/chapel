@@ -1,50 +1,154 @@
 # USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.
 #
-# Each category represents a Cron run that we perform nightly and mail
-# to chapel-test-results-all (and chapel-test-results-regressions if
-# anything unusual happened).  The label for each category should
-# match the unique ID for that testing configuration.  In some cases,
-# categories will have a wildcard name such as 'gasnet*' or 'x?-wb.*'
-# implying that they are an abstract category for all configurations
-# that match that pattern.  In the past we have used specific testing
-# instances (like 'gasnet-everything') for such purposes, but in
-# practice there often isn't a test configuration that serves as a
-# good root for the purposes of inheriting errors.
+# The file itself is divided into several major sections, set off by
+# *****'s: General Issues, Principal platforms, Desktop performance,
+# etc.  These are designed to provide a loose, broad structure to the
+# file.
 #
-# There is an informal hierarchy embedded in this file in order to try
-# and reduce redundancy in which each suite is marked as inheriting
-# from one or more other suites.  For example, if "hello.chpl" fails
-# everywhere, it should only be noted in "general regressions" (the
-# root of the hierarchy) and not in every configuration.  Similarly,
-# if something fails for every gasnet configuration, it can be listed
-# in 'gasnet*' which forms the root of the logical gasnet sub-tree.
+# Each section contains a number of categories, set off by ===='s.
+# Categories either correspond to a concrete test configuration that
+# we run nightly, or it is an abstract category that represents some
+# characteristic like "32-bit platforms" (*32) or "gasnet
+# configurations" (gasnet*).  Abstract categories have wildcards in
+# their name.  Concrete category labels match the subject lines of the
+# nightly cron mails sent to chapel-test-results-all and
+# chapel-test-results-regressions.
+#
+# Each category contains a list of issues, which are a description
+# followed by --------'s followed by a list of the failures which are
+# failing with that issue.  Within each category, issues are divided
+# into those that occur regularly vs. those that occur sporadically
+# via a "=== sporadic failures below ===" separator.
+#
+# There is a hierarchy embedded between categories via their
+# "Inherits" labels.  For example, the 'cygwin32' configuration
+# inherits both from 'cygwin*' (issues specific to cygwin) and from
+# '*32' (issues specific to 32-bit platforms).  The goal of this
+# inheritance is to reduce redundancy in listing issues and to tie
+# issues to the specific aspects of testing that trigger them (e.g.,
+# "this is an issue that is specific to 32-bit platforms" or "...to
+# multi-locale executions").  The root of the hierarchy is the
+# "general" category which would indicate something that fails
+# everywhere (e.g., someone committed a syntax error to hello.chpl) or
+# in enough configurations that there isn't a more nautral root
+# category.
 #
 # Ultimately, the hope is to do more of this filtering and
 # categorization automatically, but for the time being it is manual
-# and rotated among members of the core Chapel team.  Periodically,
-# all failures in a test suite should be compared against what's in
-# this file to ensure that they match.  The last time that this full
-# review was done is marked in the "Reviewed" slot in the header of
-# the category.
+# and rotated among members of the core Chapel team.  On a weekly
+# basis, all failures in this file should be compared against what's
+# being reported in nightly testing to ensure that they match 1:1
+# (i.e., no failures are listed here that are not showing up in the
+# nightly runs; and everything showing up in the nightly runs is
+# listed here) Upon reviewing a category in this way, update the
+# "Reviewed" date listed in its header.
 #
-# Each regression itself should be marked with a brief (one-line)
-# description of why the failure is occurring, the date on which the
-# failure occurred, and the owner.  All new issues should be assigned
-# an owner; some historical ones may have escaped being assigned one.
+# Each issue itself should be marked with a brief description
+# indicating the nature of the issue, the date on which it first
+# showed up, and the owner of the issue (generally, all new issues
+# should be assigned an owner; some historical cases may have predated
+# the assignment of owners).  For example:
 #
-# In some cases, more extensive notes may be in order, but this file
-# should lean towards being spare (for the purposes of maintenance).
-# The project's pivotal task tracker should be used to store notes
-# on any given failure mode or story.
+# new RandomStream changes cause segfaults (2015-03-08, bradc)
+# ------------------------------------------------------------
+# [Error matching program output for test/modules/random/complex]
 #
-# At the bottom of each category is a list of "sporadic" failures
-# that come and go at different times.  These are followed by a
-# list of dates for when a "new failure" was reported.  If a test
-# has not failed in a month, it can probably be removed from this
-# list.
+# If a failure is being described in an abstract category and it
+# occurs in some configurations but not others, a list of the
+# configurations can be given in a second line before the label.
+# For example, under 'general' one might say:
+# 
+# bad commit broke some hpcc tests (2015-03-08, bradc)
+# (linux64, cygwin64, cygwin32, gasnet.fifo, gasnet-fast)
+# -------------------------------------------------------
+# [Error matching program output for test/release/examples/benchmarks/hpcc/stream]
+# [Error matching program output for test/release/examples/benchmarks/hpcc/ra]
 #
-# The status of failing future tests is detailed in ../STATUS.devel
+# Generally speaking, this file shouldn't be used to accumulate notes
+# on an issue or testing configuration.  Such notes should be tracked
+# by the issues owner or in Pivotal rather than in this file.
+#
+# For sporadic failures, the dates that the failure was seen should be
+# listed after the test itself rather than in the category.  For
+# example:
+#
+# Sporadic execution timeouts (bradc)
+# -----------------------------------
+# [Error: Timed out executing program test/npb/cg/bradc/cg-sparse] (2015-03-04..2015-03-06)
+# [Error: Timed out executing program test/npb/mg/mg-annotated] (2015-03-01, 2015-03-05..)
+#
+# The first entry above indicates that we saw the timeout on March
+# 4th, 5th, and 6th, but that it resolved on the 7th.  The second
+# indicates that we saw a failure on the 1st (which resolved on the
+# next run), and then saw it happen again on the 5th, but that it has
+# not yet resolved.
+#
+# When sporadic failures are listed in a category that's inherited, it
+# can be more difficult to track the comings and goings of the failure
+# since it may fail at different times in different configurations.
+# In such cases, simply list the last time a failure was seen and in
+# what configuration it was seen.  For example, say the following was
+# in the 'xc*' category representing all Cray XC failures:
+#
+# Sporadic execution timeouts
+# ---------------------------
+# [Error: Timed out executing program test/npb/cg/bradc/cg-sparse] (last seen: 2015-03-06 on xc.ugni-qthreads.gnu]
+#
+# Sporadic failures should be removed when (a) someone has committed a
+# change with the goal of removing that failure mode and it appears to
+# have worked, or (b) when the issue has not been seen for a month.
+# Garbage collecting such cases should be part of the once-a-week
+# check to make sure that all categories reflect reality.
+#
+# Here's a loose algorithm for updating this file when doing triage:
+#
+# For each mail that comes in on test-results-regressions:
+#   If the mail came in because of a new failure:
+#
+#     As background, seach this file to find other cases where this test fails
+#
+#     If that test is an already known sporadic failure:
+#       If the test is in a concrete category:
+#         Update the dates to reflect the new failure
+#       If the test is in an abstract category:
+#         Update the "last seen" information for the test
+#
+#     If the test is a known stable failure in some other category:
+#       If the two categories are related:
+#         Consider moving the issue to a shared inherited category
+#       otherwise:
+#         Create a new issue in the category in which the test failed
+#         Or, in an appropriate parent category if it fails in several configs
+#
+#   If the mail came in because of a new passing test:
+#
+#     If that test is an already known sporadic failure:
+#       If the test is in a concrete category:
+#         Update the dates to reflect the test's passing
+#       If the test is in an abstract category:
+#         Nothing needs to be done
+#
+#     If the test is listed as a stable failure:
+#       If the test has been resolved
+#         Remove the test (and its issue, if it's now empty)
+#       If the test has not been resolved
+#         Move it from the stable to the sporadic part of the category
+#
+#   If a future is listed as passing:
+#     Find an owner to either retire the future or tighten it up
+#       (This is most typically the person who filed the future or
+#        the person who fixed it).
+#     Don't bother tracking such cases in this file
+# 
+# Once per triage rotation:
+#   Iterate through the mails generated by all configurations
+#     Make sure that all issues reported are covered by this file
+#     Make sure all issues in this file are showing up in testing
+#     Update the "Reviewed" date for all such categories
+#
+#   Check through the sporadic failures to see whether any are at
+#     least one month old and can be retired
 
 
 
@@ -374,8 +478,8 @@ Inherits 'gasnet*' and 'fifo'
 Reviewed 2015-03-06
 =============================
 
-segfault (2015-03-07, ???)
---------------------------
+segfault (2015-03-07, vass)
+---------------------------
 [Error matching program output for types/string/StringImpl/memLeaks/cast]
 
 === sporadic failures below ===
@@ -906,13 +1010,13 @@ QIO strcmp(got, expect) assertion error
 
 sporadic pthread_cond_init failed
 ---------------------------------
-[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (2015-02-25..2015-03-04)
-[Error matching program output for reductions/diten/testSerialReductions (compopts: 1)] (2015-03-06..
+[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (2015-02-25..2015-03-04, 2015-03-07..)
+[Error matching program output for reductions/diten/testSerialReductions (compopts: 1)] (2015-03-06)
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..)
-
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06)
+[Error: Timed out executing program reductions/diten/testSerialReductions (compopts: 1)] (2015-03-07..)
 
 ===========================
 cygwin32
