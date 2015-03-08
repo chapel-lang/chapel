@@ -1320,24 +1320,38 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
   }
 }
 
+
+// Returns the number of yields in the given function.
+//
+// If any call expressions call a task function, this functions is called
+// recursively on those task functions.  Task functions are out-lined in
+// createTaskFunctions, but contain statements -- including yields -- that
+// actually "belong" to the calling function.  Recursive calls of this function
+// effective inline those out-lined functions so we get an accurate count.
+static unsigned
+countYieldsInFn(FnSymbol* fn)
+
+{
+  unsigned count = 0;
+  std::vector<CallExpr*> calls;
+  collectCallExprsSTL(fn, calls);
+  for_vector(CallExpr, call, calls)
+  {
+    if (call->isPrimitive(PRIM_YIELD))
+      count++;
+
+    if (FnSymbol* taskFn = resolvedToTaskFun(call))
+      count += countYieldsInFn(taskFn);
+  }
+  return count;
+}
+
 // Returns true if the iterator can be inlined; false otherwise.
 //
 // It can be inlined if it contains exactly one yield statement.
 static bool
 canInlineIterator(FnSymbol* iterator) {
-  std::vector<CallExpr*> calls;
-  int            count = 0;
-
-  collectCallExprsSTL(iterator, calls);
-
-  for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_YIELD))
-      count++;
-
-    else if (FnSymbol* taskFn = resolvedToTaskFun(call))
-      // Need to descend into 'taskFn' - append to 'calls'.
-      collectCallExprsSTL(taskFn->body, calls);
-  }
+  unsigned count = countYieldsInFn(iterator);
 
   // count==0 e.g. in users/biesack/test_recursive_iterator.chpl
   return (count == 1) ? true : false;
