@@ -20,6 +20,7 @@
 #include "optimizations.h"
 
 #include "astutil.h"
+#include "oldCollectors.h"
 #include "stlUtil.h"
 #include "CForLoop.h"
 #include "expr.h"
@@ -1385,14 +1386,17 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
   for (int i = 0; i < iterators.n; i++) {
     FnSymbol*      iterator = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
     BlockStmt*     block    = iterator->body;
-    std::vector<CallExpr*> calls;
+    Vec<CallExpr*> calls;
     int            numYields = 0;
 
     INT_ASSERT(block);
 
-    collectCallExprsSTL(block, calls);
-
-    for_vector(CallExpr, call, calls) {
+    // TODO: std::vector::iterator does not guarantee correct iteration if the
+    // capaacity of the vector it refers to increases during iteration.
+    // Replace this loop with an equivalent predicate that uses std::vector in
+    // a valid fashion.
+    collectCallExprs(block, calls);
+    forv_Vec(CallExpr, call, calls) {
       if (call && call->isPrimitive(PRIM_YIELD)) {
         numYields++;
 
@@ -1405,7 +1409,7 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
           // Need to descend into 'taskFn' - append to 'asts'.
           // If there are any yields there, they will trigger
           // 'return false' above.
-          collectCallExprsSTL(taskFn->body, calls);
+          collectCallExprs(taskFn->body, calls);
         }
       }
     }
