@@ -1,4 +1,4 @@
-# USAGE: the intent of this file is to keep track of current
++# USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.
 #
 # The file itself is divided into several major sections, set off by
@@ -1059,7 +1059,6 @@ QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
 
-===
 
 
 ****************************************************************************
