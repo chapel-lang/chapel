@@ -208,12 +208,16 @@ class RandomStream {
 
     :arg parSafe: The parallel safety setting.  Defaults to `true`.
     :type parSafe: bool
+
+    :arg eltType: The element type to be generated.  Defaults to `real(64)`.
+    :type eltType: type
   */
   proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
-                   param parSafe: bool = true) {
+                    param parSafe: bool = true,
+                    type eltType = real(64)) {
     if seed % 2 == 0 || seed < 1 || seed > 1:int(64)<<46 then
       halt("RandomStream seed must be an odd integer between 0 and 2**46");
-    RandomStreamPrivate_init(seed);
+    this.seed = seed;
   }
 
   pragma "no doc"
@@ -342,16 +346,9 @@ class RandomStream {
   pragma "no doc"
   var RandomStreamPrivate_lock$: sync bool;
   pragma "no doc"
-  var RandomStreamPrivate_cursor: real;
+  var RandomStreamPrivate_cursor: real = seed;
   pragma "no doc"
-  var RandomStreamPrivate_count: int(64);
-
-  pragma "no doc"
-  proc RandomStreamPrivate_init(seed: int(64)) {
-    this.seed = seed;
-    RandomStreamPrivate_cursor = seed;
-    RandomStreamPrivate_count = 1;
-  }    
+  var RandomStreamPrivate_count: int(64) = 1;
 }
 
 
