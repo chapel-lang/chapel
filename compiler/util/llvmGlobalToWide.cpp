@@ -1243,7 +1243,8 @@ namespace {
 
         for(Function::use_iterator UI = F->use_begin(), UE = F->use_end();
                 UI!=UE; ) {
-          User *Old = *UI; //UI->getUser();
+          Use &U = *UI;
+          User *Old = U.getUser(); //UI->getUser(); //*UI; //UI->getUser();
           ++UI;
           CallSite CS(Old);
           if (CS.getInstruction()) {
@@ -1707,7 +1708,7 @@ bool containsGlobalPointers(unsigned gSpace, SmallSet<Type*, 10> & set, Type* t)
 
   // If it's something we've already enumerated,
   // it doesn't get to say yes.
-  if( set.insert(t) ) {
+  if( llvm_small_set_insert(set, t) ) {
     // We added it to the set, we can continue.
   } else {
     // It was already in the set, don't bother
