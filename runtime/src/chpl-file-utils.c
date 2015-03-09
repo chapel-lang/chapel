@@ -224,6 +224,34 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
   return err;
 }
 
+qioerr chpl_fs_realpath(const char* path, const char **shortened) {
+  qioerr err = 0;
+  //shortened = NULL; // Don't want to get confused.
+  *shortened = realpath(path, NULL);
+  if (shortened == NULL) {
+    // If an error occurred, shortened will be NULL.  Otherwise, it will
+    // contain the cleaned up path.
+    err = qio_mkerror_errno();
+  }
+  return err;
+}
+
+qioerr chpl_fs_realpath_file(qio_file_t* path, const char **shortened) {
+  char *unshortened = NULL;
+  qioerr err = 0;
+  err = qio_file_path(path, (const char **)&unshortened);
+  // qio already had a way to get the path from the qio_file_t, so use it.
+
+  // check the error status here.
+  if (err) {
+    return err;
+  }
+  err = chpl_fs_realpath(unshortened, shortened);
+  // Since what is returned from qio_file_path is not necessarily the realpath,
+  // call realpath on it before returning.
+  return err;
+}
+
 /* Renames the file from oldname to newname, returning a qioerr if one
    occurred. */
 qioerr chpl_fs_rename(const char* oldname, const char* newname) {
