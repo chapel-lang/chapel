@@ -2,4 +2,4 @@
 
 import os.path
 
-print(not os.path.exists("/lus/scratch"))
+print((not os.path.exists("/dev")) or (not os.path.ismount("/dev")))

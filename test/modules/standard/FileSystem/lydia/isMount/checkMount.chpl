@@ -1,6 +1,6 @@
 use FileSystem;
 
-var knownMount = "/lus/scratch";
+var knownMount = "/dev";
 if (isMount(knownMount)) {
   // The known mount point was detected as a mount point.  Phew.
   writeln("okay");
