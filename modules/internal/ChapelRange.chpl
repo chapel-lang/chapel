@@ -1317,11 +1317,7 @@ module ChapelRange {
       writeln("*** RI: length=", v, " numChunks=", numChunks);
     }
 
-    if v == 0 {
-      return;
-    }
-
-    if numChunks == 1 {
+    if numChunks <= 1 {
       for i in this {
         yield i;
       }
