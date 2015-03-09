@@ -640,7 +640,6 @@ void setupClang(GenInfo* info, std::string mainFile)
     info->codegenOptions.OptimizationLevel = 3;
   }
 
-
   {
     // Make sure we include clang's internal header dir
 #if HAVE_LLVM_VER >= 34
@@ -814,7 +813,9 @@ void runClang(const char* just_parse_filename) {
   if( debugCCode ) compileline += " DEBUG=1";
   if( optimizeCCode ) compileline += " OPTIMIZE=1";
   std::string readargsfrom = compileline +
-                              " --llvm-install-dir --includes-and-defines";
+                              " --llvm-install-dir"
+                              " --clang-sysroot-arguments"
+                              " --includes-and-defines";
   std::vector<std::string> args;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangLDArgs;
@@ -1514,7 +1515,10 @@ void makeBinaryLLVM(void) {
 
   std::string home(CHPL_HOME);
   std::string compileline = info->compileline;
-  compileline += " --llvm-install-dir --main.o --libraries";
+  compileline += " --llvm-install-dir"
+                 " --main.o"
+                 " --clang-sysroot-arguments"
+                 " --libraries";
   std::vector<std::string> args;
   readArgsFromCommand(compileline.c_str(), args);
 
