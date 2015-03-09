@@ -1296,6 +1296,55 @@ module ChapelRange {
   //# Parallel Iterators
   //#
 
+  iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
+                                              !localeModelHasSublocales
+  {
+    if ! isBoundedRange(this) {
+      compilerError("parallel iteration is not supported over unbounded ranges");
+    }
+    if this.isAmbiguous() {
+      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+    }
+    if debugChapelRange {
+      writeln("*** In range standalone iterator:");
+    }
+
+    const len = this.length;
+    const numChunks = if __primitive("task_get_serial") then
+                      1 else _computeNumChunks(len);
+
+    if debugChapelRange {
+      writeln("*** RI: length=", len, " numChunks=", numChunks);
+    }
+
+    if numChunks <= 1 {
+      for i in this {
+        yield i;
+      }
+    } else {
+      coforall chunk in 0..#numChunks {
+        if stridable {
+          // TODO: find a way to avoid this densify/undensify for strided
+          // ranges, perhaps by adding knowledge of alignment to _computeBlock
+          // or using an aligned range
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
+          const mylen = hi - (lo-1);
+          var low = orderToIndex(lo);
+          var high = (low:strType + stride * (mylen - 1):strType):idxType;
+          if stride < 0 then low <=> high;
+          for i in low..high by stride {
+            yield i;
+          }
+        } else {
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, this.high, this.low, this.low);
+          for i in lo..hi {
+            yield i;
+          }
+        }
+      }
+    }
+  }
+
   iter range.these(param tag: iterKind) where tag == iterKind.leader
   {
     if ! isBoundedRange(this) then

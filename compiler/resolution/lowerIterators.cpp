@@ -68,7 +68,8 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       (taskFn->hasFlag(FLAG_BEGIN) ||
        taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
     if (isParallelConstruct ||
-        (call->isNamed("_toLeader"))) {
+        call->isNamed("_toLeader") ||
+        call->isNamed("_toStandalone")) {
       USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
     }
     if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
