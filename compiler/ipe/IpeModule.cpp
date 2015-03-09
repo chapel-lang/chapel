@@ -21,6 +21,7 @@
 
 #include "AstDumpToNode.h"
 #include "IpeScopeModule.h"
+#include "IpeValue.h"
 #include "ipeEvaluate.h"
 #include "symbol.h"
 

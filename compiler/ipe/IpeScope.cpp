@@ -187,19 +187,19 @@ void IpeScope::describe(int offset, bool recursiveP) const
         }
 
         if (sym->type == dtBools[BOOL_SIZE_SYS])
-          printf("  %s", (value.iValue == 1) ? " true" : "false");
+          printf("  %s", (value.boolGet() == true) ? " true" : "false");
 
         else if (sym->type == dtInt[INT_SIZE_64])
-          printf("%7ld", value.iValue);
+          printf("%7ld", value.integerGet());
 
         else if (sym->type == dtReal[FLOAT_SIZE_64])
-          printf("%10.2f", value.rValue);
+          printf("%10.2f", value.realGet());
 
         else if (sym->type == gIpeTypeModule)
-          printf("0x%012lX", (long) value.modulePtr);
+          printf("0x%012lX", (long) value.moduleGet());
 
         else if (sym->type == gIpeTypeProcedure)
-          printf("0x%012lX", (long) value.procedurePtr);
+          printf("0x%012lX", (long) value.procedureGet());
       }
 
       fputc('\n',    stdout);

@@ -21,6 +21,7 @@
 
 #include "AstDumpToNode.h"
 #include "IpeProcedure.h"
+#include "IpeValue.h"
 #include "symbol.h"
 
 #include "misc.h"
