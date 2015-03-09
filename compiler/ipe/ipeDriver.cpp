@@ -187,7 +187,7 @@ static IpeModule* initializeRoot(IpeVars* rootVars)
   IpeScopeModule* rootScope = rootMod->scope(); // new IpeScopeModule(rootMod);
   VarSymbol*      var       = NULL;
 
-  IpeValue        modValue;
+  IpeValue        modValue(rootMod);
 
   for (int i = 1; i <= sRootModuleIndex; i++)
   {
@@ -201,8 +201,6 @@ static IpeModule* initializeRoot(IpeVars* rootVars)
   var = new VarSymbol(modSym->name, gIpeTypeModule);
 
   var->addFlag(FLAG_PARAM);
-
-  modValue.modulePtr = rootMod;
 
   rootScope->extend(var, modValue, rootVars);
 
@@ -235,7 +233,7 @@ static IpeModule* initializeRepl(IpeVars* rootVars)
 
   INT_ASSERT(varSym);
 
-  return IpeVars::fetch(varSym, rootVars).modulePtr;
+  return IpeVars::fetch(varSym, rootVars).moduleGet();
 }
 
 static ModuleSymbol* createRootModule()

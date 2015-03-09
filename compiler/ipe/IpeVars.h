@@ -21,6 +21,7 @@
 #define _IPE_VARS_H_
 
 #include "IpeValue.h"
+
 #include <vector>
 
 class IpeScope;

@@ -116,7 +116,7 @@ IpeValue IpeVars::addrOf(LcnSymbol* sym, IpeVars* vars)
 
   if (sym->depth() == 0)
   {
-    retval.valuePtr = (IpeValue*) (((char*) sRootData) + offset);
+    retval.refSet((IpeValue*) (((char*) sRootData) + offset));
   }
 
   else
@@ -126,7 +126,7 @@ IpeValue IpeVars::addrOf(LcnSymbol* sym, IpeVars* vars)
     INT_ASSERT(vars         != NULL);
     INT_ASSERT(sym->depth() ==    1);
 
-    retval.valuePtr = &vars->mValues[index];
+    retval.refSet(&vars->mValues[index]);
   }
 
   return retval;

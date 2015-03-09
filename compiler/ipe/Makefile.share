@@ -28,7 +28,8 @@ IPE_SRCS =                           \
            IpeVars.cpp               \
                                      \
            IpeModule.cpp             \
-           IpeProcedure.cpp
+           IpeProcedure.cpp          \
+           IpeValue.cpp
 
 SVN_SRCS = $(IPE_SRCS)
 SRCS     = $(SVN_SRCS)

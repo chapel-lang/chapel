@@ -20,10 +20,9 @@
 #ifndef _IPE_SCOPE_H_
 #define _IPE_SCOPE_H_
 
-#include "IpeValue.h"
-
 class Symbol;
 class IpeModule;
+class IpeValue;
 class IpeVars;
 class UnresolvedSymExpr;
 class VarSymbol;
