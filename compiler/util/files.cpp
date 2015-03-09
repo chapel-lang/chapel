@@ -350,7 +350,7 @@ static bool isRecognizedSource(const char* filename) {
 }
 
 
-void addSourceFiles(int numNewFilenames, char* filename[]) {
+void addSourceFiles(int numNewFilenames, const char* filename[]) {
   static int numInputFiles = 0;
   int cursor = numInputFiles;
   char achar;
@@ -386,7 +386,7 @@ void addSourceFiles(int numNewFilenames, char* filename[]) {
 }
 
 void addSourceFile(const char* filename) {
-  char* filenamearr[1] = {(char*)filename};
+  const char* filenamearr[1] = {filename};
   addSourceFiles(1, filenamearr);
 }
 
