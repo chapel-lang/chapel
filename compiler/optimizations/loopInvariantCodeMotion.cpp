@@ -675,12 +675,14 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
 static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     loop, symToVecSymExprMap& localDefMap, FnSymbol* fn) {
  
-  //collect all of the symExpr and defExpr in the loop 
+  // collect all of the symExprs, defExprs, and callExprs in the loop
   startTimer(collectSymExprAndDefTimer);
   std::vector<SymExpr*> loopSymExprs;
   std::set<Symbol*> defsInLoop;
+  std::vector<CallExpr*> callsInLoop;
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
+      collectFnCallsSTL(expr, callsInLoop);
       collectSymExprsSTL(expr, loopSymExprs);
       if (DefExpr* defExpr = toDefExpr(expr)) {
         if (toVarSymbol(defExpr->sym)) {
@@ -880,13 +882,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
       // definitions.
       // TODO this could be improved to check which functions modify the global
       // and see if any of those functions are being called in this loop.
-      std::vector<CallExpr*> calls;
-      for_vector(BasicBlock, block, *loop->getBlocks()) {
-        for_vector(Expr, expr, block->exprs) {
-          collectFnCallsSTL(expr, calls);
-        }
-      }
-      if (calls.size() != 0) {
+      if (callsInLoop.size() != 0) {
         mightHaveBeenDeffedElseWhere = true;
       }
     }
