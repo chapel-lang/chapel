@@ -26,10 +26,7 @@
   version 3.  Over time, the intention is to expand this support to
   additional routines, prioritizing based on user feedback.
 
-  As in general FFTW, the flow is to:
-
-  0) Call init_threads() and plan_with_nthreads() if using the
-     multithreaded FFTW interface.
+  As in standard FFTW usage, the flow is to:
 
   1) Create plan(s) using the plan_dft*() routines.
 
@@ -37,10 +34,7 @@
 
   3) Destroy the plan(s) using the destroy_plan() routine.
 
-  4) If using the multithreaded FFTW interface, call
-     cleanup_threads().  
-
-  5) Call cleanup().
+  4) Call cleanup().
 
   At present, clients of the FFTW module must specify fftw3.h and -I,
   -L, -l flags sufficient to specify the required libraries and find
@@ -65,6 +59,8 @@
 module FFTW {
 
   use SysCTypes;
+  use "fftw3.h", "-lfftw3";
+
 
   // Define the various planner flags
   // See Sec. 4.3.2 of FFTW manual "Planner Flags"
@@ -107,28 +103,6 @@ module FFTW {
     plans between routines.
   */
   extern type fftw_plan; // opaque type
-
-
-  // Multi-threaded setup routines below
-  /*
-    Initialize the threads used for multi-threaded FFTW plans.
-
-    :returns: Zero if there was an error, non-zero otherwise.
-  */
-  proc init_threads() : c_int {
-    return C_FFTW.fftw_init_threads();
-  }
-
-  /*
-    Registers the number of threads to use for multi-threaded FFTW
-    plans.
-
-    :arg nthreads: The number of threads to use.
-    :type nthreads: int
-   */
-  proc plan_with_nthreads(nthreads: int) {
-    C_FFTW.fftw_plan_with_nthreads(nthreads.safeCast(c_int));
-  }
 
 
   // Planner functions
@@ -246,14 +220,6 @@ module FFTW {
     C_FFTW.fftw_destroy_plan(plan);
   }
 
-
-  /*
-    Cleans up the threads if multi-threaded FFTW's were enabled using
-    :proc:`init_threads()`.
-  */
-  proc cleanup_threads() {
-    C_FFTW.fftw_cleanup_threads();
-  }
 
   /*
     Cleans up FFTW overall.
