@@ -223,20 +223,18 @@ class RandomStream {
   pragma "no doc"
   proc RandomStreamPrivate_getNext_noLock() {
     var next: eltType;
+    
     if (eltType == complex) {
       RandomStreamPrivate_count += 2;
-      next.re = RandomPrivate_randlc(RandomStreamPrivate_cursor);
-      next.im = RandomPrivate_randlc(RandomStreamPrivate_cursor);
     } else {
       RandomStreamPrivate_count += 1;
-      next = RandomPrivate_randlc(RandomStreamPrivate_cursor): eltType;
     }
-    return next;
+    return RandomPrivate_randlc(eltType, RandomStreamPrivate_cursor);
   }
 
   pragma "no doc"
   proc RandomStreamPrivate_skipToNth_noLock(in n: integral) {
-    if eltType == complex then n *= 2;
+    if eltType == complex then n = n*2 - 1;
     RandomStreamPrivate_count = n;
     RandomStreamPrivate_cursor = RandomPrivate_randlc_skipto(seed, n);
   }
@@ -398,8 +396,14 @@ proc RandomPrivate_randlc(type resultType, inout x: real) {
   if resultType == complex then
     return (RandomPrivate_randlc(x), RandomPrivate_randlc(x)):complex;
   else
-    return RandomPrivate_randlc(x):resultType;
-}
+    if resultType == imag then
+      //
+      // BLC: I thought that casting real to imag did this automatically?
+      //
+      return _r2i(RandomPrivate_randlc(x));
+    else
+      return RandomPrivate_randlc(x);
+ }
 
 //
 // Return a value for the cursor so that the next call to randlc will
