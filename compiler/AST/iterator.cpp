@@ -900,8 +900,8 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
 
       Vec<SymExpr*>* defs = defMap.get(sym);
-      if (defs->n != 1) {
-        INT_FATAL(sym, "invalid assumption about reference");
+      if (defs == NULL || defs->n != 1) {
+        INT_FATAL(sym, "Expected sym to have exactly one definition");
       }
 
       // Do we need to consider PRIM_ASSIGN as well?
