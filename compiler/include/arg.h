@@ -56,7 +56,7 @@ typedef void ArgumentFunction(const ArgumentState* state, const char* arg);
 
 struct ArgumentState
 {
-  char**               file_argument;
+  const char**         file_argument;
   int                  nfile_arguments;
 
   const char*          program_name;
