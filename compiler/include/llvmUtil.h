@@ -40,6 +40,9 @@
 #define HAVE_LLVM_VER 31
 #endif
 
+// So we can declare our small set insert fixup
+#include "llvm/ADT/SmallSet.h"
+
 #if HAVE_LLVM_VER >= 33
 
 #include "llvm/IR/Module.h"
@@ -112,6 +115,7 @@ int64_t getTypeSizeInBytes(LLVM_TARGET_DATA * layout, llvm::Type* ty);
 bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes);
 uint64_t getTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t offset);
 
+
 // And create a type for a metadata operand 
 #if HAVE_LLVM_VER >= 36
 #define LLVM_METADATA_OPERAND_TYPE llvm::Metadata
@@ -119,12 +123,23 @@ static inline llvm::ConstantAsMetadata* llvm_constant_as_metadata(llvm::Constant
 {
   return llvm::ConstantAsMetadata::get(C);
 }
+template<typename T, unsigned N>
+static inline
+bool llvm_small_set_insert(llvm::SmallSet<T,N> & smallset, const T &V) {
+  return smallset.insert(V).second;
+}
 #else
 #define LLVM_METADATA_OPERAND_TYPE llvm::Value
 static inline llvm::Constant* llvm_constant_as_metadata(llvm::Constant* C)
 {
   return C;
 }
+template<typename T, unsigned N>
+static inline
+bool llvm_small_set_insert(llvm::SmallSet<T,N> & smallset, const T &V) {
+  return smallset.insert(V);
+}
+
 #endif
 
 #endif //HAVE_LLVM

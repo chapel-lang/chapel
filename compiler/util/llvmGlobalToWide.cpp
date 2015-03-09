@@ -1708,7 +1708,7 @@ bool containsGlobalPointers(unsigned gSpace, SmallSet<Type*, 10> & set, Type* t)
 
   // If it's something we've already enumerated,
   // it doesn't get to say yes.
-  if( set.insert(t) ) {
+  if( llvm_small_set_insert(set, t) ) {
     // We added it to the set, we can continue.
   } else {
     // It was already in the set, don't bother

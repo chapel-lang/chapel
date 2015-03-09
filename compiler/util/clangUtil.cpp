@@ -176,26 +176,28 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     llvm::LLVMContext& cx = info->module->getContext();
     // Create the TBAA root node
     {
-      llvm::Value* Ops[1];
+      LLVM_METADATA_OPERAND_TYPE* Ops[1];
       Ops[0] = llvm::MDString::get(cx, "Chapel types");
       info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
     }
     // Create type for ftable
     {
-      llvm::Value* Ops[3];
+      LLVM_METADATA_OPERAND_TYPE* Ops[3];
       Ops[0] = llvm::MDString::get(cx, "Chapel ftable");
       Ops[1] = info->tbaaRootNode;
       // and mark it as constant
-      Ops[2] = ConstantInt::get(llvm::Type::getInt64Ty(cx), 1);
+      Ops[2] = llvm_constant_as_metadata(
+          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
 
       info->tbaaFtableNode = llvm::MDNode::get(cx, Ops);
     }
     {
-      llvm::Value* Ops[3];
+      LLVM_METADATA_OPERAND_TYPE* Ops[3];
       Ops[0] = llvm::MDString::get(cx, "Chapel vmtable");
       Ops[1] = info->tbaaRootNode;
       // and mark it as constant
-      Ops[2] = ConstantInt::get(llvm::Type::getInt64Ty(cx), 1);
+      Ops[2] = llvm_constant_as_metadata(
+          ConstantInt::get(llvm::Type::getInt64Ty(cx), 1));
 
       info->tbaaVmtableNode = llvm::MDNode::get(cx, Ops);
     }
@@ -567,18 +569,28 @@ class CCodeGenConsumer : public ASTConsumer {
      }
 };
 
+
+#if HAVE_LLVM_VER >= 36
+#define CREATE_AST_CONSUMER_RETURN_TYPE std::unique_ptr<ASTConsumer>
+#else
+#define CREATE_AST_CONSUMER_RETURN_TYPE ASTConsumer*
+#endif
+
 class CCodeGenAction : public ASTFrontendAction {
  public:
   CCodeGenAction() { }
  protected:
-  virtual ASTConsumer *CreateASTConsumer(CompilerInstance &CI,
-                                                 StringRef InFile);
+  virtual CREATE_AST_CONSUMER_RETURN_TYPE CreateASTConsumer(
+      CompilerInstance &CI, StringRef InFile);
 };
 
-ASTConsumer *
-CCodeGenAction::CreateASTConsumer(CompilerInstance &CI,
-                                  StringRef InFile) {
+CREATE_AST_CONSUMER_RETURN_TYPE CCodeGenAction::CreateASTConsumer(
+    CompilerInstance &CI, StringRef InFile) {
+#if HAVE_LLVM_VER >= 36
+  return std::unique_ptr<ASTConsumer>(new CCodeGenConsumer());
+#else
   return new CCodeGenConsumer();
+#endif
 };
 
 static void cleanupClang(GenInfo* info)
@@ -745,7 +757,10 @@ void prepareCodegenLLVM()
   // Set up the optimizer pipeline.
   // Start with registering info about how the
   // target lays out data structures.
-#if HAVE_LLVM_VER >= 35
+#if HAVE_LLVM_VER >= 36
+  // We already set the data layout in setupClangContext
+  fpm->add(new DataLayoutPass());
+#elif HAVE_LLVM_VER >= 35
   fpm->add(new DataLayoutPass(info->module));
 #else
   fpm->add(new DataLayout(info->module));
@@ -1460,6 +1475,12 @@ void setupForGlobalToWide(void) {
 
 
 void makeBinaryLLVM(void) {
+#if HAVE_LLVM_VER >= 36
+  std::error_code errorInfo;
+#else
+  std::string errorInfo;
+#endif
+
   GenInfo* info = gGenInfo;
 
   std::string moduleFilename = genIntermediateFilename("chpl__module.bc");
@@ -1467,7 +1488,6 @@ void makeBinaryLLVM(void) {
 
   if( saveCDir[0] != '\0' ) {
     // Save the generated LLVM before optimization.
-    std::string errorInfo;
     tool_output_file output (preOptFilename.c_str(),
                              errorInfo,
 #if HAVE_LLVM_VER >= 34
@@ -1481,7 +1501,6 @@ void makeBinaryLLVM(void) {
     output.os().flush();
   }
 
-  std::string errorInfo;
   tool_output_file output (moduleFilename.c_str(),
                            errorInfo,
 #if HAVE_LLVM_VER >= 34
