@@ -159,7 +159,34 @@ qioerr chpl_fs_is_link(int* ret, const char* name) {
 }
 
 qioerr chpl_fs_is_mount(int* ret, const char* name) {
+  qioerr err = 0;
+  struct stat nBuf, parentBuf;
+  int exitStatus = 0;
+  size_t nameLen = strlen(name);
+  char* parent = (char* ) chpl_mem_allocMany(nameLen + 4, sizeof(char), CHPL_RT_MD_STRING_COPY_DATA, 0, 0);
+  strncat(parent, name, nameLen + 1);
+  strncat(parent, "/..", 3);
+  // TODO: Using "/" is not necessarily portable, look into this
 
+  exitStatus = stat(name, &nBuf);
+  if (exitStatus) {
+    err = qio_mkerror_errno();
+    return err;
+  }
+  exitStatus = stat(parent, &parentBuf);
+  chpl_mem_free(parent, 0, 0);
+  if (exitStatus) {
+    err = qio_mkerror_errno();
+  } else {
+    *ret = nBuf.st_dev != parentBuf.st_dev;
+    // Check if the st_dev matches that of its parent directory.
+    // If they do match, name does not denote a mount point.  Otherwise, it
+    // is.
+    // In the case of the root dir, the parent directory will be the same
+    // as itself, so by definition the st_dev will match.  Is this correct
+    // behavior?
+  }
+  return err;
 }
 
 /* Creates a directory with the given name and settings if possible,
