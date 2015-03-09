@@ -837,6 +837,13 @@ void runClang(const char* just_parse_filename) {
   std::vector<std::string> clangOtherArgs;
   std::string clangInstallDir;
 
+  // Gather information from readargsfrom into clangArgs.
+  readArgsFromCommand(readargsfrom.c_str(), args);
+  clangInstallDir = args[0];
+  for( size_t i = 1; i < args.size(); ++i ) {
+    clangCCArgs.push_back(args[i]);
+  }
+ 
   // Add cflags,etc that used to be put into the Makefile
   // (see codegen_makefile in files.cpp)
   if (ccwarnings) {
@@ -869,13 +876,6 @@ void runClang(const char* just_parse_filename) {
   // libFlag and ldflags are handled during linking later.
 
   clangCCArgs.push_back("-DCHPL_GEN_CODE");
-
-  // Gather information from readargsfrom into clangArgs.
-  readArgsFromCommand(readargsfrom.c_str(), args);
-  clangInstallDir = args[0];
-  for( size_t i = 1; i < args.size(); ++i ) {
-    clangOtherArgs.push_back(args[i]);
-  }
 
   // Always include sys_basic because it might change the
   // behaviour of macros!
