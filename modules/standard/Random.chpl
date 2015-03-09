@@ -218,12 +218,12 @@ class RandomStream {
     if seed % 2 == 0 || seed < 1 || seed > 1:int(64)<<46 then
       halt("RandomStream seed must be an odd integer between 0 and 2**46");
     this.seed = seed;
+    RandomStreamPrivate_cursor = seed;
+    RandomStreamPrivate_count = 1;
   }
 
   pragma "no doc"
   proc RandomStreamPrivate_getNext_noLock() {
-    var next: eltType;
-    
     if (eltType == complex) {
       RandomStreamPrivate_count += 2;
     } else {
@@ -240,7 +240,7 @@ class RandomStream {
   }
 
   /*
-    Returns the next value in the random stream.`
+    Returns the next value in the random stream.
 
     :returns: The next value in the random stream as type :type:`eltType`.
    */
@@ -327,9 +327,11 @@ class RandomStream {
 
   pragma "no doc"
   proc writeThis(f: Writer) {
-    f <~> "RandomStream(parSafe=";
+    f <~> "RandomStream(eltType=";
+    f <~> typeToString(eltType);
+    f <~> ", parSafe=";
     f <~> parSafe;
-    f <~> ", seed = ";
+    f <~> ", seed=";
     f <~> seed;
     f <~> ")";
   }
@@ -478,7 +480,7 @@ iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
     if ZD.rank > 1 then
       myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
     else
-      myStart += multiplier * ZD.indexOrder(innerRange.low):int(64);
+      myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
     if !innerRange.stridable {
       cursor = RandomPrivate_randlc_skipto(seed, myStart);
       for i in innerRange do
@@ -486,7 +488,7 @@ iter RandomPrivate_iterate(type resultType, D: domain, seed: int(64),
     } else {
       myStart -= innerRange.low.safeCast(int(64));
       for i in innerRange {
-        cursor = RandomPrivate_randlc_skipto(seed, myStart + i:int(64) * multiplier);
+        cursor = RandomPrivate_randlc_skipto(seed, myStart + i.safeCast(int(64)) * multiplier);
         yield RandomPrivate_randlc(resultType, cursor);
       }
     }
