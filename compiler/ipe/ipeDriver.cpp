@@ -88,7 +88,7 @@ void ipeRootInit()
 
 static PrimitiveType* createType(const char* name);
 
-static IpeModule*     initializeRoot(IpeVars* rootVars);
+static IpeModule*     initializeRoot();
 static void           initializeChapelStandard(IpeVars* rootVars);
 static IpeModule*     initializeRepl(IpeVars* rootVars);
 
@@ -126,19 +126,32 @@ void ipeRun()
 
   gRootVars         = IpeVars::rootAllocate(1024 * sizeof(IpeValue));
 
-  rootModule        = initializeRoot(gRootVars);
+  rootModule        = initializeRoot();
   gRootScope        = rootModule->scope();
 
 #if 0
+  printf("After initializeRoot\n");
   printf("\n\n");
   gRootScope->describe(3);
   printf("\n\n");
 
   IpeVars::describe(gRootVars, 3);
   printf("\n\n");
+  printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 #endif
 
   initializeChapelStandard(gRootVars);
+
+#if 0
+  printf("After initializeChapelStandard\n");
+  printf("\n\n");
+  gRootScope->describe(3);
+  printf("\n\n");
+
+  IpeVars::describe(gRootVars, 3);
+  printf("\n\n");
+  printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+#endif
 
   replModule        = initializeRepl(gRootVars);
   replScope         = replModule->scope();
@@ -180,11 +193,11 @@ static PrimitiveType* createType(const char* name)
   return pt;
 }
 
-static IpeModule* initializeRoot(IpeVars* rootVars)
+static IpeModule* initializeRoot()
 {
   ModuleSymbol*   modSym    = createRootModule();
   IpeModule*      rootMod   = new IpeModule(modSym);
-  IpeScopeModule* rootScope = rootMod->scope(); // new IpeScopeModule(rootMod);
+  IpeScopeModule* rootScope = rootMod->scope();
   VarSymbol*      var       = NULL;
 
   IpeValue        modValue(rootMod);
@@ -193,8 +206,8 @@ static IpeModule* initializeRoot(IpeVars* rootVars)
   {
     if (DefExpr* defExpr = toDefExpr(rootModule->block->body.get(i)))
     {
-      ipeResolve (defExpr, rootScope, rootVars);
-      ipeEvaluate(defExpr,            rootVars);
+      ipeResolve (defExpr, rootScope, gRootVars);
+      ipeEvaluate(defExpr,            gRootVars);
     }
   }
 
@@ -202,7 +215,7 @@ static IpeModule* initializeRoot(IpeVars* rootVars)
 
   var->addFlag(FLAG_PARAM);
 
-  rootScope->extend(var, modValue, rootVars);
+  rootScope->extend(var, modValue, gRootVars);
 
   return rootMod;
 }

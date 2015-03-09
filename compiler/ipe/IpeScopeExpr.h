@@ -17,22 +17,16 @@
  * limitations under the License.
  */
 
-#ifndef _IPE_SCOPE_PROCEDURE_H_
-#define _IPE_SCOPE_PROCEDURE_H_
+#ifndef _IPE_SCOPE_EXPR_H_
+#define _IPE_SCOPE_EXPR_H_
 
 #include "IpeScope.h"
 
-#include <stack>
-
-class IpeProcedure;
-class IpeVars;
-
-class IpeScopeProcedure : public IpeScope
+class IpeScopeExpr : public IpeScope
 {
 public:
-                           IpeScopeProcedure(IpeProcedure* procedure,
-                                             IpeScope*     parent);
-  virtual                 ~IpeScopeProcedure();
+                           IpeScopeExpr(IpeScope* parent);
+  virtual                 ~IpeScopeExpr();
 
   virtual const char*      name()                                     const;
 
@@ -43,21 +37,12 @@ public:
   virtual void             envPush();
   virtual void             envPop();
 
-  int                      maxFrameSize()                             const;
-
 protected:
   virtual const char*      type()                                     const;
   virtual void             describeHeader(int offset)                 const;
 
 private:
-                           IpeScopeProcedure();
-
-  IpeProcedure*            mProcedure;
-  int                      mDepth;
-
-  int                      mMaxFrameSize;
-  int                      mOffset;
-  std::stack<int>          mOffsetStack;
+                           IpeScopeExpr();
 };
 
 #endif
