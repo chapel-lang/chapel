@@ -50,8 +50,8 @@ void collectFnCalls(BaseAST* ast, Vec<CallExpr*>& calls) {
 }
 
 
-void collectFnCallsSTL(BaseAST* ast, std::vector<CallExpr*>& calls) {
-  AST_CHILDREN_CALL(ast, collectFnCallsSTL, calls);
+void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
+  AST_CHILDREN_CALL(ast, collectFnCalls, calls);
   if (CallExpr* call = toCallExpr(ast))
     if (call->isResolved())
       calls.push_back(call);
@@ -72,11 +72,11 @@ void collect_stmts(BaseAST* ast, Vec<Expr*>& stmts) {
   }
 }
 
-void collect_stmts_STL(BaseAST* ast, std::vector<Expr*>& stmts) {
+void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts) {
   if (Expr* expr = toExpr(ast)) {
     stmts.push_back(expr);
     if (isBlockStmt(expr) || isCondStmt(expr)) {
-      AST_CHILDREN_CALL(ast, collect_stmts_STL, stmts);
+      AST_CHILDREN_CALL(ast, collect_stmts, stmts);
     }
   }
 }
@@ -87,8 +87,8 @@ void collectDefExprs(BaseAST* ast, Vec<DefExpr*>& defExprs) {
     defExprs.add(defExpr);
 }
 
-void collectDefExprsSTL(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
-  AST_CHILDREN_CALL(ast, collectDefExprsSTL, defExprs);
+void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
+  AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
   if (DefExpr* defExpr = toDefExpr(ast))
     defExprs.push_back(defExpr);
 }
@@ -99,8 +99,8 @@ void collectCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs) {
     callExprs.add(callExpr);
 }
 
-void collectCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
-  AST_CHILDREN_CALL(ast, collectCallExprsSTL, callExprs);
+void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
+  AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
   if (CallExpr* callExpr = toCallExpr(ast))
     callExprs.push_back(callExpr);
 }
@@ -113,9 +113,9 @@ void collectMyCallExprs(BaseAST* ast, Vec<CallExpr*>& callExprs,
       callExprs.add(callExpr);
 }
 
-void collectMyCallExprsSTL(BaseAST* ast, std::vector<CallExpr*>& callExprs,
+void collectMyCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs,
                            FnSymbol* parent_fn) {
-  AST_CHILDREN_CALL(ast, collectMyCallExprsSTL, callExprs, parent_fn);
+  AST_CHILDREN_CALL(ast, collectMyCallExprs, callExprs, parent_fn);
   if (CallExpr* callExpr = toCallExpr(ast))
     if (callExpr->parentSymbol == parent_fn)
       callExprs.push_back(callExpr);
@@ -127,8 +127,8 @@ void collectGotoStmts(BaseAST* ast, Vec<GotoStmt*>& gotoStmts) {
     gotoStmts.add(gotoStmt);
 }
 
-void collectGotoStmtsSTL(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
-  AST_CHILDREN_CALL(ast, collectGotoStmtsSTL, gotoStmts);
+void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
+  AST_CHILDREN_CALL(ast, collectGotoStmts, gotoStmts);
   if (GotoStmt* gotoStmt = toGotoStmt(ast))
     gotoStmts.push_back(gotoStmt);
 }
@@ -139,8 +139,8 @@ void collectSymExprs(BaseAST* ast, Vec<SymExpr*>& symExprs) {
     symExprs.add(symExpr);
 }
 
-void collectSymExprsSTL(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
-  AST_CHILDREN_CALL(ast, collectSymExprsSTL, symExprs);
+void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
     symExprs.push_back(symExpr);
 }
@@ -178,8 +178,8 @@ void collectSymbols(BaseAST* ast, Vec<Symbol*>& symbols) {
     symbols.add(symbol);
 }
 
-void collectSymbolsSTL(BaseAST* ast, std::vector<Symbol*>& symbols) {
-  AST_CHILDREN_CALL(ast, collectSymbolsSTL, symbols);
+void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
+  AST_CHILDREN_CALL(ast, collectSymbols, symbols);
   if (Symbol* symbol = toSymbol(ast))
     symbols.push_back(symbol);
 }
@@ -189,9 +189,9 @@ void collect_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
-void collect_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
   asts.push_back(ast);
-  AST_CHILDREN_CALL(ast, collect_asts_STL, asts);
+  AST_CHILDREN_CALL(ast, collect_asts, asts);
 }
 
 void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
@@ -199,8 +199,8 @@ void collect_asts_postorder(BaseAST* ast, Vec<BaseAST*>& asts) {
   asts.add(ast);
 }
 
-void collect_asts_postorder_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
-  AST_CHILDREN_CALL(ast, collect_asts_postorder_STL, asts);
+void collect_asts_postorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_asts_postorder, asts);
   asts.push_back(ast);
 }
 
@@ -216,9 +216,9 @@ void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   asts.add(ast);
 }
 
-static void collect_top_asts_internal_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
+static void collect_top_asts_internal(BaseAST* ast, std::vector<BaseAST*>& asts) {
   if (!isSymbol(ast) || isArgSymbol(ast)) {
-    AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
+    AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
     asts.push_back(ast);
   }
 }
@@ -230,8 +230,8 @@ static void collect_top_asts_internal_STL(BaseAST* ast, std::vector<BaseAST*>& a
 // replaced by more specific traversals implemented in this file.
 // Something to check out another day.
 //
-void collect_top_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
-  AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
+void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
+  AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
   asts.push_back(ast);
 }
 
@@ -652,7 +652,7 @@ static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   types.set_add(ts);
   std::vector<DefExpr*> defExprs;
-  collectDefExprsSTL(ts, defExprs);
+  collectDefExprs(ts, defExprs);
   for_vector(DefExpr, def, defExprs) {
     if (def->sym->type && !types.set_in(def->sym->type->symbol))
       pruneVisit(def->sym->type->symbol, fns, types);
@@ -666,7 +666,7 @@ static void
 pruneVisit(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   fns.set_add(fn);
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(fn, symExprs);
+  collectSymExprs(fn, symExprs);
   for_vector(SymExpr, se, symExprs) {
     if (FnSymbol* next = toFnSymbol(se->var))
       if (!fns.set_in(next))

@@ -141,7 +141,7 @@ checkFunction(FnSymbol* fn) {
     USR_WARN(fn, "providing an explicit return type on a 'param' function currently leads to incorrect results; as a workaround, remove the return type specification in function '%s'", fn->name);
 
   std::vector<CallExpr*> calls;
-  collectMyCallExprsSTL(fn, calls, fn);
+  collectMyCallExprs(fn, calls, fn);
   bool isIterator = fn->isIterator();
   bool notInAFunction = !isIterator && (fn->getModule()->initFn == fn);
   int numVoidReturns = 0, numNonVoidReturns = 0, numYields = 0;

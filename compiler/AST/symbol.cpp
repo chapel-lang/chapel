@@ -2059,7 +2059,7 @@ void FnSymbol::codegenDef() {
 
   {
     std::vector<BaseAST*> asts;
-    collect_top_asts_STL(body, asts);
+    collect_top_asts(body, asts);
 
     for_vector(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))

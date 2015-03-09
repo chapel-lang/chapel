@@ -125,7 +125,7 @@ void deadVariableElimination(FnSymbol* fn) {
 void deadExpressionElimination(FnSymbol* fn) {
   std::vector<BaseAST*> asts;
 
-  collect_asts_STL(fn, asts);
+  collect_asts(fn, asts);
 
   for_vector(BaseAST, ast, asts) {
     Expr* exprAst = toExpr(ast);
@@ -216,7 +216,7 @@ void deadCodeElimination(FnSymbol* fn) {
 
       std::vector<BaseAST*> asts;
 
-      collect_asts_STL(expr, asts);
+      collect_asts(expr, asts);
 
       for_vector(BaseAST, ast, asts) {
         if (Expr* sub = toExpr(ast)) {
@@ -249,7 +249,7 @@ void deadCodeElimination(FnSymbol* fn) {
   forv_Vec(Expr, expr, workSet) {
     std::vector<SymExpr*> symExprs;
 
-    collectSymExprsSTL(expr, symExprs);
+    collectSymExprs(expr, symExprs);
 
     for_vector(SymExpr, se, symExprs) {
       if (UD.count(se) != 0) {
@@ -536,7 +536,7 @@ void verifyNcleanRemovedIterResumeGotos() {
 static void cleanupLoopBlocks(FnSymbol* fn) {
   std::vector<Expr*> stmts;
 
-  collect_stmts_STL(fn->body, stmts);
+  collect_stmts(fn->body, stmts);
 
   for_vector (Expr, expr, stmts) {
     if (BlockStmt* stmt = toBlockStmt(expr)) {

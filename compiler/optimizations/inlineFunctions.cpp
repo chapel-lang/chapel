@@ -116,7 +116,7 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
   }
 
   std::vector<CallExpr*> callExprs;
-  collectCallExprsSTL(fn, callExprs);
+  collectCallExprs(fn, callExprs);
 
   for_vector(CallExpr, call, callExprs) {
     if (!call->primitive) {
@@ -165,7 +165,7 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemo
 
   inlinedSet.set_add(fn);
 
-  collectFnCallsSTL(fn, calls);
+  collectFnCalls(fn, calls);
 
   for_vector(CallExpr, call, calls) {
     if (call->parentSymbol) {

@@ -172,7 +172,7 @@ static void flatten_primary_methods(FnSymbol* fn) {
 static void change_cast_in_where(FnSymbol* fn) {
   if (fn->where) {
     std::vector<BaseAST*> asts;
-    collect_asts_STL(fn->where, asts);
+    collect_asts(fn->where, asts);
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed("_cast")) {
@@ -187,7 +187,7 @@ static void change_cast_in_where(FnSymbol* fn) {
 
 void cleanup(void) {
   std::vector<BaseAST*> asts;
-  collect_asts_STL(rootModule, asts);
+  collect_asts(rootModule, asts);
 
   for_vector(BaseAST, ast, asts) {
     SET_LINENO(ast);

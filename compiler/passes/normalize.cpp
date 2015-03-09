@@ -291,13 +291,13 @@ static void transformLogicalShortCircuit()
 // e.g., after generating default or wrapper functions
 void normalize(BaseAST* base) {
   std::vector<CallExpr*> calls;
-  collectCallExprsSTL(base, calls);
+  collectCallExprs(base, calls);
   for_vector(CallExpr, call, calls) {
     processSyntacticDistributions(call);
   }
 
   std::vector<Symbol*> symbols;
-  collectSymbolsSTL(base, symbols);
+  collectSymbols(base, symbols);
   for_vector(Symbol, symbol, symbols) {
     if (FnSymbol* fn = toFnSymbol(symbol))
       normalize_returns(fn);
@@ -310,7 +310,7 @@ void normalize(BaseAST* base) {
   }
 
   calls.clear();
-  collectCallExprsSTL(base, calls);
+  collectCallExprs(base, calls);
   for_vector(CallExpr, call1, calls) {
     applyGetterTransform(call1);
     insert_call_temps(call1);
@@ -341,7 +341,7 @@ checkUseBeforeDefs() {
       Vec<Symbol*> defined;
 
       // Walk the asts in this function.
-      collect_asts_postorder_STL(fn, asts);
+      collect_asts_postorder(fn, asts);
       for_vector(BaseAST, ast, asts) {
         // Adds definitions (this portion could probably be made into a
         // separate function - see loopInvariantCodeMotion and copyPropagation)
@@ -590,7 +590,7 @@ static void normalize_returns(FnSymbol* fn) {
   int numVoidReturns = 0;
   int numYields = 0;
   bool isIterator = fn->isIterator();
-  collectMyCallExprsSTL(fn, calls, fn); // ones not in a nested function
+  collectMyCallExprs(fn, calls, fn); // ones not in a nested function
   for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN)) {
       rets.add(call);
@@ -1288,7 +1288,7 @@ static void fixup_array_formals(FnSymbol* fn) {
         arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
 
         std::vector<SymExpr*> symExprs;
-        collectSymExprsSTL(fn, symExprs);
+        collectSymExprs(fn, symExprs);
 
         // If we have an element type, replace reference to its symbol with
         // "arg.eltType", so we use the instantiated element type.
@@ -1387,7 +1387,7 @@ clone_for_parameterized_primitive_formals(FnSymbol* fn,
   Symbol* newsym = map.get(def->sym);
   newsym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(newfn, symExprs);
+  collectSymExprs(newfn, symExprs);
   for_vector(SymExpr, se, symExprs) {
     if (se->var == newsym)
       se->var = new_IntSymbol(width);
@@ -1446,7 +1446,7 @@ fixup_query_formals(FnSymbol* fn) {
       continue;
     if (DefExpr* def = toDefExpr(formal->typeExpr->body.tail)) {
       std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(fn, symExprs);
+      collectSymExprs(fn, symExprs);
       for_vector(SymExpr, se, symExprs) {
         if (se->var == def->sym)
           se->replace(new CallExpr(PRIM_TYPEOF, formal));
@@ -1505,7 +1505,7 @@ fixup_query_formals(FnSymbol* fn) {
       if (queried) {
         bool isTupleType = false;
         std::vector<SymExpr*> symExprs;
-        collectSymExprsSTL(fn, symExprs);
+        collectSymExprs(fn, symExprs);
         if (call->isNamed("_build_tuple")) {
           add_to_where_clause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_StringSymbol("size")));
           call->baseExpr->replace(new SymExpr(dtTuple->symbol));
@@ -1548,7 +1548,7 @@ find_printModuleInit_stuff() {
   if (fUseIPE == false) {
     std::vector<Symbol*> symbols;
 
-    collectSymbolsSTL(printModuleInitModule, symbols);
+    collectSymbols(printModuleInitModule, symbols);
 
     for_vector(Symbol, symbol, symbols) {
       if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {

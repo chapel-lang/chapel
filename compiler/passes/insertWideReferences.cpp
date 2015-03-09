@@ -250,7 +250,7 @@ static void handleLocalBlocks() {
 
   forv_Vec(BlockStmt, block, queue) {
     std::vector<CallExpr*> calls;
-    collectCallExprsSTL(block, calls);
+    collectCallExprs(block, calls);
     for_vector(CallExpr, call, calls) {
       localizeCall(call);
       if (FnSymbol* fn = call->isResolved()) {

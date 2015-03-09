@@ -359,7 +359,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 
   std::vector<CallExpr*> calls;
 
-  collectCallExprsSTL(fn, calls);
+  collectCallExprs(fn, calls);
 
   for_vector(CallExpr, call, calls) {
     DEBUG_PRINTF("\tcall %p (id=%d): ", call, call->id);

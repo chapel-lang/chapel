@@ -4218,7 +4218,7 @@ createFunctionAsValue(CallExpr *call) {
   }
 
   std::vector<CallExpr*> calls;
-  collectCallExprsSTL(captured_fn, calls);
+  collectCallExprs(captured_fn, calls);
 
   for_vector(CallExpr, cl, calls) {
     if (cl->isPrimitive(PRIM_YIELD)) {
@@ -4280,7 +4280,7 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent /* = NULL*/) {
 static bool
 usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen) {
   std::vector<BaseAST*> asts;
-  collect_asts_STL(fn, asts);
+  collect_asts(fn, asts);
   for_vector(BaseAST, ast, asts) {
     if (toCallExpr(ast)) {
       CallExpr *call = toCallExpr(ast);
@@ -7981,7 +7981,7 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
 
 static void insertRuntimeInitTemps() {
   std::vector<BaseAST*> asts;
-  collect_asts_postorder_STL(rootModule, asts);
+  collect_asts_postorder(rootModule, asts);
 
   // Collect asts which are definitions of VarSymbols that are type variables
   // and are flagged as runtime types.

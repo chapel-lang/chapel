@@ -725,7 +725,7 @@ static void build_type_constructor(AggregateType* ct) {
   // Update the symbol table with added defs.
   std::vector<DefExpr*> defs;
 
-  collectDefExprsSTL(fn, defs);
+  collectDefExprs(fn, defs);
   addToSymbolTable(defs);
 }
 
@@ -1010,7 +1010,7 @@ static void build_constructor(AggregateType* ct) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
 
   std::vector<DefExpr*> defs;
-  collectDefExprsSTL(fn, defs);
+  collectDefExprs(fn, defs);
   addToSymbolTable(defs);
 }
 
@@ -1052,7 +1052,7 @@ static void insert_implicit_this(FnSymbol* fn, Vec<const char*>& fieldNamesSet)
 {
   std::vector<BaseAST*> asts;
 
-  collect_asts_STL(fn->body, asts);
+  collect_asts(fn->body, asts);
 
   for_vector(BaseAST, ast, asts) {
     if (UnresolvedSymExpr* se = toUnresolvedSymExpr(ast))

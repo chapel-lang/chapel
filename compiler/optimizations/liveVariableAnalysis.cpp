@@ -75,7 +75,7 @@ liveVariableAnalysis(FnSymbol* fn,
     BitVec* lvout = new BitVec(locals.n);
     for_vector(Expr, expr, bb->exprs) {
       std::vector<BaseAST*> asts;
-      collect_asts_STL(expr, asts);
+      collect_asts(expr, asts);
       for_vector(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {

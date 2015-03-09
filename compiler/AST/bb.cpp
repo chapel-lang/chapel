@@ -227,7 +227,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
     DefExpr*      def = toDefExpr(stmt);
     std::vector<BaseAST*> asts;
 
-    collect_asts_STL(stmt, asts);
+    collect_asts(stmt, asts);
 
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {

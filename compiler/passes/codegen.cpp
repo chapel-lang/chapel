@@ -775,7 +775,7 @@ static void codegen_header() {
     }
 
     std::vector<DefExpr*> defs;
-    collectDefExprsSTL(fn->body, defs);
+    collectDefExprs(fn->body, defs);
     for_vector(DefExpr, def, defs) {
       legalizeName(def->sym);
       // give temps cnames

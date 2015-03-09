@@ -40,7 +40,7 @@ void localizeGlobals() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     Map<Symbol*,VarSymbol*> globals;
     std::vector<BaseAST*> asts;
-    collect_asts_STL(fn->body, asts);
+    collect_asts(fn->body, asts);
     for_vector(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
         Symbol* var = se->var;

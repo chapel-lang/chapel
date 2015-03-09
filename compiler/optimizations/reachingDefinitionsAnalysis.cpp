@@ -84,7 +84,7 @@ reachingDefinitionsAnalysis(FnSymbol* fn,
     for (int i = bb->exprs.size()-1; i >= 0; i--) {
       Expr* expr = bb->exprs[i];
       std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(expr, symExprs);
+      collectSymExprs(expr, symExprs);
       for_vector(SymExpr, se, symExprs) {
         if (defSet.set_in(se)) {
           if (!bbDefSet.set_in(se->var)) {
@@ -166,7 +166,7 @@ buildDefUseChains(FnSymbol* fn,
     BitVec* in = IN[i];
     for_vector(Expr, expr, bb->exprs) {
       std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(expr, symExprs);
+      collectSymExprs(expr, symExprs);
       for_vector(SymExpr, se, symExprs) {
         if (useSet.set_in(se)) {
           UD[se] = new Vec<SymExpr*>();

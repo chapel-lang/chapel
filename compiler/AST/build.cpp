@@ -40,7 +40,7 @@ checkControlFlow(Expr* expr, const char* context) {
   Vec<BaseAST*> loopSet;     // all asts in a loop in expr argument
   Vec<BaseAST*> innerFnSet;  // all asts in a function in expr argument
   std::vector<BaseAST*> asts;
-  collect_asts_STL(expr, asts);
+  collect_asts(expr, asts);
 
   //
   // compute labelSet and loopSet
@@ -52,7 +52,7 @@ checkControlFlow(Expr* expr, const char* context) {
       else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (!innerFnSet.set_in(fn)) {
           std::vector<BaseAST*> innerAsts;
-          collect_asts_STL(fn, innerAsts);
+          collect_asts(fn, innerAsts);
           for_vector(BaseAST, ast, innerAsts) {
             innerFnSet.set_add(ast);
           }
@@ -64,7 +64,7 @@ checkControlFlow(Expr* expr, const char* context) {
           labelSet.set_add(block->userLabel);
         }
         std::vector<BaseAST*> loopAsts;
-        collect_asts_STL(block, loopAsts);
+        collect_asts(block, loopAsts);
         for_vector(BaseAST, ast, loopAsts) {
           loopSet.set_add(ast);
         }

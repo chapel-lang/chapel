@@ -56,7 +56,7 @@ static void nonLeaderParCheck()
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 {
   std::vector<CallExpr*> calls;
-  collectCallExprsSTL(fn, calls);
+  collectCallExprs(fn, calls);
   for_vector(CallExpr, call, calls) {
     if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
         (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
@@ -204,7 +204,7 @@ static void computeRecursiveIteratorSet() {
 //
 static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
   std::vector<BaseAST*> asts;
-  collect_asts_STL(block, asts);
+  collect_asts(block, asts);
 
   for_vector(BaseAST, ast, asts) {
 
@@ -797,7 +797,7 @@ static void localizeIteratorReturnSymbols() {
   forv_Vec(FnSymbol, iterFn, gFnSymbols) {
     if (iterFn->inTree() && iterFn->isIterator()) {
       std::vector<BaseAST*> asts;
-      collect_asts_STL(iterFn, asts);
+      collect_asts(iterFn, asts);
       localizeReturnSymbols(iterFn, asts);
     }
   }
@@ -967,7 +967,7 @@ static void convertYieldsAndReturns(std::vector<BaseAST*>& asts, Symbol* index,
         // both 'taskFn' and 'call' are updated by threadLoopBodyFnArgs()
         INT_ASSERT(call->isResolved() == taskFn);
         std::vector<BaseAST*> taskAsts;
-        collect_asts_STL(taskFn, taskAsts);
+        collect_asts(taskFn, taskAsts);
         convertYieldsAndReturns(taskAsts, index, tIDArg, tArgArgs);
       }
     }
@@ -980,7 +980,7 @@ static void convertYieldsAndReturns(std::vector<BaseAST*>& asts, Symbol* index,
 static bool fnContainsOn(FnSymbol* fn)
 {
   std::vector<CallExpr*> calls;
-  collectCallExprsSTL(fn, calls);
+  collectCallExprs(fn, calls);
   for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_BLOCK_ON) ||
         call->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
@@ -1015,7 +1015,7 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
   iteratorFn->body = iterator->body->copy();
   iterator->defPoint->insertBefore(new DefExpr(iteratorFn));
   std::vector<BaseAST*> asts;
-  collect_asts_STL(iteratorFn, asts);
+  collect_asts(iteratorFn, asts);
   ArgSymbol* icArg = new ArgSymbol(blankIntentForType(ic->type), "_ic", ic->type);
   iteratorFn->insertFormalAtTail(icArg);
   replaceIteratorFormalsWithIteratorFields(iterator, icArg, asts);
@@ -1192,7 +1192,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // the yielded index for the iterator formal.
     expandBodyForIteratorInline(forLoop, ibody, index);
 
-    collect_asts_STL(ibody, asts);
+    collect_asts(ibody, asts);
 
     replaceIteratorFormalsWithIteratorFields(iterator, ic, asts);
   }
@@ -1215,7 +1215,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             TaskFnCopyMap& taskFnCopies) {
   std::vector<BaseAST*> asts;
 
-  collect_asts_STL(ibody, asts);
+  collect_asts(ibody, asts);
 
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
@@ -1328,14 +1328,14 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 // recursively on those task functions.  Task functions are out-lined in
 // createTaskFunctions, but contain statements -- including yields -- that
 // actually "belong" to the calling function.  Recursive calls of this function
-// effective inline those out-lined functions so we get an accurate count.
+// effectively inline those out-lined functions so we get an accurate count.
 static unsigned
 countYieldsInFn(FnSymbol* fn)
 
 {
   unsigned count = 0;
   std::vector<CallExpr*> calls;
-  collectCallExprsSTL(fn, calls);
+  collectCallExprs(fn, calls);
   for_vector(CallExpr, call, calls)
   {
     if (call->isPrimitive(PRIM_YIELD))
@@ -1392,7 +1392,7 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
     INT_ASSERT(block);
 
     // TODO: std::vector::iterator does not guarantee correct iteration if the
-    // capaacity of the vector it refers to increases during iteration.
+    // capacity of the vector it refers to increases during iteration.
     // Replace this loop with an equivalent predicate that uses std::vector in
     // a valid fashion.
     collectCallExprs(block, calls);
@@ -1573,7 +1573,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
     int           count      = 1;
     std::vector<BaseAST*> asts;
 
-    collect_asts_STL(ibody, asts);
+    collect_asts(ibody, asts);
 
     for_alist(expr, ibody->body) {
       if (CallExpr* curr_expr = toCallExpr(expr)) {

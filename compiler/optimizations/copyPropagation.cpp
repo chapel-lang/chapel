@@ -817,7 +817,7 @@ localCopyPropagationCore(BasicBlock*          bb,
 
     std::vector<SymExpr*> symExprs;
 
-    collectSymExprsSTL(expr, symExprs);
+    collectSymExprs(expr, symExprs);
 
     propagateCopies(symExprs, available, refs);
 
@@ -925,7 +925,7 @@ static void computeKillSets(FnSymbol* fn,
     for_vector(Expr, expr, bb2->exprs)
     {
       std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(expr, symExprs);
+      collectSymExprs(expr, symExprs);
 
       for_vector(SymExpr, se, symExprs)
       {
@@ -1309,7 +1309,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 
 size_t singleAssignmentRefPropagation(FnSymbol* fn) {
   std::vector<BaseAST*> asts;
-  collect_asts_STL(fn, asts);
+  collect_asts(fn, asts);
 
   Vec<Symbol*> refSet;
   Vec<Symbol*> refVec;

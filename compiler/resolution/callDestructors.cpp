@@ -72,7 +72,7 @@ static void cullAutoDestroyFlags()
         buildDefUseMaps(fn, defMap, useMap);
 
         std::vector<DefExpr*> defs;
-        collectDefExprsSTL(fn, defs);
+        collectDefExprs(fn, defs);
 
         for_vector(DefExpr, def, defs)
         {
@@ -121,7 +121,7 @@ static void cullExplicitAutoDestroyFlags()
     buildDefUseMaps(fn, defMap, useMap);
 
     std::vector<DefExpr*> defs;
-    collectDefExprsSTL(fn, defs);
+    collectDefExprs(fn, defs);
 
     Symbol* retVar = fn->getReturnSymbol();
 
@@ -269,7 +269,7 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
       isGotoStmt(stmt) == false) {
     std::vector<GotoStmt*> gotoStmts;
 
-    collectGotoStmtsSTL(stmt, gotoStmts);
+    collectGotoStmts(stmt, gotoStmts);
 
     for_vector(GotoStmt, gotoStmt, gotoStmts) {
       if (gotoExitsBlock(gotoStmt, block)) {
@@ -439,7 +439,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
   fn->defPoint->insertBefore(new DefExpr(newFn));
 
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(newFn, symExprs);
+  collectSymExprs(newFn, symExprs);
 
   // In the body of the function, replace references to the original
   // ret symbol with copies of the return value reference.  A local
@@ -624,7 +624,7 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
   } else {
     for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
       std::vector<SymExpr*> symExprs;
-      collectSymExprsSTL(stmt, symExprs);
+      collectSymExprs(stmt, symExprs);
       for_vector(SymExpr, se, symExprs) {
         if (se->var == lhs) {
           use.add(se);

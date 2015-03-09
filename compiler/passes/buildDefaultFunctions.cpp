@@ -63,7 +63,7 @@ void buildDefaultFunctions() {
   SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
 
   std::vector<BaseAST*> asts;
-  collect_asts_STL(rootModule, asts);
+  collect_asts(rootModule, asts);
   for_vector(BaseAST, ast, asts) {
     if (TypeSymbol* type = toTypeSymbol(ast)) {
       // Here we build default functions that are always generated (even when
@@ -217,7 +217,7 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
     std::vector<BaseAST*> asts;
-    collect_asts_STL(fn, asts);
+    collect_asts(fn, asts);
     for_vector(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         if (call->isNamed(field->name) && call->numActuals() == 2) {

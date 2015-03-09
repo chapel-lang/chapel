@@ -50,7 +50,7 @@ static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   std::vector<BaseAST*> asts;
 
-  collect_asts_STL(fn, asts);
+  collect_asts(fn, asts);
 
   for_vector(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
@@ -201,7 +201,7 @@ static void
 replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   if (vars->n == 0) return;
   std::vector<SymExpr*> symExprs;
-  collectSymExprsSTL(fn->body, symExprs);
+  collectSymExprs(fn->body, symExprs);
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       ArgSymbol* arg = toArgSymbol(e->value);
@@ -284,7 +284,7 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
     change = false;
     forv_Vec(FnSymbol, fn, nestedFunctions) {
       std::vector<BaseAST*> asts;
-      collect_top_asts_STL(fn, asts);
+      collect_top_asts(fn, asts);
       SymbolMap* uses = args_map.get(fn);
       for_vector(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
