@@ -1309,12 +1309,12 @@ module ChapelRange {
       writeln("*** In range standalone iterator:");
     }
 
-    const v = this.length;
+    const len = this.length;
     const numChunks = if __primitive("task_get_serial") then
-                      1 else _computeNumChunks(v);
+                      1 else _computeNumChunks(len);
 
     if debugChapelRange {
-      writeln("*** RI: length=", v, " numChunks=", numChunks);
+      writeln("*** RI: length=", len, " numChunks=", numChunks);
     }
 
     if numChunks <= 1 {
@@ -1323,14 +1323,23 @@ module ChapelRange {
       }
     } else {
       coforall chunk in 0..#numChunks {
-        const (lo, hi) = _computeBlock(v, numChunks, chunk, v-1);
-        const len = hi - (lo-1);
-        var low = orderToIndex(lo);
-        var high = (low:strType + stride * (len - 1):strType):idxType;
-        if stride < 0 then low <=> high;
-        const r = if stridable then low..high by stride else low..high;
-        for i in r {
-          yield i;
+        if stridable {
+          // TODO: find a way to avoid this densify/undensify for strided
+          // ranges, perhaps by adding knowledge of alignment to _computeBlock
+          // or using an aligned range
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
+          const mylen = hi - (lo-1);
+          var low = orderToIndex(lo);
+          var high = (low:strType + stride * (mylen - 1):strType):idxType;
+          if stride < 0 then low <=> high;
+          for i in low..high by stride {
+            yield i;
+          }
+        } else {
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, this.high, this.low, this.low);
+          for i in lo..hi {
+            yield i;
+          }
         }
       }
     }
