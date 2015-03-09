@@ -1,5 +1,4 @@
 findfiles.chpl
-globberator-par.chpl
 globberator.chpl
 testboth.chpl
 testemptyglob.chpl

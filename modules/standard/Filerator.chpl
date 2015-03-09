@@ -32,12 +32,12 @@ use Sort;
 // wrong.
 //
 
-/* iter listdir(path: string, dotfiles=false, dirs=true, files=true, 
+/* iter listdir(path: string, hidden=false, dirs=true, files=true, 
                 listlinks=true): string
   
     listdir() lists the contents of a directory, similar to 'ls'
       * path: the directory whose contents should be listed
-      * dotfiles: should files/directories that start with '.' be listed?
+      * hidden: should hidden files/directories be listed?
       * dirs: should dirs be listed?
       * files: should files be listed?
       * listlinks: should symbolic links be listed?
@@ -47,7 +47,7 @@ use Sort;
    start with '.'
 */
 
-iter listdir(path: string, dotfiles=false, dirs=true, files=true, 
+iter listdir(path: string, hidden=false, dirs=true, files=true, 
              listlinks=true): string {
   extern type DIRptr;
   extern type direntptr;
@@ -68,7 +68,7 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
       const filename = ent.d_name();
-      if (dotfiles || filename.substring(1) != '.') {
+      if (hidden || filename.substring(1) != '.') {
         if (filename != "." && filename != "..") {
           //
           // use FileSystem;  // Doesn't work, see comment below
@@ -109,7 +109,7 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
 
 
 /* iter walkdirs(path: string=".", topdown=true, depth=max(int), 
-                 dotfiles=false, followlinks=false, sort=false): string
+                 hidden=false, followlinks=false, sort=false): string
   
    walkdirs() recursively walks a directory structure, yielding
    directory names.  The strings that are generated will be rooted
@@ -119,7 +119,7 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
      * topdown: indicates whether to yield the directories using a
        preorder (vs. postorder) traversal
      * depth: indicates the maximal depth of recursion to use
-     * dotfiles: indicates whether to enter directories with dotfile names
+     * hidden: indicates whether to enter hidden directories
      * followlinks: indicates whether to follow symbolic links or not
      * sort: indicates whether to consider subdirectories in sorted
        order or not
@@ -130,19 +130,19 @@ iter listdir(path: string, dotfiles=false, dirs=true, files=true,
    sort the directories by default.
 */
 
-iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false, 
+iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
               followlinks=false, sort=false): string {
 
   if (topdown) then
     yield path;
 
   if (depth) {
-    var subdirs = listdir(path, dotfiles=dotfiles, files=false, listlinks=followlinks);
+    var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) then
       QuickSort(subdirs);
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
-      for subdir in walkdirs(fullpath, topdown, depth-1, dotfiles, 
+      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
                              followlinks, sort) do
         yield subdir;
     }
@@ -153,33 +153,32 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), dotfiles=false,
 }
 
 
-/* iter wordexp(pattern="*")
+//
+// Here's a parallel version
+//
+iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
+              followlinks=false, sort=false, param tag: iterKind): string 
+       where tag == iterKind.standalone {
 
-   wordexp() gives a glob-like capability, implemented with C's wordexp()
-   (which is, itself a routine that provides a glob-like capability :)
+  if (topdown) then
+    yield path;
 
-     * pattern: the glob pattern to match against
-  
-   By default, it will list all files/directories in the current directory
-*/
-
-iter wordexp(pattern="*") {
-  extern type wordexp_t;
-  extern proc wordexp(pattern:c_string, ref ret_glob: wordexp_t, 
-                      flags_c_int): c_int;
-  extern proc chpl_wordexp_num(x:wordexp_t): size_t;
-  extern proc chpl_wordexp_index(x:wordexp_t, idx:size_t): c_string;
-  extern proc wordfree(ref glb:wordexp_t);
-
-  var glb : wordexp_t;
-
-  const err = wordexp(pattern:c_string, glb, 0);
-
-  for i in 0..chpl_wordexp_num(glb)-1 {
-    yield chpl_wordexp_index(glb, i): string;
+  if (sort) then
+    warning("sorting has no effect for a parallel invocation of walkdirs()");
+  if (depth) {
+    var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
+    if (sort) then
+      warning("sorting has no effect for a parallel invocation of walkdirs()");
+    forall subdir in subdirs {
+      const fullpath = path + "/" + subdir;
+      forall subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
+                                followlinks, sort) do
+        yield subdir;
+    }
   }
 
-  wordfree(glb);
+  if (!topdown) then
+    yield path;
 }
 
 
@@ -192,43 +191,58 @@ iter wordexp(pattern="*") {
    By default, it will list all files/directories in the current directory
 */
 
-iter glob(pattern="*") {
+module Chpl_rt_glob {
   extern type glob_t;
   extern proc chpl_glob(pattern:c_string, flags: c_int, 
                         ref ret_glob:glob_t):c_int;
   extern proc chpl_glob_num(x:glob_t): size_t;
   extern proc chpl_glob_index(x:glob_t, idx:size_t): c_string;
   extern proc globfree(ref glb:glob_t);
+}
 
-  var glb : glob_t;
+iter glob(pattern="*") {
+  var glb : Chpl_rt_glob.glob_t;
 
-  const err = chpl_glob(pattern:c_string, 0, glb);
-  const num = chpl_glob_num(glb);
+  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  const num = Chpl_rt_glob.chpl_glob_num(glb);
   if (num) then
     for i in 0..num-1 do
-      yield chpl_glob_index(glb, i): string;
+      yield Chpl_rt_glob.chpl_glob_index(glb, i): string;
 
-
-  globfree(glb);
+  Chpl_rt_glob.globfree(glb);
 }
 
 
-/* iter findfiles(startdir = ".", recursive=false, dotfiles=false)
+iter glob(pattern:string="*", param tag: iterKind) 
+       where tag == iterKind.standalone {
+  var glb : Chpl_rt_glob.glob_t;
+
+  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  const num = Chpl_rt_glob.chpl_glob_num(glb);
+  if (num) then
+    forall i in 0..num-1 do
+      yield Chpl_rt_glob.chpl_glob_index(glb, i): string;
+
+  Chpl_rt_glob.globfree(glb);
+}
+
+
+/* iter findfiles(startdir = ".", recursive=false, hidden=false)
 
    findfiles() is a simple find-like utility implemented using the
    above routines
 
      * startdir: where to start when looking for files
      * recursive: tells whether or not to descend recurisvely
-     * dotfiles: tells whether or not to yield dotfiles
+     * hidden: tells whether or not to yield hidden
 */
 
-iter findfiles(startdir = ".", recursive=false, dotfiles=false) {
+iter findfiles(startdir = ".", recursive=false, hidden=false) {
   if (recursive) then
-    for subdir in walkdirs(startdir, dotfiles=dotfiles) do
-      for file in listdir(subdir, dotfiles=dotfiles, dirs=false, files=true, listlinks=true) do
+    for subdir in walkdirs(startdir, hidden=hidden) do
+      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    for file in listdir(startdir, dotfiles=dotfiles, dirs=false, files=true, listlinks=false) do
+    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
