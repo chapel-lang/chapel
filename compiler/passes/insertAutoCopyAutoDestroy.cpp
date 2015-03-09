@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -918,53 +918,6 @@ static void computeExits(FnSymbol* fn, SymbolIndexMap& symbolIndex,
 //
 
 
-// Finds the last "normal" statement in a basic block and returns it.
-// A non-normal statement is a flow-altering statement, like a jump or return.
-//
-// If the block contains no "normal" statements, then NULL is returned.
-// Then, new code can be inserted ahead of the first statement in the block.
-static Expr* getLastNonflowStatement(BasicBlock* bb)
-{
-#if 0
-  // As a slight code cleanup, autoDestroys that appear at the end of a loop
-  // body (after the increment expression) in a C-style for loop are pushed
-  // back into the preceding block.  
-  // Without this clause, we get C-sytle for loops that look like:
-  // /* 980641 */ for (i3 = start2; ((i3 <= end2)); i3 += INT64(1),chpl__autoDestroy23(&_yieldedIndex2),chpl__autoDestroy23(&_yieldedIndex),chpl__autoDestroy23(&call_tmp13)) {
-  // which is arguably correct, but not very pretty.
-  // This code depends on the increment expression in a C-style for loop being
-  // set off in a block by itself in basic block analysis.  (Look for clauses
-  // related to CForLoop blocks in BasicBlock::buildLoopStmt().)
-  if (isCStyleForLoopUpdateBlock(bb))
-  {
-    // Back up to the predecessor of the C-style for loop update block and use
-    // its last statement as the insertion point instead.
-
-    // We assume that the update expression of a C-style for loop has only one
-    // predecessor.  (This would not be true if we supported continue
-    // statements in C-sytle for loops.)
-    INT_ASSERT(bb->ins.size() == 1);
-    bb = bb->ins.at(0);
-  }
-  // Actually, this doesn't quite work, because the increment clause may depend
-  // on one or more of the values being deleted.  So we also have to ensure
-  // that they are not read in the increment clause before moving them.
-#endif
-
-  size_t i = bb->exprs.size();
-  while (i-- > 0)
-  {
-    Expr*& expr = bb->exprs[i];
-    // TODO: It might be good to insert only statements into the bb expr list.
-    Expr* stmt = expr->getStmtExpr(); // Is this necessary?
-    if (! isFlowStmt(stmt))
-      return stmt;
-  }
-
-  return NULL;
-}
-
-
 static void processCreator(SymExpr* se, 
                            BitVec* prod, BitVec* live,
                            const AliasVectorMap& aliases,
@@ -1358,16 +1311,9 @@ static void insertAutoDestroy(BasicBlock* bb, BitVec* to_cons,
     return;
 
   // Find the last statement in the block.
-  Expr* stmt = getLastNonflowStatement(bb);
-
-  // If we didn't find one, use the first statement in the block, and insert
-  // autoDestroy calls in front of it.
-  bool isJump = false;
-  if (stmt == NULL)
-  {
-    stmt = bb->exprs[0];
-    isJump = true;
-  }
+  Expr*& expr = bb->exprs[bb->exprs.size()-1];
+  Expr* stmt = expr->getStmtExpr(); // Is this necessary?
+  bool isJump = isFlowStmt(stmt);
 
   // For each true bit in the bit vector, add an autodestroy call.
   // But destroying one member of an alias list destroys them all.
@@ -1408,6 +1354,11 @@ static void insertAutoDestroy(FnSymbol* fn,
                               SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
 {
+  // We need to re-run BB analysis, so that inserted autoCopy() calls are added
+  // to their respective basic blocks.
+  BasicBlock::buildBasicBlocks(fn);
+  BasicBlock::ignoreUnreachableBlocks(fn);
+
   size_t nbbs = fn->basicBlocks->size();
   for (size_t i = 0; i < nbbs; i++)
   {
