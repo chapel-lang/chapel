@@ -54,6 +54,8 @@ public:
                                   IpeValue defaultValue,
                                   IpeVars* vars)                            = 0;
 
+  virtual const char*      name()                                     const = 0;
+
   void                     useAdd(IpeModule* use);
 
   VisibleSymbols           visibleSymbols(UnresolvedSymExpr* expr)    const;
@@ -63,11 +65,12 @@ public:
   void                     describe(int  offset     = 0,
                                     bool recursiveP = false)          const;
 
+  int                      describeVariables(int offset, int index)   const;
+
 protected:
                            IpeScope(IpeScope* parent);
 
   virtual const char*      type()                                     const = 0;
-  virtual const char*      name()                                     const = 0;
   virtual void             describeHeader(int offset)                 const = 0;
 
   void                     symbolPush(Symbol* sym);

@@ -257,3 +257,120 @@ void IpeScope::describe(int offset, bool recursiveP) const
     mParent->describe(offset, recursiveP);
   }
 }
+
+int IpeScope::describeVariables(int offset, int index) const
+{
+  char pad[32] = { '\0' };
+  int  size    = (int) mSymbols.size();
+
+  if (offset < 32)
+  {
+    char* tptr = pad;
+
+    for (int i = 0; i < offset; i++)
+      *tptr++ = ' ';
+
+    *tptr = '\0';
+  }
+
+  for (int i = 0; i < size; i++)
+  {
+    const char* symName = mSymbols[i]->name;
+
+    if (VarSymbol* sym = toVarSymbol(mSymbols[i]))
+    {
+      const char* typeName = "??????";
+
+      if (mSymbols[i]->type != 0)
+        typeName = mSymbols[i]->type->symbol->name;
+
+      if (sym->immediate != 0)
+        printf("%s   %3d: const (%s)", pad, index, typeName);
+
+      else if (sym->hasFlag(FLAG_CONST))
+        printf("%s   %3d: const (%s)", pad, index, typeName);
+
+      else if (sym->hasFlag(FLAG_PARAM))
+        printf("%s   %3d: param (%s)", pad, index, typeName);
+
+      else
+        printf("%s   %3d: var   (%s)", pad, index, typeName);
+
+      if (strlen(typeName) < 10)
+      {
+        int spaces = 10 - strlen(typeName);
+
+        for (int j = 0; j <= spaces; j++)
+          fputc(' ', stdout);
+      }
+
+      printf("   %4d %4d %s", sym->depth(), sym->offset(), symName);
+
+      if (sym->depth() == 0 && sym->offset() >= 0)
+      {
+        IpeValue value = IpeVars::fetch(sym, NULL);
+
+        if (strlen(symName) < 24)
+        {
+          for (size_t i = strlen(symName); i < 24; i++)
+            fputc(' ', stdout);
+        }
+
+        if (sym->type == dtBools[BOOL_SIZE_SYS])
+          printf("         %s", (value.boolGet() == true) ? " true" : "false");
+
+        else if (sym->type == dtInt[INT_SIZE_64])
+          printf("       %7ld", value.integerGet());
+
+        else if (sym->type == dtReal[FLOAT_SIZE_64])
+          printf("       %10.2f", value.realGet());
+
+        else if (sym->type == gIpeTypeModule)
+          printf("0x%012lX", (long) value.moduleGet());
+
+        else if (sym->type == gIpeTypeProcedure)
+          printf("0x%012lX", (long) value.procedureGet());
+      }
+
+      fputc('\n',    stdout);
+
+      index = index + 1;
+    }
+
+    else if (ArgSymbol* sym = toArgSymbol(mSymbols[i]))
+    {
+      const char* typeName = "??????";
+
+      if (mSymbols[i]->type != 0)
+        typeName = mSymbols[i]->type->symbol->name;
+
+      if      (sym->hasFlag(FLAG_CONST) == true)
+        printf("%s   %3d: const (%s)", pad, index, typeName);
+
+      else if (sym->hasFlag(FLAG_PARAM) == true)
+        printf("%s   %3d: param (%s)", pad, index, typeName);
+
+      else
+        printf("%s   %3d: arg   (%s)", pad, index, typeName);
+
+      if (strlen(typeName) < 10)
+      {
+        int spaces = 10 - strlen(typeName);
+
+        for (int j = 0; j <= spaces; j++)
+          fputc(' ', stdout);
+      }
+
+      fputs("   ",   stdout);
+
+      printf("%4d %4d ", sym->depth(), sym->offset());
+
+      fputs(symName, stdout);
+      fputc('\n',    stdout);
+
+      index = index + 1;
+    }
+  }
+
+  return index;
+}
