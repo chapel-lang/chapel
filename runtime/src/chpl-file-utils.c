@@ -158,6 +158,10 @@ qioerr chpl_fs_is_link(int* ret, const char* name) {
   return 0;
 }
 
+qioerr chpl_fs_is_mount(int* ret, const char* name) {
+
+}
+
 /* Creates a directory with the given name and settings if possible,
    returning a qioerr if not. If parents != 0, then the callee wishes
    to create all interim directories necessary as well. */

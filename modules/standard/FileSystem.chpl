@@ -480,6 +480,28 @@ proc isLink(name: string): bool {
   return ret;
 }
 
+/* Returns true if the name corresponds to a mount point, false otherwise.
+   err: a syserr used to indicate if an error occurred
+   name: a string that could be the name of a mount point.
+*/
+proc isMount(out err:syserr, name: string): bool {
+  extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
+
+  var ret:c_int;
+  err = chpl_fs_is_mount(ret, name.c_str());
+  return ret != 0;
+}
+
+/* Returns true if the name corresponds to a mount point, false otherwise.
+   name: a string that could be the name of a mount point.
+*/
+proc isMount(name: string): bool {
+  var err:syserr;
+  var ret = isMount(err, name);
+  if err != ENOERR then ioerror(err, "in isMount", name);
+  return ret;
+}
+
 /* These are constant values of the form S_I[R | W | X][USR | GRP | OTH],
    S_IRWX[U | G | O], S_ISUID, S_ISGID, or S_ISVTX, where R corresponds to
    readable, W corresponds to writable, X corresponds to executable, USR and
