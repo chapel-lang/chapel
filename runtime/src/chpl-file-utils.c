@@ -163,7 +163,7 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
   struct stat nBuf, parentBuf;
   int exitStatus = 0;
   size_t nameLen = strlen(name);
-  char* parent = (char* ) chpl_mem_allocMany(nameLen + 4, sizeof(char), CHPL_RT_MD_STRING_COPY_DATA, 0, 0);
+  char* parent = (char* ) chpl_mem_allocMany(nameLen + 4, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
   strncat(parent, name, nameLen + 1);
   strncat(parent, "/..", 3);
   // TODO: Using "/" is not necessarily portable, look into this

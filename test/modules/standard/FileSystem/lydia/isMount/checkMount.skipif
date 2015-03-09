@@ -2,4 +2,4 @@
 
 import os.path
 
-print(not os.path.exists("/lus/"))
+print(not os.path.exists("/lus/scratch"))
