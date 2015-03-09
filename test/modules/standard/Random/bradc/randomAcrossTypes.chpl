@@ -76,9 +76,29 @@ writeln(A);
 writeln(B);
 writeln(C);
 
+var rs7 = new RandomStream(seed=314159265, eltType=real);
+var rs8 = new RandomStream(seed=314159265, eltType=imag);
+var rs9 = new RandomStream(seed=314159265, eltType=complex);
+//
+// Check getNext() method
+//
+for i in 1..8 {
+  A[i] = rs7.getNext();
+  B[i] = rs8.getNext();
+}
+for i in 1..4 {
+  C[i] = rs9.getNext();
+}
+writeln(A);
+writeln(B);
+writeln(C);
+
 delete rs1;
 delete rs2;
 delete rs3;
 delete rs4;
 delete rs5;
 delete rs6;
+delete rs7;
+delete rs8;
+delete rs9;
