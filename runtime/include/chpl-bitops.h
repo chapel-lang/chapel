@@ -28,13 +28,14 @@
 #ifndef _chpl_bitops_h_
 #define _chpl_bitops_h_
 
+#include <assert.h>
 #include <stdint.h>
 #include <limits.h>
 
 #include "chpl-comp-detect-macros.h"
 
 // chpl_bitops_popcount_*
-// -----------------------
+// ----------------------
 // C implementations from Bithacks: 'Couting bits set, in parallel'
 // With -O3 and no support for the popcount instruction, the C versions produce
 // the same assembly as the builtin under clang
@@ -71,7 +72,7 @@ static inline uint64_t chpl_bitops_popcount_64(unsigned long long x) {
 
 
 // chpl_bitops_clz_*
-// ------------------
+// -----------------
 // C implementation from http://aggregate.org/MAGIC/#Leading%20Zero%20Count
 // Returns: number of leading zeros in the provided integer
 
@@ -120,7 +121,7 @@ static inline uint64_t chpl_bitops_clz_64(unsigned long long x) {
 
 
 // chpl_bitops_ctz_*
-// ------------------
+// -----------------
 // C implementation from Bithacks: 'Count the consecutive zero bits (trailing)
 //                                   on the right with multiply and lookup'
 // Returns: number of trailing zeros in the provided integer
@@ -161,7 +162,7 @@ static inline uint64_t chpl_bitops_ctz_64(unsigned long long x) {
 
 
 // chpl_bitops_parity_*
-// -----------------------
+// --------------------
 // C implementations from Bithacks: 'Compute parity of word with a multiply'
 // Returns: 0 if an even number of bits are set
 //          1 if an odd number of bits are set
@@ -199,4 +200,48 @@ static inline uint64_t chpl_bitops_parity_64(unsigned long long x) {
 #endif
 }
 
+// chpl_bitops_rotl_*
+// ------------------
+// See "Safe, Efficient, and Portable Rotate in C/C++" by John Regehr
+//     http://blog.regehr.org/archives/1063
+// These should be recognized by the backend C compiler and turned into a rol
+//
+// Returns: x rotated left by n
+
+#define UI(size) uint##size##_t
+#define CHPL_BITOPS_ROTL(size) \
+static inline UI(size) chpl_bitops_rotl_##size(UI(size) x, UI(size) n) { \
+  assert(n < size);                                                      \
+  return (x << n) | (x >> (-n & (size - 1)));                            \
+}
+
+CHPL_BITOPS_ROTL(8)
+CHPL_BITOPS_ROTL(16)
+CHPL_BITOPS_ROTL(32)
+CHPL_BITOPS_ROTL(64)
+
+#undef CHPL_BITOPS_ROTL
+
+//
+// chpl_bitops_rotr_*
+// ------------------
+// See "Safe, Efficient, and Portable Rotate in C/C++" by John Regehr
+//     http://blog.regehr.org/archives/1063
+// These should be recognized by the backend C compiler and turned into a ror
+//
+// Returns: x rotated left by n
+
+#define CHPL_BITOPS_ROTR(size) \
+static inline UI(size) chpl_bitops_rotr_##size(UI(size) x, UI(size) n) { \
+  assert(n < size);                                                      \
+  return (x >> n) | (x << (-n & (size - 1)));                            \
+}
+
+CHPL_BITOPS_ROTR(8)
+CHPL_BITOPS_ROTR(16)
+CHPL_BITOPS_ROTR(32)
+CHPL_BITOPS_ROTR(64)
+
+#undef CHPL_BITOPS_ROTR
+#undef UI
 #endif // _chpl_bitops_h_

@@ -185,6 +185,82 @@ module BitOps {
     return parity(x:uint(bits)):int(bits);
   }
 
+  /*
+    rotate left
+
+    x: unsigned integer of size `bits`
+    bits: 8, 16, 32, 64
+    n: shift amount, must be less than `bits`
+
+    returns: `x` rotated left by `n` bits
+  */
+  inline proc rotl(x: uint(?bits), n: integral) {
+    // the select will be folded out at compile time.
+    select bits {
+      when 64 do
+        return BitOps_internal.chpl_bitops_rotl_64(x, n:uint(bits));
+      when 32 do
+        return BitOps_internal.chpl_bitops_rotl_32(x, n:uint(bits));
+      when 16 do
+        return BitOps_internal.chpl_bitops_rotl_16(x, n:uint(bits));
+      when 8 do
+        return BitOps_internal.chpl_bitops_rotl_8(x, n:uint(bits));
+      otherwise
+        compilerError("rotl is not supported for that bit width.");
+    }
+  }
+
+  /*
+    rotate left
+
+    x: signed integer of size `bits`
+    bits: 8, 16, 32, 64
+    n: shift amount, must be less than `bits`
+
+    returns: `x` rotated left by `n` bits
+  */
+  inline proc rotl(x: int(?bits), n: integral) {
+    return rotl(x:uint(bits), n):int(bits);
+  }
+
+  /*
+    rotate right
+
+    x: unsigned integer of size `bits`
+    bits: 8, 16, 32, 64
+    n: shift amount, must be less than `bits`
+
+    returns: `x` rotated right by `n` bits
+  */
+  inline proc rotr(x: uint(?bits), n: integral) {
+    // the select will be folded out at compile time.
+    select bits {
+      when 64 do
+        return BitOps_internal.chpl_bitops_rotr_64(x, n:uint(bits));
+      when 32 do
+        return BitOps_internal.chpl_bitops_rotr_32(x, n:uint(bits));
+      when 16 do
+        return BitOps_internal.chpl_bitops_rotr_16(x, n:uint(bits));
+      when 8 do
+        return BitOps_internal.chpl_bitops_rotr_8(x, n:uint(bits));
+      otherwise
+        compilerError("rotr is not supported for that bit width.");
+    }
+  }
+
+  /*
+    rotate right
+
+    x: signed integer of size `bits`
+    bits: 8, 16, 32, 64
+    n: shift amount, must be less than `bits`
+
+    returns: `x` rotated left by `n` bits
+  */
+  inline proc rotr(x: int(?bits), n: integral) {
+    return rotr(x:uint(bits), n):int(bits);
+  }
+
   // Legacy operations
   // -----------------
   // kyleb: a few tests use these, but I'm not sure if there too much value
@@ -229,34 +305,23 @@ module BitOps {
     var result:uint(64) = 0;
     var yTranspose = bitMatTrans(y);
     result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x8040201008040201;
-    yTranspose = bitRotLeft(yTranspose, 8);
+    yTranspose = rotl(yTranspose, 8);
     result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x4020100804020180;
-    yTranspose = bitRotLeft(yTranspose, 8);
+    yTranspose = rotl(yTranspose, 8);
     result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x2010080402018040;
-    yTranspose = bitRotLeft(yTranspose, 8);
+    yTranspose = rotl(yTranspose, 8);
     result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x1008040201804020;
-    yTranspose = bitRotLeft(yTranspose, 8);
+    yTranspose = rotl(yTranspose, 8);
     result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x0804020180402010;
-    yTranspose = bitRotLeft(yTranspose, 8);
+    yTranspose = rotl(yTranspose, 8);
     result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x0402018040201008;
-    yTranspose = bitRotLeft(yTranspose, 8);
+    yTranspose = rotl(yTranspose, 8);
     result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x0201804020100804;
-    yTranspose = bitRotLeft(yTranspose, 8);
+    yTranspose = rotl(yTranspose, 8);
     result |= byteExpand(byteOrReduce(x & yTranspose)) & 0x0180402010080402;
     return result;
   }
 
-
-  inline proc bitRotLeft(x, shift) {
-    var backshift = numBits(x.type) - shift;
-    return (x << shift:int) | (x >> backshift:int);
-  }
-
-
-  inline proc bitRotRight(x: uint(64), shift) {
-    var backshift = numBits(x.type) - shift;
-    return (x >> shift:int) | (x << backshift:int);
-  }
 }
 
 /**
@@ -275,4 +340,14 @@ module BitOps_internal {
 
   extern proc chpl_bitops_parity_32(x: c_uint) : uint(32);
   extern proc chpl_bitops_parity_64(x: c_ulonglong) : uint(64);
+
+  extern proc chpl_bitops_rotl_8(x: uint(8), n: uint(8)) : uint(8);
+  extern proc chpl_bitops_rotl_16(x: uint(16), n: uint(16)) : uint(16);
+  extern proc chpl_bitops_rotl_32(x: uint(32), n: uint(32)) : uint(32);
+  extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
+
+  extern proc chpl_bitops_rotr_8(x: uint(8), n: uint(8)) : uint(8);
+  extern proc chpl_bitops_rotr_16(x: uint(16), n: uint(16)) : uint(16);
+  extern proc chpl_bitops_rotr_32(x: uint(32), n: uint(32)) : uint(32);
+  extern proc chpl_bitops_rotr_64(x: uint(64), n: uint(64)) : uint(64);
 }
