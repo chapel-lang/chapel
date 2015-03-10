@@ -153,7 +153,7 @@ types. A link to the type will be created, if possible. For example:
 
       :arg startdir: Directory to start looking for files.
       :arg recursive: Whether or not to descend recursively into directories.
-      :arg hidden: Whehter or not to yield hidden files.
+      :arg hidden: Whether or not to yield hidden files.
 
       :yields: Filenames found in `startdir` based on input arguments.
       :ytype: string
