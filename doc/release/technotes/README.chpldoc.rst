@@ -187,8 +187,8 @@ preface the symbol with the pragma "no doc". For example:
 Creating links to other symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the `cross-references <#inline-markup>`_ section for details on creating links, also known as
-cross-references, in the documentation to other symbols.
+See the `hyperlinks <#hyperlinks>`_ section for details on creating links, also
+known as cross-references, in the documentation to other symbols.
 
 
 .. _reStructuredText primer:
@@ -304,7 +304,7 @@ Internal links
 ++++++++++++++
 
 Internal linking is done via a special reST role, see the section on specific
-markup `cross-references <#inline-markup>`_.
+markup `cross-references <#inline-markup-1>`_.
 
 
 Sections
