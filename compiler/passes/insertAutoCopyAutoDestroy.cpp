@@ -176,6 +176,7 @@ static int debug = 0;
 
 #include "bb.h"
 #include "stmt.h"
+#include "CForLoop.h"
 #include "expr.h"
 #include "symbol.h"
 #include "bitVec.h"
@@ -825,6 +826,33 @@ static void populateAliases(FnSymbol* fn,
 }
 
 
+// Returns true if this block one which is executed repeatedly within a loop;
+// false otherwise.
+// Only C-style for loops have init clauses that are essentially in the
+// preceding scope.  All other loops contain only repeated clauses.
+static bool isRepeatedInLoop(BlockStmt* block)
+{
+  BlockStmt* parent = toBlockStmt(block->parentExpr);
+  if (parent == NULL)
+    // Not block statement, so can't be a loop
+    return false;
+
+  if (parent->isLoopStmt())
+  {
+    // This is the case we're looking for -- the init clause in a CForLoop.
+    if (CForLoop* cfl = toCForLoop(parent))
+      if (block == cfl->initBlockGet())
+        return false;
+
+    // All other clauses in all other loop types are repeated.
+    return true;
+  }
+
+  // But clauses in non-loop statements are not repeated (at this level).
+  return false;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // computeExits
 //
@@ -833,7 +861,7 @@ static void populateAliases(FnSymbol* fn,
 // We do this by creating a map from blocks to basic block IDs: scope -> bbID.
 // We traverse the statements in each basic block and for each block
 // expression containing that statement, the corresponding index is updated to
-// the index ofthe current basic block.  When this pass is complete, each
+// the index of the current basic block.  When this pass is complete, each
 // element of the map will contain the ID of the final BB the lies entirely
 // within the scope it defines.
 // Then, for each symbol in our symbol set,
@@ -848,11 +876,32 @@ computeScopeToLastBBIDMap(FnSymbol* fn,
   BasicBlock::BasicBlockVector& bbs = *fn->basicBlocks;
   for (size_t i = 0; i < nbbs; ++i)
   {
-    for_vector(Expr, expr, bbs[i]->exprs)
+    // Get the last expression in the block.
+    std::vector<Expr*>& exprs = bbs[i]->exprs;
+    size_t nexprs = exprs.size();
+    if (nexprs == 0)
+      continue;
+    Expr* expr = exprs[nexprs - 1];
+
+    // Now, for each scope up the chain, mark that this basic block (i) is the
+    // last one in it.  In loops, the last block belonging to the outer scope
+    // cannot be one that is executed repeatedly.  Otherwise, variables
+    // belonging to an outer scope will be freed repeatedly, which is not what
+    // we want.
+    // If blocks were properly nested, we would not have to do this, but since
+    // the end of several blocks may lie between two adjacent statements, we
+    // have to go up the chain and mark them all.
+    while (expr)
     {
-      BlockStmt* scope = getScopeBlock(expr);
-      if (scope)
-        scopeToLastBBIDMap[scope] = i;
+      BlockStmt* block = toBlockStmt(expr);
+      if (block)
+      {
+        if (! (block->blockTag & BLOCK_SCOPELESS))
+          scopeToLastBBIDMap[block] = i;
+        if (isRepeatedInLoop(block))
+          break;
+      }
+      expr = expr->parentExpr;
     }
   }
 }
