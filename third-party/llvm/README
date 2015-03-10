@@ -11,6 +11,5 @@ please refer to $CHPL_HOME/doc/technotes/README.llvm.  For more
 information about LLVM itself, please refer to the website above or to
 the README in the llvm/ subdirectory of this directory.
 
-The version of LLVM used here is 3.3 modified to fix bug 15907, which prevents
-the LLVM backend from performing communication optimization. See
-http://llvm.org/bugs/show_bug.cgi?id=15907 for the bug report and patch.
+The version of LLVM used here is 3.6.
+

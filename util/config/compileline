@@ -63,6 +63,14 @@ for my $arg (@ARGV) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino");
   } elsif( $arg eq "--llvm-install-dir" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall");
+  } elsif( $arg eq "--clang-sysroot-arguments" ) {
+    open(ARGS, "<", "$chpl_home_dir/third-party/llvm/configured-clang-sysroot-arguments") or die "Could not open third-party/llvm/configured-clang-sysroot-arguments: $!";
+    while(<ARGS>) {
+      chomp;
+      print "$_";
+    }
+    print "\n";
+    close(ARGS);
   } elsif( $arg =~ /[^-=][^=]*=[^=]+/ ) {
     ($key, $val) = split('=', $arg, 2);
     $ENV{$key} = $val;

@@ -1,0 +1,24 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+use File::Spec;
+use Cwd 'abs_path';
+
+$chpl_home_dir = abs_path(dirname(__FILE__) . "/../../");
+$sys_basic = $chpl_home_dir . "/runtime/include/sys_basic.h";
+
+$_ = `clang -### $sys_basic 2>&1`;
+
+if( $? == 0 ) {
+
+  # find something like the path reported here:
+  #"-isysroot" "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk"
+
+  if( /isysroot" "([^"]+)"/ ) {
+    $match = $1;
+    print "-isysroot $match\n";
+  }
+} else {
+  # no clang in path. do nothing.
+}
+
