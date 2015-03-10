@@ -1,0 +1,2 @@
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.clang
+
