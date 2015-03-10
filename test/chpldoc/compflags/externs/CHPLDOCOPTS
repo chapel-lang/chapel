@@ -1,1 +1,1 @@
---docs --docs-text-only --no-docs-externs
+--text-only --no-externs
