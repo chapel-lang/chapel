@@ -1,4 +1,4 @@
 use FileSystem;
 
-writeln(viewMode("blah"));
+writeln(getMode("blah"));
 // Blah should be all user permissions, or 448 in decimal

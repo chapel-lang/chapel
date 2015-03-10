@@ -23,11 +23,11 @@ use Error;
    err: a syserr used to indicate if an error occurred during this operation.
    name: a string representing a valid path.
 */
-proc realPath(out err: syserr, name: string): string {
+proc realPath(out error: syserr, name: string): string {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string_copy): syserr;
 
   var res: c_string_copy;
-  err = chpl_fs_realpath(name.c_str(), res);
+  error = chpl_fs_realpath(name.c_str(), res);
   return toString(res);
 }
 
@@ -47,7 +47,7 @@ proc realPath(name: string): string {
    parameter.
    err: a syserr used to indicate if an error occurred during this operation.
 */
-proc file.realPath(out err: syserr): string {
+proc file.realPath(out error: syserr): string {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string_copy): syserr;
 
   var res: c_string_copy;
@@ -55,10 +55,10 @@ proc file.realPath(out err: syserr): string {
   if (is_c_nil(_file_internal)) {
     // This file is referencing a null file.  We'll get a segfault if we
     // continue.
-    err = EBADF;
+    error = EBADF;
     return "";
   }
-  err = chpl_fs_realpath_file(_file_internal, res);
+  error = chpl_fs_realpath_file(_file_internal, res);
   return toString(res);
 }
 
