@@ -20,14 +20,16 @@
 #include "IpeVars.h"
 
 #include "AstDumpToNode.h"
+#include "IpeScopeModule.h"
 #include "misc.h"
 #include "symbol.h"
 
-IpeValue*               IpeVars::sRootData = NULL;
-int                     IpeVars::sRootSize =    0;
-int                     IpeVars::sRootTail =    0;
+IpeValue*                    IpeVars::sRootData = NULL;
+int                          IpeVars::sRootSize =    0;
+int                          IpeVars::sRootTail =    0;
 
-std::vector<LcnSymbol*> IpeVars::sSymbols;
+std::vector<LcnSymbol*>      IpeVars::sSymbols;
+std::vector<IpeScopeModule*> IpeVars::sModuleScopes;
 
 IpeVars* IpeVars::rootAllocate(int size)
 {
@@ -58,6 +60,25 @@ void IpeVars::deallocate(IpeVars* vars)
     free(vars);
 }
 
+void IpeVars::addModuleScope(IpeScopeModule* scope, IpeVars* env)
+{
+  INT_ASSERT(sRootData != 0);
+
+  if (env == NULL)
+  {
+    sModuleScopes.push_back(scope);
+  }
+  else
+  {
+    AstDumpToNode logger(stdout, 3);
+
+    printf("   IpeVars::addModuleScope(IpeScopeModule*, IpeVars*) unsupported on local vars\n");
+    printf("\n");
+
+    INT_ASSERT(false);
+  }
+}
+
 void IpeVars::bind(VarSymbol* sym, IpeValue value, IpeVars* env)
 {
   INT_ASSERT(sRootData != 0);
@@ -77,7 +98,7 @@ void IpeVars::bind(VarSymbol* sym, IpeValue value, IpeVars* env)
   {
     AstDumpToNode logger(stdout, 3);
 
-    printf("   IpeVars::bind(VarSymbol*, IpeValue, IpeVars*) unsupported\n");
+    printf("   IpeVars::bind(VarSymbol*, IpeValue, IpeVars*) unsupported on local vars\n");
     printf("   ");
     sym->accept(&logger);
     printf("\n");
@@ -116,7 +137,7 @@ IpeValue IpeVars::addrOf(LcnSymbol* sym, IpeVars* vars)
 
   if (sym->depth() == 0)
   {
-    retval.valuePtr = (IpeValue*) (((char*) sRootData) + offset);
+    retval.refSet((IpeValue*) (((char*) sRootData) + offset));
   }
 
   else
@@ -126,7 +147,7 @@ IpeValue IpeVars::addrOf(LcnSymbol* sym, IpeVars* vars)
     INT_ASSERT(vars         != NULL);
     INT_ASSERT(sym->depth() ==    1);
 
-    retval.valuePtr = &vars->mValues[index];
+    retval.refSet(&vars->mValues[index]);
   }
 
   return retval;
@@ -204,97 +225,29 @@ void IpeVars::describe(IpeVars* env, int offset)
 
   if (env == 0)
   {
-    int size = (int) sSymbols.size();
+    int index = 0;
 
-    printf("%s#<IpeVars   Root %5d symbols. %5d / %5d\n",
+    printf("%s#<IpeVars   Root %5d symbols. %5d / %5d. %5d modules\n",
            pad,
            (int) sSymbols.size(),
            sRootTail,
-           sRootSize);
+           sRootSize,
+           (int) sModuleScopes.size());
 
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < sModuleScopes.size(); i++)
     {
-      const char* symName = sSymbols[i]->name;
+      if (i > 0)
+        printf("\n");
 
-      if      (isTypeSymbol(sSymbols[i]))
-      {
-        printf("%s   %3d: type %16s %s\n", pad, i, "", symName);
-      }
+      printf("%s  %s\n", pad, sModuleScopes[i]->name());
 
-      else if (VarSymbol* sym = toVarSymbol(sSymbols[i]))
-      {
-        const char* typeName = "??????";
-
-        if (sSymbols[i]->type != 0)
-          typeName = sSymbols[i]->type->symbol->name;
-
-        if (sym->immediate != 0)
-          printf("%s   %3d: const (%s)", pad, i, typeName);
-
-        else if (sym->hasFlag(FLAG_CONST))
-          printf("%s   %3d: const (%s)", pad, i, typeName);
-
-        else if (sym->hasFlag(FLAG_PARAM))
-          printf("%s   %3d: param (%s)", pad, i, typeName);
-
-        else
-          printf("%s   %3d: var   (%s)", pad, i, typeName);
-
-        if (strlen(typeName) < 10)
-        {
-          int spaces = 10 - strlen(typeName);
-
-          for (int j = 0; j <= spaces; j++)
-            fputc(' ', stdout);
-        }
-
-        printf("        %4d %-24s ", sym->offset(), symName);
-
-        if (sSymbols[i]->type == dtInt[INT_SIZE_64])
-        {
-          int* ptr = (int*) (((char*) sRootData) + sym->offset());
-
-          printf("%6d", *ptr);
-        }
-
-        else if (sSymbols[i]->type == dtReal[FLOAT_SIZE_64])
-        {
-          double* ptr = (double*) (((char*) sRootData) + sym->offset());
-
-          printf("%9.2f", *ptr);
-        }
-
-        else if (sSymbols[i]->type == dtBools[BOOL_SIZE_SYS])
-        {
-          int* ptr = (int*) (((char*) sRootData) + sym->offset());
-
-          printf(" %s", (*ptr == 1) ? " true" : "false");
-        }
-
-        fputc('\n',    stdout);
-      }
-
-      else if (isFnSymbol(sSymbols[i]) == true)
-      {
-        printf("%s   %3d: func %16s %s\n", pad, i, "", symName);
-      }
-
-      else
-      {
-        AstDumpToNode logger(stdout, 3);
-
-        printf("Unsupported symbol\n");
-        printf("   ");
-        sSymbols[i]->accept(&logger);
-        printf("\n\n");
-      }
+      index = sModuleScopes[i]->describeVariables(offset, index);
     }
-
-    printf("%s>\n", pad);
   }
   else
   {
     printf("%s#<IpeVars   Locals\n", pad);
-    printf("%s>\n", pad);
   }
+
+  printf("%s>\n", pad);
 }

@@ -21,6 +21,9 @@
 
 #include "AstDumpToNode.h"
 #include "IpeScopeModule.h"
+#include "IpeValue.h"
+#include "IpeVars.h"
+#include "ipeDriver.h"
 #include "ipeEvaluate.h"
 #include "symbol.h"
 
@@ -29,6 +32,8 @@ IpeModule::IpeModule(ModuleSymbol* sym)
   mModuleDecl  = sym;
   mScope       = new IpeScopeModule(this);
   mInitialized = false;
+
+  IpeVars::addModuleScope(mScope, gRootVars);
 }
 
 IpeModule::~IpeModule()

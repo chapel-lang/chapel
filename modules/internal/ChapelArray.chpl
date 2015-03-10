@@ -2329,6 +2329,10 @@ module ChapelArray {
       return;
     }
 
+    if a.size == 0 && b.size == 0 then
+      // Do nothing for zero-length assignments
+      return;
+
     if boundsChecking then
       checkArrayShapesUponAssignment(a, b);
   

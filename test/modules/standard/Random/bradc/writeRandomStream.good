@@ -1,1 +1,1 @@
-RandomStream(parSafe=true, seed = 314159265)
+RandomStream(eltType=real(64), parSafe=true, seed=314159265)
