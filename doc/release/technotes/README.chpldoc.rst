@@ -363,8 +363,9 @@ If highlighting with the specified language fails, e.g. if the syntax is not
 parsable, the block is not highlighted in anyway.
 
 
-.. _Inline Markup:
 .. _cross-references:
+
+.. _Inline Markup:
 
 Inline markup
 ~~~~~~~~~~~~~
