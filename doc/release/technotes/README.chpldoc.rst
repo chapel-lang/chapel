@@ -385,7 +385,7 @@ versatile:
 
 * For the Chapel roles, if you prefix the content with ``~``, the link text
   will only be the last component of the target.  For example,
-  ``:meth:`~Random.RandomStream.fillRandom``` will refer to
+  ``:proc:`~Random.RandomStream.fillRandom``` will refer to
   ``Random.RandomStream.fillRandom`` but only display ``fillRandom`` as the
   link text.
 
@@ -395,13 +395,13 @@ versatile:
 The following roles refer to objects in modules and are possibly hyperlinked if
 a matching identifier is found:
 
-``:chpl:mod:``
+``:mod:``
 
     Reference a module; a dotted name may be used. See `cross-references <#inline-markup-1>`_ for
     details on dotted and non-dotted names.
 
-``:chpl:proc:``
-``:chpl:iter:``
+``:proc:``
+``:iter:``
 
     Reference a Chapel function or iterator. The role text needs not include
     trailing parentheses to enhance readability.
@@ -413,31 +413,31 @@ a matching identifier is found:
 
     Dotted names may be used for any form.
 
-``:chpl:data:``
-``:chpl:const:``
-``:chpl:var:``
-``:chpl:param:``
-``:chpl:type:``
+``:data:``
+``:const:``
+``:var:``
+``:param:``
+``:type:``
 
     Reference a module-level variable, constant, compiler param, or type.
 
-``:chpl:class:``
-``:chpl:record:``
+``:class:``
+``:record:``
 
     Reference a class or record; a dotted name may be used.
 
-``:chpl:attr:``
+``:attr:``
 
     Reference a data attribute (const, var, param, generic type) of an object.
 
 For example::
 
-    Uses :chpl:proc:`Random.RandomStream.fillRandom` and real->int casts to
-    generate a vector of random integers. See :chpl:attr:`RandomStream.seed`
-    and description of :chpl:mod:`Random` for details on PRNG.
+    Uses :proc:`Random.RandomStream.fillRandom` and real->int casts to
+    generate a vector of random integers. See :attr:`RandomStream.seed`
+    and description of :mod:`Random` for details on PRNG.
 
-    Relies on :chpl:iter:`MyModule.Set.these` to iterate over all values in the
-    given :chpl:record:`MyModule.Set`.
+    Relies on :iter:`MyModule.Set.these` to iterate over all values in the
+    given :record:`MyModule.Set`.
 
 
 .. _documenting-args-returns-yields:
@@ -553,8 +553,8 @@ units as well as normal text:
 
       .. seealso::
 
-         Module :chpl:mod:`Random`
-            Documentation of the :chpl:mod:`Random` standard module.
+         Module :mod:`Random`
+            Documentation of the :mod:`Random` standard module.
 
          `Mersenne Twister pseudo random number generator <http://link>`_
             Documentation for the PRNG.
