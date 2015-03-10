@@ -176,6 +176,7 @@ static int debug = 0;
 
 #include "bb.h"
 #include "stmt.h"
+#include "CForLoop.h"
 #include "expr.h"
 #include "symbol.h"
 #include "bitVec.h"
@@ -825,6 +826,33 @@ static void populateAliases(FnSymbol* fn,
 }
 
 
+// Returns true if this block one which is executed repeatedly within a loop;
+// false otherwise.
+// Only C-style for loops have init clauses that are essentially in the
+// preceding scope.  All other loops contain only repeated clauses.
+static bool isRepeatedInLoop(BlockStmt* block)
+{
+  BlockStmt* parent = toBlockStmt(block->parentExpr);
+  if (parent == NULL)
+    // Not block statement, so can't be a loop
+    return false;
+
+  if (parent->isLoopStmt())
+  {
+    // This is the case we're looking for -- the init clause in a CForLoop.
+    if (CForLoop* cfl = toCForLoop(parent))
+      if (block == cfl->initBlockGet())
+        return false;
+
+    // All other clauses in all other loop types are repeated.
+    return true;
+  }
+
+  // But clauses in non-loop statements are not repeated (at this level).
+  return false;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // computeExits
 //
@@ -856,15 +884,23 @@ computeScopeToLastBBIDMap(FnSymbol* fn,
     Expr* expr = exprs[nexprs - 1];
 
     // Now, for each scope up the chain, mark that this basic block (i) is the
-    // last one in it.
+    // last one in it.  In loops, the last block belonging to the outer scope
+    // cannot be one that is executed repeatedly.  Otherwise, variables
+    // belonging to an outer scope will be freed repeatedly, which is not what
+    // we want.
     // If blocks were properly nested, we would not have to do this, but since
     // the end of several blocks may lie between two adjacent statements, we
     // have to go up the chain and mark them all.
     while (expr)
     {
       BlockStmt* block = toBlockStmt(expr);
-      if (block && ! (block->blockTag & BLOCK_SCOPELESS))
-        scopeToLastBBIDMap[block] = i;
+      if (block)
+      {
+        if (! (block->blockTag & BLOCK_SCOPELESS))
+          scopeToLastBBIDMap[block] = i;
+        if (isRepeatedInLoop(block))
+          break;
+      }
       expr = expr->parentExpr;
     }
   }
