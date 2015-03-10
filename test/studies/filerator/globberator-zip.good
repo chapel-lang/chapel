@@ -10,5 +10,7 @@ File #5 is: testboth.chpl
 File #5 is: testboth.chpl
 File #6 is: testemptyglob.chpl
 File #6 is: testemptyglob.chpl
-File #7 is: walk.chpl
-File #7 is: walk.chpl
+File #7 is: walk-par.chpl
+File #7 is: walk-par.chpl
+File #8 is: walk.chpl
+File #8 is: walk.chpl
