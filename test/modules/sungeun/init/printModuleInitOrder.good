@@ -1,14 +1,15 @@
 Initializing Modules:
    ChapelStandard
     ChapelBase
+    CString
     String
-     CString
+     BaseStringType
+      SysCTypes
+     StringCasts
     MemConsistency
     Atomics
     NetworkAtomics
     AtomicsCommon
-    NewString
-     BaseStringType
     ChapelThreads
     ChapelTuple
     ChapelRange
@@ -20,7 +21,6 @@ Initializing Modules:
      ChapelNumLocales
      Sys
       SysBasic
-       SysCTypes
     LocalesArray
     ChapelDistribution
      List
