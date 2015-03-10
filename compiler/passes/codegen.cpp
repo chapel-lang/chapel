@@ -1181,7 +1181,7 @@ codegen_config() {
       }
     }
     info->builder->CreateRetVoid();
-    llvm::verifyFunction(*createConfigFunc);
+    //llvm::verifyFunction(*createConfigFunc);
 #endif
   }
 }
