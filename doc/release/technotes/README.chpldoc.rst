@@ -188,7 +188,7 @@ Documentation text within comments is parsed as ReStructed Text.
 Creating links to other symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the `Inline markup`_ section for details on creating links, also known as
+See the `Inline markup <#inline-markup>`_ section for details on creating links, also known as
 cross-references, in the documentation to other symbols.
 
 
@@ -466,7 +466,9 @@ definitions, like ``int``, ``int(64)``, ``bool``, ``[] int``, ``RandomStream``,
 etc. More verbose descriptions, qualifications, and limitations of those types
 should go in the corresponding ``arg``, ``returns``, or ``yields`` field.
 
-For example, when documenting a Chapel proc::
+For example, when documenting a Chapel proc:
+
+.. code-block:: chapel
 
    /*
     * Calculates number of pipes and returns fooy.
