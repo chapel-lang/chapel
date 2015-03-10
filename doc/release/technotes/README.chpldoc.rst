@@ -131,7 +131,7 @@ possible. For example:
 
 Return or yield types can optionally be documented using the ``:returns:`` and
 ``:yields:`` fields, and the ``:rtype:`` and ``:ytype:`` fields. ``:returns:``
-and ``:rtype:`` are for functions and methods, while ``:yields:`` and
+and ``:rtype:`` are for procedures and methods, while ``:yields:`` and
 ``:ytype:`` are for iterators.
 
 Similar to arguments, the ``:returns:`` and ``:yields:`` should be a concise
@@ -166,6 +166,9 @@ types. A link to the type will be created, if possible. For example:
    * All of these fields must be left-aligned with the outer most paragraph(s).
    * Leave an empty line above and below all these fields for best results.
 
+For more information see the `Documenting argument, return, and yield values
+and types <documenting-args-returns-yields>`_ section.
+
 
 Stifling documentation
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -180,6 +183,13 @@ pragma "no doc".  For example:
    proc foo() { ... }
 
 Documentation text within comments is parsed as ReStructed Text.
+
+
+Creating links to other symbols
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See the `Inline markup <cross-references>`_ section for details on creating
+links, also known as cross-references, in the documentation to other symbols.
 
 
 .. _reStructuredText primer:
@@ -432,6 +442,8 @@ For example::
     Relies on :chpl:iter:`MyModule.Set.these` to iterate over all values in the
     given :chpl:record:`MyModule.Set`.
 
+
+.. _documenting-args-returns-yields:
 
 Documenting argument, return, and yield values and types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
