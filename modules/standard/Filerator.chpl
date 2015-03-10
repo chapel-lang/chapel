@@ -162,6 +162,7 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
               followlinks=false, sort=false, param tag: iterKind): string 
        where tag == iterKind.standalone {
 
+  compilerWarning("Parallel invocations of walkdirs() will only parallelize the first-level directories at present");
   if (sort && chpl_first_walkdirs_sorted_warning) {
     chpl_first_walkdirs_sorted_warning = true;
     warning("sorting has no effect for a parallel invocation of walkdirs()");
