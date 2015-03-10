@@ -1,7 +1,7 @@
 use IO;
 use AdvancedIters;
 
-extern proc memcpy(x : [], b, len:int);
+extern proc memcpy(x : [], b:c_string , len:int);
 
 config const tableSize = 1 << 16;
 config const lineSize = 61;
@@ -81,7 +81,7 @@ proc write_count(data : [] uint(8), str : string) {
 
 proc string.toBytes() ref {
    var b : [1..this.length] uint(8);
-   memcpy(b, this, this.length);
+   memcpy(b, this.c_str(), this.length);
    return b;
 }
 

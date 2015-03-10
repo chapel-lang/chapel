@@ -190,6 +190,8 @@ Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 
 bool isTypeExpr(Expr* expr);
 
+Symbol* getSvecSymbol(CallExpr* call);
+
 // move to resolve when scope resolution is put in resolution directory
 BlockStmt* getVisibilityBlock(Expr* expr);
 

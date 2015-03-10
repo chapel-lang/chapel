@@ -297,7 +297,7 @@ function setupAnnToggle(g, graphInfo, annToggle) {
   annToggle.onclick = function() {
     if (g.annotations().length === 0) {
       updateAnnotationsSeries(g);
-      g.setAnnotations(g.graphInfo.anotations);
+      g.setAnnotations(g.graphInfo.annotations);
     } else {
       g.setAnnotations([]);
     }

@@ -139,6 +139,7 @@ symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model sp
 // Implementation of an export function declares only narrow args and has a
 // narrow return value.
 symbolFlag( FLAG_LOCAL_ARGS , ypr, "local args" , "arguments and return value are narrow" )
+symbolFlag( FLAG_LOCAL_FIELD, ypr, "local field", "field is local to aggregate type" )
 symbolFlag( FLAG_LOCAL_FN , npr, "local fn" , "function is completely local (no communication)" )
 symbolFlag( FLAG_LOOP_BODY_ARGUMENT_CLASS , npr, "loop body argument class" , ncm )
 symbolFlag( FLAG_MARKED_GENERIC , npr, "marked generic" , "formal is marked generic using the type query syntax" )

@@ -185,8 +185,29 @@ removeWrapRecords() {
   //
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (Type* type = getWrapRecordBaseType(var->type))
-      if (!var->defPoint->parentSymbol->hasFlag(FLAG_REF))
+      if (!var->defPoint->parentSymbol->hasFlag(FLAG_REF)) {
         var->type = type;
+
+        //
+        // record-wrapped arrays should be local fields
+        // TODO: Domains don't work generally due to some case in Sparse.
+        // What about dist classes?
+        //
+        if (TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol)) {
+          if (!(ts->hasFlag(FLAG_REF) ||
+                ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE) ||
+                ts->hasEitherFlag(FLAG_TUPLE, FLAG_STAR_TUPLE) ||
+                ts->hasEitherFlag(FLAG_ITERATOR_CLASS, FLAG_ITERATOR_RECORD) ||
+                ts->hasFlag(FLAG_HEAP))) {
+              const char* bundlePrefix = "_class_locals";
+              if (strncmp(ts->name, bundlePrefix, strlen(bundlePrefix))) {
+                if (isArrayClass(type)) {
+                  var->addFlag(FLAG_LOCAL_FIELD);
+                }
+              }
+          }
+        }
+      }
   }
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (Type* type = getWrapRecordBaseType(arg->type)) {

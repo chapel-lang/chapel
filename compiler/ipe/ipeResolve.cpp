@@ -65,13 +65,18 @@ Expr* ipeResolve(Expr* expr, IpeScope* scope, IpeVars* vars)
   {
     AstDumpToNode logger(stdout, 3);
 
-    printf("   ipeResolve\n");
+    printf("ipeResolve\n");
     printf("   ");
     expr->accept(&logger);
     printf("\n\n");
 
     scope->describe(3);
     printf("\n\n");
+
+#if 0
+    IpeVars::describe(vars, 3);
+    printf("\n\n");
+#endif
   }
 
   if (false)
@@ -167,13 +172,16 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
 
     scope->describe(3);
     printf("\n\n");
+
+#if 0
+    IpeVars::describe(vars, 3);
+    printf("\n\n");
+#endif
   }
 
   if      (TypeSymbol*   sel    = toTypeSymbol(defExpr->sym))
   {
     IpeValue value;
-
-    value.iValue = 0;
 
     scope->extend(sel, value, vars);
 
@@ -186,14 +194,12 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
     IpeScopeModule* modScope = module->scope();
     VarSymbol*      var      = new VarSymbol(modSym->name, gIpeTypeModule);
 
-    IpeValue        modValue;
+    IpeValue        modValue(module);
 
     INT_ASSERT(defExpr->exprType == NULL);
     INT_ASSERT(defExpr->init     == NULL);
 
     var->addFlag(FLAG_PARAM);
-
-    modValue.modulePtr = module;
 
     scope->extend(var, modValue, vars);
 
@@ -206,14 +212,12 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
   {
     IpeProcedure* procedure = new IpeProcedure(funSym, scope);
     VarSymbol*    var       = new VarSymbol(funSym->name, gIpeTypeProcedure);
-    IpeValue      funValue;
+    IpeValue      funValue(procedure);
 
     INT_ASSERT(defExpr->exprType == NULL);
     INT_ASSERT(defExpr->init     == NULL);
 
     var->addFlag(FLAG_PARAM);
-
-    funValue.procedurePtr = procedure;
 
     scope->extend(var, funValue, vars);
 
@@ -286,8 +290,6 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
     {
       IpeValue value;
 
-      value.iValue = 0;
-
       scope->extend(var, value, vars);
     }
 
@@ -338,7 +340,7 @@ static Expr* resolve(ModuleSymbol* modSym, IpeScope* scope, IpeVars* vars)
 
       value  = IpeVars::fetch(varSym, vars);
 
-      scope->useAdd(value.modulePtr);
+      scope->useAdd(value.moduleGet());
     }
 
     else if (DefExpr* defExpr = toDefExpr(expr))
@@ -467,7 +469,7 @@ static Expr* resolve(CallExpr* callExpr, IpeScope* scope, IpeVars* vars)
     if (symbols.count() == 0)
     {
       // New modules should be resolved relative to root
-      ipeResolve(findModuleDefinition(modName), gGlobalScope, vars);
+      ipeResolve(findModuleDefinition(modName), gRootScope, vars);
 
       // Fetch the modName again. It will be found this time.
       symbols = scope->visibleSymbols(modName);
@@ -586,7 +588,7 @@ static Expr* selectFunc(UnresolvedSymExpr*  funName,
     if (var != 0 && var->type == gIpeTypeProcedure && var->depth() == 0)
     {
       IpeValue      value = IpeVars::fetch(var, vars);
-      IpeProcedure* proc  = value.procedurePtr;
+      IpeProcedure* proc  = value.procedureGet();
 
       if (proc->exactMatch(actualTypes) == true)
       {
@@ -601,7 +603,24 @@ static Expr* selectFunc(UnresolvedSymExpr*  funName,
     }
   }
 
-  INT_ASSERT(varProcedure != 0);
+  if (varProcedure == 0)
+  {
+    AstDumpToNode logger(stdout, 3);
+
+    printf("selectFunc: Failed to find an exact match\n");
+    printf("   ");
+    funName->accept(&logger);
+    printf("\n\n");
+
+    for (size_t i = 0; i < actualTypes.size(); i++)
+    {
+      printf("   ");
+      actualTypes[i]->accept(&logger);
+      printf("\n");
+    }
+
+    INT_ASSERT(false);
+  }
 
   retval = new SymExpr(varProcedure);
 
@@ -729,8 +748,6 @@ void ipeResolveBody(IpeProcedure* procedure, IpeScopeProcedure* scope, IpeVars* 
     ArgSymbol* formalArg = toArgSymbol(formalDef->sym);
     IpeValue   value;
 
-    value.iValue = 0;
-
     scope->extend(formalArg, value, vars);
   }
 
@@ -820,7 +837,7 @@ static Type* typeForExpr(Expr* expr, IpeVars* vars)
       INT_ASSERT(varSym->type == gIpeTypeProcedure);
 
       IpeValue      proc      = IpeVars::fetch(varSym, vars);
-      IpeProcedure* procedure = proc.procedurePtr;
+      IpeProcedure* procedure = proc.procedureGet();
       FnSymbol*     fnSym     = procedure->fnSymbol();
 
 #if 0

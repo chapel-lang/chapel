@@ -89,11 +89,18 @@ namespace clang {
 #include "llvm/Support/Path.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Bitcode/ReaderWriter.h"
+
+#if HAVE_LLVM_VER >= 35
+#include "llvm/IR/Verifier.h"
+#else
 #include "llvm/Analysis/Verifier.h"
+#endif
+
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/PassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Support/raw_ostream.h"
 
 #endif
 
