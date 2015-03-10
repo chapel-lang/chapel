@@ -833,7 +833,7 @@ static void populateAliases(FnSymbol* fn,
 // We do this by creating a map from blocks to basic block IDs: scope -> bbID.
 // We traverse the statements in each basic block and for each block
 // expression containing that statement, the corresponding index is updated to
-// the index ofthe current basic block.  When this pass is complete, each
+// the index of the current basic block.  When this pass is complete, each
 // element of the map will contain the ID of the final BB the lies entirely
 // within the scope it defines.
 // Then, for each symbol in our symbol set,
@@ -848,11 +848,24 @@ computeScopeToLastBBIDMap(FnSymbol* fn,
   BasicBlock::BasicBlockVector& bbs = *fn->basicBlocks;
   for (size_t i = 0; i < nbbs; ++i)
   {
-    for_vector(Expr, expr, bbs[i]->exprs)
+    // Get the last expression in the block.
+    std::vector<Expr*>& exprs = bbs[i]->exprs;
+    size_t nexprs = exprs.size();
+    if (nexprs == 0)
+      continue;
+    Expr* expr = exprs[nexprs - 1];
+
+    // Now, for each scope up the chain, mark that this basic block (i) is the
+    // last one in it.
+    // If blocks were properly nested, we would not have to do this, but since
+    // the end of several blocks may lie between two adjacent statements, we
+    // have to go up the chain and mark them all.
+    while (expr)
     {
-      BlockStmt* scope = getScopeBlock(expr);
-      if (scope)
-        scopeToLastBBIDMap[scope] = i;
+      BlockStmt* block = toBlockStmt(expr);
+      if (block && ! (block->blockTag & BLOCK_SCOPELESS))
+        scopeToLastBBIDMap[block] = i;
+      expr = expr->parentExpr;
     }
   }
 }
