@@ -72,6 +72,7 @@
 # COMPSTDIN: Get stdin from this file (default /dev/null)
 # COMPOPTS: Compiler flags
 # LASTCOMPOPTS: Compiler flags to be put at the end of the command line
+# CHPLDOCOPTS: chpldoc flags
 # EXECENV: Environment variables to be applied to the entire directory
 # EXECOPTS: Test program flags to be applied to the entire directory
 # LASTEXECOPTS: Test program flags to be put at the end of the command line
@@ -95,6 +96,7 @@
 # .perfcompopts: Additional compiler options for performance testing
 # .lastcompopts: Additional compiler options to be added at the end of the
 #    command line
+# .chpldocopts: Additional chpldoc options.
 # .execenv: Additional environment variables for the test
 # .execopts: Additional test options
 # .perfexecenv: Additional environment variables for performance testing
@@ -607,6 +609,11 @@ else:
     perflabel=''
 
 compoptssuffix = PerfSfx('compopts')  # .compopts or .perfcompopts or ...
+
+# If compiler is chpldoc, use .chpldocopts for "compopts".
+if is_chpldoc:
+    compoptssuffix = '.chpldocopts'
+
 execenvsuffix  = PerfSfx('execenv')   # .execenv  or .perfexecenv  or ...
 execoptssuffix = PerfSfx('execopts')  # .execopts or .perfexecopts or ...
 timeoutsuffix  = PerfSfx('timeout')   # .timeout  or .perftimeout  or ...
@@ -790,19 +797,28 @@ elif os.access('./COMPOPTS',os.R_OK):
 else:
     directoryCompopts = []
 
-envCompopts = os.getenv('COMPOPTS')
-envChpldocOpts = os.getenv('CHPLDOC_OPTS')
+if os.access('./CHPLDOCOPTS', os.R_OK):
+    dirChpldocOpts = shlex.split(ReadFileWithComments('./CHPLDOCOPTS')[0])
+else:
+    dirChpldocOpts = []
 
-# Use chpldoc options, if this is a chpldoc compiler. Otherwise, use the
-# regular COMPOPTS.
-if is_chpldoc and envChpldocOpts is not None:
-    envCompopts = shlex.split(envChpldocOpts)
-if not is_chpldoc and envCompopts is not None:
+envCompopts = os.getenv('COMPOPTS')
+if envCompopts is not None:
     envCompopts = shlex.split(envCompopts)
 else:
   envCompopts = []
 
+envChpldocOpts = os.getenv('CHPLDOCOPTS')
+if envChpldocOpts is not None:
+    envChpldocOpts = shlex.split(envChpldocOpts)
+else:
+    envChpldocOpts = []
+
+# Use chpldoc options, if this is a chpldoc compiler. Otherwise, use the
+# regular compopts.
 globalCompopts = directoryCompopts + envCompopts
+if is_chpldoc:
+    globalCompopts = dirChpldocOpts + envChpldocOpts
 # sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
 
 #
@@ -962,6 +978,7 @@ for testname in testsrc:
         # Deal with these later
         if (suffix == '.good' or
             suffix=='.compopts' or suffix=='.perfcompopts' or
+            suffix=='.chpldocopts' or
             suffix=='.execenv' or suffix=='.perfexecenv' or
             suffix=='.execopts' or suffix=='.perfexecopts'):
             continue # on to next file
