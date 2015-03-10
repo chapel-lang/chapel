@@ -1464,20 +1464,14 @@ module ChapelRange {
   
     if ! this.hasFirst() {
       if this.isEmpty() {
-        if myFollowThis.isEmpty() then
-          // nothing to do
-          return;
-        else
+        if ! myFollowThis.isEmpty() then
           halt("zippered iteration with a range has non-equal lengths");
       } else {
         halt("iteration over a range with no first index");
       }
     }
     if ! myFollowThis.hasFirst() {
-      if !myFollowThis.isAmbiguous() && myFollowThis.isEmpty() then
-        // nothing to do
-        return;
-      else
+      if ! (!myFollowThis.isAmbiguous() && myFollowThis.isEmpty()) then
         halt("zippered iteration over a range with no first index");
     }
   
@@ -1485,8 +1479,6 @@ module ChapelRange {
        myFollowThis.hasLast()
     {
       const flwlen = myFollowThis.length;
-      if flwlen == 0 then
-        return; // nothing to do
       if boundsChecking && this.hasLast() {
         // this check is for typechecking only
         if isBoundedRange(this) {
@@ -1496,32 +1488,38 @@ module ChapelRange {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }    
       if this.stridable || myFollowThis.stridable {
-        // same as undensifyBounded(this, myFollowThis)
-        const stride = this.stride * myFollowThis.stride;
-        var low: idxType  = this.orderToIndex(myFollowThis.first);
-        var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
-        assert(high == this.orderToIndex(myFollowThis.last));
+        var r = 1:idxType .. 0:idxType by 1:indexToStrideType(idxType);
 
-        if stride < 0 then low <=> high;
+        if flwlen != 0 {
+          const stride = this.stride * myFollowThis.stride;
+          var low: idxType  = this.orderToIndex(myFollowThis.first);
+          var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
+          assert(high == this.orderToIndex(myFollowThis.last));
 
-        const r = low .. high by stride:strType;
+          if stride < 0 then low <=> high;
+          r = low .. high by stride:strType;
+        }
+
         if debugChapelRange then
           writeln("Expanded range = ",r);
 
-        // todo: factor out this loop (and the above writeln) into a function?
         for i in r do
           yield i;
-      } else {
-        // same as undensifyBounded(this, myFollowThis)
-        const low: idxType  = this.orderToIndex(myFollowThis.first);
-        const high: idxType = ( low: strType + (flwlen - 1):strType ):idxType;
-        assert(high == this.orderToIndex(myFollowThis.last));
 
-        const r = low .. high;
+      } else {
+        var r = 1:idxType .. 0:idxType;
+
+        if flwlen != 0 {
+          const low: idxType  = this.orderToIndex(myFollowThis.first);
+          const high: idxType = ( low: strType + (flwlen - 1):strType ):idxType;
+          assert(high == this.orderToIndex(myFollowThis.last));
+
+          r = low .. high;
+        }
+
         if debugChapelRange then
           writeln("Expanded range = ",r);
 
-        // todo: factor out this loop (and the above writeln) into a function?
         for i in r do
           yield i;
       }
