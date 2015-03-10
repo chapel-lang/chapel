@@ -18,6 +18,10 @@
  */
 use Error;
 
+const curDir = ".";
+const parentDir = "..";
+const pathSep = "/";
+
 /* Returns the canonical path specified, eliminating symbolic links.  If an
    error occurred, it will be returned via the out parameter.
    err: a syserr used to indicate if an error occurred during this operation.
