@@ -386,6 +386,30 @@ proc getGID(name: string): int {
   return ret;
 }
 
+/* Returns an integer representing the current permissions of the file specified
+   by name.  May generate an error message.
+   err: a syserr used to indicate if an error occurred during this function
+   name: the name of the file that you want to know the permissions of.
+*/
+proc getMode(out error: syserr, name: string): int {
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
+
+  var ret:c_int;
+  err = chpl_fs_viewmode(ret, name.c_str());
+  return ret;
+}
+
+/* Returns an integer representing the current permissions of the file specified
+   by name.  May generate an error message.
+   name: the name of the file that you want to know the permissions of.
+*/
+proc getMode(name: string): int {
+  var err:syserr = ENOERR;
+  var result = getMode(err, name);
+  if err != ENOERR then ioerror(err, "in getMode", name);
+  return result;
+}
+
 /* Returns the user id associated with the file or directory specified by
    name.  Returns any errors that occurred via an out parameter.
    err: a syserr used to indicate if an error occurred
@@ -724,26 +748,3 @@ proc umask(mask: int): int {
   return chpl_fs_umask(mask.safeCast(mode_t));
 }
 
-/* Returns an integer representing the current permissions of the file specified
-   by name.  May generate an error message.
-   err: a syserr used to indicate if an error occurred during this function
-   name: the name of the file that you want to know the permissions of.
-*/
-proc getMode(out error: syserr, name: string): int {
-  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
-
-  var ret:c_int;
-  err = chpl_fs_viewmode(ret, name.c_str());
-  return ret;
-}
-
-/* Returns an integer representing the current permissions of the file specified
-   by name.  May generate an error message.
-   name: the name of the file that you want to know the permissions of.
-*/
-proc getMode(name: string): int {
-  var err:syserr = ENOERR;
-  var result = getMode(err, name);
-  if err != ENOERR then ioerror(err, "in getMode", name);
-  return result;
-}
