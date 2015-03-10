@@ -166,8 +166,8 @@ types. A link to the type will be created, if possible. For example:
    * All of these fields must be left-aligned with the outer most paragraph(s).
    * Leave an empty line above and below all these fields for best results.
 
-For more information see the :ref:`Documenting argument, return, and yield
-values and types <documenting-args-returns-yields>` section.
+For more information see the `Documenting argument, return, and yield values
+and types <#documenting-argument-return-and-yield-values-and-types>`_ section.
 
 
 Stifling documentation
@@ -188,7 +188,7 @@ Documentation text within comments is parsed as ReStructed Text.
 Creating links to other symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the `Inline markup <#inline-markup>`_ section for details on creating links, also known as
+See the `cross-references <#inline-markup>`_ section for details on creating links, also known as
 cross-references, in the documentation to other symbols.
 
 
@@ -305,7 +305,7 @@ Internal links
 ++++++++++++++
 
 Internal linking is done via a special reST role, see the section on specific
-markup `cross-references`_.
+markup `cross-references <#inline-markup>`_.
 
 
 Sections
@@ -402,7 +402,7 @@ a matching identifier is found:
 
 ``:chpl:mod:``
 
-    Reference a module; a dotted name may be used. See `cross-references`_ for
+    Reference a module; a dotted name may be used. See `cross-references <#inline-markup>`_ for
     details on dotted and non-dotted names.
 
 ``:chpl:proc:``
