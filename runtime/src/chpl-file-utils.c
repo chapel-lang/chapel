@@ -180,8 +180,7 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
     if (nBuf.st_dev != parentBuf.st_dev) {
       *ret = 1;
     // Check if the st_dev matches that of its parent directory.
-    // If they do match, name does not denote a mount point.  Otherwise, it
-    // is.
+    // If they don't match, it is.
     } else {
       err = chpl_fs_samefile_string(ret, name, parent);
       // If the parent directory is the same as the current directory, we've
