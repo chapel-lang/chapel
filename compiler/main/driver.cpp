@@ -109,6 +109,7 @@ bool fNoTupleCopyOpt = false;
 bool fNoRemoteValueForwarding = false;
 bool fNoRemoveCopyCalls = false;
 bool fNoOptimizeLoopIterators = false;
+bool fNoVectorize = true;
 bool fNoGlobalConstOpt = false;
 bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
@@ -117,6 +118,7 @@ bool fNoBoundsChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fNoStackChecks = false;
+bool fNoCastChecks = false;
 bool fMungeUserIdents = true;
 bool fEnableTaskTracking = false;
 
@@ -148,6 +150,7 @@ int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fLocal;   // initialized in setupOrderedGlobals() below
+bool fIgnoreLocalClasses = false;
 bool fHeterogeneous = false; // re-initialized in setupOrderedGlobals() below
 bool fieeefloat = true;
 bool report_inlining = false;
@@ -163,6 +166,7 @@ bool fPrintEmittedCodeSize = false;
 char fPrintStatistics[256] = "";
 bool fPrintDispatch = false;
 bool fReportOptimizedLoopIterators = false;
+bool fReportOrderIndependentLoops = false;
 bool fReportOptimizedOn = false;
 bool fReportPromotion = false;
 bool fReportScalarReplace = false;
@@ -178,6 +182,7 @@ bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
 char fDocsFolder[256] = "";
 bool fDocsTextOnly = false;
+char fDocsSphinxDir[256] = "";
 bool fDocsIncludeExterns = true;
 char mainModuleName[256] = "";
 bool printSearchDirs = false;
@@ -550,6 +555,7 @@ static void turnOffChecks(const ArgumentState* state, const char* unused) {
   fNoBoundsChecks = true;
   fNoLocalChecks  = true;
   fNoStackChecks  = true;
+  fNoCastChecks = true;
 }
 
 static void handleStackCheck(const ArgumentState* state, const char* unused) {
@@ -577,6 +583,7 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoInline = false;
   fNoInlineIterators = false;
   fNoOptimizeLoopIterators = false;
+  //fNoVectorize = false;
   fNoLiveAnalysis = false;
   fNoRemoteValueForwarding = false;
   fNoRemoveCopyCalls = false;
@@ -586,8 +593,10 @@ static void setFastFlag(const ArgumentState* state, const char* unused) {
   fNoChecks = true;
   fNoBoundsChecks = true;
   fNoLocalChecks = true;
+  fIgnoreLocalClasses = false;
   fNoNilChecks = true;
   fNoStackChecks = true;
+  fNoCastChecks = true;
   fNoOptimizeOnClauses = false;
   optimizeCCode = true;
   specializeCCode = true;
@@ -606,12 +615,14 @@ static void setBaselineFlag(const ArgumentState* state, const char* unused) {
   fNoInlineIterators = true;
   fNoLiveAnalysis = true;
   fNoOptimizeLoopIterators = true;
+  fNoVectorize = true;
   fNoRemoteValueForwarding = true;
   fNoRemoveCopyCalls = true;
   fNoScalarReplacement = true;
   fNoTupleCopyOpt = true;
   fNoPrivatization = true;
   fNoOptimizeOnClauses = true;
+  fIgnoreLocalClasses = true;
   fConditionalDynamicDispatchLimit = 0;
 }
 
@@ -700,10 +711,12 @@ static ArgumentDescription arg_desc[] = {
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", NULL},
  {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoloopInvariantCodeMotion, NULL, NULL},
+ {"ignore-local-classes", ' ', NULL, "Disable [enable] local classes", "N", &fIgnoreLocalClasses, NULL, NULL},
  {"inline", ' ', NULL, "Enable [disable] function inlining", "n", &fNoInline, NULL, NULL},
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
+ {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", NULL},
  {"optimize-on-clauses", ' ', NULL, "Enable [disable] optimization of on clauses", "n", &fNoOptimizeOnClauses, "CHPL_DISABLE_OPTIMIZE_ON_CLAUSES", NULL},
  {"optimize-on-clause-limit", ' ', "<limit>", "Limit recursion depth of on clause optimization search", "I", &optimize_on_clause_limit, "CHPL_OPTIMIZE_ON_CLAUSE_LIMIT", NULL},
  {"privatization", ' ', NULL, "Enable [disable] privatization of distributed arrays and domains", "n", &fNoPrivatization, "CHPL_DISABLE_PRIVATIZATION", NULL},
@@ -721,6 +734,7 @@ static ArgumentDescription arg_desc[] = {
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
  {"nil-checks", ' ', NULL, "Enable [disable] nil checking", "n", &fNoNilChecks, "CHPL_NO_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", handleStackCheck},
+ {"cast-checks", ' ', NULL, "Enable [disable] checks in safeCast calls", "n", &fNoCastChecks, NULL, NULL},
 
  {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_NO_CODEGEN", NULL},
@@ -754,6 +768,7 @@ static ArgumentDescription arg_desc[] = {
  {"docs-dir", ' ', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  // {"docs-externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL}, // Commented out because we aren't sure we want it yet.
  {"docs-text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
+ {"docs-save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},  // "CHPL_SAVE_SPHINX_DIR", NULL
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
@@ -811,6 +826,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
  {"report-optimized-loop-iterators", ' ', NULL, "Print stats on optimized single loop iterators", "F", &fReportOptimizedLoopIterators, NULL, NULL},
+ {"report-order-independent-loops", ' ', NULL, "Print stats on order independent loops", "F", &fReportOrderIndependentLoops, NULL, NULL},
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
@@ -966,7 +982,8 @@ int main(int argc, char* argv[]) {
     recordCodeGenStrings(argc, argv);
   } // astlocMarker scope
 
-  printStuff(argv[0]);
+  if (fUseIPE == false)
+    printStuff(argv[0]);
 
   if (rungdb)
     runCompilerInGDB(argc, argv);
@@ -974,7 +991,7 @@ int main(int argc, char* argv[]) {
   if (runlldb)
     runCompilerInLLDB(argc, argv);
 
-  testInputFiles(sArgState.nfile_arguments, sArgState.file_argument);
+  addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
   if (fUseIPE == false) {
     if (fDocs == false && strcmp(sArgState.program_name, "chpldoc") == 0)

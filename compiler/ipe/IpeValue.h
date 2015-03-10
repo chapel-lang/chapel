@@ -20,11 +20,51 @@
 #ifndef _IPE_VALUE_H_
 #define _IPE_VALUE_H_
 
-union IpeValue
+class IpeModule;
+class IpeProcedure;
+
+class IpeValue
 {
-  bool   bValue;
-  long   iValue;
-  double rValue;
+public:
+                IpeValue();
+                IpeValue(bool          value);
+                IpeValue(IpeModule*    value);
+                IpeValue(IpeProcedure* value);
+
+  bool          boolGet()                              const;
+  void          boolSet(bool value);
+
+  long          integerGet()                           const;
+  void          integerSet(long value);
+
+  double        realGet()                              const;
+  void          realSet(double value);
+
+  const char*   cstringGet()                           const;
+  void          cstringSet(const char* value);
+
+  IpeModule*    moduleGet()                            const;
+
+  IpeProcedure* procedureGet()                         const;
+
+  IpeValue*     refGet()                               const;
+  void          refSet(IpeValue* value);
+
+private:
+
+  union ipeValue
+  {
+    long          iValue;
+    double        rValue;
+
+    const char*   sValue;
+
+    IpeValue*     valuePtr;
+    IpeModule*    modulePtr;
+    IpeProcedure* procedurePtr;
+  };
+
+  ipeValue    mValue;
 };
 
 #endif

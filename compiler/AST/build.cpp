@@ -23,6 +23,7 @@
 #include "baseAST.h"
 #include "config.h"
 #include "expr.h"
+#include "files.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -162,16 +163,33 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   return stmt;
 }
 
-static Expr* convertStringLiteral(Expr *e) {
-  if (SymExpr* s = toSymExpr(e)) {
-    VarSymbol *v = toVarSymbol(s->var);
-    INT_ASSERT(v);
-    if (v->immediate &&
-        v->immediate->const_kind==CONST_KIND_STRING) {
-      return new CallExpr("toString", s);
+
+//
+// A helper function that's useful in a few places in this file to
+// conditionally convert an Expr to a 'const char*' in the event that
+// it's an immediate string.
+//
+static const char* toImmediateString(Expr* expr) {
+  if (SymExpr* se = toSymExpr(expr)) {
+    if (VarSymbol* var = toVarSymbol(se->var)) {
+      if (var->isImmediate()) {
+        Immediate* imm = var->immediate;
+        if (imm->const_kind == CONST_KIND_STRING) {
+          return imm->v_string;
+        }
+      }
     }
   }
-  return e;
+  return NULL;
+}
+
+
+static Expr* convertStringLiteral(Expr *e) {
+  if (toImmediateString(e) != NULL) {
+    return new CallExpr("toString", e);
+  } else {
+    return e;
+  }
 }
 
 static void convertStringLiteralArgList(CallExpr* call) {
@@ -378,11 +396,58 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
   }
 }
 
+//
+// Given a string literal argument from a 'use' statement, process
+// that argument.  We assume it's either a "-llib" flag,
+// or a source filename like "foo.h", "foo.c", "foo.o", etc.  
+//
+// - For the former, pass to addLibInfo(), the same function that
+//   handles command line -l flags.
+//
+// - Otherwise, assume it's the latter and pass it to our source file
+//   handler (which itself handles cases it doesn't recognize).
+//
+static void processStringInUseStmt(const char* str) {
+  if (strncmp(str, "-l", 2) == 0) {
+    addLibInfo(str);
+  } else {
+    addSourceFile(str);
+  }
+}
 
-BlockStmt* buildUseStmt(CallExpr* modules) {
+
+//
+// Build a 'use' statement
+//
+BlockStmt* buildUseStmt(CallExpr* args) {
   BlockStmt* list = NULL;
-  for_actuals(expr, modules)
-    list = buildUseList(expr->remove(), list);
+
+  //
+  // Iterate over the expressions being 'use'd, processing them
+  //
+  for_actuals(expr, args) {
+    Expr* useArg = expr->remove();
+
+    //
+    // if this is a string argument to 'use', process it
+    //
+    if (const char* str = toImmediateString(useArg)) {
+      processStringInUseStmt(str);
+    } else {
+      //
+      // Otherwise, handle it in the traditional way
+      //
+      list = buildUseList(useArg, list);
+    }
+  }
+
+  //
+  // If all of them are consumed, replace the use statement by a no-op
+  //
+  if (list == NULL) {
+    list = buildChapelStmt(new CallExpr(PRIM_NOOP));
+  }
+  
   return list;
 }
 
@@ -493,22 +558,23 @@ ModuleSymbol* buildModule(const char* name, BlockStmt* block, const char* filena
 }
 
 
+
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
   if (exprs->argList.length == 0)
     INT_FATAL("primitive has no name");
   Expr* expr = exprs->get(1);
   expr->remove();
-  SymExpr* symExpr = toSymExpr(expr);
-  if (!symExpr)
-    INT_FATAL(expr, "primitive has no name");
-  VarSymbol* var = toVarSymbol(symExpr->var);
-  if (!var || !var->immediate || var->immediate->const_kind != CONST_KIND_STRING)
+  if (const char* primname = toImmediateString(expr)) {
+    if (PrimitiveOp* prim = primitives_map.get(primname)) {
+      return new CallExpr(prim, exprs);
+    } else {
+      INT_FATAL(expr, "primitive not found '%s'", primname);
+    }
+  } else {
     INT_FATAL(expr, "primitive with non-literal string name");
-  PrimitiveOp* prim = primitives_map.get(var->immediate->v_string);
-  if (!prim)
-    INT_FATAL(expr, "primitive not found '%s'", var->immediate->v_string);
-  return new CallExpr(prim, exprs);
+  }
+  return NULL;
 }
 
 
@@ -953,6 +1019,83 @@ buildFollowLoop(VarSymbol* iter,
   return followBlock;
 }
 
+// Do whatever is needed for a reduce intent.
+// Return the globalOp symbol.
+static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
+                                 Expr* reduceOp, Expr* reduceVar,
+                                 Expr* otherROp)
+{
+  // Otherwise reduceVar->copy() may not be adequate.
+  INT_ASSERT(isUnresolvedSymExpr(reduceVar));
+
+  VarSymbol* globalOp = newTemp("chpl__reduceGlob");
+  iterRec->defPoint->insertBefore(new DefExpr(globalOp));
+  reduceOp->replace(new SymExpr(globalOp));
+  if (otherROp)
+    otherROp->replace(new SymExpr(globalOp));
+
+  // globalOp = new reduceOp(eltType = reduceVar.type)
+  Expr* eltType = new NamedExpr("eltType",
+                    new_Expr("'typeof'(%E)", reduceVar->copy()));
+  iterRec->defPoint->insertBefore(new_Expr("'move'(%S, 'new'(%E(%E)))",
+                                           globalOp, reduceOp, eltType));
+  // reduceVar = globalOp.generate(); delete globalOp;
+  parLoop->insertAfter("'delete'(%S)", globalOp);
+  parLoop->insertAfter(new_Expr("'='(%E,.(%S, 'generate')())",
+                                reduceVar->copy(), globalOp));
+}
+
+// Setup for forall intents
+static void setupForallIntents(CallExpr* withClause,
+                               CallExpr* otherWith,
+                               VarSymbol* iterRec,
+                               VarSymbol* leadIdx,
+                               VarSymbol* leadIdxCopy,
+                               BlockStmt* parLoop)
+{
+  // To iterate over two withClause in parallel.
+  Expr* otherActual = otherWith ? otherWith->argList.head : NULL;
+  Expr* otherNext   = otherActual ? otherActual->next : NULL;
+
+  // Handle reduce intents, if any.
+  // Keep in sync with markOuterVarsWithIntents().
+  bool markerTurn = true;
+  Expr* reduceOp = NULL;
+  Expr* otherROp = NULL;
+  for_actuals(actual, withClause) {
+    if (markerTurn) {
+      markerTurn = false;
+      if (SymExpr* se = toSymExpr(actual)) {
+        ArgSymbol* tiMarker =  toArgSymbol(se->var);
+        INT_ASSERT(tiMarker); // confirm my thinking
+      } else {
+        reduceOp = actual;
+        if (otherActual) otherROp = otherActual;
+      }
+    } else {
+      markerTurn = true;
+      if (reduceOp) {
+        setupOneReduceIntent(iterRec, parLoop, reduceOp, actual, otherROp);
+        reduceOp = NULL;
+        otherROp = NULL;
+      }
+    }
+    // Advance the iteration over otherWith.
+    otherActual = otherNext;
+    otherNext = otherNext ? otherNext->next: NULL;
+  }
+  INT_ASSERT(markerTurn);
+  INT_ASSERT(!reduceOp);
+  INT_ASSERT(!otherROp);
+  INT_ASSERT(!otherActual);
+
+  // ForallLeaderArgs: stash references so we know where things are.
+  INT_ASSERT(withClause->isPrimitive(PRIM_FORALL_LOOP));
+  withClause->insertAtHead(leadIdxCopy); // 3rd arg
+  withClause->insertAtHead(leadIdx);     // 2nd arg
+  withClause->insertAtHead(iterRec);     // 1st arg
+}
+
 /*
  * Build a forall loop that has only one level instead of a nested leader
  * follower loop. This single level loop will be handled similarily to
@@ -974,13 +1117,6 @@ buildStandaloneForallLoopStmt(Expr* indices,
   saIdx->addFlag(FLAG_INDEX_VAR);
   saIdxCopy->addFlag(FLAG_INDEX_VAR);
 
-  // ForallLeaderArgs: stash references so we know where things are.
-  CallExpr* byref_vars = loopBody->byrefVars;
-  INT_ASSERT(byref_vars->isPrimitive(PRIM_FORALL_LOOP));
-  byref_vars->insertAtHead(saIdxCopy); // 3rd arg
-  byref_vars->insertAtHead(saIdx);     // 2nd arg
-  byref_vars->insertAtHead(iterRec);   // 1st arg
-
   BlockStmt* SABlock = buildChapelStmt();
 
   SABlock->insertAtTail(new DefExpr(iterRec));
@@ -998,6 +1134,8 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABody->insertAtTail(loopBody);
   SABlock->insertAtTail(SABody);
   SABlock->insertAtTail("_freeIterator(%S)", saIter);
+  setupForallIntents(loopBody->byrefVars, NULL,
+                     iterRec, saIdx, saIdxCopy, SABody);
   return SABlock;
 }
 
@@ -1010,13 +1148,18 @@ buildStandaloneForallLoopStmt(Expr* indices,
  *
  * When both versions are created, it will end up as a normalized form of:
  *
- * if (chpl__tryToken)
- *   for idx in iter(standalone)
- *     do body(idx);
+ * if chpl__tryToken then
+ *   for idx in iter(standalone) do
+ *     body(idx);
  * else
- *   for block in iter(leader) do
- *     for idx in iter(follower, block) do
- *       body(idx);
+ *   for block in iter(leader) {
+ *     if doing fast follower then
+ *       for idx in iter(follower, block, fast=true) do
+ *         body(idx);
+ *     else
+ *       for idx in iter(follower, block) do
+ *         body(idx);
+ *   }
  */
 BlockStmt*
 buildForallLoopStmt(Expr*      indices,
@@ -1074,16 +1217,9 @@ buildForallLoopStmt(Expr*      indices,
   iterRec->addFlag(FLAG_EXPR_TEMP);
   iterRec->addFlag(FLAG_CHPL__ITER);
 
-  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
   leadIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
   followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-
-  // ForallLeaderArgs: stash references so we know where things are.
-  byref_vars->insertAtHead(leadIdxCopy); // 3rd arg
-  byref_vars->insertAtHead(leadIdx);     // 2nd arg
-  byref_vars->insertAtHead(iterRec);     // 1st arg
 
   resultBlock->insertAtTail(new DefExpr(iterRec));
   resultBlock->insertAtTail(new DefExpr(leadIter));
@@ -1156,6 +1292,9 @@ buildForallLoopStmt(Expr*      indices,
 
   resultBlock->insertAtTail(leadForLoop);
   resultBlock->insertAtTail("_freeIterator(%S)", leadIter);
+  setupForallIntents(byref_vars,
+                     loopBodyForFast ? loopBodyForFast->byrefVars : NULL,
+                     iterRec, leadIdx, leadIdxCopy, leadForLoop);
 
   if (!zippered) {
     BlockStmt* SALoop = buildStandaloneForallLoopStmt(indices,
@@ -2029,7 +2168,13 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk) {
       if (!de->init) {
         Symbol* vs = de->sym;
         PrimitiveType* pt = new PrimitiveType(NULL);
-        DefExpr* newde = new DefExpr(new TypeSymbol(vs->name, pt));
+
+        TypeSymbol* ts = new TypeSymbol(vs->name, pt);
+        if (VarSymbol* theVs = toVarSymbol(vs)) {
+          ts->doc = theVs->doc;
+        }
+        DefExpr* newde = new DefExpr(ts);
+
         de->replace(newde);
         de = newde;
       }

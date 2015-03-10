@@ -1296,6 +1296,55 @@ module ChapelRange {
   //# Parallel Iterators
   //#
 
+  iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
+                                              !localeModelHasSublocales
+  {
+    if ! isBoundedRange(this) {
+      compilerError("parallel iteration is not supported over unbounded ranges");
+    }
+    if this.isAmbiguous() {
+      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+    }
+    if debugChapelRange {
+      writeln("*** In range standalone iterator:");
+    }
+
+    const len = this.length;
+    const numChunks = if __primitive("task_get_serial") then
+                      1 else _computeNumChunks(len);
+
+    if debugChapelRange {
+      writeln("*** RI: length=", len, " numChunks=", numChunks);
+    }
+
+    if numChunks <= 1 {
+      for i in this {
+        yield i;
+      }
+    } else {
+      coforall chunk in 0..#numChunks {
+        if stridable {
+          // TODO: find a way to avoid this densify/undensify for strided
+          // ranges, perhaps by adding knowledge of alignment to _computeBlock
+          // or using an aligned range
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
+          const mylen = hi - (lo-1);
+          var low = orderToIndex(lo);
+          var high = (low:strType + stride * (mylen - 1):strType):idxType;
+          if stride < 0 then low <=> high;
+          for i in low..high by stride {
+            yield i;
+          }
+        } else {
+          const (lo, hi) = _computeBlock(len, numChunks, chunk, this.high, this.low, this.low);
+          for i in lo..hi {
+            yield i;
+          }
+        }
+      }
+    }
+  }
+
   iter range.these(param tag: iterKind) where tag == iterKind.leader
   {
     if ! isBoundedRange(this) then
@@ -1415,20 +1464,14 @@ module ChapelRange {
   
     if ! this.hasFirst() {
       if this.isEmpty() {
-        if myFollowThis.isEmpty() then
-          // nothing to do
-          return;
-        else
+        if ! myFollowThis.isEmpty() then
           halt("zippered iteration with a range has non-equal lengths");
       } else {
         halt("iteration over a range with no first index");
       }
     }
     if ! myFollowThis.hasFirst() {
-      if !myFollowThis.isAmbiguous() && myFollowThis.isEmpty() then
-        // nothing to do
-        return;
-      else
+      if ! (!myFollowThis.isAmbiguous() && myFollowThis.isEmpty()) then
         halt("zippered iteration over a range with no first index");
     }
   
@@ -1436,8 +1479,6 @@ module ChapelRange {
        myFollowThis.hasLast()
     {
       const flwlen = myFollowThis.length;
-      if flwlen == 0 then
-        return; // nothing to do
       if boundsChecking && this.hasLast() {
         // this check is for typechecking only
         if isBoundedRange(this) {
@@ -1447,32 +1488,38 @@ module ChapelRange {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }    
       if this.stridable || myFollowThis.stridable {
-        // same as undensifyBounded(this, myFollowThis)
-        const stride = this.stride * myFollowThis.stride;
-        var low: idxType  = this.orderToIndex(myFollowThis.first);
-        var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
-        assert(high == this.orderToIndex(myFollowThis.last));
+        var r = 1:idxType .. 0:idxType by 1:indexToStrideType(idxType);
 
-        if stride < 0 then low <=> high;
+        if flwlen != 0 {
+          const stride = this.stride * myFollowThis.stride;
+          var low: idxType  = this.orderToIndex(myFollowThis.first);
+          var high: idxType = ( low: strType + stride * (flwlen - 1):strType ):idxType;
+          assert(high == this.orderToIndex(myFollowThis.last));
 
-        const r = low .. high by stride:strType;
+          if stride < 0 then low <=> high;
+          r = low .. high by stride:strType;
+        }
+
         if debugChapelRange then
           writeln("Expanded range = ",r);
 
-        // todo: factor out this loop (and the above writeln) into a function?
         for i in r do
           yield i;
-      } else {
-        // same as undensifyBounded(this, myFollowThis)
-        const low: idxType  = this.orderToIndex(myFollowThis.first);
-        const high: idxType = ( low: strType + (flwlen - 1):strType ):idxType;
-        assert(high == this.orderToIndex(myFollowThis.last));
 
-        const r = low .. high;
+      } else {
+        var r = 1:idxType .. 0:idxType;
+
+        if flwlen != 0 {
+          const low: idxType  = this.orderToIndex(myFollowThis.first);
+          const high: idxType = ( low: strType + (flwlen - 1):strType ):idxType;
+          assert(high == this.orderToIndex(myFollowThis.last));
+
+          r = low .. high;
+        }
+
         if debugChapelRange then
           writeln("Expanded range = ",r);
 
-        // todo: factor out this loop (and the above writeln) into a function?
         for i in r do
           yield i;
       }

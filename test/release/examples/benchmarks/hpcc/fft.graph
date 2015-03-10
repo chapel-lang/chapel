@@ -1,6 +1,6 @@
 perfkeys: Execution time =
 graphkeys: fft
 files: fft.dat
-graphtitle: HPCC FFT Performance
+graphtitle: HPCC FFT Time
 ylabel: Time (seconds)
 graphname: fft

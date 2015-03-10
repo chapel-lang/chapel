@@ -147,7 +147,7 @@ extern const QIO_HINT_PARALLEL:c_int;
 extern const QIO_HINT_DIRECT:c_int;
 extern const QIO_HINT_NOREUSE:c_int;
 
-/** NONE means normal operation, nothing special
+/*  NONE means normal operation, nothing special
     to hint. Expect to use NONE most of the time.
     The other hints can be bitwise-ORed in.
  */
@@ -156,18 +156,18 @@ const IOHINT_NONE = 0:c_int;
 /** RANDOM means we expect random access to a file */
 const IOHINT_RANDOM = QIO_HINT_RANDOM;
 
-/** SEQUENTAL means expect sequential access. On
+/*  SEQUENTIAL means expect sequential access. On
     Linux, this should double the readahead.
  */
 const IOHINT_SEQUENTIAL = QIO_HINT_SEQUENTIAL;
 
-/** CACHED means we expect the entire file
+/*  CACHED means we expect the entire file
     to be cached and/or we pull it in all at
     once. May request readahead on the entire file.
  */
 const IOHINT_CACHED = QIO_HINT_CACHED;
 
-/** PARALLEL means that we expect to have many
+/*  PARALLEL means that we expect to have many
     channels working with this file in parallel.
     It might change the reading/writing implementation
     to something more efficient in that scenario.
@@ -226,6 +226,7 @@ extern record iostyle { // aka qio_style_t
                              and nonprinting characters c = \uABCD
      QIO_STRING_FORMAT_TOEND string is as-is; reading reads until string_end
    */
+  /* */
   var string_format:uint(8) = 0;
   // numeric scanning/printing choices
   var base:uint(8) = 0;
@@ -266,8 +267,8 @@ extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, co
 
 // Same as qio_file_open_access in, except this time we pass though our
 // struct that will initilize the file with the appropriate functions for that FS
-extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:string,
-                                     access:string, iohints:c_int, /*const*/ ref style:iostyle,
+extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
+                                     access:c_string, iohints:c_int, /*const*/ ref style:iostyle,
                                      fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
@@ -510,6 +511,7 @@ extern type fdflag_t = c_int;
 
 /* Access hints describe how a file will be used.
    These can help optimize. These might be:
+
   QIO_METHOD_DEFAULT,
   QIO_METHOD_READWRITE,
   QIO_METHOD_P_READWRITE,
@@ -520,7 +522,7 @@ extern type fdflag_t = c_int;
   QIO_HINT_BANDWIDTH,
   QIO_HINT_CACHED,
   QIO_HINT_NOREUSE
-}
+
 */
 extern type iohints = c_int;
 
@@ -1563,7 +1565,13 @@ inline proc channel.read(ref args ...?k,
     this.lock();
     for param i in 1..k {
       if !error {
-        error = _read_one_internal(_channel_internal, kind, args[i]);
+        if args[i].locale == here {
+          error = _read_one_internal(_channel_internal, kind, args[i]);
+        } else {
+          var tmp:args[i].type;
+          error = _read_one_internal(_channel_internal, kind, tmp);
+          args[i] = tmp;
+        }
       }
     }
     this.unlock();
@@ -2046,6 +2054,7 @@ record ItemReader {
   }*/
 }
 
+/* */
 proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   if writing then compilerError(".itemReader on write-only channel");
   return new ItemReader(ItemType, kind, locking, this);

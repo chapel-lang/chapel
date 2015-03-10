@@ -18,23 +18,21 @@
 IPE_SRCS =                           \
            ipeDriver.cpp             \
            ipeResolve.cpp            \
-           ipeCheckReturn.cpp        \
-           ipeInlinePrimitives.cpp   \
-           ipeAssignLocations.cpp    \
            ipeEvaluate.cpp           \
                                      \
-           IpeEnvironment.cpp        \
-           IpeSymbol.cpp             \
-           VisibleSymbol.cpp         \
+           IpeScope.cpp              \
+           IpeScopeExpr.cpp          \
+           IpeScopeModule.cpp        \
+           IpeScopeProcedure.cpp     \
+           VisibleSymbols.cpp        \
                                      \
-           ScopeBase.cpp             \
-           ScopeModule.cpp           \
-           ScopeFunction.cpp         \
-           ScopeBlock.cpp
-
+           IpeVars.cpp               \
+                                     \
+           IpeModule.cpp             \
+           IpeProcedure.cpp          \
+           IpeValue.cpp
 
 SVN_SRCS = $(IPE_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS     = $(SVN_SRCS)
 
-IPE_OBJS = \
-	$(IPE_SRCS:%.cpp=$(IPE_OBJDIR)/%.$(OBJ_SUFFIX))
+IPE_OBJS = $(IPE_SRCS:%.cpp=$(IPE_OBJDIR)/%.$(OBJ_SUFFIX))

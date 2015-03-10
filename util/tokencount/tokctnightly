@@ -4,8 +4,12 @@ use Cwd 'abs_path';
 use File::Basename;
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
 $replymail = "chapel-developers\@lists.sourceforge.net";
+
+$tokctdir = abs_path(dirname(__FILE__));
+$tokctr = "$tokctdir/tokencount.cron";
+$chplhomedir = abs_path("$tokctdir/../..");
 
 $printusage = 0;
 if (@ARGV) {
@@ -72,10 +76,12 @@ if ($mailer eq "") {
     if ($? == 0) {
         $mailer = "$chplsendemail --header=Reply-To=$replymail,Precedence=bulk";
     } else {
+        print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
         $mailer = "mail";
     }
 }
 print "\$mailer = $mailer\n";
+
 
 if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
     $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
@@ -100,9 +106,6 @@ if ($debug == 1) {
 #
 # directory locations
 #
-$tokctdir = abs_path(dirname(__FILE__));
-$tokctr = "$tokctdir/tokencount.cron";
-$chplhomedir = abs_path("$tokctdir/../..");
 $logdir = "/data/sea/chapel/Nightly";
 $statdir = "$logdir/Stats";
 if ($debug == 1) {

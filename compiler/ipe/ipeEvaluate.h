@@ -20,6 +20,12 @@
 #ifndef _IPE_EVALUATE_H_
 #define _IPE_EVALUATE_H_
 
-void ipeEvaluate();
+class Expr;
+class IpeValue;
+class IpeVars;
+class Symbol;
+
+IpeValue ipeEvaluate(Expr*   expr, IpeVars* vars);
+IpeValue ipeEvaluate(Symbol* expr, IpeVars* vars);
 
 #endif

@@ -172,6 +172,12 @@ class AggregateType : public Type {
   bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
   bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
   bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
+  std::string docsSuperClass();
 };
 
 
@@ -184,6 +190,11 @@ class PrimitiveType : public Type {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
   void codegenDef();
   int codegenStructure(FILE* outfile, const char* baseoffset);
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+
+private:
+  virtual std::string docsDirective();
 };
 
 
@@ -249,6 +260,7 @@ TYPE_EXTERN Type* dtObject;
 
 TYPE_EXTERN Map<Type*,Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*,Type*> wideRefMap;   // reference -> wide reference
+TYPE_EXTERN std::map<Type*, Type*> wideToNarrowRefMap; // reference of wide class to reference of narrow class
 
 void     initRootModule();
 void     initPrimitiveTypes();

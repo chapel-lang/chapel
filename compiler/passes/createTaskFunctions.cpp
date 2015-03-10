@@ -164,25 +164,35 @@ findOuterVars(FnSymbol* fn, SymbolMap& uses) {
 // Mark the variables listed in 'with' clauses, if any, with tiMark markers.
 void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
   if (!byrefVars) return;
-  ArgSymbol* tiMarker = NULL;
-  // the actuals alternate: tiMark arg, task-intent variable [, repeat]
+  Symbol* marker = NULL;
+
+  // Keep in sync with setupForallIntents() - the actuals alternate:
+  //  (tiMark arg | reduce opExpr), task-intent variable [, repeat]
   for_actuals(actual, byrefVars) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se); // comes as an UnresolvedSymExpr from the parser,
                     // should have been resolved in ScopeResolve
                     // or it is a SymExpr over a tiMark ArgSymbol
+                    //                 or over chpl__reduceGlob
     Symbol* var = se->var;
-    if (tiMarker) {
+    if (marker) {
       SymbolMapElem* elem = uses.get_record(var);
-      if (elem)
-        elem->value = tiMarker;
-      tiMarker = NULL;
+      if (elem) {
+        elem->value = marker;
+      } else {
+        if (isVarSymbol(marker)) {
+          // this is a globalOp created in setupOneReduceIntent()
+          INT_ASSERT(!strcmp(marker->name, "chpl__reduceGlob"));
+          USR_WARN(byrefVars, "the variable '%s' is given a reduce intent and not mentioned in the loop body - it will have the unit value after the loop", var->name);
+        }
+      }
+      marker = NULL;
     } else {
-      tiMarker =  toArgSymbol(var);
-      INT_ASSERT(tiMarker);
+      marker = var;
+      INT_ASSERT(marker);  // otherwise the alternation logic will not work
     }
   }
-  INT_ASSERT(!tiMarker);
+  INT_ASSERT(!marker);
 }
 
 // 'this' (the receiver) should *always* be passed by reference - because

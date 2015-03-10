@@ -26,6 +26,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "stlUtil.h"
 
 
 static Type* getWrapRecordBaseType(Type* type);
@@ -81,7 +82,7 @@ removeWrapRecords() {
   }
 
   //
-  // remove formals for _valueType fields in constructors
+  // Remove actuals bound to _valueType formals.
   //
   compute_call_sites();
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -89,6 +90,52 @@ removeWrapRecords() {
       if (!strcmp(formal->name, "_valueType")) {
         forv_Vec(CallExpr, call, *fn->calledBy) {
           formal_to_actual(call, formal)->remove();
+        }
+      }        
+    }
+  }
+
+  //
+  // Remove all uses of _valueType formals, and then the formal itself.
+  //
+  // We need to complete the above action on all functions/formals first,
+  // before proceeding to the following loop.  Otherwise in the following
+  // scenario:
+  //
+  //   proc fun1(..., _valueType) {
+  //     ...
+  //     tmp = fun2(..., _valueType); <-- need to preserve this call.
+  //     ...
+  //   }
+  //
+  // Suppose we process fun1() before fun2().  In that case, the code below
+  // would remove the indicated call because _valueType still appears as an
+  // argument.  Most likely, that call is a call to the compiler-generated
+  // default constructor for a record-wrapped type.  It needs to be preserved
+  // in its reduced form, e.g. _construct_array(_value).  If the call is
+  // removed entirely, then the array tmp is never initialized, and the program
+  // computes garbage.
+  // In this revised formulation, all _valueType formals and their
+  // corresponding actual arguments are removed first.  Then, the call to
+  // fun2() no longer contains a reference to the _valueType argument of
+  // fun1(), so it is preserved as desired.
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    for_formals(formal, fn) {
+      if (!strcmp(formal->name, "_valueType")) {
+        // Remove all uses of _valueType within the body of this function.
+        std::vector<SymExpr*> symExprs;
+        collectSymExprsSTL(fn->body, symExprs);
+        for_vector(SymExpr, se, symExprs) {
+          // Ignore dead ones.
+          if (se->parentSymbol == NULL)
+            continue;
+          // Weed out all but the formal we're interested in.
+          if (se->var != formal)
+            continue;
+          // OK, remove the entire statement accessing the _valueType formal.
+          Expr* stmt = se->getStmtExpr();
+          stmt->remove();
         }
         formal->defPoint->remove();
       }        
@@ -99,6 +146,9 @@ removeWrapRecords() {
   // replace accesses of _value with wrap record
   //
   forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->parentSymbol == NULL)
+      continue;
+
     if (call->isPrimitive(PRIM_SET_MEMBER)) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
         if (isRecordWrappedType(se->var->type)) {
@@ -134,8 +184,29 @@ removeWrapRecords() {
   //
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (Type* type = getWrapRecordBaseType(var->type))
-      if (!var->defPoint->parentSymbol->hasFlag(FLAG_REF))
+      if (!var->defPoint->parentSymbol->hasFlag(FLAG_REF)) {
         var->type = type;
+
+        //
+        // record-wrapped arrays should be local fields
+        // TODO: Domains don't work generally due to some case in Sparse.
+        // What about dist classes?
+        //
+        if (TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol)) {
+          if (!(ts->hasFlag(FLAG_REF) ||
+                ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE) ||
+                ts->hasEitherFlag(FLAG_TUPLE, FLAG_STAR_TUPLE) ||
+                ts->hasEitherFlag(FLAG_ITERATOR_CLASS, FLAG_ITERATOR_RECORD) ||
+                ts->hasFlag(FLAG_HEAP))) {
+              const char* bundlePrefix = "_class_locals";
+              if (strncmp(ts->name, bundlePrefix, strlen(bundlePrefix))) {
+                if (isArrayClass(type)) {
+                  var->addFlag(FLAG_LOCAL_FIELD);
+                }
+              }
+          }
+        }
+      }
   }
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (Type* type = getWrapRecordBaseType(arg->type)) {

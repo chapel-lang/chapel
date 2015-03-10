@@ -599,7 +599,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
     }
     else
     {
-      state->file_argument = (char **)realloc(
+      state->file_argument = (const char **)realloc(
         state->file_argument,
         sizeof(char*) * (state->nfile_arguments + 2));
 

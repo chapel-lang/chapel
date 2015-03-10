@@ -39,7 +39,7 @@ checkNormalized(void) {
 static void checkFunctionSignatures()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ITERATOR_FN)) {
+    if (fn->isIterator()) {
       if (fn->retTag == RET_TYPE)
         USR_FATAL_CONT(fn, "iterators may not yield or return types");
       if (fn->retTag == RET_PARAM)

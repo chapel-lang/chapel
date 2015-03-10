@@ -43,6 +43,9 @@ struct fileinfo {
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false);
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
+const char* getCwd();
+const char* makeTempDir(const char* dirPrefix);
+void deleteDir(const char* dirname);
 void deleteTmpDir(void);
 const char* objectFileForCFile(const char* cfile);
 
@@ -63,7 +66,8 @@ bool isChplSource(const char* filename);
 bool isCHeader(const char* filename);
 bool isCSource(const char* filename);
 bool isObjFile(const char* filename);
-void testInputFiles(int numFilenames, char* filename[]);
+void addSourceFiles(int numFilenames, const char* filename[]);
+void addSourceFile(const char* filename);
 const char* nthFilename(int i);
 void addLibInfo(const char* filename);
 void addIncInfo(const char* incDir);

@@ -86,8 +86,8 @@ module Defined {
   }
 
   /*
-    If a class inherits from another class, those fields, methods, and their
-    comments are output in both the super and the subclass
+    If a class inherits from another class, the inheritance is shown
+    in the signature.
   */
   class Bar : Foo {
 
