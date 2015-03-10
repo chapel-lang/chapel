@@ -188,7 +188,7 @@ Documentation text within comments is parsed as ReStructed Text.
 Creating links to other symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the `Inline Markup`_ section for details on creating links, also known as
+See the `Inline markup`_ section for details on creating links, also known as
 cross-references, in the documentation to other symbols.
 
 
@@ -365,7 +365,7 @@ parsable, the block is not highlighted in anyway.
 
 .. _cross-references:
 
-.. _Inline Markup:
+.. _Inline markup:
 
 Inline markup
 ~~~~~~~~~~~~~
