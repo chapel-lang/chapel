@@ -1,4 +1,4 @@
-#include "debug.h"
+#include "llvmDebug.h"
 
 #include "stringutil.h"
 #include "expr.h"
@@ -8,6 +8,7 @@
 #include "vec.h"
 #include "type.h"
 #include "alist.h"
+#include "version.h"
 
 #ifdef HAVE_LLVM
 #include "llvmUtil.h"
@@ -93,7 +94,7 @@ llvm::DIType debug_data::construct_type(Type *type)
         name);
   } else if(ty->isStructTy() && type->astTag == E_AggregateType) {
     AggregateType *this_class = (AggregateType *)type;
-    llvm::SmallVector<llvm::Value *, 8> EltTys;
+    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *, 8> EltTys;
     llvm::DIType derivedFrom;
     if( type->dispatchParents.length() > 0 )
       derivedFrom = get_type(type->dispatchParents.first());
@@ -226,11 +227,11 @@ llvm::DINameSpace debug_data::get_module_scope(ModuleSymbol* modSym)
   return llvm::DINameSpace(modSym->llvmDINameSpace);
 }
 
-llvm::DIType debug_data::get_function_type(FnSymbol *function)
+LLVM_DI_SUBROUTINE_TYPE debug_data::get_function_type(FnSymbol *function)
 {
   const char *file_name = function->astloc.filename;
   llvm::DIFile file = get_file(file_name);
-  llvm::SmallVector<llvm::Value *,16> ret_arg_types;
+  llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *,16> ret_arg_types;
 
   ret_arg_types.push_back(get_type(function->retType));
   for_formals(arg, function)
@@ -238,8 +239,13 @@ llvm::DIType debug_data::get_function_type(FnSymbol *function)
     ret_arg_types.push_back(get_type(arg->type));
   }
 
+#if HAVE_LLVM_VER >= 36
+  llvm::DITypeArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);
+  return this->dibuilder.createSubroutineType(file, ret_arg_arr);
+#else
   llvm::DIArray ret_arg_arr = dibuilder.getOrCreateArray(ret_arg_types);
   return this->dibuilder.createSubroutineType(file, ret_arg_arr);
+#endif
 }
 
 llvm::DISubprogram debug_data::construct_function(FnSymbol *function)
@@ -254,7 +260,9 @@ llvm::DISubprogram debug_data::construct_function(FnSymbol *function)
   llvm::DINameSpace module = get_module_scope(modSym);
   llvm::DIFile file = get_file(file_name);
 
-  llvm::DIType function_type = get_function_type(function);
+  LLVM_DI_SUBROUTINE_TYPE function_type = get_function_type(function);
+
+  printf("CONSTRUCTING DEBUG DATA\n");
 
   llvm::DISubprogram ret = this->dibuilder.createFunction(
       module, /* scope */

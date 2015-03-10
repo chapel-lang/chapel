@@ -36,7 +36,7 @@
 
 #include <inttypes.h>
 
-#include "debug.h"
+#include "llvmDebug.h"
 
 #include <cctype>
 #include <cstring>
@@ -1254,14 +1254,14 @@ void codegen(void) {
     if( fHeterogeneous )
       INT_FATAL("fHeretogeneous not yet supported with LLVM");
 
-    if(printCppLineno)
+    if(printCppLineno || debugCCode)
     {
       debug_info = new debug_data(*info->module);
     }
     if(debug_info) {
       // first fine the main module, this will be the compile unit.
       forv_Vec(ModuleSymbol, currentModule, allModules) {
-        if(currentModule->modTag == MOD_MAIN) {
+        if(currentModule->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
           //So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
           // and no compile flags, since I can't figure out how to get that either.
           printf("Making a compile unit\n");

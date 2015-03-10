@@ -39,7 +39,7 @@
 #include "type.h"
 
 // LLVM debugging support
-#include "debug.h"
+#include "llvmDebug.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -2046,7 +2046,9 @@ void FnSymbol::codegenDef() {
 
     info->lvt->addLayer();
 
+    printf("LLVM GENERATING FUNCTION\n");
     if(debug_info) {
+      printf("LLVM DEBUG_INFO BLOCK\n");
       llvm::DISubprogram dbgScope = debug_info->get_function(this);
       info->builder->SetCurrentDebugLocation(
         llvm::DebugLoc::get(linenum(),0,dbgScope));

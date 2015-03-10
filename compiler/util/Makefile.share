@@ -21,7 +21,7 @@ UTIL_SRCS = \
 	llvmAggregateGlobalOps.cpp \
 	llvmGlobalToWide.cpp \
 	llvmUtil.cpp \
-	debug.cpp \
+	llvmDebug.cpp \
 	misc.cpp \
 	mysystem.cpp \
 	stringutil.cpp \

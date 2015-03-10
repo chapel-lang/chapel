@@ -28,7 +28,7 @@
 #include "stringutil.h"
 
 #include "codegen.h"
-#include "debug.h"
+#include "llvmDebug.h"
 
 #include "AstVisitor.h"
 

@@ -7,13 +7,27 @@
 
 #include "llvmUtil.h"
 #include "llvm/Support/Dwarf.h"
+
+#if HAVE_LLVM_VER >= 35
+#include "llvm/IR/DebugInfo.h"
+#include "llvm/IR/DIBuilder.h"
+#else
 #include "llvm/DebugInfo.h"
 #include "llvm/DIBuilder.h"
+#endif
+
 
 #include <vector>
 
 //#define DW_LANG_chapel (llvm::dwarf::DW_LANG_lo_user+37)
 #define DW_LANG_chapel llvm::dwarf::DW_LANG_lo_user
+
+#if HAVE_LLVM_VER >= 36
+#define LLVM_DI_SUBROUTINE_TYPE llvm::DISubroutineType
+#else
+#define LLVM_DI_SUBROUTINE_TYPE llvm::DIType
+#endif
+
 #endif
 
 struct lessAstr {
@@ -40,7 +54,7 @@ class debug_data
   llvm::DINameSpace construct_module_scope(ModuleSymbol* modSym);
   llvm::DINameSpace get_module_scope(ModuleSymbol* modSym);
 
-  llvm::DIType get_function_type(FnSymbol *function);
+  LLVM_DI_SUBROUTINE_TYPE get_function_type(FnSymbol *function);
   llvm::DISubprogram construct_function(FnSymbol *function);
   llvm::DISubprogram get_function(FnSymbol *function);
 
