@@ -475,6 +475,8 @@ compiler=sys.argv[1]
 if not os.access(compiler,os.R_OK|os.X_OK):
     Fatal('Cannot execute compiler \''+compiler+'\'')
 
+is_chpldoc = compiler.endswith('chpldoc')
+
 path_to_compiler=os.path.abspath(os.path.dirname(compiler))
 # Assume chpl binary is 2 directory levels down in the base installation
 (chpl_base, tmp) = os.path.split(path_to_compiler)
@@ -787,11 +789,19 @@ elif os.access('./COMPOPTS',os.R_OK):
     directoryCompopts = shlex.split(tgco[0])
 else:
     directoryCompopts = []
+
 envCompopts = os.getenv('COMPOPTS')
-if envCompopts != None:
+envChpldocOpts = os.getenv('CHPLDOC_OPTS')
+
+# Use chpldoc options, if this is a chpldoc compiler. Otherwise, use the
+# regular COMPOPTS.
+if is_chpldoc and envChpldocOpts is not None:
+    envCompopts = shlex.split(envChpldocOpts)
+if not is_chpldoc and envCompopts is not None:
     envCompopts = shlex.split(envCompopts)
 else:
   envCompopts = []
+
 globalCompopts = directoryCompopts + envCompopts
 # sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
 
@@ -1162,7 +1172,10 @@ for testname in testsrc:
         #
         # Build the test program
         #
-        args=['-o']+[execname]+globalCompopts+shlex.split(compopts)+[testname]
+        args = []
+        if not is_chpldoc:
+            args += ['-o', execname]
+        args += globalCompopts + shlex.split(compopts) + [testname]
 
         if is_c_test:
             # we need to drop envCompopts for C tests as those are options
