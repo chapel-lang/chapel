@@ -477,7 +477,7 @@ For example, when documenting a Chapel proc:
     * :returns: Amount of fooy available.
     * :rtype: Foo
     */
-   proc foo(x, y=1.0): Foo
+   proc foo(bars, hours=1.0): Foo
    {
      ...
    }
