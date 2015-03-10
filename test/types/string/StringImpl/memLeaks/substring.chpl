@@ -9,9 +9,9 @@ module unitTest {
       {
         const s: t = "substring";
         if useExpr {
-          writeMe(s.substring(i));
+          writeMe(s[i]);
         } else {
-          const ss = s.substring(i);
+          const ss = s[i];
           writeMe(ss);
         }
       }
@@ -43,17 +43,17 @@ module unitTest {
         const s0: t = "substring";
         on Locales[numLocales-1] {
           if useExpr {
-            writeMe(s0.substring(i));
+            writeMe(s0[i]);
           } else {
-            const ss = s0.substring(i);
+            const ss = s0[i];
             writeMe(ss);
           }
           const s1: t = "substring";
           on Locales[0] {
             if useExpr {
-              writeMe(s1.substring(i));
+              writeMe(s1[i]);
             } else {
-              const ss = s1.substring(i);
+              const ss = s1[i];
               writeMe(ss);
             }
           }
