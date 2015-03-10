@@ -163,7 +163,7 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
   struct stat nBuf, parentBuf;
   int exitStatus = 0;
   size_t nameLen = strlen(name);
-  char* parent = (char* ) chpl_mem_allocMany(nameLen + 4, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
+  char* parent = (char* ) chpl_mem_allocManyZero(nameLen + 4, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
   strncat(parent, name, nameLen + 1);
   strncat(parent, "/..", 3);
   // TODO: Using "/" is not necessarily portable, look into this
@@ -174,18 +174,21 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
     return err;
   }
   exitStatus = stat(parent, &parentBuf);
-  chpl_mem_free(parent, 0, 0);
   if (exitStatus) {
     err = qio_mkerror_errno();
   } else {
-    *ret = nBuf.st_dev != parentBuf.st_dev;
+    if (nBuf.st_dev != parentBuf.st_dev) {
+      *ret = 1;
     // Check if the st_dev matches that of its parent directory.
     // If they do match, name does not denote a mount point.  Otherwise, it
     // is.
-    // In the case of the root dir, the parent directory will be the same
-    // as itself, so by definition the st_dev will match.  Is this correct
-    // behavior?
+    } else {
+      err = chpl_fs_samefile_string(ret, name, parent);
+      // If the parent directory is the same as the current directory, we've
+      // reached the root.
+    }
   }
+  chpl_mem_free(parent, 0, 0);
   return err;
 }
 
