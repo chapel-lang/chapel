@@ -25,7 +25,7 @@ chpldoc
 
 ``chpldoc`` is a tool for generating HTML based documentation from Chapel
 source code and embedded comments. It is similar in spirit to Javadoc and
-Pydoc. To build ``chpldoc``, use:
+Pydoc. To build ``chpldoc``, use::
 
     [g]make chpldoc
 
@@ -114,7 +114,7 @@ Arguments and their types can optionally be documented using the ``:arg:`` and
 concise description of the argument using a sentence, or two. This should
 include any constraints and default information. ``:type:`` should be the
 literal type for the parameter. A link will be created to the type, if
-possible. For example::
+possible. For example:
 
 .. code-block:: chapel
 
