@@ -2867,88 +2867,81 @@ static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual) {
   return false;
 }
 
+
+// little helper
+static Symbol* getBaseSymForConstCheck(CallExpr* call) {
+  // ensure this is a method call
+  INT_ASSERT(call->get(1)->typeInfo() == dtMethodToken);
+  SymExpr* baseExpr = toSymExpr(call->get(2));
+  INT_ASSERT(baseExpr); // otherwise, cannot do the checking
+  return baseExpr->var;
+}
+ 
+
 // If 'call' is an access to a const thing, for example a const field
 // or a field of a const record, set const flag(s) on the symbol
 // that stores the result of 'call'.
-static void setFlagsForConstAccess(CallExpr* call, FnSymbol* resolvedFn)
+static void setFlagsAndCheckForConstAccess(Symbol* dest,
+                                         CallExpr* call, FnSymbol* resolvedFn)
 {
   // Is the outcome of 'call' a reference to a const?
   bool refConst = resolvedFn->hasFlag(FLAG_REF_TO_CONST);
-
-  // ... except do a couple of adjustments for field accesses.
-  // Do we really need FLAG_FIELD_ACCESSOR here? Perhaps we do,
-  // in order to treat field accesses to const records specially.
+  // Another flag that's relevant.
+  const bool constWCT = resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+  // The second flag does not make sense when the first flag is set.
+  INT_ASSERT(!(refConst && constWCT));
 
   // The symbol whose field is accessed, if applicable:
   Symbol* baseSym = NULL;
 
-  if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR) &&
-      // promotion wrappers are not handled currently
-      !resolvedFn->hasFlag(FLAG_PROMOTION_WRAPPER))
-  {
-    SymExpr* baseExpr = toSymExpr(call->get(2));
-    INT_ASSERT(baseExpr); // otherwise, cannot do the checking
-    // the symbol whose field is accessed
-    baseSym = baseExpr->var;
+  if (refConst) {
+    if (resolvedFn->hasFlag(FLAG_FIELD_ACCESSOR) &&
+        // promotion wrappers are not handled currently
+        !resolvedFn->hasFlag(FLAG_PROMOTION_WRAPPER)
+        )
+      baseSym = getBaseSymForConstCheck(call);
 
-    if (refConst) {
-      // Do not consider it const if it is an access to 'this'
-      // in a constructor. Todo: will need to reconcile with UMM.
-      if (baseSym->hasFlag(FLAG_ARG_THIS) &&
-          isInConstructorLikeFunction(call))
-        refConst = false;
-    } else {
-      // See if the variable being accessed is const.
-      if (baseSym->isConstant() ||
-          baseSym->hasFlag(FLAG_REF_TO_CONST)
-      ) {
-        // Todo: fine-tuning may be desired, e.g.
-        // if FLAG_CONST then baseType = baseSym->type.
-        Type* baseType = baseSym->type->getValType();
-        // Exclude classes: even if a class variable is const,
-        // its non-const fields are OK to modify.
-        if (isRecord(baseType) || isUnion(baseType))
-          refConst = true;
-        else
-          INT_ASSERT(isClass(baseType));
-      }
-    }
+  } else if (constWCT) {
+    baseSym = getBaseSymForConstCheck(call);
+    if (baseSym->isConstant()               ||
+        baseSym->hasFlag(FLAG_REF_TO_CONST) ||
+        baseSym->hasFlag(FLAG_CONST)
+       )
+      refConst = true;
+    else
+      // The result is not constant.
+      baseSym = NULL;
 
-  } else if (!refConst &&
-             resolvedFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))
+  } else if (dest->hasFlag(FLAG_ARRAY_ALIAS)        &&
+             resolvedFn->hasFlag(FLAG_AUTO_COPY_FN) &&
+             !dest->hasFlag(FLAG_CONST))
   {
-    // todo - avoid code duplication w.r.t. the above
-    // 'resolvedFn' is either a 'var' function or returns an array or such
-    SymExpr* baseExpr = toSymExpr(call->get(2));
-    INT_ASSERT(baseExpr); // otherwise, cannot do the checking
-    // the symbol for 'this'
-    baseSym = baseExpr->var;
-    // See if the variable being accessed is const.
-    if (baseSym->isConstant() ||
-        // somehow above the check is: baseSym->hasFlag(FLAG_REF_TO_CONST)
-        baseSym->hasFlag(FLAG_CONST))
-    {
-      // Do not consider it const if it is an access to 'this'
-      // in a constructor. Todo: will need to reconcile with UMM.
-      if (baseSym->hasFlag(FLAG_ARG_THIS) &&
-          isInConstructorLikeFunction(call))
-        ; // nothing
-      else
-        refConst = true;
-    }
+    // We are creating a var alias - ensure aliasee is not const either.
+    SymExpr* aliaseeSE = toSymExpr(call->get(1));
+    INT_ASSERT(aliaseeSE);
+    if (aliaseeSE->var->isConstant() ||
+        aliaseeSE->var->hasFlag(FLAG_CONST))
+      USR_FATAL_CONT(call, "creating a non-const alias '%s' of a const array or domain", dest->name);
+  }
+  // Do not consider it const if it is an access to 'this'
+  // in a constructor. Todo: will need to reconcile with UMM.
+  if (baseSym) {
+    // Aside: at this point 'baseSym' can have reference or value type,
+    // seemingly without a particular rule.
+    if (baseSym->hasFlag(FLAG_ARG_THIS)   &&
+        isInConstructorLikeFunction(call)
+        )
+      refConst = false;
   }
 
   if (refConst) {
-    if (CallExpr* parent = toCallExpr(call->parentExpr)) {
-      if (parent->isPrimitive(PRIM_MOVE)) {
-        SymExpr* dest = toSymExpr(parent->get(1));
-        INT_ASSERT(dest); // what else can it be?
-        dest->var->addFlag(FLAG_REF_TO_CONST);
-        if (baseSym && baseSym->hasFlag(FLAG_ARG_THIS))
-          // 'call' can be a field accessor or an array element accessor or ?
-          dest->var->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
-      }
-    }
+    if (isReferenceType(dest->type))
+      dest->addFlag(FLAG_REF_TO_CONST);
+    else
+      dest->addFlag(FLAG_CONST);
+    if (baseSym && baseSym->hasFlag(FLAG_ARG_THIS))
+      // 'call' can be a field accessor or an array element accessor or ?
+      dest->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
   }
 }
 
@@ -3247,15 +3240,13 @@ void resolveNormalCall(CallExpr* call) {
     call->baseExpr->replace(new SymExpr(resolvedFn));
   }
 
-  setFlagsForConstAccess(call, resolvedFn);
-  checkForStoringIntoTuple(call, resolvedFn);
-
   if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
     // Not allowed if it is not called directly from a constructor.
     if (!isInConstructorLikeFunction(call))
       USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor", resolvedFn->name);
 
   lvalueCheck(call);
+  checkForStoringIntoTuple(call, resolvedFn);
 
   if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
     reissueCompilerWarning(str, 2);
@@ -3342,6 +3333,40 @@ static void lvalueCheck(CallExpr* call)
                          calleeFn->name, calleeParens);
         }
       }
+    }
+  }
+}
+
+
+// We do some const-related work upon PRIM_MOVE
+static void setConstFlagsAndCheckUponMove(Symbol* lhs, Expr* rhs) {
+  // If this assigns into a loop index variable from a non-var iterator,
+  // mark the variable constant.
+  if (SymExpr* rhsSE = toSymExpr(rhs)) {
+    // If RHS is this special variable...
+    if (rhsSE->var->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+      INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
+      // ... and not of a reference type
+      // todo: differentiate based on ref-ness, not _ref type
+      // todo: not all const if it is zippered and one of iterators is var
+      if (!isReferenceType(rhsSE->var->type))
+       // ... and not an array (arrays are always yielded by reference)
+       if (!rhsSE->var->type->symbol->hasFlag(FLAG_ARRAY))
+        // ... then mark LHS constant.
+        lhs->addFlag(FLAG_CONST);
+    }
+  } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
+    if (rhsCall->isPrimitive(PRIM_GET_MEMBER)) {
+      if (SymExpr* rhsBase = toSymExpr(rhsCall->get(1))) {
+        if (rhsBase->var->hasFlag(FLAG_CONST) ||
+            rhsBase->var->hasFlag(FLAG_REF_TO_CONST)
+            )
+          lhs->addFlag(FLAG_REF_TO_CONST);
+      } else {
+        INT_ASSERT(false); // PRIM_GET_MEMBER of a non-SymExpr??
+      }
+    } else if (FnSymbol* resolvedFn = rhsCall->isResolved()) {
+        setFlagsAndCheckForConstAccess(lhs, rhsCall, resolvedFn);
     }
   }
 }
@@ -3556,27 +3581,12 @@ static void resolveMove(CallExpr* call) {
     }
   }
 
-  // If this assigns into a loop index variable from a non-var iterator,
-  // mark the variable constant.
-  if (SymExpr* rhsSE = toSymExpr(rhs)) {
-    // If RHS is this special variable...
-    if (rhsSE->var->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-      INT_ASSERT(lhs->hasFlag(FLAG_INDEX_VAR));
-      // ... and not of a reference type
-      // todo: differentiate based on ref-ness, not _ref type
-      // todo: not all const if it is zippered and one of iterators is var
-      if (!isReferenceType(rhsSE->var->type))
-       // ... and not an array (arrays are always yielded by reference)
-       if (!rhsSE->var->type->symbol->hasFlag(FLAG_ARRAY))
-        // ... then mark LHS constant.
-        lhs->addFlag(FLAG_CONST);
-    }
-  }
-
   if (lhs->type == dtUnknown || lhs->type == dtNil)
     lhs->type = rhsType;
 
   Type* lhsType = lhs->type;
+
+  setConstFlagsAndCheckUponMove(lhs, rhs);
 
   if (CallExpr* call = toCallExpr(rhs)) {
     if (FnSymbol* fn = call->isResolved()) {

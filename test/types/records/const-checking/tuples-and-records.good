@@ -1,0 +1,12 @@
+tuples-and-records.chpl:16: In function 'main':
+tuples-and-records.chpl:17: error: illegal lvalue in assignment
+tuples-and-records.chpl:18: error: illegal lvalue in assignment
+tuples-and-records.chpl:22: error: illegal lvalue in assignment
+tuples-and-records.chpl:23: error: illegal lvalue in assignment
+tuples-and-records.chpl:24: error: illegal lvalue in assignment
+tuples-and-records.chpl:25: error: illegal lvalue in assignment
+tuples-and-records.chpl:26: error: illegal lvalue in assignment
+tuples-and-records.chpl:27: error: illegal lvalue in assignment
+tuples-and-records.chpl:28: error: illegal lvalue in assignment
+tuples-and-records.chpl:29: error: illegal lvalue in assignment
+tuples-and-records.chpl:30: error: illegal lvalue in assignment
