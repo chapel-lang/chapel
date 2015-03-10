@@ -108,11 +108,14 @@ module DefaultRectangular {
         compilerError("index type mismatch in domain assignment");
       ranges = x;
     }
-  
+
     iter these_help(param d: int) {
-      if d == rank - 1 {
+      if d == rank {
         for i in ranges(d) do
-          for j in ranges(rank) do
+          yield i;
+      } else if d == rank - 1 {
+        for i in ranges(d) do
+          for j in these_help(rank) do
             yield (i, j);
       } else {
         for i in ranges(d) do
@@ -122,9 +125,12 @@ module DefaultRectangular {
     }
   
     iter these_help(param d: int, block) {
-      if d == block.size - 1 {
+      if d == block.size {
         for i in block(d) do
-          for j in block(block.size) do
+          yield i;
+      } else if d == block.size - 1 {
+        for i in block(d) do
+          for j in these_help(block.size, block) do
             yield (i, j);
       } else {
         for i in block(d) do
@@ -132,7 +138,7 @@ module DefaultRectangular {
             yield (i, (...j));
       }
     }
-  
+
     iter these(tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
@@ -180,7 +186,7 @@ module DefaultRectangular {
                 "### nranges = ", ranges);
       }
 
-      if numChunks == 1 {
+      if numChunks <= 1 {
         if rank == 1 {
           for i in ranges(1) {
             yield i;
@@ -213,17 +219,16 @@ module DefaultRectangular {
           if stridable {
             type strType = chpl__signedType(idxType);
             for param i in 1..rank {
-              const rStride = ranges(i).stride:strType,
-                    fStride = followThis(i).stride:strType;
+              const rStride = ranges(i).stride:strType;
               if ranges(i).stride > 0 {
                 const low = ranges(i).alignedLow + followMe(i).low*rStride,
                       high = ranges(i).alignedLow + followMe(i).high*rStride,
-                      stride = (rStride * fStride):idxType;
+                      stride = rStride:idxType;
                 block(i) = low..high by stride;
               } else {
                 const low = ranges(i).alignedHigh + followMe(i).high*rStride,
                       high = ranges(i).alignedHigh + followMe(i).low*rStride,
-                      stride = (rStride * fStride):idxType;
+                      stride = rStride:idxType;
                 block(i) = low..high by stride;
               }
             }
@@ -231,14 +236,8 @@ module DefaultRectangular {
             for  param i in 1..rank do
               block(i) = ranges(i).low+followMe(i).low:idxType..ranges(i).low+followMe(i).high:idxType;
           }
-          if rank == 1 {
-            for i in zip((...block)) {
-              yield i;
-            }
-          } else {
-            for i in these_help(1, block) {
-              yield i;
-            }
+          for i in these_help(1, block) {
+            yield i;
           }
         }
       }
@@ -731,7 +730,7 @@ module DefaultRectangular {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
-      ref where tag == iterKind.standalone {
+      ref where tag == iterKind.standalone && !localeModelHasSublocales {
       if debugDefaultDist {
         writeln("*** In array standalone code");
       }
