@@ -362,10 +362,6 @@ If highlighting with the specified language fails, e.g. if the syntax is not
 parsable, the block is not highlighted in anyway.
 
 
-.. _cross-references:
-
-.. _Inline markup:
-
 Inline markup
 ~~~~~~~~~~~~~
 
@@ -401,7 +397,7 @@ a matching identifier is found:
 
 ``:chpl:mod:``
 
-    Reference a module; a dotted name may be used. See `cross-references <#inline-markup>`_ for
+    Reference a module; a dotted name may be used. See `cross-references <#inline-markup-1>`_ for
     details on dotted and non-dotted names.
 
 ``:chpl:proc:``
