@@ -11,8 +11,8 @@ LLVM_LLVM_LIBS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --ldflags --system-li
 LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
 
 # LLVM preprocessor flags (ie -Dbla and -Ibla) 
-LLVM_CXXFLAGS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --cxxflags | sed 's/ -O[0-4s] / /') -pthread -DHAVE_LLVM
-LLVM_CFLAGS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --cflags | sed 's/ -O[0-4s] / /') -pthread -DHAVE_LLVM
+LLVM_CXXFLAGS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --cxxflags | sed 's/ -O[0-4s] / /') -DHAVE_LLVM
+LLVM_CFLAGS=$(shell $(LLVM_INSTALL_DIR)/bin/llvm-config --cflags | sed 's/ -O[0-4s] / /') -DHAVE_LLVM
 LLVM_INCLUDES=-I$(LLVM_INCLUDE_DIR) -I$(LLVM_CLANG_CODEGEN_INCLUDE_DIR)
 LLVM_LIBS=-L$(LLVM_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS)
 
