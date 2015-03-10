@@ -226,6 +226,62 @@ iter glob(pattern:string="*", param tag: iterKind)
   Chpl_rt_glob.globfree(glb);
 }
 
+//
+// TODO: The following leader/follower iterator assumes that
+// the file system state won't change between calls because
+// it calls the glob routines twice and assumes the same
+// result will come back.  In leader-follower 2.0, we would
+// like to store such state between calls in which case this
+// should be rewritten to do so (and would require freeing
+// the state at the end of the call).
+//
+iter glob(pattern:string="*", param tag: iterKind) 
+       where tag == iterKind.leader {
+  var glb : Chpl_rt_glob.glob_t;
+
+  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  //
+  // cast is used here to ensure we create an int-based leader
+  //
+  const num = Chpl_rt_glob.chpl_glob_num(glb).safeCast(int);
+  if (num) {
+    Chpl_rt_glob.globfree(glb);
+
+    //
+    // Forward to the range type's leader
+    //
+    for followThis in (0..num-1).these(tag) do
+      yield followThis;
+  }
+}
+
+iter glob(pattern:string="*", followThis, param tag: iterKind) 
+       where tag == iterKind.follower {
+  var glb : Chpl_rt_glob.glob_t;
+  if (followThis.size != 1) then
+    compilerError("glob() iterator can only be zipped with 1D iterators");
+  var (r,) = followThis;
+
+  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  const num = Chpl_rt_glob.chpl_glob_num(glb);
+  if (r.high > num.safeCast(int)) then
+    halt("glob() iterator zipped with something too big");
+  if (num) then
+    for i in r do
+      //
+      // safe cast is used here to turn an int into a size_t
+      //
+      yield Chpl_rt_glob.chpl_glob_index(glb, i.safeCast(size_t)): string;
+
+  Chpl_rt_glob.globfree(glb);
+}
+
+//
+// TODO: It'd be nice if we could do a leader-follower version of
+// glob() -- and we almost could -- except that the glob_t state
+// has to be communicated from leader to follower.
+//
+
 
 /* iter findfiles(startdir = ".", recursive=false, hidden=false)
 
