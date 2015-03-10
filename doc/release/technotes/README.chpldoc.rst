@@ -137,7 +137,7 @@ and ``:rtype:`` are for functions and methods, while ``:yields:`` and
 Similar to arguments, the ``:returns:`` and ``:yields:`` should be a concise
 description of the return value or yield value, including any constraints,
 using a sentence, or two. ``:rtype:`` and ``:ytype:`` should be the literal
-types. A link to the type will be created, if possible. For example::
+types. A link to the type will be created, if possible. For example:
 
 .. code-block:: chapel
 
