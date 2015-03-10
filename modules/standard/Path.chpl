@@ -18,6 +18,28 @@
  */
 use Error;
 
+/* Returns a constant string representing the current directory according to
+   the operating system.  For Windows and POSIX, this is "."
+*/
+proc curDir(): string {
+  extern proc chpl_fs_curdir(): c_string;
+
+  var res = chpl_fs_curdir();
+  // This version of toString steals its operand.  No need to free.
+  return toString(res);
+}
+
+/* Returns a constant string representing the parent directory according to
+   the operating system.  In Windows and POSIX, this is ".."
+*/
+proc parentDir(): string {
+  extern proc chpl_fs_parentdir(): c_string;
+
+  var res = chpl_fs_parentdir();
+  // This version of toString steals its operand.  No need to free.
+  return toString(res);
+}
+
 /* Returns the canonical path specified, eliminating symbolic links.  If an
    error occurred, it will be returned via the out parameter.
    err: a syserr used to indicate if an error occurred during this operation.

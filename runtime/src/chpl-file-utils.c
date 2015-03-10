@@ -77,6 +77,29 @@ qioerr chpl_fs_copy_metadata(const char* source, const char* dest) {
   return err;
 }
 
+char* chpl_fs_curdir(void) {
+  // Lydia note (March 2015): I found a wikipedia article,
+  // http://en.wikipedia.org/wiki/Path_(computing), which listed many different
+  // operating systems and their symbols for current and parent directory.  Most
+  // of the systems which did not match "." for current directory would probably
+  // not be able to run Chapel as it stands today.  With that in mind, and my
+  // inexperience with these operating systems, it seemed best to ignore them
+  // for now and leave the implementation of this function until the need
+  // arises.  If you find yourself using this file operation on one of these
+  // systems, please feel free to extend this function and contribute it back
+  // to us.
+
+  size_t nameSize = 1 + 1;
+  // For extensibility.  The first part of the above operation is the number of
+  // characters in the expected token, while the second part takes into account
+  // the null terminating character.
+
+  char* curDir = (char* ) chpl_mem_allocMany(nameSize, sizeof(char), CHPL_RT_MD_OS_LAYER_RETURN_DATA, 0, 0);
+
+  strncpy(curDir, ".", nameSize);
+  return curDir;
+}
+
 // This routine returns a malloc'd string (through the working_dir pointer)
 // that must be deallocated by the caller.
 qioerr chpl_fs_cwd(const char** working_dir) {
@@ -256,6 +279,29 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
     err = qio_mkerror_errno();
   }
   return err;
+}
+
+char* chpl_fs_parentdir(void) {
+  // Lydia note (March 2015): I found a wikipedia article,
+  // http://en.wikipedia.org/wiki/Path_(computing), which listed many different
+  // operating systems and their symbols for current and parent directory.  Most
+  // of the systems which did not match ".." for current directory would
+  // probably not be able to run Chapel as it stands today.  With that in mind,
+  // and my inexperience with these operating systems, it seemed best to ignore
+  // them for now and leave the implementation of this function until the need
+  // arises.  If you find yourself using this file operation on one of these
+  // systems, please feel free to extend this function and contribute it back
+  // to us.
+
+  size_t nameSize = 2 + 1;
+  // For extensibility.  The first part of the above operation is the number of
+  // characters in the expected token, while the second part takes into account
+  // the null terminating character.
+
+  char* parentDir = (char* ) chpl_mem_allocMany(nameSize, sizeof(char), CHPL_RT_MD_OS_LAYER_RETURN_DATA, 0, 0);
+
+  strncpy(parentDir, "..", nameSize);
+  return parentDir;
 }
 
 qioerr chpl_fs_realpath(const char* path, const char **shortened) {
