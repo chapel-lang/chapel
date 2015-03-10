@@ -19,11 +19,7 @@
 
 #include "docsDriver.h"
 
-// FIXME: This global should no longer be needed. Instead, use argv[0] ==
-//        "chpldoc". Alt. set it based on that comparison.
-//        (thomasvandoren, 2015-03-08)
 bool fDocs = false;
-
 bool fDocsPrintHelp = false;
 bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
