@@ -36,6 +36,8 @@ qioerr chpl_fs_chown(const char* name, int uid, int gid);
 
 qioerr chpl_fs_copy_metadata(const char* source, const char* dest);
 
+char* chpl_fs_curdir(void);
+
 qioerr chpl_fs_cwd(const char** working_dir);
 
 qioerr chpl_fs_exists(int* ret, const char* name);
@@ -52,6 +54,8 @@ qioerr chpl_fs_is_link(int* ret, const char* name);
 // Creates a directory with the given name and settings if possible,
 // returning a qioerr if not.
 qioerr chpl_fs_mkdir(const char* name, int mode, int parents);
+
+char* chpl_fs_parentdir(void);
 
 // Takes a path string and resolves and removes all "/../", "/./", and
 // symbolic links, returning the result in shortened

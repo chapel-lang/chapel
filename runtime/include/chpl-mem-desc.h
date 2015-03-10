@@ -98,6 +98,8 @@
           "string move data"),                                          \
         m(STRING_SELECT_DATA,                                           \
           "string select data"),                                        \
+        m(OS_LAYER_RETURN_DATA,                                         \
+          "os layer return data"),                                      \
         m(CONFIG_ARG_COPY_DATA,                                         \
           "config arg copy data"),                                      \
         m(CONFIG_TABLE_DATA,                                            \

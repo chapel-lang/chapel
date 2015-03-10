@@ -1,0 +1,3 @@
+use Path;
+
+writeln(curDir());
