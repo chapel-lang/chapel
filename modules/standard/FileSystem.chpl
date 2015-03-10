@@ -298,6 +298,95 @@ proc copyMode(src: string, dest: string) {
   if err != ENOERR then ioerror(err, "in copyMode " + src, dest);
 }
 
+use Filerator;
+use Path;
+/* Will recursively copy the tree which starts at src into dst, including all
+   contents, permissions, and metadata.  dst must not previously exist, this
+   function assumes it can create it and any missing parent directories.
+   If copySymbolically is true, symlinks will be copied as symlinks, otherwise
+   their contents and metadata will be copied. May return an error via an out
+   argument.
+   error: a syserr used to indicate if an error occurred
+   src: the root of the source tree to be copied.
+   dest: the root of the destination directory where the tree where the tree is
+         to be copied (must not exist prior to this function call).
+   copySymbolically: a boolean indicating how to handle symlinks in the
+                     source directory.
+*/
+proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
+  var expectedErrorCases = exists(error, dest);
+  if (error != ENOERR) then return; // Some error occurred in checking the existence of dest.
+  else if (expectedErrorCases) {
+    // dest exists.  That's not ideal.
+    error = EEXIST;
+    return;
+  }
+  expectedErrorCases = !isDir(error, src);
+  if (error != ENOERR) then return; // Some error occurred in checking src was a directory.
+  else if (expectedErrorCases) {
+    error = ENOTDIR;
+    return;
+  }
+
+  // FENCEPOST to avoid needing basename
+  var oldMode = getMode(src);
+  mkdir(error, dest, mode=oldMode, parents=true);
+  if error != ENOERR then return;
+  // Create dest
+
+  for filename in listdir(path=src, dirs=false, files=true, listlinks=copySymbolically) {
+    // Take care of files in src
+    var fileDestName = dest + "/" + filename;
+    copy(error, filename, fileDestName, metadata=true);
+    if (error != ENOERR) then return;
+  }
+  for dir in listdir(path=src, dirs=true, files=false, listlinks=copySymbolically) {
+    // Now go into src's children
+    // walkdirs returns path first if topdown=true.  But that's fine
+    for dirname in walkdirs(path=dir, topdown=true, followlinks=copySymbolically) {
+      var srcName = realPath(src + "/" + dirname);
+      oldMode = getMode(srcName);
+      // Create the directory name by replacing src with dest in dirname
+      var destName = realPath(dest + "/" + dirname); // TODO: assumes no trailing "/" atm
+      // Make the new directory with the name just created and the same
+      // permissions
+      writeln(destName);
+
+      mkdir(error, destName, mode=oldMode);
+      writeln("2");
+      if error != ENOERR then return;
+      writeln("3");
+      // If an error occurred making this directory, exit immediately.
+      for filename in listdir(path=srcName, dirs=false, files=true, listlinks=copySymbolically) {
+        writeln("4");
+        // Copy the src directory's contents.
+        var fileDestName = destName + "/" + filename;
+        copy(error, filename, fileDestName, metadata=true);
+        writeln("5");
+        if (error != ENOERR) then return;
+        // If an error occurred copying this individual file, exit immmediately.
+      }
+    }
+  }
+}
+
+/* Will recursively copy the tree which starts at src into dst, including all
+   contents, permissions, and metadata.  dst must not previously exist, this
+   function assumes it can create it and any missing parent directories.
+   If copySymbolically is true, symlinks will be copied as symlinks, otherwise
+   their contents and metadata will be copied. May halt with an error message.
+   src: the root of the source tree to be copied.
+   dest: the root of the destination directory where the tree where the tree is
+         to be copied (must not exist prior to this function call).
+   copySymbolically: a boolean indicating how to handle symlinks in the
+                     source directory.
+*/
+proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
+  var err: syserr = ENOERR;
+  copyTree(err, src, dest, copySymbolically);
+  if err != ENOERR then ioerror(err, "in copyTree " + src, dest);
+}
+
 /* Returns the current working directory for the current locale.
    err: a syserr used to indicate if an error occurred
 
