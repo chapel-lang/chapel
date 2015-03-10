@@ -11,7 +11,7 @@ within the code.
 
 #. chpldoc_
 #. Prerequisites_
-#. `Generating documenation`_
+#. `Generating documentation`_
 #. `Documenting Chapel code`_
 #. `reStructuredText primer`_
 #. `Advanced chpldoc options`_
