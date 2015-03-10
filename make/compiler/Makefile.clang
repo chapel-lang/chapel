@@ -22,8 +22,18 @@
 #
 # Tools
 #
+
+ifeq ($(CHPL_MAKE_COMPILER), clang-included)
+# handle using the included clang compiler
+CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))
+CXX = $(LLVM_BIN_DIR)/clang++ $(CLANG_SYSROOT_ARGS)
+CC = $(LLVM_BIN_DIR)/clang $(CLANG_SYSROOT_ARGS)
+else
 CXX = clang++
 CC = clang
+endif
+
+
 
 RANLIB = ranlib
 

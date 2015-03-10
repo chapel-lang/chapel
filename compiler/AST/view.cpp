@@ -45,7 +45,7 @@ list_sym(Symbol* sym, bool type = true) {
   if (VarSymbol* var = toVarSymbol(sym)) {
     if (var->immediate) {
       if (var->immediate->const_kind == NUM_KIND_INT) {
-        printf("%"PRId64" ", var->immediate->int_value());
+        printf("%" PRId64 " ", var->immediate->int_value());
         return;
       } else if (var->immediate->const_kind == CONST_KIND_STRING) {
         printf("\"%s\" ", var->immediate->v_string);
