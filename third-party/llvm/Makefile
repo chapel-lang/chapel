@@ -36,6 +36,7 @@ $(LLVM_FILE):
 	cd $(LLVM_BUILD_DIR) && $(MAKE)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) install
 	cd $(LLVM_BUILD_DIR) && cd test && $(MAKE) lit.site.cfg
+	../../util/config/gather-clang-sysroot-arguments > $(LLVM_INSTALL_DIR)/configured-clang-sysroot-arguments
 
 llvm: $(LLVM_FILE)
 

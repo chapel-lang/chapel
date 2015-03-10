@@ -35,6 +35,10 @@ def handle_la(la_path):
                     args.append(p.sub(r'-l\1', lib_name))
                 elif 'dependency_libs=' in line:
                     for tok in line.split('\'')[1].split():
+                        # paths reflect built env; replace with $CHPL_HOME
+                        pat = re.compile(r'^((-L\s*)?).*(/third-party/)')
+                        repl = r'\1' + utils.get_chpl_home() + r'\3'
+                        tok = pat.sub(repl, tok)
                         if tok.endswith('.la'):
                             args.extend(handle_la(tok))
                         else:

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+
+THIS_DIR=`dirname "$0"`
+CHPL_HOME="$THIS_DIR/../../"
+SYS_BASIC="$CHPL_HOME/runtime/include/sys_basic.h"
+
+SYSTEM_CLANG_COMMANDS=`clang -### $SYS_BASIC 2>&1`
+
+if [ $? -eq 0 ]; then
+  # find something like the path reported here:
+  #"-isysroot" "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk"
+
+  REGEXP='isysroot" "([^"]+)"'
+  if [[ $SYSTEM_CLANG_COMMANDS =~ $REGEXP ]]; then
+    MATCH=${BASH_REMATCH[1]}
+    echo "-isysroot $MATCH"
+  fi
+  REGEXP='resource-dir" "([^"]+)"'
+  if [[ $SYSTEM_CLANG_COMMANDS =~ $REGEXP ]]; then
+    MATCH=${BASH_REMATCH[1]}
+    echo "-resource-dir $MATCH";
+  fi
+fi
+
+#otherwise, no clang in path. do nothing.
+

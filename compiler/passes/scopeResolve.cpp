@@ -1490,7 +1490,8 @@ static bool tryCResolve_set(ModuleSymbol* module, const char* name,
 
   if (! module) return false;
 
-  if (already_checked.insert(module)) {
+  if (llvm_small_set_insert(already_checked, module)) {
+   // already_checked.insert(module)) {
     // we added it to the set, so continue.
   } else {
     // It was already in the set.

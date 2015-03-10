@@ -21,9 +21,11 @@
 #define _IPE_VARS_H_
 
 #include "IpeValue.h"
+
 #include <vector>
 
 class IpeScope;
+class IpeScopeModule;
 class LcnSymbol;
 class VarSymbol;
 
@@ -37,10 +39,10 @@ class IpeVars
   //   2) operations for allocating/reading/writing "stack frames"
   //
 public:
-  static IpeVars*                  rootAllocate(int size);
+  static IpeVars*                      rootAllocate(int size);
 
-  static IpeVars*                  allocate(int dataSize);
-  static void                      deallocate(IpeVars* vars);
+  static IpeVars*                      allocate(int dataSize);
+  static void                          deallocate(IpeVars* vars);
 
   //
   // If sym->depth() == 0 then
@@ -49,25 +51,27 @@ public:
   //    the operation is on an allocated "stack frame"
   //
 
-  // This is only valid for the root environment
-  static void                      bind  (VarSymbol* sym,    IpeValue value, IpeVars* vars);
+  // These are only valid for the root environment
+  static void                          bind  (VarSymbol* sym, IpeValue value, IpeVars* vars);
+  static void                          addModuleScope(IpeScopeModule* scope,  IpeVars* vars);
 
   // Valid for all environments
-  static IpeValue                  addrOf(LcnSymbol* sym,                    IpeVars* vars);
+  static IpeValue                      addrOf(LcnSymbol* sym,                 IpeVars* vars);
 
-  static IpeValue                  fetch (LcnSymbol* sym,                    IpeVars* vars);
-  static void                      store (LcnSymbol* sym,    IpeValue value, IpeVars* vars);
+  static IpeValue                      fetch (LcnSymbol* sym,                 IpeVars* vars);
+  static void                          store (LcnSymbol* sym, IpeValue value, IpeVars* vars);
 
-  static void                      describe(IpeVars* env, int offset = 0);
+  static void                          describe(IpeVars* env, int offset = 0);
 
 private:
-  static void                      ensureSpaceToExtend(int size);
+  static void                          ensureSpaceToExtend(int size);
 
-  static IpeValue*                 sRootData;
-  static int                       sRootSize;
-  static int                       sRootTail;
+  static IpeValue*                     sRootData;
+  static int                           sRootSize;
+  static int                           sRootTail;
 
-  static std::vector<LcnSymbol*>   sSymbols;
+  static std::vector<LcnSymbol*>       sSymbols;
+  static std::vector<IpeScopeModule*>  sModuleScopes;
 
   //
   // The instance interface
@@ -77,15 +81,15 @@ private:
   // No virtual functions etc.
   //
 public:
-  IpeValue                         valueGet(int index)                                const;
+  IpeValue                             valueGet(int index)                                const;
 
 private:
-                                   IpeVars();
-                                  ~IpeVars();
+                                       IpeVars();
+                                      ~IpeVars();
 
-  IpeVars*                         mLexicalParent;
-  IpeScope*                        mScope;
-  IpeValue                         mValues[1];
+  IpeVars*                             mLexicalParent;
+  IpeScope*                            mScope;
+  IpeValue                             mValues[1];
 };
 
 #endif

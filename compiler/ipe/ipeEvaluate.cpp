@@ -66,10 +66,15 @@ IpeValue ipeEvaluate(Expr* expr, IpeVars* vars)
     printf("   ");
     expr->accept(&logger);
     printf("\n\n");
+
+#if 0
+    IpeVars::describe(vars, 3);
+    printf("\n\n");
+#endif
   }
 
   if (false)
-    retval.iValue = 0;
+    ;
 
   else if (SymExpr*     sel = toSymExpr(expr))
     retval = evaluate(sel, vars);
@@ -103,8 +108,6 @@ IpeValue ipeEvaluate(Expr* expr, IpeVars* vars)
     printf("\n\n");
 
     INT_ASSERT(false);
-
-    retval.iValue = 0;
   }
 
   return retval;
@@ -134,7 +137,6 @@ static IpeValue evaluate(SymExpr* expr, IpeVars* vars)
     expr->accept(&logger);
     printf("\n\n");
 
-    retval.iValue = 0;
     INT_ASSERT(false);
   }
 
@@ -159,7 +161,28 @@ static IpeValue evaluate(DefExpr* defExpr, IpeVars* vars)
 
   else if (VarSymbol*    sym = toVarSymbol(defExpr->sym))
   {
-    if (sym->immediate == 0)
+    if (Immediate* imm = sym->immediate)
+    {
+      Type* type = sym->type;
+
+      INT_ASSERT(type);
+      INT_ASSERT(type->symbol);
+      INT_ASSERT(type->symbol->name);
+
+      if (strcmp(type->symbol->name, "bool") == 0)
+      {
+        IpeValue value(imm->v_bool);
+
+        IpeVars::store(sym, value, vars);
+      }
+
+      else
+      {
+        INT_ASSERT(false);
+      }
+    }
+
+    else
     {
       IpeValue value;
 
@@ -186,8 +209,6 @@ static IpeValue evaluate(DefExpr* defExpr, IpeVars* vars)
     INT_ASSERT(false);
 
   }
-
-  retval.iValue = 0;
 
   return retval;
 }
@@ -222,14 +243,11 @@ static IpeValue evaluate(CondStmt* expr, IpeVars* vars)
   IpeValue condValue = ipeEvaluate(expr->condExpr, vars);
   IpeValue retval;
 
-  if (condValue.iValue == 1)
+  if (condValue.boolGet() == true)
     retval = ipeEvaluate(expr->thenStmt, vars);
 
   else if (expr->elseStmt != 0)
     retval = ipeEvaluate(expr->elseStmt, vars);
-
-  else
-    retval.iValue = 0;
 
   return retval;
 }
@@ -243,7 +261,7 @@ static IpeValue evaluate(WhileDoStmt* whileDoStmt, IpeVars* vars)
   {
     IpeValue cond = ipeEvaluate(whileDoStmt->condExprGet(), vars);
 
-    proceed = cond.iValue;
+    proceed = cond.boolGet();
 
     if (proceed == true)
     {
@@ -251,8 +269,6 @@ static IpeValue evaluate(WhileDoStmt* whileDoStmt, IpeVars* vars)
         ipeEvaluate(expr, vars);
     }
   }
-
-  retval.iValue = 0;
 
   return retval;
 }
@@ -288,7 +304,7 @@ static IpeValue evaluateCall(CallExpr* callExpr, IpeVars* vars)
   AstDumpToNode logger(stdout, 3);
 
   IpeValue      procValue = ipeEvaluate(callExpr->baseExpr, vars);
-  IpeProcedure* proc      = procValue.procedurePtr;
+  IpeProcedure* proc      = procValue.procedureGet();
   FnSymbol*     fnSymbol  = (proc != 0) ? proc->fnSymbol() : 0;
 
   IpeVars*      locals    = 0;
@@ -298,8 +314,6 @@ static IpeValue evaluateCall(CallExpr* callExpr, IpeVars* vars)
   INT_ASSERT(proc);
 
   proc->ensureBodyResolved();
-
-  retval.iValue = 0;
 
   if (gDebugLevelCalls > 0)
   {
@@ -359,16 +373,25 @@ static IpeValue evaluateCall(CallExpr* callExpr, IpeVars* vars)
     ArgSymbol* formal  = toArgSymbol(defExpr->sym);
 
     ipePrint(locals->valueGet(0), formal->type);
-    retval.iValue = 0;
   }
 
   else if (isPrint2(fnSymbol) == true)
   {
-    DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(2));
-    ArgSymbol* formal  = toArgSymbol(defExpr->sym);
+    if (fnSymbol->formals.length == 2)
+    {
+      DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(2));
+      ArgSymbol* formal  = toArgSymbol(defExpr->sym);
 
-    ipePrint(locals->valueGet(0), locals->valueGet(1), formal->type);
-    retval.iValue = 0;
+      ipePrint(locals->valueGet(0), locals->valueGet(1), formal->type);
+    }
+    else
+    {
+      DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(1));
+      ArgSymbol* formal  = toArgSymbol(defExpr->sym);
+      IpeValue   dummy;
+
+      ipePrint(locals->valueGet(0), dummy, formal->type);
+    }
   }
 
   else
@@ -398,8 +421,6 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     printf("\n\n");
   }
 
-  retval.iValue  = 0;
-
   if (false)
   {
 
@@ -422,14 +443,37 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
 
     if (gDebugLevelCalls > 1)
     {
-      printf("   PRIM_ASSIGN   value.iValue = %ld\n", value.iValue);
+      printf("   PRIM_ASSIGN   value.iValue = %ld\n", value.integerGet());
     }
 
-    *addr.valuePtr = value;
-
-    retval.iValue  = 0;
+    *addr.refGet() = value;
     handled        = true;
   }
+
+  else if (callExpr->isPrimitive(PRIM_UNARY_MINUS) == true)
+  {
+    if (gDebugLevelCalls > 1)
+    {
+      AstDumpToNode logger(stdout, 3);
+
+      printf("   PRIM_UNARY_MINUS\n");
+      printf("   ");
+      callExpr->accept(&logger);
+      printf("\n\n");
+    }
+
+    Type*    type = callExpr->typeInfo();
+    IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
+
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(1 * arg1.integerGet());
+
+    else if (strcmp(type->symbol->name, "real") == 0)
+      retval.realSet(-1.0 * arg1.realGet());
+
+    handled       = true;
+  }
+
 
   else if (callExpr->isPrimitive(PRIM_ADD) == true)
   {
@@ -447,18 +491,11 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.iValue = arg1.iValue + arg2.iValue;
-
-      if (gDebugLevelCalls > 1)
-        printf("   PRIM_ADD    %3ld = %3ld + %3ld\n", retval.iValue, arg1.iValue, arg2.iValue);
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(arg1.integerGet() + arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.rValue = arg1.rValue + arg2.rValue;
-    }
+      retval.realSet(arg1.realGet() + arg2.realGet());
 
     handled       = true;
   }
@@ -469,15 +506,11 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.iValue = arg1.iValue - arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(arg1.integerGet() - arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.rValue = arg1.rValue - arg2.rValue;
-    }
+      retval.realSet(arg1.realGet() - arg2.realGet());
 
     handled       = true;
   }
@@ -488,15 +521,11 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.iValue = arg1.iValue * arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(arg1.integerGet() * arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.rValue = arg1.rValue * arg2.rValue;
-    }
+      retval.realSet(arg1.realGet() * arg2.realGet());
 
     handled       = true;
   }
@@ -507,15 +536,11 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.iValue = arg1.iValue / arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.integerSet(arg1.integerGet() / arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.rValue = arg1.rValue / arg2.rValue;
-    }
+      retval.realSet(arg1.realGet() / arg2.realGet());
 
     handled       = true;
   }
@@ -526,20 +551,14 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "bool") == 0)
-    {
-      retval.iValue = arg1.iValue == arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "bool") == 0)
+      retval.boolSet(arg1.boolGet()    == arg2.boolGet());
 
-    else if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.iValue = arg1.iValue == arg2.iValue;
-    }
+    else if (strcmp(type->symbol->name, "int")  == 0)
+      retval.boolSet(arg1.integerGet() == arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.iValue = arg1.rValue == arg2.rValue;
-    }
+      retval.boolSet(arg1.realGet()    == arg2.realGet());
 
     handled = true;
   }
@@ -551,19 +570,13 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
     if (strcmp(type->symbol->name, "bool") == 0)
-    {
-      retval.iValue = arg1.iValue != arg2.iValue;
-    }
+      retval.boolSet(arg1.boolGet()    != arg2.boolGet());
 
     else if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.iValue = arg1.iValue != arg2.iValue;
-    }
+      retval.boolSet(arg1.integerGet() != arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.iValue = arg1.rValue != arg2.rValue;
-    }
+      retval.boolSet(arg1.realGet()    != arg2.realGet());
 
     handled = true;
   }
@@ -574,15 +587,11 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
-    if (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.iValue = arg1.iValue > arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.boolSet(arg1.integerGet() >  arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.iValue = arg1.rValue > arg2.rValue;
-    }
+      retval.boolSet(arg1.realGet()    >  arg2.realGet());
 
     handled = true;
   }
@@ -594,14 +603,10 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
     if      (strcmp(type->symbol->name, "int")  == 0)
-    {
-      retval.iValue = arg1.iValue < arg2.iValue;
-    }
+      retval.boolSet(arg1.integerGet() <  arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.iValue = arg1.rValue < arg2.rValue;
-    }
+      retval.boolSet(arg1.realGet()    <  arg2.realGet());
 
     handled = true;
   }
@@ -612,15 +617,11 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
-    if      (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.iValue = arg1.iValue >= arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.boolSet(arg1.integerGet() >= arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.iValue = arg1.rValue >= arg2.rValue;
-    }
+      retval.boolSet(arg1.realGet()    >= arg2.realGet());
 
     handled = true;
   }
@@ -631,15 +632,11 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
     IpeValue arg1 = ipeEvaluate(callExpr->get(1), env);
     IpeValue arg2 = ipeEvaluate(callExpr->get(2), env);
 
-    if      (strcmp(type->symbol->name, "int") == 0)
-    {
-      retval.iValue = arg1.iValue <= arg2.iValue;
-    }
+    if      (strcmp(type->symbol->name, "int")  == 0)
+      retval.boolSet(arg1.integerGet() <= arg2.integerGet());
 
     else if (strcmp(type->symbol->name, "real") == 0)
-    {
-      retval.iValue = arg1.rValue <= arg2.rValue;
-    }
+      retval.boolSet(arg1.realGet()    <= arg2.realGet());
 
     handled = true;
   }
@@ -667,7 +664,7 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
       if (VarSymbol* var = toVarSymbol(sym->var))
       {
         IpeValue   value  = IpeVars::fetch(var, env);
-        IpeModule* module = value.modulePtr;
+        IpeModule* module = value.moduleGet();
 
         module->ensureInitialized(env);
         handled = true;
@@ -689,7 +686,7 @@ static IpeValue evaluatePrimop(CallExpr* callExpr, IpeVars* env)
 
   else
   {
-    retval.iValue = 0;
+
   }
 
   if (handled == false)
@@ -720,7 +717,7 @@ IpeValue ipeEvaluate(Symbol* sym, IpeVars* env)
   IpeValue retval;
 
   if (false)
-    retval.iValue = 0;
+    ;
 
   else if  (FnSymbol*     sel = toFnSymbol(sym))
     retval = evaluate(sel, env);
@@ -742,8 +739,6 @@ IpeValue ipeEvaluate(Symbol* sym, IpeVars* env)
     printf("\n\n");
 
     INT_ASSERT(false);
-
-    retval.iValue = 0;
   }
 
   return retval;
@@ -762,8 +757,6 @@ static IpeValue evaluate(FnSymbol* sym, IpeVars* env)
 
   INT_ASSERT(false);
 
-  retval.iValue = 0;
-
   return retval;
 }
 
@@ -773,8 +766,6 @@ static IpeValue evaluate(ModuleSymbol* sym, IpeVars* env)
 
   for_alist(expr, sym->block->body)
     ipeEvaluate(expr, env);
-
-  retval.iValue = 0;
 
   return retval;
 }
@@ -792,22 +783,19 @@ static IpeValue evaluate(VarSymbol* sym, IpeVars* env)
     INT_ASSERT(type->symbol->name);
 
     if      (strcmp(type->symbol->name, "bool")     == 0)
-      retval.iValue = imm->v_bool;
+      retval.boolSet(imm->v_bool);
 
     else if (strcmp(type->symbol->name, "int")      == 0)
-      retval.iValue = imm->v_int64;
+      retval.integerSet(imm->v_int64);
 
     else if (strcmp(type->symbol->name, "real")     == 0)
-      retval.rValue = imm->v_float64;
+      retval.realSet(imm->v_float64);
 
     else if (strcmp(type->symbol->name, "c_string") == 0)
-      retval.sValue = imm->v_string;
+      retval.cstringSet(imm->v_string);
 
     else
-    {
-      retval.iValue = 0;
       INT_ASSERT(false);
-    }
   }
 
   else
@@ -851,27 +839,22 @@ static bool isPrint2(FnSymbol* fn)
 static void ipePrint(IpeValue msg,   IpeValue value, Type* type)
 {
   printf("     ");
-  fputs(msg.sValue, stdout);
+  fputs(msg.cstringGet(), stdout);
 
   if      (type == dtBool)
-  {
-    printf("%s\n", (value.iValue) ? " true" : "false");
-  }
+    printf("%s\n", (value.boolGet() == true) ? " true" : "false");
 
   else if (type == dtInt[INT_SIZE_64])
-  {
-    printf("%5ld\n", value.iValue);
-  }
+    printf("%5ld\n", value.integerGet());
 
   else if (type == dtReal[FLOAT_SIZE_64])
-  {
-    printf("%6.2f\n", value.rValue);
-  }
+    printf("%6.2f\n", value.realGet());
+
+  else if (type == dtStringC)
+    printf("%s\n", msg.cstringGet());
 
   else
-  {
     printf("???\n");
-  }
 }
 
 static void ipePrint(IpeValue value, Type* type)
@@ -879,22 +862,17 @@ static void ipePrint(IpeValue value, Type* type)
   printf("     ");
 
   if      (type == dtBool)
-  {
-    printf("bool  %s\n\n", (value.iValue) ? " true" : "false");
-  }
+    printf("bool  %s\n", (value.boolGet() == true) ? " true" : "false");
 
   else if (type == dtInt[INT_SIZE_64])
-  {
-    printf("int   %5ld\n\n", value.iValue);
-  }
+    printf("int   %5ld\n", value.integerGet());
 
   else if (type == dtReal[FLOAT_SIZE_64])
-  {
-    printf("real  %6.2f\n\n", value.rValue);
-  }
+    printf("real  %6.2f\n", value.realGet());
+
+  else if (type == dtStringC)
+    printf("string \"%s\"\n", value.cstringGet());
 
   else
-  {
     printf("???\n\n");
-  }
 }

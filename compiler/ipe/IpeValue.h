@@ -23,16 +23,48 @@
 class IpeModule;
 class IpeProcedure;
 
-union IpeValue
+class IpeValue
 {
-  long          iValue;
-  double        rValue;
+public:
+                IpeValue();
+                IpeValue(bool          value);
+                IpeValue(IpeModule*    value);
+                IpeValue(IpeProcedure* value);
 
-  const char*   sValue;
+  bool          boolGet()                              const;
+  void          boolSet(bool value);
 
-  IpeValue*     valuePtr;
-  IpeModule*    modulePtr;
-  IpeProcedure* procedurePtr;
+  long          integerGet()                           const;
+  void          integerSet(long value);
+
+  double        realGet()                              const;
+  void          realSet(double value);
+
+  const char*   cstringGet()                           const;
+  void          cstringSet(const char* value);
+
+  IpeModule*    moduleGet()                            const;
+
+  IpeProcedure* procedureGet()                         const;
+
+  IpeValue*     refGet()                               const;
+  void          refSet(IpeValue* value);
+
+private:
+
+  union ipeValue
+  {
+    long          iValue;
+    double        rValue;
+
+    const char*   sValue;
+
+    IpeValue*     valuePtr;
+    IpeModule*    modulePtr;
+    IpeProcedure* procedurePtr;
+  };
+
+  ipeValue    mValue;
 };
 
 #endif
