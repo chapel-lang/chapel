@@ -87,7 +87,9 @@ To document Chapel code, place a multi-line comment just prior to the
 definition of the symbol --- module, class, function, method, global variable,
 etc. --- that you wish to comment. All multi-line comments are considered
 potential documentation. Documentation is output in the same order that it
-exists in the source.
+exists in the source. Documentation text within comments is parsed as
+ReStructed Text.
+
 
 Comment style
 ~~~~~~~~~~~~~
@@ -173,16 +175,13 @@ and types <#documenting-argument-return-and-yield-values-and-types>`_ section.
 Stifling documentation
 ~~~~~~~~~~~~~~~~~~~~~~
 
-If you would like a particular symbol to not be output as part of your
-documentation, you can specify this by prefacing the symbol with the
-pragma "no doc".  For example:
+To mark a particular symbol to not be output as part of the documentation,
+preface the symbol with the pragma "no doc". For example:
 
 .. code-block:: chapel
 
    pragma "no doc"
    proc foo() { ... }
-
-Documentation text within comments is parsed as ReStructed Text.
 
 
 Creating links to other symbols
