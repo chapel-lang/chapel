@@ -22,18 +22,15 @@
 
 extern bool fDocs;
 extern bool fDocsPrintHelp;
-
-// FIXME: Comment out this option until it is re-enabled.
-//        (thomasvandoren, 2015-03-09)
 extern bool fDocsAlphabetize;
-
 extern char fDocsCommentLabel[256];
 extern char fDocsFolder[256];
 extern bool fDocsTextOnly;
 extern char fDocsSphinxDir[256];
 
-// FIXME: This is always true, so propagate that to the one spot it is used
-//        (thomasvandoren, 2015-03-08)
+// TODO: Whether or not to support this flag is an open discussion. Currently,
+//       it is not supported, so the flag is always true.
+//       (thomasvandoren, 2015-03-08)
 extern bool fDocsIncludeExterns;
 
 
