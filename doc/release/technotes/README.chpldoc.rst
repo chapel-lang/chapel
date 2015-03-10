@@ -188,8 +188,8 @@ Documentation text within comments is parsed as ReStructed Text.
 Creating links to other symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the :ref:`Inline markup <cross-references>` section for details on creating
-links, also known as cross-references, in the documentation to other symbols.
+See the cross-references_ section for details on creating links, also known as
+cross-references, in the documentation to other symbols.
 
 
 .. _reStructuredText primer:
