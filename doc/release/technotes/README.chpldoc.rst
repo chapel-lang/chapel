@@ -9,8 +9,16 @@ within the code.
 
 **Contents**:
 
-.. FIXME: add TOC!!!
+#. chpldoc_
+#. Prerequisites_
+#. `Generating documenation`_
+#. `Documenting Chapel code`_
+#. `reStructuredText primer`_
+#. `Advanced chpldoc options`_
+#. `How chpldoc works`_
+#. `Future directions`_
 
+.. _chpldoc:
 
 chpldoc
 -------
@@ -25,6 +33,8 @@ This will downloads the required Python package dependencies and creates the
 ``chpldoc`` program in the same location as the ``chpl`` compiler.
 
 
+.. _Prerequisites:
+
 Prerequisites
 -------------
 
@@ -34,6 +44,8 @@ package.
 
 .. _$CHPL_HOME/third-party/chpldoc-venv/README.md: https://github.com/chapel-lang/chapel/blob/master/third-party/chpldoc-venv/README.md
 
+
+.. _Generating documentation:
 
 Generating documentation
 ------------------------
@@ -65,6 +77,8 @@ The output documentation will be located in::
 
    $CHPL_HOME/examples/primers/docs/chpldoc.html
 
+
+.. _Documenting Chapel code:
 
 Documenting Chapel code
 -----------------------
@@ -147,8 +161,10 @@ types. A link to the type will be created, if possible. For example::
    iter findfiles(startdir=".", recursive=false, hidden=false): string {
      ...
 
-.. note:: Leave an empty line above and below all these fields for best
-          results.
+.. note::
+
+   * All of these fields must be left-aligned with the outer most paragraph(s).
+   * Leave an empty line above and below all these fields for best results.
 
 
 Stifling documentation
@@ -166,8 +182,10 @@ pragma "no doc".  For example:
 Documentation text within comments is parsed as ReStructed Text.
 
 
-reStructured Text Primer
-------------------------
+.. _reStructuredText primer:
+
+reStructuredText primer
+-----------------------
 
 This section is a brief introduction to reStructuredText (aka reST). It is
 intended to provide Chapel developers with enough information to write
@@ -531,8 +549,10 @@ units as well as normal text:
             Documentation for the PRNG.
 
 
-Advanced options
-----------------
+.. _Advanced chpldoc options:
+
+Advanced chpldoc options
+------------------------
 
 If you would like to restrict documentation to multi-line comments starting
 only with a special character sequence (say, ``/***``) use the
@@ -541,6 +561,8 @@ only with a special character sequence (say, ``/***``) use the
 establishes that the closing comment style should have the same number of
 characters (though they can be different ones).
 
+
+.. _How chpldoc works:
 
 How chpldoc works
 -----------------
@@ -558,7 +580,9 @@ reStructuredText as HTML.
 .. _Sphinx: http://sphinx-doc.org/
 
 
-Future Directions
+.. _Future directions:
+
+Future directions
 -----------------
 
 If there are other features you would like, please let us know. These are
