@@ -827,7 +827,7 @@ void runClang(const char* just_parse_filename) {
   std::string compileline = home + "/util/config/compileline";
   if( debugCCode ) compileline += " DEBUG=1";
   if( optimizeCCode ) compileline += " OPTIMIZE=1";
-  std::string readargsfrom = compileline +
+  std::string readargsfrom = compileline + " --llvm"
                               " --llvm-install-dir"
                               " --clang-sysroot-arguments"
                               " --includes-and-defines";
@@ -1536,7 +1536,7 @@ void makeBinaryLLVM(void) {
 
   std::string home(CHPL_HOME);
   std::string compileline = info->compileline;
-  compileline += 
+  compileline += " --llvm"
                  " --llvm-install-dir"
                  " --main.o"
                  " --clang-sysroot-arguments"
