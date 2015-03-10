@@ -27,8 +27,9 @@ char fDocsFolder[256] = "";
 bool fDocsTextOnly = false;
 char fDocsSphinxDir[256] = "";
 
-// FIXME: This is always true, so propagate that to the one spot it is used
-//        (thomasvandoren, 2015-03-08)
+// TODO: Whether or not to support this flag is an open discussion. Currently,
+//       it is not supported, so the flag is always true.
+//       (thomasvandoren, 2015-03-08)
 bool fDocsIncludeExterns = true;
 
 
@@ -72,6 +73,12 @@ ArgumentDescription docs_arg_desc[] = {
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  {"text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
  {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
+
+ // TODO: Whether or not to support this flag is an open discussion. Currently,
+ //       it is not supported, so the flag is always true.
+ //       (thomasvandoren, 2015-03-08)
+ //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
+
  {"help", 'h', NULL, "Help (show this list)", "F", &fDocsPrintHelp, NULL, NULL},
  {0}
 };
