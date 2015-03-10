@@ -487,6 +487,11 @@ proc isLink(name: string): bool {
 proc isMount(out err:syserr, name: string): bool {
   extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
 
+  if (isFile(name)) {
+    // Files aren't mount points.  That would be silly.
+    err = ENOERR;
+    return false;
+  }
   var ret:c_int;
   err = chpl_fs_is_mount(ret, name.c_str());
   return ret != 0;
