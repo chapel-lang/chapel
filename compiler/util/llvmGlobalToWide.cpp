@@ -1699,7 +1699,6 @@ bool containsGlobalPointers(unsigned gSpace, SmallSet<Type*, 10> & set, Type* t)
   // All primitive types do not need to change.
   if(t->isFloatingPointTy() || t->isX86_MMXTy() || t->isLabelTy() ||
      t->isMetadataTy() || t->isVoidTy() || t->isIntegerTy()) return false;
-  assert(!t->isVoidTy());
 
   // Pointer types return true if they are in our address space.
   if(t->isPointerTy()){
