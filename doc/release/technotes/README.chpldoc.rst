@@ -75,6 +75,85 @@ etc. --- that you wish to comment. All multi-line comments are considered
 potential documentation. Documentation is output in the same order that it
 exists in the source.
 
+Comment style
+~~~~~~~~~~~~~
+
+For the Chapel standard modules, it is recommended to use multiline comments
+without any per-line prefixes. This results in the most consistent, best
+looking output. For example:
+
+.. code-block:: chapel
+
+   /* Support for buffers - ...
+
+      Provides bytes and buffer types, which can be used to...
+    */
+   module Buffers {
+     ...
+
+
+Argument and return/yield types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Arguments and their types can optionally be documented using the ``:arg:`` and
+``:type:`` fields. For the Chapel standard modules, ``:arg:`` should be a
+concise description of the argument using a sentence, or two. This should
+include any constraints and default information. ``:type:`` should be the
+literal type for the parameter. A link will be created to the type, if
+possible. For example::
+
+.. code-block:: chapel
+
+   /* Fill and array with pseudorandom values ...
+
+      :arg arr: Array to be filled, where T is real(64), imag(64), or complex(128).
+      :type arr: [] T
+
+      :arg seed: Integer seed to use for the PRNG. Defaults to :proc:`SeedGenerator.currentTime`.
+      :type seed: int(64)
+    */
+   proc fillRandom(arr: [], seed: int(64) = SeedGenerator.currentTime) {
+     ...
+
+Return or yield types can optionally be documented using the ``:returns:`` and
+``:yields:`` fields, and the ``:rtype:`` and ``:ytype:`` fields. ``:returns:``
+and ``:rtype:`` are for functions and methods, while ``:yields:`` and
+``:ytype:`` are for iterators.
+
+Similar to arguments, the ``:returns:`` and ``:yields:`` should be a concise
+description of the return value or yield value, including any constraints,
+using a sentence, or two. ``:rtype:`` and ``:ytype:`` should be the literal
+types. A link to the type will be created, if possible. For example::
+
+.. code-block:: chapel
+
+   /* Returns the next value in the random stream.
+
+      :returns: Next value in the random integer stream.
+      :rtype: int
+    */
+   proc RandomStream.getNext(): int {
+     ...
+
+   /* Simple find-like utility for iterating over files.
+
+      :arg startdir: Directory to start looking for files.
+      :arg recursive: Whether or not to descend recursively into directories.
+      :arg hidden: Whehter or not to yield hidden files.
+
+      :yields: Filenames found in `startdir` based on input arguments.
+      :ytype: string
+    */
+   iter findfiles(startdir=".", recursive=false, hidden=false): string {
+     ...
+
+.. note:: Leave an empty line above and below all these fields for best
+          results.
+
+
+Stifling documentation
+~~~~~~~~~~~~~~~~~~~~~~
+
 If you would like a particular symbol to not be output as part of your
 documentation, you can specify this by prefacing the symbol with the
 pragma "no doc".  For example:
@@ -478,11 +557,12 @@ reStructuredText as HTML.
 .. _docutils: http://docutils.sourceforge.net/
 .. _Sphinx: http://sphinx-doc.org/
 
+
 Future Directions
 -----------------
 
-Here are some directions we intend to take this feature in future versions. If
-there are other features you would like, please let us know.
+If there are other features you would like, please let us know. These are
+currently on our backlog:
 
 * Add visibility control (public/private) to Chapel and have chapeldoc only
   represent public elements by default (with options for including private
