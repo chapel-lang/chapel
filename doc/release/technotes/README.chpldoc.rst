@@ -166,8 +166,8 @@ types. A link to the type will be created, if possible. For example:
    * All of these fields must be left-aligned with the outer most paragraph(s).
    * Leave an empty line above and below all these fields for best results.
 
-For more information see the `Documenting argument, return, and yield values
-and types <documenting-args-returns-yields>`_ section.
+For more information see the :ref:`Documenting argument, return, and yield
+values and types <documenting-args-returns-yields>` section.
 
 
 Stifling documentation
@@ -188,7 +188,7 @@ Documentation text within comments is parsed as ReStructed Text.
 Creating links to other symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the `Inline markup <cross-references>`_ section for details on creating
+See the :ref:`Inline markup <cross-references>` section for details on creating
 links, also known as cross-references, in the documentation to other symbols.
 
 
