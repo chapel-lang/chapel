@@ -834,7 +834,7 @@ static ArgumentState sArgState = {
   0,
   "program",
   "path",
-  arg_desc
+  NULL
 };
 
 
@@ -898,7 +898,14 @@ static void printStuff(const char* argv0) {
   if (printHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
 
-    usage(&sArgState, (!printHelp), printEnvHelp, printSettingsHelp);
+    int usageExitStatus;
+    if (fDocs) {
+      usageExitStatus = (!fDocsPrintHelp);
+    } else {
+      usageExitStatus = (!printHelp);
+    }
+
+    usage(&sArgState, usageExitStatus, printEnvHelp, printSettingsHelp);
 
     shouldExit       = true;
     printedSomething = true;
@@ -926,7 +933,16 @@ int main(int argc, char* argv[]) {
 
     init_args(&sArgState, argv[0]);
 
+    fDocs = (strcmp(sArgState.program_name, "chpldoc") == 0) ? true : false;
     fUseIPE = (strcmp(sArgState.program_name, "chpl-ipe") == 0) ? true : false;
+
+    // Initialize the arguments for argument state. If chpldoc, use the docs
+    // specific arguments. Otherwise, use the regular arguments.
+    if (fDocs) {
+      init_arg_desc(&sArgState, docs_arg_desc);
+    } else {
+      init_arg_desc(&sArgState, arg_desc);
+    }
 
     initFlags();
     initRootModule();
@@ -965,9 +981,6 @@ int main(int argc, char* argv[]) {
   addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
   if (fUseIPE == false) {
-    if (fDocs == false && strcmp(sArgState.program_name, "chpldoc") == 0)
-      fDocs = true;
-
     runPasses(tracker, fDocs);
   } else {
     ipeRun();

@@ -24,6 +24,7 @@
 //        (thomasvandoren, 2015-03-08)
 bool fDocs = false;
 
+bool fDocsPrintHelp = false;
 bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
 char fDocsFolder[256] = "";
@@ -75,5 +76,6 @@ ArgumentDescription docs_arg_desc[] = {
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  {"text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
  {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
+ {"help", 'h', NULL, "Help (show this list)", "F", &fDocsPrintHelp, NULL, NULL},
  {0}
 };

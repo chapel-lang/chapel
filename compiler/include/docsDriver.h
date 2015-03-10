@@ -20,12 +20,13 @@
 #include "arg.h"
 #include "misc.h"
 
-// FIXME: This global should no longer be needed. Instead, use argv[0] ==
-//        "chpldoc". Alt. set it based on that comparison.
-//        (thomasvandoren, 2015-03-08)
 extern bool fDocs;
+extern bool fDocsPrintHelp;
 
+// FIXME: Comment out this option until it is re-enabled.
+//        (thomasvandoren, 2015-03-09)
 extern bool fDocsAlphabetize;
+
 extern char fDocsCommentLabel[256];
 extern char fDocsFolder[256];
 extern bool fDocsTextOnly;
