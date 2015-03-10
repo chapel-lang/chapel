@@ -282,10 +282,7 @@ void Expr::prettyPrint(std::ostream *o) {
 }
 
 Expr* Expr::remove() {
-  if (!this) // TODO -- this==NULL is undefined behavior
-    return NULL;
-
-  {
+  if (this != NULL) {
     if (list) {
       if (next)
         next->prev = prev;
