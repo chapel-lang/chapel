@@ -27,7 +27,7 @@ use Error;
    Note: this is not safe within a parallel context.  A chdir call in one task
    will affect the current working directory of all tasks for that locale.
 */
-proc locale.chdir(out err: syserr, name: string) {
+proc locale.chdir(out error: syserr, name: string) {
   extern proc chpl_fs_chdir(name: c_string):syserr;
 
   on this {
@@ -59,7 +59,7 @@ proc locale.chdir(name: string) {
               question.  See description of the provided constants for
               potential values.
 */
-proc chmod(out err: syserr, name: string, mode: int) {
+proc chmod(out error: syserr, name: string, mode: int) {
   extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
 
   err = chpl_fs_chmod(name.c_str(), mode);
@@ -90,7 +90,7 @@ proc chmod(name: string, mode: int){
    uid: user id to use as new owner, or -1 if it should remain the same.
    gid: group id to use as the new group owner, or -1 if it should remain the same.
 */
-proc chown(out err: syserr, name: string, uid: int, gid: int) {
+proc chown(out error: syserr, name: string, uid: int, gid: int) {
   extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 
   err = chpl_fs_chown(name.c_str(), uid:c_int, gid:c_int);
@@ -124,7 +124,7 @@ proc chown(name: string, uid: int, gid: int) {
              last access and time of modification) associated with the source
              file.
 */
-proc copy(out err: syserr, src: string, dest: string, metadata: bool = false) {
+proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) {
   var destFile = dest;
   if (isDir(err, destFile)) {
     // destFile = joinPath(destFile, basename(src));
@@ -188,7 +188,7 @@ proc copy(src: string, dest: string, metadata: bool = false) {
    src: the source file whose contents are to be copied.
    dest: the destination of the contents.
 */
-proc copyFile(out err: syserr, src: string, dest: string) {
+proc copyFile(out error: syserr, src: string, dest: string) {
   // This implementation is based off of the python implementation for copyfile,
   // with some slight differences.  That implementation was found at:
   // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
@@ -275,9 +275,9 @@ proc copyFile(src: string, dest: string) {
    src: the source file whose permissions are to be copied.
    dest: the destination of the permissions.
 */
-proc copyMode(out err: syserr, src: string, dest: string) {
+proc copyMode(out error: syserr, src: string, dest: string) {
   // Gets the mode from the source file.
-  var srcMode = viewMode(err, src);
+  var srcMode = getMode(err, src);
   // If any error occurred, we want to be the one reporting it, so as not
   // to bleed implementation details.  If we found one when viewing the
   // source's mode, we should return immediately.
@@ -305,7 +305,7 @@ proc copyMode(src: string, dest: string) {
    directory from underneath this task, so use caution when making use
    of this function in a parallel environment.
 */
-proc locale.cwd(out err: syserr): string {
+proc locale.cwd(out error: syserr): string {
   extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
 
   var ret:string;
@@ -342,7 +342,7 @@ proc locale.cwd(): string {
    occurred via an out parameter
    name: a string used to attempt to find the file specified.
 */
-proc exists(out err: syserr, name: string): bool {
+proc exists(out error: syserr, name: string): bool {
   extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
@@ -367,7 +367,7 @@ proc exists(name: string): bool {
    err: a syserr used to indicate if an error occurred
    name: a string used to indicate the file in question
 */
-proc getGID(out err: syserr, name: string): int {
+proc getGID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
 
   var result: c_int;
@@ -391,7 +391,7 @@ proc getGID(name: string): int {
    err: a syserr used to indicate if an error occurred
    name: a string used to indicate the file in question
 */
-proc getUID(out err: syserr, name: string): int {
+proc getUID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
 
   var result: c_int;
@@ -414,7 +414,7 @@ proc getUID(name: string): int {
    err: a syserr used to indicate if an error occurred
    name: a string that could be the name of a directory.
 */
-proc isDir(out err:syserr, name:string):bool {
+proc isDir(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
 
   var ret:c_int;
@@ -437,7 +437,7 @@ proc isDir(name:string):bool {
    err: a syserr used to indicate if an error occurred
    name: a string that could be the name of a file.
 */
-proc isFile(out err:syserr, name:string):bool {
+proc isFile(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
 
   var ret:c_int;
@@ -460,7 +460,7 @@ proc isFile(name:string):bool {
    or if symbolic links are not supported.
    name: a string that could be the name of a symbolic link.
 */
-proc isLink(out err:syserr, name: string): bool {
+proc isLink(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
@@ -484,7 +484,7 @@ proc isLink(name: string): bool {
    err: a syserr used to indicate if an error occurred
    name: a string that could be the name of a mount point.
 */
-proc isMount(out err:syserr, name: string): bool {
+proc isMount(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
 
   if (isFile(name)) {
@@ -553,7 +553,7 @@ extern const S_ISVTX: int;
    afterward, it's still not necessarily true that this function created that
    parent. Some other concurrent operation could have done so.
 */
-proc mkdir(out err: syserr, name: string, mode: int = 0o777,
+proc mkdir(out error: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
   extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
 
@@ -610,7 +610,7 @@ proc rename(oldname, newname: string) {
    if one occurred via an out parameter.
    err: a syserr used to indicate if an error occurred during removal
    name: the name of the file/directory to remove */
-proc remove(out err: syserr, name: string) {
+proc remove(out error: syserr, name: string) {
   extern proc chpl_fs_remove(name: c_string):syserr;
 
   err = chpl_fs_remove(name.c_str());
@@ -631,7 +631,7 @@ proc remove(name: string) {
    err: a syserr used to indicate if an error occurred during comparison
    file1, file2: string representations of paths to be compared.
 */
-proc sameFile(out err: syserr, file1: string, file2: string): bool {
+proc sameFile(out error: syserr, file1: string, file2: string): bool {
   extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
 
   var ret:c_int;
@@ -654,7 +654,7 @@ proc sameFile(file1: string, file2: string): bool {
 /* Same as the above function, but taking file records instead of string
    pathnames as arguments.
 */
-proc sameFile(out err: syserr, file1: file, file2: file): bool {
+proc sameFile(out error: syserr, file1: file, file2: file): bool {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): syserr;
 
@@ -697,7 +697,7 @@ proc sameFile(file1: file, file2: file): bool {
    oldName: the source file to be linked
    newName: the location the symbolic link should live
 */
-proc symlink(out err: syserr, oldName: string, newName: string) {
+proc symlink(out error: syserr, oldName: string, newName: string) {
   extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
 
   err = chpl_fs_symlink(oldName.c_str(), newName.c_str());
@@ -729,7 +729,7 @@ proc umask(mask: int): int {
    err: a syserr used to indicate if an error occurred during this function
    name: the name of the file that you want to know the permissions of.
 */
-proc viewMode(out err: syserr, name: string): int {
+proc getMode(out error: syserr, name: string): int {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
@@ -741,9 +741,9 @@ proc viewMode(out err: syserr, name: string): int {
    by name.  May generate an error message.
    name: the name of the file that you want to know the permissions of.
 */
-proc viewMode(name: string): int {
+proc getMode(name: string): int {
   var err:syserr = ENOERR;
-  var result = viewMode(err, name);
-  if err != ENOERR then ioerror(err, "in viewMode", name);
+  var result = getMode(err, name);
+  if err != ENOERR then ioerror(err, "in getMode", name);
   return result;
 }
