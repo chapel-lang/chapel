@@ -165,8 +165,8 @@ types. A link to the type will be created, if possible. For example:
 
 .. note::
 
-   * All of these fields must be left-aligned with the outer most paragraph(s).
    * Leave an empty line above and below all these fields for best results.
+   * All of these fields must be left-aligned with the outer most paragraph(s).
 
 For more information see the `Documenting argument, return, and yield values
 and types <#documenting-argument-return-and-yield-values-and-types>`_ section.
@@ -482,7 +482,10 @@ For example, when documenting a Chapel proc:
      ...
    }
 
-.. note:: These fields must be left-aligned with the outer most paragraphs.
+.. note::
+
+   * Leave an empty line above and below all these fields for best results.
+   * All of these fields must be left-aligned with the outer most paragraph(s).
 
 
 Paragraph level markup
