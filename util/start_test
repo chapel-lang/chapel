@@ -1715,7 +1715,7 @@ foreach testType ($testTypes)
                     if (-e $skipfilen) then
                         if (-x $skipfilen) then
                             set pruneif = `$skipfilen`
-                            if ( $pruneif == "True" ) then
+                            if ( $pruneif == "1" || $pruneif == "True" ) then
                                 set pruneif = "1"
                             else
                                 set pruneif = "0"
