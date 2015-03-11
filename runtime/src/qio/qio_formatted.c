@@ -383,7 +383,7 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
       err = _peek_until_len(ch, maxlen, &peek_amt);
       num = peek_amt;
       // Ignore EOF errors as long as we read something.
-      if( num > 0 && err && qio_err_to_int(err) == EEOF ) err = 0;
+      if( err && qio_err_to_int(err) == EEOF && num > 0 ) err = 0;
       break;
     default:
       if( str_style >= 0 ) {
