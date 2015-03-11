@@ -70,7 +70,7 @@ runtime: FORCE
 	cd runtime && $(MAKE)
 
 llvm-runtime-if-needed: FORCE
-	if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
+	@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
 	echo "Building runtime for chpl --llvm"; \
 	cd runtime && CHPL_TARGET_COMPILER=clang-included $(MAKE); \
 	fi
