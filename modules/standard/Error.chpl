@@ -160,7 +160,7 @@ proc errorToString(error:syserr):string
 {
   var errstr:c_string = "unknown"; // Why initialize this?
   var strerror_err:err_t = ENOERR;
-  errstr = sys_strerror_syserr_str(error, strerror_err); 
+  errstr = sys_strerror_syserr_str(error, strerror_err);
   return errstr;
 }
 
