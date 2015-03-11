@@ -1,4 +1,12 @@
-const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n";
+extern proc memcpy(a:[], b:c_string, len);
+
+proc string.toBytes() {
+   var b : [1..this.length] uint(8);
+   memcpy(b, this.c_str(), this.length);
+   return b;
+}
+
+const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".toBytes();
 var table : [1..128] uint(8);
 
 proc main(args: [] string) {

@@ -32,14 +32,14 @@
 
 /* "%code requires" blocks.  */
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 33 "chapel.ypp"
 
   extern int  captureTokens;
   extern char captureString[1024];
 
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 44 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_0_
@@ -56,7 +56,7 @@
   #endif
 
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 63 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
@@ -110,7 +110,7 @@
   #endif
 
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 119 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
@@ -130,7 +130,7 @@
   #endif
 
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 141 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
@@ -161,7 +161,7 @@
 
 
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 166 "../include/bison-chapel.h"
 
 /* Tokens.  */
@@ -351,7 +351,7 @@ void yypstate_delete ();
 
 /* "%code provides" blocks.  */
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 172 "chapel.ypp"
 
   extern int yydebug;
@@ -362,5 +362,5 @@ void yypstate_delete ();
 
 
 
-/* Line 2068 of yacc.c  */
+/* Line 2132 of yacc.c  */
 #line 367 "../include/bison-chapel.h"
