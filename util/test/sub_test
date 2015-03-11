@@ -1230,8 +1230,9 @@ for testname in testsrc:
                 cmd = compiler + 'doc'
 
                 if which(cmd) is None:
-                    sys.stderr.write('[Warning: Skipping test; could not find chpldoc '
-                                     'at: {0}'.format(cmd))
+                    sys.stdout.write(
+                        '[Warning: Could not find chpldoc, skipping test '
+                        '{0}/{1}]\n'.format(localdir, test_filename))
                     continue
             else:
                 cmd = compiler
