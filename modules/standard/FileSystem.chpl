@@ -310,7 +310,7 @@ proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolical
   for filename in listdir(path=src, dirs=false, files=true, listlinks=copySymbolically) {
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
-    copy(error, filename, fileDestName, metadata=true);
+    copy(error, src + "/" + filename, fileDestName, metadata=true);
     if (error != ENOERR) then return;
   }
 
