@@ -57,7 +57,7 @@ comprt: FORCE
 	@$(MAKE) compiler
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) runtime
-	@$(MAKE) llvm-runtime-maybe
+	@$(MAKE) llvm-runtime-if-needed
 	@$(MAKE) modules
 
 compiler: FORCE
@@ -69,7 +69,7 @@ modules: FORCE
 runtime: FORCE
 	cd runtime && $(MAKE)
 
-llvm-runtime-maybe: FORCE
+llvm-runtime-if-needed: FORCE
 	-@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
 	echo "Building runtime for chpl --llvm"; \
 	cd runtime && CHPL_TARGET_COMPILER=clang-included $(MAKE); \
