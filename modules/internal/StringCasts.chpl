@@ -58,7 +58,7 @@ module StringCasts {
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
-    ret.len = safe_cast(int, strlen(csc));
+    ret.len = strlen(csc).safeCast(int);
     ret._size = ret.len+1;
 
     return ret;
@@ -113,7 +113,7 @@ module StringCasts {
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
-    ret.len = safe_cast(int, strlen(csc));
+    ret.len = strlen(csc).safeCast(int);
     ret._size = ret.len+1;
 
     return ret;
@@ -209,7 +209,7 @@ module StringCasts {
 
     var ret = new string(owned=false);
     ret.buff = cs:c_ptr(uint(8));
-    ret.len = safe_cast(int, strlen(cs));
+    ret.len = strlen(cs).safeCast(int);
     ret._size = ret.len+1;
 
     return ret;
