@@ -348,7 +348,7 @@ module String {
         } else {
           localNeedle = new string(owned=false);
           localNeedle.reinitString(needle.buff, needle.len,
-                                   needle._size, needToCopy=false);
+                                   needle._size, needToCopy = true);
         }
         const lastPossible = (this.len-localNeedle.len)+1;
         for i in 0..#lastPossible {
@@ -644,7 +644,7 @@ module String {
       } else {
         localA = new string(owned=false);
         localA.reinitString(a.buff, a.len,
-                            a._size, needToCopy=false);
+                            a._size, needToCopy=true);
       }
 
       var localB: string;
@@ -653,7 +653,7 @@ module String {
       } else {
         localB = new string(owned=false);
         localB.reinitString(b.buff, b.len,
-                            b._size, needToCopy=false);
+                            b._size, needToCopy=true);
       }
 
       return doEq(localA, localB);
@@ -679,7 +679,7 @@ module String {
       } else {
         localA = new string(owned=false);
         localA.reinitString(a.buff, a.len,
-                            a._size, needToCopy=false);
+                            a._size, needToCopy=true);
       }
 
       var localB: string;
@@ -688,7 +688,7 @@ module String {
       } else {
         localB = new string(owned=false);
         localB.reinitString(b.buff, b.len,
-                            b._size, needToCopy=false);
+                            b._size, needToCopy=true);
       }
 
       return doLt(localA, localB);
@@ -710,7 +710,7 @@ module String {
       } else {
         localA = new string(owned=false);
         localA.reinitString(a.buff, a.len,
-                            a._size, needToCopy=false);
+                            a._size, needToCopy=true);
       }
 
       var localB: string;
@@ -719,7 +719,7 @@ module String {
       } else {
         localB = new string(owned=false);
         localB.reinitString(b.buff, b.len,
-                            b._size, needToCopy=false);
+                            b._size, needToCopy=true);
       }
 
       return doGt(localA, localB);
