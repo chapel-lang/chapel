@@ -50,12 +50,12 @@ Finishing
 In ~R() 1
 Destroying a RefCount
 In ~R() 2
-In ~R() 2
 In ~R() 1
 Destroying a RefCount
 In ~R() 2
 In ~R() 1
 Destroying a RefCount
+In ~R() 2
 In ~R() 1
 Destroying a RefCount
 In ~R() 1

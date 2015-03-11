@@ -1170,8 +1170,10 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
   ti.ret_bytes = -1;
 
   if( !ptr || len == 0 ) {
-    err = 0;
-    return err;
+    // hilde sez: Having a distinguished value for empty strings is
+    // undesirable.
+    ptr = "";
+    len = 0;
   }
 
   if( qio_glocale_utf8 == 0 ) {

@@ -171,7 +171,7 @@ module StringCasts {
     if x.im < 0 {
       im = (-x.im):string;
       op = " - ";
-    } else if x.im == -0.0 {
+    } else if x.im == -0.0 && -0.0 != 0.0 { // Special accommodation for Seymour.
       im = "0.0";
       op = " - ";
     } else {
