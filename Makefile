@@ -81,7 +81,7 @@ third-party: FORCE
 third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
-	-@if [ -z "$$CHPL_REGEXP" ]; then \
+	@if [ -z "$$CHPL_REGEXP" ]; then \
 	cd third-party && $(MAKE) try-re2; \
 	fi
 
