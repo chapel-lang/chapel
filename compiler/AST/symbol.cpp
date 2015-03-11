@@ -1293,7 +1293,7 @@ void TypeSymbol::codegenMetadata() {
   llvm::LLVMContext& ctx = info->module->getContext();
   // Create the TBAA root node if necessary.
   if( ! info->tbaaRootNode ) {
-    llvm::Value* Ops[1];
+    LLVM_METADATA_OPERAND_TYPE* Ops[1];
     Ops[0] = llvm::MDString::get(ctx, "Chapel types");
     info->tbaaRootNode = llvm::MDNode::get(ctx, Ops);
   }
@@ -1347,16 +1347,17 @@ void TypeSymbol::codegenMetadata() {
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
     // Now create tbaa metadata, one for const and one for not.
     {
-      llvm::Value* Ops[2];
+      LLVM_METADATA_OPERAND_TYPE* Ops[2];
       Ops[0] = llvm::MDString::get(ctx, cname);
       Ops[1] = parent;
       llvmTbaaNode = llvm::MDNode::get(ctx, Ops);
     }
     {
-      llvm::Value* Ops[3];
+      LLVM_METADATA_OPERAND_TYPE* Ops[3];
       Ops[0] = llvm::MDString::get(ctx, cname);
       Ops[1] = constParent;
-      Ops[2] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1);
+      Ops[2] = llvm_constant_as_metadata(
+                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1));
       llvmConstTbaaNode = llvm::MDNode::get(ctx, Ops);
     }
   }
@@ -1372,8 +1373,8 @@ void TypeSymbol::codegenMetadata() {
 
   if( ct ) {
     // Now create the tbaa.struct metadata nodes.
-    llvm::SmallVector<llvm::Value*, 16> Ops;
-    llvm::SmallVector<llvm::Value*, 16> ConstOps;
+    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE*, 16> Ops;
+    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE*, 16> ConstOps;
 
     const char* struct_name = ct->classStructName(true);
     llvm::Type* struct_type_ty = info->lvt->getType(struct_name);
@@ -1393,11 +1394,11 @@ void TypeSymbol::codegenMetadata() {
         unsigned gep = ct->getMemberGEP(field->cname);
         llvm::Constant* off = llvm::ConstantExpr::getOffsetOf(struct_type, gep);
         llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
-        Ops.push_back(off);
-        Ops.push_back(sz);
+        Ops.push_back(llvm_constant_as_metadata(off));
+        Ops.push_back(llvm_constant_as_metadata(sz));
         Ops.push_back(field->type->symbol->llvmTbaaNode);
-        ConstOps.push_back(off);
-        ConstOps.push_back(sz);
+        ConstOps.push_back(llvm_constant_as_metadata(off));
+        ConstOps.push_back(llvm_constant_as_metadata(sz));
         ConstOps.push_back(field->type->symbol->llvmConstTbaaNode);
         llvmTbaaStructNode = llvm::MDNode::get(ctx, Ops);
         llvmConstTbaaStructNode = llvm::MDNode::get(ctx, ConstOps);
@@ -2077,7 +2078,13 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
     if( developer ) {
-      if(llvm::verifyFunction(*func, llvm::PrintMessageAction)){
+      bool problems;
+#if HAVE_LLVM_VER >= 35
+      problems = llvm::verifyFunction(*func, &llvm::errs());
+#else
+      problems = llvm::verifyFunction(*func, llvm::PrintMessageAction);
+#endif
+      if( problems ) {
         INT_FATAL("LLVM function verification failed");
       }
     }

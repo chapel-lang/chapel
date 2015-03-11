@@ -113,11 +113,12 @@ public:
   // destinations of a deref can also be narrow.
   std::vector<SymExpr*> destsToNarrow;
 
-  WideInfo() : sym(NULL), mustBeWide(false), valIsWide(false), fnToNarrow(NULL) { }
+  WideInfo() : sym(NULL), mustBeWide(false), wideType(NULL), valIsWide(false), fnToNarrow(NULL) { }
   WideInfo(Symbol* isym) : sym(isym), mustBeWide(false), valIsWide(false), fnToNarrow(NULL) {
     if (isWideType(sym)) {
       wideType = toAggregateType(sym->type);
-    }
+    } else
+      wideType = NULL;
   }
 
   void setWide(SymExpr* se, const char* msg) {
@@ -343,7 +344,7 @@ static void resolveHelper(WideInfo* wi);
 static void doNarrowing(SymExprTypeMap&);
 static void handleLocalFields(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                               Map<Symbol*,Vec<SymExpr*>*>& useMap);
-static void pruneNarrowedActuals(SymExprTypeMap&);
+static void pruneWidenMap(SymExprTypeMap&);
 static void printNarrowEffectSummary();
 static void insertWideReferenceTemps(SymExprTypeMap&);
 static void moveAddressSourcesToTemp();
@@ -601,8 +602,8 @@ narrowSym(Symbol* sym, WideInfo* wi,
             continue;
           }
           if (rhs->isPrimitive(PRIM_STRING_FROM_C_STRING)) {
-            // The destination string need not be wide if we're initializing from
-            // a c_string.
+            // By making such strings wide, we seem to avoid more memory leaks.
+            wi->mustBeWide = true;
             continue;
           }
           if (rhs->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
@@ -617,8 +618,19 @@ narrowSym(Symbol* sym, WideInfo* wi,
             if (fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC))
               continue;
             bool retIsWide = isWideType(fn->retType->symbol);
-            if (retIsWide && (isWideRef || isWideObj)) {
+
+            //
+            // The LHS should follow the wideness of the returned type if:
+            // - the LHS is a class
+            // - both the LHS and return type are refs
+            //
+            // If the function returns a class and the LHS is a reference,
+            // then that reference will be narrow.
+            //
+            if (retIsWide) {
+              if (isWideObj || (isRef(fn->getReturnSymbol()) && isRef(sym))) {
                 addNarrowDep(fn->getReturnSymbol(), sym);
+              }
             }
             if (isRef(sym)) {
               if (WideInfo* next = wideInfoMap->get(fn->getReturnSymbol())) {
@@ -632,9 +644,19 @@ narrowSym(Symbol* sym, WideInfo* wi,
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
             bool isObj = isWideObj || isClass(sym->type);
             bool rhsIsWide = isWideType(rhs->var);
-            if (rhsIsWide && (isRef(sym) || isObj)) {
-              addNarrowDep(rhs->var, sym);
+            if (rhsIsWide) {
+              // For 'class = x', the LHS has to be wide if the RHS is wide.
+              if (isObj) {
+                addNarrowDep(rhs->var, sym);
+              }
+
+              // If the RHS is a wide ref, the LHS must also be wide.
+              if (isRef(rhs->var) && isRef(sym)) {
+                addNarrowDep(rhs->var, sym);
+              }
             }
+
+            // This handles the 'ref = class' case.
             if (isRef(sym)) {
               if (rhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
                   isRef(rhs->var)) {
@@ -661,8 +683,8 @@ narrowSym(Symbol* sym, WideInfo* wi,
       }
     }
 #ifdef PRINT_NARROW_ANALYSIS
-    DEBUG_PRINTF("No case to narrow def %d %s in %s", wi->sym->id, wi->sym->cname, se->getModule()->cname);
-    print_view(se->getStmtExpr());
+    DEBUG_PRINTF("No case to narrow def %d %s in %s", wi->sym->id, wi->sym->cname, def->getModule()->cname);
+    print_view(def->getStmtExpr());
 #endif
   }
 
@@ -712,7 +734,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
         continue;
           }
       if (call->isResolved()) {
-        // pruneNarrowedActuals will clean up
+        // pruneWidenMap will clean up
         DEBUG_PRINTF("call: widening expr %d\n", sym->id);
         wi->exprsToWiden.push_back(use);
         continue;
@@ -733,6 +755,7 @@ narrowSym(Symbol* sym, WideInfo* wi,
           if (strcmp(base->var->type->symbol->cname, "_class_localscoforall_fn") == 0) {
             DEBUG_PRINTF("trying to narrow coforall arg: %d -> %d\n", sym->id, member->var->id);
             addNarrowDep(sym, member->var);
+            wi->exprsToWiden.push_back(use);
           } else {
             // For all other types, we assume the fields are wide.
             DEBUG_PRINTF("set: widening expr %d\n", sym->id);
@@ -821,6 +844,9 @@ narrowSym(Symbol* sym, WideInfo* wi,
         continue;
       }
     }
+    if (isCondStmt(use->parentExpr)) {
+      continue;
+    }
     //
     // It's not clear to me (bradcray) why falling through to this
     // point has traditionally meant "this case must be wide"; this
@@ -892,8 +918,10 @@ narrowArg(ArgSymbol* arg, WideInfo* wi,
         wideInfoMap->get(actual->var)->exprsToWiden.push_back(actual);
         
         // sync _val wideness
-        wi->refsToNarrow.push_back(actual->var);
-        wideInfoMap->get(actual->var)->refsToNarrow.push_back(arg);
+        if (isRef(actual->var))
+          wi->refsToNarrow.push_back(actual->var);
+        if (isRef(arg))
+          wideInfoMap->get(actual->var)->refsToNarrow.push_back(arg);
       }
     }
 
@@ -907,13 +935,14 @@ narrowArg(ArgSymbol* arg, WideInfo* wi,
 static bool usedInOn(Symbol* sym, Map<Symbol*, Vec<SymExpr*>*> &useMap, CallGraph* graph) {
   for_uses(use, useMap, sym) {
     if (FnSymbol* fn = toFnSymbol(use->parentSymbol)) {
-      CallGraph::Node* n = graph->vertices[fn];
-      if (n->onDepth != 0 ||
-          fn->hasFlag(FLAG_ON_BLOCK) ||
-          fn->hasFlag(FLAG_ON)) {
-            DEBUG_PRINTF("ON: %s used in %s (%d): %d\n", sym->cname, fn->cname, fn->id, n->onDepth);
-            return true;
-      }
+      if (CallGraph::Node* n = graph->vertices[fn]) {
+        if (n->onDepth != 0 ||
+            fn->hasFlag(FLAG_ON_BLOCK) ||
+            fn->hasFlag(FLAG_ON)) {
+              DEBUG_PRINTF("ON: %s used in %s (%d): %d\n", sym->cname, fn->cname, fn->id, n->onDepth);
+              return true;
+        }
+      } else return true;
     }
   }
   return false;
@@ -952,7 +981,7 @@ narrowWideReferences() {
 
   doNarrowing(*widenMap);
 
-  pruneNarrowedActuals(*widenMap);
+  pruneWidenMap(*widenMap);
 
   printNarrowEffectSummary();
 
@@ -995,6 +1024,7 @@ static void populateWideInfoMap()
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->type->symbol->hasFlag(FLAG_WIDE_REF) ||
         arg->type->symbol->hasFlag(FLAG_REF) ||
+        arg->type->symbol->hasFlag(FLAG_DATA_CLASS) ||
         arg->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       wideInfoMap->put(arg, new WideInfo(arg));
     }
@@ -1068,6 +1098,7 @@ static void resolveHelper(WideInfo* wi) {
     }
     for_vector(Symbol, se, wi->refsToNarrow) {
       WideInfo* nwi = wideInfoMap->get(se);
+      INT_ASSERT(isRef(nwi->sym));
       DEBUG_PRINTF("REF %s (%d)", nwi->sym->cname, nwi->sym->id);
       if (!nwi->valIsWide) {
         DEBUG_PRINTF(" (%d)\n", wi->sym->id);
@@ -1099,6 +1130,7 @@ static void resolveHelper(WideInfo* wi) {
     // refs to this variable should wrap a narrow _val.
     for_vector(Symbol, se, wi->refsToNarrow) {
       WideInfo* nwi = wideInfoMap->get(se);
+      INT_ASSERT(nwi->sym);
       DEBUG_PRINTF("REF %s (%d): val is ", nwi->sym->cname, nwi->sym->id);
       if (wi->valIsWide) DEBUG_PRINTF("wide");
       else DEBUG_PRINTF("not wide");
@@ -1192,11 +1224,15 @@ static void doNarrowing(SymExprTypeMap& widenMap)
 }
 
 
-static void pruneNarrowedActuals(SymExprTypeMap& widenMap)
+static void pruneWidenMap(SymExprTypeMap& widenMap)
 {
   //
   // Prune the map of expressions to widen because of arguments that
   // have been narrowed.
+  //
+  // For every narrow ArgSymbol, use corresponding actuals as keys
+  // to set the value to null in the widenMap. If the value is null,
+  // a wide temporary will not be made for the actual.
   //
   form_Map(WideInfoMapElem, e, *wideInfoMap) {
     WideInfo* wi = e->value;
@@ -1208,6 +1244,27 @@ static void pruneNarrowedActuals(SymExprTypeMap& widenMap)
           SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
           widenMap.put(actual, NULL);
           DEBUG_PRINTF("PRUNE: %d\n", actual->var->id);
+        }
+      }
+    }
+  }
+
+
+  //
+  // For every SymExpr remaining in the widenMap that is used
+  // in PRIM_SET_MEMBER, set the value to null if the member
+  // is narrow.
+  //
+  form_Map(SymExprTypeMapElem, e, widenMap) {
+    SymExpr* key = e->key;
+    Type* value = e->value;
+    if (value) {
+      if (CallExpr* call = toCallExpr(key->parentExpr)) {
+        if (call->isPrimitive(PRIM_SET_MEMBER)) {
+          SymExpr* member = toSymExpr(call->get(2));
+          if (!isWideType(member->var)) {
+            widenMap.put(key, NULL);
+          }
         }
       }
     }

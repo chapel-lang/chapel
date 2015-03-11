@@ -19,6 +19,7 @@ MAIN_SRCS =                  \
             arg.cpp          \
             checks.cpp       \
             config.cpp       \
+            docsDriver.cpp   \
             driver.cpp       \
             log.cpp          \
             runpasses.cpp    \

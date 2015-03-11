@@ -130,9 +130,9 @@ module unitTest {
     {
       const x: t = "cs";
       if useExpr {
-        writeMe(x:c_string);
+        writeMe(x.c_str());
       } else {
-        const s = x:c_string;
+        const s = x.c_str();
         writeMe(s);
       }
     }

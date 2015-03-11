@@ -1715,13 +1715,18 @@ foreach testType ($testTypes)
                     if (-e $skipfilen) then
                         if (-x $skipfilen) then
                             set pruneif = `$skipfilen`
+                            if ( $pruneif == "1" || $pruneif == "True" ) then
+                                set pruneif = "1"
+                            else
+                                set pruneif = "0"
+                            endif
                         else
                             set pruneif = `$utildir/test/testEnv $skipfilen`
                         endif
                     endif
                     cd ..
                 end
-                if ( $pruneif == "1" || $pruneif == "True" ) then
+                if ( $pruneif == "1" ) then
                     echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]" |& $tee -a $logfile
                     continue
                 endif
