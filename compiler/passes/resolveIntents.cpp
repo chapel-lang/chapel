@@ -22,7 +22,13 @@
 
 bool intentsResolved = false;
 
+static inline bool rwtLowlevel(Type* t) {
+  return resolved && isRecordWrappedType(t);
+}
+
 static IntentTag constIntentForType(Type* t) {
+  if (rwtLowlevel(t)) // low-level semantics for domain, array, or distribution
+    return INTENT_CONST_IN;
   if (isSyncType(t) ||
       isRecordWrappedType(t) ||  // domain, array, or distribution
       isRecord(t)) { // may eventually want to decide based on size
@@ -52,6 +58,8 @@ static IntentTag constIntentForType(Type* t) {
 }
 
 IntentTag blankIntentForType(Type* t) {
+  if (rwtLowlevel(t)) // low-level semantics for domain, array, or distribution
+    return INTENT_CONST_IN;
   if (isSyncType(t) ||
       isAtomicType(t) ||
       t->symbol->hasFlag(FLAG_ARRAY)) {
@@ -102,6 +110,10 @@ void resolveArgIntent(ArgSymbol* arg) {
     arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK ?
     blankIntentForThisArg(arg->type) :
     concreteIntent(arg->intent, arg->type);
+  // enact low-level semantics for domain, array, or distribution
+  if (isRecordWrappedType(arg->type) &&
+      (arg->intent & INTENT_FLAG_REF))
+    arg->intent = INTENT_CONST_IN;
 }
 
 void resolveIntents() {

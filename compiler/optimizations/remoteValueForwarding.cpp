@@ -150,15 +150,20 @@ isSafeToDeref(Symbol* ref,
 }
 
 
-
+//
+// vass 3'2015: This function feels useless now.
+// Indeed, RVF is done only when arg's type is non-FLAG_REF.
+// In these cases isSufficientlyConst() always returns false.
+// I am leaving this function around in case we RVF of non-REF things.
+//
 static bool isSufficientlyConst(ArgSymbol* arg) {
   Type* argvaltype = arg->getValType();
 
-  if (argvaltype->symbol->hasFlag(FLAG_ARRAY)) {
-    // Arg is an array, so it's sufficiently constant (because this
-    // refers to the descriptor, not the array's values\n");
-    return true;
-  }
+  // The intention of this assert is mostly to document the current state.
+  // If it fails, we are probaly missing some pass-by-value opportunity.
+  if (isRecordWrappedType(argvaltype))
+    INT_ASSERT(arg->intent == INTENT_CONST_IN  &&
+               !arg->type->symbol->hasFlag(FLAG_REF));
 
   //
   // See if this argument is 'const in'; if it is, it's a good

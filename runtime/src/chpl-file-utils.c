@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <sys/param.h> // MAXPATHLEN
 #include <sys/stat.h>
+#include <utime.h> // Defines utimbuf and utime()
 
 
 qioerr chpl_fs_chdir(const char* name) {
@@ -52,6 +53,27 @@ qioerr chpl_fs_chown(const char* name, int uid, int gid) {
   int exitStatus = chown(name, uid, gid);
   if (exitStatus)
     err = qio_mkerror_errno();
+  return err;
+}
+
+qioerr chpl_fs_copy_metadata(const char* source, const char* dest) {
+  qioerr err = 0;
+  struct stat oldTimes;
+  struct utimbuf times;
+  int exitStatus = stat(source, &oldTimes);
+  if (exitStatus == -1) {
+    // Hopefully an error will not occur (as we have checked that the
+    // file exists when we perform the other operations on it).  But just in
+    // case, check it here.
+    err = qio_mkerror_errno();
+    return err;
+  }
+  times.actime = oldTimes.st_atime;  // The access time
+  times.modtime = oldTimes.st_mtime; // The modification time
+  exitStatus = utime(dest, &times);  // Set the times for dest.
+  if (exitStatus == -1) {
+    err = qio_mkerror_errno();
+  }
   return err;
 }
 
@@ -136,6 +158,40 @@ qioerr chpl_fs_is_link(int* ret, const char* name) {
   return 0;
 }
 
+qioerr chpl_fs_is_mount(int* ret, const char* name) {
+  qioerr err = 0;
+  struct stat nBuf, parentBuf;
+  int exitStatus = 0;
+  size_t nameLen = strlen(name);
+  char* parent = (char* ) chpl_mem_allocMany(nameLen + 4, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
+  strncpy(parent, name, nameLen + 1);
+  strncat(parent, "/..", 3);
+  // TODO: Using "/" is not necessarily portable, look into this
+
+  exitStatus = stat(name, &nBuf);
+  if (exitStatus) {
+    err = qio_mkerror_errno();
+    return err;
+  }
+  exitStatus = stat(parent, &parentBuf);
+  if (exitStatus) {
+    err = qio_mkerror_errno();
+  } else {
+    if (nBuf.st_dev != parentBuf.st_dev) {
+      *ret = 1;
+    // Check if the st_dev matches that of its parent directory.
+    // If they don't match, it is a mount point.
+    } else {
+      err = chpl_fs_samefile_string(ret, name, parent);
+      // If the parent directory is the same as the current directory, we've
+      // reached the root.  If they don't, we know it isn't a mount point
+      // because we already know their st_dev matches.
+    }
+  }
+  chpl_mem_free(parent, 0, 0);
+  return err;
+}
+
 /* Creates a directory with the given name and settings if possible,
    returning a qioerr if not. If parents != 0, then the callee wishes
    to create all interim directories necessary as well. */
@@ -199,6 +255,33 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
   if (exitStatus) {
     err = qio_mkerror_errno();
   }
+  return err;
+}
+
+qioerr chpl_fs_realpath(const char* path, const char **shortened) {
+  qioerr err = 0;
+  *shortened = realpath(path, NULL);
+  if (*shortened == NULL) {
+    // If an error occurred, shortened will be NULL.  Otherwise, it will
+    // contain the cleaned up path.
+    err = qio_mkerror_errno();
+  }
+  return err;
+}
+
+qioerr chpl_fs_realpath_file(qio_file_t* path, const char **shortened) {
+  char *unshortened = NULL;
+  qioerr err = 0;
+  err = qio_file_path(path, (const char **)&unshortened);
+  // qio already had a way to get the path from the qio_file_t, so use it.
+
+  // check the error status here.
+  if (err) {
+    return err;
+  }
+  err = chpl_fs_realpath(unshortened, shortened);
+  // Since what is returned from qio_file_path is not necessarily the realpath,
+  // call realpath on it before returning.
   return err;
 }
 
@@ -285,6 +368,10 @@ qioerr chpl_fs_symlink(const char* orig, const char* linkName) {
     err = qio_mkerror_errno();
   return err;
 
+}
+
+mode_t chpl_fs_umask(mode_t mask) {
+  return umask(mask);
 }
 
 /* Returns the current permissions on a file specified by name */

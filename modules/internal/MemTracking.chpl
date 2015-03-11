@@ -36,8 +36,8 @@ module MemTracking
     memLeaksLog: c_ptr(uint(8)) = nil;
 
   // Safely cast to size_t instances of memMax and memThreshold.
-  const cMemMax = safe_cast(size_t, memMax),
-    cMemThreshold = safe_cast(size_t, memThreshold);
+  const cMemMax = memMax.safeCast(size_t),
+    cMemThreshold = memThreshold.safeCast(size_t);
 
   // Globally accessible copy of the corresponding c_string consts
   //const s_memLog: string = memLog;

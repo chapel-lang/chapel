@@ -476,9 +476,17 @@ GenRet SymExpr::codegen() {
   } else {
 #ifdef HAVE_LLVM
     if(isVarSymbol(var)) {
-      ret = toVarSymbol(var)->codegen();
+      VarSymbol* varSym = toVarSymbol(var);
+      ret = varSym->codegen();
+      if( varSym->hasFlag(FLAG_CONST) ) {
+        ret.baseTypeConstant = 1;
+      }
     } else if(isArgSymbol(var)) {
-      ret = info->lvt->getValue(var->cname);
+      ArgSymbol* argSym = toArgSymbol(var);
+      ret = info->lvt->getValue(argSym->cname);
+      if( (argSym->intent & INTENT_FLAG_CONST) != 0 ) {
+        ret.baseTypeConstant = 1;
+      }
     } else if(isTypeSymbol(var)) {
       ret.type = toTypeSymbol(var)->codegen().type;
     } else if(isFnSymbol(var) ){
@@ -937,15 +945,14 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
 
 static
 llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
-                                Type* valType = NULL,
-                                bool isConst = false)
+                                Type* valType = NULL)
 {
   if( ptr.chplType && !valType ) {
     if( ptr.isLVPtr ) valType = ptr.chplType;
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, isConst);
+  return codegenLoadLLVM(ptr.val, valType, ptr.baseTypeConstant);
 }
 
 #endif

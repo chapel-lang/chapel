@@ -26,7 +26,7 @@
 #include "misc.h"
 #include "symbol.h"
 
-IpeScopeModule::IpeScopeModule(IpeModule* module) : IpeScope(gGlobalScope)
+IpeScopeModule::IpeScopeModule(IpeModule* module) : IpeScope(gRootScope)
 {
   mModule = module;
 }
