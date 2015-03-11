@@ -18,7 +18,6 @@
  */
 
 #include <fstream>
-#include <glob.h>
 #include <iostream>
 #include <iterator>
 #include <sstream>
@@ -270,31 +269,6 @@ std::string generateSphinxProject(std::string dirpath) {
 }
 
 
-/* Returns the first path found matching '$venvDir/lib/python*\/site-packages' */
-static const char* getPythonPath(const char* venvDir) {
-  glob_t globResult;
-  const char* globPattern = astr(venvDir, "/lib/python*/site-packages");
-  glob(globPattern, 0, NULL, &globResult);
-  const size_t count = globResult.gl_pathc;
-
-  // No results found. Return "".
-
-  // FIXME: This should report error (chpldoc is not properly built/installed),
-  //        and stop processing...
-  //        (thomasvandoren, 2015-03-10)
-  char* result;
-  if (count == 0) {
-    result = (char*)"";
-  // At least one result found, so return first.
-  } else {
-    result = new char[strlen(globResult.gl_pathv[0])];
-    strcpy(result, globResult.gl_pathv[0]);
-  }
-  globfree(&globResult);
-  return result;
-}
-
-
 /*
  * Invoke sphinx-build using sphinxDir to find conf.py and rst sources, and
  * outputDir for generated html files.
@@ -308,11 +282,9 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
     CHPL_TARGET_PLATFORM, "/chpldoc-virtualenv");
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
-  const char * pythonPath = getPythonPath(venvDir);
 
   const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && ",
-                              "export VIRTUAL_ENV=", venvDir, " && ",
-                              "export PYTHONPATH=", pythonPath);
+                              "export VIRTUAL_ENV=", venvDir);
 
   // Run:
   //   $envVars &&
