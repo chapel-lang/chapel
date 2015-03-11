@@ -1228,6 +1228,11 @@ for testname in testsrc:
                 # For tests with .doc.chpl suffix, use chpldoc compiler. Update
                 # the compopts accordingly. Add 'doc' prefix to existing compiler.
                 cmd = compiler + 'doc'
+
+                if which(cmd) is None:
+                    sys.stderr.write('[Warning: Skipping test; could not find chpldoc '
+                                     'at: {0}'.format(cmd))
+                    continue
             else:
                 cmd = compiler
 
