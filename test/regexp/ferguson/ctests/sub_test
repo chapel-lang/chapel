@@ -21,21 +21,21 @@ RE2_INSTALL_DIR=$($CHPL_HOME/util/config/compileline --libraries | \
 RE2INCLS=-I$RE2_INSTALL_DIR/include
 RE2LIB="-L$RE2_INSTALL_DIR/lib -Wl,-rpath,$RE2_INSTALL_DIR/lib -lre2"
 
-echo $DEFS | grep atomics/intrinsics
-if [ $? -eq 0 ]
-then
-  echo C tests will run using atomics/intrinsics
-else
-  echo Skipping C I/O tests without atomics/intrinsics
-  exit
-fi
-
 RE=`$CHPL_HOME/util/chplenv/chpl_regexp.py`
 if [ "$RE" = "re2" ]
 then
-  echo C tests will run using RE2
+  echo "[Working on $DIR with RE2]"
 else
-  echo Skipping C Regexp tests without RE2
+  echo "[Skipping directory $DIR without RE2]"
+  exit
+fi
+
+echo $DEFS | grep atomics/intrinsics
+if [ $? -eq 0 ]
+then
+  echo "[Working on $DIR with atomics/intrinsics]"
+else
+  echo "[Skipping directory $DIR without atomics/intrinsics]"
   exit
 fi
 
@@ -52,7 +52,7 @@ then
   CC=clang
   CXX=clang++
 else
-  echo Skipping C Regexp tests without gnu compilers
+  echo "[Skipping directory $DIR without gcc or clang]"
   exit
 fi
 
