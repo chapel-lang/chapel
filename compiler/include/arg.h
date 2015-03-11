@@ -83,6 +83,8 @@ void usage(const ArgumentState* arg_state,
 
 void init_args(ArgumentState* state, const char* argv0);
 
+void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc);
+
 void process_args(ArgumentState* state, int argc, char* argv[]);
 
 void free_args(ArgumentState* arg_state);

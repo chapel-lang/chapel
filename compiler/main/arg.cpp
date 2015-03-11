@@ -317,6 +317,15 @@ void init_args(ArgumentState* state, const char* argv0) {
   state->program_loc  = findProgramPath(argv0);
 }
 
+
+/*
+ * Initialize arg_desc member.
+ */
+
+void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc) {
+  state->desc = arg_desc;
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Process the argument descriptor                                             *
