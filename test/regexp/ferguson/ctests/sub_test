@@ -11,6 +11,7 @@ then
   export CHPL_HOME=$SAVE_HOME
 fi
 
+DIR=regexp/ferguson/ctests
 CC=gcc
 CXX=g++
 DEFS=`$CHPL_HOME/util/config/compileline --includes-and-defines`
@@ -68,38 +69,36 @@ DEPS="$OPTS -Wall -DCHPL_RT_UNIT_TEST $DEFS $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xs
 T1="$CXX $DEPS -g regexp_test.cc -o regexp_test"
 T2="$CXX $DEPS -g regexp_channel_test.cc -o regexp_channel_test"
 
-echo $T1
-echo $T2
 
-$T1 && $T2
-
-RETVAL=$?
-
-runtest() {
+dotest() {
   EXE=$1
-  DESC=$2
-  echo Running $EXE
-  `$CHPL_HOME/util/test/timedexec 500 $EXE > /dev/null`
+  COMPLINE=$2
+  echo "[Executing compiler $COMPLINE]"
+  $COMPLINE
   RETVAL=$?
   if [ $RETVAL -eq 0 ]
   then
-    echo "[Success matching C regexp test $EXE $DESC]"
-    rm $EXE
-  elif [ $RETVAL -eq 222 ]
-  then
-    echo "[Error Timed out executing regexp test $EXE $DESC]"
+    echo "[Success compiling $DIR/$EXE]"
+    echo "[Executing program ./$EXE]"
+    `$CHPL_HOME/util/test/timedexec 500 ./$EXE > /dev/null`
+    RETVAL=$?
+    if [ $RETVAL -eq 0 ]
+    then
+      echo "[Success matching program output for $DIR/$EXE]"
+
+      rm ./$EXE
+    elif [ $RETVAL -eq 222 ]
+    then
+      echo "[Error Timed out executing program $DIR/$EXE]"
+    else
+      echo "[Error matching program output for $DIR/$EXE]"
+    fi
   else
-    echo "[Error matching C regexp test $EXE $DESC]"
+    echo "[Error matching compiler output for $DIR/$EXE]"
   fi
 }
 
-if [ $RETVAL -eq 0 ]
-then
-  echo "[Success compiling C Regexp tests]"
 
-  runtest ./regexp_test "Regexp Test"
-  runtest ./regexp_channel_test "Regexp Channels Test"
-else
-  echo "[Error compiling C Regexp tests]"
-fi
+dotest regexp_test "$T1"
+dotest regexp_channel_test "$T2"
 
