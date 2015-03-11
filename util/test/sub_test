@@ -610,9 +610,8 @@ else:
 
 compoptssuffix = PerfSfx('compopts')  # .compopts or .perfcompopts or ...
 
-# If compiler is chpldoc, use .chpldocopts for "compopts".
-if is_chpldoc:
-    compoptssuffix = '.chpldocopts'
+# If compiler is chpldoc, use .chpldocopts for options.
+chpldocsuffix = '.chpldocopts'
 
 execenvsuffix  = PerfSfx('execenv')   # .execenv  or .perfexecenv  or ...
 execoptssuffix = PerfSfx('execopts')  # .execopts or .perfexecopts or ...
@@ -797,29 +796,30 @@ elif os.access('./COMPOPTS',os.R_OK):
 else:
     directoryCompopts = []
 
-if os.access('./CHPLDOCOPTS', os.R_OK):
-    dirChpldocOpts = shlex.split(ReadFileWithComments('./CHPLDOCOPTS')[0])
-else:
-    dirChpldocOpts = []
-
 envCompopts = os.getenv('COMPOPTS')
 if envCompopts is not None:
     envCompopts = shlex.split(envCompopts)
 else:
   envCompopts = []
 
+globalCompopts = directoryCompopts + envCompopts
+# sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
+
+# Global CHPLDOCOPTS
+if os.access('./CHPLDOCOPTS', os.R_OK):
+    dirChpldocOpts = shlex.split(ReadFileWithComments('./CHPLDOCOPTS')[0])
+else:
+    dirChpldocOpts = []
+
+# Env CHPLDOCOPTS
 envChpldocOpts = os.getenv('CHPLDOCOPTS')
 if envChpldocOpts is not None:
     envChpldocOpts = shlex.split(envChpldocOpts)
 else:
     envChpldocOpts = []
 
-# Use chpldoc options, if this is a chpldoc compiler. Otherwise, use the
-# regular compopts.
-globalCompopts = directoryCompopts + envCompopts
-if is_chpldoc:
-    globalCompopts = dirChpldocOpts + envChpldocOpts
-# sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
+# Global chpldoc options.
+globalChpldocOpts = dirChpldocOpts + envChpldocOpts
 
 #
 # Global PERFNUMTRIALS
@@ -911,6 +911,13 @@ for testname in testsrc:
       is_c_test = True
     else:
       is_c_test = False
+
+    # If the test name ends with .doc.chpl or the compiler was set to chpldoc
+    # (i.e. is_chpldoc=True), run this test with chpldoc options.
+    if testname.endswith('.doc.chpl') or is_chpldoc:
+        test_is_chpldoc = True
+    else:
+        test_is_chpldoc = False
 
     # Test specific settings
     catfiles = globalCatfiles
@@ -1106,7 +1113,14 @@ for testname in testsrc:
             numTrials = 1
 
     # Get list of test specific compiler options
-    if os.access(test_filename+compoptssuffix, os.R_OK):
+    chpldoc_opts_filename = test_filename + chpldocsuffix
+    if test_is_chpldoc and os.access(chpldoc_opts_filename, os.R_OK):
+        compoptslist = ReadFileWithComments(chpldoc_opts_filename, False)
+        if not compoptslist:
+            sys.stdout.write('[Warning: ignoring an empty chpldocopts file %s]\n' %
+                             (test_filename+compoptssuffix))
+            compoptslists = list(' ')
+    elif os.access(test_filename+compoptssuffix, os.R_OK):
         compoptslist = ReadFileWithComments(test_filename+compoptssuffix, False)
         if not compoptslist:
             # cf. for execoptslist no warning is issued
@@ -1190,9 +1204,11 @@ for testname in testsrc:
         # Build the test program
         #
         args = []
-        if not is_chpldoc:
-            args += ['-o', execname]
-        args += globalCompopts + shlex.split(compopts) + [testname]
+        if test_is_chpldoc:
+            args += globalChpldocOpts + shlex.split(compopts)
+        else:
+            args += ['-o', execname] + globalCompopts + shlex.split(compopts)
+        args += [testname]
 
         if is_c_test:
             # we need to drop envCompopts for C tests as those are options
@@ -1203,6 +1219,11 @@ for testname in testsrc:
             if valgrindcomp:
                 cmd = valgrindcomp
                 args = valgrindcompopts+[compiler]+args
+            elif test_is_chpldoc:
+                # For tests with .doc.chpl suffix, use chpldoc compiler. Update
+                # the compopts accordingly.
+                cmd = 'chpldoc'
+                
             else:
                 cmd = compiler
 
