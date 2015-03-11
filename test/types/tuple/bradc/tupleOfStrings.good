@@ -1,1 +1,5 @@
-tupleOfStrings.chpl:3: error: cannot iterate over values of type string
+a is: (b, s, m, d, s)
+a is: (r, t, a, a, a)
+a is: (a, e, r, v, m)
+a is: (d, v, y, i, u)
+tupleOfStrings.chpl:3: error: zippered iterations have non-equal lengths

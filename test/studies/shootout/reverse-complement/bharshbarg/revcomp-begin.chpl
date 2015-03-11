@@ -6,9 +6,7 @@ proc string.toBytes() {
    return b;
 }
 
-const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n";
-//const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".toBytes();
-
+const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".toBytes();
 var table : [1..128] uint(8);
 
 proc main(args: [] string) {
