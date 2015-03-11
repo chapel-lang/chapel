@@ -307,7 +307,6 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
     CHPL_TARGET_PLATFORM, "/chpldoc-virtualenv");
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
-
   const char * pythonPath = getPythonPath(venvDir);
 
   const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && ",
