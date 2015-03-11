@@ -1,4 +1,4 @@
-Module: chpldoc
+Module: chpldoc.doc
    proc commented(val: int): string
       
       Multiline comments found before a function are associated with that function
@@ -9,7 +9,7 @@ Module: chpldoc
       The function can be a stub and still output its comment
 
    proc uncommented()
-   Module: chpldoc.Defined
+   Module: chpldoc.doc.Defined
       
       If the source code defines a module, it can also have a comment associated
       with it
