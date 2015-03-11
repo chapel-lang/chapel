@@ -1,4 +1,4 @@
 var s = 987:string;
-writeln(s.substring(1));
-writeln(s.substring(2));
-writeln(s.substring(3));
+writeln(s[1]);
+writeln(s[2]);
+writeln(s[3]);

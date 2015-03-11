@@ -385,15 +385,14 @@ module String {
     }
   }
 
+  // We'd like this to be by ref, but doing so leads to an internal
+  // compiler error.  See
+  // $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
   pragma "donor fn"
   pragma "auto copy fn"
-    // We'd like this to be by ref, but doing so leads to an internal
-    // compiler error.  See
-    // $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
-    /*inline*/ proc chpl__autoCopy(/*ref*/ s: string) {
+  proc chpl__autoCopy(s: string) {
     if debugStrings then
       chpl_debug_string_print("in autoCopy()");
-
 
     pragma "no auto destroy"
     var ret: string;
@@ -424,7 +423,7 @@ module String {
    * used by initCopy().
    */
   pragma "init copy fn"
-  /*inline*/ proc chpl__initCopy(ref s: string) {
+  proc chpl__initCopy(ref s: string) {
     if debugStrings then
       chpl_debug_string_print("in initCopy()");
 
