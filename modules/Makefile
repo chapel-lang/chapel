@@ -58,7 +58,8 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 MODULES_TO_DOCUMENT = \
 	standard/Random.chpl \
 	standard/Buffers.chpl \
-	$(SYS_CTYPES_MODULE_DOC)
+	$(SYS_CTYPES_MODULE_DOC) \
+	standard/Sort.chpl
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
