@@ -1,0 +1,11 @@
+feature request/error message: recursive leader iterators
+
+This test mirrors functions/iterators/bradc/recursiveStandalone.chpl
+
+Text copied from recursiveStandalone.future, with leader replacing standalone:
+When writing a recursive leader iterator, we get a somewhat
+confusing error message pointing to an internal module.  This future
+can be perceived as a feature request to add support for recursive
+leader iterators, if possible.  Or, if not, as a request
+to improve the error message if there's a good reason that we can't
+support recursive leader iterators.
