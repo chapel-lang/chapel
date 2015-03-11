@@ -545,8 +545,8 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-                writeln("   level ", format("##", n), "   #boxes=",
-                        format("####", ncoeffs), "  norm=", format("%0.2e", truncate(sqrt(sum))));
+	        writef("   level ##   #boxes=####  norm=%0.2e\n",
+		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
         writeln("difference coefficients:");
@@ -557,8 +557,8 @@ class Function {
                 ncoeffs += 1;
             }
             if ncoeffs != 0 then
-                writeln("   level ", format("##", n), "   #boxes=",
-                        format("####", ncoeffs), "  norm=", format("%0.2e", truncate(sqrt(sum))));
+	        writef("   level ##   #boxes=####  norm=%0.2e\n",
+		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -573,12 +573,12 @@ class Function {
 	    // This truncation may lead to a loss of precision in the error calculation.
             // var (fval, Fval) = (truncate(f(i/npt:real)), truncate(this(i/npt:real)));
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
-            //writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.5e", Fval),
-            //        "  f_analytic()=", format("% 0.5e", fval), " err=", format("% 0.5e", Fval-fval),
-            //        if abs(Fval-fval) > thresh then "  > thresh" else "");
-            writeln(" -- ", format("%0.2f", i/npt:real), ":  F_numeric()=", format("% 0.8f", truncate(Fval)),
-                    "  f_analytic()=", format("% 0.8f", truncate(fval)), " err=", format("% 0.8f", truncate(Fval-fval)),
-                    if abs(Fval-fval) > thresh then "  > thresh" else "");
+	    // HEY mppf: Why doesn't this work:
+	    //            writef(" -- %.2r :  F_numeric()=%0.8r  f_analytic()=%0.8r err=%0.8r %s\n",
+            writef(" -- #.##:  F_numeric()= #.########  f_analytic()= #.######## err= #.########%s\n",
+		   i/npt:real, truncate(Fval), truncate(fval), 
+		   truncate(Fval-fval), 
+		   if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }
 }
