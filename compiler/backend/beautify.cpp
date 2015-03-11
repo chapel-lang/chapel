@@ -215,7 +215,13 @@ void beautify(fileinfo* origfile) {
         sscanf(cp, ZLINEINPUTFORMAT, &zline, zname);
         znptr = strrchr(zname,'/');
         if (znptr != NULL) {
-          strcpy(zname,znptr+1);
+          // This was
+          //strcpy(zname,znptr+1);
+          // but that lead to overlapping memcpy (reported by valgrind)
+          char *src = znptr+1;
+          char *dst = zname;
+          size_t len = strlen(src) + 1; // also copy null
+          memmove(dst, src, len);
         }
         continue;
       }
