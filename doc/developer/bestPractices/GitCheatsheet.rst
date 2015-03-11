@@ -476,5 +476,6 @@ Suppose you have figured out that a particular commit is causing a problem
 and you'd like to view the pull request discussion on GitHub. You can go
 to
   https://github.com/chapel-lang/chapel/commit/<commit-hash>
-and GitHub shows the pull request number at the bottom of the commit message.
+and GitHub shows the pull request number at the bottom of the commit message
+complete with a link to the pull request page.
 
