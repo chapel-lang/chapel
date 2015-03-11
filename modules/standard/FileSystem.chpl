@@ -652,7 +652,7 @@ proc remove(name: string) {
 /* Returns true if both pathnames refer to the same file or directory
    (utilizing operating system operations rather than string ones), returns
    false otherwise.
-   err: a syserr used to indicate if an error occurred during comparison
+   error: a syserr used to indicate if an error occurred during comparison
    file1, file2: string representations of paths to be compared.
 */
 proc sameFile(out error: syserr, file1: string, file2: string): bool {
@@ -671,7 +671,7 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
 proc sameFile(file1: string, file2: string): bool {
   var err:syserr = ENOERR;
   var result = sameFile(err, file1, file2);
-  if err != ENOERR then ioerror(err, "in sameFile " + file1, file2);
+  if err != ENOERR then ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
   return result;
 }
 
