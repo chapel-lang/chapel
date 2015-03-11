@@ -1224,11 +1224,10 @@ for testname in testsrc:
             if valgrindcomp:
                 cmd = valgrindcomp
                 args = valgrindcompopts+[compiler]+args
-            elif test_is_chpldoc:
+            elif test_is_chpldoc and not compiler.endswith('chpldoc'):
                 # For tests with .doc.chpl suffix, use chpldoc compiler. Update
-                # the compopts accordingly.
-                cmd = 'chpldoc'
-                
+                # the compopts accordingly. Add 'doc' prefix to existing compiler.
+                cmd = compiler + 'doc'
             else:
                 cmd = compiler
 
