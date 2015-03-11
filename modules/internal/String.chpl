@@ -90,8 +90,8 @@ module BaseStringType {
   }
 
   proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: int): bufferType {
-      const dest = chpl_mem_alloc(safe_cast(size_t, len+1), CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
-      chpl_string_comm_get(dest, src_loc_id, src_addr, safe_cast(size_t, len));
+      const dest = chpl_mem_alloc((len+1).safeCast(size_t), CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
+      chpl_string_comm_get(dest, src_loc_id, src_addr, len.safeCast(size_t));
       dest[len] = 0;
       return dest;
   }
@@ -184,12 +184,12 @@ module String {
             if this.owned && !this.isEmptyString() then
               on this do chpl_mem_free(this.buff);
             // allocate a new buffer
-            this.buff = chpl_mem_alloc(safe_cast(size_t, s_len+1),
+            this.buff = chpl_mem_alloc((s_len+1).safeCast(size_t),
                                        CHPL_RT_MD_STRING_COPY_DATA):bufferType;
             this.buff[s_len] = 0;
             this._size = s_len+1;
           }
-          memmove(this.buff, buf, safe_cast(size_t, s_len));
+          memmove(this.buff, buf, s_len.safeCast(size_t));
         } else {
           this.buff = buf;
           this._size = size;
@@ -245,12 +245,12 @@ module String {
 
       ret._size = min_alloc_size;
       ret.len = 1;
-      ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+      ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                                 CHPL_RT_MD_STRING_COPY_DATA): bufferType;
 
       var remoteThis = this.locale.id != chpl_nodeID;
       if remoteThis {
-        chpl_string_comm_get(ret.buff, this.locale.id, this.buff, safe_cast(size_t, this.len));
+        chpl_string_comm_get(ret.buff, this.locale.id, this.buff, this.len.safeCast(size_t));
       } else {
         ret.buff[0] = this.buff[i-1];
       }
@@ -284,7 +284,7 @@ module String {
         ret.len = r2.size:int;
       }
       ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
-      ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+      ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                                 CHPL_RT_MD_STRING_COPY_DATA): bufferType;
 
       var thisBuff: bufferType;
@@ -398,9 +398,9 @@ module String {
     var ret: string;
 
     if !s.isEmptyString() {
-      ret.buff = chpl_mem_alloc(safe_cast(size_t, s.len+1),
+      ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
                                 CHPL_RT_MD_STRING_COPY_DATA): bufferType;
-      memmove(ret.buff, s.buff, safe_cast(size_t, s.len));
+      memmove(ret.buff, s.buff, s.len.safeCast(size_t));
       ret.len = s.len;
       ret.owned = s.owned;
       ret._size = s.len+1;
@@ -433,9 +433,9 @@ module String {
       if s.locale.id == chpl_nodeID {
         if debugStrings then
           chpl_debug_string_print("  local initCopy");
-        ret.buff = chpl_mem_alloc(safe_cast(size_t, s.len+1),
+        ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
                                   CHPL_RT_MD_STRING_COPY_DATA): bufferType;
-        memmove(ret.buff, s.buff, safe_cast(size_t, s.len));
+        memmove(ret.buff, s.buff, s.len.safeCast(size_t));
         ret.buff[s.len] = 0;
       } else {
         if debugStrings then
@@ -523,24 +523,24 @@ module String {
     var ret: string;
     ret.len = s0len + s1len;
     ret._size = ret.len+1;
-    ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+    ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                               CHPL_RT_MD_STRING_COPY_DATA): bufferType;
 
     const hereId = chpl_nodeID;
     const s0remote = s0.locale.id != hereId;
     if s0remote {
       chpl_string_comm_get(ret.buff, s0.locale.id,
-                           s0.buff, safe_cast(size_t, s0len));
+                           s0.buff, s0len.safeCast(size_t));
     } else {
-      memmove(ret.buff, s0.buff, safe_cast(size_t, s0len));
+      memmove(ret.buff, s0.buff, s0len.safeCast(size_t));
     }
 
     const s1remote = s1.locale.id != hereId;
     if s1remote {
       chpl_string_comm_get(ret.buff+s0len, s1.locale.id,
-                           s1.buff, safe_cast(size_t, s1len));
+                           s1.buff, s1len.safeCast(size_t));
     } else {
-      memmove(ret.buff+s0len, s1.buff, safe_cast(size_t, s1len));
+      memmove(ret.buff+s0len, s1.buff, s1len.safeCast(size_t));
     }
     ret.buff[ret.len] = 0;
 
@@ -564,7 +564,7 @@ module String {
     var ret: string;
     ret.len = slen + cs.length;
     ret._size = ret.len+1;
-    ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+    ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                               CHPL_RT_MD_STRING_COPY_DATA): bufferType;
     const sremote = s.locale.id != hereId;
     var sbuff = if sremote
@@ -572,11 +572,11 @@ module String {
                   else s.buff;
 
     if stringFirst {
-      memmove(ret.buff, sbuff, safe_cast(size_t, slen));
-      memmove(ret.buff+slen, cs:bufferType, safe_cast(size_t, cs.length));
+      memmove(ret.buff, sbuff, slen.safeCast(size_t));
+      memmove(ret.buff+slen, cs:bufferType, cs.length.safeCast(size_t));
     } else {
-      memmove(ret.buff, cs:bufferType, safe_cast(size_t, cs.length));
-      memmove(ret.buff+cs.length, sbuff, safe_cast(size_t, slen));
+      memmove(ret.buff, cs:bufferType, cs.length.safeCast(size_t));
+      memmove(ret.buff+cs.length, sbuff, slen.safeCast(size_t));
     }
 
     ret.buff[ret.len] = 0;
