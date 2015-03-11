@@ -888,14 +888,15 @@ computeScopeToLastBBIDMap(FnSymbol* fn,
       // If blocks were properly nested, we would not have to do this, but since
       // the end of several blocks may lie between two adjacent statements, we
       // have to go up the chain and mark them all.
-      BlockStmt* block = toBlockStmt(expr);
-      while (block)
+      while ((expr = expr->parentExpr))
       {
-        if (! (block->blockTag & BLOCK_SCOPELESS))
-          scopeToLastBBIDMap[block] = i;
-        if (isRepeatedInLoop(block))
-          break;
-        block = toBlockStmt(expr->parentExpr);
+        if (BlockStmt* block = toBlockStmt(expr))
+        {
+          if (! (block->blockTag & BLOCK_SCOPELESS))
+            scopeToLastBBIDMap[block] = i;
+          if (isRepeatedInLoop(block))
+            break;
+        }
       }
     }
   }
