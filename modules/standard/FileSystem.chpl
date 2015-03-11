@@ -347,22 +347,18 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
       var srcName = realPath(src + "/" + dirname);
       oldMode = getMode(srcName);
       // Create the directory name by replacing src with dest in dirname
-      var destName = realPath(dest + "/" + dirname); // TODO: assumes no trailing "/" atm
+      var destName = realPath(dest) + "/" + dirname; // TODO: assumes no trailing "/" atm
       // Make the new directory with the name just created and the same
       // permissions
       writeln(destName);
 
       mkdir(error, destName, mode=oldMode);
-      writeln("2");
       if error != ENOERR then return;
-      writeln("3");
       // If an error occurred making this directory, exit immediately.
       for filename in listdir(path=srcName, dirs=false, files=true, listlinks=copySymbolically) {
-        writeln("4");
         // Copy the src directory's contents.
         var fileDestName = destName + "/" + filename;
         copy(error, filename, fileDestName, metadata=true);
-        writeln("5");
         if (error != ENOERR) then return;
         // If an error occurred copying this individual file, exit immmediately.
       }
