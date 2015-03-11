@@ -22,6 +22,7 @@
 
  */
 
+
 pragma "no doc"
 inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
   if eq {
@@ -32,6 +33,37 @@ inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
     else return a < b;
   }
 }
+
+
+/*
+   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm
+
+   :arg Data: The array to be sorted
+   :type Data: [] eltType
+   :arg doublecheck: Verify the array is correctly sorted before returning
+   :type doublecheck: bool
+   :arg reverse: Sort in reverse numerical order
+   :type reverse: bool
+
+ */
+proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  const lo = Dom.dim(1).low;
+  const hi = Dom.dim(1).high;
+  var swapped = true;
+
+  while (swapped) {
+    swapped = false;
+    for i in lo..hi-1 {
+      if !chpl_sort_cmp(Data(i), Data(i+1), reverse, true) {
+        Data(i) <=> Data(i+1);
+        swapped = true;
+      }
+    }
+  }
+
+  if (doublecheck) then VerifySort(Data, "BubbleSort", reverse);
+}
+
 
 /*
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
@@ -84,35 +116,6 @@ proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) wher
 
 
 /*
-   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm
-
-   :arg Data: The array to be sorted
-   :type Data: [] eltType
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: bool
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: bool
-
- */
-proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
-  var swapped = true;
-
-  while (swapped) {
-    swapped = false;
-    for i in lo..hi-1 {
-      if !chpl_sort_cmp(Data(i), Data(i+1), reverse, true) {
-        Data(i) <=> Data(i+1);
-        swapped = true;
-      }
-    }
-  }
-
-  if (doublecheck) then VerifySort(Data, "BubbleSort", reverse);
-}
-
-/*
    Sort the 1D array `Data` in-place using a sequential insertion sort algorithm
 
    :arg Data: The array to be sorted
@@ -145,6 +148,7 @@ proc InsertionSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false)
   if (doublecheck) then VerifySort(Data, "InsertionSort", reverse);
 }
 
+
 /*
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
@@ -162,6 +166,7 @@ proc MergeSort(Data: [?Dom], minlen=16, doublecheck=false, param reverse=false) 
   _MergeSort(Data, minlen, reverse=reverse);
   if (doublecheck) then VerifySort(Data, "MergeSort", reverse);
 }
+
 
 pragma "no doc"
 proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.rank == 1 {
@@ -182,6 +187,7 @@ proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.rank == 
 
   for (a, _a) in zip(Data[lo..hi], _MergeIterator(A1, A2, reverse=reverse)) do a = _a;
 }
+
 
 pragma "no doc"
 iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) {
@@ -207,6 +213,7 @@ iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) {
   if a1 < a1hi then for a in A1[a1..a1hi] do yield a;
   else if a2 < a2hi then for a in A2[a2..a2hi] do yield a;
 }
+
 
 /*
    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
@@ -288,6 +295,7 @@ proc SelectionSort(Data: [?Dom], doublecheck=false, param reverse=false) where D
   if (doublecheck) then VerifySort(Data, "SelectionSort", reverse);
 }
 
+
 /*
    Verify that the array `Data` is in sorted order and halt if any element is
    out of order.
@@ -335,4 +343,3 @@ iter sorted(x) {
   for i in y do
     yield i;
 }
-
