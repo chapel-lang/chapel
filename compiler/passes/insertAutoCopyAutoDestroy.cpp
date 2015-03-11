@@ -876,32 +876,27 @@ computeScopeToLastBBIDMap(FnSymbol* fn,
   BasicBlock::BasicBlockVector& bbs = *fn->basicBlocks;
   for (size_t i = 0; i < nbbs; ++i)
   {
-    // Get the last expression in the block.
+    // Walk the expressions in this block.
     std::vector<Expr*>& exprs = bbs[i]->exprs;
-    size_t nexprs = exprs.size();
-    if (nexprs == 0)
-      continue;
-    Expr* expr = exprs[nexprs - 1];
-
-    // Now, for each scope up the chain, mark that this basic block (i) is the
-    // last one in it.  In loops, the last block belonging to the outer scope
-    // cannot be one that is executed repeatedly.  Otherwise, variables
-    // belonging to an outer scope will be freed repeatedly, which is not what
-    // we want.
-    // If blocks were properly nested, we would not have to do this, but since
-    // the end of several blocks may lie between two adjacent statements, we
-    // have to go up the chain and mark them all.
-    while (expr)
+    for_vector(Expr, expr, exprs)
     {
+      // Now, for each scope up the chain, mark that this basic block (i) is the
+      // last one in it.  In loops, the last block belonging to the outer scope
+      // cannot be one that is executed repeatedly.  Otherwise, variables
+      // belonging to an outer scope will be freed repeatedly, which is not what
+      // we want.
+      // If blocks were properly nested, we would not have to do this, but since
+      // the end of several blocks may lie between two adjacent statements, we
+      // have to go up the chain and mark them all.
       BlockStmt* block = toBlockStmt(expr);
-      if (block)
+      while (block)
       {
         if (! (block->blockTag & BLOCK_SCOPELESS))
           scopeToLastBBIDMap[block] = i;
         if (isRepeatedInLoop(block))
           break;
+        block = toBlockStmt(expr->parentExpr);
       }
-      expr = expr->parentExpr;
     }
   }
 }
