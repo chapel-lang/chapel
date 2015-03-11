@@ -36,6 +36,7 @@ $(LLVM_FILE):
 	--prefix=$(LLVM_INSTALL_DIR) \
 	--enable-optimized --disable-clang-arcmt --disable-clang-static-analyzer \
 	--disable-clang-rewriter --disable-docs \
+	--disable-zlib \
 	--enable-targets=host,x86,x86_64 $(CHPL_LLVM_DEBUG)
 	cd $(LLVM_BUILD_DIR) && $(MAKE)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) install
