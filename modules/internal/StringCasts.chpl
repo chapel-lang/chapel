@@ -201,8 +201,7 @@ module StringCasts {
   //
   // enumerated
   //
-  // TODO: do we support string->enum?
-  inline proc _cast(type t, x:enumerated) where t == string {
+  proc _cast(type t, x:enumerated) where t == string {
     extern proc strlen(const str: c_string) : size_t;
 
     // Use the compiler-generated enum to c_string conversion.
@@ -215,6 +214,8 @@ module StringCasts {
 
     return ret;
   }
+
+
 
   //
   // Badness
