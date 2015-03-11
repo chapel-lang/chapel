@@ -287,7 +287,8 @@ static const char* getPythonPath(const char* venvDir) {
     result = (char*)"";
   // At least one result found, so return first.
   } else {
-    result = globResult.gl_pathv[0];
+    result = new char[strlen(globResult.gl_pathv[0])];
+    strcpy(result, globResult.gl_pathv[0]);
   }
   globfree(&globResult);
   return result;
