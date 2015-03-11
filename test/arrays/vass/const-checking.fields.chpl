@@ -5,11 +5,23 @@ var ARR: [1..2] int;
 record REC {
   var   arvar: [1..2] int;
   const arcst: [1..2] int;
+  proc REC() {
+    arvar = ARR;
+    arcst = ARR;
+    arvar[1] = 1111;
+    arcst[2] = 1111;
+  }
 }
 
 class CLSS {
   var   cvar: [1..2] int;
   const ccst: [1..2] int;
+  proc CLSS() {
+    cvar = ARR;
+    ccst = ARR;
+    cvar[1] = 1111;
+    ccst[2] = 1111;
+  }
 }
 
 var cvar = new CLSS();

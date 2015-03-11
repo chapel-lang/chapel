@@ -1078,7 +1078,10 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
         se->var->isParameter())
       if (okToConvertFormalToRefType(formal->type) ||
           // If the user says 'const', it means 'const'.
-          (se->var->hasFlag(FLAG_CONST) && !se->var->hasFlag(FLAG_TEMP)))
+          // Honor FLAG_CONST if it is a coerce temp, too.
+          (se->var->hasFlag(FLAG_CONST) &&
+           (!se->var->hasFlag(FLAG_TEMP) || se->var->hasFlag(FLAG_COERCE_TEMP))
+         ))
         return false;
   // Perhaps more checks are needed.
   return true;
@@ -2829,9 +2832,38 @@ makeNoop(CallExpr* call) {
   call->primitive = primitives[PRIM_NOOP];
 }
 
+// Is 'call' in a constructor or in initialize()?
+// This includes being in a task function invoked from the above.
+static bool isConstructorLikeFunction(Symbol* fun) {
+  return fun->hasFlag(FLAG_CONSTRUCTOR) || !strcmp(fun->name, "initialize");
+}
 static bool isInConstructorLikeFunction(CallExpr* call) {
-  return call->parentSymbol->hasFlag(FLAG_CONSTRUCTOR) ||
-         !strcmp(call->parentSymbol->name, "initialize");
+  Symbol* parent = call->parentSymbol;
+  if (isConstructorLikeFunction(parent))
+    return true;
+
+  if (FnSymbol* parentFn = toFnSymbol(parent)) {
+    if (isTaskFun(parentFn)) {
+      int stackN = callStack.n-1;
+      CallExpr* stackTop = callStack.v[stackN];
+      INT_ASSERT(stackN >= 1);
+      INT_ASSERT(stackTop == call || stackTop == call->parentExpr);
+
+      do {
+        stackN--;
+        call = callStack.v[stackN];
+        parent = call->parentSymbol;
+        if (isConstructorLikeFunction(parent))
+          return true;
+        parentFn = toFnSymbol(parent);
+        if (!parentFn || !isTaskFun(parentFn))
+          return false;
+      } while (stackN > 0);
+
+      INT_ASSERT(stackN > 0); // sanity: a task function can't be at stack top
+    }
+  }
+  return false;
 }
 
 // The function call->parentSymbol is invoked from a constructor
@@ -2923,6 +2955,7 @@ static void setFlagsAndCheckForConstAccess(Symbol* dest,
         aliaseeSE->var->hasFlag(FLAG_CONST))
       USR_FATAL_CONT(call, "creating a non-const alias '%s' of a const array or domain", dest->name);
   }
+
   // Do not consider it const if it is an access to 'this'
   // in a constructor. Todo: will need to reconcile with UMM.
   if (baseSym) {
@@ -2939,8 +2972,13 @@ static void setFlagsAndCheckForConstAccess(Symbol* dest,
       dest->addFlag(FLAG_REF_TO_CONST);
     else
       dest->addFlag(FLAG_CONST);
+
     if (baseSym && baseSym->hasFlag(FLAG_ARG_THIS))
       // 'call' can be a field accessor or an array element accessor or ?
+      dest->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
+
+    // Propagate this flag.  btw (recConst && constWCT) ==> (baseSym != NULL)
+    if (constWCT && baseSym->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
       dest->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
   }
 }

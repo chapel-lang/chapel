@@ -1,1 +1,0 @@
-bug: array fields of records and classes are not checked for constness
