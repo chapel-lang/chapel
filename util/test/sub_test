@@ -948,7 +948,12 @@ for testname in testsrc:
     else:
         timer = None
     futuretest=''
-    executebin=execute
+
+    if test_is_chpldoc:
+        executebin = False
+    else:
+        executebin = execute
+
     testfuturesfile=False
     testskipiffile=False
     noexecfile=False
