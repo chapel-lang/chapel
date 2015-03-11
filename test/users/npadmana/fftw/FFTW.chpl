@@ -31,7 +31,8 @@
 
 // TODOs for Brad (in priority order):
 //
-// - How can we get away from fftw_complex and use Chapel's complex?
+// - Can we get a form of use/requires in that will simplify the
+//   command-line?
 //
 // - How do we feel about FFTW_ALLCAPS names given that the routines
 //   themselves don't have fftw_ prefixes, that they're defined as
@@ -82,23 +83,6 @@ module FFTW {
   extern const FFTW_UNALIGNED : c_uint;
 
 
-  // Define types
-  // NOTE : Ideally, this should be mapped to complex(128), but I seem
-  // to run into casting issues in the C code. This is a simple
-  // workaround for now - although ugly.  Also note that if one used
-  // complex types, then one would need to include complex.h at the
-  // command line.
-  //
-  // TODO: What would it take to change these to complex rather than
-  // fftw_complex?
-  //
-  /*
-    At present, to send complex arrays to FFTW routines, they must be
-    declared to be of type fftw_complex.  We anticipate adding support
-    for using native Chapel complex types over time.
-  */
-  extern type fftw_complex = 2*real(64); // 4.1.1
-
   /*
     'fftw_plan' is an opaque type used by FFTW for storing and passing
     plans between routines.
@@ -143,10 +127,10 @@ module FFTW {
     Creates a plan for a complex->complex DFT.
 
     :arg input: The input array, which can be of any rank
-    :type input: [] :type:`fftw_complex`
+    :type input: [] `complex(128)`
 
     :arg output: The output array, with rank matching the input array's
-    :type output: [] :type:`fftw_complex`
+    :type output: [] `complex(128)`
     
     :arg sign: The sign of the exponent in the DFT formula.
     :type sign: c_int
@@ -156,7 +140,7 @@ module FFTW {
 
     :returns: The fftw_plan representing the plan
   */
-  proc plan_dft(input: [] fftw_complex, output: [] fftw_complex, 
+  proc plan_dft(input: [] complex(128), output: [] complex(128), 
                  sign: c_int, flags: c_uint) : fftw_plan
   {
     param rank = input.rank;
@@ -176,33 +160,33 @@ module FFTW {
   // TODO : This should be cleaned up further and made consistent across the file
 
   // Out-of-place routines
-  proc plan_dft_r2c(in1 : [] real(64), out1 : [] fftw_complex, flags :c_uint) : fftw_plan
+  proc plan_dft_r2c(input : [] real(64), output : [] complex(128), flags :c_uint) : fftw_plan
   {
-    param rank = in1.rank: c_int;
+    param rank = input.rank: c_int;
 
     var dims: rank*c_int;
     for param i in 1..rank do
-      dims(i) = in1.domain.dim(i).size: c_int;
+      dims(i) = input.domain.dim(i).size: c_int;
 
-    return C_FFTW.fftw_plan_dft_r2c(rank, dims, in1, out1, flags);
+    return C_FFTW.fftw_plan_dft_r2c(rank, dims, input, output, flags);
   }
 
 
-  proc plan_dft_c2r(in1 : [] fftw_complex, out1 : [] real(64),  flags :c_uint) : fftw_plan
+  proc plan_dft_c2r(input : [] complex(128), output : [] real(64),  flags :c_uint) : fftw_plan
   {
-    param rank = out1.rank: c_int; // The dimensions are that of the real array
+    param rank = output.rank: c_int; // The dimensions are that of the real array
 
     var dims: rank*c_int;
     for param i in 1..rank do
-      dims(i) = out1.domain.dim(i).size: c_int;
+      dims(i) = output.domain.dim(i).size: c_int;
 
-    return C_FFTW.fftw_plan_dft_c2r(rank, dims, in1, out1, flags);
+    return C_FFTW.fftw_plan_dft_c2r(rank, dims, input, output, flags);
   }
 
   // In-place routines, note that these take in the true leading dimension
   // TODO : We should put in checks to see that the sizes are consistent
   // TODO : We should check on types...
-  proc plan_dft_r2c(realDom : domain, in1 : [] ?t, flags : c_uint) : fftw_plan 
+  proc plan_dft_r2c(realDom : domain, input : [] ?t, flags : c_uint) : fftw_plan 
   {
     param rank = realDom.rank: c_int;
 
@@ -210,9 +194,9 @@ module FFTW {
     for param i in 1..rank do
       dims(i) = realDom.dim(i).size: c_int;
 
-    return C_FFTW.fftw_plan_dft_r2c(rank, dims, in1, in1, flags);
+    return C_FFTW.fftw_plan_dft_r2c(rank, dims, input, input, flags);
   }
-  proc plan_dft_c2r(realDom : domain, in1: [] ?t, flags : c_uint) : fftw_plan 
+  proc plan_dft_c2r(realDom : domain, input: [] ?t, flags : c_uint) : fftw_plan 
   {
     param rank = realDom.rank: c_int;
 
@@ -220,7 +204,7 @@ module FFTW {
     for param i in 1..rank do
       dims(i) = realDom.dim(i).size: c_int;
 
-    return C_FFTW.fftw_plan_dft_c2r(rank, dims, in1, in1, flags);
+    return C_FFTW.fftw_plan_dft_c2r(rank, dims, input, input, flags);
   }
 
 
@@ -262,94 +246,36 @@ module FFTW {
   }
 
 
-  // Utilities -- not in FFTW
-  /*
-    Computes an absolute value on an :type:`fftw_complex` value.  This will
-    be deprecated once we can replace :type:`fftw_complex` with Chapel's
-    native complex type.
-    
-    :arg val: the input value
-    :type val: :type:`fftw_complex`
-  */
-  proc abs(val: fftw_complex) : real(64) {
-    const (r,c) = val;
-    return sqrt(r*r + c*c);
-  }
-
-  /*
-    Returns the real component of an :type:`fftw_complex` value.  This will be
-    deprecated once we can replace :type:`fftw_complex` with Chapel's native
-    complex type.
-    
-    :arg val: the input value
-    :type val: :type:`fftw_complex`
-
-    :returns: the real component of value as a `real(64)`
-  */
-  proc re(val: fftw_complex) : real(64) {
-    return val(1);
-  }
-
-  //
-  // TODO: Is there a world in which returning this as imaginary would
-  // be preferable?
-  //
-
-  /*
-    Returns the imaginary component of an :type:`fftw_complex` value.  This
-    will be deprecated once we can replace :type:`fftw_complex` with Chapel's
-    native complex type.
-    
-    :arg val: the input value
-    :type val: :type:`fftw_complex`
-
-    :returns: the imaginary component of value as a `real(64)`
-  */
-  proc im(val: fftw_complex) : real(64) {
-    return val(2);
-  }
-
   pragma "no doc"
   module C_FFTW {
-    // CHPLDOC FIXME: I don't believe the following routines should
-    // need to get labeled as "no doc" routines...
-  pragma "no doc"
     extern proc fftw_plan_dft(rank: c_int, 
-        n,  // BLC: having trouble being specific
-        in1: [] fftw_complex, 
-        out1: [] fftw_complex, 
-        sign : c_int, c_flags : c_uint) : fftw_plan;
+                              n,  // BLC: having trouble being specific
+                              in1: [] complex(128), 
+                              out1: [] complex(128), 
+                              sign : c_int, c_flags : c_uint) : fftw_plan;
 
-  pragma "no doc"
-  extern proc fftw_plan_dft_r2c(rank: c_int, 
-      n,  // BLC: having trouble being specific
-      in1: [],
-      out1: [], 
-      c_flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_r2c(rank: c_int, 
+                                  n,  // BLC: having trouble being specific
+                                  in1: [],
+                                  out1: [], 
+                                  c_flags : c_uint) : fftw_plan;
 
-  pragma "no doc"
-  extern proc fftw_plan_dft_c2r(rank: c_int, 
-      n,  // BLC: having trouble being specific
-      in1: [],
-      out1: [],
-      c_flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_c2r(rank: c_int, 
+                                  n,  // BLC: having trouble being specific
+                                  in1: [],
+                                  out1: [],
+                                  c_flags : c_uint) : fftw_plan;
 
-  pragma "no doc"
     extern proc fftw_execute(const plan : fftw_plan);
-
-  pragma "no doc"
+    
     extern proc fftw_destroy_plan(plan : fftw_plan);
-
-  pragma "no doc"
+    
     extern proc fftw_cleanup();
-
-  pragma "no doc"
+    
     extern proc fftw_init_threads() : c_int;
-
-  pragma "no doc"
+    
     extern proc fftw_cleanup_threads();
-
-  pragma "no doc"
+    
     extern proc fftw_plan_with_nthreads(n : c_int);
   }
 }
