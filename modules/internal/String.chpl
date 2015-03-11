@@ -616,10 +616,16 @@ module String {
   // TODO: all relational ops other than == and != are broken for unicode
   // TODO: It may be faster to work on a.locale or b.locale if a or b is large
   //
+  // For the purposes of comparison, a shorter string compares less than a
+  // longer string: "101" < "1010".
+  //
+
+  // This is an internal support routine.
+  // As an optimization, it is assumed that the operands have equal length.
   inline proc _strcmp(a: string, b:string) : int {
-    // Assumes a and b are on same locale and not empty
+    // Assumes a and b are on same locale and equal length and not empty.
     var idx: int = 0;
-    while (idx < a.len) && (idx < b.len) {
+    while (idx < a.len) {
       if a.buff[idx] != b.buff[idx] then return a.buff[idx]:int - b.buff[idx];
       idx += 1;
     }
@@ -666,7 +672,8 @@ module String {
 
   inline proc <(a: string, b: string) : bool {
     inline proc doLt(a: string, b:string) {
-      if b.len == 0 then return false;
+      if a.len < b.len then return true;
+      if a.len > b.len then return false;
       if a.len == 0 then return true;
       return _strcmp(a, b) < 0;
     }
@@ -697,8 +704,9 @@ module String {
 
   inline proc >(a: string, b: string) : bool {
     inline proc doGt(a: string, b:string) {
-      if a.len == 0 then return false;
-      if b.len == 0 then return true;
+      if a.len < b.len then return false; // a is shorter so a < b.
+      if a.len > b.len then return true; // a is longer so a > b.
+      if a.len == 0 then return false; // Both empty strings so ==, so not >.
       return _strcmp(a, b) > 0;
     }
     if a.locale.id == b.locale.id {
