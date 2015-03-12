@@ -303,3 +303,13 @@ iter findfiles(startdir = ".", recursive=false, hidden=false) {
     for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
+
+iter findfiles(startdir = ".", recursive=false, hidden=false, param tag: iterKind) where tag == iterKind.standalone {
+  if (recursive) then
+    forall subdir in walkdirs(startdir, hidden=hidden) do
+      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
