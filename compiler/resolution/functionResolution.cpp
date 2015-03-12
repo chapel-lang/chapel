@@ -2832,50 +2832,52 @@ makeNoop(CallExpr* call) {
   call->primitive = primitives[PRIM_NOOP];
 }
 
-// Is 'call' in a constructor or in initialize()?
-// This includes being in a task function invoked from the above.
-static bool isConstructorLikeFunction(Symbol* fun) {
-  return fun->hasFlag(FLAG_CONSTRUCTOR) || !strcmp(fun->name, "initialize");
-}
-static bool isInConstructorLikeFunction(CallExpr* call) {
-  Symbol* parent = call->parentSymbol;
-  if (isConstructorLikeFunction(parent))
-    return true;
+static void findNonTaskFnParent(CallExpr* call,
+                                FnSymbol*& parent, int& stackIdx) {
+  // We assume that 'call' is at the top of the call stack.
+  INT_ASSERT(callStack.n >= 1);
+  INT_ASSERT(callStack.v[callStack.n-1] == call ||
+             callStack.v[callStack.n-1] == call->parentExpr);
 
-  if (FnSymbol* parentFn = toFnSymbol(parent)) {
-    if (isTaskFun(parentFn)) {
-      int stackN = callStack.n-1;
-      CallExpr* stackTop = callStack.v[stackN];
-      INT_ASSERT(stackN >= 1);
-      INT_ASSERT(stackTop == call || stackTop == call->parentExpr);
-
-      do {
-        stackN--;
-        call = callStack.v[stackN];
-        parent = call->parentSymbol;
-        if (isConstructorLikeFunction(parent))
-          return true;
-        parentFn = toFnSymbol(parent);
-        if (!parentFn || !isTaskFun(parentFn))
-          return false;
-      } while (stackN > 0);
-
-      INT_ASSERT(stackN > 0); // sanity: a task function can't be at stack top
+  int ix;
+  for (ix = callStack.n-1; ix >= 0; ix--) {
+    CallExpr* curr = callStack.v[ix];
+    Symbol* parentSym = curr->parentSymbol;
+    FnSymbol* parentFn = toFnSymbol(parentSym);
+    if (!parentFn)
+      break;
+    if (!isTaskFun(parentFn)) {
+      stackIdx = ix;
+      parent = parentFn;
+      return;
     }
   }
-  return false;
+  // backup plan
+  parent = toFnSymbol(call->parentSymbol);
+  stackIdx = -1;
 }
 
-// The function call->parentSymbol is invoked from a constructor
+static bool isConstructorLikeFunction(FnSymbol* fn) {
+  return fn->hasFlag(FLAG_CONSTRUCTOR) || !strcmp(fn->name, "initialize");
+}
+
+// Is 'call' in a constructor or in initialize()?
+// This includes being in a task function invoked from the above.
+static bool isInConstructorLikeFunction(CallExpr* call) {
+  FnSymbol* parent;
+  int stackIdx;
+  findNonTaskFnParent(call, parent, stackIdx); // sets the args
+  return parent && isConstructorLikeFunction(parent);
+}
+
+// Is the function of interest invoked from a constructor
 // or initialize(), with the constructor's or intialize's 'this'
 // as the receiver actual.
-static bool isInvokedFromConstructorLikeFunction(CallExpr* call1) {
-  // We assume that 'call' is at the top of the call stack.
-  INT_ASSERT(callStack.n >= 1 && call1 == callStack.v[callStack.n-1]);
-  if (callStack.n >= 2) {
-    CallExpr* call2 = callStack.v[callStack.n-2];
-    INT_ASSERT(call2->isResolved() == call1->parentSymbol); // sanity
-    if (isInConstructorLikeFunction(call2))
+static bool isInvokedFromConstructorLikeFunction(int stackIdx) {
+  if (stackIdx > 0) {
+    CallExpr* call2 = callStack.v[stackIdx - 1];
+    if (FnSymbol* parent2 = toFnSymbol(call2->parentSymbol))
+     if (isConstructorLikeFunction(parent2))
       if (call2->numActuals() >= 2)
         if (SymExpr* thisArg2 = toSymExpr(call2->get(2)))
           if (thisArg2->var->hasFlag(FLAG_ARG_THIS))
@@ -2888,14 +2890,19 @@ static bool isInvokedFromConstructorLikeFunction(CallExpr* call1) {
 // and the call is in a function invoked directly from this's constructor.
 // In such case, fields of 'this' are not considered 'const',
 // so we remove the const-ness flag.
-static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual) {
+static bool checkAndUpdateIfLegalFieldOfThis(CallExpr* call, Expr* actual,
+                                             FnSymbol*& nonTaskFnParent) {
+  int stackIdx;
+  findNonTaskFnParent(call, nonTaskFnParent, stackIdx); // sets the args
+
   if (SymExpr* se = toSymExpr(actual))
     if (se->var->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
-      if (isInvokedFromConstructorLikeFunction(call)) {
+      if (isInvokedFromConstructorLikeFunction(stackIdx)) {
           // Yes, this is the case we are looking for.
           se->var->removeFlag(FLAG_REF_TO_CONST);
           return true;
       }
+
   return false;
 }
 
@@ -3280,8 +3287,10 @@ void resolveNormalCall(CallExpr* call) {
 
   if (resolvedFn->hasFlag(FLAG_MODIFIES_CONST_FIELDS))
     // Not allowed if it is not called directly from a constructor.
-    if (!isInConstructorLikeFunction(call))
-      USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor", resolvedFn->name);
+    if (!isInConstructorLikeFunction(call) ||
+        !getBaseSymForConstCheck(call)->hasFlag(FLAG_ARG_THIS)
+        )
+      USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed", resolvedFn->name);
 
   lvalueCheck(call);
   checkForStoringIntoTuple(call, resolvedFn);
@@ -3331,12 +3340,16 @@ static void lvalueCheck(CallExpr* call)
       INT_ASSERT(false);
       break;
     }
-    if (errorMsg && checkAndUpdateIfLegalFieldOfThis(call, actual)) {
+    FnSymbol* nonTaskFnParent = NULL;
+    if (errorMsg &&
+        // sets nonTaskFnParent
+        checkAndUpdateIfLegalFieldOfThis(call, actual, nonTaskFnParent)
+    ) {
       errorMsg = false;
-      call->parentSymbol->addFlag(FLAG_MODIFIES_CONST_FIELDS);
+      nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
     }
     if (errorMsg) {
-      if (call->parentSymbol->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
+      if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS))
         // we are asked to ignore errors here
         return;
       FnSymbol* calleeFn = call->isResolved();
