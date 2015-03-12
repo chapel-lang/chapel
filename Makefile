@@ -68,28 +68,39 @@ modules: FORCE
 
 runtime: FORCE
 	cd runtime && $(MAKE)
-
-llvm-runtime-if-needed: FORCE
 	-@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
 	echo "Building runtime for chpl --llvm"; \
 	export CHPL_TARGET_COMPILER=clang-included && \
-	$(MAKE) third-party-try-opt && \
-	$(MAKE) runtime ; \
+	cd runtime && $(MAKE) \
 	fi
+
+llvm-runtime-if-needed: FORCE
+
 
 third-party: FORCE
 	cd third-party && $(MAKE)
 
 third-party-try-opt: third-party-try-re2 third-party-try-gmp
+	
 
 third-party-try-re2: FORCE
 	-@if [ -z "$$CHPL_REGEXP" ]; then \
 	cd third-party && $(MAKE) try-re2; \
+	-@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
+	echo "Building runtime for chpl --llvm"; \
+	export CHPL_TARGET_COMPILER=clang-included && \
+	$(MAKE) third-party-try-re2 && \
+	fi \
 	fi
 
 third-party-try-gmp: FORCE
 	-@if [ -z "$$CHPL_GMP" ]; then \
 	cd third-party && $(MAKE) try-gmp; \
+	-@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
+	echo "Building runtime for chpl --llvm"; \
+	export CHPL_TARGET_COMPILER=clang-included && \
+	$(MAKE) third-party&& $(MAKE) try-gmp \
+	fi \
 	fi
 
 third-party-chpldoc-venv: FORCE
