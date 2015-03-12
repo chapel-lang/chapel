@@ -66,6 +66,7 @@ memleaks.graph
 studies/jacobi/jacobi.graph
 performance/elliot/no-op.graph
 performance/bharshbarg/forall-dom-range.graph
+performance/bharshbarg/arr-forall.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
