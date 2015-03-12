@@ -141,7 +141,11 @@ proc runtest(param ndim : int, fn : string) {
       * Cleanup plans
   */
 
-  /* Complex <-> complex 
+  /* Complex <-> complex out-of-place transform.
+     
+     Unlike the basic FFTW interface, we do not have specific 1,2,3d planner routines. 
+     For the complex <-> complex case, the dimensions of the array are inferred automatically.
+
   */
 	var fwd = plan_dft(A, B, FFTW_FORWARD, FFTW_ESTIMATE);
 	var rev = plan_dft(B, A, FFTW_BACKWARD, FFTW_ESTIMATE);
@@ -155,7 +159,10 @@ proc runtest(param ndim : int, fn : string) {
 	destroy_plan(fwd);
 	destroy_plan(rev);
 
-	// Test in-place transforms
+  /* Complex <-> complex in-place transform. 
+
+     This is the same calling sequence as above, with the input/output arrays the same.
+  */
 	fwd = plan_dft(A, A, FFTW_FORWARD, FFTW_ESTIMATE);
 	rev = plan_dft(A, A, FFTW_BACKWARD, FFTW_ESTIMATE);
 	A = goodA;
@@ -169,7 +176,13 @@ proc runtest(param ndim : int, fn : string) {
 	destroy_plan(fwd);
 	destroy_plan(rev);
 
-  // Testing r2c and c2r
+  /* Real <-> complex out-of-place transform 
+
+     As with FFTW, these use an r2c and c2r suffix to define the direction of the transform.
+
+     plan_dft_r2c/plan_dft_c2r are overloaded; for the out-of-place transforms, they infer the
+     dimensions from the sizes of the arrays passed in.
+  */
   var rA : [D] real(64); // No padding for an out-of place transform
   var cB : [cD] complex;
   fwd = plan_dft_r2c(rA,cB,FFTW_ESTIMATE);
@@ -182,13 +195,26 @@ proc runtest(param ndim : int, fn : string) {
   printcmp(rA[D],goodA.re);
   destroy_plan(fwd);
   destroy_plan(rev);
-  // In place transform
+
+  /* Real <-> complex in-place transform 
+
+     In this case, the first argument to the planning routines is the domain of the *real*
+     array WITHOUT padding (in both r2c and c2r cases). This breaks the ambiguity of whether the leading 
+     dimension of the real array is even or odd. 
+
+     This design decision was motivated by the fact that the user has likely already defined a
+     domain to extract the unpadded real array from the fully padded array (or that such a domain 
+     is intrinsically useful).
+
+     For both the r2c and c2r transforms, a real array is passed in.
+
+  */
   var rA2 : [rD] real(64);
   fwd = plan_dft_r2c(D,rA2,FFTW_ESTIMATE);
   rev = plan_dft_c2r(D,rA2,FFTW_ESTIMATE);
   rA2[D] = goodA.re;
   execute(fwd);
-  printcmp(rA2[reD],goodB[cD].re);
+  printcmp(rA2[reD],goodB[cD].re); // Check the real and complex parts separately.
   printcmp(rA2[imD],goodB[cD].im);
   execute(rev);
   rA2 /= norm;
@@ -198,7 +224,7 @@ proc runtest(param ndim : int, fn : string) {
 
 }
 
-
+// A helper function that calls all the tests.
 proc testAllDims() {
   writeln("1D");
   runtest(1, "arr1d.dat");
@@ -208,6 +234,7 @@ proc testAllDims() {
   runtest(3, "arr3d.dat");
 }
 
+// Do the tests and then cleanup.
 proc main() {
   testAllDims();
   cleanup();
