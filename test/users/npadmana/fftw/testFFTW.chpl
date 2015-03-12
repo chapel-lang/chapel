@@ -1,13 +1,32 @@
+/* 
+Example usage of the FFTW module in Chapel. This particular file demonstrates the single-threaded version of
+the code.
+
+To compile this code :
+   chpl testFFTW.chpl
+If FFTW is not on your include/library paths, you can do 
+   chpl testFFTW.chpl -I$FFTW_DIR/include -L$FFTW_DIR/lib
+where $FFTW_DIR points to your FFTW installation.
+
+Note that you do not need to explicitly include the header or library files; the module uses an experimental
+feature of the Chapel compiler to automatically include these.
+
+The FFTW module uses the FFTW3 API, and currently just implements the basic interface.
+We will assume that the reader is familiar with using FFTW; more 
+details are at http://www.fftw.org. 
+
+The code computes a series of 1,2 and 3D transforms, exercising the complex <-> complex, and real<->complex
+transforms (both in and out of place). The output of the code should be a series of small numbers ( <= 10^-13);
+see testFFTW.good for example values (it is possible that your values might differ). 
+
+The data for these tests is in arr{1,2,3}d.dat.
+*/
 use FFTW;
 
-
+/* Utility function to print the maximum absolute deviation between values computed by this code, 
+   and "truth". The true values are computed using Mathematica v10 */
 proc printcmp(x, y) {
   var err = max reduce abs(x-y);
-  //writeln("----");
-  //writeln(x);
-  //writeln("**");
-  //writeln(y);
-  //writeln("----");
   writeln(err);
 }
 
