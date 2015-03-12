@@ -153,8 +153,6 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
 }
 
 
-var chpl_first_walkdirs_sorted_warning = false;
-
 //
 // Here's a parallel version
 //
@@ -162,26 +160,20 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
               followlinks=false, sort=false, param tag: iterKind): string 
        where tag == iterKind.standalone {
 
-  compilerWarning("Parallel invocations of walkdirs() will only parallelize the first-level directories at present");
-  if (sort && chpl_first_walkdirs_sorted_warning) {
-    chpl_first_walkdirs_sorted_warning = true;
-    warning("sorting has no effect for a parallel invocation of walkdirs()");
-  }
+  if (sort) then
+    warning("sorting has no effect for parallel invocations of walkdirs()");
 
   if (topdown) then
     yield path;
 
   if (depth) {
     var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
-    if (sort) then
-      warning("sorting has no effect for parallel invocations of walkdirs()");
     forall subdir in subdirs {
       const fullpath = path + "/" + subdir;
       //
-      // TODO: It seems that recursive standalone leaders don't work yet?
+      // Call standalone walkdirs() iterator recursively
       //
-      for/*all*/ subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
-                                    followlinks, sort) do
+      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, followlinks, sort=false, iterKind.standalone) do
         yield subdir;
     }
   }
