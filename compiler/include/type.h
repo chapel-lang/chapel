@@ -118,6 +118,8 @@ class EnumType : public Type {
   // if this is NULL it will just be recomputed when needed.
   PrimitiveType* integerType;
 
+  const char* doc;
+
   EnumType();
   ~EnumType();
   void verify();

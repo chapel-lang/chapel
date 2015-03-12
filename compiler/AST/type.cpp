@@ -188,7 +188,8 @@ void PrimitiveType::accept(AstVisitor* visitor) {
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants(), integerType(NULL)
+  constants(), integerType(NULL),
+  doc(NULL)
 {
   gEnumTypes.add(this);
   constants.parent = this;
