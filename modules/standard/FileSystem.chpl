@@ -36,6 +36,49 @@ module FileSystem {
 
 use Error;
 
+/* S_IRUSR and the following constants are values of the form
+   S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
+   S_ISVTX, where R corresponds to readable, W corresponds to writable, X
+   corresponds to executable, USR and U correspond to user, GRP and G
+   correspond to group, OTH and O correspond to other, directly tied to the C
+   idea of these constants.  They are intended for use when dealing with the
+   permissions of files or directories, such as with :proc:`chmod`,
+   :proc:`getMode`, :proc:`mkdir`, or :proc:`umask`
+
+   S_IRUSR refers to the user's read permission
+*/
+extern const S_IRUSR: int;
+/* Refers to the user's write permission, see :data:`S_IRUSR` */
+extern const S_IWUSR: int;
+/* Refers to the user's executable permission, see :data:`S_IRUSR` */
+extern const S_IXUSR: int;
+/* Refers to all the user's permissions, see :data:`S_IRUSR` */
+extern const S_IRWXU: int;
+
+/* Refers to the group's read permission, see :data:`S_IRUSR` */
+extern const S_IRGRP: int;
+/* Refers to the group's write permission, see :data:`S_IRUSR` */
+extern const S_IWGRP: int;
+/* Refers to the group's executable permission, see :data:`S_IRUSR` */
+extern const S_IXGRP: int;
+/* Refers to all the permissions of those in this group, see :data:`S_IRUSR` */
+extern const S_IRWXG: int;
+
+/* Refers to everyone else's read permission, see :data:`S_IRUSR` */
+extern const S_IROTH: int;
+/* Refers to the everyone else's write permission, see :data:`S_IRUSR` */
+extern const S_IWOTH: int;
+/* Refers to the everyone else's executable permission, see :data:`S_IRUSR` */
+extern const S_IXOTH: int;
+/* Refers to all the permissions of everyone else, see :data:`S_IRUSR` */
+extern const S_IRWXO: int;
+
+/* This means that on execution, the user id will be set */
+extern const S_ISUID: int;
+/* This means that on execution, the group id will be set */
+extern const S_ISGID: int;
+
+extern const S_ISVTX: int;
 
 pragma "no doc"
 proc locale.chdir(out error: syserr, name: string) {
@@ -487,6 +530,8 @@ proc getMode(out error: syserr, name: string): int {
    :type name: string
 
    :return: The permissions of the specified file or directory
+            See description of :const:`S_IRUSR`, for instance, for potential
+            values.
    :rtype: int
 */
 proc getMode(name: string): int {
@@ -641,32 +686,6 @@ proc isMount(name: string): bool {
   return ret;
 }
 
-/* These are constant values of the form S_I[R | W | X][USR | GRP | OTH],
-   S_IRWX[U | G | O], S_ISUID, S_ISGID, or S_ISVTX, where R corresponds to
-   readable, W corresponds to writable, X corresponds to executable, USR and
-   U correspond to user, GRP and G correspond to group, OTH and O correspond
-   to other, directly tied to the C idea of these constants.  They are intended
-   for use with functions that alter the permissions of files or directories.
-*/
-extern const S_IRUSR: int;
-extern const S_IWUSR: int;
-extern const S_IXUSR: int;
-extern const S_IRWXU: int;
-
-extern const S_IRGRP: int;
-extern const S_IWGRP: int;
-extern const S_IXGRP: int;
-extern const S_IRWXG: int;
-
-extern const S_IROTH: int;
-extern const S_IWOTH: int;
-extern const S_IXOTH: int;
-extern const S_IRWXO: int;
-
-extern const S_ISUID: int;
-extern const S_ISGID: int;
-extern const S_ISVTX: int;
-
 pragma "no doc"
 proc mkdir(out error: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
@@ -697,7 +716,8 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
 
    :arg name: The name of the directory to be created, fully specified.
    :arg mode: The permissions desired for the directory to create.  Takes the
-              current :proc:`umask` into account
+              current :proc:`umask` into account.  See description of
+              :const:`S_IRUSR`, for instance, for potential values.
    :arg parents: Indicates whether parent directories should be created.  If
                  set to ``false``, any nonexistent parent will cause an error
                  to occur.
@@ -855,7 +875,8 @@ proc symlink(oldName: string, newName: string) {
 }
 
 /* Sets the file creation mask of the current process to ``mask``, and returns
-   the previous value of the file creation mask.
+   the previous value of the file creation mask.  See description of
+   :const:`S_IRUSR`, for instance, for potential values.
 
    :arg mask: The file creation mask to use now.
    :type mask: int
