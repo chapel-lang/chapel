@@ -1,60 +1,30 @@
 NAME
-  chpldoc - FIXME: Compiler for the Chapel Programming Language
+  chpldoc - the Chapel documentation tool
 
 SYNOPSIS
-  chpldoc [FIXME] [-O] [--no-checks] [--fast]
-          [-o directory]
+  chpldoc [-o directory]
           [--save-sphinx directory]
           [options] source-files...
 
 DESCRIPTION
 
-  FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME
-  The chpl command invokes the Chapel compiler. chpl converts one or
-  more Chapel source files into an executable. It does this by
-  compiling Chapel code to C99 code and then invoking the target
-  platform's C compiler to create the executable. However, most users
-  will not need to be aware of the use of C as an intermediate format
-  during compilation.
-  FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME
-
-SOURCE FILES
-  Chapel currently recognizes four source file types: .chpl, .c, .h and .o.
-
-  foo.chpl      Chapel sources are compiled by the Chapel compiler into C intermediate code,
-                which is then passed to the target compiler to be compiled into
-                object code.
-
-  foo.c         C source files are passed directly to the target C compiler.
-
-  foo.h         C header files are included in the generated C code.
-
-  foo.o         Object files are passed directly to the target linker. 
-
-OPTIONS
-
-FIXME: These were copied from chpl.txt...
+  chpldoc is a tool for generating HTML based documentation from Chapel
+  source code and embedded comments. It does this by parsing Chapel
+  source files and associating comments with symbols, then generating
+  reStructuredText, and finally building the output documentation
+  with Sphinx. Most users will not need to be aware of the use of
+  reStructuredText as an intermediate format.
 
   Documentation Options
 
-  --[no-]docs       Create [Don't create] documents based on comments
-                    preceding symbol declarations. See
-                    $CHPL_HOME/doc/technotes/README.chpldoc for more
-                    information.
+  -o, --output-dir <dirname>  Specify the directory name into which documentation
+                    should be saved (defaults to 'docs' if unspecified).
 
-  --[no-]docs-alphabetical  [Don't] Alphabetize the documentation within
-                    each lexical scope rather than using the declaration
-                    order within the code.
+  --save-sphinx <directory>  Save generated Sphinx project in directory.
 
-  --docs-comment-style <string>  Specify the opening comment character
+  --comment-style <string>  Specify the opening comment character
                     sequence used to distinguish a documentation comment
                     from a normal one (defaults to '/*' if unspecified).
 
-  --docs-dir <dirname>  Specify the directory name into which documentation
-                    should be saved (defaults to 'docs' if unspecified).
-
-  --docs-text-only  Specify that documents should use a text output file
+  --text-only       Specify that documents should use a text output file
                     format rather than HTML.
-
-  --docs-save-sphinx <directory>  Save generated Sphinx project in
-                                  directory.
