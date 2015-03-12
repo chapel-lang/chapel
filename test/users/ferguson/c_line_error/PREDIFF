@@ -1,11 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 
 TEST=$1
 LOG=$2
 # PREDIFF: Script to execute before diff'ing output (arguments: <test
 #    executable>, <log>, <compiler executable>)
 
-grep '#line' tmp/$TEST.c | head -n 10 | grep "$TEST.chpl" >> $LOG
+TEST=${TEST/use_/}
+
+grep '#line' tmp/$TEST.c | head -n 10 >> $LOG
+grep '#line' tmp/$TEST.c | head -n 10 | grep "$TEST.chpl" > /dev/null
 if [ $? -eq 0 ]
 then
   echo Found OK line directives containing $TEST.chpl >> $LOG
