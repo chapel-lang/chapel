@@ -1,1 +1,5 @@
--O3
+# All 64-bit x86 has prefetch, but some 32-bit intel did not
+# so it is necessary to supply -march=native for 32-bit testing.
+# This could be achieved working through the CHPL_TARGET_ARCH
+# mechanism to be more robust for different platforms.
+-O3 -march=native
