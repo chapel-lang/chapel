@@ -469,12 +469,6 @@ proc getGID(name: string): int {
   return ret;
 }
 
-/* Returns an integer representing the current permissions of the file specified
-   by name.  May generate an error message.
-
-   err: a syserr used to indicate if an error occurred during this function
-   name: the name of the file that you want to know the permissions of.
-*/
 pragma "no doc"
 proc getMode(out error: syserr, name: string): int {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
@@ -484,10 +478,15 @@ proc getMode(out error: syserr, name: string): int {
   return ret;
 }
 
-/* Returns an integer representing the current permissions of the file specified
-   by name.  May generate an error message.
+/* Obtains and returns the current permissions of the file or directory
+   specified by ``name``.
 
-   name: the name of the file that you want to know the permissions of.
+   Will halt with an error message if one is detected
+
+   :arg name: The file or directory whose permissions are desired.
+   :type name: string
+
+   :return: The permissions of the 
 */
 proc getMode(name: string): int {
   var err:syserr = ENOERR;
