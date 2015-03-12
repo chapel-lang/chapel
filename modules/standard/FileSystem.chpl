@@ -486,7 +486,8 @@ proc getMode(out error: syserr, name: string): int {
    :arg name: The file or directory whose permissions are desired.
    :type name: string
 
-   :return: The permissions of the 
+   :return: The permissions of the specified file or directory
+   :rtype: int
 */
 proc getMode(name: string): int {
   var err:syserr = ENOERR;
@@ -495,12 +496,6 @@ proc getMode(name: string): int {
   return result;
 }
 
-/* Returns the user id associated with the file or directory specified by
-   name.  Returns any errors that occurred via an out parameter.
-
-   err: a syserr used to indicate if an error occurred
-   name: a string used to indicate the file in question
-*/
 pragma "no doc"
 proc getUID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
@@ -510,10 +505,16 @@ proc getUID(out error: syserr, name: string): int {
   return result;
 }
 
-/* Returns the user id associated with the file or directory specified by
-   name.  May generate an error message.
+/* Obtains and returns the user id associated with the file or directory
+   specified by ``name``.
 
-   name: a string used to indicate the file in question
+   Will halt with an error message if one is detected.
+
+   :arg name: The file or directory whose user id is desired
+   :type name: string
+
+   :return: The user id of the specified file or directory
+   :rtype: int
 */
 proc getUID(name: string): int {
   var err: syserr = ENOERR;
@@ -522,11 +523,6 @@ proc getUID(name: string): int {
   return ret;
 }
 
-/* Returns true if the name corresponds to a directory, false otherwise.
-
-   err: a syserr used to indicate if an error occurred
-   name: a string that could be the name of a directory.
-*/
 pragma "no doc"
 proc isDir(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
@@ -536,10 +532,17 @@ proc isDir(out error:syserr, name:string):bool {
   return ret != 0;
 }
 
-/* Returns true if the name corresponds to a directory, false otherwise.
-   Generates an error message if one occurs.
+/* Determine if the provided path ``name`` corresponds to a directory and return
+   the result
 
-   name: a string that could be the name of a directory.
+   Will halt with an error message if one is detected, including if the path
+   does not refer to a valid file or directory
+
+   :arg name: A path that could refer to a directory.
+   :type name: string
+
+   :return: ``true`` if the path is a directory, ``false`` if it is not
+   :rtype: bool
 */
 proc isDir(name:string):bool {
   var err:syserr;
@@ -548,11 +551,6 @@ proc isDir(name:string):bool {
   return ret;
 }
 
-/* Returns true if the name corresponds to a file, false otherwise.
-
-   err: a syserr used to indicate if an error occurred
-   name: a string that could be the name of a file.
-*/
 pragma "no doc"
 proc isFile(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
@@ -562,10 +560,17 @@ proc isFile(out error:syserr, name:string):bool {
   return ret != 0;
 }
 
-/* Returns true if the name corresponds to a file, false otherwise.
-   Generates an error message if one occurs.
+/* Determine if the provided path ``name`` corresponds to a file and return
+   the result
 
-   name: a string that could be the name of a file.
+   Will halt with an error message if one is detected, including if the path
+   does not refer to a valid file or directory
+
+   :arg name: A path that could refer to a file.
+   :type name: string
+
+   :return: ``true`` if the path is a file, ``false`` if it is not
+   :rtype: bool
 */
 proc isFile(name:string):bool {
   var err:syserr;
@@ -574,11 +579,6 @@ proc isFile(name:string):bool {
   return ret;
 }
 
-/* Returns true if the name corresponds to a symbolic link, false if not
-   or if symbolic links are not supported.
-
-   name: a string that could be the name of a symbolic link.
-*/
 pragma "no doc"
 proc isLink(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
@@ -588,11 +588,18 @@ proc isLink(out error:syserr, name: string): bool {
   return ret != 0;
 }
 
-/* Returns true if the name corresponds to a symbolic link, false if not
-   or if symbolic links are not supported.  Generates an error message if one
-   occurs
+/* Determine if the provided path ``name`` corresponds to a link and return the
+   result.  If symbolic links are not supported, will return ``false``.
 
-   name: a string that could be the name of a symbolic link.
+   Will halt with an error message if one is detected, including if the path
+   does not refer to a valid file or directory
+
+   :arg name: A path that could refer to a symbolic link.
+   :type name: string
+
+   :return: ``true`` if the path is a symbolic link, ``false`` if it is not or
+            if symbolic links are not supported.
+   :rtype: bool
 */
 proc isLink(name: string): bool {
   var err:syserr;
@@ -601,11 +608,6 @@ proc isLink(name: string): bool {
   return ret;
 }
 
-/* Returns true if the name corresponds to a mount point, false otherwise.
-
-   err: a syserr used to indicate if an error occurred
-   name: a string that could be the name of a mount point.
-*/
 pragma "no doc"
 proc isMount(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
@@ -620,9 +622,17 @@ proc isMount(out error:syserr, name: string): bool {
   return ret != 0;
 }
 
-/* Returns true if the name corresponds to a mount point, false otherwise.
+/* Determine if the provided path ``name`` corresponds to a mount point and
+   return the result.
 
-   name: a string that could be the name of a mount point.
+   Will halt with an error message if one is detected, including if the path
+   does not refer to a valid file or directory.
+
+   :arg name: A path that could refer to a mount point.
+   :type name: string
+
+   :return: ``true`` if the path is a mount point, ``false`` if it is not.
+   :rtype: bool
 */
 proc isMount(name: string): bool {
   var err:syserr;
@@ -657,26 +667,6 @@ extern const S_ISUID: int;
 extern const S_ISGID: int;
 extern const S_ISVTX: int;
 
-/* Attempt to create a directory with the given path.  If parents is true,
-   will attempt to create any directory in the path that did not previously
-   exist.  Returns any errors that occurred via an out parameter
-
-   Important note: In the case where parents is true, there is a potential
-   security vulnerability.  Checking whether parent directories exist and
-   creating them if not are separate events. So even if parents==true and a
-   parent directory didn't exist before this function is called but does exist
-   afterward, it's still not necessarily true that this function created that
-   parent. Some other concurrent operation could have done so.
-
-   :arg err: a syserr used to indicate if an error occurred
-   :arg name: the name of the directory to be created, fully specified.
-   :arg mode: an integer representing the permissions desired for the file in
-   question. See description of the provided constants for
-   potential values.
-   :arg parents: a boolean indicating if parent directories should be created.
-   If set to false, any nonexistent parent will cause an error to
-   occur.
-*/
 pragma "no doc"
 proc mkdir(out error: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
@@ -685,20 +675,32 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
   error = chpl_fs_mkdir(name.c_str(), mode, parents);
 }
 
-/* Attempt to create a directory with the given path.  If parents is true,
-   will attempt to create any directory in the path that did not previously
-   exist.  Generates an error message if one occurred.
+/* Attempt to create a directory with the given path, ``name``.  If ``parents``
+   is ``true``, will attempt to create any directory in the path that did not
+   previously exist.
 
-   Important note: In the case where parents is true, there is a potential
-   security vulnerability.  Checking whether parent directories exist and
-   creating them if not are separate events. So even if parents==true and a
-   parent directory didn't exist before this function is called but does exist
-   afterward, it's still not necessarily true that this function created that
-   parent. Some other concurrent operation could have done so.
+   Will halt with an error message if one is detected
 
-   :arg name: the name of the directory to be created, fully specified.
-   :arg mode: an integer representing the permissions desired for the file in question. See description of the provided constants for potential values.
-   :arg parents: a boolean indicating if parent directories should be created.  If set to false, any nonexistent parent will cause an error to occur.
+   .. warning::
+
+      In the case where ``parents`` is ``true``, there is a potential security
+      vulnerability.  Checking whether parent directories exist and creating
+      them are separate events.  This is called a Time of Check, Time of Use
+      vulnerability (TOCTOU), and in the case of files or directories that did
+      not previously exist, there is no known guard against it.  So even if
+      ``parents == true`` and a parent directory didn't exist before this
+      function was called but does exist afterward, it's not necessarily true
+      that this function created that parent. Some other concurrent operation
+      could have done so, either intentionally or unintentionally, maliciously
+      or ignorantly.  This option is provided as a convenience only, and any
+      attempt to perform the same functionality will run a similar risk.
+
+   :arg name: The name of the directory to be created, fully specified.
+   :arg mode: The permissions desired for the directory to create.  Takes the
+              current :proc:`umask` into account
+   :arg parents: Indicates whether parent directories should be created.  If
+                 set to ``false``, any nonexistent parent will cause an error
+                 to occur.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   var err: syserr = ENOERR;
@@ -706,12 +708,6 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   if err != ENOERR then ioerror(err, "in mkdir", name);
 }
 
-/* Renames the file specified by oldname to newname, returning an error
-   if one occurred.  The file is not opened during this operation.
-
-   error: a syserr used to indicate if an error occurred during renaming.
-   oldname: current name of the file
-   newname: name which should refer to the file in the future.*/
 pragma "no doc"
 proc rename(out error: syserr, oldname, newname: string) {
   extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
@@ -719,22 +715,22 @@ proc rename(out error: syserr, oldname, newname: string) {
   error = chpl_fs_rename(oldname.c_str(), newname.c_str());
 }
 
-/* Renames the file specified by oldname to newname, generating an error message
-   if one occurred.  The file is not opened during this operation.
+/* Renames the file specified by ``oldname`` to ``newname``.  The file is not
+   opened during this operation.
 
-   oldname: current name of the file
-   newname: name which should refer to the file in the future.*/
-proc rename(oldname, newname: string) {
+   Will halt with an error message if one is detected
+
+   :arg oldname: Current name of the file
+   :type oldname: string
+   :arg newname: Name which should be used to refer to the file in the future.
+   :type newname: string
+*/
+ proc rename(oldname: string, newname: string) {
   var err:syserr = ENOERR;
   rename(err, oldname, newname);
   if err != ENOERR then ioerror(err, "in rename", oldname);
 }
 
-/* Removes the file or directory specified by name, returning an error
-   if one occurred via an out parameter.
-
-   err: a syserr used to indicate if an error occurred during removal
-   name: the name of the file/directory to remove */
 pragma "no doc"
 proc remove(out error: syserr, name: string) {
   extern proc chpl_fs_remove(name: c_string):syserr;
@@ -742,23 +738,19 @@ proc remove(out error: syserr, name: string) {
   error = chpl_fs_remove(name.c_str());
 }
 
-/* Removes the file or directory specified by name, generating an error message
-   if one occurred.
+/* Removes the file or directory specified by ``name``
 
-   name: the name of the file/directory to remove */
+   Will halt with an error message if one is detected
+
+   :arg name: The file/directory to remove
+   :type name: string
+*/
 proc remove(name: string) {
   var err:syserr = ENOERR;
   remove(err, name);
   if err != ENOERR then ioerror(err, "in remove", name);
 }
 
-/* Returns true if both pathnames refer to the same file or directory
-   (utilizing operating system operations rather than string ones), returns
-   false otherwise.
-
-   error: a syserr used to indicate if an error occurred during comparison
-   file1, file2: string representations of paths to be compared.
-*/
 pragma "no doc"
 proc sameFile(out error: syserr, file1: string, file2: string): bool {
   extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
@@ -768,11 +760,20 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
   return ret != 0;
 }
 
-/* Returns true if both pathnames refer to the same file or directory
-   (utilizing operating system operations rather than string ones), returns
-   false otherwise.  May generate an error message.
+/* Determines if both pathnames refer to the same file or directory (utilizing
+   operating system operations rather than string ones) and returns the result
+   of that check
 
-   file1, file2: string representations of paths to be compared.
+   Will halt with an error message if one is detected
+
+   :arg file1: The first path to be compared.
+   :type file1: string
+   :arg file2: The second path to be compared.
+   :type file2: string
+
+   :return: ``true`` if the two paths refer to the same file or directory,
+            ``false`` otherwise.
+   :rtype: bool
 */
 proc sameFile(file1: string, file2: string): bool {
   var err:syserr = ENOERR;
@@ -781,9 +782,6 @@ proc sameFile(file1: string, file2: string): bool {
   return result;
 }
 
-/* Same as the above function, but taking file records instead of string
-   pathnames as arguments.
-*/
 pragma "no doc"
 proc sameFile(out error: syserr, file1: file, file2: file): bool {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
@@ -812,8 +810,20 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
   return ret != 0;
 }
 
-/* Same as the above function, but taking file records instead of string
-   pathnames as arguments.  May generate an error message.
+/* Determines if both file records refer to the same file (utilizing operating
+   system operations rather than string ones) and returns the result of that
+   check
+
+   Will halt with an error message if one is detected
+
+   :arg file1: The first file to be compared.
+   :type file1: file
+   :arg file2: The second file to be compared.
+   :type file2: file
+
+   :return: ``true`` if the two records refer to the same file, ``false``
+            otherwise.
+   :rtype: bool
 */
 proc sameFile(file1: file, file2: file): bool {
   var err:syserr = ENOERR;
@@ -822,13 +832,6 @@ proc sameFile(file1: file, file2: file): bool {
   return result;
 }
 
-/* Create a symbolic link pointing to oldName named newName.  May generate an
-   error message.
-
-   err: a syserr used to indicate if an error occurred during creation
-   oldName: the source file to be linked
-   newName: the location the symbolic link should live
-*/
 pragma "no doc"
 proc symlink(out error: syserr, oldName: string, newName: string) {
   extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
@@ -836,11 +839,14 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
   error = chpl_fs_symlink(oldName.c_str(), newName.c_str());
 }
 
-/* Create a symbolic link pointing to oldName named sym.  May generate an error
-   message.
+/* Create a symbolic link pointing to ``oldName`` named ``newName``.
 
-   oldName: the source file to be linked
-   newName: the location the symbolic link should live
+   Will halt with an error message if one is detected
+
+   :arg oldName: The source file to be linked
+   :type oldName: string
+   :arg newName: The location where the symbolic link should live
+   :type newName: string
 */
 proc symlink(oldName: string, newName: string) {
   var err:syserr = ENOERR;
@@ -848,10 +854,14 @@ proc symlink(oldName: string, newName: string) {
   if err != ENOERR then ioerror(err, "in symlink " + oldName, newName);
 }
 
-/* Sets the file creation mask of the current process to mask, and returns
+/* Sets the file creation mask of the current process to ``mask``, and returns
    the previous value of the file creation mask.
 
-   mask: the file creation mask to use now.
+   :arg mask: The file creation mask to use now.
+   :type mask: int
+
+   :return: The previous file creation mask
+   :rtype: int
 */
 proc umask(mask: int): int {
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
