@@ -21,6 +21,9 @@ develall: man STATUS
 man: FORCE
 	cd man && $(MAKE)
 
+man-chpldoc: FORCE
+	cd man && $(MAKE) chpldoc
+
 test: FORCE
 	cd test && start_test
 
