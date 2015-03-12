@@ -616,26 +616,33 @@ module String {
   // TODO: all relational ops other than == and != are broken for unicode
   // TODO: It may be faster to work on a.locale or b.locale if a or b is large
   //
-  // For the purposes of comparison, a shorter string compares less than a
-  // longer string: "101" < "1010".
+  // When strings are compared, they compare equal up to the point the
+  // characters in the string differ.   At that point, if the encoding of the
+  // next character is numerically smaller it will compare less, otherwise
+  // greater.  If the encoding of one character uses fewer bits, the smaller
+  // one is zero-extended to match the langth of the longer one.
+  // For purposes of comparison, if one comparand is shorter than the
+  // other, we fake in a NUL (character code 0x0).  Thus, for example:
+  //  "1000" < "101" < "1010".
   //
 
-  // This is an internal support routine.
-  // As an optimization, it is assumed that the operands have equal length.
   inline proc _strcmp(a: string, b:string) : int {
-    // Assumes a and b are on same locale and equal length and not empty.
+    // Assumes a and b are on same locale and not empty.
     var idx: int = 0;
-    while (idx < a.len) {
+    while (idx < a.len && idx < b.len) {
       if a.buff[idx] != b.buff[idx] then return a.buff[idx]:int - b.buff[idx];
       idx += 1;
     }
+    // What if the next character in the longer buffer is 0x0?
+    // I just return +1 or -1 to avoid that question.
+    if (idx < a.len) then return 1;
+    if (idx < b.len) then return -1;
     return 0;
   }
 
   proc ==(a: string, b: string) : bool {
     inline proc doEq(a: string, b:string) {
       if a.len != b.len then return false;
-      if a.len == 0 then return true;
       return _strcmp(a, b) == 0;
     }
     if a.locale.id == b.locale.id {
@@ -672,9 +679,6 @@ module String {
 
   inline proc <(a: string, b: string) : bool {
     inline proc doLt(a: string, b:string) {
-      if a.len < b.len then return true;
-      if a.len > b.len then return false;
-      if a.len == 0 then return true;
       return _strcmp(a, b) < 0;
     }
     if a.locale.id == b.locale.id {
@@ -704,9 +708,6 @@ module String {
 
   inline proc >(a: string, b: string) : bool {
     inline proc doGt(a: string, b:string) {
-      if a.len < b.len then return false; // a is shorter so a < b.
-      if a.len > b.len then return true; // a is longer so a > b.
-      if a.len == 0 then return false; // Both empty strings so ==, so not >.
       return _strcmp(a, b) > 0;
     }
     if a.locale.id == b.locale.id {
