@@ -68,7 +68,13 @@ Record components:
 
 ArgumentDescription docs_arg_desc[] = {
  {"", ' ', NULL, "Documentation Options", NULL, NULL, NULL, NULL},
- {"alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
+
+ // TODO: This option is disabled for now (since source based ordering was
+ //       introduced). The code to support it is still around, and the plan is
+ //       to bring it back someday soon. (thomasvandoren, 2015-03-11)
+ //
+ // {"alphabetical", ' ', NULL, "Alphabetizes the documentation", "N", &fDocsAlphabetize, NULL, NULL},
+
  {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  {"text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
