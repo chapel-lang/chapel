@@ -442,12 +442,6 @@ proc exists(name: string): bool {
   return ret;
 }
 
-/* Returns the group id associated with the file or directory specified by
-   name.  Returns any errors that occurred via an out parameter.
-
-   err: a syserr used to indicate if an error occurred
-   name: a string used to indicate the file in question
-*/
 pragma "no doc"
 proc getGID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
@@ -457,10 +451,16 @@ proc getGID(out error: syserr, name: string): int {
   return result;
 }
 
-/* Returns the group id associated with the file or directory specified by
-   name.  May generate an error message.
+/* Obtains and returns the group id associated with the file or directory
+   specified by ``name``.
 
-   name: a string used to indicate the file in question
+   Will halt with an error message if one is detected
+
+   :arg name: The file or directory whose group id is desired
+   :type name: string
+
+   :return: The group id of the file or directory in question
+   :rtype: int
 */
 proc getGID(name: string): int {
   var err: syserr = ENOERR;
