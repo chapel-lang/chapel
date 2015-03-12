@@ -2832,6 +2832,30 @@ makeNoop(CallExpr* call) {
   call->primitive = primitives[PRIM_NOOP];
 }
 
+
+//
+// The following several functions support const-ness checking.
+// Which is tailored to how our existing Chapel code is written
+// and to the current constructor story. In particular:
+//
+// * Const-ness of fields is not honored within constructors
+// and initialize() functions
+//
+// * A function invoked directly from a constructor or initialize()
+// are treated as if were a constructor.
+//
+// The implementation also tends to the case where such an invocation
+// occurs inside a task function within the constructor or initialize().
+//
+// THESE RULES ARE INTERIM.
+// They will change - and the Chapel code will need to be updated -
+// for the upcoming new constructor story.
+//
+// Implementation note: we need to propagate the constness property
+// through temp assignments, dereferences, and calls to methods with
+// FLAG_REF_TO_CONST_WHEN_CONST_THIS.
+//
+
 static void findNonTaskFnParent(CallExpr* call,
                                 FnSymbol*& parent, int& stackIdx) {
   // We assume that 'call' is at the top of the call stack.
@@ -2965,6 +2989,7 @@ static void setFlagsAndCheckForConstAccess(Symbol* dest,
 
   // Do not consider it const if it is an access to 'this'
   // in a constructor. Todo: will need to reconcile with UMM.
+  // btw (baseSym != NULL) ==> (refConst == true).
   if (baseSym) {
     // Aside: at this point 'baseSym' can have reference or value type,
     // seemingly without a particular rule.
