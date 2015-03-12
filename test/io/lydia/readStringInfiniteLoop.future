@@ -1,4 +1,0 @@
-bug: infinite loop in readstring (may be related to binary I/O)
-
-When reading a file in binary, readstring may go past the EOF without
-stopping and run forever.
