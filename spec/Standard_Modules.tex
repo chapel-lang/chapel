@@ -23,7 +23,6 @@ are as follows:
 
 \begin{tabular}{lll}
 \hspace{1pc} & \chpl{AdvancedIters} & Advanced iterator functions \\
-             & \chpl{Norm}   & Routines for computing vector and matrix norms \\
              & \chpl{Search} & Generic searching routines \\
              & \chpl{Time} & Types and routines related to time \\
              & \chpl{UtilMath} & Math-related utilities \\
@@ -715,39 +714,6 @@ iter adaptive(r:range(?), numTasks:int = 0)
   splitting in the victim range is performed from its tail.
 \end{itemize}
 
-\end{protobody}
-
-
-\subsection{Norm}
-\label{Norm}
-\index{modules!optional!Norm@\chpl{Norm}}
-
-The module \chpl{Norm} supports the computation of standard vector and
-matrix norms on Chapel arrays.  The current interface is minimal and
-should be expected to grow and evolve over time.
-
-\begin{protohead}
-enum normType {norm1, norm2, normInf, normFrob};
-\end{protohead}
-\begin{protobody}
-An enumerated type indicating the different types of norms supported
-by this module: 1-norm, 2-norm, infinity norm and Frobenius norm,
-respectively.
-\end{protobody}
-
-\begin{protohead}
-proc norm(x: [], p: normType) where x.rank == 1 || x.rank == 2
-\end{protohead}
-\begin{protobody}
-Compute the norm indicated by \chpl{p} on the 1D or 2D array \chpl{x}.
-\end{protobody}
-
-\begin{protohead}
-proc norm(x: [])
-\end{protohead}
-\begin{protobody}
-Compute the default norm on array \chpl{x}.  For a 1D array this is
-the 2-norm, for a 2D array, this is the Frobenius norm.
 \end{protobody}
 
 
