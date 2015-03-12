@@ -17,6 +17,11 @@
  * limitations under the License.
  */
 
+/*
+   HDFS module
+ */
+module HDFS {
+
 use IO, SysBasic, Error, UtilReplicatedVar;
 
 extern type qio_locale_map_ptr_t;     // array of locale to byte range mappings
@@ -213,3 +218,4 @@ proc getLocaleBytes(g: hdfsChapelFile_local, i: int) {
   return ret;
 }
 
+} /* end of module */

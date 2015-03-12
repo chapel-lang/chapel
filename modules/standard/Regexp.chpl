@@ -17,6 +17,11 @@
  * limitations under the License.
  */
 
+/*
+   Regexp Module
+ */
+module Regexp {
+
 extern type qio_regexp_t;
 
 extern record qio_regexp_options_t {
@@ -600,3 +605,4 @@ iter string.matches(pattern:regexp, param captures=0, maxmatches:int=max(int))
   }
 }
 
+} /* end of module */

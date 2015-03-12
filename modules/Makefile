@@ -58,7 +58,15 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
+	standard/Curl.chpl \
+	standard/GMP.chpl \
+	standard/HDFS.chpl \
+	standard/HDFSiterator.chpl \
+	standard/Help.chpl \
+	standard/IO.chpl \
 	standard/Random.chpl \
+	standard/Regexp.chpl \
+	standard/Sys.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
