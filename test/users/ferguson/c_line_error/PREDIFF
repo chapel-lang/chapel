@@ -7,8 +7,8 @@ LOG=$2
 
 TEST=${TEST/use_/}
 
-grep '#line' tmp/$TEST.c | head -n 10 >> $LOG
-grep '#line' tmp/$TEST.c | head -n 10 | grep "$TEST.chpl" > /dev/null
+grep '#line' tmp/$TEST.c | head -n 1 >> $LOG
+grep '#line' tmp/$TEST.c | grep "$TEST.chpl" > /dev/null
 if [ $? -eq 0 ]
 then
   echo Found OK line directives containing $TEST.chpl >> $LOG
