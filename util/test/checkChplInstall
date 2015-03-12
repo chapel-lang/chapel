@@ -50,9 +50,6 @@ bin_name=chpl
 
 for opt in ${*:1} ; do
 case $opt in
-    # "")
-    #     # nothing special when no args are given
-    #     ;;
     --debug)
         debug_chpl_test=true
         ;;
