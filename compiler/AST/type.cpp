@@ -561,7 +561,7 @@ std::string EnumType::docsConstantList() {
     // If there are constants, join them in a single comma delimited string
     // inside curly brackets.
     std::string constList = " { " + constNames.front();
-    for (int i = 1; i < constNames.size(); i++) {
+    for (unsigned int i = 1; i < constNames.size(); i++) {
       constList += ", " + constNames.at(i);
     }
     constList += " }";
