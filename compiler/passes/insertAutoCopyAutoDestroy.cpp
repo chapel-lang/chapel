@@ -1371,6 +1371,7 @@ static void insertAutoDestroy(BasicBlock* bb, BitVec* to_cons,
 
       // Remove this symbol and all its aliases from the cons set.
       SymbolVector* aliasList = aliases.at(sym);
+      Symbol* last = aliasList->operator[](aliasList->size() - 1);
       resetAliasList(to_cons, *aliasList, symbolIndex);
 
       FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
@@ -1379,7 +1380,11 @@ static void insertAutoDestroy(BasicBlock* bb, BitVec* to_cons,
         // autoDestroy call for it.
         continue;
 
-      CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
+      // Use the last symbol in the alias list.
+      // This is a workaround because we do not track aliases in this
+      // implementation.
+      // See Note #1.
+      CallExpr* autoDestroyCall = new CallExpr(autoDestroy, last);
 
       if (isJump)
         stmt->insertBefore(autoDestroyCall);
@@ -1761,3 +1766,30 @@ void insertAutoCopyAutoDestroy()
 // qualifier, but since operator[] in the C++98 STL is not a const member
 // function, we are prevented from doing so until we adopt the C++11 STL
 // uniformly.
+
+//########################################################################
+//#
+//# NOTES
+//#
+//# Note #1: No reference tracking
+//#  We do not track references in this version, which can lead to
+//# assumptions about aliases being wrong in certain cases.  We get to treat
+//# bitwise copies of an object as if they are aliases because they are
+//# effectively the same object -- just residing at different locations in
+//# memory.  However, if one of these is modified, then they are no longer
+//# equivalent.  They should be the same object, but one of them is obsolete.
+//# Which one?
+//#  In this implementation, temporaries are initialized only once, and typically
+//# used only once as well.  Named variables are also initialized only once, but
+//# may be used in multiple places -- including as lvalues.
+//#  Currently, we use a heuristic to determine the "current" alias -- we simply
+//# use the last one in the alias chain.  This is likely to be the named
+//# variable into which the call temps are finally assigned.
+//#  The heuristic can be made more robust in two ways: 
+//#  1. In alias sets that contain a named variable, ensure that this named
+//# variable is unique (i.e. that the remaining aliases are unnamed
+//# temporaries).  Then, actually use that named variable.
+//#  2. Ensure that temporaries cannot be updated.  That is, that they are in
+//# fact assigned only one, and that only constant references (i.e. specifically
+//# not modifiable references) to them are created.
+//#

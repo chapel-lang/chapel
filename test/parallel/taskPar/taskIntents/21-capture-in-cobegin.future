@@ -1,0 +1,19 @@
+bug: Records copied into local args (shadow variables) should be piped through autoCopy.
+
+This bug was uncovered by conversion to the new string implementation.  A valid update of
+the global string str causes the contents of its buffer to change.  This change should be
+reflected inside the task function if the default task intent for a string is "const
+ref".  If it is "const in" then the local value should be unchanged even after the global
+is updated.
+
+What we are seeing instead is a hybrid behavior, the length of the shadow variable is
+unchanged when the global is updated, but the bytes pointed to by the shadow variable
+change.  This is an indication that the copy constructor is not being called when the
+shadow variable is being created from the global.
+
+  /* 1398142 */ (_args_forcobegin_fn)->_27_str = str;
+  (A bitwise copy is not valid here.  If passed as a shadow variable at all, it should
+  either be piped through autoCopy first (and destroyed later) or passed by reference.)
+
+Since records in general should be passed const ref, that is the preferred alternative.
+But since the original is a global, it is unclear that it has to be captured at all.

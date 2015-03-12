@@ -18,7 +18,8 @@ proc cdr(x: (?T1, ?T2)) ref: T2 {
   return x(2);
 }
 
-proc cons(x: ?T1, y: ?T2): (T1, T2) {
+proc cons(x: ?T1, y: ?T2)//: (T1, T2)
+{
   return (x, y);
 }
   
