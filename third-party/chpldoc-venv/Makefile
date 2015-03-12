@@ -55,10 +55,19 @@ create-virtualenv: $(CHPLDOC_VENV_VIRTUALENV_DIR)
 # indicate success or failure. Call virtualenv --relocatable <virtualenv_dir>
 # after installing, which takes the hardcoded paths out of the installed
 # "python binaries".
+#
+# In order to avoid issues with long hash bangs (#!) in the pip script, call it
+# directly. For example, in some cases the hash bang can be longer than OS
+# supports, so when pip is called the shell fails with an error like:
+#
+#   /bin/sh: .../path/to/bin/pip: <truncated hash bang>: bad interpreter: No such file or directory.
+#
+# By calling `python .../path/to/pip ...`, this issue is circumvented.
 $(CHPLDOC_VENV_SPHINX_BUILD): $(CHPLDOC_VENV_VIRTUALENV_DIR)
 	export PATH=$(CHPLDOC_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPLDOC_VENV_VIRTUALENV_DIR) && \
-	pip install -U --force-reinstall -r requirements.txt && \
+	python $(CHPLDOC_VENV_VIRTUALENV_BIN)/pip install \
+	-U --force-reinstall -r requirements.txt && \
 	$(CHPLDOC_VENV_VIRTUALENV) --relocatable $(CHPLDOC_VENV_VIRTUALENV_DIR)
 
 # Phony convenience target for install python packages.
