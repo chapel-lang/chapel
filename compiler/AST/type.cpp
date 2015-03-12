@@ -550,7 +550,7 @@ std::string EnumType::docsConstantList() {
       if (DefExpr* de = toDefExpr(constant)) {
         constNames.push_back(de->sym->name);
       } else {
-        INT_FATAL(constant, "Expected UnresolvedSymExpr for all members of constants alist.");
+        INT_FATAL(constant, "Expected DefExpr for all members in constants alist.");
       }
     }
 
