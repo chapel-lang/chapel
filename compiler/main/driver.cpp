@@ -895,7 +895,7 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
 
-  if (printHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+  if (printHelp || fDocsPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
 
     int usageExitStatus;
