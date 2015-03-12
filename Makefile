@@ -72,7 +72,9 @@ runtime: FORCE
 llvm-runtime-if-needed: FORCE
 	-@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
 	echo "Building runtime for chpl --llvm"; \
-	cd runtime && CHPL_TARGET_COMPILER=clang-included $(MAKE); \
+	export CHPL_TARGET_COMPILER=clang-included && \
+	$(MAKE) third-party-try-opt && \
+	$(MAKE) runtime ; \
 	fi
 
 third-party: FORCE
