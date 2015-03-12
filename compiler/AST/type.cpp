@@ -498,6 +498,78 @@ void EnumType::accept(AstVisitor* visitor) {
   }
 }
 
+
+void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << "enum ";
+  *file << this->symbol->name;
+  *file << this->docsConstantList();
+  *file << std::endl;
+
+  // In rst mode, ensure there is an empty line between the enum signature and
+  // its description or the next directive.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+
+    // In rst mode, ensure there is an empty line between the enum description
+    // and the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+std::string EnumType::docsDirective() {
+  if (fDocsTextOnly) {
+    return "";
+  } else {
+    // TODO: Add enum directive to chapel domain (thomasvandoren, 2015-03-12)
+    return ".. class:: ";
+  }
+}
+
+
+std::string EnumType::docsConstantList() {
+  if (this->constants.length == 0) {
+    return "";
+  } else {
+    std::vector<std::string> constNames;
+
+    for_alist(constant, this->constants) {
+      if (DefExpr* de = toDefExpr(constant)) {
+        constNames.push_back(de->sym->name);
+      } else {
+        INT_FATAL(constant, "Expected UnresolvedSymExpr for all members of constants alist.");
+      }
+    }
+
+    if (constNames.empty()) {
+      return "";
+    }
+
+    // If there are constants, join them in a single comma delimited string
+    // inside curly brackets.
+    std::string constList = " { " + constNames.front();
+    for (int i = 1; i < constNames.size(); i++) {
+      constList += ", " + constNames.at(i);
+    }
+    constList += " }";
+    return constList;
+  }
+}
+
+
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
   aggregateTag(initTag),
@@ -1254,7 +1326,7 @@ std::string AggregateType::docsSuperClass() {
       if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
         superClassNames.push_back(use->unresolved);
       } else {
-        INT_FATAL(expr, "Expected UnresolvedSymExpr for all member of inherits alist.");
+        INT_FATAL(expr, "Expected UnresolvedSymExpr for all members of inherits alist.");
       }
     }
 
