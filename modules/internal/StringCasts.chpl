@@ -58,7 +58,7 @@ module StringCasts {
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
-    ret.len = safe_cast(int, strlen(csc));
+    ret.len = strlen(csc).safeCast(int);
     ret._size = ret.len+1;
 
     return ret;
@@ -113,7 +113,7 @@ module StringCasts {
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
-    ret.len = safe_cast(int, strlen(csc));
+    ret.len = strlen(csc).safeCast(int);
     ret._size = ret.len+1;
 
     return ret;
@@ -201,8 +201,7 @@ module StringCasts {
   //
   // enumerated
   //
-  // TODO: do we support string->enum?
-  inline proc _cast(type t, x:enumerated) where t == string {
+  proc _cast(type t, x:enumerated) where t == string {
     extern proc strlen(const str: c_string) : size_t;
 
     // Use the compiler-generated enum to c_string conversion.
@@ -210,11 +209,13 @@ module StringCasts {
 
     var ret = new string(owned=false);
     ret.buff = cs:c_ptr(uint(8));
-    ret.len = safe_cast(int, strlen(cs));
+    ret.len = strlen(cs).safeCast(int);
     ret._size = ret.len+1;
 
     return ret;
   }
+
+
 
   //
   // Badness

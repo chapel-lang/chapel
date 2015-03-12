@@ -90,8 +90,8 @@ module BaseStringType {
   }
 
   proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: int): bufferType {
-      const dest = chpl_mem_alloc(safe_cast(size_t, len+1), CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
-      chpl_string_comm_get(dest, src_loc_id, src_addr, safe_cast(size_t, len));
+      const dest = chpl_mem_alloc((len+1).safeCast(size_t), CHPL_RT_MD_STRING_COPY_REMOTE): bufferType;
+      chpl_string_comm_get(dest, src_loc_id, src_addr, len.safeCast(size_t));
       dest[len] = 0;
       return dest;
   }
@@ -125,12 +125,38 @@ module String {
     var buff: bufferType = nil;
     // I can almost get away without this, but other things get verbose.
     // This causes us to get padded out to a word boundary :(
-    const owned: bool = true;
+    // TODO: change to const when const checking for auto/initCopy is fixed
+    var owned: bool = true;
 
-    /*
+    proc string(s: string, owned: bool = true) {
+      this.owned = owned;
+      const sRemote = s.locale.id != chpl_nodeID;
+      if !owned && sRemote {
+        // TODO: Should I just ignore the supplied value of owned instead of
+        //       halting?
+        halt("Must take ownership of a copy of a remote string");
+      }
+      var localBuff: bufferType = nil;
+      const sLen = s.len;
+      // Dont need to do anything if s is an empty string
+      if sLen != 0 {
+        localBuff = if sRemote
+          then copyRemoteBuffer(s.locale.id, s.buff, sLen)
+          else s.buff;
+      }
+      // We only need to copy when the buffer is local
+      // TODO: reinitString does more checks then we actually need but is still
+      // correct. Is it worht just doing the proper copy here?
+      this.reinitString(localBuff, sLen, sLen+1, needToCopy=sRemote);
+    }
+
+    // Assumes owned == the need to copy the buffer in
+    // use reinitString directly if that is not the case
+    // buff must be local
     proc string(buff: bufferType, length: int, size: int, owned: bool = true) {
-      reinitString(buff, length, size);
-    }*/
+      this.owned = owned;
+      this.reinitString(buff, length, size, owned);
+    }
 
     proc ref ~string() {
       if owned && !this.isEmptyString() {
@@ -155,22 +181,22 @@ module String {
         if needToCopy {
           if s_len+1 > this._size {
             // free the old buffer
-            if this.owned && this.len != 0 then
+            if this.owned && !this.isEmptyString() then
               on this do chpl_mem_free(this.buff);
             // allocate a new buffer
-            this.buff = chpl_mem_alloc(safe_cast(size_t, s_len+1),
+            this.buff = chpl_mem_alloc((s_len+1).safeCast(size_t),
                                        CHPL_RT_MD_STRING_COPY_DATA):bufferType;
             this.buff[s_len] = 0;
             this._size = s_len+1;
           }
-          memmove(this.buff, buf, safe_cast(size_t, s_len));
+          memmove(this.buff, buf, s_len.safeCast(size_t));
         } else {
           this.buff = buf;
           this._size = size;
         }
       } else {
         // free the old buffer
-        if this.owned && this.len != 0 then chpl_mem_free(this.buff);
+        if this.owned && !this.isEmptyString() then chpl_mem_free(this.buff);
         this.buff = nil;
         this._size = 0;
       }
@@ -219,12 +245,12 @@ module String {
 
       ret._size = min_alloc_size;
       ret.len = 1;
-      ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+      ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                                 CHPL_RT_MD_STRING_COPY_DATA): bufferType;
 
       var remoteThis = this.locale.id != chpl_nodeID;
       if remoteThis {
-        chpl_string_comm_get(ret.buff, this.locale.id, this.buff, safe_cast(size_t, this.len));
+        chpl_string_comm_get(ret.buff, this.locale.id, this.buff, this.len.safeCast(size_t));
       } else {
         ret.buff[0] = this.buff[i-1];
       }
@@ -236,7 +262,7 @@ module String {
     // TODO: I wasn't very good about caching variables locally in this one.
     proc this(r: range(?)) : string {
       var ret: string;
-      if this.len == 0 then return ret;
+      if this.isEmptyString() then return ret;
 
       //TODO: halt()s should use string.writef at some point.
       if r.hasLowBound() {
@@ -258,7 +284,7 @@ module String {
         ret.len = r2.size:int;
       }
       ret._size = if ret.len+1 > min_alloc_size then ret.len+1 else min_alloc_size;
-      ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+      ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                                 CHPL_RT_MD_STRING_COPY_DATA): bufferType;
 
       var thisBuff: bufferType;
@@ -342,14 +368,10 @@ module String {
       var ret: int = 0;
       // needle.len is <= than this.len, so go to the home locale
       on this {
-        var localNeedle: string;
-        if needle.locale.id != chpl_nodeID {
-          localNeedle = needle; // assignment makes it local
-        } else {
-          localNeedle = new string(owned=false);
-          localNeedle.reinitString(needle.buff, needle.len,
-                                   needle._size, needToCopy = true);
-        }
+        var localNeedle: string = if needle.locale.id != chpl_nodeID
+        then needle // assignment makes it local
+        else new string(needle, owned=false);
+
         const lastPossible = (this.len-localNeedle.len)+1;
         for i in 0..#lastPossible {
           for j in 0..#localNeedle.len {
@@ -363,22 +385,24 @@ module String {
     }
   }
 
+  // We'd like this to be by ref, but doing so leads to an internal
+  // compiler error.  See
+  // $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
   pragma "donor fn"
   pragma "auto copy fn"
-    // We'd like this to be by ref, but doing so leads to an internal
-    // compiler error.  See
-    // $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
-    /*inline*/ proc chpl__autoCopy(/*ref*/ s: string) {
+  proc chpl__autoCopy(s: string) {
     if debugStrings then
       chpl_debug_string_print("in autoCopy()");
 
     pragma "no auto destroy"
     var ret: string;
+
     if !s.isEmptyString() {
-      ret.buff = chpl_mem_alloc(safe_cast(size_t, s.len+1),
+      ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
                                 CHPL_RT_MD_STRING_COPY_DATA): bufferType;
-      memmove(ret.buff, s.buff, safe_cast(size_t, s.len));
+      memmove(ret.buff, s.buff, s.len.safeCast(size_t));
       ret.len = s.len;
+      ret.owned = s.owned;
       ret._size = s.len+1;
       ret.buff[ret.len] = 0;
     }
@@ -399,19 +423,19 @@ module String {
    * used by initCopy().
    */
   pragma "init copy fn"
-  /*inline*/ proc chpl__initCopy(ref s: string) {
+  proc chpl__initCopy(ref s: string) {
     if debugStrings then
       chpl_debug_string_print("in initCopy()");
 
     var ret: string;
-    if !s.isEmptyString() {
-      const slen = s.len; // cache the remote copy of len
+    const slen = s.len; // cache the remote copy of len
+    if slen != 0 {
       if s.locale.id == chpl_nodeID {
         if debugStrings then
           chpl_debug_string_print("  local initCopy");
-        ret.buff = chpl_mem_alloc(safe_cast(size_t, s.len+1),
+        ret.buff = chpl_mem_alloc((s.len+1).safeCast(size_t),
                                   CHPL_RT_MD_STRING_COPY_DATA): bufferType;
-        memmove(ret.buff, s.buff, safe_cast(size_t, s.len));
+        memmove(ret.buff, s.buff, s.len.safeCast(size_t));
         ret.buff[s.len] = 0;
       } else {
         if debugStrings then
@@ -420,6 +444,7 @@ module String {
       }
       ret.len = slen;
       ret._size = slen+1;
+      ret.owned = true;
     }
 
     if debugStrings then
@@ -450,8 +475,6 @@ module String {
       }
     }
 
-    // TODO: using 'here' requires constructing a locale record even though we
-    //       are just going to use it's id
     if lhs.locale.id == chpl_nodeID then {
       if debugStrings then
         chpl_debug_string_print("  lhs local");
@@ -500,24 +523,24 @@ module String {
     var ret: string;
     ret.len = s0len + s1len;
     ret._size = ret.len+1;
-    ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+    ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                               CHPL_RT_MD_STRING_COPY_DATA): bufferType;
 
     const hereId = chpl_nodeID;
     const s0remote = s0.locale.id != hereId;
     if s0remote {
       chpl_string_comm_get(ret.buff, s0.locale.id,
-                           s0.buff, safe_cast(size_t, s0len));
+                           s0.buff, s0len.safeCast(size_t));
     } else {
-      memmove(ret.buff, s0.buff, safe_cast(size_t, s0len));
+      memmove(ret.buff, s0.buff, s0len.safeCast(size_t));
     }
 
     const s1remote = s1.locale.id != hereId;
     if s1remote {
       chpl_string_comm_get(ret.buff+s0len, s1.locale.id,
-                           s1.buff, safe_cast(size_t, s1len));
+                           s1.buff, s1len.safeCast(size_t));
     } else {
-      memmove(ret.buff+s0len, s1.buff, safe_cast(size_t, s1len));
+      memmove(ret.buff+s0len, s1.buff, s1len.safeCast(size_t));
     }
     ret.buff[ret.len] = 0;
 
@@ -535,13 +558,13 @@ module String {
       halt("Cannot concatenate a remote c_string.");
 
     if cs == _defaultOf(c_string) then return s;
-    if s.isEmptyString() then return cs:string;
+    const slen = s.len;
+    if slen == 0 then return cs:string;
 
     var ret: string;
-    const slen = s.len;
     ret.len = slen + cs.length;
     ret._size = ret.len+1;
-    ret.buff = chpl_mem_alloc(safe_cast(size_t, ret._size),
+    ret.buff = chpl_mem_alloc(ret._size.safeCast(size_t),
                               CHPL_RT_MD_STRING_COPY_DATA): bufferType;
     const sremote = s.locale.id != hereId;
     var sbuff = if sremote
@@ -549,11 +572,11 @@ module String {
                   else s.buff;
 
     if stringFirst {
-      memmove(ret.buff, sbuff, safe_cast(size_t, slen));
-      memmove(ret.buff+slen, cs:bufferType, safe_cast(size_t, cs.length));
+      memmove(ret.buff, sbuff, slen.safeCast(size_t));
+      memmove(ret.buff+slen, cs:bufferType, cs.length.safeCast(size_t));
     } else {
-      memmove(ret.buff, cs:bufferType, safe_cast(size_t, cs.length));
-      memmove(ret.buff+cs.length, sbuff, safe_cast(size_t, slen));
+      memmove(ret.buff, cs:bufferType, cs.length.safeCast(size_t));
+      memmove(ret.buff+cs.length, sbuff, slen.safeCast(size_t));
     }
 
     ret.buff[ret.len] = 0;
@@ -616,26 +639,33 @@ module String {
   // TODO: all relational ops other than == and != are broken for unicode
   // TODO: It may be faster to work on a.locale or b.locale if a or b is large
   //
-  // For the purposes of comparison, a shorter string compares less than a
-  // longer string: "101" < "1010".
+  // When strings are compared, they compare equal up to the point the
+  // characters in the string differ.   At that point, if the encoding of the
+  // next character is numerically smaller it will compare less, otherwise
+  // greater.  If the encoding of one character uses fewer bits, the smaller
+  // one is zero-extended to match the langth of the longer one.
+  // For purposes of comparison, if one comparand is shorter than the
+  // other, we fake in a NUL (character code 0x0).  Thus, for example:
+  //  "1000" < "101" < "1010".
   //
 
-  // This is an internal support routine.
-  // As an optimization, it is assumed that the operands have equal length.
   inline proc _strcmp(a: string, b:string) : int {
-    // Assumes a and b are on same locale and equal length and not empty.
+    // Assumes a and b are on same locale and not empty.
     var idx: int = 0;
-    while (idx < a.len) {
+    while (idx < a.len && idx < b.len) {
       if a.buff[idx] != b.buff[idx] then return a.buff[idx]:int - b.buff[idx];
       idx += 1;
     }
+    // What if the next character in the longer buffer is 0x0?
+    // I just return +1 or -1 to avoid that question.
+    if (idx < a.len) then return 1;
+    if (idx < b.len) then return -1;
     return 0;
   }
 
   proc ==(a: string, b: string) : bool {
     inline proc doEq(a: string, b:string) {
       if a.len != b.len then return false;
-      if a.len == 0 then return true;
       return _strcmp(a, b) == 0;
     }
     if a.locale.id == b.locale.id {
@@ -672,9 +702,6 @@ module String {
 
   inline proc <(a: string, b: string) : bool {
     inline proc doLt(a: string, b:string) {
-      if a.len < b.len then return true;
-      if a.len > b.len then return false;
-      if a.len == 0 then return true;
       return _strcmp(a, b) < 0;
     }
     if a.locale.id == b.locale.id {
@@ -704,9 +731,6 @@ module String {
 
   inline proc >(a: string, b: string) : bool {
     inline proc doGt(a: string, b:string) {
-      if a.len < b.len then return false; // a is shorter so a < b.
-      if a.len > b.len then return true; // a is longer so a > b.
-      if a.len == 0 then return false; // Both empty strings so ==, so not >.
       return _strcmp(a, b) > 0;
     }
     if a.locale.id == b.locale.id {
@@ -750,6 +774,16 @@ module String {
     f.close();
   }
 
+  //
+  // ascii
+  // TODO: replace with ordinal()
+  //
+  inline proc ascii(a: string) : int(32) {
+    if a.isEmptyString() then return 0;
+
+    return a.buff[0]:int(32);
+  }
+
 
   //
   // Casts (casts to & from other primitive types are in StringCasts)
@@ -783,7 +817,7 @@ module String {
     var ret: string;
     ret.len = cs.length;
     ret._size = ret.len+1;
-    if ret.len != 0 then ret.buff = __primitive("string_copy", cs): bufferType;
+    if !ret.isEmptyString() then ret.buff = __primitive("string_copy", cs): bufferType;
 
     if debugStrings then
       chpl_debug_string_print("leaving _cast() c_string->string");

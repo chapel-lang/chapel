@@ -158,6 +158,7 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   return stmt;
 }
 
+
 //
 // A helper function that's useful in a few places in this file to
 // conditionally convert an Expr to a 'const char*' in the event that
@@ -177,16 +178,13 @@ static const char* toImmediateString(Expr* expr) {
   return NULL;
 }
 
+
 static Expr* convertStringLiteral(Expr *e) {
-  if (SymExpr* s = toSymExpr(e)) {
-    VarSymbol *v = toVarSymbol(s->var);
-    INT_ASSERT(v);
-    if (v->immediate &&
-        v->immediate->const_kind==CONST_KIND_STRING) {
-      return new CallExpr("_cast", new SymExpr(dtString->symbol), s);
-    }
+  if (toImmediateString(e) != NULL) {
+    return new CallExpr("_cast", new SymExpr(dtString->symbol), e);
+  } else {
+    return e;
   }
-  return NULL;
 }
 
 static void convertStringLiteralArgList(CallExpr* call) {

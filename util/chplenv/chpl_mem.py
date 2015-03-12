@@ -12,9 +12,9 @@ def get(flag='host'):
         mem_val = os.environ.get('CHPL_MEM')
         if not mem_val:
             comm_val = chpl_comm.get()
-            platform_val = chpl_platform.get('host')
-            arch_val = chpl_arch.get('target', get_lcd=True)
-            tcmallocCompat = ["gnu", "clang", "intel"]
+            #platform_val = chpl_platform.get('host')
+            #arch_val = chpl_arch.get('target', get_lcd=True)
+            #tcmallocCompat = ["gnu", "clang", "clang-included", "intel"]
 
             # true if tcmalloc is compatible with the target compiler
             #if (not (platform_val == 'cray-xc' and arch_val == 'knc') and

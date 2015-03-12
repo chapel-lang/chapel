@@ -260,9 +260,8 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
 
 qioerr chpl_fs_realpath(const char* path, const char **shortened) {
   qioerr err = 0;
-  //shortened = NULL; // Don't want to get confused.
   *shortened = realpath(path, NULL);
-  if (shortened == NULL) {
+  if (*shortened == NULL) {
     // If an error occurred, shortened will be NULL.  Otherwise, it will
     // contain the cleaned up path.
     err = qio_mkerror_errno();
