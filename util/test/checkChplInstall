@@ -46,12 +46,18 @@ function log_error()
     echo "[ERROR] ${msg}" 1>&2
 }
 
-case $1 in
-    "")
-        # nothing special when no args are given
-        ;;
+bin_name=chpl
+
+for opt in ${*:1} ; do
+case $opt in
+    # "")
+    #     # nothing special when no args are given
+    #     ;;
     --debug)
         debug_chpl_test=true
+        ;;
+    --chpldoc)
+        bin_name=chpldoc
         ;;
     --help|-h|*)
         cat<<EOF
@@ -64,22 +70,25 @@ usage: $0
   By default, programs are compiled and run from \$HOME/.chpl/. Set
   CHPL_CHECK_INSTALL_DIR environment variable to use an alternate location.
 
+  --chpldoc  Test chpldoc with the chpldoc primer, instead of the chpl.
+
 EOF
         exit 0
         ;;
 esac
+done
 
-CHPL_BIN=$(which chpl 2> /dev/null)
+CHPL_BIN=$(which ${bin_name} 2> /dev/null)
 
 # Verify chpl binary exists and is executable.
 if [ -z "${CHPL_BIN}" ] ; then
-    log_error "chpl compiler not found. Make sure it available in the current PATH."
+    log_error "${bin_name} not found. Make sure it available in the current PATH."
     exit 1
 elif [ ! -x $CHPL_BIN ] ; then
-    log_error "Found chpl at ${CHPL_BIN} but it is not executable."
+    log_error "Found ${bin_name} at ${CHPL_BIN} but it is not executable."
     exit 1
 else
-    log_debug "Found chpl compiler at: ${CHPL_BIN}"
+    log_debug "Found ${bin_name} at: ${CHPL_BIN}"
 fi
 
 # Verify CHPL_HOME is correctly set.
@@ -105,18 +114,24 @@ else
     exit 1
 fi
 
+# For chpldoc, only test the primers/chpldoc.doc.chpl test.
+if [ "${bin_name}" = "chpldoc" ] ; then
+    test_name="chpldoc"
+    TESTS=$TEST_DIR/primers/chpldoc.doc.*
+
 # List all the files in the examples dir. Do not list any subdirectories,
 # though.
-TESTS=$(find $TEST_DIR -maxdepth 1 -mindepth 1 -type f)
+else
+    test_name="hello world"
+    TESTS=$(find $TEST_DIR -maxdepth 1 -mindepth 1 -type f)
+fi
 
 # Copy these tests to a temp file.
 
 chpl_dir=${CHPL_CHECK_INSTALL_DIR:-$HOME/.chpl}
 if [ ! -d $chpl_dir ] ; then
     log_debug "${chpl_dir} does not exist. Creating it."
-    # Do not use -p/--parents. $HOME should exist and if it doesn't many other
-    # things will probably fail.
-    mkdir $chpl_dir || { log_error "Failed to create ${chpl_dir}." && exit 10 ; }
+    mkdir -p $chpl_dir || { log_error "Failed to create ${chpl_dir}." && exit 10 ; }
 fi
 
 TMP_TEST_DIR=$(mktemp -d ${chpl_dir}/chapel-test-XXXXX)
@@ -143,7 +158,7 @@ cp $TESTS $TMP_TEST_DIR/
     export CHPL_TEST_UTIL_DIR=$CHPL_HOME/util
 
     # Run the tests.
-    echo "Running the hello world tests found in: $TEST_DIR"
+    echo "Running the ${test_name} tests found in: $TEST_DIR"
 
     $CHPL_HOME/util/start_test --no-chpl-home-warn --progress $CHPL_START_TEST_ARGS *.chpl > $test_output_log
 
@@ -199,7 +214,7 @@ log_debug $(grep -E "${summary_key}" $test_output_log)
 
 case $success in
     true)
-        echo "chpl installation works as expected!"
+        echo "${bin_name} installation works as expected!"
         exit 0
         ;;
     false|*)
@@ -208,8 +223,8 @@ case $success in
             cat $test_output_log
         fi
 
-        echo "Found issues with chpl installation."
-        echo "  chpl path: ${CHPL_BIN}"
+        echo "Found issues with ${bin_name} installation."
+        echo "  ${bin_name} path: ${CHPL_BIN}"
         echo "  CHPL_HOME: ${CHPL_HOME}"
 
         # Copy the output log file to a non-temp location to make it available
