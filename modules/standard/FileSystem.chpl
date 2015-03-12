@@ -16,17 +16,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/* A file utilities library
+
+   The FileSystem module focuses on file and directory properties and
+   operations.  It does not cover every interaction involving a file -
+   for instance, path specific operations live in the :mod:`Path` module, while
+   opening, writing to, or reading from a file appropriately live in the
+   :mod:`IO` module.  Rather, it covers cases where the user would prefer a file
+   or directory handled wholesale and/or with minimal interaction.  The
+   :proc:`copy` functionality belongs here, as does :proc:`chmod`,
+   :proc:`mkdir`, and :proc:`remove`, for instance.  Also included are
+   operations relating to the current process's state, such as :proc:`umask` or
+   :proc:`~locale.chdir` (an operation which is performed on a specified
+   locale).
+
+ */
+module FileSystem {
+
 use Error;
 
 
-/* Change the current working directory of the current locale to the specified
-   name. Returns any errors that occurred via an out parameter.
-   err: a syserr used to indicate if an error occurred
-   name: a string indicating a new directory
-
-   Note: this is not safe within a parallel context.  A chdir call in one task
-   will affect the current working directory of all tasks for that locale.
-*/
+pragma "no doc"
 proc locale.chdir(out error: syserr, name: string) {
   extern proc chpl_fs_chdir(name: c_string):syserr;
 
@@ -35,12 +46,18 @@ proc locale.chdir(out error: syserr, name: string) {
   }
 }
 
-/* Change the current working directory of the current locale to the specified
-   name. Generates an error message if one occurred.
-   name: a string indicating a new directory
+/* Change the current working directory of the locale in question to the
+   specified name.
 
-   Note: this is not safe within a parallel context.  A chdir call in one task
-   will affect the current working directory of all tasks for that locale.
+   Will halt with an error message if one is detected.
+
+   .. warning::
+
+      This is not safe within a parallel context.  A chdir call in one task
+      will affect the current working directory of all tasks for that locale.
+
+   :arg name: The intended current working directory
+   :type name: string
 */
 proc locale.chdir(name: string) {
   var err: syserr = ENOERR;
@@ -48,60 +65,56 @@ proc locale.chdir(name: string) {
   if err != ENOERR then ioerror(err, "in chdir", name);
 }
 
-/* Set the permissions of the file or directory specified by name to that
-   indicated by settings.  Returns any errors that occurred via an out
-   parameter.
-
-   :arg err: a syserr used to indicate if an error occurred
-   :arg name: the name of the file/directory which should have its permissions
-              alterred.
-   :arg mode: an integer representing the permissions desired for the file in
-              question.  See description of the provided constants for
-              potential values.
-*/
+pragma "no doc"
 proc chmod(out error: syserr, name: string, mode: int) {
   extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
 
   error = chpl_fs_chmod(name.c_str(), mode);
 }
 
+// CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
 
-/* Set the permissions of the file or directory specified by name to that
-   indicated by settings, and may generate an error message
+/* Set the permissions of the file or directory specified by the argument
+   ``name`` to that indicated by the argument ``mode``.
 
-   :arg name: the name of the file/directory which should have its permissions
+   Will halt with an error message if one is detected
+
+   :arg name: The name of the file or directory whose permissions should be
               alterred.
-   :arg mode: an integer representing the permissions desired for the file
-              in question.  See description of the provided constants for potential
+   :type name: string
+   :arg mode: The permissions desired for the file or direcory in question.
+              See description of :const:`S_IRUSR`, for instance, for potential
               values.
+   :type mode: int
 */
-proc chmod(name: string, mode: int){
+proc chmod(name: string, mode: int) {
   var err: syserr = ENOERR;
   chmod(err, name, mode);
   if err != ENOERR then ioerror(err, "in chmod", name);
 }
 
 
-/* Changes one or both of the owner and group id of the named file to the
-   specified values.  If uid or gid are -1, the value in question will remain
-   unchanged.
-   err: a syserr used to indicate if an error occurred
-   name: the name of the file to be changed.
-   uid: user id to use as new owner, or -1 if it should remain the same.
-   gid: group id to use as the new group owner, or -1 if it should remain the same.
-*/
+pragma "no doc"
 proc chown(out error: syserr, name: string, uid: int, gid: int) {
   extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 
   error = chpl_fs_chown(name.c_str(), uid:c_int, gid:c_int);
 }
 
-/* Changes one or both of the owner and group id of the named file to the
-   specified values.  If uid or gid are -1, the value in question will remain
-   unchanged. Generates an error message if one occurred.
-   name: the name of the file to be changed.
-   uid: user id to use as new owner, or -1 if it should remain the same.
-   gid: group id to use as the new group owner, or -1 if it should remain the same.
+/* Change one or both of the owner and group id of the named file or directory
+   to the specified values.  If ``uid`` or ``gid`` are -1, the value in question
+   will remain unchanged.
+
+   Halts with an error message if one occurred.
+
+   :arg name: The name of the file to be changed.
+   :type name: string
+   :arg uid: The intended new owner(user) id, or -1 if it should remain the
+             same.
+   :type uid: int
+   :arg gid: The intended new group owner(id), or -1 if it should remain the
+             same.
+   :type gid: int
 */
 proc chown(name: string, uid: int, gid: int) {
   var err: syserr = ENOERR;
@@ -111,19 +124,7 @@ proc chown(name: string, uid: int, gid: int) {
 
 // FUTURE WORK:
 // When basename and joinPath are supported, enable dest to be a directory.
-
-/* Copies the contents and permissions of the file indicated by src into
-   the file or directory dest.  If dest is a directory, will return an error via
-   the out parameter.  If metadata is set to true, will also copy the metadata
-   of the file to be copied.  Other errors may also be returned via the out
-   parameter.
-   err: a syserr used to indicate if an error occurred
-   src: the source file whose contents and permissions are to be copied
-   dest: the destination file for the contents and permissions.
-   metadata: a boolean indicating whether to copy metadata (uid, gid, time of
-             last access and time of modification) associated with the source
-             file.
-*/
+pragma "no doc"
 proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) {
   var destFile = dest;
   if (isDir(error, destFile)) {
@@ -164,15 +165,23 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
   }
 }
 
-/* Copies the contents and permissions of the file indicated by src into
-   the file or directory dest.  If dest is a directory, will halt with an error
-   message.  If metadata is set to true, will also copy the metadata of the
-   file to be copied.  May halt with other error messages.
-   src: the source file whose contents and permissions are to be copied
-   dest: the destination file for the contents and permissions.
-   metadata: a boolean indicating whether to copy metadata (uid, gid, time of
-             last access and time of modification) associated with the source
-             file.
+/* Copies the contents and permissions of the file indicated by ``src`` into
+   the file or directory ``dest``.  If ``dest`` is a directory, will halt with
+   an error message.  If ``metadata`` is set to ``true``, will also copy the
+   metadata (uid, gid, time of last access and time of modification) of the
+   file to be copied.
+
+   May halt with other error messages.
+
+   :arg src: The source file whose contents and permissions are to be copied
+   :type src: string
+   :arg dest: The name of the destination file for the contents and permissions.
+              May or may not exist previously, but will be overwritten if it did
+              exist
+   :type dest: string
+   :arg metadata: This argument indicates whether to copy metadata associated
+                  with the source file.  It is set to ``false`` by default.
+   :type metadata: bool
 */
 proc copy(src: string, dest: string, metadata: bool = false) {
   var err: syserr = ENOERR;
@@ -180,14 +189,7 @@ proc copy(src: string, dest: string, metadata: bool = false) {
   if err != ENOERR then ioerror(err, "in copy(" + src + ", " + dest + ")");
 }
 
-/* Copies the contents of the file indicated by src into the file indicated
-   by dest, replacing dest if it already exists (and is different than src).
-   If the dest is not writable or src and dest are the same file, generates
-   an error.  Does not copy metadata.
-   err: a syserr used to indicate if an error occurred
-   src: the source file whose contents are to be copied.
-   dest: the destination of the contents.
-*/
+pragma "no doc"
 proc copyFile(out error: syserr, src: string, dest: string) {
   // This implementation is based off of the python implementation for copyfile,
   // with some slight differences.  That implementation was found at:
@@ -256,12 +258,18 @@ proc copyFile(out error: syserr, src: string, dest: string) {
   }
 }
 
-/* Copies the contents of the file indicated by src into the file indicated
-   by dest, replacing dest if it already exists (and is different than src).
-   If the dest is not writable or src and dest are the same file, halts with
-   an error.  Does not copy metadata.  May halt with an error message.
-   src: the source file whose contents are to be copied.
-   dest: the destination of the contents.
+/* Copies the contents of the file indicated by ``src`` into the file indicated
+   by ``dest``, replacing ``dest``'s contents if it already exists (and is a
+   different file than ``src``, i.e. not a symbolic link to ``src``).
+
+   If ``dest`` is not writable, or ``src`` and ``dest`` refer to the same file,
+   this function will halt with an error message.  Does not copy metadata.  May
+   halt with other error messages.
+
+   :arg src: The source file whose contents are to be copied.
+   :type src: string
+   :arg dest: The intended destination of the contents.
+   :type dest: string
 */
 proc copyFile(src: string, dest: string) {
   var err: syserr = ENOERR;
@@ -269,12 +277,7 @@ proc copyFile(src: string, dest: string) {
   if err != ENOERR then ioerror(err, "in copyFile(" + src + ", " + dest + ")");
 }
 
-/* Copies the permissions of the file indicated by src to the file indicated
-   by dest, leaving contents, owner and group unaffected.
-   err: a syserr used to indicate if an error occurred
-   src: the source file whose permissions are to be copied.
-   dest: the destination of the permissions.
-*/
+pragma "no doc"
 proc copyMode(out error: syserr, src: string, dest: string) {
   // Gets the mode from the source file.
   var srcMode = getMode(error, src);
@@ -286,11 +289,15 @@ proc copyMode(out error: syserr, src: string, dest: string) {
   chmod(error, dest, srcMode);
 }
 
-/* Copies the permissions of the file indicated by src to the file indicated
-   by dest, leaving contents, owner and group unaffected.  May halt with an
-   error message.
-   src: the source file whose permissions are to be copied.
-   dest: the destination of the permissions.
+/* Copies the permissions of the file indicated by ``src`` to the file indicated
+   by ``dest``, leaving contents, owner and group unaffected.
+
+   Will halt with an error message if one is detected.
+
+   :arg src: The source file whose permissions are to be copied.
+   :type src: string
+   :arg dest: The intended destination of the permissions.
+   :type dest: string
 */
 proc copyMode(src: string, dest: string) {
   var err: syserr = ENOERR;
@@ -301,6 +308,7 @@ proc copyMode(src: string, dest: string) {
 use Filerator;
 use Path;
 
+pragma "no doc"
 proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
   var oldMode = getMode(src);
   mkdir(error, dest, mode=oldMode, parents=true);
@@ -319,19 +327,7 @@ proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolical
   }
 }
 
-/* Will recursively copy the tree which starts at src into dst, including all
-   contents, permissions, and metadata.  dst must not previously exist, this
-   function assumes it can create it and any missing parent directories.
-   If copySymbolically is true, symlinks will be copied as symlinks, otherwise
-   their contents and metadata will be copied. May return an error via an out
-   argument.
-   error: a syserr used to indicate if an error occurred
-   src: the root of the source tree to be copied.
-   dest: the root of the destination directory where the tree where the tree is
-         to be copied (must not exist prior to this function call).
-   copySymbolically: a boolean indicating how to handle symlinks in the
-                     source directory.
-*/
+pragma "no doc"
 proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
   var expectedErrorCases = exists(error, dest);
   if (error != ENOERR) then return; // Some error occurred in checking the existence of dest.
@@ -352,16 +348,25 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
   copyTreeHelper(error, srcPath, dest, copySymbolically);
 }
 
-/* Will recursively copy the tree which starts at src into dst, including all
-   contents, permissions, and metadata.  dst must not previously exist, this
-   function assumes it can create it and any missing parent directories.
-   If copySymbolically is true, symlinks will be copied as symlinks, otherwise
-   their contents and metadata will be copied. May halt with an error message.
-   src: the root of the source tree to be copied.
-   dest: the root of the destination directory where the tree where the tree is
-         to be copied (must not exist prior to this function call).
-   copySymbolically: a boolean indicating how to handle symlinks in the
-                     source directory.
+/* Will recursively copy the tree which lives under ``src`` into ``dst``,
+   including all contents, permissions, and metadata.  ``dst`` must not
+   previously exist, this function assumes it can create it and any missing
+   parent directories. If ``copySymbolically`` is ``true``, symlinks will be
+   copied as symlinks, otherwise their contents and metadata will be copied
+   instead.
+
+   Will halt with an error message if one is detected.
+
+   :arg src: The root of the source tree to be copied.
+   :type src: string
+   :arg dest: The root of the destination directory under which the contents of
+              ``src`` are to be copied (must not exist prior to this function
+              call).
+   :type dest: string
+   :arg copySymbolically: This argument is used to indicate how to handle
+                          symlinks in the source directory.  It is set to
+                          ``false`` by default
+   :type copySymbolically: bool
 */
 proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
   var err: syserr = ENOERR;
@@ -369,13 +374,7 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
   if err != ENOERR then ioerror(err, "in copyTree " + src, dest);
 }
 
-/* Returns the current working directory for the current locale.
-   err: a syserr used to indicate if an error occurred
-
-   Note: another task on this locale can change the current working
-   directory from underneath this task, so use caution when making use
-   of this function in a parallel environment.
-*/
+pragma "no doc"
 proc locale.cwd(out error: syserr): string {
   extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
 
@@ -394,12 +393,18 @@ proc locale.cwd(out error: syserr): string {
   return ret;
 }
 
-/* Returns the current working directory for the current locale. Generates an
-   error message if one occurred.
+/* Obtains and returns the current working directory for this locale.
 
-   Note: another task on this locale can change the current working
-   directory from underneath this task, so use caution when making use
-   of this function in a parallel environment.
+   Will halt with an error message if one was detected.
+
+   .. warning::
+
+      Another task on this locale can change the current working directory from
+      underneath this task, so use caution when making use of this function in
+      a parallel environment.
+
+   :return: The current working directory for the locale in question.
+   :rtype: string
 */
 proc locale.cwd(): string {
   var err: syserr = ENOERR;
@@ -408,11 +413,7 @@ proc locale.cwd(): string {
   return ret;
 }
 
-/* Returns true if the provided filename corresponds to an existing file, false
-   otherwise.  Returns false for broken symbolic links.  Returns any errors that
-   occurred via an out parameter
-   name: a string used to attempt to find the file specified.
-*/
+pragma "no doc"
 proc exists(out error: syserr, name: string): bool {
   extern proc chpl_fs_exists(ref result:c_int, name: c_string): syserr;
 
@@ -421,10 +422,18 @@ proc exists(out error: syserr, name: string): bool {
   return ret != 0;
 }
 
-/* Returns true if the provided filename corresponds to an existing file, false
-   otherwise.  Returns false for broken symbolic links.  Generates an error
-   message if one occurred.
-   name: a string used to attempt to find the file specified.
+/* Determines if the file or directory indicated by ``name`` exists and returns
+   the result of this check.
+
+   Will halt with an error message if one was detected.
+
+   :arg name: The file or directory whose existence is in question.
+   :type name: string
+
+   :return: ``true`` if the provided argument corresponds to an existing file or
+            directory, ``false`` otherwise.  Also returns ``false`` for broken
+            symbolic links.
+   :rtype: bool
 */
 proc exists(name: string): bool {
   var err: syserr = ENOERR;
@@ -435,9 +444,11 @@ proc exists(name: string): bool {
 
 /* Returns the group id associated with the file or directory specified by
    name.  Returns any errors that occurred via an out parameter.
+
    err: a syserr used to indicate if an error occurred
    name: a string used to indicate the file in question
 */
+pragma "no doc"
 proc getGID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
 
@@ -448,6 +459,7 @@ proc getGID(out error: syserr, name: string): int {
 
 /* Returns the group id associated with the file or directory specified by
    name.  May generate an error message.
+
    name: a string used to indicate the file in question
 */
 proc getGID(name: string): int {
@@ -459,9 +471,11 @@ proc getGID(name: string): int {
 
 /* Returns an integer representing the current permissions of the file specified
    by name.  May generate an error message.
+
    err: a syserr used to indicate if an error occurred during this function
    name: the name of the file that you want to know the permissions of.
 */
+pragma "no doc"
 proc getMode(out error: syserr, name: string): int {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
 
@@ -472,6 +486,7 @@ proc getMode(out error: syserr, name: string): int {
 
 /* Returns an integer representing the current permissions of the file specified
    by name.  May generate an error message.
+
    name: the name of the file that you want to know the permissions of.
 */
 proc getMode(name: string): int {
@@ -483,9 +498,11 @@ proc getMode(name: string): int {
 
 /* Returns the user id associated with the file or directory specified by
    name.  Returns any errors that occurred via an out parameter.
+
    err: a syserr used to indicate if an error occurred
    name: a string used to indicate the file in question
 */
+pragma "no doc"
 proc getUID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
 
@@ -496,6 +513,7 @@ proc getUID(out error: syserr, name: string): int {
 
 /* Returns the user id associated with the file or directory specified by
    name.  May generate an error message.
+
    name: a string used to indicate the file in question
 */
 proc getUID(name: string): int {
@@ -506,9 +524,11 @@ proc getUID(name: string): int {
 }
 
 /* Returns true if the name corresponds to a directory, false otherwise.
+
    err: a syserr used to indicate if an error occurred
    name: a string that could be the name of a directory.
 */
+pragma "no doc"
 proc isDir(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):syserr;
 
@@ -519,6 +539,7 @@ proc isDir(out error:syserr, name:string):bool {
 
 /* Returns true if the name corresponds to a directory, false otherwise.
    Generates an error message if one occurs.
+
    name: a string that could be the name of a directory.
 */
 proc isDir(name:string):bool {
@@ -529,9 +550,11 @@ proc isDir(name:string):bool {
 }
 
 /* Returns true if the name corresponds to a file, false otherwise.
+
    err: a syserr used to indicate if an error occurred
    name: a string that could be the name of a file.
 */
+pragma "no doc"
 proc isFile(out error:syserr, name:string):bool {
   extern proc chpl_fs_is_file(ref result:c_int, name: c_string):syserr;
 
@@ -542,6 +565,7 @@ proc isFile(out error:syserr, name:string):bool {
 
 /* Returns true if the name corresponds to a file, false otherwise.
    Generates an error message if one occurs.
+
    name: a string that could be the name of a file.
 */
 proc isFile(name:string):bool {
@@ -553,8 +577,10 @@ proc isFile(name:string):bool {
 
 /* Returns true if the name corresponds to a symbolic link, false if not
    or if symbolic links are not supported.
+
    name: a string that could be the name of a symbolic link.
 */
+pragma "no doc"
 proc isLink(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): syserr;
 
@@ -566,6 +592,7 @@ proc isLink(out error:syserr, name: string): bool {
 /* Returns true if the name corresponds to a symbolic link, false if not
    or if symbolic links are not supported.  Generates an error message if one
    occurs
+
    name: a string that could be the name of a symbolic link.
 */
 proc isLink(name: string): bool {
@@ -576,9 +603,11 @@ proc isLink(name: string): bool {
 }
 
 /* Returns true if the name corresponds to a mount point, false otherwise.
+
    err: a syserr used to indicate if an error occurred
    name: a string that could be the name of a mount point.
 */
+pragma "no doc"
 proc isMount(out error:syserr, name: string): bool {
   extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): syserr;
 
@@ -593,6 +622,7 @@ proc isMount(out error:syserr, name: string): bool {
 }
 
 /* Returns true if the name corresponds to a mount point, false otherwise.
+
    name: a string that could be the name of a mount point.
 */
 proc isMount(name: string): bool {
@@ -632,22 +662,23 @@ extern const S_ISVTX: int;
    will attempt to create any directory in the path that did not previously
    exist.  Returns any errors that occurred via an out parameter
 
-   :arg err: a syserr used to indicate if an error occurred
-   :arg name: the name of the directory to be created, fully specified.
-   :arg mode: an integer representing the permissions desired for the file in
-              question. See description of the provided constants for
-              potential values.
-   :arg parents: a boolean indicating if parent directories should be created.
-                 If set to false, any nonexistent parent will cause an error to
-                 occur.
-
    Important note: In the case where parents is true, there is a potential
    security vulnerability.  Checking whether parent directories exist and
    creating them if not are separate events. So even if parents==true and a
    parent directory didn't exist before this function is called but does exist
    afterward, it's still not necessarily true that this function created that
    parent. Some other concurrent operation could have done so.
+
+   :arg err: a syserr used to indicate if an error occurred
+   :arg name: the name of the directory to be created, fully specified.
+   :arg mode: an integer representing the permissions desired for the file in
+   question. See description of the provided constants for
+   potential values.
+   :arg parents: a boolean indicating if parent directories should be created.
+   If set to false, any nonexistent parent will cause an error to
+   occur.
 */
+pragma "no doc"
 proc mkdir(out error: syserr, name: string, mode: int = 0o777,
            parents: bool=false) {
   extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):syserr;
@@ -659,20 +690,16 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
    will attempt to create any directory in the path that did not previously
    exist.  Generates an error message if one occurred.
 
-   :arg name: the name of the directory to be created, fully specified.
-   :arg mode: an integer representing the permissions desired for the file in
-              question. See description of the provided constants for
-              potential values.
-   :arg parents: a boolean indicating if parent directories should be created.
-                 If set to false, any nonexistent parent will cause an error to
-                 occur.
-
    Important note: In the case where parents is true, there is a potential
    security vulnerability.  Checking whether parent directories exist and
    creating them if not are separate events. So even if parents==true and a
    parent directory didn't exist before this function is called but does exist
    afterward, it's still not necessarily true that this function created that
    parent. Some other concurrent operation could have done so.
+
+   :arg name: the name of the directory to be created, fully specified.
+   :arg mode: an integer representing the permissions desired for the file in question. See description of the provided constants for potential values.
+   :arg parents: a boolean indicating if parent directories should be created.  If set to false, any nonexistent parent will cause an error to occur.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   var err: syserr = ENOERR;
@@ -682,9 +709,11 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
 
 /* Renames the file specified by oldname to newname, returning an error
    if one occurred.  The file is not opened during this operation.
+
    error: a syserr used to indicate if an error occurred during renaming.
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
+pragma "no doc"
 proc rename(out error: syserr, oldname, newname: string) {
   extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
 
@@ -693,6 +722,7 @@ proc rename(out error: syserr, oldname, newname: string) {
 
 /* Renames the file specified by oldname to newname, generating an error message
    if one occurred.  The file is not opened during this operation.
+
    oldname: current name of the file
    newname: name which should refer to the file in the future.*/
 proc rename(oldname, newname: string) {
@@ -703,8 +733,10 @@ proc rename(oldname, newname: string) {
 
 /* Removes the file or directory specified by name, returning an error
    if one occurred via an out parameter.
+
    err: a syserr used to indicate if an error occurred during removal
    name: the name of the file/directory to remove */
+pragma "no doc"
 proc remove(out error: syserr, name: string) {
   extern proc chpl_fs_remove(name: c_string):syserr;
 
@@ -713,6 +745,7 @@ proc remove(out error: syserr, name: string) {
 
 /* Removes the file or directory specified by name, generating an error message
    if one occurred.
+
    name: the name of the file/directory to remove */
 proc remove(name: string) {
   var err:syserr = ENOERR;
@@ -723,9 +756,11 @@ proc remove(name: string) {
 /* Returns true if both pathnames refer to the same file or directory
    (utilizing operating system operations rather than string ones), returns
    false otherwise.
+
    error: a syserr used to indicate if an error occurred during comparison
    file1, file2: string representations of paths to be compared.
 */
+pragma "no doc"
 proc sameFile(out error: syserr, file1: string, file2: string): bool {
   extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
 
@@ -737,6 +772,7 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
 /* Returns true if both pathnames refer to the same file or directory
    (utilizing operating system operations rather than string ones), returns
    false otherwise.  May generate an error message.
+
    file1, file2: string representations of paths to be compared.
 */
 proc sameFile(file1: string, file2: string): bool {
@@ -749,6 +785,7 @@ proc sameFile(file1: string, file2: string): bool {
 /* Same as the above function, but taking file records instead of string
    pathnames as arguments.
 */
+pragma "no doc"
 proc sameFile(out error: syserr, file1: file, file2: file): bool {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): syserr;
@@ -788,10 +825,12 @@ proc sameFile(file1: file, file2: file): bool {
 
 /* Create a symbolic link pointing to oldName named newName.  May generate an
    error message.
+
    err: a syserr used to indicate if an error occurred during creation
    oldName: the source file to be linked
    newName: the location the symbolic link should live
 */
+pragma "no doc"
 proc symlink(out error: syserr, oldName: string, newName: string) {
   extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
 
@@ -800,6 +839,7 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
 
 /* Create a symbolic link pointing to oldName named sym.  May generate an error
    message.
+
    oldName: the source file to be linked
    newName: the location the symbolic link should live
 */
@@ -811,6 +851,7 @@ proc symlink(oldName: string, newName: string) {
 
 /* Sets the file creation mask of the current process to mask, and returns
    the previous value of the file creation mask.
+
    mask: the file creation mask to use now.
 */
 proc umask(mask: int): int {
@@ -819,3 +860,4 @@ proc umask(mask: int): int {
   return chpl_fs_umask(mask.safeCast(mode_t));
 }
 
+}
