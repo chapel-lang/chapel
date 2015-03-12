@@ -693,7 +693,14 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
-    if (serial_state) {
+    // Visual Debug -- should be protected by an #ifdef VISUALDEBUG?
+    if (chpl_vdebug) {
+       dprintf (chpl_vdebug_fd, "addToTaskList: %d %d %s %d %s\n"
+                chpl_nodeID, task_list_locale, (is_begin_stmt ? "begin" : "nb"),
+                lineno, filename);
+    }
+
+  if (serial_state) {
         // call the function directly.
         (chpl_ftable[fid])(arg);
     } else if (subloc == c_sublocid_any) {

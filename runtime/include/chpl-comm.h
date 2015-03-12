@@ -49,6 +49,18 @@ size_t chpl_comm_getenvMaxHeapSize(void);
 
 
 //
+// Visual Debug support (Shared Interface)
+//
+
+extern int chpl_vdebug_fd;    // fd of output file, 0 => not gathering data
+extern int chpl_vdebug;       // 
+
+extern void chpl_vdebug_start(const char *); //  start and open file if not NULL
+extern void chpl_vdebug_stop(void);    //  stop collecting data
+
+// End Visual Debug support
+
+//
 // Shared interface (implemented in the compiler generated code)
 //
 extern void chpl__heapAllocateGlobals(void);

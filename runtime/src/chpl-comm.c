@@ -37,6 +37,17 @@ int chpl_verbose_comm;
 int chpl_comm_diagnostics;
 int chpl_verbose_mem;
 
+// Visual Debug -- should be protected by a #ifdef?
+
+#include <stdio.h>
+#include <fcntl.h>
+#include <errno.h>
+
+int chpl_vdebug_fd = -1;
+int chpl_vdebug = 0;
+
+// End Visual Debug
+
 void chpl_startCommDiagnostics(void); // this one implemented by comm layers
 void chpl_gen_startCommDiagnostics(void); // this one implemented in chpl-comm.c
 void chpl_stopCommDiagnostics(void);
@@ -113,3 +124,55 @@ size_t chpl_comm_getenvMaxHeapSize(void)
 
   return size;
 }
+
+// Visual Debug support
+
+static int chpl_make_vdebug_file (const char *rootname, int namelen) {
+    char fname[namelen];
+    
+    snprintf (fname, namelen, "%s-%d", rootname, chpl_nodeID);
+    chpl_vdebug_fd = open (fname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+    if (chpl_vdebug_fd < 0) {
+      fprintf (stderr, "Visual Debug failed to open %s: %s\n",
+               fname, strerror(errno));
+      chpl_vdebug = 0;
+      chpl_vdebug_fd = -1;
+      return -1;
+    }
+    return 0;
+}
+
+void chpl_vdebug_start(const char *fileroot) {
+  if (chpl_vdebug_fd == -1) {
+
+    // Initial call, open file and write initialization information
+    const char * rootname;
+    int  namelen;
+    int  temp;
+
+    // Get the root of the file name.
+    rootname = (fileroot == NULL) ? ".Vdebug" : fileroot; 
+    namelen = strlen(rootname)+3;
+    temp =  chpl_numNodes;
+    while (temp > 1) { 
+      namelen ++;
+      temp /= 2;
+    }
+
+    // In case of an error, just return
+    if (chpl_make_vdebug_file(rootname, namelen) < 0)
+      return;
+
+    // Write initial information to the file
+    dprintf (chpl_vdebug_fd, "ChplVdebug: nodes %d, id %d\n",
+             chpl_numNodes, chpl_nodeID);
+  }
+
+  chpl_vdebug = 1;
+}
+
+void chpl_vdebug_stop(void) {
+  chpl_vdebug = 0;
+}
+
+// End Visual Debug Support

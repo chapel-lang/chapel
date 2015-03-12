@@ -373,6 +373,15 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
     chpl_sync_unlock(&chpl_comm_diagnostics_sync);
   }
 
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "put_nb: %lld.%06d, %d, %d, 0x%lx, 0x%lx, %d, %d, %d, %d, %s\n",
+	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, node, (long) addr,
+             (long) raddr, elemSize, typeIndex, len, ln, fn);
+  }
+
   return (chpl_comm_nb_handle_t) ret;
 }
 
@@ -390,6 +399,15 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
     chpl_comm_commDiagnostics.get_nb++;
     chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  }
+
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "get_nb: %lld.%06d, %d, %d, 0x%lx, 0x%lx, %d, %d, %d, %d, %s\n",
+	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, node, (long) addr,
+             (long) raddr, elemSize, typeIndex, len, ln, fn);
   }
 
   return (chpl_comm_nb_handle_t) ret;
@@ -804,6 +822,16 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, c_string fn) {
   const int size = elemSize*len;
+
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "put: %lld.%06d, %d, %d, 0x%lx, 0x%lx, %d, %d, %d, %d, %s\n",
+	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, node, (long) addr,
+             (long) raddr, elemSize, typeIndex, len, ln, fn);
+  }
+
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
   } else {
@@ -825,6 +853,16 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                     int32_t elemSize, int32_t typeIndex, int32_t len,
                     int ln, c_string fn) {
   const int size = elemSize*len;
+
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "get: %lld.%06d, %d, %d, 0x%lx, 0x%lx, %d, %d, %d, %d, %s\n",
+	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, node, (long) addr,
+             (long) raddr, elemSize, typeIndex, len, ln, fn);
+  }
+
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
   } else {
@@ -885,6 +923,18 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
     for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
     printf("\n");                     
   }
+
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "get_strd: %lld.%06d, %d, %d, 0x%lx, 0x%lx, %d, %d, %d, %s\n",
+	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, srcnode, (long) dstaddr,
+             (long) srcaddr, elemSize, typeIndex, ln, fn);
+    // print out the srcstr and dststr?
+	     
+  }
+
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
     printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, srcnode);
@@ -933,6 +983,17 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
     printf("count (count[0] in bytes):\n");                   
     for (i=0;i<=strlvls;i++) printf(" %d ",(int)cnt[i]);
     printf("\n");                     
+  }
+
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "put_strd: %lld.%06d, %d, %d, 0x%lx, 0x%lx, %d, %d, %d, %s\n",
+	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, dstnode, (long) dstaddr,
+             (long) srcaddr, elemSize, typeIndex, ln, fn);
+    // print out the srcstr and dststr?
+	     
   }
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet

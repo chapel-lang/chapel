@@ -483,6 +483,13 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
 
   assert(subloc == 0 || subloc == c_sublocid_any);
 
+  // Visual Debug -- should be protected by an #ifdef VISUALDEBUG?
+  if (chpl_vdebug) {
+    dprintf (chpl_vdebug_fd, "addToTaskList: %d %d %s %d %s\n",
+             chpl_nodeID, task_list_locale, (is_begin_stmt ? "begin" : "nb"),
+             lineno, filename);
+  }
+
   if (task_list_locale == chpl_nodeID) {
     chpl_task_list_p ltask;
 
