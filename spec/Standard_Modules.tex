@@ -26,7 +26,6 @@ are as follows:
              & \chpl{BitOps} & Bit manipulation routines \\
              & \chpl{Norm}   & Routines for computing vector and matrix norms \\
              & \chpl{Search} & Generic searching routines \\
-             & \chpl{Sort} & Generic sorting routines \\
              & \chpl{Time} & Types and routines related to time \\
              & \chpl{UtilMath} & Math-related utilities \\
 \end{tabular}
@@ -826,71 +825,6 @@ the whole array will be searched.  Returns a tuple indicating (1)
 whether or not the value was found and (2) the location of the value
 if it was found, or the location where the value should have been if
 it was not found.
-\end{protobody}
-
-
-\subsection{Sort}
-\label{Sort}
-\index{modules!optional!Sort@\chpl{Sort}}
-
-The \chpl{Sort} module is designed to support standard sorting
-routines.  The current interface is minimal and should be expected to
-grow and evolve over time. Each of the following functions accepts an
-optional boolean argument, \chpl{reverse}, which is \chpl{false} by
-default. If \chpl{true}, then the sort function will order in reverse.
-
-\begin{protohead}
-proc BubbleSort(Data: [?Dom], reverse : bool = false) where Dom.rank == 1
-\end{protohead}
-\begin{protobody}
-Sorts the 1D array \chpl{Data} in-place using a sequential bubble sort
-algorithm.
-\end{protobody}
-
-\begin{protohead}
-proc HeapSort(Data: [?Dom], reverse : bool = false) where Dom.rank == 1
-\end{protohead}
-\begin{protobody}
-Sorts the 1D array \chpl{Data} in-place using a sequential heap sort
-algorithm.
-\end{protobody}
-
-\begin{protohead}
-proc InsertionSort(Data: [?Dom], reverse : bool = false) where Dom.rank == 1
-\end{protohead}
-\begin{protobody}
-Sorts the 1D array \chpl{Data} in-place using a sequential insertion
-sort algorithm.
-\end{protobody}
-
-\begin{protohead}
-proc MergeSort(Data: [?Dom], reverse : bool = false, minlen=16) where Dom.rank == 1
-\end{protohead}
-\begin{protobody}
-Sorts the 1D array \chpl{Data} using a parallel merge sort algorithm.
-The optional minlen argument is the minimum sized array that will be
-sorted using merge sort.  If the size is less than minlen, the
-insertion sort algorithm will be used.
-
-\end{protobody}
-
-\begin{protohead}
-proc QuickSort(Data: [?Dom], reverse : bool = false, minlen=16) where Dom.rank == 1
-\end{protohead}
-\begin{protobody}
-Sorts the 1D array \chpl{Data} in-place using a sequential
-implementation of the QuickSort algorithm.  The optional minlen
-argument is the minimum sized array that will be sorted using
-QuickSort.  If the size is less than minlen, the insertion sort
-algorithm will be used.
-\end{protobody}
-
-\begin{protohead}
-proc SelectionSort(Data: [?Dom], reverse : bool = false) where Dom.rank == 1
-\end{protohead}
-\begin{protobody}
-Sorts the 1D array \chpl{Data} in-place using a sequential selection
-sort algorithm.
 \end{protobody}
 
 
