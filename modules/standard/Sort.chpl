@@ -18,10 +18,14 @@
  */
 
 /*
-   The `Sort` module is designed to support standard sorting routines.
+   The `Sort` module is designed to support standard sorting
+   routines.  The current interface is minimal and should be expected to
+   grow and evolve over time. Each of the following functions accepts an
+   optional boolean argument, `reverse`, which is `false` by
+   default. If `true`, then the sort function will order in reverse.
 
  */
-
+module Sort {
 
 pragma "no doc"
 inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
@@ -36,7 +40,7 @@ inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
 
 
 /*
-   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm
+   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
 
    :arg Data: The array to be sorted
    :type Data: [] eltType
@@ -116,7 +120,7 @@ proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) wher
 
 
 /*
-   Sort the 1D array `Data` in-place using a sequential insertion sort algorithm
+   Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
 
    :arg Data: The array to be sorted
    :type Data: [] eltType
@@ -172,7 +176,6 @@ pragma "no doc"
 proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
-
   if hi-lo < minlen {
     InsertionSort(Data, reverse=reverse);
     return;
@@ -328,7 +331,7 @@ inline proc VerifySort(Data: [?Dom] ?elType, str: string, param reverse=false) {
 // when it doesn't.
 //
 /*
-   Iterator to yield the elements of argument `x` in sorted order
+   Yield the elements of argument `x` in sorted order.
 
    :arg x: An iterable value to be sorted and yielded element by element
    :type x: iterable
@@ -342,4 +345,5 @@ iter sorted(x) {
   QuickSort(y);
   for i in y do
     yield i;
+}
 }
