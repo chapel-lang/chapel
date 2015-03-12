@@ -3,10 +3,11 @@ export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 
 PROGRAM = chpl
+CHPLDOC = chpldoc
 VERSION = $(shell $(CHPL_MAKE_HOME)/util/devel/compVersion)
 
-MANPAGE = man1/$(PROGRAM).1
-TARGETS = $(MANPAGE) $(PROGRAM).pdf
+MANPAGE = man1/$(PROGRAM).1 man1/$(CHPLDOC).1
+TARGETS = $(MANPAGE) $(PROGRAM).pdf $(CHPLDOC).pdf
 
 TXT2MAN = $(CHPL_MAKE_HOME)/third-party/txt2man/txt2man
 
