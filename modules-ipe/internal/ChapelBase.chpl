@@ -113,13 +113,14 @@ module ChapelBase
   // These are implemented within the interpreter
   //
 
-  extern proc print (x : bool)                    : void;
-  extern proc print (x : int)                     : void;
-  extern proc print (x : real)                    : void;
-  extern proc print (x : c_string)                : void;
+  extern proc print(x : bool)                      : void;
+  extern proc print(x : int)                       : void;
+  extern proc print(x : real)                      : void;
+  extern proc print(x : c_string)                  : void;
 
-  extern proc print2(format : c_string, x : bool) : void;
-  extern proc print2(format : c_string, x : int)  : void;
-  extern proc print2(format : c_string, x : real) : void;
-  extern proc print2(format : c_string)           : void;
+  extern proc writeln(format : c_string)           : void;
+
+  extern proc writeln(format : c_string, x : bool) : void;
+  extern proc writeln(format : c_string, x : int)  : void;
+  extern proc writeln(format : c_string, x : real) : void;
 }

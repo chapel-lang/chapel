@@ -94,18 +94,6 @@ LLVM Code Generation Options:
       --[no-]llvm-wide-opt            Enable [disable] LLVM wide pointer
                                       optimizations
 
-Documentation Options:
-      --[no-]docs                     Runs documentation on the source file
-      --[no-]docs-alphabetical        Alphabetizes the documentation
-      --docs-comment-style <indicator>
-                                      Only includes comments that start with
-                                      <indicator>
-      --docs-dir <dirname>            Sets the documentation directory to
-                                      <dirname>
-      --docs-text-only                Generate text only documentation
-      --docs-save-sphinx <directory>  Save generated Sphinx project in
-                                      directory
-
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
       --[no-]print-passes             [Don't] print compiler passes
