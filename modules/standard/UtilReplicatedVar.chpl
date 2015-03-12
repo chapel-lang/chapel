@@ -70,6 +70,8 @@ Use it as above, except modify the variable declarations as follows:
 See also rcExample() and rcExampleOverLocales() in this file.
 */
 
+/* */
+
 use ReplicatedDist;
 
 const rcDomainIx   = 1;

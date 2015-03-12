@@ -235,12 +235,24 @@ class AbstractJob(object):
             job_id = self.submit_job(testing_dir, output_file, input_file)
             logging.info('Test has been queued (job id: {0}). Waiting for output...'.format(job_id))
 
-            def wait_for_file(filename):
-                """Wait for filename for a few seconds. If it shows up, return early."""
-                t = 0
-                while not os.path.exists(filename) and t < 5:
-                    time.sleep(0.5)
-                    t += 0.5
+            # TODO: The while condition here should look for jobs that become held,
+            #       are in the queue too long, or ??? and do something
+            #       intelligent. For example, if the job is in the queue longer
+            #       than the walltime, it should probably be deleted (qdel
+            #       <job_id>) and a timeout should be reported. Here are all the
+            #       pbs (torque) job statuses:
+            #
+            #           C -     Job is completed after having run/
+            #           E -  Job is exiting after having run.
+            #           H -  Job is held.
+            #           Q -  job is queued, eligible to run or routed.
+            #           R -  job is running.
+            #           T -  job is being moved to new location.
+            #           W -  job is waiting for its execution time
+            #                (-a option) to be reached.
+            #           S -  (Unicos only) job is suspend.
+            #
+            #       (thomasvandoren, 2014-04-09)
 
             def job_status(job_id, output_file):
                 """Returns the status of the job specified by job_id
@@ -261,12 +273,10 @@ class AbstractJob(object):
                 except ValueError as ex:
                     # ValueError may indicate that the job completed and was
                     # dequeued before we last checked the status. If the output
-                    # file exists (give is a couple seconds to show up), assume
-                    # success. Otherwise re raise error message.
-                    wait_for_file(output_file)
+                    # file exists, assume success. Otherwise re raise error
+                    # message.
                     if os.path.exists(output_file):
                         return 'C'
-
                     raise
 
             exec_start_time = time.time()
@@ -276,8 +286,8 @@ class AbstractJob(object):
                 if not alreadyRunning and status == 'R':
                     alreadyRunning = True
                     exec_start_time = time.time()
+                time.sleep(.5)
                 status = job_status(job_id, output_file)
-                time.sleep(0.5)
 
             exec_time = time.time() - exec_start_time
             # Note that this time isn't very accurate as we don't get the exact
@@ -291,9 +301,6 @@ class AbstractJob(object):
 
             logging.debug('{0} reports job {1} as complete.'.format(
                 self.status_bin, job_id))
-
-            # Give the output file a few seconds to show up.
-            wait_for_file(output_file)
 
             if not os.path.exists(output_file):
                 logging.error('Output file from job does not exist at: {0}'.format(

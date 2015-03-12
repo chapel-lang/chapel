@@ -135,6 +135,9 @@ GenRet WhileDoStmt::codegen()
 
   if (outfile)
   {
+
+    codegenOrderIndependence();
+
     std::string hdr = "while (" + codegenValue(condExprGet()).c + ") ";
 
     info->cStatements.push_back(hdr);

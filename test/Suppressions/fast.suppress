@@ -21,6 +21,7 @@ arrays/deitz/part4/test_array_rankchange_error
 arrays/deitz/part6/test_bounds1
 arrays/deitz/part6/test_bounds2
 arrays/waynew/init2
+classes/bradc/arrayInClass/overrideDefaultArr
 classes/diten/callNilClassesMethod
 classes/diten/nilDynamicDispatch
 compflags/deitz/test_no_bounds_checking

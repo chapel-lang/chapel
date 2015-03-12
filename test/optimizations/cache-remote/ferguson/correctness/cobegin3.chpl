@@ -7,7 +7,7 @@ config const verbose=false;
 
 proc doit(a:locale, b:locale, c:locale)
 {
-  extern proc printf(fmt: string, vals...?numvals): int;
+  extern proc printf(fmt: c_string, vals...?numvals): int;
  
   on a {
     if verbose then printf("on %d\n", here.id:c_int);

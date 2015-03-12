@@ -11,5 +11,4 @@ c_ptr(int(32))
 9
 byRef(ptr to 7)
 byPtr(ptr to 7)
-byString(Hello)
 byCString(Hello)

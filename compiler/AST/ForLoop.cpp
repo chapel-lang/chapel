@@ -208,17 +208,18 @@ ForLoop::~ForLoop()
 ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 {
   SymbolMap  localMap;
-  SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
-  ForLoop*   retval    = new ForLoop();
+  SymbolMap* map            = (mapRef != 0) ? mapRef : &localMap;
+  ForLoop*   retval         = new ForLoop();
 
-  retval->astloc         = astloc;
-  retval->blockTag       = blockTag;
+  retval->astloc            = astloc;
+  retval->blockTag          = blockTag;
 
-  retval->mBreakLabel    = mBreakLabel;
-  retval->mContinueLabel = mContinueLabel;
+  retval->mBreakLabel       = mBreakLabel;
+  retval->mContinueLabel    = mContinueLabel;
+  retval->mOrderIndependent = mOrderIndependent;
 
-  retval->mIndex         = mIndex->copy(map, true),
-  retval->mIterator      = mIterator->copy(map, true);
+  retval->mIndex            = mIndex->copy(map, true),
+  retval->mIterator         = mIterator->copy(map, true);
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -254,6 +255,16 @@ BlockStmt* ForLoop::copyBody(SymbolMap* map)
 bool ForLoop::isForLoop() const
 {
   return true;
+}
+
+// TODO (Elliot 03/03/15): coforall loops are currently represented
+// as ForLoops in the compiler. This is a start at distinguishing
+// them. Note that for coforall loops, this method and isForLoop
+// with both return true. Eventually CoforallLoop should become it's
+// own class that shares a common parent with ForLoop.
+bool ForLoop::isCoforallLoop() const
+{
+  return mIndex->var->hasFlag(FLAG_COFORALL_INDEX_VAR);
 }
 
 SymExpr* ForLoop::indexGet() const

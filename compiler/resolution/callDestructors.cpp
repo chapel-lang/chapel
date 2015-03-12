@@ -238,7 +238,7 @@ static bool stmtDefinesAnAutoDestroyedVariable(Expr* stmt) {
         // flag, presumably before the type was known, that should not in
         // fact be auto-destroyed.  Don't gum things up by collecting them.
         if (autoDestroyMap.get(var->type) != 0) {
-          if (var->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+          if (var->isType() == false) {
             retval = true;
           }
         }
@@ -774,7 +774,7 @@ static void insertGlobalAutoDestroyCalls() {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)
         if (VarSymbol* var = toVarSymbol(def->sym))
-          if (!var->isParameter() && !var->hasFlag(FLAG_TYPE_VARIABLE))
+          if (!var->isParameter() && !var->isType())
             if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
               if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
                 SET_LINENO(var);

@@ -1,8 +1,8 @@
 Module: hasGlobalParams
    This module has some global scoped params. 
-   param first
-   param second: bool
-   param third
+   param first = 16
+   param second: bool = false
+   param third = 16
       This param has an associated comment and a value 
-   param fourth: bool
+   param fourth: bool = false
       This param has an associated comment, a type, and a value 

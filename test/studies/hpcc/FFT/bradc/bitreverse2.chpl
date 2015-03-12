@@ -23,7 +23,7 @@ proc bitReverse(W: [?WD] complex) {
   var V: [WD] complex;
   for i in WD {
     var ndx = bitMatMultOr(mask, bitMatMultOr(i:uint(64), mask));
-    ndx = bitRotLeft(ndx, shift);
+    ndx = rotl(ndx, shift);
     // BLC: would be nice to replace this all with:
     // ndx = bitRot(ndx, shift, numbits = shift);
     V(ndx:int) = W(i); // BLC: unfortunate cast
@@ -36,6 +36,6 @@ proc bitReverse(W: [?WD] complex) {
 proc bitReverse(val: ?valType, numBits = 64) {
   param mask: uint(64) = 0x0102040810204080;
   const valReverse64 = bitMatMultOr(mask, bitMatMultOr(val:uint(64), mask));
-  const valReverse = bitRotLeft(valReverse64, numBits);
+  const valReverse = rotl(valReverse64, numBits);
   return valReverse: valType;
 }

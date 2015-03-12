@@ -1,4 +1,4 @@
-extern proc chpl_mem_allocMany(number, size, description, lineno = -1, filename = ""): opaque;
+extern proc chpl_mem_allocMany(number, size, description, lineno = -1, filename: c_string = ""): opaque;
 
 for 1..1000 {
   var i = 1000000;

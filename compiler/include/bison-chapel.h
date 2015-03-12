@@ -81,8 +81,8 @@
   };
 
   struct IntentExpr {
-    ArgSymbol* first;
-    Expr*      second;
+    Expr*  first;
+    Expr*  second;
   };
 
   // The lexer only uses pch.

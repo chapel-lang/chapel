@@ -26,13 +26,17 @@ module MemTracking
     memStats: bool = false,
     memLeaks: bool = false,
     memLeaksTable: bool = false,
-    memMax: size_t = 0,
-    memThreshold: size_t = 0,
+    memMax: uint = 0,
+    memThreshold: uint = 0,
     memLog: c_string = "";
 
   pragma "no auto destroy"
   config const
     memLeaksLog: c_string = "";
+
+  // Safely cast to size_t instances of memMax and memThreshold.
+  const cMemMax = memMax.safeCast(size_t),
+    cMemThreshold = memThreshold.safeCast(size_t);
 
   // Globally accessible copy of the corresponding c_string consts
   use NewString;
@@ -64,8 +68,8 @@ module MemTracking
     ret_memStats = memStats;
     ret_memLeaks = memLeaks;
     ret_memLeaksTable = memLeaksTable;
-    ret_memMax = memMax;
-    ret_memThreshold = memThreshold;
+    ret_memMax = cMemMax;
+    ret_memThreshold = cMemThreshold;
 
     if (here.id != 0) {
       // These c_strings are going to be leaked

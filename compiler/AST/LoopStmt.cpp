@@ -18,11 +18,13 @@
  */
 
 #include "LoopStmt.h"
+#include "codegen.h"
 
 LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
 {
-  mBreakLabel    = 0;
-  mContinueLabel = 0;
+  mBreakLabel       = 0;
+  mContinueLabel    = 0;
+  mOrderIndependent = false;
 }
 
 LoopStmt::~LoopStmt()
@@ -55,3 +57,50 @@ void LoopStmt::continueLabelSet(LabelSymbol* sym)
   mContinueLabel = sym;
 }
 
+bool LoopStmt::isOrderIndependent() const
+{
+  return mOrderIndependent;
+}
+
+void LoopStmt::orderIndependentSet(bool orderIndependent)
+{
+  mOrderIndependent = orderIndependent;
+}
+
+LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr)
+{
+  LoopStmt* retval = NULL;
+
+  if (LoopStmt* loop = toLoopStmt(expr))
+    retval = loop;
+
+  else if (expr->parentExpr)
+    retval = findEnclosingLoop(expr->parentExpr);
+
+  else
+    retval = NULL;
+
+  return retval;
+
+}
+
+// If vectorization is enabled and this loop is order independent, codegen
+// CHPL_PRAGMA_IVDEP. This method is a no-op if vectorization is off, or the
+// loop is not order independent.
+void LoopStmt::codegenOrderIndependence()
+{
+  if (fNoVectorize == false && isOrderIndependent())
+  {
+    GenInfo* info = gGenInfo;
+
+    // Note: This *must* match the macro definitions provided in the runtime
+    std:: string ivdepStr = "CHPL_PRAGMA_IVDEP";
+    if (fReportOrderIndependentLoops)
+    {
+      printf("Adding %s to %s for %s:%d\n", ivdepStr.c_str(),
+          this->astTagAsString(), this->getModule()->name, this->linenum());
+    }
+
+    info->cStatements.push_back(ivdepStr+'\n');
+  }
+}

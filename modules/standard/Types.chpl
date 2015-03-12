@@ -450,6 +450,61 @@ proc numBits(type t: enumerated) param {
   return numBits(enum_mintype(t));
 }
 
+//
+// safe up/down casts between all integral types
+// performs the minimum number of runtime checks - uint(8)->uint(64) won't
+// perform any checks for example
+//
+inline proc integral.safeCast(type T) : T where isUintType(T) {
+  if castChecking {
+    if isIntType(this.type) {
+      // int(?) -> uint(?)
+      if this < 0 then // runtime check
+        halt("casting "+typeToString(this.type)+" less than 0 to "+typeToString(T));
+    }
+
+    if max(this.type):uint > max(T):uint {
+      // [u]int(?) -> uint(?)
+      if (this:uint > max(T):uint) then // runtime check
+        halt("casting "+typeToString(this.type)+" with a value greater than the maximum of "+
+             typeToString(T)+" to "+typeToString(T));
+    }
+  }
+  return this:T;
+}
+
+inline proc integral.safeCast(type T) : T where isIntType(T) {
+  if castChecking {
+    if max(this.type):uint > max(T):uint {
+      // this isUintType check lets us avoid a runtime check for this < 0
+      if isUintType(this.type) {
+        // uint(?) -> int(?)
+        if this:uint > max(T):uint then // runtime check
+          halt("casting "+typeToString(this.type)+" with a value greater than the maximum of "+
+               typeToString(T)+" to "+typeToString(T));
+      } else {
+        // int(?) -> int(?)
+        // max(T) <= max(int), so cast to int is safe
+        if this:int > max(T):int then // runtime check
+          halt("casting "+typeToString(this.type)+" with a value greater than the maximum of "+
+               typeToString(T)+" to "+typeToString(T));
+      }
+    }
+    if isIntType(this.type) {
+      if min(this.type):int < min(T):int {
+        // int(?) -> int(?)
+        if this:int < min(T):int then // runtime check
+          halt("casting "+typeToString(this.type)+" with a value less than the minimum of "+
+               typeToString(T)+" to "+typeToString(T));
+      }
+    }
+  }
+  return this:T;
+}
+
+proc integral.safeCast(type T) {
+  compilerError("safeCast is only supported between integral types");
+}
 
 //
 // identity functions (for reductions)

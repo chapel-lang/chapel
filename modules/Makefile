@@ -23,7 +23,7 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
-
+SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 default: all
@@ -35,7 +35,7 @@ clean: FORCE
 
 cleanall: FORCE
 
-clobber: FORCE
+clobber: FORCE clean-documentation
 	rm -rf standard/gen
 
 depend:
@@ -48,13 +48,23 @@ $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 # created, but still make sure the command fails.
 	cd $(@D) && ( $(MAKE_SYS_BASIC_TYPES) > $(@F) || { rm -f $(@F) && false ; } )
 
-MODULES_TO_DOCUMENT = \
-	standard/BitOps.chpl \
-	standard/Random.chpl
+$(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
+	mkdir -p $(@D)
+# When makeSysBasicTypes call fails, delete the SysCTypes.chpl file that is
+# created, but still make sure the command fails.
+	cd $(@D) && ( $(MAKE_SYS_BASIC_TYPES) --doc > $(@F) || { rm -f $(@F) && false ; } )
 
-documentation:
+
+MODULES_TO_DOCUMENT = \
+	standard/Random.chpl \
+	standard/Buffers.chpl \
+	$(SYS_CTYPES_MODULE_DOC)
+
+documentation: $(SYS_CTYPES_MODULE_DOC)
 	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
-	@echo "HTML files are at \$$CHPL_HOME/modules/docs/html/build/html/."
+
+clean-documentation:
+	rm -rf ./docs
 
 FORCE:
 

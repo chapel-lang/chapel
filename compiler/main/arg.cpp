@@ -210,7 +210,7 @@ void usage(const ArgumentState* state,
 
           case 'L':
             if (desc[i].location != 0)
-              printf("%"PRId64, *(int64_t*) desc[i].location);
+              printf("%" PRId64, *(int64_t*) desc[i].location);
             else
               printf("''");
 
@@ -599,7 +599,7 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
     }
     else
     {
-      state->file_argument = (char **)realloc(
+      state->file_argument = (const char **)realloc(
         state->file_argument,
         sizeof(char*) * (state->nfile_arguments + 2));
 

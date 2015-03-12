@@ -94,7 +94,7 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
     wrapper->addFlag(FLAG_FIELD_ACCESSOR);
   if (fn->hasFlag(FLAG_REF_TO_CONST))
     wrapper->addFlag(FLAG_REF_TO_CONST);
-  if (!fn->hasFlag(FLAG_ITERATOR_FN)) { // getValue is var, not iterator
+  if (!fn->isIterator()) { // getValue is var, not iterator
     wrapper->retTag = fn->retTag;
     if (fn->setter)
       wrapper->setter = fn->setter->copy();
@@ -169,7 +169,7 @@ buildDefaultWrapper(FnSymbol* fn,
   wrapper->cname = astr("_default_wrap_", fn->cname);
 
   // Mimic return type.
-  if (!fn->hasFlag(FLAG_ITERATOR_FN))
+  if (!fn->isIterator())
     wrapper->retType = fn->retType;
 
   SymbolMap copy_map;

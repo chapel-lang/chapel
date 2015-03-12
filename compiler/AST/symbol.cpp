@@ -38,11 +38,14 @@
 #include "stringutil.h"
 #include "type.h"
 
+#include "AstToText.h"
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
 
 #include <cstdlib>
 #include <inttypes.h>
+#include <iostream>
+#include <sstream>
 #include <stdint.h>
 
 //
@@ -78,6 +81,7 @@ VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
 VarSymbol *gTryToken = NULL;
 VarSymbol *gBoundsChecking = NULL;
+VarSymbol *gCastChecking = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gNodeID = NULL;
@@ -207,6 +211,7 @@ bool Symbol::isImmediate() const {
   return false;
 }
 
+
 /******************************** | *********************************
 *                                                                   *
 * Common base class for ArgSymbol and VarSymbol.                    *
@@ -253,7 +258,8 @@ VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
-  doc(NULL)
+  doc(NULL),
+  isField(false)
 {
   gVarSymbols.add(this);
 }
@@ -302,6 +308,88 @@ bool VarSymbol::isConstValWillNotChange() const {
 bool VarSymbol::isParameter() const {
   return hasFlag(FLAG_PARAM) || immediate;
 }
+
+
+bool VarSymbol::isType() const {
+  return hasFlag(FLAG_TYPE_VARIABLE);
+}
+
+
+std::string VarSymbol::docsDirective() {
+  std::string result;
+  if (fDocsTextOnly) {
+    result = "";
+  } else {
+    // Global type aliases become type directives. Types that are also fields
+    // could be generics, so let them be treated as regular fields (i.e. use
+    // the attribute directive).
+    if (this->isType() && !this->isField) {
+      result = ".. type:: ";
+    } else if (this->isField) {
+      result = ".. attribute:: ";
+    } else {
+      result = ".. data:: ";
+    }
+  }
+  return this->hasFlag(FLAG_CONFIG) ? result + "config " : result;
+}
+
+
+void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->hasFlag(FLAG_NO_DOC) || this->hasFlag(FLAG_SUPER_CLASS)) {
+      return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+
+  if (this->isType()) {
+    *file << "type ";
+  } else if (this->isConstant()) {
+    *file << "const ";
+  } else if (this->isParameter()) {
+    *file << "param ";
+  } else {
+    *file << "var ";
+  }
+
+  *file << this->name;
+
+  if (this->defPoint->exprType != NULL) {
+    *file << ": ";
+    this->defPoint->exprType->prettyPrint(file);
+  }
+
+  if (this->defPoint->init != NULL) {
+    *file << " = ";
+    this->defPoint->init->prettyPrint(file);
+  }
+
+  *file << std::endl;
+
+  // For .rst mode, put a line break after the .. data:: directive and
+  // its description text.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+/*
+ * For docs, when VarSymbol is used for class fields, identify them as such by
+ * calling this function.
+ */
+void VarSymbol::makeField() {
+  this->isField = true;
+}
+
 
 #ifdef HAVE_LLVM
 static
@@ -596,7 +684,7 @@ GenRet VarSymbol::codegen() {
     // for LLVM
 
     // Handle extern type variables.
-    if( hasFlag(FLAG_EXTERN) && hasFlag(FLAG_TYPE_VARIABLE) ) {
+    if( hasFlag(FLAG_EXTERN) && isType() ) {
       // code generate the type.
       GenRet got = typeInfo();
       return got;
@@ -744,7 +832,7 @@ void VarSymbol::codegenGlobalDef() {
 
     if( this->hasFlag(FLAG_EXTERN) ) {
       // Make sure that it already exists in the layered value table.
-      if( hasFlag(FLAG_TYPE_VARIABLE) ) {
+      if( isType() ) {
         llvm::Type* t = info->lvt->getType(cname);
         if( ! t ) {
           // TODO should be USR_FATAL
@@ -1125,7 +1213,8 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmType(NULL),
     llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
-    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL)
+    llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    doc(NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
@@ -1207,7 +1296,7 @@ void TypeSymbol::codegenMetadata() {
   llvm::LLVMContext& ctx = info->module->getContext();
   // Create the TBAA root node if necessary.
   if( ! info->tbaaRootNode ) {
-    llvm::Value* Ops[1];
+    LLVM_METADATA_OPERAND_TYPE* Ops[1];
     Ops[0] = llvm::MDString::get(ctx, "Chapel types");
     info->tbaaRootNode = llvm::MDNode::get(ctx, Ops);
   }
@@ -1261,16 +1350,17 @@ void TypeSymbol::codegenMetadata() {
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
     // Now create tbaa metadata, one for const and one for not.
     {
-      llvm::Value* Ops[2];
+      LLVM_METADATA_OPERAND_TYPE* Ops[2];
       Ops[0] = llvm::MDString::get(ctx, cname);
       Ops[1] = parent;
       llvmTbaaNode = llvm::MDNode::get(ctx, Ops);
     }
     {
-      llvm::Value* Ops[3];
+      LLVM_METADATA_OPERAND_TYPE* Ops[3];
       Ops[0] = llvm::MDString::get(ctx, cname);
       Ops[1] = constParent;
-      Ops[2] = llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1);
+      Ops[2] = llvm_constant_as_metadata(
+                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1));
       llvmConstTbaaNode = llvm::MDNode::get(ctx, Ops);
     }
   }
@@ -1286,8 +1376,8 @@ void TypeSymbol::codegenMetadata() {
 
   if( ct ) {
     // Now create the tbaa.struct metadata nodes.
-    llvm::SmallVector<llvm::Value*, 16> Ops;
-    llvm::SmallVector<llvm::Value*, 16> ConstOps;
+    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE*, 16> Ops;
+    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE*, 16> ConstOps;
 
     const char* struct_name = ct->classStructName(true);
     llvm::Type* struct_type_ty = info->lvt->getType(struct_name);
@@ -1307,11 +1397,11 @@ void TypeSymbol::codegenMetadata() {
         unsigned gep = ct->getMemberGEP(field->cname);
         llvm::Constant* off = llvm::ConstantExpr::getOffsetOf(struct_type, gep);
         llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
-        Ops.push_back(off);
-        Ops.push_back(sz);
+        Ops.push_back(llvm_constant_as_metadata(off));
+        Ops.push_back(llvm_constant_as_metadata(sz));
         Ops.push_back(field->type->symbol->llvmTbaaNode);
-        ConstOps.push_back(off);
-        ConstOps.push_back(sz);
+        ConstOps.push_back(llvm_constant_as_metadata(off));
+        ConstOps.push_back(llvm_constant_as_metadata(sz));
         ConstOps.push_back(field->type->symbol->llvmConstTbaaNode);
         llvmTbaaStructNode = llvm::MDNode::get(ctx, Ops);
         llvmConstTbaaStructNode = llvm::MDNode::get(ctx, ConstOps);
@@ -1991,7 +2081,13 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
     if( developer ) {
-      if(llvm::verifyFunction(*func, llvm::PrintMessageAction)){
+      bool problems;
+#if HAVE_LLVM_VER >= 35
+      problems = llvm::verifyFunction(*func, &llvm::errs());
+#else
+      problems = llvm::verifyFunction(*func, llvm::PrintMessageAction);
+#endif
+      if( problems ) {
         INT_FATAL("LLVM function verification failed");
       }
     }
@@ -2275,6 +2371,93 @@ bool FnSymbol::isSecondaryMethod() const {
   return isMethod() && !isPrimaryMethod();
 }
 
+
+// This function or method is an iterator (as opposed to a procedure).
+bool FnSymbol::isIterator() const {
+  return hasFlag(FLAG_ITERATOR_FN);
+}
+
+
+std::string FnSymbol::docsDirective() {
+  if (fDocsTextOnly) {
+    return "";
+  }
+
+  if (this->isMethod() && this->isIterator()) {
+    return ".. itermethod:: ";
+  } else if (this->isIterator()) {
+    return ".. iterfunction:: ";
+  } else if (this->isMethod()) {
+    return ".. method:: ";
+  } else {
+    return ".. function:: ";
+  }
+}
+
+
+void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  // Print the rst directive, if one is needed.
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+
+  // Print inline/export. Externs do not get a prefix, since the user doesn't
+  // care whether it's an extern or not (they just want to use the function).
+  if (this->hasFlag(FLAG_INLINE)) {
+    *file << "inline ";
+  } else if (this->hasFlag(FLAG_EXPORT)) {
+    *file << "export ";
+  }
+
+  // Print iter/proc.
+  if (this->isIterator()) {
+    *file << "iter ";
+  } else {
+    *file << "proc ";
+  }
+
+  // Print name and arguments.
+  AstToText *info = new AstToText();
+  info->appendNameAndFormals(this);
+  *file << info->text();
+  delete info;
+
+  // Print return intent, if one exists.
+  switch (this->retTag) {
+  case RET_REF:
+    *file << " ref";
+    break;
+  case RET_PARAM:
+    *file << " param";
+    break;
+  case RET_TYPE:
+    *file << " type";
+    break;
+  default:
+    break;
+  }
+
+  // Print return type.
+  if (this->retExprType != NULL) {
+    *file << ": ";
+    this->retExprType->body.tail->prettyPrint(file);
+  }
+  *file << std::endl;
+
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+  }
+}
+
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -2337,7 +2520,9 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     initFn(NULL),
     filename(NULL),
     doc(NULL),
-    extern_info(NULL) {
+    extern_info(NULL),
+    moduleNamePrefix("")
+{
 
   block->parentSymbol = this;
   registerModule(this);
@@ -2463,6 +2648,72 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
 
   return classes;
 }
+
+
+void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  // Print the module directive first, for .rst mode. This will associate the
+  // Module: <name> title with the module. If the .. module:: directive comes
+  // after the title, sphinx will complain about a duplicate id error.
+  if (!fDocsTextOnly) {
+    *file << ".. default-domain:: chpl" << std::endl << std::endl;
+    *file << ".. module:: " << this->docsName() << std::endl;
+
+    if (this->doc != NULL) {
+      this->printTabs(file, tabs + 1);
+      *file << ":synopsis: ";
+      *file << firstNonEmptyLine(this->doc);
+      *file << std::endl;
+    }
+    *file << std::endl;
+  }
+
+  this->printTabs(file, tabs);
+  const char *moduleTitle = astr("Module: ", this->docsName().c_str());
+  *file << moduleTitle << std::endl;
+
+  if (!fDocsTextOnly) {
+    int length = tabs * this->tabText.length() + strlen(moduleTitle);
+    for (int i = 0; i < length; i++) {
+      *file << "=";
+    }
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    // Only print tabs for text only mode. The .rst prefers not to have the
+    // tabs for module level comments and leading whitespace removed.
+    unsigned int t = tabs;
+    if (fDocsTextOnly) {
+      t += 1;
+    }
+
+    this->printDocsDescription(this->doc, file, t);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+/*
+ * Append 'prefix' to existing module name prefix.
+ */
+void ModuleSymbol::addPrefixToName(std::string prefix) {
+  this->moduleNamePrefix += prefix;
+}
+
+
+/*
+ * Returns name of module, including any prefixes that have been set.
+ */
+std::string ModuleSymbol::docsName() {
+  return this->moduleNamePrefix + this->name;
+}
+
 
 // This is intended to be called by getTopLevelConfigsVars and
 // getTopLevelVariables, since the code for them would otherwise be roughly

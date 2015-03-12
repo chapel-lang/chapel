@@ -620,7 +620,7 @@ bool isTypeExpr(Expr* expr)
       SymExpr* right = toSymExpr(call->get(2));
       VarSymbol* var = toVarSymbol(right->var);
 
-      if (var->hasFlag(FLAG_TYPE_VARIABLE))
+      if (var->isType())
         return true;
 
       if (var->immediate)
@@ -858,3 +858,27 @@ prune() {
 // each pass must be unique.  See initLogFlags() in runpasses.cpp.
 void prune2() { prune(); } // Synonym for prune.
 
+/*
+ * Takes a call that is a PRIM_SVEC_GET_MEMBER* and returns the symbol of the
+ * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 1)
+ * and what this function gets out is the symbol that is the first field
+ * instead of just the number 1.
+ */
+Symbol* getSvecSymbol(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
+             call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
+             call->isPrimitive(PRIM_SET_SVEC_MEMBER));
+  Type* type = call->get(1)->getValType();
+  AggregateType* tuple = toAggregateType(type);
+  SymExpr* fieldVal = toSymExpr(call->get(2));
+  VarSymbol* fieldSym = toVarSymbol(fieldVal->var);
+  if (fieldSym) {
+    int immediateVal = fieldSym->immediate->int_value();
+
+    INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
+    return tuple->getField(immediateVal);
+  } else {
+    // GET_SVEC_MEMBER(p, i), where p is a star tuple
+    return NULL;
+  }
+}

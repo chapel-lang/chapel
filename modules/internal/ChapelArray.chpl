@@ -2322,6 +2322,17 @@ module ChapelArray {
       // default initalizer is a forall expr. E.g. arrayInClassRecord.chpl.
       return;
 
+    if a._value == b._value {
+      // Do nothing for A = A but we could generate a warning here
+      // since it is probably unintended. We need this check here in order
+      // to avoid memcpy(x,x) which happens inside doiBulkTransfer.
+      return;
+    }
+
+    if a.size == 0 && b.size == 0 then
+      // Do nothing for zero-length assignments
+      return;
+
     if boundsChecking then
       checkArrayShapesUponAssignment(a, b);
   

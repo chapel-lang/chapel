@@ -11,11 +11,11 @@ const x = f(256);
 
 startVerboseComm();
 
-extern proc printf(x...);
+extern proc printf(fmt: c_string, x...);
 
 on Locales(1) {
   for param i in 1..256 do
-    printf("%s\n", x(i):string);
+    printf("%s\n", (x(i):string).c_str());
 }
 
 stopVerboseComm();
