@@ -715,7 +715,6 @@ set perflabel = ""
 set perfkeys  = ""
 set compperformance = 0
 set compperformancedescription = ""
-set numtrials = 1
 set oldgraphs = 0
 set gengraphs = 0
 set graphsdisprange = 1
@@ -885,7 +884,7 @@ while ( $#argv > 0 )
     case --num-trials:
     case -num-trials:
         shift
-        set numtrials = $argv[1]
+        setenv CHPL_TEST_NUM_TRIALS $argv[1]
         shift
         breaksw
     case --perflabel:
@@ -1183,8 +1182,11 @@ else
     echo \[compiler performance tests: OFF\] |& tee -a $logfile
 endif
 
-echo \[number of trials: "$numtrials"\] |& $tee -a $logfile
-setenv CHPL_TEST_NUM_TRIALS "$numtrials"
+if (! $?CHPL_TEST_NUM_TRIALS) then
+    setenv CHPL_TEST_NUM_TRIALS "1"
+endif
+
+echo \[number of trials: "$CHPL_TEST_NUM_TRIALS"\] |& $tee -a $logfile
 
 if ($gengraphs) then
     echo \[performance graph generation: ON\] |& $tee -a $logfile

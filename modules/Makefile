@@ -64,8 +64,10 @@ MODULES_TO_DOCUMENT = \
 	standard/HDFSiterator.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
+	standard/List.chpl \
 	standard/Random.chpl \
 	standard/Regexp.chpl \
+	standard/Sort.chpl \
 	standard/Sys.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 

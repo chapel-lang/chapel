@@ -298,6 +298,77 @@ proc copyMode(src: string, dest: string) {
   if err != ENOERR then ioerror(err, "in copyMode " + src, dest);
 }
 
+use Filerator;
+use Path;
+
+proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
+  var oldMode = getMode(src);
+  mkdir(error, dest, mode=oldMode, parents=true);
+  if error != ENOERR then return;
+  // Create dest
+
+  for filename in listdir(path=src, dirs=false, files=true, listlinks=copySymbolically) {
+    // Take care of files in src
+    var fileDestName = dest + "/" + filename;
+    copy(error, src + "/" + filename, fileDestName, metadata=true);
+    if (error != ENOERR) then return;
+  }
+
+  for dirname in listdir(path=src, dirs=true, files=false, listlinks=copySymbolically) {
+    copyTreeHelper(error, src+"/"+dirname, dest+"/"+dirname, copySymbolically);
+  }
+}
+
+/* Will recursively copy the tree which starts at src into dst, including all
+   contents, permissions, and metadata.  dst must not previously exist, this
+   function assumes it can create it and any missing parent directories.
+   If copySymbolically is true, symlinks will be copied as symlinks, otherwise
+   their contents and metadata will be copied. May return an error via an out
+   argument.
+   error: a syserr used to indicate if an error occurred
+   src: the root of the source tree to be copied.
+   dest: the root of the destination directory where the tree where the tree is
+         to be copied (must not exist prior to this function call).
+   copySymbolically: a boolean indicating how to handle symlinks in the
+                     source directory.
+*/
+proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
+  var expectedErrorCases = exists(error, dest);
+  if (error != ENOERR) then return; // Some error occurred in checking the existence of dest.
+  else if (expectedErrorCases) {
+    // dest exists.  That's not ideal.
+    error = EEXIST;
+    return;
+  }
+  expectedErrorCases = !isDir(error, src);
+  if (error != ENOERR) then return; // Some error occurred in checking src was a directory.
+  else if (expectedErrorCases) {
+    error = ENOTDIR;
+    return;
+  }
+
+  var srcPath = realPath(src);
+
+  copyTreeHelper(error, srcPath, dest, copySymbolically);
+}
+
+/* Will recursively copy the tree which starts at src into dst, including all
+   contents, permissions, and metadata.  dst must not previously exist, this
+   function assumes it can create it and any missing parent directories.
+   If copySymbolically is true, symlinks will be copied as symlinks, otherwise
+   their contents and metadata will be copied. May halt with an error message.
+   src: the root of the source tree to be copied.
+   dest: the root of the destination directory where the tree where the tree is
+         to be copied (must not exist prior to this function call).
+   copySymbolically: a boolean indicating how to handle symlinks in the
+                     source directory.
+*/
+proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
+  var err: syserr = ENOERR;
+  copyTree(err, src, dest, copySymbolically);
+  if err != ENOERR then ioerror(err, "in copyTree " + src, dest);
+}
+
 /* Returns the current working directory for the current locale.
    err: a syserr used to indicate if an error occurred
 
@@ -652,7 +723,7 @@ proc remove(name: string) {
 /* Returns true if both pathnames refer to the same file or directory
    (utilizing operating system operations rather than string ones), returns
    false otherwise.
-   err: a syserr used to indicate if an error occurred during comparison
+   error: a syserr used to indicate if an error occurred during comparison
    file1, file2: string representations of paths to be compared.
 */
 proc sameFile(out error: syserr, file1: string, file2: string): bool {
@@ -671,7 +742,7 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
 proc sameFile(file1: string, file2: string): bool {
   var err:syserr = ENOERR;
   var result = sameFile(err, file1, file2);
-  if err != ENOERR then ioerror(err, "in sameFile " + file1, file2);
+  if err != ENOERR then ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
   return result;
 }
 

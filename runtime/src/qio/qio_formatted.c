@@ -382,8 +382,8 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
       // Figure out how many bytes are available.
       err = _peek_until_len(ch, maxlen, &peek_amt);
       num = peek_amt;
-      // Ignore EOF errors.
-      if( err && qio_err_to_int(err) == EEOF ) err = 0;
+      // Ignore EOF errors as long as we read something.
+      if( err && qio_err_to_int(err) == EEOF && num > 0 ) err = 0;
       break;
     default:
       if( str_style >= 0 ) {
@@ -2134,6 +2134,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
+  if( style->showpoint ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
 
   // We might not have room...
@@ -2176,6 +2177,12 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   // now output the digits.
   qio_memcpy(dst + i, tmp+tmp_skip, tmp_len);
   i += tmp_len;
+
+  // Now output a period if we're doing showpoint.
+  if( style->showpoint ) {
+    dst[i] = '.';
+    i++;
+  }
 
   // Now if we're left justified we might need padding.
   if( style->leftjustify && width < style->min_width_columns) {

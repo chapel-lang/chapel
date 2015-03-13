@@ -71,6 +71,13 @@ void AstPrintDocs::exitAggrType(AggregateType* node) {
 }
 
 
+bool AstPrintDocs::enterEnumType(EnumType* node)
+{
+  node->printDocs(this->file, this->tabs);
+  return false;
+}
+
+
 void AstPrintDocs::visitPrimType(PrimitiveType* node) {
   node->printDocs(this->file, this->tabs);
 }

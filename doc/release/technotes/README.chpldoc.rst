@@ -32,6 +32,11 @@ Pydoc. To build ``chpldoc``, use::
 This will downloads the required Python package dependencies and creates the
 ``chpldoc`` program in the same location as the ``chpl`` compiler.
 
+To ensure chpldoc is installed properly, optionally run the automatic sanity
+check::
+
+    [g]make check-chpldoc
+
 
 .. _Prerequisites:
 
