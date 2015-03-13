@@ -23,7 +23,6 @@ are as follows:
 
 \begin{tabular}{lll}
 \hspace{1pc} & \chpl{AdvancedIters} & Advanced iterator functions \\
-             & \chpl{BitOps} & Bit manipulation routines \\
              & \chpl{Norm}   & Routines for computing vector and matrix norms \\
              & \chpl{Search} & Generic searching routines \\
              & \chpl{Time} & Types and routines related to time \\
@@ -716,49 +715,6 @@ iter adaptive(r:range(?), numTasks:int = 0)
   splitting in the victim range is performed from its tail.
 \end{itemize}
 
-\end{protobody}
-
-
-\subsection{BitOps}
-\label{BitOps}
-\index{modules!standard!BitOps@\chpl{BitOps}}
-
-The module \chpl{BitOps} defines routines that manipulate the bits of
-values of integral types.
-
-\vspace{1pc}
-
-\begin{protohead}
-proc bitPop(i: integral): int
-\end{protohead}
-\begin{protobody}
-Returns the number of bits set to one in the integral
-argument \chpl{i}.
-\end{protobody}
-
-\begin{protohead}
-proc bitMatMultOr(i: uint(64), j: uint(64)): uint(64)
-\end{protohead}
-\begin{protobody}
-Returns the bitwise matrix multiplication of \chpl{i} and \chpl{j}
-where the values of \chpl{uint(64)} type are treated as $8 \times 8$
-bit matrices and the combinator function is bitwise or.
-\end{protobody}
-
-\begin{protohead}
-proc bitRotLeft(i: integral, shift: integral): i.type
-\end{protohead}
-\begin{protobody}
-Returns the value of the integral argument \chpl{i} after rotating the
-bits to the left \chpl{shift} number of times.
-\end{protobody}
-
-\begin{protohead}
-proc bitRotRight(i: integral, shift: integral): i.type
-\end{protohead}
-\begin{protobody}
-Returns the value of the integral argument \chpl{i} after rotating the
-bits to the right \chpl{shift} number of times.
 \end{protobody}
 
 
