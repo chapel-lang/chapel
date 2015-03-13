@@ -247,6 +247,11 @@ tags
 /test/modules/standard/FileSystem/lydia/copyFile/bar.txt
 /test/modules/standard/FileSystem/lydia/copyTree/complexDest
 /test/modules/standard/FileSystem/lydia/copyTree/emptyDest
+/test/modules/standard/FileSystem/lydia/copyTree/sparseDest
+/test/modules/standard/FileSystem/lydia/copyTree/verySparseDest
+/test/modules/standard/FileSystem/lydia/copyTree/shortDest
+/test/modules/standard/FileSystem/lydia/copyTree/denseDest
+/test/modules/standard/FileSystem/lydia/copyTree/cutoffDest
 /test/modules/standard/FileSystem/lydia/copyTree/existing_dir
 /test/modules/standard/FileSystem/lydia/exists/broken_link
 /test/modules/standard/FileSystem/lydia/exists/dir

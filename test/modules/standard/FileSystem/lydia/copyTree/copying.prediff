@@ -5,10 +5,46 @@ diff -r complexSrc/ complexDest/ >> $2
 if [ $? ]; then
     echo "Large, complicated tree structure passed" >> $2
 fi
+echo "" >> $2
 #echo "Checking source in different directory than dest" >> $2
 
 echo "Checking empty source directory" >> $2
 diff -r complexSrc/emptyDir/ emptyDest/ >> $2
 if [ $? ]; then
     echo "Empty source directory passed" >> $2
+fi
+echo "" >> $2
+
+echo "Checking dir with only a dir with a file in it" >> $2
+diff -r complexSrc/hasDirWithFileOnly/ sparseDest/ >> $2
+if [ $? ]; then
+    echo "Dir with only a dir with a file in it passed" >> $2
+fi
+echo "" >> $2
+
+echo "Checking dir with only an empty dir in it" >> $2
+diff -r complexSrc/hasEmptyDir/ verySparseDest/ >> $2
+if [ $? ]; then
+    echo "Dir with only an empty dir in it passed" >> $2
+fi
+echo "" >> $2
+
+echo "Checking dir with only a file in it" >> $2
+diff -r complexSrc/hasFile/ shortDest/ >> $2
+if [ $? ]; then
+    echo "Dir with only a file in it passed" >> $2
+fi
+echo "" >> $2
+
+echo "Checking dir with a file and a child dir with a file in it" >> $2
+diff -r complexSrc/hasFileAndDirWithFile/ denseDest/ >> $2
+if [ $? ]; then
+    echo "Dir with a file and a child dir with a file in it passed" >> $2
+fi
+echo "" >> $2
+
+echo "Checking dir with a file and an empty child dir in it" >> $2
+diff -r complexSrc/hasFileAndDirWithFile/ denseDest/ >> $2
+if [ $? ]; then
+    echo "Dir with a file and an empty child dir in it passed" >> $2
 fi
