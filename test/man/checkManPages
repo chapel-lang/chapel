@@ -25,7 +25,7 @@ def main():
     results.append( check_chpl_env_vars(chpl) )
 
     # Test chpldoc
-    #results.append( check_man_page(chpldoc) )
+    results.append( check_man_page(chpldoc) )
 
     # Exit clean if no errors.
     if not reduce(operator.and_, results):

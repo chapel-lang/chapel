@@ -28,3 +28,8 @@ DESCRIPTION
 
   --text-only       Specify that documents should use a text output file
                     format rather than HTML.
+
+  -h, --help        Print a list of the command line options, indicating
+                    the arguments that they expect and a brief summary of their 
+                    purpose.
+
