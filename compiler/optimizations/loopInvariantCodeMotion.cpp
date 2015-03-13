@@ -1030,9 +1030,7 @@ static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols
     if (FnSymbol* fnSymbol = call->isResolved()) {
       if(fnSymbols.count(fnSymbol) == 0) {
         fnSymbols.insert(fnSymbol);
-        for_alist(expr, fnSymbol->body->body) {
-          AST_CHILDREN_CALL(expr, collectUsedFnSymbolsSTL, fnSymbols);
-        }
+        AST_CHILDREN_CALL(fnSymbol->body, collectUsedFnSymbolsSTL, fnSymbols);
       }
     }
   }
