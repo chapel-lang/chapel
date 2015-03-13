@@ -841,6 +841,11 @@ Multi-locale/GASNet executions
 Portability
 -----------
 
+Ubuntu:
+- Ubuntu 14.04 32-bit (not 64-bit) has broken preadv/pwritev support.
+  If this issue matters to you, please upvote the bug report here:
+    https://bugs.launchpad.net/ubuntu/+source/eglibc/+bug/1309818
+
 cygwin:
 - cygwin builds may demonstrate portability issues.
 - The qthreads tasking layer is not supported.
