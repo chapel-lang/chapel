@@ -66,18 +66,25 @@ extern const S_IRWXG: int;
 
 /* Refers to everyone else's read permission, see :data:`S_IRUSR` */
 extern const S_IROTH: int;
-/* Refers to the everyone else's write permission, see :data:`S_IRUSR` */
+/* Refers to everyone else's write permission, see :data:`S_IRUSR` */
 extern const S_IWOTH: int;
-/* Refers to the everyone else's executable permission, see :data:`S_IRUSR` */
+/* Refers to everyone else's executable permission, see :data:`S_IRUSR` */
 extern const S_IXOTH: int;
 /* Refers to all the permissions of everyone else, see :data:`S_IRUSR` */
 extern const S_IRWXO: int;
 
-/* This means that on execution, the user id will be set */
+/* Use of this would cause the user id to be set on execution, see
+   :data:`S_IRUSR`
+*/
 extern const S_ISUID: int;
-/* This means that on execution, the group id will be set */
+/* Use of this would cause the group id to be set on execution, see
+   :data:`S_IRUSR`
+*/
 extern const S_ISGID: int;
-
+/* This is the sticky bit. See `GNU Permissions
+   <http://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html>`_
+   for what that generally means, and :data:`S_IRUSR` for intended uses, etc.
+*/
 extern const S_ISVTX: int;
 
 pragma "no doc"
@@ -830,9 +837,9 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
   return ret != 0;
 }
 
-/* Determines if both file records refer to the same file (utilizing operating
-   system operations rather than string ones) and returns the result of that
-   check
+/* Determines if both :type:`~IO.file` records refer to the same file
+   (utilizing operating system operations rather than string ones) and returns
+   the result of that check
 
    Will halt with an error message if one is detected
 

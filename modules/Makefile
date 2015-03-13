@@ -60,6 +60,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Buffers.chpl \
 	standard/FileSystem.chpl \
 	standard/List.chpl \
+	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Sort.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
