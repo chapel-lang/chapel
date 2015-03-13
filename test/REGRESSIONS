@@ -502,7 +502,7 @@ Reviewed 2015-03-06
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (last seen: 2015-03-01..2014-03-03 on xc-wb.prgenv-intel)
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (last seen: 2015-03-01..2014-03-13 on xc-wb.prgenv-pgi)
 [Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (last seen: 2015-02-24 on xc-wb.pgi)
 
 
@@ -556,6 +556,10 @@ xc-wb.intel
 Inherits 'xc-wb.*' and '*intel*'
 Reviewed 2015-03-06
 ================================
+
+Sporadic failures (2015-03-13..)
+--------------------------------
+[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
 
 
 ================================
@@ -905,7 +909,7 @@ Reviewed 2015-03-06
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-05)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-12)
 
 
 ===============================
