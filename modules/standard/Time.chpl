@@ -22,7 +22,7 @@
 
 /*
    This module provides support for querying wall time in the local
-   timezone and implements a record **Timer** that provides basic
+   timezone and implements a record :record:`~Timer` that provides basic
    stopwatch behavior.  The stopwatch has the potential for microsecond
    resolution and is intended to be useful for performance testing.
  */
@@ -126,8 +126,8 @@ inline proc sleep(t: uint) : void {
    Implements basic stopwatch behavior with a potential resolution of
    microseconds if supported by the runtime platform.
 
-   The **Timer** can be started, stopped, and cleared.
-   A **Timer** is either running or stopped.
+   The :record:`!Timer` can be started, stopped, and cleared.
+   A :record:`!Timer` is either running or stopped.
 */
 
 record Timer {
@@ -181,9 +181,10 @@ record Timer {
 
   /*
      Returns the cumulative elapsed time, in the units specified, between
-     all pairs of calls to start() and stop() since the timer was created or
-     the last call to clear(). If the timer is running, the elapsed time
-     since the last call to start() is added to the return value.
+     all pairs of calls to :proc:`~!Timer.start` and :proc:`~!Timer.stop`
+     since the timer was created or the last call to :proc:`~!Timer.clear`.
+     If the timer is running, the elapsed time since the last call to
+     :proc:`~!Timer.start` is added to the return value.
 
      :arg  unit: The units for the returned value
      :type unit: TimeUnits
