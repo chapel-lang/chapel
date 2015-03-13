@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Checking large, complicated tree structure" > $2
-diff -r a/ f/ >> $2
+diff -r complexSrc/ complexDest/ >> $2
 if [ $? ]; then
     echo "Large, complicated tree structure passed" >> $2
 fi

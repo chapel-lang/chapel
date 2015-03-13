@@ -1,0 +1,6 @@
+#!/bin/bash
+
+if [ ! -e complexSrc/emptyDir ]; then
+    # Create an empty directory, since git doesn't save those
+    mkdir complexSrc/emptyDir
+fi
