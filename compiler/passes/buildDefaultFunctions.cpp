@@ -214,6 +214,7 @@ static FnSymbol* function_exists(const char* name,
 // These functions have the same binding strength as if they were user-defined.
 static void build_getter(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
+  const bool recordLike = ct->isRecord() || ct->isUnion();
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
     Vec<BaseAST*> asts;
     collect_asts(fn, asts);
@@ -233,6 +234,8 @@ static void build_getter(AggregateType* ct, Symbol *field) {
     fn->addFlag(FLAG_FIELD_ACCESSOR);
     if (fieldIsConst)
       fn->addFlag(FLAG_REF_TO_CONST);
+    else if (recordLike)
+      fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
     return;
   }
 
@@ -253,6 +256,8 @@ static void build_getter(AggregateType* ct, Symbol *field) {
 
   if (fieldIsConst)
     fn->addFlag(FLAG_REF_TO_CONST);
+  else if (recordLike)
+    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->addFlag(FLAG_METHOD);
