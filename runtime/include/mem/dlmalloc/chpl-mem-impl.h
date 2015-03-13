@@ -18,6 +18,9 @@
  */
 
 /* dlmalloc memory function implementation */
+#ifndef _chpl_mem_impl_H_
+#define _chpl_mem_impl_H_
+
 
 #include "dlmalloc.h"
 
@@ -39,3 +42,4 @@ static ___always_inline void chpl_free(void* ptr) {
   mspace_free(chpl_dlmalloc_heap, ptr);
 }
 
+#endif

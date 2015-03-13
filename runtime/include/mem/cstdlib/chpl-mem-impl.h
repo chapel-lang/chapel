@@ -18,6 +18,8 @@
  */
 
 /* cstdlib memory function implementation */
+#ifndef _chpl_mem_impl_H_
+#define _chpl_mem_impl_H_
 
 // Uses the built-in malloc, calloc, realloc and free.
 
@@ -48,3 +50,4 @@ static ___always_inline void chpl_free(void* ptr) {
 // Now that we've defined our functions, turn the warnings back on.
 #include "chpl-mem-warning-macros.h"
 
+#endif
