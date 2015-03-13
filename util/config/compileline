@@ -49,10 +49,20 @@ sub mysystem {
 }
 
 for my $arg (@ARGV) {
-  if( $arg eq "--home" ) {
-      print $chpl_home_dir . "\n";
+  if( $arg eq "--llvm" ) {
+    $ENV{"CHPL_TARGET_COMPILER"}="clang-included";
+
+    # get the name of main.o and check that it exits.
+    $maino=`$make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino`;
+    chomp $maino;
+    if( ! -e $maino ) {
+      print STDERR "Missing clang-included runtime build for chpl --llvm\n";
+      exit 1;
+    }
+  } elsif( $arg eq "--home" ) {
+    print $chpl_home_dir . "\n";
   } elsif( $arg eq "--make" ) {
-      print $make . "\n";
+    print $make . "\n";
   } elsif( $arg eq "--compile" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline");
   } elsif ( $arg eq "--includes-and-defines" ) {
@@ -63,6 +73,16 @@ for my $arg (@ARGV) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printmaino");
   } elsif( $arg eq "--llvm-install-dir" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall");
+  } elsif( $arg eq "--clang-sysroot-arguments" ) {
+    $llvminstall=`$make -f $chpl_home_dir/runtime/etc/Makefile.include printllvminstall`;
+    chomp $llvminstall;
+    open(ARGS, "<", "$llvminstall/configured-clang-sysroot-arguments") or die "Could not open $llvminstall/configured-clang-sysroot-arguments: $!";
+    while(<ARGS>) {
+      chomp;
+      print " $_";
+    }
+    print "\n";
+    close(ARGS);
   } elsif( $arg =~ /[^-=][^=]*=[^=]+/ ) {
     ($key, $val) = split('=', $arg, 2);
     $ENV{$key} = $val;

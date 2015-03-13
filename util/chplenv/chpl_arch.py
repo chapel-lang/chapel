@@ -123,6 +123,8 @@ class argument_map(object):
             return cls.intel.get(arch, '')
         elif compiler == 'clang':
             return cls.clang.get(arch, '')
+        elif compiler == 'clang-included':
+            return cls.clang.get(arch, '')
         else:
             stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler))
             return ''

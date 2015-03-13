@@ -56,8 +56,11 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 
 MODULES_TO_DOCUMENT = \
-	standard/Random.chpl \
+	standard/BitOps.chpl \
 	standard/Buffers.chpl \
+	standard/List.chpl \
+	standard/Random.chpl \
+	standard/Sort.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
