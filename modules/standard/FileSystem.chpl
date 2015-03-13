@@ -235,6 +235,11 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
 
    May halt with other error messages.
 
+   .. note::
+
+      In the future, when the :mod:`Path` module has been expanded further,
+      this function will be able to support directories for the dest argument.
+
    :arg src: The source file whose contents and permissions are to be copied
    :type src: string
    :arg dest: The name of the destination file for the contents and permissions.
@@ -800,8 +805,9 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
 }
 
 /* Determines if both pathnames refer to the same file or directory (utilizing
-   operating system operations rather than string ones) and returns the result
-   of that check
+   operating system operations rather than string ones, due to the possibility
+   of symbolic links, :data:`~Path.curDir`, or :data:`~Path.parentDir` appearing
+   in the path) and returns the result of that check
 
    Will halt with an error message if one is detected
 
@@ -850,8 +856,10 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
 }
 
 /* Determines if both :type:`~IO.file` records refer to the same file
-   (utilizing operating system operations rather than string ones) and returns
-   the result of that check
+   (utilizing operating system operations rather than string ones, due to the
+   possibility of symbolic links, :data:`~Path.curDir`, or
+   :data:`~Path.parentDir` appearing in the path) and returns the result of that
+   check
 
    Will halt with an error message if one is detected
 
@@ -878,7 +886,7 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
   error = chpl_fs_symlink(oldName.c_str(), newName.c_str());
 }
 
-/* Create a symbolic link pointing to ``oldName`` named ``newName``.
+/* Create a symbolic link pointing to ``oldName`` with the path ``newName``.
 
    Will halt with an error message if one is detected
 
