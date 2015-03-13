@@ -19,25 +19,25 @@ cleanall: FORCE
 clobber: FORCE
 	rm -rf install
 
-$(PYTHON):
+check-python:
 ifeq ($(wildcard $(PYTHON)),)
 	$(error python and easy_install are required to install chpldoc \
 	        dependencies. See https://www.python.org/)
 endif
 
-$(EASY_INSTALL):
+check-easy-install:
 ifeq ($(wildcard $(EASY_INSTALL)),)
 	$(error python and easy_install are required to install chpldoc \
 	        dependencies. See https://www.python.org/)
 endif
 
-check-exes: $(PYTHON) $(EASY_INSTALL)
+check-exes: check-python check-easy-install
 
 $(CHPLDOC_VENV_INSTALL_DIR):
 	mkdir -p $@
 
 # Install virtualenv program.
-$(CHPLDOC_VENV_VIRTUALENV): $(CHPLDOC_VENV_INSTALL_DIR) $(PYTHON) $(EASY_INSTALL)
+$(CHPLDOC_VENV_VIRTUALENV): $(CHPLDOC_VENV_INSTALL_DIR) check-exes
 	export PYTHONPATH=$(CHPLDOC_VENV_INSTALL_DIR):$$PYTHONPATH && \
 	$(EASY_INSTALL) --install-dir=$(CHPLDOC_VENV_INSTALL_DIR) $(shell cat virtualenv.txt)
 
@@ -79,6 +79,6 @@ rm-sphinx-build: FORCE
 
 FORCE:
 
-.PHONY: install-requirements create-virtualenv virtualenv check-exes rm-sphinx-build
+.PHONY: install-requirements create-virtualenv virtualenv check-exes rm-sphinx-build check-easy-install check-python
 
 .NOTPARALLEL:
