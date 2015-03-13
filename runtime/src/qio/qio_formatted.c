@@ -3552,13 +3552,18 @@ qioerr qio_conv_parse(c_string fmt,
   i = start;
 
   // do we have a ####.#### conversion to match?
+  if( fmt[i] == '%' && fmt[i+1] == '{' && fmt[i+2] == '#' ) {
+    // handle %{####} conversions
+    in_group = 1;
+    i++; // pass %
+    i++; // pass {
+  }
   if( fmt[i] == '#' ) {
     size_t num_before, num_after, period;
     num_before = 0;
     num_after = 0;
     period = 0;
     
-
     // how many ### do we have before a . ?
     for( ; fmt[i] == '#'; i++ ) num_before++;
 
@@ -3566,6 +3571,14 @@ qioerr qio_conv_parse(c_string fmt,
       i++; // pass '.'
       period = 1;
       for( ; fmt[i] == '#'; i++ ) num_after++;
+    }
+
+    if( in_group ) {
+      if( fmt[i] != '}' ) {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "Bad %{###.###} format group");
+      } else {
+        i++; // pass }
+      }
     }
 
     spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;
