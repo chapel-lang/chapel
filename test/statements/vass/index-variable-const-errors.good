@@ -1,8 +1,11 @@
 index-variable-const-errors.chpl:23: In function 'main':
 index-variable-const-errors.chpl:35: error: illegal lvalue in assignment
 index-variable-const-errors.chpl:51: error: illegal lvalue in assignment
+index-variable-const-errors.chpl:52: error: illegal lvalue in assignment
+index-variable-const-errors.chpl:53: error: illegal lvalue in assignment
 index-variable-const-errors.chpl:70: error: illegal lvalue in assignment
 index-variable-const-errors.chpl:71: error: illegal lvalue in assignment
 index-variable-const-errors.chpl:80: error: illegal lvalue in assignment
+index-variable-const-errors.chpl:82: error: illegal lvalue in assignment
 index-variable-const-errors.chpl:90: error: illegal lvalue in assignment
 index-variable-const-errors.chpl:23: error: done
