@@ -20,40 +20,48 @@
 // Wrapper for FFTW version 3.
 
 /*
-  Support for key FFTW version 3 routines in Chapel trappings
+  FFT computations via key routines from FFTW (version 3)
 
-  This module defines a Chapel wrapper around key routines from FFTW
-  version 3.  Over time, the intention is to expand this support to
-  additional routines, prioritizing based on user feedback.
+  This module defines Chapel wrappers for key routines from FFTW
+  (http://www.fftw.org), version 3.  Over time, the intention is to
+  expand this module to support additional routines, prioritizing
+  based on requests and feedback from users.  Also, see the
+  :mod:`FFTW_MT` module which provides support for calls to the
+  multi-threaded FFTW implementation.
+
+
+  To use this module:
+
+  1. Ensure that FFTW (version 3) is installed on your system and that
+     the header and library files (e.g., fftw3.h, libfftw3.*) are
+     either installed in a standard system location or that your C
+     compiler's environment variables are set up to find them.
+
+  2. Add ``use FFTW;`` to your Chapel code.
+
+  3. Compile and run your Chapel program as usual.
+
 
   As in standard FFTW usage, the flow is to:
 
-  1) Create plan(s) using the plan_dft*() routines.
+  1. Create plan(s) using the :proc:`plan_dft* <plan_dft>` routines.
 
-  2) Execute the plan(s) using the execute() routine.
+  2. Execute the plan(s) one or more times using :proc:`execute`.
 
-  3) Destroy the plan(s) using the destroy_plan() routine.
+  3. Destroy the plan(s) using :proc:`destroy_plan`.
 
-  4) Call cleanup().
-
-  At present, clients of the FFTW module must specify fftw3.h and -I,
-  -L, -l flags sufficient to specify the required libraries and find
-  the files on the 'chpl' command line.  We are currently
-  investigating techniques to streamline this process.
+  4. Call :proc:`cleanup`.
 */
 
-// TODOs for Brad (in priority order):
-//
-// - Can we get a form of use/requires in that will simplify the
-//   command-line?
 //
 // - How do we feel about FFTW_ALLCAPS names given that the routines
 //   themselves don't have fftw_ prefixes, that they're defined as
 //   c_int's, and that they're all-caps?
 //
 // - Related question about fftw_ types taking type c_int, though
-//   maybe we don't care that much since symbolic values are taken
-//   in?
+//   maybe we don't care that much (as compared to other interfaces)
+//   since symbolic values are taken in? (i.e., we won't run into
+//   32- vs. 64-bit issues...)
 //
 
 module FFTW {
@@ -72,29 +80,67 @@ module FFTW {
   // or is the familiarity better?
   //
 
+  // Direction flags
+
+  /* Request a forward transform (i.e., use a negative exponent in the tranform). */
   extern const FFTW_FORWARD : c_int;
-  /* These two constants are symbolic aliases for making the sign of
-     the exponent in the formula that defines the Fourier transform
-     -1 or 1, respectively. */
+  /* Request a backward transform (i.e., use a positive exponent in the transofmr). */
   extern const FFTW_BACKWARD : c_int;
 
+
+  // Planning-rigor flags
+
+  /* Specify that a simple heuristic should be used to pick a plan
+     quickly.  This will prevent the input/output arrays from being
+     overwritten during planning. */
   extern const FFTW_ESTIMATE : c_uint;
+
+  /* Specify that FFTW should try and find an optimized plan by
+     computing several FFTs and measuring their execution time.  This
+     option is the default planning option and can consume some
+     time. */
   extern const FFTW_MEASURE : c_uint;
+
+  /* Specify that FFTW should expend a greater effort finding an
+     optimized plan. */
   extern const FFTW_PATIENT : c_uint;
+
+  /* Specify that FFTW should expend an even greater effort finding an
+     optimized plan. */
   extern const FFTW_EXHAUSTIVE : c_uint;
-  /* 
-     All of the above are planning-rigor flags.  See `Section 4.3.2
+
+  /* This is a special planning mode that is useful for querying
+     whether wisdom is available.  When using it, the plan is only
+     created when wisdom is available for the given problem; otherwise
+     a `null plan` is returned.  This can be combined with other flags
+     to create a plan if the wisdom available was created in that mode
+     (e.g., ``FFTW_WISDOM_ONLY | FFW_PATIENT``).  For more details on
+     this flag and the previous four, refer to `Section 4.3.2
      <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual
-     for details.
   */
   extern const FFTW_WISDOM_ONLY : c_uint;
+
+
+  // Algorithm-restriction flags
+
+  /* Specify that an out-of-place transform is permitted to overwrite
+     its input array with arbitrary data.  This permits more efficient
+     algorithms to be used in some cases.  This is the default for
+     :proc:`plan_dft_c2r`. */ // NOTE: ...and hc2r once supported...
   extern const FFTW_DESTROY_INPUT : c_uint;
+
+  /* Specify that an out-of-place transform cannot change its input
+     array.  This is the default for :proc:`plan_dft` and
+     :proc:`plan_dft_r2c`. */
   extern const FFTW_PRESERVE_INPUT : c_uint;
-  /* 
-     All of the above are algorithm-restriction flags.  See `Section
-     4.3.2 <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW
-     manual for details.
-  */
+
+  /* Specify that the algorithm may not impose any unusual alignment
+     requirements on the input/output arrays.  This flag should not be
+     necessary for current Chapel use since the planner will
+     automatically detect such cases.  For more details on this flag
+     and the previous two, refer to `Section 4.3.2
+     <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual.
+  */  // NOTE: But it will be if/when the new-array execute interface is supported
   extern const FFTW_UNALIGNED : c_uint;
 
 
@@ -125,7 +171,7 @@ module FFTW {
     :arg output: The output array, with rank matching the input array's
     :type output: [] `complex(128)`
     
-    :arg sign: The sign of the exponent in the DFT formula.
+    :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
     :type sign: c_int
 
     :arg flags: planning-rigor and/or algorithm-restriction flags
