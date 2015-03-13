@@ -66,6 +66,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Help.chpl \
 	standard/IO.chpl \
 	standard/List.chpl \
+	standard/Norm.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Regexp.chpl \
