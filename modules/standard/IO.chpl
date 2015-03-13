@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+/* IO Module
+ */
+module IO {
+
 /* "channel" I/O contributed by Michael Ferguson
 
    Future Work:
@@ -4097,3 +4101,5 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
   }
   return ret;
 }
+
+} /* end of module */

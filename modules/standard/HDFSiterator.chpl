@@ -17,6 +17,11 @@
  * limitations under the License.
  */
 
+/*
+   HDFS Iterator Support Module
+ */
+module HDFSiterator {
+
 use HDFS, UtilReplicatedVar, RecordParser;
 
 
@@ -118,3 +123,6 @@ iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string, follow
      | File 1 | File2 | ...       File numLocales
      +--------+-------+------
    */
+
+
+} /* end of module */
