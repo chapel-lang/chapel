@@ -65,6 +65,8 @@ for my $arg (@ARGV) {
     print $make . "\n";
   } elsif( $arg eq "--compile" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline");
+  } elsif( $arg eq "--cflags" ) {
+    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcflags");
   } elsif ( $arg eq "--includes-and-defines" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines");
   } elsif( $arg eq "--libraries" ) {
