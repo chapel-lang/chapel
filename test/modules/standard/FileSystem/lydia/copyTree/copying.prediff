@@ -1,10 +1,14 @@
 #!/bin/bash
 
-echo "Checking large, complicated tree structure" > $2
+echo "Checking large, complicated tree structure" >> $2
 diff -r complexSrc/ complexDest/ >> $2
 if [ $? ]; then
     echo "Large, complicated tree structure passed" >> $2
 fi
 #echo "Checking source in different directory than dest" >> $2
 
-#echo "Checking empty source directory" >> $2
+echo "Checking empty source directory" >> $2
+diff -r complexSrc/emptyDir/ emptyDest/ >> $2
+if [ $? ]; then
+    echo "Empty source directory passed" >> $2
+fi

@@ -4,3 +4,13 @@ if [ ! -e complexSrc/emptyDir ]; then
     # Create an empty directory, since git doesn't save those
     mkdir complexSrc/emptyDir
 fi
+if [ ! -e complexSrc/hasEmptyDir ]; then
+    # Create a directory that only has an empty dir inside it
+    # since git doesn't save those
+    mkdir complexSrc/hasEmptyDir
+fi
+if [ ! -e complexSrc/hasEmptyDir/SOALONE ]; then
+    # Create the empty dir inside an otherwise empty dir
+    # since git doesn't save empty dirs
+    mkdir complexSrc/hasEmptyDir/SOALONE
+fi
