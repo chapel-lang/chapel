@@ -982,6 +982,11 @@ void saveExternBlock(ModuleSymbol* module, const char* extern_code)
   if( ! gAllExternCode.filename ) {
     openCFile(&gAllExternCode, "extern-code", "c");
     INT_ASSERT(gAllExternCode.fptr);
+
+    // Allow code in extern block to use malloc/calloc/realloc/free
+    // Note though that e.g. strdup or other library routines that
+    // allocate memory might still be an issue...
+    fprintf(gAllExternCode.fptr, "#include \"chpl-mem-no-warning-macros.h\"\n");
   }
 
   if( ! module->extern_info ) {
