@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+/* Libcurl support 
+ */
+module Curl {
 /***************************** Libcurl support *****************/
 // This corresponds to struct curl_slist* when we have curl enabled
 extern type chpl_slist;
@@ -263,3 +266,5 @@ extern const curlopt_lastentry                  : c_int ;
 extern const curlopt_mail_from                  : c_int ;
 extern const curlopt_mail_rcpt                  : c_int ;
 extern const curlopt_mail_auth                  : c_int ;
+
+} /* end of module */

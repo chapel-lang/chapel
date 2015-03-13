@@ -139,15 +139,6 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
                arg->intent == INTENT_REF))
             return 1;
 
-          // For arrays/domains/distributions, we just converted all 'ref' args
-          // to 'const in'. So we will count those cases as definitions, too.
-          // This is a workaround until we get initialization right.
-          // Todo also: distinguish between what was 'ref' vs. 'const ref'.
-          if (se->var == ret &&
-              isRecordWrappedType(arg->type) &&
-              arg->intent == INTENT_CONST_IN)
-            return 1;
-
           // Treat all (non-const) refs as definitions, until we know better.
           // TODO: This may not be needed after moving insertReferenceTemps()
           // after this pass.
