@@ -534,8 +534,7 @@ std::string EnumType::docsDirective() {
   if (fDocsTextOnly) {
     return "";
   } else {
-    // TODO: Add enum directive to chapel domain (thomasvandoren, 2015-03-12)
-    return ".. class:: ";
+    return ".. enum:: ";
   }
 }
 

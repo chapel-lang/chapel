@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-/* system call wrapping */
+/* Sys module. For low level programming and system call wrapping */
 module Sys {
   /* BASIC TYPES */
   use SysBasic;
