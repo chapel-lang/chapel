@@ -366,7 +366,7 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
 proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
   var err: syserr = ENOERR;
   copyTree(err, src, dest, copySymbolically);
-  if err != ENOERR then ioerror(err, "in copyTree " + src, dest);
+  if err != ENOERR then ioerror(err, "in copyTree(" + src + ", " + dest + ")");
 }
 
 /* Returns the current working directory for the current locale.
