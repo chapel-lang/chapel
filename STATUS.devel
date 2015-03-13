@@ -843,6 +843,7 @@ Portability
 
 Ubuntu:
 - Ubuntu 14.04 32-bit (not 64-bit) has broken preadv/pwritev support.
+  This problem is not present in Ubuntu 12.04 or 14.10 or any 64-bit version.
   If using this operating system with Chapel is important to you, please
   please upvote the bug report here:
     https://bugs.launchpad.net/ubuntu/+source/eglibc/+bug/1309818
