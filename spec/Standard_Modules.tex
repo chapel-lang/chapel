@@ -25,7 +25,6 @@ are as follows:
 \hspace{1pc} & \chpl{AdvancedIters} & Advanced iterator functions \\
              & \chpl{Norm}   & Routines for computing vector and matrix norms \\
              & \chpl{Search} & Generic searching routines \\
-             & \chpl{Time} & Types and routines related to time \\
              & \chpl{UtilMath} & Math-related utilities \\
 \end{tabular}
 
@@ -781,104 +780,6 @@ the whole array will be searched.  Returns a tuple indicating (1)
 whether or not the value was found and (2) the location of the value
 if it was found, or the location where the value should have been if
 it was not found.
-\end{protobody}
-
-
-\subsection{Time}
-\label{Time}
-\index{modules!optional!Time@\chpl{Time}}
-
-The module \chpl{Time} defines routines that query the system time and
-a record \chpl{Timer} that is useful for timing portions of code.
-
-\vspace{1pc}
-
-\begin{protohead}
-record Timer
-\end{protohead}
-\begin{protobody}
-A timer is used to time portions of code.  Its semantics are similar
-to a stopwatch.
-\end{protobody}
-
-\begin{protohead}
-enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours };
-\end{protohead}
-\begin{protobody}
-The enumeration TimeUnits defines units of time.  These units can be
-supplied to routines in this module to specify the desired time units.
-\end{protobody}
-
-\begin{protohead}
-enum Day { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday };
-\end{protohead}
-\begin{protobody}
-The enumeration Day defines the days of the week, with Sunday defined to be 0.
-\end{protobody}
-
-\begin{protohead}
-proc getCurrentDate(): (int, int, int)
-\end{protohead}
-\begin{protobody}
-Returns the year, month, and day of the month as integers.  The year
-is the year since 0.  The month is in the range 1 to 12.  The day is
-in the range 1 to 31.
-\end{protobody}
-
-\begin{protohead}
-proc getCurrentDayOfWeek(): Day
-\end{protohead}
-\begin{protobody}
-Returns the current day of the week.
-\end{protobody}
-
-\begin{protohead}
-proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds): real
-\end{protohead}
-\begin{protobody}
-Returns the elapsed time since midnight in the units specified.
-\end{protobody}
-
-\begin{protohead}
-proc Timer.clear()
-\end{protohead}
-\begin{protobody}
-Clears the elapsed time stored in the Timer.  This routine can be called
-whether or not the timer is running and doesn't change its status in that
-regard.  If the timer is running it is restarted.
-\end{protobody}
-
-\begin{protohead}
-proc Timer.elapsed(unit: TimeUnits = TimeUnits.seconds): real
-\end{protohead}
-\begin{protobody}
-Returns the cumulative elapsed time, in the units specified, between
-all pairs of calls to \chpl{start} and \chpl{stop} since the timer was
-created or the last call to \chpl{clear}.  If the timer is running,
-the elapsed time since the last call to \chpl{start} is added to the
-return value.
-\end{protobody}
-
-\begin{protohead}
-proc Timer.start()
-\end{protohead}
-\begin{protobody}
-Starts the timer.  It is an error to start a timer that is already
-running.
-\end{protobody}
-
-\begin{protohead}
-proc Timer.stop()
-\end{protohead}
-\begin{protobody}
-Stops the timer.  It is an error to stop a timer that is not running.
-\end{protobody}
-
-\begin{protohead}
-proc sleep(t: uint)
-\end{protohead}
-\begin{protobody}
-Delays a task for \chpl{t} seconds.
 \end{protobody}
 
 
