@@ -70,6 +70,194 @@ module FFTW {
   use "fftw3.h", "-lfftw3";
 
 
+  /*
+    An opaque type used to store and reuse FFTW plans across multiple
+    routines.
+  */
+  extern type fftw_plan; // opaque type
+
+
+  // Planner functions
+  // Complex : 4.3.1
+  // NOTE : We pass in arrays using ref 
+
+  // TODO: Can we have the plan_dft() routine below take in native
+  // Chapel types without changing the external C constants from
+  // type c_int?  Probably given that Chapel's int will be >=
+  // C's int for the forseeable future.  See also the TODO above
+  // about whether we'd want to represent those constants using
+  // more native Chapel types anyway.
+
+  /*
+    Creates a plan for a complex-to-complex DFT.
+
+    :arg input: The input array, which can be of any rank
+    :type input: [] `complex(128)`
+
+    :arg output: The output array, whose rank must match the input array's
+    :type output: [] `complex(128)`
+    
+    :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
+    :type sign: c_int
+
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+  */
+  proc plan_dft(input: [] complex(128), output: [] complex(128), 
+                 sign: c_int, flags: c_uint = 0:c_int) : fftw_plan
+  {
+    param rank = input.rank;
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = input.domain.dim(i).size.safeCast(c_int);
+
+    return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, input, 
+                                     output, sign, flags);
+  }
+
+
+  // Real-to-complex and complex-to-real planning routines There are
+  // two cases that we treat independently here : in-place and
+  // out-of-place transforms
+
+  /*
+    Create a plan for a real-to-complex, out-of-place DFT.
+
+    :arg input: The input array, which can be of any rank
+    :type input: [] `real(64)`
+
+    :arg output: The output array, whose rank must match the input array's
+    :type output: [] `complex(128)`
+    
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+  */
+  proc plan_dft_r2c(input : [] real(64), output : [] complex(128), flags :c_uint = 0:c_int) : fftw_plan
+  {
+    param rank = input.rank: c_int;
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = input.domain.dim(i).size: c_int;
+
+    return C_FFTW.fftw_plan_dft_r2c(rank, dims, input, output, flags);
+  }
+
+  // In-place routines, note that these take in the true leading dimension
+  // TODO : We should put in checks to see that the sizes are consistent
+  // TODO : We should check on types...
+  /*
+    Create a plan for a real-to-complex, in-place DFT.
+
+    :arg realDom: Describes the indices of the 'real' view of the array
+    :type realDom: `domain`
+
+    :arg arr: The array to be used as the in-place input/output array.
+    :type arr: [] `T` where `T` is of type `real` or `complex`
+
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+   */
+  proc plan_dft_r2c(realDom : domain, arr : [] ?t, flags : c_uint = 0:c_int) : fftw_plan 
+  {
+    param rank = realDom.rank: c_int;
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = realDom.dim(i).size: c_int;
+
+    return C_FFTW.fftw_plan_dft_r2c(rank, dims, arr, arr, flags);
+  }
+
+  /*
+    Create a plan for a complex-to-real, out-of-place DFT.
+
+    :arg input: The input array, which can be of any rank
+    :type input: [] `complex(128)`
+
+    :arg output: The output array, whose rank must match the input array's
+    :type output: [] `real(64)`
+    
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+  */
+  proc plan_dft_c2r(input : [] complex(128), output : [] real(64), flags :c_uint=0:c_int) : fftw_plan
+  {
+    param rank = output.rank: c_int; // The dimensions are that of the real array
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = output.domain.dim(i).size: c_int;
+
+    return C_FFTW.fftw_plan_dft_c2r(rank, dims, input, output, flags);
+  }
+
+  /*
+    Create a plan for a complex-to-real, in-place DFT.
+
+    :arg realDom: Describes the indices of the 'real' view of the array
+    :type realDom: `domain`
+
+    :arg arr: The array to be used as the in-place input/output array.
+    :type arr: [] `T` where `T` is of type `real` or `complex`
+
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+   */
+  proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : c_uint=0:c_int) : fftw_plan 
+  {
+    param rank = realDom.rank: c_int;
+
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = realDom.dim(i).size: c_int;
+
+    return C_FFTW.fftw_plan_dft_c2r(rank, dims, arr, arr, flags);
+  }
+
+
+  // Using plans 
+
+  /*
+    Execute an FFTW plan.
+
+    :arg plan: The plan to execute, as computed by a `plan_dft*()` routine.
+    :type plan: fftw_plan
+  */
+  proc execute(const plan: fftw_plan) {
+   C_FFTW.fftw_execute(plan);
+  }
+
+  /*
+    Destroy an FFTW plan.
+
+    :arg plan: The plan to destroy
+    :type plan: fftw_plan
+  */
+  proc destroy_plan(plan: fftw_plan) {
+    C_FFTW.fftw_destroy_plan(plan);
+  }
+
+
+  /*
+    Clean up FFTW overall.
+  */
+  proc cleanup() {
+    C_FFTW.fftw_cleanup();
+  }
+
+
   // Define the various planner flags
   // See Sec. 4.3.2 of FFTW manual "Planner Flags"
 
@@ -143,136 +331,6 @@ module FFTW {
   */  // NOTE: But it will be if/when the new-array execute interface is supported
   extern const FFTW_UNALIGNED : c_uint;
 
-
-  /*
-    'fftw_plan' is an opaque type used by FFTW for storing and passing
-    plans between routines.
-  */
-  extern type fftw_plan; // opaque type
-
-
-  // Planner functions
-  // Complex : 4.3.1
-  // NOTE : We pass in arrays using ref 
-
-  // TODO: Can we have the plan_dft() routine below take in native
-  // Chapel types without changing the external C constants from
-  // type c_int?  Probably given that Chapel's int will be >=
-  // C's int for the forseeable future.  See also the TODO above
-  // about whether we'd want to represent those constants using
-  // more native Chapel types anyway.
-
-  /*
-    Creates a plan for a complex->complex DFT.
-
-    :arg input: The input array, which can be of any rank
-    :type input: [] `complex(128)`
-
-    :arg output: The output array, with rank matching the input array's
-    :type output: [] `complex(128)`
-    
-    :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
-    :type sign: c_int
-
-    :arg flags: planning-rigor and/or algorithm-restriction flags
-    :type sign: c_int
-
-    :returns: The fftw_plan representing the plan
-  */
-  proc plan_dft(input: [] complex(128), output: [] complex(128), 
-                 sign: c_int, flags: c_uint) : fftw_plan
-  {
-    param rank = input.rank;
-
-    var dims: rank*c_int;
-    for param i in 1..rank do
-      dims(i) = input.domain.dim(i).size.safeCast(c_int);
-
-    return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, input, 
-                                     output, sign, flags);
-  }
-
-  // Real-to-complex and complex-to-real planning routines There are
-  // two cases that we treat independently here : in-place and
-  // out-of-place transforms
-
-  // Out-of-place routines
-  proc plan_dft_r2c(input : [] real(64), output : [] complex(128), flags :c_uint) : fftw_plan
-  {
-    param rank = input.rank: c_int;
-
-    var dims: rank*c_int;
-    for param i in 1..rank do
-      dims(i) = input.domain.dim(i).size: c_int;
-
-    return C_FFTW.fftw_plan_dft_r2c(rank, dims, input, output, flags);
-  }
-
-
-  proc plan_dft_c2r(input : [] complex(128), output : [] real(64),  flags :c_uint) : fftw_plan
-  {
-    param rank = output.rank: c_int; // The dimensions are that of the real array
-
-    var dims: rank*c_int;
-    for param i in 1..rank do
-      dims(i) = output.domain.dim(i).size: c_int;
-
-    return C_FFTW.fftw_plan_dft_c2r(rank, dims, input, output, flags);
-  }
-
-  // In-place routines, note that these take in the true leading dimension
-  // TODO : We should put in checks to see that the sizes are consistent
-  // TODO : We should check on types...
-  proc plan_dft_r2c(realDom : domain, input : [] ?t, flags : c_uint) : fftw_plan 
-  {
-    param rank = realDom.rank: c_int;
-
-    var dims: rank*c_int;
-    for param i in 1..rank do
-      dims(i) = realDom.dim(i).size: c_int;
-
-    return C_FFTW.fftw_plan_dft_r2c(rank, dims, input, input, flags);
-  }
-  proc plan_dft_c2r(realDom : domain, input: [] ?t, flags : c_uint) : fftw_plan 
-  {
-    param rank = realDom.rank: c_int;
-
-    var dims: rank*c_int;
-    for param i in 1..rank do
-      dims(i) = realDom.dim(i).size: c_int;
-
-    return C_FFTW.fftw_plan_dft_c2r(rank, dims, input, input, flags);
-  }
-
-
-  // Using plans 
-  /*
-    Executes the given plan.
-
-    :arg plan: The plan to execute, as computed by a plan*() routine.
-    :type plan: fftw_plan
-  */
-  proc execute(const plan: fftw_plan) {
-   C_FFTW.fftw_execute(plan);
-  }
-
-  /*
-    Destroys the given plan.
-
-    :arg plan: The plan to destroy
-    :type plan: fftw_plan
-  */
-  proc destroy_plan(plan: fftw_plan) {
-    C_FFTW.fftw_destroy_plan(plan);
-  }
-
-
-  /*
-    Cleans up FFTW overall.
-  */
-  proc cleanup() {
-    C_FFTW.fftw_cleanup();
-  }
 
 
   pragma "no doc"
