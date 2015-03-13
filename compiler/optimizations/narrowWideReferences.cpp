@@ -744,6 +744,10 @@ narrowSym(Symbol* sym, WideInfo* wi,
         wi->mustBeWide = true;
         return;
       }
+      if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+        wi->mustBeWide = true;
+        continue;
+      }
       if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) {
         SymExpr* member = toSymExpr(call->get(2));
         SymExpr* base = toSymExpr(call->get(1));
