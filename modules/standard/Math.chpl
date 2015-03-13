@@ -36,17 +36,14 @@ interface: instead, the type of the argument is used to select which
 underlying C routine is called.  Normally, the result has the same precision
 as the argument(s).  Please consult the C standard for specifics.
 
-Rounding
-========
-The rounding mode for floating-point addition (subtraction) is
+Rounding -- The rounding mode for floating-point addition (subtraction) is
 implementation-defined.
 
-Error Handling
-==============
-At present, Chapel does not provide control over error handling in the Math
-module.  The default behavior is as if the macro :kbd:`math_errhandling` is set
-to :kbd:`0`: Given erroneous input at run-time, all math functions will will
-return an implementation-defined value; no exception will be generated.
+Error Handling -- At present, Chapel does not provide control over error
+handling in the Math module.  The default behavior is as if the macro
+:kbd:`math_errhandling` is set to :kbd:`0`: Given erroneous input at run-time,
+all math functions will will return an implementation-defined value; no
+exception will be generated.
 
 */
 module Math {
