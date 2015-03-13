@@ -68,7 +68,6 @@ modules: FORCE
 runtime: FORCE
 	cd runtime && $(MAKE)
 	-@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
-	echo "Building runtime for chpl --llvm" ; \
 	export CHPL_TARGET_COMPILER=clang-included && \
 	cd runtime && $(MAKE) ; \
 	fi
