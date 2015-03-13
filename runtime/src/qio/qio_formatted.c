@@ -2134,6 +2134,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
+  if( style->showpoint ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
 
   // We might not have room...
@@ -2176,6 +2177,12 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   // now output the digits.
   qio_memcpy(dst + i, tmp+tmp_skip, tmp_len);
   i += tmp_len;
+
+  // Now output a period if we're doing showpoint.
+  if( style->showpoint ) {
+    dst[i] = '.';
+    i++;
+  }
 
   // Now if we're left justified we might need padding.
   if( style->leftjustify && width < style->min_width_columns) {
