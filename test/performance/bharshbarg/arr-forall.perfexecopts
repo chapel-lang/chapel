@@ -1,0 +1,2 @@
+--n=1000000000 --zipIter=false
+--n=1000000000 --zipIter=true # arr-forall-zip

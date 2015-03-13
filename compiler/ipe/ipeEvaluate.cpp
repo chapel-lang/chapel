@@ -44,10 +44,11 @@ static IpeValue evaluate(CondStmt*     expr, IpeVars* vars);
 static IpeValue evaluate(WhileDoStmt*  expr, IpeVars* vars);
 
 static bool     isPrint (FnSymbol* fn);
-static bool     isPrint2(FnSymbol* fn);
+static void     ipePrint(IpeValue value, Type* type);
 
-static void     ipePrint(IpeValue msg,   IpeValue value, Type* type);
-static void     ipePrint(IpeValue value,                 Type* type);
+
+static bool     isWriteln (FnSymbol* fn);
+static void     ipeWriteln(IpeValue msg,   IpeValue value, Type* type);
 
 /************************************ | *************************************
 *                                                                           *
@@ -375,14 +376,14 @@ static IpeValue evaluateCall(CallExpr* callExpr, IpeVars* vars)
     ipePrint(locals->valueGet(0), formal->type);
   }
 
-  else if (isPrint2(fnSymbol) == true)
+  else if (isWriteln(fnSymbol) == true)
   {
     if (fnSymbol->formals.length == 2)
     {
       DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(2));
       ArgSymbol* formal  = toArgSymbol(defExpr->sym);
 
-      ipePrint(locals->valueGet(0), locals->valueGet(1), formal->type);
+      ipeWriteln(locals->valueGet(0), locals->valueGet(1), formal->type);
     }
     else
     {
@@ -390,7 +391,7 @@ static IpeValue evaluateCall(CallExpr* callExpr, IpeVars* vars)
       ArgSymbol* formal  = toArgSymbol(defExpr->sym);
       IpeValue   dummy;
 
-      ipePrint(locals->valueGet(0), dummy, formal->type);
+      ipeWriteln(locals->valueGet(0), dummy, formal->type);
     }
   }
 
@@ -823,40 +824,6 @@ static bool isPrint(FnSymbol* fn)
   return retval;
 }
 
-static bool isPrint2(FnSymbol* fn)
-{
-  bool retval = false;
-
-  if (strcmp(fn->name, "print2") == 0)
-  {
-    if (ModuleSymbol* mod = fn->getModule())
-      retval = (strcmp(mod->name, "ChapelBase") == 0) ? true : false;
-  }
-
-  return retval;
-}
-
-static void ipePrint(IpeValue msg,   IpeValue value, Type* type)
-{
-  printf("     ");
-  fputs(msg.cstringGet(), stdout);
-
-  if      (type == dtBool)
-    printf("%s\n", (value.boolGet() == true) ? " true" : "false");
-
-  else if (type == dtInt[INT_SIZE_64])
-    printf("%5ld\n", value.integerGet());
-
-  else if (type == dtReal[FLOAT_SIZE_64])
-    printf("%6.2f\n", value.realGet());
-
-  else if (type == dtStringC)
-    printf("%s\n", msg.cstringGet());
-
-  else
-    printf("???\n");
-}
-
 static void ipePrint(IpeValue value, Type* type)
 {
   printf("     ");
@@ -875,4 +842,40 @@ static void ipePrint(IpeValue value, Type* type)
 
   else
     printf("???\n\n");
+}
+
+
+
+static bool isWriteln(FnSymbol* fn)
+{
+  bool retval = false;
+
+  if (strcmp(fn->name, "writeln") == 0)
+  {
+    if (ModuleSymbol* mod = fn->getModule())
+      retval = (strcmp(mod->name, "ChapelBase") == 0) ? true : false;
+  }
+
+  return retval;
+}
+
+static void ipeWriteln(IpeValue msg,   IpeValue value, Type* type)
+{
+  printf("     ");
+  fputs(msg.cstringGet(), stdout);
+
+  if      (type == dtBool)
+    printf("%s\n", (value.boolGet() == true) ? " true" : "false");
+
+  else if (type == dtInt[INT_SIZE_64])
+    printf("%5ld\n", value.integerGet());
+
+  else if (type == dtReal[FLOAT_SIZE_64])
+    printf("%6.2f\n", value.realGet());
+
+  else if (type == dtStringC)
+    printf("%s\n", msg.cstringGet());
+
+  else
+    printf("???\n");
 }

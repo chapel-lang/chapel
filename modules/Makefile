@@ -59,7 +59,9 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/FileSystem.chpl \
+	standard/List.chpl \
 	standard/Random.chpl \
+	standard/Sort.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
