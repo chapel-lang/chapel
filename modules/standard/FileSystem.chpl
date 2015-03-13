@@ -41,9 +41,11 @@ use Error;
    S_ISVTX, where R corresponds to readable, W corresponds to writable, X
    corresponds to executable, USR and U correspond to user, GRP and G
    correspond to group, OTH and O correspond to other, directly tied to the C
-   idea of these constants.  They are intended for use when dealing with the
-   permissions of files or directories, such as with :proc:`chmod`,
-   :proc:`getMode`, :proc:`mkdir`, or :proc:`umask`
+   idea of these constants as visible at `GNU Permissions
+   <http://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html>`_.
+   They are intended for use when dealing with the permissions of files or
+   directories, such as with :proc:`chmod`, :proc:`getMode`, :proc:`mkdir`,
+   or :proc:`umask`
 
    S_IRUSR refers to the user's read permission
 */
@@ -52,7 +54,9 @@ extern const S_IRUSR: int;
 extern const S_IWUSR: int;
 /* Refers to the user's executable permission, see :data:`S_IRUSR` */
 extern const S_IXUSR: int;
-/* Refers to all the user's permissions, see :data:`S_IRUSR` */
+/* Refers to all the user's permissions - read, write, and execute.  See
+   :data:`S_IRUSR`
+*/
 extern const S_IRWXU: int;
 
 /* Refers to the group's read permission, see :data:`S_IRUSR` */
@@ -61,7 +65,9 @@ extern const S_IRGRP: int;
 extern const S_IWGRP: int;
 /* Refers to the group's executable permission, see :data:`S_IRUSR` */
 extern const S_IXGRP: int;
-/* Refers to all the permissions of those in this group, see :data:`S_IRUSR` */
+/* Refers to all the permissions - read, write, and execute - of those in this
+   group, see :data:`S_IRUSR`
+*/
 extern const S_IRWXG: int;
 
 /* Refers to everyone else's read permission, see :data:`S_IRUSR` */
@@ -70,15 +76,21 @@ extern const S_IROTH: int;
 extern const S_IWOTH: int;
 /* Refers to everyone else's executable permission, see :data:`S_IRUSR` */
 extern const S_IXOTH: int;
-/* Refers to all the permissions of everyone else, see :data:`S_IRUSR` */
+/* Refers to all the permissions - read, write, and execute - of everyone else,
+   see :data:`S_IRUSR`
+*/
 extern const S_IRWXO: int;
 
-/* Use of this would cause the user id to be set on execution, see
-   :data:`S_IRUSR`
+/* Use of this would cause the user id to be set on execution.  See
+   `GNU Permissions
+   <http://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html>`_
+   for what that generally means, and :data:`S_IRUSR` for intended uses, etc.
 */
 extern const S_ISUID: int;
-/* Use of this would cause the group id to be set on execution, see
-   :data:`S_IRUSR`
+/* Use of this would cause the group id to be set on execution.  See
+   `GNU Permissions
+   <http://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html>`_
+   for what that generally means, and :data:`S_IRUSR` for intended uses, etc.
 */
 extern const S_ISGID: int;
 /* This is the sticky bit. See `GNU Permissions
