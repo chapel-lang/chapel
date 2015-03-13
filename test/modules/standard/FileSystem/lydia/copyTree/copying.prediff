@@ -1,0 +1,6 @@
+#!/bin/bash
+
+diff -r f/ a/ > $2
+if [ $? ]; then
+    echo "okay" >> $2
+fi
