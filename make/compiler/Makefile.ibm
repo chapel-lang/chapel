@@ -55,6 +55,9 @@ LIB_DYNAMIC_FLAG = -qmkshrobj -X64
 # 1506-229: warns about empty files
 #
 
+# TODO: Set the target architecture for optimization
+# TODO: Set flag for lax or IEEE floating point
+
 #
 # a hacky flag necessary currently due to our use of setenv in the runtime code
 #
