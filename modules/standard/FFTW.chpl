@@ -51,6 +51,12 @@
   3. Destroy the plan(s) using :proc:`destroy_plan`.
 
   4. Call :proc:`cleanup`.
+
+  
+  In future versions of this interface, we anticipate replacing
+  C-oriented arguments in the `plan_dft*()` routines (like `flags`)
+  with more precise arguments that take advantage of Chapel's support
+  for default argument values and keyword-based argument passing.
 */
 
 //
@@ -105,8 +111,8 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft(input: [] complex(128), output: [] complex(128), 
-                 sign: c_int, flags: c_uint = 0:c_int) : fftw_plan
+  proc plan_dft(input: [] complex(128), output: [] complex(128), sign: c_int, 
+                flags: c_uint) : fftw_plan
   {
     param rank = input.rank;
 
@@ -137,7 +143,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_r2c(input : [] real(64), output : [] complex(128), flags :c_uint = 0:c_int) : fftw_plan
+  proc plan_dft_r2c(input : [] real(64), output : [] complex(128), flags :c_uint) : fftw_plan
   {
     param rank = input.rank: c_int;
 
@@ -165,7 +171,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_r2c(realDom : domain, arr : [] ?t, flags : c_uint = 0:c_int) : fftw_plan 
+  proc plan_dft_r2c(realDom : domain, arr : [] ?t, flags : c_uint) : fftw_plan 
   {
     param rank = realDom.rank: c_int;
 
@@ -190,7 +196,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_c2r(input : [] complex(128), output : [] real(64), flags :c_uint=0:c_int) : fftw_plan
+  proc plan_dft_c2r(input : [] complex(128), output : [] real(64), flags :c_uint) : fftw_plan
   {
     param rank = output.rank: c_int; // The dimensions are that of the real array
 
@@ -215,7 +221,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : c_uint=0:c_int) : fftw_plan 
+  proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan 
   {
     param rank = realDom.rank: c_int;
 
@@ -284,9 +290,11 @@ module FFTW {
   extern const FFTW_ESTIMATE : c_uint;
 
   /* Specify that FFTW should try and find an optimized plan by
-     computing several FFTs and measuring their execution time.  This
-     option is the default planning option and can consume some
-     time. */
+     computing several FFTs and measuring their execution time.
+     This can consume some time.
+  */
+  // TODO: If/when we support defaults, might say something like: This
+  // is the default planning option.
   extern const FFTW_MEASURE : c_uint;
 
   /* Specify that FFTW should expend a greater effort finding an
@@ -313,13 +321,15 @@ module FFTW {
 
   /* Specify that an out-of-place transform is permitted to overwrite
      its input array with arbitrary data.  This permits more efficient
-     algorithms to be used in some cases.  This is the default for
-     :proc:`plan_dft_c2r`. */ // NOTE: ...and hc2r once supported...
+     algorithms to be used in some cases. */
+  // TODO: When we're ready to mention defaults, add: "This is the default for
+  // :proc:`plan_dft_c2r`. // NOTE: ...and hc2r once supported...
   extern const FFTW_DESTROY_INPUT : c_uint;
 
   /* Specify that an out-of-place transform cannot change its input
-     array.  This is the default for :proc:`plan_dft` and
-     :proc:`plan_dft_r2c`. */
+     array. */
+  // TODO: When we're ready to mention defaults, add: This is the
+  // default for :proc:`plan_dft` and :proc:`plan_dft_r2c`. */
   extern const FFTW_PRESERVE_INPUT : c_uint;
 
   /* Specify that the algorithm may not impose any unusual alignment
