@@ -13,3 +13,4 @@ Information Options:
   -h, --help                          Help (show this list)
       --version                       Show version
       --copyright                     Show copyright
+      --license                       Show license
