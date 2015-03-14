@@ -22,10 +22,14 @@
 
 // Shared flags.
 extern bool fPrintHelp;
+extern bool fPrintVersion;
 
 
 #define DRIVER_ARG_HELP \
   {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL}
+
+#define DRIVER_ARG_VERSION \
+  {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL}
 
 #define DRIVER_ARG_LAST \
   {0}

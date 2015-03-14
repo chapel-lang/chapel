@@ -18,3 +18,4 @@
  */
 
 bool fPrintHelp = false;
+bool fPrintVersion = false;
