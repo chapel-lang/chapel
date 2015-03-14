@@ -1471,13 +1471,6 @@ void initPrimitiveTypes() {
   gTryToken->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gTryToken));
 
-  //
-  // IPE tries to run without the rest of the types
-  //
-  if (fUseIPE == true) {
-    return;
-  }
-
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
