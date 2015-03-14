@@ -198,7 +198,6 @@ bool preserveInlinedLineNumbers = false;
 const char* compileCommand = NULL;
 char compileVersion[64];
 
-static bool printChplHome = false;
 
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
@@ -801,7 +800,7 @@ static ArgumentDescription arg_desc[] = {
  {"remove-unreachable-blocks", ' ', NULL, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", NULL},
 
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
- {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome,   NULL,                   NULL},
+ DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };
 
@@ -862,7 +861,7 @@ static void printStuff(const char* argv0) {
 
     printedSomething = true;
   }
-  if( printChplHome ) {
+  if( fPrintChplHome ) {
     char* guess = findProgramPath(argv0);
 
     printf("%s\t%s\n", CHPL_HOME, guess);

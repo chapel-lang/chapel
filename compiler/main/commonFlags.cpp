@@ -21,6 +21,7 @@
 
 bool ccwarnings = false;
 bool developer = false;
+bool fPrintChplHome = false;
 bool fPrintCopyright = false;
 bool fPrintEnvHelp = false;
 bool fPrintHelp = false;

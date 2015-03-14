@@ -25,6 +25,7 @@
 // Shared flags.
 extern bool ccwarnings;
 extern bool developer;
+extern bool fPrintChplHome;
 extern bool fPrintCopyright;
 extern bool fPrintEnvHelp;
 extern bool fPrintHelp;
@@ -59,6 +60,9 @@ void driverSetDevelSettings(const ArgumentState* state, const char* arg_unused);
 
 #define DRIVER_ARG_LICENSE \
   {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL}
+
+#define DRIVER_ARG_PRINT_CHPL_HOME \
+  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, NULL,NULL}
 
 #define DRIVER_ARG_VERSION \
   {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL}
