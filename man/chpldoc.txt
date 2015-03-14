@@ -75,6 +75,23 @@ ENVIRONMENT VARIABLES FOR OPTIONS
   non-empty value of the environment variable equivalent has the same effect
   as passing that option once.
 
+
+ENVIRONMENT
+
+  See $CHPL_HOME/doc/README.chplenv for detailed information about 
+  general environment variable settings, legal values, and default
+  settings. Run $CHPL_HOME/util/printchplenv to view your current
+  settings (as explicitly set and inferred). Some of the most
+  commonly-used environment variables are summarized here.
+
+  CHPL_HOME           Specifies the location of the Chapel installation directory.
+
+  CHPL_DEVELOPER      When set, build and compile in developer mode,
+                      which generates line numbers in internal module
+                      code and throws extra warning flags when
+                      compiling the generated C code.
+
+
 BUGS
   See $CHPL_HOME/STATUS for a list of known bugs and $CHPL_HOME/doc/README.bugs
   for instructions on reporting bugs.
