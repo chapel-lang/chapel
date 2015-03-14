@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "driver.h"
 #include "docsDriver.h"
 
 bool fDocs = false;
@@ -85,6 +86,6 @@ ArgumentDescription docs_arg_desc[] = {
  //       (thomasvandoren, 2015-03-08)
  //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
 
- {"help", 'h', NULL, "Help (show this list)", "F", &fDocsPrintHelp, NULL, NULL},
- {0}
+ DRIVER_HELP_ARG,
+ DRIVER_LAST_ARG
 };

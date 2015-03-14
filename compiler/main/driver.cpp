@@ -766,7 +766,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
  {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL, NULL},
- {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL, NULL},
+ DRIVER_HELP_ARG,
  {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
  {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
  {"license", ' ', NULL, "Show license", "F", &printLicense, NULL, NULL},
@@ -825,7 +825,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome,   NULL,                   NULL},
- {0}
+ DRIVER_LAST_ARG
 };
 
 
