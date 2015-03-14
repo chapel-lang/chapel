@@ -201,8 +201,6 @@ bool preserveInlinedLineNumbers = false;
 const char* compileCommand = NULL;
 char compileVersion[64];
 
-static bool printEnvHelp = false;
-static bool printSettingsHelp = false;
 static bool printChplHome = false;
 
 /* Note -- LLVM provides a way to get the path to the executable...
@@ -609,10 +607,6 @@ static void setCacheEnable(const ArgumentState* state, const char* unused) {
 }
 
 
-static void setHelpTrue(const ArgumentState* state, const char* unused) {
-  fPrintHelp = true;
-}
-
 static void setHtmlUser(const ArgumentState* state, const char* unused) {
   fdump_html = true;
   fdump_html_include_system_modules = false;
@@ -764,8 +758,8 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
  DRIVER_ARG_COPYRIGHT,
  DRIVER_ARG_HELP,
- {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
- {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
+ DRIVER_ARG_HELP_ENV,
+ DRIVER_ARG_HELP_SETTINGS,
  DRIVER_ARG_LICENSE,
  DRIVER_ARG_VERSION,
 
@@ -895,7 +889,7 @@ static void printStuff(const char* argv0) {
   if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
 
-    usage(&sArgState, !fPrintHelp, printEnvHelp, printSettingsHelp);
+    usage(&sArgState, !fPrintHelp, fPrintEnvHelp, fPrintSettingsHelp);
 
     shouldExit       = true;
     printedSomething = true;

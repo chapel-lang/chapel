@@ -20,11 +20,18 @@
 #ifndef _common_flags_H_
 #define _common_flags_H_
 
+#include "arg.h"
+
 // Shared flags.
 extern bool fPrintCopyright;
+extern bool fPrintEnvHelp;
 extern bool fPrintHelp;
 extern bool fPrintLicense;
+extern bool fPrintSettingsHelp;
 extern bool fPrintVersion;
+
+// Shared setter functions.
+void driverSetHelpTrue(const ArgumentState* state, const char* unused);
 
 
 #define DRIVER_ARG_COPYRIGHT \
@@ -32,6 +39,12 @@ extern bool fPrintVersion;
 
 #define DRIVER_ARG_HELP \
   {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL}
+
+#define DRIVER_ARG_HELP_ENV \
+  {"help-env", ' ', NULL, "Environment variable help", "F", &fPrintEnvHelp, "", driverSetHelpTrue}
+
+#define DRIVER_ARG_HELP_SETTINGS \
+  {"help-settings", ' ', NULL, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue}
 
 #define DRIVER_ARG_LICENSE \
   {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL}

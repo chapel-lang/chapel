@@ -17,7 +17,15 @@
  * limitations under the License.
  */
 
+#include "commonFlags.h"
+
 bool fPrintCopyright = false;
+bool fPrintEnvHelp = false;
 bool fPrintHelp = false;
 bool fPrintLicense = false;
+bool fPrintSettingsHelp = false;
 bool fPrintVersion = false;
+
+void driverSetHelpTrue(const ArgumentState* state, const char* unused) {
+  fPrintHelp = true;
+}

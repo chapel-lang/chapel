@@ -88,6 +88,8 @@ ArgumentDescription docs_arg_desc[] = {
 
  {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
  DRIVER_ARG_HELP,
+ DRIVER_ARG_HELP_ENV,
+ DRIVER_ARG_HELP_SETTINGS,
  DRIVER_ARG_VERSION,
  DRIVER_ARG_COPYRIGHT,
  DRIVER_ARG_LICENSE,
