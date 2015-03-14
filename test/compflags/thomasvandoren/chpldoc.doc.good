@@ -11,6 +11,8 @@ Documentation Options:
 
 Information Options:
   -h, --help                          Help (show this list)
+      --help-env                      Environment variable help
+      --help-settings                 Current flag settings
       --version                       Show version
       --copyright                     Show copyright
       --license                       Show license
