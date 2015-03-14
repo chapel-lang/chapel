@@ -8,4 +8,8 @@ Documentation Options:
       --comment-style <indicator>     Only includes comments that start with
                                       <indicator>
       --text-only                     Generate text only documentation
+
+Information Options:
   -h, --help                          Help (show this list)
+      --version                       Show version
+      --copyright                     Show copyright
