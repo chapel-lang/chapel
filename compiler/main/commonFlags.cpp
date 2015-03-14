@@ -19,4 +19,5 @@
 
 bool fPrintCopyright = false;
 bool fPrintHelp = false;
+bool fPrintLicense = false;
 bool fPrintVersion = false;

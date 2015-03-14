@@ -23,14 +23,18 @@
 // Shared flags.
 extern bool fPrintCopyright;
 extern bool fPrintHelp;
+extern bool fPrintLicense;
 extern bool fPrintVersion;
 
+
+#define DRIVER_ARG_COPYRIGHT \
+  {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
 
 #define DRIVER_ARG_HELP \
   {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL}
 
-#define DRIVER_ARG_COPYRIGHT \
-  {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
+#define DRIVER_ARG_LICENSE \
+  {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL}
 
 #define DRIVER_ARG_VERSION \
   {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL}

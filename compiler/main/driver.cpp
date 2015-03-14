@@ -203,7 +203,6 @@ char compileVersion[64];
 
 static bool printEnvHelp = false;
 static bool printSettingsHelp = false;
-static bool printLicense = false;
 static bool printChplHome = false;
 
 /* Note -- LLVM provides a way to get the path to the executable...
@@ -767,7 +766,7 @@ static ArgumentDescription arg_desc[] = {
  DRIVER_ARG_HELP,
  {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
  {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
- {"license", ' ', NULL, "Show license", "F", &printLicense, NULL, NULL},
+ DRIVER_ARG_LICENSE,
  DRIVER_ARG_VERSION,
 
  {"", ' ', NULL, "Developer Flags -- Debug Output", NULL, NULL, NULL, NULL},
@@ -866,7 +865,7 @@ static void printStuff(const char* argv0) {
     shouldExit       = true;
   }
 
-  if (printLicense) {
+  if (fPrintLicense) {
     fprintf(stdout,
 #include "LICENSE"
             );
