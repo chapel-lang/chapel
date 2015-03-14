@@ -139,7 +139,8 @@ tags
 /test/compflags/sungeun/configs/type_variables/configTypeFunNoType.good
 /test/compflags/sungeun/configs/type_variables/configTypeFun.good
 
-/test/compflags/thomasvandoren/chpldoc/version.doc.good
+/test/compflags/thomasvandoren/chpldoc/*.doc.good
+/test/compflags/thomasvandoren/chpldoc/docs/
 
 /test/compflags/waynew/*.c
 /test/compflags/waynew/*.tmp_launcher

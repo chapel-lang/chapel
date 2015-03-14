@@ -87,7 +87,8 @@ ArgumentDescription docs_arg_desc[] = {
  //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
 
  {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
- DRIVER_ARG_VERSION,
  DRIVER_ARG_HELP,
+ DRIVER_ARG_VERSION,
+ DRIVER_ARG_COPYRIGHT,
  DRIVER_ARG_LAST
 };

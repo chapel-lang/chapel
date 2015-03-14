@@ -201,7 +201,6 @@ bool preserveInlinedLineNumbers = false;
 const char* compileCommand = NULL;
 char compileVersion[64];
 
-static bool printCopyright = false;
 static bool printEnvHelp = false;
 static bool printSettingsHelp = false;
 static bool printLicense = false;
@@ -764,7 +763,7 @@ static ArgumentDescription arg_desc[] = {
  {"no-warnings", ' ', NULL, "Disable output of warnings", "F", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
- {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL, NULL},
+ DRIVER_ARG_COPYRIGHT,
  DRIVER_ARG_HELP,
  {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
  {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
@@ -862,7 +861,7 @@ static void printStuff(const char* argv0) {
   if (fPrintVersion) {
     fprintf(stdout, "%s Version %s\n", sArgState.program_name, compileVersion);
 
-    printCopyright   = true;
+    fPrintCopyright  = true;
     printedSomething = true;
     shouldExit       = true;
   }
@@ -872,12 +871,12 @@ static void printStuff(const char* argv0) {
 #include "LICENSE"
             );
 
-    printCopyright   = false;
+    fPrintCopyright  = false;
     shouldExit       = true;
     printedSomething = true;
   }
 
-  if (printCopyright) {
+  if (fPrintCopyright) {
     fprintf(stdout,
 #include "COPYRIGHT"
             );

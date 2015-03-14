@@ -17,5 +17,6 @@
  * limitations under the License.
  */
 
+bool fPrintCopyright = false;
 bool fPrintHelp = false;
 bool fPrintVersion = false;
