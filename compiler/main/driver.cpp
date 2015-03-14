@@ -88,12 +88,9 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
 static char log_flags[512] = "";
-static bool rungdb = false;
-static bool runlldb = false;
 bool fLibraryCompile = false;
 bool no_codegen = false;
 int debugParserLevel = 0;
-bool developer = false;
 bool fVerify = false;
 bool ignore_errors = false;
 bool ignore_errors_for_pass = false;
@@ -439,16 +436,6 @@ static void setChapelDebug(const ArgumentState* state, const char* arg_unused) {
   printCppLineno = true;
 }
 
-static void setDevelSettings(const ArgumentState* state, const char* arg_unused) {
-  // have to handle both cases since this will be called with --devel
-  // and --no-devel
-  if (developer) {
-    ccwarnings = true;
-  } else {
-    ccwarnings = false;
-  }
-}
-
 static void handleLibrary(const ArgumentState* state, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
 }
@@ -741,7 +728,7 @@ static ArgumentDescription arg_desc[] = {
 // Support for extern { c-code-here } blocks could be toggled with this
 // flag, but instead we just leave it on if the compiler can do it.
 // {"extern-c", ' ', NULL, "Enable [disable] extern C block support", "f", &externC, "CHPL_EXTERN_C", NULL},
- {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", setDevelSettings},
+ DRIVER_ARG_DEVELOPER,
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
@@ -799,8 +786,7 @@ static ArgumentDescription arg_desc[] = {
  {"break-on-codegen", ' ', NULL, "Break when function cname is code generated", "S256", &breakOnCodegenCname, "CHPL_BREAK_ON_CODEGEN", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
- {"gdb", ' ', NULL, "Run compiler in gdb", "F", &rungdb, NULL, NULL},
- {"lldb", ' ', NULL, "Run compiler in lldb", "F", &runlldb, NULL, NULL},
+ DRIVER_ARG_DEBUGGERS,
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
@@ -956,10 +942,10 @@ int main(int argc, char* argv[]) {
   if (fUseIPE == false)
     printStuff(argv[0]);
 
-  if (rungdb)
+  if (fRungdb)
     runCompilerInGDB(argc, argv);
 
-  if (runlldb)
+  if (fRunlldb)
     runCompilerInLLDB(argc, argv);
 
   addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);

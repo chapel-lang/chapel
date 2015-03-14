@@ -19,13 +19,27 @@
 
 #include "commonFlags.h"
 
+bool ccwarnings = false;
+bool developer = false;
 bool fPrintCopyright = false;
 bool fPrintEnvHelp = false;
 bool fPrintHelp = false;
 bool fPrintLicense = false;
 bool fPrintSettingsHelp = false;
 bool fPrintVersion = false;
+bool fRungdb = false;
+bool fRunlldb = false;
 
 void driverSetHelpTrue(const ArgumentState* state, const char* unused) {
   fPrintHelp = true;
+}
+
+void driverSetDevelSettings(const ArgumentState* state, const char* arg_unused) {
+  // have to handle both cases since this will be called with --devel
+  // and --no-devel
+  if (developer) {
+    ccwarnings = true;
+  } else {
+    ccwarnings = false;
+  }
 }

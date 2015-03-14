@@ -93,5 +93,10 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_VERSION,
  DRIVER_ARG_COPYRIGHT,
  DRIVER_ARG_LICENSE,
+
+ {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
+ DRIVER_ARG_DEVELOPER,
+ DRIVER_ARG_DEBUGGERS,
+
  DRIVER_ARG_LAST
 };

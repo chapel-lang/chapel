@@ -23,19 +23,30 @@
 #include "arg.h"
 
 // Shared flags.
+extern bool ccwarnings;
+extern bool developer;
 extern bool fPrintCopyright;
 extern bool fPrintEnvHelp;
 extern bool fPrintHelp;
 extern bool fPrintLicense;
 extern bool fPrintSettingsHelp;
 extern bool fPrintVersion;
+extern bool fRungdb;
+extern bool fRunlldb;
 
 // Shared setter functions.
 void driverSetHelpTrue(const ArgumentState* state, const char* unused);
-
+void driverSetDevelSettings(const ArgumentState* state, const char* arg_unused);
 
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
+
+#define DRIVER_ARG_DEBUGGERS                                            \
+  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL}, \
+  {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL}
+
+#define DRIVER_ARG_DEVELOPER \
+  {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", driverSetDevelSettings}
 
 #define DRIVER_ARG_HELP \
   {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL}
