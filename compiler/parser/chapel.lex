@@ -45,6 +45,7 @@
 %{
 
 #include "bison-chapel.h"
+#include "docsDriver.h"
 #include "parser.h"
 
 #include <cstdio>

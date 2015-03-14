@@ -26,6 +26,7 @@
 
 #include "AstPrintDocs.h"
 #include "AstToText.h"
+#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
