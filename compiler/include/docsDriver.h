@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#ifndef _docs_driver_H_
+#define _docs_driver_H_
+
 #include "arg.h"
 #include "misc.h"
 
@@ -38,3 +41,5 @@ void docsArgSetCommentLabel(const ArgumentState* arg_state, const char* label);
 
 
 extern ArgumentDescription docs_arg_desc[];
+
+#endif
