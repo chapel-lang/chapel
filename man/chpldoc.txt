@@ -29,7 +29,14 @@ DESCRIPTION
   --text-only       Specify that documents should use a text output file
                     format rather than HTML.
 
+  Information Options
+
   -h, --help        Print a list of the command line options, indicating
                     the arguments that they expect and a brief summary of their 
                     purpose.
 
+  --version       Print the version number of the compiler.
+
+  --copyright     Print the compiler's copyright information.
+
+  --license       Print the compiler's license information.
