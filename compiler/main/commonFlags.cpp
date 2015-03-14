@@ -17,28 +17,4 @@
  * limitations under the License.
  */
 
-#ifndef _docs_driver_H_
-#define _docs_driver_H_
-
-#include "arg.h"
-#include "misc.h"
-
-extern bool fDocs;
-extern bool fDocsAlphabetize;
-extern char fDocsCommentLabel[256];
-extern char fDocsFolder[256];
-extern bool fDocsTextOnly;
-extern char fDocsSphinxDir[256];
-
-// TODO: Whether or not to support this flag is an open discussion. Currently,
-//       it is not supported, so the flag is always true.
-//       (thomasvandoren, 2015-03-08)
-extern bool fDocsIncludeExterns;
-
-
-void docsArgSetCommentLabel(const ArgumentState* arg_state, const char* label);
-
-
-extern ArgumentDescription docs_arg_desc[];
-
-#endif
+bool fPrintHelp = false;

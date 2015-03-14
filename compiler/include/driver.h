@@ -188,10 +188,4 @@ extern bool fMinimalModules;
 // Interactive Programming Environmment (IPE) mode.
 extern bool fUseIPE;
 
-#define DRIVER_HELP_ARG \
-  {"help", 'h', NULL, "Help (show this list)", "F", &printHelp, NULL, NULL}
-
-#define DRIVER_LAST_ARG \
-  {0}
-
 #endif

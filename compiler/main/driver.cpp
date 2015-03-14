@@ -26,6 +26,7 @@
 
 #include "arg.h"
 #include "chpl.h"
+#include "commonFlags.h"
 #include "config.h"
 #include "countTokens.h"
 #include "docsDriver.h"
@@ -201,7 +202,6 @@ const char* compileCommand = NULL;
 char compileVersion[64];
 
 static bool printCopyright = false;
-static bool printHelp = false;
 static bool printEnvHelp = false;
 static bool printSettingsHelp = false;
 static bool printLicense = false;
@@ -613,7 +613,7 @@ static void setCacheEnable(const ArgumentState* state, const char* unused) {
 
 
 static void setHelpTrue(const ArgumentState* state, const char* unused) {
-  printHelp = true;
+  fPrintHelp = true;
 }
 
 static void setHtmlUser(const ArgumentState* state, const char* unused) {
@@ -766,7 +766,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
  {"copyright", ' ', NULL, "Show copyright", "F", &printCopyright, NULL, NULL},
- DRIVER_HELP_ARG,
+ DRIVER_ARG_HELP,
  {"help-env", ' ', NULL, "Environment variable help", "F", &printEnvHelp, "", setHelpTrue},
  {"help-settings", ' ', NULL, "Current flag settings", "F", &printSettingsHelp, "", setHelpTrue},
  {"license", ' ', NULL, "Show license", "F", &printLicense, NULL, NULL},
@@ -825,7 +825,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &printChplHome,   NULL,                   NULL},
- DRIVER_LAST_ARG
+ DRIVER_ARG_LAST
 };
 
 
@@ -895,17 +895,10 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
 
-  if (printHelp || fDocsPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+  if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
 
-    int usageExitStatus;
-    if (fDocs) {
-      usageExitStatus = (!fDocsPrintHelp);
-    } else {
-      usageExitStatus = (!printHelp);
-    }
-
-    usage(&sArgState, usageExitStatus, printEnvHelp, printSettingsHelp);
+    usage(&sArgState, !fPrintHelp, printEnvHelp, printSettingsHelp);
 
     shouldExit       = true;
     printedSomething = true;
