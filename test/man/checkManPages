@@ -2,7 +2,7 @@
 
 """Compare the help page and man page for chpl and chpldoc.
 
-Make sure every flag is in the help page is present in the man page. Also, for
+Make sure every flag in the help page is present in the man page. Also, for
 chpl check that all top-level CHPL variables from $CHPL_HOME/util/printchplenv
 are included in the man page's ENVIRONMENT section.
 """
