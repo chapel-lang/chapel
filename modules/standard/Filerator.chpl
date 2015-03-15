@@ -171,7 +171,8 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
     forall subdir in subdirs {
       const fullpath = path + "/" + subdir;
       //
-      // Call standalone walkdirs() iterator recursively
+      // Call standalone walkdirs() iterator recursively; set sort=false since it is
+      // not useful and we've already printed the warning
       //
       for subdir in walkdirs(fullpath, topdown, depth-1, hidden, followlinks, sort=false, iterKind.standalone) do
         yield subdir;
