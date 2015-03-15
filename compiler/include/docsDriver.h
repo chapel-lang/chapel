@@ -21,6 +21,7 @@
 #include "misc.h"
 
 extern bool fDocs;
+extern char fDocsAuthor[256];
 extern bool fDocsPrintHelp;
 extern bool fDocsAlphabetize;
 extern char fDocsCommentLabel[256];

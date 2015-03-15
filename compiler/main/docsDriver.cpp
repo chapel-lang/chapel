@@ -20,6 +20,7 @@
 #include "docsDriver.h"
 
 bool fDocs = false;
+char fDocsAuthor[256] = "";
 bool fDocsPrintHelp = false;
 bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
@@ -77,6 +78,7 @@ ArgumentDescription docs_arg_desc[] = {
 
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
+ {"author", ' ', "<author>", "", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
  {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
  {"text-only", ' ', NULL, "Generate text only documentation", "F", &fDocsTextOnly, NULL, NULL},
 

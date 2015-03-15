@@ -26,6 +26,7 @@
 
 #include "AstPrintDocs.h"
 #include "AstToText.h"
+#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -284,7 +285,8 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
 
   const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && ",
-                              "export VIRTUAL_ENV=", venvDir);
+                              "export VIRTUAL_ENV=", venvDir, " && ",
+                              "export CHPLDOC_AUTHOR=", fDocsAuthor);
 
   // Run:
   //   $envVars &&
