@@ -195,6 +195,9 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
 
 module Chpl_rt_glob {
   extern type glob_t;
+
+  extern const GLOB_NOMATCH: c_int;
+
   extern proc chpl_glob(pattern:c_string, flags: c_int, 
                         ref ret_glob:glob_t):c_int;
   extern proc chpl_glob_num(x:glob_t): size_t;
@@ -206,6 +209,9 @@ iter glob(pattern="*") {
   var glb : Chpl_rt_glob.glob_t;
 
   const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != Chpl_rt_glob.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
   const num = Chpl_rt_glob.chpl_glob_num(glb);
   if (num) then
     for i in 0..num-1 do
@@ -220,6 +226,9 @@ iter glob(pattern:string="*", param tag: iterKind)
   var glb : Chpl_rt_glob.glob_t;
 
   const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != Chpl_rt_glob.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
   const num = Chpl_rt_glob.chpl_glob_num(glb);
   if (num) then
     forall i in 0..num-1 do
@@ -242,6 +251,9 @@ iter glob(pattern:string="*", param tag: iterKind)
   var glb : Chpl_rt_glob.glob_t;
 
   const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != Chpl_rt_glob.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
   //
   // cast is used here to ensure we create an int-based leader
   //
@@ -265,6 +277,9 @@ iter glob(pattern:string="*", followThis, param tag: iterKind)
   var (r,) = followThis;
 
   const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != Chpl_rt_glob.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
   const num = Chpl_rt_glob.chpl_glob_num(glb);
   if (r.high > num.safeCast(int)) then
     halt("glob() iterator zipped with something too big");
