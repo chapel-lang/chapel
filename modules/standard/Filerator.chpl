@@ -193,7 +193,7 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
    By default, it will list all files/directories in the current directory
 */
 
-module Chpl_rt_glob {
+module chpl_glob_c_interface {
   extern type glob_t;
 
   extern const GLOB_NOMATCH: c_int;
@@ -206,35 +206,35 @@ module Chpl_rt_glob {
 }
 
 iter glob(pattern="*") {
-  var glb : Chpl_rt_glob.glob_t;
+  var glb : chpl_glob_c_interface.glob_t;
 
-  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
   // TODO: Handle error cases better
-  if (err != 0 && err != Chpl_rt_glob.GLOB_NOMATCH) then
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
     __primitive("chpl_error", "unhandled error in glob()");
-  const num = Chpl_rt_glob.chpl_glob_num(glb);
+  const num = chpl_glob_c_interface.chpl_glob_num(glb);
   if (num) then
     for i in 0..num-1 do
-      yield Chpl_rt_glob.chpl_glob_index(glb, i): string;
+      yield chpl_glob_c_interface.chpl_glob_index(glb, i): string;
 
-  Chpl_rt_glob.globfree(glb);
+  chpl_glob_c_interface.globfree(glb);
 }
 
 
 iter glob(pattern:string="*", param tag: iterKind) 
        where tag == iterKind.standalone {
-  var glb : Chpl_rt_glob.glob_t;
+  var glb : chpl_glob_c_interface.glob_t;
 
-  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
   // TODO: Handle error cases better
-  if (err != 0 && err != Chpl_rt_glob.GLOB_NOMATCH) then
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
     __primitive("chpl_error", "unhandled error in glob()");
-  const num = Chpl_rt_glob.chpl_glob_num(glb);
+  const num = chpl_glob_c_interface.chpl_glob_num(glb);
   if (num) then
     forall i in 0..num-1 do
-      yield Chpl_rt_glob.chpl_glob_index(glb, i): string;
+      yield chpl_glob_c_interface.chpl_glob_index(glb, i): string;
 
-  Chpl_rt_glob.globfree(glb);
+  chpl_glob_c_interface.globfree(glb);
 }
 
 //
@@ -248,18 +248,18 @@ iter glob(pattern:string="*", param tag: iterKind)
 //
 iter glob(pattern:string="*", param tag: iterKind) 
        where tag == iterKind.leader {
-  var glb : Chpl_rt_glob.glob_t;
+  var glb : chpl_glob_c_interface.glob_t;
 
-  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
   // TODO: Handle error cases better
-  if (err != 0 && err != Chpl_rt_glob.GLOB_NOMATCH) then
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
     __primitive("chpl_error", "unhandled error in glob()");
   //
   // cast is used here to ensure we create an int-based leader
   //
-  const num = Chpl_rt_glob.chpl_glob_num(glb).safeCast(int);
+  const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
   if (num) {
-    Chpl_rt_glob.globfree(glb);
+    chpl_glob_c_interface.globfree(glb);
 
     //
     // Forward to the range type's leader
@@ -271,16 +271,16 @@ iter glob(pattern:string="*", param tag: iterKind)
 
 iter glob(pattern:string="*", followThis, param tag: iterKind) 
        where tag == iterKind.follower {
-  var glb : Chpl_rt_glob.glob_t;
+  var glb : chpl_glob_c_interface.glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");
   var r = followThis(1);
 
-  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
   // TODO: Handle error cases better
-  if (err != 0 && err != Chpl_rt_glob.GLOB_NOMATCH) then
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
     __primitive("chpl_error", "unhandled error in glob()");
-  const num = Chpl_rt_glob.chpl_glob_num(glb);
+  const num = chpl_glob_c_interface.chpl_glob_num(glb);
   if (r.high > num.safeCast(int)) then
     halt("glob() iterator zipped with something too big");
   if (num) then
@@ -288,9 +288,9 @@ iter glob(pattern:string="*", followThis, param tag: iterKind)
       //
       // safe cast is used here to turn an int into a size_t
       //
-      yield Chpl_rt_glob.chpl_glob_index(glb, i.safeCast(size_t)): string;
+      yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
 
-  Chpl_rt_glob.globfree(glb);
+  chpl_glob_c_interface.globfree(glb);
 }
 
 
