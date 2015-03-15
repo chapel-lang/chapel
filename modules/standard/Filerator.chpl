@@ -278,12 +278,6 @@ iter glob(pattern:string="*", followThis, param tag: iterKind)
   Chpl_rt_glob.globfree(glb);
 }
 
-//
-// TODO: It'd be nice if we could do a leader-follower version of
-// glob() -- and we almost could -- except that the glob_t state
-// has to be communicated from leader to follower.
-//
-
 
 /* iter findfiles(startdir = ".", recursive=false, hidden=false)
 
