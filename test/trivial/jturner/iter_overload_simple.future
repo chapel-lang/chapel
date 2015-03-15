@@ -1,8 +1,0 @@
-bug: Statically-typed variable declaration disables dynamic dispatch
-
-When statically-typing the declaration of a variable that will
-dynamically be a subclass, we seem to dispatch to the static type's
-iterator rather than the dynamic type's.  You can see this in this
-program by removing the type declaration on 'c'.
-
-Happily, this behavior seems to be specific to iterators.

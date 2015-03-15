@@ -698,6 +698,8 @@ enum_ls:
       $1->sym->type = $$;
       $$->constants.insertAtTail($1);
       $$->defaultValue = $1->sym;
+      $$->doc = context->latestComment;
+      context->latestComment = NULL;
     }
 | enum_ls TCOMMA
     {

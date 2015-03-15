@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+/* GMP Module 
+ */
 module GMP {
   use SysBasic;
   use Error;
@@ -1560,4 +1562,5 @@ module GMP {
 
   // calls mp_set_memory_functions to use chpl_malloc, etc.
   chpl_gmp_init();
-}
+
+} /* end of module */
