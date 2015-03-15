@@ -902,7 +902,7 @@ int main(int argc, char* argv[]) {
 
     init_args(&sArgState, argv[0]);
 
-    fDocs = (strcmp(sArgState.program_name, "chpldoc") == 0) ? true : false;
+    fDocs   = (strcmp(sArgState.program_name, "chpldoc")  == 0) ? true : false;
     fUseIPE = (strcmp(sArgState.program_name, "chpl-ipe") == 0) ? true : false;
 
     // Initialize the arguments for argument state. If chpldoc, use the docs
@@ -918,19 +918,15 @@ int main(int argc, char* argv[]) {
     initPrimitive();
     initPrimitiveTypes();
 
-    if (fUseIPE == false) {
-      DefExpr* objectClass = defineObjectClass();
+    DefExpr* objectClass = defineObjectClass();
 
-      initChplProgram(objectClass);
-    }
+    initChplProgram(objectClass);
 
     setupOrderedGlobals(argv[0]);
 
     process_args(&sArgState, argc, argv);
 
-    if (fUseIPE == false) {
-      initCompilerGlobals(); // must follow argument parsing
-    }
+    initCompilerGlobals(); // must follow argument parsing
 
     setupDependentVars();
     setupModulePaths();

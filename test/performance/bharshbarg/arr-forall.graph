@@ -1,4 +1,4 @@
-perfkeys: real
+perfkeys: real, real
 files: arr-forall.dat, arr-forall-zip.dat
 graphkeys: DefaultRect, Zip-DefaultRect
 graphtitle: 1D Array Parallel Iteration
