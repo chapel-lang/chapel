@@ -212,10 +212,14 @@ iter glob(pattern="*") {
   // TODO: Handle error cases better
   if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
     __primitive("chpl_error", "unhandled error in glob()");
-  const num = chpl_glob_c_interface.chpl_glob_num(glb);
-  if (num) then
-    for i in 0..num-1 do
-      yield chpl_glob_c_interface.chpl_glob_index(glb, i): string;
+  //
+  // Use safeCast here, and then back again, in order to avoid conditional
+  // in iterator in order to get better generated code, and to support
+  // 'num-1' without risk of overflow
+  //
+  const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
+  for i in 0..num-1 do
+    yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
 
   chpl_glob_c_interface.globfree(glb);
 }
@@ -229,10 +233,9 @@ iter glob(pattern:string="*", param tag: iterKind)
   // TODO: Handle error cases better
   if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
     __primitive("chpl_error", "unhandled error in glob()");
-  const num = chpl_glob_c_interface.chpl_glob_num(glb);
-  if (num) then
-    forall i in 0..num-1 do
-      yield chpl_glob_c_interface.chpl_glob_index(glb, i): string;
+  const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
+  forall i in 0..num-1 do
+    yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
 
   chpl_glob_c_interface.globfree(glb);
 }
@@ -258,15 +261,13 @@ iter glob(pattern:string="*", param tag: iterKind)
   // cast is used here to ensure we create an int-based leader
   //
   const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
-  if (num) {
-    chpl_glob_c_interface.globfree(glb);
+  chpl_glob_c_interface.globfree(glb);
 
-    //
-    // Forward to the range type's leader
-    //
-    for followThis in (0..num-1).these(tag) do
-      yield followThis;
-  }
+  //
+  // Forward to the range type's leader
+  //
+  for followThis in (0..num-1).these(tag) do
+    yield followThis;
 }
 
 iter glob(pattern:string="*", followThis, param tag: iterKind) 
@@ -283,12 +284,11 @@ iter glob(pattern:string="*", followThis, param tag: iterKind)
   const num = chpl_glob_c_interface.chpl_glob_num(glb);
   if (r.high > num.safeCast(int)) then
     halt("glob() iterator zipped with something too big");
-  if (num) then
-    for i in r do
-      //
-      // safe cast is used here to turn an int into a size_t
-      //
-      yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
+  for i in r do
+    //
+    // safe cast is used here to turn an int into a size_t
+    //
+    yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
 
   chpl_glob_c_interface.globfree(glb);
 }
