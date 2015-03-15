@@ -274,7 +274,7 @@ iter glob(pattern:string="*", followThis, param tag: iterKind)
   var glb : Chpl_rt_glob.glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");
-  var (r,) = followThis;
+  var r = followThis(1);
 
   const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
   // TODO: Handle error cases better
