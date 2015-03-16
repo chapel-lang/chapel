@@ -1,0 +1,2 @@
+umask is locale specific
+As suspected, changing locale 1's mode didn't affect locale 0's mode
