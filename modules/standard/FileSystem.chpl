@@ -20,16 +20,17 @@
 /* A file utilities library
 
    The FileSystem module focuses on file and directory properties and
-   operations.  It does not cover every interaction involving a file -
+   operations.  It does not cover every interaction involving a file---
    for instance, path-specific operations live in the :mod:`Path` module, while
-   opening, writing to, or reading from a file live in the
+   routines for opening, writing to, or reading from a file live in the
    :mod:`IO` module.  Rather, it covers cases where the user would prefer a file
-   or directory handled wholesale and/or with minimal interaction.  For example,
-   this module contains a file :proc:`copy` routine, as well as :proc:`chmod`,
-   :proc:`mkdir`, :proc:`remove`, and the like.  Also included are
-   operations relating to the current process's state, such as :proc:`umask` or
-   :proc:`~locale.chdir` (an operation which is performed on a specified
-   locale).
+   or directory to be handled wholesale and/or with minimal interaction.  For example,
+   this module contains a file :proc:`copy` routine, as well as operations like :proc:`chmod`,
+   :proc:`mkdir`, and :proc:`remove`.  Also included are
+   operations relating to the current process's file system state, such as :proc:`~locale.umask` or
+   :proc:`~locale.chdir`, which are performed on a specified locale.  The module
+   also contains iterators for traversing the file system, such as 
+   :iter:`glob`, :iter:`listdir`, :iter:`walkdirs`, and :iter:`findfiles`.
 
  */
 module FileSystem {
