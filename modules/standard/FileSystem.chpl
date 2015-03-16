@@ -898,31 +898,13 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
       const filename = ent.d_name();
       if (hidden || filename.substring(1) != '.') {
         if (filename != "." && filename != "..") {
-          //
-          // use FileSystem;  // Doesn't work, see comment below
-          //
           const fullpath = path + "/" + filename;
-          {
-            //
-            // The use of this compound statement to restrict the
-            // impact of the 'use' of FileSystem is unfortunate
-            // (compared to placing it in the more logical place
-            // above), yet seemingly required at present; otherwise
-            // the 'path' argument gets shadowed by a
-            // (compiler-introduced?) method coming from one of the
-            // standard or internal modules.  See
-            // test/modules/bradc/useFileSystemShadowsPath.chpl for
-            // a smaller standalone test exhibiting the issue (or
-            // uncomment the 'use' above to see it here).
-            //
-            use FileSystem;
 
-            if (listlinks || !isLink(fullpath)) {
-              if (dirs && isDir(fullpath)) then
-                yield filename;
-              else if (files && isFile(fullpath)) then
-                yield filename;
-            }
+          if (listlinks || !isLink(fullpath)) {
+            if (dirs && isDir(fullpath)) then
+              yield filename;
+            else if (files && isFile(fullpath)) then
+              yield filename;
           }
         }
       }
@@ -1168,15 +1150,17 @@ proc umask(mask: int): int {
 
 iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
               followlinks=false, sort=false): string {
-  use Sort;
 
   if (topdown) then
     yield path;
 
   if (depth) {
     var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
-    if (sort) then
+    if (sort) {
+      use Sort;
       QuickSort(subdirs);
+    }
+
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
       for subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
