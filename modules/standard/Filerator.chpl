@@ -153,8 +153,6 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
 }
 
 
-var chpl_first_walkdirs_sorted_warning = false;
-
 //
 // Here's a parallel version
 //
@@ -162,26 +160,21 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
               followlinks=false, sort=false, param tag: iterKind): string 
        where tag == iterKind.standalone {
 
-  compilerWarning("Parallel invocations of walkdirs() will only parallelize the first-level directories at present");
-  if (sort && chpl_first_walkdirs_sorted_warning) {
-    chpl_first_walkdirs_sorted_warning = true;
-    warning("sorting has no effect for a parallel invocation of walkdirs()");
-  }
+  if (sort) then
+    warning("sorting has no effect for parallel invocations of walkdirs()");
 
   if (topdown) then
     yield path;
 
   if (depth) {
     var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
-    if (sort) then
-      warning("sorting has no effect for parallel invocations of walkdirs()");
     forall subdir in subdirs {
       const fullpath = path + "/" + subdir;
       //
-      // TODO: It seems that recursive standalone leaders don't work yet?
+      // Call standalone walkdirs() iterator recursively; set sort=false since it is
+      // not useful and we've already printed the warning
       //
-      for/*all*/ subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
-                                    followlinks, sort) do
+      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, followlinks, sort=false, iterKind.standalone) do
         yield subdir;
     }
   }
@@ -200,8 +193,11 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
    By default, it will list all files/directories in the current directory
 */
 
-module Chpl_rt_glob {
+module chpl_glob_c_interface {
   extern type glob_t;
+
+  extern const GLOB_NOMATCH: c_int;
+
   extern proc chpl_glob(pattern:c_string, flags: c_int, 
                         ref ret_glob:glob_t):c_int;
   extern proc chpl_glob_num(x:glob_t): size_t;
@@ -210,29 +206,38 @@ module Chpl_rt_glob {
 }
 
 iter glob(pattern="*") {
-  var glb : Chpl_rt_glob.glob_t;
+  var glb : chpl_glob_c_interface.glob_t;
 
-  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
-  const num = Chpl_rt_glob.chpl_glob_num(glb);
-  if (num) then
-    for i in 0..num-1 do
-      yield Chpl_rt_glob.chpl_glob_index(glb, i): string;
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
+  //
+  // Use safeCast here, and then back again, in order to avoid conditional
+  // in iterator in order to get better generated code, and to support
+  // 'num-1' without risk of overflow
+  //
+  const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
+  for i in 0..num-1 do
+    yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
 
-  Chpl_rt_glob.globfree(glb);
+  chpl_glob_c_interface.globfree(glb);
 }
 
 
 iter glob(pattern:string="*", param tag: iterKind) 
        where tag == iterKind.standalone {
-  var glb : Chpl_rt_glob.glob_t;
+  var glb : chpl_glob_c_interface.glob_t;
 
-  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
-  const num = Chpl_rt_glob.chpl_glob_num(glb);
-  if (num) then
-    forall i in 0..num-1 do
-      yield Chpl_rt_glob.chpl_glob_index(glb, i): string;
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
+  const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
+  forall i in 0..num-1 do
+    yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
 
-  Chpl_rt_glob.globfree(glb);
+  chpl_glob_c_interface.globfree(glb);
 }
 
 //
@@ -246,50 +251,47 @@ iter glob(pattern:string="*", param tag: iterKind)
 //
 iter glob(pattern:string="*", param tag: iterKind) 
        where tag == iterKind.leader {
-  var glb : Chpl_rt_glob.glob_t;
+  var glb : chpl_glob_c_interface.glob_t;
 
-  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
   //
   // cast is used here to ensure we create an int-based leader
   //
-  const num = Chpl_rt_glob.chpl_glob_num(glb).safeCast(int);
-  if (num) {
-    Chpl_rt_glob.globfree(glb);
+  const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
+  chpl_glob_c_interface.globfree(glb);
 
-    //
-    // Forward to the range type's leader
-    //
-    for followThis in (0..num-1).these(tag) do
-      yield followThis;
-  }
+  //
+  // Forward to the range type's leader
+  //
+  for followThis in (0..num-1).these(tag) do
+    yield followThis;
 }
 
 iter glob(pattern:string="*", followThis, param tag: iterKind) 
        where tag == iterKind.follower {
-  var glb : Chpl_rt_glob.glob_t;
+  var glb : chpl_glob_c_interface.glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");
-  var (r,) = followThis;
+  var r = followThis(1);
 
-  const err = Chpl_rt_glob.chpl_glob(pattern:c_string, 0, glb);
-  const num = Chpl_rt_glob.chpl_glob_num(glb);
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
+  const num = chpl_glob_c_interface.chpl_glob_num(glb);
   if (r.high > num.safeCast(int)) then
     halt("glob() iterator zipped with something too big");
-  if (num) then
-    for i in r do
-      //
-      // safe cast is used here to turn an int into a size_t
-      //
-      yield Chpl_rt_glob.chpl_glob_index(glb, i.safeCast(size_t)): string;
+  for i in r do
+    //
+    // safe cast is used here to turn an int into a size_t
+    //
+    yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
 
-  Chpl_rt_glob.globfree(glb);
+  chpl_glob_c_interface.globfree(glb);
 }
-
-//
-// TODO: It'd be nice if we could do a leader-follower version of
-// glob() -- and we almost could -- except that the glob_t state
-// has to be communicated from leader to follower.
-//
 
 
 /* iter findfiles(startdir = ".", recursive=false, hidden=false)
@@ -305,6 +307,16 @@ iter glob(pattern:string="*", followThis, param tag: iterKind)
 iter findfiles(startdir = ".", recursive=false, hidden=false) {
   if (recursive) then
     for subdir in walkdirs(startdir, hidden=hidden) do
+      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
+
+iter findfiles(startdir = ".", recursive=false, hidden=false, param tag: iterKind) where tag == iterKind.standalone {
+  if (recursive) then
+    forall subdir in walkdirs(startdir, hidden=hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
