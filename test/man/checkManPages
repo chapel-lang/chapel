@@ -155,7 +155,7 @@ def check_chpl_env_vars(bin_name):
         envSection = manPage.index('ENVIRONMENT')
     except ValueError:
         numErrors += 1
-        sys.stdout.write('WARNING: Did not find ENVIRONMENT section.  Checking all sections\n')
+        _warn('Did not find ENVIRONMENT section.  Checking all sections')
         envSection = 0
 
     chplenv, _ = _run_cmd([chpl_home+'/util/printchplenv'])
@@ -176,7 +176,7 @@ def check_chpl_env_vars(bin_name):
                         continue
                 if not found:
                     numErrors += 1
-                    sys.stdout.write('ERROR: %s not in man page ENVIRONMENT section\n'%(chplenvVar))
+                    _error(chplenvVar, 'not in man page ENVIRONMENT section')
         except IndexError:
             continue
 
