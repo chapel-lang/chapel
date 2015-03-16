@@ -8,5 +8,5 @@ forall (f,i) in zip(glob(pattern), 1..) do
 //
 // Hardcoding number of matches in this directory
 //
-forall (i,f) in zip(1..8, glob(pattern)) do
+forall (i,f) in zip(1..9, glob(pattern)) do
   writeln("File #", i, " is: ", f);
