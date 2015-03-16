@@ -1119,10 +1119,15 @@ proc symlink(oldName: string, newName: string) {
    :return: The previous file creation mask
    :rtype: int
 */
-proc umask(mask: int): int {
+proc locale.umask(mask: int): int {
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
 
-  return chpl_fs_umask(mask.safeCast(mode_t));
+  var result: int;
+  on this {
+    var callRes = chpl_fs_umask(mask.safeCast(mode_t));
+    result = callRes.safeCast(int);
+  }
+  return result;
 }
 
 
