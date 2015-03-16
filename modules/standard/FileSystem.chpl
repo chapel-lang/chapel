@@ -34,7 +34,7 @@
  */
 module FileSystem {
 
-use Error;
+use Error, Path;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -371,9 +371,6 @@ proc copyMode(src: string, dest: string) {
   copyMode(err, src, dest);
   if err != ENOERR then ioerror(err, "in copyMode " + src, dest);
 }
-
-use Filerator;
-use Path;
 
 pragma "no doc"
 proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
