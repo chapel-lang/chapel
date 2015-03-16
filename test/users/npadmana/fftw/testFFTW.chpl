@@ -165,7 +165,6 @@ proc runtest(param ndim : int, fn : string) {
   */
 	fwd = plan_dft(A, A, FFTW_FORWARD, FFTW_ESTIMATE);
 	rev = plan_dft(A, A, FFTW_BACKWARD, FFTW_ESTIMATE);
-	A = goodA;
 	// Test forward and reverse transform
 	A = goodA;
 	execute(fwd);
