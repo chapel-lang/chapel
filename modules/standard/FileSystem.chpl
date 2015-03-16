@@ -25,8 +25,8 @@
    opening, writing to, or reading from a file live in the
    :mod:`IO` module.  Rather, it covers cases where the user would prefer a file
    or directory handled wholesale and/or with minimal interaction.  For example,
-   this module contains file :proc:`copy` functionality, as well as :proc:`chmod`,
-   :proc:`mkdir`, and :proc:`remove`.  Also included are
+   this module contains a file :proc:`copy` routine, as well as :proc:`chmod`,
+   :proc:`mkdir`, :proc:`remove`, and the like.  Also included are
    operations relating to the current process's state, such as :proc:`umask` or
    :proc:`~locale.chdir` (an operation which is performed on a specified
    locale).
@@ -513,7 +513,7 @@ proc exists(name: string): bool {
    above routines
 
      * startdir: where to start when looking for files
-     * recursive: tells whether or not to descend recurisvely
+     * recursive: tells whether or not to descend recursively
      * hidden: tells whether or not to yield hidden
 */
 
