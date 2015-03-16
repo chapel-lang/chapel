@@ -1,0 +1,1 @@
+errorcase.chpl:4: error: No such file or directory in realPath of with path "foo.txt"
