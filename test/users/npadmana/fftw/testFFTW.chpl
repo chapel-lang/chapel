@@ -11,7 +11,7 @@ where $FFTW_DIR points to your FFTW installation.
 Note that you do not need to explicitly include the header or library files; the module uses an experimental
 feature of the Chapel compiler to automatically include these.
 
-The FFTW module uses the FFTW3 API, and currently just implements the basic interface.
+The FFTW module uses the FFTW3 API, and currently just implements the basic, double-precision interface.
 We will assume that the reader is familiar with using FFTW; more 
 details are at http://www.fftw.org. 
 
