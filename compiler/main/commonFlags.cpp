@@ -17,29 +17,30 @@
  * limitations under the License.
  */
 
-#ifndef _docs_driver_H_
-#define _docs_driver_H_
+#include "commonFlags.h"
 
-#include "arg.h"
-#include "misc.h"
+bool ccwarnings = false;
+bool developer = false;
+bool fPrintChplHome = false;
+bool fPrintCopyright = false;
+bool fPrintEnvHelp = false;
+bool fPrintHelp = false;
+bool fPrintLicense = false;
+bool fPrintSettingsHelp = false;
+bool fPrintVersion = false;
+bool fRungdb = false;
+bool fRunlldb = false;
 
-extern bool fDocs;
-extern char fDocsAuthor[256];
-extern bool fDocsAlphabetize;
-extern char fDocsCommentLabel[256];
-extern char fDocsFolder[256];
-extern bool fDocsTextOnly;
-extern char fDocsSphinxDir[256];
+void driverSetHelpTrue(const ArgumentState* state, const char* unused) {
+  fPrintHelp = true;
+}
 
-// TODO: Whether or not to support this flag is an open discussion. Currently,
-//       it is not supported, so the flag is always true.
-//       (thomasvandoren, 2015-03-08)
-extern bool fDocsIncludeExterns;
-
-
-void docsArgSetCommentLabel(const ArgumentState* arg_state, const char* label);
-
-
-extern ArgumentDescription docs_arg_desc[];
-
-#endif
+void driverSetDevelSettings(const ArgumentState* state, const char* arg_unused) {
+  // have to handle both cases since this will be called with --devel
+  // and --no-devel
+  if (developer) {
+    ccwarnings = true;
+  } else {
+    ccwarnings = false;
+  }
+}

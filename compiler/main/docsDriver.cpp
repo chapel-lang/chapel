@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
+#include "commonFlags.h"
+#include "driver.h"
 #include "docsDriver.h"
 
 bool fDocs = false;
 char fDocsAuthor[256] = "";
-bool fDocsPrintHelp = false;
 bool fDocsAlphabetize = false;
 char fDocsCommentLabel[256] = "";
 char fDocsFolder[256] = "";
@@ -87,6 +88,18 @@ ArgumentDescription docs_arg_desc[] = {
  //       (thomasvandoren, 2015-03-08)
  //{"externs", ' ', NULL, "Include externs", "n", &fDocsIncludeExterns, NULL, NULL},
 
- {"help", 'h', NULL, "Help (show this list)", "F", &fDocsPrintHelp, NULL, NULL},
- {0}
+ {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
+ DRIVER_ARG_HELP,
+ DRIVER_ARG_HELP_ENV,
+ DRIVER_ARG_HELP_SETTINGS,
+ DRIVER_ARG_VERSION,
+ DRIVER_ARG_COPYRIGHT,
+ DRIVER_ARG_LICENSE,
+
+ {"", ' ', NULL, "Developer Flags", NULL, NULL, NULL, NULL},
+ DRIVER_ARG_DEVELOPER,
+ DRIVER_ARG_DEBUGGERS,
+ DRIVER_ARG_PRINT_CHPL_HOME,
+
+ DRIVER_ARG_LAST
 };
