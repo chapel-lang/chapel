@@ -71,17 +71,11 @@ proc runtest(param ndim : int, fn : string) {
     for ii in 1..ndim {
       f.read(dims(ii));
     }
-    /* The code below sets the domain D. Note that the if statements are folded at compile
-       time. This would be more compact with a select statement, but that isn't folded on compilation.
-    */
-    if (ndim == 1) {
-      D = 0.. #dims(ndim);
-    }
-    if (ndim == 2) {
-      D = {0.. #dims(1),0.. #dims(ndim)};
-    }
-    if (ndim == 3) {
-      D = {0.. #dims(1),0.. #dims(2), 0.. #dims(ndim)};
+    /* The code below sets the domain D handling the different rank cases */
+    select ndim {
+      when 1 do D = 0.. #dims(1);
+      when 2 do D = {0.. #dims(1), 0.. #dims(2)};
+      when 3 do D = {0.. #dims(1), 0.. #dims(2), 0.. #dims(3)};
     }
 
     // Read in the arrays
@@ -96,37 +90,39 @@ proc runtest(param ndim : int, fn : string) {
     writeln("Data read...");
   }
 
-  /* Now set the remaining domains. As above, the if statements are folded on compilation.
+  /* Now set the remaining domains. 
 
      The reader is referred to the FFTW documentation on the storage order for the in-place 
      transforms (Sec 2.4 and 4.3.4).
   */
-  if (ndim==1) {
-    var ldim = dims(1)/2 + 1;
-    // Domains for real FFT
-    rD = 0.. #(2*ldim); // Padding to do in place transforms
-    cD = 0.. #ldim;
-    // Define domains to extract the real and imaginary parts for inplace transforms
-    reD = rD[0..(2*ldim-1) by 2]; 
-    imD = rD[1..(2*ldim-1) by 2]; 
-  }
-  if (ndim==2) {
-    // Domains for real FFT
-    var ldim = dims(2)/2+1;
-    rD = {0.. #dims(1),0.. #(2*ldim)}; // Padding to do in place transforms
-    cD = {0.. #dims(1),0.. #ldim};
-    // Define domains to extract the real and imaginary parts for in place transforms
-    reD = rD[..,0..(2*ldim-1) by 2]; 
-    imD = rD[..,1..(2*ldim-1) by 2]; 
-  }
-  if (ndim==3) {
-    // Domains for real FFT
-    var ldim = dims(3)/2+1;
-    rD = {0.. #dims(1),0.. #dims(2),0.. #(2*ldim)}; // Padding to do in place transforms
-    cD = {0.. #dims(1),0.. #dims(2),0.. #ldim};
-    // Define domains to extract the real and imaginary parts for in place transforms
-    reD = rD[..,..,0..(2*ldim-1) by 2]; 
-    imD = rD[..,..,1..(2*ldim-1) by 2]; 
+  select ndim {
+    when 1 {
+      var ldim = dims(1)/2 + 1;
+      // Domains for real FFT
+      rD = 0.. #(2*ldim); // Padding to do in place transforms
+      cD = 0.. #ldim;
+      // Define domains to extract the real and imaginary parts for inplace transforms
+      reD = rD[0..(2*ldim-1) by 2]; 
+      imD = rD[1..(2*ldim-1) by 2]; 
+    }
+    when 2 {
+      // Domains for real FFT
+      var ldim = dims(2)/2+1;
+      rD = {0.. #dims(1),0.. #(2*ldim)}; // Padding to do in place transforms
+      cD = {0.. #dims(1),0.. #ldim};
+      // Define domains to extract the real and imaginary parts for in place transforms
+      reD = rD[..,0..(2*ldim-1) by 2]; 
+      imD = rD[..,1..(2*ldim-1) by 2]; 
+    }
+    when 3 {
+      // Domains for real FFT
+      var ldim = dims(3)/2+1;
+      rD = {0.. #dims(1),0.. #dims(2),0.. #(2*ldim)}; // Padding to do in place transforms
+      cD = {0.. #dims(1),0.. #dims(2),0.. #ldim};
+      // Define domains to extract the real and imaginary parts for in place transforms
+      reD = rD[..,..,0..(2*ldim-1) by 2]; 
+      imD = rD[..,..,1..(2*ldim-1) by 2]; 
+    }
   }
 
   // FFTW does not normalize inverse transform, so just compute the normalization constant.
