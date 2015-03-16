@@ -64,7 +64,7 @@ proc runtest(param ndim : int, fn : string) {
 
         The arrays are all stored in C (row-major) order.
   */
-  var A,B,goodA,goodB : [D] complex;
+  var A,B,goodA,goodB : [D] complex(128);
   {
     var f = open(fn,iomode.r).reader(kind=iokind.little);
     // Read in dimensions 
@@ -183,7 +183,7 @@ proc runtest(param ndim : int, fn : string) {
      dimensions from the sizes of the arrays passed in.
   */
   var rA : [D] real(64); // No padding for an out-of place transform
-  var cB : [cD] complex;
+  var cB : [cD] complex(128);
   fwd = plan_dft_r2c(rA,cB,FFTW_ESTIMATE);
   rev = plan_dft_c2r(cB,rA,FFTW_ESTIMATE);
   rA[D] = goodA.re;
