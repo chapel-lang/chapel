@@ -1227,7 +1227,8 @@ for testname in testsrc:
             elif test_is_chpldoc and not compiler.endswith('chpldoc'):
                 # For tests with .doc.chpl suffix, use chpldoc compiler. Update
                 # the compopts accordingly. Add 'doc' prefix to existing compiler.
-                cmd = compiler + 'doc'
+                compiler += 'doc'
+                cmd = compiler
 
                 if which(cmd) is None:
                     sys.stdout.write(

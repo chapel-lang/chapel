@@ -50,7 +50,6 @@ char               saveCDir[FILENAME_MAX + 1]           = "";
 
 char               ccflags[256]                         = "";
 char               ldflags[256]                         = "";
-bool               ccwarnings                           = false;
 
 int                numLibFlags                          = 0;
 const char**       libFlag                              = NULL;
