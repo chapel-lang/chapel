@@ -220,17 +220,19 @@ module FFTW {
 
     if !noFFTWsizeChecks {
       var error = false;
-      const inputDim = input.domain.dim(rank).size/2+1;
-      const outputDim = output.domain.dim(rank).size;
-      if (inputDim != outputDim) {
-        writeln("Error: In plan_dft_r2c(), output array's leading dimension is not of the appropriate size (expected ", inputDim, ", got ", outputDim, ")");
-        error = true;
-      }
       for i in 1..rank-1 {
         const inputDim = input.domain.dim(i).size;
         const outputDim = output.domain.dim(i).size;
         if (inputDim != outputDim) {
           writeln("Error: In plan_dft_r2c(), output array's size doesn't match input array's in dimension ", i, " (input = ", inputDim, ", output = ", outputDim, ")");
+          error = true;
+        }
+      }
+      {
+        const inputDim = input.domain.dim(rank).size/2+1;
+        const outputDim = output.domain.dim(rank).size;
+        if (inputDim != outputDim) {
+          writeln("Error: In plan_dft_r2c(), output array's leading dimension is not of the appropriate size (expected ", inputDim, ", got ", outputDim, ")");
           error = true;
         }
       }
@@ -268,6 +270,14 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
+      for i in 1..rank-1 {
+        const arrDim = arr.domain.dim(i).size;
+        const domDim = realDom.dim(i).size;
+        if (arrDim != domDim) {
+          writeln("Error: In plan_dft_r2c(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim, ")");
+          error = true;
+        }
+      }
       if t == real {
         const arrDim = arr.domain.dim(rank).size;
         const domDim = 2*(realDom.dim(rank).size/2+1);
@@ -280,14 +290,6 @@ module FFTW {
         const domDim = realDom.dim(rank).size/2+1;
         if (arrDim != domDim) {
           writeln("Error: In plan_dft_r2c(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
-          error = true;
-        }
-      }
-      for i in 1..rank-1 {
-        const arrDim = arr.domain.dim(i).size;
-        const domDim = realDom.dim(i).size;
-        if (arrDim != domDim) {
-          writeln("Error: In plan_dft_r2c(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim, ")");
           error = true;
         }
       }
@@ -322,17 +324,19 @@ module FFTW {
 
     if !noFFTWsizeChecks {
       var error = false;
-      const inputDim = input.domain.dim(rank).size;
-      const outputDim = output.domain.dim(rank).size/2+1;
-      if (inputDim != outputDim) {
-        writeln("Error: In plan_dft_c2r(), input array's leading dimension is not of the appropriate size (expected ", outputDim, ", got ", inputDim, ")");
-        error = true;
-      }
       for i in 1..rank-1 {
         const inputDim = input.domain.dim(i).size;
         const outputDim = output.domain.dim(i).size;
         if (inputDim != outputDim) {
-          writeln("Error: In plan_dft_c2r(), input array's size doesn't match ourput array's in dimension ", i, " (input = ", inputDim, ", output = ", outputDim, ")");
+          writeln("Error: In plan_dft_c2r(), input array's size doesn't match output array's in dimension ", i, " (input = ", inputDim, ", output = ", outputDim, ")");
+          error = true;
+        }
+      }
+      {
+        const inputDim = input.domain.dim(rank).size;
+        const outputDim = output.domain.dim(rank).size/2+1;
+        if (inputDim != outputDim) {
+          writeln("Error: In plan_dft_c2r(), input array's leading dimension is not of the appropriate size (expected ", outputDim, ", got ", inputDim, ")");
           error = true;
         }
       }
@@ -368,6 +372,14 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
+      for i in 1..rank-1 {
+        const arrDim = arr.domain.dim(i).size;
+        const domDim = realDom.dim(i).size;
+        if (arrDim != domDim) {
+          writeln("Error: In plan_dft_c2r(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim, ")");
+          error = true;
+        }
+      }
       if t == real {
         const arrDim = arr.domain.dim(rank).size;
         const domDim = 2*(realDom.dim(rank).size/2+1);
@@ -380,14 +392,6 @@ module FFTW {
         const domDim = realDom.dim(rank).size/2+1;
         if (arrDim != domDim) {
           writeln("Error: In plan_dft_c2r(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
-          error = true;
-        }
-      }
-      for i in 1..rank-1 {
-        const arrDim = arr.domain.dim(i).size;
-        const domDim = realDom.dim(i).size;
-        if (arrDim != domDim) {
-          writeln("Error: In plan_dft_c2r(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim, ")");
           error = true;
         }
       }
