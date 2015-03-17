@@ -1,0 +1,4 @@
+bug: remote records pass by blank intent are not deep copied.
+
+The record 'x' in 'bar' exists on the last locale in the Locales array.
+However, its member 'data' still points to data on the root locale.
