@@ -1,4 +1,8 @@
-bug: remote records pass by blank intent are not deep copied.
+bug: remote records pass by blank intent are shallow-copied.
 
 The record 'x' in 'bar' exists on the last locale in the Locales array.
 However, its member 'data' still points to data on the root locale.
+Arrays in an aggregate type are assumed to be local to the parent type, and
+when possible the local field optimization is applied.
+
+The spec also suggests that no copies of 'a' should be made.

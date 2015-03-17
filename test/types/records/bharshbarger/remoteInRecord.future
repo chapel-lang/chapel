@@ -1,9 +1,11 @@
 bug: remote records pass by 'in' intent made local before copying.
 
-This test fails in an initCopy for the 'foo' record. The local-field
-optimization is applied to the formal 'x' in 'bar' because in the generated C
-code 'x' is not wide. 'x' is not wide because the struct representing 'a' is
-copied locally before being passed into the function.
+This test fails in an initCopy for the 'foo' record. It fails because the
+local field optimization is applied to the 'data' member of 'x'. The
+optimization is applied because 'x' is narrow, and the compiler assumes that
+arrays in an aggregate type will be local to the containing type.
 
-The initCopy is the first thing to happen inside the generated C code for 'bar'.
-Should it take the wide reference of 'a' first?
+'x' is not wide because we make a local, shallow copy of 'a' before passing 'x'
+into 'bar'.
+
+As of this commit, the initCopy is the first thing to happen in 'bar'.
