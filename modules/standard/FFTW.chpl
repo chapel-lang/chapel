@@ -278,11 +278,6 @@ module FFTW {
         halt("Incorrect array sizes in plan_dft_r2c()");
     }
         
-      
-    //
-    // TODO: Need runtime size checks
-    //
-
     var dims: rank*c_int;
     for param i in 1..rank do
       dims(i) = realDom.dim(i).size: c_int;
@@ -353,9 +348,35 @@ module FFTW {
   {
     param rank = realDom.rank: c_int;
 
-    //
-    // TODO: Need runtime size checks
-    //
+    if !noFFTWsizeChecks {
+      var error = false;
+
+      if t == real {
+        const arrDim = arr.domain.dim(rank).size;
+        const domDim = 2*(realDom.dim(rank).size/2+1);
+        if (arrDim != domDim) {
+          writeln("Error: In plan_dft_c2r(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
+          error = true;
+        }
+      } else {
+        const arrDim = arr.domain.dim(rank).size;
+        const domDim = realDom.dim(rank.size)/2+1;
+        if (arrDim != domDim) {
+          writeln("Error: In plan_dft_c2r(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
+          error = true;
+        }
+      }
+      for i in 1..rank-1 {
+        const arrDim = arr.domain.dim(i).size;
+        const domDim = realDom.dim(i).size;
+        if (arrDim != domDim) {
+          writeln("Error: In plan_dft_c2r(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim);
+          error = true;
+        }
+      }
+      if (error) then
+        halt("Incorrect array sizes in plan_dft_r2c()");
+    }
 
     var dims: rank*c_int;
     for param i in 1..rank do
