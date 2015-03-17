@@ -119,6 +119,9 @@ proc buildNeighbors() {
 
 // add an atom 'a' to bin 'b'
 // resize if necessary
+// 
+// We use the 'ref' intent in order to avoid shallow copy bugs.
+// See test/types/records/bharshbarger/remote*Record.chpl for more.
 inline proc addatom(ref a : atom, x : v3, b : v3int) {
   // increment bin's # of atoms
   Count[b] += 1;
