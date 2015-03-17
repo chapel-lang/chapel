@@ -119,7 +119,7 @@ proc buildNeighbors() {
 
 // add an atom 'a' to bin 'b'
 // resize if necessary
-inline proc addatom(a : atom, x : v3, b : v3int) {
+inline proc addatom(ref a : atom, x : v3, b : v3int) {
   // increment bin's # of atoms
   Count[b] += 1;
   const end = if useStencilDist then Count.readRemote(b) else Count[b];
@@ -132,7 +132,8 @@ inline proc addatom(a : atom, x : v3, b : v3int) {
   }
  
   // add to the end of the bin
-  Bins[b][end] = a;
+  Bins[b][end].v = a.v;
+  Bins[b][end].f = a.f;
   Pos[b][end] = x;
 }
 
@@ -152,7 +153,8 @@ proc binAtoms() {
 
         // replace with atom at end of list, if one exists
         if cur < c {
-          bin[cur] = bin[c]; 
+          bin[cur].v = bin[c].v;
+          bin[cur].f = bin[c].f;
           pos[cur] = pos[c];
         }
 
