@@ -1221,21 +1221,19 @@ for testname in testsrc:
             args = ['-o', test_filename]+directoryCompopts+shlex.split(compopts)+[testname]
             cmd = c_compiler
         else:
-            if test_is_chpldoc and not compiler.endswith('chpldoc'):
+            if valgrindcomp:
+                cmd = valgrindcomp
+                args = valgrindcompopts+[compiler]+args
+            elif test_is_chpldoc and not compiler.endswith('chpldoc'):
                 # For tests with .doc.chpl suffix, use chpldoc compiler. Update
                 # the compopts accordingly. Add 'doc' prefix to existing compiler.
-                compiler += 'doc'
-                cmd = compiler
+                cmd = compiler + 'doc'
 
                 if which(cmd) is None:
                     sys.stdout.write(
                         '[Warning: Could not find chpldoc, skipping test '
                         '{0}/{1}]\n'.format(localdir, test_filename))
                     continue
-
-            if valgrindcomp:
-                cmd = valgrindcomp
-                args = valgrindcompopts+[compiler]+args
             else:
                 cmd = compiler
 
