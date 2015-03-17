@@ -335,6 +335,7 @@ class ForceLJ : Force {
     fTimer.start();
     var eng, vir : atomic real;
     forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) {
+      var t_eng, t_vir : real;
       for (a, x, j) in zip(b[1..c],p[1..c],1..c) {
         for(n,i) in a.neighs[1..a.ncount] {
           const del = x - Pos[n][i];
@@ -347,11 +348,15 @@ class ForceLJ : Force {
             a.f += del * force;
 
             if store {
-              eng.add(4.0 * sr6 * (sr6 - 1.0));
-              vir.add(.5 * rsq * force);
+              t_eng += (sr6 * (sr6 - 1.0));
+              t_vir += (rsq * force);
             }
           }
         }
+      }
+      if store {
+        eng.add(t_eng * 4.0);
+        vir.add(t_vir * .5);
       }
     }
 
