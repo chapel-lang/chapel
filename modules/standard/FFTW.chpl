@@ -263,7 +263,8 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_r2c(realDom : domain, arr : [] ?t, flags : c_uint) : fftw_plan 
+  proc plan_dft_r2c(realDom : domain, arr : [] ?t, flags : c_uint) : fftw_plan
+    where t == real || t == complex
   {
     param rank = realDom.rank: c_int;
 
@@ -302,6 +303,14 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims, arr, arr, flags);
+  }
+
+  //
+  // Error overload
+  //
+  pragma "no doc"
+  proc plan_dft_r2c(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan {
+    compilerError("plan_dft_r2c() is only supported for arrays of type real(64) and complex(128)");
   }
 
   /*
@@ -366,6 +375,7 @@ module FFTW {
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
   proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan 
+    where t == real || t == complex
   {
     param rank = realDom.rank: c_int;
 
@@ -404,6 +414,11 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_c2r(rank, dims, arr, arr, flags);
+  }
+
+  pragma "no doc"
+  proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan {
+    compilerError("plan_dft_c2r() is only supported for arrays of type real(64) and complex(128)");
   }
 
 
