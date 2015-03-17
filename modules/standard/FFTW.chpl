@@ -123,7 +123,7 @@ module FFTW {
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
   proc plan_dft(input: [] complex(128), output: [] complex(128), 
-                sign: c_int, flags: c_uint) : fftw_plan
+                 sign: c_int, flags: c_uint) : fftw_plan
   {
     if !noFFTWsizeChecks then
       for i in 1..input.rank do
@@ -158,7 +158,7 @@ module FFTW {
   // 
   pragma "no doc"
   proc plan_dft_help(input: [] complex(128), output: [] complex(128), 
-                sign: c_int, flags: c_uint) : fftw_plan
+                 sign: c_int, flags: c_uint) : fftw_plan
   {
     param rank = input.rank;
 
