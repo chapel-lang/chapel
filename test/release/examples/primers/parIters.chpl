@@ -1,8 +1,10 @@
 //
-// This example shows how to use leader-follower iterators in Chapel.
-// leader-follower iterators are used to implement zippered (and
-// currently, non-zippered) forall loops in Chapel over data
-// structures or standalone iterators.  We expect the leader-follower
+// This example shows how to use paralell iterators in Chapel.
+// Leader-follower iterators are used to implement zippered
+// forall loops in Chapel over data structures or iterators.
+// Standalone parallel iterators are used to implement non-zippered
+// forall loops when they exist, falling back to leader-follower when
+// standalone is not available. We expect the parallel iterator
 // interface to change and improve over time, so this should be
 // considered a snapshot of their use in the current implementation.
 //
@@ -280,13 +282,39 @@ iter count(param tag: iterKind, n: int, low: int=1, followThis)
 
 
 //
-// Now that we've defined leader-follower iterators, we can execute
-// the same loops we did before, only this time using forall loops
-// to make the execution parallel.  We start with some simple
-// invocations as before.  In these invocations, the count() iterator
-// serves as the only leader and follower iterator being invoked
-// since it is the only thing being iterated over (A is being randomly
-// accessed within the loop.
+// The standalone parallel iterator is another overload of the same name,
+// taking the iterKind.standalone param enumeration as its first argument.
+// The next arguments again match the serial iterator exactly. This iterator
+// generates paralellism and yields single elements in the low-based
+// coordinate system. The standalone parallel iterator is invoked in
+// forall loops that are not zippered.  Because this iterator will not
+// be zippered with others, it doesn't need to go to the trouble of
+// zero-shifting indices and putting them into a 1-tuple.
+//
+// This iterator has also been authored to include debugging output when
+// compiled with -sverbose=true.
+//
+iter count(param tag: iterKind, n: int, low: int = 1)
+       where tag == iterKind.standalone {
+  if (verbose) then
+    writeln("In count() standalone, creating ", numTasks, " tasks");
+  coforall tid in 0..#numTasks {
+    const myIters = computeChunk(low..#n, tid, numTasks);
+    if (verbose) then
+      writeln("task ", tid, " owns ", myIters);
+    for i in myIters do
+      yield i;
+  }
+}
+
+
+//
+// Now that we've defined leader-follower and standalone iterators, we can
+// execute the same loops we did before, only this time using forall loops
+// to make the execution parallel.  We start with some simple invocations
+// as before.  In these invocations, the count() standalone parallel
+// iterator is used since it is the only thing being iterated over (A is
+// being randomly accessed within the loop.)
 //
 forall i in count(probSize) do
   A[i] = i:real;
@@ -306,7 +334,7 @@ writeln("After negating the middle of A in parallel:");
 writeln(A);
 writeln();
 
-                         
+
 //
 // Zippered iteration is now a bit more interesting.  In this
 // first loop, count() serves as the leader and follower while
@@ -368,10 +396,8 @@ writeln();
 //   versions as well to permit parallel iteration over the variable.
 //
 // * As mentioned at the outset, our leader-follower scheme has a number
-//   of improvements planned for it, including the ability to specify
-//   a standalone parallel iterator for non-zippered forall loops to
-//   avoid the overhead of using a leader-follower pair and better error
-//   checking.  We'll update this primer as we improve these features.
+//   of changes planned for it such as interface improvements and better
+//   error checking.  We'll update this primer as we improve these features.
 //
 
                         
