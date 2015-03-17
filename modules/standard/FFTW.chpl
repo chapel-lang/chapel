@@ -58,10 +58,14 @@
   transforms, where the former versions use a single array for both
   input and output, and the latter use two distinct arrays.
   
-  In future versions of this interface, we anticipate replacing
-  C-oriented arguments in the `plan_dft*()` routines (like `flags`)
-  with more precise arguments that take advantage of Chapel's support
-  for default argument values and keyword-based argument passing.
+  In future versions of this module, we anticipate improving the
+  plan_dft*() interfaces to make better use of Chapel features and
+  move further away from C-isms (like the overloaded role of `flags`
+  and the use of C-based types).  Such features are expected to take
+  advantage of Chapel's support for default argument values and
+  keyword-based argument passing.  We are also thinking about changing
+  the interface for the in-place routines to use array slicing rather
+  than separate arguments for the array and domain.
 */
 
 //
