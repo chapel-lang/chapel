@@ -1,8 +1,0 @@
-#!/bin/bash
-
-if [ ! -e symlinkToRoot ]; then
-    ln -s / symlinkToRoot
-fi
-if [ ! -e notAMonkey/symlinkToRoot ]; then
-    ln -s / notAMonkey/symlinkToRoot
-fi

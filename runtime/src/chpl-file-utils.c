@@ -172,6 +172,8 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
   if (err) {
     // The stat call in is_link returned an error, which we would encounter too,
     // so return immediately.
+    chpl_mem_free(parent, 0, 0);
+    chpl_mem_free(safeNameCopy, 0, 0);
     return err;
   } else if (exitStatus) {
     // We are dealing with a link.  Using /.. will refer to the parent of the
@@ -221,6 +223,8 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
   exitStatus = lstat(name, &nBuf);
   if (exitStatus) {
     err = qio_mkerror_errno();
+    chpl_mem_free(parent, 0, 0);
+    chpl_mem_free(safeNameCopy, 0, 0);
     return err;
   }
   exitStatus = lstat(parent, &parentBuf);
