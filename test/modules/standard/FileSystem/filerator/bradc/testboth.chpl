@@ -1,4 +1,4 @@
-use Filerator;
+use FileSystem;
 
 for dir in walkdirs("subdir", sort=true) {
   writeln("dir ", dir, " contains:");
