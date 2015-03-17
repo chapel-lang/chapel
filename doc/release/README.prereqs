@@ -31,8 +31,8 @@ Note that our test system works much better with tcsh installed and that users
 of Chapel won't need 'git'.:
 
 CentOS 6.5, 6.6, 7.0, SLES 11 SP3:
-sudo yum install git gcc gcc-c++ bc perl python tcsh bash
+sudo yum install git gcc gcc-c++ bc perl python tcsh bash make
 
 Debigan 7.8, Ubuntu 12.04, 14.04, 14.10:
-sudo apt-get install git gcc g++ bc perl python tcsh bash
+sudo apt-get install git gcc g++ bc perl python tcsh bash make
 
