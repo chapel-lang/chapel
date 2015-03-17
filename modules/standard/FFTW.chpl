@@ -68,10 +68,18 @@
   than separate arguments for the array and domain.
 */
 
+// Possible TODOs:
 //
 // - How do we feel about FFTW_ALLCAPS names given that the routines
 //   themselves don't have fftw_ prefixes, that they're defined as
-//   c_int's, and that they're all-caps?
+//   c_int's, and that they're all-caps?  What if we were to replace
+//   these with bool/enum arguments representing the separate planning
+//   aspects that are overloaded into 'flags'?  This would also allow
+//   us to move away from c_ints (which could be done in other ways
+//   as well.
+//
+// - It seems that rather than passing in a domain and an array for
+//   the in-place cases, we could probably pass in 
 //
 // - Related question about fftw_ types taking type c_int, though
 //   maybe we don't care that much (as compared to other interfaces)
@@ -129,10 +137,19 @@ module FFTW {
   proc plan_dft(input: [] complex(128), output: [] complex(128), 
                  sign: c_int, flags: c_uint) : fftw_plan
   {
-    if !noFFTWsizeChecks then
-      for i in 1..input.rank do
-        if (input.domain.dim(i).size != output.domain.dim(i).size) then
-          halt("In plan_dft(), input and output arrays don't have same size in dimension ", i);
+    if !noFFTWsizeChecks {
+      var error = false;
+      for i in 1..input.rank {
+        const inputDim = input.domain.dim(i).size;
+        const outputDim = output.domain.dim(i).size;
+        if (inputDim != outputDim) {
+          writeln("Error: In plan_dft(), input and output arrays don't have same size in dimension ", i, " (input = ", inputDim, ", output = ", outputDim, ")");
+          error = true;
+        }
+      }
+      if error then
+        halt("Incorrect array sizes in plan_dft()");
+    }
 
     return plan_dft_help(input, output, sign, flags);
   }
@@ -206,14 +223,14 @@ module FFTW {
       const inputDim = input.domain.dim(rank).size/2+1;
       const outputDim = output.domain.dim(rank).size;
       if (inputDim != outputDim) {
-        writeln("Error: In plan_dft_r2c(), output array's leading dimension is not of the appropriate size (expected ", inputDim, ", got ", outputDim);
+        writeln("Error: In plan_dft_r2c(), output array's leading dimension is not of the appropriate size (expected ", inputDim, ", got ", outputDim, ")");
         error = true;
       }
       for i in 1..rank-1 {
         const inputDim = input.domain.dim(i).size;
         const outputDim = output.domain.dim(i).size;
         if (inputDim != outputDim) {
-          writeln("Error: In plan_dft_r2c(), output array's size doesn't match input array's in dimension ", i, " (input = ", inputDim, "output = ", outputDim, ")");
+          writeln("Error: In plan_dft_r2c(), output array's size doesn't match input array's in dimension ", i, " (input = ", inputDim, ", output = ", outputDim, ")");
           error = true;
         }
       }
@@ -260,7 +277,7 @@ module FFTW {
         }
       } else {
         const arrDim = arr.domain.dim(rank).size;
-        const domDim = realDom.dim(rank.size)/2+1;
+        const domDim = realDom.dim(rank).size/2+1;
         if (arrDim != domDim) {
           writeln("Error: In plan_dft_r2c(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
           error = true;
@@ -270,7 +287,7 @@ module FFTW {
         const arrDim = arr.domain.dim(i).size;
         const domDim = realDom.dim(i).size;
         if (arrDim != domDim) {
-          writeln("Error: In plan_dft_r2c(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim);
+          writeln("Error: In plan_dft_r2c(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim, ")");
           error = true;
         }
       }
@@ -308,14 +325,14 @@ module FFTW {
       const inputDim = input.domain.dim(rank).size;
       const outputDim = output.domain.dim(rank).size/2+1;
       if (inputDim != outputDim) {
-        writeln("Error: In plan_dft_c2r(), input array's leading dimension is not of the appropriate size (expected ", outputDim, ", got ", inputDim);
+        writeln("Error: In plan_dft_c2r(), input array's leading dimension is not of the appropriate size (expected ", outputDim, ", got ", inputDim, ")");
         error = true;
       }
       for i in 1..rank-1 {
         const inputDim = input.domain.dim(i).size;
         const outputDim = output.domain.dim(i).size;
         if (inputDim != outputDim) {
-          writeln("Error: In plan_dft_c2r(), input array's size doesn't match ourput array's in dimension ", i, " (input = ", inputDim, "output = ", outputDim, ")");
+          writeln("Error: In plan_dft_c2r(), input array's size doesn't match ourput array's in dimension ", i, " (input = ", inputDim, ", output = ", outputDim, ")");
           error = true;
         }
       }
@@ -360,7 +377,7 @@ module FFTW {
         }
       } else {
         const arrDim = arr.domain.dim(rank).size;
-        const domDim = realDom.dim(rank.size)/2+1;
+        const domDim = realDom.dim(rank).size/2+1;
         if (arrDim != domDim) {
           writeln("Error: In plan_dft_c2r(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
           error = true;
@@ -370,12 +387,12 @@ module FFTW {
         const arrDim = arr.domain.dim(i).size;
         const domDim = realDom.dim(i).size;
         if (arrDim != domDim) {
-          writeln("Error: In plan_dft_c2r(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim);
+          writeln("Error: In plan_dft_c2r(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim, ")");
           error = true;
         }
       }
       if (error) then
-        halt("Incorrect array sizes in plan_dft_r2c()");
+        halt("Incorrect array sizes in plan_dft_c2r()");
     }
 
     var dims: rank*c_int;
