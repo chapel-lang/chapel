@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys, os
 
-import chpl_arch
 import chpl_compiler
 import chpl_platform
 from utils import memoize
