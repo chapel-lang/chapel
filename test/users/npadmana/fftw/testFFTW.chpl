@@ -89,8 +89,8 @@ proc runtest(param ndim : int, fn : string) {
 	destroy_plan(rev);
 
 	// Test in-place transforms
-	fwd = plan_dft(A, A, FFTW_FORWARD, FFTW_ESTIMATE);
-	rev = plan_dft(A, A, FFTW_BACKWARD, FFTW_ESTIMATE);
+	fwd = plan_dft(A, FFTW_FORWARD, FFTW_ESTIMATE);
+	rev = plan_dft(A, FFTW_BACKWARD, FFTW_ESTIMATE);
 	A = goodA;
 	// Test forward and reverse transform
 	A = goodA;

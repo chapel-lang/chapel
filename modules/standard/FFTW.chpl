@@ -52,6 +52,11 @@
 
   4. Call :proc:`cleanup`.
 
+
+  Note that each of the Chapel :proc:`plan_dft* <plan_dft>` routines
+  support both `in-place` and `out-of-place` versions of the
+  transforms, where the former versions use a single array for both
+  input and output, and the latter use two distinct arrays.
   
   In future versions of this interface, we anticipate replacing
   C-oriented arguments in the `plan_dft*()` routines (like `flags`)
@@ -101,7 +106,7 @@ module FFTW {
   // more native Chapel types anyway.
 
   /*
-    Creates a plan for a complex-to-complex DFT.
+    Creates a plan for an out-of-place complex-to-complex DFT.
 
     :arg input: The input array, which can be of any rank
     :type input: [] `complex(128)`
@@ -117,15 +122,45 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft(input: [] complex(128), output: [] complex(128), sign: c_int, 
-                flags: c_uint) : fftw_plan
+  proc plan_dft(input: [] complex(128), output: [] complex(128), 
+                sign: c_int, flags: c_uint) : fftw_plan
   {
-    param rank = input.rank;
-
     if !noFFTWsizeChecks then
-      for i in 1..rank do
+      for i in 1..input.rank do
         if (input.domain.dim(i).size != output.domain.dim(i).size) then
           halt("In plan_dft(), input and output arrays don't have same size in dimension ", i);
+
+    return plan_dft_help(input, output, sign, flags);
+  }
+
+
+  /*
+    Creates a plan for an in-place complex-to-complex DFT.
+
+    :arg arr: The array to use as the in-place input/output array.
+    :type arr: [] `complex(128)`
+
+    :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
+    :type sign: c_int
+
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+  */
+  proc plan_dft(arr: [] complex(128), sign: c_int, flags: c_uint): fftw_plan {
+    return plan_dft_help(arr, arr, sign, flags);
+  }
+
+  //
+  // Though not strictly necessary, this helper routine is to avoid
+  // doing the size check for the in-place case.
+  // 
+  pragma "no doc"
+  proc plan_dft_help(input: [] complex(128), output: [] complex(128), 
+                sign: c_int, flags: c_uint) : fftw_plan
+  {
+    param rank = input.rank;
 
     var dims: rank*c_int;
     for param i in 1..rank do

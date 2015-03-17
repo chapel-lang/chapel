@@ -1,0 +1,1 @@
+planDFTmismatch.chpl:8: error: halt reached - In plan_dft(), input and output arrays don't have same size in dimension 2
