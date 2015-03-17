@@ -3,6 +3,7 @@ NAME
 
 SYNOPSIS
   chpldoc [-o directory]
+          [--author authortext]
           [--save-sphinx directory]
           [options] source-files...
 
@@ -22,7 +23,7 @@ DESCRIPTION
 
   --save-sphinx <directory>  Save generated Sphinx project in directory.
 
-  --author <author>  Documentation author string. 'author' becomes the copyright
+  --author <authortext>  Documentation author string. authortext becomes the copyright
                     and author in the output documentation.
 
   --comment-style <string>  Specify the opening comment character
