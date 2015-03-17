@@ -25,7 +25,7 @@
 
 
 /*
-   Searches through the pre-sorted array Data looking for the value val using
+   Searches through the pre-sorted array `Data` looking for the value `val` using
    a sequential linear search.  Returns a tuple indicating (1) whether or not
    the value was found and (2) the location of the value if it was found, or
    the location where the value should have been if it was not found.
@@ -34,7 +34,6 @@
    :arg val: The value to find in the array
 
    :returns: A tuple indicating (1) if the value was found and (2) the location of the value if it was found or the location where the value should have been if it was not found.
-
 
  */
 proc LinearSearch(Data:[?Dom], val) {
