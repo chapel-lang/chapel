@@ -60,6 +60,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Buffers.chpl \
 	standard/Curl.chpl \
 	standard/FFTW.chpl \
+	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/HDFS.chpl \
 	standard/HDFSiterator.chpl \
@@ -67,6 +68,7 @@ MODULES_TO_DOCUMENT = \
 	standard/IO.chpl \
 	standard/List.chpl \
 	standard/Norm.chpl \
+	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Regexp.chpl \
 	standard/Sort.chpl \

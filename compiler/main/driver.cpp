@@ -895,7 +895,7 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
 
-  if (printHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+  if (printHelp || fDocsPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
     if (printedSomething) printf("\n");
 
     int usageExitStatus;
@@ -933,7 +933,7 @@ int main(int argc, char* argv[]) {
 
     init_args(&sArgState, argv[0]);
 
-    fDocs = (strcmp(sArgState.program_name, "chpldoc") == 0) ? true : false;
+    fDocs   = (strcmp(sArgState.program_name, "chpldoc")  == 0) ? true : false;
     fUseIPE = (strcmp(sArgState.program_name, "chpl-ipe") == 0) ? true : false;
 
     // Initialize the arguments for argument state. If chpldoc, use the docs
@@ -949,19 +949,15 @@ int main(int argc, char* argv[]) {
     initPrimitive();
     initPrimitiveTypes();
 
-    if (fUseIPE == false) {
-      DefExpr* objectClass = defineObjectClass();
+    DefExpr* objectClass = defineObjectClass();
 
-      initChplProgram(objectClass);
-    }
+    initChplProgram(objectClass);
 
     setupOrderedGlobals(argv[0]);
 
     process_args(&sArgState, argc, argv);
 
-    if (fUseIPE == false) {
-      initCompilerGlobals(); // must follow argument parsing
-    }
+    initCompilerGlobals(); // must follow argument parsing
 
     setupDependentVars();
     setupModulePaths();
