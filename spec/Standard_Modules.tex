@@ -23,7 +23,6 @@ are as follows:
 
 \begin{tabular}{lll}
 \hspace{1pc} & \chpl{AdvancedIters} & Advanced iterator functions \\
-             & \chpl{Search} & Generic searching routines \\
              & \chpl{UtilMath} & Math-related utilities \\
 \end{tabular}
 
@@ -713,39 +712,6 @@ iter adaptive(r:range(?), numTasks:int = 0)
   splitting in the victim range is performed from its tail.
 \end{itemize}
 
-\end{protobody}
-
-
-\subsection{Search}
-\label{Search}
-\index{modules!optional!Search@\chpl{Search}}
-
-The \chpl{Search} module is designed to support standard search
-routines.  The current interface is minimal and should be expected to
-grow and evolve over time.
-
-\begin{protohead}
-proc LinearSearch(Data: [?Dom], val): (bool, index(Dom))
-\end{protohead}
-\begin{protobody}
-Searches through the pre-sorted array \chpl{Data} looking for the
-value \chpl{val} using a sequential linear search.  Returns a tuple
-indicating (1) whether or not the value was found and (2) the location
-of the value if it was found, or the location where the value should
-have been if it was not found.
-\end{protobody}
-
-\begin{protohead}
-proc BinarySearch(Data: [?Dom], val, in lo = Dom.low, in hi = Dom.high)
-\end{protohead}
-\begin{protobody}
-Searches through the pre-sorted array \chpl{Data} looking for the
-value \chpl{val} using a sequential binary search.  If provided, only
-the indices \chpl{lo} through \chpl{hi} will be considered, otherwise
-the whole array will be searched.  Returns a tuple indicating (1)
-whether or not the value was found and (2) the location of the value
-if it was found, or the location where the value should have been if
-it was not found.
 \end{protobody}
 
 
