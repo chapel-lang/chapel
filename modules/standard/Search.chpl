@@ -22,7 +22,7 @@
    current interface is minimal and should be expected to grow and evolve
    over time.
  */
-
+module Search {
 
 /*
    Searches through the pre-sorted array `Data` looking for the value `val` using
@@ -80,4 +80,5 @@ proc BinarySearch(Data:[?Dom], val, in lo = Dom.low, in hi = Dom.high) {
     }
   }
   return (false, lo);
+}
 }
