@@ -8,7 +8,7 @@ TARGETS = \
         arrayVectorOps \
 	associative \
 	atomics \
-	chpldoc \
+	chpldoc.doc \
 	classes \
 	distributions \
 	domains \
