@@ -1,4 +1,4 @@
-use Filerator;
+use FileSystem;
 
 config const startdir = ".";
 config const topdown = true;
