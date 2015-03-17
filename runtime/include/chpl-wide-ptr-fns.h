@@ -37,7 +37,7 @@
 // chpl_error needed for some of the packed wide pointer error cases.
 #include "error.h"
 
-#define WIDE_PTR_INLINE ___always_inline
+#define WIDE_PTR_INLINE inline
 
 // Methods for working with wide pointers (packed or not) and localeID_t.
 // There are several variants of many of these in order to simplify
