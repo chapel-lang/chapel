@@ -56,7 +56,7 @@ tags
 /make/Chapel.xcodeproj/*.mode1v3
 
 # Man ignores.
-/man/man1/chpl.1
+/man/man1/
 
 # Modules ignores.
 /modules/docs
