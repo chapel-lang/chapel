@@ -142,10 +142,10 @@ writeln();
 // When invoked in a forall loop (or semantically equivalent context),
 // iterators that create parallel tasks and assign work to
 // those tasks are required.  These are known as leader/follower
-// iterators in Chapel, and they are a fairly big topic of their
-// own.  See the leaderfollower.chpl test in this directory for
-// an extended example of defining and using leader/follower
-// iterators.
+// or standalone paralllel iterators in Chapel, and they are a fairly
+// big topic of their own.  See the parIters.chpl test in
+// this directory for an extended example of defining and using
+// leader/follower and standalone parallel iterators.
 
 //
 // The coforall loop uses the serial version iterator 

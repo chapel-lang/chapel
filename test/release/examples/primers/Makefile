@@ -15,9 +15,9 @@ TARGETS = \
 	fileIO \
 	genericClasses \
 	iterators \
-	leaderfollower \
 	locales \
 	opaque \
+	parIters \
 	procedures \
         randomNumbers \
 	ranges \
