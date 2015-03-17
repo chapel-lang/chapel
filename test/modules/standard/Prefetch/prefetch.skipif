@@ -2,5 +2,7 @@
 # so it is necessary to supply -march=native for 32-bit testing.
 # This could be achieved working through the CHPL_TARGET_ARCH
 # mechanism to be more robust for different platforms.
+# In fact, this test works for me on 32-bit linux if CHPL_TARGET_ARCH=native
+# is set before testing begins...
 # For now though, we just skip this test on 32-bit systems.
 CHPL_TARGET_PLATFORM == linux32
