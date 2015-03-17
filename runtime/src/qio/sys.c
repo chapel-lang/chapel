@@ -71,6 +71,27 @@
 #endif
 #endif
 
+#ifdef __CYGWIN__
+#undef HAS_PREADV
+#undef HAS_PWRITEV
+
+// PAGE_SIZE is declared in both Cygwin headers and Windows ones.
+// We don't really care who wins but want to get rid of the warning.
+#undef PAGE_SIZE
+
+
+#include <io.h> // _get_osfhandle
+//#include <ntddk.h>
+//#include <winternl.h>
+//#include <ntifs.h>
+#include <windows.h>
+#include <sys/cygwin.h> // for cygwin_internal
+
+// function to get a POSIX-y error number from an NT status
+extern void seterrno_from_nt_status(const char* file, int line, NTSTATUS status);
+
+#endif
+
 // Should be available in sys_xsi_strerror_r.c
 extern int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen);
 
@@ -87,8 +108,14 @@ size_t sys_page_size(void)
   static long pagesize = -1;
   err_t err;
 
+#ifdef __CYGWIN__
+  // see note in runtime/include/cygwin/chplsys.h
+  return 4096;
+#endif
+
   // Handle already computed page size.
   if( pagesize > 0 ) return pagesize;
+
 
 #ifdef _SC_PAGESIZE
   err = sys_sysconf(_SC_PAGESIZE, &pagesize);
@@ -784,23 +811,117 @@ err_t sys_write(int fd, const void* buf, size_t count, ssize_t* num_written_out)
   return err_out;
 }
 
+
+#ifdef __CYGWIN__
+static
+err_t get_errcode_from_winerr(DWORD win_error)
+{
+  uintptr_t res = cygwin_internal(CW_GET_ERRNO_FROM_WINERROR,
+                                  win_error,
+                                  EACCES);
+  return res;
+}
+#endif
+
+static inline
+err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
+{
+#ifdef __CYGWIN__
+  ssize_t got;
+  err_t error;
+  HANDLE handle = (HANDLE) _get_osfhandle(fd);
+  DWORD win_to_read;
+  DWORD win_num_read;
+  OVERLAPPED overlapped;
+  BOOL win_did_read;
+  DWORD win_error;
+
+  win_to_read = count;
+  win_num_read = 0;
+  memset(&overlapped, 0, sizeof(OVERLAPPED));
+  overlapped.Offset = offset;
+  overlapped.OffsetHigh = offset >> (8*sizeof(DWORD));
+
+  win_did_read = ReadFile(handle, buf, win_to_read, &win_num_read, &overlapped);
+  if( win_did_read ) {
+    got = win_num_read;
+    error = 0;
+  } else {
+    win_error = GetLastError();
+    error = get_errcode_from_winerr(win_error);
+  }
+
+  if( got == -1 && error == ENODATA ) got = 0;
+  *num_read = got;
+  return error;
+#else
+  ssize_t got;
+  got = pread(fd, buf, count, offset);
+  if( got == -1 ) {
+    *num_read = 0;
+    return errno;
+  }
+  *num_read = got;
+  return 0;
+#endif
+}
+
+static inline
+err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *num_written)
+{
+#ifdef __CYGWIN__
+  ssize_t got;
+  err_t error;
+  HANDLE handle = (HANDLE) _get_osfhandle(fd);
+  DWORD win_to_write;
+  DWORD win_num_wrote;
+  OVERLAPPED overlapped;
+  BOOL win_did_write;
+  DWORD win_error;
+
+  win_to_write = count;
+  win_num_wrote = 0;
+  memset(&overlapped, 0, sizeof(OVERLAPPED));
+  overlapped.Offset = offset;
+  overlapped.OffsetHigh = offset >> (8*sizeof(DWORD));
+
+  win_did_write = WriteFile(handle, buf, win_to_write, &win_num_wrote, &overlapped);
+  if( win_did_write ) {
+    got = win_num_wrote;
+    error = 0;
+  } else {
+    win_error = GetLastError();
+    error = get_errcode_from_winerr(win_error);
+  }
+
+  *num_written = got;
+  return error;
+#else
+  ssize_t got;
+  got = pwrite(fd, buf, count, offset);
+  if( got == -1 ) {
+    *num_written = 0;
+    return errno;
+  }
+  *num_written = got;
+  return 0;
+#endif
+}
+
 err_t sys_pread(int fd, void* buf, size_t count, off_t offset, ssize_t* num_read_out)
 {
   ssize_t got;
   err_t err_out;
 
   STARTING_SLOW_SYSCALL;
-  got = pread(fd, buf, count, offset);
-  #ifdef __CYGWIN__
-  if( got == -1 && errno == ENODATA ) got = 0;
-  #endif
+  got = 0;
+  err_out = do_pread(fd, buf, count, offset, &got);
   if( got != -1 ) {
     *num_read_out = got;
     if( got == 0 && count != 0 ) err_out = EEOF;
     else err_out = 0;
   } else {
     *num_read_out = 0;
-    err_out = errno;
   }
   DONE_SLOW_SYSCALL;
 
@@ -813,13 +934,13 @@ err_t sys_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t* n
   err_t err_out;
 
   STARTING_SLOW_SYSCALL;
-  got = pwrite(fd, buf, count, offset);
+  got = 0;
+  err_out = do_pwrite(fd, buf, count, offset, &got);
   if( got != -1 ) {
     *num_written_out = got;
     err_out = 0;
   } else {
     *num_written_out = 0;
-    err_out = errno;
   }
   DONE_SLOW_SYSCALL;
 
@@ -965,14 +1086,11 @@ err_t sys_preadv(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_off
   err_out = 0;
   got_total = 0;
   for( i = 0; i < iovcnt; i++ ) {
-    got = pread(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total);
-    #ifdef __CYGWIN__
-    if( got == -1 && errno == ENODATA ) got = 0;
-    #endif
+    got = 0;
+    err_out = do_pread(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total, &got);
     if( got != -1 ) {
       got_total += got;
     } else {
-      err_out = errno;
       break;
     }
     if( got != iov[i].iov_len ) {
@@ -1041,11 +1159,11 @@ err_t sys_pwritev(fd_t fd, const struct iovec* iov, int iovcnt, off_t seek_to_of
   err_out = 0;
   got_total = 0;
   for( i = 0; i < iovcnt; i++ ) {
-    got = pwrite(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total);
+    got = 0;
+    err_out = do_pwrite(fd, iov[i].iov_base, iov[i].iov_len, seek_to_offset + got_total, &got);
     if( got != -1 ) {
       got_total += got;
     } else {
-      err_out = errno;
       break;
     }
     if( got != iov[i].iov_len ) {

@@ -72,6 +72,9 @@ RUNTIME_INCLS += \
         -I$(RUNTIME_INCLUDE_ROOT)/atomics/$(CHPL_MAKE_ATOMICS) \
         -I$(RUNTIME_INCLUDE_ROOT)/mem/$(CHPL_MAKE_MEM) \
         -I$(THIRD_PARTY_DIR)/utf8-decoder \
+        -I/usr/include/w32api/ddk \
+
+GEN_LFLAGS += -L/usr/lib/w32api -lntdll
 
 # Add any further includes (e.g. third party tcmalloc dir) for memory
 MEM_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_MEM)
