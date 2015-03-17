@@ -393,18 +393,21 @@ module FFTW {
   module C_FFTW {
     extern proc fftw_plan_dft(rank: c_int, 
                               n,  // BLC: having trouble being specific
+                                  // This is a const int* in C
                               in1: [] complex(128), 
                               out1: [] complex(128), 
                               sign : c_int, c_flags : c_uint) : fftw_plan;
 
     extern proc fftw_plan_dft_r2c(rank: c_int, 
                                   n,  // BLC: having trouble being specific
+                                      // This is a const int* in C
                                   in1: [],
                                   out1: [], 
                                   c_flags : c_uint) : fftw_plan;
 
     extern proc fftw_plan_dft_c2r(rank: c_int, 
                                   n,  // BLC: having trouble being specific
+                                      // This is a const int* in C
                                   in1: [],
                                   out1: [],
                                   c_flags : c_uint) : fftw_plan;
