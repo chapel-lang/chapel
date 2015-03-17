@@ -189,7 +189,7 @@ module FFTW {
     :arg input: The input array, which can be of any rank
     :type input: [] `real(64)`
 
-    :arg output: The output array, whose rank must match the input array's.  The leading dimension of this array should be n/2 + 1, where n is the size of the real array's corresponding dimension.  See the `FFTW documentation <http://www.fftw.org/fftw2_doc/fftw_2.html#SEC6>`_ for more information.
+    :arg output: The output array, whose size and shape must match the input array's, except for the leading dimension which should be n/2 + 1, where n is the size of the input array's leading dimension.  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
     :type output: [] `complex(128)`
     
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
@@ -201,9 +201,25 @@ module FFTW {
   {
     param rank = input.rank: c_int;
 
-    //
-    // TODO: Need runtime size checks
-    //
+    if !noFFTWsizeChecks {
+      var error = false;
+      const inputDim = input.domain.dim(rank).size/2+1;
+      const outputDim = output.domain.dim(rank).size;
+      if (inputDim != outputDim) {
+        writeln("Error: In plan_dft_r2c(), output array's leading dimension is not of the appropriate size (expected ", inputDim, ", got ", outputDim);
+        error = true;
+      }
+      for i in 1..rank-1 {
+        const inputDim = input.domain.dim(i).size;
+        const outputDim = output.domain.dim(i).size;
+        if (inputDim != outputDim) {
+          writeln("Error: In plan_dft_r2c(), output array's size doesn't match input array's in dimension ", i, " (input = ", inputDim, "output = ", outputDim, ")");
+          error = true;
+        }
+      }
+      if (error) then
+        halt("Incorrect array sizes in plan_dft_r2c()");
+    }
 
     var dims: rank*c_int;
     for param i in 1..rank do
@@ -213,7 +229,6 @@ module FFTW {
   }
 
   // In-place routines, note that these take in the true leading dimension
-  // TODO : We should put in checks to see that the sizes are consistent
   // TODO : We should check on types...
   /*
     Create a plan for a real-to-complex, in-place DFT.
@@ -221,8 +236,8 @@ module FFTW {
     :arg realDom: Describes the indices of the 'real' view of the array
     :type realDom: `domain`
 
-    :arg arr: The array to be used as the in-place input/output array.  If passing in an array of `real` elements, the leading dimension of the array must be padded to store 2(n/2)+1 elements, where `n` is the size of the corresponding dimension of `realDom`.  If passing in an array of `complex` elements, the leading dimension should be (n/2 + 1).  See the `FFTW documentation <http://www.fftw.org/fftw2_doc/fftw_2.html#SEC6>`_ for more information.
-    :type arr: [] `T` where `T` is of type `real` or `complex`
+    :arg arr: The array to be used as the in-place input/output array.  If passing in an array of `real` elements, the leading dimension of the array must be padded to store 2(n/2 + 1) elements, where `n` is the size of the corresponding dimension of `realDom`.  If passing in an array of `complex` elements, the leading dimension should be (n/2 + 1).  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
+    :type arr: [] `T` where `T` is of type `real(640` or `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
     :type flags: c_int
@@ -233,6 +248,37 @@ module FFTW {
   {
     param rank = realDom.rank: c_int;
 
+    if !noFFTWsizeChecks {
+      var error = false;
+
+      if t == real {
+        const arrDim = arr.domain.dim(rank).size;
+        const domDim = 2*(realDom.dim(rank).size/2+1);
+        if (arrDim != domDim) {
+          writeln("Error: In plan_dft_r2c(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
+          error = true;
+        }
+      } else {
+        const arrDim = arr.domain.dim(rank).size;
+        const domDim = realDom.dim(rank.size)/2+1;
+        if (arrDim != domDim) {
+          writeln("Error: In plan_dft_r2c(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
+          error = true;
+        }
+      }
+      for i in 1..rank-1 {
+        const arrDim = arr.domain.dim(i).size;
+        const domDim = realDom.dim(i).size;
+        if (arrDim != domDim) {
+          writeln("Error: In plan_dft_r2c(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim);
+          error = true;
+        }
+      }
+      if (error) then
+        halt("Incorrect array sizes in plan_dft_r2c()");
+    }
+        
+      
     //
     // TODO: Need runtime size checks
     //
@@ -247,10 +293,10 @@ module FFTW {
   /*
     Create a plan for a complex-to-real, out-of-place DFT.
 
-    :arg input: The input array, which can be of any rank
+    :arg input: The input array, whose size and shape must match the output array's, except for the leading dimension which should be n/2 + 1, where n is the size of the output array's leading dimension.  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
     :type input: [] `complex(128)`
 
-    :arg output: The output array, whose rank must match the input array's.  The leading dimension of this array should be n/2 + 1, where n is the size of the real array's corresponding dimension.  See the `FFTW documentation <http://www.fftw.org/fftw2_doc/fftw_2.html#SEC6>`_ for more information.
+    :arg output: The output array
     :type output: [] `real(64)`
     
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
@@ -262,9 +308,25 @@ module FFTW {
   {
     param rank = output.rank: c_int; // The dimensions are that of the real array
 
-    //
-    // TODO: Need runtime size checks
-    //
+    if !noFFTWsizeChecks {
+      var error = false;
+      const inputDim = input.domain.dim(rank).size;
+      const outputDim = output.domain.dim(rank).size/2+1;
+      if (inputDim != outputDim) {
+        writeln("Error: In plan_dft_c2r(), input array's leading dimension is not of the appropriate size (expected ", outputDim, ", got ", inputDim);
+        error = true;
+      }
+      for i in 1..rank-1 {
+        const inputDim = input.domain.dim(i).size;
+        const outputDim = output.domain.dim(i).size;
+        if (inputDim != outputDim) {
+          writeln("Error: In plan_dft_c2r(), input array's size doesn't match ourput array's in dimension ", i, " (input = ", inputDim, "output = ", outputDim, ")");
+          error = true;
+        }
+      }
+      if (error) then
+        halt("Incorrect array sizes in plan_dft_c2r()");
+    }
 
     var dims: rank*c_int;
     for param i in 1..rank do
@@ -279,8 +341,8 @@ module FFTW {
     :arg realDom: Describes the indices of the 'real' view of the array
     :type realDom: `domain`
 
-    :arg arr: The array to be used as the in-place input/output array.  If passing in an array of `real` elements, the leading dimension of the array must be padded to store 2(n/2)+1 elements, where `n` is the size of the corresponding dimension of `realDom`.  If passing in an array of `complex` elements, the leading dimension should be (n/2 + 1).  See the `FFTW documentation <http://www.fftw.org/fftw2_doc/fftw_2.html#SEC6>`_ for more information.
-    :type arr: [] `T` where `T` is of type `real` or `complex`
+    :arg arr: The array to be used as the in-place input/output array.  If passing in an array of `real` elements, the leading dimension of the array must be padded to store 2(n/2 + 1) elements, where `n` is the size of the corresponding dimension of `realDom`.  If passing in an array of `complex` elements, the leading dimension should be (n/2 + 1).  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
+    :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
     :type flags: c_int
