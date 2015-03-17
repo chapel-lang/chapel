@@ -923,6 +923,11 @@ of \chpl{C}.
 The value \chpl{nil} can be implicitly converted to any class type.
 These conversions do not change the value.
 
+
+%TODO: Move memory management explanation up, closer to class constructors.
+% Perhaps make the memory management part of the introduction, and then let the
+% description of destructors appear naturally at the same indentation level as
+% constructors.
 \section{Dynamic Memory Management}
 \label{Dynamic_Memory_Management}
 \label{Class_Delete}
@@ -996,8 +1001,8 @@ features become supported.
 
 \subsection{Class Destructor}
 \label{Class_Destructor}
-\label{classes!destructor}
-\label{destructor!classes}
+\index{classes!destructor}
+\index{destructor!classes}
 
 A class author may specify additional actions to be performed before a class object is
 reclaimed, by defining a class destructor.  A class destructor is a method that has the

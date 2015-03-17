@@ -345,18 +345,36 @@ supplied, the default initializer cannot be called directly.
 
 \subsection{Record Destructor}
 \label{Record_Destructor}
-\label{records!destructor}
-\label{destructor!records}
+\index{records!destructor}
+\index{destructor!records}
 
-A record author may specify addditional actions to be performed before a record object is
-reclaimed, by defining a record destructor.  A record destructor is a method that has the
+A record author may specify addditional actions to be performed before record storage is
+reclaimed by defining a record destructor.  A record destructor is a method that has the
 same name as the record prefixed by a tilde.  A record destructor takes no arguments
 (aside from the implicit \chpl{this} argument).  If defined, the destructor is called
 on a record object after it goes out of scope and before its memory is reclaimed.
 
+% TODO: The above ambiguous language is intended to allow optimizations involving extending
+% the lifetime of an object.  However, we leave unspecified the means by which a user may
+% demand avid running of the destructor and reclamation of memory (as in C\#).  We need to
+% specify this so the above language can be tightened up for that case.
+
+% For now, the actual lifetime of a record object is under the control of the compiler.  For
+% example, as an optimization, ownership of an object may be transferred between variables with
+% non-overlapping lifetimes.  When this happens, there will be no observable destruction of
+% one of those variables.  The compiler may also choose to insert temporary copies e.g. of
+% record formals or of a record return value.
+
+% The compiler guarantees that every record constructor call will have exactly one
+% corresponding record destructor call.  However, the exact number of constructor-destructor
+% pairs is determined by the compiler, and may also be influenced by various compiler
+% options.
+
 \begin{chapelexample}{recordDestructor.chpl}
 \begin{chapel}
 class C { var x: int; } // A class with nonzero size.
+// If the class were empty, whether or not its memory was reclaimed 
+// would not be observable.
 
 // Defines a record implementing simple memory management.
 record R {
@@ -391,19 +409,6 @@ Number of leaked allocations
 --memLeaks
 \end{chapelexecopts}
 \end{chapelexample}
-
-\begin{note}
-The actual lifetime of an object is under the control of the compiler.  For example, as an
-optimization, ownership of an object may be transferred between variables with
-non-overlapping lifetimes.  When this happens, there will be no observable destruction of
-one of those variables.  The compiler may also choose to insert temporary copies e.g. of
-record formals or of a record return value.  
-
-The compiler guarantees that every record constructor call will have exactly one
-corresponding record destructor call.  However, the exact number of constructor-destructor
-pairs is determined by the compiler, and may also be influenced by various compiler
-options.
-\end{note}
 
 
 \section{Record Arguments}
