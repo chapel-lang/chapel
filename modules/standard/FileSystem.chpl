@@ -20,21 +20,22 @@
 /* A file utilities library
 
    The FileSystem module focuses on file and directory properties and
-   operations.  It does not cover every interaction involving a file -
-   for instance, path specific operations live in the :mod:`Path` module, while
-   opening, writing to, or reading from a file appropriately live in the
+   operations.  It does not cover every interaction involving a file---
+   for instance, path-specific operations live in the :mod:`Path` module, while
+   routines for opening, writing to, or reading from a file live in the
    :mod:`IO` module.  Rather, it covers cases where the user would prefer a file
-   or directory handled wholesale and/or with minimal interaction.  The
-   :proc:`copy` functionality belongs here, as does :proc:`chmod`,
-   :proc:`mkdir`, and :proc:`remove`, for instance.  Also included are
-   operations relating to the current process's state, such as :proc:`umask` or
-   :proc:`~locale.chdir` (an operation which is performed on a specified
-   locale).
+   or directory to be handled wholesale and/or with minimal interaction.  For example,
+   this module contains a file :proc:`copy` routine, as well as operations like :proc:`chmod`,
+   :proc:`mkdir`, and :proc:`remove`.  Also included are
+   operations relating to the current process's file system state, such as :proc:`~locale.umask` or
+   :proc:`~locale.chdir`, which are performed on a specified locale.  The module
+   also contains iterators for traversing the file system, such as 
+   :iter:`glob`, :iter:`listdir`, :iter:`walkdirs`, and :iter:`findfiles`.
 
  */
 module FileSystem {
 
-use Error;
+use Error, Path;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -372,9 +373,6 @@ proc copyMode(src: string, dest: string) {
   if err != ENOERR then ioerror(err, "in copyMode " + src, dest);
 }
 
-use Filerator;
-use Path;
-
 pragma "no doc"
 proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
   var oldMode = getMode(src);
@@ -509,6 +507,39 @@ proc exists(name: string): bool {
   return ret;
 }
 
+
+/* iter findfiles(startdir = ".", recursive=false, hidden=false)
+
+   findfiles() is a simple find-like utility implemented using the
+   above routines
+
+     * startdir: where to start when looking for files
+     * recursive: tells whether or not to descend recursively
+     * hidden: tells whether or not to yield hidden
+*/
+
+iter findfiles(startdir = ".", recursive=false, hidden=false) {
+  if (recursive) then
+    for subdir in walkdirs(startdir, hidden=hidden) do
+      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
+
+pragma "no doc"
+iter findfiles(startdir = ".", recursive=false, hidden=false, param tag: iterKind) where tag == iterKind.standalone {
+  if (recursive) then
+    forall subdir in walkdirs(startdir, hidden=hidden) do
+      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
+
+
 pragma "no doc"
 proc getGID(out error: syserr, name: string): int {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
@@ -591,6 +622,125 @@ proc getUID(name: string): int {
   if err != ENOERR then ioerror(err, "in getUID");
   return ret;
 }
+
+
+//
+// This is a helper module used by the various glob() overloads
+// to access the C-level routines, types, and values
+//
+pragma "no doc"
+module chpl_glob_c_interface {
+  extern type glob_t;
+
+  extern const GLOB_NOMATCH: c_int;
+
+  extern proc chpl_glob(pattern:c_string, flags: c_int, 
+                        ref ret_glob:glob_t):c_int;
+  extern proc chpl_glob_num(x:glob_t): size_t;
+  extern proc chpl_glob_index(x:glob_t, idx:size_t): c_string;
+  extern proc globfree(ref glb:glob_t);
+}
+
+
+/* iter glob(pattern="*")
+
+   glob() gives glob() capabilities and is implemented using C's glob()
+
+     * pattern: the glob pattern to match against
+
+   By default, it will list all files/directories in the current directory
+*/
+iter glob(pattern="*") {
+  var glb : chpl_glob_c_interface.glob_t;
+
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
+  //
+  // Use safeCast here, and then back again, in order to avoid conditional
+  // in iterator in order to get better generated code, and to support
+  // 'num-1' without risk of overflow
+  //
+  const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
+  for i in 0..num-1 do
+    yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
+
+  chpl_glob_c_interface.globfree(glb);
+}
+
+
+pragma "no doc"
+iter glob(pattern:string="*", param tag: iterKind) 
+       where tag == iterKind.standalone {
+  var glb : chpl_glob_c_interface.glob_t;
+
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
+  const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
+  forall i in 0..num-1 do
+    yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
+
+  chpl_glob_c_interface.globfree(glb);
+}
+
+//
+// TODO: The following leader/follower iterator assumes that
+// the file system state won't change between calls because
+// it calls the glob routines twice and assumes the same
+// result will come back.  In leader-follower 2.0, we would
+// like to store such state between calls in which case this
+// should be rewritten to do so (and would require freeing
+// the state at the end of the call).
+//
+pragma "no doc"
+iter glob(pattern:string="*", param tag: iterKind) 
+       where tag == iterKind.leader {
+  var glb : chpl_glob_c_interface.glob_t;
+
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
+  //
+  // cast is used here to ensure we create an int-based leader
+  //
+  const num = chpl_glob_c_interface.chpl_glob_num(glb).safeCast(int);
+  chpl_glob_c_interface.globfree(glb);
+
+  //
+  // Forward to the range type's leader
+  //
+  for followThis in (0..num-1).these(tag) do
+    yield followThis;
+}
+
+pragma "no doc"
+iter glob(pattern:string="*", followThis, param tag: iterKind) 
+       where tag == iterKind.follower {
+  var glb : chpl_glob_c_interface.glob_t;
+  if (followThis.size != 1) then
+    compilerError("glob() iterator can only be zipped with 1D iterators");
+  var r = followThis(1);
+
+  const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
+  // TODO: Handle error cases better
+  if (err != 0 && err != chpl_glob_c_interface.GLOB_NOMATCH) then
+    __primitive("chpl_error", "unhandled error in glob()");
+  const num = chpl_glob_c_interface.chpl_glob_num(glb);
+  if (r.high > num.safeCast(int)) then
+    halt("glob() iterator zipped with something too big");
+  for i in r do
+    //
+    // safe cast is used here to turn an int into a size_t
+    //
+    yield chpl_glob_c_interface.chpl_glob_index(glb, i.safeCast(size_t)): string;
+
+  chpl_glob_c_interface.globfree(glb);
+}
+
 
 pragma "no doc"
 proc isDir(out error:syserr, name:string):bool {
@@ -709,6 +859,65 @@ proc isMount(name: string): bool {
   if err != ENOERR then ioerror(err, "in isMount", name);
   return ret;
 }
+
+
+/* iter listdir(path: string, hidden=false, dirs=true, files=true, 
+                listlinks=true): string
+  
+    listdir() lists the contents of a directory, similar to 'ls'
+      * path: the directory whose contents should be listed
+      * hidden: should hidden files/directories be listed?
+      * dirs: should dirs be listed?
+      * files: should files be listed?
+      * listlinks: should symbolic links be listed?
+  
+   By default this routine lists all files and directories in the
+   current directory, including symbolic links, as long as they don't
+   start with '.'
+*/
+
+iter listdir(path: string, hidden=false, dirs=true, files=true, 
+             listlinks=true): string {
+  extern type DIRptr;
+  extern type direntptr;
+  extern proc opendir(name: c_string): DIRptr;
+  extern proc readdir(dirp: DIRptr): direntptr;
+  extern proc closedir(dirp: DIRptr): c_int;
+
+  proc direntptr.d_name(): c_string {
+    extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
+
+    return chpl_rt_direntptr_getname(this);
+  }
+
+  var dir: DIRptr;
+  var ent: direntptr;
+  dir = opendir(path:c_string);
+  if (!is_c_nil(dir)) {
+    ent = readdir(dir);
+    while (!is_c_nil(ent)) {
+      const filename = ent.d_name();
+      if (hidden || filename.substring(1) != '.') {
+        if (filename != "." && filename != "..") {
+          const fullpath = path + "/" + filename;
+
+          if (listlinks || !isLink(fullpath)) {
+            if (dirs && isDir(fullpath)) then
+              yield filename;
+            else if (files && isFile(fullpath)) then
+              yield filename;
+          }
+        }
+      }
+      ent = readdir(dir);
+    }
+    closedir(dir);
+  } else {
+    extern proc perror(s: c_string);
+    perror("error in listdir(): ");
+  }
+}
+
 
 pragma "no doc"
 proc mkdir(out error: syserr, name: string, mode: int = 0o777,
@@ -911,10 +1120,97 @@ proc symlink(oldName: string, newName: string) {
    :return: The previous file creation mask
    :rtype: int
 */
-proc umask(mask: int): int {
+proc locale.umask(mask: int): int {
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
 
-  return chpl_fs_umask(mask.safeCast(mode_t));
+  var result: int;
+  on this {
+    var callRes = chpl_fs_umask(mask.safeCast(mode_t));
+    result = callRes.safeCast(int);
+  }
+  return result;
 }
+
+
+/* iter walkdirs(path: string=".", topdown=true, depth=max(int), 
+                 hidden=false, followlinks=false, sort=false): string
+  
+   walkdirs() recursively walks a directory structure, yielding
+   directory names.  The strings that are generated will be rooted
+   from 'path'.
+
+     * path: the directory to start from
+     * topdown: indicates whether to yield the directories using a
+       preorder (vs. postorder) traversal
+     * depth: indicates the maximal depth of recursion to use
+     * hidden: indicates whether to enter hidden directories
+     * followlinks: indicates whether to follow symbolic links or not
+     * sort: indicates whether to consider subdirectories in sorted
+       order or not
+  
+   by default, walkdirs() will start in the current directory, process
+   directories in preorder; recursively traverse subdirectories; and
+   neither follow dotfile directories nor symbolic links.  It will not
+   sort the directories by default.
+*/
+
+iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
+              followlinks=false, sort=false): string {
+
+  if (topdown) then
+    yield path;
+
+  if (depth) {
+    var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
+    if (sort) {
+      use Sort;
+      QuickSort(subdirs);
+    }
+
+    for subdir in subdirs {
+      const fullpath = path + "/" + subdir;
+      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
+                             followlinks, sort) do
+        yield subdir;
+    }
+  }
+
+  if (!topdown) then
+    yield path;
+}
+
+
+//
+// Here's a parallel version
+//
+pragma "no doc"
+iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
+              followlinks=false, sort=false, param tag: iterKind): string 
+       where tag == iterKind.standalone {
+
+  if (sort) then
+    warning("sorting has no effect for parallel invocations of walkdirs()");
+
+  if (topdown) then
+    yield path;
+
+  if (depth) {
+    var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
+    forall subdir in subdirs {
+      const fullpath = path + "/" + subdir;
+      //
+      // Call standalone walkdirs() iterator recursively; set sort=false since it is
+      // not useful and we've already printed the warning
+      //
+      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, followlinks, sort=false, iterKind.standalone) do
+        yield subdir;
+    }
+  }
+
+  if (!topdown) then
+    yield path;
+}
+
+
 
 }

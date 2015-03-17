@@ -1,4 +1,4 @@
-use Filerator;
+use FileSystem;
 
 for file in glob("*.goo") do
   writeln(file);
