@@ -217,6 +217,35 @@ proc runtest(param ndim : int, fn : string) {
   destroy_plan(fwd);
   destroy_plan(rev);
 
+
+  /* Real <-> complex in-place transform
+
+     This is similar to the previous case, except that we pass in a complex array, instead 
+     of a real array. This can get a little ugly, so we just reverse engineer the previous case.
+
+     Note that we reuse the rA2 and cB arrays, since they're the correct sizes.
+  */
+  fwd = plan_dft_r2c(D,cB,FFTW_ESTIMATE);
+  rev = plan_dft_c2r(D,cB,FFTW_ESTIMATE);
+  // Zero out rA2 to ensure that anything extraneous in the padding doesn't get passed in.
+  rA2 = 0.0;
+  rA2[D] = goodA.re;
+  cB.re = rA2[reD]; // Fill the complex array
+  cB.im = rA2[imD];
+  execute(fwd);
+  printcmp(cB.re,goodB[cD].re); // Check the real and complex parts separately.
+  printcmp(cB.im,goodB[cD].im);
+  execute(rev);
+  cB /= norm;
+  // Pull everything back out to the real array for simplicity
+  rA2 = 0.0;
+  rA2[reD] = cB.re;
+  rA2[imD] = cB.im;
+  printcmp(rA2[D],goodA.re);
+  destroy_plan(fwd);
+  destroy_plan(rev);
+
+
 }
 
 // A helper function that calls all the tests.
