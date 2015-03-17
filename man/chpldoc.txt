@@ -22,6 +22,9 @@ DESCRIPTION
 
   --save-sphinx <directory>  Save generated Sphinx project in directory.
 
+  --author <author>  Documentation author string. 'author' becomes the copyright
+                    and author in the output documentation.
+
   --comment-style <string>  Specify the opening comment character
                     sequence used to distinguish a documentation comment
                     from a normal one (defaults to '/*' if unspecified).
