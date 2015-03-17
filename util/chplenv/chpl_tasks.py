@@ -3,6 +3,7 @@ import sys, os
 
 import chpl_arch, chpl_platform, chpl_compiler
 from utils import memoize
+import utils
 
 @memoize
 def get():
@@ -11,7 +12,11 @@ def get():
         arch_val = chpl_arch.get('target', get_lcd=True)
         platform_val = chpl_platform.get()
         compiler_val = chpl_compiler.get('target')
-        if (arch_val == 'knc' or
+
+        # use muxed when on a cray-x* machine using the module
+        if platform_val.startswith('cray-x') and utils.using_chapel_module():
+            tasks_val = 'muxed'
+        elif (arch_val == 'knc' or
                 platform_val.startswith('cygwin') or
                 platform_val.startswith('netbsd') or
                 compiler_val == 'cray-prgenv-cray'):
