@@ -197,6 +197,10 @@ module FFTW {
   {
     param rank = input.rank: c_int;
 
+    //
+    // TODO: Need runtime size checks
+    //
+
     var dims: rank*c_int;
     for param i in 1..rank do
       dims(i) = input.domain.dim(i).size: c_int;
@@ -225,6 +229,10 @@ module FFTW {
   {
     param rank = realDom.rank: c_int;
 
+    //
+    // TODO: Need runtime size checks
+    //
+
     var dims: rank*c_int;
     for param i in 1..rank do
       dims(i) = realDom.dim(i).size: c_int;
@@ -250,6 +258,10 @@ module FFTW {
   {
     param rank = output.rank: c_int; // The dimensions are that of the real array
 
+    //
+    // TODO: Need runtime size checks
+    //
+
     var dims: rank*c_int;
     for param i in 1..rank do
       dims(i) = output.domain.dim(i).size: c_int;
@@ -274,6 +286,10 @@ module FFTW {
   proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan 
   {
     param rank = realDom.rank: c_int;
+
+    //
+    // TODO: Need runtime size checks
+    //
 
     var dims: rank*c_int;
     for param i in 1..rank do
