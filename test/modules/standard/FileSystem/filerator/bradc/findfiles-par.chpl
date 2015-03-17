@@ -1,4 +1,4 @@
-use Filerator, Sort;
+use FileSystem, Sort;
 
 config const startdir = "subdir";
 config const recur = true;
