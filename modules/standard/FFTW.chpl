@@ -77,6 +77,12 @@ module FFTW {
 
 
   /*
+    Disable execution-time array size checks in the FFTW
+    :proc:`plan_dft` routine.
+   */
+  config param noFFTWsizeChecks = false;
+
+  /*
     An opaque type used to store and reuse FFTW plans across multiple
     routines.
   */
@@ -100,7 +106,7 @@ module FFTW {
     :arg input: The input array, which can be of any rank
     :type input: [] `complex(128)`
 
-    :arg output: The output array, whose rank must match the input array's
+    :arg output: The output array, whose size and shape must match the input array's
     :type output: [] `complex(128)`
     
     :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
@@ -115,6 +121,11 @@ module FFTW {
                 flags: c_uint) : fftw_plan
   {
     param rank = input.rank;
+
+    if !noFFTWsizeChecks then
+      for i in 1..rank do
+        if (input.domain.dim(i).size != output.domain.dim(i).size) then
+          halt("In plan_dft(), input and output arrays don't have same size in dimension ", i);
 
     var dims: rank*c_int;
     for param i in 1..rank do
@@ -135,7 +146,7 @@ module FFTW {
     :arg input: The input array, which can be of any rank
     :type input: [] `real(64)`
 
-    :arg output: The output array, whose rank must match the input array's
+    :arg output: The output array, whose rank must match the input array's.  The leading dimension of this array should be n/2 + 1, where n is the corresponding dimension of the real aray.  See the `FFTW documentation <http://www.fftw.org/fftw2_doc/fftw_2.html#SEC6>`_ for more information.
     :type output: [] `complex(128)`
     
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
@@ -163,7 +174,7 @@ module FFTW {
     :arg realDom: Describes the indices of the 'real' view of the array
     :type realDom: `domain`
 
-    :arg arr: The array to be used as the in-place input/output array.
+    :arg arr: The array to be used as the in-place input/output array.  If passing in an array of `real` elements, the leading dimension of the array must be padded to store 2(n/2)+1 elements, where `n` is the number of elements in the corresponding dimension of `realDom`.  If passing in an array of `complex` elements, the leading dimension should be (n/2 + 1).  See the `FFTW documentation <http://www.fftw.org/fftw2_doc/fftw_2.html#SEC6>`_ for more information.
     :type arr: [] `T` where `T` is of type `real` or `complex`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
@@ -188,7 +199,7 @@ module FFTW {
     :arg input: The input array, which can be of any rank
     :type input: [] `complex(128)`
 
-    :arg output: The output array, whose rank must match the input array's
+    :arg output: The output array, whose rank must match the input array's.  The leading dimension of this array should be n/2 + 1, where n is the corresponding dimension of the real aray.  See the `FFTW documentation <http://www.fftw.org/fftw2_doc/fftw_2.html#SEC6>`_ for more information.
     :type output: [] `real(64)`
     
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
@@ -213,7 +224,7 @@ module FFTW {
     :arg realDom: Describes the indices of the 'real' view of the array
     :type realDom: `domain`
 
-    :arg arr: The array to be used as the in-place input/output array.
+    :arg arr: The array to be used as the in-place input/output array.  If passing in an array of `real` elements, the leading dimension of the array must be padded to store 2(n/2)+1 elements, where `n` is the number of elements in the corresponding dimension of `realDom`.  If passing in an array of `complex` elements, the leading dimension should be (n/2 + 1).  See the `FFTW documentation <http://www.fftw.org/fftw2_doc/fftw_2.html#SEC6>`_ for more information.
     :type arr: [] `T` where `T` is of type `real` or `complex`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
