@@ -1,1 +1,1 @@
-CHPL_LLVM!=none
+COMPOPTS <= --llvm
