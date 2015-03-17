@@ -24,3 +24,16 @@ about your environment for using Chapel:
   code using compilers by Cray, IBM, Intel, and PGI. Any standard C and
   C++ compiler should work, but the aforementioned are the ones we have
   the most experience with.  
+
+
+We have used the following commands to set up newly installed system images.
+Note that our test system works much better with tcsh installed and that users
+of Chapel won't need 'git'.:
+
+CentOS 6.5, 6.6, 7.0:
+sudo yum install git gcc gcc-c++ bc perl python tcsh bash
+
+Debigan 7.8, Ubuntu 12.04, 14.04, 14.10:
+sudo apt-get install git gcc g++ bc perl python tcsh bash
+
+
