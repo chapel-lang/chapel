@@ -36,13 +36,14 @@
  */
 module Help {
 
-  /* Print out a usage message for config variables. This function does not
-     exit. A typical use of this function would be to call it when "--help" or
-     "-h" are encountered when doing custom argument processing. In addition
-     to calling this function, programs with custom argument processing should
-     probably also print out a description of the arguments that they take.
-     Once both help messages have been output, the program would normally
-     exit early - for example, by returning from main.
+  /*
+     Print out a usage message for config variables. This function does not
+     exit. A typical use of this function would be to call it when ``"--help"``
+     or ``"-h"`` are encountered when doing custom argument processing. In
+     addition to calling this function, programs with custom argument
+     processing should probably also print out a description of the arguments
+     that they take.  Once both help messages have been output, the program
+     would normally exit early - for example, by returning from main.
 
      A typical example might be this program, that accumulates a list of
      filenames in addition to handling config variable arguments:
