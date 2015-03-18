@@ -27,7 +27,7 @@ The Chapel implementation is composed of two categories of code:
      vim              vim-based syntax coloring                    VIM
 
    third-party/
-     chpldoc-venv/    python packages supporting chpldoc
+     chpldoc-venv    python packages supporting chpldoc
        Sphinx         Python documentation generator               BSD
        sphinxcontrib-chapeldomain
                       The Chapel language domain for Sphinx        Apache v2.0
