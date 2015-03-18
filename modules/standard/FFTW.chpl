@@ -76,15 +76,15 @@
 //   these with bool/enum arguments representing the separate planning
 //   aspects that are overloaded into 'flags'?  This would also allow
 //   us to move away from c_ints (which could be done in other ways
-//   as well.
+//   as well, such as safe-casting and providing our own versions of
+//   the C variables).
 //
 // - It seems that rather than passing in a domain and an array for
-//   the in-place cases, we could probably pass in 
-//
-// - Related question about fftw_ types taking type c_int, though
-//   maybe we don't care that much (as compared to other interfaces)
-//   since symbolic values are taken in? (i.e., we won't run into
-//   32- vs. 64-bit issues...)
+//   the in-place cases, we could probably pass in an array slice
+//   where the array's allocating domain reflected the padding and
+//   the slicing domain reflected the area over which the FFT should
+//   be performed.  Would this be cleaner?  Would the overhead be
+//   significant?
 //
 
 module FFTW {
@@ -141,7 +141,7 @@ module FFTW {
       var error = false;
 
       for i in 1..input.rank do
-        error |= Private_FFTW.checkDimMatch(Din, Dout, i, "plan_dft()");
+        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft()");
 
       if error then
         halt("Incorrect array sizes in plan_dft()");
@@ -219,7 +219,7 @@ module FFTW {
       var error = false;
 
       for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMatch(Din, Dout, i, "plan_dft_r2c()");
+        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
 
       {
         const inputDim = input.domain.dim(rank).size/2+1;
@@ -264,8 +264,8 @@ module FFTW {
       var error = false;
 
       for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMatch(realDom, D, i, "plan_dft_r2c()",
-                                            inplace=true);
+        error |= Private_FFTW.checkDimMismatch(realDom, D, i, "plan_dft_r2c()",
+                                               inplace=true);
 
       if t == real {
         const arrDim = arr.domain.dim(rank).size;
@@ -324,7 +324,7 @@ module FFTW {
       var error = false;
 
       for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMatch(Din, Dout, i, "plan_dft_c2r()");
+        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
 
       {
         const inputDim = input.domain.dim(rank).size;
@@ -368,8 +368,8 @@ module FFTW {
       var error = false;
 
       for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMatch(realDom, D, i, "plan_dft_c2r()",
-                                            inplace=true);
+        error |= Private_FFTW.checkDimMismatch(realDom, D, i, "plan_dft_c2r()",
+                                               inplace=true);
 
       if t == real {
         const arrDim = arr.domain.dim(rank).size;
@@ -525,7 +525,7 @@ module FFTW {
     // the 'inplace' argument is used to customize the error message
     // for in-place and out-of-place cases.
     //
-    proc checkDimMatch(inDom, outDom, dim, fnname, inplace=false) {
+    proc checkDimMismatch(inDom, outDom, dim, fnname, inplace=false) {
       const inputDim = inDom.dim(dim).size;
       const outputDim = outDom.dim(dim).size;
       if (inputDim == outputDim) then
