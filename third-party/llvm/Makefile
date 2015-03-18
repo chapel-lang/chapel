@@ -32,10 +32,16 @@ clobber: FORCE
 $(LLVM_FILE):
 	if [ ! -d llvm ]; then ./unpack-llvm.sh; fi
 	mkdir -p $(LLVM_BUILD_DIR)
-	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' --prefix=$(LLVM_INSTALL_DIR) --enable-optimized --disable-clang-arcmt --disable-clang-static-analyzer --disable-clang-rewriter --disable-docs --enable-targets=host,x86,x86_64 $(CHPL_LLVM_DEBUG)
+	cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure CC='$(CC)' CXX='$(CXX)' \
+	--prefix=$(LLVM_INSTALL_DIR) \
+	--enable-optimized --disable-clang-arcmt --disable-clang-static-analyzer \
+	--disable-clang-rewriter --disable-docs \
+	--disable-zlib \
+	--enable-targets=host,x86,x86_64 $(CHPL_LLVM_DEBUG)
 	cd $(LLVM_BUILD_DIR) && $(MAKE)
 	cd $(LLVM_BUILD_DIR) && $(MAKE) install
 	cd $(LLVM_BUILD_DIR) && cd test && $(MAKE) lit.site.cfg
+	../../util/config/gather-clang-sysroot-arguments > $(LLVM_INSTALL_DIR)/configured-clang-sysroot-arguments
 
 llvm: $(LLVM_FILE)
 

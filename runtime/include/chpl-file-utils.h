@@ -48,6 +48,7 @@ qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag);
 qioerr chpl_fs_is_dir(int* ret, const char* name);
 qioerr chpl_fs_is_file(int* ret, const char* name);
 qioerr chpl_fs_is_link(int* ret, const char* name);
+qioerr chpl_fs_is_mount(int* ret, const char* name);
 
 // Creates a directory with the given name and settings if possible,
 // returning a qioerr if not.

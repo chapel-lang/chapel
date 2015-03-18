@@ -158,6 +158,95 @@ qioerr chpl_fs_is_link(int* ret, const char* name) {
   return 0;
 }
 
+qioerr chpl_fs_is_mount(int* ret, const char* name) {
+  qioerr err = 0;
+  struct stat nBuf, parentBuf;
+  int exitStatus = 0;
+  size_t nameLen = strlen(name);
+  char* parent = (char* ) chpl_mem_allocMany(nameLen + 4, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
+  char* safeNameCopy = (char* ) chpl_mem_allocMany(nameLen + 1, sizeof(char), CHPL_RT_MD_OS_LAYER_TMP_DATA, 0, 0);
+  strncpy(safeNameCopy, name, nameLen + 1);
+  // Need to copy name so that we can use it in the case of links
+
+  err = chpl_fs_is_link(&exitStatus, name);
+  if (err) {
+    // The stat call in is_link returned an error, which we would encounter too,
+    // so return immediately.
+    chpl_mem_free(parent, 0, 0);
+    chpl_mem_free(safeNameCopy, 0, 0);
+    return err;
+  } else if (exitStatus) {
+    // We are dealing with a link.  Using /.. will refer to the parent of the
+    // linked location, rather than the parent of the link itself.  We need to
+    // perform some string token action.
+
+    // Lydia note (03/17/2015): when the Path library is more fleshed out, this
+    // operation could be done in module code and this function would instead
+    // take the name of the parent and child instead of creating the parent name
+    // itself.
+
+    char* curTok = strtok(safeNameCopy, "/");
+    // should never be null.  The only string which would return null is "/",
+    // but that directory is not a link, so won't be here in the first place.
+    char* nextTok = strtok(NULL, "/");
+    // We need the next token to determine if the path is longer than a single
+    // link name.
+    if (nextTok != NULL) {
+      // name includes a path longer than just the current symlink.
+      // Thus, we should copy up to (but not including) the basename of the
+      // path.
+      strncpy(parent, curTok, strlen(curTok) + 1);
+      curTok = nextTok;
+      nextTok = strtok(NULL, "/");
+      while (nextTok != NULL) {
+        // While we haven't found the end of the path (in nextTok)
+        strncat(parent, "/", 1);
+        // Restore the lost path separator.
+        strncat(parent, curTok, strlen(curTok));
+        // Add the current token to the parent list
+        curTok = nextTok;
+        // And prepare to check if the next token is the last in the path
+        nextTok = strtok(NULL, "/");
+      }
+    } else {
+      // name was merely the current symlink rather than a longer path.
+      // That means its parent is "." or the current directory.
+      strncpy(parent, ".", 2);
+    }
+  } else {
+    // We are not referring to a link, so concatenating "/.." is fine.
+    strncpy(parent, name, nameLen + 1);
+    strncat(parent, "/..", 3);
+    // TODO: Using "/" is not necessarily portable, look into this
+  }
+
+  exitStatus = lstat(name, &nBuf);
+  if (exitStatus) {
+    err = qio_mkerror_errno();
+    chpl_mem_free(parent, 0, 0);
+    chpl_mem_free(safeNameCopy, 0, 0);
+    return err;
+  }
+  exitStatus = lstat(parent, &parentBuf);
+  if (exitStatus) {
+    err = qio_mkerror_errno();
+  } else {
+    if (nBuf.st_dev != parentBuf.st_dev) {
+      *ret = 1;
+    // Check if the st_dev matches that of its parent directory.
+    // If they don't match, it is a mount point.
+    } else {
+      err = chpl_fs_samefile_string(ret, name, parent);
+      // If the parent directory is the same as the current directory, we've
+      // reached the root.  If they don't, we know it isn't a mount point
+      // because we already know their st_dev matches.
+    }
+  }
+  chpl_mem_free(parent, 0, 0);
+  chpl_mem_free(safeNameCopy, 0, 0);
+  return err;
+}
+
 /* Creates a directory with the given name and settings if possible,
    returning a qioerr if not. If parents != 0, then the callee wishes
    to create all interim directories necessary as well. */
@@ -226,9 +315,8 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
 
 qioerr chpl_fs_realpath(const char* path, const char **shortened) {
   qioerr err = 0;
-  //shortened = NULL; // Don't want to get confused.
   *shortened = realpath(path, NULL);
-  if (shortened == NULL) {
+  if (*shortened == NULL) {
     // If an error occurred, shortened will be NULL.  Otherwise, it will
     // contain the cleaned up path.
     err = qio_mkerror_errno();

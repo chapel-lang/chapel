@@ -16,24 +16,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/* A file utilities library, specifically related to path operations
+
+   The Path module focuses on manipulation of the path to a file or directory.
+   Also provided are constant values representing common idioms that may vary
+   across operating systems (though rarely in the modern era), such as general
+   references to a parent directory or the current directory.
+
+   .. note::
+
+      This module is currently under development and will expand significantly
+      in upcoming releases.  Stay tuned!
+
+   Operations which occur on the files or directories referred to by these paths
+   may be found in :mod:`FileSystem` (for operations *on* the file) or :mod:`IO`
+   (for operations *within* the file).
+*/
+module Path {
+
 use Error;
 
-/* Returns the canonical path specified, eliminating symbolic links.  If an
-   error occurred, it will be returned via the out parameter.
-   err: a syserr used to indicate if an error occurred during this operation.
-   name: a string representing a valid path.
-*/
-proc realPath(out err: syserr, name: string): string {
+/* Represents generally the current directory */
+const curDir = ".";
+/* Represents generally the parent directory */
+const parentDir = "..";
+/* Denotes the separator between a directory and its child. */
+const pathSep = "/";
+
+pragma "no doc"
+proc realPath(out error: syserr, name: string): string {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string_copy): syserr;
 
   var res: c_string_copy;
-  err = chpl_fs_realpath(name.c_str(), res);
+  error = chpl_fs_realpath(name.c_str(), res);
   return toString(res);
 }
 
-/* Returns the canonical path specified, eliminating symbolic links.  May
-   halt with an error message.
-   name: a string representing a valid path.
+/* Given a path `name`, attempts to determine the canonical path referenced.
+   This resolves and removes any :data:`curDir` and :data:`parentDir` uses
+   present, as well as any symbolic links.  Returns the result
+
+   Will halt with an error message if one is detected.
+
+   :arg name: A path to resolve.  If the path does not refer to a valid file
+              or directory, an error will occur.
+   :type name: string
+
+   :return: A canonical version of the argument.
+   :rtype: string
 */
 proc realPath(name: string): string {
   var err: syserr = ENOERR;
@@ -42,12 +73,8 @@ proc realPath(name: string): string {
   return ret;
 }
 
-/* Returns the canonical path referred to by the file record, eliminating
-   symbolic links.  If an error occurred, it will be returned via the out
-   parameter.
-   err: a syserr used to indicate if an error occurred during this operation.
-*/
-proc file.realPath(out err: syserr): string {
+pragma "no doc"
+proc file.realPath(out error: syserr): string {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string_copy): syserr;
 
   var res: c_string_copy;
@@ -55,19 +82,30 @@ proc file.realPath(out err: syserr): string {
   if (is_c_nil(_file_internal)) {
     // This file is referencing a null file.  We'll get a segfault if we
     // continue.
-    err = EBADF;
+    error = EBADF;
     return "";
   }
-  err = chpl_fs_realpath_file(_file_internal, res);
+  error = chpl_fs_realpath_file(_file_internal, res);
   return toString(res);
 }
 
-/* Returns the canonical path referred to by the file record, eliminating
-   symbolic links.
+/* Determines the canonical path referenced by the :type:`~IO.file` record
+   performing this operation.  This resolves and removes any :data:`curDir` and
+   :data:`parentDir` uses present, as well as any symbolic links.  Returns the
+   result
+
+   Will halt with an error message if one is detected.
+
+   :return: A canonical path to the file referenced by this :type:`~IO.file`
+            record.  If the :type:`~IO.file` record is not valid, an error will
+            occur
+   :rtype: string
 */
 proc file.realPath(): string {
   var err: syserr = ENOERR;
   var ret = realPath(err);
   if err != ENOERR then ioerror(err, "in file.realPath");
   return ret;
+}
+
 }

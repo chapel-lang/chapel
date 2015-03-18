@@ -34,7 +34,7 @@ third_party_pkgs = os.listdir(third_party)
 #
 # Add any aliases
 #
-pkg_aliases = list()
+pkg_aliases = dict()
 for dir in third_party_pkgs:
     if dir == '.svn':
         continue
@@ -47,7 +47,7 @@ for dir in third_party_pkgs:
             if varvalue[0] == aliasvar:
                 aliases = varvalue[1].split()
                 for a in aliases:
-                    pkg_aliases.append(a)
+                    pkg_aliases[a] = dir
                 break
         f.close()
 
@@ -66,8 +66,8 @@ for l in chplenv.split('\n'):
         if not var.endswith('_PLATFORM'):
             if third_party_pkgs.count(val)==1:
                 pkgs += val+' '
-            elif pkg_aliases.count(val)==1:
-                pkgs += val+' '
+            elif val in pkg_aliases:
+                pkgs += pkg_aliases[val]+' '
 
 pkgs = pkgs.strip()
 # Filter dependencies into 2 list: compiler and runtime dependencies.

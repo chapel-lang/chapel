@@ -60,6 +60,23 @@ if ($tmpstatus != 0) then
     exit($tmpstatus)
 endif
 
+# Build chpldoc and run chpldoc-check.
+$mymake -j$num_procs chpldoc
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make chpldoc failed"
+    exit($tmpstatus)
+endif
+rehash   # required for csh only; if we convert this to bash, drop this
+
+$mymake check-chpldoc
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make check-chpldoc failed"
+    exit($tmpstatus)
+endif
+
+
 # Calculate expected version string from version_num.h.
 set major=`cat compiler/main/version_num.h | grep MAJOR_VERSION | cut -f3 -d' ' | sed 's/\"//g'`
 set minor=`cat compiler/main/version_num.h | grep MINOR_VERSION | cut -f3 -d' ' | sed 's/\"//g'`

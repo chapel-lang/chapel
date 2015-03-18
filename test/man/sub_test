@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
+CWD=$(cd $(dirname $0) ; pwd)
+
 if [ $# -lt 1 ]; then
     echo '[Error (sub_test): missing compiler argument]'
     exit -1
 fi
 
-$1 --no-devel -h | ./checkManPages
+$CWD/checkManPages $1
 if [ $? != 0 ]; then
-    echo '[Error matching man page with compiler environment]'
+    echo '[Error matching man page(s) with compiler environment]'
 else
-    echo '[Success matching man page with compiler environment]'
+    echo '[Success matching man page(s) with compiler environment]'
 fi

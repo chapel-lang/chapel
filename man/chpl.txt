@@ -306,30 +306,6 @@ OPTIONS
                     for example, they might be able to hoist a 'get' out of a
                     loop. See $CHPL_HOME/doc/technotes/README.llvm for details.
 
-  Documentation Options
-
-  --[no-]docs       Create [Don't create] documents based on comments
-                    preceding symbol declarations. See
-                    $CHPL_HOME/doc/technotes/README.chpldoc for more
-                    information.
-
-  --[no-]docs-alphabetical  [Don't] Alphabetize the documentation within
-                    each lexical scope rather than using the declaration
-                    order within the code.
-
-  --docs-comment-style <string>  Specify the opening comment character
-                    sequence used to distinguish a documentation comment
-                    from a normal one (defaults to '/*' if unspecified).
-
-  --docs-dir <dirname>  Specify the directory name into which documentation
-                    should be saved (defaults to 'docs' if unspecified).
-
-  --docs-text-only  Specify that documents should use a text output file
-                    format rather than HTML.
-
-  --docs-save-sphinx <directory>  Save generated Sphinx project in
-                                  directory.
-
   Compilation Trace Options
 
   --[no-]print-commands  Prints the system commands that the compiler 
