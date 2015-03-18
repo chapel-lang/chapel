@@ -59,6 +59,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/Curl.chpl \
+	standard/FFTW.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/HDFS.chpl \

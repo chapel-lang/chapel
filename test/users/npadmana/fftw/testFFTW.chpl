@@ -157,10 +157,11 @@ proc runtest(param ndim : int, fn : string) {
 
   /* Complex <-> complex in-place transform. 
 
-     This is the same calling sequence as above, with the input/output arrays the same.
+     This is the same calling sequence as above, but using the
+     in-place versions of the routine.
   */
-	fwd = plan_dft(A, A, FFTW_FORWARD, FFTW_ESTIMATE);
-	rev = plan_dft(A, A, FFTW_BACKWARD, FFTW_ESTIMATE);
+	fwd = plan_dft(A, FFTW_FORWARD, FFTW_ESTIMATE);
+	rev = plan_dft(A, FFTW_BACKWARD, FFTW_ESTIMATE);
 	// Test forward and reverse transform
 	A = goodA;
 	execute(fwd);
