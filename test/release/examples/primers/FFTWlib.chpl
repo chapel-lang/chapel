@@ -1,37 +1,57 @@
 /* 
-Example usage of the FFTW module in Chapel. This particular file demonstrates the single-threaded version of
-the code.
+
+Example usage of the FFTW module in Chapel. This particular file
+demonstrates the single-threaded version of the code.
 
 To compile this code :
+
    chpl testFFTW.chpl
+
 If FFTW is not on your include/library paths, you can do 
+
    chpl testFFTW.chpl -I$FFTW_DIR/include -L$FFTW_DIR/lib
+
 where $FFTW_DIR points to your FFTW installation.
 
-Note that you do not need to explicitly include the header or library files; the module uses an experimental
-feature of the Chapel compiler to automatically include these.
+Note that you do not need to explicitly include the header or library
+files; the module uses an experimental feature of the Chapel compiler
+to automatically include these.
 
-The FFTW module uses the FFTW3 API, and currently just implements the basic, double-precision interface.
-We will assume that the reader is familiar with using FFTW; more 
-details are at http://www.fftw.org. 
+The FFTW module uses the FFTW3 API, and currently just implements the
+basic, double-precision interface.  We will assume that the reader is
+familiar with using FFTW; more details are at http://www.fftw.org.
 
-The code computes a series of 1,2 and 3D transforms, exercising the complex <-> complex, and real<->complex
-transforms (both in and out of place). The output of the code should be a series of small numbers ( <= 10^-13);
-see testFFTW.good for example values (it is possible that your values might differ). 
+The code computes a series of 1,2 and 3D transforms, exercising the
+complex <-> complex, and real<->complex transforms (both in and out of
+place). The output of the code should be a series of small numbers (
+<= 10^-13); see testFFTW.good for example values (it is possible that
+your values might differ).
 
-The data for these tests is in arr{1,2,3}d.dat. The format of these files is documented below.
+The data for these tests is in arr{1,2,3}d.dat. The format of these
+files is documented below.
 */
+
 use FFTW;
 
-/* Utility function to print the maximum absolute deviation between values computed by this code, 
-   and "truth". The true values are computed using Mathematica v10 */
-proc printcmp(x, y) {
-  var err = max reduce abs(x-y);
-  writeln(err);
+// Do the tests and then cleanup.
+proc main() {
+  testAllDims();
+  cleanup();
 }
 
+// A helper function that calls all the tests.
+proc testAllDims() {
+  writeln("1D");
+  runtest(1, "arr1d.dat");
+  writeln("2D");
+  runtest(2, "arr2d.dat");
+  writeln("3D");
+  runtest(3, "arr3d.dat");
+}
+
+
 /* This is main test code, parametrized on the number of dimensions ndim. 
-  fn is the file that contains the test data.
+   fn is the file that contains the test data.
 */
 proc runtest(param ndim : int, fn : string) {
   var dims : ndim*int(32); 
@@ -249,18 +269,12 @@ proc runtest(param ndim : int, fn : string) {
 
 }
 
-// A helper function that calls all the tests.
-proc testAllDims() {
-  writeln("1D");
-  runtest(1, "arr1d.dat");
-  writeln("2D");
-  runtest(2, "arr2d.dat");
-  writeln("3D");
-  runtest(3, "arr3d.dat");
-}
 
-// Do the tests and then cleanup.
-proc main() {
-  testAllDims();
-  cleanup();
+/* Utility function to print the maximum absolute deviation between
+   values computed by this code, and "truth". The true values are
+   computed using Mathematica v10 */
+
+proc printcmp(x, y) {
+  var err = max reduce abs(x-y);
+  writeln(err);
 }
