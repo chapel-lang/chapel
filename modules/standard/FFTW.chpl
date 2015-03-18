@@ -223,16 +223,6 @@ module FFTW {
 
       error |= Private_FFTW.checkRealCplxDimMismatch(Din, Dout, "plan_dft_r2c()", "output ");
 
-      /*
-      {
-        const inputDim = input.domain.dim(rank).size/2+1;
-        const outputDim = output.domain.dim(rank).size;
-        if (inputDim != outputDim) {
-          writeln("Error: In plan_dft_r2c(), output array's leading dimension is not of the appropriate size (expected ", inputDim, ", got ", outputDim, ")");
-          error = true;
-        }
-      }
-      */
       if (error) then
         halt("Incorrect array sizes in plan_dft_r2c()");
     }
@@ -273,24 +263,8 @@ module FFTW {
 
       if t == real {
         error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, "plan_dft_r2c()");
-        /*
-        const arrDim = arr.domain.dim(rank).size;
-        const domDim = 2*(realDom.dim(rank).size/2+1);
-        if (arrDim != domDim) {
-          writeln("Error: In plan_dft_r2c(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
-          error = true;
-        }
-        */
       } else {
         error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, "plan_dft_r2c()");
-        /*
-        const arrDim = arr.domain.dim(rank).size;
-        const domDim = realDom.dim(rank).size/2+1;
-        if (arrDim != domDim) {
-          writeln("Error: In plan_dft_r2c(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
-          error = true;
-        }
-        */
       }
       if (error) then
         halt("Incorrect array sizes in plan_dft_r2c()");
@@ -338,16 +312,6 @@ module FFTW {
 
       error |= Private_FFTW.checkRealCplxDimMismatch(Dout, Din, "plan_dft_c2r()", "input ");
 
-      /*
-      {
-        const inputDim = input.domain.dim(rank).size;
-        const outputDim = output.domain.dim(rank).size/2+1;
-        if (inputDim != outputDim) {
-          writeln("Error: In plan_dft_c2r(), input array's leading dimension is not of the appropriate size (expected ", outputDim, ", got ", inputDim, ")");
-          error = true;
-        }
-      }
-      */
       if (error) then
         halt("Incorrect array sizes in plan_dft_c2r()");
     }
@@ -387,24 +351,8 @@ module FFTW {
 
       if t == real {
         error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, "plan_dft_c2r()");
-        /*
-        const arrDim = arr.domain.dim(rank).size;
-        const domDim = 2*(realDom.dim(rank).size/2+1);
-        if (arrDim != domDim) {
-          writeln("Error: In plan_dft_c2r(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
-          error = true;
-        }
-        */
       } else {
         error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, "plan_dft_c2r()");
-        /*
-        const arrDim = arr.domain.dim(rank).size;
-        const domDim = realDom.dim(rank).size/2+1;
-        if (arrDim != domDim) {
-          writeln("Error: In plan_dft_c2r(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
-          error = true;
-        }
-        */
       }
       if (error) then
         halt("Incorrect array sizes in plan_dft_c2r()");
