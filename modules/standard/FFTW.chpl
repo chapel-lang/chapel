@@ -511,10 +511,10 @@ module FFTW {
     // to customize the error message for the role of the complex
     // domain.
     //
-    proc checkRealCplxDimMismatch(Dreal, Dcomplex, fnname, cplxarrdesc="") {
-      const dim = Dreal.rank;
-      const realDim = Dreal.dim(dim).size/2+1;
-      const complexDim = Dcomplex.dim(dim).size;
+    proc checkRealCplxDimMismatch(realDom, complexDom, fnname, cplxarrdesc="") {
+      const dim = realDom.rank;
+      const realDim = realDom.dim(dim).size/2+1;
+      const complexDim = complexDom.dim(dim).size;
 
       if (realDim == complexDim) then
         return false;
@@ -531,10 +531,10 @@ module FFTW {
     // first describes the logical computation coordinates and the
     // second describes the domain describing the padded array allocation.
     //
-    proc checkRealInPlaceDimMismatch(Dreal, Darr, fnname) {
-      const dim = Dreal.rank;
-      const arrDim = Darr.dim(dim).size;
-      const domDim = 2*(Dreal.dim(dim).size/2+1);
+    proc checkRealInPlaceDimMismatch(logDom, physDom, fnname) {
+      const dim = logDom.rank;
+      const arrDim = physDom.dim(dim).size;
+      const domDim = 2*(logDom.dim(dim).size/2+1);
       if (arrDim == domDim) then
         return false;
 
