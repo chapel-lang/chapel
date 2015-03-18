@@ -17,18 +17,20 @@
  * limitations under the License.
  */
 
-/* This module provides for collecting and reporting statistics about
-   communication operations between network-connected locales.  The
-   operations include various kinds of remote reads (GETs), remote
-   writes (PUTs), and remote forks.  Callers can request on-the-fly
-   output each time a remote operation occurs, or aggregate counting of
-   the operations for later retrieval.  The former gives more detailed
+pragma "no use ChapelStandard"
+
+/* This module provides support for reporting and counting communication
+   operations between network-connected locales.  The operations include
+   various kinds of remote reads (GETs), remote writes (PUTs), and
+   remote forks.  Callers can request on-the-fly output each time a
+   remote operation occurs, or count such operations as they occur and
+   retrieve the counts later.  The former gives more detailed
    information but has much more overhead.  The latter has much less
    overhead but only provides aggregate information.
 
-   All forms of statistics collection are done between pairs of function
-   calls that turn it on and off.  On-the-fly reporting across all
-   locales is done like this::
+   All forms of communication reporting and counting are done between
+   pairs of function calls that turn it on and off.  On-the-fly
+   reporting across all locales is done like this::
 
      startVerboseComm();
      // between start/stop calls, report comm ops initiated on any locale
@@ -40,10 +42,16 @@
      // between start/stop calls, report comm ops initiated on this locale
      stopVerboseCommHere();
 
-   Aggregate statistics collection requires a few more calls.  One has
-   to retrieve the statistics after they are collected and, if they are
-   to be used again, reset the internal counters afterward.  Collecting
-   statistics across all locales is done like this::
+   In either case, the output produced consists of a line written to
+   ``stdout`` for each communication operation.  (Here ``stdout`` means
+   the file associated with the process, not the Chapel channel with the
+   same name.)
+
+   Counting communication operations requires a few more calls then just
+   reporting them does.  In particular, the counts have to be retrieved
+   after they are collected and, if they have been used previously, the
+   internal counters have to be reset before counting is turned on.
+   Counting across all locales is done like this::
 
      // (optional) if we counted previously, reset the counters to zero
      resetCommDiagnostics();
@@ -53,8 +61,8 @@
      // retrieve the counts and report the results
      writeln(getCommDiagnostics());
 
-   Collecting statistics on just the calling locale is much the same.
-   Only the procedure names change::
+   Counting on just the calling locale is similar.  Only the procedure
+   names change::
 
      // (optional) if we counted previously, reset the counters to zero
      resetCommDiagnosticsHere();
@@ -65,15 +73,15 @@
      writeln(getCommDiagnosticsHere());
 
    The optional call to reset the counters is only needed when a program
-   collects communication statistics more than once.  In this case, the
-   counters have to be set back to zero before starting the second and
-   succeeding collection periods.  By far the most common situation is
-   that programs only collect the communication counters once per run,
-   in which case this step is not needed.
+   collects counts more than once.  In this case, the counters have to
+   be set back to zero before starting the second and succeeding
+   counting periods.  By far the most common situation is that programs
+   only collect communication counts once per run, in which case this
+   step is not needed.
 
    Note that the same internal mechanisms and counters are used for
    counting on all locales and counting on just the calling locale, so
-   trying to do both at once may lead to surprising turn-of/turn-off
+   trying to do both at once may lead to surprising turn-on/turn-off
    behavior and/or incorrect results.
  */
 module CommDiagnostics
@@ -90,10 +98,10 @@ module CommDiagnostics
   // various counters.
 
   /* Aggregated communication operation counts.  This record type is
-     defined in the same way by both the runtime and this module,
-     because we don't have a good way to inherit types back and forth
-     between the two.  This first definition duplicates the one in the
-     runtime.
+     defined in the same way by both the underlying comm layer(s) and
+     this module, because we don't have a good way to inherit types back
+     and forth between the two.  This first definition duplicates the
+     one in the comm layer(s).
    */
   extern record chpl_commDiagnostics {
     /*
@@ -140,7 +148,7 @@ module CommDiagnostics
   };
 
   /*
-    The Chapel record type inherits the runtime's definition of it.
+    The Chapel record type inherits the comm layer definition of it.
    */
   type commDiagnostics = chpl_commDiagnostics;
 
@@ -175,28 +183,22 @@ module CommDiagnostics
   extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
 
   /*
-    Start real-time reporting of communication initiated on any locale.
-    The output consists of a line written to ``stdout`` for each
-    communication operation.  (Here ``stdout`` means the file associated
-    with the process, not the Chapel channel with the same name.)
+    Start on-the-fly reporting of communication initiated on any locale.
    */
   proc startVerboseComm() { chpl_startVerboseComm(); }
 
   /*
-    Stop real-time reporting of communication initiated on any locale.
+    Stop on-the-fly reporting of communication initiated on any locale.
    */
   proc stopVerboseComm() { chpl_stopVerboseComm(); }
 
   /*
-    Start real-time reporting of communication initiated on this locale.
-    The output consists of a line written to ``stdout`` for each
-    communication operation.  (Here ``stdout`` means the file associated
-    with the process, not the Chapel channel with the same name.)
+    Start on-the-fly reporting of communication initiated on this locale.
    */
   proc startVerboseCommHere() { chpl_startVerboseCommHere(); }
 
   /*
-    Stop real-time reporting of communication initiated on this locale.
+    Stop on-the-fly reporting of communication initiated on this locale.
    */
   proc stopVerboseCommHere() { chpl_stopVerboseCommHere(); }
 
@@ -215,14 +217,14 @@ module CommDiagnostics
   }
 
   /*
-    Start counting communication operations initiated on the calling locale.
+    Start counting communication operations initiated on this locale.
    */
   proc startCommDiagnosticsHere() {
     chpl_gen_startCommDiagnosticsHere();
   }
 
   /*
-    Stop counting communication operations initiated on the calling locale.
+    Stop counting communication operations initiated on this locale.
    */
   proc stopCommDiagnosticsHere() {
     chpl_gen_stopCommDiagnosticsHere();
@@ -301,7 +303,7 @@ module CommDiagnostics
   /*
     Retrieve aggregate communication counts for this locale.
 
-    :returns: counts of comm ops initiated on the calling locale
+    :returns: counts of comm ops initiated on this locale
     :rtype: `commDiagnostics`
    */
   proc getCommDiagnosticsHere() {
