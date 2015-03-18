@@ -16,8 +16,7 @@ def get():
         # use muxed on cray-x* machines using the module and supported compiler
         if (platform_val.startswith('cray-x') and
                 utils.using_chapel_module() and
-                compiler_val in ('cray-prgenv-gnu', 'cray-prgenv-intel') and
-                arch_val != 'knc'):
+                compiler_val in ('cray-prgenv-gnu', 'cray-prgenv-intel')):
             tasks_val = 'muxed'
         elif (arch_val == 'knc' or
                 platform_val.startswith('cygwin') or
