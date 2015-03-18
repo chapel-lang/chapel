@@ -755,9 +755,13 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
   //
   Symbol* ret = iteratorFn->getReturnSymbol();
   Map<BlockStmt*,Symbol*> retReplacementMap;
+  // Walk all SymExprs in the function and select those that refer to ret (the
+  // function return symbol).
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast)) {
       if (se->var == ret) {
+
+        // Find the nearest enclosing block.
         BlockStmt* block = NULL;
         for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
           block = toBlockStmt(parent);
@@ -765,16 +769,37 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
             break;
         }
         INT_ASSERT(block);
+
+        // If the enclosing block is different from (and presumably smaller
+        // than) the scope in which the RVV is declared, replace it with a
+        // localized variable.
         if (block != ret->defPoint->parentExpr) {
+          // Use a cached symbol if there is one.
           if (Symbol* repl = retReplacementMap.get(block)) {
             se->var = repl;
-          } else {
+          }
+          // Otherwise, create a new return symbol and insert it at the head of
+          // the enclosing block.  See Note #1 regarding memory management.
+          else {
             SET_LINENO(se);
             Symbol* newRet = newTemp("newRet", ret->type);
             newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
             block->insertAtHead(new DefExpr(newRet));
             se->var = newRet;
             retReplacementMap.put(block, newRet);
+          }
+
+          // If the se is the target of an assignment, then remove the
+          // assignment call and replace it with a MOVE.
+          // This does not handle the case where the LHS is already a
+          // reference; is that needed?
+          CallExpr* call = toCallExpr(se->parentExpr);
+          if (call && call->isResolved() &&
+              !strcmp(call->isResolved()->name, "="))
+          {
+            SET_LINENO(call);
+            Expr* rhs = call->get(2);
+            call->replace(new CallExpr(PRIM_MOVE, se->copy(), rhs->copy()));
           }
         }
       }
@@ -2297,3 +2322,24 @@ void lowerIterators() {
   cleanupTemporaryVectors();
 }
 
+//////////////////////////////////////////////////////////////////////////
+// NOTES
+//
+// Note #1: In iterators where the return value type is declared, there will be
+// an initializer (constructor) call.  Corresponding updates of the RVV use
+// assignment (rather than a simple MOVE primitive).  Therefore, yields and
+// returns rely on the variable having been initialized.
+// localizeIteratorReturnSymbols() breaks this assumption because the
+// initialization is not copied when the local return symbol is created.   As
+// a result, we have to then look for places where the RVV is updated by
+// assignment and the original RVV is replaced by a new one.  We then bridge
+// out the assignment and insert a MOVE instead.
+// Note that the assignment is still required in the implementation of return
+// value inference.  It is inserted in normalize.cpp, but is no longer needed
+// after the resolution pass.
+// Localization of iterator yields was added 2013/08/11 by vass <8d3b2c4>.
+// Justification was that using a common return symbol added overhead
+// (including communication in some cases) and reduced optimization opportunities.
+// Note for future direction that eliminating the RVV and having yields and
+// returns call constructors to create the return value accomplishes the same
+// goal.

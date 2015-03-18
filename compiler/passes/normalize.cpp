@@ -541,11 +541,16 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
   {
+    // This is the case for a declared return type.
     ret->insertBefore(new CallExpr("=", retval, ret_expr));
     // Using assignment creates a new copy, which transfers ownership of *a*
     // copy to the return value variable.
     // Contrast this with a move, which merely shares ownership between the
     // bitwise copies of the object.
+
+    // We want to move toward an implementation that uses initialization for
+    // both yields and returns.  In that case, we have to extract the type of
+    // the return value variable without executing anything.
 #ifndef HILDE_MM
     retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
 #endif
