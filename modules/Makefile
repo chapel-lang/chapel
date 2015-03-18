@@ -71,6 +71,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Regexp.chpl \
+	standard/Search.chpl \
 	standard/Sort.chpl \
 	standard/Sys.chpl \
 	$(SYS_CTYPES_MODULE_DOC)

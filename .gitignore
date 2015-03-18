@@ -263,6 +263,8 @@ tags
 /test/modules/standard/FileSystem/lydia/isLink/my_file
 /test/modules/standard/FileSystem/lydia/isLink/my_link_dir
 /test/modules/standard/FileSystem/lydia/isLink/my_link_file
+/test/modules/standard/FileSystem/lydia/isMount/symlinkToRoot
+/test/modules/standard/FileSystem/lydia/isMount/notAMonkey/symlinkToRoot
 /test/modules/standard/FileSystem/lydia/symlink/bar.txt
 /test/modules/standard/Path/lydia/realpath/blahblahblah.txt
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
