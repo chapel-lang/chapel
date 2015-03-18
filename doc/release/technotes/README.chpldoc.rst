@@ -211,6 +211,9 @@ for more detail.
 * `Sphinx reST Primer`_
 * `Python reST Primer`_
 
+This primer is based on the information and text in the Sphinx and Python reST
+primers (some of the text is copied verbatim).
+
 The authoritative `reStructuredText User Guide`_ is also helpful.
 
 .. _Sphinx reST Primer: http://sphinx-doc.org/rest.html
