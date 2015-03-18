@@ -222,7 +222,7 @@ module FFTW {
         error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
 
       error |= Private_FFTW.checkRealCplxDimMismatch(Din, Dout, rank, "plan_dft_r2c()", 
-                                                     "output");
+                                                     "output ");
 
       /*
       {
@@ -273,12 +273,15 @@ module FFTW {
                                                inplace=true);
 
       if t == real {
+        error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, rank, "plan_dft_r2c()");
+        /*
         const arrDim = arr.domain.dim(rank).size;
         const domDim = 2*(realDom.dim(rank).size/2+1);
         if (arrDim != domDim) {
           writeln("Error: In plan_dft_r2c(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
           error = true;
         }
+        */
       } else {
         error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, rank, "plan_dft_r2c()");
         /*
@@ -335,7 +338,7 @@ module FFTW {
         error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
 
       error |= Private_FFTW.checkRealCplxDimMismatch(Dout, Din, rank, "plan_dft_c2r()",
-                                                     "input");
+                                                     "input ");
 
       /*
       {
@@ -385,12 +388,15 @@ module FFTW {
                                                inplace=true);
 
       if t == real {
+        error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, rank, "plan_dft_c2r()");
+        /*
         const arrDim = arr.domain.dim(rank).size;
         const domDim = 2*(realDom.dim(rank).size/2+1);
         if (arrDim != domDim) {
           writeln("Error: In plan_dft_c2r(), the array's leading dimension is not of the expected size (expected ", domDim, ", got ", arrDim, ")");
           error = true;
         }
+        */
       } else {
         error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, rank, "plan_dft_c2r()");
         /*
@@ -536,10 +542,11 @@ module FFTW {
   pragma "no doc"
   module Private_FFTW {
     //
-    // Check that two domain dimensions match, print an error if they
-    // don't, and return whether or not an error occurred.  Note that
-    // the 'inplace' argument is used to customize the error message
-    // for in-place and out-of-place cases.
+    // Check for a mismatch in size between two domain dimensions,
+    // print an error if they don't, and return whether or not a
+    // mismatch occurred.  Note that the 'inplace' argument is used to
+    // customize the error message for in-place and out-of-place
+    // cases.
     //
     proc checkDimMismatch(inDom, outDom, dim, fnname, inplace=false) {
       const inputDim = inDom.dim(dim).size;
@@ -558,6 +565,13 @@ module FFTW {
       return true;
     }
 
+    //
+    // Check for a mismatch in the proper size relationship between
+    // two domain dimensions where the first describes a real array
+    // and the second a complex array.  The 'cplxarrdesc' is used
+    // to customize the error message for the role of the complex
+    // domain.
+    //
     proc checkRealCplxDimMismatch(Dreal, Dcomplex, dim, fnname, cplxarrdesc="") {
       const realDim = Dreal.dim(dim).size/2+1;
       const complexDim = Dcomplex.dim(dim).size;
@@ -566,8 +580,20 @@ module FFTW {
         return false;
 
       writeln("Error: In ", fnname, ", the ", cplxarrdesc, 
-              " array's leading dimension is not the proper size (expected ", realDim, 
+              "array's leading dimension is not the proper size (expected ", realDim, 
               ", got ", complexDim, ")");
+      return true;
+    }
+
+    proc checkRealInPlaceDimMismatch(Dreal, Darr, dim, fnname) {
+      const arrDim = Darr.dim(dim).size;
+      const domDim = 2*(Dreal.dim(dim).size/2+1);
+      if (arrDim == domDim) then
+        return false;
+
+      writeln("Error: In ", fnname, 
+              ", the array's leading dimension is not the proper size (expected ", domDim, 
+              ", got ", arrDim, ")");
       return true;
     }
   }
