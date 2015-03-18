@@ -34,6 +34,8 @@ public:
 
   virtual bool   enterAggrType    (AggregateType*     node);
   virtual void   exitAggrType     (AggregateType*     node);
+  virtual bool   enterEnumType    (EnumType*          node);
+  virtual void   visitPrimType    (PrimitiveType*     node);
 
   virtual bool   enterFnSym       (FnSymbol*          node);
   virtual bool   enterModSym      (ModuleSymbol*      node);

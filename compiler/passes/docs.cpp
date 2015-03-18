@@ -84,8 +84,9 @@ void docs(void) {
     }
 
     // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
-    mkdir(docsRstDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
-    mkdir(docsOutputDir.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
+    mkdir(docsRstDir.c_str(), dirPerms);
+    mkdir(docsOutputDir.c_str(), dirPerms);
 
 
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
@@ -267,25 +268,30 @@ std::string generateSphinxProject(std::string dirpath) {
   return std::string(moddir);
 }
 
+
 /*
  * Invoke sphinx-build using sphinxDir to find conf.py and rst sources, and
  * outputDir for generated html files.
  */
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
-  // The virtualenv active and sphinx-build scripts are in:
-  //   $CHPL_HOME/third-party/chpldoc-venv/install/$CHPL_TARGET_PLATFORM/chpldoc-virtualenv/bin/
-  const char * venvBinDir = astr(
+  // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
+  // based on the install path in the third-party/chpldoc-venv/ dir.
+
+  const char * venvDir = astr(
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
-    CHPL_TARGET_PLATFORM, "/chpdoc-virtualenv/bin/");
-  const char * activate = astr(venvBinDir, "activate");
-  const char * sphinxBuild = astr(venvBinDir, "sphinx-build");
+    CHPL_TARGET_PLATFORM, "/chpldoc-virtualenv");
+  const char * venvBinDir = astr(venvDir, "/bin");
+  const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
+
+  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && ",
+                              "export VIRTUAL_ENV=", venvDir);
 
   // Run:
-  //   . $activate &&
+  //   $envVars &&
   //     sphinx-build -b html
   //     -d $sphinxDir/build/doctrees -W
   //     $sphinxDir/source $outputDir
-  const char * cmdPrefix = astr(". ", activate, " && ");
+  const char * cmdPrefix = astr(envVars, " && ");
   const char * cmd = astr(
     cmdPrefix,
     sphinxBuild, " -b html -d ",

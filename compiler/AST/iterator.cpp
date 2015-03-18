@@ -106,7 +106,7 @@ removeRetSymbolAndUses(FnSymbol* fn) {
 //
 // I believe these conditions can be relaxed.
 //
-static CallExpr*
+CallExpr*
 isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
   if (fNoOptimizeLoopIterators)
     return NULL;
@@ -191,23 +191,10 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
   }
 
   if (singleFor && singleYield) {
-    if (fReportOptimizedLoopIterators) {
-      ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
-
-      INT_ASSERT(mod);
-
-      if (developer ||
-          ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
-        printf("Optimized single yield/loop iterator (%s) in module %s (%s:%d)\n",
-               fn->cname,
-               mod->name,
-               fn->fname(),
-               fn->linenum());
-      }
-    }
     return singleYield;
-  } else
-      return NULL;
+  } else {
+    return NULL;
+  }
 }
 
 //  se -- A sym expression which accesses a live local variable.
@@ -662,6 +649,8 @@ buildAdvance(FnSymbol* fn,
       } else if (call->isPrimitive(PRIM_RETURN)) {
         INT_ASSERT(false); // should have been removed with removeRetSymbolAndUses()
       }
+    } else if (LoopStmt* loop = toLoopStmt(ast)) {
+      loop->orderIndependentSet(false);
     }
   }
 
@@ -900,8 +889,8 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms, FnSymbol* fn,
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
 
       Vec<SymExpr*>* defs = defMap.get(sym);
-      if (defs->n != 1) {
-        INT_FATAL(sym, "invalid assumption about reference");
+      if (defs == NULL || defs->n != 1) {
+        INT_FATAL(sym, "Expected sym to have exactly one definition");
       }
 
       // Do we need to consider PRIM_ASSIGN as well?
@@ -1294,6 +1283,16 @@ void lowerIterator(FnSymbol* fn) {
     // even if --no-inline-iterators is specified?
     // Isn't that bad?
     if (singleLoop) {
+      if (fReportOptimizedLoopIterators) {
+        ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
+        INT_ASSERT(mod);
+
+        if (developer || mod->modTag == MOD_USER) {
+          printf("Optimized single yield/loop iterator (%s) in module %s (%s:%d)\n",
+                 fn->cname, mod->name, fn->fname(), fn->linenum());
+        }
+      }
+
       buildZip1(ii, asts, singleLoop);
       buildZip2(ii, asts, singleLoop);
       buildZip3(ii, asts, singleLoop);

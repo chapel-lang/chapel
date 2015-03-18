@@ -1,0 +1,11 @@
+Module: complexes
+   Record: Foo
+      var aComplex: complex = 1.0 + 2.0i
+      const bar = 0.0 + 1.0i
+      param baz: complex
+      var anComplex2: complex = 1.0 + 2.0i
+         This one has a comment 
+      const bar2 = 0.0 + 1.0i
+         So does this one 
+      param baz2: complex
+         And this one 

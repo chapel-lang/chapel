@@ -120,6 +120,8 @@ OPTIONS
                     currently a rather conservative pass in the sense that 
                     it may not identify all code that is truly invariant.
 
+  --[no-]ignore-local-classes   Disable [enable] local classes
+
   --[no-]inline     Enable [disable] function inlining.
 
   --[no-]inline-iterators   Enable [disable] iterator inlining. When
@@ -134,6 +136,11 @@ OPTIONS
   --[no-]optimize-loop-iterators   Enable [disable] optimizations to
                     aggressively optimize iterators that are defined in terms
                     of a single loop. By default this is enabled.
+
+  --[no-]vectorize                Enable [disable] generating vectorization
+                    hints for target compiler. If enabled, hints will always be
+                    generated, but the effects will vary based on the target
+                    compiler.
 
   --[no-]optimize-on-clauses   Enable [disable] optimization of on
                                clauses in which qualifying on
@@ -198,7 +205,7 @@ OPTIONS
   --[no-]stack-checks   Enable [disable] run-time checking for stack
                     overflow.
 
-  --[no-]cast-checks   Enable [disable] run-time checks in safe_cast calls for
+  --[no-]cast-checks   Enable [disable] run-time checks in safeCast calls for
                     casts that wouldn't preserve the logical value being cast.
 
   C Code Generation Options
@@ -298,30 +305,6 @@ OPTIONS
                     existing LLVM optimizations to work with wide pointers -
                     for example, they might be able to hoist a 'get' out of a
                     loop. See $CHPL_HOME/doc/technotes/README.llvm for details.
-
-  Documentation Options
-
-  --[no-]docs       Create [Don't create] documents based on comments
-                    preceding symbol declarations. See
-                    $CHPL_HOME/doc/technotes/README.chpldoc for more
-                    information.
-
-  --[no-]docs-alphabetical  [Don't] Alphabetize the documentation within
-                    each lexical scope rather than using the declaration
-                    order within the code.
-
-  --docs-comment-style <string>  Specify the opening comment character
-                    sequence used to distinguish a documentation comment
-                    from a normal one (defaults to '/*' if unspecified).
-
-  --docs-dir <dirname>  Specify the directory name into which documentation
-                    should be saved (defaults to 'docs' if unspecified).
-
-  --docs-text-only  Specify that documents should use a text output file
-                    format rather than HTML.
-
-  --docs-save-sphinx <directory>  Save generated Sphinx project in
-                                  directory.
 
   Compilation Trace Options
 

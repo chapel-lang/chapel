@@ -12,6 +12,18 @@ module Foo {
 
   config var blah4: int; // Should be printed, but without comment
 
+  /* This type should not be doc'd. */
+  pragma "no doc"
+  type myint = int(64);
+
+  /* This external type should not be doc'd. */
+  pragma "no doc"
+  extern type exT = 2*real(64);
+
+  /* This opaque external type should not be doc'd. */
+  pragma "no doc"
+  extern type MyExT;
+
   pragma "no doc"
   proc a () {  }
 
@@ -63,6 +75,14 @@ module Foo {
 
     var showMe: bool;
     // This is the only field that should be printed
+  }
+
+  /* This is an undocumented module. */
+  pragma "no doc"
+  module invisible {
+
+    /* This class is undocumented, since its module is undocumented. */
+    class MyC {}
   }
 }
 

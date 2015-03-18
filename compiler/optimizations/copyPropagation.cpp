@@ -1220,7 +1220,12 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         }
         if (!stillAlive) {
           var->defPoint->remove();
-          defMap.get(var)->v[0]->getStmtExpr()->remove();
+          Vec<SymExpr*>* defs = defMap.get(var);
+          if (defs == NULL) {
+            INT_FATAL(var, "Expected var to be defined");
+          }
+          // Remove the first definition from the AST.
+          defs->v[0]->getStmtExpr()->remove();
         }
       } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
                  rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {

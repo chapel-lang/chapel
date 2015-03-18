@@ -559,6 +559,13 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
     checkAgain = true;
     castCall = new CallExpr(PRIM_DEREF, prevActual);
 
+    if (SymExpr* prevSE = toSymExpr(prevActual))
+      if (prevSE->var->hasFlag(FLAG_REF_TO_CONST)) {
+        castTemp->addFlag(FLAG_CONST);
+        if (prevSE->var->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
+          castTemp->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
+      }
+
   } else {
     // There was code to handle the case when the flag *is* present.
     // I deleted that code. The assert ensures it wouldn't apply anyway.

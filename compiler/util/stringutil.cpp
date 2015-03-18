@@ -191,7 +191,7 @@ uint64_t hexStr2uint64(const char* str) {
     INT_FATAL("Illegal string passed to hexStrToUint64()");
   }
   uint64_t val;
-  int numitems = sscanf(str+2, "%"SCNx64, &val);
+  int numitems = sscanf(str+2, "%" SCNx64, &val);
   if (numitems != 1) {
     INT_FATAL("Illegal string passed to hexStrToUint64");
   }

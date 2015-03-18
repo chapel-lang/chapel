@@ -30,7 +30,6 @@
 #include "IpeVars.h"
 #include "ipeResolve.h"
 #include "ipeEvaluate.h"
-#include "log.h"
 #include "parser.h"
 #include "passes.h"
 #include "stmt.h"
@@ -40,8 +39,9 @@
 
 PrimitiveType* gIpeTypeModule      = NULL;
 PrimitiveType* gIpeTypeProcedure   = NULL;
-IpeVars*       gGlobalVars         = NULL;
-IpeScope*      gGlobalScope        = NULL;
+
+IpeScope*      gRootScope          = NULL;
+IpeVars*       gRootVars           = NULL;
 
 int            gDebugLevelResolve  =    0;
 int            gDebugLevelEvaluate =    0;
@@ -87,37 +87,24 @@ void ipeRootInit()
 
 static PrimitiveType* createType(const char* name);
 
-static IpeModule*     initializeRoot(IpeVars* rootVars);
-static void           initializeChapelStandard(IpeVars* rootVars);
-static IpeModule*     initializeRepl(IpeVars* rootVars);
-
+static IpeModule*     initializeRoot();
 static ModuleSymbol*  createRootModule();
-static ModuleSymbol*  createReplModule();
-static CallExpr*      createUseChapelStandard();
 
+static void           loadInternalFile(const char* modName,
+                                       IpeScope*   scope,
+                                       IpeVars*    vars);
+
+static IpeModule*     moduleByName(const char* modName, IpeVars* rootVars);
 static void           readEvalPrintLoop(IpeScope* scope, IpeVars* rootVars);
 
 void ipeRun()
 {
   astlocMarker    markAstLoc(0, "<repl>");
 
-  IpeVars*        rootVars   = IpeVars::rootAllocate(1024 * sizeof(IpeValue));
-
   IpeModule*      rootModule = NULL;
-  IpeScopeModule* rootScope  = NULL;
 
   IpeModule*      replModule = NULL;
   IpeScopeModule* replScope  = NULL;
-
-  //
-  // Parse the internal modules
-  //
-  setupLogfiles();
-
-  parse();
-  AstDumpToNode::view("parse", 1);
-
-  teardownLogfiles();
 
   //
   // Initialize the REPL
@@ -126,28 +113,71 @@ void ipeRun()
   gIpeTypeModule    = createType("module");
   gIpeTypeProcedure = createType("procedure");
 
-  rootModule        = initializeRoot(rootVars);
-  rootScope         = rootModule->scope();
-  gGlobalScope      = rootScope;
+  gRootVars         = IpeVars::rootAllocate(1024 * sizeof(IpeValue));
 
-  initializeChapelStandard(rootVars);
+  rootModule        = initializeRoot();
+  gRootScope        = rootModule->scope();
 
-  replModule        = initializeRepl(rootVars);
+#if 0
+  printf("After initializeRoot\n");
+  printf("\n\n");
+  gRootScope->describe(3);
+  printf("\n\n");
+
+  IpeVars::describe(gRootVars, 3);
+  printf("\n\n");
+  printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+#endif
+
+  loadInternalFile("ChapelBase",     gRootScope, gRootVars);
+  loadInternalFile("ChapelStandard", gRootScope, gRootVars);
+  loadInternalFile("ChapelRepl",     gRootScope, gRootVars);
+
+#if 0
+  printf("\n\n");
+  gRootScope->describe(3);
+  printf("\n\n");
+
+  IpeVars::describe(gRootVars, 3);
+  printf("\n\n");
+
+  moduleByName("ChapelRoot",     gRootVars)->describe(3);
+  printf("\n\n");
+
+  moduleByName("ChapelBase",     gRootVars)->describe(3);
+  printf("\n\n");
+
+  moduleByName("ChapelStandard", gRootVars)->describe(3);
+  printf("\n\n");
+
+  moduleByName("ChapelRepl",     gRootVars)->describe(3);
+  printf("\n\n");
+#endif
+
+  replModule        = moduleByName("ChapelRepl", gRootVars);
   replScope         = replModule->scope();
 
 #if 0
   printf("\n\n");
-  rootScope->describe(3);
+  gRootScope->describe(3);
+  printf("\n\n");
+
+  replModule->describe(3);
   printf("\n\n\n\n");
+
+  IpeVars::describe(gRootVars, 3);
+  printf("\n\n");
 #endif
 
-  readEvalPrintLoop(replScope, rootVars);
+  readEvalPrintLoop(replScope, gRootVars);
 
+#if 0
   if (replModule != NULL)
     delete replModule;
 
   if (rootModule != NULL)
     delete rootModule;
+#endif
 
 #if 0
   // NOAKES 2015/02/23 These will seg-fault for some reason
@@ -169,21 +199,21 @@ static PrimitiveType* createType(const char* name)
   return pt;
 }
 
-static IpeModule* initializeRoot(IpeVars* rootVars)
+static IpeModule* initializeRoot()
 {
   ModuleSymbol*   modSym    = createRootModule();
   IpeModule*      rootMod   = new IpeModule(modSym);
-  IpeScopeModule* rootScope = rootMod->scope(); // new IpeScopeModule(rootMod);
+  IpeScopeModule* rootScope = rootMod->scope();
   VarSymbol*      var       = NULL;
 
-  IpeValue        modValue;
+  IpeValue        modValue(rootMod);
 
   for (int i = 1; i <= sRootModuleIndex; i++)
   {
     if (DefExpr* defExpr = toDefExpr(rootModule->block->body.get(i)))
     {
-      ipeResolve (defExpr, rootScope, rootVars);
-      ipeEvaluate(defExpr,            rootVars);
+      ipeResolve (defExpr, rootScope, gRootVars);
+      ipeEvaluate(defExpr,            gRootVars);
     }
   }
 
@@ -191,45 +221,14 @@ static IpeModule* initializeRoot(IpeVars* rootVars)
 
   var->addFlag(FLAG_PARAM);
 
-  modValue.modulePtr = rootMod;
-
-  rootScope->extend(var, modValue, rootVars);
+  rootScope->extend(var, modValue, gRootVars);
 
   return rootMod;
 }
 
-static void initializeChapelStandard(IpeVars* rootVars)
-{
-  CallExpr* use = createUseChapelStandard();
-
-  ipeResolve (use, gGlobalScope, rootVars);
-  ipeEvaluate(use,               rootVars);
-}
-
-static IpeModule* initializeRepl(IpeVars* rootVars)
-{
-  ModuleSymbol*  mod     = createReplModule();
-  DefExpr*       def     = new DefExpr(mod);
-  VarSymbol*     varSym  = 0;
-  VisibleSymbols symbols;
-
-  ipeResolve (def, gGlobalScope, rootVars);
-  ipeEvaluate(def,               rootVars);
-
-  symbols = gGlobalScope->visibleSymbols(mod->name);
-
-  INT_ASSERT(symbols.count() == 1);
-
-  varSym  = toVarSymbol(symbols.symbol(0));
-
-  INT_ASSERT(varSym);
-
-  return IpeVars::fetch(varSym, rootVars).modulePtr;
-}
-
 static ModuleSymbol* createRootModule()
 {
-  ModuleSymbol* retval = new ModuleSymbol("ChplRoot",
+  ModuleSymbol* retval = new ModuleSymbol("ChapelRoot",
                                           MOD_INTERNAL,
                                           new BlockStmt());
 
@@ -238,23 +237,36 @@ static ModuleSymbol* createRootModule()
   return retval;
 }
 
-static ModuleSymbol* createReplModule()
+static IpeModule* moduleByName(const char* modName, IpeVars* rootVars)
 {
-  CallExpr*     use    = createUseChapelStandard();
-  ModuleSymbol* retval = new ModuleSymbol("ChapelRepl",
-                                          MOD_INTERNAL,
-                                          new BlockStmt());
+  VisibleSymbols symbols = gRootScope->visibleSymbols(modName);
+  VarSymbol*     varSym  = 0;
 
-  retval->filename = astr("<ChapelRepl>");
+  INT_ASSERT(symbols.count() == 1);
 
-  retval->block->insertAtTail(use);
+  varSym  = toVarSymbol(symbols.symbol(0));
 
-  return retval;
+  INT_ASSERT(varSym);
+
+  return IpeVars::fetch(varSym, rootVars).moduleGet();
 }
 
-static CallExpr* createUseChapelStandard()
+static void loadInternalFile(const char* modName,
+                             IpeScope*   scope,
+                             IpeVars*    vars)
 {
-  return new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
+  ReadStream  stream;
+  bool        dummy    = false;
+  const char* fileName = modNameToFilename(modName, true, &dummy);
+
+  if (stream.open(fileName) == true)
+  {
+    while (Expr* expr = stream.read())
+    {
+      ipeResolve(expr, scope, vars);
+      ipeEvaluate(expr, vars);
+    }
+  }
 }
 
 /************************************ | *************************************
@@ -282,7 +294,7 @@ static void readEvalPrintLoop(IpeScope* scope, IpeVars* env)
       {
         ReadStream stream;
 
-        if (stream.open(inputFilename))
+        if (stream.open(inputFilename) == true)
         {
           while (Expr* expr = stream.read())
           {
@@ -383,13 +395,19 @@ ReadStream::~ReadStream()
   yylex_destroy(mContext.scanner);
 
   if (mFP != 0)
+  {
+    yyfilename = NULL;
     fclose(mFP);
+  }
 }
 
 bool ReadStream::open(const char* fileName)
 {
   if ((mFP = fopen(fileName, "r")) != 0)
+  {
+    yyfilename = fileName;
     yyset_in(mFP, mContext.scanner);
+  }
 
   return (mFP != NULL) ? true : false;
 }
@@ -416,7 +434,9 @@ Expr* ReadStream::read()
 #endif
 
     if (lexerStatus >= 0)
+    {
       parserStatus = yypush_parse(mParser, lexerStatus, &yylval, &mYYlloc, &mContext);
+    }
 
     else if (lexerStatus == YYLEX_NEWLINE)
     {
@@ -440,114 +460,3 @@ Expr* ReadStream::read()
 
   return retval;
 }
-
-
-
-
-
-/************************************ | *************************************
-*                                                                           *
-*  FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO  *
-*                                                                           *
-************************************* | ************************************/
-
-#if 0
-static DefExpr* defineReplModule(ModuleSymbol* module)
-{
-  return new DefExpr(module);
-}
-#endif
-
-#if 0
-static IpeScopeRoot* initializeScopeRoot()
-{
-#if 0
-  IpeScopeRoot*   retval = new IpeScopeRoot();
-  IpeValue        value;
-
-  ModuleSymbol*   modSym = NULL;
-  VarSymbol*      varSym = NULL;
-  IpeScopeModule* scope  = NULL;
-  IpeModule*      retval = NULL;
-
-  modSym           = new ModuleSymbol("ChapelRoot", MOD_INTERNAL, new BlockStmt());
-  modSym->filename = astr("<ChapelRoot>");
-
-  IpeModule*      foo = NULL;
-  IpeScopeModule* bar = NULL;
-
-  retval           = new IpeModule(modSym, foo, bar);
-  scope            = new IpeScopeModule(retval, NULL);
-
-  retval->scopeSet(scope);
-
-  for (int i = 1; i <= sRootModuleIndex; i++)
-  {
-    if (DefExpr* defExpr = toDefExpr(rootModule->block->body.get(i)))
-      scope->extend(defExpr->sym);
-  }
-
-  varSym          = new VarSymbol(modSym->name, gIpeTypeModule);
-  varSym->addFlag(FLAG_CONST);
-
-  value.modulePtr = retval;
-
-  scope->extend(varSym);
-  IpeGlobals::extend(varSym, value);
-
-  return retval;
-
-#else
-  AstDumpToNode logger(stdout, 3);
-
-  printf("InitializeRoot\n");
-
-  for (int i = 1; i <= sRootModuleIndex; i++)
-  {
-    if (DefExpr* defExpr = toDefExpr(rootModule->block->body.get(i)))
-    {
-      printf("   ");
-      defExpr->accept(&logger);
-      printf("\n");
-
-    }
-  }
-#endif
-
-  return retval;
-}
-#endif
-
-#if 0
-static IpeModule* initializeRepl(IpeScope* scope)
-{
-  ModuleSymbol*  replMod  = createReplModule();
-  DefExpr*       replDef  = defineReplModule(replMod);
-
-  printf("initializeRepl 00100\n");
-  Expr*          resolved = ipeResolve(replDef, scope);
-
-
-  VisibleSymbols symbols;
-  IpeValue       retval;
-
-  printf("initializeRepl 00600\n");
-  AstDumpToNode logger(stdout, 3);
-  printf("   ");
-  resolved->accept(&logger);
-  printf("\n\n");
-
-  ipeEvaluate(resolved, gGlobalEnv);
-
-  printf("initializeRepl 00700\n");
-  symbols = scope->visibleSymbols(replDef->sym);
-
-  INT_ASSERT(symbols.count() == 1);
-  INT_ASSERT(isVarSymbol(symbols.symbol(0)));
-
-  retval  = IpeGlobals::fetch(toVarSymbol(symbols.symbol(0)));
-
-  return retval.modulePtr;
-}
-#endif
-

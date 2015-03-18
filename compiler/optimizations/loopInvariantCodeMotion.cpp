@@ -299,27 +299,6 @@ void collectNaturalLoopForEdge(Loop* loop, BasicBlock* header, BasicBlock* tail)
   } 
 }
 
-/*
- * Takes a call that is a PRIM_SVEC_GET_MEMBER* and returns the symbol of the
- * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 1) 
- * and what this function gets out is the symbol that is the first field
- * instead of just the number 1. 
- */
-static Symbol* getSvecSymbol(CallExpr* call) {
-  INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
-             call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-             call->isPrimitive(PRIM_SET_SVEC_MEMBER));
-  
-  Type* type = call->get(1)->getValType();
-  AggregateType* tuple = toAggregateType(type);
-  SymExpr* fieldVal = toSymExpr(call->get(2));
-  VarSymbol* fieldSym = toVarSymbol(fieldVal->var);
-  int immediateVal = fieldSym->immediate->int_value();
-
-  INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
-  return tuple->getField(immediateVal);
-}
-
 // Returns rhs var if lhs aliases rhs
 //
 //
@@ -696,12 +675,14 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
 static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     loop, symToVecSymExprMap& localDefMap, FnSymbol* fn) {
  
-  //collect all of the symExpr and defExpr in the loop 
+  // collect all of the symExprs, defExprs, and callExprs in the loop
   startTimer(collectSymExprAndDefTimer);
   std::vector<SymExpr*> loopSymExprs;
   std::set<Symbol*> defsInLoop;
+  std::vector<CallExpr*> callsInLoop;
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
+      collectFnCallsSTL(expr, callsInLoop);
       collectSymExprsSTL(expr, loopSymExprs);
       if (DefExpr* defExpr = toDefExpr(expr)) {
         if (toVarSymbol(defExpr->sym)) {
@@ -888,10 +869,22 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
         }
       }
     }
-    // Where the variable is defined.
+    // Find where the variable is defined.
     Symbol* defScope = symExpr->var->defPoint->parentSymbol;
+    // if the variable is a module level (global) variable
     if (isModuleSymbol(defScope)) {
-      mightHaveBeenDeffedElseWhere = true;
+      // if there are any function calls inside the loop, assume that one of
+      // the functions may have changed the value of the global. Note that we
+      // don't have to worry about a different task updating the global since
+      // that would have to be protected with a sync or be atomic in which case
+      // no hoisting will occur in the function at all. Any defs to the global
+      // inside of this loop will be detected just like any other variable
+      // definitions.
+      // TODO this could be improved to check which functions modify the global
+      // and see if any of those functions are being called in this loop.
+      if (callsInLoop.size() != 0) {
+        mightHaveBeenDeffedElseWhere = true;
+      }
     }
     //if there were no defs of the symbol, it is invariant 
     if(actualDefs.count(symExpr) == 0 && !mightHaveBeenDeffedElseWhere) {
@@ -1037,9 +1030,7 @@ static void collectUsedFnSymbolsSTL(BaseAST* ast, std::set<FnSymbol*>& fnSymbols
     if (FnSymbol* fnSymbol = call->isResolved()) {
       if(fnSymbols.count(fnSymbol) == 0) {
         fnSymbols.insert(fnSymbol);
-        for_alist(expr, fnSymbol->body->body) {
-          AST_CHILDREN_CALL(expr, collectUsedFnSymbolsSTL, fnSymbols);
-        }
+        AST_CHILDREN_CALL(fnSymbol->body, collectUsedFnSymbolsSTL, fnSymbols);
       }
     }
   }

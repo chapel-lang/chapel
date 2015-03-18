@@ -165,6 +165,19 @@ Fixing a commit message:
     This should only every be done to commits that **have not been pushed** to
     a remote repository.
 
+Un-do the last commit (leaving changed files in your working directory)
+
+.. code-block:: bash
+
+    git reset --soft HEAD~1
+
+.. note::
+
+    This should only every be done to commits that **have not been pushed** to
+    a remote repository.
+
+
+
 Update your feature branch with changes from the main Chapel project
 --------------------------------------------------------------------
 Bring in changes from the main Chapel project to your feature branch:
@@ -455,4 +468,14 @@ To view commits grouped by author (for example, show me commits by author from
     # Show commits by author between 1.8.0 and 1.9.0.1 releases:
     git sl 1.8.0..1.9.0.1
 
+
+Finding a Pull Request by Commit
+--------------------------------
+
+Suppose you have figured out that a particular commit is causing a problem
+and you'd like to view the pull request discussion on GitHub. You can go
+to
+  https://github.com/chapel-lang/chapel/commit/<commit-hash>
+and GitHub shows the pull request number at the bottom of the commit message
+complete with a link to the pull request page.
 

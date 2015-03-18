@@ -873,6 +873,7 @@ module ChapelArray {
       return member(i);
     }
 
+    pragma "reference to const when const this"
     proc newAlias() {
       var x = _value;
       return _newDomain(x);
@@ -1460,6 +1461,7 @@ module ChapelArray {
     proc numElements return _value.dom.dsiNumIndices;
     proc size return numElements;
   
+    pragma "reference to const when const this"
     proc newAlias() {
       var x = _value;
       return _newArray(x);
@@ -2328,6 +2330,10 @@ module ChapelArray {
       // to avoid memcpy(x,x) which happens inside doiBulkTransfer.
       return;
     }
+
+    if a.size == 0 && b.size == 0 then
+      // Do nothing for zero-length assignments
+      return;
 
     if boundsChecking then
       checkArrayShapesUponAssignment(a, b);

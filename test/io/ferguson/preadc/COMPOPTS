@@ -1,0 +1,1 @@
+-DCHPL_RT_UNIT_TEST $CHPL_HOME/runtime/src/qio/sys.c $CHPL_HOME/runtime/src/qio/sys_xsi_strerror_r.c -lpthread

@@ -34,6 +34,8 @@ public:
                                   IpeValue defaultValue,
                                   IpeVars* vars);
 
+  virtual const char*      name()                                     const;
+
   virtual void             envPush();
   virtual void             envPop();
 
@@ -41,7 +43,6 @@ public:
 
 protected:
   virtual const char*      type()                                     const;
-  virtual const char*      name()                                     const;
   virtual void             describeHeader(int offset)                 const;
 
 private:

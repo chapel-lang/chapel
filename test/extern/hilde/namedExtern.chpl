@@ -10,7 +10,7 @@ extern printf proc cprintf(fmt: c_string, arg...): int;
 
 var i = 19: int(32); // using an int(32) to up the odds this works with %d
 var f = 63.0;
-var s = "pwh";
+var s: c_string = "pwh";
 
 cprintf("%d %f %s\n", i, f, s);
 cprintf("Done.\n");
