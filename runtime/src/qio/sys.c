@@ -847,6 +847,7 @@ err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
     got = win_num_read;
     error = 0;
   } else {
+    got = -1;
     win_error = GetLastError();
     error = get_errcode_from_winerr(win_error);
   }
@@ -890,6 +891,7 @@ err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *nu
     got = win_num_wrote;
     error = 0;
   } else {
+    got = -1;
     win_error = GetLastError();
     error = get_errcode_from_winerr(win_error);
   }
