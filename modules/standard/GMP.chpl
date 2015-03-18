@@ -17,25 +17,157 @@
  * limitations under the License.
  */
 
-/* GMP Module 
+/*
+
+This module supports integration with the GMP library (the GNU Multiple
+Precision Arithmetic Library. See the `GMP homepage <https://gmplib.org/>`_
+for more information on this library.
+
+This README describes a prototype implementation of a standard GMP (GNU
+Multiple Precision Arithmetic Library) module in Chapel.  It should be
+considered incomplete in that (a) only a subset of the full GMP interface is
+supported, and (b) the performance is currently lacking due to extraneous
+copies in the Chapel code that have not yet been optimized away.  If there is
+sufficient interest, this protype can be expanded to support the full GMP
+interface and performance.
+
+This prototype GMP module has been used to implement a port of the standard GMP
+Chudnovsky algorithm for computing pi to arbitrary digits.  If you are
+interested in receiving a copy of this Chapel program, or simply in expressing
+your support for GMP within Chapel, please contact us at chapel_info@cray.com.
+
+
+Using the GMP Module
+--------------------
+
+Step 1:
+  Build Chapel with GMP
+
+  .. code-block:: sh
+
+            # To use the an already-installed GMP
+            export CHPL_GMP=system
+            # To use the distributed GMP
+            export CHPL_GMP=gmp
+            # From $CHPL_HOME
+            make clean; make
+
+
+Step 2:
+  Have your Chapel program ``use`` the standard GMP module
+
+  .. code-block:: chapel
+
+            use GMP;   // put this statement in your Chapel program
+
+
+Step 3:
+  Start using the supported subset of GMP types and routines
+  or the BigInt class (see below for a complete listing).
+
+
+Using the BigInt class
+----------------------
+
+The GMP Chapel module provides a :class:`BigInt` class wrapping GMP integers.
+At the present time, only the functions for ``mpz`` (ie signed integer)
+GMP types are supported with :class:`BigInt`; future work will be to make
+extend this support to floating-point types. Also, in the future,
+we hope to provide these GMP functions as records that support
+operators like ``+``, ``*``, ``-``, etc.
+
+:class:`BigInt` methods all wrap GMP functions with obviously similar names.
+The :class:`BigInt` methods are locale aware - so Chapel programs can create a
+distributed array of GMP numbers. The method of :class:`BigInt` objects are
+setting the receiver, so e.g. myBigInt.add(x,y) sets myBigInt to ``x + y``.
+
+A code example::
+
+ use GMP;
+
+ var a = new BigInt(); // initialize a GMP value, set it to zero
+
+ a.fac_ui(100); // set a to 100!
+
+ writeln(a); // output 100!
+
+ delete a; // free memory used by the GMP value
+
+ var b = new BigInt("48473822929893829847"); // initialize from a decimal string
+ b.add_ui(b, 1); // add one to b
+
+ delete b; // free memory used by b
+
+Calling GMP functions directly
+------------------------------
+
+The second option for Chapel programs using this module is to call the GMP
+functions directly. For a full reference to GMP capabilities, please refer to
+the `GMP website <http://gmplib.org>`_ and the
+`GMP documentation <https://gmplib.org/manual/>`_.
+
+
+At present, Chapel's GMP module supports the following GMP types:
+
+  * :type:`mp_bitcnt_t`
+  * :type:`mpf_t`
+  * :type:`mpz_t`
+
+And all :type:`mpz_t` GMP routines, as well as the following routines:
+
+  * :proc:`gmp_fprintf()`
+  * :proc:`gmp_printf()`
+  * :proc:`mpf_add()`
+  * :proc:`mpf_clear()`
+  * :proc:`mpf_div_2exp()`
+  * :proc:`mpf_get_d()`
+  * :proc:`mpf_get_prec()`
+  * :proc:`mpf_init()`
+  * :proc:`mpf_mul()`
+  * :proc:`mpf_mul_ui()`
+  * :proc:`mpf_out_str()`
+  * :proc:`mpf_set_d()`
+  * :proc:`mpf_set_default_prec()`
+  * :proc:`mpf_set_prec_raw()`
+  * :proc:`mpf_set_z()`
+  * :proc:`mpf_sub()`
+  * :proc:`mpf_ui_div()`
+  * :proc:`mpf_ui_sub()`
+
+
  */
 module GMP {
   use SysBasic;
   use Error;
 
-
+  pragma "no doc"
   extern type __mpf_struct;
+
+  /*  The GMP ``mpf_t`` type */
   extern type mpf_t = 1*__mpf_struct;
+
+  pragma "no doc"
   extern type __mpz_struct;
+
+  /* The GMP ``mpz_t`` type */
   extern type mpz_t = 1*__mpz_struct;
+
+  pragma "no doc"
   extern type __gmp_randstate_struct;
+
+  /* The GMP ``gmp_randstate_t`` type */
   extern type gmp_randstate_t = 1*__gmp_randstate_struct;
 
+  /* The GMP ``mp_bitcnt_t`` type */
   extern type mp_bitcnt_t = c_ulong;
+  /* The GMP ``mp_size_t`` type */
   extern type mp_size_t = size_t;
+  /* The GMP ``mp_limb_t`` type */
   extern type mp_limb_t=uint(64);
+  /* The GMP ``mp_ptr`` type */
   extern type mp_ptr; // mp_limb_t *
 
+  /* The GMP `mp_bits_per_limb`` constant */
   extern const mp_bits_per_limb: c_int;
 
   /* All these external functions are ref, which may
@@ -51,7 +183,8 @@ module GMP {
      routines if not for ref.
    */
 
-  // initializing rng
+  // Initializing random state 
+  /* */
   extern proc gmp_randinit_default(ref STATE: gmp_randstate_t);
   extern proc gmp_randinit_mt(ref STATE: gmp_randstate_t);
   extern proc gmp_randinit_lc_2exp(ref STATE: gmp_randstate_t, ref A:mpz_t, C: c_ulong, M2EXP: c_ulong);
@@ -304,6 +437,10 @@ module GMP {
   }
 
   /*
+    The BigInt class provides a more Chapel-friendly interface to the
+    GMP integer functions. In particular, this class supports GMP
+    numbers that are stored in distributed arrays.
+    
     All methods on BigInt work with Chapel types. Many of them use the gmp
     functions directly, wich use C types. Runtime checks are used to ensure the
     Chapel types can safely be cast to the C types (e.g. when casting a Chapel
