@@ -328,7 +328,8 @@ single code block. For example::
       }
 
 If highlighting with the specified language fails, e.g. if the syntax is not
-parsable, the block is not highlighted in anyway.
+parsable, the block is not highlighted in anyway. Note that there should be a
+blank line betweent he ``code-block`` directive and the indented code snippet.
 
 
 Hyperlinks
