@@ -257,6 +257,8 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
+      error = Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real);
+      /*
       for i in 1..rank-1 do
         error |= Private_FFTW.checkDimMismatch(realDom, D, i, "plan_dft_r2c()",
                                                inplace=true);
@@ -266,6 +268,7 @@ module FFTW {
       } else {
         error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, "plan_dft_r2c()");
       }
+      */
       if (error) then
         halt("Incorrect array sizes in plan_dft_r2c()");
     }
@@ -345,6 +348,8 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
+      error = Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_c2r()", t == real);
+      /*
       for i in 1..rank-1 do
         error |= Private_FFTW.checkDimMismatch(realDom, D, i, "plan_dft_c2r()",
                                                inplace=true);
@@ -354,6 +359,7 @@ module FFTW {
       } else {
         error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, "plan_dft_c2r()");
       }
+      */
       if (error) then
         halt("Incorrect array sizes in plan_dft_c2r()");
     }
@@ -509,6 +515,25 @@ module FFTW {
               " (", first, " = ", inputDim, ", ", second, " = ", outputDim, 
               ")");
       return true;
+    }
+
+    //
+    // Check for mismatches in the dimensions for an in-place
+    // transform between the logical domain for a DFT and the
+    // physical domain over which the array is allocated.
+    //
+    proc checkInPlaceDimMismatch(logDom, physDom, fnname, realElems) {
+      var error = false;
+      
+      for i in 1..logDom.rank-1 do
+        error |= checkDimMismatch(logDom, physDom, i, fnname, inplace=true);
+
+      if realElems {
+        error |= Private_FFTW.checkRealInPlaceDimMismatch(logDom, physDom, fnname);
+      } else {
+        error |= Private_FFTW.checkRealCplxDimMismatch(logDom, physDom, fnname);
+      }
+      return error;
     }
 
     //
