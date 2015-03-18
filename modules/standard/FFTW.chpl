@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-// Wrapper for FFTW version 3.
-
 /*
   FFT computations via key routines from FFTW (version 3)
 
@@ -497,9 +495,9 @@ module FFTW {
         error |= checkDimMismatch(logDom, physDom, i, fnname, inplace=true);
 
       if realElems {
-        error |= Private_FFTW.checkRealInPlaceDimMismatch(logDom, physDom, fnname);
+        error |= checkRealInPlaceDimMismatch(logDom, physDom, fnname);
       } else {
-        error |= Private_FFTW.checkRealCplxDimMismatch(logDom, physDom, fnname);
+        error |= checkRealCplxDimMismatch(logDom, physDom, fnname);
       }
       return error;
     }
