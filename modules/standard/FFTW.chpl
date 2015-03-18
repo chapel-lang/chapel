@@ -252,27 +252,11 @@ module FFTW {
   proc plan_dft_r2c(realDom : domain, arr : [?D] ?t, flags : c_uint) : fftw_plan
     where t == real || t == complex
   {
-    param rank = realDom.rank: c_int;
-
-    if !noFFTWsizeChecks {
-      var error = false;
-
-      error = Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real);
-      /*
-      for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMismatch(realDom, D, i, "plan_dft_r2c()",
-                                               inplace=true);
-
-      if t == real {
-        error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, "plan_dft_r2c()");
-      } else {
-        error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, "plan_dft_r2c()");
-      }
-      */
-      if (error) then
+    if !noFFTWsizeChecks then
+      if Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real) then
         halt("Incorrect array sizes in plan_dft_r2c()");
-    }
         
+    param rank = realDom.rank: c_int;
     var dims: rank*c_int;
     for param i in 1..rank do
       dims(i) = realDom.dim(i).size: c_int;
@@ -343,27 +327,11 @@ module FFTW {
   proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : c_uint) : fftw_plan 
     where t == real || t == complex
   {
-    param rank = realDom.rank: c_int;
-
-    if !noFFTWsizeChecks {
-      var error = false;
-
-      error = Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_c2r()", t == real);
-      /*
-      for i in 1..rank-1 do
-        error |= Private_FFTW.checkDimMismatch(realDom, D, i, "plan_dft_c2r()",
-                                               inplace=true);
-
-      if t == real {
-        error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, "plan_dft_c2r()");
-      } else {
-        error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, "plan_dft_c2r()");
-      }
-      */
-      if (error) then
+    if !noFFTWsizeChecks then
+      if Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_c2r()", t == real) then
         halt("Incorrect array sizes in plan_dft_c2r()");
-    }
 
+    param rank = realDom.rank: c_int;
     var dims: rank*c_int;
     for param i in 1..rank do
       dims(i) = realDom.dim(i).size: c_int;
