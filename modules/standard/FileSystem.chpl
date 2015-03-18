@@ -20,17 +20,18 @@
 /* A file utilities library
 
    The FileSystem module focuses on file and directory properties and
-   operations.  It does not cover every interaction involving a file---
-   for instance, path-specific operations live in the :mod:`Path` module, while
+   operations.  It does not cover every interaction involving a file--- for
+   instance, path-specific operations live in the :mod:`Path` module, while
    routines for opening, writing to, or reading from a file live in the
    :mod:`IO` module.  Rather, it covers cases where the user would prefer a file
-   or directory to be handled wholesale and/or with minimal interaction.  For example,
-   this module contains a file :proc:`copy` routine, as well as operations like :proc:`chmod`,
-   :proc:`mkdir`, and :proc:`remove`.  Also included are
-   operations relating to the current process's file system state, such as :proc:`~locale.umask` or
-   :proc:`~locale.chdir`, which are performed on a specified locale.  The module
-   also contains iterators for traversing the file system, such as 
-   :iter:`glob`, :iter:`listdir`, :iter:`walkdirs`, and :iter:`findfiles`.
+   or directory to be handled wholesale and/or with minimal interaction.  For
+   example, this module contains a file :proc:`copy` routine, as well as
+   operations like :proc:`chmod`, :proc:`mkdir`, and :proc:`remove`.  Also
+   included are operations relating to the current process's file system state,
+   such as :proc:`~locale.umask` or :proc:`~locale.chdir`, which are performed
+   on a specified locale.  The module also contains iterators for traversing the
+   file system, such as :iter:`glob`, :iter:`listdir`, :iter:`walkdirs`, and
+   :iter:`findfiles`.
 
  */
 module FileSystem {
@@ -46,7 +47,7 @@ use Error, Path;
    <http://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html>`_.
    They are intended for use when dealing with the permissions of files or
    directories, such as with :proc:`chmod`, :proc:`getMode`, :proc:`mkdir`,
-   or :proc:`umask`
+   or :proc:`~locale.umask`
 
    S_IRUSR refers to the user's read permission
 */
@@ -110,7 +111,7 @@ proc locale.chdir(out error: syserr, name: string) {
 }
 
 /* Change the current working directory of the locale in question to the
-   specified name.
+   specified path `name`.
 
    Will halt with an error message if one is detected.
 
@@ -138,7 +139,7 @@ proc chmod(out error: syserr, name: string, mode: int) {
 // CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
 
 /* Set the permissions of the file or directory specified by the argument
-   ``name`` to that indicated by the argument ``mode``.
+   `name` to that indicated by the argument `mode`.
 
    Will halt with an error message if one is detected
 
@@ -165,7 +166,7 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
 }
 
 /* Change one or both of the owner and group id of the named file or directory
-   to the specified values.  If ``uid`` or ``gid`` are -1, the value in question
+   to the specified values.  If `uid` or `gid` are -1, the value in question
    will remain unchanged.
 
    Halts with an error message if one occurred.
@@ -228,9 +229,9 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
   }
 }
 
-/* Copies the contents and permissions of the file indicated by ``src`` into
-   the file or directory ``dest``.  If ``dest`` is a directory, will halt with
-   an error message.  If ``metadata`` is set to ``true``, will also copy the
+/* Copies the contents and permissions of the file indicated by `src` into
+   the file or directory `dest`.  If `dest` is a directory, will halt with
+   an error message.  If `metadata` is set to `true`, will also copy the
    metadata (uid, gid, time of last access and time of modification) of the
    file to be copied.
 
@@ -248,7 +249,7 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
               exist
    :type dest: string
    :arg metadata: This argument indicates whether to copy metadata associated
-                  with the source file.  It is set to ``false`` by default.
+                  with the source file.  It is set to `false` by default.
    :type metadata: bool
 */
 proc copy(src: string, dest: string, metadata: bool = false) {
@@ -326,11 +327,11 @@ proc copyFile(out error: syserr, src: string, dest: string) {
   }
 }
 
-/* Copies the contents of the file indicated by ``src`` into the file indicated
-   by ``dest``, replacing ``dest``'s contents if it already exists (and is a
-   different file than ``src``, i.e. not a symbolic link to ``src``).
+/* Copies the contents of the file indicated by `src` into the file indicated
+   by `dest`, replacing `dest`'s contents if it already exists (and is a
+   different file than `src`, i.e. not a symbolic link to `src`).
 
-   If ``dest`` is not writable, or ``src`` and ``dest`` refer to the same file,
+   If `dest` is not writable, or `src` and `dest` refer to the same file,
    this function will halt with an error message.  Does not copy metadata.  May
    halt with other error messages.
 
@@ -357,8 +358,8 @@ proc copyMode(out error: syserr, src: string, dest: string) {
   chmod(error, dest, srcMode);
 }
 
-/* Copies the permissions of the file indicated by ``src`` to the file indicated
-   by ``dest``, leaving contents, owner and group unaffected.
+/* Copies the permissions of the file indicated by `src` to the file indicated
+   by `dest`, leaving contents, owner and group unaffected.
 
    Will halt with an error message if one is detected.
 
@@ -413,10 +414,10 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
   copyTreeHelper(error, srcPath, dest, copySymbolically);
 }
 
-/* Will recursively copy the tree which lives under ``src`` into ``dst``,
-   including all contents, permissions, and metadata.  ``dst`` must not
+/* Will recursively copy the tree which lives under `src` into `dst`,
+   including all contents, permissions, and metadata.  `dst` must not
    previously exist, this function assumes it can create it and any missing
-   parent directories. If ``copySymbolically`` is ``true``, symlinks will be
+   parent directories. If `copySymbolically` is `true`, symlinks will be
    copied as symlinks, otherwise their contents and metadata will be copied
    instead.
 
@@ -425,12 +426,12 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
    :arg src: The root of the source tree to be copied.
    :type src: string
    :arg dest: The root of the destination directory under which the contents of
-              ``src`` are to be copied (must not exist prior to this function
+              `src` are to be copied (must not exist prior to this function
               call).
    :type dest: string
    :arg copySymbolically: This argument is used to indicate how to handle
                           symlinks in the source directory.  It is set to
-                          ``false`` by default
+                          `false` by default
    :type copySymbolically: bool
 */
 proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
@@ -465,7 +466,7 @@ proc locale.cwd(out error: syserr): string {
    .. warning::
 
       Another task on this locale can change the current working directory from
-      underneath this task, so use caution when making use of this function in
+      underneath this task, so use caution when making use of this method in
       a parallel environment.
 
    :return: The current working directory for the locale in question.
@@ -487,7 +488,7 @@ proc exists(out error: syserr, name: string): bool {
   return ret != 0;
 }
 
-/* Determines if the file or directory indicated by ``name`` exists and returns
+/* Determines if the file or directory indicated by `name` exists and returns
    the result of this check.
 
    Will halt with an error message if one was detected.
@@ -495,8 +496,8 @@ proc exists(out error: syserr, name: string): bool {
    :arg name: The file or directory whose existence is in question.
    :type name: string
 
-   :return: ``true`` if the provided argument corresponds to an existing file or
-            directory, ``false`` otherwise.  Also returns ``false`` for broken
+   :return: `true` if the provided argument corresponds to an existing file or
+            directory, `false` otherwise.  Also returns `false` for broken
             symbolic links.
    :rtype: bool
 */
@@ -550,7 +551,7 @@ proc getGID(out error: syserr, name: string): int {
 }
 
 /* Obtains and returns the group id associated with the file or directory
-   specified by ``name``.
+   specified by `name`.
 
    Will halt with an error message if one is detected
 
@@ -577,7 +578,7 @@ proc getMode(out error: syserr, name: string): int {
 }
 
 /* Obtains and returns the current permissions of the file or directory
-   specified by ``name``.
+   specified by `name`.
 
    Will halt with an error message if one is detected
 
@@ -606,7 +607,7 @@ proc getUID(out error: syserr, name: string): int {
 }
 
 /* Obtains and returns the user id associated with the file or directory
-   specified by ``name``.
+   specified by `name`.
 
    Will halt with an error message if one is detected.
 
@@ -751,7 +752,7 @@ proc isDir(out error:syserr, name:string):bool {
   return ret != 0;
 }
 
-/* Determine if the provided path ``name`` corresponds to a directory and return
+/* Determine if the provided path `name` corresponds to a directory and return
    the result
 
    Will halt with an error message if one is detected, including if the path
@@ -760,7 +761,7 @@ proc isDir(out error:syserr, name:string):bool {
    :arg name: A path that could refer to a directory.
    :type name: string
 
-   :return: ``true`` if the path is a directory, ``false`` if it is not
+   :return: `true` if the path is a directory, `false` if it is not
    :rtype: bool
 */
 proc isDir(name:string):bool {
@@ -779,7 +780,7 @@ proc isFile(out error:syserr, name:string):bool {
   return ret != 0;
 }
 
-/* Determine if the provided path ``name`` corresponds to a file and return
+/* Determine if the provided path `name` corresponds to a file and return
    the result
 
    Will halt with an error message if one is detected, including if the path
@@ -788,7 +789,7 @@ proc isFile(out error:syserr, name:string):bool {
    :arg name: A path that could refer to a file.
    :type name: string
 
-   :return: ``true`` if the path is a file, ``false`` if it is not
+   :return: `true` if the path is a file, `false` if it is not
    :rtype: bool
 */
 proc isFile(name:string):bool {
@@ -807,8 +808,8 @@ proc isLink(out error:syserr, name: string): bool {
   return ret != 0;
 }
 
-/* Determine if the provided path ``name`` corresponds to a link and return the
-   result.  If symbolic links are not supported, will return ``false``.
+/* Determine if the provided path `name` corresponds to a link and return the
+   result.  If symbolic links are not supported, will return `false`.
 
    Will halt with an error message if one is detected, including if the path
    does not refer to a valid file or directory
@@ -816,7 +817,7 @@ proc isLink(out error:syserr, name: string): bool {
    :arg name: A path that could refer to a symbolic link.
    :type name: string
 
-   :return: ``true`` if the path is a symbolic link, ``false`` if it is not or
+   :return: `true` if the path is a symbolic link, `false` if it is not or
             if symbolic links are not supported.
    :rtype: bool
 */
@@ -841,7 +842,7 @@ proc isMount(out error:syserr, name: string): bool {
   return ret != 0;
 }
 
-/* Determine if the provided path ``name`` corresponds to a mount point and
+/* Determine if the provided path `name` corresponds to a mount point and
    return the result.
 
    Will halt with an error message if one is detected, including if the path
@@ -850,7 +851,7 @@ proc isMount(out error:syserr, name: string): bool {
    :arg name: A path that could refer to a mount point.
    :type name: string
 
-   :return: ``true`` if the path is a mount point, ``false`` if it is not.
+   :return: `true` if the path is a mount point, `false` if it is not.
    :rtype: bool
 */
 proc isMount(name: string): bool {
@@ -927,20 +928,20 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
   error = chpl_fs_mkdir(name.c_str(), mode, parents);
 }
 
-/* Attempt to create a directory with the given path, ``name``.  If ``parents``
-   is ``true``, will attempt to create any directory in the path that did not
+/* Attempt to create a directory with the given path, `name`.  If `parents`
+   is `true`, will attempt to create any directory in the path that did not
    previously exist.
 
    Will halt with an error message if one is detected
 
    .. warning::
 
-      In the case where ``parents`` is ``true``, there is a potential security
+      In the case where `parents` is `true`, there is a potential security
       vulnerability.  Checking whether parent directories exist and creating
       them are separate events.  This is called a Time of Check, Time of Use
       vulnerability (TOCTOU), and in the case of files or directories that did
       not previously exist, there is no known guard against it.  So even if
-      ``parents == true`` and a parent directory didn't exist before this
+      `parents == true` and a parent directory didn't exist before this
       function was called but does exist afterward, it's not necessarily true
       that this function created that parent. Some other concurrent operation
       could have done so, either intentionally or unintentionally, maliciously
@@ -949,10 +950,10 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
 
    :arg name: The name of the directory to be created, fully specified.
    :arg mode: The permissions desired for the directory to create.  Takes the
-              current :proc:`umask` into account.  See description of
+              current :proc:`~locale.umask` into account.  See description of
               :const:`S_IRUSR`, for instance, for potential values.
    :arg parents: Indicates whether parent directories should be created.  If
-                 set to ``false``, any nonexistent parent will cause an error
+                 set to `false`, any nonexistent parent will cause an error
                  to occur.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
@@ -968,7 +969,7 @@ proc rename(out error: syserr, oldname, newname: string) {
   error = chpl_fs_rename(oldname.c_str(), newname.c_str());
 }
 
-/* Renames the file specified by ``oldname`` to ``newname``.  The file is not
+/* Renames the file specified by `oldname` to `newname`.  The file is not
    opened during this operation.
 
    Will halt with an error message if one is detected
@@ -991,7 +992,7 @@ proc remove(out error: syserr, name: string) {
   error = chpl_fs_remove(name.c_str());
 }
 
-/* Removes the file or directory specified by ``name``
+/* Removes the file or directory specified by `name`
 
    Will halt with an error message if one is detected
 
@@ -1025,8 +1026,8 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
    :arg file2: The second path to be compared.
    :type file2: string
 
-   :return: ``true`` if the two paths refer to the same file or directory,
-            ``false`` otherwise.
+   :return: `true` if the two paths refer to the same file or directory,
+            `false` otherwise.
    :rtype: bool
 */
 proc sameFile(file1: string, file2: string): bool {
@@ -1077,7 +1078,7 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
    :arg file2: The second file to be compared.
    :type file2: file
 
-   :return: ``true`` if the two records refer to the same file, ``false``
+   :return: `true` if the two records refer to the same file, `false`
             otherwise.
    :rtype: bool
 */
@@ -1095,7 +1096,7 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
   error = chpl_fs_symlink(oldName.c_str(), newName.c_str());
 }
 
-/* Create a symbolic link pointing to ``oldName`` with the path ``newName``.
+/* Create a symbolic link pointing to `oldName` with the path `newName`.
 
    Will halt with an error message if one is detected
 
@@ -1110,9 +1111,15 @@ proc symlink(oldName: string, newName: string) {
   if err != ENOERR then ioerror(err, "in symlink " + oldName, newName);
 }
 
-/* Sets the file creation mask of the current process to ``mask``, and returns
-   the previous value of the file creation mask.  See description of
-   :const:`S_IRUSR`, for instance, for potential values.
+/* Sets the file creation mask of the current locale to `mask`, and returns
+   the previous value of the file creation mask for that locale.  See
+   description of :const:`S_IRUSR`, for instance, for potential values.
+
+   .. warning::
+
+      This is not safe within a parallel context.  A umask call in one task
+      will affect the umask of all tasks for that locale.
+
 
    :arg mask: The file creation mask to use now.
    :type mask: int
