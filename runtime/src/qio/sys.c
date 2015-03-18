@@ -87,10 +87,11 @@
 #include <windows.h>
 #include <sys/cygwin.h> // for cygwin_internal
 
-// function to get a POSIX-y error number from an NT status
-extern void seterrno_from_nt_status(const char* file, int line, NTSTATUS status);
+#define REPLACE_CYGWIN_PREADWRITE 1
 
 #endif
+
+
 
 // Should be available in sys_xsi_strerror_r.c
 extern int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen);
@@ -826,7 +827,7 @@ err_t get_errcode_from_winerr(DWORD win_error)
 static inline
 err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
 {
-#ifdef __CYGWIN__
+#ifdef REPLACE_CYGWIN_PREADWRITE
   ssize_t got;
   err_t error;
   HANDLE handle = (HANDLE) _get_osfhandle(fd);
@@ -870,7 +871,7 @@ err_t do_pread(int fd, void* buf, size_t count, off_t offset, ssize_t *num_read)
 static inline
 err_t do_pwrite(int fd, const void* buf, size_t count, off_t offset, ssize_t *num_written)
 {
-#ifdef __CYGWIN__
+#ifdef REPLACE_CYGWIN_PREADWRITE
   ssize_t got;
   err_t error;
   HANDLE handle = (HANDLE) _get_osfhandle(fd);
