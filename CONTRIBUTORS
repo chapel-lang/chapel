@@ -10,7 +10,6 @@ Contributors to the current release
 -----------------------------------
 Sean Billig, individual contributor
 Kyle Brady, Cray Inc.
-Daniel Buettner, LTS
 Brad Chamberlain, Cray Inc.
 Sung-Eun Choi, Cray Inc.
 Lydia Duncan, Cray Inc.
@@ -19,24 +18,23 @@ Ben Harshbarger, Cray Inc.
 Tom Hildebrandt, Cray Inc.
 David Iten, Cray Inc.
 Vassily Litvinov, Cray Inc.
-Simon Lund, ***TODO***
+Simon Lund, Københavns Universitet (University of Copenhagen)
 Tom MacDonald, Cray Inc.
 Michael Noakes, Cray Inc.
 Elliot Ronaghan, Cray Inc.
 Francisco Souza, individual contributor
 Greg Titus, Cray Inc.
 Thomas Van Doren, Cray Inc.
-Chris Wailes, Indiana University
-Tim Zakian, Cray Inc./Indiana University
 
 Contributors to previous releases
 ---------------------------------
-Rafael Asenjo, University of Malaga
+Rafael Asenjo, Universidad de Málaga (University of Malaga)
 Matthew Baker, ORNL
 Steve Balensiefer, University of Washington
 Casey Battaglino, Cray Inc./Georgia Tech
 Robert Bocchino, Cray Inc./University of Illinois, Urbana-Champaign
 Dan Bonachea, UC Berkeley
+Daniel Buettner, LTS
 David Callahan, Cray Inc.
 Steve Deitz, Cray Inc.
 Joel Denny, ETI
@@ -56,17 +54,17 @@ Mary Beth Hribar, Cray Inc. (*)
 Mackale Joyner, Cray Inc./Rice University
 Jessica Jueckstock, MITRE
 John Koenig, Cray Inc.
-Rafael Larrosa Jiminez, University of Malaga
+Rafael Larrosa Jiminez, Universidad de Málaga (University of Malaga)
 Matthew Lentz, University of Maryland
-Juan Lopez, University of Malaga
-Maria Angeles Navarro, University of Malaga
+Juan Lopez, Universidad de Málaga (University of Malaga)
+Maria Angeles Navarro, Universidad de Málaga (University of Malaga)
 Jun Nakashima, University of Tokyo
 Jacob Nelson, Cray Inc./University of Washington
 John Plevyak, Cray Inc.
 Lee Prokowich, Cray Inc.
 Brandon Ross, University at Buffalo
 Sara Salem, Cairo University
-Alberto Sanz, University of Malaga
+Alberto Sanz, Universidad de Málaga (University of Malaga)
 Albert Sidelnik, Cray Inc./University of Illinois, Urbana-Champaign
 Darren Smith, University of Maryland
 Rachel Sobel, Cray Inc./University of Washington
@@ -74,8 +72,10 @@ Srinivas Sridharan, University of Notre Dame/ORNL
 Andy Stone, Cray Inc./University of Colorado
 Chris Swenson, individual contributor
 Jonathan Turner, Cray Inc./CU Boulder
+Chris Wailes, Indiana University
 Wayne Wong, Cray Inc.
 Joe Yan, University of Maryland
+Tim Zakian, Cray Inc./Indiana University
 
 
 We are also grateful to our many enthusiastic and vocal users for

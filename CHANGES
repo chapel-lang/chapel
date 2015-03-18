@@ -2,34 +2,20 @@
 Release Changes List
 ====================
 
-*** STOPPED Jan 1 2015 ***
-
-TODO:
-* Does Thomas realize that his nice runtime-not-built errors are eclipsed by
-  the standard modules not being built?
-* Did Elliot know about comp vs. exec timeout prior to d2c0566?
-* "It also has the nice side effect of a clearer error message in the
-  case where we attempt to create a/b/c when b is not a directory (if
-  such a race had occurred)." -- doesn't it help the non-racey case too?
+*** STOPPED Feb 2 2015 (b48f87c) ***
 
 This file TODO:
 * fill in pointers to standard-module-based documentation below
-* did a1288ee fix some bugs? (refers to pr#678)
+* add pointer to IPE documentation
 
-Code freeze TODO:
-* Brad: Remove format() in release tests
-* Elliot: remove strcmp()s on chpl_build_*range()?
+General TODO:
+* check all changes in
+  - test/release/examples
+  - spec/
+  - doc/
 
 Doc TODO:
-* Mike: README.ipe?
 * Brad: Document how to compile with task tracking enabled?
-* Vass: forall intents
-* Elliot: documentation of --nodelist feature for slurm launcher?
-* Elliot: document version of dygraphs in third-party READMEs?
-* Greg: update third-party READMEs w.r.t. GASNet and hwloc versions?
-* Kyle: is 'chpltags' well-documented?
-* David: standalone parallel iterators: primers, README, spec?
-* Elliot: default of 'fifo' for CCE documented?
 
 ==============
 version 1.11.0
@@ -45,13 +31,22 @@ Packaging Changes
 * changed "quickstart" mode to set CHPL_COMM to 'none' and to not set CHPL_MEM
 * updated Makefiles to support building Chapel in parallel via 'make -j'
 * avoid rebuilding gmp and re2 speculatively when the previous build fails
+* made the setchplenv.* scripts prepend to PATH and MANPATH rather than append
+
+Tool changes
+------------
 * added a new 'chpltags' utility to generate emacs/vim tags for Chapel code
-  (see 'util/chpltags' and 'util/README' for details)
+  (see 'util/chpltags --help' and 'util/README' for more information)
+* added a prototype of a new "interactive Chapel programming environment" mode
+  (see TODO)
+* revamped 'chpldoc' to create HTML files via sphinx-based
+  (see 'doc/technotes/README.chpldoc' and 'man chpldoc' after make-ing chpldoc)
 
 Environment Changes
 -------------------
 * added support for auto-detecting 'cray-xc' and 'cray-xe' systems
 * split the 'cygwin' platform variable into 'cygwin32' and 'cygwin64'
+* added new 'netbsd32' and 'netbsd64' values for CHPL_*_PLATFORM
 
 Syntactic/Naming Changes
 ------------------------
@@ -61,6 +56,8 @@ Syntactic/Naming Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * added intent clauses and intent semantics to forall loops
+* changed min(t) and max(t) to return 'param' values for integral types 't'
+* removed the 'type select x' syntax in favor of 'select x.type'
 
 New Features
 ------------
@@ -68,9 +65,12 @@ New Features
 * added "standalone parallel iterators" for use by non-zippered forall loops
 * added a prototypical Interactive Programming Environment for Chapel (chpl-ipe)
   (see TODO for more details)
+* added support for aliasing of domains via the '=>' operator
 
 New Interoperability Features
 -----------------------------
+* added munging of all user identifiers by default to avoid naming conflicts
+  (see --[no-]munge-user-idents in 'man chpl' for more information)
 
 Standard Library/Modules
 ------------------------
@@ -85,6 +85,7 @@ Performance Improvements
   (see TODO)
 * optimized away the creation of anonymous ranges in loops
   (e.g., 'for i in 1..10' no longer creates an anonymous range object for 1..10)
+* optimized parallel iterations over ranges
 
 Changes to the Implementation
 -----------------------------
@@ -108,10 +109,13 @@ Platform-specific Changes
 
 Portability Improvements
 ------------------------
+* fixed a gmp build issue for 32-bit platforms
+* fixed some static/dynamic linking issues with certain platforms/compilers
 
 Third-Party Software Changes
 ----------------------------
 * upgraded snapshot of dygraphs to version 1.1.0
+* made the re2 build do a better job of propagating errors back to the Makefiles
 
 Documentation
 -------------
@@ -147,6 +151,7 @@ New Semantic Checks (for old semantics)
 Error Message Improvements
 --------------------------
 * added an error when compiling for a configuration whose runtime is not built
+* improved error messages for several range overflow conditions
 
 Bug Fixes
 ---------
@@ -157,6 +162,8 @@ Bug Fixes
 * fixed a bug in which iterators yielding locale types caused an internal error
 * fixed a crash when using multiple formal type queries for primitives types
 * fixed a bug when casting param 'int(64)' and 'uint(?)' to 'c_string'
+* fixed a bug in which record variables did not call user-defined cosntructors
+* fixed a bug in which arrays of associative domains could cause a segfault
 
 Platform-specific bug fixes
 ---------------------------
@@ -167,6 +174,7 @@ Platform-specific bug fixes
 
 Runtime Library Changes
 -----------------------
+* changed Qthreads to yield after uncontested sync var locks to avoid starvation
 
 Generated Code Cleanups
 -----------------------
@@ -199,15 +207,22 @@ Testing System
 * fixed a bad interaction between env. vars. set in sub_test vs. execenv files
 * added support for jUnit XML-style report generation to start_test and paratest
 * made sub_test ignore OS errors during unlinking to quiet false negatives
+* check for .skipif conditions before wasting any effort on a test
+* permitted suppression files to contain blank lines
 
 Performance Testing/Graphing System
 -----------------------------------
 * embed more information in the URL of performance graphs for sharing
 * move sorting of graphs' legends into genGraphs to reduce real-time overheads
 * automatically strip punctuation characters from the end of graph keys
+* changed performance graphs to use json rather than csv
+* allow scrolling of the list of graphs independently from graphs themselves
+* added support for 'today' as a date in the perf graph system's URL encodings
+* track top processes between performance runs to look for causes of noise
 
-Developer-oriented changes: Process Changes
+Developer-oriented changes: Utility Changes
 -------------------------------------------
+* made build_configs.py support parallel execution
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -222,6 +237,7 @@ Developer-oriented changes: Module improvements
 * changed Filerator routines to use new isLink(), isDir(), and isFile() routines
 * split _build_range() into several routines with better names
 * removed requirement to add 'no ChapelStandard' pragma to internal modules
+* refactored overloads of range operator definitions
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -255,6 +271,10 @@ Developer-oriented changes: Compiler improvements
 * added a new abstract LoopStmt AST class
 * added a new ParamForLoop class to the IR
 * reorder localCopyPropagation to avoid a ref-before-def bug
+* added binary operators to the BitVec implementation
+* fixed a bug in basic block analysis
+* moved the handling of boolean short-circuiting from 'parse' to 'normalize'
+* deprecated the use of MOD_MAIN
 
 Developer-oriented changes: Compiler refactorings
 -------------------------------------------------
@@ -267,6 +287,9 @@ Developer-oriented changes: Runtime improvements
 * fixed several code issues identified by coverity scan
 * guarded against some src==dst calls to memcpy()
 * simplified interactions between locales models and the runtime
+* added support for the main process to run Chapel tasks
+* for optimized builds of the runtime, set NDEBUG to turn off assertions
+* improved the non-blocking communication interface
 
 Developer-oriented changes: Generated Code improvements
 -------------------------------------------------------
