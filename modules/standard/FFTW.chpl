@@ -134,19 +134,15 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft(input: [] complex(128), output: [] complex(128), 
+  proc plan_dft(input: [?Din] complex(128), output: [?Dout] complex(128), 
                  sign: c_int, flags: c_uint) : fftw_plan
   {
     if !noFFTWsizeChecks {
       var error = false;
-      for i in 1..input.rank {
-        const inputDim = input.domain.dim(i).size;
-        const outputDim = output.domain.dim(i).size;
-        if (inputDim != outputDim) {
-          writeln("Error: In plan_dft(), input and output arrays don't have same size in dimension ", i, " (input = ", inputDim, ", output = ", outputDim, ")");
-          error = true;
-        }
-      }
+
+      for i in 1..input.rank do
+        error |= Private_FFTW.checkDimMatch(Din, Dout, i, "plan_dft()");
+
       if error then
         halt("Incorrect array sizes in plan_dft()");
     }
@@ -214,20 +210,17 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_r2c(input : [] real(64), output : [] complex(128), flags :c_uint) : fftw_plan
+  proc plan_dft_r2c(input : [?Din] real(64), output : [?Dout] complex(128), 
+                    flags :c_uint) : fftw_plan
   {
     param rank = input.rank: c_int;
 
     if !noFFTWsizeChecks {
       var error = false;
-      for i in 1..rank-1 {
-        const inputDim = input.domain.dim(i).size;
-        const outputDim = output.domain.dim(i).size;
-        if (inputDim != outputDim) {
-          writeln("Error: In plan_dft_r2c(), output array's size doesn't match input array's in dimension ", i, " (input = ", inputDim, ", output = ", outputDim, ")");
-          error = true;
-        }
-      }
+
+      for i in 1..rank-1 do
+        error |= Private_FFTW.checkDimMatch(Din, Dout, i, "plan_dft_r2c()");
+
       {
         const inputDim = input.domain.dim(rank).size/2+1;
         const outputDim = output.domain.dim(rank).size;
@@ -248,7 +241,6 @@ module FFTW {
   }
 
   // In-place routines, note that these take in the true leading dimension
-  // TODO : We should check on types...
   /*
     Create a plan for a real-to-complex, in-place DFT.
 
@@ -263,7 +255,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_r2c(realDom : domain, arr : [] ?t, flags : c_uint) : fftw_plan
+  proc plan_dft_r2c(realDom : domain, arr : [?D] ?t, flags : c_uint) : fftw_plan
     where t == real || t == complex
   {
     param rank = realDom.rank: c_int;
@@ -271,14 +263,10 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
-      for i in 1..rank-1 {
-        const arrDim = arr.domain.dim(i).size;
-        const domDim = realDom.dim(i).size;
-        if (arrDim != domDim) {
-          writeln("Error: In plan_dft_r2c(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim, ")");
-          error = true;
-        }
-      }
+      for i in 1..rank-1 do
+        error |= Private_FFTW.checkDimMatch(realDom, D, i, "plan_dft_r2c()",
+                                            inplace=true);
+
       if t == real {
         const arrDim = arr.domain.dim(rank).size;
         const domDim = 2*(realDom.dim(rank).size/2+1);
@@ -327,20 +315,17 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_c2r(input : [] complex(128), output : [] real(64), flags :c_uint) : fftw_plan
+  proc plan_dft_c2r(input : [?Din] complex(128), output : [?Dout] real(64), 
+                    flags :c_uint) : fftw_plan
   {
     param rank = output.rank: c_int; // The dimensions are that of the real array
 
     if !noFFTWsizeChecks {
       var error = false;
-      for i in 1..rank-1 {
-        const inputDim = input.domain.dim(i).size;
-        const outputDim = output.domain.dim(i).size;
-        if (inputDim != outputDim) {
-          writeln("Error: In plan_dft_c2r(), input array's size doesn't match output array's in dimension ", i, " (input = ", inputDim, ", output = ", outputDim, ")");
-          error = true;
-        }
-      }
+
+      for i in 1..rank-1 do
+        error |= Private_FFTW.checkDimMatch(Din, Dout, i, "plan_dft_c2r()");
+
       {
         const inputDim = input.domain.dim(rank).size;
         const outputDim = output.domain.dim(rank).size/2+1;
@@ -374,7 +359,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan 
+  proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : c_uint) : fftw_plan 
     where t == real || t == complex
   {
     param rank = realDom.rank: c_int;
@@ -382,14 +367,10 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
-      for i in 1..rank-1 {
-        const arrDim = arr.domain.dim(i).size;
-        const domDim = realDom.dim(i).size;
-        if (arrDim != domDim) {
-          writeln("Error: In plan_dft_c2r(), the array's size doesn't match 'realDom's in dimension ", i, " (expected ", domDim, ", got ", arrDim, ")");
-          error = true;
-        }
-      }
+      for i in 1..rank-1 do
+        error |= Private_FFTW.checkDimMatch(realDom, D, i, "plan_dft_c2r()",
+                                            inplace=true);
+
       if t == real {
         const arrDim = arr.domain.dim(rank).size;
         const domDim = 2*(realDom.dim(rank).size/2+1);
@@ -530,6 +511,37 @@ module FFTW {
   */  // NOTE: But it will be if/when the new-array execute interface is supported
   extern const FFTW_UNALIGNED : c_uint;
 
+
+  //
+  // This is a helper module to give us a "private" notion.  Once we
+  // have a private keyword, these could be hoisted to module scope
+  // and labeled private.
+  //
+  pragma "no doc"
+  module Private_FFTW {
+    //
+    // Check that two domain dimensions match, print an error if they
+    // don't, and return whether or not an error occurred.  Note that
+    // the 'inplace' argument is used to customize the error message
+    // for in-place and out-of-place cases.
+    //
+    proc checkDimMatch(inDom, outDom, dim, fnname, inplace=false) {
+      const inputDim = inDom.dim(dim).size;
+      const outputDim = outDom.dim(dim).size;
+      if (inputDim == outputDim) then
+        return false;
+
+      const first = if inplace then "domain" else "input";
+      const second = if inplace then "array" else "output";
+
+      writeln("Error: In ", fnname, ", ", first, " and ", second,
+              if !inplace then " arrays" else "",
+              " don't have same size in dimension ", dim, 
+              " (", first, " = ", inputDim, ", ", second, " = ", outputDim, 
+              ")");
+      return true;
+    }
+  }
 
 
   pragma "no doc"
