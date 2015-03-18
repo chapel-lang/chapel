@@ -221,8 +221,7 @@ module FFTW {
       for i in 1..rank-1 do
         error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
 
-      error |= Private_FFTW.checkRealCplxDimMismatch(Din, Dout, rank, "plan_dft_r2c()", 
-                                                     "output ");
+      error |= Private_FFTW.checkRealCplxDimMismatch(Din, Dout, "plan_dft_r2c()", "output ");
 
       /*
       {
@@ -273,7 +272,7 @@ module FFTW {
                                                inplace=true);
 
       if t == real {
-        error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, rank, "plan_dft_r2c()");
+        error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, "plan_dft_r2c()");
         /*
         const arrDim = arr.domain.dim(rank).size;
         const domDim = 2*(realDom.dim(rank).size/2+1);
@@ -283,7 +282,7 @@ module FFTW {
         }
         */
       } else {
-        error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, rank, "plan_dft_r2c()");
+        error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, "plan_dft_r2c()");
         /*
         const arrDim = arr.domain.dim(rank).size;
         const domDim = realDom.dim(rank).size/2+1;
@@ -337,8 +336,7 @@ module FFTW {
       for i in 1..rank-1 do
         error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
 
-      error |= Private_FFTW.checkRealCplxDimMismatch(Dout, Din, rank, "plan_dft_c2r()",
-                                                     "input ");
+      error |= Private_FFTW.checkRealCplxDimMismatch(Dout, Din, "plan_dft_c2r()", "input ");
 
       /*
       {
@@ -388,7 +386,7 @@ module FFTW {
                                                inplace=true);
 
       if t == real {
-        error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, rank, "plan_dft_c2r()");
+        error |= Private_FFTW.checkRealInPlaceDimMismatch(realDom, D, "plan_dft_c2r()");
         /*
         const arrDim = arr.domain.dim(rank).size;
         const domDim = 2*(realDom.dim(rank).size/2+1);
@@ -398,7 +396,7 @@ module FFTW {
         }
         */
       } else {
-        error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, rank, "plan_dft_c2r()");
+        error |= Private_FFTW.checkRealCplxDimMismatch(realDom, D, "plan_dft_c2r()");
         /*
         const arrDim = arr.domain.dim(rank).size;
         const domDim = realDom.dim(rank).size/2+1;
@@ -572,7 +570,8 @@ module FFTW {
     // to customize the error message for the role of the complex
     // domain.
     //
-    proc checkRealCplxDimMismatch(Dreal, Dcomplex, dim, fnname, cplxarrdesc="") {
+    proc checkRealCplxDimMismatch(Dreal, Dcomplex, fnname, cplxarrdesc="") {
+      const dim = Dreal.rank;
       const realDim = Dreal.dim(dim).size/2+1;
       const complexDim = Dcomplex.dim(dim).size;
 
@@ -585,7 +584,14 @@ module FFTW {
       return true;
     }
 
-    proc checkRealInPlaceDimMismatch(Dreal, Darr, dim, fnname) {
+    //
+    // Check for a mismatch in the proper size relationship between two
+    // domain dimensions for an in-place transform on reals, where the
+    // first describes the logical computation coordinates and the
+    // second describes the domain describing the padded array allocation.
+    //
+    proc checkRealInPlaceDimMismatch(Dreal, Darr, fnname) {
+      const dim = Dreal.rank;
       const arrDim = Darr.dim(dim).size;
       const domDim = 2*(Dreal.dim(dim).size/2+1);
       if (arrDim == domDim) then
