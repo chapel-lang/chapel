@@ -186,11 +186,13 @@ qioerr chpl_fs_is_mount(int* ret, const char* name) {
     // itself.
 
     char* curTok = strtok(safeNameCopy, "/");
-    // should never be null.  The only string which would return null is "/",
-    // but that directory is not a link, so won't be here in the first place.
     char* nextTok = strtok(NULL, "/");
     // We need the next token to determine if the path is longer than a single
     // link name.
+    assert(curTok != NULL);
+    // should never be null.  The only string which would return null is "/",
+    // but that directory is not a link, so won't be here in the first place.
+
     if (nextTok != NULL) {
       // name includes a path longer than just the current symlink.
       // Thus, we should copy up to (but not including) the basename of the
