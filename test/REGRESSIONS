@@ -1,4 +1,4 @@
-+# USAGE: the intent of this file is to keep track of current
+# USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.
 #
 # The file itself is divided into several major sections, set off by
@@ -216,18 +216,14 @@ Chapel string passed to external routine (2015-03-05, kyleb)
 ===================
 darwin
 Inherits 'general'
-Reviewed 2015-03-16
+Reviewed 2015-03-17
 ===================
-
-Unable to compile C test (2015-03-14, mferguson)
-------------------------------------------------
-[Error matching compiler output for io/ferguson/preadc/preadvpwritev]
 
 
 ===================
 gnu.darwin
 Inherits 'darwin'
-Reviewed 2015-03-16
+Reviewed 2015-03-17
 ===================
 
 
@@ -334,8 +330,14 @@ Reviewed 2015-03-16
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-03-16
+Reviewed 2015-03-18
 ===================
+
+start_test --valgrind uses chpl instead of chpldoc (2015-03-11, Thomas)
+-----------------------------------------------------------------------
+[Error matching compiler output for compflags/thomasvandoren/chpldoc.doc (compopts: 1)]
+[Error matching compiler output for release/examples/primers/chpldoc.doc (compopts: 1)]
+
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
@@ -346,8 +348,8 @@ conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 
 sporadic invalid write in dl_lookup_symbol->do_lookup_x, read in dl_name_match_p
 --------------------------------------------------------------------------------
-[Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-05, 2015-01-12..)
-[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..2015-02-18, 2015-02-19..2015-02-26, 2015-02-28)
+[Error matching program output for performance/sungeun/dgemm] (..., 2014-11-29..)
+[Error matching program output for studies/sudoku/dinan/sudoku] (..., 2015-02-19..2015-02-26, 2015-02-28..2015-03-07)
 
 sporadic execution timeout
 --------------------------
@@ -577,12 +579,8 @@ Sporadic failures (2015-03-13..)
 ================================
 xc-wb.prgenv-intel
 Inherits 'xc-wb.*' and '*intel*'
-Reviewed 2015-03-16
+Reviewed 2015-03-17
 ================================
-
-Error compiling C tests due to third-party changes (2015-03-06, gbt, michael)
------------------------------------------------------------------------------
-[Error compiling C Regexp tests]
 
 
 =============================
@@ -632,8 +630,8 @@ error differs but within acceptable margin; should squash error printing (..)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
-Execution timeout (206-03-04, vass)
------------------------------------
+Execution timeout (2015-03-04, vass - won't fix or skipif or suppress)
+----------------------------------------------------------------------
 [Error: Timed out executing program parallel/forall/vass/ri-3-stress (compopts: 1)] 
 
 Execution timeout (2015-02-15)
@@ -767,7 +765,7 @@ sporadic execution timeouts
 ===================
 x?.ugni-qthreads.*
 Inherits 'x?.*'
-Reviewed 2015-03-16
+Reviewed 2015-03-17
 ===================
 
 segfaults in various tests (2015-03-06, though we missed a few days, gbt)
@@ -778,7 +776,7 @@ segfaults in various tests (2015-03-06, though we missed a few days, gbt)
 ===================
 xe.ugni.*
 Inherits 'xe.*'
-Reviewed 2015-03-16
+Reviewed 2015-03-17
 ===================
 
 === sporadic failures below ===
@@ -786,13 +784,13 @@ Reviewed 2015-03-16
 sporadic execution timeouts
 ---------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (last seen 2015-03-05 on xe.ugni.intel)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (last seen 2015-03-07 on xe.ugni.gnu)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (last seen 2015-03-17 on xe.ugni.gnu)
 
 
 ==========================================
 xc.knc
 Inherits 'xc.*'
-Reviewed 2015-03-16
+Reviewed 2015-03-18
 ==========================================
 
 Unclear how KNCs interact with the file system on Crays (since first run)
@@ -983,7 +981,7 @@ Reviewed 2015-03-16
 
 check_channel assertion failure
 -------------------------------
-[Error matching C regexp test ./regexp_channel_test Regexp Channels Test]
+[Error matching program output for regexp/ferguson/ctests/regexp_channel_test]
 
 QIO strcmp(got, expect) assertion error
 ---------------------------------------
@@ -998,7 +996,7 @@ sporadic pthread_cond_init failed
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (cygwin64 occasionally succeeds since 2014-11-27.., cygwin32 almost never succeeds since cygwin32 started 2014-12-06..)
 [Error: Timed out executing program reductions/diten/testSerialReductions (compopts: 1)] (2015-03-07..)
 
 ===========================
@@ -1024,18 +1022,23 @@ Consistent execution timouts
 ----------------------------
 [Error: Timed out executing program io/ferguson/ctests/qio_test (compopts: 1)]
 
+A package needed for chpldoc is not installed (2015-03-12, Thomas)
+------------------------------------------------------------------
+[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc.doc]
+[Warning: Could not find chpldoc, skipping test release/examples/primers/chpldoc.doc]
+
 
 === sporadic failures below ===
 
 sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..2015-02-18, 2015-02-20..2015-02-22, 2015-02-24, 2015-03-01..2015-03-06)
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (on and off 2014-12-07..)
 
 
 ================================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
-Reviewed 2015-03-16
+Reviewed 2015-03-18
 ================================
 
 QIO qio_err_to_int() == EEOF assertion error
