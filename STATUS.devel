@@ -60,9 +60,8 @@ General (see also portability section at the bottom of this file)
   # modules/diten/module_use_hides_size_var.future
   # types/records/sungeun/chapelTypes/record_array.future
   # extern/vass/c_sublocid_any.inner-extern.future
-- There are several internal memory leaks:
+- There are several internal memory leaks
   # memory/figueroa/StringLeaks5.future
-  # memory/figueroa/LeakedMemory6.future
   - All strings are leaked
   - Privatized domains and arrays (i.e., those that use the standard
     distributions) are leaked
@@ -119,7 +118,6 @@ Types, Params, Variables, and Consts
   # domains/bradc/modDomMethod.future
   # domains/bradc/modDomQuery.future
   # domains/bradc/assignConstDom.future
-  # classes/bradc/arrayInClass/arrayDomInClassRecord-illegal.future
   # types/records/const-checking/todo-multiple-asgn-errors.future
 
 
@@ -139,8 +137,6 @@ Conversions
   # types/enum/sungeun/cast_neg_start_oor_2.future
   # functions/diten/param_enum_to_int.future
   # functions/diten/param_enum_to_string.future
-- Casts from uint param to strings treat the string as int.
-  # users/vass/param-uint-to-param-string.future
 - Casts to non-type variables do not result in an error at compile time.
   # expressions/vass/cast-to-non-type-1.future
   # expressions/vass/cast-to-non-type-2.future
@@ -269,9 +265,6 @@ Functions and Iterators
 - The implicit 'setter' argument passed to other functions may be
   incorrect.
   # functions/vass/setter-passed-to-another-fun.future
-- Iterators yielding locale types result in an internal compiler
-  error.
-  # functions/iterators/sungeun/iterInClass.future
 - A forall loop with an iteratable expression that does not provide
   leader/follower iterators cause an internal compiler error.
   # functions/iterators/vass/forall-without-leaderfollower.future
@@ -296,7 +289,6 @@ Strings
   sometimes by value.
   # distributions/bradc/block1Dlocale.future
   # multilocale/diten/needMultiLocales/remoteString3.future
-  # multilocale/sungeun/rvf/stringType.future
 - Casting from complex to string mishandles -0.0i
   # types/complex/diten/complexCastToString.future
 - Implcit conversion of a param c_string to string does not work.
@@ -311,8 +303,6 @@ Strings
   # types/string/sungeun/c_string/multilocale/c_str_on_remote_global_string.future
   # types/string/sungeun/c_string/multilocale/remote_assign_c_string.future
   # types/string/sungeun/c_string/multilocale/remote_assign_global_c_string.future
-- Calling string.c_str() on a non-local string results in a runtime error.
-  # types/string/sungeun/c_string/multilocale/c_str_on_remote_string.future
 - Changes to a string used in a begin statement are not visible from
   the begin body.
   # types/string/sungeun/stringInBegin.future
@@ -403,15 +393,6 @@ Classes, Records, and Unions
   to compile without an explicitly specified element type.
   # classes/stonea/arrayAliasRecordMember.future
   # studies/hpcc/HPL/stonea/serial/hplExample1.future
-- Parentheses-less methods of classes/records may result in failed
-  compilation if they are not declared within the class/record
-  definition.
-  # classes/vass/generic-parenthesesless-1.future
-  # classes/vass/generic-parenthesesless-2.future
-  # classes/vass/generic-parenthesesless-3.future
-  # classes/vass/generic-parenthesesless-4.future
-  # classes/vass/generic-parenthesesless-5.future
-  # classes/vass/generic-parenthesesless-big1.future
 - Multiple inheritance as defined in the spec (single base class with
   fields) is not implemented.
   # classes/figueroa/DestructorSubclassing2.future
@@ -441,8 +422,6 @@ Classes, Records, and Unions
 - Function resolution may be overly conservative for methods of subclasses.
   # classes/bradc/compilerErrorInMethod/testClear.future
   # classes/diten/subclassMethodCall.future
-- User-defined copy constructors are not supported.
-  # classes/diten/test_destructor3.future
 - Declaring class members using type aliases may result in unresolved
   type errors.
   # arrays/deitz/part5/test_array_type_field_type.future 
@@ -450,9 +429,6 @@ Classes, Records, and Unions
   # types/records/bharshbarger/nestedRecordInClass2.future
 - Cannot call 'new' on type variables for classes and records
   # types/typedefs/tzakian/classConstructorsFromTypes.future
-- Iterator methods may not obey dynamic dispatch.
-  # trivial/jturner/iter_overload_simple.future
-  # functions/iterators/vass/dynamic-dispatch-iterators.future
 - Ambiguous definitions of class methods that are overridden in a
   subclass result in an internal compiler error.
   # classes/vass/duplicate-virtual-method-error-2.future
@@ -494,9 +470,6 @@ Classes, Records, and Unions
   # classes/vass/ref-like-intents/inout-subclass.future
   # classes/vass/ref-like-intents/out-subclass.future
   # classes/vass/ref-like-intents/ref-subclass.future
-- Printing of a string field in a record in a class does not work.
-  # types/records/sungeun/stringInRecordInClass.future
-  # types/string/sungeun/string2InRecordInClass.future
 - Specifying the type when declaring a record variable with const
   fields results in a compile time errors regarding assigning to const
   fields.
@@ -722,14 +695,9 @@ Optimizations
 -------------
 # OMITTED: optimizations/rafa/rankChange.future
 #  b/c workaround put in place
-- Compiling with --baseline (or disabling specific optimizations) may
-  result in incorrect code
-  # functions/sungeun/promotionWithNoInline.future
 - Disabling inlining may cause incorrect code to be generated.
   # SEE NIGHTLY BASELINE TESTING NOTES
   # functions/deitz/nested/test_nested_var_iterator3.future
-- Disabling inlining with -t results in a compiler seg fault.
-  # compflags/diten/noInlineAndHtml.future
 
 
 Miscellaneous
@@ -803,8 +771,6 @@ chpldoc
 - chpldoc comments that are not closed with using the specified
   comment style are not detected.
   # chpldoc/compflags/comment/badClose.future
-- Queried types are not properly handled by chpldoc.
-  # chpldoc/types/arguments/queried.future
 
 
 Developer
