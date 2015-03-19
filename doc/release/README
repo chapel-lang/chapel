@@ -53,7 +53,6 @@ This directory contains the following documentation:
     README.localeModels     :  information about Chapel locale models
     README.main             :  defining the 'main()' routine  TODO
     README.module_search    :  how modules are searched for to fulfill 'use's
-    README.regexp           :  using regular expressions in Chapel
     README.sets             :  set operations on associative arrays and domains
     README.subquery         :  querying the index set owned by a locale
     README.typeQueries      :  type query functions provided by Types module
