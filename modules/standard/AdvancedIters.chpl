@@ -18,15 +18,16 @@
  */
 
 /*
-For more information, see "User-Defined Parallel Zippered iterators
-in Chapel". Bradford L. Chamberlain, Sung-Eun Choi, Steven J. Deitz,
-Angeles Navarro. PGAS 2011: Fifth Conference on Partitioned Global
-Address Space Programming Models, October 2011.
+  For more information, see "User-Defined Parallel Zippered iterators
+  in Chapel". Bradford L. Chamberlain, Sung-Eun Choi, Steven J. Deitz,
+  Angeles Navarro. PGAS 2011: Fifth Conference on Partitioned Global
+  Address Space Programming Models, October 2011.
 */
 
 /*
    An atomic test-and-set lock.
 */
+pragma "no doc"
 record vlock {
   var l: atomic bool;
   proc lock() {
@@ -38,7 +39,7 @@ record vlock {
 }
 
 /*
-   A config param to control debugging output.
+   Toggle debugging output.
 */
 config param debugAdvancedIters:bool=false;
 
@@ -46,7 +47,7 @@ config param debugAdvancedIters:bool=false;
 
 /*
    The serial version of the dynamic iterator.
-   Essentially identical to the default range iterator.
+   Equivalent to serial iteration over the range ``c``.
 */
 iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 
@@ -59,20 +60,22 @@ iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 // Parallel iterator
 
 /*
-   The parallel leader for the dynamic iterator.
+:arg c: The range to iterate over. The length of the range must be greater than zero.
+:type c: range(?)
+:arg chunkSize: The size of chunks to be yielded to each thread. Must be greater than zero.
+:type chunkSize: int
+:arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
+:type numTasks: int
 
-   :arg c: The range to iterate over. The length of the range must be greater than zero.
+:yields: Indices in the range ``c``.
 
-   :arg chunkSize: The size of chunks to be yielded to each thread. Must be greater than zero.
-   :type chunkSize: int
 
-   :arg numTasks: The number of tasks to use. Must be >= zero.
-   :type numTasks: int
+This iterator is equivalent to the dynamic scheduling approach of OpenMP.
+Given an input range ``c``, each task is assigned chunks of size
+``chunkSize`` from ``c`` (or the remaining iterations if there are fewer
+than ``chunkSize``). This continues until there are no remaining iterations
+in ``c``.
 
-   If this iterator cannot make use of more than one task, no tasks are created.
-
-   Otherwise, this iterator will yield chunks of the specified size to each
-   thread until all indices in the range have been yielded.
 */
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int=0) 
 where tag == iterKind.leader
@@ -145,7 +148,10 @@ where tag == iterKind.follower
 
 //************************* Guided iterator
 
-//Serial iterator 
+/*
+   The serial version of the guided iterator.
+   Equivalent to serial iteration over the range ``c``.
+*/
 iter guided(c:range(?), numTasks:int=0) {
 
   if debugAdvancedIters then 
@@ -154,10 +160,20 @@ iter guided(c:range(?), numTasks:int=0) {
   for i in c do yield i;                  
 }
 
+/*
+  :arg c: The range to iterate over. Must have a length greater than zero.
+  :type c: range(?)
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
+  :type numTasks: int
 
-// Parallel iterator
+  This iterator is equivalent to the guided policy of OpenMP: Given an input
+  range ``c``, each task is assigned chunks of variable size, until there are
+  no remaining iterations in ``c``. The size of each chunk is the number of
+  unassigned iterations divided by the number of tasks, ``numTasks``. The size
+  decreases approximately exponentially to 1. The splitting strategy is
+  therefore adaptive.
 
-// Leader iterator
+*/
 iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader 
 {   
@@ -193,6 +209,7 @@ where tag == iterKind.leader
 }
 
 // Follower
+pragma "no doc"
 iter guided(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 
@@ -207,7 +224,10 @@ where tag == iterKind.follower
 }
 
 //************************* Adaptive work-stealing iterator
-//Serial iterator 
+/*
+   The serial version of the adaptive iterator.
+   Equivalent to serial iteration over the range ``c``.
+*/
 iter adaptive(c:range(?), numTasks:int=0) {  
 
   if debugAdvancedIters then 
@@ -219,16 +239,54 @@ iter adaptive(c:range(?), numTasks:int=0) {
 
 
 // Parallel iterator
+/*
+The enum used to represent adaptive methods.
 
+- ``Whole``
+  Each task without work tries to steal from its neighbor range
+  until it exhausts that range. Then the task continues with the next
+  neighbor range, and so on until there is no more work. This is the default
+  policy.
+
+- ``RoundRobin``
+  Each task without work tries to steal once from its neighbor range, next
+  from the following neighbor range and so on in a round-robin way until
+  there is no more work.
+
+- ``WholeTail``
+  Similar to the ``Whole`` method, but now the splitting in the victim
+  range is performed from its tail.
+*/
 enum Method {
-  Whole = 0,            // Steal until range is exhausted
-  RoundRobin = 1,       // Steal from a different victim every time
-  WholeTail = 2         // Steal from the tail until range is exhausted
+  Whole = 0,
+  RoundRobin = 1,
+  WholeTail = 2
 };
 
+/*
+  Used to select the adaptive stealing method. Defaults to ``Whole``.
+  See :data:`Method` for more information.
+*/
 config param methodStealing = Method.Whole;
 
-// Leader iterator
+/*
+  :arg c: The range to iterate over. Must have a length greater than zero.
+  :type c: range(?)
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
+  :type numTasks: int
+
+  This iterator implements a naive adaptive binary splitting work-stealing
+  strategy: Initially the leader iterator distributes the range to split, ``c``,
+  evenly among the ``numTasks`` tasks.
+
+  Then, each task performs adaptive splitting on its local sub-range's iterations.
+  When a task exhausts its local iterations, it steals and splits from the
+  range of another task (the victim). The splitting method on the local range
+  and on the victim range is binary: i.e. the size of each chunk is computed as
+  the number of unassigned iterations divided by 2. There are three stealing
+  strategies that can be selected at compile time using the config param
+  :param:`methodStealing`.
+*/
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
   
@@ -356,6 +414,7 @@ where tag == iterKind.leader
 }
 
 // Follower
+pragma "no doc"
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 {
@@ -369,6 +428,7 @@ where tag == iterKind.follower
 }
 
 //************************* Helper functions
+pragma "no doc"
 proc defaultNumTasks(nTasks:int)
 {
   var dnTasks=nTasks;
@@ -381,6 +441,7 @@ proc defaultNumTasks(nTasks:int)
   return dnTasks;
 }
 
+pragma "no doc"
 proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:bool, ref lock : vlock, splitTail:bool=false)
 {
   type rType=rangeToSplit.type;
