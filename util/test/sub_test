@@ -203,6 +203,11 @@ def LauncherTimeoutArgs(seconds):
 def ShellEscape(str):
     return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', str)
 
+# Escape all special characters but leave spaces alone
+def ShellEscapeCommand(str):
+    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{}])', r'\\\1', str)
+
+
 # Grabs the start and end of the output and replaces non-printable chars with ~
 def trim_output(output):
     max_size = 256*1024 # ~1/4 MB
@@ -1261,6 +1266,7 @@ for testname in testsrc:
             sys.stdout.write(' %s'%(' '.join(args)))
         sys.stdout.write(' < %s]\n'%(compstdin))
         sys.stdout.flush()
+        cmd=ShellEscapeCommand(cmd);
         if useTimedExec:
             wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
             p = subprocess.Popen([timedexec, str(comptimeout), wholecmd],
