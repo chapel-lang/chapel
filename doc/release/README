@@ -37,7 +37,6 @@ This directory contains the following documentation:
     README.auxIO            :  information about Auxiliary I/O with Chapel
     README.chpldoc          :  notes on using the 'chpldoc' capability
     README.comm-diagnostics :  tracking communication events
-    README.curl             :  information about curl and Chapel
     README.dsi              :  requirements/guidelines on writing a domain map
     README.extern           :  calling external C routines
     README.fileUtil         :  information about new file capabilities
