@@ -22,8 +22,7 @@ are as follows:
 \noindent The optional modules include:
 
 \begin{tabular}{lll}
-\hspace{1pc} & \chpl{AdvancedIters} & Advanced iterator functions \\
-             & \chpl{UtilMath} & Math-related utilities \\
+\hspace{1pc} & \chpl{UtilMath} & Math-related utilities \\
 \end{tabular}
 
 There is an expectation that each of these modules will be extended
@@ -635,84 +634,6 @@ These are documented in the following README in the Chapel release:
 
 Optional modules can be used by a Chapel program via the \chpl{use}
 keyword (\rsec{Using_Modules}).
-
-
-\subsection{AdvancedIters}
-\label{AdvancedIters}
-\index{modules!standard!AdvancedIters@\chpl{AdvancedIters}}
-
-The \chpl{AdvancedIters} module contains several iterators that can be
-used to drive a \chpl{forall} loop by performing dynamic and adaptive splitting
-of a range's iterations.
-
-\begin{protohead}
-iter dynamic(r:range(?), chunkSize:int, numTasks:int=0) {
-\end{protohead}
-\begin{protobody}
-
-  This iterator is equivalent to the dynamic scheduling approach of
-  OpenMP: Given an input range \chpl{r}, each task (of
-  \chpl{numTasks}) is assigned chunks of size \chpl{chunkSize} from
-  \chpl{r} (or the remaining iterations if there are fewer than
-  \chpl{chunkSize}). This continues until there are no remaining
-  iterations in \chpl{r}.  If \chpl{numTasks} has the value 0, it will
-  use the value indicated by \chpl{dataParTasksPerLocale}
-  (\rsec{data_parallel_knobs}).
-
-\end{protobody}
-
-\begin{protohead}
-iter guided(r:range(?), numTasks:int = 0)
-\end{protohead}
-\begin{protobody}
-  This iterator is equivalent to the guided policy of OpenMP: Given an
-  input range \chpl{r}, each task (of \chpl{numTasks}) is assigned
-  chunks of variable size, until there are no remaining iterations in
-  \chpl{r}. The size of each chunk is the number of unassigned
-  iterations divided by the number of tasks, \chpl{numTasks}. The size
-  decreases approximately exponentially to 1. The splitting strategy
-  is therefore adaptive.  If \chpl{numTasks} has the value 0, it will
-  use the value indicated by \chpl{dataParTasksPerLocale}
-  (\rsec{data_parallel_knobs}).
-
-\end{protobody}
-
-\begin{protohead}
-iter adaptive(r:range(?), numTasks:int = 0)
-\end{protohead}
-\begin{protobody}
-  This iterator implements a naive adaptive binary splitting
-  work-stealing strategy: Initially the leader iterator distributes
-  the range to split, \chpl{r}, evenly among the \chpl{numTasks}
-  tasks.  If \chpl{numTasks} has the value 0, it will use the value
-  indicated by \chpl{dataParTasksPerLocale}
-  (\rsec{data_parallel_knobs}).
-
-  Then, each task performs adaptive splitting on its local
-  sub-range's iterations. When a task exhausts its local iterations,
-  it steals and splits from the range of another task (the
-  victim). The splitting method on the local range and on the victim
-  range is binary: i.e. the size of each chunk is computed as the
-  number of unassigned iterations divided by 2. There are three
-  stealing strategies that can be selected at compile time using the
-  config param \chpl{methodStealing}:
-
-\begin{itemize}
-
-\item \chpl{methodStealing}=0 : Each task without work tries to steal
-  from its neighbor range until it exhausts that range. Then the task
-  continues with the next neighbor range, and so on until there is no
-  more work.  This is the default policy.
-
-\item \chpl{methodStealing}=1: Each task without work tries to steal
-  once from its neighbor range, next from the following neighbor range
-  and so on in a round-robin way until there is no more work.
-
-\item \chpl{methodStealing}=2: Similar to method 0, but now the
-  splitting in the victim range is performed from its tail.
-\end{itemize}
-
-\end{protobody}
 
 
 \subsection{UtilMath}
