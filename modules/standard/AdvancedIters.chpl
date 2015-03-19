@@ -18,11 +18,15 @@
  */
 
 /*
+  This module contains several iterators that can be used to drive a ``forall``
+  loop by performing dynamic and adaptive splitting of a range's iterations.
+
   For more information, see "User-Defined Parallel Zippered iterators
   in Chapel". Bradford L. Chamberlain, Sung-Eun Choi, Steven J. Deitz,
   Angeles Navarro. PGAS 2011: Fifth Conference on Partitioned Global
   Address Space Programming Models, October 2011.
 */
+module AdvancedIters {
 
 /*
    An atomic test-and-set lock.
@@ -461,4 +465,6 @@ proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:bool, ref
   rangeToSplit=rangeToSplit#(direction*(size-totLen));
   lock.unlock();
   return firstRange;
+}
+
 }
