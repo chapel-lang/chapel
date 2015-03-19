@@ -8,12 +8,14 @@ config const zipIter = false;
 config const memFraction = 16;
 config const printPerf = false;
 
+type elemType = uint(8);
+
 const totalMem = here.physicalMemory(unit = MemUnits.Bytes);
-const n = (totalMem / numBytes(uint)) / memFraction;
+const n = (totalMem / numBytes(elemType)) / memFraction;
 
 const space = 1..n;
-var data : [space] uint;
-var x : uint = 2;
+var data : [space] elemType;
+var x : elemType = 2;
 
 var time : Timer;
 time.start();
