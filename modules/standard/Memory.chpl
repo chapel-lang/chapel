@@ -19,13 +19,13 @@
 
 /*
   The :mod:`Memory` module provides procedures which report information
-  regarding memory usage.  Except for :proc:`locale.physicalMemory` as
-  noted below, all of the procedures in :mod:`Memory` require memory
-  tracking to be enabled.  This can be done by setting at least one of
-  the following configuration variables at execution time, using either
-  the ``--configVarName=value`` or ``-sconfigVarName=value`` command
-  line options when a program is run.  If this is not done, they will
-  halt the program with an error message when called.
+  about memory usage.  With one exception, to use these procedures you
+  must enable memory tracking.  Do this by setting one or more of the
+  config vars below, using appropriate ``--configVarName=value`` or
+  ``-sconfigVarName=value`` command line options when you run the
+  program.  If memory tracking is not enabled, calling any procedure
+  described here, other than :proc:`locale.physicalMemory`, will cause
+  the program to halt with an error message.
 
   ``memTrack``: :type:`bool`:
     Enable memory tracking.  This causes memory allocations and
