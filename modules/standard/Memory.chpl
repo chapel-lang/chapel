@@ -24,13 +24,14 @@
   tracking to be enabled.  This can be done by setting at least one of
   the following configuration variables at execution time, using either
   the ``--configVarName=value`` or ``-sconfigVarName=value`` command
-  line options when a program is run.
+  line options when a program is run.  If this is not done, they will
+  halt the program with an error message when called.
 
   ``memTrack``: :type:`bool`:
     Enable memory tracking.  This causes memory allocations and
-    deallocations to be internally tracked, in order to support
-    logging them on the fly and/or producing any of several kinds of
-    memory-related reports, described below.
+    deallocations to be internally tracked, to support logging them on
+    the fly and/or producing any of several kinds of memory-related
+    reports, described below.
 
   ``memLeaksTable``: :type:`bool`:
     Enable memory tracking and produce detailed information about
@@ -97,8 +98,8 @@ enum MemUnits {Bytes, KB, MB, GB};
   a larger amount, or system or user limits which might prevent
   allocating so much.
 
-  *Note:* This is the only procedure in the :mod:`Memory` module which
-  does not need memory tracking enabled in order to work properly.
+  *Note:* Unlike the other procedures in the :mod:`Memory` module, this
+  one does not require memory tracking to be enabled.
 
   :arg unit: Units in which the returned value is to be expressed.
   :type unit: MemUnits
