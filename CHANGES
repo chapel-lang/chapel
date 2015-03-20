@@ -14,8 +14,8 @@ version 1.11.0
 Fourteenth public release of Chapel, April 2, 2015
 
 
-Highlights (see below for more information)
--------------------------------------------
+Highlights (see entries below for more information)
+----------
 * added a new FileSystem standard module supporting operations on files/dirs
 * added a new FFTW standard module supporting key FFTW routines
 * revamped 'chpldoc' and used it to create web docs for all standard modules
@@ -24,6 +24,7 @@ Highlights (see below for more information)
 * added support for vectorization of data parallel loops and operations
 * optimized away communication code for module-scope variables and local arrays
 * added an early prototype interactive/interpreted mode for writing Chapel code
+* initial support for Python->Chapel interoperability via PyChapel
 * made 'ugni' the default CHPL_COMM setting for users of the cray-x* module
 * added a new 'chpltags' utility to generate emacs/vim tags for Chapel code
 * numerous other improvements for better performance and cleaner generated code
@@ -68,7 +69,7 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * added support for task intent clauses and semantics to forall loops
   (see TODO -- vass)
-* added support for 'reduce' intents on forall loops
+* added initial support for 'reduce' intents on forall loops
   (see TODO -- vass)
 * removed the 'type select x' syntax in favor of simply using 'select x.type'
 * made read()s of sync/single variables result in a compiler error
@@ -83,6 +84,8 @@ New Features
 
 New Interoperability Features
 -----------------------------
+* inital support for Python->Chapel interoperability via PyChapel
+  (see http://pychapel.readthedocs.org/ for more details)
 * added a prototype capability to embed external dependences to source via 'use'
   (e.g., use "foo.h", "-lfoo"; is like adding these to the 'chpl' command-line)
 * added support for passing multidimensional arrays to external routines
@@ -165,7 +168,7 @@ Platform-specific Changes
   (see doc/README.chplenv, doc/platforms/README.cray, and/or doc/README.tasks)
 * made CHPL_TASKS default to 'fifo' for 'cray-prgenv-cray' CHPL_TARGET_COMPILER
 * reduced the default heap size used for CHPL_COMM=ugni
-  (see TODO)
+  (see doc/platforms/README.cray)
 
 Portability Improvements
 ------------------------
@@ -244,7 +247,7 @@ Bug Fixes
 ---------
 * fixed a bug with dynamically dispatched iterators
 * fixed a bug with parallel iteration over non-naturally-aligned ranges
-* fixed a bug in which record variables did not call user-defined cosntructors
+* fixed a bug in which record variables did not call user-defined constructors
 * fixed a bug in which arrays of associative domains could cause a segfault
 * fixed a bug in which user identifiers could easily conflict with C identifiers
 * fixed a bug with formatted writes of integers using "###."
@@ -274,6 +277,8 @@ Platform-specific bug fixes
 
 Runtime Library Changes
 -----------------------
+* changed 'muxed' tasking to use # of threads equal to the # of CPUs by default
+  (see doc/platforms/README.cray)
 * changed Qthreads to yield after uncontested sync var locks to avoid starvation
 
 Compiler Performance
@@ -304,7 +309,7 @@ Testing System
 * added validation for CHPL_NIGHTLY_LOGDIR in nightly testing
 * fixed a bug for tests with multiple execopts settings that timed out
 * permitted suppression files to contain blank lines
-* fix bug in which supression-based issues were printed in the test summary only
+* fix bug in which suppression-based issues only appeared in the test summary
 * fixed a bad interaction between env. vars. set in sub_test vs. execenv files
 * made sub_test ignore OS errors during unlinking to quiet false negatives
 
@@ -381,7 +386,7 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
-* simplified interactions between locales models and the runtime
+* simplified interactions between locale models and the runtime
 * improved the non-blocking communication interface
 * added support for the main process to run Chapel tasks
 * guarded against some src==dst calls to memcpy()
@@ -4507,3 +4512,5 @@ High-Level Themes
 - support for base language features
 - designed for correctness over performance
 - target audience: HPLS language evaluation team and HPCS mission partners
+
+ LocalWords:  ugni CHPL COMM chpltags NetBSD
