@@ -19,8 +19,57 @@
 
 pragma "no use ChapelStandard"
 
+/*
+  This module defines config params that allow observing inter-locale
+  communication during module initialization and teardown.
+
+  It is hard for a programmer to determine exactly what happens during
+  initialization or teardown of a module, because the code that runs
+  then does so implicitly, as a result of the declarations present.
+  And even if that code can be identified, doing debug output or
+  logging data for later reporting might not work because the Chapel
+  capabilities needed to do so could be unavailable due to being
+  implemented by built-in modules which themselves are not yet
+  initialized, or have already been torn down.
+
+  This module is designed to help with that problem, by providing
+  built-in support for doing on-the-fly reporting and/or background
+  counting of inter-locale communication operations during module
+  initialization and teardown.  To use it, set either or both of the
+  config params below using appropriate ``-sconfigParamName=value``
+  command line options when you compile your program.
+
+  The reporting and/or counting enabled by this module covers all of
+  program execution, from just before the first module is initialized
+  until just after the last one is torn down.  This is almost always a
+  superset of the part of the program that is of interest, which is
+  often just a single module.  To learn what communication is being
+  done by a single module during its initialization and teardown it is
+  usually necessary to run a small test program twice, once with the
+  module present and once without it.
+
+  Do not ``use`` this module.  It is already included in every program
+  automatically.  Using compiler command line options to set the
+  config params it provides is the only way to interact with it.
+ */
 module startInitCommDiags {
+  /*
+    If this is set, on-the-fly reporting of communication operations
+    will be turned on before any module initialization begins and
+    turned off after all module teardown ends.  See module
+    :mod:`CommDiagnostics` and its procedures :proc:`startVerboseComm`
+    and :proc:`stopVerboseComm` for more information.
+   */
   config param printInitVerboseComm = false;
+
+  /*
+    If this is set, communication operations are counted from before
+    any module initialization begins until after all module teardown
+    ends, and then the aggregate counts are printed.  See module
+    :mod:`CommDiagnostics` and its procedures
+    :proc:`startCommDiagnostics`, :proc:`stopCommDiagnostics`, and
+    :proc:`getCommDiagnostics` for more information.
+   */
   config param printInitCommCounts = false;
 
   if printInitVerboseComm {

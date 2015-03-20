@@ -19,6 +19,11 @@
 
 pragma "no use ChapelStandard"
 
+/*
+  This is a companion module to :mod:`startInitCommDiags` and has no
+  interface of its own.  Do not ``use`` this.  See the documentation
+  for :mod:`startInitCommDiags` for more information.
+ */
 module stopInitCommDiags {
   use startInitCommDiags;
 
