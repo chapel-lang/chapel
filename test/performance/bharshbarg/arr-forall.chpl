@@ -5,7 +5,7 @@
 use Memory, Time, Types;
 
 config const zipIter = false;
-config const memFraction = 16;
+config const memFraction = 100;
 config const printPerf = false;
 
 type elemType = uint(8);
