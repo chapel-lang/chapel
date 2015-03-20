@@ -170,6 +170,8 @@ iter guided(c:range(?), numTasks:int=0) {
   :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
   :type numTasks: int
 
+  :yields: Indices in the range ``c``.
+
   This iterator is equivalent to the guided policy of OpenMP: Given an input
   range ``c``, each task is assigned chunks of variable size, until there are
   no remaining iterations in ``c``. The size of each chunk is the number of
@@ -278,6 +280,8 @@ config param methodStealing = Method.Whole;
   :type c: range(?)
   :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
   :type numTasks: int
+
+  :yields: Indices in the range ``c``.
 
   This iterator implements a naive adaptive binary splitting work-stealing
   strategy: Initially the leader iterator distributes the range to split, ``c``,
