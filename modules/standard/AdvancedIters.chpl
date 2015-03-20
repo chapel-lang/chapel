@@ -18,7 +18,7 @@
  */
 
 /*
-  This module contains several iterators that can be used to drive a ``forall``
+  This module contains several iterators that can be used to drive a `forall`
   loop by performing dynamic and adaptive splitting of a range's iterations.
 
   For more information, see "User-Defined Parallel Zippered iterators
@@ -64,21 +64,24 @@ iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 // Parallel iterator
 
 /*
-:arg c: The range to iterate over. The length of the range must be greater than zero.
-:type c: range(?)
-:arg chunkSize: The size of chunks to be yielded to each thread. Must be greater than zero.
-:type chunkSize: int
-:arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
-:type numTasks: int
 
-:yields: Indices in the range ``c``.
+  :arg c: The range to iterate over. The length of the range must be greater than zero.
+  :type c: range(?)
+
+  :arg chunkSize: The size of chunks to be yielded to each thread. Must be greater than zero.
+  :type chunkSize: int
+
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
+  :type numTasks: int
+
+  :yields: Indices in the range ``c``.
 
 
-This iterator is equivalent to the dynamic scheduling approach of OpenMP.
-Given an input range ``c``, each task is assigned chunks of size
-``chunkSize`` from ``c`` (or the remaining iterations if there are fewer
-than ``chunkSize``). This continues until there are no remaining iterations
-in ``c``.
+  This iterator is equivalent to the dynamic scheduling approach of OpenMP.
+  Given an input range ``c``, each task is assigned chunks of size
+  ``chunkSize`` from ``c`` (or the remaining iterations if there are fewer
+  than ``chunkSize``). This continues until there are no remaining iterations
+  in ``c``.
 
 */
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int, numTasks:int=0) 
@@ -165,8 +168,10 @@ iter guided(c:range(?), numTasks:int=0) {
 }
 
 /*
+
   :arg c: The range to iterate over. Must have a length greater than zero.
   :type c: range(?)
+
   :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
   :type numTasks: int
 
@@ -276,8 +281,10 @@ enum Method {
 config param methodStealing = Method.Whole;
 
 /*
+
   :arg c: The range to iterate over. Must have a length greater than zero.
   :type c: range(?)
+
   :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
   :type numTasks: int
 
