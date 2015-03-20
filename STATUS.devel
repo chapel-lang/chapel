@@ -510,6 +510,11 @@ Classes, Records, and Unions
 - Records passed by ref intent to dynamically dispatched methods do
   not work.
   # users/kassner/dynDispatchRefRecordArg.future
+- Remote records have wide members shallow-copied.  Array members may
+  not share the same locale as the containing record violating the
+  intended semantics of array copying.
+  # types/records/bharshbarger/remoteBlankRecord.future
+  # types/records/bharshbarger/remoteInRecord.future
 - Classes arguments passed to out, inout, and ref intent formals
   result in a compiler internal error.
   # classes/vass/ref-like-intents/inout-subclass.future
