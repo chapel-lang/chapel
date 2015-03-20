@@ -509,14 +509,20 @@ proc exists(name: string): bool {
 }
 
 
-/* iter findfiles(startdir = ".", recursive=false, hidden=false)
+/* Finds files from a given start directory and yields their names,
+   similar to simple invocations of the command-line `find` utility.
+   May be invoked in serial or non-zippered parallel contexts.
 
-   findfiles() is a simple find-like utility implemented using the
-   above routines
+   :arg startdir: the root directory from which to start the search, defaults to "."
+   :type startdir: string
 
-     * startdir: where to start when looking for files
-     * recursive: tells whether or not to descend recursively
-     * hidden: tells whether or not to yield hidden
+   :arg recursive: indicates whether or not to descend recursively into subdirectories (defaults to `false`)
+   :type recursive: bool
+
+   :arg hidden: indicates whether or not to descend into hidden subdirectories and yield hidden files (defaults to `false`)
+   :type hidden: bool
+
+   :yield:  the paths to any files found, relative to `startdir`, as strings
 */
 
 iter findfiles(startdir = ".", recursive=false, hidden=false) {
@@ -643,13 +649,13 @@ module chpl_glob_c_interface {
 }
 
 
-/* iter glob(pattern="*")
+/* Yields filenames that match a given `glob` pattern.  May be invoked
+   in serial or parallel contexts (zippered or non-).
 
-   glob() gives glob() capabilities and is implemented using C's glob()
+   :arg pattern: the glob pattern to match against (defaults to "*")
+   :type pattern: string
 
-     * pattern: the glob pattern to match against
-
-   By default, it will list all files/directories in the current directory
+   :yield: the matching filenames as strings
 */
 iter glob(pattern="*") {
   var glb : chpl_glob_c_interface.glob_t;
@@ -862,21 +868,26 @@ proc isMount(name: string): bool {
 }
 
 
-/* iter listdir(path: string, hidden=false, dirs=true, files=true, 
-                listlinks=true): string
-  
-    listdir() lists the contents of a directory, similar to 'ls'
-      * path: the directory whose contents should be listed
-      * hidden: should hidden files/directories be listed?
-      * dirs: should dirs be listed?
-      * files: should files be listed?
-      * listlinks: should symbolic links be listed?
-  
-   By default this routine lists all files and directories in the
-   current directory, including symbolic links, as long as they don't
-   start with '.'
-*/
+/* Lists the contents of a directory.  May be invoked in serial
+   contexts only.
 
+   :arg path: the directory whose contents should be listed
+   :type path: string
+
+   :arg hidden: indicates whether hidden files/directory should be listed (defaults to `false`)
+   :type hidden: bool
+
+   :arg dirs: indicates whether directories should be listed (defaults to `true`)
+   :type dirs: bool
+
+   :arg files: indicates whether files should be listed (defaults to `true`)
+   :type files: bool
+
+   :arg listlinks: indicates whether symbolic links should be listed (defaults to `true`)
+   :type listlinks: bool
+
+   :yield: the names of the specified directory's contents, as strings
+*/
 iter listdir(path: string, hidden=false, dirs=true, files=true, 
              listlinks=true): string {
   extern type DIRptr;
@@ -1139,28 +1150,29 @@ proc locale.umask(mask: int): int {
 }
 
 
-/* iter walkdirs(path: string=".", topdown=true, depth=max(int), 
-                 hidden=false, followlinks=false, sort=false): string
-  
-   walkdirs() recursively walks a directory structure, yielding
-   directory names.  The strings that are generated will be rooted
-   from 'path'.
+/* Recursively walk a directory structure, yielding directory names.
+   May be invoked in serial or non-zippered parallel contexts.
 
-     * path: the directory to start from
-     * topdown: indicates whether to yield the directories using a
-       preorder (vs. postorder) traversal
-     * depth: indicates the maximal depth of recursion to use
-     * hidden: indicates whether to enter hidden directories
-     * followlinks: indicates whether to follow symbolic links or not
-     * sort: indicates whether to consider subdirectories in sorted
-       order or not
-  
-   by default, walkdirs() will start in the current directory, process
-   directories in preorder; recursively traverse subdirectories; and
-   neither follow dotfile directories nor symbolic links.  It will not
-   sort the directories by default.
+   :arg path: the directory from which to start the walk (defaults to ".")
+   :type path: string
+
+   :arg topdown: indicates whether to yield a directory before or after descending into its children (defaults to `true`)
+   :type topdown: bool
+
+   :arg depth: indicates the maximum recursion depth to use (defaults to `max(int)`)
+   :type depth: int
+
+   :arg hidden: indicates whether to descend into hidden directories (defaults to `false`)
+   :type hidden: bool
+
+   :arg followlinks: indicates whether to follow symbolic links (defaults to `false`)
+   :type followlinks: bool
+
+   :arg sort: indicates whether or not to consider subdirectories in sorted order (defaults to `false`).  Note that requesting sorting has no effect in parallel invocations.
+   :type sort: bool
+
+   :yield: the directory names encountered, relative to `path`, as strings
 */
-
 iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
               followlinks=false, sort=false): string {
 
