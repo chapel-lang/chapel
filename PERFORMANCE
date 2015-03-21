@@ -39,39 +39,40 @@ To characterize Chapel performance, generally speaking...
 
 Experimental flags for improving performance
 --------------------------------------------
+Our current implementation supports the following config param-based
+flags, which are intended to provide a preview of performance
+improvements that we are working on delivering automatically in
+upcoming releases.  Both are available for use "at your own risk" in
+that they are not guaranteed to maintain program correctness (detailed
+after the flag's description).
 
-The following compiler flags are intended to provide a preview of
-performance improvements that we anticipate being delivered by the
-compiler automatically as it matures.  Both are available for use "at
-your own risk" in that they are not guaranteed to maintain program
-correctness (details available after each flag).
+* chpl -sassertNoSlicing ...
 
-* chpl -sassertNoSlicing=true ...
-
-  Chapel's arrays are currently heavyweight compared to C/Fortran in
-  order to support Chapel's rich array semantics.  Specifically, in
-  the most general case, Chapel's support for striding, reindexing,
-  and rank-change of arrays can require a multiplication when indexing
-  the innermost dimension of an array; in contrast, C and Fortran do
-  not require this multiplication.  For memory-bound programs, this
+  At present, indexing into a Chapel array tends to require an extra
+  multiply compared to C/Fortran, in order to support Chapel's rich
+  array semantics.  More specifically, Chapel's support for striding,
+  reindexing, and rank-change of arrays requires a multiplication to
+  index into an array's innermost dimension in the general case; but
+  we pay this cost for every array.  In contrast, C and Fortran do not
+  require such multiplications.  For memory-bound programs, this
   multiplication is rarely noticeable, but for programs that are
   well-tuned for the memory hierarchy, this extra multiplication can
-  have a significant impact.
+  have a significant performance impact.
 
   Work is currently underway to automatically distinguish between
-  arrays that require this multiplication and those that don't in
-  order to remove the overhead in the (common) case when it is
+  arrays that require this multiplication and those that do not in
+  order to remove the overhead in the (common) cases where it is
   unnecessary.  In the meantime, one can request that this
-  multiplication never be used within a program by throwing this flag.
-  The flag should be safe for any programs that do not reindex a
-  strided array or perform rank changes on an array that remove the
-  innermost dimension.
+  multiplication never be used for a given Chapel program by compiling
+  with this flag.  The flag should be safe for any program that does
+  not reindex a strided array or perform rank changes on an array to
+  remove the innermost dimension.
 
-* chpl -snoRefCount=true ...
+* chpl -snoRefCount ...
 
   At present, Chapel reference counts arrays, domains, and domain maps
   in a manner that is far too conservative.  This can add unnecessary
-  overhead, particularly when passing them between functions.  
+  overhead, particularly when passing such variables between functions.  
 
   This flag turns off such reference counting, but also results in
   leaking all arrays, domains, and domain maps.  For programs that
@@ -83,7 +84,8 @@ correctness (details available after each flag).
   We are currently evaluating changes to the implementation and
   language definition that would reduce (or eliminate) the amount of
   reference counting required by Chapel programs without introducing
-  leaks.  Once these changes are complete, this flag will be retired.
+  these memory leaks.  Once these changes are complete, this flag will
+  be retired.
 
 
 Tracking Chapel Performance
