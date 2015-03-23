@@ -92,6 +92,40 @@ module Math {
     }
     return _logBasePow2Help(val, baseLog2);
   }
+
+  pragma "no doc"
+  inline proc mod_help(m: integral, n: integral) {
+    const temp = m % n;
+
+    // eliminate some run-time tests if input(s) is(are) unsigned
+    return
+      if isNonnegative(n) then
+      if isUintType(m.type)
+        then temp
+          else ( if temp >= 0 then temp else temp + n )
+            else
+              // n < 0
+              ( if temp <= 0 then temp else temp + n );
+  }
+
+  pragma "no doc"
+  inline proc mod_help(x: real(?w), y: real(w)): real(w) {
+    // This codes up the standard definition, according to Wikipedia.
+    // Is there a more efficient implementation for reals?
+    return x - y*floor(x/y);
+  }
+
+  pragma "no doc"
+  inline proc sgn_help(i : int(?w)): int(8)
+    return ((i > 0) : int(8) - (i < 0) : int(8)) : int(8);
+
+  pragma "no doc"
+  inline proc sgn_help(i : uint(?w)): uint(8)
+    return (i > 0) : uint(8);
+
+  pragma "no doc"
+  inline proc sgn_help(x : real(?w)): int(8)
+    return ((x > 0.0) : int(8) - (x < 0.0) : int(8)) : int(8);
   //
   //////////////////////////////////////////////////////////////////////////
 
@@ -327,21 +361,6 @@ module Math {
      If the arguments are of unsigned type, then
      fewer condititionals will be evaluated at run time.
   */
-  proc divceil(m: integral, n: integral) return
-    if isNonnegative(m) then
-    if isNonnegative(n) then (m + n - 1) / n
-      else                     m / n
-        else
-          if isNonnegative(n) then m / n
-            else                     (m + n + 1) / n;
-
-
-  /* Returns :proc:`ceil`\(`m`/`n`),
-     i.e., the fraction `m`/`n` rounded up to the nearest integer.
-
-     If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time.
-  */
   proc divceil(param m: integral, param n: integral) param return
     if isNonnegative(m) then
     if isNonnegative(n) then (m + n - 1) / n
@@ -352,13 +371,28 @@ module Math {
 
 
 
+  /* Returns :proc:`ceil`\(`m`/`n`),
+     i.e., the fraction `m`/`n` rounded up to the nearest integer.
+
+     If the arguments are of unsigned type, then
+     fewer condititionals will be evaluated at run time.
+  */
+  proc divceil(m: integral, n: integral) return
+    if isNonnegative(m) then
+    if isNonnegative(n) then (m + n - 1) / n
+      else                     m / n
+        else
+          if isNonnegative(n) then m / n
+            else                     (m + n + 1) / n;
+
+
   /* Returns :proc:`floor`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer condititionals will be evaluated at run time.
   */
-  proc divfloor(m: integral, n: integral) return
+  proc divfloor(param m: integral, param n: integral) param return
     if isNonnegative(m) then
     if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
@@ -373,7 +407,7 @@ module Math {
      If the arguments are of unsigned type, then
      fewer condititionals will be evaluated at run time.
   */
-  proc divfloor(param m: integral, param n: integral) param return
+  proc divfloor(m: integral, n: integral) return
     if isNonnegative(m) then
     if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
@@ -628,29 +662,9 @@ module Math {
      If the arguments are of unsigned type, then
      fewer condititionals will be evaluated at run time.
   */
-  proc mod(m: integral, n: integral) {
-    const temp = m % n;
-
-    // eliminate some run-time tests if input(s) is(are) unsigned
-    return
-      if isNonnegative(n) then
-      if isUintType(m.type)
-        then temp
-          else ( if temp >= 0 then temp else temp + n )
-            else
-              // n < 0
-              ( if temp <= 0 then temp else temp + n );
+  inline proc mod(m:numeric, n:numeric) {
+    return mod_help(m, n);
   }
-
-  /* Computes the mod operator on the two numbers, defined as
-     ``mod(x,y) = x - y * floor(x / y)``.
-  */
-  proc mod(x: real(?w), y: real(w)): real(w) {
-    // This codes up the standard definition, according to Wikipedia.
-    // Is there a more efficient implementation for reals?
-    return x - y*floor(x/y);
-  }
-
 
   /* Returns a value for which :proc:`isnan` will return `true`. */
   inline proc NAN : real(64) return chpl_macro_NAN();
@@ -710,23 +724,10 @@ module Math {
   proc sgn(param i : integral) param
     return if i > 0 then 1 else if i == 0 then 0 else -1;
 
-  /* Returns the signum function of the integer argument `i`:
+  /* Returns the signum function of the argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
-  inline proc sgn(i : int(?w)): int(8)
-    return ((i > 0) : int(8) - (i < 0) : int(8)) : int(8);
-
-  /* Returns the signum function of the unsigned integer argument `i`:
-     1 if positive, -1 if negative, 0 if zero.
-  */
-  inline proc sgn(i : uint(?w)): uint(8)
-    return (i > 0) : uint(8);
-
-  /* Returns the signum function of the real argument `x`:
-     1 if positive, -1 if negative, 0 if zero.
-  */
-  inline proc sgn(x : real(?w)): int(8)
-    return ((x > 0.0) : int(8) - (x < 0.0) : int(8)) : int(8);
+  inline proc sgn(x: numeric) return sgn_help(x);
 
 
   /* Returns the sine of the argument `x`. */
