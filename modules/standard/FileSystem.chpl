@@ -1158,9 +1158,11 @@ proc locale.umask(mask: int): int {
 /* Recursively walk a directory structure, yielding directory names.
    May be invoked in serial or non-zippered parallel contexts.  
 
-   Note: The current parallel version is not very adaptive/dynamic in
-   its application of parallelism to the list of subdirectories at any
-   given level of the traversal, and could be improved in this regard.
+   .. note:: 
+            The current parallel version is not very adaptive/dynamic
+            in its application of parallelism to the list of
+            subdirectories at any given level of the traversal, and
+            could be improved in this regard.
 
    :arg path: The directory from which to start the walk (defaults to ``"."``)
    :type path: string
