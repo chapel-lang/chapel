@@ -56,6 +56,7 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 
 MODULES_TO_DOCUMENT = \
+	standard/AdvancedIters.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
@@ -77,6 +78,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Search.chpl \
 	standard/Sort.chpl \
 	standard/Sys.chpl \
+	standard/Types.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
