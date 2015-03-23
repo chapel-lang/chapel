@@ -513,10 +513,12 @@ proc exists(name: string): bool {
    similar to simple invocations of the command-line `find` utility.
    May be invoked in serial or non-zippered parallel contexts.
 
-   :arg startdir: The root directory from which to start the search (defaults to ``"."``)
+   :arg startdir: The root directory from which to start the search 
+                  (defaults to ``"."``)
    :type startdir: string
 
-   :arg recursive: Indicates whether or not to descend recursively into subdirectories (defaults to `false`)
+   :arg recursive: Indicates whether or not to descend recursively into 
+                   subdirectories (defaults to `false`)
    :type recursive: bool
 
    :arg hidden: Indicates whether or not to descend into hidden subdirectories and yield hidden files (defaults to `false`)
@@ -874,16 +876,19 @@ proc isMount(name: string): bool {
    :arg path: The directory whose contents should be listed
    :type path: string
 
-   :arg hidden: Indicates whether hidden files/directory should be listed (defaults to `false`)
+   :arg hidden: Indicates whether hidden files/directory should be listed 
+                (defaults to `false`)
    :type hidden: bool
 
-   :arg dirs: Indicates whether directories should be listed (defaults to `true`)
+   :arg dirs: Indicates whether directories should be listed 
+              (defaults to `true`)
    :type dirs: bool
 
    :arg files: Indicates whether files should be listed (defaults to `true`)
    :type files: bool
 
-   :arg listlinks: Indicates whether symbolic links should be listed (defaults to `true`)
+   :arg listlinks: Indicates whether symbolic links should be listed 
+                   (defaults to `true`)
    :type listlinks: bool
 
    :yield: The names of the specified directory's contents, as strings
