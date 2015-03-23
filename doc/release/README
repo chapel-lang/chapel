@@ -56,7 +56,6 @@ This directory contains the following documentation:
     README.regexp           :  using regular expressions in Chapel
     README.sets             :  set operations on associative arrays and domains
     README.subquery         :  querying the index set owned by a locale
-    README.typeQueries      :  type query functions provided by Types module
 
 
 --------------------
