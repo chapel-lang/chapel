@@ -3690,6 +3690,14 @@ proc channel.readln(ref args ...?k,
      the file with this function. If such cases are important please use
      :proc:`channel.read` instead.
 
+   For example, the following line of code reads a value of type `int`
+   from :var:`stdin` and uses it to initialize a variable ``x``:
+
+   .. code-block:: chapel
+
+     var x = stdin.read(int)
+
+
    :arg t: the type to read
    :returns: the value read
  */
