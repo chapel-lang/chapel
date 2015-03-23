@@ -140,7 +140,7 @@ Performance Improvements
 * added standalone parallel iterators for ranges and default domain maps
 * extended loop-invariant code motion to include certain global variables
 * added an 'assertNoSlicing' config that can be used to optimize array accesses
-  (see TODO)
+  (see $CHPL_HOME/PERFORMANCE)
 * avoided creating new singleton tasks within serial execution contexts
 
 Memory Improvements
@@ -203,6 +203,8 @@ Documentation
   (see doc/README.launcher, doc/platforms/README.cray)
 * added a note about ugni memory registration and concurrency with slurm
   (see doc/platforms/README.cray)
+* added a note about a longstanding undocumented feature to squash ref counting
+  (see $CHPL_HOME/PERFORMANCE)
 
 Example Codes
 -------------
