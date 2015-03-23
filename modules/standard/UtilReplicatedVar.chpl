@@ -21,7 +21,8 @@
 Support for user-level replicated variables.
 
 A "replicated" variable is a variable for which there is a copy on each locale.
-Referencing a replicated variable (in a stylized way, see below)
+Referencing a replicated variable
+(in a stylized way, see :ref:`below <basic-usage>`)
 accesses its copy on the current locale.
 
 Features:
@@ -37,11 +38,19 @@ Limitations:
 
 * Using a replicated variable of an array type is not straightforward.
   Workaround: declare that array itself as replicated, then access it normally,
-  e.g.::
+  e.g.:
+
+.. code-block:: chapel
 
    var replArray: [MyDomain dmapped ReplicatedDist()] real;
 
-How to use replicated variables::
+.. _basic-usage:
+
+-------------------------------
+How to use replicated variables
+-------------------------------
+
+.. code-block:: chapel
 
     use UtilReplicatedVar;
 
@@ -49,7 +58,7 @@ How to use replicated variables::
     var myRepVar: [rcDomain] MyType;
 
     // access its copy on the current locale (read or write) (either option)
-    ... myRepVar(1) ...
+    ... myRepVar(1) ...  // must use 1
     ... rcLocal(myRepVar) ...
 
     // "replicate": assign 'valToRep' to copies on all locales
@@ -63,15 +72,16 @@ How to use replicated variables::
     // access directly a remote copy on the locale 'remoteLoc' (read or write)
     ... rcRemote(myRepVar, remoteLoc) ...
 
-For more examples, see :proc:`rcExample` and :proc:`rcExampleOverLocales`
-in the module source code.
+.. _subset-of-locales:
 
-----------------------------------------------
-Advanced: replicating over a subset of locales
-----------------------------------------------
+------------------------------------
+Replicating over a subset of locales
+------------------------------------
 
 To replicate a variable over a subset of locales, say ``myLocales``,
-modify the above variable declarations as follows::
+modify the above variable declarations as follows:
+
+.. code-block:: chapel
 
     var myRepVar: [rcDomainBase dmapped ReplicatedDist(myLocales,
                      "over which to replicate 'myRepVar'")] MyType;
@@ -84,21 +94,26 @@ That is, for each ``ix`` in ``myLocales.domain``,
 Tip: if the domain of the desired array of locales cannot be described
 as a rectangular domain (which could be strided, multi-dimensional,
 and/or sparse), make that array's domain associative over int.
+
+----------------------------------------------
+Declarations
+----------------------------------------------
 */
 module UtilReplicatedVar {
 
 use ReplicatedDist;
 
 pragma "no doc"
-const rcDomainIx   = 1;
+const rcDomainIx   = 1; // todo convert to param
 /* Use this domain when replicating over a subset of locales,
-   as shown above. */
+   as shown :ref:`above <subset-of-locales>`. */
 const rcDomainBase = {rcDomainIx..rcDomainIx};
 pragma "no doc"
 const rcLocales    = Locales;
+pragma "no doc"
 const rcDomainMap  = new ReplicatedDist(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
-   as shown above. */
+   as shown :ref:`above <basic-usage>` . */
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
 pragma "no doc" // todo - remove this?  our examples use LocaleSpace instead
 const rcCollectDomaim = rcLocales.domain;
@@ -116,7 +131,8 @@ pragma "no doc" // documented with the following entry
 proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
 { compilerError("the domain of first argument to rcReplicate()", _rcErr1); }
 
-/* Assign `valToReplicate` to copies of `replicatedVar` on all locales. */
+/* Assign a value `valToReplicate` to copies of the replicated variable
+   `replicatedVar` on all locales. */
 proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
   where replicatedVar._value.type: ReplicatedArr
 {
@@ -131,8 +147,8 @@ proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
   where ! replicatedVar._value.type: ReplicatedArr
 { compilerError("the domain of first argument to rcCollect()", _rcErr1); }
 
-/* Copy the value of `replicatedVar` on each locale
-   into the element of `collected` that corresponds to that locale. */
+/* Copy the value of the replicated variable `replicatedVar` on each locale
+   into the element of the array `collected` that corresponds to that locale.*/
 proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
   where replicatedVar._value.type: ReplicatedArr
 {
@@ -167,17 +183,13 @@ proc rcRemote(replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) ref: MYTYPE {
 /////////////////////////////////////////////////////////////////////////////
 // code examples
 
-/*
-This example illustrates the use of a replicated variable as follows:
-
-* creates a replicated variable of the type `MyType`,
-* initializes all its copies to `initVal`,
-* stores `newVal` into its copy on the locale `newLocale`,
-* collects all its copies into an array `collected`.
-
-See $CHPL_HOME/modules/standard/UtilReplicatedVar.chpl
-for the source code.
-*/
+// This example illustrates the use of a replicated variable as follows:
+// - create a replicated variable of the type MyType,
+// - initializes all its copies to 'initVal',
+// - stores 'newVal' into its copy on the locale 'newLocale',
+// - collects all its copies into an array 'collected'.
+//
+pragma "no doc" // TODO: move to a primer
 proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   writeln("starting rcExample");
 
@@ -210,13 +222,10 @@ proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   writeln("\ncollected copies of myRepVar are:\n", collected);
 }
 
-/*
-This is the same as :proc:`rcExample`, except the user can provide
-specific locales to replicate over via the `localesToReplicateOver` argument.
-
-See $CHPL_HOME/modules/standard/UtilReplicatedVar.chpl
-for the source code.
-*/
+// This is the same as 'rcExample', except the user can provide
+// specific locales to replicate over. The two differences are marked.
+//
+pragma "no doc" // TODO: move to a primer
 proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
                           localesToReplicateOver: [] locale = Locales): void {
   writeln("starting rcExampleOverLocales over ", localesToReplicateOver);
