@@ -21,10 +21,10 @@
   This module contains several iterators that can be used to drive a `forall`
   loop by performing dynamic and adaptive splitting of a range's iterations.
 
-  For more information, see "User-Defined Parallel Zippered iterators
-  in Chapel". Bradford L. Chamberlain, Sung-Eun Choi, Steven J. Deitz,
-  Angeles Navarro. PGAS 2011: Fifth Conference on Partitioned Global
-  Address Space Programming Models, October 2011.
+  For more information, see *User-Defined Parallel Zippered Iterators
+  in Chapel*. Bradford L. Chamberlain, Sung-Eun Choi, Steven J. Deitz,
+  Angeles Navarro. *PGAS 2011: Fifth Conference on Partitioned Global
+  Address Space Programming Models*, October 2011.
 */
 module AdvancedIters {
 
@@ -51,6 +51,7 @@ config param debugAdvancedIters:bool=false;
 
 /*
    The serial version of the dynamic iterator.
+
    Equivalent to serial iteration over the range ``c``.
 */
 iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
@@ -65,19 +66,24 @@ iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 
 /*
 
-  :arg c: The range to iterate over. The length of the range must be greater than zero.
+  :arg c: The range to iterate over. The length of the range must be greater
+          than zero.
   :type c: range(?)
 
-  :arg chunkSize: The size of chunks to be yielded to each thread. Must be greater than zero.
+  :arg chunkSize: The size of chunks to be yielded to each thread. Must be
+                  greater than zero.
   :type chunkSize: int
 
-  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
+                 has the value 0, it will use the value indicated by
+                 ``dataParTasksPerLocale``.
   :type numTasks: int
 
   :yields: Indices in the range ``c``.
 
 
   This iterator is equivalent to the dynamic scheduling approach of OpenMP.
+
   Given an input range ``c``, each task is assigned chunks of size
   ``chunkSize`` from ``c`` (or the remaining iterations if there are fewer
   than ``chunkSize``). This continues until there are no remaining iterations
@@ -157,6 +163,7 @@ where tag == iterKind.follower
 
 /*
    The serial version of the guided iterator.
+
    Equivalent to serial iteration over the range ``c``.
 */
 iter guided(c:range(?), numTasks:int=0) {
@@ -172,7 +179,9 @@ iter guided(c:range(?), numTasks:int=0) {
   :arg c: The range to iterate over. Must have a length greater than zero.
   :type c: range(?)
 
-  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
+                 has the value 0, it will use the value indicated by
+                 ``dataParTasksPerLocale``.
   :type numTasks: int
 
   :yields: Indices in the range ``c``.
@@ -237,6 +246,7 @@ where tag == iterKind.follower
 //************************* Adaptive work-stealing iterator
 /*
    The serial version of the adaptive iterator.
+
    Equivalent to serial iteration over the range ``c``.
 */
 iter adaptive(c:range(?), numTasks:int=0) {  
@@ -285,7 +295,9 @@ config param methodStealing = Method.Whole;
   :arg c: The range to iterate over. Must have a length greater than zero.
   :type c: range(?)
 
-  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument has the value 0, it will use the value indicated by ``dataParTasksPerLocale``.
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
+                 has the value 0, it will use the value indicated by
+                 ``dataParTasksPerLocale``.
   :type numTasks: int
 
   :yields: Indices in the range ``c``.
