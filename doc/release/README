@@ -43,10 +43,8 @@ This directory contains the following documentation:
     README.fileUtil         :  information about new file capabilities
     README.firstClassFns    :  first-class functions
     README.format           :  value-to-string formatting
-    README.formattedIO      :  readf()/writef() and formatting strings
     README.gmp              :  a prototype GMP module
     README.hdfs             :  information about using the Hadoop Filesystem
-    README.io               :  the new I/O system in Chapel
     README.libraries        :  information about creating libraries in Chapel
     README.llvm             :  information about using the LLVM back-end
     README.local            :  the 'local' statement
