@@ -18,7 +18,9 @@
  */
 
 /*
-Various math-related utilities.
+Math-related utilities.
+
+Note: this module will be merged into :mod:`Math` in the next release.
 */
 module UtilMath {
 
