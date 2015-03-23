@@ -77,6 +77,8 @@ MODULES_TO_DOCUMENT = \
 	standard/Regexp.chpl \
 	standard/Search.chpl \
 	standard/Sort.chpl \
+	standard/startInitCommDiags.chpl \
+	standard/stopInitCommDiags.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
