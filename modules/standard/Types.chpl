@@ -28,7 +28,7 @@ module Types {
 pragma "no doc" // joint documentation with the next one
 pragma "no instantiation limit"
 proc isType(type t) param return true;
-/* Indicates whether the argument is a type. */
+/* Returns `true` if the argument is a type. */
 pragma "no instantiation limit"
 proc isType(e) param return false;
 
@@ -38,7 +38,7 @@ proc isParam(type t)  param return false;
 pragma "no doc" // joint documentation with the next one
 pragma "no instantiation limit"
 proc isParam(param p) param return true;
-/* Indicates whether the argument is a param. */
+/* Returns `true` if the argument is a param. */
 pragma "no instantiation limit"
 proc isParam(e)       param return false;
 
@@ -54,7 +54,7 @@ proc _isPrimitiveType(type t) param return
   (t == c_string);
 
 /*
-Indicates whether the type `t` is a primitive type,
+Returns `true` if the type `t` is a primitive type,
 as defined by the language specification.
 */
 pragma "no instantiation limit"
@@ -63,7 +63,7 @@ proc isPrimitiveType(type t) param return
   isRealType(t) || isImagType(t) || isComplexType(t) || isStringType(t);
 
 /*
-Indicates whether the type `t` is one the following types, of any width:
+Returns `true` if the type `t` is one the following types, of any width:
 `int`, `uint`, `real`, `imag`, `complex`.
 */
 pragma "no instantiation limit"
@@ -71,7 +71,7 @@ proc isNumericType(type t) param return
   isIntegralType(t) || isFloatType(t) || isComplexType(t);
 
 /*
-Indicates whether the type `t` is one the following types, of any width:
+Returns `true` if the type `t` is one the following types, of any width:
 `int`, `uint`.
 */
 pragma "no instantiation limit"
@@ -79,7 +79,7 @@ proc isIntegralType(type t) param return
   isIntType(t) || isUintType(t);
 
 /*
-Indicates whether the type `t` is one the following types, of any width:
+Returns `true` if the type `t` is one the following types, of any width:
 `real`, `imag`.
 */
 pragma "no instantiation limit"
@@ -123,7 +123,8 @@ proc isImagType(type t) param return
 
 // Here is a single doc comment for the above.
 /*
-The above functions indicate whether the argument is a corresponding type.
+Each of the above functions returns `true` if its argument is
+a corresponding type.
 The argument must be a type.
 */
 pragma "no instantiation limit"
@@ -270,22 +271,22 @@ proc isAtomic(type t)    param  return isAtomicType(t);
 
 // Set 2 - values.
 /*
-Indicates whether the argument is a primitive type,
+Returns `true` if the argument is a primitive type,
 as defined by the language specification, or a value of a primitive type.
 */
 proc isPrimitive(e) param  return isPrimitiveValue(e);
 /*
-Indicates whether the argument is one the following types, of any width:
+Returns `true` if the argument is one the following types, of any width:
 `int`, `uint`, `real`, `imag`, `complex`, or a value of such a type.
 */
 proc isNumeric(e)   param  return isNumericValue(e);
 /*
-Indicates whether the argument is one the following types, of any width:
+Returns `true` if the argument is one the following types, of any width:
 `int`, `uint`, or a value of such a type.
 */
 proc isIntegral(e)  param  return isIntegralValue(e);
 /*
-Indicates whether the argument is one the following types, of any width:
+Returns `true` if the argument is one the following types, of any width:
 `real`, `imag`, or a value of such a type.
 */
 proc isFloat(e)     param  return isFloatValue(e);
@@ -315,8 +316,8 @@ proc isSingle(e: single) param  return true; // workaround: not isSingleValue
 proc isSingle(e)         param  return false;
 // Here is a single doc comment for the above.
 /*
-The above functions indicate whether the argument is a corresponding type,
-or a value of such a type.
+Each of the above functions returns `true` if its argument is
+a corresponding type or a value of such a type.
 */
 proc isAtomic(e)    param  return isAtomicValue(e);
 
@@ -333,13 +334,13 @@ proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
 
 // Is 'sub' a subtype (or equal to) 'super'?
-/* Indicates whether the type `sub` is a subtype of the type `super`. */
+/* Returns `true` if the type `sub` is a subtype of the type `super`. */
 proc isSubtype(type sub, type super) param where   sub: super  return true;
 pragma "no doc"
 proc isSubtype(type sub, type super) param where !(sub: super) return false;
 
 // Is 'sub' a proper subtype of 'super'?
-/* Indicates whether the type `sub` is a subtype of the type `super`
+/* Returns `true` if the type `sub` is a subtype of the type `super`
    and is not `super`. */
 proc isProperSubtype(type sub, type super) param
   where isSubtype(sub, super) && sub != super
@@ -612,15 +613,17 @@ iter chpl_enumerate(type t: enumerated) {
     yield enumTuple(i);
 }
 
-/* Indicates the smallest number of bits that this enum type can fit in. */
+// TODO we should remove "min" from these functions' names.
+/* Returns the number of bits used to store the values of type `t`. */
 proc enum_minbits(type t: enumerated) param {
   return __primitive( "enum min bits", t);
 }
-/* Indicates whether the representation type for this enum is signed. */
+/* Returns `true` if the integral type used to store the values of type `t`
+   is signed. */
 proc enum_issigned(type t: enumerated) param {
   return __primitive( "enum is signed", t);
 }
-/* Returns the smallest integer representation type for this enum. */
+/* Returns the integral type used to store the values of type `t`. */
 proc enum_mintype(type t: enumerated) type {
   param minbits = enum_minbits(t);
   param signed = enum_issigned(t);
@@ -637,8 +640,11 @@ proc numBits(type t: enumerated) param {
 }
 
 /*
-Safe up/down casts between all integral types.
-Performs the minimum number of runtime checks.
+Returns `this`, cast to the type `T`.
+Generates a run-time error if `this` cannot be represented by `T`,
+for example ``(-1).safeCast(uint)`` or ``256.safeCast(uint(8))``.
+
+This method performs the minimum number of runtime checks.
 For example, when casting from `uint(8)` to `uint(64)`,
 no checks at all will be done.
 */
