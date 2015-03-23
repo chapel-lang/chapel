@@ -81,6 +81,7 @@ MODULES_TO_DOCUMENT = \
 	standard/stopInitCommDiags.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
+	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
