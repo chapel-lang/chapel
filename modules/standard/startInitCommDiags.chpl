@@ -48,9 +48,10 @@ pragma "no use ChapelStandard"
   usually necessary to run a small test program twice, once with the
   module present and once without it.
 
-  Do not ``use`` this module.  It is already included in every program
-  automatically.  Using compiler command line options to set the
-  config params it provides is the only way to interact with it.
+  *Note:* It is not necessary to ``use`` this module.  It is included
+  in every program automatically.  Using compiler command line options
+  to set the config params it provides is the only way to interact
+  with it.
  */
 module startInitCommDiags {
   /*
