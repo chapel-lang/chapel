@@ -513,16 +513,16 @@ proc exists(name: string): bool {
    similar to simple invocations of the command-line `find` utility.
    May be invoked in serial or non-zippered parallel contexts.
 
-   :arg startdir: the root directory from which to start the search, defaults to "."
+   :arg startdir: The root directory from which to start the search (defaults to ``"."``)
    :type startdir: string
 
-   :arg recursive: indicates whether or not to descend recursively into subdirectories (defaults to `false`)
+   :arg recursive: Indicates whether or not to descend recursively into subdirectories (defaults to `false`)
    :type recursive: bool
 
-   :arg hidden: indicates whether or not to descend into hidden subdirectories and yield hidden files (defaults to `false`)
+   :arg hidden: Indicates whether or not to descend into hidden subdirectories and yield hidden files (defaults to `false`)
    :type hidden: bool
 
-   :yield:  the paths to any files found, relative to `startdir`, as strings
+   :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
 iter findfiles(startdir = ".", recursive=false, hidden=false) {
@@ -652,10 +652,10 @@ module chpl_glob_c_interface {
 /* Yields filenames that match a given `glob` pattern.  May be invoked
    in serial or parallel contexts (zippered or non-).
 
-   :arg pattern: the glob pattern to match against (defaults to "*")
+   :arg pattern: The glob pattern to match against (defaults to ``"*"``)
    :type pattern: string
 
-   :yield: the matching filenames as strings
+   :yield: The matching filenames as strings
 */
 iter glob(pattern="*") {
   var glb : chpl_glob_c_interface.glob_t;
@@ -871,22 +871,22 @@ proc isMount(name: string): bool {
 /* Lists the contents of a directory.  May be invoked in serial
    contexts only.
 
-   :arg path: the directory whose contents should be listed
+   :arg path: The directory whose contents should be listed
    :type path: string
 
-   :arg hidden: indicates whether hidden files/directory should be listed (defaults to `false`)
+   :arg hidden: Indicates whether hidden files/directory should be listed (defaults to `false`)
    :type hidden: bool
 
-   :arg dirs: indicates whether directories should be listed (defaults to `true`)
+   :arg dirs: Indicates whether directories should be listed (defaults to `true`)
    :type dirs: bool
 
-   :arg files: indicates whether files should be listed (defaults to `true`)
+   :arg files: Indicates whether files should be listed (defaults to `true`)
    :type files: bool
 
-   :arg listlinks: indicates whether symbolic links should be listed (defaults to `true`)
+   :arg listlinks: Indicates whether symbolic links should be listed (defaults to `true`)
    :type listlinks: bool
 
-   :yield: the names of the specified directory's contents, as strings
+   :yield: The names of the specified directory's contents, as strings
 */
 iter listdir(path: string, hidden=false, dirs=true, files=true, 
              listlinks=true): string {
@@ -1153,25 +1153,25 @@ proc locale.umask(mask: int): int {
 /* Recursively walk a directory structure, yielding directory names.
    May be invoked in serial or non-zippered parallel contexts.
 
-   :arg path: the directory from which to start the walk (defaults to ".")
+   :arg path: The directory from which to start the walk (defaults to ``"."``)
    :type path: string
 
-   :arg topdown: indicates whether to yield a directory before or after descending into its children (defaults to `true`)
+   :arg topdown: Indicates whether to yield a directory before or after descending into its children (defaults to `true`)
    :type topdown: bool
 
-   :arg depth: indicates the maximum recursion depth to use (defaults to `max(int)`)
+   :arg depth: Indicates the maximum recursion depth to use (defaults to `max(int)`)
    :type depth: int
 
-   :arg hidden: indicates whether to descend into hidden directories (defaults to `false`)
+   :arg hidden: Indicates whether to descend into hidden directories (defaults to `false`)
    :type hidden: bool
 
-   :arg followlinks: indicates whether to follow symbolic links (defaults to `false`)
+   :arg followlinks: Indicates whether to follow symbolic links (defaults to `false`)
    :type followlinks: bool
 
-   :arg sort: indicates whether or not to consider subdirectories in sorted order (defaults to `false`).  Note that requesting sorting has no effect in parallel invocations.
+   :arg sort: Indicates whether or not to consider subdirectories in sorted order (defaults to `false`).  Note that requesting sorting has no effect in parallel invocations.
    :type sort: bool
 
-   :yield: the directory names encountered, relative to `path`, as strings
+   :yield: The directory names encountered, relative to `path`, as strings
 */
 iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
               followlinks=false, sort=false): string {
