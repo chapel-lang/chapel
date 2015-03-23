@@ -613,17 +613,18 @@ iter chpl_enumerate(type t: enumerated) {
     yield enumTuple(i);
 }
 
-// TODO we should remove "min" from these functions' names.
-/* Returns the number of bits used to store the values of type `t`. */
+// TODO add chpl_ to these functions' names - they are not intended for user.
+pragma "no doc"
 proc enum_minbits(type t: enumerated) param {
   return __primitive( "enum min bits", t);
 }
-/* Returns `true` if the integral type used to store the values of type `t`
-   is signed. */
+pragma "no doc"
 proc enum_issigned(type t: enumerated) param {
   return __primitive( "enum is signed", t);
 }
-/* Returns the integral type used to store the values of type `t`. */
+// TODO - maybe this function can be useful for the user, for C interop?
+// If so, give it a different name.
+pragma "no doc"
 proc enum_mintype(type t: enumerated) type {
   param minbits = enum_minbits(t);
   param signed = enum_issigned(t);
