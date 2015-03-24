@@ -18,7 +18,7 @@
  */
 
 /*
-  FFT computations via key routines from FFTW (version 3)
+  Single-threaded FFT computations via key routines from FFTW (version 3)
 
   This module defines Chapel wrappers for key single-threaded 64-bit
   routines from FFTW (http://www.fftw.org), version 3.  For
@@ -32,7 +32,9 @@
   1. Ensure that FFTW (version 3) is installed on your system and that
      the header and library files (e.g., fftw3.h, libfftw3.*) are
      either installed in a standard system location or that your C
-     compiler's environment variables are set up to find them.
+     compiler's environment variables are set up to find them
+     (alternatively, the Chapel compiler's ``-I`` and ``-L`` flags can
+     be used to specify these locations).
 
   2. Add ``use FFTW;`` to your Chapel code.
 
