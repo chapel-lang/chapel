@@ -34,14 +34,8 @@ I/O Overview
 
 A :record:`file` in Chapel identifies a file in the underlying operating
 system.  Reads and writes to a file are done via one or more channels
-associated with the file.  Each :record:`channel` provides sequential access to
-its file, optionally starting at an offset. Since channels operate
-independently, concurrent I/O to the same file is possible without contending
-for locks.  Furthermore, since the channel (and not the file) stores the
-current file offset, it is straightforward to create programs that access the
-same file in parallel. Note that such parallel access is not possible in C when
-multiple threads are using the same FILE* to write to different regions of a
-file because of the race condition between ``fseek`` and ``fwrite``.
+associated with the file.  Each :record:`channel` a buffer to provide
+sequential read or write access to its file, optionally starting at an offset.
 
 For example, the following program opens a file and writes an integer to it:
 
@@ -53,7 +47,7 @@ For example, the following program opens a file and writes an integer to it:
 
   // create a writing channel starting at file offset 0
   // (start and end offsets can be specified when creating the
-  // channel
+  // channel)
   var myWritingChannel = myFile.writer();
 
   var x: int = 17;
@@ -74,7 +68,7 @@ Then, the following program can be used to read the integer:
 
   // create a reading channel starting at file offset 0
   // (start and end offsets can be specified when creating the
-  // channel
+  // channel)
   var myReadingChannel = myFile.reader();
 
   var x: int;
@@ -88,6 +82,133 @@ Then, the following program can be used to read the integer:
   writeln("Read integer ", x);
   // prints out:
   // 17
+
+Design Rationale
+----------------
+
+Since channels operate independently, concurrent I/O to the same open file is
+possible without contending for locks.  Furthermore, since the channel (and not
+the file) stores the current file offset, it is straightforward to create
+programs that access the same open file in parallel. Note that such parallel
+access is not possible in C when multiple threads are using the same ``FILE*``
+to write to different regions of a file because of the race condition between
+``fseek`` and ``fwrite``. Because of these issues, Chapel programmers wishing
+to perform I/O will need how to open files as well as create channels.
+
+
+
+I/O Styles
+----------
+
+Reading and writing of Chapel's basic types is regulated by an applicable
+:record:`iostyle`.  In particular, the I/O style controls whether binary or
+text I/O should be performed. For binary I/O it specifies, for example, byte
+order and string encoding. For text I/O it specifies string representation, the
+base, field width and precision for numeric types, and so on.  Each channel has
+an associated I/O style.  It applies to all read/write operations on that
+channel, except when the program specifies explicitly an I/O style for a
+particular read or write.
+
+See the definition for the :record:`iostyle` type. This type represents I/O
+styles and provides details on formatting and other representation choices.
+
+The default value of the :record:`iostyle` type is undefined.  However, the
+compiler-generated constructor is available.  It can be used to generate the
+default I/O style, with or without modifications.
+
+
+The I/O style for an I/O operation can be provided through an optional
+``style=`` argument in a variety of places:
+
+ * when performing the I/O, e.g. in calls to :proc:`channel.write` or
+   :proc:`channel.read`
+ * when creating the channel with :proc:`file.reader` or :proc:`file.writer`
+ * or when creating the file with e.g. :proc:`open`
+
+Note that :proc:`file.reader`, or :proc:`file.writer` will copy the file's I/O
+style if a ``style=`` argument is not provided. Also note that I/O functions on
+channels will by default use the I/O style stored with that channel.
+
+A channel's I/O style may be retrieved using :proc:`channel._style` and set
+using :proc:`channel._set_style`. These functions should only be called while
+the channel lock is held, however. See :ref:`about-io-channel-synchronization`
+for more information on channel locks.
+
+The function :proc:`defaultIOStyle` will return the default I/O style
+just as ``new iostyle()`` will. 
+
+:record:`iostyle` is work in progress: the fields and/or their types may
+change. Among other changes, we expect to be replacing the types of some
+multiple-choice fields from integral to enums.
+
+As an example for specifying an I/O style, the code below specifies the minimum width for writing numbers so array elements are aligned in the output:
+
+.. code-block:: chapel
+
+  stdout.writeln(MyArray, new iostyle(min_width=10));
+
+
+I/O facilities in Chapel also include several other ways to control I/O
+formatting. There is support for :ref:`formatted I/O <about-io-formatted-io>`
+with :proc:`channel.readf` and :proc:`channel.writef`.  It is possible to write
+data to strings (see "The write and writeln Methods on Strings" in the Chapel
+language specification) which can then be further modified or combined
+programmatically. , Lastly record or class implementations can provide custom
+functions implementing read or write operations for that type (see "The
+readThis, writeThis, and readWriteThis Methods" in the Chapel language
+specification).
+
+.. _about-io-files:
+
+Files
+-----
+
+There are several functions that open a file and return a :record:`file` including :proc:`open`, :proc:`opentmp`, :proc:`openmem`, :proc:`openfd`, and :proc:`openfp`.
+
+Once a file is open, it is necessary to create associated channel(s) - see
+:proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
+file.
+
+Use the :proc:`file.fsync` function to explicitly synchronize the file to
+ensure that file data is committed to the file's underlying device for
+persistence.
+
+To release any resources associated with a file, its channels then the file
+must be closed with :proc:`channel.close` and :proc:`file.close`.
+
+.. _about-io-channel-creation:
+
+Functions for Channel Creation
+------------------------------
+
+:proc:`file.writer` creates a channel for writing to a file, and
+:proc:`file.reader` create a channel for reading from a file.
+
+.. _about-io-channel-synchronization:
+
+Synchronization of Channel Data and Avoiding Data Races
+-------------------------------------------------------
+
+Channels (and files) contain locks in order to keep their operation safe for
+multiple tasks. When creating a channel, it is possible to disable the lock
+(for performance reasons) by passing locking=false to e.g.  file.writer(). Some
+channel methods - in particular those beginning with the underscore - should
+only be called on locked channels.  With these methods, it is possible to get
+or set the channel style, or perform I/O "transactions" (see
+:proc:`channel._mark`). To use these methods, first lock the channel with
+channel.lock(), call the methods you need, and then unlock the channel with
+channel.unlock(). Note that in the future, we may move to alternative ways of
+calling these functions that guarantee that they are not called on a channel
+without the appropriate locking.
+
+Besides data races that can occur if locking is not used in channels when it
+should be, it is also possible for there to be data races on file data that is
+buffered simultaneously in multiple channels.  The main way to avoid such data
+races is the :proc:`channel.flush` synchronization operation.
+:proc:`channel.flush` will make all writes to the channel, if any, available to
+concurrent viewers of its associated file, such as other channels or other
+applications accessing this file concurrently. See the note below for
+more details on the situation in which this kind of data race can occur.
 
 .. note::
 
@@ -114,69 +235,32 @@ Then, the following program can be used to read the integer:
     * with :proc:`openfd` when provided a non-seekable system file descriptor
 
 
-:proc:`channel.flush` can be used to make the data written to a channel
-available to other channels and :proc:`file.fsync` can commit any file data
-to the underlying device for persistence.
- 
-Reading and writing of Chapel's basic types is regulated by an applicable
-:record:`iostyle`.  In particular, the I/O style controls whether binary or
-text I/O should be performed. For binary I/O it specifies, for example, byte
-order and string encoding. For text I/O it specifies string representation, the
-base, field width and precision for numeric types, and so on.  Each channel has
-an associated I/O style.  It applies to all read/write operations on that
-channel, except when the program specifies explicitly an I/O style for a
-particular read or write.
+Performing I/O with Channels
+----------------------------
 
-The I/O style for an I/O operation can be provided through an optional
-``style=`` argument in a variety of places:
+Channels contain read and write methods, which are generic methods that can
+read or write anything, and can also take optional arguments such as I/O style
+or to return an error instead of halting. These functions generally take any
+number of arguments. See:
 
- * when performing the I/O, e.g. in calls to :proc:`channel.write` or
-   :proc:`channel.read`
- * when creating the channel with :proc:`file.reader` or :proc:`file.writer`
- * or when creating the file with e.g. :proc:`open`
+ * :proc:`channel.write`
+ * :proc:`channel.writeln`
+ * :proc:`channel.writef` (see also :ref:`about-io-formatted-io`)
+ * :proc:`channel.read`
+ * :proc:`channel.readln`
+ * :proc:`channel.readf` (see also :ref:`about-io-formatted-io`)
 
-Note that :proc:`file.reader`, or :proc:`file.writer` will copy the file's I/O
-style if a ``style=`` argument is not provided. Also note that I/O functions on
-channels will use the I/O style stored with that channel.
+Sometimes it's important to flush the buffer in a channel - to do that, use the
+.flush() method. Flushing the buffer will make all writes available to other
+applications or other views of the file (ie, it will call e.g. the OS call
+pwrite).
 
-I/O facilities in Chapel also include the ability to write data to strings and
-to define dynamically the output format or actions to be taken when writing
-values of a given type.
+It is also possible to close a channel, which will flush it and release any
+buffer memory used by the channel.
 
-.. _about-io-files:
-
-Files
------
-
-There are several functions that open a file and return a :record:`file` including :proc:`open`, :proc:`opentmp`, :proc:`openmem`, :proc:`openfd`, and :proc:`openfp`.
-
-Once a file is open, it is necessary to create associated channel(s) - see
-:proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
-file.
-
-Use the :proc:`file.fsync` function to explicitly synchronize the file to
-ensure that file data is committed to the file's OS device.
-
-To release any resources associated with a file, its channels then the file
-must be closed with :proc:`channel.close` and :proc:`file.close`.
-
-.. _about-io-channel-creation:
-
-Functions for Channel Creation
-------------------------------
-
-:proc:`file.writer` creates a channel for writing to a file, and
-:proc:`file.reader` create a channel for reading from a file.
-
-.. _about-io-channel-synchronization:
-
-Synchronization of Channel Data
--------------------------------
-
-The :proc:`channel.flush` synchronization operation is available, which will
-make all writes to the channel, if any, available to concurrent viewers of its
-associated file, such as other channels or other applications accessing this
-file concurrently.
+Note that if you need to ensure that data from a channel is on disk, you'll
+have to call :proc:`channel.flush` or :proc:`channel.close` and then
+:proc:`file.fsync` on the related file.
 
 
 .. _about-io-closing-channels:
@@ -206,23 +290,6 @@ explicitly will remain available.
 
 .. _about-io-style:
 
-I/O Style
----------
-
-I/O style regulates how Chapel's basic types are read or written.  For example,
-the I/O style defines whether I/O is binary or text and what representation is
-used for each basic type.
-
-See the definition for the :record:`iostyle` type. This type represents I/O
-styles and provides details on formatting and other representation choices.
-
-Each write/read operation has an `applicable` I/O style.
-It is defined by the :record:`iostyle` argument if one is passed explicitly
-when invoking the corresponding write/read function.
-Otherwise it is the channel's I/O style, which is established
-upon channel creation (see :ref:`about-io-channel-creation`).
-
-
 The ``stdin``, ``stdout``, and ``stderr`` Channels
 --------------------------------------------------
 
@@ -245,9 +312,18 @@ Most I/O routines accept an optional `error=` argument. If that argument
 is used, instead of halting when an error is encountered, the function
 will return the error code. 
 
-These error codes are stored with the :type:`SysBasic.syserr`. Success is
+These error codes are stored with the type :type:`SysBasic.syserr`. Success is
 represented by :proc:`SysBasic.ENOERR`. The error codes and their meaning
-are described in :mod:`SysBasic`.
+are described in :mod:`SysBasic`. Some of these error codes that are commonly used within the I/O implementation  include:
+
+ * :proc:`SysBasic.EEOF` - the end of file was reached
+ * :proc:`SysBasic.ESHORT` - a read or write only returned part of the
+   requested data
+ * :proc:`SysBasic.EFORMAT` - data read did not adhere to the requested format
+ * :const:`SysBasic.EILSEQ` - illegial multibyte sequence (e.g. there was a
+   UTF-8 format error)
+ * :const:`SysBasic.EOVERFLOW` - data read did not fit into requested type
+   (e.g. reading 1000 into a `uint(8)`).
 
 An error code can be converted to a string using the function
 :proc:`SysBasic.errorToString`.
@@ -268,8 +344,8 @@ that the data is written to persistent storage, it should use
 :proc:`file.fsync` prior to closing the file.
 
 
-Miscellanea
------------
+Correspondence to C I/O
+-----------------------
 
 It is not possible to seek, read, or write to a file directly.
 Create a channel to proceed.
@@ -288,94 +364,22 @@ strings passed to fopen() in C:
 
 However, open() in Chapel does not necessarily invoke fopen().
 
-A channel's I/O style may be retrieved using the following method:
-  
-  * proc channel._style():iostyle;
-
-
-Using Channels
---------------
-
-  Channels contain read and write methods, which are generic
-  methods that can read or write anything, and can also take
-  optional arguments (style, error)
-
-  In addition, channels have read() and write() methods that take any
-  number of arguments, and will halt if there was an error.
-
-  Sometimes it's important to flush the buffer in a channel -
-  to do that, use the .flush() method. Flushing the buffer will
-  make all writes available to other applications or other views
-  of the file (ie, it will call e.g. the OS call pwrite).
-
-  It is also possible to close a channel, which will flush
-  it and release any buffer memory used by the channel.
-
-  Note that if you need to ensure that data from a channel is on disk,
-  you'll have to call channel.flush() or channel.close() and then
-  fsync on the related file.
-
-
-The 'iostyle' Type
-------------------
-
-
-  The default value of the 'iostyle' type is undefined.
-  However, the compiler-generated constructor is available.
-  It can be used to generate the default I/O style,
-  with or without modifications.
-
-  Example: specifying the minimum width for writing numbers
-  so array elements are aligned:
-
-    stdout.writeln(MyArray, new iostyle(min_width=10));
-
-  Useful functions:
-
-  generate the default I/O style, same as 'new iostyle()':
-    proc defaultIOStyle():iostyle;
-
-  retrieve the channel's I/O style:
-    proc channel._style():iostyle;
-
-  'iostyle' is work in progress: the fields and/or their types
-  may change. Among other changes, we will be replacing the types
-  of some multiple-choice fields from integral to enums.
-
-
-Locking
--------
-
-  Channels (and files) contain locks in order to keep their operation
-  thread-safe. When creating a channel, it is possible to disable the
-  lock (for performance reasons) by passing locking=false to e.g.
-  file.writer(). Some channel methods - in particular those beginning
-  with the underscore - should only be called on locked channels.
-  With these methods, it is possible to get or set the channel style,
-  or perform I/O "transactions". To use these methods, first lock the
-  channel with channel.lock(), call the methods you need, and then
-  unlock the channel with channel.unlock(). Note that in the future,
-  we may move to alternative ways of calling these functions that
-  guarantee that they are not called on a channel without the appropriate
-  locking.
-
-
 Bytes Type
 ----------
 
-  A :record:`Buffers.bytes` object is just some data in memory along with a
-  size. Bytes objects are reference counted, and the memory will be freed when
-  nothing refers to the bytes object any more.
+A :record:`Buffers.bytes` object is just some data in memory along with a
+size. Bytes objects are reference counted, and the memory will be freed when
+nothing refers to the bytes object any more.
 
 
 Buffers
 -------
 
-  A :record:`Buffers.buffer` stores some number subsections of bytes objects.
-  It is efficient to go to a particular offset in a buffer, and to push or pop
-  bytes objects from the beginning or end of a buffer.
+A :record:`Buffers.buffer` stores some number subsections of bytes objects.
+It is efficient to go to a particular offset in a buffer, and to push or pop
+bytes objects from the beginning or end of a buffer.
 
-  Buffers are used internally in each channel.
+Buffers are used internally in each channel.
 
 
 .. _about-io-formatted-io:
@@ -958,6 +962,9 @@ Formatted I/O Examples
   // if the input is "ab", got will be true and s will be "b"
   // if the input is "abb", got will be true and s will be "bb"
 
+IO Functions and Types
+----------------------
+
  */
 module IO {
 
@@ -1375,163 +1382,260 @@ extern record iostyle { // aka qio_style_t
   var tuple_style:uint(8) = 0;
 }
 
+
+// Extern functions
+// TODO -- move these declarations to where they are used or into
+// a helper module to reduce namespace noise.
+
+pragma "no doc"
 extern proc qio_style_init_default(ref s: iostyle);
 
-/* Extern functions */
+pragma "no doc"
 extern proc qio_file_retain(f:qio_file_ptr_t);
+pragma "no doc"
 extern proc qio_file_release(f:qio_file_ptr_t);
 
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, const ref style:iostyle, usefilestar:c_int):syserr;
+pragma "no doc"
 extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyle):syserr;
+pragma "no doc"
 extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyle):syserr;
+pragma "no doc"
 extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyle):syserr;
 
 // Same as qio_file_open_access in, except this time we pass though our
 // struct that will initilize the file with the appropriate functions for that FS
+pragma "no doc"
 extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
                                      access:c_string, iohints:c_int, /*const*/ ref style:iostyle,
                                      fs:c_void_ptr, s: qio_file_functions_ptr_t):syserr;
 
+pragma "no doc"
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
 
+pragma "no doc"
 extern proc qio_file_lock(f:qio_file_ptr_t):syserr;
+pragma "no doc"
 extern proc qio_file_unlock(f:qio_file_ptr_t);
 
 /* The general way to make sure data is written without error */
+pragma "no doc"
 extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 
+pragma "no doc"
 extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
+pragma "no doc"
 extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
+pragma "no doc"
 extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
 
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, ref path:c_string, ref offset:int(64)):syserr;
 
+pragma "no doc"
 extern proc qio_channel_retain(ch:qio_channel_ptr_t);
+pragma "no doc"
 extern proc qio_channel_release(ch:qio_channel_ptr_t);
 
+pragma "no doc"
 extern proc qio_channel_lock(ch:qio_channel_ptr_t):syserr;
+pragma "no doc"
 extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
 
+pragma "no doc"
 extern proc qio_channel_get_style(ch:qio_channel_ptr_t, ref style:iostyle);
+pragma "no doc"
 extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:iostyle);
 
+pragma "no doc"
 extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
+pragma "no doc"
 extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
+pragma "no doc"
 extern proc qio_channel_str_style(ch:qio_channel_ptr_t):int(64);
+pragma "no doc"
 extern proc qio_channel_style_element(ch:qio_channel_ptr_t, element:int(64)):int(64);
 
+pragma "no doc"
 extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+pragma "no doc"
 extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
+pragma "no doc"
 extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t, ref amt_read:ssize_t):syserr;
+pragma "no doc"
 extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t):syserr;
+pragma "no doc"
 // A specialization is needed for _ddata as the value is the pointer its memory
+pragma "no doc"
 extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:ssize_t):syserr;
+pragma "no doc"
 extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t):int(32);
 
+pragma "no doc"
 extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t, ref amt_written:ssize_t):syserr;
+pragma "no doc"
 extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t):syserr;
+pragma "no doc"
 // A specialization is needed for _ddata as the value is the pointer its memory
+pragma "no doc"
 extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:ssize_t):syserr;
+pragma "no doc"
 extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):syserr;
 
+pragma "no doc"
 extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
+pragma "no doc"
 extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):syserr;
+pragma "no doc"
 extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+pragma "no doc"
 extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
+pragma "no doc"
 extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 
+pragma "no doc"
 extern proc qio_channel_write_bits(threadsafe:c_int, ch:qio_channel_ptr_t, v:uint(64), nbits:int(8)):syserr;
+pragma "no doc"
 extern proc qio_channel_flush_bits(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+pragma "no doc"
 extern proc qio_channel_read_bits(threadsafe:c_int, ch:qio_channel_ptr_t, ref v:uint(64), nbits:int(8)):syserr;
 
-extern proc qio_locales_for_region(fl:qio_file_ptr_t, start:int(64), end:int(64), ref
-    loc_names:c_ptr(c_string), ref num_locs_out:c_int):syserr;
+pragma "no doc"
+extern proc qio_locales_for_region(fl:qio_file_ptr_t,
+                                   start:int(64), end:int(64),
+                                   ref loc_names:c_ptr(c_string),
+                                   ref num_locs_out:c_int):syserr;
+pragma "no doc"
 extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):syserr;
+pragma "no doc"
 extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
+pragma "no doc"
 extern proc qio_free_string(arg:c_string);
 
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string_copy):syserr;
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_file_path_for_fp(fp:_file, ref path:c_string_copy):syserr;
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string_copy):syserr;
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string_copy, path_in:c_string):syserr;
 
+pragma "no doc"
 extern proc qio_channel_read_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_channel_write_int(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t, issigned:c_int):syserr;
 
+pragma "no doc"
 extern proc qio_channel_read_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_channel_write_float(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
 
+pragma "no doc"
 extern proc qio_channel_read_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):syserr;
+pragma "no doc"
 extern proc qio_channel_write_complex(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):syserr;
 
+pragma "no doc"
 extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
+pragma "no doc"
 extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):syserr;
 
+pragma "no doc"
 extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_channel_print_int(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t, issigned:c_int):syserr;
 
+pragma "no doc"
 extern proc qio_channel_scan_float(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_channel_print_float(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
 
 // These are the same as scan/print float but they assume an 'i' afterwards.
+pragma "no doc"
 extern proc qio_channel_scan_imag(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t):syserr;
+pragma "no doc"
 pragma "no prototype" // FIXME
 extern proc qio_channel_print_imag(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:size_t):syserr;
 
 
+pragma "no doc"
 extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:size_t):syserr;
+pragma "no doc"
 extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:size_t):syserr;
 
 
+pragma "no doc"
 extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):syserr;
 
+pragma "no doc"
 extern proc qio_nbytes_char(chr:int(32)):c_int;
+pragma "no doc"
 extern proc qio_encode_to_string(chr:int(32)):c_string_copy;
+pragma "no doc"
 extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
 
+pragma "no doc"
 extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):syserr;
+pragma "no doc"
 extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):syserr;
+pragma "no doc"
 extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 // Note, the returned ptr argument behaves like an allocated c_string
 // (i.e. c_string_copy).  It should be freed by the caller, or stored and freed
 // later.
+pragma "no doc"
 extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
+pragma "no doc"
 extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
+pragma "no doc"
 extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipws:c_int):syserr;
+pragma "no doc"
 extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t, skipws:c_int):syserr;
+pragma "no doc"
 extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
+pragma "no doc"
 extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
 
 
 /*********************** Curl/HDFS support ******************/
 
 /***************** C U R L *******************/
+pragma "no doc"
 extern type curl_handle;
+pragma "no doc"
 extern const curl_function_struct:qio_file_functions_t;
+pragma "no doc"
 extern const curl_function_struct_ptr:qio_file_functions_ptr_t;
 
 /****************** H D F S ******************/
+pragma "no doc"
 extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
+pragma "no doc"
 extern proc hdfs_connect(out fs: c_void_ptr, path: c_string, port: int): syserr; 
+pragma "no doc"
 extern proc hdfs_do_release(fs:c_void_ptr);
 // End
 
+pragma "no doc"
 extern record qio_conv_t {
   var preArg1:uint(8);
   var preArg2:uint(8);
@@ -1546,46 +1650,82 @@ extern record qio_conv_t {
   var regexp_flags:c_void_ptr;
 }
 
+pragma "no doc"
 extern const QIO_CONV_UNK:c_int;
 
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_NUMERIC:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_SIGNED:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_BINARY_SIGNED:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_UNSIGNED:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_BINARY_UNSIGNED:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_REAL:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_BINARY_REAL:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_IMAG:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_BINARY_IMAG:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_COMPLEX:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_BINARY_COMPLEX:c_int;
 
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_STRING:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_REPR:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_REGEXP:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_NONE_REGEXP_LITERAL:c_int;
+pragma "no doc"
 extern const QIO_CONV_ARG_TYPE_NONE_LITERAL:c_int;
 
+pragma "no doc"
 extern const QIO_CONV_SET_MIN_WIDTH_COLS:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_MAX_WIDTH_COLS:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_MAX_WIDTH_CHARS:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_MAX_WIDTH_BYTES:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_PRECISION:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_STRINGLEN:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_TERMINATOR:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_STRINGSTART:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_STRINGSTARTEND:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_STRINGEND:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_CAPTURE:c_int;
+pragma "no doc"
 extern const QIO_CONV_SET_DONE:c_int;
 
+pragma "no doc"
 extern proc qio_conv_parse(const fmt:c_string, start:size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyle):syserr;
 
+pragma "no doc"
 extern proc qio_format_error_too_many_args():syserr;
+pragma "no doc"
 extern proc qio_format_error_too_few_args():syserr;
+pragma "no doc"
 extern proc qio_format_error_arg_mismatch(arg:int):syserr;
+pragma "no doc"
 extern proc qio_format_error_bad_regexp():syserr;
+pragma "no doc"
 extern proc qio_format_error_write_regexp():syserr;
 
 /* :returns: the default I/O style */
@@ -1656,6 +1796,7 @@ proc iostyle.text(/* args coming later */):iostyle  {
   QIO_FDFLAG_WRITEABLE,
   QIO_FDFLAG_SEEKABLE
 */
+pragma "no doc"
 extern type fdflag_t = c_int;
 
 /* 
@@ -1722,11 +1863,14 @@ It is illegal to perform any I/O operations on the default value.
 */
 pragma "ignore noinit"
 record file {
+  pragma "no doc"
   var home: locale = here;
+  pragma "no doc"
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
 }
 
 // TODO -- shouldn't have to write this this way!
+pragma "no doc"
 pragma "init copy fn"
 proc chpl__initCopy(x: file) {
   on x.home {
@@ -1735,6 +1879,7 @@ proc chpl__initCopy(x: file) {
   return x;
 }
 
+pragma "no doc"
 proc =(ref ret:file, x:file) {
   // retain -- release
   on x.home {
@@ -1750,12 +1895,14 @@ proc =(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
+/* Halt if a file is invalid */
 proc file.check() {
   if(is_c_nil(_file_internal)) {
     halt("Operation attempted on an invalid file");
   }
 }
 
+pragma "no doc"
 proc file.~file() {
   on this.home {
     qio_file_release(_file_internal);
@@ -1824,6 +1971,8 @@ proc file.close(out error:syserr) {
   }
 }
 
+// documented in error= version
+pragma "no doc"
 proc file.close() {
   var err:syserr = ENOERR;
   this.close(err);
@@ -2757,10 +2906,20 @@ This function is equivalent to calling :proc:`open` and then
           will halt with an error message.
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
-:arg kind: HERE TODO
-:arg locking: HERE TODO
-:arg start: HERE TODO
-:arg end: HERE TODO
+:arg kind: :type:`iokind` compile-time argument to determine the
+            corresponding parameter of the :record:`channel` type. Defaults
+            to :enum:`iokind.dynamic`, meaning that the associated
+            :record:`iostyle` controls the formatting choices.
+:arg locking: compile-time argument to determine whether or not the
+              channel should use locking; sets the 
+              corresponding parameter of the :record:`channel` type.
+              Defaults to true, but when safe, setting it to false
+              can improve performance.
+:arg start: zero-based byte offset indicating where in the file the
+            channel should start reading. Defaults to 0.
+:arg end: zero-based byte offset indicating where in the file the
+          channel should no longer be allowed to read. Defaults
+          to a ``max(int)`` - meaning no end point. 
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
 :arg url: optional argument to specify a URL to open. See :mod:`Curl` and
@@ -2794,6 +2953,8 @@ proc openreader(out err: syserr, path:string="", param kind=iokind.dynamic, para
   return reader;
 }
 
+// documented in error= version
+pragma "no doc"
 proc openreader(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""):channel(false, kind, locking) {
@@ -2803,6 +2964,45 @@ proc openreader(path:string="", param kind=iokind.dynamic, param locking=true,
   return reader;
 }
 
+/*
+
+Open a file at a particular path or URL and return a writing channel for it.
+This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
+:proc:`file.writer` on the resulting file.
+
+:arg err: optional argument to capture an error code. If this argument
+          is not provided and an error is encountered, this function
+          will halt with an error message.
+:arg path: which file to open (for example, "some/file.txt"). This argument
+           is required unless the ``url=`` argument is used.
+:arg kind: :type:`iokind` compile-time argument to determine the
+           corresponding parameter of the :record:`channel` type. Defaults
+           to :enum:`iokind.dynamic`, meaning that the associated
+           :record:`iostyle` controls the formatting choices.
+:arg locking: compile-time argument to determine whether or not the
+              channel should use locking; sets the 
+              corresponding parameter of the :record:`channel` type.
+              Defaults to true, but when safe, setting it to false
+              can improve performance.
+:arg start: zero-based byte offset indicating where in the file the
+            channel should start writing. Defaults to 0.
+:arg end: zero-based byte offset indicating where in the file the
+          channel should no longer be allowed to write. Defaults
+          to a ``max(int)`` - meaning no end point. 
+:arg hints: optional argument to specify any hints to the I/O system about
+            this file. See :type:`iohints`.
+:arg url: optional argument to specify a URL to open. See :mod:`Curl` and
+          :mod:`HDFS` for more information on ``url=`` support for those
+          systems. If HDFS is enabled, this function supports ``url=``
+          arguments of the form "hdfs://<host>:<port>/<path>". If Curl is
+          enabled, this function supports ``url=`` starting with
+          ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
+          ``smtps://``, ``imap://``, or ``imaps://``
+:returns: an open reading channel to the requested resource. If the ``error=``
+          argument was provided and the channel was not opened because of an
+          error, returns the default :record:`channel` value.
+
+*/
 proc openwriter(out err: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""): channel(true, kind, locking) {
@@ -2816,6 +3016,8 @@ proc openwriter(out err: syserr, path:string="", param kind=iokind.dynamic, para
   return writer;
 }
 
+// documented in the error= version
+pragma "no doc"
 proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""): channel(true, kind, locking) {
@@ -3435,6 +3637,8 @@ proc channel.read(ref args ...?k,
   }
 }
 
+// documented in the error= version
+pragma "no doc"
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
@@ -3449,14 +3653,17 @@ where arg.rank == 1 && isRectangularArr(arg)
 }
 
 /*
-  Read a line of bytes into a Chapel array.
+  Read a line into a Chapel array of bytes. Reads until a '\n' is reached.
+  The '\n' is consumed but not returned in the array.
 
-  arg:       A 1D DefaultRectangular array which must have at least 1 element.
-  numRead:   The number of bytes read.
-  start:     Index to begin reading into.
-  amount:    The maximum amount of bytes to read.
-
-  Returns true if bytes were read without error.
+  :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
+  :arg numRead: The number of bytes read.
+  :arg start: Index to begin reading into.
+  :arg amount: The maximum amount of bytes to read.
+  :arg error: optional argument to capture an error code. If this argument
+              is not provided and an error is encountered, this function
+              will halt with an error message.
+  :returns: true if the bytes were read without error.
 */
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr) : bool
 where arg.rank == 1 && isRectangularArr(arg)
@@ -3485,6 +3692,16 @@ where arg.rank == 1 && isRectangularArr(arg)
   return !error;
 }
 
+/*
+  Read a line into a Chapel string. Reads until a '\n' is reached.
+  The '\n' is included in the resulting string.
+
+  :arg arg: a string to receive the line
+  :arg error: optional argument to capture an error code. If this argument
+              is not provided and an error is encountered, this function
+              will halt with an error message.
+  :returns: `true` if a line was read without error, `false` on error or EOF
+*/
 proc channel.readline(ref arg:string, out error:syserr):bool {
   if writing then compilerError("read on write-only channel");
   error = ENOERR;
@@ -3501,6 +3718,9 @@ proc channel.readline(ref arg:string, out error:syserr):bool {
   }
   return !error;
 }
+
+// documented in error= version
+pragma "no doc"
 proc channel.readline(ref arg:string):bool {
   var e:syserr = ENOERR;
   this.readline(arg, error=e);
@@ -3512,15 +3732,18 @@ proc channel.readline(ref arg:string):bool {
   }
 }
 
-// channel.readstring: read a given amount of bytes from a channel
-// arg: str_out  -> The string to be read into
-// arg: len      -> Read up to len bytes from the channel, up until EOF
-//                  (or some kind of I/O error). If the default value of -1
-//                  is provided, read until EOF starting from the channel's
-//                  current offset.
-// arg: out error-> On completion, the error code (possibly EOF)
-// return: true  -> We have not encountered EOF
-//         false -> We have encountered EOF or another error
+/* read a given number of bytes from a channel
+
+   :arg str_out: The string to be read into
+   :arg len: Read up to len bytes from the channel, up until EOF
+             (or some kind of I/O error). If the default value of -1
+             is provided, read until EOF starting from the channel's
+             current offset.
+   :arg error: optional argument to capture an error code. If this argument
+               is not provided and an error is encountered, this function
+               will halt with an error message.
+   :returns: `true` if we read something, `false` on EOF or error
+ */
 proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):bool {
   error = ENOERR;
   on this.home {
@@ -3567,6 +3790,8 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
   return !error;
 }
 
+// documented in the error= version
+pragma "no doc"
 proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
   var e:syserr = ENOERR;
   this.readstring(str_out, len, error=e);
@@ -3578,6 +3803,17 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
   }
 }
 
+/*
+   Read bits with binary I/O
+
+   :arg v: where to store the read bits. This value will have its nbits
+           least-significant bits set.
+   :arg nbits: how many bits to read
+   :arg error: optional argument to capture an error code. If this argument
+               is not provided and an error is encountered, this function
+               will halt with an error message.
+   :returns: `true` if the bits were read without error, `false` on error or EOF
+ */
 inline proc channel.readbits(out v:uint(64), nbits:int(8), out error:syserr):bool {
   var tmp:ioBits;
   var ret:bool;
@@ -3590,6 +3826,9 @@ inline proc channel.readbits(out v:uint(64), nbits:int(8), out error:syserr):boo
 
   return ret;
 }
+
+// documented in the error= version
+pragma "no doc"
 proc channel.readbits(out v:uint(64), nbits:int(8)):bool {
   var e:syserr = ENOERR;
   this.readbits(v, nbits, error=e);
@@ -3601,9 +3840,22 @@ proc channel.readbits(out v:uint(64), nbits:int(8)):bool {
   }
 }
 
+/*
+   Write bits with binary I/O
+
+   :arg v: a value containing nbits bits to write the least-significant bits
+   :arg nbits: how many bits to write
+   :arg error: optional argument to capture an error code. If this argument
+               is not provided and an error is encountered, this function
+               will halt with an error message.
+   :returns: `true` if the bits were written without error, `false` on error
+ */
 inline proc channel.writebits(v:uint(64), nbits:int(8), out error:syserr):bool {
   return this.write(new ioBits(v, nbits), error=error);
 }
+
+// documented in the error= version
+pragma "no doc"
 proc channel.writebits(v:uint(64), nbits:int(8)):bool {
   var e:syserr = ENOERR;
   this.writebits(v, nbits, error=e);
@@ -3922,12 +4174,21 @@ proc channel.flush(out error:syserr) {
     error = qio_channel_flush(locking, _channel_internal);
   }
 }
+// documented in error= version
+pragma "no doc"
 proc channel.flush() {
   var e:syserr = ENOERR;
   this.flush(error=e);
   if e then this._ch_ioerror(e, "in channel.flush");
 }
 
+/* Assert that a channel has reached end-of-file.
+   Halts with an error message if the receiving channel is not currently
+   at EOF.
+
+   :arg error: an optional string argument which will be printed
+               out if the assert fails. The default prints "Not at EOF".
+ */
 proc channel.assertEOF(error:string) {
   if writing {
     this._ch_ioerror(EINVAL, "assertEOF on writing channel");
@@ -4041,8 +4302,11 @@ proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
 
 // And now, the toplevel items.
 
+/* standard input, otherwise known as file descriptor 0 */
 const stdin:channel(false, iokind.dynamic, true) = openfd(0).reader(); 
+/* standard output, otherwise known as file descriptor 1 */
 const stdout:channel(true, iokind.dynamic, true) = openfp(chpl_cstdout()).writer(); 
+/* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true) = openfp(chpl_cstderr()).writer(); 
 
 /* Equivalent to stdout.write. See :proc:`channel.write` */
@@ -4083,6 +4347,8 @@ proc read(type t ...?numTypes) {
   return stdin.read((...t));
 }
 
+// used to make readThis/writeThis work
+pragma "no doc"
 class ChannelWriter : Writer {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
   var err:syserr = ENOERR;
@@ -4133,6 +4399,8 @@ class ChannelWriter : Writer {
   }
   // writeThis + no readThis -> ChannelWriter itself cannot be read
 }
+// used to make readThis/writeThis work
+pragma "no doc"
 class ChannelReader : Reader {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
   var err:syserr = ENOERR;
@@ -6168,11 +6436,16 @@ iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 
 /************** Distributed File Systems ***************/
 
+pragma "no doc"
 extern const FTYPE_NONE   : c_int;
+pragma "no doc"
 extern const FTYPE_HDFS   : c_int;
+pragma "no doc"
 extern const FTYPE_LUSTRE : c_int;
+pragma "no doc"
 extern const FTYPE_CURL   : c_int;
 
+pragma "no doc"
 proc file.fstype():int {
   var t:c_int;
   var err:syserr = ENOERR;
@@ -6183,9 +6456,11 @@ proc file.fstype():int {
   return t:int;
 }
 
-// Returns (chunk start, chunk end) for the first chunk in the file
-// containing data in the range [start, end].
-// Returns (0,0) if no such value exists.
+/*
+   Returns (chunk start, chunk end) for the first chunk in the file
+   containing data in the range [start, end].
+   Returns (0,0) if no such value exists.
+ */
 proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {
   var err:syserr = ENOERR;
   var s = 0;
@@ -6228,10 +6503,12 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   return (s, e);
 }
 
-// Returns the 'best' locales to run something working with this
-// region of the file. This *must* return the same result when
-// called from different locales. Returns a domain of locales that are "best" for the
-// given region. If no locales are "best" we return a domain containing all locales.
+/*
+   Returns the 'best' locales to run something working with this
+   region of the file. This *must* return the same result when
+   called from different locales. Returns a domain of locales that are "best" for the
+   given region. If no locales are "best" we return a domain containing all locales.
+ */
 proc file.localesForRegion(start:int(64), end:int(64)) {
 
   proc findloc(loc:string, locs:c_ptr(c_string), end:int) {
