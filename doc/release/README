@@ -61,16 +61,16 @@ reStructuredText
 ----------------
 
 We have initiated an effort to translate our text based README files in to
-reStructuredText; these can be detected by the suffix ".rst" on the file.
-In general, these files are reasonably easy to read as conventional text
-but you may find you prefer to view with an reStructuredText viewer.
+reStructuredText; these can be detected by the suffix ".rst" in the filename.
+These files are reasonably easy to read as conventional text
+but you may prefer to read them using a reStructuredText viewer.
 
 There are several viewers available for download. Alternatively you might
-like to view the rSt files using your browser to view the files on our
-Github respository; rSt files are rendered to nicely formatted HTML
-automatically.
+like to view the reST files using your browser and our Github respository;
+reST files are rendered as nicely formatted HTML automatically.
 
-You can navigate to the root of the release documentation using the URL
+You can navigate to the root of the documentation for this release using
+the URL
 
 https://github.com/chapel-lang/chapel/blob/1.11.0/doc/release
 
