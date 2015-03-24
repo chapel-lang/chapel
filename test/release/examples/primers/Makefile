@@ -36,8 +36,10 @@ TARGETS = \
 ifdef FFTW_DIR
 	TARGETS += FFTWlib
 	FFTW_OPTS = -I$(FFTW_DIR)/include -L$(FFTW_DIR)/lib
-else ifneq ($(shell /sbin/ldconfig -p | grep -i fftw),)
+else ifeq ($(wildcard /sbin/ldconfig),/sbin/ldconfig)
+ifneq ($(shell /sbin/ldconfig -p | grep -i fftw),)
 	TARGETS += FFTWlib
+endif
 endif
 
 REALS = $(TARGETS:%=%_real)
