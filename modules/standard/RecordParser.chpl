@@ -28,11 +28,10 @@ This module makes the following assumptions:
 
 1. The file has been opened for reading and a reader channel has been created
 
-2. The programmer has created a record (NOT a class) that can have an arbitrary
-   number of fields that can be cast from strings (i.e no subrecords, arrays
-   etc).
+2. The programmer has created a record (NOT a class) in which all fields 
+   can be cast from strings (i.e no subrecords, arrays etc).
 
-3. The number of captures in the regex string provided, MUST match the number
+3. The number of captures in the regex string provided MUST match the number
    of fields in the record.
 
 4. The order in which the fields in the record appear must be in the same order
@@ -94,6 +93,9 @@ Example 2
   for r in N.stream() do
     writeln(r);
 
+RecordParser Types and Functions
+--------------------------------
+
  */
 module RecordParser {
 
@@ -145,7 +147,7 @@ class RecordReader {
   */
   proc createRegexp() {
     // This is a VERY loose regex, and therefore could lead to errors unless the
-    // data is very nice... (but hey, the programmer wasnt willing to give us a
+    // data is very nice... (but hey, the programmer wasn't willing to give us a
     // regex..)
     var accum: string = "\\s*";
     for param n in 1..num_fields {
@@ -193,8 +195,9 @@ class RecordReader {
   }
 
   /*
-     An internal function that we use all our user visible code.  When called
-     with no arguments it does no checking abut block boundaries.
+
+     An internal function that we use with all our user visible code.  When
+     called with no arguments it does no checking about block boundaries.
      
      HDFS specific when offst and len are given. Checks for block boundaries
      for parallel file IO
