@@ -56,7 +56,7 @@ tags
 /make/Chapel.xcodeproj/*.mode1v3
 
 # Man ignores.
-/man/man1/chpl.1
+/man/man1/
 
 # Modules ignores.
 /modules/docs
@@ -245,7 +245,14 @@ tags
 /test/modules/standard/FileSystem/lydia/chmod/file
 /test/modules/standard/FileSystem/lydia/copy/bar.txt
 /test/modules/standard/FileSystem/lydia/copyFile/bar.txt
-/test/modules/standard/FileSystem/lydia/copyTree/f
+/test/modules/standard/FileSystem/lydia/copyTree/complexDest
+/test/modules/standard/FileSystem/lydia/copyTree/emptyDest
+/test/modules/standard/FileSystem/lydia/copyTree/sparseDest
+/test/modules/standard/FileSystem/lydia/copyTree/verySparseDest
+/test/modules/standard/FileSystem/lydia/copyTree/shortDest
+/test/modules/standard/FileSystem/lydia/copyTree/denseDest
+/test/modules/standard/FileSystem/lydia/copyTree/cutoffDest
+/test/modules/standard/FileSystem/lydia/copyTree/existing_dir
 /test/modules/standard/FileSystem/lydia/exists/broken_link
 /test/modules/standard/FileSystem/lydia/exists/dir
 /test/modules/standard/FileSystem/lydia/exists/dir_link
@@ -256,6 +263,8 @@ tags
 /test/modules/standard/FileSystem/lydia/isLink/my_file
 /test/modules/standard/FileSystem/lydia/isLink/my_link_dir
 /test/modules/standard/FileSystem/lydia/isLink/my_link_file
+/test/modules/standard/FileSystem/lydia/isMount/symlinkToRoot
+/test/modules/standard/FileSystem/lydia/isMount/notAMonkey/symlinkToRoot
 /test/modules/standard/FileSystem/lydia/symlink/bar.txt
 /test/modules/standard/Path/lydia/realpath/blahblahblah.txt
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good

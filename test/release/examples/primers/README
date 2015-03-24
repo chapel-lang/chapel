@@ -13,12 +13,13 @@ demonstrate Chapel feature areas in detail.
      classes.chpl           : Defining and using classes
      distributions.chpl     : Chapel standard distributions
      domains.chpl           : Domains and methods on domains
+     FFTWlib.chpl           : the FFTW standard library
      fileIO.chpl            : File I/O example using arrays
      genericClasses.chpl    : Defining and using generic classes
      iterators.chpl         : Iterator examples
-     leaderfollower.chpl    : Introduction to leader/follower iterators
      locales.chpl           : Chapel Locale types
      opaque.chpl            : Opaque arrays
+     parIters.chpl          : Introduction to parallel iterators
      procedures.chpl        : Procedure examples
      randomNumbers.chpl     : Usage of the standard module Random
      ranges.chpl            : Range types and operations on ranges

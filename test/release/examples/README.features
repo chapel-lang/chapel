@@ -54,9 +54,9 @@ primers/
   fileIO         : file I/O of scalars and arrays
   genericClasses : generic classes and objects; generic types
   iterators      : iterators of various styles
-  leaderfollower : leader-follower iterators for defining 'forall' behavior
   locales        : multiple locales, on clauses, multi-locale task parallelism
   opaque         : opaque domains and arrays; graph-based data structures
+  parIters       : parallel iterators for defining 'forall' behavior
   procedures     : defining and calling procedures in Chapel
   randomNumbers  : use of the standard module Random
   ranges         : ranges; .., #, by operators; range iteration; range slicing

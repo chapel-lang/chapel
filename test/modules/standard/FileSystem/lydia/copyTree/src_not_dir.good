@@ -1,0 +1,1 @@
+src_not_dir.chpl:3: error: Not a directory in copyTree(blah.txt, thatWasntADirectory)

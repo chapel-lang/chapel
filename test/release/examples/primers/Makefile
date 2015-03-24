@@ -8,16 +8,16 @@ TARGETS = \
         arrayVectorOps \
 	associative \
 	atomics \
-	chpldoc \
+	chpldoc.doc \
 	classes \
 	distributions \
 	domains \
 	fileIO \
 	genericClasses \
 	iterators \
-	leaderfollower \
 	locales \
 	opaque \
+	parIters \
 	procedures \
         randomNumbers \
 	ranges \

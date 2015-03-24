@@ -1,5 +1,11 @@
-feature request/error message: recursive standalone iterators
+feature request: recursive standalone iterators
 
+Using a for loop in the standalone iterator instead of forall and
+explicitly passing tag to the recursive invocation allows this test
+to pass.  It would be nice to be able to use a forall loop and have
+something like that transformation apply automatically.
+
+Initial text of this .future file:
 When writing a recursive standalone iterator, we get a somewhat
 confusing error message pointing to an internal module.  This future
 can be perceived as a feature request to add support for recursive

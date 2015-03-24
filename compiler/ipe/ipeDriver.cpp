@@ -30,7 +30,6 @@
 #include "IpeVars.h"
 #include "ipeResolve.h"
 #include "ipeEvaluate.h"
-#include "log.h"
 #include "parser.h"
 #include "passes.h"
 #include "stmt.h"
@@ -108,16 +107,6 @@ void ipeRun()
   IpeScopeModule* replScope  = NULL;
 
   //
-  // Parse the internal modules
-  //
-  setupLogfiles();
-
-  parse();
-  AstDumpToNode::view("parse", 1);
-
-  teardownLogfiles();
-
-  //
   // Initialize the REPL
   //
 
@@ -150,6 +139,18 @@ void ipeRun()
   printf("\n\n");
 
   IpeVars::describe(gRootVars, 3);
+  printf("\n\n");
+
+  moduleByName("ChapelRoot",     gRootVars)->describe(3);
+  printf("\n\n");
+
+  moduleByName("ChapelBase",     gRootVars)->describe(3);
+  printf("\n\n");
+
+  moduleByName("ChapelStandard", gRootVars)->describe(3);
+  printf("\n\n");
+
+  moduleByName("ChapelRepl",     gRootVars)->describe(3);
   printf("\n\n");
 #endif
 
