@@ -85,6 +85,7 @@ MODULES_TO_DOCUMENT = \
 	$(SYS_CTYPES_MODULE_DOC)
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
+	export CHPLDOC_AUTHOR='Cray Inc' && \
 	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
 
 clean-documentation:
