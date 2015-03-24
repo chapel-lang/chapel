@@ -22,11 +22,9 @@
 
 #include "chpl-comp-detect-macros.h"
 
-// Cray has supported ivdep since at least version 6 (released 2007.) We could
-// get away without a version check since the compiler isn't released outside
-// of the PrgEnv, but it doesn't hurt.
-#if RT_COMP_CC == RT_COMP_CRAY && RT_COMP_CRAY_VERSION_MAJOR >= 6
-#define CHPL_PRAGMA_IVDEP _Pragma ("ivdep")
+// See commit history for why we don't support ivdep with the Cray compiler
+#if RT_COMP_CC == RT_COMP_CRAY
+#define CHPL_PRAGMA_IVDEP
 
 // Intel has supported ivdep since at least version 9 (released 2005.) It's
 // possible previous versions did too, but that's far enough back for us.
@@ -41,11 +39,11 @@
 
 // PGI has supported "nodepchk" since at least version 6 (released 2005.) ivdep
 // is only supported for the fortran compiler, but nodepchk has identical
-// semantics and is availble for C/C++ as well.
+// semantics and is available for C/C++ as well.
 #elif RT_COMP_CC == RT_COMP_PGI && RT_COMP_PGI_VERSION_MAJOR >= 6
 #define CHPL_PRAGMA_IVDEP _Pragma("nodepchk")
 
-// GCC has only supportd ivdep since version 4.9 (released 2014.)
+// GCC has only supported ivdep since version 4.9 (released 2014.)
 #elif RT_COMP_CC == RT_COMP_GCC && RT_COMP_GCC_VERSION >= 40900
 #define CHPL_PRAGMA_IVDEP _Pragma ("GCC ivdep")
 
