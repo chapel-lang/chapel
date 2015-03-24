@@ -62,6 +62,7 @@ MODULES_TO_DOCUMENT = \
 	standard/CommDiagnostics.chpl \
 	standard/Curl.chpl \
 	standard/FFTW.chpl \
+	standard/FFTW_MT.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/HDFS.chpl \

@@ -20,12 +20,11 @@
 /*
   FFT computations via key routines from FFTW (version 3)
 
-  This module defines Chapel wrappers for key 64-bit routines from
-  FFTW (http://www.fftw.org), version 3.  Over time, the intention is
-  to expand this module to support additional routines, prioritizing
-  based on requests and feedback from users.  Also, see the
-  :mod:`FFTW_MT` module which provides support for calls to the
-  multi-threaded FFTW implementation.
+  This module defines Chapel wrappers for key single-threaded 64-bit
+  routines from FFTW (http://www.fftw.org), version 3.  For
+  multi-threaded routines, refer to the :mod:`FFTW_MT` module.  Over
+  time, the intention is to expand these modules to support additional
+  routines, prioritizing based on requests and feedback from users.
 
 
   To use this module:
@@ -240,7 +239,7 @@ module FFTW {
     :type realDom: `domain`
 
     :arg arr: The array to be used as the in-place input/output array.  If passing in an array of `real` elements, the leading dimension of the array must be padded to store 2(n/2 + 1) elements, where `n` is the size of the corresponding dimension of `realDom`.  If passing in an array of `complex` elements, the leading dimension should be (n/2 + 1).  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
-    :type arr: [] `T` where `T` is of type `real(640` or `complex(128)`
+    :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
     :type flags: c_int
@@ -388,7 +387,7 @@ module FFTW {
 
   /* Request a forward transform (i.e., use a negative exponent in the tranform). */
   extern const FFTW_FORWARD : c_int;
-  /* Request a backward transform (i.e., use a positive exponent in the transofmr). */
+  /* Request a backward transform (i.e., use a positive exponent in the transform). */
   extern const FFTW_BACKWARD : c_int;
 
 
@@ -420,7 +419,7 @@ module FFTW {
      created when wisdom is available for the given problem; otherwise
      a `null plan` is returned.  This can be combined with other flags
      to create a plan if the wisdom available was created in that mode
-     (e.g., ``FFTW_WISDOM_ONLY | FFW_PATIENT``).  For more details on
+     (e.g., :const:`FFTW_WISDOM_ONLY` ``|`` :const:`FFTW_PATIENT`).  For more details on
      this flag and the previous four, refer to `Section 4.3.2
      <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual
   */

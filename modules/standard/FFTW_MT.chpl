@@ -49,6 +49,15 @@
   and -L flags sufficient to find the files.
 */
 
+//
+// TODO: Should this module be a sub-module of FFTW?  I'm thinking
+// so, but unfortunately this didn't occur to me in time for
+// version 1.11's code freeze.  The main thing to worry about is
+// whether 'use's of external dependences will be too aggressively
+// resolved such that the MT library is linked in whenever vanilla
+// FFTW is 'use'd.  That seems like it would be easy to fix, though.
+//
+
 module FFTW_MT {
   use FFTW;
   use "-lfftw3_threads", "-lpthread";
