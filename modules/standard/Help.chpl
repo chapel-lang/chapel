@@ -29,7 +29,10 @@
          writeln("Got argument ", a);
        }
      }
-     
+
+   See doc/release/technotes/README.main in a Chapel release for more
+   information on this feature.
+
    Programs that use this feature might need to expand upon the usage message
    that explains which config variables are available. To do so, this module
    includes the :proc:`printUsage` function. 
