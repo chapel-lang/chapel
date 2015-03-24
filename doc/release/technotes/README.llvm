@@ -6,13 +6,24 @@ The Chapel compiler includes a code generator for LLVM and also two LLVM
 optimizations. These features are experimental. However, some benchmark
 programs run faster with LLVM communication optimizations.  In addition, extern
 block support uses the clang parser, and so it is necessary to build a Chapel
-compiler with LLVM support in order to use that feature.
+compiler with LLVM support in order to use that feature. See README.extern
+for more information on extern blocks, and the discussion below in this
+file for more information about the LLVM communication optimizations.
  
 -------------------------
 Building the LLVM support
 -------------------------
 
-To build the compiler with LLVM support:
+To build the compiler with LLVM support for extern blocks, --llvm code
+generation, but no support for --llvm-wide-opt:
+
+  source ./util/setchplenv.bash
+  export CHPL_LLVM=llvm
+  make # you might want to do e.g. make -j 16 for a parallel build
+
+To build the compiler with LLVM support for extern blocks, --llvm code
+generation, and also support --llvm-wide-opt:
+
   source ./util/setchplenv.bash
   export CHPL_LLVM=llvm
   export CHPL_WIDE_POINTERS=node16 # optional but useful with --llvm-wide-opt
@@ -24,9 +35,8 @@ Note:
   forget to export CHPL_LLVM=llvm, the default will be to use the built llvm.
   You can override this default by setting CHPL_LLVM=none.
 
-* the Makefile in third-party/llvm
-  will unpack a tarball of LLVM 3.3 and apply a patch fixing SROA (scalar
-  replacement of aggregates) with multiple address spaces.
+* the Makefile in third-party/llvm will unpack LLVM and Clang source releases
+  and build them
 
 * LLVM code generation has not been tested on all supported configurations,
   and some features (such as building a library instead of an executable)
@@ -56,12 +66,13 @@ Motion (LICM) optimization might be able to hoist an access of a remote
 variable - ie, a 'get' - out of a loop.  This optimization has produced better
 performance with some benchmarks.
 
-CHPL_WIDE_POINTERS=node16 is necessary to use --llvm-wide-opt because as of
-LLVM 3.3, many optimizations assume that the pointer size is the same across
-all address spaces. The default CHPL_WIDE_POINTERS=struct uses a 128-bit wide
-pointer, but CHPL_WIDE_POINTERS=node16 packs wide pointers into a pointer-sized
-value (normally 64 bits) which includes 16 bits of node number in order to
-avoid these problems.
+CHPL_WIDE_POINTERS=node16 is necessary to use --llvm-wide-opt because of
+historical limitations in LLVM support for pointers in different address spaces
+having different sizes.  The default CHPL_WIDE_POINTERS=struct uses a 128-bit
+wide pointer, but CHPL_WIDE_POINTERS=node16 packs wide pointers into a
+pointer-sized value (normally 64 bits) which includes 16 bits of node number in
+order to avoid these problems.  We plan to remove this requirement in the
+future to enable --llvm-wide-opt to work with CHPL_WIDE_POINTERS=struct.
 
 Caveats:
 * --llvm-wide-opt currently requires CHPL_WIDE_POINTERS=node16, which means
@@ -114,6 +125,5 @@ After the usual LLVM optimization passes run, two Chapel LLVM passes run:
   and any of the special function calls (e.g. .gf.addr to extract the local
   address portion of a global pointer) into the usual operations on a packed
   pointer. In the future, we would like to support converting address space 100
-  pointers into the usual Chapel wide pointer format, but that feature will
-  require better address space support than what is present in LLVM 3.3.
+  pointers into the usual Chapel wide pointer format.
 
