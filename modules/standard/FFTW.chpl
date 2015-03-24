@@ -93,8 +93,8 @@ module FFTW {
 
 
   /*
-    Disable execution-time array size checks in the FFTW
-    :proc:`plan_dft` routine.
+    Controls execution-time array size checks in the FFTW
+    :proc:`plan_dft` routines (set to `true` to disable checks).
    */
   config param noFFTWsizeChecks = false;
 
