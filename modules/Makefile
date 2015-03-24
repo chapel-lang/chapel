@@ -78,7 +78,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Search.chpl \
 	standard/Sort.chpl \
 	standard/startInitCommDiags.chpl \
-	standard/stopInitCommDiags.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
 	standard/UtilMath.chpl \
