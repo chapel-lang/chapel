@@ -878,6 +878,13 @@ Linux64:
   read errors
   # modules/standard/gmp/lydia/gmp_leak.future
 
+Ubuntu:
+- Ubuntu 14.04 32-bit (not 64-bit) has a bug in preadv/pwritev support.
+  This problem may prevent proper functioning for many of Chapel's IO
+  routines. This problem is not present in Ubuntu 12.04 or 14.10 or any
+  64-bit version.  See the bug report here:
+    https://bugs.launchpad.net/ubuntu/+source/eglibc/+bug/1309818
+
 cygwin:
 - cygwin builds may demonstrate portability issues.
 - The qthreads tasking layer is not supported.
