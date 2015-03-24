@@ -22,7 +22,7 @@ This directory contains the following documentation:
                        for quick reference
 
   platforms/           : platform-specific notes:
-    README.cray        :  Cray XC(TM), Cray XE(TM), Cray XK(TM), and 
+    README.cray        :  Cray XC(TM), Cray XE(TM), Cray XK(TM), and
                           Cray CS(TM) series
     README.cygwin      :  Cygwin
     README.ibm         :  IBM
@@ -35,7 +35,8 @@ This directory contains the following documentation:
   technotes/                : technical notes about our implementation:
     README.atomics          :  information about using 'atomic' variables
     README.auxIO            :  information about Auxiliary I/O with Chapel
-    README.chpldoc          :  notes on using the 'chpldoc' capability
+    README.chpl-ipe.rst     :  information about Interactive Chapel
+    README.chpldoc.rst      :  notes on using the 'chpldoc' capability
     README.comm-diagnostics :  tracking communication events
     README.dsi              :  requirements/guidelines on writing a domain map
     README.extern           :  calling external C routines
@@ -53,6 +54,25 @@ This directory contains the following documentation:
     README.regexp           :  using regular expressions in Chapel
     README.sets             :  set operations on associative arrays and domains
     README.subquery         :  querying the index set owned by a locale
+
+
+----------------
+reStructuredText
+----------------
+
+We have initiated an effort to translate our text based README files in to
+reStructuredText; these can be detected by the suffix ".rst" on the file.
+In general, these files are reasonably easy to read as conventional text
+but you may find you prefer to view with an reStructuredText viewer.
+
+There are several viewers available for download. Alternatively you might
+like to view the rSt files using your browser to view the files on our
+Github respository; rSt files are rendered to nicely formatted HTML
+automatically.
+
+You can navigate to the root of the release documentation using the URL
+
+https://github.com/chapel-lang/chapel/blob/1.11.0/doc/release
 
 
 --------------------
