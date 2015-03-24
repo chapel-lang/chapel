@@ -29,31 +29,31 @@
    the :ref:`file-status`.  Also included are operations relating to the current
    process's file system state, which are performed on a specified locale
    (:ref:`locale-state`).  The module also contains iterators for traversing the
-   file system, referred to as :ref:`filerator`.
+   file system (:ref:`filerator`).
 
    .. _file-manip:
 
    File/Directory Manipulations
    ----------------------------
-   :proc:`chmod`
-   :proc:`chown`
    :proc:`copy`
    :proc:`copyFile`
-   :proc:`copyMode`
    :proc:`copyTree`
    :proc:`mkdir`
-   :proc:`rename`
    :proc:`remove`
    :proc:`symlink`
+   :proc:`chmod`
+   :proc:`chown`
+   :proc:`copyMode`
+   :proc:`rename`
 
    .. _file-status:
 
    File/Directory Properties
    -------------------------
-   :proc:`exists`
    :proc:`getGID`
    :proc:`getMode`
    :proc:`getUID`
+   :proc:`exists`
    :proc:`isDir`
    :proc:`isFile`
    :proc:`isLink`
@@ -64,18 +64,18 @@
 
    Locale State Functionality
    --------------------------
-   :proc:`~locale.chdir`
-   :proc:`~locale.cwd`
-   :proc:`~locale.umask`
+   :proc:`locale.chdir`
+   :proc:`locale.cwd`
+   :proc:`locale.umask`
 
    .. _filerator:
 
-   Filerators
-   ----------
-   :iter:`findfiles`
+   File System Traversal Iterators
+   -------------------------------
    :iter:`glob`
    :iter:`listdir`
    :iter:`walkdirs`
+   :iter:`findfiles`
 
    Constant and Function Definitions
    ---------------------------------
