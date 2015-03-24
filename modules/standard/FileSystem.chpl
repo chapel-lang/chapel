@@ -25,14 +25,60 @@
    routines for opening, writing to, or reading from a file live in the
    :mod:`IO` module.  Rather, it covers cases where the user would prefer a file
    or directory to be handled wholesale and/or with minimal interaction.  For
-   example, this module contains a file :proc:`copy` routine, as well as
-   operations like :proc:`chmod`, :proc:`mkdir`, and :proc:`remove`.  Also
-   included are operations relating to the current process's file system state,
-   such as :proc:`~locale.umask` or :proc:`~locale.chdir`, which are performed
-   on a specified locale.  The module also contains iterators for traversing the
-   file system, such as :iter:`glob`, :iter:`listdir`, :iter:`walkdirs`, and
-   :iter:`findfiles`.
+   example, this module contains :ref:`file-manip` and functions for determining
+   the :ref:`file-status`.  Also included are operations relating to the current
+   process's file system state, which are performed on a specified locale
+   (:ref:`locale-state`).  The module also contains iterators for traversing the
+   file system, referred to as :ref:`filerator`.
 
+   .. _file-manip:
+
+   File/Directory Manipulations
+   ----------------------------
+   :proc:`chmod`
+   :proc:`chown`
+   :proc:`copy`
+   :proc:`copyFile`
+   :proc:`copyMode`
+   :proc:`copyTree`
+   :proc:`mkdir`
+   :proc:`rename`
+   :proc:`remove`
+   :proc:`symlink`
+
+   .. _file-status:
+
+   File/Directory Properties
+   -------------------------
+   :proc:`exists`
+   :proc:`getGID`
+   :proc:`getMode`
+   :proc:`getUID`
+   :proc:`isDir`
+   :proc:`isFile`
+   :proc:`isLink`
+   :proc:`isMount`
+   :proc:`sameFile`
+
+   .. _locale-state:
+
+   Locale State Functionality
+   --------------------------
+   :proc:`~locale.chdir`
+   :proc:`~locale.cwd`
+   :proc:`~locale.umask`
+
+   .. _filerator:
+
+   Filerators
+   ----------
+   :iter:`findfiles`
+   :iter:`glob`
+   :iter:`listdir`
+   :iter:`walkdirs`
+
+   Constant and Function Definitions
+   ---------------------------------
  */
 module FileSystem {
 
