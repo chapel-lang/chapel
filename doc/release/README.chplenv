@@ -238,14 +238,17 @@ Optional Settings
    options are:
 
    CHPL_TASKS:
-        qthreads       : run tasks using Sandia's Qthreads package
-        fifo           : run tasks to completion, in FIFO order
-        massivethreads : run tasks using U Tokyo's MassiveThreads package
+        qthreads       : use Sandia's Qthreads package
+        fifo           : use POSIX threads
+        massivethreads : use U Tokyo's MassiveThreads package
+        muxed          : use Cray-specific lightweight threading
 
    If CHPL_TASKS is not set it defaults to "qthreads" unless the
    target platform is either "cygwin*" or "netbsd*", the target
    compiler is "cray-prgenv-cray", or the target architecture is
-   "knc". For those configurations it defaults to "fifo".
+   "knc". For those configurations it defaults to "fifo".  And on
+   Cray XC and XE (TM) systems when using the pre-built module,
+   it defaults to "muxed".
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_TASKS to 'fifo' to reduce build-time and third-party
@@ -253,7 +256,8 @@ Optional Settings
    resulting in the behavior described just above.
 
    See README.tasks for more information about executing using the
-   various CHPL_TASKS options.
+   various CHPL_TASKS options.  See also platforms/README.cray for more
+   information about Cray-specific runtime layers.
 
 
 *  Optionally, set the CHPL_COMM environment variable to indicate what
@@ -262,11 +266,14 @@ Optional Settings
 
         none   : only supports single-locale execution
         gasnet : use the GASNet-based communication layer
+        ugni   : Cray-specific native communications
 
-   If unset, CHPL_COMM defaults to "none" unless you are running on a
-   Cray XC/XE/XK (TM) or Cray CS (TM) system, in which case it
-   defaults to "gasnet".  See README.multilocale for more information
-   on executing Chapel programs using multiple locales.
+   If unset, CHPL_COMM defaults to "none" in most cases.  On a Cray
+   system it defaults to "gasnet" except when using a pre-built module
+   on a Cray XC or XE (TM) system, where it defaults to "ugni".  See
+   README.multilocale for more information on executing Chapel programs
+   using multiple locales.  See also platforms/README.cray for more
+   information about Cray-specific runtime layers.
 
 
 *  Optionally, the CHPL_MEM environment variable can be used to select
@@ -276,9 +283,11 @@ Optional Settings
         dlmalloc : use Doug Lea's memory allocation package
         tcmalloc : use the tcmalloc package from Google Performance Tools
 
-   If unset, CHPL_MEM defaults to "cstdlib" unless CHPL_COMM is
-   gasnet and you are using the fast or large segments.  See
-   README.multilocale for more information on GASNet segments.
+   If unset, CHPL_MEM defaults to "cstdlib" in most cases.  If comm is
+   "gasnet" and you are using the fast or large segments it defaults to
+   "dlmalloc".  If comm is "ugni" (on Cray XC or XE systems) it defaults
+   to "tcmalloc".  See README.multilocale for more information on GASNet
+   segments.
 
 
 *  Optionally, the CHPL_LAUNCHER environment variable can be used to
@@ -361,7 +370,7 @@ Optional Settings
 
 *  Optionally, the CHPL_REGEXP environment variable can be used to
    enable regular expression operations as documented in
-   doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
+   doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.
    Current options are:
 
        re2  : use the re2 distribution in third-party
