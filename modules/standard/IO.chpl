@@ -96,6 +96,7 @@ to write to different regions of a file because of the race condition between
 to perform I/O will need to know how to open files as well as create channels.
 
 
+.. _about-io-styles:
 
 I/O Styles
 ----------
@@ -1381,13 +1382,15 @@ extern record iostyle { // aka qio_style_t
 
       * ``QIO_STRING_FORMAT_WORD`` means string is as-is;
         reading reads until whitespace.
-      * ``QIO_STRING_FORMAT_BASIC`` means only escape string_end and \ with \
-      * ``QIO_STRING_FORMAT_CHPL`` means  escape string_end \ ' " \n with \ and
-        nonprinting characters c = 0xXY with \xXY
-      * ``QIO_STRING_FORMAT_JSON`` means  escape string_end " and \ with \, and
-        nonprinting characters c = \uABCD
+      * ``QIO_STRING_FORMAT_BASIC`` means only escape *string_end* and ``\``
+        with ``\``
+      * ``QIO_STRING_FORMAT_CHPL`` means  escape *string_end*
+        ``\`` ``'`` ``"`` ``\n`` with ``\`` and
+        nonprinting characters ``c = 0xXY`` with ``\xXY``
+      * ``QIO_STRING_FORMAT_JSON`` means  escape *string_end* ``"`` and ``\``
+        with ``\``, and nonprinting characters ``c = \uABCD``
       * ``QIO_STRING_FORMAT_TOEND`` means string is as-is; reading reads until
-        string_end
+        *string_end*
       * ``QIO_STRING_FORMAT_TOEOF`` means string is as-is; reading reads until
         end of file
    */
@@ -1773,7 +1776,11 @@ extern proc qio_format_error_bad_regexp():syserr;
 pragma "no doc"
 extern proc qio_format_error_write_regexp():syserr;
 
-/* :returns: the default I/O style */
+/* 
+   :returns: the default I/O style. See :record:`iostyle`
+             and :ref:`about-io-styles`
+
+ */
 proc defaultIOStyle():iostyle {
   var ret:iostyle;
   qio_style_init_default(ret);
