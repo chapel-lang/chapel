@@ -19,6 +19,7 @@ generation, but no support for --llvm-wide-opt:
 
   source ./util/setchplenv.bash
   export CHPL_LLVM=llvm
+
   make # you might want to do e.g. make -j 16 for a parallel build
 
 To build the compiler with LLVM support for extern blocks, --llvm code
@@ -28,7 +29,8 @@ generation, and also support --llvm-wide-opt:
   export CHPL_LLVM=llvm
   export CHPL_WIDE_POINTERS=node16 # optional but useful with --llvm-wide-opt
                                    # see discussion below
-  make
+
+  make # you might want to do e.g. make -j 16 for a parallel build
 
 Note:
 * If you have a built llvm in third-party/llvm/install, even if you
