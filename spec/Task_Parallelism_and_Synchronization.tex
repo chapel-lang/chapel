@@ -836,6 +836,10 @@ task-intent-list:
   formal-intent identifier, task-intent-list
 \end{syntax}
 
+where the following intents can be used as a \sntx{formal-intent}:
+the blank intent, \chpl{ref}, \chpl{const ref}, \chpl{const},
+\chpl{const in}, \chpl{in}.
+
 The implicit treatment of outer scope variables as the task function's
 formal arguments applies to both module level and local variables.
 It applies to variable references within the lexical scope
@@ -906,25 +910,18 @@ intents can be obtained by examining just the lexical scope of the
 task construct. In general, the set of closure variables can be hard
 to determine, unweildy to implement and reason about, it is unclear
 what to do with extern functions, etc.
-\end{rationale}
 
+We do not provide \chpl{inout} or \chpl{out} as task intents because they
+will necessarily create a data race in a \chpl{cobegin} or \chpl{coforall}.
+\chpl{type} and \chpl{param} intents are not available either
+as they do not seem useful as task intents.
+\end{rationale}
 
 \begin{future}
 For a given intent, we would also like to provide a blanket clause,
 which would apply the intent to all variables.
 An example of syntax for a blanket \chpl{ref} intent would be \chpl{ref *}.
 \end{future}
-
-\begin{future}
-We may want to disallow some intents because they do not make sense
-in this context. For example, an \chpl{inout} or \chpl{out} intent
-will necessarily create a data race in a \chpl{cobegin} or \chpl{coforall}.
-Also, \chpl{type} and \chpl{param} intents do not seem useful.
-\end{future}
-
-\begin{craychapel}
-At present, only the \chpl{ref} task intent is implemented.
-\end{craychapel}
 
 
 \section{The Sync Statement}
