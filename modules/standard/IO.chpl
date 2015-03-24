@@ -247,9 +247,11 @@ number of arguments. See:
 
  * :proc:`channel.write`
  * :proc:`channel.writeln`
+ * :proc:`channel.writebits`
  * :proc:`channel.writef` (see also :ref:`about-io-formatted-io`)
  * :proc:`channel.read`
  * :proc:`channel.readln`
+ * :proc:`channel.readbits`
  * :proc:`channel.readf` (see also :ref:`about-io-formatted-io`)
 
 Sometimes it's important to flush the buffer in a channel - to do that, use the
@@ -1147,6 +1149,10 @@ module IO {
       are as efficient as possible when working with fixed-size data types
       (ie, they can open up channels that are not shared).
 */
+
+// chpldoc TODO --
+// above we have``%/ * /`` because we couldn't put /*/ in a comment
+// that needs a fix...
 
 
 use SysBasic;
@@ -3289,6 +3295,10 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
    at the offset 0.  The defaults for these arguments enable the channel to
    access the entire file.
 
+   When a channel writes to a file, it will replace file data that was
+   previously stored at the relevant offset. If the offset is beyond the
+   end of the file, the file will be extended.
+
    A channel will never write beyond its maximum end position.  It will extend
    the file only as necessary to store data written to the channel. In other
    words, specifying end here does not impact the file size directly; it
@@ -3811,8 +3821,8 @@ where arg.rank == 1 && isRectangularArr(arg)
 }
 
 /*
-  Read a line into a Chapel array of bytes. Reads until a '\n' is reached.
-  The '\n' is consumed but not returned in the array.
+  Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
+  The ``\n`` is consumed but not returned in the array.
 
   :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
   :arg numRead: The number of bytes read.
@@ -3851,8 +3861,8 @@ where arg.rank == 1 && isRectangularArr(arg)
 }
 
 /*
-  Read a line into a Chapel string. Reads until a '\n' is reached.
-  The '\n' is included in the resulting string.
+  Read a line into a Chapel string. Reads until a ``\n`` is reached.
+  The ``\n`` is included in the resulting string.
 
   :arg arg: a string to receive the line
   :arg error: optional argument to capture an error code. If this argument
@@ -3964,7 +3974,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
 /*
    Read bits with binary I/O
 
-   :arg v: where to store the read bits. This value will have its nbits
+   :arg v: where to store the read bits. This value will have its *nbits*
            least-significant bits set.
    :arg nbits: how many bits to read
    :arg error: optional argument to capture an error code. If this argument
@@ -4001,7 +4011,7 @@ proc channel.readbits(out v:uint(64), nbits:int(8)):bool {
 /*
    Write bits with binary I/O
 
-   :arg v: a value containing nbits bits to write the least-significant bits
+   :arg v: a value containing *nbits* bits to write the least-significant bits
    :arg nbits: how many bits to write
    :arg error: optional argument to capture an error code. If this argument
                is not provided and an error is encountered, this function
@@ -4098,7 +4108,7 @@ proc channel.readln(ref args ...?k,
 
      It is difficult to handle errors or to handle reaching the end of
      the file with this function. If such cases are important please use
-     :proc:`channel.read` instead.
+     the :proc:`channel.read` returning the values read in arguments instead.
 
    For example, the following line of code reads a value of type `int`
    from :var:`stdin` and uses it to initialize a variable ``x``:
@@ -4359,6 +4369,9 @@ proc channel.assertEOF(error:string) {
     }
   }
 }
+
+// documented in error:string version
+pragma "no doc"
 proc channel.assertEOF() {
   this.assertEOF("- Not at EOF");
 }
@@ -4724,6 +4737,7 @@ proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   return (x:int, true);
 }
+pragma "no doc"
 inline
 proc _toSigned(x:?t) where !_isIoPrimitiveType(t)
 {
@@ -6361,7 +6375,7 @@ proc channel.search(re:regexp):reMatch
     :arg error: optional argument to capture an error code. If this argument
                 is not provided and an error is encountered, this function
                 will halt with an error message.
-    :returns: a the region of the channel that matched 
+    :returns: the region of the channel that matched 
  */
 
 proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
@@ -6480,7 +6494,7 @@ proc channel.match(re:regexp):reMatch
    :arg error: optional argument to capture an error code. If this argument
                is not provided and an error is encountered, this function
                will halt with an error message.
-   :returns: a the region of the channel that matched 
+   :returns: the region of the channel that matched 
 
  */
 
@@ -6559,7 +6573,7 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch
             regular expression.
    :arg captures: an optional compile-time constant representing the number
                   of captures to be yielded in tuple elements.
-   :arg maxmatches: the maimum number of matches to report.
+   :arg maxmatches: the maximum number of matches to report.
    :yields: tuples of :record:`Regexp.reMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
 
