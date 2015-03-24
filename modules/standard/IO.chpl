@@ -579,103 +579,133 @@ Real Conversions
 Complex and Imaginary Conversions
 +++++++++++++++++++++++++++++++++
 
-::
+``%m``
+ an imaginary number, like a real with ``%r`` but ends with an ``i``
 
- %m - an imaginary number, like a real with %r but ends with an 'i'
+``%z``
+ print complex number with ``%r`` for each part in the format ``a + bi``
+``%@z``
+ print complex number with ``%r`` for each part in the format ``(a,b)``
+``%6z``
+ as with ``%z`` but pad the entire complex number out to 6 columns
+``%6.4z``
+ print a and b 4 significant digits and pad the entire complex
+ number out to 6 columns
+``%dz``
+ print a and b with ``%dr``
+``%ez``
+ print a and b with ``%er``
 
- %z - print complex number with %r for each part in the format a + bi
- %@z - print complex number with %r for each part in the format (a,b)
- %6z - as with %z but pad the entire complex number out to 6 columns
- %6.4z - print a and b 4 significant digits and pad the entire complex
-         number out to 6 columns
- %dz - print a and b with %dr
- %ez - print a and b with %er
-
- %|4m - same as %|4r
- %|8z - emit 8 raw,binary bytes of native-endian complex (a,b are each 4 bytes)
- %<16z - emit 16 raw,binary bytes of little-endian complex (a,b each 8 bytes)
+``%|4m``
+ same as ``%|4r``
+``%|8z``
+ emit 8 raw,binary bytes of native-endian complex (a,b are each 4 bytes)
+``%<16z``
+ emit 16 raw,binary bytes of little-endian complex (a,b each 8 bytes)
 
 String and Bytes Conversions
 ++++++++++++++++++++++++++++
 
-::
+``%s``
+ a string. When reading, read until whitespace.
+ Note that if you want to be able to read your string back in,
+ you should use one of the quoted or encoded binary versions (see below),
+ since generally with %s it's not clear where the string ends.
+``%c``
+ a single Unicode character (argument should be a string or an integral
+ storing the character code)
+``%17s``
+  * when writing - a string left padded (right justified) to 17 columns
+  * when reading - read up to 17 bytes or a whitespace, whichever comes
+    first, rounding down to whole characters
+``%-17s``
+ * when writing - a string right padded (left justified) to 17 columns
+``%.17s``
+ * when writing - a string truncated to 17 columns. When combined
+   with quoting strings, for example ``%.17"S``, the conversion
+   will print ... after a string if it was truncated. The
+   truncation includes leaving room for the quotes and -
+   if needed - the periods, so the shortest truncated
+   string is ``""...``  Generally, you won't be able to read
+   these back in.
+ * when reading - read exactly 17 Unicode code points
+``%|17s``
+ * when writing - emit string but cause runtime error if length
+   does not match
+ * when reading - read exactly 17 bytes (error if we read < 17 bytes)
+``%|*s``
+  as with %17s but the length is specified in the argument before the string.
+``%"S``
+ use double-quotes to delimit string
+``%'S``
+ use single-quotes to delimit string
+``%cS``
+ use any character (c) to delimit string
+``%{(S)}``
+ quoted string, starting with ``(``, ending with ``)``, where the
+ parens could be replaced by arbitrary characters
+``%*S``
+ quoted string, the arg before the string to specifies quote character
+``%|0S``
+ write a string null-terminated or read bytes until a null-terminator
+``%|*S``
+ means read bytes until a terminator byte. The terminator byte is read
+ from the argument before the string.
+``%|1S`` ``%|2S`` ``%|4S`` and ``%|8S``
+  work with encoded strings storing a length
+  and then the string data. The digit before ``S`` is
+  the number of bytes of length which is by default
+  stored native endian. ``<``, ``|``, ``>`` can be used
+  to specify the endianness of the length field,
+  for example ``%<8S`` is 8 bytes of little-endian length
+  and then string data.
+``%|vS``
+ as with ``%|1S``-``%|8S`` but the string length is encoded using a
+ variable-length byte scheme (which is always the same no matter what
+ endianness). In this scheme, the high bit of each encoded length byte
+ records whether or not there are more length bytes (and the remaining
+ bits encode the length in a big-endian manner).
 
- %s - a string. When reading, read until whitespace.
-      Note that if you want to be able to read your string back in,
-      you should use one of the quoted or encoded binary versions (see below),
-      since generally with %s it's not clear where the string ends.
- %c - a single Unicode character (argument should be a string or an integral
-      storing the character code)
- %17s - when writing - a string left padded (right justified) to 17 columns
-        when reading - read up to 17 bytes or a whitespace, whichever comes
-                       first, rounding down to whole characters
- %-17s - when writing - a string right padded (left justified) to 17 columns
- %.17s - when writing - a string truncated to 17 columns. When combined
-                        with quoting strings, for example %.17"S, the conversion
-                        will print ... after a string if it was truncated. The
-                        truncation includes leaving room for the quotes and -
-                        if needed - the periods, so the shortest truncated
-                        string is ""...  Generally, you won't be able to read
-                        these back in.
-         when reading - read exactly 17 Unicode code points
- %|17s - when writing - emit string but cause runtime error if length
-                        does not match
-        when reading - read exactly 17 bytes (error if we read < 17 bytes)
- %|*s -  as with %17s but the length is specified in the argument before
-         the string.
- %"S  - use double-quotes to delimit string
- %'S  - use single-quotes to delimit string
- %cS  - use any character (c) to delimit string
- %{(S)}  - quoted string, starting with (, ending with ), where the
-           parens could be replaced by arbitrary characters
- %*S  - quoted string, the arg before the string to specifies quote character
- %|0S   - write a string null-terminated or read bytes until a null-terminator
- %|*S - means read bytes until a terminator byte. The terminator byte is read
-        from the argument before the string.
- %|1S %|2S %|4S and %|8S -  work with encoded strings storing a length
-                            and then the string data. The digit before 'S' is
-                            the number of bytes of length which is by default
-                            stored native endian. <, |, > can be used
-                            to specify the endianness of the length field,
-                            for example %<8S is 8 bytes of little-endian length
-                            and then string data.
- %|vS - as with %|1S-%|8S but the string length is encoded using a
-        variable-length byte scheme (which is always the same no matter what
-        endianness). In this scheme, the high bit of each encoded length byte
-        records whether or not there are more length bytes (and the remaining
-        bits encode the length in a big-endian manner).
+``%|*vS`` or ``%|*0S``
+ read an encoded string but limit it to a number of bytes
+ read from the argument before the string; when writing
+ cause a runtime error if the string is longer than the
+ maximum.
 
- %|*vS or %|*0S - read an encoded string but limit it to a number of bytes
-                  read from the argument before the string; when writing
-                  cause a runtime error if the string is longer than the
-                  maximum.
+``%/a+/``
+ where any regular expression can be used instead of ``a+``
+ consume one or more 'a's when reading, gives an error when printing,
+ and does not assign to any arguments
+ (note - regular expression support is dependent on RE2 build;
+ see :mod:`Regexp`)
 
- %/a+/ - where any regular expression can be used instead of a+
-         consume one or more 'a's when reading, gives an error when printing,
-         and does not assign to any arguments
-         (note - regular expression support is dependent on RE2 build;
-          see README.regexp)
+``%/(a+)/``
+ consume one or more 'a's and then set the corresponding string
+ argument to the read value
 
- %/(a+)/ - consume one or more 'a's and then set the corresponding string
-           argument to the read value
+``%17/a+/``
+ match a regular expression up to 17 bytes
+ (note that ``%.17/a+/``, which would mean to match 17 characters,
+ is not supported).
 
- %17/a+/ - match a regular expression up to 17 bytes
-           (note that %.17/a+/, which would mean to match 17 characters,
-            is not supported).
-
- %/ * / - (no spaces) next argument contains the regular expression to match
+``%/ * /``
+ (without spaces) next argument contains the regular expression to match
 
 General Conversions
 +++++++++++++++++++
 
-::
-
- %t - read or write the object according to its readThis/writeThis routine
- %jt - read or write an object in JSON format using readThis/writeThis
- %ht - read or write an object in Chapel syntax using readThis/writeThis
- %|t - read or write an object in binary native-endian with readThis/writeThis
- %<t - read or write an object little-endian in binary with readThis/writeThis
- %>t - read or write an object big-endian in binary with readThis/writeThis
+``%t``
+ read or write the object according to its readThis/writeThis routine
+``%jt``
+ read or write an object in JSON format using readThis/writeThis
+``%ht``
+ read or write an object in Chapel syntax using readThis/writeThis
+``%|t``
+ read or write an object in binary native-endian with readThis/writeThis
+``%<t``
+ read or write an object little-endian in binary with readThis/writeThis
+``%>t``
+ read or write an object big-endian in binary with readThis/writeThis
 
 Note About Whitespace
 +++++++++++++++++++++
@@ -703,7 +733,7 @@ able to use type information from the call.
 
 Format strings in Chapel consist of:
 
- * conversion specifiers e.g. "%xi" (described below)
+ * conversion specifiers e.g. ``"%xi"`` (described below)
  * newline e.g. ``"\n"``
 
    * when writing - prints a newline
@@ -765,18 +795,21 @@ when they follow the first group of '#' immediately. For example:
 Specifiers starting with % offer quite a few options. First, some basic
 rules.
 
-::
+``%%``
+ means a literal ``%``
+``%#``
+ means a literal ``#``
+``\n``
+ means a literal newline
+``\\``
+ means a single backslash
+``%{}``
+ curly braces can wrap a ``%`` or ``#`` conversion specifier. That way, even
+ odd specifiers can be interpreted unambiguously. Some of the more complex
+ features require the use of the ``%{}`` syntax, but it's always 
+ acceptable to use curly braces to make the format string clearer.
 
- %% means a literal %
- %# means a literal #
- \n means a literal newline
- \\ means a single backslash
- %{} curly braces can wrap a % conversion specifier. That way, even odd
-     specifiers can be interpreted unambiguously. Some of the more complex
-     features require the use of the %{} syntax, but it's always 
-     acceptable to use curly braces to make the format string clearer.
-
-In general, a % specifier consists of either text or binary conversions:
+In general, a ``%`` specifier consists of either text or binary conversions:
 
 ::
 
@@ -793,18 +826,22 @@ Going through each section for text conversions:
 
 
 [optional flags]
-::
-
-   @ means "alternate form". It means to print out a base when not using
-     decimal (e.g. 0xFFF or 0b101011); and it will format a complex number with
-     parens instead of as e.g. 1.0+2.0i
-   + means to show a plus sign when printing positive numbers 
-   0 means to pad numeric conversions with 0 instead of space
-  ' ' (a space) leaves a blank before a positive number
-               (in order to help line up with negative numbers)
-   - left-justify the converted value instead of right-justifying
+  ``@``
+   means "alternate form". It means to print out a base when not using
+   decimal (e.g. ``0xFFF`` or ``0b101011``); and it will format a complex
+   number with parens instead of as e.g. ``1.0+2.0i``
+  ``+``
+   means to show a plus sign when printing positive numbers 
+  ``0``
+   means to pad numeric conversions with 0 instead of space
+  ``" "``
+   (a space) leaves a blank before a positive number
+   (in order to help line up with negative numbers)
+  ``-``
+   left-justify the converted value instead of right-justifying
   
-   Note, if both 0 and - are given, the effect is as if only - were given.
+  Note, if both ``0`` and ``-`` are given, the effect is as if only ``-`` were
+  given.
 
 [optional field width]
    When printing numeric or string values, the field width specifies the number
@@ -819,74 +856,96 @@ Going through each section for text conversions:
    
 [optional . then precision]
    When printing floating point values, the precision is used to control
-   the number of decimal digits to print.  For %r conversions, it
-   specifies the number of significant digits to print; for %dr conversions, 
-   it specifies the number of digits following the decimal point.  It can also
-   be ``*``, which means to read the precision from an integral argument before 
-   the converted value.
+   the number of decimal digits to print.  For ``%r`` conversions, it
+   specifies the number of significant digits to print; for ``%dr``
+   conversions, it specifies the number of digits following the decimal point.
+   It can also be ``*``, which means to read the precision from an integral
+   argument before the converted value.
 
-   For textual string conversions in writef, (%s %" %'), the precision
-   indicates the maximum number of columns to print - and the result will be
-   truncated if it does not fit. In readf for these textual string conversions,
-   the precision indicates the maximum number of characters (e.g. Unicode code
-   points) to input. 
+   For textual string conversions in writef, (``%s`` ``%"`` ``%'``), the
+   precision indicates the maximum number of columns to print - and the result
+   will be truncated if it does not fit. In readf for these textual string
+   conversions, the precision indicates the maximum number of characters
+   (e.g. Unicode code points) to input. 
 
-   The precision is silently ignored for integral conversions (%i, %u, etc) 
-   and for %// conversions.
+   The precision is silently ignored for integral conversions
+   (``%i``, ``%u``, etc) and for ``%//`` conversions.
 
 [optional base flag]
-::
-
-   d means decimal (and not exponential for floating-point)
-   x means lower-case hexadecimal
-   X means upper-case hexadecimal 
-   o means octal
-   b means binary 
-   j means JSON-style strings, numbers, and structures
-   h means Chapel-style strings, numbers, and structures
-   ' means single-quoted string (with \\ and \')
-   " means double-quoted string (with \\ and \")
+   ``d``
+    means decimal (and not exponential for floating-point)
+   ``x``
+    means lower-case hexadecimal
+   ``X``
+    means upper-case hexadecimal 
+   ``o``
+    means octal
+   ``b``
+    means binary 
+   ``j``
+    means JSON-style strings, numbers, and structures
+   ``h``
+    means Chapel-style strings, numbers, and structures
+   ``'``
+    means single-quoted string (with \\ and \')
+   ``"``
+    means double-quoted string (with \\ and \")
 
 [optional exponential type]
-::
-
-   e means floating-point conversion printing exponential -12.34e+56
-   E means floating-point conversion printing uppercase exponential -12.34E+56
+   ``e``
+    means floating-point conversion printing exponential ``-12.34e+56``
+   ``E``
+    means floating-point conversion printing uppercase
+    exponential ``-12.34E+56``
 
 [conversion type]
-::
-
-   t means "type-based" or "thing" - uses writeThis/readThis but ignores
-            width and precision
-   n means type-based number, allowing width and precision
-   i means integral conversion
-   u means unsigned integral conversion
-   r means real conversion (e.g. 12.23)
-   m means imaginary conversion with an 'i' after it (e.g. 12.23i)
-   z means complex conversion
-   s means string conversion
-   S means a quoted string conversion
-   {cS} means string conversion with quote char c
-   {*S} means string conversion with quote char in argument before the string
-   {xSy} means string conversion with left and right quote chars x and y
-   /.../ means a regular expression (for reading only)
-   {/.../xyz} means regular expression with flags xyz 
-   c means a Unicode character - either the first character in a string
-           or an integral character code 
+   ``t``
+    means *type-based* or *thing* - uses writeThis/readThis but ignores
+    width and precision
+   ``n``
+    means type-based number, allowing width and precision
+   ``i``
+    means integral conversion
+   ``u``
+    means unsigned integral conversion
+   ``r``
+    means real conversion (e.g. ``12.23``)
+   ``m``
+    means imaginary conversion with an ``i`` after it (e.g. ``12.23i``)
+   ``z``
+    means complex conversion
+   ``s``
+    means string conversion
+   ``S``
+    means a quoted string conversion
+   ``{cS}``
+    means string conversion with quote char *c*
+   ``{*S}``
+    means string conversion with quote char in argument before the string
+   ``{xSy}``
+    means string conversion with left and right quote chars *x* and *y*
+   ``/.../``
+    means a regular expression (for reading only)
+   ``{/.../xyz}``
+    means regular expression with flags *xyz*
+   ``c``
+    means a Unicode character - either the first character in a string
+    or an integral character code 
  
 For binary conversions: 
 
 [optional endian flag]
-::
-
-   < means little-endian
-   > means big-endian
-   | means native-endian
+   ``<``
+    means little-endian
+   ``>``
+    means big-endian
+   ``|``
+    means native-endian
 
 [optional size in bytes]
    This is the number of bytes the format should read or write in this
-   conversion. For integral conversions (e.g. %|i) it specifies the number of
-   bytes in the integer, and 1, 2, 4, and 8 are supported. For real and
+   conversion. For integral conversions (e.g. ``%|i``) it specifies the number
+   of bytes in the integer, and 1, 2, 4, and 8 are supported. For real and
    imaginary conversions, 4 and 8 are supported. For complex conversions,
    8 and 16 are supported. The size in bytes is *required* for binary
    integral and floating-point conversions.
@@ -900,31 +959,38 @@ For binary conversions:
    exactly that number of bytes it will cause an error even when writing).
 
 [conversion type]
-::
-
-   t means "type-based" or "thing" - to read or write with readThis/writeThis
-   n means type-based number (size is not mandatory)
-   i means integral
-            - note that the size is mandatory for binary integral conversions
-   u means unsigned integral
-            - note that the size is mandatory for binary integral conversions
-   r means real
-            - note that the size is mandatory for binary real conversions
-   m works the same as r for binary conversions
-   z means complex
-            - note that the size is mandatory for binary complex conversions
-   s means string binary I/O
-    %|17s exactly 17 byte string
-   0S/1S/2S/4S/8S mean encoded string binary I/O:
-    %|0S null-terminated string
-    %{|S*} next-argument specifies string terminator byte
-    %|1S a one-byte length and then the string
-    %|2S a two-byte length and then the string
-    %|4S a four-byte length and then the string
-    %|8S a eight-byte length and then the string
-    %|vS a variable-byte-encoded length and then the string
-   c means a Unicode character - either the first character in a string
-           or an integral character code
+   ``t``
+    means *type-based* or *thing* - to read or write with readThis/writeThis
+   ``n``
+    means type-based number (size is not mandatory)
+   ``i``
+    means integral. Note that the size is mandatory for binary integral
+    conversions
+   ``u``
+    means unsigned integral. Note that the size is mandatory for binary
+    integral conversions
+   ``r``
+    means real. Note that the size is mandatory for binary real conversions
+   ``m``
+    works the same as ``r`` for binary conversions
+   ``z``
+    means complex. Note that the size is mandatory for binary complex
+    conversions
+   ``s``
+    * means string binary I/O
+    * ``%|17s`` means exactly 17 byte string
+   ``0S``/``1S``/``2S``/``4S``/``8S``
+    * mean encoded string binary I/O:
+    * ``%|0S`` means null-terminated string
+    * ``%{|S*}`` means  next-argument specifies string terminator byte
+    * ``%|1S`` means a one-byte length and then the string
+    * ``%|2S`` means a two-byte length and then the string
+    * ``%|4S`` means a four-byte length and then the string
+    * ``%|8S`` means an eight-byte length and then the string
+    * ``%|vS`` means a variable-byte-encoded length and then the string
+   ``c``
+    means a Unicode character - either the first character in a string
+    or an integral character code
 
 
 .. _about-io-formatted-io-examples:
