@@ -6,7 +6,6 @@ Release Changes List
 
 This file TODO:
 * search for TODO below
-* change chpldoc URLs from master/ to latest/
 
 ==============
 version 1.11.0
@@ -98,30 +97,31 @@ New Interoperability Features
 Standard Library/Modules
 ------------------------
 * added a new module, FileSystem, containing numerous file system operations
-  (see http://chapel.cray.com/docs/master/modules/standard/FileSystem.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
 * added support for key 64-bit FFTW routines (single- and multi-threaded)
-  (see http://chapel.cray.com/docs/master/modules/standard/FFTW.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/FFTW.html and
+   http://chapel.cray.com/docs/latest/modules/standard/FFTW_MT.html)
 * added parity() and rotate() operations to the BitOps module
-  (see http://chapel.cray.com/docs/master/modules/standard/BitOps.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/BitOps.html)
 * added parallel versions of the glob(), walkdirs(), and findfiles() iterators
-  (see http://chapel.cray.com/docs/master/modules/standard/FileSystem.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
 * started a new module, Path, supporting realPath(), curDir, parentDir, pathSep
-  (see http://chapel.cray.com/docs/master/modules/standard/Path.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Path.html)
 * added a new module, Assert, defining a simple assertion capability
   (see TODO)
 * added support for C types c_ptrdiff, c_uintptr, and c_intptr to SysCTypes.chpl
   (see http://chapel.cray.com/docs/latest/modules/standard/gen/doc/SysCTypes.html)
 * changed cwd() and chdir() from standalone functions to locale methods
-  (see http://chapel.cray.com/docs/master/modules/standard/FileSystem.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
 * made mkdir(parents=true) behave more like 'mkdir -p'
 * added a .safeCast() method to integer types to value-check downcasts
-  (see http://chapel.cray.com/docs/master/modules/standard/Types.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Types.html)
 * changed min(t) and max(t) to return 'param' values for integral types 't'
-  (see http://chapel.cray.com/docs/master/modules/standard/Types.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Types.html)
 * parameterized RandomStream by an 'eltType' and updated its methods accordingly
-  (see http://chapel.cray.com/docs/master/modules/standard/Random.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Random.html)
 * removed the parSafe arguments from RandomStream's methods in the Random module
-  (see http://chapel.cray.com/docs/master/modules/standard/Random.html)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Random.html)
 * added support for escaping pattern-style format strings using %{}
   (e.g., "writef("#%{##}", 10)" => "#10")
 * added support for readf()/writef() of octal values
@@ -191,6 +191,7 @@ Third-Party Software Changes
 Documentation
 -------------
 * added web-based docs for all current standard modules and removed from spec
+  (see http://chapel.cray.com/docs/latest/)
 * made some minor improvements to the Quick Reference document
 * added documentation for class and record destructors to the spec
 * removed an outdated distinction between function calls using () vs. [] in spec
