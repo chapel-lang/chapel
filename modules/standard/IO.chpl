@@ -475,70 +475,106 @@ on this conversion type.
 Integral Conversions
 ++++++++++++++++++++
 
-::
-
- %i or %di - a signed integer in decimal, possibly negative
-             (note - when reading a %i, '-' is allowed)
- %u or %du - an unsigned decimal integer
-             (note - when reading a %u, '-' is not allowed)
- %bi  - a binary signed integer
- %bu  - a binary unsigned integer
- %@bu - a binary unsigned integer with 0b
- %oi  - an octal signed integer
- %ou  - an octal unsigned integer
- %@ou - an octal unsigned integer with 0o
- %xu - a hexadecimal unsigned integer
- %xi - a hexadecimal signed integer
- %@xu - a hexadecimal unsigned integer with 0x
- %Xu - a hexadecimal unsigned integer in uppercase
- %@Xu - a hexadecimal unsigned integer with 0X and uppercase
- %17i - a decimal integer padded on the left with spaces to 17 columns
-        (that is, it is right-justified in a 17-column field)
-        (padding width is ignored when reading integers)
- %*i - as with %17i but read the minimum width from the preceeding argument
- %017i - a decimal integer padded on the left with zeros to 17 columns
- %-17i - a decimal integer left-justified (padded on the right) to 17 columns
- %+i - a decimal integer showing + for positive numbers
- % i - a decimal integer with a space for positive numbers
- %|4i - output 4 raw,binary bytes of the passed integer in native endianness
- %<4i - output 4 raw,binary bytes of the passed integer little endian
- %>4i - output 4 raw,binary bytes of the passed integer big endian
- %<8i - output 8 raw,binary bytes of the passed integer little endian
-        (byte widths of 1, 2, 4, and 8 are supported for integral conversions)
+``%i`` or ``%di``
+  a signed integer in decimal, possibly negative
+  (note - when reading an ``%i``, ``-`` is allowed)
+``%u`` or ``%du``
+  an unsigned decimal integer
+  (note - when reading a ``%u``, ``-`` is not allowed)
+``%bi``
+ a binary signed integer
+``%bu``
+ a binary unsigned integer
+``%@bu``
+ a binary unsigned integer prefixed with ``0b``
+``%oi``
+ an octal signed integer
+``%ou``
+ an octal unsigned integer
+``%@ou``
+ an octal unsigned integer prefixed with ``0o``
+``%xu``
+ a hexadecimal unsigned integer
+``%xi``
+ a hexadecimal signed integer
+``%@xu``
+ a hexadecimal unsigned integer prefixed with ``0x``
+``%Xu``
+ a hexadecimal unsigned integer in uppercase
+``%@Xu``
+ a hexadecimal unsigned integer prefixed with ``0X`` and uppercase
+``%17i``
+ a decimal integer padded on the left with spaces to 17 columns
+ (That is, it is right-justified in a 17-column field.
+ Padding width is ignored when reading integers)
+``%*i``
+ as with ``%17i`` but read the minimum width from the preceeding argument
+``%017i``
+ a decimal integer padded on the left with zeros to 17 columns
+``%-17i``
+ a decimal integer left-justified (padded on the right) to 17 columns
+``%+i``
+ a decimal integer showing ``+`` for positive numbers
+``% i``
+ a decimal integer with a space for positive numbers
+``%|4i``
+ output 4 raw,binary bytes of the passed integer in native endianness
+``%<4i``
+ output 4 raw,binary bytes of the passed integer little endian
+``%>4i``
+ output 4 raw,binary bytes of the passed integer big endian
+``%<8i``
+ output 8 raw,binary bytes of the passed integer little endian
+ (byte widths of 1, 2, 4, and 8 are supported for integral conversions)
 
 Real Conversions
 ++++++++++++++++
 
-::
+``%r``
+ a real number with decimal or exponential notation, where
+ exponential is chosen if the decimal version would be too long
 
- %r - a real number with decimal or exponential notation, where
-      exponential is chosen if the decimal version would be too long
+``%6r``
+ as with ``%r`` but padded on the left to 6 columns (ie right-justified)
+``%-6r``
+ as with ``%r`` but padded on the right to 6 columns (ie left-justfied)
+``%.4r``
+ as with ``%r`` but with 4 significant digits
+``%.*r``
+ as with ``%.4r`` but with significant digits read from preceeding argument
+``%6.4r``
+ as with ``%r`` but padded on the left to 6 columns
+ and with 4 significant digits
+``%*.*r``
+ as with ``%6.4r`` but read minimum width and significant digits from
+ preceeding arguments
 
- %6r - as with %r but padded on the left to 6 columns (ie right-justified)
- %-6r - as with %r but padded on the right to 6 columns (ie left-justfied)
- %.4r - as with %r but with 4 significant digits
- %.*r - as with %.4r but with read significant digits from preceeding argument
- %6.4r - as with %r but padded on the left to 6 columns
-         and with 4 significant digits
- %*.*r - as with %6.4r but read minimum width and significant digits from
-         preceeding arguments
-      
- %dr - a real number in decimal notation, e.g. 12.34
- %6dr - a decimal number padded on the left to 6 columns (right-justified)
- %.4dr - a decimal number with 4 digits after the radix point
- %6.4dr - a decimal number padded on the left to 6 columns and with 4 digits
-          after the radix point
-          (width and precision are ignored when reading numbers in readf)
+``%dr``
+ a real number in decimal notation, e.g. ``12.34``
+``%6dr`` 
+ a decimal number padded on the left to 6 columns (right-justified)
+``%.4dr``
+ a decimal number with 4 digits after the radix point
+``%6.4dr``
+ a decimal number padded on the left to 6 columns and with 4 digits
+ after the radix point
+ (width and precision are ignored when reading numbers in readf)
 
- %er - a real number in exponential notation, e.g. 10.2e-23
- %Er - like %er but with the 'e' in uppercase, e.g. 10.2E-23
+``%er``
+ a real number in exponential notation, e.g. ``10.2e-23``
+``%Er``
+ like %er but with the 'e' in uppercase, e.g. ``10.2E-23``
 
- %xer - hexadecimal number using p to mark exponent e.g. 6c.3f7p-2a
+``%xer``
+ hexadecimal number using p to mark exponent e.g. ``6c.3f7p-2a``
 
- %|4r - emit 4 raw,binary bytes of the passed number in native endianness
- %<8r - emit 8 raw,binary bytes of the passed number in little endian
- %<4r - emit 4 raw,binary bytes of the passed number in little endian
-      (< | and > are supported for widths 4 or 8)
+``%|4r``
+ emit 4 raw,binary bytes of the passed number in native endianness
+``%<8r``
+ emit 8 raw,binary bytes of the passed number in little endian
+``%<4r``
+ emit 4 raw,binary bytes of the passed number in little endian
+ (``<`` ``|`` and ``>`` are supported for widths 4 or 8)
 
 Complex and Imaginary Conversions
 +++++++++++++++++++++++++++++++++
