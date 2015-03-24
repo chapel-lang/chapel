@@ -366,12 +366,12 @@ Optional Settings
 
    If unset, CHPL_HWLOC defaults to "hwloc" if CHPL_TASKS is "qthreads",
    unless the target platform is knc.  In all other cases it defaults to
-   "none".  If the bundled hwloc distribution does not build
-   successfully, it should still be possible to use qthreads.  Manually
-   set CHPL_HWLOC to "none" and rebuild in this case (and please file a
-   bug with the Chapel team.)  Building without hwloc should not have a
-   drastic impact on performance when CHPL_LOCALE_MODEL is "flat", but
-   will drastically hurt performance for "numa".
+   "none".  In the unlikely event the bundled hwloc distribution does
+   not build successfully, it should still be possible to use qthreads.
+   Manually set CHPL_HWLOC to "none" and rebuild in this case (and
+   please file a bug with the Chapel team.)  Building without hwloc
+   should not have a large performance impact when CHPL_LOCALE_MODEL
+   is "flat" but will drastically hurt performance for "numa".
 
 
 *  Optionally, the CHPL_REGEXP environment variable can be used to
