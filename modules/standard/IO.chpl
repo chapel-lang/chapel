@@ -2069,6 +2069,9 @@ Get the path to an open file.
 Note that not all files have a path (e.g. files opened with :proc:`openmem`),
 and that this function may not work on all operating systems.
 
+The function :proc:`Path.file.realPath` is an alternative way
+to get the path to a file.
+
 :arg error: argument to capture an error code. If this argument
             is not provided and an error is encountered, this function
             will halt with an error message.
