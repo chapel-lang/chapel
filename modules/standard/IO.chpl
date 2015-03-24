@@ -384,10 +384,13 @@ Buffers are used internally in each channel.
 Formatted I/O
 -------------
 
-See below for a sample-based overview of the format strings. Further below, we
-describes the format string syntax in detail. Finally, we demonstrate the
-functionality with example function calls.
+See below for a :ref:`sample-based overview <about-io-formatted-io-overview>`
+of the format strings. Further below, we describes the format string syntax
+:ref:`in detail <about-io-formatted-io-in-detail>`. Finally, we demonstrate the
+functionality with :ref:`example function calls
+<about-io-formatted-io-examples>`.
 
+.. _about-io-formatted-io-overview:
 
 Overview of Format Strings
 ++++++++++++++++++++++++++
@@ -424,12 +427,39 @@ Generic Numeric Conversions
 
 ``##``
   integral value padded out to 2 digits. Also works with real, imaginary
-  or complex numbers by rounding them to integers.
+  or complex numbers by rounding them to integers. Numbers with more
+  digits will take up more space instead of being truncated.
 
-In both conversions above, an imaginary argument gets an 'i' afterwards;
-a complex argument is printed in the format a + bi, where each of a and b
-is rounded (but not padded) individually as if printed under that conversion
-on its own.
+In both conversions above, an imaginary argument gets an 'i' afterwards
+and the entire expression is padded out to the width of ##### digits.
+For example:
+
+.. code-block:: chapel
+
+  writef("|#####|\n", 2.0i);
+       // outputs:
+       // |   2i|
+
+  writef("|#####.#|\n", 2.0i);
+       // outputs:
+       // |   2.0i|
+
+Complex arguments are printed in the format a + bi, where each of a and b is
+rounded individually as if printed under that conversion on its own. Then, the
+formatted complex number is padded to the requested size. For example:
+
+.. code-block:: chapel
+
+  writef("|#########|\n", 1.0+2.0i);
+       // outputs:
+       // |   1 + 2i|
+
+  writef("|#########.#|\n", 1.0+2.0i);
+       // outputs:
+       // | 1.0 + 2.0i|
+
+See :ref:`about-io-formatted-pound-details` for more details
+on this conversion type.
 
 ``%n`` 
   a "number" - equivalent to one of %i, %u, %r, %m, or %z below,
@@ -534,7 +564,7 @@ String and Bytes Conversions
 ::
 
  %s - a string. When reading, read until whitespace.
-      Note that if you want to be able to read you string back in,
+      Note that if you want to be able to read your string back in,
       you should use one of the quoted or encoded binary versions (see below),
       since generally with %s it's not clear where the string ends.
  %c - a single Unicode character (argument should be a string or an integral
@@ -613,9 +643,9 @@ General Conversions
 Note About Whitespace
 +++++++++++++++++++++
 
-When reading, \n in a format string matches any zero or more space characters
-other than newline and then exactly one newline character. In contrast, " "
-matches at least one space character of any kind.
+When reading, ``\n`` in a format string matches any zero or more space
+characters other than newline and then exactly one newline character. In
+contrast, ``" "`` matches at least one space character of any kind.
 
 When writing, whitespace is printed from the format string just like any
 other literal would be.
@@ -623,6 +653,7 @@ other literal would be.
 Finally, space characters after a binary conversion will be ignored, so
 that a binary format string can appear more readable.
 
+.. _about-io-formatted-io-in-detail:
 
 Format String Syntax in Detail
 ++++++++++++++++++++++++++++++
@@ -636,14 +667,14 @@ able to use type information from the call.
 Format strings in Chapel consist of:
 
  * conversion specifiers e.g. "%xi" (described below)
- * newline e.g. "\n"
+ * newline e.g. ``"\n"``
 
    * when writing - prints a newline
    * when reading - reads any amount of non-newline whitespace and then
      exactly one newline. Causes the format string not to
      match if it did not read a newline.
 
- * other whitespace e.g. " "
+ * other whitespace e.g. ``" "``
 
     * when writing - prints as the specified whitespace
     * when reading - matches at least one character of whitespace, possibly
@@ -653,6 +684,8 @@ Format strings in Chapel consist of:
 
     * when writing - prints the specified text
     * when reading - matches the specified text
+
+.. _about-io-formatted-pound-details:
 
 # Specifiers
 ++++++++++++
@@ -665,8 +698,8 @@ too small:
 .. code-block:: chapel
 
   writef("n:###.###\n", 1.2349);
-  // outputs:
-  // n:  1.235
+       // outputs:
+       // n:  1.235
 
 This syntax also works for numbers without a decimal point by rounding them
 appropriately.
@@ -677,8 +710,8 @@ it will interpret the . as a literal, as in:
 .. code-block:: chapel
 
   writef(".###\n", 0.777);
-  // outputs:
-  // .  1
+       // outputs:
+       // .  1
 
 A # specifier extends to include the '.' and then the fractional '#'
 when they follow the first group of '#' immediately. For example:
@@ -686,8 +719,8 @@ when they follow the first group of '#' immediately. For example:
 .. code-block:: chapel
 
   writef("(#.##.#.)\n", 1.2, 3);
-  // outputs:
-  // (1.20. 3)
+       // outputs:
+       // (1.20. 3)
 
 % Specifiers
 ++++++++++++
@@ -807,7 +840,8 @@ Going through each section for text conversions:
 For binary conversions: 
 
 [optional endian flag]
- ::
+::
+
    < means little-endian
    > means big-endian
    | means native-endian
@@ -856,87 +890,89 @@ For binary conversions:
            or an integral character code
 
 
+.. _about-io-formatted-io-examples:
+
 Formatted I/O Examples
 ++++++++++++++++++++++
 
 .. code-block:: chapel
 
   writef("%5i %5s %5r\n", 1, "test", 6.34);
-  // outputs:
-  //    1  test  6.34
+       // outputs:
+       //    1  test  6.34
 
   writef("%2.4z\n", 43.291 + 279.112i);
-  // outputs:
-  // 43.29 + 279.1i
+       // outputs:
+       // 43.29 + 279.1i
 
   writef("%<4u", 0x11223344);
-  // outputs:
-  // (hexdump of the output)
-   4433 2211
+       // outputs:
+       // (hexdump of the output)
+       // 4433 2211
   writef("%>4u", 0x11223344);
-  // outputs:
-  // (hexdump of the output)
-   1122 3344
+       // outputs:
+       // (hexdump of the output)
+       // 1122 3344
   writef("%<4i %<4i", 2, 32);
-  // outputs:
-  // (hexdump of the output -- note that spaces after
-   a binary format specifier are ignored)
-   0200 0000 2000 0000
+       // outputs:
+       // (hexdump of the output -- note that spaces after
+       //  a binary format specifier are ignored)
+       // 0200 0000 2000 0000
 
 
   writef("%|0S\n", "test");
-  // outputs:
-  // (hexdump of the output)
-  7465 7374 000a
+       // outputs:
+       // (hexdump of the output)
+       // 7465 7374 000a
   writef("%|1S\n", "test");
-  // outputs:
-  // (hexdump of the output)
-  0474 6573 740a
+       // outputs:
+       // (hexdump of the output)
+       // 0474 6573 740a
   writef("%>2S\n", "test");
-  // outputs:
-  // (hexdump of the output)
-  0004 7465 7374 0a
+       // outputs:
+       // (hexdump of the output)
+       // 0004 7465 7374 0a
   writef("%>4S\n", "test");
-  // outputs:
-  // (hexdump of the output)
-  0000 0004 7465 7374 0a
+       // outputs:
+       // (hexdump of the output)
+       // 0000 0004 7465 7374 0a
   writef("%>8S\n", "test");
-  // outputs:
-  // (hexdump of the output)
-  0000 0000 0000 0004 7465 7374 0a
+       // outputs:
+       // (hexdump of the output)
+       // 0000 0000 0000 0004 7465 7374 0a
   writef("%|vS\n", "test");
-  // outputs:
-  // (hexdump of the output)
-  04 7465 7374 0a
+       // outputs:
+       // (hexdump of the output)
+       // 04 7465 7374 0a
 
   writef('%"S\n', "test \"\" \'\' !");
-  // outputs:
-  // "test \"\" '' !"
+       // outputs:
+       // "test \"\" '' !"
   writef("%'S\n", "test \"\" \'\' !");
-  // outputs:
-  // 'test "" \'\' !'
+       // outputs:
+       // 'test "" \'\' !'
   writef("%{(S)}\n", "test ()", "(", ")");
-  // outputs:
-  // (test (\))
+       // outputs:
+       // (test (\))
 
 
   writef("%40s|\n", "test");
   writef("%-40s|\n", "test");
-  // outputs:
-  //                                     test|
-  // test                                    |
+       // outputs:
+       //                                     test|
+       // test                                    |
 
   writef("123456\n");
   writef("%6.6'S\n", "a");
   writef("%6.6'S\n", "abcdefg");
   writef("%.3'S\n", "a");
   writef("%.3'S\n", "abcd");
-  // outputs:
-  // 123456
-  //    'a'
-  // 'a'...
-  // 'a'
-  // ''...
+       // outputs:
+       // 123456
+       //    'a'
+       // 'a'...
+       // 'a'
+       // ''...
 
 
   var s:string;
@@ -1057,6 +1093,13 @@ In the case of :enum:`iokind.big`, :enum:`iokind.little`, and
 :enum:`iokind.native` the applicable :record:`iostyle` is consulted when
 writing/reading strings, but not for other basic types.
 
+There are synonyms available for these values:
+
+* ``iodynamic`` = :enum:`iokind.dynamic`
+* ``ionative`` = :enum:`iokind.native`
+* ``iobig`` = :enum:`iokind.big`
+* ``iolittle`` = :enum:`iokind.little`
+
 */
 enum iokind {
   // don't change these without updating qio_style.h QIO_NATIVE, etc
@@ -1069,13 +1112,18 @@ enum iokind {
   little = 3
 }
 
+// chpldoc TODO -- these don't render right
 /* A synonym for :enum:`iokind.dynamic`; see :type:`iokind` */
+pragma "no doc"
 param iodynamic = iokind.dynamic;
 /* A synonym for :enum:`iokind.native`; see :type:`iokind` */
+pragma "no doc"
 param ionative = iokind.native;
 /* A synonym for :enum:`iokind.big`; see :type:`iokind` */
+pragma "no doc"
 param iobig = iokind.big;
 /* A synonym for :enum:`iokind.little`; see :type:`iokind` */
+pragma "no doc"
 param iolittle = iokind.little;
 
 /*
