@@ -100,12 +100,12 @@ module Math {
     // eliminate some run-time tests if input(s) is(are) unsigned
     return
       if isNonnegative(n) then
-      if isUintType(m.type)
+        if isUintType(m.type)
         then temp
-          else ( if temp >= 0 then temp else temp + n )
-            else
-              // n < 0
-              ( if temp <= 0 then temp else temp + n );
+        else ( if temp >= 0 then temp else temp + n )
+      else
+        // n < 0
+        ( if temp <= 0 then temp else temp + n );
   }
 
   pragma "no doc"
@@ -361,13 +361,15 @@ module Math {
      If the arguments are of unsigned type, then
      fewer condititionals will be evaluated at run time.
   */
-  proc divceil(param m: integral, param n: integral) param return
+  proc divceil(param m: integral, param n: integral)
+    param
+    return
     if isNonnegative(m) then
-    if isNonnegative(n) then (m + n - 1) / n
+      if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
-        else
-          if isNonnegative(n) then m / n
-            else                     (m + n + 1) / n;
+    else
+      if isNonnegative(n) then m / n
+      else                     (m + n + 1) / n;
 
 
 
@@ -379,11 +381,11 @@ module Math {
   */
   proc divceil(m: integral, n: integral) return
     if isNonnegative(m) then
-    if isNonnegative(n) then (m + n - 1) / n
+      if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
-        else
-          if isNonnegative(n) then m / n
-            else                     (m + n + 1) / n;
+    else
+      if isNonnegative(n) then m / n
+      else                     (m + n + 1) / n;
 
 
   /* Returns :proc:`floor`\(`m`/`n`),
@@ -394,11 +396,11 @@ module Math {
   */
   proc divfloor(param m: integral, param n: integral) param return
     if isNonnegative(m) then
-    if isNonnegative(n) then m / n
+      if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
-        else
-          if isNonnegative(n) then (m - n + 1) / n
-            else                     m / n;
+    else
+      if isNonnegative(n) then (m - n + 1) / n
+      else                     m / n;
 
 
   /* Returns :proc:`floor`\(`m`/`n`),
@@ -409,11 +411,11 @@ module Math {
   */
   proc divfloor(m: integral, n: integral) return
     if isNonnegative(m) then
-    if isNonnegative(n) then m / n
+      if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
-        else
-          if isNonnegative(n) then (m - n + 1) / n
-            else                     m / n;
+    else
+      if isNonnegative(n) then (m - n + 1) / n
+      else                     m / n;
 
 
   /* Returns the error function of the argument `x`. */
@@ -648,12 +650,12 @@ module Math {
     // verbatim copy from the other 'mod', to simplify maintenance
     return
       if isNonnegative(n) then
-      if isUintType(m.type)
+        if isUintType(m.type)
         then temp
-          else ( if temp >= 0 then temp else temp + n )
-            else
-              // n < 0
-              ( if temp <= 0 then temp else temp + n );
+        else ( if temp >= 0 then temp else temp + n )
+      else
+        // n < 0
+        ( if temp <= 0 then temp else temp + n );
   }
 
   /* Computes the mod operator on the two arguments, defined as
