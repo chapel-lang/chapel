@@ -127,9 +127,9 @@ Building Chapel for a Cray System from Source
    configure the Chapel build.  These are described in greater detail in
    README.chplenv.
 
-     CHPL_LOCALE_MODEL : desired locale model, default "flat"
-     CHPL_TASKS        : tasking implementation, default "qthreads"
-     CHPL_COMM         : communication implementation, default "gasnet"
+     CHPL_TASKS : tasking implementation, default "fifo" when using
+                  target compiler "cray", otherwise "qthreads"
+     CHPL_COMM : communication implementation, default "gasnet"
 
    Other configuration environment variables such as CHPL_MEM can also
    be set, but this is more typical when doing internal development.
@@ -182,11 +182,11 @@ Using Chapel on a Cray System
    select a Chapel configuration.  These are described in greater detail
    in README.chplenv.
 
-     CHPL_LOCALE_MODEL : desired locale model, default "flat"
-     CHPL_TASKS        : tasking implementation, default "muxed" on Cray
-                         XC/XE with pre-built module, else "qthreads"
-     CHPL_COMM         : communication implementation, default "ugni" on
-                         Cray XC/XE with pre-built module, else "gasnet"
+     CHPL_TASKS : tasking implementation, default "fifo" with target
+                  compiler "cray", "muxed" on Cray XC/XE with pre-built
+                  module, otherwise "qthreads"
+     CHPL_COMM  : communication implementation, default "ugni" on Cray
+                  XC/XE with pre-built module, else "gasnet"
 
    Other configuration environment variables such as CHPL_MEM can also
    be set, but this is more typical when doing internal development.
@@ -422,8 +422,8 @@ To use ugni communications:
      module load PrgEnv-gnu
 
      -- or --
-     
-     module load PrgEnv-gnu
+
+     module load PrgEnv-intel
 
    (If you have a different PrgEnv module loaded, you will have to
    unload it first, or do a swap instead of a load.)
@@ -491,12 +491,11 @@ To use ugni communications:
 
 Due to the use of hugepages in the ugni comm layer, tasking layers
 cannot use guard pages for stack overflow detection.  Qthreads tasking
-uses uses guard pages for its stack overflow detection, so when ugni
-communications and qthreads tasking are combined, task call stack
-overflow detection is turned off.  This occurs automatically and nothing
-needs to be done to enable it.  (Muxed tasking uses another technique to
-detect stack overflow, as described below, so it is not affected by this
-limitation.)
+uses guard pages for stack overflow detection, so if ugni communications
+and qthreads tasking are combined, stack overflow detection in qthreads
+is automatically turned off.  (Muxed tasking uses a different technique
+to detect stack overflow, as described below, so it is not affected by
+this limitation.)
 
 There are a few special parameters recognized by the ugni communication
 layer:
@@ -532,8 +531,8 @@ layer:
     Thus under slurm, the ugni communication layer can support programs
     with very large heaps or programs that need a lot of communication
     concurrency, but not programs that need both simultaneously.  Such
-    programs need to be run using ALPS for job placement instead of
-    slurm.
+    programs need to be run on a system that uses ALPS instead of slurm
+    for job placement.
 
 
 Using the "muxed" Tasking Layer
@@ -547,8 +546,8 @@ To use muxed tasking:
      module load PrgEnv-gnu
 
      -- or --
-     
-     module load PrgEnv-gnu
+
+     module load PrgEnv-intel
 
    (If you have a different PrgEnv module loaded, you will have to
    unload it first, or do a swap instead of a load.)
