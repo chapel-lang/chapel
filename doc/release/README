@@ -40,7 +40,6 @@ This directory contains the following documentation:
     README.curl             :  information about curl and Chapel
     README.dsi              :  requirements/guidelines on writing a domain map
     README.extern           :  calling external C routines
-    README.fileUtil         :  information about new file capabilities
     README.firstClassFns    :  first-class functions
     README.format           :  value-to-string formatting
     README.gmp              :  a prototype GMP module
@@ -54,7 +53,6 @@ This directory contains the following documentation:
     README.regexp           :  using regular expressions in Chapel
     README.sets             :  set operations on associative arrays and domains
     README.subquery         :  querying the index set owned by a locale
-    README.typeQueries      :  type query functions provided by Types module
 
 
 --------------------
