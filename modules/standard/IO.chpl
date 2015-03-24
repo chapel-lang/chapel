@@ -2202,7 +2202,7 @@ proc _modestring(mode:iomode) {
 /*
 
 Open a file on a filesystem or stored at a particular URL. Note that once the
-file is open, you will need a to use :proc:`file.reader` or :proc:`file.writer`
+file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
 to create a channel to actually perform I/O operations
 
 :arg error: optional argument to capture an error code. If this argument
@@ -2344,7 +2344,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
 /*
 
 Create a Chapel file that works with a system file descriptor  Note that once
-the file is open, you will need a to use :proc:`file.reader` or
+the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
 
 .. note::
@@ -2404,7 +2404,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
 /*
 
 Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
-that once the file is open, you will need a to use :proc:`file.reader` or
+that once the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
 
 .. note::
@@ -2458,7 +2458,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
 
 /*
 
-Open a temporary file. Note that once the file is open, you will need a to use
+Open a temporary file. Note that once the file is open, you will need to use a
 :proc:`file.reader` or :proc:`file.writer` to create a channel to actually
 perform I/O operations.
 
@@ -2504,7 +2504,7 @@ proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
 /*
 
 Open a file that is backed by a buffer in memory that will not persist when the
-file is closed.  Note that once the file is open, you will need a to use
+file is closed.  Note that once the file is open, you will need to use a
 :proc:`file.reader` or :proc:`file.writer` to create a channel to actually
 perform I/O operations.
 
