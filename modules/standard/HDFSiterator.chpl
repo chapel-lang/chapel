@@ -31,7 +31,7 @@ use HDFS, UtilReplicatedVar, RecordParser;
    Serial and leader-follower versions of this iterator are available.
 
    :arg path: the path to the file within the HDFS server
-   :arg rec: the type of theh records to return
+   :arg rec: the type of the records to return
    :arg regexp: a regular expression with the same number of captures as
                 the number of fields in the record type ``rec``
 

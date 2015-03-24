@@ -30,8 +30,9 @@ installed.  Your ``HADOOP_INSTALL``, ``JAVA_INSTALL`` and ``CLASSPATH``
 environment variables must be set as described below in
 :ref:`setting-up-hadoop`.  Without this it will not compile with HDFS, even if
 the flags are set. As well, the HDFS functionality is also dependent upon the
-``CHPL_AUXIO_INCLUDE`` and ``CHPL_AUXIO_LIBS`` being set properly. For more
-information on how to set these properly, see README.auxIO.
+``CHPL_AUXIO_INCLUDE`` and ``CHPL_AUXIO_LIBS`` environment variables being set
+properly. For more information on how to set these properly, see 
+doc/technotes/README.auxIO in a Chapel release.
 
 
 Enabling HDFS Support
@@ -81,7 +82,7 @@ Using an HDFS filesystem with open(url="hdfs://...")
   f.close();
 
 
-Explicitly Using Replicated HDFS Filesystems and Files
+Explicitly Using Replicated HDFS Connections and Files
 ******************************************************
 
 .. code-block:: chapel
@@ -113,7 +114,7 @@ Explicitly Using Replicated HDFS Filesystems and Files
   gfl.hdfsClose();
   hdfs.hdfsChapelDisconnect();
 
-Explicitly Using Local HDFS Filesystems and Files
+Explicitly Using Local HDFS Connections and Files
 *************************************************
 
 The HDFS module file also supports non-replicated values across
@@ -148,22 +149,27 @@ variable.  This section is written so that people without sudo
 permission can install and use HDFS.  If you do have sudo permissions,
 you can usually install all of these via a package manager.
 
-The general outline for these instructions is: 
-  1. Install and point to the jdk to provide code Chapel needs to
-     compile against libhdfs
-  2. Install Hadoop
-  3. Set up Hadoop on (a) the local host or (b) a cluster of hosts
-  4. Start up HDFS
-  5. Stop HDFS when you're done
-  6. Set up Chapel to run in distributed mode
+The general outline for these instructions is:
 
-First reflect your directory structure and version numbers (etc) in
-the code at the bottom of this page and put it in your .bashrc (or
-.bash_profile -- your choice) and source whichever one you put it
-into.
+  1. Install and point to the jdk to provide code Chapel needs to
+     compile against libhdfs (:ref:`Step 1 <setup-hadoop-1>`)
+  2. Install Hadoop (:ref:`Step 2 <setup-hadoop-2>`)
+  3. Set up Hadoop on (a) the local host or (b) a cluster of hosts
+     (:ref:`Step 3 <setup-hadoop-3>`)
+  4. Start up HDFS (:ref:`Step 4 <setup-hadoop-4>`)
+  5. Stop HDFS when you're done (:ref:`Step 5 <setup-hadoop-5>`)
+  6. Set up Chapel to run in distributed mode (:ref:`Step 6 <setup-hadoop-6>`)
+
+First reflect your directory structure and version numbers (etc) in the
+:ref:`sample .bashrc <setup-hadoop-bashrc>` and put it in your .bashrc (or
+.bash_profile -- your choice) and source whichever one you put it into.
+
+.. _setup-hadoop-1:
 
 1. Make sure you have a SERVER edition of the jdk installed and
    point JAVA_INSTALL to it (see the same .bashrc below)
+
+.. _setup-hadoop-2:
 
 2. Install Hadoop
 
@@ -190,6 +196,8 @@ into.
        ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
        cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 
+.. _setup-hadoop-3:
+
 3. Set up Hadoop
    
    a. For the local host - See the
@@ -200,9 +208,9 @@ into.
       are good tutorials online. Although it is usually as easy as making
       edits to the following files in ``$HADOOP_HOME/conf``:
 
-      * adding the name of the nodes to 'slaves'
-      * putting what you want to be the namenode in 'masters'
-      * putting the master node in 'core-site.xml' and 'mapred-site.xml'
+      * adding the name of the nodes to ``slaves``
+      * putting what you want to be the namenode in ``masters``
+      * putting the master node in ``core-site.xml`` and ``mapred-site.xml``
       * running:
 
         .. code-block:: sh
@@ -216,7 +224,9 @@ into.
       A good online tutorial for this as well can be found here:
       http://hadoop.apache.org/docs/stable/cluster_setup.html
 
-4. 
+.. _setup-hadoop-4:
+
+4. Start HDFS
 
    * Now all we need to do is format the namenode and start things up:
 
@@ -235,19 +245,23 @@ into.
    * At this point, you can compile and run Chapel programs using HDFS
 
    * You can check the status of Hadoop via http, for example on a local
-     host (e.g., for ea above), using:
+     host (e.g., for :ref:`3a above <setup-hadoop-3>`), using:
 
        *  http://localhost:50070/
        *  http://localhost:50030/
 
-     For cluster mode (3b), you'll use the name of the master host in the
-     URL and its port (see the web for details).
+     For cluster mode (:ref:`3b <setup-hadoop-3>`), you'll use the name of the
+     master host in the URL and its port (see the web for details).
+
+.. _setup-hadoop-5:
 
 5. Shut things down:
 
    .. code-block:: sh
 
      stop-all.sh   # (This will stop hdfs and mapreduce)
+
+.. _setup-hadoop-6:
 
 6. Set up Chapel to run in distributed mode:
 
@@ -259,6 +273,8 @@ into.
    * After this you should be able to run Chapel code with HDFS over
      a cluster of computers the same way as you normally would.
     
+
+.. _setup-hadoop-bashrc:
 
 Here is a sample .bashrc for using Hadoop within Chapel:
 
@@ -308,6 +324,10 @@ Here is a sample .bashrc for using Hadoop within Chapel:
   export SSH_CMD=ssh
   export SSH_OPTIONS=-x
   export GASNET_ROUTE_OUTPUT=0
+
+HDFS Support Types and Functions
+--------------------------------
+
 
  */
 module HDFS {
@@ -360,22 +380,23 @@ pragma "no doc"
 extern proc hdfs_get_owners(f: qio_file_ptr_t, out locales: qio_locale_map_ptr_t, out num_blocks: c_int, arr: char_ptr_ptr, loc_nums:int): syserr;
 
 // ********* For multilocale ************
-// Holds a file per locale
-pragma "no doc"
+/* Holds a file per locale */
 record hdfsChapelFile {
+  pragma "no doc"
   var files: [rcDomain] file;
 }
 
-// Holds a configured HDFS filesystem per locale
-pragma "no doc"
+/* Holds a connection to HDFS per locale */
 record hdfsChapelFileSystem {
+  pragma "no doc"
   var home: locale;
+  pragma "no doc"
   var _internal_file: [rcDomain] c_void_ptr; // contains hdfsFS
 }
 
 // --------- Connecting/disconnecting ---------
 
-/* Connect to an HDFS filesystem on a single locale */
+/* Make a connection to HDFS for a single locale */
 proc hdfsChapelConnect(out error: syserr, path: c_string, port: int): c_void_ptr{
   var ret: c_void_ptr;
   error = hdfs_connect(ret, path, port);
@@ -471,8 +492,7 @@ record hdfsChapelFileSystem_local {
 }
 
 pragma "no doc"
-// MPPF - I'm not sure why this is here - it doesn't seem to be used
-// in the examples
+// this is used in hdfsChapelFileSystem_local.hdfs_chapel_open
 proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
     style:iostyle = defaultIOStyle(), fs:c_void_ptr):file {
   var local_style = style;
