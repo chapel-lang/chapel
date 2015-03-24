@@ -241,12 +241,13 @@ Optional Settings
         qthreads       : use Sandia's Qthreads package
         fifo           : use POSIX threads
         massivethreads : use U Tokyo's MassiveThreads package
-        muxed          : use Cray-specific lightweight threading
+        muxed          : use Cray-specific lightweight threading (with
+                         Cray pre-built module only)
 
    If CHPL_TASKS is not set it defaults to "qthreads" unless the
    target platform is either "cygwin*" or "netbsd*", the target
    compiler is "cray-prgenv-cray", or the target architecture is
-   "knc". For those configurations it defaults to "fifo".  And on
+   "knc". For those configurations it defaults to "fifo".  On
    Cray XC and XE (TM) systems when using the pre-built module,
    it defaults to "muxed".
 
@@ -266,7 +267,8 @@ Optional Settings
 
         none   : only supports single-locale execution
         gasnet : use the GASNet-based communication layer
-        ugni   : Cray-specific native communications
+        ugni   : Cray-specific native communications (with Cray
+                 pre-built module only)
 
    If unset, CHPL_COMM defaults to "none" in most cases.  On a Cray
    system it defaults to "gasnet" except when using a pre-built module
@@ -285,9 +287,8 @@ Optional Settings
 
    If unset, CHPL_MEM defaults to "cstdlib" in most cases.  If comm is
    "gasnet" and you are using the fast or large segments it defaults to
-   "dlmalloc".  If comm is "ugni" (on Cray XC or XE systems) it defaults
-   to "tcmalloc".  See README.multilocale for more information on GASNet
-   segments.
+   "dlmalloc".  If comm is "ugni" it defaults to "tcmalloc".  See
+   README.multilocale for more information on GASNet segments.
 
 
 *  Optionally, the CHPL_LAUNCHER environment variable can be used to
