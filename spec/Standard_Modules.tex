@@ -565,69 +565,6 @@ than the argument in absolute value.
 \end{protobody}
 
 
-\subsection{Types}
-\label{Types_standard_module}
-\index{modules!standard!Types@\chpl{Types}}
-\index{modules!standard!automatic!Types@\chpl{Types}}
-
-\begin{protohead}
-proc isProperSubtype(type sub, type super) param : bool
-\end{protohead}
-\begin{protobody}
-Indicates whether \chpl{sub} is a proper subtype of \chpl{super}.
-The proper subtype relationship holds if \chpl{sub} is a class or
-a record type that inherits, directly or indirectly, from \chpl{super}.
-\end{protobody}
-
-\begin{protohead}
-proc isSubtype(type sub, type super) param : bool
-\end{protohead}
-\begin{protobody}
-Indicates whether \chpl{sub} is a subtype of \chpl{super}.
-The subtype relationship holds if the proper subtype relationship holds
-(see \chpl{isProperSubtype}) or if \chpl{sub} is a subtype of \chpl{super}
-are the same type.
-\end{protobody}
-
-\begin{protohead}
-proc max(type t): t
-\end{protohead}
-\begin{protobody}
-Returns the maximum value that can be stored in type \chpl{t}.  This
-is implemented for all numeric types.
-\end{protobody}
-
-\begin{protohead}
-proc min(type t): t
-\end{protohead}
-\begin{protobody}
-Returns the minimum value that can be stored in type \chpl{t}.  This
-is implemented for all numeric types.
-\end{protobody}
-
-\begin{protohead}
-proc numBits(type t) param : int
-\end{protohead}
-\begin{protobody}
-Returns the number of bits used to store the values of type \chpl{t}.
-This is implemented for all numeric types and fixed-width \chpl{bool} types.
-It is not implemented for default-width \chpl{bool}.
-\end{protobody}
-
-\begin{protohead}
-proc numBytes(type t) param : int
-\end{protohead}
-\begin{protobody}
-Returns the number of bytes used to store the values of type \chpl{t}.
-This is implemented for all numeric types and fixed-width \chpl{bool} types.
-It is not implemented for default-width \chpl{bool}.
-\end{protobody}
-
-The \chpl{Types} module also provides a set of type queries.
-These are documented in the following README in the Chapel release:
-\chpl{doc/technotes/README.typeQueries} .
-
-
 \section{Optional Modules}
 \index{optional modules (see also modules, optional)}
 \index{modules!standard!optional}
