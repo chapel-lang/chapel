@@ -4286,19 +4286,29 @@ proc channel.modifyStyle(f:func(iostyle, iostyle))
 }
 */
 
-/* TODO: document ItemReader record. */
+/* Wrapper class on a channel to make it only read values
+   of a single type. Also supports an iterator yielding
+   the read values.
+ */
 record ItemReader {
+  /* What type do we read and yield? */
   type ItemType;
+  /* the kind field for our channel */
   param kind:iokind;
+  /* the locking field for our channel */
   param locking:bool;
+  /* our channel */
   var ch:channel(false,kind,locking);
+  /* read a single item, returning an error */
   proc read(out arg:ItemType, out error:syserr):bool {
     return ch.read(arg, error=error);
   }
+  /* read a single item, halting on error */
   proc read(out arg:ItemType):bool {
     return ch.read(arg);
   }
 
+  /* iterate through all items of that type read from the channel */
   iter these() {
     while true {
       var x:ItemType;
@@ -4322,25 +4332,36 @@ record ItemReader {
   }*/
 }
 
-/* */
+/* Create and return an :record:`ItemReader` that can yield read values of
+   a single type.
+ */
 proc channel.itemReader(type ItemType, param kind:iokind=iokind.dynamic) {
   if writing then compilerError(".itemReader on write-only channel");
   return new ItemReader(ItemType, kind, locking, this);
 }
 
 record ItemWriter {
+  /* What type do we write? */
   type ItemType;
+  /* the kind field for our channel */
   param kind:iokind;
+  /* the locking field for our channel */
   param locking:bool;
+  /* our channel */
   var ch:channel(false,kind);
+  /* write a single item, returning an error */
   proc write(arg:ItemType, out error:syserr):bool {
     return ch.write(arg, error=error);
   }
+  /* write a single item, halting on error */
   proc write(arg:ItemType):bool {
     return ch.write(arg);
   }
 }
 
+/* Create and return an :record:`ItemWriter` that can write values of
+   a single type.
+ */
 proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
   if !writing then compilerError(".itemWriter on read-only channel");
   return new ItemWriter(ItemType, kind, locking, this);
