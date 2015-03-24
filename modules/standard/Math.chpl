@@ -315,7 +315,7 @@ module Math {
      If the arguments are of unsigned type, then
      fewer condititionals will be evaluated at run time.
   */
-  proc divceil(param m: integral, param n: integral) param return
+  proc divceil(m: integral, n: integral) param
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
@@ -549,15 +549,21 @@ module Math {
   }
 
 
-  /* Computes the mod operator on the two numbers, defined as
-     ``mod(x,y) = x - y * floor(x / y)``. 
-
-     The return value has the same type as `x`.
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(x,y) = x - y * floor(x / y)``.
   */
-  proc mod(x: real(?w), y: real(w)): real(w) {
-    // This codes up the standard definition, according to Wikipedia.
-    // Is there a more efficient implementation for reals?
-    return x - y*floor(x/y);
+  proc mod(param m: integral, param n: integral) param {
+    param temp = m % n;
+
+    // verbatim copy from the other 'mod', to simplify maintenance
+    return
+      if isNonnegative(n) then
+        if isUintType(m.type)
+        then temp
+        else ( if temp >= 0 then temp else temp + n )
+      else
+        // n < 0
+        ( if temp <= 0 then temp else temp + n );
   }
 
   /* Computes the mod operator on the two arguments, defined as
@@ -580,21 +586,15 @@ module Math {
         ( if temp <= 0 then temp else temp + n );
   }
 
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(x,y) = x - y * floor(x / y)``.
-  */
-  proc mod(param m: integral, param n: integral) param {
-    param temp = m % n;
+  /* Computes the mod operator on the two numbers, defined as
+     ``mod(x,y) = x - y * floor(x / y)``. 
 
-    // verbatim copy from the other 'mod', to simplify maintenance
-    return
-      if isNonnegative(n) then
-        if isUintType(m.type)
-        then temp
-        else ( if temp >= 0 then temp else temp + n )
-      else
-        // n < 0
-        ( if temp <= 0 then temp else temp + n );
+     The return value has the same type as `x`.
+  */
+  proc mod(x: real(?w), y: real(w)): real(w) {
+    // This codes up the standard definition, according to Wikipedia.
+    // Is there a more efficient implementation for reals?
+    return x - y*floor(x/y);
   }
 
 
