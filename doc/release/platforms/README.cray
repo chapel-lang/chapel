@@ -48,10 +48,10 @@ Building Chapel for a Cray System from Source
 
      export CHPL_HOST_PLATFORM=cray-cs
 
-   These are the supported systems and strings. Note that these values
-   are used by default when building on one of those systems. They can
+   These are the supported systems and strings.  Note that these values
+   are used by default when building on the given systems.  They can
    also be set manually.  Also note that the cray-xe configuration
-   covers Cray XK systems also.
+   covers Cray XK systems as well as Cray XE systems.
 
        System       CHPL_HOST_PLATFORM
        ---------    ------------------
