@@ -315,7 +315,7 @@ module Math {
      If the arguments are of unsigned type, then
      fewer condititionals will be evaluated at run time.
   */
-  proc divceil(m: integral, n: integral) param
+  proc divceil(m: integral, n: integral) return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
