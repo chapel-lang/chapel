@@ -2215,10 +2215,10 @@ to create a channel to actually perform I/O operations
              See :type:`iomode`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify I/O style associated with this file,
-            which is the default for any channels created for on this file, and
-            which then is the default for all I/O operations performed on those
-            channels.
+:arg style: optional argument to specify I/O style associated with this file.
+            The provided style will be the default for any channels created for
+            on this file, and that in turn will be the default for all I/O
+            operations performed with those channels.
 :arg url: optional argument to specify a URL to open. See :mod:`Curl` and
           :mod:`HDFS` for more information on ``url=`` support for those
           systems. If HDFS is enabled, this function supports ``url=``
@@ -2365,10 +2365,10 @@ the file is open, you will need to use a :proc:`file.reader` or
             will halt with an error message.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify I/O style associated with this file,
-            which is the default for any channels created for on this file, and
-            which then is the default for all I/O operations performed on those
-            channels.
+:arg style: optional argument to specify I/O style associated with this file.
+            The provided style will be the default for any channels created for
+            on this file, and that in turn will be the default for all I/O
+            operations performed with those channels.
 :returns: an open :record:`file` using the specified file descriptor.
           If the ``error=`` argument
           was provided and the file was not opened because of an error, returns
@@ -2420,10 +2420,10 @@ that once the file is open, you will need to use a :proc:`file.reader` or
             will halt with an error message.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify I/O style associated with this file,
-            which is the default for any channels created for on this file, and
-            which then is the default for all I/O operations performed on those
-            channels.
+:arg style: optional argument to specify I/O style associated with this file.
+            The provided style will be the default for any channels created for
+            on this file, and that in turn will be the default for all I/O
+            operations performed with those channels.
 :returns: an open :record:`file` that uses the underlying FILE* argument.
           If the ``error=`` argument
           was provided and the file was not opened because of an error, returns
@@ -2474,10 +2474,10 @@ that is, a new file is created that supports both writing and reading.
             will halt with an error message.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify I/O style associated with this file,
-            which is the default for any channels created for on this file, and
-            which then is the default for all I/O operations performed on those
-            channels.
+:arg style: optional argument to specify I/O style associated with this file.
+            The provided style will be the default for any channels created for
+            on this file, and that in turn will be the default for all I/O
+            operations performed with those channels.
 :returns: an open temporary file. If the ``error=`` argument
           was provided and the file was not opened because of an error, returns
           the default :record:`file` value.
@@ -2513,10 +2513,10 @@ The resulting file supports both reading and writing.
 :arg error: optional argument to capture an error code. If this argument
             is not provided and an error is encountered, this function
             will halt with an error message.
-:arg style: optional argument to specify I/O style associated with this file,
-            which is the default for any channels created for on this file, and
-            which then is the default for all I/O operations performed on those
-            channels.
+:arg style: optional argument to specify I/O style associated with this file.
+            The provided style will be the default for any channels created for
+            on this file, and that in turn will be the default for all I/O
+            operations performed with those channels.
 :returns: an open memory file. If the ``error=`` argument
           was provided and the file was not opened because of an error, returns
           the default :record:`file` value.
@@ -2575,7 +2575,7 @@ record channel {
    */
   param kind:iokind;
   /*
-     locking is a boolean indicating whether it is safet to use this
+     locking is a boolean indicating whether it is safe to use this
      channel concurrently (when `true`).
    */
   param locking:bool;
@@ -2658,15 +2658,15 @@ inline proc _cast(type t, x: ioChar) where t == c_string_copy {
 
 /*
 
-Represents a newline character or character sequence (ie '\n'). I/O routines
+Represents a newline character or character sequence (ie ``\n``). I/O routines
 (such as :proc:`channel.read` and :proc:`channel.write`) can use arguments of
 this type in order to read or write a newline. This is different from '\n'
 because an ioNewline always produces an actual newline, but in some cases
-writing '\n' will produce an escaped string (such as "\n").
+writing ``\n`` will produce an escaped string (such as ``"\n"``).
 
 When reading an ioNewline, read routines will skip any character sequence
 (including e.g. letters and numbers) to get to the newline character unless
-``skipWhitespaceOnly`` is set te true.
+``skipWhitespaceOnly`` is set to true.
 
  */
 record ioNewline {
@@ -2829,8 +2829,8 @@ inline proc channel.unlock() {
    Return the current offset of a channel. Note that other operations
    on the channel (e.g. by other tasks) might change the offset. If you
    are doing another operation on the channel based upon the current offset,
-   you should use :proc:`channel.lock` and :proc:`channel.unlock` to
-   prevent race conditions.
+   you should use :proc:`channel.lock`, :proc:`channel._offset`, and
+   :proc:`channel.unlock` to prevent race conditions.
 
    :returns: the current offset of the channel
  */
