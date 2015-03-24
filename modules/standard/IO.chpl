@@ -518,13 +518,13 @@ Integral Conversions
 ``% i``
  a decimal integer with a space for positive numbers
 ``%|4i``
- output 4 raw,binary bytes of the passed integer in native endianness
+ output 4 raw, binary bytes of the passed integer in native endianness
 ``%<4i``
- output 4 raw,binary bytes of the passed integer little endian
+ output 4 raw, binary bytes of the passed integer little endian
 ``%>4i``
- output 4 raw,binary bytes of the passed integer big endian
+ output 4 raw, binary bytes of the passed integer big endian
 ``%<8i``
- output 8 raw,binary bytes of the passed integer little endian
+ output 8 raw, binary bytes of the passed integer little endian
  (byte widths of 1, 2, 4, and 8 are supported for integral conversions)
 
 Real Conversions
@@ -569,11 +569,11 @@ Real Conversions
  hexadecimal number using p to mark exponent e.g. ``6c.3f7p-2a``
 
 ``%|4r``
- emit 4 raw,binary bytes of the passed number in native endianness
+ emit 4 raw, binary bytes of the passed number in native endianness
 ``%<8r``
- emit 8 raw,binary bytes of the passed number in little endian
+ emit 8 raw, binary bytes of the passed number in little endian
 ``%<4r``
- emit 4 raw,binary bytes of the passed number in little endian
+ emit 4 raw, binary bytes of the passed number in little endian
  (``<`` ``|`` and ``>`` are supported for widths 4 or 8)
 
 Complex and Imaginary Conversions
@@ -599,9 +599,9 @@ Complex and Imaginary Conversions
 ``%|4m``
  same as ``%|4r``
 ``%|8z``
- emit 8 raw,binary bytes of native-endian complex (a,b are each 4 bytes)
+ emit 8 raw, binary bytes of native-endian complex (a,b are each 4 bytes)
 ``%<16z``
- emit 16 raw,binary bytes of little-endian complex (a,b each 8 bytes)
+ emit 16 raw, binary bytes of little-endian complex (a,b each 8 bytes)
 
 String and Bytes Conversions
 ++++++++++++++++++++++++++++
