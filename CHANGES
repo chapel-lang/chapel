@@ -6,6 +6,7 @@ Release Changes List
 
 This file TODO:
 * search for TODO below
+* change chpldoc URLs from master/ to latest/
 
 ==============
 version 1.11.0
@@ -54,7 +55,7 @@ Packaging Changes
 Tool Changes
 ------------
 * added an early prototype interactive/interpreted mode for writing Chapel code
-  (see TODO -- mike -- for more details)
+  (see doc/technotes/README.chpl-ipe.rst for more details)
 * revamped 'chpldoc' to create HTML files via Sphinx for documenting Chapel code
   (see doc/technotes/README.chpldoc.rst and 'man chpldoc' for more details)
 * added a new 'chpltags' utility to generate emacs/vim tags for Chapel code
@@ -79,7 +80,7 @@ New Features
 * added "blank", 'const', 'in', 'const in' and 'const ref' task intents
   (see TODO -- vass)
 * added "standalone parallel iterators", used by non-zippered forall loops
-  (see examples/primers/parIters.chpl and TODO -- diten)
+  (see examples/primers/parIters.chpl)
 * added support for aliasing of domains via the '=>' operator
 
 New Interoperability Features
@@ -97,32 +98,32 @@ New Interoperability Features
 Standard Library/Modules
 ------------------------
 * added a new module, FileSystem, containing numerous file system operations
-  (e.g., chmod(), exists(), isDir(), copy(), umask(), see TODO)
+  (see http://chapel.cray.com/docs/master/modules/standard/FileSystem.html)
 * added support for key 64-bit FFTW routines (single- and multi-threaded)
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/modules/standard/FFTW.html)
+* added parity() and rotate() operations to the BitOps module
+  (see http://chapel.cray.com/docs/master/modules/standard/BitOps.html)
+* added parallel versions of the glob(), walkdirs(), and findfiles() iterators
+  (see http://chapel.cray.com/docs/master/modules/standard/FileSystem.html)
 * started a new module, Path, supporting realPath(), curDir, parentDir, pathSep
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/modules/standard/Path.html)
 * added a new module, Assert, defining a simple assertion capability
   (see TODO)
-* added parallel versions of the glob(), walkdirs(), and findfiles() iterators
-  (see TODO)
-* added parity() and rotate() operations to the BitOps module
-  (see TODO)
 * added support for C types c_ptrdiff, c_uintptr, and c_intptr to SysCTypes.chpl
-  (see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/gen/doc/SysCTypes.html)
 * changed cwd() and chdir() from standalone functions to locale methods
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/modules/standard/FileSystem.html)
 * made mkdir(parents=true) behave more like 'mkdir -p'
 * added a .safeCast() method to integer types to value-check downcasts
-  (see TODO -- point to Types.html documentation)
+  (see http://chapel.cray.com/docs/master/modules/standard/Types.html)
 * changed min(t) and max(t) to return 'param' values for integral types 't'
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/modules/standard/Types.html)
 * parameterized RandomStream by an 'eltType' and updated its methods accordingly
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/modules/standard/Random.html)
 * removed the parSafe arguments from RandomStream's methods in the Random module
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/modules/standard/Random.html)
 * added support for escaping pattern-style format strings using %{}
-  (e.g., "writef("#%{##}", 10)" => "#10"; see TODO)
+  (e.g., "writef("#%{##}", 10)" => "#10")
 * added support for readf()/writef() of octal values
 * changed 'BigInt' methods to use Chapel types rather than C types
 * folded the prototypical 'Filerator' module into the new 'FileSystem' module
@@ -151,12 +152,9 @@ Memory Improvements
 
 Launcher-specific Changes
 -------------------------
-* added '-cc none' to the *aprun launchers to improve kernel scheduling affinity
 * in the 'pbs-aprun' launcher, removed reliance on the mpp* options
 * added a --nodelist option to the 'slurm-srun' launcher
-  (see TODO)
 * in the 'slurm-srun' launcher, stopped using expect scripts
-* improved the selection of /tmp directories used by the 'slurm-srun' launcher
 
 Platform-specific Changes
 -------------------------
