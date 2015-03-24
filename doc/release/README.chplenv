@@ -237,8 +237,10 @@ Optional Settings
         fifo           : run tasks to completion, in FIFO order
         massivethreads : run tasks using U Tokyo's MassiveThreads package
 
-   If CHPL_TASKS is not set it defaults to "qthreads" unless the target
-   platform is "knc" or "cygwin*".  For those two it defaults to "fifo".
+   If CHPL_TASKS is not set it defaults to "qthreads" unless the
+   target platform is either "cygwin*" or "netbsd*", the target
+   compiler is "cray-prgenv-cray", or the target architecture is
+   "knc". For those configurations it defaults to "fifo".
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_TASKS to 'fifo' to reduce build-time and third-party
