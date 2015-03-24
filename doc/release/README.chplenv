@@ -306,19 +306,12 @@ Optional Settings
         locks      : implement atomics by using Chapel sync variables to
                      protect normal operations
 
-   If unset, CHPL_ATOMICS defaults to "intrinsics" if the target
-   platform is anything except "linux32" and CHPL_TARGET_COMPILER is
-   any of the following:
-
-        clang
-        cray-prgenv-cray
-        cray-prgenv-gnu (gcc version 4.1 and later)
-        cray-prgenv-intel
-        gnu (gcc version 4.1 and later)
-        intel
-
-   Otherwise for "linux32" target platforms and/or any other target
-   compilers, it defaults to "locks".
+   If unset, CHPL_ATOMICS defaults to "intrinsics" for most
+   configurations except for 32 bit platforms or if the target compiler
+   is "pgi" or "cray-prgenv-pgi" in which case it defaults to "locks".
+   Note that gcc 4.8.1 added support for 64 bit intrinsic atomics on 32
+   bit platforms so we default to "intrinsics" for newer version of
+   target compiler "gnu".
 
    See the Chapel Language Specification for more information about
    atomic operations in Chapel or doc/technotes/README.atomics for more
