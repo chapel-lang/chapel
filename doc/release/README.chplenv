@@ -108,6 +108,7 @@ Optional Settings
    CHPL_TARGET_PLATFORM.  Currently supported values are as follows:
 
         clang             : the Clang compiler suite -- clang and clang++
+        clang-included    : the Clang compiler in third-party/llvm
         cray-prgenv-cray  : the Cray PrgEnv compiler using the Cray CCE backend
         cray-prgenv-gnu   : the Cray PrgEnv compiler using the GNU backend
         cray-prgenv-intel : the Cray PrgEnv compiler using the Intel backend
@@ -134,6 +135,10 @@ Optional Settings
    If CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM and is not cray-x*,
    CHPL_TARGET_COMPILER will default to the same value as CHPL_HOST_COMPILER.
 
+   Note that builds with LLVM support (ie when CHPL_LLVM=llvm) will build
+   the runtime twice: once with the compiler as described above and once
+   with clang-included. We do this in order to avoid issues in linking
+   objects built by different compilers.
 
 *  Optionally, set the CHPL_TARGET_ARCH environment variable to indicate that
    the target executable should be specialized to the given architecture when
@@ -237,8 +242,10 @@ Optional Settings
         fifo           : run tasks to completion, in FIFO order
         massivethreads : run tasks using U Tokyo's MassiveThreads package
 
-   If CHPL_TASKS is not set it defaults to "qthreads" unless the target
-   platform is "knc" or "cygwin*".  For those two it defaults to "fifo".
+   If CHPL_TASKS is not set it defaults to "qthreads" unless the
+   target platform is either "cygwin*" or "netbsd*", the target
+   compiler is "cray-prgenv-cray", or the target architecture is
+   "knc". For those configurations it defaults to "fifo".
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_TASKS to 'fifo' to reduce build-time and third-party
