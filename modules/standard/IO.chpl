@@ -22,8 +22,8 @@
 Support for a variety of kinds of input and output.
 
 Input/output (I/O) facilities in Chapel include the types :record:`file` and
-:record:`channel`, the constants :record:`stdin`, :record:`stdout` and
-:record:`stderr`, the functions :proc:`open`, :proc:`file.close`,
+:record:`channel`; the constants :record:`stdin`, :record:`stdout` and
+:record:`stderr`; the functions :proc:`open`, :proc:`file.close`,
 :proc:`file.reader`, :proc:`file.writer`, :proc:`channel.read`,
 :proc:`channel.write`, and many others.
 
@@ -34,7 +34,7 @@ I/O Overview
 
 A :record:`file` in Chapel identifies a file in the underlying operating
 system.  Reads and writes to a file are done via one or more channels
-associated with the file.  Each :record:`channel` a buffer to provide
+associated with the file.  Each :record:`channel` uses a buffer to provide
 sequential read or write access to its file, optionally starting at an offset.
 
 For example, the following program opens a file and writes an integer to it:
@@ -93,7 +93,7 @@ programs that access the same open file in parallel. Note that such parallel
 access is not possible in C when multiple threads are using the same ``FILE*``
 to write to different regions of a file because of the race condition between
 ``fseek`` and ``fwrite``. Because of these issues, Chapel programmers wishing
-to perform I/O will need how to open files as well as create channels.
+to perform I/O will need to know how to open files as well as create channels.
 
 
 
@@ -103,8 +103,8 @@ I/O Styles
 Reading and writing of Chapel's basic types is regulated by an applicable
 :record:`iostyle`.  In particular, the I/O style controls whether binary or
 text I/O should be performed. For binary I/O it specifies, for example, byte
-order and string encoding. For text I/O it specifies string representation, the
-base, field width and precision for numeric types, and so on.  Each channel has
+order and string encoding. For text I/O it specifies string representation; the
+base, field width and precision for numeric types; and so on.  Each channel has
 an associated I/O style.  It applies to all read/write operations on that
 channel, except when the program specifies explicitly an I/O style for a
 particular read or write.
@@ -114,8 +114,9 @@ styles and provides details on formatting and other representation choices.
 
 The default value of the :record:`iostyle` type is undefined.  However, the
 compiler-generated constructor is available.  It can be used to generate the
-default I/O style, with or without modifications.
-
+default I/O style, with or without modifications. In addition, the function
+:proc:`defaultIOStyle` will return the default I/O style just as ``new
+iostyle()`` will. 
 
 The I/O style for an I/O operation can be provided through an optional
 ``style=`` argument in a variety of places:
@@ -134,12 +135,11 @@ using :proc:`channel._set_style`. These functions should only be called while
 the channel lock is held, however. See :ref:`about-io-channel-synchronization`
 for more information on channel locks.
 
-The function :proc:`defaultIOStyle` will return the default I/O style
-just as ``new iostyle()`` will. 
+.. note::
 
-:record:`iostyle` is work in progress: the fields and/or their types may
-change. Among other changes, we expect to be replacing the types of some
-multiple-choice fields from integral to enums.
+  :record:`iostyle` is work in progress: the fields and/or their types may
+  change. Among other changes, we expect to be replacing the types of some
+  multiple-choice fields from integral to enums.
 
 As an example for specifying an I/O style, the code below specifies the minimum width for writing numbers so array elements are aligned in the output:
 
@@ -153,7 +153,7 @@ formatting. There is support for :ref:`formatted I/O <about-io-formatted-io>`
 with :proc:`channel.readf` and :proc:`channel.writef`.  It is possible to write
 data to strings (see "The write and writeln Methods on Strings" in the Chapel
 language specification) which can then be further modified or combined
-programmatically. , Lastly record or class implementations can provide custom
+programmatically. Lastly, record or class implementations can provide custom
 functions implementing read or write operations for that type (see "The
 readThis, writeThis, and readWriteThis Methods" in the Chapel language
 specification).
@@ -173,8 +173,9 @@ Use the :proc:`file.fsync` function to explicitly synchronize the file to
 ensure that file data is committed to the file's underlying device for
 persistence.
 
-To release any resources associated with a file, its channels then the file
-must be closed with :proc:`channel.close` and :proc:`file.close`.
+To release any resources associated with a file, it is necessary to first close
+any channels using that file (with :proc:`channel.close`) and then the file
+itself (with :proc:`file.close`).
 
 .. _about-io-channel-creation:
 
@@ -191,10 +192,10 @@ Synchronization of Channel Data and Avoiding Data Races
 
 Channels (and files) contain locks in order to keep their operation safe for
 multiple tasks. When creating a channel, it is possible to disable the lock
-(for performance reasons) by passing locking=false to e.g.  file.writer(). Some
-channel methods - in particular those beginning with the underscore - should
-only be called on locked channels.  With these methods, it is possible to get
-or set the channel style, or perform I/O "transactions" (see
+(for performance reasons) by passing ``locking=false`` to e.g.  file.writer().
+Some channel methods - in particular those beginning with the underscore -
+should only be called on locked channels.  With these methods, it is possible
+to get or set the channel style, or perform I/O "transactions" (see
 :proc:`channel._mark`). To use these methods, first lock the channel with
 channel.lock(), call the methods you need, and then unlock the channel with
 channel.unlock(). Note that in the future, we may move to alternative ways of
@@ -253,14 +254,10 @@ number of arguments. See:
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 .flush() method. Flushing the buffer will make all writes available to other
 applications or other views of the file (ie, it will call e.g. the OS call
-pwrite).
-
-It is also possible to close a channel, which will flush it and release any
-buffer memory used by the channel.
-
-Note that if you need to ensure that data from a channel is on disk, you'll
-have to call :proc:`channel.flush` or :proc:`channel.close` and then
-:proc:`file.fsync` on the related file.
+pwrite).  It is also possible to close a channel, which will flush it and
+release any buffer memory used by the channel.  Note that if you need to ensure
+that data from a channel is on disk, you'll have to call :proc:`channel.flush`
+or :proc:`channel.close` and then :proc:`file.fsync` on the related file.
 
 
 .. _about-io-closing-channels:
@@ -320,13 +317,13 @@ are described in :mod:`SysBasic`. Some of these error codes that are commonly us
  * :proc:`SysBasic.ESHORT` - a read or write only returned part of the
    requested data
  * :proc:`SysBasic.EFORMAT` - data read did not adhere to the requested format
- * :const:`SysBasic.EILSEQ` - illegial multibyte sequence (e.g. there was a
+ * :const:`SysBasic.EILSEQ` - illegal multibyte sequence (e.g. there was a
    UTF-8 format error)
  * :const:`SysBasic.EOVERFLOW` - data read did not fit into requested type
    (e.g. reading 1000 into a `uint(8)`).
 
 An error code can be converted to a string using the function
-:proc:`SysBasic.errorToString`.
+:proc:`Error.errorToString`.
 
 Ensuring Successful I/O
 -----------------------
@@ -2872,6 +2869,7 @@ inline proc channel._commit() {
    called on a locked channel.
 
  */
+// TODO -- come up with better names for these
 proc channel._style():iostyle {
   var ret:iostyle;
   on this.home {
