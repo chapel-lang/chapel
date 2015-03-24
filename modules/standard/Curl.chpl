@@ -73,7 +73,8 @@ Then, rebuild Chapel by executing 'make' from $CHPL_HOME:
 
 For information on how to enable and use Curl while also using other auxiliary
 IO extensions, as well as how to setup the CHPL_AUXIO_INCLUDE and
-CHPL_AUXIO_LIBS environment variables see README.auxIO in this directory.
+CHPL_AUXIO_LIBS environment variables see doc/technotes/README.auxIO in a
+Chapel release.
 
 
 Using Curl Support in Chapel
@@ -127,8 +128,8 @@ Interface 2:
     * :proc:`file.setopt`
     * :proc:`file.perform`
 
-   Calling :proc:`~IO.close` on the file will disconnect the underlying Curl
-   handle.
+   Calling :proc:`~IO.file.close` on the file will disconnect the underlying
+   Curl handle.
 
 
 Here are some simple code snippets demonstrating these two interfaces:
@@ -307,6 +308,10 @@ Example 7
   recipients.free();
   handle.close();
 
+
+Curl Support Types and Functions
+--------------------------------
+
  */
 module Curl {
 
@@ -335,7 +340,7 @@ extern const CHPL_CURL_SLIST_NULL:chpl_slist;
              case versions of these curl options (e.g. use curlopt_url
              instead of CURLOPT_URL in your Chapel program)
    :arg arg: the value to set the curl option specified by opt.
-   :type arg: `int` `string` `bool` or `slist`
+   :type arg: `int`, `string`, `bool`, or `slist`
 */
 proc file.setopt(opt:c_int, arg):bool {
   var err:syserr = ENOERR;
@@ -440,7 +445,7 @@ proc slist.free() {
   }
 }
 
-// These are meant to be ued with the file.setopt() function. This way, a user 
+// These are meant to be used with the file.setopt() function. This way, a user 
 // has access to the easy interface.
 
 
