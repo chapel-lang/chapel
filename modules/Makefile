@@ -56,8 +56,10 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 
 MODULES_TO_DOCUMENT = \
+	standard/AdvancedIters.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
+	standard/CommDiagnostics.chpl \
 	standard/Curl.chpl \
 	standard/FFTW.chpl \
 	standard/FileSystem.chpl \
@@ -67,13 +69,20 @@ MODULES_TO_DOCUMENT = \
 	standard/Help.chpl \
 	standard/IO.chpl \
 	standard/List.chpl \
+	standard/Math.chpl \
+	standard/Memory.chpl \
 	standard/Norm.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Regexp.chpl \
 	standard/Search.chpl \
 	standard/Sort.chpl \
+	standard/startInitCommDiags.chpl \
+	standard/stopInitCommDiags.chpl \
 	standard/Sys.chpl \
+	standard/Types.chpl \
+	standard/UtilMath.chpl \
+	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
