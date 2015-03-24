@@ -50,7 +50,8 @@ Recommended Settings
         linux32      : 32-bit Linux platforms
         linux64      : 64-bit Linux platforms
         marenostrum  : BSC's MareNostrum platform
-        netbsd       : NetBSD platforms
+        netbsd32     : 32-bit NetBSD platforms
+        netbsd64     : 64-bit NetBSD platforms
         pwr5         : IBM Power5 SMP cluster
         pwr6         : IBM Power6 SMP cluster
         sunos        : SunOS platforms

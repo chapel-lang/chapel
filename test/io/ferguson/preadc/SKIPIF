@@ -1,0 +1,8 @@
+# Skip these tests for the Cray and PGI compilers since these compilers print
+# out the names of the C files being compiled when compiling multiple C files.
+# An alternative solution would be to compile the .c files to .o files and run
+# a link command.
+CHPL_TARGET_COMPILER==cray-prgenv-pgi
+CHPL_TARGET_COMPILER==cray-prgenv-cray
+CHPL_TARGET_COMPILER==pgi
+CHPL_TARGET_COMPILER==cray
