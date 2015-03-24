@@ -6426,12 +6426,12 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch
 
 /* Enumerates matches in the string as well as capture groups.
 
-   Returns tuples of reMatch objects, the 1st is always
+   Yields tuples of :record:`Regexp.reMatch` objects, the 1st is always
    the match for the whole pattern.
 
    At the time each match is returned, the channel position is
    at the start of that match. Note though that you would have
-   to advance to get to the position of a capture group.
+   to use :proc:`channel.advance` to get to the position of a capture group.
 
    After returning each match, advances to just after that
    match and looks for another match. Thus, it will not return
@@ -6442,6 +6442,15 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch
    or at the end of the channel (if we no longer matched)
 
    Holds the channel lock for the duration of the search.
+
+   :arg re: a :record:`Regexp.regexp` record representing a compiled
+            regular expression.
+   :arg captures: an optional compile-time constant representing the number
+                  of captures to be yielded in tuple elements.
+   :arg maxmatches: the maimum number of matches to report.
+   :yields: tuples of :record:`Regexp.reMatch` objects, where the first element
+            is the whole pattern.  The tuples will have 1+captures elements.
+
  */
 iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 {
@@ -6525,8 +6534,16 @@ proc file.fstype():int {
 
 /*
    Returns (chunk start, chunk end) for the first chunk in the file
-   containing data in the range [start, end].
+   containing data in the region start..end-1. Note that the returned
+   chunk might not cover all of the region in question.
+
    Returns (0,0) if no such value exists.
+
+   :arg start: the file offset (starting from 0) where the region begins
+   :arg end: the file offset just after the region
+   :returns: a tuple of (chunkStart, chunkEnd) so that the bytes
+             in chunkStart..chunkEnd-1 are stored in a manner that makes
+             reading that chunk at a time most efficient
  */
 proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(64)) {
   var err:syserr = ENOERR;
@@ -6571,10 +6588,18 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
 }
 
 /*
-   Returns the 'best' locales to run something working with this
-   region of the file. This *must* return the same result when
-   called from different locales. Returns a domain of locales that are "best" for the
-   given region. If no locales are "best" we return a domain containing all locales.
+
+   Returns the 'best' locale to run something working with the region
+   of the file in start..end-1.
+
+   This *must* return the same result when called from different locales.
+   Returns a domain of locales that are "best" for the given region. If no
+   locales are "best" we return a domain containing all locales.
+
+   :arg start: the file offset (starting from 0) where the region begins
+   :arg end: the file offset just after the region
+   :returns: a set of locales that are best for working with this region
+   :rtype: domain(locale)
  */
 proc file.localesForRegion(start:int(64), end:int(64)) {
 
