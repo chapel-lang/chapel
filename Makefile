@@ -57,7 +57,6 @@ comprt: FORCE
 	@$(MAKE) compiler
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) runtime
-	@$(MAKE) llvm-runtime-if-needed
 	@$(MAKE) modules
 
 compiler: FORCE
@@ -68,11 +67,9 @@ modules: FORCE
 
 runtime: FORCE
 	cd runtime && $(MAKE)
-
-llvm-runtime-if-needed: FORCE
 	-@if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
-	echo "Building runtime for chpl --llvm"; \
-	cd runtime && CHPL_TARGET_COMPILER=clang-included $(MAKE); \
+	export CHPL_TARGET_COMPILER=clang-included && \
+	cd runtime && $(MAKE) ; \
 	fi
 
 third-party: FORCE
@@ -83,11 +80,19 @@ third-party-try-opt: third-party-try-re2 third-party-try-gmp
 third-party-try-re2: FORCE
 	-@if [ -z "$$CHPL_REGEXP" ]; then \
 	cd third-party && $(MAKE) try-re2; \
+	if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
+	export CHPL_TARGET_COMPILER=clang-included && \
+	$(MAKE) try-re2; \
+	fi \
 	fi
 
 third-party-try-gmp: FORCE
 	-@if [ -z "$$CHPL_GMP" ]; then \
 	cd third-party && $(MAKE) try-gmp; \
+	if [ "llvm" = `${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py` ]; then \
+	export CHPL_TARGET_COMPILER=clang-included && \
+	$(MAKE) try-gmp; \
+	fi \
 	fi
 
 third-party-chpldoc-venv: FORCE
@@ -95,6 +100,7 @@ third-party-chpldoc-venv: FORCE
 
 chpldoc: compiler third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
+	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
 
 clean-module-docs:
 	cd modules && $(MAKE) clean-documentation
@@ -138,6 +144,9 @@ depend:
 
 check: all
 	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall
+
+check-chpldoc: chpldoc
+	@bash $(CHPL_MAKE_HOME)/util/test/checkChplInstall --chpldoc
 
 -include Makefile.devel
 

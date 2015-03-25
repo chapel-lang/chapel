@@ -11,6 +11,7 @@ TARGETS = \
 	meteor-fast \
 	nbody \
 	pidigits \
+	regexdna \
 	spectralnorm \
 	threadring
 
@@ -46,6 +47,9 @@ nbody: nbody.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
 pidigits: pidigits.chpl
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+regexdna: regexdna.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 spectralnorm: spectralnorm.chpl

@@ -256,25 +256,27 @@ support, please let us know so that we can prioritize accordingly.
 Flags for Tracking Tasks
 ------------------------
 
-For certain tasking layers Chapel supports a couple of experimental
+For certain tasking layers, Chapel supports a few experimental
 capabilities for tracking the status of tasks, primarily designed for
-use in a single-locale execution.  These flags add a fair amount of
-runtime overhead to task parallel programs. The flags are as follows:
+use in a single-locale execution.  To enable this capability, your
+program must be compiled with the --task-tracking flag.  These flags
+add a fair amount of runtime overhead to task-parallel programs. The
+flags are as follows:
 
   -b, --blockreport : when Ctrl-C is entered during a program
                       executing under this flag, it will display a
                       list of where tasks are blocked on a
                       synchronization variable.  Running with this
-                      flag will also cause the executable to
-                      automatically detect deadlock for single-locale
-                      executions.  Both qthreads and fifo tasking
-                      support this.
+                      flag will also cause the executable to attempt
+                      to automatically detect deadlock for
+                      single-locale executions.  Both 'qthreads' and
+                      'fifo' tasking support this.
 
   -t, --taskreport : When Ctrl-C is entered during a program executing
                      under this flag, a list of pending and executing
-                     tasks will be printed to the screen, giving an
+                     tasks will be printed to the console, giving an
                      indication of which tasks are at which source
-                     locations.  Only fifo tasking supports this.
+                     locations.  Only 'fifo' tasking supports this.
 
 
 -------------------------------------------

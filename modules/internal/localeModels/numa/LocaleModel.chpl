@@ -265,7 +265,7 @@ module LocaleModel {
   class RootLocale : AbstractRootLocale {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
-    const myLocales: [myLocaleSpace] locale;
+    var myLocales: [myLocaleSpace] locale;
 
     proc RootLocale() {
       parent = nil;

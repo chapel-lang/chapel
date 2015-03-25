@@ -202,14 +202,8 @@ proc chpl__autoDestroy(x: DefaultDist) {
       }
 
       if numChunks <= 1 {
-        if rank == 1 {
-          for i in ranges(1) {
-            yield i;
-          }
-        } else {
-          for i in these_help(1) {
-            yield i;
-          }
+        for i in these_help(1) {
+          yield i;
         }
       } else {
         var locBlock: rank*range(idxType);
@@ -768,7 +762,7 @@ proc chpl__autoDestroy(x: DefaultDist) {
       if debugDefaultDist {
         writeln("*** In array standalone code");
       }
-      for i in dom.these(iterKind.standalone, tasksPerLocale,
+      for i in dom.these(tag, tasksPerLocale,
                          ignoreRunning, minIndicesPerTask) {
         yield dsiAccess(i);
       }

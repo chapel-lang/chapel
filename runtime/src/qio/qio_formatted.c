@@ -2141,6 +2141,7 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
+  if( style->showpoint ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
 
   // We might not have room...
@@ -2183,6 +2184,12 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   // now output the digits.
   qio_memcpy(dst + i, tmp+tmp_skip, tmp_len);
   i += tmp_len;
+
+  // Now output a period if we're doing showpoint.
+  if( style->showpoint ) {
+    dst[i] = '.';
+    i++;
+  }
 
   // Now if we're left justified we might need padding.
   if( style->leftjustify && width < style->min_width_columns) {
@@ -3552,13 +3559,18 @@ qioerr qio_conv_parse(c_string fmt,
   i = start;
 
   // do we have a ####.#### conversion to match?
+  if( fmt[i] == '%' && fmt[i+1] == '{' && fmt[i+2] == '#' ) {
+    // handle %{####} conversions
+    in_group = 1;
+    i++; // pass %
+    i++; // pass {
+  }
   if( fmt[i] == '#' ) {
     size_t num_before, num_after, period;
     num_before = 0;
     num_after = 0;
     period = 0;
     
-
     // how many ### do we have before a . ?
     for( ; fmt[i] == '#'; i++ ) num_before++;
 
@@ -3566,6 +3578,14 @@ qioerr qio_conv_parse(c_string fmt,
       i++; // pass '.'
       period = 1;
       for( ; fmt[i] == '#'; i++ ) num_after++;
+    }
+
+    if( in_group ) {
+      if( fmt[i] != '}' ) {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "Bad %{###.###} format group");
+      } else {
+        i++; // pass }
+      }
     }
 
     spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;

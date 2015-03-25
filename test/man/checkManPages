@@ -1,27 +1,203 @@
 #!/usr/bin/env python
-#
-# Read help input and make sure every flag is in the man page.  Also
-# check that all top-level CHPL variables from
-# $CHPL_HOME/util/printchplenv are included in the man page's
-# ENVIRONMENT section
 
-import sys, os
+"""Compare the help page and man page for chpl and chpldoc.
 
-numErrors=0
+Make sure every flag in the help page is present in the man page. Also, for
+chpl check that all top-level CHPL variables from $CHPL_HOME/util/printchplenv
+are included in the man page's ENVIRONMENT section.
+"""
 
-helpTxt = sys.stdin.readlines()
+import logging
+import operator
+import os
+import os.path
+import subprocess
+import sys
 
-CHPL_HOME=os.getenv('CHPL_HOME', '.')
 
-f = open(CHPL_HOME+'/man/chpl.txt')
-manPage = f.readlines()
-f.close()
+def main():
+    results = []
+    chpl = sys.argv[1]
+    chpldoc = chpl + 'doc'
 
-#
-# Get the flags in a string
-#
-#
-def getFlags(s):
+    # Test chpl
+    results.append( check_man_page(chpl, ['--no-devel']) )
+    results.append( check_chpl_env_vars(chpl) )
+
+    # Test chpldoc
+    results.append( check_man_page(chpldoc) )
+
+    # Exit clean if no errors.
+    if not reduce(operator.and_, results):
+        sys.exit(1)
+    else:
+        sys.exit(0)
+
+
+def check_man_page(bin_name, additional_args=None):
+    """Verify man page match -h options for given program. Returns True if help
+    text and man text match. Returns False if not.
+
+    :arg bin_name: Program to call with --help and name of .1 man page.
+    :arg additional_args: Additional arguments list to call program with.
+    """
+    chpl_home = _get_chpl_home()
+    short_bin_name = os.path.basename(bin_name)
+
+    # Get the help text. 
+    help_cmd = [bin_name]
+    if additional_args is not None:
+        help_cmd.extend(additional_args)
+    help_cmd.append('--help')
+    help_txt, help_exit = _run_cmd(help_cmd)
+
+    if help_exit != 0:
+        _error('failed to get help text with:',
+               ' '.join(help_cmd).replace(chpl_home, '$CHPL_HOME'),
+               'exited with non-zero status code', help_exit)
+        return False
+
+    # Get the man page text.
+    man_txt = _get_man_page(bin_name)
+
+    # Make sure every flag in the help text shows up in the man page
+    numErrors = 0
+    notFound = list()
+    currSection = None
+    currSectionIndex = -1
+    helpTxt = help_txt.splitlines()
+    manPage = man_txt.splitlines()
+    for l in helpTxt:
+        sl = l.strip()
+        if sl:
+            if sl[-1] == ':':
+                # print "section:"+sl
+                currSection = sl
+                for i in range(0,len(manPage)-1):
+                    if manPage[i].strip() == sl[:-1]:
+                        # print ' index: '+str(i)
+                        currSectionIndex = i+1
+            elif sl[0] == '-':
+                if currSection == None:
+                    numErrors += 1
+                    _error(sl, 'not in a {0} man page section'.format(short_bin_name))
+                    notFound.append(sl)
+                    continue
+                hFlags = _get_flags(sl)
+                found = False
+                for ml in manPage[currSectionIndex:]:
+                    try:
+                        if ml[2]!='-':
+                            continue
+                    except IndexError:
+                        continue
+                    mFlags = _get_flags(ml)
+                    if not mFlags:
+                        if len(ml) > 3:
+                            if ml[2]!=' ':
+                                # new section heading
+                                break
+                        continue
+                    if mFlags==hFlags:
+                        found = True
+                        break
+                if not found:
+                    numErrors += 1
+                    _error(hFlags, "not in {0} man page section '{1}'".format(short_bin_name, currSection[:-1]))
+                    notFound.append(hFlags)
+
+    for f in notFound:
+        for ml in manPage:
+            try:
+                if ml[2]!='-':
+                    continue
+            except IndexError:
+                continue
+            mFlags = _get_flags(ml)
+            if mFlags == f:
+                numErrors += 1
+                _warn(f, 'found in different {0} man page section'.format(short_bin_name))
+
+    # Make sure there are no extra flags in the man page
+    for ml in manPage:
+        try:
+            if ml[2]!='-':
+                continue
+        except IndexError:
+            continue
+        mFlags = _get_flags(ml)
+        if mFlags:
+            found = False
+            for hl in helpTxt:
+                hFlags=_get_flags(hl)
+                if mFlags==hFlags:
+                    found = True
+                    break
+            if found == False:
+                numErrors += 1
+                _error(mFlags, 'in {0} man page, but not in {0} user help'.format(short_bin_name))
+
+    # Return True if no error (man/help text match). False otherwise.
+    return numErrors == 0
+
+
+def check_chpl_env_vars(bin_name):
+    """Make sure all the top-level env vars in printchplenv are in the man
+    page. Returns True if env vars match up. Returns False if not.
+
+    :arg bin_name: path to chpl compiler
+    """
+    chpl_home = _get_chpl_home()
+    man_txt = _get_man_page(bin_name)
+    manPage = man_txt.splitlines()
+    numErrors = 0
+    try:
+        envSection = manPage.index('ENVIRONMENT')
+    except ValueError:
+        numErrors += 1
+        _warn('Did not find ENVIRONMENT section.  Checking all sections')
+        envSection = 0
+
+    chplenv, _ = _run_cmd([chpl_home+'/util/printchplenv'])
+
+    envlist = chplenv.split('\n')
+    for l in envlist:
+        try:
+            if l.find("CHPL_") == 0:
+                chplenvVar = l.split(':')[0].strip()
+                found = False
+                for nl in manPage[envSection+1:]:
+                    try:
+                        if nl[2:6]=='CHPL':
+                            if nl.split()[0].strip()==chplenvVar:
+                                found = True
+                                continue
+                    except IndexError:
+                        continue
+                if not found:
+                    numErrors += 1
+                    _error(chplenvVar, 'not in man page ENVIRONMENT section')
+        except IndexError:
+            continue
+
+    return numErrors == 0
+
+
+def _get_chpl_home():
+    repo_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '../..'))
+    chpl_home = os.environ.get('CHPL_HOME', repo_root)
+    return chpl_home
+
+def _get_man_page(bin_name):
+    man_file = os.path.join(_get_chpl_home(), 'man', os.path.basename(bin_name) + '.txt')
+    with open(man_file, 'r') as fp:
+        man_txt = fp.read()
+    return man_txt
+
+
+def _get_flags(s):
+    """Get the flags in a string."""
     rs = ''
     # handle empty lines
     if not s.strip():
@@ -45,118 +221,26 @@ def getFlags(s):
     else:
         return rs
 
-#
-# Make sure every flag in the help text shows up in the man page
-#
-notFound = list()
-currSection = None
-currSectionIndex = -1
-for l in helpTxt:
-    sl = l.strip()
-    if sl:
-        if sl[-1] == ':':
-            # print "section:"+sl
-            currSection = sl
-            for i in range(0,len(manPage)-1):
-                if manPage[i].strip() == sl[:-1]:
-                    # print ' index: '+str(i)
-                    currSectionIndex = i+1
-        elif sl[0] == '-':
-            if currSection == None:
-                numErrors += 1
-                sys.stdout.write('ERROR: %s not in a man page section\n'%(sl))
-                notFound.append(sl)
-                continue
-            hFlags = getFlags(sl)
-            found = False
-            for ml in manPage[currSectionIndex:]:
-                try:
-                    if ml[2]!='-':
-                        continue
-                except IndexError:
-                    continue
-                mFlags = getFlags(ml)
-                if not mFlags:
-                    if len(ml) > 3:
-                        if ml[2]!=' ':
-                            # new section heading
-                            break
-                    continue
-                if mFlags==hFlags:
-                    found = True
-                    break
-            if not found:
-                numErrors += 1
-                sys.stdout.write('ERROR: %s not in man page section \'%s\'\n'%(hFlags, currSection[:-1]))
-                notFound.append(hFlags)
 
-for f in notFound:
-    for ml in manPage:
-        try:
-            if ml[2]!='-':
-                continue
-        except IndexError:
-            continue
-        mFlags = getFlags(ml)
-        if mFlags == f:
-            numErrors += 1
-            sys.stdout.write('WARNING: %s found in different man page section\n'%(f))
-
-#
-# Make sure there are no extra flags in the man page
-#
-for ml in manPage:
-    try:
-        if ml[2]!='-':
-            continue
-    except IndexError:
-        continue
-    mFlags = getFlags(ml)
-    if mFlags:
-        found = False
-        for hl in helpTxt:
-            hFlags=getFlags(hl)
-            if mFlags==hFlags:
-                found = True
-                break
-        if found == False:
-            numErrors += 1
-            sys.stdout.write('ERROR: %s in man page, but not in user help\n'%(mFlags))
+def _run_cmd(cmd):
+    """Run command then return stdout and exit code."""
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    stdout, _ = proc.communicate()
+    return stdout, proc.returncode
 
 
-#
-# Make sure all the top-level env vars in printchplenv are in the man page
-#
-try:
-    envSection = manPage.index('ENVIRONMENT\n')
-except ValueError:
-    numErrors += 1
-    sys.stdout.out('WARNING: Did not find ENVIRONMENT section.  Checking all sections\n')
-    envSection = 0
+def _msg(level, *args):
+    log_msg = ' '.join([str(arg) for arg in args])
+    print('{level}: {msg}'.format(level=level.upper(), msg=log_msg))
 
-import subprocess
-chplenv = subprocess.Popen([CHPL_HOME+'/util/printchplenv'],
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE).communicate()[0]
 
-envlist = chplenv.split('\n')
-for l in envlist:
-    try:
-        if l.find("CHPL_") == 0:
-            chplenvVar = l.split(':')[0].strip()
-            found = False
-            for nl in manPage[envSection+1:]:
-                try:
-                    if nl[2:6]=='CHPL':
-                        if nl.split()[0].strip()==chplenvVar:
-                            found = True
-                            continue
-                except IndexError:
-                    continue
-            if not found:
-                numErrors += 1
-                sys.stdout.write('ERROR: %s not in man page ENVIRONMENT section\n'%(chplenvVar))
-    except IndexError:
-        continue
+def _warn(*args):
+    _msg('Warning', *args)
 
-sys.exit(numErrors)
+
+def _error(*args):
+    _msg('Error', *args)
+
+
+if __name__ == '__main__':
+    main()

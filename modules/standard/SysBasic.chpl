@@ -17,7 +17,9 @@
  * limitations under the License.
  */
 
-/* This module provides basic types when those types are not
+/* Types for low-level programming and C integration.
+   
+   This module provides basic types when those types are not
    platform-dependent. The module :mod:`SysCTypes` contains the
    platform-dependent declarations for C compatability.
 
@@ -78,6 +80,13 @@ extern proc chpl_cnullfile():_file;
      var err: syserr;
      if err then do writeln("err contains an error, ie err != ENOERR");
      if !err then do writeln("err does not contain an error; err == ENOERR");
+
+
+   When a :type:`syserr` formal has blank intent, the actual is copied to the
+   formal upon a function call and the formal cannot be assigned within the
+   function.
+
+   The default value of the :type:`syserr` type is undefined.
 
  */
 extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc

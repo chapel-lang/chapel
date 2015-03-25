@@ -188,7 +188,8 @@ void PrimitiveType::accept(AstVisitor* visitor) {
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants(), integerType(NULL)
+  constants(), integerType(NULL),
+  doc(NULL)
 {
   gEnumTypes.add(this);
   constants.parent = this;
@@ -496,6 +497,77 @@ void EnumType::accept(AstVisitor* visitor) {
     visitor->exitEnumType(this);
   }
 }
+
+
+void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << "enum ";
+  *file << this->symbol->name;
+  *file << this->docsConstantList();
+  *file << std::endl;
+
+  // In rst mode, ensure there is an empty line between the enum signature and
+  // its description or the next directive.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+
+    // In rst mode, ensure there is an empty line between the enum description
+    // and the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+std::string EnumType::docsDirective() {
+  if (fDocsTextOnly) {
+    return "";
+  } else {
+    return ".. enum:: ";
+  }
+}
+
+
+std::string EnumType::docsConstantList() {
+  if (this->constants.length == 0) {
+    return "";
+  } else {
+    std::vector<std::string> constNames;
+
+    for_alist(constant, this->constants) {
+      if (DefExpr* de = toDefExpr(constant)) {
+        constNames.push_back(de->sym->name);
+      } else {
+        INT_FATAL(constant, "Expected DefExpr for all members in constants alist.");
+      }
+    }
+
+    if (constNames.empty()) {
+      return "";
+    }
+
+    // If there are constants, join them in a single comma delimited string
+    // inside curly brackets.
+    std::string constList = " { " + constNames.front();
+    for (unsigned int i = 1; i < constNames.size(); i++) {
+      constList += ", " + constNames.at(i);
+    }
+    constList += " }";
+    return constList;
+  }
+}
+
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
@@ -1251,7 +1323,7 @@ std::string AggregateType::docsSuperClass() {
       if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
         superClassNames.push_back(use->unresolved);
       } else {
-        INT_FATAL(expr, "Expected UnresolvedSymExpr for all member of inherits alist.");
+        INT_FATAL(expr, "Expected UnresolvedSymExpr for all members of inherits alist.");
       }
     }
 
@@ -1396,13 +1468,6 @@ void initPrimitiveTypes() {
 
   gTryToken->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gTryToken));
-
-  //
-  // IPE tries to run without the rest of the types
-  //
-  if (fUseIPE == true) {
-    return;
-  }
 
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
