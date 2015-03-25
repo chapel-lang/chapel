@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -57,7 +57,7 @@ void chpl_gen_comm_wide_string_get(void* addr,
 {
   // This part just copies the descriptor.
   if (chpl_nodeID == node) {
-    memcpy(addr, raddr, elemSize*len);
+    chpl_memcpy(addr, raddr, elemSize*len);
   } else {
     chpl_gen_comm_get(addr, node, raddr, elemSize, typeIndex, len, ln, fn);
   }
@@ -80,12 +80,19 @@ void chpl_gen_comm_wide_string_get(void* addr,
 void
 chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno, chpl_string filename)
 {
-  size_t len = strlen(from) + 1;
+  size_t len;
+
   x->locale = chpl_gen_getLocaleID();
+  if (from == NULL)
+  {
+    x->addr = NULL;
+    x->size = 0;
+    return;
+  }
+    
+  len = strlen(from) + 1;
   x->addr = chpl_mem_calloc(len, CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
   strncpy((char*)x->addr, from, len);
-  if (*((len-1)+(char*)x->addr) != '\0')
-    chpl_internal_error("String missing terminating NUL.");
   x->size = len;    // This size includes the terminating NUL.
 }
 
@@ -93,10 +100,18 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno,
 void
 chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename)
 {
-  char* chpl_macro_tmp =
+  char* chpl_macro_tmp;
+
+  if (x->addr == NULL)
+  {
+    *local = NULL;
+    return;
+  }
+
+  chpl_macro_tmp =
       chpl_mem_calloc(x->size, CHPL_RT_MD_GET_WIDE_STRING, lineno, filename);
   if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
-    memcpy(chpl_macro_tmp, x->addr, x->size);
+    chpl_memcpy(chpl_macro_tmp, x->addr, x->size);
   else
     chpl_gen_comm_get((void*) &(*chpl_macro_tmp),
                   chpl_rt_nodeFromLocaleID(x->locale),
@@ -117,10 +132,23 @@ void string_from_c_string(chpl_string *ret, c_string str, int haslen, int64_t le
 
   s = (char*)chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_COPY_DATA,
                               lineno, filename);
-  memcpy(s, str, len);
+  chpl_memcpy(s, str, len);
   s[len] = '\0';
   *ret = s;
 }
+
+// The input is a c_string_copy, which always owns the bytes it points to.
+// On return, the string data is no longer owned by the c_string_copy
+// argument.  It is owned by the returned chpl_string instead.
+// TODO: This should be inlined.
+chpl_string
+string_from_c_string_copy(c_string_copy* str, int haslen, int64_t len)
+{
+  chpl_string result = *str;
+  *str = NULL;
+  return result;
+}
+
 void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int haslen, int64_t len, int32_t lineno, chpl_string filename)
 {
   char* s;
@@ -134,46 +162,59 @@ void wide_string_from_c_string(chpl____wide_chpl_string *ret, c_string str, int 
   if( ! haslen ) len = strlen(str);
 
   s = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_COPY_DATA, lineno, filename);
-  memcpy(s, str, len);
+  chpl_memcpy(s, str, len);
   s[len] = '\0';
 
   ret->addr = s;
   ret->size = len + 1; // this size includes the terminating NUL
 }
+
 void c_string_from_string(c_string* ret, chpl_string* str, int32_t lineno, chpl_string filename)
 {
   *ret = *str;
 }
+
 void c_string_from_wide_string(c_string* ret, chpl____wide_chpl_string* str, int32_t lineno, chpl_string filename)
 {
   if( chpl_nodeID != chpl_rt_nodeFromLocaleID(str->locale) ) {
-    chpl_error("cannot create a C string from a remote string",
-               lineno, filename);
+    // TODO: ret gets leaked
+    chpl_comm_wide_get_string(ret, str,
+                              -CHPL_TYPE_chpl_string,
+                              lineno, filename);
+  } else {
+    *ret = str->addr;
   }
-  *ret = str->addr;
 }
 
 //
 // Support for the new string record implementation
 //
-// NOTE: strings of length 0 are assumed to be the literal ""
 
-/* This function copies src into dest.  If dest == "", allocate a new
- * buffer for the string.  If dest is specified, it is the caller's
+/* This function copies src into dest.  It is the caller's
  * responsibility to make sure that dest is large enough to hold src.
  * Return the moved string.
  */
-c_string stringMove(c_string dest, c_string src, int64_t len,
-                    int32_t lineno, c_string filename) {
+// Even if allocation is done here, the returned string is already owned
+// elsewhere.  So we return a c_string, not a c_string_copy.
+c_string_copy stringMove(c_string_copy dest, c_string src, int64_t len,
+                         int32_t lineno, c_string filename) {
   char *ret;
-  assert(src);
+  if (src == NULL)
+    return NULL;
 
-  if (!strcmp(dest, "")) {
+  if (dest == NULL ||
+      // TODO: Want to deprecate indicating an empty string by a string of zero
+      // length.  This works OK if the string is unallocated (such as a string
+      // literal), but does not work well with an allocated string.  An
+      // allocated string of zero length still occupies memory (one byte for
+      // the NUL, at least), so that leaves us with a dilemma.  Which is it?
+      strlen(dest) == 0)
     ret = chpl_mem_alloc(len+1, CHPL_RT_MD_STRING_MOVE_DATA, lineno, filename);
-  } else {
+  else
     // reuse the buffer
+    // The cast is necessary so we can write into the buffer (which is declared
+    // to be const).
     ret = (char *) dest;
-  }
 
   snprintf(ret, len+1, "%s", src);
   return (c_string) ret;
@@ -186,9 +227,9 @@ c_string stringMove(c_string dest, c_string src, int64_t len,
  *     src_len: length
  *
  */
-c_string remoteStringCopy(c_nodeid_t src_locale,
-                          c_string src_addr, int64_t src_len,
-                          int32_t lineno, c_string filename) {
+c_string_copy remoteStringCopy(c_nodeid_t src_locale,
+                               c_string src_addr, int64_t src_len,
+                               int32_t lineno, c_string filename) {
   char* ret;
   if (src_addr == NULL) return NULL;
   ret = chpl_mem_alloc(src_len+1, CHPL_RT_MD_STRING_COPY_REMOTE,

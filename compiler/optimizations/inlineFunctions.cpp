@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,16 +17,16 @@
  * limitations under the License.
  */
 
-#include <vector>
+#include "optimizations.h"
 
-#include "stlUtil.h"
 #include "astutil.h"
 #include "expr.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "optimizations.h"
 
+#include <vector>
 
 static bool canRemoveRefTemps(FnSymbol* fn);
 static CallExpr* findRefTempInit(SymExpr* se);
@@ -161,9 +161,12 @@ static CallExpr* findRefTempInit(SymExpr* se) {
 //
 static void
 inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemoveRefTempSet) {
-  inlinedSet.set_add(fn);
   Vec<CallExpr*> calls;
+
+  inlinedSet.set_add(fn);
+
   collectFnCalls(fn, calls);
+
   forv_Vec(CallExpr, call, calls) {
     if (call->parentSymbol) {
       FnSymbol* fn = call->isResolved();
@@ -174,24 +177,30 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemo
       }
     }
   }
-  collapseBlocks(fn->body);
+
+  fn->collapseBlocks();
+
   removeUnnecessaryGotos(fn);
+
 #if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
   if (!fNoCopyPropagation) {
     singleAssignmentRefPropagation(fn);
     localCopyPropagation(fn);
   }
 #endif
+
   if (!fNoDeadCodeElimination) {
     deadVariableElimination(fn);
     deadExpressionElimination(fn);
   }
+
   forv_Vec(CallExpr, call, *fn->calledBy) {
     if (call->isResolved()) {
       inlineCall(fn, call, canRemoveRefTempSet);
+
       if (report_inlining)
-        printf("chapel compiler: reporting inlining"
-               ", %s function was inlined\n", fn->cname);
+        printf("chapel compiler: reporting inlining, %s function was inlined\n",
+               fn->cname);
     }
   }
 }
@@ -202,16 +211,19 @@ inlineFunction(FnSymbol* fn, Vec<FnSymbol*>& inlinedSet, Vec<FnSymbol*>& canRemo
 // remove unnecessary block statements and gotos
 //
 void
-inlineFunctions(void) {
+inlineFunctions() {
   if (!fNoInline) {
-    compute_call_sites();
     Vec<FnSymbol*> inlinedSet;
     Vec<FnSymbol*> canRemoveRefTempSet;
+
+    compute_call_sites();
+
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (canRemoveRefTemps(fn)) {
         canRemoveRefTempSet.set_add(fn);
       }
     }
+
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) && !inlinedSet.set_in(fn))
         inlineFunction(fn, inlinedSet, canRemoveRefTempSet);
@@ -222,7 +234,7 @@ inlineFunctions(void) {
     if (!fNoInline && fn->hasFlag(FLAG_INLINE) && !fn->hasFlag(FLAG_VIRTUAL)) {
       fn->defPoint->remove();
     } else {
-      collapseBlocks(fn->body);
+      fn->collapseBlocks();
       removeUnnecessaryGotos(fn);
     }
   }

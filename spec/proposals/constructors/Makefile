@@ -1,8 +1,8 @@
 all:
-	pdflatex -file-line-error -halt-on-error spec
+	pdflatex -file-line-error -halt-on-error proposal
 
 clean:
 	rm -f *.aux *.blg *.bbl *.dvi *.log
 
 clobber: clean
-	rm -f spec.ps spec.pdf spec.ilg spec.out spec.toc spec.idx spec.ind
+	rm -f proposal.ps proposal.pdf proposal.ilg proposal.out proposal.toc proposal.idx proposal.ind

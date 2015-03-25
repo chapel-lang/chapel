@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+
+#
+# This test ensures that the generated code contains instances of foo,
+# bar, and baz (variables that the test does not expect to see munged)
+# and does not contain instances of foo_chpl, bar_chpl, and baz_chpl
+# (which would imply that they have been munged).  The test also
+# verifies that other variables have been renamed, by using reserved
+# and unprotected names, like socket and connect which will conflict
+# with standard library identifiers if not renamed.
+#
+
+import sys, os, shutil
+
+genCodeDir = 'genCode'
+actualGenCodeFile = os.path.join(genCodeDir, 'chpl__header.h')
+testOutputFile = sys.argv[2]
+
+with open(testOutputFile, 'a') as f:
+    for line in open(actualGenCodeFile):
+        if "aaaaa" in line and "int64_t" in line:
+            if "static" in line:
+                f.write("ERROR: aaaaa is static\n")
+            else:
+                founda = 1
+        if "bbbbb" in line and "int64_t" in line:
+            if "static" in line:
+                f.write("ERROR: bbbbb is static\n")
+            else:
+                foundb = 1
+        if "ccccc" in line and "int64_t" in line:
+            if "static" in line:
+                f.write("ERROR: ccccc is static\n")
+            else:
+                foundc = 1
+
+    if not founda:
+        f.write("ERROR: definition of aaaaa not as expected\n")
+
+    if not foundb:
+        f.write("ERROR: definition of bbbbb not as expected\n")
+
+    if not foundc:
+        f.write("ERROR: definition of ccccc not as expected\n")
+
+    if founda and foundb and foundc:
+        f.write("SUCCESS\n")
+
+shutil.rmtree(genCodeDir)

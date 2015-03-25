@@ -35,8 +35,10 @@ benchmarks/
     fannkuchredux     : arrays
     mandelbrot        : uints; multidimensional arrays; bit ops; binary output
     meteor            : coforall loops; forall loops; recursion
+    meteor-fast       : less readable, much faster version of meteor
     nbody             : tuples; records; inlined functions
     pidigits          : GMP; iterators
+    regexdna          : strings, regular expressions
     spectralnorm      : reductions; domains; arrays
     threadring        : syncs; coforall loops
   ssca2/       : graph algorithms, generic programming, distributed
@@ -47,16 +49,17 @@ primers/
   arrayVectorOps : vector-like operations on rectangular arrays
   associative    : associative domains and arrays; set operations
   atomics        : atomic variables and operations on them
-  chpldoc        : the comment-based documentation generation feature
+  chpldoc.doc    : the comment-based documentation generation feature
   classes        : classes and objects; dynamic dispatch; 'this' and 'these'
   distributions  : distributions; Block; Cyclic; Block-Cyclic; Replicated
   domains        : domains and operations on domains
+  FFTWlib        : use of the standard module FFTW
   fileIO         : file I/O of scalars and arrays
   genericClasses : generic classes and objects; generic types
   iterators      : iterators of various styles
-  leaderfollower : leader-follower iterators for defining 'forall' behavior
   locales        : multiple locales, on clauses, multi-locale task parallelism
   opaque         : opaque domains and arrays; graph-based data structures
+  parIters       : parallel iterators for defining 'forall' behavior
   procedures     : defining and calling procedures in Chapel
   randomNumbers  : use of the standard module Random
   ranges         : ranges; .., #, by operators; range iteration; range slicing

@@ -1,0 +1,8 @@
+bug: naming conflict for "object" module when generated from the file name
+
+"object" is used as the name of a type within module code.  This currently
+causes conflicts between any module also named "object".  See also
+object2.future
+
+This future relates specifically to the case where object is the name of the
+file, so the module name is generated from the file name.

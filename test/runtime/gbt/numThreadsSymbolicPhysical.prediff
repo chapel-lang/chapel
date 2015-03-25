@@ -4,6 +4,11 @@ numCores1=$( grep -m 1 '^cpu cores[[:space:]]\+: ' /proc/cpuinfo |
              sed 's/^[^0-9]*\([0-9]\+\).*$/\1/' )
 numSibs1=$( grep -m 1 '^siblings[[:space:]]\+: ' /proc/cpuinfo |
             sed 's/^[^0-9]*\([0-9]\+\).*$/\1/' )
-numCores=$(( $numPUs / ( $numSibs1 / $numCores1 ) ))
+if [[ -z $numCores1 || -z $numSibs1 ]] ; then
+  numCores=$numPUs
+else
+  sibsPerCore=$(( $numSibs1 / $numCores1 ))
+  numCores=$(( $numPUs / $sibsPerCore ))
+fi
 
 echo $numCores > $1.good

@@ -55,6 +55,13 @@ foreach my $envsetting (@envlist) {
             } else {
 #                print "nope\n";
             }
+        } elsif ($2 eq ">") {
+            if ($ENV{$1} =~ m/$3/) {
+#                print "nope\n";
+            } else {
+#                print "yep\n";
+                $skiptest = 1;
+            }
         } else {
 #            print "ERROR: badly formatted line: $envsetting\n";
             exit(1);

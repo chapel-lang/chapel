@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,16 +35,21 @@ public:
                   Expr(AstTag astTag);
   virtual        ~Expr();
 
-  virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
-
   // Interface for BaseAST
   virtual bool    inTree();
-  virtual bool    isStmt() const { return false; }
+  virtual bool    isStmt()                                           const;
   virtual Type*   typeInfo();
   virtual void    verify();
 
+  // New interface
+  virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
+
+  virtual Expr*   getFirstExpr()                                       = 0;
+  virtual Expr*   getNextExpr(Expr* expr);
+
   virtual bool    isNoInitExpr()                                     const;
+
   virtual void    prettyPrint(std::ostream* o);
 
   bool            isModuleDefinition();
@@ -53,7 +58,13 @@ public:
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
 
+  void            insertBefore(const char* format, ...);
+  void            insertAfter(const char* format, ...);
+  void            replace(const char* format, ...);
+
   Expr*           remove();
+
+  bool            isStmtExpr()                                       const;
   Expr*           getStmtExpr();
 
   Symbol*         parentSymbol;
@@ -69,40 +80,51 @@ private:
 
 
 class DefExpr : public Expr {
- public:
-  Symbol* sym;
-  Expr* init;
-  Expr* exprType;
+public:
+                  DefExpr(Symbol*  initSym      = NULL,
+                          BaseAST* initInit     = NULL,
+                          BaseAST* initExprType = NULL);
 
-  DefExpr(Symbol* initSym = NULL,
-          BaseAST* initInit = NULL,
-          BaseAST* initExprType = NULL);
-  virtual void verify(); 
+  virtual void    verify();
+
   DECLARE_COPY(DefExpr);
 
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
 
-  Type* typeInfo(void);
-  void prettyPrint(std::ostream *o);
-  
-  GenRet codegen();
+  virtual Type*   typeInfo();
+  virtual void    prettyPrint(std::ostream* o);
+
+  virtual GenRet  codegen();
+
+  virtual Expr*   getFirstExpr();
+
+  const char*     name()                               const;
+
+  Symbol*         sym;
+  Expr*           init;
+  Expr*           exprType;
 };
 
 
 class SymExpr : public Expr {
  public:
   Symbol* var;
+
   SymExpr(Symbol* init_var);
+
   DECLARE_COPY(SymExpr);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void verify(); 
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
 
-  Type* typeInfo(void);
-  bool isNoInitExpr() const;
-  GenRet codegen();
-  void prettyPrint(std::ostream *o);
+  virtual Type*   typeInfo();
+  virtual bool    isNoInitExpr() const;
+  virtual GenRet  codegen();
+  virtual void    prettyPrint(std::ostream* o);
+
+  virtual Expr*   getFirstExpr();
 };
 
 
@@ -111,13 +133,17 @@ class UnresolvedSymExpr : public Expr {
   const char* unresolved;
 
   UnresolvedSymExpr(const char* init_var);
+
   DECLARE_COPY(UnresolvedSymExpr);
-  virtual void replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void verify(); 
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
-  Type* typeInfo(void);
-  GenRet codegen();
-  void prettyPrint(std::ostream *o);
+  virtual Type*   typeInfo();
+  virtual GenRet  codegen();
+  virtual void    prettyPrint(std::ostream *o);
+
+  virtual Expr*   getFirstExpr();
 };
 
 
@@ -143,43 +169,54 @@ class CallExpr : public Expr {
   CallExpr(const char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL);
   ~CallExpr();
-  void verify(); 
+
+  virtual void    verify();
+
   DECLARE_COPY(CallExpr);
 
   virtual void    accept(AstVisitor* visitor);
 
-  void replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
 
-  GenRet codegen();
-  void prettyPrint(std::ostream *o);
+  virtual GenRet  codegen();
+  virtual void    prettyPrint(std::ostream* o);
+  virtual Type*   typeInfo();
 
-  void insertAtHead(BaseAST* ast);
-  void insertAtTail(BaseAST* ast);
+  virtual Expr*   getFirstExpr();
+  virtual Expr*   getNextExpr(Expr* expr);
 
-  FnSymbol* isResolved(void);
-  bool isNamed(const char*);
+  void            insertAtHead(BaseAST* ast);
+  void            insertAtTail(BaseAST* ast);
 
-  int numActuals();
-  Expr* get(int index);
-  FnSymbol* findFnSymbol(void);
-  Type* typeInfo(void);
-  bool isPrimitive(PrimitiveTag primitiveTag);
-  bool isPrimitive(const char* primitiveName);
+  FnSymbol*       isResolved();
+  bool            isNamed(const char*);
+
+  int             numActuals();
+  Expr*           get(int index);
+  FnSymbol*       findFnSymbol();
+
+  bool            isPrimitive(PrimitiveTag primitiveTag);
+  bool            isPrimitive(const char*  primitiveName);
 };
-
 
 class NamedExpr : public Expr {
  public:
-  const char* name;
-  Expr* actual;
+  const char*     name;
+  Expr*           actual;
+
   NamedExpr(const char* init_name, Expr* init_actual);
-  void verify(); 
+
+  virtual void    verify();
+
   DECLARE_COPY(NamedExpr);
-  void replaceChild(Expr* old_ast, Expr* new_ast);
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual void    accept(AstVisitor* visitor);
-  Type* typeInfo(void);
-  GenRet codegen();
-  void prettyPrint(std::ostream *o);
+  virtual Type*   typeInfo();
+  virtual GenRet  codegen();
+  virtual void    prettyPrint(std::ostream* o);
+
+  virtual Expr*   getFirstExpr();
 };
 
 
@@ -256,11 +293,10 @@ CallExpr* callChplHereFree(BaseAST* p);
 // Assignments to e in the calling context will change the path taken by the
 // iterator, so should be avoided (unless you really know what you are doing).
 #define for_exprs_postorder(e, expr)                            \
-  for (Expr *last = (expr), *e = getFirstExpr(expr);            \
+  for (Expr *last = (expr), *e = expr->getFirstExpr();          \
        e;                                                       \
        e = (e != last) ? getNextExpr(e) : NULL)
 
-Expr* getFirstExpr(Expr* expr);
 Expr* getNextExpr(Expr* expr);
 
 Expr* new_Expr(const char* format, ...);

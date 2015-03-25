@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,13 +17,65 @@
  * limitations under the License.
  */
 
-/* If the user declares main to take an argument, then Chapel's normal
- * processing of --help and -h arguments is suppressed.  As such,
- * printUsage allows the user to generate Chapel's normal help
- * messages, allowing the user to add information on any additional supported
- * arguments.
+/* Functions for producing program help and usage.
+   
+   Chapel programs can declare main to take arguments like this:
+ 
+   .. code-block:: chapel
+ 
+     proc main(args: [] string) {
+       for a in args {
+         // process arguments
+         writeln("Got argument ", a);
+       }
+     }
+
+   See doc/release/technotes/README.main in a Chapel release for more
+   information on this feature.
+
+   Programs that use this feature might need to expand upon the usage message
+   that explains which config variables are available. To do so, this module
+   includes the :proc:`printUsage` function. 
  */
 module Help {
+
+  /*
+     Print out a usage message for config variables. This function does not
+     exit. A typical use of this function would be to call it when ``"--help"``
+     or ``"-h"`` are encountered when doing custom argument processing. In
+     addition to calling this function, programs with custom argument
+     processing should probably also print out a description of the arguments
+     that they take.  Once both help messages have been output, the program
+     would normally exit early - for example, by returning from main.
+
+     A typical example might be this program, that accumulates a list of
+     filenames in addition to handling config variable arguments:
+
+     .. code-block:: chapel
+
+       use Help;
+
+       config const x = 5;
+
+       proc main(args: [] string) {
+         var filenames: [1..0] string;
+
+         var programName = args[0];
+
+         for a in args[1..] {
+           if a == "-h" || a == "--help" {
+             writeln("Usage: ", programName, " <options> filename [filenames]");
+             printUsage();
+             exit(1); // returning 1 from main is also an option
+           } else {
+             filenames.push_back(a);
+           }
+         }
+
+         writef("Got filenames = %ht\n", filenames);
+         writef("Got configuration variable x = %ht\n", x);
+       }
+   */
   proc printUsage() {
     extern proc printHelpTable();
     extern proc printConfigVarTable();

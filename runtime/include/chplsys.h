@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+size_t chpl_getSysPageSize(void);
+size_t chpl_getHeapPageSize(void);
 uint64_t chpl_bytesPerLocale(void);
 size_t chpl_bytesAvailOnThisLocale(void);
 int chpl_getNumPhysicalCpus(chpl_bool accessible_only);

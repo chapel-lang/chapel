@@ -9,7 +9,7 @@ F1.norm2() = 1.0
 -----------------------------------------------------
 k=5 thresh=1e-05 compressed=false
 sum coefficients:
-   level  3   #boxes=   4  norm=4.45e-15
+   level  3   #boxes=   4  norm=0.00e+00
    level  5   #boxes=   8  norm=1.51e-04
    level  6   #boxes=  12  norm=4.03e-01
    level  7   #boxes=   8  norm=9.15e-01
@@ -18,16 +18,16 @@ difference coefficients:
 
 Evaluating F1 on [0, 1]:
  -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
- -- 0.10:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.30:  F_numeric()= 0.00000001  f_analytic()= 0.00000001
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
  -- 0.40:  F_numeric()= 0.02845992  f_analytic()= 0.02846034
  -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934
  -- 0.60:  F_numeric()= 0.02845992  f_analytic()= 0.02846034
- -- 0.70:  F_numeric()= 0.00000001  f_analytic()= 0.00000001
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 0.90:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
- -- 1.00:  F_numeric()=-0.00000000  f_analytic()= 0.00000000
+ -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
 
 ======================================================================
 
@@ -47,7 +47,7 @@ difference coefficients:
 -----------------------------------------------------
 
 Evaluating F2 on [0, 1]:
- -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001
+ -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000
  -- 0.10:  F_numeric()= 0.02846071  f_analytic()= 0.02846034
  -- 0.20:  F_numeric()= 4.22388933  f_analytic()= 4.22388934
  -- 0.30:  F_numeric()= 0.02846057  f_analytic()= 0.02846035
@@ -57,7 +57,7 @@ Evaluating F2 on [0, 1]:
  -- 0.70:  F_numeric()= 0.02846057  f_analytic()= 0.02846035
  -- 0.80:  F_numeric()= 4.22388933  f_analytic()= 4.22388934
  -- 0.90:  F_numeric()= 0.02846071  f_analytic()= 0.02846034
- -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000001
+ -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000
 
 ======================================================================
 

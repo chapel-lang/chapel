@@ -85,9 +85,13 @@ A \sntx{call-expression} is resolved to a particular function
 according to the algorithm for function resolution described
 in~\rsec{Function_Resolution}.
 
-Functions can be called using either parentheses or brackets.  The
-only difference in the call has to do with promotion and is discussed
-in~\rsec{Promotion}.
+Functions can be called using either parentheses or brackets.
+
+\begin{rationale}
+This provides an opportunity to blur the distinction between
+an array access and a function call and thereby exploit a
+possible space/time tradeoff.
+\end{rationale}
 
 Functions that are defined without parentheses must be called without
 parentheses as defined by scope resolution.  Functions without
@@ -780,6 +784,22 @@ if setter && i == 1 && x <= 0 then
 A2(0) = 0;
 A2(1) = 1;
 \end{chapelpost}
+\begin{chapelprediff}
+\#!/usr/bin/env python
+
+"""Sort the output file. Some platforms (especially WLMs) seem to reverse the
+order (probably because one line is on stdout and the other is on stderr).
+"""
+
+import sys
+
+with open(sys.argv[2], 'r') as fp:
+    content = fp.read()
+lines = content.splitlines(True)
+lines.sort()
+with open(sys.argv[2], 'w') as fp:
+    fp.write(''.join(lines))
+\end{chapelprediff}
 \begin{chapeloutput}
 3
 ref-return-intent.chpl:18: error: halt reached - cannot assign value to A(1) if A(0) <= 0
@@ -868,7 +888,7 @@ writeln((numBits(at.type), numBits(bt.type)));
 argument \chpl{x} and returns \chpl{int(32)} if the number of bits used to
 represent \chpl{x} is less than or equal to 32, otherwise it
 returns \chpl{int(64)}.  \chpl{numBits} is a param
-procedure defined in the Types module~(\rsec{Types_standard_module}).
+procedure defined in the standard Types module.
 \end{chapelexample}
 
 

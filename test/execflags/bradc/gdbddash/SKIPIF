@@ -1,2 +1,4 @@
 # GASNet can run gdb but can't send a stdin file to each window
+# Darwin now only supports lldb
 CHPL_COMM == gasnet
+CHPL_TARGET_PLATFORM==darwin

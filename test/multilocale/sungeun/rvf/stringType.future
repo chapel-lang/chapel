@@ -1,4 +1,0 @@
-bug: Strings accessed on remote locales are copied and considered local
-
-Based on a few experiments, it seems that at least one of the cases in
-which the string is copied is when the locale id is accessed.

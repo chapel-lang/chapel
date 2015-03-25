@@ -1,7 +1,7 @@
 use IO;
 use AdvancedIters;
 
-extern proc memcpy(x : [], b, len:int);
+extern proc memcpy(x : [], b:c_string , len:int);
 
 config const tableSize = 1 << 16;
 config const lineSize = 61;
@@ -81,7 +81,7 @@ proc write_count(data : [] uint(8), str : string) {
 
 proc string.toBytes() ref {
    var b : [1..this.length] uint(8);
-   memcpy(b, this, this.length);
+   memcpy(b, this.c_str(), this.length);
    return b;
 }
 
@@ -89,7 +89,7 @@ inline proc startsWithThree(data : []) {
   return data[1] == 0x3E && data[2] == 0x54 && data[3] == 0x48;
 }
 
-proc main() {
+proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const inFile = openfd(0);
   const fileLen = inFile.length();

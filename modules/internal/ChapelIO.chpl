@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,6 @@
 
 // ChapelIO.chpl
 //
-pragma "no use ChapelStandard"
 module ChapelIO {
   use ChapelBase; // for uint().
   use SysBasic;
@@ -52,7 +51,7 @@ module ChapelIO {
       if _isIoPrimitiveTypeOrNewline(t) {
         writePrimitive(x);
       } else {
-        if isClassType(t) {
+        if isClassType(t) || chpl_isDdata(t) {
           // FUTURE -- write the class name/ID?
   
           if x == nil {
@@ -479,23 +478,6 @@ module ChapelIO {
     this.readwrite(ionl);
   }
   
-  
-  
-  proc assert(test: bool) {
-    if !test then
-      __primitive("chpl_error", "assert failed");
-  }
-  
-  extern proc chpl_exit_any(status:int);
-  
-  proc assert(test: bool, args ...?numArgs) {
-    if !test {
-      var tmpstring: c_string;
-      tmpstring.write((...args));
-      __primitive("chpl_error", "assert failed - " + tmpstring);
-    }
-  }
-  
   proc halt() {
     __primitive("chpl_error", "halt reached");
   }
@@ -523,15 +505,15 @@ module ChapelIO {
   }
   
   proc warning(args ...?numArgs) {
-    var tmpstring: c_string;
+    var tmpstring: c_string_copy;
     tmpstring.write((...args));
     warning(tmpstring);
-    chpl_free_c_string(tmpstring);
+    chpl_free_c_string_copy(tmpstring);
   }
   
   proc _ddata.writeThis(f: Writer) {
     compilerWarning("printing _ddata class");
-    write("<_ddata class cannot be printed>");
+    f.write("<_ddata class cannot be printed>");
   }
 
   proc chpl_taskID_t.writeThis(f: Writer) {
@@ -545,27 +527,33 @@ module ChapelIO {
   }
   
   class StringWriter: Writer {
-    var s: c_string = "";
+    var s: c_string_copy; // Should be initialized to NULL.
+    proc StringWriter(x:c_string) {
+      this.s = __primitive("string_copy", x);
+    }
     proc writePrimitive(x) {
-      const orig = this.s;
-      this.s += (x:c_string);
-      if orig.length != 0 then chpl_free_c_string(orig);
+      // TODO: Implement += so it consumes a c_string_copy LHS.
+      var aug = x:c_string_copy;
+      this.s += aug;      // The update frees this.s before overwriting it.
+      chpl_free_c_string_copy(aug);
     }
     proc ~StringWriter() {
-      if this.s.length != 0 then chpl_free_c_string(this.s);
+      chpl_free_c_string_copy(this.s);
+      __primitive("=", this.s, _nullString);
     }
   }
   
   // Convert 'x' to a string just the way it would be written out.
   // Includes Writer.write, with modifications (for simplicity; to avoid 'on').
-  proc _cast(type t, x) where t == c_string {
+  proc _cast(type t, x) where t == c_string_copy {
     //proc isNilObject(o: object) return o == nil;
     //proc isNilObject(o) param return false;
     const w = new StringWriter();
     //if isNilObject(x) then "nil".writeThis(w);
     //else                   x.writeThis(w);
     w.write(x);
-    const result = __primitive("string_copy", w.s);
+    const result = w.s;
+    __primitive("=", w.s, _nullString);
     delete w;
     return result;
   }
@@ -575,7 +563,9 @@ module ChapelIO {
     var sc = new StringWriter(this);
     sc.write((...args));
     // We need to copy this string because the destructor call below frees it
-    this = __primitive("string_copy", sc.s);
+    this = sc.s;
+    // This is required to prevent double-deletion.
+    __primitive("=", sc.s, _nullString);
     delete sc;
   }
   
@@ -584,12 +574,14 @@ module ChapelIO {
     var sc = new StringWriter(this.c_str());
     sc.write((...args));
     this = toString(sc.s);
+    // This is required to prevent double-deletion.
+    __primitive("=", sc.s, _nullString);
     delete sc;
   }
   
   // C can't handle overloaded declarations, so just don't prototype this one.
   pragma "no prototype"
-  extern proc chpl_format(fmt: c_string, x): c_string;
+  extern proc chpl_format(fmt: c_string, x): c_string_copy;
   
   proc format(fmt: c_string, x:?t) where isIntegralType(t) || isFloatType(t) {
     if fmt.substring(1) == "#" {
@@ -623,10 +615,10 @@ module ChapelIO {
     var afterdot = false;
     var dplaces = 0;
     for i in 1..sn {
-      const ss = s.substring(i);
+      var ss = s.substring(i);
       if ((ss == '#') & afterdot) then dplaces += 1;
       if (ss == '.') then afterdot=true;
-      chpl_free_c_string(ss);
+      chpl_free_c_string_copy(ss);
     }
     // FIX ME: leak c_string due to concatenation
     return("%" + sn + "." + dplaces + "f");
@@ -649,9 +641,7 @@ module ChapelIO {
     chpl__testParOn = false;
   }
   
-  inline proc chpl__testPar(args...) where chpl__testParFlag == false { }
-  
-  proc chpl__testPar(args...) where chpl__testParFlag == true {
+  proc chpl__testPar(args...) {
     if chpl__testParFlag && chpl__testParOn {
       const file : c_string = __primitive("_get_user_file");
       const line = __primitive("_get_user_line");

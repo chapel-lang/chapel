@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,7 +28,6 @@
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
-#include "view.h"
 
 //#############################################################################
 //# COPY PROPAGATION
@@ -804,10 +803,10 @@ static void extractCopies(Expr* expr,
 // if a variable can be accessed concurrently, so we assume that a separate
 // pass has already marked such symbols.
 static void
-localCopyPropagationCore(BasicBlock* bb,
-                         AvailableMap& available,
+localCopyPropagationCore(BasicBlock*          bb,
+                         AvailableMap&        available,
                          ReverseAvailableMap& ravailable,
-                         RefMap& refs)
+                         RefMap&              refs)
 {
   for_vector(Expr, expr, bb->exprs)
   {
@@ -817,6 +816,7 @@ localCopyPropagationCore(BasicBlock* bb,
 #endif
 
     std::vector<SymExpr*> symExprs;
+
     collectSymExprsSTL(expr, symExprs);
 
     propagateCopies(symExprs, available, refs);
@@ -833,19 +833,22 @@ localCopyPropagationCore(BasicBlock* bb,
 //
 size_t localCopyPropagation(FnSymbol* fn)
 {
-  buildBasicBlocks(fn);
-
   RefMap refs;
+
+  BasicBlock::buildBasicBlocks(fn);
+
   computeRefMap(fn, refs);
 
-  s_repl_count = s_ref_repl_count = 0;
+  s_repl_count     = 0;
+  s_ref_repl_count = 0;
+
   for_vector(BasicBlock, bb1, *fn->basicBlocks)
   {
     AvailableMap available;
     ReverseAvailableMap ravailable;
     localCopyPropagationCore(bb1, available, ravailable, refs);
   }
-  
+
   return s_repl_count + s_ref_repl_count;
 }
 
@@ -856,10 +859,11 @@ size_t localCopyPropagation(FnSymbol* fn)
 
 
 static void createPairSet(std::vector<BitVec*>& set,
-                          size_t nbbs, size_t size)
+                          size_t                nbbs,
+                          size_t                size)
 {
   // Create a BitVec of length size for each block.
-  for (size_t i = 0; i < nbbs; ++i) 
+  for (size_t i = 0; i < nbbs; ++i)
     set.push_back(new BitVec(size));
 }
 
@@ -950,7 +954,7 @@ static void computeKillSets(FnSymbol* fn,
     // Use killSet to initialize the KILL set for this block.
     // It's OK if we include the pairs from this block in KILL[i] because we
     // put them back when we add in the COPY set.
-    for (int j = 0; j < KILL[i]->size(); ++j)
+    for (size_t j = 0; j < KILL[i]->size(); ++j)
       if (killSet.find(availablePairs[j].first) != killSet.end() ||
           killSet.find(availablePairs[j].second) != killSet.end())
         KILL[i]->set(j);
@@ -988,8 +992,10 @@ static void initCopySets(std::vector<BitVec*>& COPY, std::vector<size_t>& ends,
 // When these are corrected and the test becomes true, then we can drop back
 // to the simpler form given here:
 #ifdef INLINING_DOES_NOT_LEAVE_INTERNAL_BASIC_BLOCKS_WITHOUT_PREDECESSORS
-static void initInSets(std::vector<BitVec*>& IN, size_t nbbs)
+static void initInSets(std::vector<BitVec*>& IN, FnSymbol* fn)
 {
+  size_t nbbs = fn->basicBlocks->size();
+
   // Note that we start with i = 1, so that IN[0] is left as all zeroes.
   for (size_t i = 1; i < nbbs; i++)
     IN[i]->set();
@@ -1032,16 +1038,19 @@ static void initInSets(std::vector<BitVec*>& IN, FnSymbol* fn)
 // immediately after it would be redundant.
 //
 size_t globalCopyPropagation(FnSymbol* fn) {
-  buildBasicBlocks(fn);
-
   RefMap refs;
+
+  BasicBlock::buildBasicBlocks(fn);
+
   computeRefMap(fn, refs);
 
-  size_t nbbs = fn->basicBlocks->size();
+  size_t                     nbbs = fn->basicBlocks->size();
 
   std::vector<AvailablePair> availablePairs;
-  std::vector<size_t> ends;
+  std::vector<size_t>        ends;
+
   extractAvailablePairs(fn, refs, availablePairs, ends);
+
   size_t size = availablePairs.size();
 
 #if DEBUG_CP
@@ -1050,7 +1059,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
     printf("\n");
     list_view(fn);
 
-    printBasicBlocks(fn);
+    BasicBlock::printBasicBlocks(fn);
   }
 #endif
 
@@ -1065,31 +1074,33 @@ size_t globalCopyPropagation(FnSymbol* fn) {
   createPairSet(OUT,  nbbs, size);
 
   initCopySets(COPY, ends, nbbs);
+
   computeKillSets(fn, refs, availablePairs, KILL);
+
   initInSets(IN, fn);
 
 #if DEBUG_CP
   if (debug > 0)
   {
-    printf("COPY:\n"); printBitVectorSets(COPY);
-    printf("KILL:\n"); printBitVectorSets(KILL);
+    printf("COPY:\n"); BasicBlock::printBitVectorSets(COPY);
+    printf("KILL:\n"); BasicBlock::printBitVectorSets(KILL);
   }
 #endif
 
-  forwardFlowAnalysis(fn, COPY, KILL, IN, OUT, true);
+  BasicBlock::forwardFlowAnalysis(fn, COPY, KILL, IN, OUT, true);
 
 #if DEBUG_CP
   if (debug > 0)
   {
-    printf("IN:\n"); printBitVectorSets(IN);
-    printf("OUT:\n"); printBitVectorSets(OUT);
+    printf("IN:\n");  BasicBlock::printBitVectorSets(IN);
+    printf("OUT:\n"); BasicBlock::printBitVectorSets(OUT);
   }
 #endif
 
   // This is the main loop.
   // Use the set IN[i] to initialize the available pairs at the top of a
   // block.  Then call local copy propagation to perform legal substitutions
-  // within a block.  
+  // within a block.
   // The local copy propagation algorithm will invalidate pairs when their LHS
   // or RHS is overwritten, so the available set remains correct as the block
   // is traversed.  As a check, the contents of the available set following
@@ -1209,7 +1220,12 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         }
         if (!stillAlive) {
           var->defPoint->remove();
-          defMap.get(var)->v[0]->getStmtExpr()->remove();
+          Vec<SymExpr*>* defs = defMap.get(var);
+          if (defs == NULL) {
+            INT_FATAL(var, "Expected var to be defined");
+          }
+          // Remove the first definition from the AST.
+          defs->v[0]->getStmtExpr()->remove();
         }
       } else if (rhs->isPrimitive(PRIM_GET_MEMBER) ||
                  rhs->isPrimitive(PRIM_GET_SVEC_MEMBER)) {

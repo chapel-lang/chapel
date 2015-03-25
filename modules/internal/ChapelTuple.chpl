@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,6 @@
 //
 // tuple data implementation as a record
 //
-pragma "no use ChapelStandard"
 module ChapelTuple {
   
   pragma "tuple" record _tuple {
@@ -105,7 +104,9 @@ module ChapelTuple {
   
   //
   // homogeneous tuple accessor
+  // the result is const when the tuple is
   //
+  pragma "reference to const when const this"
   proc _tuple.this(i : integral) ref {
     if !isHomogeneousTuple(this) then
       compilerError("invalid access of non-homogeneous tuple by runtime value");

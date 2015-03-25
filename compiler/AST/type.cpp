@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
+#include "ipe.h"
 #include "misc.h"
 #include "passes.h" // for isWideString
 #include "stringutil.h"
@@ -63,7 +64,7 @@ void Type::addSymbol(TypeSymbol* newsymbol) {
 }
 
 
-bool Type::inTree(void) {
+bool Type::inTree() {
   if (symbol)
     return symbol->inTree();
   else
@@ -71,7 +72,7 @@ bool Type::inTree(void) {
 }
 
 
-Type* Type::typeInfo(void) {
+Type* Type::typeInfo() {
   return this;
 }
 
@@ -144,13 +145,51 @@ int PrimitiveType::codegenStructure(FILE* outfile, const char* baseoffset) {
   return 1;
 }
 
+
+void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
+  // Only print extern types.
+  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << "type ";
+  *file << this->symbol->name;
+  *file << std::endl;
+
+  // For .rst mode, put a line break after the .. data:: directive and
+  // its description text.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->symbol->doc != NULL) {
+    this->printDocsDescription(this->symbol->doc, file, tabs + 1);
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+std::string PrimitiveType::docsDirective() {
+  if (!fDocsTextOnly) {
+    return ".. type:: ";
+  } else {
+    return "";
+  }
+}
+
+
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
 }
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants(), integerType(NULL)
+  constants(), integerType(NULL),
+  doc(NULL)
 {
   gEnumTypes.add(this);
   constants.parent = this;
@@ -194,7 +233,7 @@ void EnumType::codegenDef() {
   FILE* outfile = info->cfile;
 
 
-  if( outfile ) { 
+  if( outfile ) {
     fprintf(outfile, "typedef enum {");
     bool first = true;
     for_enums(constant, this) {
@@ -219,10 +258,10 @@ void EnumType::codegenDef() {
     if(!(type = info->lvt->getType(symbol->cname))) {
       type = ty->codegen().type;
       info->lvt->addGlobalType(symbol->cname, type);
-      
+
       for_enums(constant, this) {
         //llvm::Constant *initConstant;
-        
+
         if(constant->init == NULL) INT_FATAL(this, "no constant->init");
 
         VarSymbol* s = toVarSymbol(toSymExpr(constant->init)->var);
@@ -244,7 +283,6 @@ int EnumType::codegenStructure(FILE* outfile, const char* baseoffset) {
   fprintf(outfile, "{CHPL_TYPE_enum, %s},\n", baseoffset);
   return 1;
 }
- 
 
 
 void EnumType::sizeAndNormalize() {
@@ -274,10 +312,13 @@ void EnumType::sizeAndNormalize() {
         // If we get here, then the initializer does not have an immediate
         // value associated with it....
         SymExpr* sym = toSymExpr(constant->init);
+
         // We think that all params should have init values by now.
         INT_ASSERT(sym && !sym->var->hasFlag(FLAG_PARAM));
+
         // So we're going to blame this on the user.
-        USR_FATAL(constant, "enumerator '%s' is not an integer param value", 
+        USR_FATAL(constant,
+                  "enumerator '%s' is not an integer param value",
                   constant->sym->name);
         // And unfortunately, if we get here, we don't know how to proceed,
         // which is why no USR_FATAL_CONT().
@@ -457,6 +498,77 @@ void EnumType::accept(AstVisitor* visitor) {
   }
 }
 
+
+void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
+  if (this->symbol->hasFlag(FLAG_NO_DOC)) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << "enum ";
+  *file << this->symbol->name;
+  *file << this->docsConstantList();
+  *file << std::endl;
+
+  // In rst mode, ensure there is an empty line between the enum signature and
+  // its description or the next directive.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+
+    // In rst mode, ensure there is an empty line between the enum description
+    // and the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
+}
+
+
+std::string EnumType::docsDirective() {
+  if (fDocsTextOnly) {
+    return "";
+  } else {
+    return ".. enum:: ";
+  }
+}
+
+
+std::string EnumType::docsConstantList() {
+  if (this->constants.length == 0) {
+    return "";
+  } else {
+    std::vector<std::string> constNames;
+
+    for_alist(constant, this->constants) {
+      if (DefExpr* de = toDefExpr(constant)) {
+        constNames.push_back(de->sym->name);
+      } else {
+        INT_FATAL(constant, "Expected DefExpr for all members in constants alist.");
+      }
+    }
+
+    if (constNames.empty()) {
+      return "";
+    }
+
+    // If there are constants, join them in a single comma delimited string
+    // inside curly brackets.
+    std::string constList = " { " + constNames.front();
+    for (unsigned int i = 1; i < constNames.size(); i++) {
+      constList += ", " + constNames.at(i);
+    }
+    constList += " }";
+    return constList;
+  }
+}
+
+
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
   aggregateTag(initTag),
@@ -544,8 +656,15 @@ addDeclaration(AggregateType* ct, DefExpr* def, bool tail) {
       fn->insertFormalAtHead(
           new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
       fn->addFlag(FLAG_METHOD);
+      fn->addFlag(FLAG_METHOD_PRIMARY);
     }
   }
+
+  if (VarSymbol* var = toVarSymbol(def->sym)) {
+    // Identify VarSymbol as class/record member.
+    var->makeField();
+  }
+
   if (def->parentSymbol || def->list)
     def->remove();
   if (tail)
@@ -613,11 +732,13 @@ const char* AggregateType::classStructName(bool standalone) {
       if (symbol->hasFlag(FLAG_EXTERN)) {
         return astr("_", basename);
       } else {
+        // keep in sync with maxCNameAddedChars
         return astr(CLASS_STRUCT_PREFIX, basename, "_object");
       }
     } else
       return basename;
   } else {
+    // keep in sync with maxCNameAddedChars
     return astr(CLASS_STRUCT_PREFIX, symbol->cname, "_s");
   }
 }
@@ -699,14 +820,14 @@ void AggregateType::codegenDef() {
     }
   } else {
     if( outfile ) {
-      if( symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS) &&
+      if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
           (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
         Type* baseType = this->getField("addr")->type;
         GenRet c = baseType;
- 
+
         // could use __attribute__(address_space(101))
         //  if we wanted to emit packed pointers in a different AS with clang.
         fprintf(outfile, "typedef %s * %s;\n",
@@ -816,15 +937,15 @@ void AggregateType::codegenDef() {
       // Is it a class or a record?
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
-      
-      if( symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS) &&
+      if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
           (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
         unsigned globalAddressSpace = 0;
+
         if( fLLVMWideOpt )
-          globalAddressSpace = info->globalToWideInfo.globalSpace; 
+          globalAddressSpace = info->globalToWideInfo.globalSpace;
 
         Type* baseType = this->getField("addr")->type;
         llvm::Type* llBaseType = baseType->symbol->codegen().type;
@@ -868,7 +989,7 @@ void AggregateType::codegenDef() {
 
         llvm::StructType* stype = llvm::cast<llvm::StructType>(type);
         stype->setBody(params);
-  
+
         if (aggregateTag == AGGREGATE_CLASS) {
           type = stype->getPointerTo();
         }
@@ -895,13 +1016,13 @@ void AggregateType::codegenPrototype() {
   // not a record or wide pointer)
   if (aggregateTag == AGGREGATE_CLASS) {
     if( info->cfile ) {
-      fprintf(info->cfile, "typedef struct %s* %s;\n", 
+      fprintf(info->cfile, "typedef struct %s* %s;\n",
               this->classStructName(false), symbol->cname);
     } else {
 #ifdef HAVE_LLVM
       // ie _AggregateType
       const char* struct_name = this->classStructName(true);
- 
+
       llvm::StructType* st;
       st = llvm::StructType::create(info->module->getContext(), struct_name);
       info->lvt->addGlobalType(struct_name, st);
@@ -974,20 +1095,28 @@ static const char* genNewBaseOffsetString(TypeSymbol* typesym, int fieldnum,
                                           AggregateType* classtype) {
   if (classtype->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     char fieldnumstr[64];
+
     sprintf(fieldnumstr, "%d", fieldnum);
-    return astr(baseoffset, " + (", fieldnumstr, "* ", 
-                genSizeofStr(field->type->symbol), ")");
+
+    return astr(baseoffset,
+                " + (",
+                fieldnumstr, "* ",
+                genSizeofStr(field->type->symbol),
+                ")");
   } else {
-    return astr(baseoffset, " + offsetof(", 
+    return astr(baseoffset,
+                " + offsetof(",
                 genUnderscore(classtype->symbol),
-                classtype->symbol->cname, ", ", 
+                classtype->symbol->cname,
+                ", ",
                 classtype->isUnion() ? "_u." : "",
                 field->cname, ")");
   }
 }
 
-int AggregateType::codegenFieldStructure(FILE* outfile, bool nested, 
-                                     const char* baseoffset) {
+int AggregateType::codegenFieldStructure(FILE*       outfile,
+                                         bool        nested,
+                                         const char* baseoffset) {
   // Handle ref types as pointers
   if (symbol->hasFlag(FLAG_REF)) {
     fprintf(outfile, "{CHPL_TYPE_CLASS_REFERENCE, 0},\n");
@@ -997,11 +1126,15 @@ int AggregateType::codegenFieldStructure(FILE* outfile, bool nested,
 
   int totfields = 0;
   int locfieldnum = 0;
+
   for_fields(field, this) {
-    const char* newbaseoffset = genNewBaseOffsetString(symbol, locfieldnum,
-                                                       baseoffset, field,
+    const char* newbaseoffset = genNewBaseOffsetString(symbol,
+                                                       locfieldnum,
+                                                       baseoffset,
+                                                       field,
                                                        this);
-    int numfields = field->type->codegenStructure(outfile, newbaseoffset);
+    int         numfields = field->type->codegenStructure(outfile, newbaseoffset);
+
     fprintf(outfile, " /* %s */\n", field->name);
     totfields += numfields;
     locfieldnum++;
@@ -1066,9 +1199,11 @@ int AggregateType::getMemberGEP(const char *name) {
 int AggregateType::getFieldPosition(const char* name, bool fatal) {
   Vec<Type*> next, current;
   Vec<Type*>* next_p = &next, *current_p = &current;
+
   current_p->set_add(this);
-  
+
   int fieldPos = 0;
+
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
       if (AggregateType* ct = toAggregateType(t)) {
@@ -1076,7 +1211,7 @@ int AggregateType::getFieldPosition(const char* name, bool fatal) {
           if (!strcmp(sym->name, name)) {
             return fieldPos;
           }
-          
+
           fieldPos++;
         }
         forv_Vec(Type, parent, ct->dispatchParents) {
@@ -1090,17 +1225,19 @@ int AggregateType::getFieldPosition(const char* name, bool fatal) {
     current_p = temp;
     next_p->clear();
   }
-  
+
   if (fatal) {
     const char *className = "<no name>";
     if (this->symbol) { // this is always true?
       className = this->symbol->name;
     }
     // TODO: report as a user error in certain cases
-    INT_FATAL(this, "no field '%s' in class '%s' in getField()",
-              name, className);
+    INT_FATAL(this,
+              "no field '%s' in class '%s' in getField()",
+              name,
+              className);
   }
-  
+
   return -1;
 }
 
@@ -1145,82 +1282,197 @@ Symbol* AggregateType::getField(int i) {
 }
 
 
-static PrimitiveType* 
-createPrimitiveType(const char *name, const char *cname, bool internalType=false) {
-  PrimitiveType* pt = new PrimitiveType(NULL, internalType);
-  TypeSymbol* ts = new TypeSymbol(name, pt);
-  ts->cname = cname;
-  ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Is attached to a global variable;
-                                        // should not be deleted!
-  rootModule->block->insertAtTail(new DefExpr(ts));
-  return pt;
+void AggregateType::printDocs(std::ostream *file, unsigned int tabs) {
+  // TODO: Include unions... (thomasvandoren, 2015-02-25)
+  if (this->symbol->hasFlag(FLAG_NO_DOC) || this->isUnion()) {
+    return;
+  }
+
+  this->printTabs(file, tabs);
+  *file << this->docsDirective();
+  *file << this->symbol->name;
+  *file << this->docsSuperClass();
+  *file << std::endl;
+
+  // In rst mode, ensure there is an empty line between the class/record
+  // signature and its description or the next directive.
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  if (this->doc != NULL) {
+    this->printDocsDescription(this->doc, file, tabs + 1);
+    *file << std::endl;
+
+    // In rst mode, ensure there is an empty line between the class/record
+    // description and the next directive.
+    if (!fDocsTextOnly) {
+      *file << std::endl;
+    }
+  }
 }
 
-static PrimitiveType*
-createInternalType(const char *name, const char *cname) {
-  return createPrimitiveType(name, cname, true /* internalType */);
+
+/*
+ * Returns super class string for documentation. If super class exists, returns
+ * ": <super class name>".
+ */
+std::string AggregateType::docsSuperClass() {
+  if (this->inherits.length > 0) {
+    std::vector<std::string> superClassNames;
+
+    for_alist(expr, this->inherits) {
+      if (UnresolvedSymExpr* use = toUnresolvedSymExpr(expr)) {
+        superClassNames.push_back(use->unresolved);
+      } else {
+        INT_FATAL(expr, "Expected UnresolvedSymExpr for all members of inherits alist.");
+      }
+    }
+
+    if (superClassNames.empty()) {
+      return "";
+    }
+
+    // If there are super classes, join them into a single comma delimited
+    // string prefixed with a colon.
+    std::string superClasses = " : " + superClassNames.front();
+    for (unsigned int i = 1; i < superClassNames.size(); i++) {
+      superClasses += ", " + superClassNames.at(i);
+    }
+    return superClasses;
+  } else {
+    return "";
+  }
 }
 
 
-// Create new primitive type for integers. Specify name for now. Though it will 
-// probably be something like int1, int8, etc. in the end. In that case
-// we can just specify the width (i.e., size).
-#define INIT_PRIM_BOOL(name, width)                                \
+std::string AggregateType::docsDirective() {
+  if (fDocsTextOnly) {
+    if (this->isClass()) {
+      return "Class: ";
+    } else if (this->isRecord()) {
+      return "Record: ";
+    }
+  } else {
+    if (this->isClass()) {
+      return ".. class:: ";
+    } else if (this->isRecord()) {
+      return ".. record:: ";
+    }
+  }
+  return "";
+}
+
+
+void initRootModule() {
+  rootModule           = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
+  rootModule->filename = astr("<internal>");
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
+static PrimitiveType* createInternalType (const char* name, const char* cname);
+
+static PrimitiveType* createType(const char* name,
+                                 const char* cname,
+                                 bool        internalType);
+
+static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
+
+// Create new primitive type for integers.
+// Specify name for now.
+// Though it will probably be something like int1, int8, etc. in the end.
+// In that case we can just specify the width (i.e., size).
+#define INIT_PRIM_BOOL(name, width)                                             \
   dtBools[BOOL_SIZE_ ## width] = createPrimitiveType(name, "chpl_bool" #width); \
   dtBools[BOOL_SIZE_ ## width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_ ## width)
 
-#define INIT_PRIM_INT( name, width)                                 \
-  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t"); \
+#define INIT_PRIM_INT( name, width)                                             \
+  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t");    \
   dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width)
 
-#define INIT_PRIM_UINT( name, width)                                  \
-  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t"); \
+#define INIT_PRIM_UINT( name, width)                                            \
+  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t");  \
   dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width)
 
-#define INIT_PRIM_REAL( name, width)                                     \
-  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width); \
+#define INIT_PRIM_REAL( name, width)                                            \
+  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width);    \
   dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
-  
-#define INIT_PRIM_IMAG( name, width)                               \
-  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width); \
+
+#define INIT_PRIM_IMAG( name, width)                                            \
+  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width);    \
   dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", 0.0, FLOAT_SIZE_ ## width)
-  
-#define INIT_PRIM_COMPLEX( name, width)                                   \
-  dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width); \
-  dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(         \
-                                  "_chpl_complex" #width "(0.0, 0.0)",         \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width);          \
+
+#define INIT_PRIM_COMPLEX( name, width)                                                   \
+  dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width);       \
+  dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(                    \
+                                  "_chpl_complex" #width "(0.0, 0.0)",                    \
+                                   0.0, 0.0, COMPLEX_SIZE_ ## width);                     \
   dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::pair<std::string, int>("re", 0)); \
   dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::pair<std::string, int>("im", 1));
 
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
-  gSym->addFlag(FLAG_CONST);                          \
+  gSym->addFlag(FLAG_CONST);                            \
   rootModule->block->insertAtTail(new DefExpr(gSym));   \
   primType->defaultValue = gSym
 
 
-void initChplProgram(void) {
-  // Inititalize the outermost module
-  rootModule = new ModuleSymbol("_root", MOD_INTERNAL, new BlockStmt());
-  rootModule->filename = astr("<internal>");
-  rootModule->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
-
-  theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
-  theProgram->addFlag(FLAG_NO_CODEGEN);
-  theProgram->filename = astr("<internal>");
-  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
-
-  rootModule->block->insertAtTail(new DefExpr(theProgram));
-}
-
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
-void initPrimitiveTypes(void) {
+void initPrimitiveTypes() {
+  dtVoid                               = createInternalType ("void",     "void");
+
+  dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
+  dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
+  dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
+
+  dtStringC                            = createPrimitiveType("c_string", "c_string" );
+
+  gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
+  gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
+
+  gFalse->immediate                    = new Immediate;
+  gFalse->immediate->v_bool            = false;
+  gFalse->immediate->const_kind        = NUM_KIND_BOOL;
+  gFalse->immediate->num_index         = BOOL_SIZE_SYS;
+
+  gTrue->immediate                     = new Immediate;
+  gTrue->immediate->v_bool             = true;
+  gTrue->immediate->const_kind         = NUM_KIND_BOOL;
+  gTrue->immediate->num_index          = BOOL_SIZE_SYS;
+
+  //
+  // Mark the "high water mark" for types that IPE relies on directly
+  //
+  if (fUseIPE == true) {
+    ipeRootInit();
+  }
+
+  dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
+  dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
+  dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", 0.0, FLOAT_SIZE_64);
+  dtStringC->defaultValue              = new_StringSymbol("");
+
+  dtBool                               = dtBools[BOOL_SIZE_SYS];
+
+  uniqueConstantsHash.put(gFalse->immediate, gFalse);
+  uniqueConstantsHash.put(gTrue->immediate,  gTrue);
+
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
+
+  gTryToken = new VarSymbol("chpl__tryToken", dtBool);
+
+  gTryToken->addFlag(FLAG_CONST);
+  rootModule->block->insertAtTail(new DefExpr(gTryToken));
+
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
-
-  dtVoid = createInternalType ("void", "void");
 
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
@@ -1231,44 +1483,17 @@ void initPrimitiveTypes(void) {
 
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
 
-  dtBool = createPrimitiveType ("bool", "chpl_bool");
-
-  dtObject = new AggregateType(AGGREGATE_CLASS);
   dtValue = createInternalType("value", "_chpl_value");
-
-  CREATE_DEFAULT_SYMBOL (dtBool, gFalse, "false");
-  gFalse->immediate = new Immediate;
-  gFalse->immediate->v_bool = false;
-  gFalse->immediate->const_kind = NUM_KIND_BOOL;
-  gFalse->immediate->num_index = BOOL_SIZE_SYS;
-  uniqueConstantsHash.put(gFalse->immediate, gFalse);
-  dtBool->defaultValue = gFalse;
-
-  gTrue = new VarSymbol("true", dtBool);
-  gTrue->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gTrue));
-  gTrue->immediate = new Immediate;
-  gTrue->immediate->v_bool = true;
-  gTrue->immediate->const_kind = NUM_KIND_BOOL;
-  gTrue->immediate->num_index = BOOL_SIZE_SYS;
-  uniqueConstantsHash.put(gTrue->immediate, gTrue);
-
-  gTryToken = new VarSymbol("chpl__tryToken", dtBool);
-  gTryToken->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gTryToken));
 
   INIT_PRIM_BOOL("bool(1)", 1);
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);
   INIT_PRIM_BOOL("bool(32)", 32);
   INIT_PRIM_BOOL("bool(64)", 64);
-  dtBools[BOOL_SIZE_SYS] = dtBool;
 
-  // WAW: could have a loop, but the following unrolling is more explicit.
   INIT_PRIM_INT( "int(8)", 8);
   INIT_PRIM_INT( "int(16)", 16);
   INIT_PRIM_INT( "int(32)", 32);
-  INIT_PRIM_INT( "int", 64);            // default size
 
   INIT_PRIM_UINT( "uint(8)", 8);
   INIT_PRIM_UINT( "uint(16)", 16);
@@ -1276,7 +1501,6 @@ void initPrimitiveTypes(void) {
   INIT_PRIM_UINT( "uint", 64);          // default size
 
   INIT_PRIM_REAL( "real(32)", 32);
-  INIT_PRIM_REAL( "real", 64);            // default size
 
   INIT_PRIM_IMAG( "imag(32)", 32);
   INIT_PRIM_IMAG( "imag", 64);            // default size
@@ -1284,74 +1508,128 @@ void initPrimitiveTypes(void) {
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
 
-  dtStringC = createPrimitiveType( "c_string", "c_string" );
-  dtStringC->defaultValue = new_StringSymbol("");
-  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtStringCopy = createPrimitiveType( "c_string_copy", "c_string_copy" );
+  dtStringCopy->defaultValue = gOpaque;
+  dtStringCopy->symbol->addFlag(FLAG_NO_CODEGEN);
+
+  CREATE_DEFAULT_SYMBOL(dtStringCopy, gStringCopy, "_nullString");
+  gStringCopy->cname = "NULL";
+  gStringCopy->addFlag(FLAG_EXTERN);
+
   dtString = createPrimitiveType( "string", "chpl_string");
   dtString->defaultValue = NULL;
 
-  dtSymbol = createPrimitiveType( "symbol", "_symbol"); 
+  dtSymbol = createPrimitiveType( "symbol", "_symbol");
 
   dtFile = createPrimitiveType ("_file", "_cfile");
   dtFile->symbol->addFlag(FLAG_EXTERN);
+
   CREATE_DEFAULT_SYMBOL(dtFile, gFile, "NULL");
-  // In codegen, this prevents the "&NULL" absurdity.
   gFile->addFlag(FLAG_EXTERN);
 
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
+
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
   gOpaque->cname = "NULL";
-  // In codegen, this prevents the "&NULL" absurdity.
   gOpaque->addFlag(FLAG_EXTERN);
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
   dtTaskID->symbol->addFlag(FLAG_NO_CODEGEN);
+
   CREATE_DEFAULT_SYMBOL(dtTaskID, gTaskID, "chpl_nullTaskID");
 
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
+
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
   gSyncVarAuxFields->cname = "NULL";
+
   dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
+
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
   gSingleVarAuxFields->cname = "NULL";
 
   dtTaskList = createPrimitiveType( "_task_list", "chpl_task_list_p");
   dtTaskList->symbol->addFlag(FLAG_EXTERN);
+
   CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "_nullTaskList");
   gTaskList->cname = "NULL";
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
+
   dtIntegral = createInternalType ("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
+
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
+
   dtNumeric = createInternalType ("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
+
   dtIteratorRecord = createInternalType("_iteratorRecord", "_iteratorRecord");
   dtIteratorRecord->symbol->addFlag(FLAG_GENERIC);
+
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
+
   dtMethodToken = createInternalType ("_MT", "_MT");
+
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
+
   dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
+
   CREATE_DEFAULT_SYMBOL(dtTypeDefaultToken, gTypeDefaultToken, "_typeDefaultT");
+
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
+
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
 
   dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 }
 
-void initTheProgram() {
-  theProgram->block->insertAtTail(
-    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase")));
+static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
+  return createType(name, cname, false);
+}
 
-  // it may be better to add the following use after parsing
-  // to simplify insertion of module guard sync var defs
-  theProgram->block->insertAtTail(
-    new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard")));
-  
+static PrimitiveType* createInternalType(const char* name, const char* cname) {
+  return createType(name, cname,  true);
+}
+
+static PrimitiveType*
+createType(const char* name, const char* cname, bool internalType) {
+  PrimitiveType* pt = new PrimitiveType(NULL, internalType);
+  TypeSymbol*    ts = new TypeSymbol(name, pt);
+
+  ts->cname = cname;
+
+  // This prevents cleanAST() from sweeping these
+  ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
+
+  rootModule->block->insertAtTail(new DefExpr(ts));
+
+  return pt;
+}
+
+static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
+  VarSymbol* retval = new VarSymbol(name, primType);
+
+  retval->addFlag(FLAG_CONST);
+
+  rootModule->block->insertAtTail(new DefExpr(retval));
+
+  return retval;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+DefExpr* defineObjectClass() {
+  DefExpr* retval = 0;
+
   // The base object class looks like this:
   //
   //   class object {
@@ -1366,60 +1644,83 @@ void initTheProgram() {
   //  throughout compilation, and it seemed to me that the it might result
   //  in possibly more special case code.
   //
-  DefExpr* objectDef = buildClassDefExpr("object",
-                                         dtObject,
-                                         NULL,
-                                         new BlockStmt(),
-                                         FLAG_UNKNOWN,
-                                         NULL);
+  dtObject = new AggregateType(AGGREGATE_CLASS);
 
-  objectDef->sym->addFlag(FLAG_OBJECT_CLASS);
-  objectDef->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
-  objectDef->sym->addFlag(FLAG_NO_OBJECT);
+  retval   = buildClassDefExpr("object",
+                               dtObject,
+                               NULL,
+                               new BlockStmt(),
+                               FLAG_UNKNOWN,
+                               NULL);
 
-  theProgram->block->insertAtHead(objectDef);
+  retval->sym->addFlag(FLAG_OBJECT_CLASS);
+  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
+  retval->sym->addFlag(FLAG_NO_OBJECT);
+
+  return retval;
 }
 
-void initCompilerGlobals(void) {
+void initChplProgram(DefExpr* objectDef) {
+  CallExpr* base = 0;
+  CallExpr* std  = 0;
+
+  theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
+  theProgram->filename = astr("<internal>");
+
+  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
+  theProgram->addFlag(FLAG_NO_CODEGEN);
+
+  base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
+  std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+
+  theProgram->block->insertAtTail(base);
+
+  // it may be better to add the following use after parsing
+  // to simplify insertion of module guard sync var defs
+  theProgram->block->insertAtTail(std);
+
+  theProgram->block->insertAtHead(objectDef);
+
+  rootModule->block->insertAtTail(new DefExpr(theProgram));
+}
+
+// Appends a VarSymbol to the root module and gives it the bool immediate
+// matching 'value'. For use in initCompilerGlobals.
+static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
+  rootModule->block->insertAtTail(new DefExpr(globalVar));
+  if (value) {
+    globalVar->immediate = new Immediate;
+    *globalVar->immediate = *gTrue->immediate;
+  } else {
+    globalVar->immediate = new Immediate;
+    *globalVar->immediate = *gFalse->immediate;
+  }
+}
+
+void initCompilerGlobals() {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
   gBoundsChecking->addFlag(FLAG_CONST);
-  rootModule->block->insertAtTail(new DefExpr(gBoundsChecking));
-  if (fNoBoundsChecks) {
-    gBoundsChecking->immediate = new Immediate;
-    *gBoundsChecking->immediate = *gFalse->immediate;
-  } else {
-    gBoundsChecking->immediate = new Immediate;
-    *gBoundsChecking->immediate = *gTrue->immediate;
-  }
+  setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
+
+  gCastChecking = new VarSymbol("castChecking", dtBool);
+  gCastChecking->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gCastChecking, !fNoCastChecks);
 
   gPrivatization = new VarSymbol("_privatization", dtBool);
   gPrivatization->addFlag(FLAG_PARAM);
-  rootModule->block->insertAtTail(new DefExpr(gPrivatization));
-  if (fNoPrivatization || fLocal) {
-    gPrivatization->immediate = new Immediate;
-    *gPrivatization->immediate = *gFalse->immediate;
-  } else {
-    gPrivatization->immediate = new Immediate;
-    *gPrivatization->immediate = *gTrue->immediate;
-  }
+  setupBoolGlobal(gPrivatization, !(fNoPrivatization || fLocal));
 
   gLocal = new VarSymbol("_local", dtBool);
   gLocal->addFlag(FLAG_PARAM);
-  rootModule->block->insertAtTail(new DefExpr(gLocal));
-  if (fLocal) {
-    gLocal->immediate = new Immediate;
-    *gLocal->immediate = *gTrue->immediate;
-  } else {
-    gLocal->immediate = new Immediate;
-    *gLocal->immediate = *gFalse->immediate;
-  }
+  setupBoolGlobal(gLocal, fLocal);
 
   // defined and maintained by the runtime
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
 
+  initForTaskIntents();
 }
 
 bool is_void_type(Type* t) {
@@ -1427,7 +1728,7 @@ bool is_void_type(Type* t) {
 }
 
 bool is_bool_type(Type* t) {
-  return 
+  return
     t == dtBools[BOOL_SIZE_SYS] ||
     t == dtBools[BOOL_SIZE_8] ||
     t == dtBools[BOOL_SIZE_16] ||
@@ -1496,26 +1797,26 @@ bool is_string_type(Type *t) {
 
 int get_width(Type *t) {
   if (t == dtBools[BOOL_SIZE_SYS]) {
-    return 1; 
+    return 1;
     // BLC: This is a lie, but one I'm hoping we can get away with
     // based on how this function is used
   }
-  if (t == dtBools[BOOL_SIZE_8] || 
-      t == dtInt[INT_SIZE_8] || 
+  if (t == dtBools[BOOL_SIZE_8] ||
+      t == dtInt[INT_SIZE_8] ||
       t == dtUInt[INT_SIZE_8])
     return 8;
-  if (t == dtBools[BOOL_SIZE_16] || 
-      t == dtInt[INT_SIZE_16] || 
+  if (t == dtBools[BOOL_SIZE_16] ||
+      t == dtInt[INT_SIZE_16] ||
       t == dtUInt[INT_SIZE_16])
     return 16;
   if (t == dtBools[BOOL_SIZE_32] ||
-      t == dtInt[INT_SIZE_32] || 
+      t == dtInt[INT_SIZE_32] ||
       t == dtUInt[INT_SIZE_32] ||
       t == dtReal[FLOAT_SIZE_32] ||
       t == dtImag[FLOAT_SIZE_32])
     return 32;
   if (t == dtBools[BOOL_SIZE_64] ||
-      t == dtInt[INT_SIZE_64] || 
+      t == dtInt[INT_SIZE_64] ||
       t == dtUInt[INT_SIZE_64] ||
       t == dtReal[FLOAT_SIZE_64] ||
       t == dtImag[FLOAT_SIZE_64] ||
@@ -1557,7 +1858,7 @@ bool isRefCountedType(Type* t) {
   //  be "automatically" reference counted when needed
 
   // The set of reference counted types currently coincides with the set
-  // of record-wrapped types, so we can reuse the flag set. 
+  // of record-wrapped types, so we can reuse the flag set.
   return getRecordWrappedFlags(t->symbol).any();
 }
 
@@ -1646,7 +1947,7 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
       }
     }
   } else {
-    if( info->cfile ) 
+    if( info->cfile )
       ret.c = "-1";
     else {
 #ifdef HAVE_LLVM
@@ -1689,13 +1990,15 @@ void codegenTypeStructures(FILE* hdrfile) {
   fprintf(outfile, "} chpl_rt_types;\n\n");
 
   fprintf(outfile,
-      "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
-            
+          "chpl_fieldType chpl_structType[][CHPL_MAX_FIELDS_PER_TYPE] = {\n");
+
   qsort(typesToStructurallyCodegenList.v,
         typesToStructurallyCodegenList.n,
         sizeof(typesToStructurallyCodegenList.v[0]),
         compareCnames);
+
   int num = 0;
+
   forv_Vec(TypeSymbol*, typesym, typesToStructurallyCodegenList) {
     if (num) {
       fprintf(outfile, ",\n");
@@ -1775,9 +2078,10 @@ bool needsCapture(Type* t) {
       isClass(t) ||
       isRecord(t) ||
       isUnion(t) ||
-      t == dtTaskID ||
+      t == dtTaskID || // false?
       t == dtFile ||
       t == dtTaskList ||
+      // TODO: Move these down to the "no" section.
       t == dtNil ||
       t == dtOpaque ||
       t->symbol->hasFlag(FLAG_EXTERN)) {

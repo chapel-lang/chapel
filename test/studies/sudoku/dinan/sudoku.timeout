@@ -1,0 +1,8 @@
+# This is a long running test that has occasional timeouts for
+# gasnet+qthreads. This test only uses 1 locale for gasnet testing
+# so it's not obvious if this timeout can be removed when we test on
+# real hardware. I would guess it can be, and that the slowdown is
+# because qthreads is built with over-subscription which makes
+# performance for an individual qthreads instance worse so that
+# multiple ones can run on a machine simultaneously.
+900

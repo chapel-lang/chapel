@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,15 +25,17 @@
 
 #include "alist.h"
 #include "astutil.h"
+#include "AstVisitor.h"
 #include "codegen.h"
+#include "ForLoop.h"
 #include "genret.h"
 #include "misc.h"
 #include "passes.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "WhileStmt.h"
 
-#include "AstVisitor.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -55,7 +57,7 @@ static GenRet createTempVar(Type* t);
 // These functions operate on wide pointers. There are several different
 // kinds of wide pointers:
 //  1 wide reference to something
-//    (wide.chplType->symbol->hasFlag(FLAG_WIDE))
+//    (wide.chplType->symbol->hasFlag(FLAG_WIDE_REF))
 //  2 wide class pointer
 //    (wide.chplType->symbol->hasFlag(FLAG_WIDE_CLASS))
 //  3 wide result of codegenFieldPtr or codegenElementPtr etc
@@ -101,6 +103,11 @@ static GenRet codegenFieldPtr(GenRet base, const char* field);
 
 static int codegen_tmp = 1;
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 Expr::Expr(AstTag astTag) :
   BaseAST(astTag),
   parentSymbol(NULL),
@@ -110,8 +117,26 @@ Expr::Expr(AstTag astTag) :
   next(NULL)
 { }
 
-Expr::~Expr() { 
+Expr::~Expr() {
 
+}
+
+bool Expr::isStmt() const {
+  return false;
+}
+
+// IPE: Provide the name of the symbol/variable being defined
+const char* DefExpr::name() const {
+  const char* retval = 0;
+
+  if (isLcnSymbol(sym)    == true ||
+      isTypeSymbol(sym)   == true ||
+      isFnSymbol(sym)     == true ||
+      isModuleSymbol(sym) == true) {
+    retval = sym->name;
+  }
+
+  return retval;
 }
 
 // Return true if this expression is a ModuleDefinition i.e. it
@@ -121,7 +146,7 @@ bool Expr::isModuleDefinition() {
   bool retval = false;
 
 #if 1
-  //  MDN 2014/07/02  
+  //  MDN 2014/07/02
   //  Leaving the old definition here until the scope-less BlockStmt
   //  change is stable.
   if (BlockStmt* block = toBlockStmt(this))
@@ -138,27 +163,79 @@ bool Expr::isModuleDefinition() {
   return retval;
 }
 
+bool Expr::isStmtExpr() const {
+  bool retval = false;
+
+  if (isStmt() == true) {
+    retval = true;
+
+  // NOAKES 2014/11/28 A WhileStmt is currently a BlockStmt
+  // but needs special handling
+  } else if (WhileStmt* parent = toWhileStmt(parentExpr)) {
+    retval = (parent->condExprGet() != this) ? true : false;
+
+  // NOAKES 2014/11/30 A ForLoop is currently a BlockStmt
+  // but needs special handling
+  } else if (ForLoop* parent = toForLoop(parentExpr)) {
+    retval = (parent->indexGet() != this && parent->iteratorGet() != this) ? true : false;
+
+  } else {
+    retval = isBlockStmt(parentExpr);
+  }
+
+  return retval;
+}
+
 Expr* Expr::getStmtExpr() {
   for (Expr* expr = this; expr; expr = expr->parentExpr) {
-    if (expr->isStmt() || isBlockStmt(expr->parentExpr))
+    if (expr->isStmt() == true) {
       return expr;
+
+    // NOAKES 2014/11/28 A WhileStmt is currently a BlockStmt
+    // but needs special handling
+    } else if (WhileStmt* parent = toWhileStmt(expr->parentExpr)) {
+      if (parent->condExprGet() != expr) {
+        return expr;
+      }
+
+    // NOAKES 2014/11/30 A ForLoop is currently a BlockStmt
+    // but needs special handling
+    } else if (ForLoop* parent = toForLoop(parentExpr)) {
+      if (parent->indexGet() != this && parent->iteratorGet() != this)
+        return expr;
+
+    } else if (isBlockStmt(expr->parentExpr) == true) {
+      return expr;
+    }
   }
+
   return NULL;
 }
 
+Expr* Expr::getNextExpr(Expr* expr) {
+  return this;
+}
 
 void Expr::verify() {
   if (prev || next)
     if (!list)
       INT_FATAL(this, "Expr is in list but does not point at it");
+
+  if (prev && prev->next != this)
+    INT_FATAL(this, "Bad Expr->prev->next");
+
+  if (next && next->prev != this)
+    INT_FATAL(this, "Bad Expr->next->prev");
+
   if (!parentSymbol)
     INT_FATAL(this, "Expr::parentSymbol is NULL");
+
   if (parentExpr && parentExpr->parentSymbol != parentSymbol)
     INT_FATAL(this, "Bad Expr::parentSymbol");
 }
 
 
-bool Expr::inTree(void) {
+bool Expr::inTree() {
   if (parentSymbol)
     return parentSymbol->inTree();
   else
@@ -166,7 +243,7 @@ bool Expr::inTree(void) {
 }
 
 
-Type* Expr::typeInfo(void) {
+Type* Expr::typeInfo() {
   INT_FATAL(this, "Illegal call to Expr::typeInfo()");
   return NULL;
 }
@@ -310,6 +387,41 @@ void Expr::insertAfter(Expr* new_ast) {
 }
 
 
+void
+Expr::replace(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  replace(new_Expr(format, args));
+  va_end(args);
+}
+
+
+void
+Expr::insertBefore(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertBefore(new_Expr(format, args));
+  va_end(args);
+}
+
+
+void
+Expr::insertAfter(const char* format, ...) {
+  va_list args;
+
+  va_start(args, format);
+  insertAfter(new_Expr(format, args));
+  va_end(args);
+}
+
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 SymExpr::SymExpr(Symbol* init_var) :
   Expr(E_SymExpr),
   var(init_var)
@@ -325,6 +437,10 @@ bool SymExpr::isNoInitExpr() const {
 
 void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
+}
+
+Expr* SymExpr::getFirstExpr() {
+  return this;
 }
 
 void SymExpr::verify() {
@@ -402,6 +518,11 @@ void SymExpr::accept(AstVisitor* visitor) {
   visitor->visitSymExpr(this);
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
   Expr(E_UnresolvedSymExpr),
   unresolved(astr(i_unresolved))
@@ -411,12 +532,15 @@ UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
   gUnresolvedSymExprs.add(this);
 }
 
-
-void 
+void
 UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "unexpected case in UnresolvedSymExpr::replaceChild");
 }
 
+
+Expr* UnresolvedSymExpr::getFirstExpr() {
+  return this;
+}
 
 void
 UnresolvedSymExpr::verify() {
@@ -456,6 +580,11 @@ void UnresolvedSymExpr::accept(AstVisitor* visitor) {
   visitor->visitUsymExpr(this);
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   Expr(E_DefExpr),
   sym(initSym),
@@ -489,6 +618,10 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
     INT_FATAL(this, "DefExpr of ArgSymbol cannot have either exprType or init");
 
   gDefExprs.add(this);
+}
+
+Expr* DefExpr::getFirstExpr() {
+  return this;
 }
 
 void DefExpr::verify() {
@@ -548,15 +681,15 @@ GenRet DefExpr::codegen() {
 #ifdef HAVE_LLVM
     if (toLabelSymbol(sym)) {
       llvm::Function *func = info->builder->GetInsertBlock()->getParent();
-      
+
       llvm::BasicBlock *blockLabel;
-      
+
       if(!(blockLabel = info->lvt->getBlock(sym->cname))) {
         blockLabel = llvm::BasicBlock::Create(
             info->module->getContext(), sym->cname);
         info->lvt->addBlock(sym->cname, blockLabel);
       }
-      
+
       info->builder->CreateBr(blockLabel);
 
       func->getBasicBlockList().push_back(blockLabel);
@@ -581,6 +714,11 @@ void DefExpr::accept(AstVisitor* visitor) {
     visitor->exitDefExpr(this);
   }
 }
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 #ifdef HAVE_LLVM
 // Easier-to-use versions of functions in llvmUtil.h, not
@@ -624,7 +762,7 @@ static const char* wide_fields[] = {"locale", "addr", "size", NULL};
 // or in case it would be difficult to compute it. It used to be the case that
 // it was sometimes impossible to reference types for some arguments but
 // getOrMakeRefTypeDuringCodegen/getOrMakeWideTypeDuringCodegen may cover
-// all the cases. 
+// all the cases.
 static
 GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 {
@@ -698,7 +836,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
       llvm::PointerType *addrType = llvm::cast<llvm::PointerType>(wideTy.type);
 
-      // call GLOBAL_FN_GLOBAL_MAKE dummy function 
+      // call GLOBAL_FN_GLOBAL_MAKE dummy function
       llvm::Function* fn = getMakeFn(info->module, &info->globalToWideInfo,
                                      addrType);
       INT_ASSERT(fn);
@@ -914,7 +1052,7 @@ GenRet codegenWideHere(GenRet addr, Type* wideType = NULL)
 static bool isWide(GenRet x)
 {
   if( x.isLVPtr == GEN_WIDE_PTR ) return true;
-  if( x.chplType && x.chplType->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) ) return true;
+  if( x.chplType && x.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) return true;
   return false;
 }
 
@@ -938,7 +1076,7 @@ Type* getRefTypesForWideThing(GenRet wide, Type** wideRefTypeOut)
       // local lv-pointer or value; in such cases they are wide
       // only if they are a wide reference or a wide class.
       // Then the wide type is the current Chapel type.
-      if( wide.chplType->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) ) {
+      if( wide.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
         ret = wide.chplType->getField("addr")->typeInfo();
         wideRefType = wide.chplType;
       } else {
@@ -956,7 +1094,7 @@ static GenRet codegenCastWideToVoid(GenRet wide) {
 
   INT_ASSERT(wide.isLVPtr == GEN_WIDE_PTR ||
              (wide.chplType &&
-              wide.chplType->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS)));
+              wide.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS)));
 
   // If we have a local pointer to a wide reference,
   // codegen value it.
@@ -1218,7 +1356,7 @@ GenRet codegenFieldPtr(
 
     // Reduce the Chapel reference or wide reference cases
     // to GEN_PTR or GEN_WIDE_PTR cases.
-    if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE)) {
+    if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
       base = codegenDeref(base);
       return codegenFieldPtr(base, c_field_name, chpl_field_name, special);
     }
@@ -1430,7 +1568,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
 
   // Handle references to arrays or star tuples
   // by converting them to isLVPtr != GEN_VAL
-  if( base.chplType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE) ) {
+  if( base.chplType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ) {
     base = codegenDeref(base);
   }
 
@@ -1725,7 +1863,7 @@ GenRet codegenLocalDeref(GenRet r)
   GenRet ret;
   // LocalDeref on a wide pointer should just give
   // the address field as a reference.
-  if( r.chplType && r.chplType->symbol->hasFlag(FLAG_WIDE) ) {
+  if( r.chplType && r.chplType->symbol->hasFlag(FLAG_WIDE_REF) ) {
     ret = codegenRaddr(r);
     return ret;
   }
@@ -1734,7 +1872,7 @@ GenRet codegenLocalDeref(GenRet r)
   // (instead of running codegenDeref with chplType=type->refType )
   ret = codegenValue(r);
   ret.isLVPtr = GEN_PTR;
-  if( r.chplType ) ret.chplType = r.chplType->getValType(); 
+  if( r.chplType ) ret.chplType = r.chplType->getValType();
   return ret;
 }
 
@@ -1744,7 +1882,7 @@ GenRet codegenDeref(GenRet r)
   GenRet ret;
 
   INT_ASSERT(r.chplType);
-  if (r.chplType->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS)) {
+  if (r.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
     ret = codegenValue(r);
     ret.isLVPtr = GEN_WIDE_PTR;
     ret.chplType = r.chplType->getValType();
@@ -2174,7 +2312,7 @@ GenRet codegenIsZero(GenRet x)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
-  if (x.chplType->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) ) {
+  if (x.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
     x = codegenRaddr(x);
     if (info->cfile) {
       ret.c = x.c;
@@ -2203,7 +2341,7 @@ GenRet codegenIsNotZero(GenRet x)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
-  if (x.chplType->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS) ) {
+  if (x.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
     x = codegenRaddr(x);
     if (info->cfile) {
       ret.c = x.c;
@@ -2743,12 +2881,12 @@ GenRet codegenBasicPrimitiveExpr(CallExpr* call) {
 
     // Make wide pointers/classes local
     if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-        actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+        actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
       gen = codegenRaddr(gen);
 
     // Dereference reference or now-local wide reference
     if (actual->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-        actual->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+        actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
       gen = codegenDeref(gen);
 
     gen = codegenValue(gen);
@@ -3121,7 +3259,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   // a nil pointer of the correct type.
   if (from.chplType && to_ptr.chplType){
     AggregateType* ct = toAggregateType(from.chplType);
-    if (ct && ct->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS)) {
+    if (ct && ct->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
       Symbol* valField = ct->getField("addr");
       if (valField && valField->getValType() == dtNil) {
          from = codegenAddrOf(
@@ -3130,7 +3268,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
     }
     if (from.chplType == dtNil)
     {
-      if (to_ptr.chplType->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+      if (to_ptr.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
       {
         from = codegenWideHere(codegenNullPointer(), to_ptr.chplType);
         type = to_ptr.chplType->getValType();
@@ -3287,6 +3425,11 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 }
 
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
                    BaseAST* arg3, BaseAST* arg4) :
   Expr(E_CallExpr),
@@ -3372,6 +3515,30 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
 CallExpr::~CallExpr() { }
 
 
+Expr* CallExpr::getFirstExpr() {
+  Expr* retval = NULL;
+
+  if (baseExpr != NULL)
+    retval = baseExpr->getFirstExpr();
+
+  else if (argList.head != NULL)
+    retval = argList.head->getFirstExpr();
+
+  else
+    retval = this;
+
+  return retval;
+}
+
+Expr* CallExpr::getNextExpr(Expr* expr) {
+  Expr* retval = this;
+
+  if (expr == baseExpr && argList.head != NULL)
+    retval = argList.head->getFirstExpr();
+
+  return retval;
+}
+
 void CallExpr::verify() {
   Expr::verify();
   if (astTag != E_CallExpr) {
@@ -3417,9 +3584,7 @@ void CallExpr::verify() {
     case PRIM_BLOCK_COFORALL_ON:
     case PRIM_BLOCK_LOCAL:
       if (toBlockStmt(parentExpr)) {
-        // does not pass:
-        //if (toBlockStmt(parentExpr)->blockInfo != this)
-        //  INT_FATAL(this, "blockInfo-type CallExpr not parent's blockInfo");
+
       } else {
         INT_FATAL(this, "blockInfo-type CallExpr not in a BlockStmt");
       }
@@ -3545,8 +3710,9 @@ void CallExpr::prettyPrint(std::ostream *o) {
         *o << "*(";
         argList.last()->prettyPrint(o);
         *o << ")";
-      } else if (strcmp(expr->unresolved, 
-                        "_build_range") == 0) {
+      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0 ||
+                 strcmp(expr->unresolved, "chpl_build_partially_bounded_range") == 0 ||
+                 strcmp(expr->unresolved, "chpl_build_unbounded_range") == 0) {
         argList.first()->prettyPrint(o);
         *o << "..";
         argList.last()->prettyPrint(o);
@@ -3634,7 +3800,7 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
   // deref 'a' if it is a 'ref' argument
   GenRet ap;
   if (a.chplType->symbol->hasFlag(FLAG_REF) ||
-      a.chplType->symbol->hasFlag(FLAG_WIDE) ||
+      a.chplType->symbol->hasFlag(FLAG_WIDE_REF) ||
       a.chplType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
     ap = codegenDeref(a);
   } else {
@@ -3803,10 +3969,10 @@ GenRet CallExpr::codegen() {
         {
          case PRIM_DEREF:
          {
-          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
               call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             Type* valueType;
-            if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE))
+            if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
               valueType = call->get(1)->getValType();
             else
               valueType = call->get(1)->typeInfo()->getField("addr")->type;
@@ -3854,7 +4020,7 @@ GenRet CallExpr::codegen() {
             } else {
               codegenAssign(get(1), codegenFieldPtr(call->get(1), se));
             }
-          } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+          } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
             INT_ASSERT(se);
             // codegenAssign will dereference.
             codegenAssign(get(1), codegenFieldPtr(call->get(1), se));
@@ -3883,7 +4049,7 @@ GenRet CallExpr::codegen() {
           /* Get a pointer to a member */
           SymExpr* se = toSymExpr(call->get(2));
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-              call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+              call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
               get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE))
           {
             codegenAssign(
@@ -3895,7 +4061,7 @@ GenRet CallExpr::codegen() {
          }
          case PRIM_GET_SVEC_MEMBER:
          {
-          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
             /* Get a pointer to the i'th element of a homogenous tuple */
             GenRet elemPtr =
               codegenElementPtr(call->get(1),codegenExprMinusOne(call->get(2)));
@@ -3910,7 +4076,7 @@ GenRet CallExpr::codegen() {
          case PRIM_GET_SVEC_MEMBER_VALUE:
          {
           /* Get the i'th value from a homogeneous tuple */
-          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
             // codegenElementPtr/codegenAssign handle wide pointers
             codegenAssign(
                 get(1),
@@ -3931,7 +4097,7 @@ GenRet CallExpr::codegen() {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             codegenAssign(get(1),
                 codegenAddrOf(codegenElementPtr(call->get(1), call->get(2))));
-          } else if( get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_WIDE_CLASS)) {
+          } else if( get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS)) {
             // resulting reference is wide, but the array is local.
             // This can happen with c_ptr for extern integration...
             codegenAssign(
@@ -3957,7 +4123,7 @@ GenRet CallExpr::codegen() {
          }
          case PRIM_GET_UNION_ID:
          {
-          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+          if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
             codegenAssign(get(1), codegenFieldUidPtr(call->get(1)));
           }
           else
@@ -3991,7 +4157,7 @@ GenRet CallExpr::codegen() {
          case PRIM_CAST:
          {
           if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-              call->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+              call->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
             GenRet tmp = call->get(2);
             tmp = codegenWideAddrWithAddr(tmp,
                                   codegenCast(call->get(1)->typeInfo(), 
@@ -4101,20 +4267,20 @@ GenRet CallExpr::codegen() {
                       get(3), get(4)); 
         break;
       }
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
         break;
       }
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
-          !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE) &&
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+          !get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         GenRet to_ptr = codegenDeref(get(1));
         codegenAssign(to_ptr, get(2));
         break;
       }
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
-          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+          get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         // get(1) = Raddr(get(2));
         codegenAssign(get(1), codegenRaddr(get(2))); 
         break;
@@ -4147,7 +4313,7 @@ GenRet CallExpr::codegen() {
       break;
     case PRIM_WIDE_GET_LOCALE:
     {
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         ret = codegenRlocale(get(1));
       } else {
@@ -4157,7 +4323,7 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_WIDE_GET_NODE:
     {
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         ret = codegenRnode(get(1));
       } else {
@@ -4167,7 +4333,7 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_WIDE_GET_ADDR:
     {
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         ret = codegenRaddr(get(1));
       } else {
@@ -4182,7 +4348,7 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_REF_TO_STRING:
     {
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         GenRet wide = get(1);
         ret = codegenCallExpr("chpl_wideRefToString",
@@ -4426,7 +4592,7 @@ GenRet CallExpr::codegen() {
           codegenCall("chpl_string_widen", codegenAddrOf(get(1)), get(2),
                       get(3), get(4));
       } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE) ||
+          get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
           get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         codegenAssign(codegenDeref(get(1)), get(2));
       } else {
@@ -4626,7 +4792,7 @@ GenRet CallExpr::codegen() {
     {
       // arguments are (wide ptr, line, function/file, error string)
       const char *error;
-      if (!get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+      if (!get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
         break;
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           get(1)->typeInfo()->getField("addr")->typeInfo()->symbol->
@@ -4824,7 +4990,7 @@ GenRet CallExpr::codegen() {
       GenRet localAddr = codegenValuePtr(get(1));
 
       // destination data array
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         Symbol *sym = get(1)->typeInfo()->getField("addr", true);
         INT_ASSERT(sym);
         dt = sym->typeInfo()->getValType()->symbol;
@@ -4837,7 +5003,7 @@ GenRet CallExpr::codegen() {
       }
 
       GenRet locale;
-      if( get(2)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+      if( get(2)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) ) {
         locale = codegenValue(codegenDeref(get(2)));
       } else {
         locale = codegenValue(get(2));
@@ -4847,7 +5013,7 @@ GenRet CallExpr::codegen() {
       GenRet remoteAddr = get(3);
       SymExpr *sym = toSymExpr(get(3));
       INT_ASSERT(sym);
-      if( sym->typeInfo()->symbol->hasFlag(FLAG_WIDE) ) {
+      if( sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ) {
         remoteAddr = codegenRaddr(remoteAddr);
       } else {
         if( !sym->typeInfo()->symbol->hasFlag(FLAG_REF) ) {
@@ -4861,7 +5027,7 @@ GenRet CallExpr::codegen() {
       }*/
       GenRet eltSize = codegenSizeof(dt->typeInfo());
       GenRet len;
-      if( get(4)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+      if( get(4)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) ) {
         len = codegenValue(codegenDeref(get(4)));
       } else {
         len = codegenValue(get(4));
@@ -4897,7 +5063,7 @@ GenRet CallExpr::codegen() {
 
       TypeSymbol *dt;
       // Get the element type.
-      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         Symbol *sym = get(2)->typeInfo()->getField("addr", true);
         INT_ASSERT(sym);
         dt = sym->typeInfo()->getValType()->symbol;
@@ -4907,7 +5073,7 @@ GenRet CallExpr::codegen() {
 
       // Get the locale
       GenRet locale;
-      if( get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+      if( get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) ) {
         locale = codegenValue(codegenDeref(get(1)));
       } else {
         locale = codegenValue(get(1));
@@ -4917,7 +5083,7 @@ GenRet CallExpr::codegen() {
       GenRet remoteAddr = get(2);
       SymExpr *sym = toSymExpr(get(2));
       INT_ASSERT(sym);
-      if( sym->typeInfo()->symbol->hasFlag(FLAG_WIDE) ) {
+      if( sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ) {
         remoteAddr = codegenRaddr(remoteAddr);
       } else {
         if( !sym->typeInfo()->symbol->hasFlag(FLAG_REF) ) {
@@ -4926,7 +5092,7 @@ GenRet CallExpr::codegen() {
       }
       GenRet eltSize = codegenSizeof(dt->typeInfo());
       GenRet len;
-      if( get(3)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+      if( get(3)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) ) {
         len = codegenValue(codegenDeref(get(3)));
       } else {
         len = codegenValue(get(3));
@@ -4951,7 +5117,7 @@ GenRet CallExpr::codegen() {
       GenRet localAddr = codegenValuePtr(get(1));
 
       // destination data array
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         Symbol *sym = get(1)->typeInfo()->getField("addr", true);
         INT_ASSERT(sym);
         dt = sym->typeInfo()->getValType()->symbol;
@@ -4966,7 +5132,7 @@ GenRet CallExpr::codegen() {
       // destination strides local array
       GenRet dststr = codegenValuePtr(get(2));
 
-      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+      if (get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         Symbol *sym = get(2)->typeInfo()->getField("addr", true);
         INT_ASSERT(sym);
         dststr = codegenRaddr(dststr);
@@ -4978,7 +5144,7 @@ GenRet CallExpr::codegen() {
 
       // locale id 
       GenRet locale;
-      if( get(3)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+      if( get(3)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) ) {
         locale = codegenValue(codegenDeref(get(3)));
       } else {
         locale = codegenValue(get(3));
@@ -4988,7 +5154,7 @@ GenRet CallExpr::codegen() {
       GenRet remoteAddr = get(4);
       SymExpr *sym = toSymExpr(get(4));
       INT_ASSERT(sym);
-      if( sym->typeInfo()->symbol->hasFlag(FLAG_WIDE) ) {
+      if( sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ) {
         remoteAddr = codegenRaddr(remoteAddr);
       } else {
         if( !sym->typeInfo()->symbol->hasFlag(FLAG_REF) ) {
@@ -4999,7 +5165,7 @@ GenRet CallExpr::codegen() {
       // source strides local array
       GenRet srcstr = codegenValuePtr(get(5));
 
-      if (get(5)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+      if (get(5)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         Symbol *sym = get(5)->typeInfo()->getField("addr", true);
         INT_ASSERT(sym);
         srcstr = codegenRaddr(srcstr);
@@ -5012,7 +5178,7 @@ GenRet CallExpr::codegen() {
       // count local array
       GenRet count = codegenValuePtr(get(6));
 
-      if (get(6)->typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+      if (get(6)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         Symbol *sym = get(6)->typeInfo()->getField("addr", true);
         INT_ASSERT(sym);
         count = codegenRaddr(count);
@@ -5024,7 +5190,7 @@ GenRet CallExpr::codegen() {
 
       // stridelevels
       GenRet stridelevels;
-      if( get(7)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF) ) {
+      if( get(7)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF) ) {
         stridelevels = codegenValue(codegenDeref(get(7)));
       } else {
         stridelevels = codegenValue(get(7));
@@ -5046,7 +5212,7 @@ GenRet CallExpr::codegen() {
     {
       Type* type = get(1)->typeInfo();
       if (type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          type->symbol->hasFlag(FLAG_WIDE))
+          type->symbol->hasFlag(FLAG_WIDE_REF))
         // If wide, get the value type.
         type = toAggregateType(type)->getField("addr", true)->typeInfo();
 
@@ -5064,7 +5230,7 @@ GenRet CallExpr::codegen() {
     case PRIM_CAST: 
     {
       if (typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          typeInfo()->symbol->hasFlag(FLAG_WIDE)) {
+          typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         GenRet tmp = get(2);
         ret = codegenWideAddrWithAddr(tmp,
                               codegenCast(get(1)->typeInfo(), 
@@ -5080,57 +5246,6 @@ GenRet CallExpr::codegen() {
         GenRet v = codegenValue(get(2));
         // cast like this: (type) (intptr_t) v
         ret = codegenCast(typeInfo(), codegenCast("intptr_t", v));
-      } else if (dst == dtString || src == dtString ||
-                 dst == dtStringC || src == dtStringC) {
-        const char* dst_cname = dst->symbol->cname;
-        const char* src_cname = src->symbol->cname;
-        if (src == dtString && dst != dtStringC) {
-          src_cname = dtStringC->symbol->cname;
-        } else if (dst == dtString && src != dtStringC) {
-          dst_cname = dtStringC->symbol->cname;
-        }
-        std::string fn;
-        if( dst->symbol->cname[0] == '_' ) {
-          fn += src_cname;
-          fn += "_to";
-          fn += dst_cname;
-        } else {
-          fn += src_cname;
-          fn += "_to_";
-          fn += dst_cname;
-        }
-        if (src == dtString) {
-          if (dst == dtStringC) {
-            ret = codegenCallExpr("chpl_string_to_c_string",
-                                  get(2), get(3), get(4));
-          } else {
-            // convert string to c_string
-            ret = codegenCallExpr(fn.c_str(),
-                                  codegenCallExpr("chpl_string_to_c_string",
-                                                  get(2), get(3), get(4)),
-                                  get(3), get(4));
-          }
-        } else if (src == dtStringC) {
-          if (dst == dtString) {
-            // FIX ME: leak string
-            ret = codegenCallExpr("c_string_to_chpl_string",
-                                  get(2), get(3), get(4));
-          } else {
-            ret = codegenCallExpr(fn.c_str(), codegenValue(get(2)),
-                                  get(3), get(4));
-          }
-
-        } else { // other primitive type
-          if (dst == dtString) {
-            // FIX ME: leak string
-            ret = codegenCallExpr("c_string_to_chpl_string",
-                                  codegenCallExpr(fn.c_str(),
-                                                  codegenValue(get(2))),
-                                  get(3), get(4));
-          } else {
-            ret = codegenCallExpr(fn.c_str(), codegenValue(get(2)));
-          }
-        }
       } else {
         if (isRecord(typeInfo()) || isUnion(typeInfo())) {
           INT_FATAL("TODO - don't like type-punning record/union");
@@ -5219,7 +5334,7 @@ GenRet CallExpr::codegen() {
     {
       Type* t = get(1)->typeInfo();
       GenRet ptr;
-      if (t->symbol->hasEitherFlag(FLAG_WIDE, FLAG_WIDE_CLASS))
+      if (t->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
         // Get the local address.
         // Assume that we have already tested to ensure that this wide pointer
         // is local.  That is, caller should have called chpl_check_local.
@@ -5427,9 +5542,9 @@ GenRet CallExpr::codegen() {
     GenRet endCountValue = codegenValue(endCountPtr);
     GenRet taskList;
 
-    if (endCountType->symbol->hasFlag(FLAG_WIDE)) {
+    if (endCountType->symbol->hasFlag(FLAG_WIDE_REF)) {
       GenRet node = codegenRnode(endCountValue);
-      while(endCountValue.chplType->symbol->hasEitherFlag(FLAG_WIDE,FLAG_REF)){
+      while(endCountValue.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_REF)){
         endCountValue = codegenLocalDeref(endCountValue);
       }
       // Now, we should have a wide pointer to a class
@@ -5529,7 +5644,7 @@ GenRet CallExpr::codegen() {
         arg = codegenCastToCharStar(codegenValue(arg));
       else if (isRefWideString(actualType))// checks for ref(widestr)
         arg = codegenAddrOf(codegenWideThingField(codegenDeref(arg),WIDE_GEP_ADDR));
-      else if( actualType->symbol->hasFlag(FLAG_WIDE) ||
+      else if( actualType->symbol->hasFlag(FLAG_WIDE_REF) ||
                arg.isLVPtr == GEN_WIDE_PTR) {
         arg = codegenRaddr(codegenValue(arg));
       } else if (formal->type->symbol->hasFlag(FLAG_REF) &&
@@ -5595,8 +5710,12 @@ bool CallExpr::isPrimitive(const char* primitiveName) {
   return primitive && !strcmp(primitive->name, primitiveName);
 }
 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
-NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) : 
+NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   Expr(E_NamedExpr),
   name(init_name),
   actual(init_actual)
@@ -5604,6 +5723,10 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   gNamedExprs.add(this);
 }
 
+
+Expr* NamedExpr::getFirstExpr() {
+  return (actual != NULL) ? actual->getFirstExpr() : this;
+}
 
 void NamedExpr::verify() {
   Expr::verify();
@@ -5657,7 +5780,12 @@ void NamedExpr::accept(AstVisitor* visitor) {
   }
 }
 
-bool 
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+bool
 get_int(Expr *e, int64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
@@ -5674,7 +5802,7 @@ get_int(Expr *e, int64_t *i) {
   return false;
 }
 
-bool 
+bool
 get_uint(Expr *e, uint64_t *i) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
@@ -5691,7 +5819,7 @@ get_uint(Expr *e, uint64_t *i) {
   return false;
 }
 
-bool 
+bool
 get_string(Expr *e, const char **s) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
@@ -5789,62 +5917,18 @@ CallExpr* callChplHereFree(BaseAST* p) {
   }
 }
 
-
-// getNextExpr(expr) returns the lexically next expr in a normalized
-// tree
-#define AST_RET_CHILD(_t, _m) \
-  if (((_t*)expr)->_m) return getFirstExpr(((_t*)expr)->_m)
-#define AST_RET_LIST(_t, _m) \
-  if (((_t*)expr)->_m.head) return getFirstExpr(((_t*)expr)->_m.head)
-
-Expr* getFirstExpr(Expr* expr) {
-  switch (expr->astTag) {
-  default:
-    INT_FATAL(expr, "unexpected expr in getFirstExpr");
-    return NULL;
-  case E_SymExpr:
-  case E_UnresolvedSymExpr:
-  case E_DefExpr:
-    return expr;
-  case E_BlockStmt:
-    AST_RET_CHILD(BlockStmt, blockInfo);
-    AST_RET_LIST(BlockStmt, body);
-    break;
-  case E_CondStmt:
-    AST_RET_CHILD(CondStmt, condExpr);
-    break;
-  case E_GotoStmt:
-    AST_RET_CHILD(GotoStmt, label);
-    break;
-  case E_CallExpr:
-    AST_RET_CHILD(CallExpr, baseExpr);
-    AST_RET_LIST(CallExpr, argList);
-    break;
-  case E_NamedExpr:
-    AST_RET_CHILD(NamedExpr, actual);
-    break;
-  }
-  return expr;
-}
-
 Expr* getNextExpr(Expr* expr) {
-  if (expr->next)
-    return getFirstExpr(expr->next);
-  if (CallExpr* parent = toCallExpr(expr->parentExpr)) {
-    if (expr == parent->baseExpr && parent->argList.head)
-      return getFirstExpr(parent->argList.head);
-  } else if (CondStmt* parent = toCondStmt(expr->parentExpr)) {
-    if (expr == parent->condExpr && parent->thenStmt)
-      return getFirstExpr(parent->thenStmt);
-    else if (expr == parent->thenStmt && parent->elseStmt)
-      return getFirstExpr(parent->elseStmt);
-  } else if (BlockStmt* parent = toBlockStmt(expr->parentExpr)) {
-    if (expr == parent->blockInfo && parent->body.head)
-      return getFirstExpr(parent->body.head);
+  Expr* retval = NULL;
+
+  if (expr->next) {
+    retval = expr->next->getFirstExpr();
+
+  } else if (Expr* parent = expr->parentExpr) {
+    retval = parent->getNextExpr(expr);
+
   }
-  if (expr->parentExpr)
-    return expr->parentExpr;
-  return NULL;
+
+  return retval;
 }
 
 static bool
@@ -5855,6 +5939,116 @@ isIdentifierChar(const char c) {
           (c == '$') ||
           (c == '_') || (c == '.'));
 }
+
+
+/*********** new_Expr() ***********/
+/*
+
+new_Expr() lets you build AST more succinctly.
+
+You can call new_Expr() directly, or implicitly by calling:
+
+  BlockStmt::insertAtHead
+  BlockStmt::insertAtTail
+  FnSymbol::insertAtHead
+  FnSymbol::insertAtTail
+  Expr::insertBefore
+  Expr::insertAfter
+  Expr::replace
+
+Synopsis:
+
+  new_Expr(const char* format, ...)
+
+The format string should contain a Chapel statement or expression.
+
+SIMPLE CALLS
+
+The code
+
+  block->insertAtTail("foo()");
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr("foo"));
+
+USING SYMBOLS AND EXPRESSIONS
+
+Symbols and expressions can be added to the newly created expressions
+using %S and %E format flags.  For example, given:
+
+  VarSymbol* tmp;
+  CallExpr* call;
+
+the code
+
+  block->insertAtTail("foo(%S)", tmp);
+  block->insertAtTail("foo(%E)", call);
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr("foo", tmp));
+  block->insertAtTail(new CallExpr("foo", call));
+
+PRIMITIVES
+
+Primitives can be defined by enclosing the name of the primitive in
+apostrophes.  So the code
+
+  block->insertAtTail("'move'(%S, new CallExpr("foo"))");
+
+is equivalent to
+
+  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("foo")));
+
+STRING LITERALS
+
+String literals are also supported by enclosing a string in
+apostrophes.
+
+BLOCK STATEMENTS
+
+Finally, block statements and type block statements
+(BlockStmt::blockTag == BLOCK_TYPE) are supported
+via curly brackets and semicolons. For example:
+
+  new_Expr("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
+
+METHOD CALLS
+
+Note that AST represents method calls differently before and after normalize.
+
+Here are examples before normalize:
+
+  // localOp.accumulate(followIdx)
+  new_Expr(".(%S, 'accumulate')(%S)", localOp, followIdx);
+
+  // globalOp.generate()
+  new_Expr(".(%S, 'generate')()", globalOp);
+
+  // Paren-less calls are perhaps done so: localOp.identity
+  new_Expr(".(%S, 'identity')", localOp);
+
+After normalize method calls are represented as procedure calls with
+the first argument being gMethodToken:
+
+  // rvar.identity
+  new_Expr("identity(%S,%S)", gMethodToken, rvar);
+
+  // rvar.accumulate(svar)
+  new_Expr("accumulate(%S,%S,%S)", gMethodToken, rvar, svar);
+
+FINAL EXAMPLE
+
+The code
+
+  leadBlock->insertAtTail(new CallExpr(PRIM_MOVE, leadIter, new CallExpr("_getIterator", new CallExpr("_toLeader", iter))));
+
+can be written as
+
+  leadBlock->insertAtTail("'move'(%S, _getIterator(_toLeader(%S)))", leadIter, iter);
+
+*/
 
 Expr*
 new_Expr(const char* format, ...) {

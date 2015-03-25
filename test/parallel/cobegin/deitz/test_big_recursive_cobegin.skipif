@@ -1,1 +1,1 @@
-CHPL_TARGET_PLATFORM == cygwin
+CHPL_TARGET_PLATFORM <= cygwin

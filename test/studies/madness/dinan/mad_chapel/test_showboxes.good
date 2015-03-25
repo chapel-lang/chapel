@@ -14,17 +14,17 @@ sum coefficients:
 difference coefficients:
 -----------------------------------------------------
 
- -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 1.0e-32
- -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 9.7e-33
- -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-1.6e-15
- -- 0.30:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-4.9e-10
- -- 0.40:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-4.2e-07
- -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934 err=-2.0e-07
- -- 0.60:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-4.2e-07
- -- 0.70:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-4.9e-10
- -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-1.6e-15
- -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 9.7e-33
- -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 1.0e-32
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.20:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-0.00000000
+ -- 0.30:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-0.00000000
+ -- 0.40:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-0.00000042
+ -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934 err=-0.00000020
+ -- 0.60:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-0.00000042
+ -- 0.70:  F_numeric()= 0.00000001  f_analytic()= 0.00000001 err=-0.00000000
+ -- 0.80:  F_numeric()=-0.00000000  f_analytic()= 0.00000000 err=-0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
 
 Dumping the boxes at each level:
 

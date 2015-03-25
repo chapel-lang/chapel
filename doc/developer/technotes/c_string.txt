@@ -1,0 +1,259 @@
+c_string Design Notes
+=====================
+
+This description accompanies the split of the c_string type into two distinct types:
+c_string and c_string_copy.  I did this to better support memory management in the
+handling of low-level string representations.
+
+The work was undertaken because of a bug reported by GCC when compiling with the --fast
+option.  A workaround fix for the bug was checked in as commit
+9cd70207e1db6380d3eab6f4c27f6414d538d587, but this solution was known to leak additional
+string copy memory (1.19Gb --> 1.22Gb).
+
+The root cause of the bug was the overloaded meaning of c_string.  In some cases it refers
+to a string that is heap-allocated and in other cases it refers to a string that is
+allocated on the stack or statically (in the program image).  
+
+This lack of clarity about the allocation status of a c_string is almost guaranteed to
+lead to bugs.  If client code (such as the code that failed in String.h) wants to perform
+memory management on a variable of that type (e.g. calling free() or realloc()) it must
+use additional information not available in the type itself.  This is dangerous business:
+To break all existing code that is a client of the c_string type, it is only necessary to
+add another function that returns a c_string of ambiguous allocation status.
+
+
+Eliminating the Overloaded Meaning of c_string
+----------------------------------------------
+
+My approach to resolving the memory management problem was to use another typedef to be
+more explicit about the allocation status (one might say "storage class") of a low-level
+string.  The type c_string was refined to refer to strings that are not heap-allocated,
+while a new type "c_string_copy" was invented to represent strings that *are*
+heap-allocated.
+
+The name "c_string_copy" was chosen because string_copy() returns a c_string that is
+heap-allocated.  I also considered using ref_c_string to refer to the non-heap-allocation
+version and coopting c_string to mean the heap-allocated version.  However, I thought that
+might create confusion with the _ref_ types generated automatically by the Chapel
+compiler, and would also involve a lot more search-and-replace in existing module and
+runtime support code.  Using _ref_c_string and c_string in the future is not ruled out,
+but it's probably best to isolate that renaming in a separate commit and merge anyway.
+
+
+Background of the c_string Type
+-------------------------------
+
+The c_string type was split off from the chpl_string type earlier this year, to
+distinguish the low-level representation of string (i.e. C strings, a.k.a. ASCIIZ strings)
+from the language-level implementation of the Chapel "string" type.  At present, Chapel
+strings are still implemented as "const char*", but there is a new record-based
+implementation for Chapel strings that will be substituted for the (admittedly inadequate)
+current implementation.  The distinction that was made between c_strings and chpl_strings
+in that effort was intended to directly support this future work.
+
+Importantly, "c_string" is used to represent the type of string literals.  This
+interpretation will continue after the new string implementation is put in place.  It is
+more efficient to represent string literals using a simple string-of-characters
+representation than the full-up reference-counted string implementation.  Moreover, there
+is legacy code for handling coercions between string literals and other fundamental types
+(ifa/cast_code.cpp) that would have to be reworked.  The compiler currently depends upon
+this code for expression folding.  This conversion has wisely been left as a separate
+effort.
+
+As a footnote, some of the handling of string literals could probably be improved by
+including a length field.  This length could be computed at compile-time and thus removed
+from the run-time burden.
+
+
+Properties of the c_string Type
+-------------------------------
+
+The c_string type is a Chapel extern type whose definition in C is "const char*".  Its
+default value is the empty string literal "".  The type itself is not code-generated;
+instead, its definition is supplied by chpl-string-support.h.  The c_string type used to
+refer to low-level strings that were both heap-allocated and not.  That has now changed.
+
+The type c_string now refers to a string that is not heap-allocated.  This means that
+c_string retains its former interpretation as the type of a Chapel string literal.
+However, it should *not* be used as the return type of a function that returns a
+heap-allocated C string.  In that case c_string_copy should be used instead.
+
+In terms of memory management, a c_string should never be freed or used as the argument to
+realloc().  A more subtle use of c_string is as a reference to a heap-allocated string
+that is owned by another program entity.  It is legal to coerce a c_string_copy to the
+c_string type.  This is equivalent to creating a C++ reference to a (the contents of) a
+pointer.  It is understood that the contents of the original pointer must outlast the
+lifetime of the reference, or bad things will happen.
+
+To support this coercion, a clause was added to canCoerce() in functionResolution.cpp, to
+allow it, and module code was added to define the coercion (it is trivial, devolving to a
+pointer-copy).  When a c_string_copy is coerced to a c_string, ownership is retained by
+the original c_string_copy *variable*.  Variable is highlighted here, because if a
+c_string_copy return value is coerced directly to a c_string, we are guaranteed to leak
+memory at that point:
+
+  c_string_copy string_copy(c_string x); // Forward declaration.
+  ...
+  c_string foo = "Foo!";
+
+  /* Bad */
+  c_string_copy result = string_copy(string_copy(foo));
+  //                                 ^-- memory leaks here.
+
+  /* Good */
+  c_string_copy csc = string_copy(foo);
+  c_string_copy result = string_copy(csc);
+  chpl_rt_free_c_string(csc);
+  // No memory leaked so far.  Someone has to free "result" eventually, though.
+
+
+Properties of the c_string_copy Type
+------------------------------------
+
+The c_string_copy type is intended to represent just heap-allocated strings.  Its default
+value is NULL.  Like c_string, the type definition is not generated by the Chapel
+compiler, it is supplied by chpl-string-support.h instead.
+
+It is always permissible -- and in fact obligatory -- to free an object of type
+c_string_copy.  If the object was previously freed, its contents will have been set to
+zero (a null pointer) at that point; freeing a null pointer succeeds without error (and to
+no effect).
+
+If client code calls a routine that returns a value of c_string_copy, it should arrange
+for that value to be freed in one of the following ways:
+   1. Deleting the c_string_copy in the routine itself;
+   2. Returning it (as an object of the c_string_copy type).
+   3. Passing the c_string_copy as an argument whose corresponding formal also has the
+      c_string_copy type.
+   4. Storing it in a class or record whose destructor frees it appropriately.
+If action 2, 3, or 4 is taken, the c_string_copy variable should not also be freed within
+the same routine.
+
+
+String Types in Runtime Support Code
+------------------------------------
+
+Obeying the following rules should result in the correct usage of the c_string and
+c_string_copy types in the runtime support code.  In C code, the distinction between
+c_string and c_string_copy is merely a form documentation.  The C compiler will squash
+them both to their common underlying type "const char*".  This is handy because it
+supports the coercion of c_string_copy objects to c_string objects in the C code without
+requiring explicit casts.  But it is also dangerous: Care must be taken in the runtime
+support code to ensure that memory management is done correctly.
+
+* If a runtime support routine returns a "const char*" that refers to a character string
+  allocated and owned elsewhere, the return type should be c_string.  This return type
+  should be used if any of the return-value expressions is a C string literal.  It may
+  also be used to return one of its formal arguments whose type is also c_string.
+* If a runtime support routine returns a "const char*" that refers to heap-allocated
+  memory that is allocated within that routine, the return type should be c_string_copy.
+* It is illegal to return a c_string_copy object as an object of type c_string.  This will
+  result in memory leakage as outined above.
+
+* Any formal argument of type c_string may be used as a c_string within the routine and
+  even returned (so long as the type is still c_string).  To coerce a c_string object to a
+  c_string_copy, it is necessary to allocate new memory for the c_string_copy and perform
+  a deep (byte-by-byte) copy of the original into the copy.
+* A formal of type c_string_copy is presumed to assume ownership of the passed-in object.
+  A routine with such a formal must take exactly the same actions (one of the four listed
+  above) as if the formal had been heap-allocated within the same routine.  Client code
+  that passes a c_string_copy actual to a c_string_copy formal may treat the object as
+  having been disposed of.  There is no need for the client code to free that object
+  directly.
+* It is illegal to pass a c_string_copy actual to a c_string formal.  This will result in
+  memory leakage as shown above.
+
+It is assumed that the storage and management (e.g. reference counting) of low-level
+string objects is handled in Chapel code.
+
+
+String Types in Chapel Code
+---------------------------
+
+Fortunately for us, Chapel treats c_string and c_string_copy as distinct types.  This lets
+us supply overloaded versions of some of the low-level string-handling functions, so that --
+where it is important -- c_strings and c_string_copies can be handled differently.  The
+bifurcation is made at compile-time and does not require an explicit conditional, which is
+rather elegant.
+
+As a specific example, I created overloaded versions of toString().  Both return a
+c_string_copy.  The version taking a c_string allocates memory and makes a deep copy of
+its argument.  The version taking a c_string_copy argument simply returns its argument.
+It effectively assumes ownership of the passed-in c_string_copy, and then passes that
+ownership on to the client code.
+
+However, code using c_string_copy objects must still be cautious.  If a c_string_copy is
+coerced to a c_string, it must still be managed in the caller (because ownership is not
+passed through a formal of type c_string).  
+
+If overloaded versions of the called routine exist, one taking a c_string formal in that
+position and the other taking a c_string_copy, the Chapel compiler will choose the right
+one.  The problem area to look out for is if the existing version of the called
+routine has a c_string formal at that location.  If a c_string_copy is passed, it will be
+coerced to a c_string and used as if it were a reference, so there is a potential memory
+leak there.
+
+The two ways to handle this situation are to explictly free the c_string_copy in the
+client code, or to supply an overloaded version of the called routine that has a
+c_string_copy formal in that position.  If the called routine is called from several
+locations in the code, supplying the overloaded function is the preferred approach.
+
+When a character string is stored in a Chapel structure, it should have the c_string_copy
+type.  This reflects the fact that the string is owned by the data structure that contains
+it.  Only the present and future implementations of the Chapel string type need to be
+concerned with this.  User code should use the language-level Chapel string type, so need
+not be concerned with such details.
+
+
+Fine Points
+-----------
+
+The default value of a c_string is "" while the default value of a c_string_copy is NULL.
+Since a c_string_copy can be coerced to a c_string, it turns out that the c_string type
+ends up with two ways to represent an empty string.  Until the code for performing param
+coercions between c_strings and other fundamental types is recoded to support NULL as a
+valid string literal, we have to live with this duality.
+
+The low-level string manipulation routines have been modified to handle the case where a
+c_string argument evaluates to NULL.  I did not consider it worthwhile to handle the
+zero-length string as a special case.
+
+In some cases, this may result in a c_string_copy that is one byte long and contains just
+the NUL character.  If memory is leaked in this case, it is because zero-length strings
+*are* handled specially in the existing or new Chapel string implementation.  I deferred
+going through and eliminating all of that special-case code, but it should be safe to do
+so now.  Both the Chapel source and the generated C code will end up smaller and (I
+assert) the application will run faster.
+
+
+The new string implementation contains two reference counts, one that tracks references
+before an alias is created through chpl__initCopy() and the other after.  I don't fully
+understand the utility of the non-alias reference count.  I suspect they can be safely
+combined without leaking memory.
+
+It is an unusual arrangement to store the reference count in the handle rather than in the
+representation.  Both work as long as the correspondence between the reference count and
+the referenced data is maintained.  The version where the reference count and data pointer
+are stored together in the same implementation structure saves memory involves an extra
+level of indirection.  The version where the reference count and data pointer are stored
+in the handle uses more memory, but may execute faster.  In a data type as important as
+strings, this space-time tradeoff should be examined closely, the choice being made only
+with adequate experimental support.
+
+I will assert without support that storing the reference count in the implementation will
+turn out to be closer to optimal.
+
+Our Implementation (assuming the second ref count can be eliminated):
+   +---+    +----------+
+   | *-+--->| refCount |
+   +---+    +------+---+
+   | *-+--->| data |
+   +---+    +------+
+(refCount and data are not necessarily contiguous in memory)
+
+Common Implementation:
+   +---+    +----------+---+    +------+
+   | *-+--->| refCount | *-+--->| data |
+   +---+    +----------+---+    +------+
+
+

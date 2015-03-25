@@ -1,0 +1,31 @@
+Module: fields
+   Class: fullOfFields
+      type eltType
+         This is a generic type. 
+      var thing1
+      param thing2
+      var typedField: int
+      var alsoTyped: string
+      var commented
+         This field has a doc attached, does that work? 
+      var typeComment: int
+         This field has a doc and an explicit type 
+      const initialized = "bleah"
+      var initializedType: int = 3
+      type yards = uint(16)
+         This is a type alias. 
+   Record: fullOfFieldsToo
+      type eltType
+         This is a generic type. 
+      var thing1
+      param thing2
+      var typedField: int
+      var alsoTyped: string
+      var commented
+         This field has a doc attached, does that work? 
+      var typeComment: int
+         This field has a doc and an explicit type 
+      const myConst = 10
+         This is a const. 
+      type yards = int
+         This is a type alias. 

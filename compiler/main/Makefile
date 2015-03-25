@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -33,6 +33,11 @@ include Makefile.share
 TARGETS = COPYRIGHT \
 	LICENSE \
 	$(MAIN_OBJS)
+
+# Ensure LICENSE and COPYRIGHT are complete before building driver.o (from
+# driver.cpp). Otherwise, compiling driver.o can fail with a #include error
+# (i.e. the file is not yet available).
+OBJ_PREREQS = LICENSE COPYRIGHT
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 

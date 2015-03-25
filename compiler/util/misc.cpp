@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,21 +17,23 @@
  * limitations under the License.
  */
 
+#include "misc.h"
+
+#include "baseAST.h"
+#include "chpl.h"
+#include "driver.h"
+#include "expr.h"
+#include "files.h"
+#include "parser.h"
+#include "resolution.h"
+#include "stmt.h"
+#include "stringutil.h"
+#include "symbol.h"
+#include "version.h"
+
 #include <csignal>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include "driver.h"
-#include "../main/version.h"
-#include "files.h"
-#include "chpl.h"
-#include "baseAST.h"
-#include "symbol.h"
-#include "expr.h"
-#include "stmt.h"
-#include "stringutil.h"
-#include "misc.h"
-#include "yy.h"
-#include "../resolution/resolution.h"
 
 static void cleanup_for_exit(void) {
   deleteTmpDir();
@@ -83,7 +85,7 @@ const char* cleanFilename(const char* name) {
 }
 
 
-static const char* cleanFilename(BaseAST* ast) {
+const char* cleanFilename(BaseAST* ast) {
   const char* astFname = ast->fname();
   if (astFname)
     return cleanFilename(astFname);
@@ -186,7 +188,7 @@ printDevelErrorHeader(BaseAST* ast) {
             fprintf(stderr, "constructor '%s':\n", err_fn->name+11);
           } else {
             fprintf(stderr, "%s '%s':\n",
-                    (err_fn->hasFlag(FLAG_ITERATOR_FN) ? "iterator" : "function"),
+                    (err_fn->isIterator() ? "iterator" : "function"),
                     err_fn->name);
           }
         }

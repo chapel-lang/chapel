@@ -7,18 +7,17 @@ the Chapel team and which are released under distinct licenses from
 Chapel itself.  Current subdirectories include:
 
 
-creoleparser/
-  Summary: This is a directory in which the python Creoleparser
-           package will be downloaded when running 'make creoleparser'
-           in the third-party directory.  It also relies on an
-           additional Python package 'Genshi' which will be downloaded
-           if it is not found within your path
+chpldoc-venv/
 
-  License: MIT (Genshi is Revised BSD)
+  Summary: Directory where several python packages are downloaded and installed
+           when running 'make chpldoc-venv' in the third-party directory, or
+           when running 'make chpldoc' in $CHPL_HOME. See requirements.txt and
+           virtualenv.txt files for a complete list of packages that are
+           installed.
 
-  Website: http://pypi.python.org/pypi/Creoleparser
-             and
-           http://genshi.edgewall.org/
+  License: Varies, see chpldoc-venv/README.md
+
+  Website: Varies, see chpldoc-venv/README.md
 
 
 dlmalloc/
@@ -59,7 +58,7 @@ gasnet/
 gmp/
   Summary: the GNU Multiple Precision Arithmetic Library
 
-  License: L-GPL (see gmp/gmp-*/COPYING and gmp/gmp-*/COPYING.LIB)
+  License: L-GPL (see gmp/gmp-*/COPYING and gmp/gmp-*/COPYING.LESSERv3)
 
   Website: http://gmplib.org
 

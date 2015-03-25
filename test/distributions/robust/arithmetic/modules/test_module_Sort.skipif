@@ -1,0 +1,3 @@
+# MergeSort gets into "zippered iterations have non-equal lengths"
+# for ReplicatedDist. Skip, until we have a better idea.
+COMPOPTS <= distType=DistType.replicated

@@ -1,6 +1,6 @@
 config const n = 40000;
 extern proc chpl_cache_print();
-extern proc printf(fmt: string, vals...?numvals): int;
+extern proc printf(fmt: c_string, vals...?numvals): int;
 config const verbose=false;
 
 proc doit(memory:locale, running:locale) {

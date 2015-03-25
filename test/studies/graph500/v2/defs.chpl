@@ -62,7 +62,7 @@ module Graph500_defs
 
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
          var is_member: bool = false;
-         forall n in Neighbors (1..neighbor_count) {
+         forall n in Neighbors (1..neighbor_count) with (ref is_member) {
             if (new_vertex_ID == n ) then is_member = true;
          }
          return is_member;

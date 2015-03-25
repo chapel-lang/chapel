@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,6 @@ class FnSymbol;
 class Symbol;
 class SymExpr;
 
-void collapseBlocks(BlockStmt* block);
 void removeUnnecessaryGotos(FnSymbol* fn);
 void removeUnusedLabels(FnSymbol* fn);
 size_t localCopyPropagation(FnSymbol* fn);

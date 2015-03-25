@@ -1,0 +1,7 @@
+Bug: Internal error should be user error
+
+This test was sent by Chris Wailes to chapel-developers on
+Apr 22, 2014 and, from what I can see, was never filed against
+the testing system.  The error message proposed here is just a
+placeholder.  I'm open to other        sufficiently clear user  (rather
+than internal) messages   as well.

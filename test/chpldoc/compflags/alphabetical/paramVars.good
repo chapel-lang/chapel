@@ -1,0 +1,8 @@
+Module: hasGlobalParams
+   This module has some global scoped params. 
+   param first
+   param fourth: bool
+      This param has an associated comment, a type, and a value 
+   param second: bool
+   param third
+      This param has an associated comment and a value 

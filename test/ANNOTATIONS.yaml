@@ -1,24 +1,29 @@
 # The format for this file is as follows:
 #
-# group:
-#   mm/dd/yy:
-#     - example annotation 1
-#     - example annotation 2
-#   mm/dd/yy:
-#     - text: example annotation 3
-#       host: [hostname1, hostname2]
-#
 # all:
 #   mm/dd/yy:
-#     - example annotation 5
+#     - example annotation 1
 #
-# where group is the name of the .graph file that attached set of annotations
-# should apply to. When the long form of an annotation is used (when text and
-# host are specified) the annotation is only added to the graphs if the current
-# hostname is in the host list. 'all' is a special group where any annotations
-# are added to to every single graph. One limitation of dygraphs is that if you
-# try and place an annotation on a date that has no data (tests didn't run or
-# all failed) it will not be displayed.
+# group:
+#   mm/dd/yy:
+#     - example annotation 2
+#     - example annotation 3
+#   mm/dd/yy:
+#     - text: example annotation 4
+#       host: [hostname1, hostname2]
+#
+#
+# where 'group' is the base name of the .graph file that attached set
+# of annotations should apply to.  'all' is a special group where any
+# annotations are added to to every single graph.
+#
+# When the long form of an annotation is used (where 'text:' and
+# 'host:' are specified), the annotation is only added to the graphs
+# if the current hostname is in the host list.  Note that in this
+# form, the 'host:' line does not (cannot) have a leading '-' sign.
+#
+# Groups are listed in case insensitive alphabetical order
+#
 
 all:
   10/14/13:
@@ -44,6 +49,33 @@ all:
     - switch default memory allocator from cstdlib to tcmalloc
   09/12/14:
     - switch default memory allocator back to cstdlib
+  11/05/14:
+    - fix overlapping memcpy() reported by valgrind
+  12/18/14:
+    - change mult in array indexing to conditional, then revert
+  12/22/14:
+    - simplify some locale model interactions with the runtime
+  01/16/15:
+    - move chpl_getLocaleID into the modules
+  02/12/15:
+    - text: zombie process on chap04 was causing noise
+      host: chap04
+
+AllCompTime:
+  11/09/14:
+    - disable the task table by default
+
+assign.1024:
+  01/21/15:
+    - optimize range follower iter so optimize-loop-iterators fires
+
+bfs:
+  09/25/14:
+    - addition of octal to, reformatting of format printing.
+
+binary-trees:
+  12/05/14:
+    - introduce "library mode"
 
 chameneos-redux:
   07/08/13:
@@ -57,27 +89,87 @@ dgemm.64:
   09/06/13:
     - LICM bug fixes
 
+ep:
+  11/18/14:
+    - added -E to tests which would benefit from it
+  11/22/14:
+    - revert -E use for nightly on 21st (which failed, unrelatedly)
+
+ep-b:
+  11/18/14:
+    - added -E to tests which would benefit from it
+  11/22/14:
+    - revert -E use for nightly on 21st (which failed, unrelatedly)
+
 fannkuch-redux:
   07/22/14:
     - Error due to cleaning up file incompletely
+  09/04/14:
+    - LICM no longer hoisting globals (bug fix related to hoisting wide things)
 
 fasta:
   01/14/14:
     - enabled unlocked I/O on fasta and fasta-printf
+  10/07/14:
+    - Add c_string_copy type
+
+forall-dom-range:
+  01/21/15:
+    - optimize range follower iter so optimize-loop-iterators fires
+  01/23/15:
+    - optimize range follower iter for non-strided ranges
+
+ft:
+  09/05/14:
+    - switched uses of locale.numCores to locale.maxTaskPar
+
+ft-a:
+  09/05/14:
+    - switched uses of locale.numCores to locale.maxTaskPar
+
+is:
+  09/05/14:
+    - switched uses of locale.numCores to locale.maxTaskPar
+  11/18/14:
+    - added -E to tests which would benefit from it
+  11/22/14:
+    - revert -E use for nightly on 21st (which failed, unrelatedly)
+
+jacobi:
+  03/07/14:
+    - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
+  08/19/14:
+    - C for loops initial commit
+  08/20/14:
+    - Tom's use of user-defined default constructors
+  08/26/14:
+    - Kyle's ref temp peephole optimization
+  11/09/14:
+    - disable the task table by default
 
 lulesh:
   03/15/14:
     - improved constness of de-nested functions, improved remove value forwarding
+  12/05/14:
+    - introduce "library mode"
 
 lulesh-dense:
   03/15/14:
     - improved constness of de-nested functions, improved remove value forwarding
 
-nbody:
-  03/17/14:
-    - removed extra formal temps
-  07/24/14:
-    - chap04 Subtest random glitch
+mandelbrot:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  03/19/14:
+    - Bulk IO optimization
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
+
+mandelbrot-extras:
+  01/03/14:
+    - Chapel level improvement by using a nonlocking writer
+  09/05/14:
+    - maxTaskPar change delayed fifo->qthreads performance hit
 
 memleaks:
   11/13/13:
@@ -106,28 +198,32 @@ meteor:
 miniMD:
   12/21/13:
     - clean up of noRefCount related code in modules/internal (22473)
+  11/04/14:
+    - surprising regression from cast in DefaultRectangular (df8c3172cc9c)
 
-mandelbrot:
-  01/03/14:
-    - Chapel level improvement by using a nonlocking writer
-  03/19/14:
-    - Bulk IO optimization
-
-jacobi:
-  03/07/14:
-    - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
-  08/19/14:
-    - C for loops initial commit
-  08/20/14:
-    - Tom's use of user-defined default constructors
-  08/26/14:
-    - Kyle's ref temp peephole optimization
+nbody:
+  03/17/14:
+    - removed extra formal temps
+  07/24/14:
+    - chap04 Subtest random glitch
 
 parOpEquals:
   09/06/13:
     - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+
+regexdna:
+  10/07/14:
+    - Add c_string_copy type
+
+spectralnorm:
+  01/21/15:
+    - qthreads updated to yield every ~100 uncontested sync var locks
+
+spectral-norm-specify-step:
+  01/21/15:
+    - qthreads updated to yield every ~100 uncontested sync var locks
 
 SSCA2_main:
   06/12/13:
@@ -157,13 +253,13 @@ testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
 
-time_array_vs_tuple:
-  08/19/14:
-    - C for loops initial commit
-
 time_array_vs_ddata:
   05/31/14:
     - specializing binaries to target architectures
+
+time_array_vs_tuple:
+  08/19/14:
+    - C for loops initial commit
 
 time_iterate:
   11/13/13:

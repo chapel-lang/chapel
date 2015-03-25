@@ -1,5 +1,0 @@
-perfkeys: Time:
-files: Jacobi-2D-NaiveParallel.dat
-graphkeys: Jacobi-2D-NaiveParallel
-ylabel: Time (seconds)
-graphtitle: Jacobi-2D Naive Parallel

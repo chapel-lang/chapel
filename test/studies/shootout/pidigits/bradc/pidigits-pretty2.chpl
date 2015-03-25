@@ -120,6 +120,10 @@ iter gen_digits(numDigits) {
     accum *= 10;
     numer *= 10;
   }
+
+  //
+  // Free memory associated with multi-precision valuesx
+  //
   mpz_clear(numer);
   mpz_clear(accum);
   mpz_clear(denom);

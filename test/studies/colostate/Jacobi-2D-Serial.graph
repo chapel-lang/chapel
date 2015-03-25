@@ -1,5 +1,0 @@
-perfkeys: Time:
-files: Jacobi-2D-Serial.dat
-graphkeys: Jacobi-2D-Serial
-ylabel: Time (seconds)
-graphtitle: Jacobi-2D Serial

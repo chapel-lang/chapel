@@ -1,0 +1,2 @@
+CHPL_HOST_PLATFORM <= cygwin
+CHPL_HOST_PLATFORM == darwin

@@ -1,0 +1,4 @@
+# Try to set memMax, then memThreshold to max(uint64). This only runs on 32-bit
+# platforms, so this will not be a valid value.
+--memMax 18446744073709551615
+--memThreshold 18446744073709551615

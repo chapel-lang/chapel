@@ -1,15 +1,13 @@
 //
-// The recursive_sum() function currently requires 64 bytes of stack
-// per activation.  The default stack size on linux systems seems to
-// be 8 mb, which should be enough for a depth of almost 128k ("almost"
-// because the stack actually has to hold all the recursive_sum()
-// activations plus a few others).  The default depth here is such
-// that with the default stack limit, doing recursion to the given
-// depth overruns the stack, typically causing a segfault.  But when
-// the task call stack size is increased enough (to about 10 mb for
-// tasking==none and ? mb for tasking==fifo), the program works.
-// 
-config var depth: uint(64) = 128 * 1024;
+// This test is intended to show that CHPL_RT_CALL_STACK_SIZE properly sets the
+// call stack size. Other tests check that the runtime reports the correct
+// value, but this will show if the value is actually changed based on whether
+// or not program execution was successful or not. To do this we run the
+// program twice, once with a really small stack size, and once with a really
+// large stack size to avoid having to think about what the stack size is for
+// different configurations and worrying about it changing in the future.
+//
+config var depth: uint(64) = 1024;
 
 var sum1$, sum2$: single uint(64);
 

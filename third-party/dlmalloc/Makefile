@@ -25,3 +25,5 @@ clobber: FORCE
 	rm -rf build install
 
 FORCE:
+
+.NOTPARALLEL:

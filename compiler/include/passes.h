@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -94,13 +94,29 @@ void checkReturnTypesHaveRefTypes();
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
 
+// createTaskFunctions.cpp -> implementForallIntents.cpp
+extern Symbol* markPruned;
+extern Symbol* markUnspecified;
+void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses);
+void replaceVarUses(Expr* topAst, SymbolMap& vars);
+void pruneThisArg(Symbol* parent, SymbolMap& uses);
+
+// deadCodeElimination.cpp
+void deadBlockElimination();
+
 // flattenFunctions.cpp
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+
+// callDestructors.cpp
+void insertReferenceTemps(CallExpr* call);
 
 // parallel.cpp
 bool isRefWideString(Type* t);
 bool isWideString(Type* t);
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
+
+// type.cpp
+void initForTaskIntents();
 
 #endif

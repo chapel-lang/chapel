@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -26,9 +26,25 @@
 
 #include "llvm/Config/llvm-config.h"
 
-#if LLVM_VERSION_MAJOR > 3 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 1 )
-#if LLVM_VERSION_MAJOR > 3 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR > 2 )
+#if   LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=6 )
+#define HAVE_LLVM_VER 36
+#elif  LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=5 )
+#define HAVE_LLVM_VER 35
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=4 )
+#define HAVE_LLVM_VER 34
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=3 )
 #define HAVE_LLVM_VER 33
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=2 )
+#define HAVE_LLVM_VER 32
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=1 )
+#define HAVE_LLVM_VER 31
+#endif
+
+// So we can declare our small set insert fixup
+#include "llvm/ADT/SmallSet.h"
+
+#if HAVE_LLVM_VER >= 33
+
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
 #include "llvm/IR/Intrinsics.h"
@@ -42,8 +58,9 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
 {
   return f->getAttributes().hasAttribute(idx, v);
 }
-#else
-#define HAVE_LLVM_VER 32
+
+#elif HAVE_LLVM_VER >= 32
+
 #include "llvm/Module.h"
 #include "llvm/Value.h"
 #include "llvm/IRBuilder.h"
@@ -58,10 +75,9 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
   //return f->getAttributes().getParamAttributes(idx).hasAttribute(v);
   return f->getParamAttributes(idx).hasAttribute(v);
 }
-#endif
 
-#else
-#define HAVE_LLVM_VER 31
+#elif HAVE_LLVM_VER >= 31
+
 #include "llvm/Module.h"
 #include "llvm/Value.h"
 #include "llvm/Support/IRBuilder.h"
@@ -98,6 +114,33 @@ PromotedPair convertValuesToLarger(llvm::IRBuilder<> *builder, llvm::Value *valu
 int64_t getTypeSizeInBytes(LLVM_TARGET_DATA * layout, llvm::Type* ty);
 bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes);
 uint64_t getTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t offset);
+
+
+// And create a type for a metadata operand 
+#if HAVE_LLVM_VER >= 36
+#define LLVM_METADATA_OPERAND_TYPE llvm::Metadata
+static inline llvm::ConstantAsMetadata* llvm_constant_as_metadata(llvm::Constant* C)
+{
+  return llvm::ConstantAsMetadata::get(C);
+}
+template<typename T, unsigned N>
+static inline
+bool llvm_small_set_insert(llvm::SmallSet<T,N> & smallset, const T &V) {
+  return smallset.insert(V).second;
+}
+#else
+#define LLVM_METADATA_OPERAND_TYPE llvm::Value
+static inline llvm::Constant* llvm_constant_as_metadata(llvm::Constant* C)
+{
+  return C;
+}
+template<typename T, unsigned N>
+static inline
+bool llvm_small_set_insert(llvm::SmallSet<T,N> & smallset, const T &V) {
+  return smallset.insert(V);
+}
+
+#endif
 
 #endif //HAVE_LLVM
 

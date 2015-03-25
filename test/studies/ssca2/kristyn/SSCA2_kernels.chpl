@@ -74,8 +74,8 @@ module SSCA2_kernels
       // of all edges  matching the heaviest weight
       // ---------------------------------------------
 
-      forall s in G.vertices do
-        forall (t, w) in ( G.Neighbors (s), G.edge_weight (s) ) do
+      forall s in G.vertices with (ref heavy_edge_list) do
+        forall (t, w) in ( G.Neighbors (s), G.edge_weight (s) ) with (ref heavy_edge_list) do
 
 	  // should be forall, requires a custom parallel iterator in the 
 	  // random graph case and zippering for associative domains may 

@@ -29,14 +29,14 @@ var Temp:[outerD] real;
 [e in eastOfD]  Temp(e) = 0.63;
 
 
-var moving: bool;
+var moving: atomic int;
 do {
-  moving = false;
+  moving.write(0);
   forall (i,j) in D do {                       // calc new World
     World(i,j) = (Temp(i-1,j) + Temp(i+1,j) + Temp(i,j-1) + Temp(i,j+1)) / 4.0;
-    moving |= abs( World(i,j) - Temp(i,j)) > THRESHOLD;
+    moving.add(abs( World(i,j) - Temp(i,j)) > THRESHOLD);
   }
   [e in D] Temp(e) = World(e);               // copy back World->Temp
- } while (moving);
+ } while (moving.read());
 
 writeln( World);

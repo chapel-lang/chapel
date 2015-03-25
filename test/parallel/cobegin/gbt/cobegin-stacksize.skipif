@@ -1,0 +1,14 @@
+# This test sets a low stack size expecting the program to fail with that
+# amount, but it ends up succeeding with --fast because the stack sizes with
+# --fast are really small.
+COMPOPTS <= --fast
+
+# cygwin doesn't support changing the stack size
+CHPL_TARGET_PLATFORM <= cygwin
+
+# The -E option is being used to set CHPL_RT_CALL_STACK_SIZE because the test
+# tries to test two modes and I didn't want to create two identical tests with
+# different .execenvs. However, the -E option doesn't work with launchers so I
+# opted to just skip those configurations for now.
+CHPL_COMM != none
+

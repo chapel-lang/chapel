@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,7 @@
  */
 
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
@@ -382,8 +382,8 @@ qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const 
       // Figure out how many bytes are available.
       err = _peek_until_len(ch, maxlen, &peek_amt);
       num = peek_amt;
-      // Ignore EOF errors.
-      if( err && qio_err_to_int(err) == EEOF ) err = 0;
+      // Ignore EOF errors as long as we read something.
+      if( err && qio_err_to_int(err) == EEOF && num > 0 ) err = 0;
       break;
     default:
       if( str_style >= 0 ) {
@@ -1383,18 +1383,22 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
     quoted_cols += elipses_size;
   }
 
-  ti->ret_columns = quoted_cols;
-  ti->ret_chars = quoted_chars;
-  ti->ret_bytes = quoted_bytes;
-  ti->ret_truncated_at_byte = i;
-  ti->ret_truncated = overfull;
+  if( ti ) {
+    ti->ret_columns = quoted_cols;
+    ti->ret_chars = quoted_chars;
+    ti->ret_bytes = quoted_bytes;
+    ti->ret_truncated_at_byte = i;
+    ti->ret_truncated = overfull;
+  }
   return 0;
 error:
-  ti->ret_columns = -1;
-  ti->ret_chars = -1;
-  ti->ret_bytes = -1;
-  ti->ret_truncated_at_byte = -1;
-  ti->ret_truncated = -1;
+  if( ti ) {
+    ti->ret_columns = -1;
+    ti->ret_chars = -1;
+    ti->ret_bytes = -1;
+    ti->ret_truncated_at_byte = -1;
+    ti->ret_truncated = -1;
+  }
   return err;
 }
 
@@ -2069,6 +2073,7 @@ qioerr qio_channel_scan_imag(const int threadsafe, qio_channel_t* restrict ch, v
 // core of ltoa for arbitrary base.
 // Fills in tmp from right to left
 // Returns the number of positions in tmp to skip to get to number.
+// Returns -1 on buffer overflow.
 // supports up to base 36.
 static inline int _ltoa_convert(char *tmp, int tmplen, uint64_t num, int base, int uppercase)
 {
@@ -2119,10 +2124,17 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
     tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, 16, style->uppercase);
   else
     tmp_skip = _ltoa_convert(tmp, sizeof(tmp), num, base, style->uppercase);
+
+  if (tmp_skip < 0) {
+    // Internal buffer too small.  Increase size of tmp[].
+    return -1;
+  }
+
   tmp_len = sizeof(tmp) - 1 - tmp_skip;
   width = tmp_len;
 
   if( style->showplus || isnegative ) width++;
+  if( style->showpoint ) width++;
   if( style->prefix_base && base != 10 ) width += 2;
 
   // We might not have room...
@@ -2163,8 +2175,14 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   }
 
   // now output the digits.
-  memcpy(dst + i, tmp+tmp_skip, tmp_len);
+  qio_memcpy(dst + i, tmp+tmp_skip, tmp_len);
   i += tmp_len;
+
+  // Now output a period if we're doing showpoint.
+  if( style->showpoint ) {
+    dst[i] = '.';
+    i++;
+  }
 
   // Now if we're left justified we might need padding.
   if( style->leftjustify && width < style->min_width_columns) {
@@ -2441,7 +2459,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
   }
 
   // now output the digits
-  memcpy(dst + i, buf + j, buf_len);
+  qio_memcpy(dst + i, buf + j, buf_len);
   i += buf_len;
 
   if( needs_i ) {
@@ -3349,7 +3367,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
   return err;
 }
 
-c_string qio_encode_to_string(int32_t chr)
+c_string_copy qio_encode_to_string(int32_t chr)
 {
   int nbytes;
   char* buf;
@@ -3534,13 +3552,18 @@ qioerr qio_conv_parse(c_string fmt,
   i = start;
 
   // do we have a ####.#### conversion to match?
+  if( fmt[i] == '%' && fmt[i+1] == '{' && fmt[i+2] == '#' ) {
+    // handle %{####} conversions
+    in_group = 1;
+    i++; // pass %
+    i++; // pass {
+  }
   if( fmt[i] == '#' ) {
     size_t num_before, num_after, period;
     num_before = 0;
     num_after = 0;
     period = 0;
     
-
     // how many ### do we have before a . ?
     for( ; fmt[i] == '#'; i++ ) num_before++;
 
@@ -3548,6 +3571,14 @@ qioerr qio_conv_parse(c_string fmt,
       i++; // pass '.'
       period = 1;
       for( ; fmt[i] == '#'; i++ ) num_after++;
+    }
+
+    if( in_group ) {
+      if( fmt[i] != '}' ) {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "Bad %{###.###} format group");
+      } else {
+        i++; // pass }
+      }
     }
 
     spec_out->argType = QIO_CONV_ARG_TYPE_NUMERIC;

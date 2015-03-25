@@ -7,7 +7,7 @@ var EndIndices: sparse subdomain(AllIndices);
 var lock: sync int = 0;
 
 proc main {
-  forall z in AllIndices do {
+  forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
     if sourceText.substring[z] == '<' then {
       lock;
       StartIndices += z;

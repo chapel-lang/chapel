@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,12 @@
 
 pragma "no use ChapelStandard"
 
+/*
+  This is a companion to module :mod:`startInitCommDiags` and has no
+  interface of its own.  There is no benefit to naming it in a ``use``
+  statement.  See the documentation for :mod:`startInitCommDiags` for
+  more information.
+ */
 module stopInitCommDiags {
   use startInitCommDiags;
 

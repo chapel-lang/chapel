@@ -109,16 +109,21 @@ class argument_map(object):
             return arch
 
         if compiler == 'gnu':
-            if version >= 4.9:
+            if version.major > 4:
                 return cls.gcc49.get(arch, '')
-            if version >= 4.7:
-                return cls.gcc47.get(arch, '')
-            if version >= 4.3:
-                return cls.gcc43.get(arch, '')
+            elif version.major == 4:
+                if version.minor >= 9:
+                    return cls.gcc49.get(arch, '')
+                elif version.minor >= 7:
+                    return cls.gcc47.get(arch, '')
+                elif version.minor >= 3:
+                    return cls.gcc43.get(arch, '')
             return 'none'
         elif compiler == 'intel':
             return cls.intel.get(arch, '')
         elif compiler == 'clang':
+            return cls.clang.get(arch, '')
+        elif compiler == 'clang-included':
             return cls.clang.get(arch, '')
         else:
             stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler))
@@ -309,7 +314,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
     #
     if comm_val == 'none' and ('linux' in platform_val or
                                platform_val == 'darwin' or
-                               platform_val == 'cygwin'):
+                               platform_val.startswith('cygwin')):
         if arch:
             if arch != 'knc' and not location or location == 'host':
                 # when a user supplies an architecture, and it seems reasonable

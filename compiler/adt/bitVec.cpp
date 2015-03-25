@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 
 #define TYPE unsigned
 
-BitVec::BitVec(int in_size) {
+BitVec::BitVec(size_t in_size) {
   if (in_size == 0) {
     ndata = 0;
     this->in_size = 0;
@@ -35,39 +35,62 @@ BitVec::BitVec(int in_size) {
 }
 
 
+BitVec::BitVec(const BitVec& rhs)
+: data(NULL), in_size(rhs.in_size), ndata(rhs.ndata)
+{
+  if (ndata > 0)
+  {
+    data = (TYPE*)calloc(ndata, sizeof(TYPE));
+    copy(rhs);
+  }
+}
+
+
 BitVec::~BitVec() {
   free(data);
 }
 
 
 void BitVec::clear() {
-  for (int i = 0; i < ndata; i++)
+  for (size_t i = 0; i < ndata; i++)
     data[i] = 0;
 }
 
 
-bool BitVec::get(int i) {
-  int j = i / (sizeof(TYPE)<<3);
-  int k = i - j*(sizeof(TYPE)<<3);
+bool BitVec::get(size_t i) const {
+#if DEBUG
+  if (i >= in_size) 
+    INT_FATAL("BitVec::get -- operand out of range.");
+#endif
+  size_t j = i / (sizeof(TYPE)<<3);
+  size_t k = i - j*(sizeof(TYPE)<<3);
   return data[j] & (1 << k);
 }
 
 
-void BitVec::unset(int i) {
-  int j = i / (sizeof(TYPE)<<3);
-  int k = i - j*(sizeof(TYPE)<<3);
+void BitVec::unset(size_t i) {
+  size_t j = i / (sizeof(TYPE)<<3);
+  size_t k = i - j*(sizeof(TYPE)<<3);
   data[j] &= ((TYPE)-1) - (1 << k);
 }
 
 
-void BitVec::disjunction(BitVec& other) {
-  for (int i = 0; i < ndata; i++)
+void BitVec::disjunction(const BitVec& other) {
+#if DEBUG
+  if (other.in_size != in_size)
+    INT_FATAL("BitVec::disjunction -- operand lengths must be equal.");
+#endif
+  for (size_t i = 0; i < ndata; i++)
     data[i] |= other.data[i];
 }
 
 
-void BitVec::intersection(BitVec& other) {
-  for (int i = 0; i < ndata; i++)
+void BitVec::intersection(const BitVec& other) {
+#if DEBUG
+  if (other.in_size != in_size)
+    INT_FATAL("BitVec::intersection -- operand lengths must be equal.");
+#endif
+  for (size_t i = 0; i < ndata; i++)
     data[i] &= other.data[i];
 }
 
@@ -82,8 +105,12 @@ void BitVec::intersection(BitVec& other) {
  */ 
 
 
-bool BitVec::equals(BitVec& other) {
-  for(int i = 0; i < ndata; i++) {
+bool BitVec::equals(const BitVec& other) const {
+#if DEBUG
+  if (other.in_size != in_size)
+    INT_FATAL("BitVec::disjunction -- operand lengths must be equal.");
+#endif
+  for(size_t i = 0; i < ndata; i++) {
     if(data[i] != other.data[i]) {
       return false;
     }
@@ -93,40 +120,55 @@ bool BitVec::equals(BitVec& other) {
 
 
 void BitVec::set() {
-  for (int i = 0; i < ndata; i++)
+  for (size_t i = 0; i < ndata; i++)
     data[i] = ~0;
 }
 
 
-void BitVec::set(int i) {
-  int j = i / (sizeof(TYPE)<<3);
-  int k = i - j*(sizeof(TYPE)<<3);
+void BitVec::set(size_t i) {
+  size_t j = i / (sizeof(TYPE)<<3);
+  size_t k = i - j*(sizeof(TYPE)<<3);
   data[j] |= 1 << k;
 }
 
 
 void BitVec::reset() {
-  for (int i = 0; i < ndata; i++)
+  for (size_t i = 0; i < ndata; i++)
     data[i] = 0;
 }
       
         
-void BitVec::reset(int i) {
-  int j = i / (sizeof(TYPE)<<3);
-  int k = i - j*(sizeof(TYPE)<<3);
-  data[j] &= ((int)-1) - (1 << k);
+void BitVec::reset(size_t i) {
+  size_t j = i / (sizeof(TYPE)<<3);
+  size_t k = i - j*(sizeof(TYPE)<<3);
+  data[j] &= ((size_t)-1) - (1 << k);
+}
+
+
+void BitVec::copy(const BitVec& other) {
+  for (size_t i = 0; i < ndata; ++i)
+    data[i] = other.data[i];
+}
+
+
+void BitVec::copy(size_t i, bool value) {
+  size_t j = i / (sizeof(TYPE)<<3);
+  size_t k = i - j*(sizeof(TYPE)<<3);
+  data[j] &= ~(1 << k);
+  if (value)
+    data[j] |= (1 << k);
 }
 
 
 void BitVec::flip() {
-  for (int i = 0; i < ndata; i++)
+  for (size_t i = 0; i < ndata; i++)
     data[i] = ~data[i];
 }
 
 
-void BitVec::flip(int i) {
-  int j = i / (sizeof(TYPE)<<3);
-  int k = i - j*(sizeof(TYPE)<<3);
+void BitVec::flip(size_t i) {
+  size_t j = i / (sizeof(TYPE)<<3);
+  size_t k = i - j*(sizeof(TYPE)<<3);
   data[j] ^= 1 << k;
 }
 
@@ -138,11 +180,11 @@ void BitVec::flip(int i) {
  * hex manipulation (I have no idea what the name of that bit counting 
  * algorithm is called)
  */
-int BitVec::count() {
-  int count = 0;
-  for (int i = 0; i < ndata; i++) {
-    int localCount ;
-    int x = data[i]; 
+size_t BitVec::count() const {
+  size_t count = 0;
+  for (size_t i = 0; i < ndata; i++) {
+    size_t localCount ;
+    size_t x = data[i]; 
     for (localCount=0; x; localCount++) {
       x &= x-1;
     }
@@ -152,20 +194,20 @@ int BitVec::count() {
 }
 
 
-int BitVec::size() {
-  return (int)in_size; 
+size_t BitVec::size() const {
+  return in_size; 
 }
 
 
-bool BitVec::test(int i) {
-  int j = i / (sizeof(TYPE)<<3);
-  int k = i - j*(sizeof(TYPE)<<3);
+bool BitVec::test(size_t i) const {
+  size_t j = i / (sizeof(TYPE)<<3);
+  size_t k = i - j*(sizeof(TYPE)<<3);
   return data[j] & (1 << k);
 }
 
 
-bool BitVec::any() {
-  for (int i = 0; i < ndata; i++) {
+bool BitVec::any() const {
+  for (size_t i = 0; i < ndata; i++) {
     if(data[i] > 0) {
       return true;
     }
@@ -174,7 +216,7 @@ bool BitVec::any() {
 }
 
 
-bool BitVec::none() {
+bool BitVec::none() const {
   return !any();
 }
 

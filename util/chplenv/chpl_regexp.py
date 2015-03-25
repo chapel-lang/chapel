@@ -3,18 +3,16 @@ import sys, os
 
 import chpl_arch, chpl_platform, chpl_compiler, utils
 from utils import memoize
+import chpl_3p_re2_configs
 
 @memoize
 def get():
     regexp_val = os.environ.get('CHPL_REGEXP')
     if not regexp_val:
-        target_platform = chpl_platform.get('target')
-        target_compiler = chpl_compiler.get('target')
-        target_arch = chpl_arch.get('target', map_to_compiler=True, get_lcd=True)
         chpl_home = utils.get_chpl_home()
-        regexp_target_dir = '{0}-{1}-{2}'.format(target_platform, target_compiler, target_arch)
+        uniq_cfg_path = chpl_3p_re2_configs.get_uniq_cfg_path()
         regexp_subdir = os.path.join(chpl_home, 'third-party', 're2', 'install',
-                                     regexp_target_dir)
+                                     uniq_cfg_path)
         regexp_header = os.path.join(regexp_subdir, 'include', 're2', 're2.h')
         if os.path.exists(regexp_header):
             regexp_val = 're2'

@@ -1,0 +1,6 @@
+# This test requires the use of --fast-followers to generate correct output
+# and since the test is examining if our default behavior makes the entire test
+# use fast followers, it doesn't make sense to force the flag to be thrown in
+# all cases.  So turn it off for the cases where we would normally expect this
+# optimization not to be in use.
+COMPOPTS <= --baseline

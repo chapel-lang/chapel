@@ -1,3 +1,0 @@
-# Under comm=none, this fails with
-#   this-in-taskfns-in-ctors.chpl:62: error: attempt to dereference nil
-CHPL_COMM==none

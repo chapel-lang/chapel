@@ -4,6 +4,11 @@
 // usually the system runs out of resources after two or three thousand
 // threads have been created.)
 
+// If CHPL_RT_NUM_THREADS_PER_LOCALE has been set then this test will fail
+// because it won't print out the expected warning.  One could alter the prediff
+// to use an alternate .good file in that case, but this seems like more trouble
+// than it is worth at the moment.
+
 // This test also makes sure that regardless of whether the system runs out of
 // resources, tasks can be placed in the task pool, and these tasks are
 // eventually performed to completion.

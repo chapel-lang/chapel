@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -754,7 +754,9 @@ struct rdcache_s* cache_create(void) {
   pages = buffer + total_size;
   total_size += CACHEPAGE_SIZE * cache_pages;
 
-  assert(total_size <= allocated_size);
+  if (total_size > allocated_size) {
+    chpl_internal_error("cache_create() failed");
+  }
 
   // Now fill in everything else.
   c->next_request_number = 1;
@@ -1432,6 +1434,7 @@ struct cache_entry_s* find_in_tree(struct rdcache_s* tree,
   return bottom_match;
 }
 
+#if VERIFY
 static
 int find_in_dirty(struct rdcache_s* tree, struct dirty_entry_s* entry)
 {
@@ -1497,10 +1500,12 @@ int validate_queue(struct rdcache_s* tree, struct cache_entry_s* head, struct ca
   assert(forward_count == reverse_count);
   return forward_count;
 }
+#endif
 
 static
 void validate_cache(struct rdcache_s* tree)
 {
+#if VERIFY
   int top, bottom;
   struct top_entry_s* top_cur;
   struct cache_entry_s* bottom_cur;
@@ -1608,6 +1613,7 @@ void validate_cache(struct rdcache_s* tree)
     }
     assert( num_used_top_nodes + num_free_top_nodes == tree->max_top_nodes );
   }
+#endif
 }
 
 static
@@ -1642,11 +1648,11 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
       while( cache->pending[index] ) {
         DEBUG_PRINT(("wait_for waiting %i..%i\n", index, last));
         // Wait for some requests to complete.
-        chpl_comm_nb_wait_some(&cache->pending[index], last - index + 1);
+        chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
       }
       // cache->pending[index] == NULL now
     }
-    if( chpl_comm_nb_handle_is_complete(cache->pending[index]) ) {
+    if( chpl_comm_test_nb_complete(cache->pending[index]) ) {
       // we completed cache->pending[index], so remove the entry from the queue.
       DEBUG_PRINT(("wait_for removing %i\n", index));
       fifo_circleb_pop( &cache->pending_first_entry, &cache->pending_last_entry, cache->pending_len);
@@ -1824,7 +1830,6 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
   struct top_entry_s **head, *top_match, *top_tmp;
   struct cache_entry_s **bottom, *bottom_match, *bottom_tmp;
   struct cache_entry_base_s* bottom_prev;
-  int queue = QUEUE_FREE;
 
   assert(raddr != 0);
 
@@ -1856,9 +1861,8 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
   // If X is in A1out then find space for X and add it to the head of Am
     assert( bottom_match->base.node == node );
     assert( bottom_match->raddr == raddr );
-    queue = bottom_match->queue;
     // We shouldn't be replacing something in Ain or Am; use use_entry instead
-    assert(queue == QUEUE_AOUT);
+    assert(bottom_match->queue == QUEUE_AOUT);
 
     DEBUG_PRINT(("%d: Found %p in Aout\n", chpl_nodeID, (void*) raddr));
     // add X to the head of Am
@@ -1881,8 +1885,6 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     bottom_match->max_prefetch_sequence_number = NO_SEQUENCE_NUMBER;
   } else {
   // Else If X is in no queue then find space for X and add it to A1in
-    queue = QUEUE_FREE;
-
     DEBUG_PRINT(("%d: Found %p nowhere\n", chpl_nodeID, (void*) raddr));
 
     // This is our new entry...
@@ -2029,9 +2031,9 @@ void cache_put(struct rdcache_s* cache,
     entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
 
     // Copy the data into page.
-    memcpy(page+(requested_start-ra_page),
-           addr+(requested_start-raddr),
-           requested_size);
+    chpl_memcpy(page+(requested_start-ra_page),
+                addr+(requested_start-raddr),
+                requested_size);
 
     // Make sure that there is a dirty page available for next time.
     ensure_free_dirty(cache);
@@ -2409,9 +2411,9 @@ void cache_get(struct rdcache_s* cache,
           //       node, (void*) ra_page, (void*) requested_start,
           //       (int) entry->readahead_len);
           // Copy the data out.
-          memcpy(addr+(requested_start-raddr),
-                 page+(requested_start-ra_page),
-                 requested_size);
+          chpl_memcpy(addr+(requested_start-raddr),
+                      page+(requested_start-ra_page),
+                      requested_size);
     
           // If we are accessing a page that has a readahead condition,
           // trigger that readahead.
@@ -2556,7 +2558,7 @@ void cache_get(struct rdcache_s* cache,
       clock_gettime(CLOCK_REALTIME, &wait1);
 #endif
 
-      chpl_comm_nb_wait_some(&handle, 1);
+      chpl_comm_wait_nb_some(&handle, 1);
 
 #ifdef TIME
       clock_gettime(CLOCK_REALTIME, &wait2);
@@ -2569,9 +2571,9 @@ void cache_get(struct rdcache_s* cache,
 #endif
 
       // Then, copy it out.
-      memcpy(addr+(requested_start-raddr),
-             page+(requested_start-ra_page),
-             requested_size);
+      chpl_memcpy(addr+(requested_start-raddr),
+                  page+(requested_start-ra_page),
+                  requested_size);
   
     }
   }

@@ -12,3 +12,4 @@ script:
   - ./util/buildRelease/smokeTest
 env:
   - CHPL_DEVELOPER=true
+  - NIGHTLY_TEST_SETTINGS=true

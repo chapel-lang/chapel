@@ -63,13 +63,59 @@ perl -c $CHPL_HOME/util/tokencount/tokctnightly
 # Check copyrights in source files.
 $CHPL_HOME/util/test/checkCopyrights.bash
 
-# Source common.bash, which sets up a bunch of environment variables like
-# CHPL_DEVELOPER, CHPL_GMP, etc. that are required for nightly testing.
+# Check that test script names match their registered config names (for consistency).
+config_name_errors=$(grep CHPL_NIGHTLY_TEST_CONFIG_NAME $CHPL_HOME/util/cron/test-*.ba{t,sh} | \
+    $CHPL_HOME/util/cron/verify_config_names.py)
+if [ -n "${config_name_errors}" ] ; then
+    echo ""
+    echo "Test script naming errors:"
+    echo "${config_name_errors}"
+    exit 1
+fi
+
+# Source common.bash, which sets up a bunch of environment variables that are
+# required for nightly testing.
 source $CHPL_HOME/util/cron/common.bash
 
 # Disable GMP and re2 to speed up build.
 export CHPL_GMP=none
 export CHPL_REGEXP=none
 
-# Compile chapel and make sure the hello world examples run.
-make -C $CHPL_HOME check
+echo ""
+
+# If NIGHTLY_TEST_SETTINGS is set, call make with DEBUG=0 WARNINGS=1 OPTIMIZE=1
+# (like nightly testing).
+chpl_make_args="-C ${CHPL_HOME}"
+if [ "${NIGHTLY_TEST_SETTINGS+x}" = "x" ] ; then
+    chpl_make_args="${chpl_make_args} DEBUG=0 WARNINGS=1 OPTIMIZE=1"
+fi
+echo "Setting these make variables: ${chpl_make_args}"
+
+# Record whether CHPL_DEVELOPER was set during the build to console.
+if [ "${CHPL_DEVELOPER+x}" = "x" ] ; then
+    echo "CHPL_DEVELOPER is set for this build."
+fi
+
+echo ""
+
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+num_procs=$(python -c "import multiprocessing; print(multiprocessing.cpu_count())")
+
+# If make check fails, store the log file in CHPL_HOME. Also, create a temp dir
+# in $CHPL_HOME where the hello*.chpl tests are copied and run.
+export CHPL_CHECK_INSTALL_DIR=$CHPL_HOME
+
+if [ "${TRAVIS}" = "true" ] ; then
+    export CHPL_CHECK_INSTALL_PRINT_ERROR="true"
+fi
+
+# Compile chapel and make sure the hello world examples run. Compile first with
+# parallel execution, but call `make check` without it.
+make -j${num_procs} $chpl_make_args && \
+    make $chpl_make_args check
+
+# Build chpldoc and make sure the chpldoc primer runs. Build chpldoc with
+# parallel execution, but call `make check-chpldoc` without it.
+make -j${num_procs} $chpl_make_args chpldoc && \
+    make $chpl_make_args check-chpldoc

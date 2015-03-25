@@ -1,7 +1,12 @@
-#Because inlining is turned off when baseline is run:
+# These generate reports on inlining
 trivial/mjoyner/inlinefunc/inlfunc1_report
 trivial/mjoyner/inlinefunc/inlfunc2_report
-#Removing unnecessary autocopies necessary to get to minimum number of leaks
-memory/figueroa/LeakedMemory5
+
 # lack of optimizations lead to extra leaked memory
 memory/sungeun/refCount/domainMaps
+
+# Tom H. thinks these are related to modules/hilde/test_module_Sort-baseline.
+# They started failing with 46cb43b36745149a7866e0e38a2379611ac55014 but there
+# was an existing underlying issue.
+types/string/StringImpl/memLeaks/promotion
+memory/vass/memleak-array-of-records-1

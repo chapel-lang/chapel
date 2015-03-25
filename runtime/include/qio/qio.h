@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -226,8 +226,8 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 
 #else
 
-#ifndef SIMPLE_TEST
-#error Chapel runtime should be included before QIO or SIMPLE_TEST should be set
+#ifndef CHPL_RT_UNIT_TEST
+#error Chapel runtime should be included before QIO or CHPL_RT_UNIT_TEST should be set
 #endif
 
 #include <pthread.h>
@@ -914,7 +914,7 @@ qioerr qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* 
 
   // Is there room in our fast path buffer?
   if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
-    memcpy( ptr, ch->cached_cur, len );
+    qio_memcpy( ptr, ch->cached_cur, len );
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
     *amt_read = len;
     err = 0;
@@ -1068,7 +1068,7 @@ qioerr qio_channel_write(const int threadsafe, qio_channel_t* restrict ch, const
 
   // Is there room in our fast path buffer?
   if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
-    memcpy( ch->cached_cur, ptr, len );
+    qio_memcpy( ch->cached_cur, ptr, len );
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
     *amt_written = len;
     err = _qio_channel_post_cached_write(ch);
@@ -1098,7 +1098,7 @@ qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, vo
 
   // Is there room in our fast path buffer?
   if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
-    memcpy( ptr, ch->cached_cur, len );
+    qio_memcpy( ptr, ch->cached_cur, len );
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
     err = 0;
   } else {
@@ -1128,7 +1128,7 @@ qioerr qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, c
 
   // Is there room in our fast path buffer?
   if( len <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
-    memcpy( ch->cached_cur, ptr, len );
+    qio_memcpy( ch->cached_cur, ptr, len );
     ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, len);
     err = _qio_channel_post_cached_write(ch);
   } else {

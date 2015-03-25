@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,7 +15,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GEN_LFLAGS += -L$(RE2_LIB_DIR) -Wl,-rpath -Wl,$(RE2_LIB_DIR)
-LIBS += -lre2 -lpthread
-
+GEN_LFLAGS += -L$(RE2_LIB_DIR) -Wl,-rpath,$(RE2_LIB_DIR)
 LD=$(CXX)

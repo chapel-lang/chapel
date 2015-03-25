@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -56,9 +56,11 @@ chpl_localeID_t id_rt2pub(c_localeid_t i)
 {
   return chpl_rt_buildLocaleID(i >> 32, i & 0xffffffff);
 }
-
+extern void chpl_getLocaleID (chpl_localeID_t* localeID,  int64_t _ln, c_string _fn);
 static ___always_inline
 chpl_localeID_t chpl_gen_getLocaleID(void)
 {
-  return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
+  chpl_localeID_t localeID;
+  chpl_getLocaleID(&localeID, 0, NULL);
+  return localeID;
 }

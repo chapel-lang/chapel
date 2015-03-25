@@ -1,4 +1,4 @@
-# Copyright 2004-2014 Cray Inc.
+# Copyright 2004-2015 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -43,3 +43,6 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.foot
 
 reservedSymbolNames.h: reservedSymbolNames
 	sed -e 's/^\([ 	]*\)\([A-Za-z_][A-Za-z0-9_]*\)/\1cnames.set_add(astr("\2"));/' <$< >$@
+
+$(OBJ_SUBDIR)/codegen.o: reservedSymbolNames.h
+

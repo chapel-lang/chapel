@@ -2,3 +2,7 @@ COMPOPTS <= --baseline
 CHPL_COMM == gasnet
 COMPOPTS  <= --no-local
 CHPL_LOCALE_MODEL != flat
+#
+# when doing memory testing, the configs used are not available, so skip
+#
+EXECOPTS <= memLeaksLog

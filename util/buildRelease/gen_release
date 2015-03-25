@@ -2,6 +2,7 @@
 
 use Cwd;
 use Cwd 'abs_path';
+use File::Basename;
 use File::Path qw(mkpath);
 use File::Spec;
 use File::Temp qw/ tempdir /;
@@ -18,47 +19,88 @@ if ($version eq "") {
     $version = "-$version";
 }
 
-# check out a clean copy of the sources into a temporary directory
-$user = `whoami`;
-chomp($user);
-
-$basetmpdir = File::Spec->tmpdir;
-if (exists($ENV{"CHPL_GEN_RELEASE_TMPDIR"})) {
-    $basetmpdir = $ENV{"CHPL_GEN_RELEASE_TMPDIR"};
-}
-$tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
-
 $origCwd = abs_path(cwd());
-$reldir = "chapel$version";
-$rootdir = "$tmpdir/$reldir";
-$git_url = $ENV{'CHPL_HOME_REPOSITORY'};
-if ($git_url eq "") {
-    $git_url = "https://github.com/chapel-lang/chapel";
+
+# Find CHPL_HOME. If unset, use root of repo relative to this script.
+$chplhome = "";
+if (exists($ENV{"CHPL_HOME"})) {
+    $chplhome = $ENV{"CHPL_HOME"};
+} else {
+    $script_dir = dirname($0);
+    $chplhome = abs_path("$script_dir/../..");
 }
 
-$git_branch = "master";
-if (exists($ENV{'CHPL_GEN_RELEASE_BRANCH'})) {
-    $git_branch = $ENV{'CHPL_GEN_RELEASE_BRANCH'};
+# If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo and
+# just use $CHPL_HOME as the work space.
+$no_clone = 0;
+$archive_dir = "";
+$resultdir = "";
+$reldir = "";
+$transform_args = "";
+if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
+    $no_clone = 1;
+    $archive_dir = $chplhome;
+    $rootdir = $chplhome;
+    $resultdir = "$chplhome/tar";
+    $reldir = ".";
+
+    $tar_version = `tar --version`;
+    if ( $tar_version =~ /bsd/ ) {
+        $transform_args = "-s '/./chapel$version/'";
+    } else {
+        $transform_args = "--transform 's/./chapel$version/'"
+    }
 }
 
-print "Cloning the sources (repo: $git_url branch: $git_branch)...\n";
-$clone_status = system("git clone --branch $git_branch $git_url $rootdir");
+if ($no_clone == 0) {
+    # check out a clean copy of the sources into a temporary directory
+    $user = `whoami`;
+    chomp($user);
 
-if ($clone_status != 0) {
-    print "Failed to clone repo.\n";
-    exit 1;
+    $basetmpdir = File::Spec->tmpdir;
+    if (exists($ENV{"CHPL_GEN_RELEASE_TMPDIR"})) {
+        $basetmpdir = $ENV{"CHPL_GEN_RELEASE_TMPDIR"};
+    }
+    $tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
+
+    $reldir = "chapel$version";
+    $rootdir = "$tmpdir/$reldir";
+    $git_url = $ENV{'CHPL_HOME_REPOSITORY'};
+    if ($git_url eq "") {
+        $git_url = "https://github.com/chapel-lang/chapel";
+    }
+
+    $git_branch = "master";
+    if (exists($ENV{'CHPL_GEN_RELEASE_BRANCH'})) {
+        $git_branch = $ENV{'CHPL_GEN_RELEASE_BRANCH'};
+    }
+
+    print "Cloning the sources (repo: $git_url branch: $git_branch)...\n";
+    $clone_status = system("git clone --branch $git_branch $git_url $rootdir");
+
+    if ($clone_status != 0) {
+        print "Failed to clone repo.\n";
+        exit 1;
+    }
+
+    print "Creating git archive...\n";
+    $archive_dir = "$rootdir/$reldir";
+    system("cd $rootdir && git archive --format=tar HEAD | (mkdir -pv $archive_dir && cd $archive_dir && tar -xf -)");
+
+    if (defined($ENV{"CHPL_HOME"})) {
+        $resultdir = $ENV{"CHPL_HOME"};
+        $resultdir = "$resultdir/tar";
+    } else {
+        $resultdir = $basetmpdir;
+    }
 }
-
-print "Creating git archive...\n";
-$archive_dir = "$rootdir/$reldir";
-system("cd $rootdir && git archive --format=tar HEAD | (mkdir -pv $archive_dir && cd $archive_dir && tar -xf -)");
 
 # explicit files to include
 @files = (
        "ACKNOWLEDGEMENTS",
        "CHANGES",
        "CONTRIBUTORS",
-       "COPYRIGHT", 
+       "COPYRIGHT",
        "GOALS",
        "LICENSE",
        "LICENSE.chapel",
@@ -78,6 +120,7 @@ system("cd $rootdir && git archive --format=tar HEAD | (mkdir -pv $archive_dir &
        "util/setchplenv.fish",
        "util/setchplenv.sh",
        "util/start_test",
+       "util/chpltags",
 );
 
 
@@ -96,20 +139,17 @@ system("cd $rootdir && git archive --format=tar HEAD | (mkdir -pv $archive_dir &
     "examples",
     "make",
     "modules",
+    "modules-ipe",
     "runtime",
     "third-party",
     "util/chplenv",
     "util/config",
-    "util/docs",
     "util/quickstart",
     "util/test"
 );
 
 
 chdir "$archive_dir";
-
-print "Generating the bison/flex files...\n";
-system("cd compiler/parser && make lex.yy.cpp > /dev/null");
 
 print "Creating the examples directory...\n";
 system("cp -r test/release/examples .");
@@ -175,22 +215,16 @@ foreach $dir (@complete_dirs) {
 }
 
 
-if (defined($ENV{"CHPL_HOME"})) {
-    $resultdir = $ENV{"CHPL_HOME"};
-    $resultdir = "$resultdir/tar";
-} else {
-    $resultdir = $basetmpdir;
-}
-
 if (! -d $resultdir) {
     print("Creating $resultdir\n");
     mkpath($resultdir, 1);
 }
 
-$cmd = "tar -cz -f $resultdir/$reldir.tar.gz @tarfiles";
+$tarball_name = "$resultdir/chapel$version.tar.gz";
+$cmd = "tar -cz $transform_args -f $tarball_name @tarfiles";
 print "$cmd\n";
 system ($cmd);
 
-print "Left result in $resultdir/$reldir.tar.gz\n";
+print "Left result in $tarball_name\n";
 
 chdir $origCwd;

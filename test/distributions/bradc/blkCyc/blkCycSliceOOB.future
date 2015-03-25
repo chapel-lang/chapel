@@ -1,0 +1,6 @@
+bug: No bounds checking on block-cyclic slices
+
+While implementing array views, I found that we don't seem to
+bounds check block-cyclic array slices.  This should be fixed
+if/when array views are merged.
+
