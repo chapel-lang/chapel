@@ -17,118 +17,92 @@
  * limitations under the License.
  */
 
-// Wrapper for FFTW version 3.
-
 /*
-  Support for key FFTW version 3 routines in Chapel trappings
+  Single-threaded FFT computations via key routines from FFTW (version 3)
 
-  This module defines a Chapel wrapper around key routines from FFTW
-  version 3.  Over time, the intention is to expand this support to
-  additional routines, prioritizing based on user feedback.
+  This module defines Chapel wrappers for key single-threaded 64-bit
+  routines from FFTW (http://www.fftw.org), version 3.  For
+  multi-threaded routines, refer to the :mod:`FFTW_MT` module.  Over
+  time, the intention is to expand these modules to support additional
+  routines, prioritizing based on requests and feedback from users.
 
-  As in general FFTW, the flow is to:
 
-  0) Call init_threads() and plan_with_nthreads() if using the
-     multithreaded FFTW interface.
+  To use this module:
 
-  1) Create plan(s) using the plan_dft*() routines.
+  1. Ensure that FFTW (version 3) is installed on your system and that
+     the header and library files (e.g., fftw3.h, libfftw3.*) are
+     either installed in a standard system location or that your C
+     compiler's environment variables are set up to find them
+     (alternatively, the Chapel compiler's ``-I`` and ``-L`` flags can
+     be used to specify these locations).
 
-  2) Execute the plan(s) using the execute() routine.
+  2. Add ``use FFTW;`` to your Chapel code.
 
-  3) Destroy the plan(s) using the destroy_plan() routine.
+  3. Compile and run your Chapel program as usual.
 
-  4) If using the multithreaded FFTW interface, call
-     cleanup_threads().  
 
-  5) Call cleanup().
+  As in standard FFTW usage, the flow is to:
 
-  At present, clients of the FFTW module must specify fftw3.h and -I,
-  -L, -l flags sufficient to specify the required libraries and find
-  the files on the 'chpl' command line.  We are currently
-  investigating techniques to streamline this process.
+  1. Create plan(s) using the :proc:`plan_dft* <plan_dft>` routines.
+
+  2. Execute the plan(s) one or more times using :proc:`execute`.
+
+  3. Destroy the plan(s) using :proc:`destroy_plan`.
+
+  4. Call :proc:`cleanup`.
+
+
+  Note that each of the Chapel :proc:`plan_dft* <plan_dft>` routines
+  support both `in-place` and `out-of-place` versions of the
+  transforms, where the former versions use a single array for both
+  input and output, and the latter use two distinct arrays.
+  
+  In future versions of this module, we anticipate improving the
+  plan_dft*() interfaces to make better use of Chapel features and
+  move further away from C-isms (like the overloaded role of `flags`
+  and the use of C-based types).  Such features are expected to take
+  advantage of Chapel's support for default argument values and
+  keyword-based argument passing.  We are also thinking about changing
+  the interface for the in-place routines to use array slicing rather
+  than separate arguments for the array and domain.
 */
 
-// TODOs for Brad (in priority order):
-//
-// - Can we get a form of use/requires in that will simplify the
-//   command-line?
+// Possible TODOs:
 //
 // - How do we feel about FFTW_ALLCAPS names given that the routines
 //   themselves don't have fftw_ prefixes, that they're defined as
-//   c_int's, and that they're all-caps?
+//   c_int's, and that they're all-caps?  What if we were to replace
+//   these with bool/enum arguments representing the separate planning
+//   aspects that are overloaded into 'flags'?  This would also allow
+//   us to move away from c_ints (which could be done in other ways
+//   as well, such as safe-casting and providing our own versions of
+//   the C variables).
 //
-// - Related question about fftw_ types taking type c_int, though
-//   maybe we don't care that much since symbolic values are taken
-//   in?
+// - It seems that rather than passing in a domain and an array for
+//   the in-place cases, we could probably pass in an array slice
+//   where the array's allocating domain reflected the padding and
+//   the slicing domain reflected the area over which the FFT should
+//   be performed.  Would this be cleaner?  Would the overhead be
+//   significant?
 //
 
 module FFTW {
 
   use SysCTypes;
-
-  // Define the various planner flags
-  // See Sec. 4.3.2 of FFTW manual "Planner Flags"
-
-  //
-  // TODO: Is it weird that we use FFTW_ names here, but not in
-  // the routines?  Should we wrap the external flags so that
-  // they can be ints or enums and avoid the all-caps C scheme
-  // or is the familiarity better?
-  //
-
-  extern const FFTW_FORWARD : c_int;
-  /* These two constants are symbolic aliases for making the sign of
-     the exponent in the formula that defines the Fourier transform
-     -1 or 1, respectively. */
-  extern const FFTW_BACKWARD : c_int;
-
-  extern const FFTW_ESTIMATE : c_uint;
-  extern const FFTW_MEASURE : c_uint;
-  extern const FFTW_PATIENT : c_uint;
-  extern const FFTW_EXHAUSTIVE : c_uint;
-  /* 
-     All of the above are planning-rigor flags.  See `Section 4.3.2
-     <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual
-     for details.
-  */
-  extern const FFTW_WISDOM_ONLY : c_uint;
-  extern const FFTW_DESTROY_INPUT : c_uint;
-  extern const FFTW_PRESERVE_INPUT : c_uint;
-  /* 
-     All of the above are algorithm-restriction flags.  See `Section
-     4.3.2 <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW
-     manual for details.
-  */
-  extern const FFTW_UNALIGNED : c_uint;
+  use "fftw3.h", "-lfftw3";
 
 
   /*
-    'fftw_plan' is an opaque type used by FFTW for storing and passing
-    plans between routines.
+    Controls execution-time array size checks in the FFTW
+    :proc:`plan_dft` routines (set to `true` to disable checks).
+   */
+  config param noFFTWsizeChecks = false;
+
+  /*
+    An opaque type used to store and reuse FFTW plans across multiple
+    routines.
   */
   extern type fftw_plan; // opaque type
-
-
-  // Multi-threaded setup routines below
-  /*
-    Initialize the threads used for multi-threaded FFTW plans.
-
-    :returns: Zero if there was an error, non-zero otherwise.
-  */
-  proc init_threads() : c_int {
-    return C_FFTW.fftw_init_threads();
-  }
-
-  /*
-    Registers the number of threads to use for multi-threaded FFTW
-    plans.
-
-    :arg nthreads: The number of threads to use.
-    :type nthreads: int
-   */
-  proc plan_with_nthreads(nthreads: int) {
-    C_FFTW.fftw_plan_with_nthreads(nthreads.safeCast(c_int));
-  }
 
 
   // Planner functions
@@ -143,23 +117,67 @@ module FFTW {
   // more native Chapel types anyway.
 
   /*
-    Creates a plan for a complex->complex DFT.
+    Creates a plan for an out-of-place complex-to-complex DFT.
 
     :arg input: The input array, which can be of any rank
     :type input: [] `complex(128)`
 
-    :arg output: The output array, with rank matching the input array's
+    :arg output: The output array, whose size and shape must match the input array's
     :type output: [] `complex(128)`
     
-    :arg sign: The sign of the exponent in the DFT formula.
+    :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
     :type sign: c_int
 
-    :arg flags: planning-rigor and/or algorithm-restriction flags
-    :type sign: c_int
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
 
-    :returns: The fftw_plan representing the plan
+    :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft(input: [] complex(128), output: [] complex(128), 
+  proc plan_dft(input: [?Din] complex(128), output: [?Dout] complex(128), 
+                 sign: c_int, flags: c_uint) : fftw_plan
+  {
+    if !noFFTWsizeChecks {
+      var error = false;
+
+      for i in 1..input.rank do
+        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft()");
+
+      if error then
+        halt("Incorrect array sizes in plan_dft()");
+    }
+
+    return plan_dft_help(input, output, sign, flags);
+  }
+
+
+  /*
+    Creates a plan for an in-place complex-to-complex DFT.
+
+    :arg arr: The array to use as the in-place input/output array.
+    :type arr: [] `complex(128)`
+
+    :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
+    :type sign: c_int
+
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+  */
+  proc plan_dft(arr: [] complex(128), sign: c_int, flags: c_uint): fftw_plan {
+    return plan_dft_help(arr, arr, sign, flags);
+  }
+
+  //
+  // Though not strictly necessary, this helper routine is to avoid
+  // doing the size check for the in-place case.  This is the kind
+  // of thing we'd like to mark as "private" once we have that
+  // capability.  I could move it into a sub-module for the time
+  // being, but want to keep the diff with the previous version of
+  // the code minimal.  -BLC
+  // 
+  pragma "no doc"
+  proc plan_dft_help(input: [] complex(128), output: [] complex(128), 
                  sign: c_int, flags: c_uint) : fftw_plan
   {
     param rank = input.rank;
@@ -172,14 +190,41 @@ module FFTW {
                                      output, sign, flags);
   }
 
+
   // Real-to-complex and complex-to-real planning routines There are
   // two cases that we treat independently here : in-place and
   // out-of-place transforms
 
-  // Out-of-place routines
-  proc plan_dft_r2c(input : [] real(64), output : [] complex(128), flags :c_uint) : fftw_plan
+  /*
+    Create a plan for a real-to-complex, out-of-place DFT.
+
+    :arg input: The input array, which can be of any rank
+    :type input: [] `real(64)`
+
+    :arg output: The output array, whose size and shape must match the input array's, except for the leading dimension which should be n/2 + 1, where n is the size of the input array's leading dimension.  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
+    :type output: [] `complex(128)`
+    
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+  */
+  proc plan_dft_r2c(input : [?Din] real(64), output : [?Dout] complex(128), 
+                    flags :c_uint) : fftw_plan
   {
     param rank = input.rank: c_int;
+
+    if !noFFTWsizeChecks {
+      var error = false;
+
+      for i in 1..rank-1 do
+        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
+
+      error |= Private_FFTW.checkRealCplxDimMismatch(Din, Dout, "plan_dft_r2c()", "output ");
+
+      if (error) then
+        halt("Incorrect array sizes in plan_dft_r2c()");
+    }
 
     var dims: rank*c_int;
     for param i in 1..rank do
@@ -188,10 +233,74 @@ module FFTW {
     return C_FFTW.fftw_plan_dft_r2c(rank, dims, input, output, flags);
   }
 
+  // In-place routines, note that these take in the true leading dimension
+  /*
+    Create a plan for a real-to-complex, in-place DFT.
 
-  proc plan_dft_c2r(input : [] complex(128), output : [] real(64),  flags :c_uint) : fftw_plan
+    :arg realDom: Describes the indices of the 'real' view of the array
+    :type realDom: `domain`
+
+    :arg arr: The array to be used as the in-place input/output array.  If passing in an array of `real` elements, the leading dimension of the array must be padded to store 2(n/2 + 1) elements, where `n` is the size of the corresponding dimension of `realDom`.  If passing in an array of `complex` elements, the leading dimension should be (n/2 + 1).  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
+    :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
+
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+   */
+  proc plan_dft_r2c(realDom : domain, arr : [?D] ?t, flags : c_uint) : fftw_plan
+    where t == real || t == complex
+  {
+    if !noFFTWsizeChecks then
+      if Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real) then
+        halt("Incorrect array sizes in plan_dft_r2c()");
+        
+    param rank = realDom.rank: c_int;
+    var dims: rank*c_int;
+    for param i in 1..rank do
+      dims(i) = realDom.dim(i).size: c_int;
+
+    return C_FFTW.fftw_plan_dft_r2c(rank, dims, arr, arr, flags);
+  }
+
+  //
+  // Error overload
+  //
+  pragma "no doc"
+  proc plan_dft_r2c(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan {
+    compilerError("plan_dft_r2c() is only supported for arrays of type real(64) and complex(128)");
+  }
+
+  /*
+    Create a plan for a complex-to-real, out-of-place DFT.
+
+    :arg input: The input array, whose size and shape must match the output array's, except for the leading dimension which should be n/2 + 1, where n is the size of the output array's leading dimension.  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
+    :type input: [] `complex(128)`
+
+    :arg output: The output array
+    :type output: [] `real(64)`
+    
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+  */
+  proc plan_dft_c2r(input : [?Din] complex(128), output : [?Dout] real(64), 
+                    flags :c_uint) : fftw_plan
   {
     param rank = output.rank: c_int; // The dimensions are that of the real array
+
+    if !noFFTWsizeChecks {
+      var error = false;
+
+      for i in 1..rank-1 do
+        error |= Private_FFTW.checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
+
+      error |= Private_FFTW.checkRealCplxDimMismatch(Dout, Din, "plan_dft_c2r()", "input ");
+
+      if (error) then
+        halt("Incorrect array sizes in plan_dft_c2r()");
+    }
 
     var dims: rank*c_int;
     for param i in 1..rank do
@@ -200,36 +309,47 @@ module FFTW {
     return C_FFTW.fftw_plan_dft_c2r(rank, dims, input, output, flags);
   }
 
-  // In-place routines, note that these take in the true leading dimension
-  // TODO : We should put in checks to see that the sizes are consistent
-  // TODO : We should check on types...
-  proc plan_dft_r2c(realDom : domain, input : [] ?t, flags : c_uint) : fftw_plan 
-  {
-    param rank = realDom.rank: c_int;
+  /*
+    Create a plan for a complex-to-real, in-place DFT.
 
+    :arg realDom: Describes the indices of the 'real' view of the array
+    :type realDom: `domain`
+
+    :arg arr: The array to be used as the in-place input/output array.  If passing in an array of `real` elements, the leading dimension of the array must be padded to store 2(n/2 + 1) elements, where `n` is the size of the corresponding dimension of `realDom`.  If passing in an array of `complex` elements, the leading dimension should be (n/2 + 1).  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
+    :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
+
+    :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
+    :type flags: c_int
+
+    :returns: The :type:`fftw_plan` representing the resulting plan
+   */
+  proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : c_uint) : fftw_plan 
+    where t == real || t == complex
+  {
+    if !noFFTWsizeChecks then
+      if Private_FFTW.checkInPlaceDimMismatch(realDom, D, "plan_dft_c2r()", t == real) then
+        halt("Incorrect array sizes in plan_dft_c2r()");
+
+    param rank = realDom.rank: c_int;
     var dims: rank*c_int;
     for param i in 1..rank do
       dims(i) = realDom.dim(i).size: c_int;
 
-    return C_FFTW.fftw_plan_dft_r2c(rank, dims, input, input, flags);
+    return C_FFTW.fftw_plan_dft_c2r(rank, dims, arr, arr, flags);
   }
-  proc plan_dft_c2r(realDom : domain, input: [] ?t, flags : c_uint) : fftw_plan 
-  {
-    param rank = realDom.rank: c_int;
 
-    var dims: rank*c_int;
-    for param i in 1..rank do
-      dims(i) = realDom.dim(i).size: c_int;
-
-    return C_FFTW.fftw_plan_dft_c2r(rank, dims, input, input, flags);
+  pragma "no doc"
+  proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan {
+    compilerError("plan_dft_c2r() is only supported for arrays of type real(64) and complex(128)");
   }
 
 
   // Using plans 
-  /*
-    Executes the given plan.
 
-    :arg plan: The plan to execute, as computed by a plan*() routine.
+  /*
+    Execute an FFTW plan.
+
+    :arg plan: The plan to execute, as computed by a `plan_dft*()` routine.
     :type plan: fftw_plan
   */
   proc execute(const plan: fftw_plan) {
@@ -237,7 +357,7 @@ module FFTW {
   }
 
   /*
-    Destroys the given plan.
+    Destroy an FFTW plan.
 
     :arg plan: The plan to destroy
     :type plan: fftw_plan
@@ -248,18 +368,180 @@ module FFTW {
 
 
   /*
-    Cleans up the threads if multi-threaded FFTW's were enabled using
-    :proc:`init_threads()`.
-  */
-  proc cleanup_threads() {
-    C_FFTW.fftw_cleanup_threads();
-  }
-
-  /*
-    Cleans up FFTW overall.
+    Clean up FFTW overall.
   */
   proc cleanup() {
     C_FFTW.fftw_cleanup();
+  }
+
+
+  // Define the various planner flags
+  // See Sec. 4.3.2 of FFTW manual "Planner Flags"
+
+  //
+  // TODO: Is it weird that we use FFTW_ names here, but not in
+  // the routines?  Should we wrap the external flags so that
+  // they can be ints or enums and avoid the all-caps C scheme
+  // or is the familiarity better?
+  //
+
+  // Direction flags
+
+  /* Request a forward transform (i.e., use a negative exponent in the tranform). */
+  extern const FFTW_FORWARD : c_int;
+  /* Request a backward transform (i.e., use a positive exponent in the transform). */
+  extern const FFTW_BACKWARD : c_int;
+
+
+  // Planning-rigor flags
+
+  /* Specify that a simple heuristic should be used to pick a plan
+     quickly.  This will prevent the input/output arrays from being
+     overwritten during planning. */
+  extern const FFTW_ESTIMATE : c_uint;
+
+  /* Specify that FFTW should try and find an optimized plan by
+     computing several FFTs and measuring their execution time.
+     This can consume some time.
+  */
+  // TODO: If/when we support defaults, might say something like: This
+  // is the default planning option.
+  extern const FFTW_MEASURE : c_uint;
+
+  /* Specify that FFTW should expend a greater effort finding an
+     optimized plan. */
+  extern const FFTW_PATIENT : c_uint;
+
+  /* Specify that FFTW should expend an even greater effort finding an
+     optimized plan. */
+  extern const FFTW_EXHAUSTIVE : c_uint;
+
+  /* This is a special planning mode that is useful for querying
+     whether wisdom is available.  When using it, the plan is only
+     created when wisdom is available for the given problem; otherwise
+     a `null plan` is returned.  This can be combined with other flags
+     to create a plan if the wisdom available was created in that mode
+     (e.g., :const:`FFTW_WISDOM_ONLY` ``|`` :const:`FFTW_PATIENT`).  For more details on
+     this flag and the previous four, refer to `Section 4.3.2
+     <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual
+  */
+  extern const FFTW_WISDOM_ONLY : c_uint;
+
+
+  // Algorithm-restriction flags
+
+  /* Specify that an out-of-place transform is permitted to overwrite
+     its input array with arbitrary data.  This permits more efficient
+     algorithms to be used in some cases. */
+  // TODO: When we're ready to mention defaults, add: "This is the default for
+  // :proc:`plan_dft_c2r`. // NOTE: ...and hc2r once supported...
+  extern const FFTW_DESTROY_INPUT : c_uint;
+
+  /* Specify that an out-of-place transform cannot change its input
+     array. */
+  // TODO: When we're ready to mention defaults, add: This is the
+  // default for :proc:`plan_dft` and :proc:`plan_dft_r2c`. */
+  extern const FFTW_PRESERVE_INPUT : c_uint;
+
+  /* Specify that the algorithm may not impose any unusual alignment
+     requirements on the input/output arrays.  This flag should not be
+     necessary for current Chapel use since the planner will
+     automatically detect such cases.  For more details on this flag
+     and the previous two, refer to `Section 4.3.2
+     <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual.
+  */  // NOTE: But it will be if/when the new-array execute interface is supported
+  extern const FFTW_UNALIGNED : c_uint;
+
+
+  //
+  // This is a helper module to give us a "private" notion.  Once we
+  // have a private keyword, these could be hoisted to module scope
+  // and labeled private.
+  //
+  pragma "no doc"
+  module Private_FFTW {
+    //
+    // Check for a mismatch in size between two domain dimensions,
+    // print an error if they don't, and return whether or not a
+    // mismatch occurred.  Note that the 'inplace' argument is used to
+    // customize the error message for in-place and out-of-place
+    // cases.
+    //
+    proc checkDimMismatch(inDom, outDom, dim, fnname, inplace=false) {
+      const inputDim = inDom.dim(dim).size;
+      const outputDim = outDom.dim(dim).size;
+      if (inputDim == outputDim) then
+        return false;
+
+      const first = if inplace then "domain" else "input";
+      const second = if inplace then "array" else "output";
+
+      writeln("Error: In ", fnname, ", the ", first, " and ", second,
+              if !inplace then " arrays" else "",
+              " don't have same size in dimension ", dim, 
+              " (", first, " = ", inputDim, ", ", second, " = ", outputDim, 
+              ")");
+      return true;
+    }
+
+    //
+    // Check for mismatches in the dimensions for an in-place
+    // transform between the logical domain for a DFT and the
+    // physical domain over which the array is allocated.
+    //
+    proc checkInPlaceDimMismatch(logDom, physDom, fnname, realElems) {
+      var error = false;
+      
+      for i in 1..logDom.rank-1 do
+        error |= checkDimMismatch(logDom, physDom, i, fnname, inplace=true);
+
+      if realElems {
+        error |= checkRealInPlaceDimMismatch(logDom, physDom, fnname);
+      } else {
+        error |= checkRealCplxDimMismatch(logDom, physDom, fnname);
+      }
+      return error;
+    }
+
+    //
+    // Check for a mismatch in the proper size relationship between
+    // two domain dimensions where the first describes a real array
+    // and the second a complex array.  The 'cplxarrdesc' is used
+    // to customize the error message for the role of the complex
+    // domain.
+    //
+    proc checkRealCplxDimMismatch(realDom, complexDom, fnname, cplxarrdesc="") {
+      const dim = realDom.rank;
+      const realDim = realDom.dim(dim).size/2+1;
+      const complexDim = complexDom.dim(dim).size;
+
+      if (realDim == complexDim) then
+        return false;
+
+      writeln("Error: In ", fnname, ", the ", cplxarrdesc, 
+              "array's leading dimension is not the proper size (expected ", realDim, 
+              ", got ", complexDim, ")");
+      return true;
+    }
+
+    //
+    // Check for a mismatch in the proper size relationship between two
+    // domain dimensions for an in-place transform on reals, where the
+    // first describes the logical computation coordinates and the
+    // second describes the domain describing the padded array allocation.
+    //
+    proc checkRealInPlaceDimMismatch(logDom, physDom, fnname) {
+      const dim = logDom.rank;
+      const arrDim = physDom.dim(dim).size;
+      const domDim = 2*(logDom.dim(dim).size/2+1);
+      if (arrDim == domDim) then
+        return false;
+
+      writeln("Error: In ", fnname, 
+              ", the array's leading dimension is not the proper size (expected ", domDim, 
+              ", got ", arrDim, ")");
+      return true;
+    }
   }
 
 
@@ -267,18 +549,21 @@ module FFTW {
   module C_FFTW {
     extern proc fftw_plan_dft(rank: c_int, 
                               n,  // BLC: having trouble being specific
+                                  // This is a const int* in C
                               in1: [] complex(128), 
                               out1: [] complex(128), 
                               sign : c_int, c_flags : c_uint) : fftw_plan;
 
     extern proc fftw_plan_dft_r2c(rank: c_int, 
                                   n,  // BLC: having trouble being specific
+                                      // This is a const int* in C
                                   in1: [],
                                   out1: [], 
                                   c_flags : c_uint) : fftw_plan;
 
     extern proc fftw_plan_dft_c2r(rank: c_int, 
                                   n,  // BLC: having trouble being specific
+                                      // This is a const int* in C
                                   in1: [],
                                   out1: [],
                                   c_flags : c_uint) : fftw_plan;

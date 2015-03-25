@@ -4,7 +4,7 @@ Chapel Prerequisites and Assumptions
 
 If you have a standard UNIX environment, a C/C++ compiler, some basic
 scripting languages, a GNU-compatible make, and awk installed you should
-have no problems getting started with Chapel.   
+have no problems getting started with Chapel.
 
 In slightly more detail the following are prerequisites and assumptions
 about your environment for using Chapel:
@@ -16,11 +16,21 @@ about your environment for using Chapel:
   available at /bin/csh, 'env' available at /usr/bin/env, and that
   'env' can locate Perl and Python on your system.
 
-* You have access to gmake or a GNU-compatible version of make and awk.
+* You have access to gmake or a GNU-compatible version of make.
 
-* You have access to standard C and C++ compilers. We typically
-  compile our code using gcc/g++ (at least version 3.3.0.) We have also
-  had some experience using Clang. Additionally we have compiled our
-  code using compilers by Cray, IBM, Intel, and PGI. Any standard C and
-  C++ compiler should work, but the aforementioned are the ones we have
-  the most experience with.  
+* You have access to standard C and C++ compilers. We test our code
+  using a range of compilers on a nightly basis; these include relatively
+  recent versions of gcc/g++, clang, and compilers from Cray, Intel, and PGI.
+
+We have used the following commands to set up newly installed system images.
+Note that our test system works much better with tcsh installed.
+
+CentOS 6.5, 6.6, 7.0:
+sudo yum install gcc gcc-c++ bc perl python tcsh bash make gawk
+
+SLES 11 SP3:
+sudo zypper install gcc gcc-c++ bc perl python tcsh bash make gawk
+
+Debian 7.8, Ubuntu 12.04, 14.04, 14.10:
+sudo apt-get install gcc g++ bc perl python tcsh bash make mawk
+

@@ -887,12 +887,23 @@ static VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
   Symbol* origRetSym = orse->var;
   for (Expr* curr = ref->prev; curr; curr = curr->prev)
     if (CallExpr* call = toCallExpr(curr))
-      if (call->isPrimitive(PRIM_MOVE))
+      if (call->isPrimitive(PRIM_MOVE) ||
+          call->isNamed("="))
         if (SymExpr* dest = toSymExpr(call->get(1)))
           if (dest->var == origRetSym) {
             VarSymbol* newOrigRet = newTemp("localRet", origRetSym->type);
-            curr->insertBefore(new DefExpr(newOrigRet));
+            call->insertBefore(new DefExpr(newOrigRet));
             dest->var = newOrigRet;
+            if (call->isNamed("=")) {
+              // We are "initializing" localRet, not "assigning" to it.
+              // An autoCopy of the r.h.s. will be inserted by a later pass.
+              // David requests creating a new CallExpr instead of patching
+              // the existing one.
+              CallExpr* init = new CallExpr(PRIM_MOVE);
+              for_actuals(actual, call)
+                init->insertAtTail(actual->remove());
+              call->replace(init);
+            }
             return newOrigRet; // done
           }
   INT_ASSERT(false); // did not find the assignment
@@ -909,7 +920,18 @@ static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(parentFn, symExprs);
   for_vector(SymExpr, se, symExprs)
-    INT_ASSERT(se->var != origRet);
+    if (se->var == origRet) {
+      // It may appear in a no-init assignment.
+      bool OK = false;
+      if (CallExpr* parent = toCallExpr(se->parentExpr))
+        if (parent->isPrimitive(PRIM_MOVE))
+          if (CallExpr* rhs = toCallExpr(parent->get(2)))
+            if (rhs->isPrimitive(PRIM_NO_INIT)) {
+              OK = true;
+              parent->remove();
+            }
+      INT_ASSERT(OK);
+    }
 
   // If none are found, we can yank origRet.
   origRet->defPoint->remove();

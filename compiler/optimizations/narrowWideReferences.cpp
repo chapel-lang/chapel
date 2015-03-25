@@ -113,11 +113,12 @@ public:
   // destinations of a deref can also be narrow.
   std::vector<SymExpr*> destsToNarrow;
 
-  WideInfo() : sym(NULL), mustBeWide(false), valIsWide(false), fnToNarrow(NULL) { }
+  WideInfo() : sym(NULL), mustBeWide(false), wideType(NULL), valIsWide(false), fnToNarrow(NULL) { }
   WideInfo(Symbol* isym) : sym(isym), mustBeWide(false), valIsWide(false), fnToNarrow(NULL) {
     if (isWideType(sym)) {
       wideType = toAggregateType(sym->type);
-    }
+    } else
+      wideType = NULL;
   }
 
   void setWide(SymExpr* se, const char* msg) {
@@ -601,8 +602,8 @@ narrowSym(Symbol* sym, WideInfo* wi,
             continue;
           }
           if (rhs->isPrimitive(PRIM_STRING_FROM_C_STRING)) {
-            // The destination string need not be wide if we're initializing from
-            // a c_string.
+            // By making such strings wide, we seem to avoid more memory leaks.
+            wi->mustBeWide = true;
             continue;
           }
           if (rhs->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
@@ -617,8 +618,19 @@ narrowSym(Symbol* sym, WideInfo* wi,
             if (fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC))
               continue;
             bool retIsWide = isWideType(fn->retType->symbol);
-            if (retIsWide && (isWideRef || isWideObj)) {
+
+            //
+            // The LHS should follow the wideness of the returned type if:
+            // - the LHS is a class
+            // - both the LHS and return type are refs
+            //
+            // If the function returns a class and the LHS is a reference,
+            // then that reference will be narrow.
+            //
+            if (retIsWide) {
+              if (isWideObj || (isRef(fn->getReturnSymbol()) && isRef(sym))) {
                 addNarrowDep(fn->getReturnSymbol(), sym);
+              }
             }
             if (isRef(sym)) {
               if (WideInfo* next = wideInfoMap->get(fn->getReturnSymbol())) {
@@ -632,9 +644,19 @@ narrowSym(Symbol* sym, WideInfo* wi,
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
             bool isObj = isWideObj || isClass(sym->type);
             bool rhsIsWide = isWideType(rhs->var);
-            if (rhsIsWide && (isRef(sym) || isObj)) {
-              addNarrowDep(rhs->var, sym);
+            if (rhsIsWide) {
+              // For 'class = x', the LHS has to be wide if the RHS is wide.
+              if (isObj) {
+                addNarrowDep(rhs->var, sym);
+              }
+
+              // If the RHS is a wide ref, the LHS must also be wide.
+              if (isRef(rhs->var) && isRef(sym)) {
+                addNarrowDep(rhs->var, sym);
+              }
             }
+
+            // This handles the 'ref = class' case.
             if (isRef(sym)) {
               if (rhs->var->type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
                   isRef(rhs->var)) {
@@ -721,6 +743,10 @@ narrowSym(Symbol* sym, WideInfo* wi,
         DEBUG_PRINTF("Registered as global heap var, must be wide\n");
         wi->mustBeWide = true;
         return;
+      }
+      if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+        wi->mustBeWide = true;
+        continue;
       }
       if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) {
         SymExpr* member = toSymExpr(call->get(2));
@@ -822,6 +848,9 @@ narrowSym(Symbol* sym, WideInfo* wi,
         continue;
       }
     }
+    if (isCondStmt(use->parentExpr)) {
+      continue;
+    }
     //
     // It's not clear to me (bradcray) why falling through to this
     // point has traditionally meant "this case must be wide"; this
@@ -893,8 +922,10 @@ narrowArg(ArgSymbol* arg, WideInfo* wi,
         wideInfoMap->get(actual->var)->exprsToWiden.push_back(actual);
         
         // sync _val wideness
-        wi->refsToNarrow.push_back(actual->var);
-        wideInfoMap->get(actual->var)->refsToNarrow.push_back(arg);
+        if (isRef(actual->var))
+          wi->refsToNarrow.push_back(actual->var);
+        if (isRef(arg))
+          wideInfoMap->get(actual->var)->refsToNarrow.push_back(arg);
       }
     }
 
@@ -997,6 +1028,7 @@ static void populateWideInfoMap()
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->type->symbol->hasFlag(FLAG_WIDE_REF) ||
         arg->type->symbol->hasFlag(FLAG_REF) ||
+        arg->type->symbol->hasFlag(FLAG_DATA_CLASS) ||
         arg->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       wideInfoMap->put(arg, new WideInfo(arg));
     }
@@ -1070,6 +1102,7 @@ static void resolveHelper(WideInfo* wi) {
     }
     for_vector(Symbol, se, wi->refsToNarrow) {
       WideInfo* nwi = wideInfoMap->get(se);
+      INT_ASSERT(isRef(nwi->sym));
       DEBUG_PRINTF("REF %s (%d)", nwi->sym->cname, nwi->sym->id);
       if (!nwi->valIsWide) {
         DEBUG_PRINTF(" (%d)\n", wi->sym->id);
@@ -1101,6 +1134,7 @@ static void resolveHelper(WideInfo* wi) {
     // refs to this variable should wrap a narrow _val.
     for_vector(Symbol, se, wi->refsToNarrow) {
       WideInfo* nwi = wideInfoMap->get(se);
+      INT_ASSERT(nwi->sym);
       DEBUG_PRINTF("REF %s (%d): val is ", nwi->sym->cname, nwi->sym->id);
       if (wi->valIsWide) DEBUG_PRINTF("wide");
       else DEBUG_PRINTF("not wide");

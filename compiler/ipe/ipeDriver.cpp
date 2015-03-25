@@ -30,7 +30,6 @@
 #include "IpeVars.h"
 #include "ipeResolve.h"
 #include "ipeEvaluate.h"
-#include "log.h"
 #include "parser.h"
 #include "passes.h"
 #include "stmt.h"
@@ -88,14 +87,14 @@ void ipeRootInit()
 
 static PrimitiveType* createType(const char* name);
 
-static IpeModule*     initializeRoot(IpeVars* rootVars);
-static void           initializeChapelStandard(IpeVars* rootVars);
-static IpeModule*     initializeRepl(IpeVars* rootVars);
-
+static IpeModule*     initializeRoot();
 static ModuleSymbol*  createRootModule();
-static ModuleSymbol*  createReplModule();
-static CallExpr*      createUseChapelStandard();
 
+static void           loadInternalFile(const char* modName,
+                                       IpeScope*   scope,
+                                       IpeVars*    vars);
+
+static IpeModule*     moduleByName(const char* modName, IpeVars* rootVars);
 static void           readEvalPrintLoop(IpeScope* scope, IpeVars* rootVars);
 
 void ipeRun()
@@ -108,16 +107,6 @@ void ipeRun()
   IpeScopeModule* replScope  = NULL;
 
   //
-  // Parse the internal modules
-  //
-  setupLogfiles();
-
-  parse();
-  AstDumpToNode::view("parse", 1);
-
-  teardownLogfiles();
-
-  //
   // Initialize the REPL
   //
 
@@ -126,8 +115,23 @@ void ipeRun()
 
   gRootVars         = IpeVars::rootAllocate(1024 * sizeof(IpeValue));
 
-  rootModule        = initializeRoot(gRootVars);
+  rootModule        = initializeRoot();
   gRootScope        = rootModule->scope();
+
+#if 0
+  printf("After initializeRoot\n");
+  printf("\n\n");
+  gRootScope->describe(3);
+  printf("\n\n");
+
+  IpeVars::describe(gRootVars, 3);
+  printf("\n\n");
+  printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+#endif
+
+  loadInternalFile("ChapelBase",     gRootScope, gRootVars);
+  loadInternalFile("ChapelStandard", gRootScope, gRootVars);
+  loadInternalFile("ChapelRepl",     gRootScope, gRootVars);
 
 #if 0
   printf("\n\n");
@@ -136,11 +140,21 @@ void ipeRun()
 
   IpeVars::describe(gRootVars, 3);
   printf("\n\n");
+
+  moduleByName("ChapelRoot",     gRootVars)->describe(3);
+  printf("\n\n");
+
+  moduleByName("ChapelBase",     gRootVars)->describe(3);
+  printf("\n\n");
+
+  moduleByName("ChapelStandard", gRootVars)->describe(3);
+  printf("\n\n");
+
+  moduleByName("ChapelRepl",     gRootVars)->describe(3);
+  printf("\n\n");
 #endif
 
-  initializeChapelStandard(gRootVars);
-
-  replModule        = initializeRepl(gRootVars);
+  replModule        = moduleByName("ChapelRepl", gRootVars);
   replScope         = replModule->scope();
 
 #if 0
@@ -148,17 +162,22 @@ void ipeRun()
   gRootScope->describe(3);
   printf("\n\n");
 
+  replModule->describe(3);
+  printf("\n\n\n\n");
+
   IpeVars::describe(gRootVars, 3);
   printf("\n\n");
 #endif
 
   readEvalPrintLoop(replScope, gRootVars);
 
+#if 0
   if (replModule != NULL)
     delete replModule;
 
   if (rootModule != NULL)
     delete rootModule;
+#endif
 
 #if 0
   // NOAKES 2015/02/23 These will seg-fault for some reason
@@ -180,21 +199,21 @@ static PrimitiveType* createType(const char* name)
   return pt;
 }
 
-static IpeModule* initializeRoot(IpeVars* rootVars)
+static IpeModule* initializeRoot()
 {
   ModuleSymbol*   modSym    = createRootModule();
   IpeModule*      rootMod   = new IpeModule(modSym);
-  IpeScopeModule* rootScope = rootMod->scope(); // new IpeScopeModule(rootMod);
+  IpeScopeModule* rootScope = rootMod->scope();
   VarSymbol*      var       = NULL;
 
-  IpeValue        modValue;
+  IpeValue        modValue(rootMod);
 
   for (int i = 1; i <= sRootModuleIndex; i++)
   {
     if (DefExpr* defExpr = toDefExpr(rootModule->block->body.get(i)))
     {
-      ipeResolve (defExpr, rootScope, rootVars);
-      ipeEvaluate(defExpr,            rootVars);
+      ipeResolve (defExpr, rootScope, gRootVars);
+      ipeEvaluate(defExpr,            gRootVars);
     }
   }
 
@@ -202,45 +221,14 @@ static IpeModule* initializeRoot(IpeVars* rootVars)
 
   var->addFlag(FLAG_PARAM);
 
-  modValue.modulePtr = rootMod;
-
-  rootScope->extend(var, modValue, rootVars);
+  rootScope->extend(var, modValue, gRootVars);
 
   return rootMod;
 }
 
-static void initializeChapelStandard(IpeVars* rootVars)
-{
-  CallExpr* use = createUseChapelStandard();
-
-  ipeResolve (use, gRootScope, rootVars);
-  ipeEvaluate(use,             rootVars);
-}
-
-static IpeModule* initializeRepl(IpeVars* rootVars)
-{
-  ModuleSymbol*  mod     = createReplModule();
-  DefExpr*       def     = new DefExpr(mod);
-  VarSymbol*     varSym  = 0;
-  VisibleSymbols symbols;
-
-  ipeResolve (def, gRootScope, rootVars);
-  ipeEvaluate(def,             rootVars);
-
-  symbols = gRootScope->visibleSymbols(mod->name);
-
-  INT_ASSERT(symbols.count() == 1);
-
-  varSym  = toVarSymbol(symbols.symbol(0));
-
-  INT_ASSERT(varSym);
-
-  return IpeVars::fetch(varSym, rootVars).modulePtr;
-}
-
 static ModuleSymbol* createRootModule()
 {
-  ModuleSymbol* retval = new ModuleSymbol("ChplRoot",
+  ModuleSymbol* retval = new ModuleSymbol("ChapelRoot",
                                           MOD_INTERNAL,
                                           new BlockStmt());
 
@@ -249,23 +237,36 @@ static ModuleSymbol* createRootModule()
   return retval;
 }
 
-static ModuleSymbol* createReplModule()
+static IpeModule* moduleByName(const char* modName, IpeVars* rootVars)
 {
-  CallExpr*     use    = createUseChapelStandard();
-  ModuleSymbol* retval = new ModuleSymbol("ChapelRepl",
-                                          MOD_INTERNAL,
-                                          new BlockStmt());
+  VisibleSymbols symbols = gRootScope->visibleSymbols(modName);
+  VarSymbol*     varSym  = 0;
 
-  retval->filename = astr("<ChapelRepl>");
+  INT_ASSERT(symbols.count() == 1);
 
-  retval->block->insertAtTail(use);
+  varSym  = toVarSymbol(symbols.symbol(0));
 
-  return retval;
+  INT_ASSERT(varSym);
+
+  return IpeVars::fetch(varSym, rootVars).moduleGet();
 }
 
-static CallExpr* createUseChapelStandard()
+static void loadInternalFile(const char* modName,
+                             IpeScope*   scope,
+                             IpeVars*    vars)
 {
-  return new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  ReadStream  stream;
+  bool        dummy    = false;
+  const char* fileName = modNameToFilename(modName, true, &dummy);
+
+  if (stream.open(fileName) == true)
+  {
+    while (Expr* expr = stream.read())
+    {
+      ipeResolve(expr, scope, vars);
+      ipeEvaluate(expr, vars);
+    }
+  }
 }
 
 /************************************ | *************************************
@@ -293,7 +294,7 @@ static void readEvalPrintLoop(IpeScope* scope, IpeVars* env)
       {
         ReadStream stream;
 
-        if (stream.open(inputFilename))
+        if (stream.open(inputFilename) == true)
         {
           while (Expr* expr = stream.read())
           {
@@ -394,13 +395,19 @@ ReadStream::~ReadStream()
   yylex_destroy(mContext.scanner);
 
   if (mFP != 0)
+  {
+    yyfilename = NULL;
     fclose(mFP);
+  }
 }
 
 bool ReadStream::open(const char* fileName)
 {
   if ((mFP = fopen(fileName, "r")) != 0)
+  {
+    yyfilename = fileName;
     yyset_in(mFP, mContext.scanner);
+  }
 
   return (mFP != NULL) ? true : false;
 }
@@ -427,7 +434,9 @@ Expr* ReadStream::read()
 #endif
 
     if (lexerStatus >= 0)
+    {
       parserStatus = yypush_parse(mParser, lexerStatus, &yylval, &mYYlloc, &mContext);
+    }
 
     else if (lexerStatus == YYLEX_NEWLINE)
     {

@@ -675,12 +675,14 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
 static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
     loop, symToVecSymExprMap& localDefMap, FnSymbol* fn) {
  
-  //collect all of the symExpr and defExpr in the loop 
+  // collect all of the symExprs, defExprs, and callExprs in the loop
   startTimer(collectSymExprAndDefTimer);
   std::vector<SymExpr*> loopSymExprs;
   std::set<Symbol*> defsInLoop;
+  std::vector<CallExpr*> callsInLoop;
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
+      collectFnCalls(expr, callsInLoop);
       collectSymExprs(expr, loopSymExprs);
       if (DefExpr* defExpr = toDefExpr(expr)) {
         if (toVarSymbol(defExpr->sym)) {
@@ -867,10 +869,22 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
         }
       }
     }
-    // Where the variable is defined.
+    // Find where the variable is defined.
     Symbol* defScope = symExpr->var->defPoint->parentSymbol;
+    // if the variable is a module level (global) variable
     if (isModuleSymbol(defScope)) {
-      mightHaveBeenDeffedElseWhere = true;
+      // if there are any function calls inside the loop, assume that one of
+      // the functions may have changed the value of the global. Note that we
+      // don't have to worry about a different task updating the global since
+      // that would have to be protected with a sync or be atomic in which case
+      // no hoisting will occur in the function at all. Any defs to the global
+      // inside of this loop will be detected just like any other variable
+      // definitions.
+      // TODO this could be improved to check which functions modify the global
+      // and see if any of those functions are being called in this loop.
+      if (callsInLoop.size() != 0) {
+        mightHaveBeenDeffedElseWhere = true;
+      }
     }
     //if there were no defs of the symbol, it is invariant 
     if(actualDefs.count(symExpr) == 0 && !mightHaveBeenDeffedElseWhere) {
@@ -1016,9 +1030,7 @@ static void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
     if (FnSymbol* fnSymbol = call->isResolved()) {
       if(fnSymbols.count(fnSymbol) == 0) {
         fnSymbols.insert(fnSymbol);
-        for_alist(expr, fnSymbol->body->body) {
-          AST_CHILDREN_CALL(expr, collectUsedFnSymbols, fnSymbols);
-        }
+        AST_CHILDREN_CALL(fnSymbol->body, collectUsedFnSymbols, fnSymbols);
       }
     }
   }

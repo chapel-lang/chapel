@@ -27,11 +27,14 @@
 // The caller is responsible for calling qbytes_release on it when done.
 qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
 {
-  qbytes_t tmp = { 0 };
+  qbytes_t tmp;
   qbytes_t* ret;
   int64_t src_len;
   void* src_data;
   qioerr err;
+
+  // Zero-initialize tmp.
+  memset(&tmp, 0, sizeof(qbytes_t));
 
   // First, get the length and local pointer to the bytes.
   chpl_gen_comm_get( &tmp, src_locale, src_addr, sizeof(qbytes_t), CHPL_TYPE_int64_t, 1, -1, "<internal>");

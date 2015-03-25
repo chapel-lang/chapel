@@ -1182,7 +1182,7 @@ codegen_config() {
       }
     }
     info->builder->CreateRetVoid();
-    llvm::verifyFunction(*createConfigFunc);
+    //llvm::verifyFunction(*createConfigFunc);
 #endif
   }
 }
@@ -1439,14 +1439,14 @@ std::string numToString(int64_t num)
 std::string int64_to_string(int64_t i)
 {
   char buf[32];
-  sprintf(buf, "%"PRId64, i);
+  sprintf(buf, "%" PRId64, i);
   std::string ret(buf);
   return ret;
 }
 std::string uint64_to_string(uint64_t i)
 {
   char buf[32];
-  sprintf(buf, "%"PRIu64, i);
+  sprintf(buf, "%" PRIu64, i);
   std::string ret(buf);
   return ret;
 }

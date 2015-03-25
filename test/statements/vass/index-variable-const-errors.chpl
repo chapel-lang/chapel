@@ -49,8 +49,8 @@ proc main() {
   // _indexOfInterest: 2*int
   for itVal in tupleVal() {
     itVal = (14001, 14002);   // error
-    itVal(1) = 14003;         // TODO: must be an error
-    itVal(2) = 14004;         // TODO: must be an error
+    itVal(1) = 14003;         // error
+    itVal(2) = 14004;         // error
   }
 
 
@@ -79,7 +79,7 @@ proc main() {
   for isZip in zip (singleVar(), singleVal()) {
     isZip = (17001, 17002);   // error
     isZip(1) = 17003;
-    isZip(2) = 17004;         // TODO: must be an error
+    isZip(2) = 17004;         // error
   }
 
   // _indexOfInterest: (_ref(int),int)

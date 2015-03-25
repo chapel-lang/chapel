@@ -18,9 +18,8 @@
  */
 
 #include "optimizations.h"
-
 #include "astutil.h"
-#include "oldCollectors.h"
+//#include "oldCollectors.h"
 #include "stlUtil.h"
 #include "CForLoop.h"
 #include "expr.h"
@@ -70,7 +69,8 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       (taskFn->hasFlag(FLAG_BEGIN) ||
        taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL));
     if (isParallelConstruct ||
-        (call->isNamed("_toLeader"))) {
+        call->isNamed("_toLeader") ||
+        call->isNamed("_toStandalone")) {
       USR_FATAL_CONT(call, "invalid use of parallel construct in serial iterator");
     }
     if ((call->isPrimitive(PRIM_BLOCK_ON)) ||
@@ -1180,12 +1180,33 @@ expandIteratorInline(ForLoop* forLoop) {
     BlockStmt*    ibody = iterator->body->copy();
     std::vector<BaseAST*> asts;
 
+    bool isOrderIndependent = forLoop->isOrderIndependent();
     if (preserveInlinedLineNumbers == false) {
       reset_ast_loc(ibody, forLoop);
     }
 
     // and the entire for loop block is replaced by the iterator body.
     forLoop->replace(ibody);
+
+    // if the loop being expanded was order independent, all of the yielding
+    // loops in the body are also order independent. Note that this must occur
+    // after the ibody replaces the forLoop since findEnclosingLoop() requires
+    // that it's argument be in the AST. It must occur before yields are
+    // replaced in the functions below though.
+    if (isOrderIndependent) {
+      std::vector<CallExpr*> callExprs;
+      collectCallExprsSTL(ibody, callExprs);
+
+      for_vector(CallExpr, call, callExprs) {
+        if (call->isPrimitive(PRIM_YIELD)) {
+          if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
+            if (loop->isCoforallLoop() == false) {
+              loop->orderIndependentSet(isOrderIndependent);
+            }
+          }
+        }
+      }
+    }
 
     // Replace yield statements in the inlined iterator body with copies
     // of the body of the For Loop that invoked the iterator, substituting
@@ -1643,7 +1664,10 @@ expandForLoop(ForLoop* forLoop) {
         iterator->type->dispatchChildren.v[0] == dtObject))) {
     expandIteratorInline(forLoop);
 
-  } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator)) {
+  } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator) &&
+            (iterator->type->dispatchChildren.n == 0 ||
+             (iterator->type->dispatchChildren.n == 1 &&
+              iterator->type->dispatchChildren.v[0] == dtObject))) {
     inlineSingleYieldIterator(forLoop);
 
   } else {
@@ -1679,6 +1703,7 @@ expandForLoop(ForLoop* forLoop) {
 
     setupSimultaneousIterators(iterators, indices, iterator, index, forLoop);
 
+    bool allOrderIndependent = true;
     // For each iterator we add the zip* functions in the appropriate place and
     // if bounds checking was on, we insert the code for that. Note that this
     // code handles iterators that have regular loops, c for loops, and
@@ -1718,7 +1743,8 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAtTail(buildIteratorCall(NULL, ZIP3, iterators.v[i], children));
       forLoop->insertAfter (buildIteratorCall(NULL, ZIP4, iterators.v[i], children));
 
-      if (isBoundedIterator(iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer)) {
+      FnSymbol* iterFn = iterators.v[i]->type->defaultInitializer->getFormal(1)->type->defaultInitializer;
+      if (isBoundedIterator(iterFn)) {
         if (testBlock == NULL) {
           if (isNotDynIter) {
             // note that we have found the first test
@@ -1765,7 +1791,30 @@ expandForLoop(ForLoop* forLoop) {
       }
 
       forLoop->insertAtHead(buildIteratorCall(NULL, ZIP2, iterators.v[i], children));
+
+      // Need to check if iterator will be inlined, isSingleLoopIterator()
+      // doesn't handle arbitrary blockstmts well, so we collapse them first
+      iterFn->collapseBlocks();
+      Vec<BaseAST*> asts;
+      collect_asts_postorder(iterFn, asts);
+
+      // If the iterator cannot be inlined a re-entrant advance function will
+      // be built. This function maintains state and must be called in order.
+      // If inlined, the iterator's loop will be order independent if it was
+      // independent prior to inlining or the forLoop is order independent
+      bool curOrderIndependent = false;
+      if (CallExpr* singleLoopYield = isSingleLoopIterator(iterFn, asts)) {
+        if (LoopStmt* loop = LoopStmt::findEnclosingLoop(singleLoopYield)) {
+          curOrderIndependent = loop->isOrderIndependent() || forLoop->isOrderIndependent();
+        }
+      }
+      allOrderIndependent = allOrderIndependent && curOrderIndependent;
     }
+
+    // The loop will be order independent if all the iters it zips are order
+    // independent (all iters will be inlined and were all marked order
+    // independent or the forLoop was marked independent prior zippering.)
+    forLoop->orderIndependentSet(allOrderIndependent);
 
     // 2015-02-23 hilde:
     // TODO: I think this wants to be insertBefore, and moved before the call

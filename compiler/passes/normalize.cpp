@@ -1545,20 +1545,18 @@ fixup_query_formals(FnSymbol* fn) {
 
 static void
 find_printModuleInit_stuff() {
-  if (fUseIPE == false) {
-    std::vector<Symbol*> symbols;
+  std::vector<Symbol*> symbols;
 
-    collectSymbols(printModuleInitModule, symbols);
+  collectSymbols(printModuleInitModule, symbols);
 
-    for_vector(Symbol, symbol, symbols) {
-      if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
-        gModuleInitIndentLevel = toVarSymbol(symbol);
-        INT_ASSERT(gModuleInitIndentLevel);
+  for_vector(Symbol, symbol, symbols) {
+    if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_INDENT_LEVEL)) {
+      gModuleInitIndentLevel = toVarSymbol(symbol);
+      INT_ASSERT(gModuleInitIndentLevel);
 
-      } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
-        gPrintModuleInitFn = toFnSymbol(symbol);
-        INT_ASSERT(gPrintModuleInitFn);
-      }
+    } else if (symbol->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) {
+      gPrintModuleInitFn = toFnSymbol(symbol);
+      INT_ASSERT(gPrintModuleInitFn);
     }
   }
 }

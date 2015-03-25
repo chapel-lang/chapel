@@ -20,9 +20,8 @@
 #ifndef _IPE_EVALUATE_H_
 #define _IPE_EVALUATE_H_
 
-#include "IpeValue.h"
-
 class Expr;
+class IpeValue;
 class IpeVars;
 class Symbol;
 

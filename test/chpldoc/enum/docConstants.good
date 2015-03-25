@@ -1,0 +1,4 @@
+Module: docConstants
+   enum Color { Red, Yellow }
+      enum documentation 
+

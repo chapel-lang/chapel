@@ -1,0 +1,66 @@
+.TH "hwloc_distances_s" 3 "Mon Jan 26 2015" "Version 1.10.1" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwloc_distances_s \- 
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <hwloc\&.h>\fP
+.SS "Data Fields"
+
+.in +1c
+.ti -1c
+.RI "unsigned \fBrelative_depth\fP"
+.br
+.ti -1c
+.RI "unsigned \fBnbobjs\fP"
+.br
+.ti -1c
+.RI "float * \fBlatency\fP"
+.br
+.ti -1c
+.RI "float \fBlatency_max\fP"
+.br
+.ti -1c
+.RI "float \fBlatency_base\fP"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Distances between objects\&. 
+
+One object may contain a distance structure describing distances between all its descendants at a given relative depth\&. If the containing object is the root object of the topology, then the distances are available for all objects in the machine\&.
+.PP
+If the \fClatency\fP pointer is not \fCNULL\fP, the pointed array contains memory latencies (non-zero values), see below\&.
+.PP
+In the future, some other types of distances may be considered\&. In these cases, \fClatency\fP may be \fCNULL\fP\&. 
+.SH "Field Documentation"
+.PP 
+.SS "float* hwloc_distances_s::latency"
+
+.PP
+Matrix of latencies between objects, stored as a one-dimension array\&. May be \fCNULL\fP if the distances considered here are not latencies\&. Unless defined by the user, this currently contains latencies between NUMA nodes (as reported in the System Locality Distance Information Table (SLIT) in the ACPI specification), which may or may not be accurate\&. It corresponds to the latency for accessing the memory of one node from a core in another node\&.
+.PP
+Values are normalized to get 1\&.0 as the minimal value in the matrix\&. Latency from i-th to j-th object is stored in slot i*nbobjs+j\&. 
+.SS "float hwloc_distances_s::latency_base"
+
+.PP
+The multiplier that should be applied to latency matrix to retrieve the original OS-provided latencies\&. Usually 10 on Linux since ACPI SLIT uses 10 for local latency\&. 
+.SS "float hwloc_distances_s::latency_max"
+
+.PP
+The maximal value in the latency matrix\&. 
+.SS "unsigned hwloc_distances_s::nbobjs"
+
+.PP
+Number of objects considered in the matrix\&. It is the number of descendant objects at \fCrelative_depth\fP below the containing object\&. It corresponds to the result of \fBhwloc_get_nbobjs_inside_cpuset_by_depth()\fP\&. 
+.SS "unsigned hwloc_distances_s::relative_depth"
+
+.PP
+Relative depth of the considered objects below the object containing this distance information\&. 
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

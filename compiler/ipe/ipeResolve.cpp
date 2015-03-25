@@ -183,8 +183,6 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
   {
     IpeValue value;
 
-    value.iValue = 0;
-
     scope->extend(sel, value, vars);
 
     retval = defExpr;
@@ -196,14 +194,12 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
     IpeScopeModule* modScope = module->scope();
     VarSymbol*      var      = new VarSymbol(modSym->name, gIpeTypeModule);
 
-    IpeValue        modValue;
+    IpeValue        modValue(module);
 
     INT_ASSERT(defExpr->exprType == NULL);
     INT_ASSERT(defExpr->init     == NULL);
 
     var->addFlag(FLAG_PARAM);
-
-    modValue.modulePtr = module;
 
     scope->extend(var, modValue, vars);
 
@@ -216,14 +212,12 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
   {
     IpeProcedure* procedure = new IpeProcedure(funSym, scope);
     VarSymbol*    var       = new VarSymbol(funSym->name, gIpeTypeProcedure);
-    IpeValue      funValue;
+    IpeValue      funValue(procedure);
 
     INT_ASSERT(defExpr->exprType == NULL);
     INT_ASSERT(defExpr->init     == NULL);
 
     var->addFlag(FLAG_PARAM);
-
-    funValue.procedurePtr = procedure;
 
     scope->extend(var, funValue, vars);
 
@@ -296,8 +290,6 @@ static Expr* resolve(DefExpr* defExpr, IpeScope* scope, IpeVars* vars)
     {
       IpeValue value;
 
-      value.iValue = 0;
-
       scope->extend(var, value, vars);
     }
 
@@ -348,7 +340,7 @@ static Expr* resolve(ModuleSymbol* modSym, IpeScope* scope, IpeVars* vars)
 
       value  = IpeVars::fetch(varSym, vars);
 
-      scope->useAdd(value.modulePtr);
+      scope->useAdd(value.moduleGet());
     }
 
     else if (DefExpr* defExpr = toDefExpr(expr))
@@ -596,7 +588,7 @@ static Expr* selectFunc(UnresolvedSymExpr*  funName,
     if (var != 0 && var->type == gIpeTypeProcedure && var->depth() == 0)
     {
       IpeValue      value = IpeVars::fetch(var, vars);
-      IpeProcedure* proc  = value.procedurePtr;
+      IpeProcedure* proc  = value.procedureGet();
 
       if (proc->exactMatch(actualTypes) == true)
       {
@@ -671,7 +663,7 @@ void ipeResolveFormalsTypes(IpeProcedure* procedure, IpeScopeProcedure* scope, I
 
     if (ArgSymbol* arg = toArgSymbol(def->sym))
     {
-      if (arg->type == 0)
+      if (arg->type == dtUnknown)
       {
         resolveFormalType(arg, scope);
 
@@ -755,8 +747,6 @@ void ipeResolveBody(IpeProcedure* procedure, IpeScopeProcedure* scope, IpeVars* 
     DefExpr*   formalDef = toDefExpr(fnSymbol->formals.get(i));
     ArgSymbol* formalArg = toArgSymbol(formalDef->sym);
     IpeValue   value;
-
-    value.iValue = 0;
 
     scope->extend(formalArg, value, vars);
   }
@@ -847,7 +837,7 @@ static Type* typeForExpr(Expr* expr, IpeVars* vars)
       INT_ASSERT(varSym->type == gIpeTypeProcedure);
 
       IpeValue      proc      = IpeVars::fetch(varSym, vars);
-      IpeProcedure* procedure = proc.procedurePtr;
+      IpeProcedure* procedure = proc.procedureGet();
       FnSymbol*     fnSym     = procedure->fnSymbol();
 
 #if 0

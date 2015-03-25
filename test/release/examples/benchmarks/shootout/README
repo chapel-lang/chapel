@@ -20,6 +20,7 @@ At present, this directory contains the following codes:
     meteor-fast.chpl    : A less readable, but much faster version of meteor.
     nbody.chpl          : Performs an n-body simulation of the Jovian planets
     pidigits.chpl       : Computes digits of pi using GMP, if available
+    regexdna            : Performs DNA matching
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
     threadring.chpl     : Passes a token between a large number of threads
 
@@ -32,4 +33,4 @@ The provided Makefile can be used to compile the programs, or they can
 be run in correctness or performance modes using the Chapel testing
 system (see $CHPL_HOME/util/sub_test).
 
-Note that chameneosredux.chpl has non-deterministic output
+Note that chameneosredux.chpl has non-deterministic output.
