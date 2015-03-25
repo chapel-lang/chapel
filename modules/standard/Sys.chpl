@@ -17,19 +17,43 @@
  * limitations under the License.
  */
 
-/* system call wrapping */
+/*
+   Support for low-level programming and system calls.
+
+   This module is for low-level programming. It provides Chapel versions of
+   many POSIX/Linux C library or system calls. For documentation on these
+   system calls and constants, please see your system's manual pages.
+   
+   Each of the functions in this file provides the same functionality
+   as the corresponding function without the ``sys_`` prefix, except that
+   the ``sys_`` versions all return an error code (of type :type:`~SysBasic.err_t`)
+   and return any other values (such as how much was read) through an out
+   argument.
+
+   For example, you can find more about the ``mmap`` call with:
+   
+   .. code-block:: sh
+
+     man mmap
+     
+   The call available here, :proc:`sys_mmap`, always returns an error
+   code (or 0 for no error). The pointer value normally returned by ``mmap``
+   will be returned through the final ``ret_out`` argument.
+
+ */
 module Sys {
-  /* BASIC TYPES */
+  // get basic types from SysBasic
   use SysBasic;
 
  
-  /* CONSTANTS */
+  // CONSTANTS
 
   // note that if a constant is not defined in the C environment,
   // the compile will fail when it is used (and not here!)
   // That means that we can just list all of the constants we know of,
   // for different OSs, and if one is missing errors will occur in
   // C code generation.
+  // mferguson -- TODO -- is that still true? Even for LLVM?
 
 
   // basic file flags

@@ -55,10 +55,6 @@
 size_t chpl_getSysPageSize(void) {
   static size_t pageSize = 0;
 
-  //
-  // No conflict management.  We assume this is set once, early, before
-  // we have multiple threads that might be querying the value.
-  //
   if (pageSize == 0) {
 #if defined _SC_PAGESIZE
     pageSize = (size_t) sysconf(_SC_PAGESIZE);
@@ -76,10 +72,6 @@ size_t chpl_getSysPageSize(void) {
 size_t chpl_getHeapPageSize(void) {
   static size_t pageSize = 0;
 
-  //
-  // No conflict management.  We assume this is set once, early, before
-  // we have multiple threads that might be querying the value.
-  //
   if (pageSize == 0) {
 #if defined __linux__
     char* ev;

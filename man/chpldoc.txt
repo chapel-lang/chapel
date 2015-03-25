@@ -1,0 +1,35 @@
+NAME
+  chpldoc - the Chapel documentation tool
+
+SYNOPSIS
+  chpldoc [-o directory]
+          [--save-sphinx directory]
+          [options] source-files...
+
+DESCRIPTION
+
+  chpldoc is a tool for generating HTML based documentation from Chapel
+  source code and embedded comments. It does this by parsing Chapel
+  source files and associating comments with symbols, then generating
+  reStructuredText, and finally building the output documentation
+  with Sphinx. Most users will not need to be aware of the use of
+  reStructuredText as an intermediate format.
+
+  Documentation Options
+
+  -o, --output-dir <dirname>  Specify the directory name into which documentation
+                    should be saved (defaults to 'docs' if unspecified).
+
+  --save-sphinx <directory>  Save generated Sphinx project in directory.
+
+  --comment-style <string>  Specify the opening comment character
+                    sequence used to distinguish a documentation comment
+                    from a normal one (defaults to '/*' if unspecified).
+
+  --text-only       Specify that documents should use a text output file
+                    format rather than HTML.
+
+  -h, --help        Print a list of the command line options, indicating
+                    the arguments that they expect and a brief summary of their 
+                    purpose.
+

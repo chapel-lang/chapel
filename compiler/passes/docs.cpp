@@ -268,6 +268,7 @@ std::string generateSphinxProject(std::string dirpath) {
   return std::string(moddir);
 }
 
+
 /*
  * Invoke sphinx-build using sphinxDir to find conf.py and rst sources, and
  * outputDir for generated html files.
@@ -275,11 +276,13 @@ std::string generateSphinxProject(std::string dirpath) {
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
   // based on the install path in the third-party/chpldoc-venv/ dir.
+
   const char * venvDir = astr(
     CHPL_HOME, "/third-party/chpldoc-venv/install/",
     CHPL_TARGET_PLATFORM, "/chpldoc-virtualenv");
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
+
   const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && ",
                               "export VIRTUAL_ENV=", venvDir);
 
