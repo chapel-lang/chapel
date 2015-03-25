@@ -108,6 +108,7 @@ Optional Settings
    CHPL_TARGET_PLATFORM.  Currently supported values are as follows:
 
         clang             : the Clang compiler suite -- clang and clang++
+        clang-included    : the Clang compiler in third-party/llvm
         cray-prgenv-cray  : the Cray PrgEnv compiler using the Cray CCE backend
         cray-prgenv-gnu   : the Cray PrgEnv compiler using the GNU backend
         cray-prgenv-intel : the Cray PrgEnv compiler using the Intel backend
@@ -134,6 +135,10 @@ Optional Settings
    If CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM and is not cray-x*,
    CHPL_TARGET_COMPILER will default to the same value as CHPL_HOST_COMPILER.
 
+   Note that builds with LLVM support (ie when CHPL_LLVM=llvm) will build
+   the runtime twice: once with the compiler as described above and once
+   with clang-included. We do this in order to avoid issues in linking
+   objects built by different compilers.
 
 *  Optionally, set the CHPL_TARGET_ARCH environment variable to indicate that
    the target executable should be specialized to the given architecture when
@@ -233,12 +238,18 @@ Optional Settings
    options are:
 
    CHPL_TASKS:
-        qthreads       : run tasks using Sandia's Qthreads package
-        fifo           : run tasks to completion, in FIFO order
-        massivethreads : run tasks using U Tokyo's MassiveThreads package
+        qthreads       : use Sandia's Qthreads package
+        fifo           : use POSIX threads
+        massivethreads : use U Tokyo's MassiveThreads package
+        muxed          : use Cray-specific lightweight threading (with
+                         Cray pre-built module only)
 
-   If CHPL_TASKS is not set it defaults to "qthreads" unless the target
-   platform is "knc" or "cygwin*".  For those two it defaults to "fifo".
+   If CHPL_TASKS is not set it defaults to "qthreads" unless the
+   target platform is either "cygwin*" or "netbsd*", the target
+   compiler is "cray-prgenv-cray", or the target architecture is
+   "knc". For those configurations it defaults to "fifo".  On
+   Cray XC and XE (TM) systems when using the pre-built module,
+   it defaults to "muxed".
 
    Note that the Chapel util/quickstart/setchplenv.* source scripts
    set CHPL_TASKS to 'fifo' to reduce build-time and third-party
@@ -246,7 +257,8 @@ Optional Settings
    resulting in the behavior described just above.
 
    See README.tasks for more information about executing using the
-   various CHPL_TASKS options.
+   various CHPL_TASKS options.  See also platforms/README.cray for more
+   information about Cray-specific runtime layers.
 
 
 *  Optionally, set the CHPL_COMM environment variable to indicate what
@@ -255,11 +267,15 @@ Optional Settings
 
         none   : only supports single-locale execution
         gasnet : use the GASNet-based communication layer
+        ugni   : Cray-specific native communications (with Cray
+                 pre-built module only)
 
-   If unset, CHPL_COMM defaults to "none" unless you are running on a
-   Cray XC/XE/XK (TM) or Cray CS (TM) system, in which case it
-   defaults to "gasnet".  See README.multilocale for more information
-   on executing Chapel programs using multiple locales.
+   If unset, CHPL_COMM defaults to "none" in most cases.  On a Cray
+   system it defaults to "gasnet" except when using a pre-built module
+   on a Cray XC or XE (TM) system, where it defaults to "ugni".  See
+   README.multilocale for more information on executing Chapel programs
+   using multiple locales.  See also platforms/README.cray for more
+   information about Cray-specific runtime layers.
 
 
 *  Optionally, the CHPL_MEM environment variable can be used to select
@@ -269,8 +285,9 @@ Optional Settings
         dlmalloc : use Doug Lea's memory allocation package
         tcmalloc : use the tcmalloc package from Google Performance Tools
 
-   If unset, CHPL_MEM defaults to "cstdlib" unless CHPL_COMM is
-   gasnet and you are using the fast or large segments.  See
+   If unset, CHPL_MEM defaults to "cstdlib" in most cases.  If comm is
+   "gasnet" and you are using the fast or large segments it defaults to
+   "dlmalloc".  If comm is "ugni" it defaults to "tcmalloc".  See
    README.multilocale for more information on GASNet segments.
 
 
@@ -289,19 +306,14 @@ Optional Settings
         locks      : implement atomics by using Chapel sync variables to
                      protect normal operations
 
-   If unset, CHPL_ATOMICS defaults to "intrinsics" if the target
-   platform is anything except "linux32" and CHPL_TARGET_COMPILER is
-   any of the following:
+   If unset, CHPL_ATOMICS defaults to "intrinsics" for most
+   configurations.  On some 32 bit platforms, or if the target compiler
+   is "pgi" or "cray-prgenv-pgi" it defaults to "locks".
 
-        clang
-        cray-prgenv-cray
-        cray-prgenv-gnu (gcc version 4.1 and later)
-        cray-prgenv-intel
-        gnu (gcc version 4.1 and later)
-        intel
-
-   Otherwise for "linux32" target platforms and/or any other target
-   compilers, it defaults to "locks".
+   Note: gcc 4.8.1 added support for 64 bit atomics on 32 bit platforms.
+   We default to "intrinsics" for 32 bit platforms when using the target
+   compiler "gnu" with a recent enough version of gcc.  For older
+   versions or other target compilers we default to "locks"
 
    See the Chapel Language Specification for more information about
    atomic operations in Chapel or doc/technotes/README.atomics for more
@@ -339,22 +351,27 @@ Optional Settings
 
 *  Optionally, the CHPL_HWLOC environment variable can select between
    no hwloc support or using the hwloc package distributed with Chapel
-   in third-party.  Current options are:
+   in third-party.  Note that hwloc is only used by the qthreads
+   tasking layer, and does not need to be built for other tasking
+   layers.  Current options are:
 
        none   : do not build hwloc support into the Chapel runtime
        hwloc  : use the hwloc distribution bundled with Chapel in
                 third-party
 
-   If unset, CHPL_HWLOC defaults to "hwloc" if CHPL_TASKS is qthreads,
+   If unset, CHPL_HWLOC defaults to "hwloc" if CHPL_TASKS is "qthreads",
    unless the target platform is knc.  In all other cases it defaults to
-   "none".  Note that the bundled hwloc distribution will not build on
-   some targets (Mac, for example), but the CHPL_HWLOC default does not
-   reflect that.
+   "none".  In the unlikely event the bundled hwloc distribution does
+   not build successfully, it should still be possible to use qthreads.
+   Manually set CHPL_HWLOC to "none" and rebuild in this case (and
+   please file a bug with the Chapel team.)  Building without hwloc
+   should not have a large performance impact when CHPL_LOCALE_MODEL
+   is "flat" but will drastically hurt performance for "numa".
 
 
 *  Optionally, the CHPL_REGEXP environment variable can be used to
    enable regular expression operations as documented in
-   doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.  
+   doc/technotes/README.regexp and defined in modules/standard/Regexp.chpl.
    Current options are:
 
        re2  : use the re2 distribution in third-party
