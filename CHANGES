@@ -4,8 +4,6 @@ Release Changes List
 
 *** STOPPED Mar 18 2015 (54008e4) ***
 
-This file TODO:
-* search for TODO below
 
 ==============
 version 1.11.0
@@ -68,16 +66,16 @@ Syntactic/Naming Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * added support for task intent clauses and semantics to forall loops
-  (see TODO -- vass)
+  (see 'Data Parallelism: Forall Intents' in the language specification)
 * added initial support for 'reduce' intents on forall loops
-  (see TODO -- vass)
+  (see doc/technotes/README.reduceIntents)
 * removed the 'type select x' syntax in favor of simply using 'select x.type'
 * made read()s of sync/single variables result in a compiler error
 
 New Features
 ------------
 * added "blank", 'const', 'in', 'const in' and 'const ref' task intents
-  (see TODO -- vass)
+  (see 'Task Parallelism: Task Intents' in the language specification)
 * added "standalone parallel iterators", used by non-zippered forall loops
   (see examples/primers/parIters.chpl)
 * added support for aliasing of domains via the '=>' operator
@@ -285,7 +283,7 @@ Runtime Library Changes
 Compiler Performance
 --------------------
 * accelerated compilation times by disabling the task table by default
-  (see TODO)
+  (see '--[no-]task-tracking' on the 'chpl' man page and doc/README.executing)
 
 Testing System
 --------------
