@@ -2,7 +2,7 @@
 Release Changes List
 ====================
 
-*** STOPPED Mar 18 2015 (54008e4) ***
+*** STOPPED Mar 18 2015 (b46388e) ***
 
 
 ==============
@@ -106,7 +106,7 @@ Standard Library/Modules
 * started a new module, Path, supporting realPath(), curDir, parentDir, pathSep
   (see http://chapel.cray.com/docs/latest/modules/standard/Path.html)
 * added a new module, Assert, defining a simple assertion capability
-  (see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Assert.html)
 * added support for C types c_ptrdiff, c_uintptr, and c_intptr to SysCTypes.chpl
   (see http://chapel.cray.com/docs/latest/modules/standard/gen/doc/SysCTypes.html)
 * changed cwd() and chdir() from standalone functions to locale methods
