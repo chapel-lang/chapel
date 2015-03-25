@@ -2,33 +2,44 @@
 Release Changes List
 ====================
 
-*** STOPPED Mar 18 2015 (b46388e) ***
-
-
 ==============
 version 1.11.0
 ==============
 
 Fourteenth public release of Chapel, April 2, 2015
 
-
-Highlights (see entries below for more information)
+Highlights
 ----------
-* added a new FileSystem standard module supporting operations on files/dirs
-* added a new FFTW standard module supporting key FFTW routines
 * revamped 'chpldoc' and used it to create web docs for all standard modules
+  (see http://chapel.cray.com/docs/latest/)
+* added a new FileSystem standard module supporting operations on files/dirs
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
+* added a new FFTW standard module supporting key FFTW routines
+  (see http://chapel.cray.com/docs/latest/modules/standard/FFTW.html)
 * added task intents to forall loops, plus new intents such as 'in' and 'reduce'
+  (see 'Semantic Changes' and 'New Features' sections below)
 * added support for standalone parallel iterators, used by non-zippered foralls
+  (see examples/primers/parIters.chpl)
 * added support for vectorization of data parallel loops and operations
+  (see '--vectorize' flag in 'man chpl')
 * optimized away communication code for module-scope variables and local arrays
+  (see release note slides at http://chapel.cray.com/download.html#releaseNotes)
 * added an early prototype interactive/interpreted mode for writing Chapel code
+  (see doc/technotes/README.chpl-ipe.rst for more details)
 * initial support for Python->Chapel interoperability via PyChapel
-* made 'ugni' the default CHPL_COMM setting for users of the cray-x* module
+  (see http://pychapel.readthedocs.org/ for more details)
+* made 'ugni'/'muxed' the default comm/tasking choices for cray-x* module users
+  (see doc/platforms/README.cray and doc/README.chplenv)
 * added a new 'chpltags' utility to generate emacs/vim tags for Chapel code
+  (see 'util/chpltags --help' and 'util/README')
 * numerous other improvements for better performance and cleaner generated code
+  (see 'Performance Improvements' section below)
 * improved portability to NetBSD and additional flavors of Linux
+  (see 'Portability Improvements' section below)
 * upgraded the bundled versions of GASNet, hwloc, llvm, and dygraphs
+  (see 'Third-Party Software Changes' section below)
 * numerous bug fixes
+  (see 'Bug Fixes' section below)
 
 Environment/Configuration Changes
 ---------------------------------
@@ -36,11 +47,12 @@ Environment/Configuration Changes
 * made the "quickstart" scripts set CHPL_COMM to 'none' and not set CHPL_MEM
 * improved the logic for auto-detecting when CHPL_ATOMICS should be 'intrinsics'
 * added auto-detection of CHPL_*_PLATFORM for 'cray-xc'/'cray-xe' systems
+* added support for building runtime/third-party with the bundled clang version
+  (see references to 'clang-included' in README.chplenv)
 * split the 'cygwin' CHPL_*_PLATFORM value into 'cygwin32' and 'cygwin64'
 * added new 'netbsd32' and 'netbsd64' values for CHPL_*_PLATFORM
 * changed CHPL_COMM/TASKS to default to ugni/muxed when using the cray-x* module
   (see doc/README.chplenv, doc/platforms/README.cray, and/or doc/README.tasks)
-* enabled 'ugni' and 'muxed' runtime layers to be mixed with others
 * made CHPL_TASKS default to 'fifo' for 'cray-prgenv-cray' CHPL_TARGET_COMPILER
 
 Packaging Changes
@@ -156,15 +168,19 @@ Launcher-specific Changes
 
 Platform-specific Changes
 -------------------------
-* disabled optimizations by default for cray-prgenv-cray compilations
 * fixed an issue in which Qthreads would not handle sleep() correctly for darwin
 * added a micro-sleep when yielding threads on Cygwin to improve throughput
-* split the 'cygwin' platform variable into 'cygwin32' and 'cygwin64'
 * changed CHPL_COMM/TASKS to default to ugni/muxed when using the cray-x* module
   (see doc/README.chplenv, doc/platforms/README.cray, and/or doc/README.tasks)
-* made CHPL_TASKS default to 'fifo' for 'cray-prgenv-cray' CHPL_TARGET_COMPILER
-* reduced the default heap size used for CHPL_COMM=ugni
+* enabled 'ugni' tasking to be usable with 'qthreads' as well as 'muxed'
+* reduced default heap size used for CHPL_COMM='ugni' to 2/3 free node memory
   (see doc/platforms/README.cray)
+* changed 'muxed' tasking to use # of threads equal to the # of CPUs by default
+  (see doc/platforms/README.cray)
+* disabled optimizations by default for cray-prgenv-cray compilations
+* split the 'cygwin' platform variable into 'cygwin32' and 'cygwin64'
+* split the 'netbsd' platform variable into 'netbsd32' and 'netbsd64'
+* made CHPL_TASKS default to 'fifo' for 'cray-prgenv-cray' CHPL_TARGET_COMPILER
 
 Portability Improvements
 ------------------------
@@ -185,10 +201,11 @@ Third-Party Software Changes
 * rearchitected scripting framework for third-party dependences
 * made the re2 build do a better job of propagating errors back to the Makefiles
 * changed Qthreads to avoid using guard pages when mprotect() won't work
+* fixed a bug in limiting the maximum size of Qthreads memory pools
 
 Documentation
 -------------
-* added web-based docs for all current standard modules and removed from spec
+* added web-based docs for all standard modules and removed from spec/READMEs
   (see http://chapel.cray.com/docs/latest/)
 * made some minor improvements to the Quick Reference document
 * added documentation for class and record destructors to the spec
@@ -276,8 +293,7 @@ Platform-specific bug fixes
 
 Runtime Library Changes
 -----------------------
-* changed 'muxed' tasking to use # of threads equal to the # of CPUs by default
-  (see doc/platforms/README.cray)
+* enabled 'ugni' tasking to be usable with 'qthreads' as well as 'muxed'
 * changed Qthreads to yield after uncontested sync var locks to avoid starvation
 
 Compiler Performance
