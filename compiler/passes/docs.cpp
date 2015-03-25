@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include <errno.h>
+#include <cerrno>
 #include <fstream>
 #include <iostream>
 #include <iterator>
