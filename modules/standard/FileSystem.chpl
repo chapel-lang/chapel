@@ -25,14 +25,60 @@
    routines for opening, writing to, or reading from a file live in the
    :mod:`IO` module.  Rather, it covers cases where the user would prefer a file
    or directory to be handled wholesale and/or with minimal interaction.  For
-   example, this module contains a file :proc:`copy` routine, as well as
-   operations like :proc:`chmod`, :proc:`mkdir`, and :proc:`remove`.  Also
-   included are operations relating to the current process's file system state,
-   such as :proc:`~locale.umask` or :proc:`~locale.chdir`, which are performed
-   on a specified locale.  The module also contains iterators for traversing the
-   file system, such as :iter:`glob`, :iter:`listdir`, :iter:`walkdirs`, and
-   :iter:`findfiles`.
+   example, this module contains :ref:`file-manip` and functions for determining
+   the :ref:`file-status`.  Also included are operations relating to the current
+   process's file system state, which are performed on a specified locale
+   (:ref:`locale-state`).  The module also contains iterators for traversing the
+   file system (:ref:`filerator`).
 
+   .. _file-manip:
+
+   File/Directory Manipulations
+   ----------------------------
+   :proc:`copy`
+   :proc:`copyFile`
+   :proc:`copyTree`
+   :proc:`mkdir`
+   :proc:`remove`
+   :proc:`symlink`
+   :proc:`chmod`
+   :proc:`chown`
+   :proc:`copyMode`
+   :proc:`rename`
+
+   .. _file-status:
+
+   File/Directory Properties
+   -------------------------
+   :proc:`getGID`
+   :proc:`getMode`
+   :proc:`getUID`
+   :proc:`exists`
+   :proc:`isDir`
+   :proc:`isFile`
+   :proc:`isLink`
+   :proc:`isMount`
+   :proc:`sameFile`
+
+   .. _locale-state:
+
+   Locale State Functionality
+   --------------------------
+   :proc:`locale.chdir`
+   :proc:`locale.cwd`
+   :proc:`locale.umask`
+
+   .. _filerator:
+
+   File System Traversal Iterators
+   -------------------------------
+   :iter:`glob`
+   :iter:`listdir`
+   :iter:`walkdirs`
+   :iter:`findfiles`
+
+   Constant and Function Definitions
+   ---------------------------------
  */
 module FileSystem {
 

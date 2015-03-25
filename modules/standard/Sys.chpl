@@ -18,6 +18,8 @@
  */
 
 /*
+   Support for low-level programming and system calls.
+
    This module is for low-level programming. It provides Chapel versions of
    many POSIX/Linux C library or system calls. For documentation on these
    system calls and constants, please see your system's manual pages.

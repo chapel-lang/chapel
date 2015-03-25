@@ -9,7 +9,7 @@ demonstrate Chapel feature areas in detail.
      arrayVectorOps.chpl    : Vector-like operations on 1D arrays
      associative.chpl       : Associative arrays/domains and set operations
      atomics.chpl           : Atomic variables
-     chpldoc.chpl           : The chpldoc feature
+     chpldoc.doc.chpl       : The chpldoc feature
      classes.chpl           : Defining and using classes
      distributions.chpl     : Chapel standard distributions
      domains.chpl           : Domains and methods on domains

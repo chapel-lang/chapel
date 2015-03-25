@@ -38,20 +38,17 @@ This directory contains the following documentation:
     README.chpl-ipe.rst     :  information about Interactive Chapel
     README.chpldoc.rst      :  notes on using the 'chpldoc' capability
     README.comm-diagnostics :  tracking communication events
+    README.reduceIntents    :  'reduce' forall intents
     README.dsi              :  requirements/guidelines on writing a domain map
     README.extern           :  calling external C routines
     README.firstClassFns    :  first-class functions
     README.format           :  value-to-string formatting
-    README.formattedIO      :  readf()/writef() and formatting strings
-    README.gmp              :  a prototype GMP module
-    README.io               :  the new I/O system in Chapel
     README.libraries        :  information about creating libraries in Chapel
     README.llvm             :  information about using the LLVM back-end
     README.local            :  the 'local' statement
     README.localeModels     :  information about Chapel locale models
     README.main             :  defining the 'main()' routine  TODO
     README.module_search    :  how modules are searched for to fulfill 'use's
-    README.regexp           :  using regular expressions in Chapel
     README.sets             :  set operations on associative arrays and domains
     README.subquery         :  querying the index set owned by a locale
 

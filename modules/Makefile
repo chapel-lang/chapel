@@ -57,11 +57,13 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 MODULES_TO_DOCUMENT = \
 	standard/AdvancedIters.chpl \
+	standard/Assert.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Curl.chpl \
 	standard/FFTW.chpl \
+	standard/FFTW_MT.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/HDFS.chpl \
