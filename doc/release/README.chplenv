@@ -307,11 +307,13 @@ Optional Settings
                      protect normal operations
 
    If unset, CHPL_ATOMICS defaults to "intrinsics" for most
-   configurations except for 32 bit platforms or if the target compiler
-   is "pgi" or "cray-prgenv-pgi" in which case it defaults to "locks".
-   Note that gcc 4.8.1 added support for 64 bit intrinsic atomics on 32
-   bit platforms so we default to "intrinsics" for newer version of
-   target compiler "gnu".
+   configurations.  On some 32 bit platforms, or if the target compiler
+   is "pgi" or "cray-prgenv-pgi" it defaults to "locks".
+
+   Note: gcc 4.8.1 added support for 64 bit atomics on 32 bit platforms.
+   We default to "intrinsics" for 32 bit platforms when using the target
+   compiler "gnu" with a recent enough version of gcc.  For older
+   versions or other target compilers we default to "locks"
 
    See the Chapel Language Specification for more information about
    atomic operations in Chapel or doc/technotes/README.atomics for more
