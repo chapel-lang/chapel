@@ -31,7 +31,7 @@ execution.
 The 'local' construct does not necessarily indicate the cause of
 communication when present. See
 
-    README.comm-diagnostics
+    http://chapel.cray.com/docs/master/modules/standard/CommDiagnostics.html
 
 for ways to diagnose communication.
 

@@ -19,70 +19,126 @@
 
 pragma "no use ChapelStandard"
 
-/* This module provides support for reporting and counting communication
-   operations between network-connected locales.  The operations include
-   various kinds of remote reads (GETs), remote writes (PUTs), and
-   remote forks.  Callers can request on-the-fly output each time a
-   remote operation occurs, or count such operations as they occur and
-   retrieve the counts later.  The former gives more detailed
-   information but has much more overhead.  The latter has much less
-   overhead but only provides aggregate information.
+/*
+  This module provides support for reporting and counting
+  communication operations between network-connected locales.  The
+  operations include various kinds of remote reads (GETs), remote
+  writes (PUTs), and remote forks (which are actually more like remote
+  procedure calls, and are used to implement ``on`` statements).
+  Callers can request on-the-fly output each time a remote operation
+  occurs, or count such operations as they occur and retrieve the
+  counts later.  The former gives more detailed information but has
+  much more overhead.  The latter has much less overhead but only
+  provides aggregate information.
 
-   All forms of communication reporting and counting are done between
-   pairs of function calls that turn it on and off.  On-the-fly
-   reporting across all locales is done like this::
+  **On-the-fly Reporting**
 
-     startVerboseComm();
-     // between start/stop calls, report comm ops initiated on any locale
-     stopVerboseComm();
+  All forms of communication reporting and counting are done between
+  pairs of function calls that turn it on and off.  On-the-fly
+  reporting across all locales is done like this::
 
-   On-the-fly reporting for a single locale is done like this::
+    startVerboseComm();
+    // between start/stop calls, report comm ops initiated on any locale
+    stopVerboseComm();
 
-     startVerboseCommHere();
-     // between start/stop calls, report comm ops initiated on this locale
-     stopVerboseCommHere();
+  On-the-fly reporting for just the calling locale is similar.  Only
+  the procedure names change::
 
-   In either case, the output produced consists of a line written to
-   ``stdout`` for each communication operation.  (Here ``stdout`` means
-   the file associated with the process, not the Chapel channel with the
-   same name.)
+    startVerboseCommHere();
+    // between start/stop calls, report comm ops initiated on this locale
+    stopVerboseCommHere();
 
-   Counting communication operations requires a few more calls then just
-   reporting them does.  In particular, the counts have to be retrieved
-   after they are collected and, if they have been used previously, the
-   internal counters have to be reset before counting is turned on.
-   Counting across all locales is done like this::
+  In either case, the output produced consists of a line written to
+  ``stdout`` for each communication operation.  (Here ``stdout`` means
+  the file associated with the process, not the Chapel channel with the
+  same name.)
 
-     // (optional) if we counted previously, reset the counters to zero
-     resetCommDiagnostics();
-     startCommDiagnostics();
-     // between start/stop calls, count comm ops initiated on any locale
-     stopCommDiagnostics();
-     // retrieve the counts and report the results
-     writeln(getCommDiagnostics());
+  Consider this little example program::
 
-   Counting on just the calling locale is similar.  Only the procedure
-   names change::
+    use CommDiagnostics;
+    proc main() {
+      startVerboseComm();
+      var x: int = 1;
+      on Locales(1) {     // should fork a blocking task onto locale 1
+        x = x + 1;        // should invoke a remote put and a remote get
+      }
+      stopVerboseComm();
+    }
 
-     // (optional) if we counted previously, reset the counters to zero
-     resetCommDiagnosticsHere();
-     startCommDiagnosticsHere();
-     // between start/stop calls, count comm ops initiated on this locale
-     stopCommDiagnosticsHere();
-     // retrieve the counts and report the results
-     writeln(getCommDiagnosticsHere());
+  Executing this on two locales with the ``-nl 2`` command line
+  option results in the following output::
 
-   The optional call to reset the counters is only needed when a program
-   collects counts more than once.  In this case, the counters have to
-   be set back to zero before starting the second and succeeding
-   counting periods.  By far the most common situation is that programs
-   only collect communication counts once per run, in which case this
-   step is not needed.
+    0: remote task created on 1
+    1: t.chpl:6: remote get from 0
+    1: t.chpl:6: remote put to 0
 
-   Note that the same internal mechanisms and counters are used for
-   counting on all locales and counting on just the calling locale, so
-   trying to do both at once may lead to surprising turn-on/turn-off
-   behavior and/or incorrect results.
+  The initial number refers to the locale reporting the communication
+  event.  The file name and line number point to the place in the
+  code that triggered the communication event.  (For remote forks,
+  file name and line number information is not yet reported.)
+
+  **Counting Communication Operations**
+
+  Counting communication operations requires a few more calls then just
+  reporting them does.  In particular, the counts have to be retrieved
+  after they are collected and, if they have been used previously, the
+  internal counters have to be reset before counting is turned on.
+  Counting across all locales is done like this::
+
+    // (optional) if we counted previously, reset the counters to zero
+    resetCommDiagnostics();
+    startCommDiagnostics();
+    // between start/stop calls, count comm ops initiated on any locale
+    stopCommDiagnostics();
+    // retrieve the counts and report the results
+    writeln(getCommDiagnostics());
+
+  Counting on just the calling locale is similar.  Just as for
+  on-the-fly reporting, only the procedure names change::
+
+    // (optional) if we counted previously, reset the counters to zero
+    resetCommDiagnosticsHere();
+    startCommDiagnosticsHere();
+    // between start/stop calls, count comm ops initiated on this locale
+    stopCommDiagnosticsHere();
+    // retrieve the counts and report the results
+    writeln(getCommDiagnosticsHere());
+
+  The optional call to reset the counters is only needed when a program
+  collects counts more than once.  In this case, the counters have to
+  be set back to zero before starting the second and succeeding
+  counting periods.  By far the most common situation is that programs
+  only collect communication counts once per run, in which case this
+  step is not needed.
+
+  Note that the same internal mechanisms and counters are used for
+  counting on all locales and counting on just the calling locale, so
+  trying to do both at once may lead to surprising turn-on/turn-off
+  behavior and/or incorrect results.
+
+  Consider this little example program::
+
+    use CommDiagnostics;
+    proc main() {
+      startCommDiagnostics();
+      var x: int = 1;
+      on Locales(1) {     // should fork a blocking task onto locale 1
+        x = x + 1;        // should invoke a remote put and a remote get
+      }
+      stopCommDiagnostics();
+      writeln(getCommDiagnostics());
+    }
+
+  Executing this on two locales with the ``-nl 2`` command line
+  option results in the following output::
+
+    (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 1, get_nb = 0, put = 1, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 0, fork_fast = 0, fork_nb = 0)
+
+  The first parenthesized group contains the counts for locale 0, and
+  the second contains the counts for locale 1.  So, for the
+  instrumented section of this program we can say that a remote fork
+  was executed on locale 0, and a remote get and a remote put were
+  executed on locale 1.
  */
 module CommDiagnostics
 {
