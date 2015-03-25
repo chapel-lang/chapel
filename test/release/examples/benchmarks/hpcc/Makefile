@@ -7,6 +7,7 @@ TARGETS = \
 	stream \
 	stream-ep \
 	ra \
+	ra-atomics \
 	fft \
 	ptrans \
 	hpl \
