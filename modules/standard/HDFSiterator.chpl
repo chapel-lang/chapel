@@ -18,6 +18,8 @@
  */
 
 /*
+   Iterators for distributed iteration over Hadoop Distributed Filesystem
+
    Iterators that can iterate over distributed data in an HDFS filesystem
    in a distributed manner. See :mod:`HDFS`.
  */

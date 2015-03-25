@@ -17,7 +17,9 @@
  * limitations under the License.
  */
 
-/* This module provides basic types when those types are not
+/* Types for low-level programming and C integration.
+   
+   This module provides basic types when those types are not
    platform-dependent. The module :mod:`SysCTypes` contains the
    platform-dependent declarations for C compatability.
 

@@ -18,6 +18,9 @@
  */
 
 /*
+
+Support for Hadoop Distributed Filesystem
+
 This module implements support for the 
 `Hadoop <http://hadoop.apache.org/>`_ 
 `Distributed Filesystem <http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html>`_ (HDFS).

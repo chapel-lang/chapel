@@ -19,6 +19,8 @@
 
 /*
 
+Simple support for many network protocols with libcurl
+
 This module provides support for libcurl, enabling Chapel programs
 to work with many network protocols. 
 
