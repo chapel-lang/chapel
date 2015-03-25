@@ -38,6 +38,7 @@ This directory contains the following documentation:
     README.chpl-ipe.rst     :  information about Interactive Chapel
     README.chpldoc.rst      :  notes on using the 'chpldoc' capability
     README.comm-diagnostics :  tracking communication events
+    README.reduceIntents    :  'reduce' forall intents
     README.dsi              :  requirements/guidelines on writing a domain map
     README.extern           :  calling external C routines
     README.firstClassFns    :  first-class functions
