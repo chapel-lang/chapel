@@ -23,8 +23,8 @@ This module provides regular expression support.
 
 The regular expression support is built on top of the RE2 regular expression
 library. As such, the exact regular expression syntax available is the syntax
-from RE2, which is available at http://code.google.com/p/re2/wiki/Syntax and
-included here for your convenience.
+from RE2, which is available within the RE2 project at
+https://github.com/google/re2 and included here for your convenience.
 
 
 Enabling Regular Expression Support
@@ -37,12 +37,14 @@ expression support with the RE2 library:
 
    export CHPL_REGEXP=re2
 
-Then, rebuild Chapel. As part of the make, the RE2 library will be
-downloaded from its Mercurial repository at re2.googlecode.com.
+Then, rebuild Chapel. The RE2 library will be expanded from a release included
+in the Chapel distribution.
 
-Note: if re2 support is not enabled (which is the default), all features
-described below will compile successfully, but will result in an internal
-error at *run time*, saying "No Regexp Support".
+.. note::
+
+  if re2 support is not enabled (which is the default), all features
+  described below will compile successfully, but will result in an internal
+  error at *run time*, saying "No Regexp Support".
 
 
 Using Regular Expression Support
@@ -53,7 +55,11 @@ Using Regular Expression Support
    use Regexp;
    var myRegexp = compile("a+");
 
-Now you can use :proc:`regexp.search`, :proc:`regexp.match`, :proc:`regexp.split`, :proc:`regexp.matches` or :proc:`string.search`, :proc:`string.match`, :proc:`string.split`, :proc:`string.matches`, or :proc:`string.search`.
+Now you can use these methods on regular expressions: :proc:`regexp.search`,
+:proc:`regexp.match`, :proc:`regexp.split`, :proc:`regexp.matches`.
+
+You can also use the string versions of these methods: :proc:`string.search`,
+:proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`.
 
 Lastly, you can include regular expressions in the format string for
 :proc:`~IO.readf` for searching on QIO channels using the ``%/<regexp>/``
@@ -307,6 +313,10 @@ RE2 regular expression syntax reference
   \D      not «\d»
   \w      word character
   \W      not «\w»
+
+Regular Expression Types and Methods
+------------------------------------
+
  */
 module Regexp {
 
@@ -400,14 +410,17 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   return ret;
 }
 
-/*  Compile a regular expression. If the optional error argument is provided,
-    this routine will return an error code if compilation failed. Otherwise,
-    it will halt with an error message.
+/*
+   Compile a regular expression. If the optional error argument is provided,
+   this routine will return an error code if compilation failed. Otherwise, it
+   will halt with an error message.
     
    :arg pattern: the string regular expression to compile.
                  See :ref:`regular-expression-syntax` for details
    :arg error: (optional) if provided, return an error code instead of halting
                if an error is encountered
+   :arg utf8: (optional, default true) set to `true` to create a regular
+               expression matching UTF-8; `false` for binary or ASCII only.
    :arg posix: (optional) set to true to disable non-POSIX regular expression
                syntax   
    :arg literal: (optional) set to true to treat the regular expression as a
@@ -419,6 +432,8 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
    :arg multiline: (optional) set to true in order to activate multiline mode
                    (meaning that ``^`` and ``$`` match the beginning and end of a
                    line instead of just the beginning and end of the text.
+   :arg dotnl: (optional, default false) set to true in order to allow ``.``
+               to match a newline.
    :arg nongreedy: (optional) set to true in order to prefer shorter matches for
                    repetitions; for example, normally x* will match as many x
                    characters as possible and x*? will match as few as possible.
@@ -473,6 +488,7 @@ record stringPart {
 
 /*  The reMatch record records a regular expression search match
     or a capture group.
+
     Regular expression search routines normally return one of these.
     Also, this type can be passed as a capture group argument.
     Lastly, something of type reMatch can be checked for a match
@@ -739,7 +755,7 @@ record regexp {
      Split the text by occurrences of this regular expression.
      If capturing parentheses are used in pattern, then the text of all
      groups in the pattern are also returned as part of the resulting array.
-     If maxsplit is nonzero, at most maxsplit splits occur, and the
+     If *maxsplit* is nonzero, at most maxsplit splits occur, and the
      remaining text is returned as the last element.
 
      :arg text: a string to split
@@ -868,6 +884,7 @@ record regexp {
      :arg global: if true, replace multiple matches
      :returns: a tuple containing (new string, number of substitutions made)
    */
+  // TODO -- move subn after sub for documentation clarity
   proc subn(repl:string, text: ?t, global = true ):(string, int)
     where t == string || t == stringPart 
   {
@@ -990,8 +1007,10 @@ inline proc _cast(type t, x: string) where t == regexp {
 
 
 
-/* Compile a regular expression and search the receiving string
-   for matches at any offset using :proc:`regexp.search`.
+/*
+
+   Compile a regular expression and search the receiving string for matches at
+   any offset using :proc:`regexp.search`.
 
    :arg needle: the regular expression to search for
    :arg ignorecase: true to ignore case in the regular expression
