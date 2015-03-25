@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+# skip this test unless we're doing baseline testing (the only place it fails)
+import os
+print('--baseline' not in os.environ.get('COMPOPTS', ''))

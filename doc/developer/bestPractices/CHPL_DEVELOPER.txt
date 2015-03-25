@@ -91,8 +91,6 @@ Notes:
   that the testing system is running from an end-user perspective and
   not from a developer perspective.
 
-* the 'nightly' script used to run cron jobs always sets
-  CHPL_DEVELOPER, primarily because some cron jobs were running with
-  it set and others with it unset and we wanted to make sure they were
-  all consistent.  That said, I can't recall offhand what our reasons
-  were for choosing to hardcode it to 'on'.
+* the 'nightly' script used to run cron jobs does not set
+  CHPL_DEVELOPER. Instead, it sets WARNINGS=1, DEBUG=0, and OPTIMIZE=1
+  when calling make.

@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,17 +24,19 @@
    on numbers of tokens and to print out the code in a tokenized
    form */
 
+#include "bison-chapel.h"
+
 extern bool countTokens;
 extern bool printTokens;
 
 void startCountingFileTokens(const char* filename);
-void stopCountingFileTokens(void);
-void finishCountingTokens(void);
+void stopCountingFileTokens(yyscan_t scanner);
+void finishCountingTokens();
 
 void countToken(const char* tokentext);
-void countNewline(void);
-void countCommentLine(void);
+void countNewline();
+void countCommentLine();
 void countSingleLineComment(const char* comment);
-void countMultiLineComment(char* comment);
+void countMultiLineComment(const char* comment);
 
 #endif

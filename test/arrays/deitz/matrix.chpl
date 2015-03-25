@@ -30,7 +30,8 @@ proc *(M1: Matrix, M2: Matrix) {
   if M1.n != M2.m then
     halt("illegal matrix * operation");
   var M3 = new Matrix((M1(1,1)*M2(1,1)).type, M1.m, M2.n);
-  [(i,j) in M3.D] M3(i,j) = + reduce [k in M1.D.dim(2)] (M1(i,k) + M2(k,j));
+  [(i,j) in M3.D with (ref M1, ref M2, ref M3)] M3(i,j) =
+   + reduce [k in M1.D.dim(2)] (M1(i,k) + M2(k,j));
   return M3;
 }
 

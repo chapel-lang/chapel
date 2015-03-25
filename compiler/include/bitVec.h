@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,32 +23,51 @@
 class BitVec {
  public:
   unsigned* data;
-  int in_size;
-  int ndata;
+  size_t in_size;
+  size_t ndata;
 
-  BitVec(int in_size);
+  BitVec(size_t in_size);
+  BitVec(const BitVec& rhs);
   ~BitVec();
   void clear();
-  bool get(int i);
-  void unset(int i);
-  void disjunction(BitVec& other);
-  void intersection(BitVec& other);
+  bool get(size_t i) const;
+  bool operator[](size_t i) const { return get(i); }
+  void unset(size_t i);
+  void disjunction(const BitVec& other);
+  void intersection(const BitVec& other);
   
   
   // Added functionality to make this compatible with std::bitset and thus 
   // boosts dynamic bitset if that gets into the STL, or we start using boost
-  bool equals(BitVec& other);
+  bool equals(const BitVec& other) const;
   void set();
-  void set(int i);
+  void set(size_t i);
   void reset();
-  void reset(int i);
+  void reset(size_t i);
+  void copy(const BitVec& other);
+  void copy(size_t i, bool value);
   void flip();
-  void flip(int i);
-  int count();
-  int size();
-  bool test(int i);
-  bool any();
-  bool none();
+  void flip(size_t i);
+  size_t count() const;
+  size_t size() const;
+  bool test(size_t i) const;
+  bool any() const;
+  bool none() const;
 };
+
+inline BitVec operator+(const BitVec& a, const BitVec& b)
+{
+  BitVec result(a);
+  result.disjunction(b);
+  return result;
+}
+
+inline BitVec operator-(const BitVec& a, const BitVec& b)
+{
+  BitVec result(b);
+  result.flip();
+  result.intersection(a);
+  return result;
+}
 
 #endif

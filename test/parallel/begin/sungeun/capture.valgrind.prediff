@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+sort $2 | uniq - > $2.prediff.tmp && mv $2.prediff.tmp $2
+

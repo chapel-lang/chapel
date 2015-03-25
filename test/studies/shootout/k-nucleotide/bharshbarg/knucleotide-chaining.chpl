@@ -1,7 +1,7 @@
 use IO;
 use AdvancedIters;
 
-extern proc memcpy(x : [], b, len:int);
+extern proc memcpy(x : [], b:c_string, len:int);
 
 config const tableSize = 1 << 16;
 config const lineSize = 61;
@@ -30,7 +30,7 @@ class Table {
 
   proc this(d : uint) ref {
     const slot :int = (d & (tableSize-1)):int;
-    refvar head = table[slot];
+    ref head = table[slot];
     var n = head;
     if n == nil {
       n = new Node(d, 0, nil);
@@ -51,10 +51,21 @@ class Table {
 
   iter these() {
     for t in table {
-      var n : Node = t;
+      var n = t;
       while n != nil {
         yield (n.data, n.count);
         n = n.next;
+      }
+    }
+  }
+
+  proc ~Table() {
+    for n in table do {
+      var cur = n;
+      while cur != nil {
+        var next = cur.next;
+        delete cur;
+        cur = next;
       }
     }
   }
@@ -94,6 +105,7 @@ proc calculate(data : [] uint(8), size : int) {
     lock; // acquire lock
     for (k,v) in curArr do freqs[k] += v;
     lock = true; // free lock
+    delete curArr;
   }
 
   return freqs;
@@ -111,17 +123,19 @@ proc write_frequencies(data : [] uint(8), size : int) {
 
   for (f, s) in arr do
     writef("%s %.3dr\n", decode(s, size), (100.0 * f) / sum);
+  delete freqs;
 }
 
 proc write_count(data : [] uint(8), str : string) {
   var freqs = calculate(data, str.length);
   var d = hash(str.toBytes(), 1, 0..str.length-1);
   writeln(freqs[d], "\t", decode(d, str.length));
+  delete freqs;
 }
 
 proc string.toBytes() ref {
    var b : [1..this.length] uint(8);
-   memcpy(b, this, this.length);
+   memcpy(b, this.c_str(), this.length);
    return b;
 }
 
@@ -129,7 +143,7 @@ inline proc startsWithThree(data : []) {
   return data[1] == 0x3E && data[2] == 0x54 && data[3] == 0x48;
 }
 
-proc main() {
+proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const inFile = openfd(0);
   const fileLen = inFile.length();

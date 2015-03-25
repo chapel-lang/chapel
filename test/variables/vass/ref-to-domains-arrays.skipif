@@ -1,0 +1,11 @@
+# This test goes off rails bad in non-default configurations,
+# esp. numa and no-local, causing intermittent .bad mismatches.
+# So don't run it there.
+#
+CHPL_COMM != none
+COMPOPTS <= --no-local
+CHPL_LOCALE_MODEL != flat
+CHPL_TARGET_PLATFORM != linux64
+CHPL_TARGET_COMPILER != gnu
+# and produces a few errors under valgrind
+CHPL_TEST_VGRND_EXE == on

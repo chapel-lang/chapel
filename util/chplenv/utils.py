@@ -1,5 +1,6 @@
 import os, re, subprocess
 from distutils.spawn import find_executable
+from collections import namedtuple
 
 def memoize(func):
     cache = func.cache = {}
@@ -22,16 +23,24 @@ def get_chpl_home():
     return chpl_home
 
 @memoize
+def using_chapel_module():
+    chpl_home = os.environ.get('CHPL_HOME', '')
+    if chpl_home != '':
+        return chpl_home == os.environ.get('CHPL_MODULE_HOME', '')
+    return False
+
+@memoize
 def get_compiler_version(compiler):
+    CompVersion = namedtuple('CompVersion', ['major', 'minor'])
     if 'gnu' in compiler:
         output = run_command(['gcc', '-dumpversion'])
-        match = re.search(r'(\d+\.\d+)', output)
+        match = re.search(r'(\d+)\.(\d+)', output)
         if match:
-            return float(match.group(1))
+            return CompVersion(major=int(match.group(1)), minor=int(match.group(2)))
         else:
             raise ValueError("Could not find the GCC version")
     else:
-        return 0
+        return CompVersion(major=0, minor=0)
 
 class CommandError(Exception):
     pass

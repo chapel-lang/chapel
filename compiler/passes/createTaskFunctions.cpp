@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,10 +20,57 @@
 #include "astutil.h"
 #include "passes.h"
 #include "stmt.h"
+#include "stlUtil.h"
 
-// Marker for variables listed in the 'ref' clause and so not to be converted.
-// (Used instead of deleting SymbolMap elements, which does not work well.)
-static Symbol* markPruned;
+// 'markPruned' replaced deletion from SymbolMap, which does not work well.
+Symbol* markPruned;
+// initial value for 'uses' SymbolMap
+Symbol* markUnspecified;
+
+// These mark the intents for variables in a task intent clause.
+static ArgSymbol *tiMarkBlank, *tiMarkIn, *tiMarkConstDflt, *tiMarkConstIn,
+                 *tiMarkConstRef, *tiMarkRef;
+// Dummy function to host the above.
+static FnSymbol* tiMarkHost;
+
+// Return a fixed ArgSymbol marker for the given intent, or NULL if n/a.
+ArgSymbol* tiMarkForIntent(IntentTag intent) {
+  switch (intent) {
+    case INTENT_BLANK:     return tiMarkBlank;    break;
+    case INTENT_IN:        return tiMarkIn;        break;
+    case INTENT_INOUT:     return NULL;            break;
+    case INTENT_OUT:       return NULL;            break;
+    case INTENT_CONST:     return tiMarkConstDflt; break;
+    case INTENT_CONST_IN:  return tiMarkConstIn;   break;
+    case INTENT_CONST_REF: return tiMarkConstRef;  break;
+    case INTENT_REF:       return tiMarkRef;       break;
+    case INTENT_PARAM:     return NULL;            break;
+    case INTENT_TYPE:      return NULL;            break;
+    default: INT_FATAL("unexpected intent in tiMarkForIntent()");
+             return NULL; break;
+  }
+}
+
+#define tiMarkAdd(intent, mark) \
+  mark = new ArgSymbol(intent, #mark, dtVoid); \
+  tiMarkHost->insertFormalAtTail(mark);
+// does not work: rootModule->block->insertAtTail(new DefExpr(mark));
+
+// one-time initialization
+void initForTaskIntents() {
+  tiMarkHost = new FnSymbol("tiMarkHost");
+  theProgram->block->insertAtTail(new DefExpr(tiMarkHost));
+
+  markPruned = gVoid;
+  markUnspecified = gNil;
+  tiMarkAdd(INTENT_BLANK,     tiMarkBlank);
+  tiMarkAdd(INTENT_IN,        tiMarkIn);
+  tiMarkAdd(INTENT_CONST,     tiMarkConstDflt);
+  tiMarkAdd(INTENT_CONST_IN,  tiMarkConstIn);
+  tiMarkAdd(INTENT_CONST_REF, tiMarkConstRef);
+  tiMarkAdd(INTENT_REF,       tiMarkRef);
+}
+
 
 // Is 'sym' an index var in the coforall loop
 // for which the 'fn' was created?
@@ -43,12 +90,11 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
     return false;
 
   // FYI: presently, for a 'coforall', the enclosing block is a for loop.
-  INT_ASSERT(block->blockInfo &&
-             block->blockInfo->isPrimitive(PRIM_BLOCK_FOR_LOOP));
+  INT_ASSERT(block->isForLoop());
 
   // We could verify that 'sym' is defined via a 'move'
   // from the _indexOfInterest variable referenced by the SymExpr
-  // block->blockInfo->get(1). (It's a move from a tuple component
+  // block->blockInfoGet()->get(1). (It's a move from a tuple component
   // of _indexOfInterest, for zippered coforall loops.)
   //
   return true;
@@ -56,7 +102,7 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
 
 // We use modified versions of these in flattenFunctions.cpp:
 //  isOuterVar(), findOuterVars(), addVarsToFormals(),
-//  replaceVarUsesWithFormals(), addVarsToActuals()
+//  replaceVarUsesWithFormals() -> replaceVarUses(), addVarsToActuals()
 
 // Is 'sym' a non-const variable (including formals) defined outside of 'fn'?
 // This is a modification of isOuterVar() from flattenFunctions.cpp.
@@ -98,100 +144,117 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 }
 
 static void
-findOuterVars(FnSymbol* fn, SymbolMap* uses) {
+findOuterVars(FnSymbol* fn, SymbolMap& uses) {
   Vec<BaseAST*> asts;
+
   collect_asts(fn, asts);
+
   forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
-      if (toVarSymbol(sym) || toArgSymbol(sym))
+
+      if (isLcnSymbol(sym)) {
         if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
-          uses->put(sym,gNil);
+          uses.put(sym, markUnspecified);
+      }
     }
   }
 }
 
-// Mark the variables listed in 'ref' clauses, if any, with 'markPruned'.
-static void
-pruneOuterVars(SymbolMap* uses, CallExpr* byrefVars) {
+// Mark the variables listed in 'with' clauses, if any, with tiMark markers.
+void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
   if (!byrefVars) return;
+  Symbol* marker = NULL;
+
+  // Keep in sync with setupForallIntents() - the actuals alternate:
+  //  (tiMark arg | reduce opExpr), task-intent variable [, repeat]
   for_actuals(actual, byrefVars) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se); // comes as an UnresolvedSymExpr from the parser,
                     // should have been resolved in ScopeResolve
+                    // or it is a SymExpr over a tiMark ArgSymbol
+                    //                 or over chpl__reduceGlob
     Symbol* var = se->var;
-    SymbolMapElem* elem = uses->get_record(var);
-    if (elem) {
-      elem->value = markPruned;
+    if (marker) {
+      SymbolMapElem* elem = uses.get_record(var);
+      if (elem) {
+        elem->value = marker;
+      } else {
+        if (isVarSymbol(marker)) {
+          // this is a globalOp created in setupOneReduceIntent()
+          INT_ASSERT(!strcmp(marker->name, "chpl__reduceGlob"));
+          USR_WARN(byrefVars, "the variable '%s' is given a reduce intent and not mentioned in the loop body - it will have the unit value after the loop", var->name);
+        }
+      }
+      marker = NULL;
+    } else {
+      marker = var;
+      INT_ASSERT(marker);  // otherwise the alternation logic will not work
     }
   }
+  INT_ASSERT(!marker);
 }
 
 // 'this' (the receiver) should *always* be passed by reference - because
 // we want any updates to it in a task construct to be visible outside.
 // That includes the implicit 'this' in the constructor - see
 // the commit message for r21602. So we exclude those from consideration.
-static void
-pruneThisArg(Symbol* parent, SymbolMap* uses) {
-  form_Map(SymbolMapElem, e, *uses) {
-    if (Symbol* sym = e->key) {
+// While there, we prune other things for forall intents.
+void pruneThisArg(Symbol* parent, SymbolMap& uses) {
+  form_Map(SymbolMapElem, e, uses) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
-        if (sym->hasFlag(FLAG_ARG_THIS)) {
+        if (sym->hasFlag(FLAG_ARG_THIS))
           e->value = markPruned;
-        }
       }
-    }
   }
 }
 
 static void
-addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
-  form_Map(SymbolMapElem, e, *vars) {
-    if (Symbol* sym = e->key) {
+addVarsToFormals(FnSymbol* fn, SymbolMap& vars) {
+  form_Map(SymbolMapElem, e, vars) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
-        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, sym->name, sym->type);
+        IntentTag argTag = INTENT_BLANK;
+        if (ArgSymbol* tiMarker = toArgSymbol(e->value))
+          argTag = tiMarker->intent;
+        else
+          INT_ASSERT(e->value == markUnspecified);
+        ArgSymbol* arg = new ArgSymbol(argTag, sym->name, sym->type);
         if (ArgSymbol* symArg = toArgSymbol(sym))
           if (symArg->hasFlag(FLAG_MARKED_GENERIC))
             arg->addFlag(FLAG_MARKED_GENERIC);
         fn->insertFormalAtTail(new DefExpr(arg));
-        vars->put(sym, arg);
+        e->value = arg;  // aka vars->put(sym, arg);
       }
+  }
+}
+
+void replaceVarUses(Expr* topAst, SymbolMap& vars) {
+  if (vars.n == 0) return;
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsSTL(topAst, symExprs);
+  form_Map(SymbolMapElem, e, vars) {
+    Symbol* oldSym = e->key;
+    if (e->value != markPruned) {
+      SET_LINENO(oldSym);
+      Symbol* newSym = e->value;
+      for_vector(SymExpr, se, symExprs)
+        if (se->var == oldSym)
+          se->var = newSym;
     }
   }
 }
 
 static void
-replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
-  if (vars->n == 0) return;
-  Vec<BaseAST*> asts;
-  collect_asts(fn->body, asts);
-  form_Map(SymbolMapElem, e, *vars) {
-    if (Symbol* sym = e->key) {
-      if (e->value != markPruned) {
-        SET_LINENO(sym);
-        ArgSymbol* arg = toArgSymbol(e->value);
-        forv_Vec(BaseAST, ast, asts) {
-          if (SymExpr* se = toSymExpr(ast)) {
-            if (se->var == sym) {
-              se->var = arg;
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-static void
-addVarsToActuals(CallExpr* call, SymbolMap* vars) {
-  form_Map(SymbolMapElem, e, *vars) {
-    if (Symbol* sym = e->key) {
+addVarsToActuals(CallExpr* call, SymbolMap& vars) {
+  form_Map(SymbolMapElem, e, vars) {
+      Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
         call->insertAtTail(sym);
       }
-    }
   }
 }
 
@@ -237,8 +300,6 @@ bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = N
 // to the "on" function.
 //
 void createTaskFunctions(void) {
-  // one-time initialization
-  markPruned = gVoid;
 
   if( fCacheRemote ) {
     // Add fences to Atomics methods
@@ -270,13 +331,19 @@ void createTaskFunctions(void) {
       }
     }
   }
- 
+
   // Process task-creating constructs. We include 'on' blocks, too.
   // This code used to be in parallel().
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (CallExpr* info = block->blockInfo) {
+    bool hasTaskIntentClause = false;  // this 'block' has task intent clause ?
+    // Loops are not a parallel block construct
+    if (block->isLoopStmt() == true) {
+
+    } else if (CallExpr* info = block->blockInfoGet()) {
       SET_LINENO(block);
+
       FnSymbol* fn = NULL;
+
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
         fn->addFlag(FLAG_BEGIN);
@@ -305,12 +372,7 @@ void createTaskFunctions(void) {
         ArgSymbol* arg = new ArgSymbol(INTENT_CONST_IN, "dummy_locale_arg", dtLocaleID);
         fn->insertFormalAtTail(arg);
       }
-      else if (info->isPrimitive(PRIM_BLOCK_PARAM_LOOP) || // resolution will remove this case.
-               info->isPrimitive(PRIM_BLOCK_WHILEDO_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_DOWHILE_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_FOR_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) ||
-               info->isPrimitive(PRIM_BLOCK_LOCAL) ||
+      else if (info->isPrimitive(PRIM_BLOCK_LOCAL) ||
                info->isPrimitive(PRIM_BLOCK_UNLOCAL))
         ; // Not a parallel block construct, so do nothing special.
       else
@@ -343,13 +405,13 @@ void createTaskFunctions(void) {
 
         if (fn->hasFlag(FLAG_ON)) {
           // This puts the target locale expression "onExpr" at the start of the call.
-          call->insertAtTail(block->blockInfo->get(1)->remove());
+          call->insertAtTail(block->blockInfoGet()->get(1)->remove());
         }
 
         block->insertBefore(new DefExpr(fn));
 
         if( fCacheRemote ) {
-          if( block->blockInfo->isPrimitive(PRIM_BLOCK_ON) ) {
+          if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
             isBlockingOn = true;
           }
 
@@ -381,7 +443,7 @@ void createTaskFunctions(void) {
            // block->insertBefore(new CallExpr(PRIM_JOIN_RMEM_FENCE));
         }
 
-        block->blockInfo->remove();
+        block->blockInfoGet()->remove();
 
         // Now build the fn for the task or on statement.
 
@@ -415,35 +477,29 @@ void createTaskFunctions(void) {
         fn->retType = dtVoid;
 
         if (needsCapture(fn)) {
+          hasTaskIntentClause = true;
+
           // Convert referenced variables to explicit arguments.
-          // Note: this collects only the variables, including globals,
-          // that are referenced directly within in the task-parallel block.
-          SymbolMap* uses = new SymbolMap();
+          SymbolMap uses;
           findOuterVars(fn, uses);
 
-          // Dunno what the "right" place to eliminate these variables is.
-          // Will need to do more when we have a variety of ref-like clauses.
-          pruneOuterVars(uses, block->byrefVars);
+          markOuterVarsWithIntents(block->byrefVars, uses);
+          pruneThisArg(call->parentSymbol, uses);
           block->byrefVars->remove();
 
-          pruneThisArg(call->parentSymbol, uses);
-
-          // Cf. flattenNestedFunctions - here we don't (seem to) need:
-          // (a) the 'while (change)' loop - as we are not flattenning 'fn';
-          // (b) the 'outerCall' computation - because the (single) call
-          //     and the callee's defPoint are in the same scope, so they see
-          //     the defPoints of the same set of vars.
           addVarsToActuals(call, uses);
-
           addVarsToFormals(fn, uses);
-          replaceVarUsesWithFormals(fn, uses);
+          replaceVarUses(fn->body, uses);
         }
       } // if fn
     } // if blockInfo
 
     // 'byrefVars' should have been eliminated for those blocks where it is
     // syntactically allowed, and should be always empty for anything else.
-    INT_ASSERT(!block->byrefVars);
+    // Except where it marks a forall loop body.
+    INT_ASSERT(!block->byrefVars ||
+               (!hasTaskIntentClause &&
+                block->byrefVars->isPrimitive(PRIM_FORALL_LOOP)));
 
   } // for block
 

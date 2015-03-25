@@ -41,19 +41,24 @@ below.
 Building Chapel for a Cray System from Source
 ---------------------------------------------
 
-1) Set CHPL_HOST_PLATFORM to the appropriate string for your particular
-   Cray system.  These are the supported systems and strings:
+1) If using a XC, XE, or XK system, continue to step 2. If using a
+   CS series system, set CHPL_HOST_PLATFORM to "cray-cs".
+
+   For example:
+
+     export CHPL_HOST_PLATFORM=cray-cs
+
+   These are the supported systems and strings.  Note that these values
+   are used by default when building on the given systems.  They can
+   also be set manually.  Also note that the cray-xe configuration
+   covers Cray XK systems as well as Cray XE systems.
 
        System       CHPL_HOST_PLATFORM
        ---------    ------------------
        CS series        cray-cs
        XC series        cray-xc
        XE series        cray-xe
-       XK series        cray-xk
-
-   For example:
-
-     export CHPL_HOST_PLATFORM=cray-xc
+       XK series        cray-xe
 
 
 2) Optionally, set the CHPL_LAUNCHER environment variable to indicate
@@ -118,7 +123,27 @@ Building Chapel for a Cray System from Source
      pgi       : the PGI compiler suite -- pgcc and pgCC
 
 
-5) Make sure you're in the top-level chapel/ directory and make/re-make the
+5) Optionally, set one or more of the following environment variables to
+   configure the Chapel build.  These are described in greater detail in
+   README.chplenv.
+
+     CHPL_TASKS : tasking implementation, default "fifo" when using
+                  target compiler "cray", otherwise "qthreads"
+     CHPL_COMM : communication implementation, default "gasnet"
+
+   Other configuration environment variables such as CHPL_MEM can also
+   be set, but this is more typical when doing internal development.
+   For production work the configuration scripts should always select an
+   appropriate default for these.
+
+   Note that the Cray-specific settings of "muxed" tasking and "ugni"
+   communications cannot be selected when building Chapel from source,
+   because the corresponding runtime layers are not distributed in
+   source form.  These settings can only be selected when using the
+   pre-built Chapel module.
+
+
+6) Make sure you're in the top-level chapel/ directory and make/re-make the
    compiler and runtime:
 
      gmake
@@ -126,9 +151,9 @@ Building Chapel for a Cray System from Source
    Note that a single Chapel installation can support multiple
    configurations simultaneously and that you can switch between them
    simply by changing any of the above settings.  However, each
-   configuration must be built separately.  Thus, you can change any
-   of the settings in steps 1-4, and then re-run step 5 in order to
-   create additional installations.  Thereafter, you can switch
+   configuration must be built separately.  Thus, you can change any of
+   the settings in the steps before this, and then re-run this step in
+   order to create additional installations.  Thereafter, you can switch
    between any of these configurations without rebuilding.
 
 
@@ -153,14 +178,38 @@ Using Chapel on a Cray System
           source util/setchplenv.bash
 
 
-2) Compile your Chapel program.  For example:
+2) Optionally, set one or more of the following environment variables to
+   select a Chapel configuration.  These are described in greater detail
+   in README.chplenv.
+
+     CHPL_TASKS : tasking implementation, default "fifo" with target
+                  compiler "cray", "muxed" on Cray XC/XE with pre-built
+                  module, otherwise "qthreads"
+     CHPL_COMM  : communication implementation, default "ugni" on Cray
+                  XC/XE with pre-built module, else "gasnet"
+
+   Other configuration environment variables such as CHPL_MEM can also
+   be set, but this is more typical when doing internal development.
+   For production work the configuration scripts should always select an
+   appropriate default for these.
+
+   The configuration selected must be one that is present in the Chapel
+   installation being used, whether that is a source distribution or the
+   pre-built module.  If it is not, the Chapel compiler will produce an
+   error message saying so when you try to compile anything.  If you get
+   this error, you will need to build the desired configuration (if you
+   are working from source) or modify your configuration so that it is
+   one of those supplied (if you are working with the pre-built module).
+
+
+3) Compile your Chapel program.  For example:
 
       chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
    See README.compiling or 'man chpl' for further details.
 
 
-3) If CHPL_LAUNCHER is set to anything other than 'none', when you
+4) If CHPL_LAUNCHER is set to anything other than 'none', when you
    compile a Chapel program for your Cray system, you will see two
    binaries (e.g., hello6-taskpar-dist and hello6-taskpar-dist_real).
    The first binary contains code to launch the Chapel program onto
@@ -171,7 +220,7 @@ Using Chapel on a Cray System
    You can use the -v flag to see the commands used by the launcher
    binary to start your program.
 
-   If CHPL_LAUNCHER is set to pbs-aprun or pbs-gasnetrun_ibv:
+   If CHPL_LAUNCHER is pbs-aprun or pbs-gasnetrun_ibv:
 
      a) You can optionally specify a queue name using the environment
         variable CHPL_LAUNCHER_QUEUE.  For example:
@@ -191,11 +240,18 @@ Using Chapel on a Cray System
         Alternatively, you can set the wall clock time limit on your
         Chapel program command line using the --walltime flag.
 
+   If CHPL_LAUNCHER is slurm-gasnetrun_ibv:
+
+     You must set the amount of time to request from SLURM.
+     For example, the following requests 15 minutes:
+
+          export CHPL_LAUNCHER_WALLTIME=00:15:00
+
    For further information about launchers, please refer to
    $CHPL_HOME/doc/README.launcher.
 
 
-4) Execute your Chapel program.  Multi-locale executions require the
+5) Execute your Chapel program.  Multi-locale executions require the
    number of locales (compute nodes) to be specified on the command
    line.  For example:
 
@@ -204,7 +260,7 @@ Using Chapel on a Cray System
    Requests the program to be executed using two locales.
 
 
-5) If your Cray system has compute nodes with varying numbers of
+6) If your Cray system has compute nodes with varying numbers of
    cores, you can request nodes with at least a certain number of
    cores using the variable CHPL_LAUNCHER_CORES_PER_LOCALE.  For
    example, on a Cray system in which some compute nodes have 24 or
@@ -231,7 +287,7 @@ Using Chapel on a Cray System
    between Chapel launchers and workload managers.
 
 
-6) If your Cray system has compute nodes with varying numbers of CPUs
+7) If your Cray system has compute nodes with varying numbers of CPUs
    per compute unit, you can request nodes with a certain number of
    CPUs per compute unit using the variable CHPL_LAUNCHER_CPUS_PER_CU.
    For example, on a Cray XC series system with some nodes having at
@@ -244,7 +300,7 @@ Using Chapel on a Cray System
    0 (the default), 1, and 2.
 
 
-7) For more information on...          see...
+8) For more information on...          see...
 
    ...CHPL_* environment settings               README.chplenv
    ...Compiling Chapel programs                 README.compiling
@@ -287,15 +343,21 @@ program heap will grow to during execution:
 
   CHPL_COMM=ugni
 
-By default the heap will occupy as much of the free memory on the locale
-(compute node) as the runtime can acquire, less a certain amount to
-allow for demands from other (system) programs running there.  Advanced
-users may want to make the heap smaller than this.  Programs start more
-quickly with a smaller heap, and in the unfortunate event that you need
-to produce core files, those will be written more quickly if the heap is
-smaller.  However, note that if you reduce the heap size to less than
-the amount your program actually needs and then run it, it will
-terminate prematurely due to not having enough memory.
+With CHPL_COMM=gasnet, by default the heap will occupy as much of the
+free memory on each locale (compute node) as the runtime can acquire,
+less some amount to allow for demands from other (system) programs
+running there.  With CHPL_COMM=ugni, by default the heap will occupy 2/3
+of the free memory on each locale.  With the ugni comm layer and slurm
+job placement, however, the default is reduced to 16 GiB if that is
+less.  See "Communication Layer Concurrency and Slurm", below, for more
+information.
+
+Advanced users may want to make the heap smaller than this.  Programs
+start more quickly with a smaller heap, and in the unfortunate event
+that you need to produce core files, those will be written more quickly
+if the heap is smaller.  However, note that if you reduce the heap size
+to less than the amount your program actually needs and then run it, it
+will terminate prematurely due to not having enough memory.
 
 To change the heap size, set the CHPL_RT_MAX_HEAP_SIZE environment
 variable.  Set it to just a number to specify the size of the heap in
@@ -323,54 +385,74 @@ Native Runtime Layers
 
 The README.multilocale and README.tasking files describe a variety of
 communication and tasking layers that can be used by Chapel programs.
-By default, Chapel programs on Cray systems use the GASNet communication
-layer and the qthreads tasking layer.  There are several other tasking
-layers available that can also be used with the GASNet communication
-layer.
-
 In addition to the standard runtime layers available in any Chapel
-release, the pre-built Chapel modules for Cray XC, XE, and XK series
-systems support a combination of Cray-specific communication, tasking,
-and threading layers.  These make use of the Cray systems' hardware
-and/or software to produce enhanced performance for Chapel programs.
+release, the pre-built Chapel module for Cray XC and XE series systems
+supports Cray-specific communication and tasking layers.  These make use
+of the Cray systems' hardware and/or software to produce enhanced
+performance for Chapel programs.  When using the pre-built module on
+Cray XC or XE systems the allowed combinations are ugni communications
+with muxed tasking (the default), and ugni communications with qthreads
+tasking.  On other kinds of Cray systems or when not using the pre-built
+module, the default is to use gasnet communications and qthreads
+tasking.
 
-The communication layer interacts with the system's network interface
-very closely through a lightweight interface called uGNI (user Generic
-Network Interface).  The tasking and threading layers switch Chapel
+Note that neither the ugni communication layer nor the muxed tasking
+layer can be built from sources, as they are not distributed in source
+form.
+
+The ugni communication layer interacts with the system's network
+interface very closely through a lightweight interface called uGNI (user
+Generic Network Interface).  The muxed tasking layer switches Chapel
 tasks and threads in a lightweight manner in user space, avoiding the
 overhead and some of the resource limitations associated with OS thread
-switching.  These three layers cooperate to overlap communication to
-remote locales with task execution, particularly improving the
-performance of programs limited by the latency of small remote data
-references, such as graph analytic applications.
+switching.  These layers cooperate to overlap communication to remote
+locales with task execution, particularly improving the performance of
+programs limited by the latency of small remote data references, such as
+graph analytic applications.
 
-To use this combination of runtime layers:
 
-1) Make sure that you are using the GNU target compiler.
+Using the "ugni" Communications Layer
+-------------------------------------
+
+To use ugni communications:
+
+1) Make sure that you are using either the GNU or Intel target
+   compiler.
 
      module load PrgEnv-gnu
+
+     -- or --
+
+     module load PrgEnv-intel
 
    (If you have a different PrgEnv module loaded, you will have to
    unload it first, or do a swap instead of a load.)
 
 
-2) Set your CHPL_COMM environment variable to "ugni" and your CHPL_TASKS
-   environment variable to "muxed".
+2) Set your CHPL_COMM environment variable to "ugni".
 
      export CHPL_COMM=ugni
-     export CHPL_TASKS=muxed
 
    This specifies that you wish to use the Cray-specific communication
-   and tasking layers.
-
-   Other Chapel environment variables having to do with runtime layers
-   should be left unset.  Setting the above two will automatically
-   select the correct combination of other runtime layers that work with
-   those, in particular, CHPL_MEM=tcmalloc, CHPL_ATOMICS=intrinsics, and
-   CHPL_NETWORK_ATOMICS=ugni.  None of these need to be set explicitly.
+   layer.
 
 
-3) Load an appropriate craype-hugepages module.  For example:
+3) Set your CHPL_TASKS environment variable to "muxed" or "qthreads".
+
+     export CHPL_TASKS=muxed
+
+     -- or --
+
+     export CHPL_TASKS=qthreads
+
+   Only these two tasking layers work with ugni communications.  Other
+   Chapel environment variables having to do with runtime layers should
+   be left unset.  Setting CHPL_COMM and CHPL_TASKS like this will cause
+   the correct combination of other runtime layers that work with those
+   to be selected automatically.
+
+
+4) Load an appropriate craype-hugepages module.  For example:
 
      module load craype-hugepages16M
 
@@ -379,7 +461,7 @@ To use this combination of runtime layers:
    a craype-hugepages module loaded both when building your program and
    when running it.
 
-   There are several such modules, with suffixes indicating the hugepage
+   There are several hugepage modules, with suffixes indicating the page
    size they support.  For example, craype-hugepages16M supports 16 MiB
    hugepages.  It does not matter which craype-hugepages module you have
    loaded when you build your program.  Any of them will do.  However,
@@ -407,52 +489,119 @@ To use this combination of runtime layers:
    of the total locale memory being wasted.
 
 
-Special parameters for the Cray-specific runtime layers
--------------------------------------------------------
+Due to the use of hugepages in the ugni comm layer, tasking layers
+cannot use guard pages for stack overflow detection.  Qthreads tasking
+uses guard pages for stack overflow detection, so if ugni communications
+and qthreads tasking are combined, stack overflow detection in qthreads
+is automatically turned off.  (Muxed tasking uses a different technique
+to detect stack overflow, as described below, so it is not affected by
+this limitation.)
 
-This section describes several environment variable parameters that
-affect the behavior of the native muxed tasking and ugni communication
-runtime layers for Cray X* systems.  Here are those parameters and their
-default values:
+There are a few special parameters recognized by the ugni communication
+layer:
 
-    CHPL_RT_CALL_STACK_SIZE        : 8 MiB (see README.executing)
-    CHPL_RT_NUM_HARDWARE_THREADS   : number of physical CPUs per locale
-    CHPL_RT_NUM_THREADS_PER_LOCALE : 16 * CHPL_RT_NUM_HARDWARE_THREADS
-    CHPL_RT_COMM_CONCURRENCY       : CHPL_RT_NUM_HARDWARE_THREADS
+    Communication Layer Concurrency
+    -------------------------------
 
-The default values were consciously chosen to achieve high performance
-across a broad range of circumstances, by maximizing system resource
-use.  But in some situations, as described in the following, you may
-want to explicitly set one or more of them to other values.
+    The CHPL_RT_COMM_CONCURRENCY environment variable tells the ugni
+    communication layer how much program concurrency it should try to
+    support.  This basically controls how much of the communication
+    resources on the NIC will be used by the program.  The default
+    value is the number of hardware processor cores the program will
+    use for Chapel tasks (CHPL_RT_NUM_HARDWARE_THREADS in the next
+    section).  Usually this is enough, but for highly parallel codes
+    that do a lot of remote references, increasing it may help the
+    performance.  Useful values for CHPL_RT_COMM_CONCURRENCY are in
+    the range 1 to 30.  Values specified outside this range are
+    silently increased or reduced so as to fall within it.
 
 
-Parameters associated with the muxed tasking layer:
+    Communication Layer Concurrency and Slurm
+    -----------------------------------------
+
+    When slurm is used for job placement on Cray systems, it limits the
+    total NIC memory registration in order to allow for job sharing on
+    the compute nodes.  In our experience this limit is approximately
+    240 GiB.  The product of CHPL_RT_MAX_HEAP_SIZE and the communication
+    layer concurrency discussed above must be less than this.  The ugni
+    communication layer adjusts its heap size and concurrency defaults
+    to reflect this limit when slurm is used for job placement.  The
+    default heap size is reduced to 16 GiB.  The concurrency is computed
+    such that the product of heap size and concurrency is below 240 GiB.
+    Thus under slurm, the ugni communication layer can support programs
+    with very large heaps or programs that need a lot of communication
+    concurrency, but not programs that need both simultaneously.  Such
+    programs need to be run on a system that uses ALPS instead of slurm
+    for job placement.
+
+
+Using the "muxed" Tasking Layer
+-------------------------------
+
+To use muxed tasking:
+
+1) Make sure that you are using either the GNU or Intel target
+   compiler.
+
+     module load PrgEnv-gnu
+
+     -- or --
+
+     module load PrgEnv-intel
+
+   (If you have a different PrgEnv module loaded, you will have to
+   unload it first, or do a swap instead of a load.)
+
+
+2) Set your CHPL_TASKS environment variable to "muxed".
+
+     export CHPL_TASKS=muxed
+
+   This specifies that you wish to use the Cray-specific tasking
+   layer.
+
+
+3) Set your CHPL_COMM environment variable to "ugni".
+
+     export CHPL_COMM=ugni
+
+   Muxed tasking is only available combined with ugni communications.
+   Other Chapel environment variables having to do with runtime layers
+   should be left unset.  Setting CHPL_TASKS and CHPL_COMM like this
+   will cause the correct combination of other runtime layers that work
+   with those to be selected automatically.
+
+
+There are a few special parameters recognized by the muxed tasking
+layer:
 
     Controlling the Call Stack Size
     -------------------------------
 
-    A side effect of using the muxed tasking and ugni communication
-    layers is that task call stacks have to be created at full size.
-    With other comm layers (or no comm layer), creating a stack just
-    reserves the memory for it without actually bringing the memory into
+    For muxed tasking, more so than for other tasking implementations,
+    it may be important to reduce the task call stack size from its
+    default of 8 MiB.  A side effect of using the ugni communication
+    layer is that task stacks have to be created at full size.  With
+    other comm layers (or no comm layer), creating a stack just reserves
+    the memory for it without actually bringing the pages of memory into
     existence.  The memory does not exist until each page of the stack
     is actually used.  If the stack limit is 8 MiB (the default) and
     2,000 tasks exist at the same time but each one only uses 32 KiB of
-    its stack space, then the program only requires about 64 MiB of
-    memory for stacks, rather than the full 16 GiB.  But with the ugni
-    communication layer, interactions with the network require that all
-    the space for any memory object be brought into existence up front.
-    So there, our hypothetical program would need 16 GiB of heap space
-    just for stacks.  Thus with muxed tasking and ugni communications,
-    in programs that may have many tasks active at once but where each
-    one does not need a very large call stack (such as SSCA#2), it can be
-    useful to make the stack size smaller than its default of 8 MiB.
+    its stack space, then the program only requires about 64 MiB (2000 *
+    32 KiB) of memory for stacks.  But with ugni communications, the
+    network interactions require that all the space be brought into
+    existence up front.  So there, our hypothetical program would need
+    16 GiB (2000 * 8 MiB) of heap space just for stacks.  Thus with ugni
+    communications, in programs that may have many tasks active at once
+    but where each one does not need a very large call stack (such as
+    SSCA#2), it can be useful to make the stack size smaller than its
+    default of 8 MiB.
 
     You can set the task stack size using CHPL_RT_CALL_STACK_SIZE, as
     described in README.executing.  The following would make the task
-    stack size 64 KiB, for example:
+    stack size 128 KiB, for example:
 
-      export CHPL_RT_CALL_STACK_SIZE=64k
+      export CHPL_RT_CALL_STACK_SIZE=128k
 
 
     Stack Overflow Checking
@@ -488,49 +637,29 @@ Parameters associated with the muxed tasking layer:
     number of lightweight threads it provides to the tasking layer.
 
     The CHPL_RT_NUM_HARDWARE_THREADS environment variable specifies the
-    number of cores that should be used to run Chapel tasks.  The
-    default is to use all of the cores, but if something other than the
-    ability to run tasks limits performance, such as limited parallelism
-    or doing many remote loads, reducing this may improve performance.
-    You can set CHPL_RT_NUM_HARDWARE_THREADS to any value from 1 to the
-    actual number of hardware processor cores.  For applications where
-    the performance is dominated by the latency of small remote loads,
-    such as the SSCA#2 benchmark and other graph processing codes, using
-    8 processor cores often gives better performance than using all of
-    them.
+    number of cores that should be used to run Chapel tasks on each
+    locale.  The default is to use all of the cores, but if something
+    other than the ability to run tasks limits performance, such as
+    limited parallelism or doing many remote loads, reducing this may
+    improve performance.  You can set CHPL_RT_NUM_HARDWARE_THREADS to
+    any value from 1 to the actual number of hardware processor cores.
+    For applications where the performance is dominated by the latency
+    of small remote loads, such as the SSCA#2 benchmark and other graph
+    processing codes, using 8 processor cores often gives better
+    performance than using all of them.
 
     The CHPL_RT_NUM_THREADS_PER_LOCALE environment variable specifies
     the number of lightweight threads the soft-threads threading layer
     should provide to the muxed tasking layer for hosting tasks.  The
-    default is 16 times the number of processor cores being used, which
-    gives good performance in most cases.  You can set this to any value
-    >= 0, but the soft-threads threading layer will silently limit it to
-    >= 1 and <= 32*the number of hardware threads (whether default or
-    user specified).
-
-    Note that both of these numbers are per-locale values, that is,
-    CHPL_RT_NUM_HARDWARE_THREADS is the number of hardware cores to use
-    on each locale, and CHPL_RT_NUM_THREADS_PER_LOCALE is the number of
-    lightweight threads to use on each locale (not on each hardware
-    thread).
-
-
-Parameters associated with the ugni communication layer:
-
-    Communication Layer Concurrency
-    -------------------------------
-
-    The CHPL_RT_COMM_CONCURRENCY environment variable tells the ugni
-    communication layer how much program concurrency it should try to
-    support.  It basically controls how much of the communication
-    resources on the NIC will be used by the program.  The default
-    value is the number of hardware processor cores the program will
-    use for Chapel tasks (CHPL_RT_NUM_HARDWARE_THREADS in the last
-    section).  Usually this is enough, but for highly parallel codes
-    that do a lot of remote references, increasing it may help the
-    performance.  Useful values for CHPL_RT_COMM_CONCURRENCY are in
-    the range 1 to 30.  Values specified outside this range are
-    silently increased or reduced so as to fall within it.
+    default is the number of processor cores being used, which gives
+    good performance in most cases.  However, if performance is limited
+    by something other than on-node processor or bandwidth limits, and
+    especially for applications like RA or SSCA#2 where performance is
+    limited by network latency, it can be worthwhile to set this to as
+    much as 16*the number of hardware threads (whether default or user
+    specified).  You can set this to any value >= 0, but note that the
+    soft-threads threading layer will silently limit it to >= 1 and <=
+    32*the number of hardware threads.
 
 
 Network Atomics

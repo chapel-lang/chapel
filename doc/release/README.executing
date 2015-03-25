@@ -230,10 +230,21 @@ launcher.
 The utility of this feature depends greatly on your familiarity with
 the Chapel generated code.  However, if your program is crashing or
 running into a runtime error, you can often determine where that is
-taking place by looking at a stack trace within gdb.  In addition,
-scalar Chapel variables can often be inspected using "p <name>"
-(or "p _<name><TAB>" in cases where the compiler has renamed the
-variable).
+taking place by looking at a stack trace within gdb.  
+
+When debugging Chapel, it is useful to know that in generating its
+code, the Chapel compiler renames user identifiers.  By default, the
+Chapel compiler munges all user identifiers, such that a variable
+named 'x' would be code generated as 'x_chpl'.  This munging can be
+controlled using the --[no-]munge-user-idents flag (see the 'chpl' man
+page for more information).  In some cases, additional munging may be
+required or applied that cannot be turned off.  
+
+The net effect of this is that Chapel variables can often be inspected
+using "p <name>_chpl" (or "p <name>_chpl<TAB>" in cases where the
+compiler has further renamed the variable).  If the
+--no-munge-user-idents flag is used, "p <name>" or "p <name><TAB>"
+should work in most cases.
 
 Over time, we plan to improve our ability to debug the generated C
 code for a Chapel program.  If you find yourself debugging the
@@ -245,25 +256,27 @@ support, please let us know so that we can prioritize accordingly.
 Flags for Tracking Tasks
 ------------------------
 
-For certain tasking layers Chapel supports a couple of experimental
+For certain tasking layers, Chapel supports a few experimental
 capabilities for tracking the status of tasks, primarily designed for
-use in a single-locale execution.  These flags add a fair amount of
-runtime overhead to task parallel programs. The flags are as follows:
+use in a single-locale execution.  To enable this capability, your
+program must be compiled with the --task-tracking flag.  These flags
+add a fair amount of runtime overhead to task-parallel programs. The
+flags are as follows:
 
   -b, --blockreport : when Ctrl-C is entered during a program
                       executing under this flag, it will display a
                       list of where tasks are blocked on a
                       synchronization variable.  Running with this
-                      flag will also cause the executable to
-                      automatically detect deadlock for single-locale
-                      executions.  Both qthreads and fifo tasking
-                      support this.
+                      flag will also cause the executable to attempt
+                      to automatically detect deadlock for
+                      single-locale executions.  Both 'qthreads' and
+                      'fifo' tasking support this.
 
   -t, --taskreport : When Ctrl-C is entered during a program executing
                      under this flag, a list of pending and executing
-                     tasks will be printed to the screen, giving an
+                     tasks will be printed to the console, giving an
                      indication of which tasks are at which source
-                     locations.  Only fifo tasking supports this.
+                     locations.  Only 'fifo' tasking supports this.
 
 
 -------------------------------------------

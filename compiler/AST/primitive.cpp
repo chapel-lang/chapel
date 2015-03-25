@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -54,6 +54,10 @@ returnInfoStringC(CallExpr* call) {
   return dtStringC;
 }
 
+static Type*
+returnInfoStringCopy(CallExpr* call) {
+  return dtStringCopy;
+}
 
 static Type*
 returnInfoLocaleID(CallExpr* call) {
@@ -144,7 +148,7 @@ returnInfoCast(CallExpr* call) {
   if (t2->symbol->hasFlag(FLAG_WIDE_CLASS))
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
-  if (t2->symbol->hasFlag(FLAG_WIDE))
+  if (t2->symbol->hasFlag(FLAG_WIDE_REF))
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
   return t1;
@@ -271,8 +275,6 @@ returnInfoGetMemberRef(CallExpr* call) {
     return field->type->refType ? field->type->refType : field->type;
   } else
     return var->type->refType ? var->type->refType : var->type;
-  INT_FATAL(call, "bad member primitive");
-  return NULL;
 }
 
 static Type*
@@ -539,8 +541,10 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_LOCAL, "local block", returnInfoVoid);
   prim_def(PRIM_BLOCK_UNLOCAL, "unlocal block", returnInfoVoid);
 
+  prim_def(PRIM_FORALL_LOOP, "forall loop", returnInfoVoid);
   prim_def(PRIM_TO_LEADER, "to leader", returnInfoVoid);
   prim_def(PRIM_TO_FOLLOWER, "to follower", returnInfoVoid);
+  prim_def(PRIM_TO_STANDALONE, "to standalone", returnInfoVoid);
 
   prim_def(PRIM_DELETE, "delete", returnInfoVoid);
 
@@ -567,15 +571,15 @@ initPrimitive() {
 
   prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoStringC, true, true);
+  prim_def("string_concat", returnInfoStringCopy, true, true);
   prim_def("string_length", returnInfoDefaultInt);
   prim_def("ascii", returnInfoInt32);
-  prim_def("string_index", returnInfoStringC, true, true);
-  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
+  prim_def("string_index", returnInfoStringCopy, true, true);
+  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
   prim_def(PRIM_STRING_FROM_C_STRING, "string_from_c_string", returnInfoString, false, true);
   prim_def(PRIM_C_STRING_FROM_STRING, "c_string_from_string", returnInfoStringC, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
-  prim_def("string_select", returnInfoStringC, true, true);
+  prim_def("string_select", returnInfoStringCopy, true, true);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoDefaultInt);
   prim_def("object2int", returnInfoDefaultInt);

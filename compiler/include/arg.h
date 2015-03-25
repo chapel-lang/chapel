@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,7 +49,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _ARG_H_
 #define _ARG_H_
 
-
 struct ArgumentState;
 struct ArgumentDescription;
 
@@ -57,7 +56,7 @@ typedef void ArgumentFunction(const ArgumentState* state, const char* arg);
 
 struct ArgumentState
 {
-  char**               file_argument;
+  const char**         file_argument;
   int                  nfile_arguments;
 
   const char*          program_name;
@@ -78,9 +77,13 @@ struct ArgumentDescription
 };
 
 void usage(const ArgumentState* arg_state,
-           int                  status, 
-           bool                 printEnvHelp, 
+           int                  status,
+           bool                 printEnvHelp,
            bool                 printCurrentSettings);
+
+void init_args(ArgumentState* state, const char* argv0);
+
+void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc);
 
 void process_args(ArgumentState* state, int argc, char* argv[]);
 

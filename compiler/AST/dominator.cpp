@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -18,6 +18,8 @@
  */
 
 #include "dominator.h"
+
+#include "stlUtil.h"
 
 /*
  * TODO Is there a need to do the post dominators and strictly post dominators?

@@ -77,7 +77,7 @@ module SSCA2_kernels
       var domain_add_lock$ : sync bool = true; // associative domain add
                                                // is not threadsafe
 
-      forall s in G.vertices do
+      forall s in G.vertices with (ref heavy_edge_list) do
 	for (t, w) in ( G.Neighbors (s), G.edge_weight (s) )  do
 
 	  // should be forall, requires a custom parallel iterator in the 

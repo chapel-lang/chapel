@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,11 +23,17 @@
 
 #include "view.h"
 
+#include "CForLoop.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "log.h"
+#include "ParamForLoop.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "WhileStmt.h"
+#include "AstDump.h"
+#include "AstDumpToNode.h"
 
 #include <inttypes.h>
 
@@ -39,7 +45,7 @@ list_sym(Symbol* sym, bool type = true) {
   if (VarSymbol* var = toVarSymbol(sym)) {
     if (var->immediate) {
       if (var->immediate->const_kind == NUM_KIND_INT) {
-        printf("%"PRId64" ", var->immediate->int_value());
+        printf("%" PRId64 " ", var->immediate->int_value());
         return;
       } else if (var->immediate->const_kind == CONST_KIND_STRING) {
         printf("\"%s\" ", var->immediate->v_string);
@@ -70,24 +76,43 @@ list_sym(Symbol* sym, bool type = true) {
 }
 
 
+static const char*
+block_explanation(BaseAST* ast, BaseAST* parentAst) {
+  if (ArgSymbol* parentArg = toArgSymbol(parentAst)) {
+    if (ast == parentArg->typeExpr)
+      return "  typeExpr=";
+    if (ast == parentArg->defaultExpr)
+      return "  defaultExpr=";
+    if (ast == parentArg->variableExpr)
+      return "  variableExpr=";
+  }
+  return "";
+}
+
 static bool
-list_line(Expr* expr) {
+list_line(Expr* expr, BaseAST* parentAst) {
   if (expr->isStmt())
-    return true;
-  if (CondStmt* cond = toCondStmt(expr->parentExpr)) {
+    return !*block_explanation(expr, parentAst);
+  if (CondStmt* cond = toCondStmt(parentAst)) {
     if (cond->condExpr == expr)
       return false;
   }
-  if (!expr->parentExpr || expr->parentExpr->isStmt())
+  if (Expr* pExpr = toExpr(parentAst))
+   if (pExpr->isStmt())
+    return true;
+  if (isSymbol(parentAst))
     return true;
   return false;
 }
 
-
 static void
-list_ast(BaseAST* ast, int indent = 0) {
+list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
+  bool do_list_line = false;
+  bool is_C_loop = false;
+  const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
-    if (list_line(expr)) {
+    do_list_line = !parentAst || list_line(expr, parentAst);
+    if (do_list_line) {
       printf("%-7d ", expr->id);
       for (int i = 0; i < indent; i++)
         printf(" ");
@@ -96,16 +121,19 @@ list_ast(BaseAST* ast, int indent = 0) {
       printf("goto ");
       if (SymExpr* label = toSymExpr(e->label)) {
         if (label->var != gNil) {
-          list_ast(e->label, indent+1);
+          list_ast(e->label, ast, indent+1);
         }
       } else {
-        list_ast(e->label, indent+1);
+        list_ast(e->label, ast, indent+1);
       }
     } else if (toBlockStmt(ast)) {
-      printf("{\n");
+      block_explain = block_explanation(ast, parentAst);
+      printf("%s{\n", block_explain);
     } else if (toCondStmt(ast)) {
       printf("if ");
     } else if (CallExpr* e = toCallExpr(expr)) {
+      if (e->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
+          is_C_loop = true;
       if (e->primitive)
         printf("%s( ", e->primitive->name);
       else
@@ -123,58 +151,103 @@ list_ast(BaseAST* ast, int indent = 0) {
 
   if (Symbol* sym = toSymbol(ast))
     list_sym(sym);
-  if (toFnSymbol(ast) || toModuleSymbol(ast)) {
+
+  bool early_newline = toFnSymbol(ast) || toModuleSymbol(ast); 
+  if (early_newline || is_C_loop)
     printf("\n");
-  }
 
   int new_indent = indent;
 
-  if (Expr* expr = toExpr(ast))
-    if (list_line(expr))
+  if (isExpr(ast))
+    if (do_list_line)
       new_indent = indent+2;
 
-  AST_CHILDREN_CALL(ast, list_ast, new_indent);
+  AST_CHILDREN_CALL(ast, list_ast, ast, new_indent);
 
   if (Expr* expr = toExpr(ast)) {
+    CallExpr* parent_C_loop = NULL;
+    if (CallExpr* call = toCallExpr(parentAst))
+      if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
+        parent_C_loop = call;
     if (toCallExpr(expr)) {
       printf(") ");
     }
     if (toBlockStmt(ast)) {
       printf("%-7d ", expr->id);
+      if (*block_explain)
+        indent -= 2;
       for (int i = 0; i < indent; i++)
         printf(" ");
-      printf("}\n");
-    } else if (CondStmt* cond = toCondStmt(expr->parentExpr)) {
+      if ((parent_C_loop && parent_C_loop->get(3) == expr) || *block_explain)
+        printf("} ");
+      else
+        printf("}\n");
+    } else if (CondStmt* cond = toCondStmt(parentAst)) {
       if (cond->condExpr == expr)
         printf("\n");
-    } else if (!toCondStmt(expr) && list_line(expr)) {
+    } else if (!toCondStmt(expr) && do_list_line) {
       DefExpr* def = toDefExpr(expr);
-      if (!(def && (toFnSymbol(def->sym) ||
-                    toModuleSymbol(def->sym))))
-        printf("\n");
+      if (!(def && early_newline))
+        if (!parent_C_loop)
+          printf("\n");
     }
   }
 }
 
 
+// If I invoke nprint_view et al. in aid(1) by accident,
+// the debugger prints the entire program, which is too much.
+// This safeguards against that.
+// As of this writing, id >= 6 is OK; we use 9 to be slightly conservative.
+static bool aidIgnore(int id) { return id < 9; }
+
 static const char*
-aidError(const char* callerMsg, int id) {
+aidErrorMessage(const char* callerMsg, int id, const char* errorMsg) {
   const int tmpBuffSize = 256;
   static char tmpBuff[tmpBuffSize];
-  snprintf(tmpBuff, tmpBuffSize, "<%s%s"
-           "the ID %d does not correspond to an AST node>",
-           callerMsg ? callerMsg : "", callerMsg ? ": " : "", id);
+  snprintf(tmpBuff, tmpBuffSize, "<%s%s""the ID %d %s>",
+           callerMsg ? callerMsg : "", callerMsg ? ": " : "",
+           id, errorMsg);
   return tmpBuff;
 }
-
-static void
-printAidError(const char* callerMsg, int id) {
-  printf("%s\n", aidError(callerMsg, id));
+static const char* aidNotFoundError(const char* callerMsg, int id) {
+  return aidErrorMessage(callerMsg, id, "does not correspond to an AST node");
+}
+static const char* aidIgnoreError(const char* callerMsg, int id) {
+  return aidErrorMessage(callerMsg, id,
+                         " is small, use aid09(id) to examine it");
 }
 
+// This version of aid*() does not exlude any id.
+BaseAST* aid09(int id) {
+  #define match_id(type)                        \
+    forv_Vec(type, a, g##type##s) {             \
+      if (a->id == id)                          \
+        return a;                               \
+    }
+  foreach_ast(match_id);
+  return NULL;
+}
+
+static BaseAST* aidWithError(int id, const char* callerMsg) {
+  if (aidIgnore(id)) {
+    printf("%s\n", aidIgnoreError(callerMsg, id));
+    return NULL;
+  } else {
+    BaseAST* result = aid09(id);
+    if (!result) printf("%s\n", aidNotFoundError(callerMsg, id));
+    return result;
+  }
+}
+
+BaseAST* aid(int id) {
+  return aidWithError(id, "aid");
+}
+
+
 void viewFlags(int id) {
-  BaseAST* ast = aid(id);
-  if (ast) viewFlags(ast); else printAidError("viewFlags", id);
+  if (BaseAST* ast = aidWithError(id, "viewFlags"))
+    viewFlags(ast);
 }
 
 
@@ -286,8 +359,8 @@ static void type_print_view(BaseAST* ast) {
 }
 
 void list_view(int id) {
-  BaseAST* ast = aid(id);
-  if (ast) list_view(ast); else printAidError("list_view", id);
+  if (BaseAST* ast = aidWithError(id, "list_view"))
+    list_view(ast);
 }
 
 void list_view(BaseAST* ast) {
@@ -335,8 +408,8 @@ void print_view_noline(BaseAST* ast) {
 }
 
 void nprint_view(int id) {
-  BaseAST* ast = aid(id);
-  if (ast) nprint_view(ast); else printAidError("nprint_view", id);
+  if (BaseAST* ast = aidWithError(id, "nprint_view"))
+    nprint_view(ast);
 }
 
 void nprint_view(BaseAST* ast) {
@@ -361,19 +434,9 @@ void nprint_view_noline(BaseAST* ast) {
 }
 
 
-BaseAST* aid(int id) {
-  #define match_id(type)                        \
-    forv_Vec(type, a, g##type##s) {             \
-      if (a->id == id)                          \
-        return a;                               \
-    }
-  foreach_ast(match_id);
-  return NULL;
-}
-
-
 void iprint_view(int id) {
-  nprint_view(aid(id));
+  if (BaseAST* ast = aidWithError(id, "iprint_view"))
+    nprint_view(ast);
 }
 
 
@@ -382,6 +445,43 @@ void mark_view(BaseAST* ast, int id) {
   printf("\n\n");
   fflush(stdout);
 }
+
+
+// feel free to propose a better name
+void astDump_view(int id) {
+  if (BaseAST* ast = aidWithError(id, "astDump_view"))
+    astDump_view(ast);
+}
+
+void astDump_view(BaseAST* ast) {
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    AstDump logger(stdout);
+    ast->accept(&logger);
+  }
+  printf("\n\n");
+  fflush(stdout);
+}
+
+
+// feel free to propose a better name
+void astDumpToNode_view(int id) {
+  if (BaseAST* ast = aidWithError(id, "astDumpToNode_view"))
+    astDumpToNode_view(ast);
+}
+
+void astDumpToNode_view(BaseAST* ast) {
+  if (ast==NULL) {
+    printf("<NULL>");
+  } else {
+    AstDumpToNode logger(stdout);
+    ast->accept(&logger);
+  }
+  printf("\n\n");
+  fflush(stdout);
+}
+
 
 static bool log_need_space;
 
@@ -437,6 +537,7 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def) {
   log_need_space = true;
 }
 
+
 //
 // stringLoc, shortLoc, debugLoc: return "file:line", where 'file' is:
 //  - stringLoc: AST's fname()
@@ -450,13 +551,13 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def) {
 static char locBuff[locBuffSize];
 
 const char* stringLoc(int id) {
-  BaseAST* ast = aid(id);
-  return ast ? stringLoc(ast) : aidError("stringLoc", id);
+  BaseAST* ast = aid09(id);
+  return ast ? stringLoc(ast) : aidNotFoundError("stringLoc", id);
 }
 
 const char* shortLoc(int id) {
-  BaseAST* ast = aid(id);
-  return ast ? shortLoc(ast) : aidError("shortLoc", id);
+  BaseAST* ast = aid09(id);
+  return ast ? shortLoc(ast) : aidNotFoundError("shortLoc", id);
 }
 
 const char* debugLoc(int id) {
@@ -483,6 +584,15 @@ const char* shortLoc(BaseAST* ast) {
 const char* debugLoc(BaseAST* ast) {
   return debugShortLoc ? shortLoc(ast) : stringLoc(ast);
 }
+
+// helper for printing IDs
+int debugID(int id) {
+  return id;
+}
+int debugID(BaseAST* ast) {
+  return ast ? ast->id : -1;
+}
+
 
 //
 // map_view: print the contents of a SymbolMap

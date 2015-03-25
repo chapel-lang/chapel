@@ -1,515 +1,596 @@
 # USAGE: the intent of this file is to keep track of current
-# regressions and to keep notes about why they are failing.  We start
-# with general regressions that are seen across a wide variety of
-# platforms, and then move onto linux64 regressions since those are
-# our main development platform.  Other platforms/settings that are
-# currently causing regressions are listed afterwards in some
-# approximation to priority order.  Formatting for each entry can be
-# loose, but should roughly follow the format of brief note on why the
-# test is failing followed by a list of tests that are failing for
-# that reason.  If someone owns a particular regression, their name
-# can be added to the description as well.
-# The path to each test should appear here, so it can be be grepped for.
-# The convention here is to include the entire error message, with [].
-# Except if a lot of test fail for the identical reason or in the same
-# directory, a wildcard is more appropriate.
-# The date the entry is added is also useful.
+# regressions and to keep notes about why they are failing.
 #
-# The status of failing future tests is detailed in ../STATUS.devel
+# The file itself is divided into several major sections, set off by
+# *****'s: General Issues, Principal platforms, Desktop performance,
+# etc.  These are designed to provide a loose, broad structure to the
+# file.
+#
+# Each section contains a number of categories, set off by ===='s.
+# Categories either correspond to a concrete test configuration that
+# we run nightly, or it is an abstract category that represents some
+# characteristic like "32-bit platforms" (*32) or "gasnet
+# configurations" (gasnet*).  Abstract categories have wildcards in
+# their name.  Concrete category labels match the subject lines of the
+# nightly cron mails sent to chapel-test-results-all and
+# chapel-test-results-regressions.
+#
+# Each category contains a list of issues, which are a description
+# followed by --------'s followed by a list of the failures which are
+# failing with that issue.  Within each category, issues are divided
+# into those that occur regularly vs. those that occur sporadically
+# via a "=== sporadic failures below ===" separator.
+#
+# There is a hierarchy embedded between categories via their
+# "Inherits" labels.  For example, the 'cygwin32' configuration
+# inherits both from 'cygwin*' (issues specific to cygwin) and from
+# '*32' (issues specific to 32-bit platforms).  The goal of this
+# inheritance is to reduce redundancy in listing issues and to tie
+# issues to the specific aspects of testing that trigger them (e.g.,
+# "this is an issue that is specific to 32-bit platforms" or "...to
+# multi-locale executions").  The root of the hierarchy is the
+# "general" category which would indicate something that fails
+# everywhere (e.g., someone committed a syntax error to hello.chpl) or
+# in enough configurations that there isn't a more nautral root
+# category.
+#
+# Ultimately, the hope is to do more of this filtering and
+# categorization automatically, but for the time being it is manual
+# and rotated among members of the core Chapel team.  On a weekly
+# basis, all failures in this file should be compared against what's
+# being reported in nightly testing to ensure that they match 1:1
+# (i.e., no failures are listed here that are not showing up in the
+# nightly runs; and everything showing up in the nightly runs is
+# listed here) Upon reviewing a category in this way, update the
+# "Reviewed" date listed in its header.
+#
+# Each issue itself should be marked with a brief description
+# indicating the nature of the issue, the date on which it first
+# showed up, and the owner of the issue (generally, all new issues
+# should be assigned an owner; some historical cases may have predated
+# the assignment of owners).  For example:
+#
+# new RandomStream changes cause segfaults (2015-03-08, bradc)
+# ------------------------------------------------------------
+# [Error matching program output for test/modules/random/complex]
+#
+# If a failure is being described in an abstract category and it
+# occurs in some configurations but not others, a list of the
+# configurations can be given in a second line before the label.
+# For example, under 'general' one might say:
+# 
+# bad commit broke some hpcc tests (2015-03-08, bradc)
+# (linux64, cygwin64, cygwin32, gasnet.fifo, gasnet-fast)
+# -------------------------------------------------------
+# [Error matching program output for test/release/examples/benchmarks/hpcc/stream]
+# [Error matching program output for test/release/examples/benchmarks/hpcc/ra]
+#
+# Generally speaking, this file shouldn't be used to accumulate notes
+# on an issue or testing configuration.  Such notes should be tracked
+# by the issues owner or in Pivotal rather than in this file.
+#
+# For sporadic failures, the dates that the failure was seen should be
+# listed after the test itself rather than in the category.  For
+# example:
+#
+# Sporadic execution timeouts (bradc)
+# -----------------------------------
+# [Error: Timed out executing program test/npb/cg/bradc/cg-sparse] (2015-03-04..2015-03-06)
+# [Error: Timed out executing program test/npb/mg/mg-annotated] (2015-03-01, 2015-03-05..)
+#
+# The first entry above indicates that we saw the timeout on March
+# 4th, 5th, and 6th, but that it resolved on the 7th.  The second
+# indicates that we saw a failure on the 1st (which resolved on the
+# next run), and then saw it happen again on the 5th, but that it has
+# not yet resolved.
+#
+# When sporadic failures are listed in a category that's inherited, it
+# can be more difficult to track the comings and goings of the failure
+# since it may fail at different times in different configurations.
+# In such cases, simply list the last time a failure was seen and in
+# what configuration it was seen.  For example, say the following was
+# in the 'xc*' category representing all Cray XC failures:
+#
+# Sporadic execution timeouts
+# ---------------------------
+# [Error: Timed out executing program test/npb/cg/bradc/cg-sparse] (last seen: 2015-03-06 on xc.ugni-qthreads.gnu]
+#
+# Sporadic failures should be removed when (a) someone has committed a
+# change with the goal of removing that failure mode and it appears to
+# have worked, or (b) when the issue has not been seen for a month.
+# Garbage collecting such cases should be part of the once-a-week
+# check to make sure that all categories reflect reality.
+#
+# Here's a loose algorithm for updating this file when doing triage:
+#
+# For each mail that comes in on test-results-regressions:
+#   If the mail came in because of a new failure:
+#
+#     As background, seach this file to find other cases where this test fails
+#
+#     If that test is an already known sporadic failure:
+#       If the test is in a concrete category:
+#         Update the dates to reflect the new failure
+#       If the test is in an abstract category:
+#         Update the "last seen" information for the test
+#
+#     If the test is a known stable failure in some other category:
+#       If the two categories are related:
+#         Consider moving the issue to a shared inherited category
+#       otherwise:
+#         Create a new issue in the category in which the test failed
+#         Or, in an appropriate parent category if it fails in several configs
+#
+#   If the mail came in because of a new passing test:
+#
+#     If that test is an already known sporadic failure:
+#       If the test is in a concrete category:
+#         Update the dates to reflect the test's passing
+#       If the test is in an abstract category:
+#         Nothing needs to be done
+#
+#     If the test is listed as a stable failure:
+#       If the test has been resolved
+#         Remove the test (and its issue, if it's now empty)
+#       If the test has not been resolved
+#         Move it from the stable to the sporadic part of the category
+#
+#   If a future is listed as passing:
+#     Find an owner to either retire the future or tighten it up
+#       (This is most typically the person who filed the future or
+#        the person who fixed it).
+#     Don't bother tracking such cases in this file
+# 
+# Once per triage rotation:
+#   Iterate through the mails generated by all configurations
+#     Make sure that all issues reported are covered by this file
+#     Make sure all issues in this file are showing up in testing
+#     Update the "Reviewed" date for all such categories
+#
+#   Check through the sporadic failures to see whether any are at
+#     least one month old and can be retired
 
 
-===========================================================
-general regressions (seem to happen in most configurations)
-(Reviewed for accuracy 09/15/14)
-===========================================================
-
-fails with some regularity (09/14/14 -- sungeun, elliot, ben)
--------------------------------------------------------------
-[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
-[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)]
-[Error finding compiler performance keys for domains/sungeun/assoc/stress.]
-[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2)]
 
 
-==============================================
-linux64 regressions (in addition to the above)
-(Reviewed for accuracy 09/15/14)
-==============================================
+****************************************************************************
+*                            General Issues                                *
+****************************************************************************
+
+===================
+general
+Reviewed 2015-03-16
+===================
 
 
-==========================================================
-linux32 (comm-none) regressions (in addition to the above)
-(Reviewed for accuracy 09/17/14)
-==========================================================
+****************************************************************************
+*                          Principal platforms                             *
+****************************************************************************
+
+===================
+linux64
+Inherits 'general'
+Reviewed 2015-03-16
+===================
 
 
-================================
-performance-specific regressions
-(Reviewed for accuracy 09/17/14)
-================================
+===================
+*32
+Inherits 'general'
+Reviewed 2015-03-16
+===================
 
-consistent failures on bradc-lnx and chap03 due to insane memory usage
-this should get better with better string memory management
--------------------------------------------------------------------------------
+32-/64-bit portability issue (2015-03-04, bradc)
+------------------------------------------------
+[Error matching compiler output for modules/standard/gmp/studies/gmp-chudnovsky (compopts: 1)]
+
+Seg fault since first run (2014-12-07)
+--------------------------------------
+[Error matching compiler output for users/vass/type-tests.isSubtype]
+
+different amounts of memory leaked on 32-bit platforms (2014-11-12, first run)
+------------------------------------------------------------------------------
+[Error matching program output for memory/sungeun/refCount/domainMaps]
+
+
+===================
+linux32
+Inherits '*32'
+Reviewed 2015-03-16
+===================
+
+timeout (2015-02-05, first run) - (elliot/michael)
+--------------------------------------------------
+[Error Timed out executing program regexp/ferguson/ctests/regexp_channel_test]
+[Error Timed out executing program regexp/ferguson/ctests/regexp_test]
+
+Chapel string passed to external routine (2015-03-05, kyleb)
+------------------------------------------------------------
+[Error matching compiler output for memory/bradc/allocBig]
+
+
+===================
+darwin
+Inherits 'general'
+Reviewed 2015-03-17
+===================
+
+
+===================
+gnu.darwin
+Inherits 'darwin'
+Reviewed 2015-03-17
+===================
+
+
+
+
+****************************************************************************
+*                            Desktop performance                           *
+****************************************************************************
+
+===================
+perf*
+Inherits 'general'
+Reviewed 2015-03-23
+===================
+
+consistent failure due to insane memory usage (should get better with strings)
+(perf.bradc-lnx, perf.chap03, perf.chapel-shootout)
+------------------------------------------------------------------------------
 [Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
-================================
---fast regressions
-(Reviewed for accuracy 09/17/14)
-================================
+===================
+perf.bradc-lnx
+Inherits 'perf*'
+Reviewed 2015-03-22
+===================
 
+=== sporadic failures below ===
 
-================================
-memory-leaks regressions
-(Reviewed for accuracy 09/15/14)
-================================
-
-Setting a config that isn't supported for --minimal-modules (1/23/14 - bradc)
------------------------------------------------------------------------------
-[Error matching program output for compflags/bradc/minimalModules/minModDeclPrint]
-[Error matching program output for compflags/bradc/minimalModules/minModFnRefArg]
+failure due to insane memory usage? (should get better with strings) (vass)
+------------------------------------------------------------------------------
+[Error matching performance keys for io/vass/time-write (compopts: 1)] (2014-11-01..2015-03-01, 2015-03-05..2015-03-18)
 
 
 
-================================
-verify regressions
-(Reviewed for accuracy 09/15/14)
-================================
-
-internal error (mike/hilde)
----------------------------
-[Error matching compiler output for types/records/sungeun/recordWithRefCopyFns]
-  (2014/09/03 -- .future file removed 09/02)
+===================
+perf.chap03
+Inherits 'perf*'
+Reviewed 2015-03-23
+===================
 
 
-================================
-valgrind-specific regressions
-(Reviewed for accuracy 09/14/14)
-================================
+===================
+perf.chap04
+Inherits 'perf*'
+Reviewed 2015-03-23
+===================
 
-nondeterministic invalid write of size 8 (e.g., 09/15/14)
----------------------------------------------------------
-[Error matching program output for associative/bharshbarg/parSafeAdd (compopts: 1)]
 
-overlapping memcpy (root cause should be eliminated)
-----------------------------------------------------
-[Error matching program output for io/bradc/readWholeArr]
-[Error matching program output for io/ferguson/readThis/readarr]
-[Error matching program output for io/ferguson/writebinaryarray]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
-[Error matching program output for release/examples/primers/fileIO]
-[Error matching program output for studies/parboil/SAD/sadSerial]
-[Error matching program output for studies/parboil/histo/histoSerial]
-[Error matching program output for studies/parboil/stencil/stencil3D]
-[Error matching program output for users/ferguson/bulkerr]
+====================
+perf.chapel-shootout
+Inherits 'perf*'
+Reviewed 2015-03-23
+====================
 
-conditional jump depends on uninitialized value (04/08/14 -- since re2 on)
---------------------------------------------------------------------------
+
+
+
+****************************************************************************
+*         Compiler flags / Sanity checks / Variant Configurations          *
+****************************************************************************
+
+
+===================
+fast
+Inherits 'general'
+Reviewed 2015-03-16
+===================
+
+
+===================
+baseline
+Inherits 'general'
+Reviewed 2015-03-20
+===================
+
+Dies with signal 6
+------------------
+[Error matching program output for studies/glob/test_glob (compopts: 1)] (Brad)
+
+
+===================
+memleaks.examples
+Inherits 'general'
+Reviewed 2015-03-16
+===================
+
+============================
+memleaks
+Inherits 'memleaks.examples'
+Reviewed 2015-03-16
+============================
+
+
+===================
+verify
+Inherits 'general'
+Reviewed 2015-03-16
+===================
+
+
+===================
+valgrind
+Inherits 'general'
+Reviewed 2015-03-23
+===================
+
+start_test --valgrind uses chpl instead of chpldoc (2015-03-11, Thomas)
+-----------------------------------------------------------------------
+[Error matching compiler output for compflags/thomasvandoren/chpldoc.doc (compopts: 1)]
+[Error matching compiler output for release/examples/primers/chpldoc.doc (compopts: 1)]
+
+
+conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
+----------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
 [Error matching program output for regexp/ferguson/rechan]
 
-invalid read (04/08/14 -- since gmp was turned on)
---------------------------------------------------
-[Error matching program output for modules/standard/gmp/ferguson/gmp_dist_array]
 
-stack overflow
---------------
-[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
+=== sporadic failures below ===
 
-missing "unable to create more than 0000 threads" warning
----------------------------------------------------------
-[Error matching program output for parallel/taskPool/figueroa/TooManyThreads (compopts: 1)]
-  Perhaps not a real error: The program is expected to raise the warning
-"maxThreadsPerLocale is unbounded, but unable to create more than 0000 threads"
-But under valgrind, the program is executed with --numThreadsPerLocale=100,
-so the warning does not apply and is not raised, and .good is not matched.
+sporadic invalid write in dl_lookup_symbol->do_lookup_x, read in dl_name_match_p
+--------------------------------------------------------------------------------
+[Error matching program output for performance/sungeun/dgemm] (..., 2014-11-29..)
+[Error matching program output for studies/sudoku/dinan/sudoku] (..., 2015-02-19..2015-02-26, 2015-02-28..2015-03-07)
 
-invalid read/write in dl_* routines
------------------------------------
-[Error matching program output for performance/sungeun/dgemm]
-
-"Unrecognised instruction" (05/18/2013)
----------------------------------------
-[Error matching program output for types/atomic/ferguson/atomictest]
-[Error matching program output for types/atomic/sungeun/atomic_vars]
-
-
-================================
-no-local regressions
-(Reviewed for accuracy 09/17/14)
-================================
-
-
-====================================================
-gasnet-everything regressions (other than the above)
-(Reviewed for accuracy 09/17/14)
-====================================================
-
-leaks reported after these had been tightened up (09/18/14)
------------------------------------------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/coforall]
-
-seg fault (09/17/14)
---------------------
-[Error matching program output for multilocale/deitz/needMultiLocales/mdblock/test_block2d_2]
-
-error: cannot create C string from remote string (due to r22900 -- sungeun)
----------------------------------------------------------------------------
-[Error matching program output for classes/sungeun/remoteDynamicDispatch (compopts: 1)]
-[Error matching program output for multilocale/diten/needMultiLocales/remoteStringTuple]
-(due to r23558)
-[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014/06/14)
-[Error matching program output for optimizations/sungeun/RADOpt/access2d (compopts: 1)] (2014/06/14)
-[Error matching program output for optimizations/sungeun/RADOpt/access3d (compopts: 1)] (2014/06/14)
-
-
-==============================================
-gasnet-fast regressions (other than the above)
-(Reviewed for accuracy 09/13/14)
-==============================================
-
-
-
-============================================================
-linux32 (comm-gasnet) regressions (in addition to the above)
-(Reviewed for accuracy 09/15/14)
-============================================================
-
-fairly consistent timeouts due to qthreads oversubscription (09/15/14)
-----------------------------------------------------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/hpl]
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 3, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4, execopts: 1)]
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)]
-
-
-========================================================
-none.qthreads.numa-specific tests (other no-local above)
-(Reviewed for accuracy 09/14/14)
-========================================================
-
-
-==========================================================
-gasnet.qthreads.numa-specific tests (other than the above)
-(Reviewed for accuracy 09/14/14)
-==========================================================
-
-comm count mismatches
----------------------
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceAlias]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceSlice]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduce]
-
-
-======================================================
-gasnet.fifo.flat-specific tests (other than the above)
-(Reviewed for accuracy 09/14/14)
-======================================================
-
-
-================================
-fifo-specific regressions
-(Reviewed for accuracy 09/12/14)
-================================
-
-
-================================
-darwin-specific regressions
-(reviewed for accuracy 09/17/14)
-================================
-
-need machine specific .good file
---------------------------------
-[Error cannot locate program output comparison file studies/hpcc/common/testProbSize.good]
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-
-nonportable use of sed in new .bad prefilter script (hilde)
------------------------------------------------------------
-[Error matching .bad file for arrays/vass/initialization-mapped-1]
-[Error matching .bad file for chpldoc/compflags/alphabetical/classFields]
-[Error matching .bad file for chpldoc/types/arguments/queried]
-[Error matching .bad file for classes/bradc/compilerErrorInMethod/testClear]
-[Error matching .bad file for classes/deitz/test_infer_nil]
-[Error matching .bad file for classes/diten/subclassMethodCall]
-[Error matching .bad file for classes/hilde/methodAssignment]
-[Error matching .bad file for classes/vass/ref-like-intents/inout-subclass]
-[Error matching .bad file for classes/vass/ref-like-intents/out-subclass]
-[Error matching .bad file for classes/vass/ref-like-intents/ref-subclass]
-[Error matching .bad file for compflags/tvandoren/runFlag (compopts: 1)]
-[Error matching .bad file for exits/sungeun/exitWithNoParensNoArgs]
-[Error matching .bad file for expressions/lydia/noinit/arg]
-[Error matching .bad file for expressions/vass/cast-to-non-type-1 (compopts:
-1)]
-[Error matching .bad file for expressions/vass/cast-to-non-type-2 (compopts:
-1)]
-[Error matching .bad file for expressions/vass/tuple-from-param-loop]
-[Error matching .bad file for extern/vass/c_sublocid_any.inner-extern]
-[Error matching .bad file for extern/vass/c_sublocid_any.mod-ne]
-[Error matching .bad file for functions/bharshbarg/setterInWhere]
-[Error matching .bad file for functions/bradc/resolution/lastResort/lastResort2]
-[Error matching .bad file for functions/bradc/resolution/lastResort/lastResort]
-[Error matching .bad file for functions/bradc/resolution/paramMismatch]
-[Error matching .bad file for functions/bradc/resolution/smallIntParamCoerce]
-[Error matching .bad file for functions/deitz/test_return1]
-[Error matching .bad file for functions/iterators/tvandoren/enumerate]
-[Error matching .bad file for functions/iterators/tzakian/par_iter_recursive]
-[Error matching .bad file for functions/iterators/vass/forall-without-leaderfollower]
-[Error matching .bad file for functions/sungeun/const_ref_arg_default_value]
-[Error matching .bad file for functions/sungeun/resolutionErrorMsg]
-[Error matching .bad file for functions/sungeun/setterFnInWhere]
-[Error matching .bad file for functions/sungeun/setterMtInWhere]
-[Error matching .bad file for functions/tzakian/implicit_arg_pass_by_ref]
-[Error matching .bad file for functions/vass/lvalue-error-messages]
-[Error matching .bad file for functions/vass/out-intent-desired]
-[Error matching .bad file for functions/vass/resolution/need-missing-return-error-2]
-[Error matching .bad file for parallel/begin/sungeun/autoCopyWithBegin (compopts: 1)]
-[Error matching .bad file for parallel/begin/sungeun/initCopyWithBegin]
-[Error matching .bad file for parallel/begin/vass/begin-in-module-init (compopts: 1)]
-[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause (compopts: 1)]
-[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
-(compopts: 2)]
-[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
-(compopts: 3)]
-[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
-(compopts: 4)]
-[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
-(compopts: 5)]
-[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
-(compopts: 6)]
-[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
-(compopts: 7)]
-[Error matching .bad file for parallel/taskPar/vass/field-in-task-ref-clause
-(compopts: 8)]
-[Error matching .bad file for performance/bradc/refArgIsWide (compopts: 1)]
-[Error matching .bad file for reductions/sungeun/count]
-[Error matching .bad file for statements/vass/index-variable-var]
-[Error matching .bad file for statements/vass/while-const3]
-[Error matching .bad file for
-studies/shootout/fannkuch-redux/bradc/fannkuch-redux-blc-unbounded]
-[Error matching .bad file for trivial/preston/gcd]
-[Error matching .bad file for trivial/sungeun/bad_reduce_expr]
-[Error matching .bad file for trivial/sungeun/promoted_expr_error]
-[Error matching .bad file for trivial/sungeun/semicolon_typeo_error]
-[Error matching .bad file for types/enum/sungeun/cast_enum_weird_4]
-[Error matching .bad file for
-types/records/bharshbarger/nestedRecordInClass2]
-[Error matching .bad file for
-types/records/const-checking/scenario-1-array-of-record-with-const-fld]
-[Error matching .bad file for
-types/records/const-checking/scenario-2-init-array-of-rec-with-const-fld]
-[Error matching .bad file for
-types/records/const-checking/scenario-3-assoc-dom-of-record-with-const-fld]
-[Error matching .bad file for
-types/records/const-checking/todo-constructors-for-const-rec-fields]
-[Error matching .bad file for
-types/records/const-checking/todo-duplicate-cannotassign-error]
-[Error matching .bad file for
-types/records/const-checking/todo-initializing-typed-var]
-[Error matching .bad file for
-types/records/const-checking/todo-linenumber-in-array-assignment-error]
-[Error matching .bad file for
-types/records/const-checking/todo-multiple-asgn-errors]
-[Error matching .bad file for types/string/sungeun/c_string/intents]
-[Error matching .bad file for types/sync/vass/generic-sync-1]
-[Error matching .bad file for types/sync/vass/ref-sync-2]
-[Error matching .bad file for
-types/tuple/sungeun/iteration/heteroTupleOfArrays]
-[Error matching .bad file for
-types/tuple/sungeun/iteration/heteroTupleOfDomains]
-[Error matching .bad file for
-types/tuple/sungeun/iteration/heteroTupleOfRanges]
-[Error matching .bad file for types/tuple/sungeun/iteration/iteratable]
-[Error matching .bad file for
-types/typedefs/tzakian/classConstructorsFromTypes]
-[Error matching .bad file for users/ferguson/histogram/reductionex_class]
-[Error matching .bad file for users/ferguson/histogram/reductionex_record]
-[Error matching .bad file for users/ferguson/int32method]
-[Error matching .bad file for users/ferguson/module_new]
-[Error matching .bad file for users/ferguson/record_from_string]
-[Error matching .bad file for users/lucashimizu/inferRecursive]
-[Error matching .bad file for users/vass/crash1callDestructorsMain]
-[Error matching .bad file for users/vass/crash5insertAfter]
-[Error matching .bad file for users/vass/div-ceil-on-more-int-types]
-[Error matching .bad file for users/vass/tuple-crash-1]
-[Error matching .bad file for variables/kbrady/ref-member]
-
-wrong signature for C main (bradc -- should now be fixed)
----------------------------------------------------------
-[Error matching compiler output for Samples/Performance/foo-c]
-
-gdb output differences?
------------------------
-[Error matching compiler output for compflags/bradc/gdbddash/declint]
-[Error matching program output for execflags/bradc/gdbddash/declint2]
-[Error matching program output for execflags/bradc/gdbddash/declint]
-[Error matching program output for execflags/bradc/gdbddash/gdbSetConfig]
-
-error: self-comparison always evaluates to true [-Werror,-Wtautological-compare])
----------------------------------------------------------------------------------
-[Error matching compiler output for extern/ferguson/c_ptrs (compopts: 1)]
-
-warning about using a non-literal format string
------------------------------------------------
-[Error matching compiler output for extern/hilde/namedExtern]
-[Error matching compiler output for io/vass/time-write (compopts: 1)]
-[Error matching compiler output for studies/pidigits/bbp/nomem32]
-
-linker error (library not found for -lcrt0.o)
----------------------------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)]
-
-various errors in the generated code
-------------------------------------
-[Error matching compiler output for performance/compiler/bradc/compSampler-timecomp]
-[Error matching compiler output for trivial/shannon/compSampler]
-
-error: static declaration of 'wait3' follows non-static declaration
--------------------------------------------------------------------
-[Error matching compiler output for parallel/sync/diten/userLevelEndCount]
-
-undefined error
----------------
-[Error matching program output for io/sungeun/ioerror (execopts: 5)]
-
-nondeterministic output order issue?
-------------------------------------
-[Error matching program output for parallel/begin/deitz/test_begin_cobegin2]
-[Error matching program output for users/vass/domain_with_on-all]
-
-incorrect output
-----------------
-[Error matching program output for parallel/begin/vass/multi-yield-leader]
-
-timeout (printed by test?)
+sporadic execution timeout
 --------------------------
-[Error matching program output for parallel/cobegin/diten/cobeginRace]
-
-nonportable prediff?
---------------------
-[Error matching program output for parallel/coforall/gbt/time-sync-incs]
-[Error matching program output for studies/hpcc/HPL/stonea/serial/hplExample5]
-
-incorrect initial values?
--------------------------
-[Error matching program output for parallel/sync/figueroa/ReadMethods]
-
-no referree output
-------------------
-[Error matching program output for parallel/taskPar/figueroa/taskParallel]
-
-unused value warning
---------------------
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 1, execopts: 1)]
-[Error matching program output for release/examples/benchmarks/miniMD/miniMD (compopts: 2, execopts: 1)]
-
-halt reached
-------------
-[Error matching program output for stress/deitz/test_10k_begins]
-
-surprising timeouts?
---------------------
-[Error: Timed out executing program exercises/RandomNumber6]
-[Error: Timed out executing program memory/shannon/outofmemory/mallocOutOfMemory]
-[Error: Timed out executing program parallel/begin/deitz/test_begin2]
-[Error: Timed out executing program parallel/begin/deitz/test_begin]
-[Error: Timed out executing program parallel/begin/deitz/test_coforall_sugar3]
-[Error: Timed out executing program parallel/begin/deitz/test_global_for_begin]
-[Error: Timed out executing program parallel/sync/figueroa/WriteMethods]
+[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (..2015-02-21)
+[Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2) (2015-03-02..)]
+[Error: Timed out executing program performance/bharshbarg/arr-forall] (2015-03-20)
 
 
-======================================
-chpbld01 (PrgEnv/XC whitebox) failures
-(Reviewed for accuracy 09/17/14)
-======================================
+
+****************************************************************************
+*                   Different build configurations                         *
+****************************************************************************
 
 
-======================================
-chpbld02 (PrgEnv/XE whitebox) failures
-(Reviewed for accuracy 09/17/14)
-======================================
+===================
+llvm
+Inherits 'general'
+Reviewed 2015-03-16
+===================
 
-broken due to sync/single-by-generic changes (09/18/14 -- should be fixed)
----------------------------------------------------------------
-[Error matching .bad file for expressions/lydia/noinit/usedWithSingle]
-[Error matching .bad file for expressions/lydia/noinit/usedWithSync]
-[Error matching .bad file for types/sync/vass/generic-sync-1]
-[Error matching .bad file for types/sync/vass/ref-sync-1]
-
-The following tests fail nondeterministically on chpbld01/chpbld02 with one of
-the following failures (should valgrind these on whiteboxes to diagnose)
-* glibc: invalid next size
-* glibc: double free or corruption
---------------------------------------------------------------------
-[Error matching program output for functions/iterators/tzakian/open_inside_file_iter]
-[Error matching program output for io/ferguson/asserteof]
-[Error matching program output for trivial/shannon/readWriteBool]
-[Error matching program output for types/file/freadComplex]
-[Error matching program output for types/file/freadIntFailed]
-[Error matching program output for types/file/freadNoInt]
-[Error matching program output for types/file/freadNoFloat]
-[Error matching program output for types/file/freadNotABoolean]
-[Error matching program output for types/file/fwriteIntFailed]
+relies on macro in gmp.h -- not expected to work without effort (2014-09-18)
+----------------------------------------------------------------------------
+[Error matching compiler output for release/examples/benchmarks/shootout/pidigits]
 
 
-==========================================================
-cray-prgenv-*-specific failures (in addition to the above)
-(Reviewed for accuracy 09/17/14)
-==========================================================
-
-problem with static/dynamic linking?
-------------------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)] (started 10/26/2012)
+===================
+fifo
+Inherits 'general'
+Reviewed 2015-03-16
+===================
 
 
-=========================================
-cray-prgenv-cray/cce-specific regressions
-(Reviewed for accuracy 09/17/14)
-=========================================
+===================
+numa
+Inherits 'general'
+Reviewed 2015-03-16
+===================
 
-zippered iterations have non-equal lengths (09/17/14 -- elliot)
---------------------------------------------------------------
-[Error matching program output for statements/bradc/swaps/swapArrayDiffIndices]
 
-doesn't hit halt (09/17/14 -- elliot)
--------------------------------------
-[Error matching program output for trivial/deitz/test_max_range_iteration (compopts: 1)]
 
-glob portability issue (09/17/14 -- bradc)
-------------------------------------------
-[Error matching program output for studies/filerator/globberator (execopts: 1)]
-[Error matching program output for studies/filerator/globberator (execopts: 2)]
+****************************************************************************
+*                     Multi-locale configurations                          *
+****************************************************************************
 
-unexpected compiler output (listing the source files) (07/23/14)
-----------------------------------------------------------------
-[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
-gbt is working on getting rid of this
 
-empty array size problem (1/25/14 -- bradc)
--------------------------------------------
-[Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
-[Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
+===================
+no-local
+Inherits 'general'
+Reviewed 2015-03-23
+===================
 
-infinite loop warning (since filed?)
-------------------------------------
-[Error matching compiler output for statements/vass/while-const1]
 
-value is outside of the int range in C compilation (03/??/12)
+=================================
+no-local.linux32
+Inherits 'linux32' and 'no-local'
+Reviewed 2015-03-16
+=================================
+
+
+===================
+gasnet*
+Inherits 'no-local'
+Reviewed 2015-03-16
+===================
+
+=== sporadic failures below ===
+
+sporadic failures even after Sung quieted it down (gbt/diten)
+(gasnet.fifo, gasnet-fast, gasnet-everything)
 -------------------------------------------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (last seen: 2015-03-11)
+
+sporadic execution timeout
+(gasnet.fifo, gasnet-fast)
+--------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_likepy] (last seen: 2015-02-17)
+
+
+
+===================
+gasnet-everything
+Inherits 'gasnet*'
+Reviewed 2015-03-16
+===================
+
+
+===================
+gasnet-fast
+Inherits 'gasnet*'
+Reviewed 2015-03-16
+===================
+
+Segfault (2015-02-22, michael)
+------------------------------
+[Error matching program output for multilocale/deitz/needMultiLocales/test_remote_file_read]
+
+
+===============================
+gasnet.darwin
+Inherits 'darwin' and 'gasnet*'
+Reviewed 2015-03-16
+===============================
+
+
+=============================
+gasnet.fifo
+Inherits 'gasnet*' and 'fifo'
+Reviewed 2015-03-16
+=============================
+
+segfault (2015-03-07, vass)
+---------------------------
+[Error matching program output for types/string/StringImpl/memLeaks/cast]
+
+=== sporadic failures below ===
+
+sporadic execution timeouts
+---------------------------
+[Error: Timed out executing program studies/madness/aniruddha/madchap/test_mul] (2015-03-01)
+
+
+=============================
+gasnet.llvm
+Inherits 'gasnet*' and 'llvm'
+Reviewed 2015-03-19
+=============================
+
+
+=============================
+gasnet.numa
+Inherits 'gasnet*' and 'numa'
+Reviewed 2015-03-16
+=============================
+
+
+
+
+****************************************************************************
+*                     XE/XC whitebox configurations                        *
+****************************************************************************
+
+
+===================
+xc-wb.*
+Inherits 'general'
+Reviewed 2015-03-16
+===================
+
+=== sporadic failures below ===
+
+sporadic execution timeouts
+---------------------------
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (last seen: 2015-03-22 on xc-wb.prgenv-pgi)
+[Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (last seen: 2015-02-24 on xc-wb.pgi)
+
+
+=======================
+*gnu*
+Inherits from 'linux64'
+Reviewed 2015-03-16
+=======================
+
+
+==============================
+xc-wb.gnu
+Inherits 'xc-wb.*' and '*gnu*'
+Reviewed 2015-03-16
+==============================
+
+
+==============================
+xc-wb.prgenv-gnu
+Inherits 'xc-wb.*' and '*gnu*'
+Reviewed 2015-03-16
+==============================
+
+
+===========================
+xc-wb.host.prgenv-gnu
+Inherits 'xc-wb.prgenv-gnu'
+Reviewed 2015-03-16
+===========================
+
+
+===================
+*intel*
+Inherits 'general'
+Reviewed 2015-03-16
+===================
+
+test assertion failures (2014-09-21..)
+------------------------------------------------
+[Error matching program output for io/ferguson/io_test]
+[Error matching program output for io/ferguson/writef_readf]
+
+binary files differ (2014-09-21..)
+--------------------------------------------
+[Error matching program output for io/ferguson/writefbinary]
+[Error matching program output for studies/parboil/SAD/sadSerial]
+
+
+================================
+xc-wb.intel
+Inherits 'xc-wb.*' and '*intel*'
+Reviewed 2015-03-23
+================================
+
+Sporadic failures (2015-03-13..)
+--------------------------------
+[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)]
+
+
+================================
+xc-wb.prgenv-intel
+Inherits 'xc-wb.*' and '*intel*'
+Reviewed 2015-03-17
+================================
+
+
+=============================
+xc-wb.host.prgenv-intel
+Inherits 'xc-wb.prgenv-intel'
+Reviewed 2015-03-16
+=============================
+
+
+====================
+*prgenv-cray*
+Inherits '*prgenv-*'
+Also includes: xc.*.cray.*
+Reviewed 2015-03-16
+====================
+
+invalid option "openmp" on the command line. (2014-11-17 -- thomas/ben/et al)
+-----------------------------------------------------------------------------
+[Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
+[Error matching compiler output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)]
+[Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
+[Error matching compiler output for studies/colostate/OMP-Jacobi-2D-Sliced-Diamond-Tiling (compopts: 1)]
+
+value is outside of the int range in C compilation (2012-03-??)
+---------------------------------------------------------------
 [Error matching compiler output for types/enum/ferguson/enum_mintype_test]
 
-wrong result due to reliance on wraparound in signed integers in test itself
-----------------------------------------------------------------------------
-[Error matching program output for expressions/bradc/uminusVsTimesPrec]
-
-filenames get printed by C compiler when multiple .c files are specified in one command
----------------------------------------------------------------------------------------
+filenames printed by C compiler when multiple .c files are specified
+--------------------------------------------------------------------
 [Error matching program output for modules/standard/BitOps/c-tests/bitops (compopts: 1)]
 [Error matching program output for modules/standard/BitOps/c-tests/bitops (compopts: 2)]
 [Error matching program output for modules/standard/BitOps/c-tests/clz (compopts: 1)]
@@ -523,431 +604,472 @@ filenames get printed by C compiler when multiple .c files are specified in one 
 [Error matching program output for modules/standard/BitOps/c-tests/popcount (compopts: 1)]
 [Error matching program output for modules/standard/BitOps/c-tests/popcount (compopts: 2)]
 
-error differs but within acceptable margin; should squash error printing
+unexpected compiler output (listing the source files) (2014-07-23, gbt/michael)
+-------------------------------------------------------------------------------
+[Error matching program output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
+
+error differs but within acceptable margin; should squash error printing (..)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
-signal 11 (first seen 03/02/14)
--------------------------------
-[Error matching compiler output for release/examples/benchmarks/shootout/meteor-fast]
-[Error matching program output for studies/shootout/meteor/kbrady/meteor-parallel-alt]
+Execution timeout (2015-03-04, vass - won't fix or skipif or suppress)
+----------------------------------------------------------------------
+[Error: Timed out executing program parallel/forall/vass/ri-3-stress (compopts: 1)] 
 
-error message missing? (first noted 07/17/2014, but failure may have predated)
-------------------------------------------------------------------------------
-[Error matching program output for types/file/freadComplex]
-
-compilation timeouts (since at least 07/16/14)
-----------------------------------------------
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/3dStrideTest]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest (compopts: 1)]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Block/perfTest_v2 (compopts: 1)]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest (compopts: 1)]
-[Error: Timed out compilation for optimizations/bulkcomm/alberto/Cyclic/perfTest_v2 (compopts: 1)]
-
-Compilation timeout (since ??? at least 01/26/14)
--------------------------------------------------
-[Error: Timed out compilation for studies/ssca2/test-rmatalt/nondet (compopts: 1)]
-
-compilation timeouts (since at least 02/23/14)
-----------------------------------------------
-[Error: Timed out compilation for users/franzf/v0/chpl/main (compopts: 1)]
-[Error: Timed out compilation for users/franzf/v1/chpl/main (compopts: 1)]
+Execution timeout (2015-02-15)
+------------------------------
+[Error: Timed out executing program performance/compiler/bradc/cg-sparse-timecomp (compopts: 1)]
 
 
-==================================================
-cray-prgenv-pgi regressions (in addition to above)
-(Reviewed for accuracy 09/15/14)
-==================================================
+=== sporadic failures below ===
 
-problem with empty initializer (1/25/14 -- bradc)
--------------------------------------------------
-[Error matching compiler output for compflags/bradc/minimalModules/minModDeclPrint]
-[Error matching compiler output for compflags/bradc/minimalModules/minModFnRefArg]
+sporadic dropping/mangling of output
+------------------------------------
+[Error matching program output for classes/bradc/arrayInClass/arrayOfArithInClass] (2015-01-12..2015-01-19)
+[Error matching program output for classes/bradc/arrayInClass/genericArrayInClass-arith] (2014-12-25..2015-01-08)
+[Error matching program output for distributions/dm/t5a] (2015-01-23)
+[Error matching program output for distributions/deitz/exBlockExample/block2D] (2015-01-21..2015-01-29)
+[Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1] (2014-10-24)
+[Error matching program output for domains/sungeun/assoc/index_not_in_domain_2 (compopts: 2)] (2014-11-13)
+[Error matching program output for functions/diten/refIntents] (2014-09-30)
+[Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (2014-10-07)
+[Error matching program output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember] (2014-12-16)
+[Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014-10-10)
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (2014-10-03, 2015-03-04, xc.mpi.cray.slurm 2015-03-01, last seen 2015-03-22 on xc.none.cray.slurm)
+[Error matching program output for release/examples/primers/arrays] (2014-10-03)
+[Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky] (2015-01-14)
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)] (2014-12-19)
+[Error matching program output for studies/hpcc/STREAMS/diten/stream-fragmented-local (compopts: 1)] (2015-01-26..2015-02-01)
+[Error matching program output for studies/shootout/nbody/sidelnik/nbody_orig_1] (2014-12-16)
+[Error matching program output for studies/hpcc/STREAMS/bradc/stream-slice (compopts: 1)] (2015-02-08)
+[Error matching program output for modules/vass/SSCA2-with-Private-2] (2015-02-19)
+[Error matching program output for reductions/waynew/reductions] (2015-02-19, 2015-02-22..2015-02-28)
+[Error matching program output for users/hilde/refcnt] (2015-02-20..2015-02-28)
+[Error matching program output for studies/590o/alaska/graph] (2015-02-25)
+[Error matching compiler output for release/examples/primers/chpldoc (compopts: 1)] (host testing 2015-03-01)
 
-identifier names too long
--------------------------
-[Error matching program output for distributions/dm/t5a]
 
-gdb prints paths differently
-----------------------------
-[Error matching program output for execflags/bradc/gdbddash/declint2]
+======================================
+xc-wb.prgenv-cray
+Inherits 'xc-wb.*' and '*prgenv-cray*'
+Reviewed 2015-03-16
+======================================
 
-undefined reference to chpl_bitops_debruijn64 (07/14/14)
---------------------------------------------------------
+
+============================
+xc-wb.host.prgenv-cray
+Inherits 'xc-wb.prgenv-cray'
+Reviewed 2015-03-19
+============================
+
+=== sporadic failures below ===
+
+sporadic unresolved call on ||(0,0) in Types.chpl and related errors (bradc)
+----------------------------------------------------------------------------
+All tests fail to compile. (2015-02-15..2015-02-16, 2015-02-19, 2015-03-10, 2015-03-12)
+
+
+===================
+*pgi*
+Inherits 'general'
+Reviewed 2015-03-16
+===================
+
+undefined reference to chpl_bitops_debruijn64
+---------------------------------------------
 [Error matching compiler output for optimizations/cache-remote/ferguson/c_tests/chpl-cache-support-test (compopts: 1)]
 
 negative floating point 0.0 not supported
 -----------------------------------------
-[Error matching program output for types/complex/bradc/negateimaginary3] 
+[Error matching program output for types/complex/bradc/negateimaginary3]
 [Error matching program output for types/complex/bradc/negativeimaginaryliteral]
 [Error matching program output for types/file/bradc/scalar/floatcomplexexceptions]
 
-alignment error in output
--------------------------
-[Error matching program output for types/range/hilde/align]
-
-===============================================
-pgi-specific regressions (in addition to above)
-(Reviewed for accuracy 09/15/14)
-===============================================
+consistent execution timeout (no intrinsics for pgi, test is slow with locks)
+-----------------------------------------------------------------------------
+[Error: Timed out executing program domains/sungeun/assoc/parSafeMember (compopts: 1)]
 
 
-==========================================================================
-cray-prgenv-intel-specific regressions (in addition to cray-prgenv* above)
-(Reviewed for accuracy 09/15/14)
-==========================================================================
+==============================
+xc-wb.pgi
+Inherits 'xc-wb.*' and '*pgi*'
+Reviewed 2015-03-16
+==============================
 
-alignment mismatch in output
+
+==============================
+xc-wb.prgenv-pgi
+Inherits 'xc-wb.*' and '*pgi*'
+Reviewed 2015-03-16
+==============================
+
+
+===========================
+xc-wb.host.prgenv-pgi
+Inherits 'xc-wb.prgenv-pgi'
+Reviewed 2015-03-16
+===========================
+
+
+****************************************************************************
+*              XE/XC hardware correctness configurations                   *
+****************************************************************************
+
+
+===================
+x?.*
+Inherits 'xc-wb.*'
+Reviewed 2015-03-20
+===================
+
+FFTW numeric differences across architectures - won't fix (2015-03-19)
+(most x?.* configurations)
+----------------------------------------------------------------------
+[Error matching program output for release/examples/primers/FFTWlib (compopts: 1)]
+
+
+===================
+xc.*
+Inherits 'x?.*'
+Reviewed 2015-03-20
+===================
+
+
+===================
+xe.*
+Inherits 'x?.*'
+Reviewed 2015-03-20
+===================
+
+=== sporadic failures below ===
+
+sporadic execution timeouts
+---------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (last seen 2015-03-19 on xe.ugni-qthreads.intel)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (last seen 2015-03-19 on xe.ugni-qthreads.gnu)
+
+
+sporadic compilation timeouts - perhaps test-independent
+--------------------------------------------------------
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4)] (last seen 2015-03-19 on xe.gemini.cray)
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)] (xe.gemini.cray: 2015-03-23..)
+
+===================
+xe.ugni*.*
+Inherits 'xe.*'
+Reviewed 2015-03-23
+===================
+
+=== sporadic failures below ===
+
+sporadic execution timeouts
+---------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)] (last seen 2015-03-23.. on xe.ugni-qthreads.gnu)
+
+
+==========================================
+xc.knc
+Inherits 'xc.*'
+Reviewed 2015-03-20
+==========================================
+
+Unclear how KNCs interact with the file system on Crays (since first run)
+-------------------------------------------------------------------------
+[Error matching program output for release/examples/primers/fileIO]
+
+=== sporadic failures below ===
+
+sporadic execution timeouts
+---------------------------
+[Error: Timed out executing program release/examples/primers/distributions] (2015-03-13, 2015-03-19)
+
+
+==========================
+xc.llvm
+Inherits 'xc.*' and 'llvm'
+Reviewed 2015-03-19
+==========================
+
+
+
+****************************************************************************
+*                 XC hardware performance configurations                   *
+****************************************************************************
+
+===========================
+perf.xc.*
+Inherits 'perf*' and 'x?.*'
+Reviewed 2015-03-16
+===========================
+
+OOB array access when core counts are not a power of 2 (2015-03-04/06, ben)
+(perf.xc.local.intel, perf.xc.local.gnu, perf.xc.no-local.gnu, perf.xc.local.cray)
+--------------------------------------------------------------
+[Error matching performance keys for npb/is/mcahir/intsort.mtml]
+
+=== sporadic failures below ===
+
+timeout instead of OOB
+----------------------
+[Error: Timed out executing program npb/is/mcahir/intsort.mtml] (last seen: 2015-03-20 on perf.xc.local.gnu)
+
+
+================================
+perf.xc.local.gnu
+Inherits 'perf.xc.*' and '*gnu*'
+Reviewed 2015-03-16
+================================
+
+
+============================
+perf.xc.no-local.gnu
+Inherits 'perf.xc.local.gnu'
+Reviewed 2015-03-20
+============================
+
+consistent timeouts (2015-02-18)
+(only perf.xc.no-local.gnu)
+--------------------------------
+[Error: Timed out executing program performance/bharshbarg/arr-forall (execopts: 1)] (2015-03-20..)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans]
+[Error: Timed out executing program studies/shootout/nbody/bradc/nbody-blc-slice]
+[Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_forloop_3]
+[Error: Timed out executing program studies/ssca2/memory/SSCA2_mem (compopts: 1)] (ben)
+
+=== sporadic failures below ===
+
+Differing whitespace (vass)
+(only on perf.xc.no-local.gnu)
+---------------------------
+[Error matching performance keys for io/vass/time-write (compopts: 1)] (firstrun..2015-02-21, 2015-02-23..)
+
+sporadic execution timeouts
+(since 2015-03-11 or before, this occurs only on perf.xc.16.*.gnu)
+---------------------------
+[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (last seen 2015-03-19 on perf.xc.16.mpi.gnu)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: *)] (last seen 2015-03-22 on perf.xc.16.ugni.gnu)
+
+
+===============================
+perf.xc.16.mpi.gnu
+Inherits 'perf.xc.no-local.gnu'
+Reviewed 2015-03-20
+===============================
+
+=== sporadic failures below ===
+
+Sporadic execution timeout
+--------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 2, execopts: 1)] (2015-02-26)
+
+
+===============================
+perf.xc.16.aries.gnu
+Inherits 'perf.xc.no-local.gnu'
+Reviewed 2015-03-16
+===============================
+
+Consistent execution timeout (2015-02-02)
+-----------------------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra-atomics]
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)] (since logs started 2015-03-11..)
+
+=== sporadic failures below ===
+
+Sporadic execution timeouts.
 ----------------------------
-[Error matching program output for types/range/hilde/align]
+[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (..2015-03-17)
+[Error: Timed out executing program studies/hpcc/HPL/vass/hpl.hpcc2012 (compopts: 1)] (2015-02-15, 2015-03-06..)
 
 
-=================================================================
-intel-specific regressions (in addition to chpbld02 errors above)
-(reviewed for accuracy 08/19/14)
-=================================================================
+===============================
+perf.xc.16.ugni-qthreads.gnu
+Inherits 'perf.xc.no-local.gnu'
+Reviewed 2015-03-20
+===============================
 
-static/dynamic linking issues
+
+===============================
+perf.xc.16.ugni.gnu
+Inherits 'perf.xc.no-local.gnu'
+Reviewed 2015-03-23
+===============================
+
+=== sporadic failures below ===
+
+sporadic execution timeout
+--------------------------
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-12..2015-03-17, 2015-03-20..)
+[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (2015-..2015-03-17)
+
+
+==================================
+perf.xc.local.intel
+Inherits 'perf.xc.*' and '*intel*'
+Reviewed 2015-03-19
+==================================
+
+Consistent errors (2015-03-11)
 -----------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (compopts:
-1)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts:
-2)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts:
-3)]
+[Error matching performance keys for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 1)]
+[Error matching performance keys for release/examples/benchmarks/lulesh/lulesh (compopts: 3, execopts: 1)]
 
-alignment error in output
--------------------------
-[Error matching program output for types/range/hilde/align]
+=== sporadic failures below ===
+
+sporadic chameneos-redux-cas output mismatch (lydia)
+----------------------------------------------------
+[Error matching performance keys for studies/shootout/chameneos-redux/hannah/chameneos-redux-cas] (2015-02-28, 2015-03-06..)
+
+
+========================================
+perf.xc.local.cray
+Inherits 'perf.xc.*'
+Reviewed 2015-03-23
+========================================
+
+due to CCE bugs? (2015-03-20, with switch to cce/8.3.10.102)
+------------------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/ptrans]
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 1)]
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 3, execopts: 1)]
+
+Validation: FAILURE with vectorization (since 2015-03-11 or before, Ben)
+------------------------------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/fft]
+
+
+=== sporadic failures below ===
+
+sporadic execution timeout
+--------------------------
+[Error: Timed out executing program studies/shootout/mandelbrot/ferguson/mandelbrot-opt2] (2015-03-01..2015-03-03)
 
 
 ================================
-gnu failures on whiteboxes
-(Reviewed for accuracy 07/13/14)
+perf.xc.local.pgi
+Inherits 'perf.xc.*' and '*pgi*'
+Reviewed 2015-03-16
 ================================
 
-gcc warning about assuming strict overflow
-------------------------------------------
-[Error matching .bad file for puzzles/hilde/overflow (compopts: 1)]
-
-
-=================================
-cray-prgenv-gnu specific failures
-(in addition to the above)
-(Reviewed for accuracy 09/14/14)
-=================================
+out of memory allocating array elements (2015-02-15)
+----------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
 
 
 
-================================
-LLVM specific regressions
-(Reviewed for accuracy 09/19/14)
-================================
-
-relies on macro in gmp.h -- not expected to work without effort (09/18/14)
---------------------------------------------------------------------------
-[Error matching compiler output for release/examples/benchmarks/shootout/pidigits]
+****************************************************************************
+*                          Secondary platforms                             *
+****************************************************************************
 
 
-===================================
-cygwin-specific failures
-(Reviewed for accuracy on 09/14/14)
-===================================
+===================
+rhel.linux64
+Inherits 'general'
+Reviewed 2015-03-16
+===================
 
-fail with compiler error (09/18/14 -- sungeun)
-----------------------------------------------
-[Error matching compiler output for types/string/StringImpl/memLeaks/promotion (compopts: 1)]
+
+===================
+cygwin*
+Inherits 'general'
+Reviewed 2015-03-16
+===================
 
 check_channel assertion failure
 -------------------------------
-[Error matching C regexp test ./regexp_channel_test Regexp Channels Test]
-
-gcc warning about assuming strict overflow
-------------------------------------------
-[Error matching .bad file for puzzles/hilde/overflow (compopts: 1)]
-[Error matching compiler output for studies/shootout/mandelbrot/bugs/mandelbrot-error]
-
-output mistmatch ('PE32+ executable (console)...')
---------------------------------------------------
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 1)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 2)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 3)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 4)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 5)]
-[Error matching compiler output for link/sungeun/static_dynamic (compopts: 6)]
-
-RLIMIT_NPROC undeclared
------------------------
-[Error matching compiler output for parallel/taskPool/figueroa/TooManyThreads (compopts: 1)]
-
-CHPL_RT_CALL_STACK_SIZE too big issue
--------------------------------------
-[Error matching program output for execflags/bradc/callStackSize]
-[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
-
-filename 'unknown' causes output mismatch
------------------------------------------
-[Error matching program output for functions/iterators/tzakian/open_inside_file_iter]
-[Error matching program output for io/ferguson/asserteof]
-[Error matching program output for trivial/shannon/readWriteBool]
-[Error matching program output for trivial/shannon/readWriteComplex]
-[Error matching program output for trivial/shannon/readWriteEnum]
-[Error matching program output for types/file/freadComplex]
-[Error matching program output for types/file/freadIntFailed]
-[Error matching program output for types/file/freadNoFloat]
-[Error matching program output for types/file/freadNoInt]
-[Error matching program output for types/file/freadNotABoolean]
-[Error matching program output for types/file/fwriteIntFailed]
+[Error matching program output for regexp/ferguson/ctests/regexp_channel_test]
 
 QIO strcmp(got, expect) assertion error
 ---------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
 
+=== sporadic failures below ===
+
+sporadic pthread_cond_init failed
+---------------------------------
+[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (cygwin64: 2015-02-25..2015-03-04, 2015-03-07, 2015-03-11; cygwin32: 2015-03-12)
+[Error matching program output for reductions/diten/testSerialReductions (compopts: 1)] (cygwin64: 2015-03-06, 2015-03-22..)
+
+sporadic execution timeout
+--------------------------
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (cygwin64:..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06, 2015-03-10, 2015-03-12..; cygwin32: ...2015-03-11, 2015-03-13..2015-03-20)
+[Error: Timed out executing program reductions/diten/testSerialReductions (compopts: 1)] (2015-03-07..)
+
+===========================
+cygwin32
+Inherits 'cygwin*' and '*32'
+Reviewed 2015-03-16
+===========================
+
+new test fails on 32-bit platforms (2015-03-06, lydia)
+------------------------------------------------------
+[Error matching program output for modules/standard/FileSystem/lydia/copy/copying]
+
+"got == expect[i]" assertion error
+----------------------------------
+[Error matching program output for io/ferguson/ctests/qio_bits_test (compopts: 1)]
+
+Generated output "FAILED" (see below for sporadic): First run 2014-12-07
+------------------------------------------------------------------------
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Naive-Parallel (compopts: 1)]
+[Error matching program output for studies/colostate/OMP-Jacobi-2D-Naive-Parallel (compopts: 1)]
+
+Consistent execution timouts
+----------------------------
+[Error: Timed out executing program io/ferguson/ctests/qio_test (compopts: 1)]
+
+A package needed for chpldoc is not installed (2015-03-12, Thomas)
+------------------------------------------------------------------
+[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc.doc]
+[Warning: Could not find chpldoc, skipping test release/examples/primers/chpldoc.doc]
+
+
+=== sporadic failures below ===
+
+sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
+------------------------------------------------------------------------------
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..2015-02-18, 2015-02-20..2015-02-22, 2015-02-24, 2015-03-01..2015-03-06, 2015-03-11..2015-03-19, 2015-03-22..)
+
+
+================================
+cygwin64
+Inherits 'cygwin*' and 'linux64'
+Reviewed 2015-03-23
+================================
+
 QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_test (compopts: 1)]
 
-error matching output (apparent whitespace difference)
-------------------------------------------------------
-[Error matching program output for io/ferguson/utf8/widecols.chpl]
-
-invalid argument in chown (since test added -- fszouza)
--------------------------------------------------------
-[Error matching program output for io/fsouza/chown/permission_error]
-
-got 'No error' rather than 'success'
-------------------------------------
-[Error matching program output for io/sungeun/ioerror (execopts: 5)]
-
-got 'unexpected target cygwin'
-------------------------------
-[Error matching program output for localeModels/gbt/maxTaskPar]
-
-amount of memory doesn't match
-------------------------------
-[Error matching program output for modules/standard/memory/countMemory/countMemory]
-
-problem size didn't match
--------------------------
-[Error matching program output for studies/hpcc/common/testProbSize (compopts: 1)]
-
-numerical roundoff issues
--------------------------
-[Error matching program output for studies/madness/aniruddha/madchap/mytests/par-reconstruct/test_reconstruct (compopts: 1)]
-[Error matching program output for studies/madness/aniruddha/madchap/test_likepy]
-[Error matching program output for studies/madness/common/test_likepy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_diff]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_gaxpy]
-[Error matching program output for studies/madness/dinan/mad_chapel/test_likepy
-
-worrisomee timeouts
--------------------
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/basic]
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/reuse]
-[Error: Timed out executing program parallel/taskPar/sungeun/barrier/split-phase]
 
 
-================================
-baseline-specific tests
-(Reviewed for accuracy 09/17/14)
-================================
-
-still a failure (09/19/14)
---------------------------
-[Error matching program output for types/string/StringImpl/memLeaks/promotion]
-
-initcopy for extern record with no fields doing the wrong thing (09/17/14 -- hilde)
------------------------------------------------------------------------------------
-[Error matching program output for extern/ferguson/crazyRecord (compopts: 1)]
-
-incorrect output -- expected? (04/03/10)
-----------------------------------------
-[Error matching program output for arrays/deitz/parallelism/stream/test_stream_is_parallel]
-[Error matching program output for arrays/deitz/parallelism/stream/test_whole_array_stream_is_parallel]
-
-different amount of string data leaked without optimization (2014/06/13)
-(may be resolved by strings-as-records)
------------------------------------------------------------
-[Error matching program output for arrays/deitz/part7/test_descriptor_frees]
-[Error matching program output for memory/figueroa/LeakedMemory2]
-[Error matching program output for memory/figueroa/LeakedMemoryArrayOfClasses]
-[Error matching program output for memory/sungeun/refCount/arraysAndDomains]
-[Error matching program output for memory/sungeun/refCount/arrays]
-[Error matching program output for memory/vass/memleak-array-of-records-1]
-
-??? (wrong output)
-------------------
-[Error matching program output for classes/figueroa/RecordConstructor2]
-
-??? (wrong output)
-------------------
-This started failing on 5/9/14, after it was un-futurized by r23360.  It
-passes without "--baseline --inline".  Brad thinks (in a chapel_dev
-email on 5/9/14) that it could be modified to fail even without giving
---baseline.
-------------------------------------------------------------------------
-[Error matching program output for extern/bradc/structs/externFloat4calls.someFields (compopts: 1)]
-
-segv due to turning on inlining (12/7/12)
------------------------------------------
-sungeun: I have confirmed that almost all of these are due to running
-out of stack space (lulesh timed out).  Assuming they are *not*
-intermittent or at least less so than the others with inilining, I
-think we would prefer these errors.
-
-[Error matching program output for parallel/cobegin/gbt/cobegin-stacksize]
-
-glibc: double free or corruption (09/28/13)
-(some of these and more are also in TRIAGE as they seem to flit in and out)
----------------------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/hpcc/hpl]
-[Error matching program output for studies/glob/test_glob (compopts: 1)]
-[Error matching program output for studies/hpcc/FFT/marybeth/fft-test-even]
-[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc-noreindex]
-[Error matching program output for studies/hpcc/HPL/bradc/hpl-blc]
-[Error matching program output for studies/hpcc/HPL/vass/hpl]
-
-Nondeterministic stacksize issue
---------------------------------
-The program fails to run to completion due to memory corruption, but the error
-just looks like an output mismatch because the output comparison script fails
-to find a valid output file.
---------------------------------
-[Error matching program output for studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)](3/9/14)
-
-Tests suppressions that now succeed due to turning on inlining (12/7/12)
-------------------------------------------------------------------------
-[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc1_report]
-[Error: did not find expected suppression trivial/mjoyner/inlinefunc/inlfunc2_report]
+****************************************************************************
+*                          Distribution testing                            *
+****************************************************************************
 
 
-================================
-block distribution regressions
-(Reviewed for accuracy 09/15/14)
-================================
-
-*** occasional timeouts due to qthreads oversubscription ***
-
-
-================================
-cyclic distribution regressions
-(Reviewed for accuracy 09/15/14)
-================================
-
-communication counts changed due to r23004, gbt (03/30/14)
-----------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc]
-
-communication counts changed due to Vass' task functions commit (05/30/13)
----------------------------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assign]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduce]
-
-regular timeouts due to oversubscription under qthreads (08/26/14)
-------------------------------------------------------------------
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
-[Error: Timed out executing program distributions/robust/arithmetic/kernels/jacobi]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Norm]
-[Error: Timed out executing program distributions/robust/arithmetic/modules/test_module_Sort]
-[Error: Timed out executing program distributions/robust/arithmetic/slicing/test_array_slicing3]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
+===================
+dist-block
+Inherits 'gasnet*'
+Reviewed 2015-03-16
+===================
 
 
-===================================
-replicated distribution regressions
-(Reviewed for accuracy 09/15/14)
-===================================
-
-SIGSEGV at execution time (started 7/24/14)
--------------------------------------------
-NightlyDists/day4-Thu-linux64.gnu.gasnet.fifo.flat-distreplicated.log:
-  [Error matching program output for distributions/robust/arithmetic/kernels/hpl (compopts: 1)]
-
-See chapel_dev email thread starting 2/12/14 12:42:46 CST (David Iten) with
-subject "Re: FW: Cron Dist replicated (linux64.gnu.gasnet.fifo.flat) 60/0/60".
-------------------------------------------------------------------------------
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_assignment]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_iteration1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_of_distributed_array1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_array_swap]
-[Error matching program output for distributions/robust/arithmetic/basics/test_class_of_distributed_array]
-[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_array1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_array2]
-[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_distributed_array1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_record1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_distributed_array_of_record2]
-[Error matching program output for distributions/robust/arithmetic/basics/test_domain_assignment]
-[Error matching program output for distributions/robust/arithmetic/basics/test_domain_iteration1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_infer_array_type]
-[Error matching program output for distributions/robust/arithmetic/basics/test_promotion1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_promotion2]
-[Error matching program output for distributions/robust/arithmetic/basics/test_promotion3]
-[Error matching program output for distributions/robust/arithmetic/basics/test_record_of_distributed_array]
-[Error matching program output for distributions/robust/arithmetic/basics/test_reduce1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_reshape]
-[Error matching program output for distributions/robust/arithmetic/basics/test_scan1]
-[Error matching program output for distributions/robust/arithmetic/basics/test_strided_serial_iteration]
-[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_default]
-[Error matching program output for distributions/robust/arithmetic/basics/test_zipper_range]
-[Error matching program output for distributions/robust/arithmetic/collapsing/test_array_rank_change1]
-[Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change1]
-[Error matching program output for distributions/robust/arithmetic/collapsing/test_domain_rank_change_OOB]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Norm]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Random]
-[Error matching program output for distributions/robust/arithmetic/modules/test_module_Sort]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record]
-[Error matching program output for distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/alloc_all]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assignAlias]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/assignSlice]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceAlias]
-[Error matching program output for distributions/robust/arithmetic/performance/multilocale/reduceSlice]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias1]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias2]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_array_alias3]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex1 (compopts: 1)]
-[Error matching program output for distributions/robust/arithmetic/reindexing/test_strided_reindex2 (compopts: 1)]
-[Error matching program output for distributions/robust/arithmetic/resizing/test_domain_resize1]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing1]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing2]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_array_slicing3]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_domain_slicing1]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_strided_slice1]
-[Error matching program output for distributions/robust/arithmetic/slicing/test_strided_slice2]
-[Error matching program output for distributions/robust/arithmetic/stress/test_many_domains]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_domain_plus_minus_index]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_domain]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_expand]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_exterior]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_interior]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_numIndices]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_dot_translate]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_tuple_to_array]
-[Error matching program output for distributions/robust/arithmetic/trivial/test_writeln]
-
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_domains]
-[Error: Timed out executing program distributions/robust/arithmetic/stress/test_many_array]
+===================
+dist-cyclic
+Inherits 'gasnet*'
+Reviewed 2015-03-16
+===================
 
 
-============================================
-CHPL_COMM=ugni, CHPL_TASKS=muxed regressions
-============================================
+===================
+dist-replicated
+Inherits 'gasnet*'
+Reviewed 2015-03-16
+===================
 
-Incorrect output (should be fixed by r21213)
-  parallel/taskPar/sungeun/barrier/basic
+=== sporadic failures below ===
 
-Comm diags mismatch
-  multilocale/deitz/needMultiLocales/dist/test_private_space
-  multilocale/deitz/needMultiLocales/raCommCheck
-  multilocale/deitz/needMultiLocales/streamCommCheck
-  parallel/taskPar/sungeun/barrier/commDiags
-
-Output mismatch
-  multilocale/numLocales/bradc/testVFlag
-  multilocale/numLocales/bradc/testVerboseFlag
-
-Network atomics don't support memory_order
-  chameneosredux.chpl
+sporadic segfault/error in sendAll (2014-03-02, looks like a one-off)
+---------------------------------------------------------------------
+[Error matching program output for distributions/robust/arithmetic/modules/test_module_Search]

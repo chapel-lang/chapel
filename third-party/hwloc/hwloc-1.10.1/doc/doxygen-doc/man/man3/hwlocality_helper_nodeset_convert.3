@@ -1,0 +1,51 @@
+.TH "Converting between CPU sets and node sets" 3 "Mon Jan 26 2015" "Version 1.10.1" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Converting between CPU sets and node sets \- 
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "static void \fBhwloc_cpuset_to_nodeset\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP _cpuset, \fBhwloc_nodeset_t\fP nodeset)"
+.br
+.ti -1c
+.RI "static void \fBhwloc_cpuset_to_nodeset_strict\fP (struct hwloc_topology *topology, \fBhwloc_const_cpuset_t\fP _cpuset, \fBhwloc_nodeset_t\fP nodeset)"
+.br
+.ti -1c
+.RI "static void \fBhwloc_cpuset_from_nodeset\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP _cpuset, \fBhwloc_const_nodeset_t\fP nodeset)"
+.br
+.ti -1c
+.RI "static void \fBhwloc_cpuset_from_nodeset_strict\fP (struct hwloc_topology *topology, \fBhwloc_cpuset_t\fP _cpuset, \fBhwloc_const_nodeset_t\fP nodeset)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+There are two semantics for converting cpusets to nodesets depending on how non-NUMA machines are handled\&.
+.PP
+When manipulating nodesets for memory binding, non-NUMA machines should be considered as having a single NUMA node\&. The standard conversion routines below should be used so that marking the first bit of the nodeset means that memory should be bound to a non-NUMA whole machine\&.
+.PP
+When manipulating nodesets as an actual list of NUMA nodes without any need to handle memory binding on non-NUMA machines, the strict conversion routines may be used instead\&. 
+.SH "Function Documentation"
+.PP 
+.SS "static void hwloc_cpuset_from_nodeset (\fBhwloc_topology_t\fPtopology, \fBhwloc_cpuset_t\fP_cpuset, \fBhwloc_const_nodeset_t\fPnodeset)\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Convert a NUMA node set into a CPU set and handle non-NUMA cases\&. If the topology contains no NUMA nodes, the machine is considered as a single memory node, and the following behavior is used: If \fCnodeset\fP is empty, \fCcpuset\fP will be emptied as well\&. Otherwise \fCcpuset\fP will be entirely filled\&. This is useful for manipulating memory binding sets\&. 
+.SS "static void hwloc_cpuset_from_nodeset_strict (struct hwloc_topology *topology, \fBhwloc_cpuset_t\fP_cpuset, \fBhwloc_const_nodeset_t\fPnodeset)\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Convert a NUMA node set into a CPU set without handling non-NUMA cases\&. This is the strict variant of \fBhwloc_cpuset_from_nodeset\fP\&. It does not fix non-NUMA cases\&. If the topology contains some NUMA nodes, behave exactly the same\&. However, if the topology contains no NUMA nodes, return an empty cpuset\&. 
+.SS "static void hwloc_cpuset_to_nodeset (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_cpuset_t\fP_cpuset, \fBhwloc_nodeset_t\fPnodeset)\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Convert a CPU set into a NUMA node set and handle non-NUMA cases\&. If some NUMA nodes have no CPUs at all, this function never sets their indexes in the output node set, even if a full CPU set is given in input\&.
+.PP
+If the topology contains no NUMA nodes, the machine is considered as a single memory node, and the following behavior is used: If \fCcpuset\fP is empty, \fCnodeset\fP will be emptied as well\&. Otherwise \fCnodeset\fP will be entirely filled\&. 
+.SS "static void hwloc_cpuset_to_nodeset_strict (struct hwloc_topology *topology, \fBhwloc_const_cpuset_t\fP_cpuset, \fBhwloc_nodeset_t\fPnodeset)\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Convert a CPU set into a NUMA node set without handling non-NUMA cases\&. This is the strict variant of \fBhwloc_cpuset_to_nodeset\fP\&. It does not fix non-NUMA cases\&. If the topology contains some NUMA nodes, behave exactly the same\&. However, if the topology contains no NUMA nodes, return an empty nodeset\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

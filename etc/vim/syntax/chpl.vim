@@ -235,7 +235,6 @@ endif
 """ End C syntax thievery
 
 " FIXME:
-"  - 'type select'
 "  - Do something with 'high, low, stride'?
 "  - vars are sometimes labels when they start on a new line
 "  - Better handing for ?

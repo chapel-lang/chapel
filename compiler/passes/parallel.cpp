@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,17 +21,18 @@
 // Transformations for begin, cobegin, and on statements
 //
 
-#include "astutil.h"
-#include "expr.h"
-#include "optimizations.h"
 #include "passes.h"
-#include "../resolution/resolution.h"
-#include "stmt.h"
-#include "symbol.h"
-#include "stringutil.h"
+
+#include "astutil.h"
 #include "driver.h"
+#include "expr.h"
 #include "files.h"
+#include "optimizations.h"
+#include "resolution.h"
 #include "stlUtil.h"
+#include "stmt.h"
+#include "stringutil.h"
+#include "symbol.h"
 
 // Notes on
 //   makeHeapAllocations()    //invoked from parallel()
@@ -206,6 +207,8 @@ static Symbol* insertAutoCopyDestroyForTaskArg
 
     if (isRefCountedType(baseType))
     {
+      // TODO: Can we consolidate these two clauses?
+      // Does arg->typeInfo() != baseType mean that arg is passed by ref?
       if (arg->typeInfo() != baseType)
       {
         // For internally reference-counted types, this punches through
@@ -216,7 +219,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
                                          new CallExpr(PRIM_DEREF, var)));
         // The result of the autoCopy call is dropped on the floor.
         // It is only called to increment the ref count.
-        fcall->insertBefore(new CallExpr(autoCopyFn, derefTmp));
+        CallExpr* autoCopyCall = new CallExpr(autoCopyFn, derefTmp);
+        fcall->insertBefore(autoCopyCall);
+        insertReferenceTemps(autoCopyCall);
         // But the original var is passed through to the field assignment.
       }
       else
@@ -224,8 +229,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         VarSymbol* valTmp = newTemp(baseType);
         valTmp->addFlag(FLAG_NECESSARY_AUTO_COPY);
         fcall->insertBefore(new DefExpr(valTmp));
-        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp,
-                                         new CallExpr(autoCopyFn, var)));
+        CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
+        fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
+        insertReferenceTemps(autoCopyCall);
         // If the arg is not passed by reference, the result of the autoCopy is
         // passed to the field assignment.
         var = valTmp;
@@ -244,7 +250,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
             new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF,  formal)));
           formal = derefTmp;
         }
-        fn->insertBeforeDownEndCount(new CallExpr(autoDestroyFn, formal));
+        CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn, formal);
+        fn->insertBeforeDownEndCount(autoDestroyCall);
+        insertReferenceTemps(autoDestroyCall);
       }
     }
     else if (isRecord(baseType))
@@ -261,6 +269,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         fcall->insertBefore(new DefExpr(valTmp));
         CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
         fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
+        insertReferenceTemps(autoCopyCall);
         var = valTmp;
 
         if (firstCall)
@@ -270,6 +279,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
           Symbol* formal = actual_to_formal(arg);
           CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn,formal);
           fn->insertBeforeDownEndCount(autoDestroyCall);
+          insertReferenceTemps(autoDestroyCall);
         }
       }
     }
@@ -565,7 +575,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
   forv_Vec(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (def->parentSymbol) {
-        if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+        if (isLcnSymbol(def->sym)) {
           symSet.set_add(def->sym);
         }
       }
@@ -581,7 +591,11 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
     // find out if a variable that was put on the heap could be passed in as an
     // argument to a function created from a begin, cobegin, or coforall statement;
     // if not, free the heap memory just allocated at the end of the block
-    if (defMap.get(var)->n == 1) {
+    Vec<SymExpr*>* defs = defMap.get(var);
+    if (defs == NULL) {
+      INT_FATAL(var, "Symbol is never defined.");
+    }
+    if (defs->n == 1) {
       bool freeVar = true;
       Vec<Symbol*> varsToTrack;
       varsToTrack.add(var);
@@ -608,7 +622,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
       }
       if (freeVar) {
-        CallExpr* move = toCallExpr(defMap.get(var)->v[0]->parentExpr);
+        CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
         INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
         Expr* innermostBlock = NULL;
         // find the innermost block that contains all uses of var
@@ -664,6 +678,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
       }
     }
+    // else ... 
+    // TODO: After the new constructor story is implemented, every declaration
+    // should have exactly one definition associated with it, so the
+    // (defs-> == 1) test above can be replaced by an assertion.
   }
 }
 
@@ -1224,7 +1242,7 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
   if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
-    wts->addFlag(FLAG_WIDE);
+    wts->addFlag(FLAG_WIDE_REF);
   else
     wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));

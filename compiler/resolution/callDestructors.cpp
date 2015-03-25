@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -129,8 +129,9 @@ static void cullExplicitAutoDestroyFlags()
     {
       if (VarSymbol* var = toVarSymbol(def->sym))
       {
-        // Examine only those bearing the explicit autodestroy flag.
-        if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
+        // Examine only those bearing an autodestroy flag.
+        if (! var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+            ! var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
           continue;
 
         // Look for the specific breaking case and amend that.
@@ -139,48 +140,15 @@ static void cullExplicitAutoDestroyFlags()
           CallExpr* call = toCallExpr(se->parentExpr);
           if (call->isPrimitive(PRIM_MOVE) &&
               toSymExpr(call->get(1))->var == retVar)
+          {
+            var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
             var->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+          }
         }
       }
     }
 
     freeDefUseMaps(defMap, useMap);
-  }
-}
-
-//
-// This is a helper function that determines, when we're creating a
-// new function call to 'fn' with actual 'arg', whether the argument
-// needs to be replaced by a reference to the argument.  If it does,
-// it creates a new reference temp and returns it; otherwise it
-// returns the original arg.  
-//
-// It also returns, via the 'refTmpAssign' argument, an assignment
-// that defines the ref tmp in question.  If this is NULL, it's an
-// indication that no ref temp was used; if it's non-NULL, the caller
-// must insert the assignment returned through this argument, as well
-// as a DefExpr for the ref tmp itself, before the call occurs.
-//
-static VarSymbol* createRefArgIfNeeded(FnSymbol*  fn, 
-                                       VarSymbol* arg,
-                                       CallExpr** refTmpAssign) {
-  DefExpr* formalDef = toDefExpr(fn->formals.only());
-  INT_ASSERT(formalDef);
-  Type* formalType = formalDef->sym->type;
-  VarSymbol* refTmp = NULL;
-  //
-  // Does the formal expect a ref, yet the actual is not one?
-  //
-  if (formalType->symbol->hasFlag(FLAG_REF) && 
-      formalType->getValType() == arg->type) {
-    SET_LINENO(arg);
-    refTmp = newTemp("_ref_tmp_", formalType);
-    *refTmpAssign = new CallExpr(PRIM_MOVE, refTmp, 
-                                 new CallExpr(PRIM_ADDR_OF, arg));
-    return refTmp;
-  } else {
-    *refTmpAssign = NULL;
-    return arg;
   }
 }
 
@@ -270,7 +238,7 @@ static bool stmtDefinesAnAutoDestroyedVariable(Expr* stmt) {
         // flag, presumably before the type was known, that should not in
         // fact be auto-destroyed.  Don't gum things up by collecting them.
         if (autoDestroyMap.get(var->type) != 0) {
-          if (var->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+          if (var->isType() == false) {
             retval = true;
           }
         }
@@ -415,33 +383,11 @@ static void updateBlockExit(Expr*            stmt,
                             Vec<VarSymbol*>& vars) {
   forv_Vec(VarSymbol, var, vars) {
     if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-      CallExpr* refTmpAssign = NULL;
-
       SET_LINENO(var);
-      
-      var = createRefArgIfNeeded(autoDestroyFn, var, &refTmpAssign);
-
       stmt->insertAfter(new CallExpr(autoDestroyFn, var));
-      
-      if (refTmpAssign) {
-        stmt->insertAfter(refTmpAssign);
-        stmt->insertAfter(new DefExpr(var));
-      }
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 //
@@ -460,16 +406,203 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> retToArgCache;
 // replacing it with (newSym), and the function that was called in the first
 // use of oldSym in the callee, to replace oldSym with newSym without breaking
 // the AST.
-static void
+inline static void
 replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
                   FnSymbol* useFn) {
-  CallExpr* refTmpAssign = NULL;
-  oldSym = createRefArgIfNeeded(useFn, oldSym, &refTmpAssign);
   focalPt->insertAfter(new CallExpr(PRIM_MOVE, newSym,
                                     new CallExpr(useFn, oldSym)));
-  if (refTmpAssign) {
-    focalPt->insertAfter(refTmpAssign);
-    focalPt->insertAfter(new DefExpr(oldSym));
+}
+
+
+// Clone fn, add a ref arg to the end of the argument list, remove the return
+// primitive and change the return type of the function to void.  
+// In the body of the clone, replace updates to the return value variable with
+// calls to the useFn in the calling context.
+//
+// This effectively replaces return-by-value from the given function into
+// return-by-reference through the new argument.  It allows the result to be
+// written directly into sapce allocated in the caller, thus avoiding a
+// verbatim copy.
+// 
+static FnSymbol*
+createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
+{
+  SET_LINENO(fn);
+  FnSymbol* newFn = fn->copy();
+  ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg", useFn->retType->refType);
+  newFn->insertFormalAtTail(arg);
+  VarSymbol* ret = toVarSymbol(newFn->getReturnSymbol());
+  INT_ASSERT(ret);
+  Expr* returnPrim = newFn->body->body.tail;
+  returnPrim->replace(new CallExpr(PRIM_RETURN, gVoid));
+  newFn->retType = dtVoid;
+  fn->defPoint->insertBefore(new DefExpr(newFn));
+
+  Vec<SymExpr*> symExprs;
+  collectSymExprs(newFn, symExprs);
+
+  // In the body of the function, replace references to the original
+  // ret symbol with copies of the return value reference.  A local
+  // deref temp is inserted if needed.  The result is fed through a
+  // call to the useFn -- effectively sucking the use function call
+  // inside the clone function.
+  forv_Vec(SymExpr, se, symExprs) {
+    if (se->var == ret) {
+      CallExpr* move = toCallExpr(se->parentExpr);
+      if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
+        SET_LINENO(move);
+        replacementHelper(move, ret, arg, useFn);
+      } else {
+        // Any other call or primitive.
+        FnSymbol* calledFn = move->isResolved();
+        CallExpr* parent = toCallExpr(move->parentExpr);
+        if (calledFn && !strcmp(calledFn->name, "=") &&
+            // Filter out case handled above.
+            (!parent || !parent->isPrimitive(PRIM_MOVE))) {
+          replacementHelper(move, ret, arg, useFn);
+        } else {
+          Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
+          se->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
+          se->var = tmp;
+        }
+      }
+    }
+  }
+  return newFn;
+}
+
+
+static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
+                                 Symbol* actual)
+{
+  // for each remaining use "se"
+  //   replace se with deref of the actual return value argument, unless parent is
+  //   accessing its address
+  forv_Vec(SymExpr, se, use) {
+    // Because we've already handled the first use
+    if (se != firstUse) {
+      CallExpr* parent = toCallExpr(se->parentExpr);
+      if (parent) {
+        SET_LINENO(parent);
+        if (parent->isPrimitive(PRIM_ADDR_OF)) {
+          parent->replace(new SymExpr(actual));
+        } else {
+          FnSymbol* parentFn = parent->isResolved();
+          if (!(parentFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                parentFn->hasFlag(FLAG_INIT_COPY_FN))) {
+            // Leave the auto copies/inits in, we'll need them for
+            // moving information back to us.
+
+            // Copy the information we currently have into the temp
+            se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->var, new CallExpr(PRIM_DEREF, actual)));
+          }
+        }
+      }
+    }
+  }            
+}
+
+
+// Create a copy of the called function, replacing
+// the return statement in that function with a copy of the call which uses
+// the result of the above call to that function.  Maybe a picture would
+// help.
+//   ('move' lhs (fn args ...))
+//   . . .
+//   ('move useLhs (useFn lhs))
+// gets converted to
+//   (newFn args ... useLhs)
+//   . . .
+//   <removed>
+// where a call to useFn replaces the return that used to be at the end of
+// newFn.  The use function is expected to be assignment, initCopy or
+// autoCopy.  All other cases are ignored.
+static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
+                                          Vec<SymExpr*>& use, FnSymbol* fn)
+{
+  SymExpr* firstUse = use.v[0];
+  // If this isn't a call expression, we've got problems.
+  if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
+    if (FnSymbol* useFn = useCall->isResolved()) {
+      if ((!strcmp(useFn->name, "=") && firstUse == useCall->get(2)) ||
+          useFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+          useFn->hasFlag(FLAG_INIT_COPY_FN)) {
+        Symbol* actual;
+        FnSymbol* newFn = NULL;
+
+        //
+        // check cache for new function
+        //
+        if (Vec<FnSymbol*>* vfn = retToArgCache.get(fn)) {
+          for (int i = 0; i < vfn->n; i++) {
+            if (vfn->v[i] == useFn) {
+              newFn = vfn->v[i+1];
+            }
+          }
+        }
+
+        if (!newFn) {
+          newFn = createClonedFnWithRetArg(fn, useFn);
+
+          //
+          // add new function to cache
+          //
+          Vec<FnSymbol*>* vfn = retToArgCache.get(fn);
+          if (!vfn)
+            vfn = new Vec<FnSymbol*>();
+          vfn->add(useFn);
+          vfn->add(newFn);
+          retToArgCache.put(fn, vfn);
+        }
+
+        SET_LINENO(call);
+        call->baseExpr->replace(new SymExpr(newFn));
+
+        CallExpr* useMove = toCallExpr(useCall->parentExpr);
+        if (useMove)
+        {
+          INT_ASSERT(useMove->isPrimitive(PRIM_MOVE));
+
+          Symbol* useLhs = toSymExpr(useMove->get(1))->var;
+          if (!useLhs->type->symbol->hasFlag(FLAG_REF))
+          {
+            useLhs = newTemp("ret_to_arg_ref_tmp_", useFn->retType->refType);
+            move->insertBefore(new DefExpr(useLhs));
+            move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, new CallExpr(PRIM_ADDR_OF, useMove->get(1)->remove())));
+          }
+
+          move->replace(call->remove());
+          useMove->remove();
+          call->insertAtTail(useLhs);
+
+          actual = useLhs;
+        }
+        else
+        {
+          // We assume the useFn is an assignment.
+          if (strcmp(useFn->name, "="))
+          {
+            INT_FATAL(useFn, "should be an assignment function");
+            return;
+          }
+
+          // We expect that the used symbol is the second actual passed to
+          // the "=".  That is, it is an assignment from the result of the
+          // call to fn to useLhs.
+          INT_ASSERT(firstUse == useCall->get(2));
+
+          Symbol* useLhs = toSymExpr(useCall->get(1))->var;
+          move->replace(call->remove());
+          call->insertAtTail(useLhs);
+
+          actual = useLhs;
+        }
+        if (actual) {
+          replaceRemainingUses(use, firstUse, actual);
+        }
+      }
+    }
   }
 }
 
@@ -502,180 +635,9 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
 
   // If such a use is found, create a copy of the called function, replacing
   // the return statement in that function with a copy of the call which uses
-  // the result of the above call to that function.  Maybe a picture would
-  // help.
-  //   ('move' lhs (fn args ...))
-  //   . . .
-  //   ('move useLhs (useFn lhs))
-  // gets converted to
-  //   (newFn args ... useLhs)
-  //   . . .
-  //   <removed>
-  // where a call to useFn replaces the return that used to be at the end of
-  // newFn.  The use function is expected to be assignment, initCopy or
-  // autoCopy.  All other cases are ignored.
+  // the result of the above call to that function.
   if (use.n > 0) {
-    SymExpr* firstUse = use.v[0];
-    // If this isn't a call expression, we've got problems.
-    if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
-      if (FnSymbol* useFn = useCall->isResolved()) {
-        if ((!strcmp(useFn->name, "=") && firstUse == useCall->get(2)) ||
-            useFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-            useFn->hasFlag(FLAG_INIT_COPY_FN)) {
-          Symbol* actual;
-          FnSymbol* newFn = NULL;
-
-          //
-          // check cache for new function
-          //
-          if (Vec<FnSymbol*>* vfn = retToArgCache.get(fn)) {
-            for (int i = 0; i < vfn->n; i++) {
-              if (vfn->v[i] == useFn) {
-                newFn = vfn->v[i+1];
-              }
-            }
-          }
-
-          if (!newFn) {
-            SET_LINENO(fn);
-            newFn = fn->copy();
-            ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg", useFn->retType->refType);
-            newFn->insertFormalAtTail(arg);
-            VarSymbol* ret = toVarSymbol(newFn->getReturnSymbol());
-            INT_ASSERT(ret);
-            Expr* returnPrim = newFn->body->body.tail;
-            returnPrim->replace(new CallExpr(PRIM_RETURN, gVoid));
-            newFn->retType = dtVoid;
-            fn->defPoint->insertBefore(new DefExpr(newFn));
-
-            Vec<SymExpr*> symExprs;
-            collectSymExprs(newFn, symExprs);
-
-            // In the body of the function, replace references to the original
-            // ret symbol with copies of the return value reference.  A local
-            // deref temp is inserted if needed.  The result is fed through a
-            // call to the useFn -- effectively sucking the use function call
-            // inside the clone function.
-            forv_Vec(SymExpr, se, symExprs) {
-              if (se->var == ret) {
-                CallExpr* move = toCallExpr(se->parentExpr);
-                if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
-                  SET_LINENO(move);
-                  replacementHelper(move, ret, arg, useFn);
-                } else {
-                  // Any other call or primitive.
-                  FnSymbol* calledFn = move->isResolved();
-                  CallExpr* parent = toCallExpr(move->parentExpr);
-                  if (calledFn && !strcmp(calledFn->name, "=") &&
-                      // Filter out case handled above.
-                      (!parent || !parent->isPrimitive(PRIM_MOVE))) {
-                    replacementHelper(move, ret, arg, useFn);
-                  } else {
-                    Symbol* tmp = newTemp("ret_to_arg_tmp_", useFn->retType);
-                    se->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                    se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, arg)));
-                    se->var = tmp;
-                  }
-                }
-              }
-            }
-
-            //
-            // add new function to cache
-            //
-            Vec<FnSymbol*>* vfn = retToArgCache.get(fn);
-            if (!vfn)
-              vfn = new Vec<FnSymbol*>();
-            vfn->add(useFn);
-            vfn->add(newFn);
-            retToArgCache.put(fn, vfn);
-          }
-
-          SET_LINENO(call);
-          call->baseExpr->replace(new SymExpr(newFn));
-
-          CallExpr* useMove = toCallExpr(useCall->parentExpr);
-          if (useMove)
-          {
-            INT_ASSERT(useMove->isPrimitive(PRIM_MOVE));
-
-            Symbol* useLhs = toSymExpr(useMove->get(1))->var;
-            if (!useLhs->type->symbol->hasFlag(FLAG_REF)) {
-              // I think this code is not needed because insertReferenceTemps()
-              // will add it.
-              useLhs = newTemp("ret_to_arg_ref_tmp_", useFn->retType->refType);
-              move->insertBefore(new DefExpr(useLhs));
-              move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, new CallExpr(PRIM_ADDR_OF, useMove->get(1)->remove())));
-            }
-            // lhs->defPoint->remove();
-            move->replace(call->remove());
-            useMove->remove();
-            call->insertAtTail(useLhs);
-
-            actual = useLhs;
-          }
-          else
-          {
-            // We assume the useFn is an assignment.
-            if (strcmp(useFn->name, "="))
-            {
-              INT_FATAL(useFn, "should be an assignment function");
-              return;
-            }
-
-            // We expect that the used symbol is the second actual passed to
-            // the "=".  That is, it is an assignment from the result of the
-            // call to fn to useLhs.
-            INT_ASSERT(firstUse == useCall->get(2));
-
-            Symbol* useLhs = toSymExpr(useCall->get(1))->var;
-            move->replace(call->remove());
-            call->insertAtTail(useLhs);
-
-            actual = useLhs;
-          }
-          if (actual) {
-            // for each remaining use "se"
-            //   replace se with deref of retArg, unless parent is accessing its
-            //   address
-            forv_Vec(SymExpr, se, use) {
-              // Because we've already handled the first use
-              if (se != firstUse) {
-                CallExpr* parent = toCallExpr(se->parentExpr);
-                if (parent) {
-                  SET_LINENO(parent);
-                  if (parent->isPrimitive(PRIM_ADDR_OF)) {
-                    parent->replace(new SymExpr(actual));
-                  } else {
-                    FnSymbol* parentFn = parent->isResolved();
-                    if (!(parentFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                          parentFn->hasFlag(FLAG_INIT_COPY_FN))) {
-                      // Leave the auto copies/inits in, we'll need them for
-                      // moving information back to us.
-
-                      // Copy the information we currently have into the temp
-                      se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->var, new CallExpr(PRIM_DEREF, actual)));
-                    }
-                  }
-                }
-              }
-            }
-          }
-          return;
-        }
-      }
-    }
-    // When this was USR_WARN, release/examples/hello.chpl generates 10 warnings
-    // if this was uncommented.  Really, it should be an internal error, though.
-    //INT_FATAL(move, "possible premature free");
-    
-  } else {
-    if (useMap.get(lhs) && useMap.get(lhs)->n > 0) {
-      // When this was USR_WARN, release/examples/hello.chpl generates 10
-      // warnings if this was uncommented.  Really, it should be an internal
-      // error, though.
-      //INT_FATAL(move, "possible premature free (use not found)");
-    }
+    replaceUsesOfFnResultInCaller(move, call, use, fn);
   }
 }
 
@@ -798,6 +760,10 @@ fixupDestructors() {
 
 
 static void insertGlobalAutoDestroyCalls() {
+  // --ipe does not build chpl_gen_main
+  if (chpl_gen_main == NULL)
+    return;
+
   const char* name = "chpl__autoDestroyGlobals";
   SET_LINENO(baseModule);
   FnSymbol* fn = new FnSymbol(name);
@@ -808,16 +774,10 @@ static void insertGlobalAutoDestroyCalls() {
     if (isModuleSymbol(def->parentSymbol))
       if (def->parentSymbol != rootModule)
         if (VarSymbol* var = toVarSymbol(def->sym))
-          if (!var->isParameter() && !var->hasFlag(FLAG_TYPE_VARIABLE))
+          if (!var->isParameter() && !var->isType())
             if (!var->hasFlag(FLAG_NO_AUTO_DESTROY))
               if (FnSymbol* autoDestroy = autoDestroyMap.get(var->type)) {
                 SET_LINENO(var);
-                CallExpr* refTmpAssign = NULL;
-                var = createRefArgIfNeeded(autoDestroy, var, &refTmpAssign);
-                if (refTmpAssign) {
-                  fn->insertAtTail(new DefExpr(var));
-                  fn->insertAtTail(refTmpAssign);
-                }
                 fn->insertAtTail(new CallExpr(autoDestroy, var));
               }
   }
@@ -832,12 +792,6 @@ static void insertDestructorCalls()
       Type* type = call->get(1)->typeInfo();
       if (!type->destructor) {
         call->remove();
-      } else if (call->get(1)->typeInfo()->refType == type->destructor->_this->type) {
-        SET_LINENO(call);
-        VarSymbol* tmp = newTemp("_destructor_tmp_", type->destructor->_this->type);
-        call->insertBefore(new DefExpr(tmp));
-        call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, call->get(1)->remove())));
-        call->replace(new CallExpr(type->destructor, tmp));
       } else {
         SET_LINENO(call);
         call->replace(new CallExpr(type->destructor, call->get(1)->remove()));
@@ -866,6 +820,21 @@ static void insertAutoCopyTemps()
           }
         }
       }
+
+      // 2015/01/21 hilde: Workaround for incomplete implementation of
+      // SymExpr::remove() in the context of a ForLoop (as its mIndex field).
+      // This operation is required by the early operation of
+      // deadBlockElimination().
+
+      // In that case, the DefExpr for the symbol should no longer exist, so we
+      // would never reach here.  Given that it is never defined and we *do*
+      // reach here, there is no harm in not creating the autoCopy temp.  This
+      // code will probably all be deprecated when the new AMM story comes
+      // online anyway, so it would be a waste of time trying to "do things
+      // right" in this routine.
+      if (! move)
+        continue;
+
       INT_ASSERT(move);
       SET_LINENO(move);
       Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);
@@ -925,24 +894,31 @@ static void insertYieldTemps()
 }
 
 
+//
+// Insert reference temps for function arguments that expect them.
+//
+void insertReferenceTemps(CallExpr* call)
+{
+  for_formals_actuals(formal, actual, call) {
+    if (formal->type == actual->typeInfo()->refType) {
+      SET_LINENO(call);
+      Expr* stmt = call->getStmtExpr();
+      VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
+      tmp->addFlag(FLAG_REF_TEMP);
+      stmt->insertBefore(new DefExpr(tmp));
+      actual->replace(new SymExpr(tmp));
+      stmt->insertBefore(
+        new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+    }
+  }
+}
+
+
 static void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if ((call->parentSymbol && call->isResolved()) ||
         call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      //
-      // Insert reference temps for function arguments that expect them.
-      //
-      for_formals_actuals(formal, actual, call) {
-        if (formal->type == actual->typeInfo()->refType) {
-          SET_LINENO(call);
-          VarSymbol* tmp = newTemp("_ref_tmp_", formal->type);
-          tmp->addFlag(FLAG_REF_TEMP);
-          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-          actual->replace(new SymExpr(tmp));
-          call->getStmtExpr()->insertBefore(
-              new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
-        }
-      }
+      insertReferenceTemps(call);
     }
   }
 }

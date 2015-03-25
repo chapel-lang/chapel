@@ -257,19 +257,13 @@ Forall intents affect those tasks in the same way that task intents
 affect the behavior of a task construct such as a \chpl{coforall} loop.
 \end{rationale}
 
-\begin{future}
-We would like to introduce "reduction" intents
-that will let us implement reductions using forall intents.
-\end{future}
-
-\begin{future}
-As with task intents, we may want to disallow some intents,
-for example \chpl{inout} and \chpl{out}.
-\end{future}
-
 \begin{craychapel}
-At present, forall intents are not implemented.
-They will be available in an upcoming release.
+An initial implementation of "reduce" intents is also available,
+which permits users to reduce values across iterations of a forall loop.
+They are described in:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+\chpl{doc/technotes/README.reduceIntents}
 \end{craychapel}
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,12 +31,14 @@
 
 #include "sys_basic.h"
 
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
 #include "chplrt.h"
 #endif
 
 #include "qio.h"
 #include "qbuffer.h"
+
+#include "error.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -51,7 +53,6 @@
 #include <fcntl.h>
 #include <sys/select.h>
 //#include <sys/fcntl.h> no sys/fcntl.h on AIX, fcntl.h should cover it.
-#include <sys/param.h> // MAXPATHLEN
 #include <sys/stat.h>
 
 #include <assert.h>
@@ -521,7 +522,7 @@ qio_hint_t choose_io_method(qio_file_t* file, qio_hint_t hints, qio_hint_t defau
       method = QIO_METHOD_PREADPWRITE;
 
     // Read and write
-    if((fdflags & QIO_FDFLAG_WRITEABLE)  && 
+    if((fdflags & QIO_FDFLAG_READABLE)   &&
         (fdflags & QIO_FDFLAG_WRITEABLE) &&
         file->fsfns->preadv && file->fsfns->pwritev)
       method = QIO_METHOD_PREADPWRITE;
@@ -682,6 +683,7 @@ qioerr qio_mmap_initial(qio_file_t* file)
 
     if( file->fdflags & QIO_FDFLAG_WRITEABLE ) prot |= PROT_WRITE;
 
+    // This check is (only) important for 32-bit systems.
     if( len > SSIZE_MAX ) return QIO_ENOMEM;
 
     // mmap the initial length of the file.
@@ -725,6 +727,8 @@ qioerr qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohint
     fd = fileno(fp);
     if( fd == -1 ) return qio_mkerror_errno();
   }
+
+  if( fd < 0 ) QIO_RETURN_CONSTANT_ERROR(EINVAL, "invalid file descriptor");
 
   err = qio_int_to_err(sys_fstat(fd, &stats));
   if( err ) return err;
@@ -1057,113 +1061,6 @@ void _qio_file_destroy(qio_file_t* f)
   qio_free(f);
 }
 
-/* Creates a directory with the given name and settings if possible,
-   returning a qioerr if not. If parents != 0, then the callee wishes
-   to create all interim directories necessary as well. */
-qioerr qio_mkdir(const char* name, int mode, int parents) {
-  qioerr err = 0;
-  int exitStatus;
-  if (!parents) {
-    // Simple, easy.  Callee didn't specify recursive creation, so
-    // if something fails, they get to deal with it.
-    exitStatus = mkdir(name, mode);
-  } else {
-    int len = strlen(name);
-    char tmp[len+1];
-    int index;
-    struct stat statRes;
-    // We don't actually care about the full result of the stat calls, merely
-    // the existance and state of the directory being accessed.
-    while (name[len-1] == '/') {
-      // In case the caller, in their infinite wisdom, decides to send
-      // a directory name of the form "foo///////".
-      len--;
-      // Note: not being able to mix declarations and code means that
-      // tmp must be created larger than might be necessary.
-    }
-    // Copy each step of the directory path into a temporary string,
-    // creating the parent directories as needed. In the case of name
-    // being "foo/bar/baz", this means that tmp will be "foo/" and then
-    // "foo/bar" for each inner call of mkdir.
-    for (index = 0; name[index] != '\0' && index < len; index++) {
-      tmp[index] = name[index];
-      if(tmp[index] == '/') {
-        tmp[index+1] = '\0';
-        exitStatus = stat(tmp, &statRes);
-        if (exitStatus == -1 && errno == ENOENT) {
-          // This error means we could not find the parent directory, so need
-          // to create it.
-          exitStatus = mkdir(tmp, mode);
-        }
-        if (exitStatus) {
-          // We encountered an error making a parent directory or during the
-          // stat call to determine if we need to make a directory.  We will
-          // encounter errors for every step after this, so return this one
-          // as it will be more informative.
-          err = qio_mkerror_errno();
-          return err;
-        }
-      }
-    }
-    tmp[len] = '\0';
-    exitStatus = mkdir(tmp, mode);
-  }
-  if (exitStatus) {
-    err = qio_mkerror_errno();
-  }
-  return err;
-}
-
-
-qioerr qio_chdir(const char* name) {
-  qioerr err = 0;
-  int exitStatus = chdir(name);
-  if (exitStatus)
-    err = qio_mkerror_errno();
-  return err;
-}
-
-qioerr qio_chown(const char* name, int uid, int gid) {
-  qioerr err = 0;
-  int exitStatus = chown(name, uid, gid);
-  if (exitStatus)
-    err = qio_mkerror_errno();
-  return err;
-}
-
-qioerr qio_cwd(const char** working_dir) {
-  qioerr err = 0;
-  size_t bufsize = MAXPATHLEN*sizeof(char);
-  char* bufptr;
-  char* pathbuf = (char *)qio_malloc(bufsize);
-  bufptr = getcwd(pathbuf, bufsize);
-  if (bufptr == NULL)
-    err = qio_mkerror_errno();
-  else
-    *working_dir = pathbuf;
-  return err;
-}
-
-/* Renames the file from oldname to newname, returning a qioerr if one
-   occurred. */
-qioerr qio_file_rename(const char* oldname, const char* newname) {
-  qioerr err = 0;
-  int exitStatus = rename(oldname, newname);
-  // utilizes the C library function rename.
-  if (exitStatus)
-    err = qio_mkerror_errno();
-  return err;
-}
-
-/* Removes the file specified, returning a qioerr if one occurred. */
-qioerr qio_file_remove(const char* name) {
-  qioerr err = 0;
-  int exitStatus = remove(name);
-  if (exitStatus)
-    err = qio_mkerror_errno();
-  return err;
-}
-
 static
 qioerr open_flags_for_string(const char* s, int *flags_out)
 {
@@ -1412,11 +1309,14 @@ qioerr qio_file_open_tmp(qio_file_t** file_out, qio_hint_t iohints, const qio_st
 // string_out must be freed by the caller.
 qioerr qio_file_path_for_fd(fd_t fd, const char** string_out)
 {
-#ifdef __linux__
+#if defined(__linux__) || defined(__CYGWIN__)
   char pathbuf[500];
   qioerr err;
+  const char* result;
   sprintf(pathbuf, "/proc/self/fd/%i", fd);
-  err = qio_int_to_err(sys_readlink(pathbuf, string_out));
+  err = qio_int_to_err(sys_readlink(pathbuf, &result));
+  // result is owned by sys_readlink, so has to be copied.
+  *string_out = qio_strdup(result);
   return err;
 #else
 #ifdef __APPLE__
@@ -1614,7 +1514,9 @@ qioerr _qio_channel_makebuffer_unlocked(qio_channel_t* ch)
   // adding to the qbuffer the file data.
   // We do not check cached_start since we might have moved
   // the mark_stack along with changing cached_start
-  assert( ch->cached_end == expect_end );
+  if ( ch->cached_end != expect_end ) {
+    chpl_internal_error("_qio_channel_makebuffer_unlocked() failed");
+  }
 
   ch->mark_stack[0] = qbuffer_start_offset(&ch->buf);
 
@@ -1706,6 +1608,8 @@ qioerr qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t h
   }
 }
 
+// This routine always returns a malloc'd string in the path_out pointer.
+// The caller must free the passed-back pointer.
 qioerr qio_relative_path(const char** path_out, const char* cwd, const char* path)
 {
   ssize_t i,j;
@@ -1774,7 +1678,7 @@ qioerr qio_relative_path(const char** path_out, const char* cwd, const char* pat
     tmp[j++] = '/';
   }
   // Now, copy the path after last_common_slash, including trailing '\0'
-  memcpy(&tmp[j], &path[last_common_slash + 1], after_len+1);
+  qio_memcpy(&tmp[j], &path[last_common_slash + 1], after_len+1);
 
   *path_out = tmp;
   return 0;
@@ -1789,6 +1693,7 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
   const char* relpath = NULL;
   qioerr err;
 
+  // TODO: Ensure that cwd is a malloc'd string.
   if (file->fsfns && file->fsfns->getcwd) {
     err = file->fsfns->getcwd(file, &cwd, file->fs_info);
   } else {
@@ -1801,16 +1706,19 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
 
   //printf("cwd %s abs %s rel %s\n", cwd, path_in, relpath);
 
+  qio_free((void*) cwd); cwd = NULL;
+
   if( ! err ) {
+    // Use relpath or path_in, whichever is shorter.
     if( strlen(relpath) < strlen(path_in) ) {
-      *path_out = relpath;
+      *path_out = relpath; relpath = NULL;
     } else {
+      // Not returning relpath, so free it.
+      qio_free((void*) relpath); relpath = NULL;
       *path_out = qio_strdup(path_in);
       if( ! *path_out ) err = QIO_ENOMEM;
     }
   }
-
-  qio_free((void*) cwd);
 
   return err;
 }
@@ -2263,6 +2171,7 @@ qioerr _buffered_get_mmap(qio_channel_t* ch, int64_t amt_in, int writing)
     prot = PROT_READ;
     if( ch->flags & QIO_FDFLAG_WRITEABLE ) prot |= PROT_WRITE;
 
+    // This check is (only) important for 32-bit systems.
     if( len > SSIZE_MAX ) QIO_RETURN_CONSTANT_ERROR(EOVERFLOW, "overflow in mmap");
 
     err = qio_int_to_err(sys_mmap(NULL, len, prot, MAP_SHARED, ch->file->fd, map_start, &data));
@@ -2773,7 +2682,7 @@ qioerr _qio_unbuffered_write(qio_channel_t* ch, const void* ptr, ssize_t len_in,
   if( method == QIO_METHOD_MMAP &&
       ch->file->mmap && _right_mark_start(ch) + len <= ch->file->mmap->len) {
     // Copy the data to the mmap.
-    memcpy( VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), ptr, len);
+    qio_memcpy( VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), ptr, len);
     _add_right_mark_start(ch, len);
   } else {
     while( len > 0 ) {
@@ -2864,7 +2773,7 @@ qioerr _qio_unbuffered_read(qio_channel_t* ch, void* ptr, ssize_t len_in, ssize_
       _right_mark_start(ch) + len <= ch->file->mmap->len) {
     // As long as we're using an I/O method that seeks on every read,
     // copy the data out of the mmap.
-    memcpy( ptr, VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), len);
+    qio_memcpy( ptr, VOID_PTR_ADD(ch->file->mmap->data,_right_mark_start(ch)), len);
     _add_right_mark_start(ch, len);
   } else {
     while( len > 0 ) {
@@ -3677,6 +3586,9 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
 
+  // ch->bit_buffer_bits should never exceed the sizeof the bitbuffer
+  assert(0 <= tmp_live && tmp_live <= (int) (8*sizeof(qio_bitbuffer_t)));
+
   // We've got > 64 bits to write.
   part_one = 8*sizeof(qio_bitbuffer_t) - tmp_live;
   part_two = nbits - part_one;
@@ -3690,7 +3602,7 @@ void _qio_channel_write_bits_cached_realign(qio_channel_t* restrict ch, uint64_t
   
   //printf("WRITE BITS REALIGNALIGNED WRITING %llx %i\n", (long long int) part_one_bits, (int) (8*to_copy));
   // memcpy will work because part_one_bits is big endian now.
-  memcpy(ch->cached_cur, &part_one_bits_be, to_copy);
+  qio_memcpy(ch->cached_cur, &part_one_bits_be, to_copy);
   ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
 
   // Remove junk from the top of tmp_bits, so only bottom tmp_live bits are set.
@@ -3751,6 +3663,9 @@ qioerr _qio_channel_write_bits_slow(qio_channel_t* restrict ch, uint64_t v, int8
   tmp_live = ch->bit_buffer_bits;
   tmp_bits = ch->bit_buffer;
   if( tmp_live == 0 ) tmp_bits = 0;
+
+  // ch->bit_buffer_bits should never exceed the sizeof the bitbuffer
+  assert(0 <= tmp_live && tmp_live <= (int) (8*sizeof(qio_bitbuffer_t)));
 
   //printf("In write bits slow\n");
 
@@ -3890,7 +3805,7 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   to_copy = (7 + value_part) / 8;
 
   buf = 0;
-  memcpy(&buf, ch->cached_cur, to_copy);
+  qio_memcpy(&buf, ch->cached_cur, to_copy);
   ch->cached_cur = VOID_PTR_ADD(ch->cached_cur, to_copy);
 
   // now we've set the top several bytes of buf.
@@ -3917,7 +3832,8 @@ void _qio_channel_read_bits_cached_realign(qio_channel_t* restrict ch, uint64_t*
   if( to_copy == sizeof(qio_bitbuffer_t) ) to_copy = 0;
 
   buf = 0;
-  if( to_copy ) memcpy(&buf, ch->cached_cur, to_copy);
+  if( to_copy )
+    qio_memcpy(&buf, ch->cached_cur, to_copy);
   tmp_read = to_copy;
   part_two = 8*to_copy;
 

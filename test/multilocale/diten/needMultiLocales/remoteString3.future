@@ -5,4 +5,13 @@ Was:
 bug: string variable should stay on the locale it was declared on
 
 In this code, the assignment to s in the on statement makes s migrate to
-Locale(1).
+Locale(1).  The string should logically remain on Locale(0) throughout
+its lifetime.
+
+Note that, as of commit 2cce3f9d40e6349cc69dfd46ddf4e3ddf3fe4f34 (Oct
+3, 2014), this test has started working with gasnet-fast, but not
+gasnet-everything.
+
+When this future is retired, remoteString3.skipif should be removed
+and remoteString3-fast.* should be retired.
+

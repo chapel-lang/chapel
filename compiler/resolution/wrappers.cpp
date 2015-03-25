@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -43,6 +43,7 @@
 #include "callInfo.h"
 #include "chpl.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -93,13 +94,15 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
     wrapper->addFlag(FLAG_FIELD_ACCESSOR);
   if (fn->hasFlag(FLAG_REF_TO_CONST))
     wrapper->addFlag(FLAG_REF_TO_CONST);
-  if (!fn->hasFlag(FLAG_ITERATOR_FN)) { // getValue is var, not iterator
+  if (!fn->isIterator()) { // getValue is var, not iterator
     wrapper->retTag = fn->retTag;
     if (fn->setter)
       wrapper->setter = fn->setter->copy();
   }
   if (fn->hasFlag(FLAG_METHOD))
     wrapper->addFlag(FLAG_METHOD);
+  if (fn->hasFlag(FLAG_METHOD_PRIMARY))
+    wrapper->addFlag(FLAG_METHOD_PRIMARY);
   if (fn->hasFlag(FLAG_ASSIGNOP))
     wrapper->addFlag(FLAG_ASSIGNOP);
   wrapper->instantiationPoint = getVisibilityBlock(info->call);
@@ -166,7 +169,7 @@ buildDefaultWrapper(FnSymbol* fn,
   wrapper->cname = astr("_default_wrap_", fn->cname);
 
   // Mimic return type.
-  if (!fn->hasFlag(FLAG_ITERATOR_FN))
+  if (!fn->isIterator())
     wrapper->retType = fn->retType;
 
   SymbolMap copy_map;
@@ -417,7 +420,7 @@ void reorderActuals(FnSymbol* fn,
     return;  // no way we will need to reorder
 
   bool need_to_reorder = false;
-  int formals_to_formals[numArgs];
+  std::vector<int> formals_to_formals(numArgs);
   int i = 0;
   for_formals(formal, fn) {
     i++;
@@ -433,7 +436,7 @@ void reorderActuals(FnSymbol* fn,
     }
   }
   if (need_to_reorder) {
-    Expr* savedActuals[numArgs];
+    std::vector<Expr*> savedActuals(numArgs);
     int i = 0;
     // remove all actuals in an order
     for_actuals(actual, info->call)
@@ -444,8 +447,8 @@ void reorderActuals(FnSymbol* fn,
     // reorder CallInfo data as well
     // ideally this would be encapsulated in within the CallInfo class
     INT_ASSERT(info->actuals.n == numArgs);
-    Symbol* ciActuals[numArgs];
-    const char* ciActualNames[numArgs];
+    std::vector<Symbol*> ciActuals(numArgs);
+    std::vector<const char*> ciActualNames(numArgs);
     for (i = 0; i < numArgs; i++)
       ciActuals[i] = info->actuals.v[i],
       ciActualNames[i] = info->actualNames.v[i];
@@ -555,6 +558,13 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
     //
     checkAgain = true;
     castCall = new CallExpr(PRIM_DEREF, prevActual);
+
+    if (SymExpr* prevSE = toSymExpr(prevActual))
+      if (prevSE->var->hasFlag(FLAG_REF_TO_CONST)) {
+        castTemp->addFlag(FLAG_CONST);
+        if (prevSE->var->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
+          castTemp->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
+      }
 
   } else {
     // There was code to handle the case when the flag *is* present.
@@ -710,7 +720,7 @@ buildPromotionWrapper(FnSymbol* fn,
 
   if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
       (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
-      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, new BlockStmt(actualCall), zippered)));
+      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, /*byref_vars=*/ NULL, new BlockStmt(actualCall), zippered)));
   } else {
     wrapper->addFlag(FLAG_ITERATOR_FN);
     wrapper->removeFlag(FLAG_INLINE);
@@ -740,7 +750,7 @@ buildPromotionWrapper(FnSymbol* fn,
     }
 
     BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
-    BlockStmt* loop = buildForLoopStmt(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
+    BlockStmt* loop = ForLoop::buildForLoop(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
     lifn->insertAtTail(loop);
     theProgram->block->insertAtTail(new DefExpr(lifn));
     toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
@@ -778,7 +788,7 @@ buildPromotionWrapper(FnSymbol* fn,
     followerBlock->insertAtTail(new DefExpr(yieldTmp));
     followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall->copy(&followerMap)));
     followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-    fifn->insertAtTail(buildForLoopStmt(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
+    fifn->insertAtTail(ForLoop::buildForLoop(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
     theProgram->block->insertAtTail(new DefExpr(fifn));
     normalize(fifn);
     fifn->addFlag(FLAG_GENERIC);
@@ -790,7 +800,7 @@ buildPromotionWrapper(FnSymbol* fn,
     yieldBlock->insertAtTail(new DefExpr(yieldTmp));
     yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall));
     yieldBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-    wrapper->insertAtTail(new BlockStmt(buildForLoopStmt(indices, iterator, yieldBlock, false, zippered)));
+    wrapper->insertAtTail(new BlockStmt(ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered)));
   }
   fn->defPoint->insertBefore(new DefExpr(wrapper));
   normalize(wrapper);

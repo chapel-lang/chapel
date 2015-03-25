@@ -278,7 +278,7 @@ proc Check()
 {
   var ERROR: real = 0.00001;
   XX=X; // A block distributed version of X (better for matrix vector multiplication)
-  forall i in Dom
+  forall i in Dom with (ref error)
     {
       if(i==1){
 	if (abs(B[i]*XX[i] + C[i]*XX[i+1] - D[i]) > ERROR)

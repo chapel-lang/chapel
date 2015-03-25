@@ -1,0 +1,7 @@
+Module: Parent
+   Module: Parent.Caroline
+      This child should be listed first 
+   Module: Parent.Elaine
+      This child should be in the middle 
+   Module: Parent.Frank
+      This child should be listed last 

@@ -5,7 +5,7 @@ use File::Basename;
 
 $user = `whoami`;
 chomp($user);
-$mailcommand = "| Mail -s \"Cron Nightly TAB check\" $user\@cray.com";
+$mailcommand = "| mail -s \"Cron Nightly TAB check\" $user\@cray.com";
 $cwd = abs_path(dirname(__FILE__));
 $chplhomedir = abs_path("$cwd/../..");
 
@@ -16,7 +16,7 @@ $matches = `wc -l $matchfile`;
 chomp($matches);
 if ($matches != 0) {
   print "matches!\n";
-  open(MAIL, "| Mail -s 'Cron Nightly TAB check' chapel_dev\@cray.com");
+  open(MAIL, "| mail -s 'Cron Nightly TAB check' chapel_dev\@cray.com");
     open(MESSAGE, "<$matchfile");
     while (<MESSAGE>) {
       my($line) = $_;

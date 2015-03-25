@@ -81,7 +81,7 @@
 #   -sysprediff <path>
 #   -suppress <suppression file>
 #   -nostdinredirect
-#   -launchertimeout pbs
+#   -launchertimeout <queueing system>
 #   -logfile   <log filename>         $testdir/Logs/<username>.<tgt-platform>.log
 #                                     (where $testdir is $CHPL_HOME/test if
 #                                     it exists, $CHPL_HOME/examples, if it
@@ -89,6 +89,10 @@
 #   -memleaks
 #   -no-chpl-home-warn                Do not show warning when start_test invoked outside CHPL_HOME
 #   -progress                         Print pass/fail to stderr for each test. Does not work for directories.
+#   -test-root                        Absolute path to test dir. Set when test dir is not under CHPL_HOME.
+#   -junit-xml                        Create jUnit XML style report.
+#   -junit-xml-file <file>            Path to store jUnit XML report. When set, -junit-xml is implied.
+#   -junit-remove-prefix <prefix>     Remove <prefix> from all tests in jUnit report.
 #
 # All options can be used with a double-dash format as well 
 # (e.g. --compopts).
@@ -166,8 +170,8 @@
 # the value "x.yz" out of the output file (all non-whitespace 
 # characters after the key string until the next whitespace 
 # character).  These data values will then be written to a file
-# named $CHPL_TEST_PERF_DIR/<machine name>/foo.dat (where
-# $CHPL_TEST_PERF_DIR is "$CHPL_HOME/test/perfdat" by default) in a
+# named $CHPL_TEST_PERF_DIR/foo.dat (where by default
+# $CHPL_TEST_PERF_DIR is "$CHPL_HOME/test/perfdat/<machine name>") in a
 # TAB-separated manner for graphing or display using gnuplot or Excel.
 #
 # When running with the -performance flag, compiler and executable
@@ -480,7 +484,7 @@
 #      <blank>        : a blank line is skipped
 #      <var> == <val> : checks to see if envvar "var" is "val"
 #      <var> != <val> : checks to see if envvar "var" is not "val"
-#       <var> <= <val> : true if <var> contains the substring "val".
+#      <var> <= <val> : true if <var> contains the substring "val".
 #      CHPL_MEM_LEAK_TESTING == true : check if we are testing for memory leaks
 #    All of the lines of containing conditional expressions are logically
 #    or'd together, and if any of them are true, the test is
@@ -641,7 +645,8 @@ endif
 if ($?CHPL_TEST_UTIL_DIR) then
     set utildir = "$CHPL_TEST_UTIL_DIR"
 else
-    set utildir = "$CHPL_HOME/util"
+    set start_test_dir = `dirname $0`
+    set utildir = `cd $start_test_dir/../util && pwd`
     setenv CHPL_TEST_UTIL_DIR $utildir
 endif
 if (! -d $utildir || ! -x $utildir) then
@@ -710,25 +715,28 @@ set perflabel = ""
 set perfkeys  = ""
 set compperformance = 0
 set compperformancedescription = ""
-set numtrials = 1
 set oldgraphs = 0
 set gengraphs = 0
 set graphsdisprange = 1
 set graphsgendefault = "avg"
 set startdate = ""
 set genGraphOpts = ""
-set testfutures = 0
-set testfuturesonly = 0
+set futuresMode = 0
 set testnotests = 0
 set recurse = 1
 set tee = "tee"
 set numlocales = 0
 set comm = `$utildir/chplenv/chpl_comm.py`
+set launcher = `$utildir/chplenv/chpl_launcher.py`
 set locMod = `$utildir/chplenv/chpl_locale_model.py`
 set suppressions = ""
 set optionerr = 0
 set chplHomeWarn = 1
 set progress = 0
+set testRootDir = ""
+set junit_xml = 0
+set junit_xml_file = 0
+set junit_remove_prefix = 0
 
 while ( $#argv > 0 )
     switch ( "$argv[1]" )
@@ -800,14 +808,28 @@ while ( $#argv > 0 )
     case -futures:
     case --futures:
         shift
-        set testfutures = 1
+        set futuresMode = 1
         breaksw
     case -futures-only
     case --futures-only
     case -futuresonly
     case --futuresonly
         shift
-        set testfuturesonly = 1
+        set futuresMode = 2
+        breaksw
+    case -futures-skipif
+    case --futures-skipif
+    case -futuresskipif
+    case --futuresskipif
+        shift
+        set futuresMode = 3
+        breaksw
+    # "undocumented" option, only meant to be used by other scripts
+    case -futures-mode:
+    case --futures-mode:
+        shift
+        set futuresMode = "$argv[1]"
+        shift
         breaksw
     case -i:
     case --interpret:
@@ -837,6 +859,14 @@ while ( $#argv > 0 )
         set performancedescription = $argv[1]
         shift
         breaksw
+    case --performance-configurations:
+    case -performance-configurations:
+    case --performance-configs:
+    case -performance-configs:
+        shift
+        set genGraphOpts = "$genGraphOpts --configs $argv[1]"
+        shift
+        breaksw
     case --compperformance:
     case -compperformance:
         shift 
@@ -854,7 +884,7 @@ while ( $#argv > 0 )
     case --num-trials:
     case -num-trials:
         shift
-        set numtrials = $argv[1]
+        setenv CHPL_TEST_NUM_TRIALS $argv[1]
         shift
         breaksw
     case --perflabel:
@@ -901,7 +931,7 @@ while ( $#argv > 0 )
     case --gengraphopts:
     case -gengraphopts:
         shift
-        set genGraphOpts = "$argv[1]"
+        set genGraphOpts = "$genGraphOpts $argv[1]"
         shift
         breaksw
     case -norecurse:
@@ -938,6 +968,12 @@ while ( $#argv > 0 )
         shift
         setenv CHPL_NO_STDIN_REDIRECT true
         breaksw
+    case -stdinredirect:
+    case --stdinredirect:
+        shift
+        unset CHPL_NO_STDIN_REDIRECT true
+        setenv CHPL_TEST_FORCE_STDIN_REDIRECT true
+        breaksw
     case -launchertimeout:
     case --launchertimeout:
         shift
@@ -954,6 +990,30 @@ while ( $#argv > 0 )
         shift
         set progress = 1
         breaksw
+    case -test-root:
+    case --test-root:
+        shift
+        set testRootDir = $argv[1]
+        shift
+        breaksw
+    case -junit-xml:
+    case --junit-xml:
+        shift
+        set junit_xml = 1
+        breaksw
+    case -junit-xml-file:
+    case --junit-xml-file:
+        shift
+        set junit_xml = 1
+        set junit_xml_file = $argv[1]
+        shift
+        breaksw
+    case -junit-remove-prefix
+    case --junit-remove-prefix
+        shift
+        set junit_remove_prefix = $argv[1]
+        shift
+        breaksw
     case -h:
     case -help:
     case --help:
@@ -967,6 +1027,8 @@ while ( $#argv > 0 )
         echo "          -norecurse"
         echo "          -comp-only"
         echo "          -performance"
+        echo "          -performance-description"
+        echo "          -performance-configurations"
         echo "          -compperformance"
         echo "          -compperformance-description <description>"
         echo "          -num-trials <number>"
@@ -977,20 +1039,25 @@ while ( $#argv > 0 )
         echo "          -startdate <MM/DD/YY> (currently: '')"
         echo "          -genGraphOpts OPT or -genGraphOpts 'OPT1 OPT2 ...'"
         echo "          -futures"
-        echo "          -futuresonly"
+        echo "          -futures-only"
+        echo "          -futures-skipif"
         echo "          -valgrind"
         echo "          -valgrindexe"
         echo "          -syspreexec <path>"
         echo "          -sysprediff <path>"
         echo "          -suppress <filename>"
         echo "          -numlocales <number>"
-        echo "          -nostdinredirect"
-        echo "          -launchertimeout pbs"
+        echo "          -[no]stdinredirect"
+        echo "          -launchertimeout <queueing system>"
 #       echo "          -interpret (or -i)"
         echo "          -logfile <file>      (currently: $logfile)"
         echo "          -memleaks <file>"
         echo "          -no-chpl-home-warn"
         echo "          -progress"
+        echo "          -test-root"
+        echo "          -junit-xml"
+        echo "          -junit-xml-file <file>  (implies -junit-xml)"
+        echo "          -junit-remove-prefix <prefix>"
         echo "          -h, -help"
         exit 0
         breaksw
@@ -1015,6 +1082,10 @@ end
 
 if ($optionerr == 1) then
     exit 1
+endif
+
+if ($testRootDir != "") then
+    setenv CHPL_TEST_ROOT_DIR "$testRootDir"
 endif
 
 set invocationDir = "$cwd"
@@ -1111,8 +1182,11 @@ else
     echo \[compiler performance tests: OFF\] |& tee -a $logfile
 endif
 
-echo \[number of trials: "$numtrials"\] |& $tee -a $logfile
-setenv CHPL_TEST_NUM_TRIALS "$numtrials"
+if (! $?CHPL_TEST_NUM_TRIALS) then
+    setenv CHPL_TEST_NUM_TRIALS "1"
+endif
+
+echo \[number of trials: "$CHPL_TEST_NUM_TRIALS"\] |& $tee -a $logfile
 
 if ($gengraphs) then
     echo \[performance graph generation: ON\] |& $tee -a $logfile
@@ -1162,9 +1236,35 @@ setenv LAUNCHCMD "$launchcmd"
 echo \[comm: \"$comm\"\] |& $tee -a $logfile
 setenv CHPL_COMM $comm
 setenv CHPL_GASNET_SEGMENT `$utildir/chplenv/chpl_comm_segment.py`
+setenv CHPL_LAUNCHER $launcher
 
 echo \[localeModel: \"$locMod\"\] |& $tee -a $logfile
 setenv CHPL_LOCALE_MODEL $locMod
+
+# we know that stdin redirection doesn't work for most launchers. only do
+# redirection when there's no launcher, or we know the launcher supports stdin
+# redirection (amudprun and slurm currently.) Set and alert user unless they
+# threw -nostdinredirect or -stdinredirect
+if ($launcher != "none" && $launcher != "amudprun" && $launcher != "slurm-srun") then
+    if (! $?CHPL_NO_STDIN_REDIRECT && ! $?CHPL_TEST_FORCE_STDIN_REDIRECT ) then
+        echo "[Info: assuming stdin redirection is not supported, skipping tests with stdin]" |& $tee -a $logfile
+        setenv CHPL_NO_STDIN_REDIRECT true
+    endif
+endif
+
+# sub_test supports using slurm and pbs/qsub to handle timeouts instead of
+# managing timeouts itself. Use the launcher timeout by default if the
+# supported launcher is detected.
+if (! $?CHPL_LAUNCHER_TIMEOUT && ! $?CHPL_TEST_DONT_SET_LAUNCHER_TIMEOUT) then
+    if ($launcher =~ *slurm*) then
+        setenv CHPL_LAUNCHER_TIMEOUT slurm
+    endif
+
+    if ($launcher =~ *pbs* || $launcher =~ *qsub*) then
+        setenv CHPL_LAUNCHER_TIMEOUT pbs
+    endif
+endif
+
 
 if ($comm != "none" && $numlocales == 0) then
     set numlocales = "1"
@@ -1267,6 +1367,42 @@ if ($compperformance) then
     set combineCompPerf = $utildir/test/combineCompPerfData
 endif
 
+# save the sha for the current run so we can map dates to shas in the
+# performance and compiler performance graphs
+if ($performance || $compperformance) then
+
+  set datdir = ""
+  if ($performance) then
+    set datdir = $perfdir
+  else
+    set datdir = $compperfdir
+  endif
+
+  if (! -e $datdir) then
+      mkdir -p $datdir
+  endif
+
+  # output the key to a temp .perfkeys file for computePerfStats to use
+  set shaKey = "sha"
+  set shaPerfKeys = "$chplTestTmpDir/sha.perfkeys"
+  echo "$shaKey " > "$shaPerfKeys"
+
+  # output the shaKey and current sha to a temp file for computePerfStats to use
+  set shaOut = "$chplTestTmpDir/sha.exec.out.tmp"
+  echo "$shaKey `git rev-parse HEAD`" > "$shaOut"
+
+  # the name of the .dat file to store the sha (store in env var for gengraphs)
+  set shaDatFileName = "perfSha"
+  set shaDatFilePath = "$datdir/$shaDatFileName.dat"
+  setenv CHPL_TEST_SHA_DAT_FILE "$shaDatFilePath"
+
+  echo "[Saving current git sha to $shaDatFilePath]" |& $tee -a $logfile
+  "$utildir/test/computePerfStats" "$shaDatFileName" "$datdir" "$shaPerfKeys" "$shaOut"
+
+  if ( $status != 0 ) then
+      echo "[Error: Failed to save current sha to $shaDatFilePath]" |& $tee -a $logfile
+  endif
+endif
 
 
 # Auto-generate tests from the spec
@@ -1336,8 +1472,8 @@ else
 endif
 
 # If we are running the performance tests, then check for unique .dat
-#  filenames.  Issue a error and exit if we have specified a common
-#  common directory via CHPL_TEST_PERF_DIR otherwise issue a warning.
+#  filenames.  Issue an error and exit if we have specified the data
+#  directory via CHPL_TEST_PERF_DIR, otherwise issue a warning.
 # NOTE: I am not proud of having written the following.
 if ($performance) then
     echo ""
@@ -1388,9 +1524,9 @@ endif
 # maybe start_test should just be re-written in a more modern
 # scripting language.
 #
-if ($gengraphs) then
+if ($gengraphs || $compperformance) then
     echo ""
-    echo "[Checking that all .graph files appear in $CHPL_HOME/test/GRAPHFILES and $CHPL_HOME/test/COMPGRAPHFILES]" |& $tee -a $logfile
+    echo "[Checking for duplicate .graph files and that all .graph files appear in $CHPL_HOME/test/.*GRAPHFILES]" |& $tee -a $logfile
     $utildir/test/checkGraphfiles |& tee -a $logfile
 endif
 
@@ -1452,7 +1588,12 @@ foreach test ($testlist)
 
             $sub_test "$compiler" |& $tee -a $logfile
             set errcode = $status
-            if ($errcode != 0) then
+            # $errcode of 173 is special sub_test error code that
+            # indicates sub_test failed and already reported an
+            # error.
+            #
+            # 173 = reduce(operator.add, map(ord, 'CHAPEL')) % 256
+            if ($errcode != 0 && $errcode != 173) then
                 echo "[Error running sub_test for $test]" |& $tee -a $logfile
             endif
             if ($progress == 1) then
@@ -1499,17 +1640,9 @@ end
 
 setenv CHPL_TEST_SINGLES 0
 
-# for this mode, only test futures and notests as specified
-# by the command-line flags
-if ($testfuturesonly == 1) then
-    setenv CHPL_TEST_FUTURES 2
-else
-    if ($testfutures == 1) then
-        setenv CHPL_TEST_FUTURES 1
-    else
-        setenv CHPL_TEST_FUTURES 0
-    endif
-endif
+# for this mode, test only futures that were specified on the command-line
+# (defaults to no futures)
+setenv CHPL_TEST_FUTURES $futuresMode
 
 if ($testnotests == 1) then
     setenv CHPL_TEST_NOTESTS 1
@@ -1564,8 +1697,12 @@ foreach testType ($testTypes)
                 # Skip this directory if there is a SKIPIF file
                 # and the condition it contains evaluates to true.
                 if (-e ./SKIPIF) then
-                    set skiptest = `$utildir/test/testEnv ./SKIPIF`
-                    if ($skiptest == 1) then
+                    if (-x ./SKIPIF) then
+                        set skiptest = `./SKIPIF`
+                    else
+                        set skiptest = `$utildir/test/testEnv ./SKIPIF`
+                    endif
+                    if ( $skiptest == "1" || $skiptest == "True" ) then
                         echo "[Skipping directory based on SKIPIF environment settings]" |& $tee -a $logfile
                         continue
                     endif
@@ -1578,11 +1715,20 @@ foreach testType ($testTypes)
                 while (! $pruneif && $cwd != $basedir)
                     set skipfilen = $cwd.skipif
                     if (-e $skipfilen) then
-                        set pruneif = `$utildir/test/testEnv $skipfilen`
+                        if (-x $skipfilen) then
+                            set pruneif = `$skipfilen`
+                            if ( $pruneif == "1" || $pruneif == "True" ) then
+                                set pruneif = "1"
+                            else
+                                set pruneif = "0"
+                            endif
+                        else
+                            set pruneif = `$utildir/test/testEnv $skipfilen`
+                        endif
                     endif
                     cd ..
                 end
-                if ($pruneif) then
+                if ( $pruneif == "1" ) then
                     echo "[Skipping directory based on ancestor .skipif environment settings in $skipfilen]" |& $tee -a $logfile
                     continue
                 endif
@@ -1614,7 +1760,12 @@ foreach testType ($testTypes)
                     
                         $sub_test "$compiler" |& $tee -a $logfile
                         set errcode = $status
-                        if ($errcode != 0) then
+                        # $errcode of 173 is special sub_test error code that
+                        # indicates sub_test failed and already reported an
+                        # error.
+                        #
+                        # 173 = reduce(operator.add, map(ord, 'CHAPEL')) % 256
+                        if ($errcode != 0 && $errcode != 173) then
                             echo "[Error running sub_test in $dir ($errcode)]" |& $tee -a $logfile
                         endif
                     endif
@@ -1671,7 +1822,7 @@ if ($compperformance) then
     set atitle = "Chapel Compiler Performance Graphs"
     #now actually create the graphs
     echo "[Creating compiler performance graphs now]"
-    $createCoolerGraphs -p "$compperfdir" -o "$compperfhtmldir" -a "$atitle" -n"$compperftestname" "$startdate_t" -g "$compGraphList" -t "$CHPL_HOME/test"  |& $tee -a $logfile
+    $createCoolerGraphs -p "$compperfdir" -o "$compperfhtmldir" -a "$atitle" -n"$compperftestname" "$startdate_t" -g "$compGraphList" -t "$CHPL_HOME/test" -m all:v,examples:v -x |& $tee -a $logfile
 
     if ($status == 0) then
         echo "[Success generating compiler performance graphs for $compGraphList in $compperfhtmldir]" |& $tee -a $logfile
@@ -1736,10 +1887,11 @@ set skipstdinredirectmarker = "^\[Skipping test with .stdin input"
 
 echo \[Test Summary - $datestr\] |& $tee $logfile.summary
 if ($clean_only == 0) then
-    grep "$errormarker" $logfile |& $tee -a $logfile.summary
+    grep "$errormarker" $logfile |& $tee -a $logfile.summary >/dev/null
     if ($suppressions != "") then
         $utildir/test/filterSuppressions $suppressions $logfile.summary
     endif
+    grep "$errormarker" $logfile.summary
 
     grep "$futuremarker" $logfile |& $tee -a $logfile.summary
     grep "$warningmarker" $logfile |& $tee -a $logfile.summary
@@ -1758,6 +1910,27 @@ if ($clean_only == 0) then
     echo "[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures | #Warnings = $warnings ]" |& $tee -a $logfile.summary
 else
     echo \[Summary: CLEAN ONLY\] |& $tee $logfile.summary
+endif
+
+echo ''
+
+set junit_args = "--start-test-log=$logfile"
+if ($junit_xml_file != 0) then
+    set junit_args = "$junit_args --junit-xml=$junit_xml_file"
+endif
+if ($junit_remove_prefix != 0) then
+    set junit_args = "$junit_args --remove-prefix=$junit_remove_prefix"
+else if ($testRootDir != "") then
+    # If --test-root was thrown, also remove it from the junit report (in case
+    # something slipped through in sub_test).
+    set junit_args = "$junit_args --remove-prefix=$testRootDir"
+endif
+if ($suppressions != "") then
+    set junit_args = "$junit_args --suppress=$suppressions"
+endif
+if ($junit_xml == 1) then
+    echo "[Generating jUnit XML report]"
+    $utildir/test/convert_start_test_log_to_junit_xml.py $junit_args
 endif
 
 echo \[END\] |& $tee -a $logfile.summary

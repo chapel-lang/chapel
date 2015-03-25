@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:, Time:, Time:, Time:, Time:, Time:, Time:
+files: Jacobi-1D-Serial.dat, Jacobi-1D-NaiveParallel.dat, Jacobi-1D-Sliced-Diamond-Tiling.dat, Jacobi-1D-Inlined-Sliced-Diamond-Tiling.dat, OMP-Jacobi-1D-Naive-Parallel.dat, OMP-Jacobi-1D-Sliced-Diamond-Tiling.dat, 1D-Diamond-fast-indexing.dat, 1D-Inlined-Diamond-fast-indexing.dat
+graphkeys: Serial, NaiveParallel, Sliced-Diamond-Tiling, Inlined-Sliced-Diamond-Tiling, OMP-Naive-Parallel, OMP-Sliced-Diamond-Tiling, Diamond-fast-indexing, Inlined-Diamond-fast-indexing
+ylabel: Time (seconds)
+graphtitle: Jacobi-1D Data

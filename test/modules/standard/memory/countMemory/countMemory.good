@@ -1,9 +1,8 @@
-The .good file for this test must be specified on a
-machine-by-machine basis, as the test reports the
-amount of physical memory available on a machine.
+The .good file for this test must be specified on a machine-by-machine
+basis, as the test reports the amount of physical memory available on
+a machine.
 
-The .prediff script can compute the .good file on
-the fly for machines that support /proc/meminfo.
-For other machines, the .prediff script will need
-to be specialized or the .good file hardcoded (or
-the test skipped).
+The .prediff script can compute the .good file on the fly for machines
+that support /proc/meminfo and for Darwin (Mac OS X).  For other
+machines, the .prediff script will need to be specialized or the .good
+file hardcoded (or the test skipped).

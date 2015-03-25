@@ -1,0 +1,5 @@
+perfkeys: Time:
+files: jacobi-unroll-serial.dat
+graphkeys: jacobi-unroll-serial
+ylabel: Time (seconds)
+graphtitle: Jacobi1D Unrolled Serial

@@ -8,6 +8,7 @@ $CHPL_HOME/modules/internal/String.chpl:: note:                 <=(a: string, b:
 $CHPL_HOME/modules/internal/String.chpl:: note:                 <=(a: c_string, b: c_string)
 $CHPL_HOME/modules/internal/String.chpl:: note:                 <=(param a: c_string, param b: c_string)
 $CHPL_HOME/modules/internal/ChapelTuple.chpl:: note:                 <=(a: _tuple, b: _tuple)
+$CHPL_HOME/modules/standard/NewString.chpl:: note:                 <=(a: string_rec, b: string_rec)
 $CHPL_HOME/modules/internal/ChapelBase.chpl:: note:                 <=(a: int(8), b: int(8))
 $CHPL_HOME/modules/internal/ChapelBase.chpl:: note:                 <=(a: int(16), b: int(16))
 $CHPL_HOME/modules/internal/ChapelBase.chpl:: note:                 <=(a: int(32), b: int(32))

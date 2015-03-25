@@ -1,2 +1,0 @@
--sedgeElems=10 -sdoTiming                 # lulesh.sungeun.default.perfkeys
--sedgeElems=10 -sdoTiming -suseBlockDist  # lulesh.sungeun.block.perfkeys

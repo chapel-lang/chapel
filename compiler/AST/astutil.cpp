@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,12 +19,16 @@
 
 #include "astutil.h"
 #include "baseAST.h"
+#include "CForLoop.h"
+#include "ForLoop.h"
 #include "expr.h"
 #include "passes.h"
+#include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
+#include "WhileStmt.h"
 
 #include <vector>
 
@@ -206,7 +210,7 @@ void collect_top_asts(BaseAST* ast, Vec<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
   asts.add(ast);
 }
-              
+
 static void collect_top_asts_internal_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
   if (!isSymbol(ast) || isArgSymbol(ast)) {
     AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
@@ -225,7 +229,7 @@ void collect_top_asts_STL(BaseAST* ast, std::vector<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_top_asts_internal_STL, asts);
   asts.push_back(ast);
 }
-              
+
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
   reset_ast_loc(destNode, sourceNode->astloc);
 }
@@ -268,7 +272,7 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   Vec<Symbol*> symSet;
   forv_Vec(DefExpr, def, gDefExprs) {
     if (def->parentSymbol) {
-      if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+      if (isLcnSymbol(def->sym)) {
         symSet.set_add(def->sym);
       }
     }
@@ -286,7 +290,7 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
                                 Vec<Symbol*>& symSet,
                                 Vec<SymExpr*>& symExprs) {
   if (DefExpr* def = toDefExpr(ast)) {
-    if (isVarSymbol(def->sym) || isArgSymbol(def->sym)) {
+    if (isLcnSymbol(def->sym)) {
       symSet.set_add(def->sym);
     }
   } else if (SymExpr* se = toSymExpr(ast)) {
@@ -386,7 +390,7 @@ bool isRelationalOperator(CallExpr* call) {
 // TODO this should be fixed to include PRIM_SET_MEMBER
 // See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
 // TODO this should also be fixed to include the PRIM_SVEC_SET_MEMBER
-// which gets inserted from the returnStartTuplesByRefArgs pass 
+// which gets inserted from the returnStartTuplesByRefArgs pass
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
@@ -616,7 +620,7 @@ bool isTypeExpr(Expr* expr)
       SymExpr* right = toSymExpr(call->get(2));
       VarSymbol* var = toVarSymbol(right->var);
 
-      if (var->hasFlag(FLAG_TYPE_VARIABLE))
+      if (var->isType())
         return true;
 
       if (var->immediate)
@@ -678,7 +682,9 @@ static void
 visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 {
   // chpl_gen_main is always visible (if it exists).
-  pruneVisit(chpl_gen_main, fns, types);
+  // --ipe does not build chpl_gen_main
+  if (chpl_gen_main)
+    pruneVisit(chpl_gen_main, fns, types);
 
   // When present, the printModuleInitOrder function is always visible;
   // it will be NULL for --minimal-modules compilations
@@ -852,3 +858,27 @@ prune() {
 // each pass must be unique.  See initLogFlags() in runpasses.cpp.
 void prune2() { prune(); } // Synonym for prune.
 
+/*
+ * Takes a call that is a PRIM_SVEC_GET_MEMBER* and returns the symbol of the
+ * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 1)
+ * and what this function gets out is the symbol that is the first field
+ * instead of just the number 1.
+ */
+Symbol* getSvecSymbol(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
+             call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
+             call->isPrimitive(PRIM_SET_SVEC_MEMBER));
+  Type* type = call->get(1)->getValType();
+  AggregateType* tuple = toAggregateType(type);
+  SymExpr* fieldVal = toSymExpr(call->get(2));
+  VarSymbol* fieldSym = toVarSymbol(fieldVal->var);
+  if (fieldSym) {
+    int immediateVal = fieldSym->immediate->int_value();
+
+    INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
+    return tuple->getField(immediateVal);
+  } else {
+    // GET_SVEC_MEMBER(p, i), where p is a star tuple
+    return NULL;
+  }
+}

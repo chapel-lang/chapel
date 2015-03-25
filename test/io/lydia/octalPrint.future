@@ -1,4 +1,0 @@
-feature request: print with octal formatting
-
-Since we now recognize octal literals, it would be useful for us to be able
-to print them in a recognizable format.

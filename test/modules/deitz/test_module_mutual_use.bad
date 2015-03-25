@@ -1,0 +1,1 @@
+test_module_mutual_use.chpl:10: error: use of 'a' before encountering its definition, type unknown

@@ -1,6 +1,6 @@
-perfkeys: total time (all), total time (examples)
+perfkeys: total time
 
-files: compilerPerformance-all.dat, compilerPerformance-examples.dat
+files: compilerPerformance.dat
 
-graphtitle: Average Total Compilation Time
+graphtitle: Top Average Total Compilation Time
 ylabel: Time (seconds)

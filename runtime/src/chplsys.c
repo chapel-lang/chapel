@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,10 @@
  * limitations under the License.
  */
 
-#if defined __APPLE__
+#if defined __CYGWIN__
+#include <windows.h>
+#endif
+#if defined(__APPLE__) || defined(__NetBSD__)
 #include <sys/sysctl.h>
 #endif
 #if defined _AIX
@@ -49,9 +52,57 @@
 #include <unistd.h>
 
 
-#ifndef chplGetPageSize
-#define chplGetPageSize() sysconf(_SC_PAGE_SIZE)
+size_t chpl_getSysPageSize(void) {
+  static size_t pageSize = 0;
+
+  if (pageSize == 0) {
+#if defined _SC_PAGESIZE
+    pageSize = (size_t) sysconf(_SC_PAGESIZE);
+#elif defined _SC_PAGE_SIZE
+    pageSize = (size_t) sysconf(_SC_PAGE_SIZE);
+#else
+    chpl_internal_error("cannot determine page size");
 #endif
+  }
+
+  return pageSize;
+}
+
+
+size_t chpl_getHeapPageSize(void) {
+  static size_t pageSize = 0;
+
+  if (pageSize == 0) {
+#if defined __linux__
+    char* ev;
+    if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
+      pageSize = chpl_getSysPageSize();
+    else {
+      int scanCnt;
+      size_t tmpPageSize;
+      char units;
+
+      if ((scanCnt = sscanf(ev, "%zd%1[kKmMgG]", &tmpPageSize, &units)) > 0) {
+        if (scanCnt == 2) {
+          switch (units) {
+          case 'k': case 'K': tmpPageSize <<= 10; break;
+          case 'm': case 'M': tmpPageSize <<= 20; break;
+          case 'g': case 'G': tmpPageSize <<= 30; break;
+          }
+        }
+      }
+      else
+        chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+      pageSize = tmpPageSize;
+    }
+#else
+    pageSize = chpl_getSysPageSize();
+#endif
+  }
+
+  return pageSize;
+}
+
 
 uint64_t chpl_bytesPerLocale(void) {
 #ifdef NO_BYTES_PER_LOCALE
@@ -71,12 +122,23 @@ uint64_t chpl_bytesPerLocale(void) {
   if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0))
     chpl_internal_error("query of physical memory failed");
   return membytes;
+#elif defined __CYGWIN__
+  MEMORYSTATUS status;
+  status.dwLength = sizeof(status);
+  GlobalMemoryStatus( &status );
+  return (uint64_t)status.dwTotalPhys;
+  //
+  // The following general case used to work for cygwin, but no longer
+  // seems to.  Now, it seems to return a very small number of pages
+  // for SC_PHYS_PAGES, which I can't explain.  Found the recipe above
+  // on the web and it works, so adopting it.
+  //
 #else
   long int numPages, pageSize;
   numPages = sysconf(_SC_PHYS_PAGES);
   if (numPages < 0)
     chpl_internal_error("query of physical memory failed");
-  pageSize = chplGetPageSize();
+  pageSize = chpl_getSysPageSize();
   if (pageSize < 0)
     chpl_internal_error("query of physical memory failed");
   return (uint64_t)numPages * (uint64_t)pageSize;
@@ -110,7 +172,7 @@ size_t chpl_bytesAvailOnThisLocale(void) {
 }
 
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__NetBSD__)
 //
 // Return information about the processors on the system.
 //
@@ -196,7 +258,7 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
   if (numCpus == 0)
     numCpus = chpl_getNumLogicalCpus(true);
   return numCpus;
-#elif defined __linux__
+#elif defined(__linux__) || defined(__NetBSD__)
   //
   // Linux
   //
@@ -209,11 +271,13 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
-#ifdef __MIC__
+#if defined __MIC__
       //
       // On Intel MIC, we seem (for now at least) not to have kernel
       // scheduling affinity information.
       //
+      numCpus = numPhysCpus;
+#elif defined __NetBSD__
       numCpus = numPhysCpus;
 #else
       //
@@ -280,7 +344,7 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
   if (numCpus == 0)
     numCpus = sysconf(_SC_NPROCESSORS_ONLN);
   return numCpus;
-#elif defined __linux__
+#elif defined(__linux__) || defined(__NetBSD__)
   //
   // Linux
   //
@@ -293,11 +357,13 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
-#ifdef __MIC__
+#if defined __MIC__
       //
       // On Intel MIC, we seem (for now at least) not to have kernel
       // scheduling affinity information.
       //
+      numCpus = numLogCpus;
+#elif defined __NetBSD__
       numCpus = numLogCpus;
 #else
       cpu_set_t m;
@@ -327,18 +393,24 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
 }
 
 
+// Using a static buffer is a bad idea from the standpoint of thread-safety.
+// However, since the node name is not expected to change it is OK to
+// initialize it once and share the singleton string.
+// There could still be a race condition concerning which thread actually gets
+// to initialize the static, but since two or more should end up writing the
+// same bytes, it probably just works out.
 c_string chpl_nodeName(void) {
   static char* namespace = NULL;
-  static int namelen = 0;
-  struct utsname utsinfo;
-  int newnamelen;
-  uname(&utsinfo);
-  newnamelen = strlen(utsinfo.nodename)+1;
-  if (newnamelen > namelen) {
-    namelen = newnamelen;
-    namespace = chpl_mem_realloc(namespace, newnamelen * sizeof(char), 
+  if (namespace == NULL)
+  {
+    struct utsname utsinfo;
+    int namelen;
+
+    uname(&utsinfo);
+    namelen = strlen(utsinfo.nodename)+1;
+    namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
                                  CHPL_RT_MD_LOCALE_NAME_BUFFER, 0, NULL);
+    strcpy(namespace, utsinfo.nodename);
   }
-  strcpy(namespace, utsinfo.nodename);
   return namespace;
 }

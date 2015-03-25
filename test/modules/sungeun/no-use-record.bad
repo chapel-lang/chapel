@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/Types.chpl:301: error: illegal cast from nil to R

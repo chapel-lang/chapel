@@ -31,3 +31,5 @@ on Locales[numLocales-1] {
 //b.debugprint();
 writeln(b);
 
+delete b;
+delete a;

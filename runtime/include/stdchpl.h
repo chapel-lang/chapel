@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -44,12 +44,12 @@
 #include "chpl-comm.h"
 #include "chpldirent.h"
 #include "chplexit.h"
+#include "chpl-file-utils.h"
 #include <chplfp.h>
 #include "chplglob.h"
 #include "chplio.h"
-#include "chplisdir.h"
 #include "chplmath.h"
-#include "chpl-main.h"
+#include "chpl-init.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpl-prefetch.h"
@@ -59,6 +59,7 @@
 #include "chpl-tasks.h"
 #include "chpltimers.h"
 #include "chpltypes.h"
+#include "chpl-vector-marcos.h"
 #include "error.h"
 
 #include "chplgmp.h"

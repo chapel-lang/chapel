@@ -1,4 +1,4 @@
---no-cc-warnings -snoRefCount -M helpers -sdisableAliasedBulkTransfer=false # miniMD.simple.perfkeys
---no-cc-warnings -snoRefCount -M helpers -sdisableAliasedBulkTransfer=false --no-local  # miniMD.simple-nolocal.perfkeys
---no-cc-warnings -snoRefCount -M helpers -sdisableAliasedBulkTransfer=false --no-local -suseBlockDist=true # miniMD.simple-block.perfkeys
---no-cc-warnings -snoRefCount -M helpers -suseStencilDist=true -sdefaultDoRADOpt=false -sdisableAliasedBulkTransfer=false --no-local # miniMD.stencil.perfkeys
+-snoRefCount -M helpers -sdisableAliasedBulkTransfer=false # miniMD.simple.perfkeys
+-snoRefCount -M helpers -sdisableAliasedBulkTransfer=false --no-local  # miniMD.simple-nolocal.perfkeys
+-snoRefCount -M helpers -sdisableAliasedBulkTransfer=false --no-local -suseBlockDist=true # miniMD.simple-block.perfkeys
+-snoRefCount -M helpers -suseStencilDist=true -sdefaultDoRADOpt=false -sdisableAliasedBulkTransfer=false --no-local # miniMD.stencil.perfkeys

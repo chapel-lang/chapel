@@ -11,7 +11,7 @@
 extern "C" {
   #include <stdlib.h>
   #include <stdio.h>
-#ifndef SIMPLE_TEST
+#ifndef CHPL_RT_UNIT_TEST
   #include "stdchplrt.h"
 #endif
   #include "qio_regexp.h"
@@ -265,6 +265,10 @@ qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_l
   StringPiece* spPtr;
   RE2* re = (RE2*) regexp->regexp;
 
+  // RE2 uses int for ncaptures
+  if( nsubmatch > INT_MAX || nsubmatch < 0 )
+    return false;
+
   if( anchor == QIO_REGEXP_ANCHOR_UNANCHORED ) ranchor = RE2::UNANCHORED;
   else if( anchor == QIO_REGEXP_ANCHOR_START ) ranchor = RE2::ANCHOR_START;
   else if( anchor == QIO_REGEXP_ANCHOR_BOTH ) ranchor = RE2::ANCHOR_BOTH;
@@ -380,6 +384,9 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   int i;
   int use_captures = ncaptures;
   MAYBE_STACK_SPACE(FilePiece, caps_onstack);
+
+  if( ncaptures > INT_MAX || ncaptures < 0 )
+    QIO_GET_CONSTANT_ERROR(err, EINVAL, "invalid number of captures");
 
   start_offset = offset = qio_channel_offset_unlocked(ch);
   end_offset = qio_channel_end_offset_unlocked(ch);

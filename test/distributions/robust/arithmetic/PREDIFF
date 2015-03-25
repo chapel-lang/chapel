@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+
+# Figure out which of TESTNAME.*.good is applicable; copy it to TESTNAME.good.
+#
+# Do nothing if:
+#  * there is no TESTNAME.default.good
+#  * there is TESTNAME.prediff
+
+import sys, os, shutil, string;
+
+testname=sys.argv[1]
+compopts=sys.argv[4]
+
+if (not os.path.isfile(testname+'.default.good') or
+    os.path.isfile(testname+'.prediff')):
+    # leave it alone
+    sys.exit(0)
+
+chpl_comm = os.getenv('CHPL_COMM')
+if chpl_comm=='none' or chpl_comm==None:
+    dist = 'default'
+else:
+    # get the distribution from the -sdistType=... option, if present
+    dist = 'block'
+    searchstring='distType=DistType.'
+    s = string.rfind(compopts, searchstring)
+
+    if s != -1:
+        opt = compopts[s+len(searchstring):len(compopts)]
+        dist = opt.split()[0]
+
+targetfn=testname+'.good'
+goodfn=testname+'.'+dist+'.good'
+if not os.path.isfile(goodfn):
+    goodfn=testname+'.default.good'
+
+print "cp", goodfn, targetfn
+shutil.copy(goodfn, targetfn)

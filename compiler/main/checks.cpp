@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2014 Cray Inc.
+ * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,7 @@
 #include "expr.h"
 #include "passes.h"
 #include "primitive.h"
-#include "../resolution/resolution.h"
+#include "resolution.h"
 
 //
 // Static function declarations.
@@ -342,6 +342,13 @@ void check_insertWideReferences()
   check_afterLowerIterators();
 }
 
+void check_narrowWideReferences()
+{
+  check_afterEveryPass();
+  check_afterNormalization();
+  check_afterCallDestructors();
+}
+
 void check_optimizeOnClauses()
 {
   check_afterEveryPass();
@@ -492,6 +499,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_QUERY_PARAM_FIELD:
         case PRIM_QUERY_TYPE_FIELD:
         case PRIM_ERROR:
+        case PRIM_FORALL_LOOP:
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");
           break;
@@ -629,7 +637,7 @@ checkRetTypeMatchesRetVarType()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (fn->hasFlag(FLAG_ITERATOR_FN))
+    if (fn->isIterator())
       // Iterators break this rule.
       // retType is the type of the iterator record
       // The return value type is the type of the index the iterator returns.

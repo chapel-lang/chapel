@@ -32,7 +32,7 @@ class XmlTag : XmlElement {
 var parsedElements: [AllPairs] single XmlElement;
 
 proc main {
-  forall z in AllIndices do {
+  forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
     if sourceText.substring[z] == '<' then {
       lock;
       StartIndices += z;
