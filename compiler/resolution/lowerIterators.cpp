@@ -19,7 +19,7 @@
 
 #include "optimizations.h"
 #include "astutil.h"
-//#include "oldCollectors.h"
+#include "oldCollectors.h"
 #include "stlUtil.h"
 #include "CForLoop.h"
 #include "expr.h"
@@ -1195,7 +1195,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // replaced in the functions below though.
     if (isOrderIndependent) {
       std::vector<CallExpr*> callExprs;
-      collectCallExprsSTL(ibody, callExprs);
+      collectCallExprs(ibody, callExprs);
 
       for_vector(CallExpr, call, callExprs) {
         if (call->isPrimitive(PRIM_YIELD)) {

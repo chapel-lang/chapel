@@ -43,7 +43,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "WhileStmt.h"
-#include "stlUtil.h"
 
 #include "../ifa/prim_data.h"
 
@@ -6297,7 +6296,7 @@ resolveFns(FnSymbol* fn) {
   //
   if (isFollowerIterator(fn) || isStandaloneIterator(fn)) {
     std::vector<CallExpr*> callExprs;
-    collectCallExprsSTL(fn->body, callExprs);
+    collectCallExprs(fn->body, callExprs);
 
     for_vector(CallExpr, call, callExprs) {
       if (call->isPrimitive(PRIM_YIELD)) {
