@@ -1,71 +1,71 @@
 Module: inlineTest
    Module: inlineTest.Other
-      inline proc inside
+      proc inside
          Comment for inline method inside module 
 
-      inline proc commentless()
-      inline proc body()
+      proc commentless()
+      proc body()
          Comment for inline method with a body inside module 
 
-      inline proc bodyCommentless()
-      inline proc hasArg(val: int)
+      proc bodyCommentless()
+      proc hasArg(val: int)
          Comment for method with an argument inside module 
 
-      inline proc hasArgCommentless(val: int)
-      inline proc argAndBody(val: int)
+      proc hasArgCommentless(val: int)
+      proc argAndBody(val: int)
          Comment for method with argument and body inside module 
 
-      inline proc argAndBodyCommentless(val: int)
-      inline proc hasReturnType(): int
+      proc argAndBodyCommentless(val: int)
+      proc hasReturnType(): int
          This method has a return type 
 
-      inline proc hasReturnTypeCommentless(): int
-      inline proc hasReturnTypeAndArg(val: int): int
+      proc hasReturnTypeCommentless(): int
+      proc hasReturnTypeAndArg(val: int): int
          This method has a return type and an argument 
 
-      inline proc hasReturnTypeAndArgCommentless(val: int): int
-      inline proc returnTypeAndBody(): int
+      proc hasReturnTypeAndArgCommentless(val: int): int
+      proc returnTypeAndBody(): int
          This method has both a return type and a body 
 
-      inline proc returnTypeAndBodyCommentless(): int
-      inline proc allThree(val: int): int
+      proc returnTypeAndBodyCommentless(): int
+      proc allThree(val: int): int
          This method has a return type, an argument, and a function body 
 
-      inline proc allThreeCommentless(val: int): int
-   inline proc method1()
+      proc allThreeCommentless(val: int): int
+   proc method1()
       Comment for method1 
 
-   inline proc uncommented()
-   inline proc body()
+   proc uncommented()
+   proc body()
       Comment for method with a body 
 
-   inline proc bodyCommentless()
-   inline proc hasArg(val: int)
+   proc bodyCommentless()
+   proc hasArg(val: int)
       Comment for method with an argument 
 
-   inline proc hasArgCommentless(val: int)
-   inline proc argAndBody(val: int)
+   proc hasArgCommentless(val: int)
+   proc argAndBody(val: int)
       Comment for method with argument and body 
 
-   inline proc argAndBodyCommentless(val: int)
-   inline proc longComment()
+   proc argAndBodyCommentless(val: int)
+   proc longComment()
       This is an rather long comment 
       It goes on for many lines
       But says very little 
 
-   inline proc hasReturnType(): int
+   proc hasReturnType(): int
       This method has a return type 
 
-   inline proc hasReturnTypeCommentless(): int
-   inline proc hasReturnTypeAndArg(val: int): int
+   proc hasReturnTypeCommentless(): int
+   proc hasReturnTypeAndArg(val: int): int
       This method has a return type and an argument 
 
-   inline proc hasReturnTypeAndArgCommentless(val: int): int
-   inline proc returnTypeAndBody(): int
+   proc hasReturnTypeAndArgCommentless(val: int): int
+   proc returnTypeAndBody(): int
       This method has both a return type and a body 
 
-   inline proc returnTypeAndBodyCommentless(): int
-   inline proc allThree(val: int): int
+   proc returnTypeAndBodyCommentless(): int
+   proc allThree(val: int): int
       This method has a return type, an argument, and a function body 
 
-   inline proc allThreeCommentless(val: int): int
+   proc allThreeCommentless(val: int): int
