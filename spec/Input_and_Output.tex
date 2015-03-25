@@ -3,8 +3,14 @@
 % got one right below: \index{input and output}
 \index{input/output}
 
+\section{See Library Documentation}
+
 Chapel includes an extensive library for input and output that is
-documented in the standard library documentation. 
+documented in the standard library documentation. See
+\url{http://chapel.cray.com/docs/latest/modules/standard/IO.html}.
+
+\section{Writing and Reading}
+\label{IO_writing_reading}
 
 \begin{chapelexample}{HelloWorld.chpl}
 The \chpl{writeln} function allows for a simple implementation
@@ -38,10 +44,6 @@ y = read(real);
 \end{chapel}
 \end{example}
 
-\label{User_Defined_writeThis_Methods}
-\index{input/output!writeThis@\chpl{writeThis}}
-
-
 
 \subsection{The {\em write} and {\em writeln} Methods on Strings}
 \label{stringwrite}
@@ -59,6 +61,9 @@ strings to write the output to a string instead of a channel.
 
 
 \subsection{The {\em readThis}, {\em writeThis}, and {\em readWriteThis} Methods}
+
+\label{User_Defined_writeThis_Methods}
+\index{input/output!writeThis@\chpl{writeThis}}
 
 When programming the input and output method for a custom data type, it is often useful to define both the read and write routines at the same time. That is possible to do in a Chapel program by defining a \chpl{readWriteThis} method, which is a generic method expecting a single argument: either a Reader or a Writer.
 
