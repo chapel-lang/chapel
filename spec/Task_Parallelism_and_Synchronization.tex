@@ -837,8 +837,15 @@ task-intent-list:
 \end{syntax}
 
 where the following intents can be used as a \sntx{formal-intent}:
-the blank intent, \chpl{ref}, \chpl{const ref}, \chpl{const},
-\chpl{const in}, \chpl{in}.
+\chpl{ref}, \chpl{in}, \chpl{const}, \chpl{const in}, \chpl{const ref}.
+
+% TODO for task intents:
+% * Introduce a 'task-formal-intent' syntactic rule
+%   that expands to the legal intents - far preferable than
+%   qualifying which intents are legal in the text of this paragraph.
+% * That's assuming we do not support 'out' and 'inout',
+%   which is still up for debate; otherwise leave as-is.
+% * Do we want to allow blank intents? Current implementation allows them.
 
 The implicit treatment of outer scope variables as the task function's
 formal arguments applies to both module level and local variables.
@@ -913,6 +920,7 @@ what to do with extern functions, etc.
 
 We do not provide \chpl{inout} or \chpl{out} as task intents because they
 will necessarily create a data race in a \chpl{cobegin} or \chpl{coforall}.
+% that does not necessarily apply to a 'begin'
 \chpl{type} and \chpl{param} intents are not available either
 as they do not seem useful as task intents.
 \end{rationale}
