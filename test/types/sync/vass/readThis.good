@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/IO.chpl:: error: sync/single variables cannot currently be read - use writeEF/writeFF instead

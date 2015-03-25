@@ -51,14 +51,28 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
+
+#if HAVE_LLVM_VER >= 35
+#include "llvm/IR/InstIterator.h"
+#include "llvm/IR/CallSite.h"
+#else
 #include "llvm/Support/InstIterator.h"
 #include "llvm/Support/CallSite.h"
+#endif
+
+
+#if HAVE_LLVM_VER >= 35
+#include "llvm/IR/Verifier.h"
+#else
 #include "llvm/Analysis/Verifier.h"
+#endif
+
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
 #include <cstdio>
+#include <list>
 
 using namespace llvm;
 
@@ -739,7 +753,11 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   }
 
   //MD = &getAnalysis<MemoryDependenceAnalysis>();
+#if HAVE_LLVM_VER >= 35
+  TD = & getAnalysisIfAvailable<DataLayoutPass>()->getDataLayout();
+#else
   TD = getAnalysisIfAvailable<DataLayout>();
+#endif
   //TLI = &getAnalysis<TargetLibraryInfo>();
 
   // Walk all instruction in the function.
@@ -770,7 +788,11 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   }
 
   if( extraChecks ) {
+#if HAVE_LLVM_VER >= 35
+    assert(!verifyFunction(F, &errs()));
+#else
     verifyFunction(F);
+#endif
   }
 
   //MD = 0;

@@ -56,7 +56,7 @@ tags
 /make/Chapel.xcodeproj/*.mode1v3
 
 # Man ignores.
-/man/man1/chpl.1
+/man/man1/
 
 # Modules ignores.
 /modules/docs
@@ -245,6 +245,14 @@ tags
 /test/modules/standard/FileSystem/lydia/chmod/file
 /test/modules/standard/FileSystem/lydia/copy/bar.txt
 /test/modules/standard/FileSystem/lydia/copyFile/bar.txt
+/test/modules/standard/FileSystem/lydia/copyTree/complexDest
+/test/modules/standard/FileSystem/lydia/copyTree/emptyDest
+/test/modules/standard/FileSystem/lydia/copyTree/sparseDest
+/test/modules/standard/FileSystem/lydia/copyTree/verySparseDest
+/test/modules/standard/FileSystem/lydia/copyTree/shortDest
+/test/modules/standard/FileSystem/lydia/copyTree/denseDest
+/test/modules/standard/FileSystem/lydia/copyTree/cutoffDest
+/test/modules/standard/FileSystem/lydia/copyTree/existing_dir
 /test/modules/standard/FileSystem/lydia/exists/broken_link
 /test/modules/standard/FileSystem/lydia/exists/dir
 /test/modules/standard/FileSystem/lydia/exists/dir_link
@@ -255,7 +263,10 @@ tags
 /test/modules/standard/FileSystem/lydia/isLink/my_file
 /test/modules/standard/FileSystem/lydia/isLink/my_link_dir
 /test/modules/standard/FileSystem/lydia/isLink/my_link_file
+/test/modules/standard/FileSystem/lydia/isMount/symlinkToRoot
+/test/modules/standard/FileSystem/lydia/isMount/notAMonkey/symlinkToRoot
 /test/modules/standard/FileSystem/lydia/symlink/bar.txt
+/test/modules/standard/Path/lydia/realpath/blahblahblah.txt
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/modules/standard/machine/numCores.good
 /test/modules/standard/memory/countMemory/countMemory.*.good
@@ -280,18 +291,22 @@ tags
 /test/release/examples/primers/docs
 /test/release/examples/primers/Arr.dat
 /test/release/examples/primers/arrays
+/test/release/examples/primers/arrayVectorOps
+/test/release/examples/primers/associative
 /test/release/examples/primers/atomics
-/test/release/examples/primers/chpldoc
+/test/release/examples/primers/chpldoc.doc
 /test/release/examples/primers/classes
 /test/release/examples/primers/distributions
 /test/release/examples/primers/domains
 /test/release/examples/primers/fileIO
+/test/release/examples/primers/FFTWlib
 /test/release/examples/primers/genericClasses
 /test/release/examples/primers/iterators
-/test/release/examples/primers/leaderfollower
 /test/release/examples/primers/locales
 /test/release/examples/primers/opaque
+/test/release/examples/primers/parIters
 /test/release/examples/primers/procedures
+/test/release/examples/primers/randomNumbers
 /test/release/examples/primers/ranges
 /test/release/examples/primers/reductions
 /test/release/examples/primers/slices

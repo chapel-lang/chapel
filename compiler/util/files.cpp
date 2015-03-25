@@ -312,7 +312,7 @@ void closeInputFile(FILE* infile) {
 }
 
 
-static const char** inputFilenames = {NULL};
+static const char** inputFilenames = NULL;
 
 
 static bool checkSuffix(const char* filename, const char* suffix) {
@@ -342,7 +342,7 @@ bool isChplSource(const char* filename) {
   return retval;
 }
 
-static bool isRecognizedSource(char* filename) {
+static bool isRecognizedSource(const char* filename) {
   return (isCSource(filename) ||
           isCHeader(filename) ||
           isObjFile(filename) ||
@@ -350,12 +350,15 @@ static bool isRecognizedSource(char* filename) {
 }
 
 
-void testInputFiles(int numFilenames, char* filename[]) {
-  inputFilenames = (const char**)malloc((numFilenames+1)*sizeof(char*));
-  int i;
+void addSourceFiles(int numNewFilenames, const char* filename[]) {
+  static int numInputFiles = 0;
+  int cursor = numInputFiles;
   char achar;
+  numInputFiles += numNewFilenames;
+  inputFilenames = (const char**)realloc(inputFilenames, 
+                                         (numInputFiles+1)*sizeof(char*));
 
-  for (i = 0; i < numFilenames; i++) {
+  for (int i = 0; i < numNewFilenames; i++, cursor++) {
     if (!isRecognizedSource(filename[i])) {
       USR_FATAL(astr("file '",
                      filename[i],
@@ -373,13 +376,18 @@ void testInputFiles(int numFilenames, char* filename[]) {
       closeInputFile(testfile);
     }
 
-    inputFilenames[i] = astr(filename[i]);
+    inputFilenames[cursor] = astr(filename[i]);
   }
 
-  inputFilenames[i] = NULL;
+  inputFilenames[cursor] = NULL;
 
   if (!foundChplSource && fUseIPE == false)
     USR_FATAL("Command line contains no .chpl source files");
+}
+
+void addSourceFile(const char* filename) {
+  const char* filenamearr[1] = {filename};
+  addSourceFiles(1, filenamearr);
 }
 
 

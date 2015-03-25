@@ -124,6 +124,8 @@
           "thread list descriptor"),                                    \
         m(IO_BUFFER,                                                    \
           "io buffer or bytes"),                                        \
+        m(OS_LAYER_TMP_DATA,                                            \
+          "OS layer temporary data"),                                   \
         m(GMP,                                                          \
           "gmp data"),                                                  \
         m(GETS_PUTS_STRIDES,                                            \

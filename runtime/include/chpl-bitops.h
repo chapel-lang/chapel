@@ -28,16 +28,17 @@
 #ifndef _chpl_bitops_h_
 #define _chpl_bitops_h_
 
+#include <assert.h>
 #include <stdint.h>
 #include <limits.h>
 
 #include "chpl-comp-detect-macros.h"
 
-// chpl_bitopts_popcount_*
-// -----------------------
+// chpl_bitops_popcount_*
+// ----------------------
 // C implementations from Bithacks: 'Couting bits set, in parallel'
 // With -O3 and no support for the popcount instruction, the C versions produce
-// the same asmembly as the builtin under clang
+// the same assembly as the builtin under clang
 // Returns: number of bits set in the provided integer
 
 static inline uint32_t chpl_bitops_popcount_32(unsigned int x) {
@@ -70,8 +71,8 @@ static inline uint64_t chpl_bitops_popcount_64(unsigned long long x) {
 }
 
 
-// chpl_bitopts_clz_*
-// ------------------
+// chpl_bitops_clz_*
+// -----------------
 // C implementation from http://aggregate.org/MAGIC/#Leading%20Zero%20Count
 // Returns: number of leading zeros in the provided integer
 
@@ -119,8 +120,8 @@ static inline uint64_t chpl_bitops_clz_64(unsigned long long x) {
 }
 
 
-// chpl_bitopts_ctz_*
-// ------------------
+// chpl_bitops_ctz_*
+// -----------------
 // C implementation from Bithacks: 'Count the consecutive zero bits (trailing)
 //                                   on the right with multiply and lookup'
 // Returns: number of trailing zeros in the provided integer
@@ -159,4 +160,88 @@ static inline uint64_t chpl_bitops_ctz_64(unsigned long long x) {
 #endif
 }
 
+
+// chpl_bitops_parity_*
+// --------------------
+// C implementations from Bithacks: 'Compute parity of word with a multiply'
+// Returns: 0 if an even number of bits are set
+//          1 if an odd number of bits are set
+
+static inline uint32_t chpl_bitops_parity_32(unsigned int x) {
+#if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
+  // This will expand to (confirmed w/ GCC):
+  // When`popcnt` is supported:    Otherwise:
+  // asm {                         asm {
+  //   popcnt eax, edi               mov   eax, edi
+  //   and    eax, 1                 shr   edi, 16
+  //   ret                           xor   eax, edi
+  // }                               xor   al,  ah
+  //                                 setnp al
+  //                                 movzx eax, al
+  //                                 ret
+  //                               }
+  return __builtin_parity(x);
+#else
+  x ^= x >> 1;
+  x ^= x >> 2;
+  x = (x & 0x11111111U) * 0x11111111U;
+  return (x >> 28) & 1;
+#endif
+}
+
+static inline uint64_t chpl_bitops_parity_64(unsigned long long x) {
+#if !defined(CHPL_BITOPS_C) && (RT_COMP_CC & (~RT_COMP_PGI))
+  return __builtin_parityll(x);
+#else
+  x ^= x >> 1;
+  x ^= x >> 2;
+  x = (x & 0x1111111111111111UL) * 0x1111111111111111UL;
+  return (x >> 60) & 1;
+#endif
+}
+
+// chpl_bitops_rotl_*
+// ------------------
+// See "Safe, Efficient, and Portable Rotate in C/C++" by John Regehr
+//     http://blog.regehr.org/archives/1063
+// These should be recognized by the backend C compiler and turned into a rol
+//
+// Returns: x rotated left by n
+
+#define UI(size) uint##size##_t
+#define CHPL_BITOPS_ROTL(size) \
+static inline UI(size) chpl_bitops_rotl_##size(UI(size) x, UI(size) n) { \
+  assert(n < size);                                                      \
+  return (x << n) | (x >> (-n & (size - 1)));                            \
+}
+
+CHPL_BITOPS_ROTL(8)
+CHPL_BITOPS_ROTL(16)
+CHPL_BITOPS_ROTL(32)
+CHPL_BITOPS_ROTL(64)
+
+#undef CHPL_BITOPS_ROTL
+
+//
+// chpl_bitops_rotr_*
+// ------------------
+// See "Safe, Efficient, and Portable Rotate in C/C++" by John Regehr
+//     http://blog.regehr.org/archives/1063
+// These should be recognized by the backend C compiler and turned into a ror
+//
+// Returns: x rotated left by n
+
+#define CHPL_BITOPS_ROTR(size) \
+static inline UI(size) chpl_bitops_rotr_##size(UI(size) x, UI(size) n) { \
+  assert(n < size);                                                      \
+  return (x >> n) | (x << (-n & (size - 1)));                            \
+}
+
+CHPL_BITOPS_ROTR(8)
+CHPL_BITOPS_ROTR(16)
+CHPL_BITOPS_ROTR(32)
+CHPL_BITOPS_ROTR(64)
+
+#undef CHPL_BITOPS_ROTR
+#undef UI
 #endif // _chpl_bitops_h_

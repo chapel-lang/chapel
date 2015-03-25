@@ -17,8 +17,313 @@
  * limitations under the License.
  */
 
+/*
+
+Regular expression support.
+
+The regular expression support is built on top of the RE2 regular expression
+library. As such, the exact regular expression syntax available is the syntax
+from RE2, which is available within the RE2 project at
+https://github.com/google/re2 and included here for your convenience.
+
+
+Enabling Regular Expression Support
+-----------------------------------
+
+Setting the environment variable CHPL_REGEXP to re2 will enable regular
+expression support with the RE2 library:
+
+.. code-block:: sh
+
+   export CHPL_REGEXP=re2
+
+Then, rebuild Chapel. The RE2 library will be expanded from a release included
+in the Chapel distribution.
+
+.. note::
+
+  if re2 support is not enabled (which is the default), all features
+  described below will compile successfully, but will result in an internal
+  error at *run time*, saying "No Regexp Support".
+
+
+Using Regular Expression Support
+--------------------------------
+
+.. code-block:: chapel
+
+   use Regexp;
+   var myRegexp = compile("a+");
+
+Now you can use these methods on regular expressions: :proc:`regexp.search`,
+:proc:`regexp.match`, :proc:`regexp.split`, :proc:`regexp.matches`.
+
+You can also use the string versions of these methods: :proc:`string.search`,
+:proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`.
+
+Lastly, you can include regular expressions in the format string for
+:proc:`~IO.readf` for searching on QIO channels using the ``%/<regexp>/``
+syntax.
+
+
+.. _regular-expression-syntax:
+
+RE2 regular expression syntax reference
+---------------------------------------
+
+::
+
+  Single characters:
+  .            any character, possibly including newline (s=true)
+  [xyz]        character class
+  [^xyz]       negated character class
+  \d           Perl character class (see below)
+  \D           negated Perl character class (see below)
+  [:alpha:]    ASCII character class
+  [:^alpha:]   negated ASCII character class
+  \pN          Unicode character class (one-letter name)
+  \p{Greek}    Unicode character class
+  \PN          negated Unicode character class (one-letter name)
+  \P{Greek}    negated Unicode character class
+
+  Composites:
+  xy           «x» followed by «y»
+  x|y          «x» or «y» (prefer «x»)
+
+  Repetitions:
+  x*           zero or more «x», prefer more
+  x+           one or more «x», prefer more
+  x?           zero or one «x», prefer one
+  x{n,m}       «n» or «n»+1 or ... or «m» «x», prefer more
+  x{n,}        «n» or more «x», prefer more
+  x{n}         exactly «n» «x»
+  x*?          zero or more «x», prefer fewer
+  x+?          one or more «x», prefer fewer
+  x??          zero or one «x», prefer zero
+  x{n,m}?      «n» or «n»+1 or ... or «m» «x», prefer fewer
+  x{n,}?       «n» or more «x», prefer fewer
+  x{n}?        exactly «n» «x»
+
+  Grouping:
+  (re)         numbered capturing group
+  (?P<name>re) named & numbered capturing group
+  (?:re)       non-capturing group
+  (?flags)     set flags within current group; non-capturing
+  (?flags:re)  set flags during re; non-capturing
+
+  Flags:
+  i            case-insensitive (default false)
+  m            multi-line mode: «^» and «$» match begin/end line in addition to
+                 begin/end text (default false)
+  s            let «.» match «\n» (default false)
+  U            ungreedy: swap meaning of «x*» and «x*?», «x+» and «x+?», etc.
+                 (default false)
+
+  Flag syntax is:
+    «xyz»   (set)
+    «-xyz»  (clear)
+    «xy-z»  (set «xy», clear «z»)
+
+  Empty strings:
+  ^            at beginning of text or line («m»=true)
+  $            at end of text (like «\z» not «\Z») or line («m»=true)
+  \A           at beginning of text
+  \b           at word boundary («\w» on one side and «\W», «\A», or «\z» on the
+                 other)
+  \B           not a word boundary
+  \z           at end of text
+
+  Escape sequences:
+  \a           bell (== \007)
+  \f           form feed (== \014)
+  \t           horizontal tab (== \011)
+  \n           newline (== \012)
+  \r           carriage return (== \015)
+  \v           vertical tab character (== \013)
+  \*           literal «*», for any punctuation character «*»
+  \123         octal character code (up to three digits)
+  \x7F         hex character code (exactly two digits)
+  \x{10FFFF}   hex character code
+  \C           match a single byte even in UTF-8 mode
+  \Q...\E      literal text «...» even if «...» has punctuation
+
+  Character class elements:
+  x            single character
+  A-Z          character range (inclusive)
+  \d           Perl character class (see below)
+  [:foo:]      ASCII character class «foo»
+  \p{Foo}      Unicode character class «Foo»
+  \pF          Unicode character class «F» (one-letter name)
+
+  Named character classes as character class elements:
+  [\d]         digits (== \d)
+  [^\d]        not digits (== \D)
+  [\D]         not digits (== \D)
+  [^\D]        not not digits (== \d)
+  [[:name:]]   named ASCII class inside character class (== [:name:])
+  [^[:name:]]  named ASCII class inside negated character class (== [:^name:])
+  [\p{Name}]   named Unicode property inside character class (== \p{Name})
+  [^\p{Name}]  named Unicode property inside negated character class (==\P{Name})
+
+  Perl character classes:
+  \d           digits (== [0-9])
+  \D           not digits (== [^0-9])
+  \s           whitespace (== [\t\n\f\r ])
+  \S           not whitespace (== [^\t\n\f\r ])
+  \w           word characters (== [0-9A-Za-z_])
+  \W           not word characters (== [^0-9A-Za-z_])
+
+  ASCII character classes::
+
+  [:alnum:]    alphanumeric (== [0-9A-Za-z])
+  [:alpha:]    alphabetic (== [A-Za-z])
+  [:ascii:]    ASCII (== [\x00-\x7F])
+  [:blank:]    blank (== [\t ])
+  [:cntrl:]    control (== [\x00-\x1F\x7F])
+  [:digit:]    digits (== [0-9])
+  [:graph:]    graphical (== [!-~] == 
+                 [A-Za-z0-9!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])
+  [:lower:]    lower case (== [a-z])
+  [:print:]    printable (== [ -~] == [ [:graph:]])
+  [:punct:]    punctuation (== [!-/:-@[-`{-~])
+  [:space:]    whitespace (== [\t\n\v\f\r ])
+  [:upper:]    upper case (== [A-Z])
+  [:word:]     word characters (== [0-9A-Za-z_])
+  [:xdigit:]   hex digit (== [0-9A-Fa-f])
+
+  Unicode character class names--general category:
+  C            other
+  Cc           control
+  Cf           format
+  Co           private use
+  Cs           surrogate
+  L            letter
+  Ll           lowercase letter
+  Lm           modifier letter
+  Lo           other letter
+  Lt           titlecase letter
+  Lu           uppercase letter
+  M            mark
+  Mc           spacing mark
+  Me           enclosing mark
+  Mn           non-spacing mark
+  N            number
+  Nd           decimal number
+  Nl           letter number
+  No           other number
+  P            punctuation
+  Pc           connector punctuation
+  Pd           dash punctuation
+  Pe           close punctuation
+  Pf           final punctuation
+  Pi           initial punctuation
+  Po           other punctuation
+  Ps           open punctuation
+  S            symbol
+  Sc           currency symbol
+  Sk           modifier symbol
+  Sm           math symbol
+  So           other symbol
+  Z            separator
+  Zl           line separator
+  Zp           paragraph separator
+  Zs           space separator
+
+  Unicode character class names--scripts (with explanation where non-trivial):
+  Arabic
+  Armenian
+  Balinese
+  Bengali
+  Bopomofo
+  Braille
+  Buginese
+  Buhid
+  Canadian_Aboriginal
+  Carian
+  Cham
+  Cherokee
+  Common       characters not specific to one script
+  Coptic
+  Cuneiform
+  Cypriot
+  Cyrillic
+  Deseret
+  Devanagari
+  Ethiopic
+  Georgian
+  Glagolitic
+  Gothic
+  Greek
+  Gujarati
+  Gurmukhi
+  Han
+  Hangul
+  Hanunoo
+  Hebrew
+  Hiragana
+  Inherited    inherit script from previous character
+  Kannada
+  Katakana
+  Kayah_Li
+  Kharoshthi
+  Khmer
+  Lao
+  Latin
+  Lepcha
+  Limbu
+  Linear_B
+  Lycian
+  Lydian
+  Malayalam
+  Mongolian
+  Myanmar
+  New_Tai_Lue  aka Simplified Tai Lue
+  Nko
+  Ogham
+  Ol_Chiki
+  Old_Italic
+  Old_Persian
+  Oriya
+  Osmanya
+  Phags_Pa
+  Phoenician
+  Rejang
+  Runic
+  Saurashtra
+  Shavian
+  Sinhala
+  Sundanese
+  Syloti_Nagri
+  Syriac
+  Tagalog
+  Tagbanwa
+  Tai_Le
+  Tamil
+  Telugu
+  Thaana
+  Thai
+  Tibetan
+  Tifinagh
+  Ugaritic
+  Vai
+  Yi
+
+  Vim character classes:
+  \d      digits (== [0-9])
+  \D      not «\d»
+  \w      word character
+  \W      not «\w»
+
+Regular Expression Types and Methods
+------------------------------------
+
+ */
+module Regexp {
+
+pragma "no doc"
 extern type qio_regexp_t;
 
+pragma "no doc"
 extern record qio_regexp_options_t {
   var utf8:bool;
   var posix:bool;
@@ -31,39 +336,59 @@ extern record qio_regexp_options_t {
   var nongreedy:bool; // (?U)
 }
 
+pragma "no doc"
 extern proc qio_regexp_null():qio_regexp_t;
+pragma "no doc"
 extern proc qio_regexp_init_default_options(ref options:qio_regexp_options_t);
+pragma "no doc"
 extern proc qio_regexp_create_compile(str:c_string, strlen:int(64), ref options:qio_regexp_options_t, ref compiled:qio_regexp_t);
+pragma "no doc"
 extern proc qio_regexp_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
+pragma "no doc"
 extern proc qio_regexp_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regexp_t);
+pragma "no doc"
 extern proc qio_regexp_retain(const ref compiled:qio_regexp_t);
+pragma "no doc"
 extern proc qio_regexp_release(ref compiled:qio_regexp_t);
+pragma "no doc"
 
+pragma "no doc"
 extern proc qio_regexp_get_options(const ref regexp:qio_regexp_t, ref options: qio_regexp_options_t);
+pragma "no doc"
 extern proc qio_regexp_get_pattern(const ref regexp:qio_regexp_t, ref pattern: c_string);
+pragma "no doc"
 extern proc qio_regexp_get_ncaptures(const ref regexp:qio_regexp_t):int(64);
+pragma "no doc"
 extern proc qio_regexp_ok(const ref regexp:qio_regexp_t):bool;
+pragma "no doc"
 extern proc qio_regexp_error(const ref regexp:qio_regexp_t):c_string;
 
+pragma "no doc"
 extern const QIO_REGEXP_ANCHOR_UNANCHORED:c_int;
+pragma "no doc"
 extern const QIO_REGEXP_ANCHOR_START:c_int;
+pragma "no doc"
 extern const QIO_REGEXP_ANCHOR_BOTH:c_int;
 
+pragma "no doc"
 extern record qio_regexp_string_piece_t {
   var offset:int(64); // counting from 0, -1 means "NULL"
   var len:int(64);
 }
 
+pragma "no doc"
 extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
 
+pragma "no doc"
 extern proc qio_regexp_match(ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
+pragma "no doc"
 extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string_copy, ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied
 // (or any way to use 'nil' in pass-by-ref)
-/** Compile a regular expression. This routine will halt if compilation failed
- */
+// This one is documented below.
+pragma "no doc"
 proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp {
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
@@ -85,8 +410,36 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
   return ret;
 }
 
-/*  Compile a regular expression and retrieve an error code if compilation
-    failed.
+/*
+   Compile a regular expression. If the optional error argument is provided,
+   this routine will return an error code if compilation failed. Otherwise, it
+   will halt with an error message.
+    
+   :arg pattern: the string regular expression to compile.
+                 See :ref:`regular-expression-syntax` for details
+   :arg error: (optional) if provided, return an error code instead of halting
+               if an error is encountered
+   :arg utf8: (optional, default true) set to `true` to create a regular
+               expression matching UTF-8; `false` for binary or ASCII only.
+   :arg posix: (optional) set to true to disable non-POSIX regular expression
+               syntax   
+   :arg literal: (optional) set to true to treat the regular expression as a
+                 literal (ie, create a regexp matching ``pattern`` as a string
+                 rather than as a regular expression).
+   :arg nocapture: (optional) set to true in order to disable all capture groups
+                   in the regular expression
+   :arg ignorecase: (optional) set to true in order to ignore case when matching
+   :arg multiline: (optional) set to true in order to activate multiline mode
+                   (meaning that ``^`` and ``$`` match the beginning and end of a
+                   line instead of just the beginning and end of the text.
+   :arg dotnl: (optional, default false) set to true in order to allow ``.``
+               to match a newline.
+   :arg nongreedy: (optional) set to true in order to prefer shorter matches for
+                   repetitions; for example, normally x* will match as many x
+                   characters as possible and x*? will match as few as possible.
+                   This flag swaps the two, so that x* will match as few as
+                   possible and x*? will match as many as possible.
+
  */
 proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp {
   var opts:qio_regexp_options_t;
@@ -118,10 +471,15 @@ proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=
  *** easier/cheaper to use a c_string here and provide a custom
  *** constructor.
  ***/
+/* mferguson - I agree - I think we should remove this one at some point,
+  at least it makes no sense if the string contained here will
+  copy the entire larger string, which is what I think we are building.
+  */
 /*  Regular expression search routines also can work with
     a stringPart, which refers to a substring within another
     string.
  */
+pragma "no doc"
 record stringPart {
   var offset:int;
   var length:int;
@@ -130,22 +488,29 @@ record stringPart {
 
 /*  The reMatch record records a regular expression search match
     or a capture group.
+
     Regular expression search routines normally return one of these.
     Also, this type can be passed as a capture group argument.
     Lastly, something of type reMatch can be checked for a match
-    in a simple if statement, as in::
+    in a simple if statement, as in:
 
-      var m:reMatch = ....;
+    .. code-block:: chapel
+
+      var m:reMatch = ...;
       if m then do_something_if_matched();
       if !m then do_something_if_not_matched();
 
  */
 record reMatch {
+  /* true if the regular expression search matched successfully */
   var matched:bool;
+  /* 0-based offset into the string or channel that matched; -1 if matched=false */
   var offset:int; // 0-based, -1 if matched==false
+  /* the length of the match. 0 if matched==false */
   var length:int; // 0 if matched==false
 }
 
+pragma "no doc"
 proc _to_reMatch(ref p:qio_regexp_string_piece_t):reMatch {
   if qio_regexp_string_piece_isnull(p) {
     return new reMatch(false, -1, 0); 
@@ -154,11 +519,19 @@ proc _to_reMatch(ref p:qio_regexp_string_piece_t):reMatch {
   }
 }
 
+pragma "no doc"
 inline proc !(m: reMatch) return !m.matched;
+
+pragma "no doc"
 inline proc _cond_test(m: reMatch) return m.matched;
 
-/*  Use someString.substring(anReMatch) to extract the part
-    of a string matching a regular expression or capture group.
+/*  This function extracts the part of a string matching a regular
+    expression or capture group. This method is intended to be
+    called on the same string used as the `text` in a regular
+    expression search.
+
+    :arg m: a match (e.g. returned by :proc:`regexp.search`)
+    :returns: the portion of ``this`` referred to by the match
  */
 proc string.substring(m:reMatch) {
   if m.matched then return this.substring(m.offset+1..#m.length);
@@ -166,27 +539,41 @@ proc string.substring(m:reMatch) {
 }
 
 /*  This class represents a compiled regular expression. Regular expressions
-    are cached on a per-thread basis and are reference counted.
+    are currently cached on a per-thread basis and are reference counted.
     To create a compiled regular expression, use the compile function.
+
+    A regexp can be cast to a string (resulting in the pattern that
+    was compiled). A string can be cast to a regexp (resulting in a compiled
+    regexp).
   */
 pragma "ignore noinit"
 record regexp {
+  pragma "no doc"
   var home: locale = here;
+  pragma "no doc"
   var _regexp:qio_regexp_t = qio_regexp_null();
 
+  /* did this regular expression compile ? */
   proc ok:bool {
     return qio_regexp_ok(_regexp);
   }
+  /* 
+     
+     :returns: a string describing any error encountered when compiling this
+               regular expression
+   */
   proc error():string {
     return toString(qio_regexp_error(_regexp));
   }
 
   // note - more = overloads are below.
+  pragma "no doc"
   proc ~regexp() {
     qio_regexp_release(_regexp);
     _regexp = qio_regexp_null();
   }
 
+  pragma "no doc"
   proc _handle_captures(text: string, matches:_ddata(qio_regexp_string_piece_t), nmatches:int, ref captures) {
     assert(nmatches >= captures.size);
     for param i in 1..captures.size {
@@ -206,15 +593,22 @@ record regexp {
 
   // Note - we would only need one version of these routines
   // if we had args ...?k supporting 0 args, or if tuples support zero length
-  /*  Search within the passed text (which must be a string or a stringPart)
-      for the first match at any offset to this regular expression. Returns a
-      match object. This routine will try matching the regular expression at
-      different offsets until a match is found. If you want to only match at
-      the beginning of the pattern, you can start your pattern with ^ or
-      use regexp.match. The capture group arguments here can be strings
-      or any type that can reasonably cast from string. If a capture group
-      was not matched, the corresponding argument will get the default value
-      for its type.
+
+  /*
+     Search within the passed text for the first match at any offset to this
+     regular expression.  This routine will try matching the regular expression
+     at different offsets until a match is found. If you want to only match at
+     the beginning of the pattern, you can start your pattern with ``^`` and
+     end it with ``$`` or use :proc:`regexp.match`. If a capture group was not
+     matched, the corresponding argument will get the default value for its
+     type.
+
+     :arg text: a string to search
+     :arg captures: (optional) what to capture from the regular expression. These
+                    should be strings or types that strings can cast to.
+     :returns: an :record:`reMatch` object representing the offset in text
+               where a match occurred
+
     */
   proc search(text: ?t, ref captures ...?k):reMatch
     where t == string || t == stringPart
@@ -245,9 +639,9 @@ record regexp {
     }
     return ret;
   }
-  /*  Search for the first match at any offset without returning any capture
-      groups.
-    */
+
+  // documented in the captures version
+  pragma "no doc"
   proc search(text: ?t):reMatch
     where t == string || t == stringPart
   {
@@ -276,17 +670,25 @@ record regexp {
     return ret;
   }
 
-  /*  Check for a match to this regular expression at the start of the
-      passed text. As with regexp.search, the capture group arguments
-      here can be strings or any type that can reasonably cast from string. If
-      a capture group was not matched, the corresponding argument will get the
-      default value for its type.
+  /*
+     Check for a match to this regular expression at the start of the passed
+     text. If a capture group was not matched, the corresponding argument will
+     get the default value for its type.
 
-      You can do::
+     For example, this function can be used to check to see if a string
+     fits a particular template:
+
+     .. code-block:: chapel
 
        if myregexp.match("some string") {
-         ... do something if matched;
+         do_something_if_matched();
        }
+
+     :arg text: a string to search
+     :arg captures: what to capture from the regular expression. These should
+                    be strings or types that strings can cast to.
+     :returns: an :record:`reMatch` object representing the offset in text
+               where a match occurred
    */
   proc match(text: ?t, ref captures ...?k):reMatch
     where t == string || t == stringPart
@@ -317,6 +719,9 @@ record regexp {
     }
     return ret;
   }
+
+  // documented in the version taking captures.
+  pragma "no doc"
   proc match(text: ?t):reMatch
     where t == string || t == stringPart
   {
@@ -346,11 +751,16 @@ record regexp {
   }
 
 
-  /* Split the text by occurrences of this regular expression.
+  /*
+     Split the text by occurrences of this regular expression.
      If capturing parentheses are used in pattern, then the text of all
      groups in the pattern are also returned as part of the resulting array.
-     If maxsplit is nonzero, at most maxsplit splits occur, and the
+     If *maxsplit* is nonzero, at most maxsplit splits occur, and the
      remaining text is returned as the last element.
+
+     :arg text: a string to split
+     :arg maxsplit: if nonzero, the maximum number of splits to do
+     :yields: each split portion, one at a time
    */
   iter split(text: ?t, maxsplit: int = 0) 
     where t == string || t == stringPart 
@@ -417,10 +827,14 @@ record regexp {
       _ddata_free(matches);
     }
   }
+
   /* Enumerates matches in the string as well as capture groups.
 
-     Returns tuples of reMatch objects, the 1st is always
-     the match for the whole pattern and the rest are the capture groups.
+     :arg text: the string to search
+     :arg captures: (compile-time constant) the size of the captures to return
+     :arg maxmatches: the maximum number of matches to return
+     :yields: tuples of :record:`reMatch` objects, the 1st is always
+              the match for the whole pattern and the rest are the capture groups.
    */
   iter matches(text: ?t, param captures=0, maxmatches: int = max(int)) 
     where t == string || t == stringPart 
@@ -460,6 +874,17 @@ record regexp {
       _ddata_free(matches);
     }
   }
+
+  /* Perform the same operation as :proc:`regexp.sub` but return a tuple
+     containing the new string and the number of substitutions made.
+
+     :arg repl: replace matches with this string
+     :arg text: the text to search and replace within
+     :type text: string
+     :arg global: if true, replace multiple matches
+     :returns: a tuple containing (new string, number of substitutions made)
+   */
+  // TODO -- move subn after sub for documentation clarity
   proc subn(repl:string, text: ?t, global = true ):(string, int)
     where t == string || t == stringPart 
   {
@@ -481,12 +906,25 @@ record regexp {
     const ret = toString(replaced);
     return (ret, nreplaced);
   }
+
+  /*
+     Find matches to this regular expression and create a new string in which
+     those matches are replaced by repl.
+     
+     :arg repl: replace matches with this string
+     :arg text: the text to search and replace within
+     :type text: string
+     :arg global: if true, replace multiple matches
+     :returns: the new string
+   */
   proc sub(repl:string, text: ?t, global = true )
     where t == string || t == stringPart 
   {
     var (str, count) = subn(repl, text, global);
     return str;
   }
+
+  pragma "no doc"
   proc writeThis(f: Writer) {
     var pattern:c_string;
     on this.home {
@@ -496,6 +934,8 @@ record regexp {
     // and there's no way to get the flags
     f.write("new regexp(\"", pattern, "\")");
   }
+
+  pragma "no doc"
   proc readThis(f: Reader) {
     var pattern:c_string;
     // Note -- this is wrong because we didn't quote
@@ -512,6 +952,7 @@ record regexp {
   }
 }
 
+pragma "no doc"
 proc =(ref ret:regexp, x:regexp)
 {
   // retain -- release
@@ -538,6 +979,7 @@ proc =(ref ret:regexp, x:regexp)
 }
 
 // TODO -- shouldn't have to write this this way!
+pragma "no doc"
 pragma "init copy fn"
 proc chpl__initCopy(x: regexp) {
   on x.home {
@@ -547,6 +989,7 @@ proc chpl__initCopy(x: regexp) {
 }
 
 // Cast regexp to string.
+pragma "no doc"
 inline proc _cast(type t, x: regexp) where t == string {
   var pattern: string;
   on x.home {
@@ -557,35 +1000,82 @@ inline proc _cast(type t, x: regexp) where t == string {
   return pattern;
 }
 // Cast string to regexp
+pragma "no doc"
 inline proc _cast(type t, x: string) where t == regexp {
   return compile(x);
 }
 
 
-// string methods for searching
+
+/*
+
+   Compile a regular expression and search the receiving string for matches at
+   any offset using :proc:`regexp.search`.
+
+   :arg needle: the regular expression to search for
+   :arg ignorecase: true to ignore case in the regular expression
+   :returns: an :record:`reMatch` object representing the offset in the
+             receiving string where a match occurred
+ */
 proc string.search(needle: string, ignorecase=false):reMatch
 {
   // Create a regexp matching the literal for needle
   var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
   return re.search(this);
 }
+
+// documented in the captures version
+pragma "no doc"
 proc string.search(needle: regexp):reMatch
 {
   return needle.search(this);
 }
+
+/* Search the receiving string for a regular expression already compiled
+   by calling :proc:`regexp.search`. Search for matches at any offset.
+
+   :arg needle: the compiled regular expression to search for
+   :arg captures: (optional) what to capture from the regular expression. These
+                  should be strings or types that strings can cast to.
+   :returns: an :record:`reMatch` object representing the offset in the
+             receiving string where a match occurred
+ */
 proc string.search(needle: regexp, ref captures ...?k):reMatch
 {
   return needle.search(this, (...captures));
 }
+
+// documented in the captures version
+pragma "no doc"
 proc string.match(pattern: regexp):reMatch
 {
   return pattern.match(this);
 }
+
+/* Match the receiving string to a regular expression already compiled
+   by calling :proc:`regexp.match`. Only return matches where the match
+   encompasses the entire string.
+
+   :arg pattern: the compiled regular expression to match
+   :arg captures: (optional) what to capture from the regular expression. These
+                  should be strings or types that strings can cast to.
+   :returns: an :record:`reMatch` object representing the offset in the
+             receiving string where a match occurred
+ */
+
 proc string.match(pattern: regexp, ref captures ...?k):reMatch
 {
   return pattern.match(this, (...captures));
 }
 
+/* 
+   Split the the receiving string by occurrences of the passed regular
+   expression by calling :proc:`regexp.split`.
+
+   :arg pattern: the regular expression to use to split
+   :arg maxsplit: if nonzero, the maximum number of splits to do
+   :yields: each split portion, one at a time
+ */
 iter string.split(pattern: regexp, maxsplit: int = 0)
 {
   for v in pattern.split(this, maxsplit) {
@@ -593,6 +1083,17 @@ iter string.split(pattern: regexp, maxsplit: int = 0)
   }
 }
 
+/* 
+   Enumerates matches in the receiving string as well as capture groups
+   by calling :proc:`regexp.matches`.
+
+   :arg pattern: the regular expression to find matches
+   :arg captures: (compile-time constant) the size of the captures to return
+   :arg maxmatches: the maximum number of matches to return
+   :yields: tuples of :record:`reMatch` objects, the 1st is always
+            the match for the whole pattern and the rest are the capture groups.
+
+*/
 iter string.matches(pattern:regexp, param captures=0, maxmatches:int=max(int))
 {
   for v in pattern.matches(this, captures, maxmatches) {
@@ -600,3 +1101,4 @@ iter string.matches(pattern:regexp, param captures=0, maxmatches:int=max(int))
   }
 }
 
+} /* end of module */

@@ -591,7 +591,11 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
     // find out if a variable that was put on the heap could be passed in as an
     // argument to a function created from a begin, cobegin, or coforall statement;
     // if not, free the heap memory just allocated at the end of the block
-    if (defMap.get(var)->n == 1) {
+    Vec<SymExpr*>* defs = defMap.get(var);
+    if (defs == NULL) {
+      INT_FATAL(var, "Symbol is never defined.");
+    }
+    if (defs->n == 1) {
       bool freeVar = true;
       Vec<Symbol*> varsToTrack;
       varsToTrack.add(var);
@@ -618,7 +622,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
       }
       if (freeVar) {
-        CallExpr* move = toCallExpr(defMap.get(var)->v[0]->parentExpr);
+        CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
         INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
         Expr* innermostBlock = NULL;
         // find the innermost block that contains all uses of var
@@ -674,6 +678,10 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
         }
       }
     }
+    // else ... 
+    // TODO: After the new constructor story is implemented, every declaration
+    // should have exactly one definition associated with it, so the
+    // (defs-> == 1) test above can be replaced by an assertion.
   }
 }
 

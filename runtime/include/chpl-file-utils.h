@@ -48,10 +48,17 @@ qioerr _chpl_fs_check_mode(int* ret, const char* name, int mode_flag);
 qioerr chpl_fs_is_dir(int* ret, const char* name);
 qioerr chpl_fs_is_file(int* ret, const char* name);
 qioerr chpl_fs_is_link(int* ret, const char* name);
+qioerr chpl_fs_is_mount(int* ret, const char* name);
 
 // Creates a directory with the given name and settings if possible,
 // returning a qioerr if not.
 qioerr chpl_fs_mkdir(const char* name, int mode, int parents);
+
+// Takes a path string and resolves and removes all "/../", "/./", and
+// symbolic links, returning the result in shortened
+qioerr chpl_fs_realpath(const char* path, const char **shortened);
+// Takes a qio_file_t and returns the realpath it refers to.
+qioerr chpl_fs_realpath_file(qio_file_t* path, const char **shortened);
 
 // Renames the file from oldname to newname, returning a qioerr if one
 // occured.

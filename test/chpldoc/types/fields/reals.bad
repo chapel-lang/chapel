@@ -1,0 +1,11 @@
+Module: reals
+   Record: Foo
+      var aReal: real = 
+      const bar = 
+      param baz: real
+      var aReal2: real = 
+         This one has a comment 
+      const bar2 = 
+         So does this one 
+      param baz2: real
+         And this one 
