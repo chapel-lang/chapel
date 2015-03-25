@@ -1,0 +1,2 @@
+error: comment label should start with /*
+cat: docs/incorrectLabel2.doc.txt: No such file or directory

@@ -1,0 +1,71 @@
+Module: inlineTest.doc
+   Module: inlineTest.doc.Other
+      inline proc inside
+         Comment for inline method inside module 
+
+      inline proc commentless()
+      inline proc body()
+         Comment for inline method with a body inside module 
+
+      inline proc bodyCommentless()
+      inline proc hasArg(val: int)
+         Comment for method with an argument inside module 
+
+      inline proc hasArgCommentless(val: int)
+      inline proc argAndBody(val: int)
+         Comment for method with argument and body inside module 
+
+      inline proc argAndBodyCommentless(val: int)
+      inline proc hasReturnType(): int
+         This method has a return type 
+
+      inline proc hasReturnTypeCommentless(): int
+      inline proc hasReturnTypeAndArg(val: int): int
+         This method has a return type and an argument 
+
+      inline proc hasReturnTypeAndArgCommentless(val: int): int
+      inline proc returnTypeAndBody(): int
+         This method has both a return type and a body 
+
+      inline proc returnTypeAndBodyCommentless(): int
+      inline proc allThree(val: int): int
+         This method has a return type, an argument, and a function body 
+
+      inline proc allThreeCommentless(val: int): int
+   inline proc method1()
+      Comment for method1 
+
+   inline proc uncommented()
+   inline proc body()
+      Comment for method with a body 
+
+   inline proc bodyCommentless()
+   inline proc hasArg(val: int)
+      Comment for method with an argument 
+
+   inline proc hasArgCommentless(val: int)
+   inline proc argAndBody(val: int)
+      Comment for method with argument and body 
+
+   inline proc argAndBodyCommentless(val: int)
+   inline proc longComment()
+      This is an rather long comment 
+      It goes on for many lines
+      But says very little 
+
+   inline proc hasReturnType(): int
+      This method has a return type 
+
+   inline proc hasReturnTypeCommentless(): int
+   inline proc hasReturnTypeAndArg(val: int): int
+      This method has a return type and an argument 
+
+   inline proc hasReturnTypeAndArgCommentless(val: int): int
+   inline proc returnTypeAndBody(): int
+      This method has both a return type and a body 
+
+   inline proc returnTypeAndBodyCommentless(): int
+   inline proc allThree(val: int): int
+      This method has a return type, an argument, and a function body 
+
+   inline proc allThreeCommentless(val: int): int
