@@ -59,7 +59,6 @@ Packaging Changes
 -----------------
 * updated Makefiles to support building Chapel in parallel via 'make -j'
 * avoid rebuilding gmp and re2 speculatively when previous builds have failed
-* made the setchplenv.* scripts work even when CHPL_HOME is a symbolic link
 
 Tool Changes
 ------------
@@ -178,8 +177,8 @@ Platform-specific Changes
 * changed 'muxed' tasking to use # of threads equal to the # of CPUs by default
   (see doc/platforms/README.cray)
 * disabled optimizations by default for cray-prgenv-cray compilations
-* split the 'cygwin' platform variable into 'cygwin32' and 'cygwin64'
-* split the 'netbsd' platform variable into 'netbsd32' and 'netbsd64'
+* split the 'cygwin' platform value into 'cygwin32' and 'cygwin64'
+* split the 'netbsd' platform value into 'netbsd32' and 'netbsd64'
 * made CHPL_TASKS default to 'fifo' for 'cray-prgenv-cray' CHPL_TARGET_COMPILER
 
 Portability Improvements
@@ -228,7 +227,7 @@ Example Codes
   (see examples/primers/parIters.chpl)
 * updated and renamed the chpldoc primer example to reflect chpldoc's changes
   (see examples/primers/chpldoc.doc.chpl)
-* updated the randomnumbers primer to reflect changes to the interface
+* updated the randomNumbers primer to reflect changes to the interface
   (see examples/primers/randomNumbers.chpl)
 * fixed a bug in our lulesh implementation when using the 3D representation
 * updated miniMD's Stencil distribution to track changes in BlockDist
