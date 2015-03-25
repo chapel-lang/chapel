@@ -42,9 +42,7 @@ This directory contains the following documentation:
     README.extern           :  calling external C routines
     README.firstClassFns    :  first-class functions
     README.format           :  value-to-string formatting
-    README.formattedIO      :  readf()/writef() and formatting strings
     README.gmp              :  a prototype GMP module
-    README.io               :  the new I/O system in Chapel
     README.libraries        :  information about creating libraries in Chapel
     README.llvm             :  information about using the LLVM back-end
     README.local            :  the 'local' statement

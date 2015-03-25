@@ -79,6 +79,13 @@ extern proc chpl_cnullfile():_file;
      if err then do writeln("err contains an error, ie err != ENOERR");
      if !err then do writeln("err does not contain an error; err == ENOERR");
 
+
+   When a :type:`syserr` formal has blank intent, the actual is copied to the
+   formal upon a function call and the formal cannot be assigned within the
+   function.
+
+   The default value of the :type:`syserr` type is undefined.
+
  */
 extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc
 
