@@ -63,6 +63,7 @@ This directory's contents are as follows:
     forces.chpl         : implementations for EAM and LJ force computations
     thermo.chpl         : calculation of energy, temperature, pressure
     neighbor.chpl       : calculation and updating of neighbor atoms
+    StencilDist.chpl    : domain map used for stencil computations
   
   miniMD.*              : other files used in the Chapel testing system
 
