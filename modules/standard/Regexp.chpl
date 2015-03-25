@@ -19,7 +19,7 @@
 
 /*
 
-This module provides regular expression support.
+Regular expression support.
 
 The regular expression support is built on top of the RE2 regular expression
 library. As such, the exact regular expression syntax available is the syntax

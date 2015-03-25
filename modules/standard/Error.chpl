@@ -17,7 +17,11 @@
  * limitations under the License.
  */
 
-/* This module helps to handle errors. In particular, it enables routines
+/*
+   
+   Support for error handling.
+
+   This module helps to handle errors. In particular, it enables routines
    to return a syserr - encoding an error state - and then contains routines
    that can be provided a syserr in order to print out a useful error message.
    
