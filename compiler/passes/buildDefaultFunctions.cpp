@@ -56,8 +56,7 @@ static void buildFieldAccessorFunctions(AggregateType* at);
 
 
 void buildDefaultFunctions() {
-  if (fUseIPE == false)
-    build_chpl_entry_points();
+  build_chpl_entry_points();
 
   SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
 
@@ -214,6 +213,7 @@ static FnSymbol* function_exists(const char* name,
 // These functions have the same binding strength as if they were user-defined.
 static void build_getter(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
+  const bool recordLike = ct->isRecord() || ct->isUnion();
   if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
     Vec<BaseAST*> asts;
     collect_asts(fn, asts);
@@ -233,6 +233,8 @@ static void build_getter(AggregateType* ct, Symbol *field) {
     fn->addFlag(FLAG_FIELD_ACCESSOR);
     if (fieldIsConst)
       fn->addFlag(FLAG_REF_TO_CONST);
+    else if (recordLike)
+      fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
     return;
   }
 
@@ -253,6 +255,8 @@ static void build_getter(AggregateType* ct, Symbol *field) {
 
   if (fieldIsConst)
     fn->addFlag(FLAG_REF_TO_CONST);
+  else if (recordLike)
+    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->addFlag(FLAG_METHOD);
@@ -455,9 +459,7 @@ static void build_chpl_entry_points() {
   // parallelism, so no need for end counts (or atomic/sync types to
   // support them).
   //
-  // The initial version of --ipe also lacks parallelism
-  //
-  if (fMinimalModules == false && fUseIPE == false) {
+  if (fMinimalModules == false) {
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc")));
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_SET_END_COUNT, endCount));
   }
@@ -512,7 +514,7 @@ static void build_chpl_entry_points() {
   // In --minimal-modules compilation mode, we won't be waiting on an
   // endcount (see comment above)
   //
-  if (fMinimalModules == false && fUseIPE == false) {
+  if (fMinimalModules == false) {
     chpl_gen_main->insertAtTail(new CallExpr("_waitEndCount"));
   }
 
@@ -1143,7 +1145,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   // We have no QIO when compiling with --minimal-modules, so no need
   // to build default R/W functions.
   //
-  if (fMinimalModules == true || fUseIPE == true) {
+  if (fMinimalModules == true) {
     return;
   }
 

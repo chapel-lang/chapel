@@ -1,0 +1,9 @@
+findfiles-par.chpl
+findfiles.chpl
+globberator-par.chpl
+globberator-zip.chpl
+globberator.chpl
+testboth.chpl
+testemptyglob.chpl
+walk-par.chpl
+walk.chpl

@@ -211,10 +211,7 @@ ModuleSymbol* parseFile(const char* filename,
 
       retval = buildModule(modulename, yyblock, yyfilename, NULL);
 
-      if (fUseIPE == false)
-        theProgram->block->insertAtTail(new DefExpr(retval));
-      else
-        rootModule->block->insertAtTail(new DefExpr(retval));
+      theProgram->block->insertAtTail(new DefExpr(retval));
 
       addModuleToDoneList(retval);
 
@@ -229,10 +226,7 @@ ModuleSymbol* parseFile(const char* filename,
         if (DefExpr* defExpr = toDefExpr(stmt)) {
           if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
 
-            if (fUseIPE == false)
-              theProgram->block->insertAtTail(defExpr->remove());
-            else
-              rootModule->block->insertAtTail(defExpr->remove());
+            theProgram->block->insertAtTail(defExpr->remove());
 
             addModuleToDoneList(modSym);
 

@@ -1671,7 +1671,10 @@ expandForLoop(ForLoop* forLoop) {
         iterator->type->dispatchChildren.v[0] == dtObject))) {
     expandIteratorInline(forLoop);
 
-  } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator)) {
+  } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator) &&
+            (iterator->type->dispatchChildren.n == 0 ||
+             (iterator->type->dispatchChildren.n == 1 &&
+              iterator->type->dispatchChildren.v[0] == dtObject))) {
     inlineSingleYieldIterator(forLoop);
 
   } else {
