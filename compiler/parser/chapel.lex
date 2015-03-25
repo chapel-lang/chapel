@@ -676,23 +676,49 @@ static int processSingleLineComment(yyscan_t scanner) {
 static int processBlockComment(yyscan_t scanner) {
   YYSTYPE*    yyLval       = yyget_lval(scanner);
   YYLTYPE*    yyLloc       = yyget_lloc(scanner);
+  int         startLine    = chplLineno;
+  const char* startFilename = yyfilename;
 
   int         len          = strlen(fDocsCommentLabel);
   int         labelIndex   = (len >= 2) ? 2 : 0;
 
   int         c            = 0;
   int         lastc        = 0;
+  int         lastlastc    = 0;
+  int         last3c       = 0;
+  int         last4c       = 0;
+  int         last5c       = 0;
   int         depth        = 1;
+  int         numStars     = 1;
+  int         afterStars   = 0;
   std::string wholeComment = "";
 
   newString();
   countCommentLine();
 
   while (depth > 0) {
-    int lastlastc = lastc;
-
+    // Keep track of the the current character and the 5 previous 
+    last5c = last4c;
+    last4c = last3c;
+    last3c = lastlastc;
+    lastlastc = lastc;
     lastc = c;
     c     = getNextYYChar(scanner);
+
+    // handle stars after the opening comment
+    if( afterStars == 0 ) {
+      if( c == '*' ) {
+        numStars++;
+      } else {
+        if( c == '/' ) {
+          // handle /***********/ using /* and */
+          numStars = 1;
+        }
+        // Limit it to 4 stars
+        if( numStars > 4 ) numStars = 4;
+        afterStars = 1;
+      }
+    }
 
     if (c == '\n') {
       countMultiLineComment(stringBuffer);
@@ -717,14 +743,38 @@ static int processBlockComment(yyscan_t scanner) {
       addChar(c);
     }
 
-    if (lastc == '*' && c == '/' && lastlastc != '/') { // close comment
-      depth--;
+    if( c == '/' ) {
+      // maybe handle a nested start-of-comment
 
-    } else if (lastc == '/' && c == '*') { // start nested
-      depth++;
+      // */ but not /*/
+      if( lastc == '*' && lastlastc != '/' &&
+          numStars == 1 ) depth--;
+      // **/ but not /**/
+      if( lastlastc == '*' && lastc == '*' &&
+          last3c != '/' && numStars == 2 ) depth--;
+      // ***/ but not /***/
+      if( last3c == '*' && lastlastc == '*' && lastc == '*' &&
+          last4c != '/' && numStars == 3 ) depth--;
+      // ****/ but not /****/
+      if( last4c == '*' && last3c == '*' && lastlastc == '*' && lastc == '*' &&
+          last5c != '/' && numStars == 4 ) depth--;
+    } else if (c == '*' ) {
+      // maybe handle a nested end-of-comment
+
+      // /*
+      if( lastc == '/' && numStars == 1 ) depth++;
+      // /**
+      if( lastc == '*' && lastlastc == '/' && numStars == 2 ) depth++;
+      // /***
+      if( lastc == '*' && lastlastc == '*' && last3c == '/' &&
+          numStars == 3 ) depth++;
+      // /****
+      if( lastc == '*' && lastlastc == '*' && last3c == '*' &&
+          last4c == '/' && numStars == 4 ) depth++;
     } else if (c == 0) {
       ParserContext context(scanner);
 
+      fprintf(stderr, "%s:%d: start of unterminated comment\n", startFilename, startLine);
       yyerror(yyLloc, &context, "EOF in comment");
     }
   }
