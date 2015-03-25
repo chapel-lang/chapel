@@ -19,11 +19,13 @@
 
 /*
 
+Support for GNU Multiple Precision Arithmetic
+
 This module supports integration with the GMP library (the GNU Multiple
 Precision Arithmetic Library. See the `GMP homepage <https://gmplib.org/>`_
 for more information on this library.
 
-This README describes a prototype implementation of a standard GMP (GNU
+This module is a prototype implementation of a standard GMP (GNU
 Multiple Precision Arithmetic Library) module in Chapel.  It should be
 considered incomplete in that (a) only a subset of the full GMP interface is
 supported, and (b) the performance is currently lacking due to extraneous
@@ -45,7 +47,7 @@ Step 1:
 
   .. code-block:: sh
 
-            # To use the an already-installed GMP
+            # To use the already-installed GMP
             export CHPL_GMP=system
             # To use the distributed GMP
             export CHPL_GMP=gmp
@@ -71,7 +73,7 @@ Using the BigInt class
 
 The GMP Chapel module provides a :class:`BigInt` class wrapping GMP integers.
 At the present time, only the functions for ``mpz`` (ie signed integer)
-GMP types are supported with :class:`BigInt`; future work will be to make
+GMP types are supported with :class:`BigInt`; future work will be to
 extend this support to floating-point types. Also, in the future,
 we hope to provide these GMP functions as records that support
 operators like ``+``, ``*``, ``-``, etc.
@@ -422,11 +424,19 @@ module GMP {
 
 
 
+  pragma "no doc"
+  // Initialize GMP to use Chapel's allocator
   extern proc chpl_gmp_init();
+  /* Get an MPZ value stored on another locale */
+  pragma "no doc"
   extern proc chpl_gmp_get_mpz(ref ret:mpz_t,src_local:int,from:__mpz_struct);
+  /* Get a randstate value stored on another locale */
   extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int, from:__gmp_randstate_struct);
+  /* Return the number of limbs in an __mpz_struct */
   extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
+  /* Print out an mpz_t (for debugging) */
   extern proc chpl_gmp_mpz_print(x:mpz_t);
+  /* Get an mpz_t as a string */
   extern proc chpl_gmp_mpz_get_str(base: c_int, x:mpz_t):c_string_copy;
 
 
@@ -442,12 +452,13 @@ module GMP {
     numbers that are stored in distributed arrays.
     
     All methods on BigInt work with Chapel types. Many of them use the gmp
-    functions directly, wich use C types. Runtime checks are used to ensure the
+    functions directly, which use C types. Runtime checks are used to ensure the
     Chapel types can safely be cast to the C types (e.g. when casting a Chapel
     uint it checks that it fits in the C ulong which could be a 32bit type if
     running on linux32 platform).
 
-    The checks are controlled by --[no-]cast-checks, --fast, etc.
+    The checks are controlled by the compiler options ``--[no-]cast-checks``,
+    ``--fast``, etc.
 
     TODO: When a Chapel will not safely cast to a C type, it would be better to
     promte the Chapel value to a BigInt, then run the operation on that
