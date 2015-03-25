@@ -62,6 +62,7 @@ MODULES_TO_DOCUMENT = \
 	standard/CommDiagnostics.chpl \
 	standard/Curl.chpl \
 	standard/FFTW.chpl \
+	standard/FFTW_MT.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/HDFS.chpl \
@@ -78,7 +79,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Search.chpl \
 	standard/Sort.chpl \
 	standard/startInitCommDiags.chpl \
-	standard/stopInitCommDiags.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
 	standard/UtilMath.chpl \
@@ -86,6 +86,7 @@ MODULES_TO_DOCUMENT = \
 	$(SYS_CTYPES_MODULE_DOC)
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
+	export CHPLDOC_AUTHOR='Cray Inc' && \
 	$(CHPLDOC) $(MODULES_TO_DOCUMENT)
 
 clean-documentation:

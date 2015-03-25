@@ -71,8 +71,8 @@ I/O Systems Supported
 
 Currently, the I/O systems supported are:
  - Lustre
- - HDFS   (see README.hdfs)
- - Curl   (see README.curl)
+ - HDFS   (see http://chapel.cray.com/docs/master/modules/standard/HDFS.html)
+ - Curl   (see http://chapel.cray.com/docs/master/modules/standard/Curl.html)
 
 
 Parallel and Distributed I/O Features
