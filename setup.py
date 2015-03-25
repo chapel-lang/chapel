@@ -19,9 +19,14 @@ import sys
 
 
 def main():
+    on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
     repo_root = os.path.abspath(os.path.dirname(__file__))
     sphinx_dir = os.path.join(repo_root, 'docs')
 
+    if on_rtd and os.path.exists(sphinx_dir):
+        print('Deleting pre-existing sphinx_dir at: {0}'.format(
+            sphinx_dir))
+        shutil.rmtree(sphinx_dir)
     assert not os.path.exists(sphinx_dir), (
         'Sphinx output dir already exists: {0}'.format(sphinx_dir))
 
