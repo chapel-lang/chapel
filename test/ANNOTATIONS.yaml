@@ -67,7 +67,7 @@ AllCompTime:
 
 assign.1024:
   01/21/15:
-    - optimize range follower iter so optimize-loop-iterators fires
+    - optimize range follower so it can be directly inlined (#1160)
 
 bfs:
   09/25/14:
@@ -106,6 +106,8 @@ fannkuch-redux:
     - Error due to cleaning up file incompletely
   09/04/14:
     - LICM no longer hoisting globals (bug fix related to hoisting wide things)
+  03/10/15:
+    - Allow LICM to hoist some global variable (#1524)
 
 fasta:
   01/14/14:
@@ -115,9 +117,11 @@ fasta:
 
 forall-dom-range:
   01/21/15:
-    - optimize range follower iter so optimize-loop-iterators fires
+    - optimize range follower so it can be directly inlined (#1160)
   01/23/15:
-    - optimize range follower iter for non-strided ranges
+    - optimize range follower for non-strided ranges (#1164)
+  03/10/15:
+    - optimize range follower so it can be zippered inlined (#1530)
 
 ft:
   09/05/14:
@@ -146,6 +150,8 @@ jacobi:
     - Kyle's ref temp peephole optimization
   11/09/14:
     - disable the task table by default
+  01/30/15:
+    - param protect all calls to chpl__testPar (#1200)
 
 lulesh:
   03/15/14:
@@ -200,6 +206,9 @@ miniMD:
     - clean up of noRefCount related code in modules/internal (22473)
   11/04/14:
     - surprising regression from cast in DefaultRectangular (df8c3172cc9c)
+  01/30/15:
+    - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
+
 
 nbody:
   03/17/14:
@@ -212,6 +221,8 @@ parOpEquals:
     - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
   09/27/13:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
+  02/28/15:
+    - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
 
 regexdna:
   10/07/14:
