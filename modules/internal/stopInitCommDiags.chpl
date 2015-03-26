@@ -16,6 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+//
+// Module stopInitCommDiags helps implement standard/CommDiagnostics
+// support for studying communication during module initialization
+// and teardown.  See that module (or its chpldocs) for details.
+//
 module stopInitCommDiags {
   use CommDiagnostics;
 

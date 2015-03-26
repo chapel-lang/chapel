@@ -17,6 +17,11 @@
  * limitations under the License.
  */
 
+//
+// Module startInitCommDiags helps implement standard/CommDiagnostics
+// support for studying communication during module initialization
+// and teardown.  See that module (or its chpldocs) for details.
+//
 module startInitCommDiags {
   use CommDiagnostics;
 
