@@ -40,18 +40,18 @@ clobber: FORCE clean-documentation
 
 depend:
 
-MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/makeSysBasicTypes
+MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/make_sys_basic_types.py
 
 $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-# When makeSysBasicTypes call fails, delete the SysCTypes.chpl file that is
-# created, but still make sure the command fails.
+# When the make sys basic types call fails, delete the SysCTypes.chpl file that
+# is created, but still make sure the command fails.
 	cd $(@D) && ( $(MAKE_SYS_BASIC_TYPES) > $(@F) || { rm -f $(@F) && false ; } )
 
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-# When makeSysBasicTypes call fails, delete the SysCTypes.chpl file that is
-# created, but still make sure the command fails.
+# When the make sys basic types call fails, delete the SysCTypes.chpl file that
+# is created, but still make sure the command fails.
 	cd $(@D) && ( $(MAKE_SYS_BASIC_TYPES) --doc > $(@F) || { rm -f $(@F) && false ; } )
 
 
