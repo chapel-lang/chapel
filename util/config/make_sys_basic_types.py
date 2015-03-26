@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-"""Build SysCTypes.chpl module."""
+"""Build SysCTypes.chpl module.
+
+Determines the size of various C types (e.g. long, size_t, etc) and creates a
+Chapel module with 'extern types' declaration so Chapel code can refer to the
+types.
+"""
 
 from __future__ import print_function
 
@@ -51,9 +56,14 @@ _max_value_to_chpl_type = {
 
 
 def main():
-    """Parse command line arguments and create module."""
+    """Parse command line arguments, create module, and print to stdout."""
     args = _parse_args()
     _setup_logging(args.verbose)
+    print(get_sys_c_types(args.doc))
+
+
+def get_sys_c_types(docs=False):
+    """Returns a string with the SysCTypes.chpl module content."""
 
     # Find the $CHPL_HOME/util/config/ dir.
     util_cfg_dir = os.path.abspath(os.path.dirname(__file__))
@@ -126,6 +136,7 @@ FIND_INT_SIZES_START
     # Chapel module code. Each line takes the form "extern type <chpl_type>=
     # <chpl_value>;" where <chpl_value> is found by looking up the max value
     # (from evaluated expression above) in the _max_value_to_chpl_type map.
+    sys_c_types = []
     handled_c_ptr = False
     for i, max_value in enumerate(max_values):
         max_macro, chpl_type, c_type = _types[i]
@@ -135,29 +146,29 @@ FIND_INT_SIZES_START
                           '_max_value_to_chpl_type dict.'.format(max_value))
             sys.exit(1)
 
-        print('/* The type corresponding to the C {c_type} type'
-              ' */'.format(**locals()))
+        sys_c_types.append('/* The type corresponding to the C {c_type} type'
+                           ' */'.format(**locals()))
         stmt = 'extern type {chpl_type}= '.format(**locals())
-        if args.doc:
+        if docs:
             stmt += 'integral'
         else:
             stmt += chpl_value
         stmt += ';'
-        print(stmt)
+        sys_c_types.append(stmt)
 
         if chpl_type == 'c_ptr':
             handled_c_ptr = True
 
     if not handled_c_ptr:
-        print('extern type c_void_ptr; '
-              '// opaque; no ptr arithmetic in Chapel code!')
+        sys_c_types.append('extern type c_void_ptr; '
+                           '// opaque; no ptr arithmetic in Chapel code!')
 
     # Finally, print out set of asserts for module. They assert that the
     # sizeof(<extern chpl type>) matches the sizeof(<chpl type>). E.g.
     #
     #   assert(sizeof(c_int) == sizeof(int(32)));
     #
-    print("""
+    sys_c_types.append("""
 {
   pragma "no prototype"
   extern proc sizeof(type t): size_t;
@@ -165,9 +176,11 @@ FIND_INT_SIZES_START
     for i, max_value in enumerate(max_values):
         _, chpl_type, _ = _types[i]
         chpl_value = _max_value_to_chpl_type.get(str(max_value))
-        print('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
+        sys_c_types.append('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
               ';'.format(**locals()))
-    print('}')
+    sys_c_types.append('}')
+
+    return '\n'.join(sys_c_types)
 
 
 @contextlib.contextmanager
