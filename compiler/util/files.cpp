@@ -553,11 +553,11 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
 
-  fprintf(makefile.fptr, "COMP_GEN_WARN = %i", ccwarnings!=0);
-  fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i", debugCCode!=0);
-  fprintf(makefile.fptr, "COMP_GEN_OPT = %i", optimizeCCode!=0);
-  fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i", specializeCCode!=0);
-  fprintf(makefile.fptr, "COMP_GEN_IEEE_FLOAT = %i", fieeefloat!=0);
+  fprintf(makefile.fptr, "COMP_GEN_WARN = %i\n", ccwarnings!=0);
+  fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", debugCCode!=0);
+  fprintf(makefile.fptr, "COMP_GEN_OPT = %i\n", optimizeCCode!=0);
+  fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode!=0);
+  fprintf(makefile.fptr, "COMP_GEN_IEEE_FLOAT = %i\n", fieeefloat!=0);
 
   if (fLibraryCompile && (fLinkStyle==LS_DYNAMIC))
     fprintf(makefile.fptr, " $(SHARED_LIB_CFLAGS)");
