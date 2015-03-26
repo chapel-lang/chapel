@@ -1,0 +1,217 @@
+#!/usr/bin/env python
+
+"""Build SysCTypes.chpl module."""
+
+from __future__ import print_function
+
+import contextlib
+import logging
+import optparse
+import os
+import os.path
+import re
+import sys
+
+
+# List of C types. The items in each element are:
+#
+#  * C macro for maximum value for type
+#  * Name of Chapel type
+#  * Name of C type
+_types = [
+    ('INT_MAX', 'c_int', 'int'),
+    ('UINT_MAX', 'c_uint', 'uint'),
+    ('LONG_MAX', 'c_long', 'long'),
+    ('ULONG_MAX', 'c_ulong', 'unsigned long'),
+    ('LLONG_MAX', 'c_longlong', 'long long'),
+    ('ULLONG_MAX', 'c_ulonglong', 'unsigned long long'),
+    ('CHAR_MAX', 'c_char', 'char'),
+    ('SCHAR_MAX', 'c_schar', 'signed char'),
+    ('UCHAR_MAX', 'c_uchar', 'unsigned char'),
+    ('SHRT_MAX', 'c_short', 'short'),
+    ('USHRT_MAX', 'c_ushort', 'unsigned short'),
+    ('INTPTR_MAX', 'c_intptr', 'intptr_t'),
+    ('UINTPTR_MAX', 'c_uintptr', 'uintptr_t'),
+    ('PTRDIFF_MAX', 'c_ptrdiff', 'ptrdiff_t'),
+    ('SSIZE_MAX', 'ssize_t', 'ssize_t'),
+    ('SIZE_MAX', 'size_t', 'size_t'),
+]
+
+# Map of max values to chapel types.
+_max_value_to_chpl_type = {
+    '127': 'int(8)',
+    '255': 'uint(8)',
+    '32767': 'int(16)',
+    '65535': 'uint(16)',
+    '2147483647': 'int(32)',
+    '4294967295': 'uint(32)',
+    '9223372036854775807': 'int(64)',
+    '18446744073709551615': 'uint(64)',
+}
+
+
+def main():
+    """Parse command line arguments and create module."""
+    args = _parse_args()
+    _setup_logging(args.verbose)
+
+    # Find the $CHPL_HOME/util/config/ dir.
+    util_cfg_dir = os.path.abspath(os.path.dirname(__file__))
+    logging.debug('Util config dir: {0}'.format(util_cfg_dir))
+
+    # Get the C compile line.
+    compileline_cmd = os.path.join(util_cfg_dir, 'compileline')
+    cmd = '{compileline_cmd} --compile'.format(**locals())
+    compileline = os.popen(cmd).read().strip()
+    logging.debug('Compile line: {0}'.format(compileline))
+
+    # Create temp header file with *_MAX macros, then run it through the C
+    # preprocessor using the C compile line found above.
+    h_file = 'find_int_sizes_tmp.h'
+    with _ensure_deleted(h_file):
+        logging.debug('Creating temp header: {0}'.format(h_file))
+        with open(h_file, 'w') as fp:
+            fp.write("""
+#include "sys_basic.h"
+#include <limits.h>
+#include <stdint.h>
+#include <math.h>
+
+FIND_INT_SIZES_START
+""")
+
+            for max_macro, _, _ in _types:
+                fp.write('{0}\n'.format(max_macro))
+            logging.debug('Wrote {0} max types to {1}'.format(len(_types), h_file))
+
+        compile_cmd = '{compileline} -E {h_file}'.format(**locals())
+        logging.debug('Preprocessor command: {0}'.format(compile_cmd))
+        compile_result = os.popen(compile_cmd).read()
+        logging.debug('Captured preprocessor output with {0} '
+                      'characters.'.format(len(compile_result)))
+
+    # Iterate through the preprocessor output, find the max value expressions,
+    # and record them in a list.
+    max_exprs = []
+    keep = False
+    for line in compile_result.splitlines():
+        if line.startswith('#') or line.startswith('//'):
+            continue
+        elif 'FIND_INT_SIZES_START' in line:
+            keep = True
+        elif keep:
+            max_exprs.append(line.strip())
+    logging.debug('Found {0} lines of max type '
+                  'values.'.format(len(max_exprs)))
+
+    if len(max_exprs) != len(_types):
+        logging.error('Found {0} max values, but {1} types were '
+                      'expected.'.format(len(max_exprs), len(_types)))
+        sys.exit(1)
+
+    # Iterate through the max value expressions, evaluate each one, and store
+    # it in a list. Python deals with arbitrarily large integers, so there is
+    # no fear of overflow.
+    replace_pattern = re.compile(r'[UL]', re.IGNORECASE)
+    max_values = []
+    for expr in max_exprs:
+        ex = re.sub(replace_pattern, '', expr)
+        value = eval(ex)
+        logging.debug('{0} -> {1}'.format(expr, value))
+        max_values.append(value)
+    logging.debug('Evaluated all {0} expressions from '
+                  'preprocessor.'.format(len(max_values)))
+
+    # Iterate through the chapel types/max values and print out the SysCTypes
+    # Chapel module code. Each line takes the form "extern type <chpl_type>=
+    # <chpl_value>;" where <chpl_value> is found by looking up the max value
+    # (from evaluated expression above) in the _max_value_to_chpl_type map.
+    handled_c_ptr = False
+    for i, max_value in enumerate(max_values):
+        max_macro, chpl_type, c_type = _types[i]
+        chpl_value = _max_value_to_chpl_type.get(str(max_value))
+        if chpl_value is None:
+            logging.error('Unknown numeric limit {0} in '
+                          '_max_value_to_chpl_type dict.'.format(max_value))
+            sys.exit(1)
+
+        print('/* The type corresponding to the C {c_type} type'
+              ' */'.format(**locals()))
+        stmt = 'extern type {chpl_type}= '.format(**locals())
+        if args.doc:
+            stmt += 'integral'
+        else:
+            stmt += chpl_value
+        stmt += ';'
+        print(stmt)
+
+        if chpl_type == 'c_ptr':
+            handled_c_ptr = True
+
+    if not handled_c_ptr:
+        print('extern type c_void_ptr; '
+              '// opaque; no ptr arithmetic in Chapel code!')
+
+    # Finally, print out set of asserts for module. They assert that the
+    # sizeof(<extern chpl type>) matches the sizeof(<chpl type>). E.g.
+    #
+    #   assert(sizeof(c_int) == sizeof(int(32)));
+    #
+    print("""
+{
+  pragma "no prototype"
+  extern proc sizeof(type t): size_t;
+""")
+    for i, max_value in enumerate(max_values):
+        _, chpl_type, _ = _types[i]
+        chpl_value = _max_value_to_chpl_type.get(str(max_value))
+        print('  assert(sizeof({chpl_type}) == sizeof({chpl_value}))'
+              ';'.format(**locals()))
+    print('}')
+
+
+@contextlib.contextmanager
+def _ensure_deleted(filename):
+    """Ensure file is deleted after context manager."""
+    try:
+        yield
+    finally:
+        if os.path.exists(filename):
+            logging.debug('Deleting: {0}'.format(filename))
+            os.unlink(filename)
+
+
+def _parse_args():
+    """Parse and return command line args."""
+    parser = optparse.OptionParser(
+        usage='usage: %prog [--doc] [options]',
+        description=__doc__
+    )
+
+    parser.add_option(
+        '-v', '--verbose', action='store_true',
+        help='Enable verbose output.'
+    )
+    parser.add_option(
+        '--doc', action='store_true',
+        help='Build SysCTypes module for chpldoc.'
+    )
+
+    opts, args = parser.parse_args()
+    return opts
+
+
+def _setup_logging(verbose=False):
+    """Initialize logging and set level based on verbose.
+
+    :type verbose: bool
+    :arg verbose: When True, set log level to DEBUG.
+    """
+    log_level = logging.DEBUG if verbose else logging.WARNING
+    logging.basicConfig(format='%(levelname)s: %(message)s',
+                        level=log_level)
+    logging.debug('Verbose output enabled.')
+
+
+if __name__ == '__main__':
+    main()
