@@ -5,6 +5,10 @@
 Determines the size of various C types (e.g. long, size_t, etc) and creates a
 Chapel module with 'extern types' declaration so Chapel code can refer to the
 types.
+
+Specify the output file as a positional argument, e.g.:
+
+    %prog path/to/SysCTypes.chpl
 """
 
 from __future__ import print_function
@@ -59,7 +63,11 @@ def main():
     """Parse command line arguments, create module, and print to stdout."""
     args = _parse_args()
     _setup_logging(args.verbose)
-    print(get_sys_c_types(args.doc))
+
+    with open(args.output_file, 'w') as fp:
+        fp.write(get_sys_c_types(args.doc))
+        fp.write('\n')
+    logging.debug('Wrote module to: {0}'.format(args.output_file))
 
 
 def get_sys_c_types(docs=False):
@@ -196,9 +204,16 @@ def _ensure_deleted(filename):
 
 def _parse_args():
     """Parse and return command line args."""
+    class NoWrapHelpFormatter(optparse.IndentedHelpFormatter):
+        """Help formatter that does not wrap the description text."""
+
+        def _format_text(self, text):
+            return text
+
     parser = optparse.OptionParser(
-        usage='usage: %prog [--doc] [options]',
-        description=__doc__
+        usage='usage: %prog [--doc] [--verbose] <SysCTypes_filename>',
+        description=__doc__,
+        formatter=NoWrapHelpFormatter()
     )
 
     parser.add_option(
@@ -211,6 +226,13 @@ def _parse_args():
     )
 
     opts, args = parser.parse_args()
+
+    if len(args) != 1:
+        parser.print_help()
+        sys.exit(1)
+    else:
+        opts.output_file = args[0]
+
     return opts
 
 
