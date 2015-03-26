@@ -1,20 +1,32 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <!-- In order to support IE7 and IE8, we use excanvas, emulate certain IE
+         versions, and use jquery version 1 instead of 2. Future versions of
+         dygraphs will remove support for anything older than IE9, so we can
+         remove that code, and use a newer jquery version. -->
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
     <link rel="stylesheet" href="perfgraph.css">
     <!--[if IE]>
-        <script type="text/javascript"
-                src="http://dygraphs.com/excanvas.js"></script>
+        <script src="http://dygraphs.com/excanvas.js"></script>
         <![endif]-->
-    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
-    <script type="text/javascript"
-      src="dygraph-combined.js"></script>
-    <!-- <script type="text/javascript"
-            src="http://dygraphs.com/dygraph-dev.js"></script>
-      -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script src="dygraph-combined.js"></script>
     <script src="graphdata.js"></script>
+
+      <!-- dev (non-minified versions)
+           TODO: when developing our perf graphs, I always use the non-minified
+           versions. I end up just changing them manually while developing, but
+           it be nice to be able to set some flag in the URL and conditionally
+           load these non-minified versions instead.) -->
+    <!--
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.js"</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.0/dygraph-combined.js"></script>
+    -->
+
   </head>
   <body onload="perfGraphInit()">
     <center><h2 id="titleElem"></h2></center>
