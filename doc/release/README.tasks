@@ -41,8 +41,8 @@ The user can select between these options by setting the CHPL_TASKS
 environment variable to one of the following options:
 
 qthreads       : best performance; default for most targets
-fifo           : most portable, but heavyweight; default for Intel KNC
-                 systems and Cygwin 
+fifo           : most portable, but heavyweight; default for Intel KNC,
+                 NetBSD, Cygwin, or when Cray is the target compiler
 massivethreads : based on U Tokyo's MassiveThreads library
 muxed          : available only on Cray Inc. systems; not documented
                  here, see $CHPL_HOME/doc/platforms/README.cray instead
@@ -57,15 +57,14 @@ Chapel's default tasking layer implementation for most targets is based
 on the Qthreads user-level threading package from Sandia National Labs.
 This provides a lightweight implementation of Chapel tasking and will
 also ultimately provide an optimized implementation of sync variables.
-Qthreads tasking is the default for all targets except Intel KNC and
-Cygwin.  To use qthreads tasking, please take the following steps:
+To use qthreads tasking, please take the following steps:
 
 1) Ensure that the environment variable CHPL_HOME points to the
    top-level Chapel directory, as always.
 
 2) Set up your environment to use Qthreads:
 
-      ensure CHPL_TASKS is not set
+      ensure CHPL_TASKS is not set (if qthreads is the default)
         -- or --
       export CHPL_TASKS=qthreads
 
@@ -183,12 +182,13 @@ For more information on Qthreads, see $CHPL_HOME/third-party/README.
 CHPL_TASKS == fifo
 ------------------
 
-FIFO tasking over POSIX threads (or pthreads) works on all platforms and
-is the default for Intel KNC and Cygwin targets.  It is attractive in
-its portability, though on most platforms it will tend to be heavier
-weight than Chapel strictly requires.  FIFO tasking is also used when
-Chapel is configured in 'Quick Start' mode (see $CHPL_HOME/README for
-details).  To use FIFO tasking, please take the following steps:
+FIFO tasking over POSIX threads (or pthreads) works on all platforms
+and is the default for Intel KNC, Cygwin, NetBSD, or when Cray is the
+target compiler.  It is attractive in its portability, though on most
+platforms it will tend to be heavier weight than Chapel strictly
+requires.  FIFO tasking is also used when Chapel is configured in
+'Quick Start' mode (see $CHPL_HOME/README for details).  To use FIFO
+tasking, please take the following steps:
 
 1) Ensure that the environment variable CHPL_HOME points to the
    top-level Chapel directory, as always.

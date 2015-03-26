@@ -361,16 +361,13 @@ module Math {
      If the arguments are of unsigned type, then
      fewer condititionals will be evaluated at run time.
   */
-  proc divceil(param m: integral, param n: integral)
-    param
-    return
+  proc divceil(param m: integral, param n: integral) param return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
     else
       if isNonnegative(n) then m / n
       else                     (m + n + 1) / n;
-
 
 
   /* Returns :proc:`ceil`\(`m`/`n`),
@@ -660,6 +657,8 @@ module Math {
 
   /* Computes the mod operator on the two arguments, defined as
      ``mod(x,y) = x - y * floor(x / y)``.
+
+     The return value has the same type as `x`.
 
      If the arguments are of unsigned type, then
      fewer condititionals will be evaluated at run time.
