@@ -2,34 +2,44 @@
 Release Changes List
 ====================
 
-*** STOPPED Mar 18 2015 (54008e4) ***
-
-This file TODO:
-* search for TODO below
-
 ==============
 version 1.11.0
 ==============
 
 Fourteenth public release of Chapel, April 2, 2015
 
-
-Highlights (see below for more information)
--------------------------------------------
-* added a new FileSystem standard module supporting operations on files/dirs
-* added a new FFTW standard module supporting key FFTW routines
+Highlights
+----------
 * revamped 'chpldoc' and used it to create web docs for all standard modules
+  (see http://chapel.cray.com/docs/latest/)
+* added a new FileSystem standard module supporting operations on files/dirs
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
+* added a new FFTW standard module supporting key FFTW routines
+  (see http://chapel.cray.com/docs/latest/modules/standard/FFTW.html)
 * added task intents to forall loops, plus new intents such as 'in' and 'reduce'
+  (see 'Semantic Changes' and 'New Features' sections below)
 * added support for standalone parallel iterators, used by non-zippered foralls
+  (see examples/primers/parIters.chpl)
 * added support for vectorization of data parallel loops and operations
+  (see '--vectorize' flag in 'man chpl')
 * optimized away communication code for module-scope variables and local arrays
+  (see release note slides at http://chapel.cray.com/download.html#releaseNotes)
 * added an early prototype interactive/interpreted mode for writing Chapel code
-* made 'ugni' the default CHPL_COMM setting for users of the cray-x* module
+  (see doc/technotes/README.chpl-ipe.rst for more details)
+* initial support for Python->Chapel interoperability via PyChapel
+  (see http://pychapel.readthedocs.org/ for more details)
+* made 'ugni'/'muxed' the default comm/tasking choices for cray-x* module users
+  (see doc/platforms/README.cray and doc/README.chplenv)
 * added a new 'chpltags' utility to generate emacs/vim tags for Chapel code
+  (see 'util/chpltags --help' and 'util/README')
 * numerous other improvements for better performance and cleaner generated code
+  (see 'Performance Improvements' section below)
 * improved portability to NetBSD and additional flavors of Linux
+  (see 'Portability Improvements' section below)
 * upgraded the bundled versions of GASNet, hwloc, llvm, and dygraphs
+  (see 'Third-Party Software Changes' section below)
 * numerous bug fixes
+  (see 'Bug Fixes' section below)
 
 Environment/Configuration Changes
 ---------------------------------
@@ -37,23 +47,23 @@ Environment/Configuration Changes
 * made the "quickstart" scripts set CHPL_COMM to 'none' and not set CHPL_MEM
 * improved the logic for auto-detecting when CHPL_ATOMICS should be 'intrinsics'
 * added auto-detection of CHPL_*_PLATFORM for 'cray-xc'/'cray-xe' systems
+* added support for building runtime/third-party with the bundled clang version
+  (see references to 'clang-included' in README.chplenv)
 * split the 'cygwin' CHPL_*_PLATFORM value into 'cygwin32' and 'cygwin64'
 * added new 'netbsd32' and 'netbsd64' values for CHPL_*_PLATFORM
 * changed CHPL_COMM/TASKS to default to ugni/muxed when using the cray-x* module
   (see doc/README.chplenv, doc/platforms/README.cray, and/or doc/README.tasks)
-* enabled 'ugni' and 'muxed' runtime layers to be mixed with others
 * made CHPL_TASKS default to 'fifo' for 'cray-prgenv-cray' CHPL_TARGET_COMPILER
 
 Packaging Changes
 -----------------
 * updated Makefiles to support building Chapel in parallel via 'make -j'
 * avoid rebuilding gmp and re2 speculatively when previous builds have failed
-* made the setchplenv.* scripts work even when CHPL_HOME is a symbolic link
 
 Tool Changes
 ------------
 * added an early prototype interactive/interpreted mode for writing Chapel code
-  (see TODO -- mike -- for more details)
+  (see doc/technotes/README.chpl-ipe.rst for more details)
 * revamped 'chpldoc' to create HTML files via Sphinx for documenting Chapel code
   (see doc/technotes/README.chpldoc.rst and 'man chpldoc' for more details)
 * added a new 'chpltags' utility to generate emacs/vim tags for Chapel code
@@ -67,22 +77,24 @@ Syntactic/Naming Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * added support for task intent clauses and semantics to forall loops
-  (see TODO -- vass)
-* added support for 'reduce' intents on forall loops
-  (see TODO -- vass)
+  (see 'Data Parallelism: Forall Intents' in the language specification)
+* added initial support for 'reduce' intents on forall loops
+  (see doc/technotes/README.reduceIntents)
 * removed the 'type select x' syntax in favor of simply using 'select x.type'
 * made read()s of sync/single variables result in a compiler error
 
 New Features
 ------------
 * added "blank", 'const', 'in', 'const in' and 'const ref' task intents
-  (see TODO -- vass)
+  (see 'Task Parallelism: Task Intents' in the language specification)
 * added "standalone parallel iterators", used by non-zippered forall loops
-  (see examples/primers/parIters.chpl and TODO -- diten)
+  (see examples/primers/parIters.chpl)
 * added support for aliasing of domains via the '=>' operator
 
 New Interoperability Features
 -----------------------------
+* inital support for Python->Chapel interoperability via PyChapel
+  (see http://pychapel.readthedocs.org/ for more details)
 * added a prototype capability to embed external dependences to source via 'use'
   (e.g., use "foo.h", "-lfoo"; is like adding these to the 'chpl' command-line)
 * added support for passing multidimensional arrays to external routines
@@ -94,32 +106,33 @@ New Interoperability Features
 Standard Library/Modules
 ------------------------
 * added a new module, FileSystem, containing numerous file system operations
-  (e.g., chmod(), exists(), isDir(), copy(), umask(), see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
 * added support for key 64-bit FFTW routines (single- and multi-threaded)
-  (see TODO)
-* started a new module, Path, supporting realPath(), curDir, parentDir, pathSep
-  (see TODO)
-* added a new module, Assert, defining a simple assertion capability
-  (see TODO)
-* added parallel versions of the glob(), walkdirs(), and findfiles() iterators
-  (see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/FFTW.html and
+   http://chapel.cray.com/docs/latest/modules/standard/FFTW_MT.html)
 * added parity() and rotate() operations to the BitOps module
-  (see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/BitOps.html)
+* added parallel versions of the glob(), walkdirs(), and findfiles() iterators
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
+* started a new module, Path, supporting realPath(), curDir, parentDir, pathSep
+  (see http://chapel.cray.com/docs/latest/modules/standard/Path.html)
+* added a new module, Assert, defining a simple assertion capability
+  (see http://chapel.cray.com/docs/latest/modules/standard/Assert.html)
 * added support for C types c_ptrdiff, c_uintptr, and c_intptr to SysCTypes.chpl
-  (see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/gen/doc/SysCTypes.html)
 * changed cwd() and chdir() from standalone functions to locale methods
-  (see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
 * made mkdir(parents=true) behave more like 'mkdir -p'
 * added a .safeCast() method to integer types to value-check downcasts
-  (see TODO -- point to Types.html documentation)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Types.html)
 * changed min(t) and max(t) to return 'param' values for integral types 't'
-  (see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Types.html)
 * parameterized RandomStream by an 'eltType' and updated its methods accordingly
-  (see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Random.html)
 * removed the parSafe arguments from RandomStream's methods in the Random module
-  (see TODO)
+  (see http://chapel.cray.com/docs/latest/modules/standard/Random.html)
 * added support for escaping pattern-style format strings using %{}
-  (e.g., "writef("#%{##}", 10)" => "#10"; see TODO)
+  (e.g., "writef("#%{##}", 10)" => "#10")
 * added support for readf()/writef() of octal values
 * changed 'BigInt' methods to use Chapel types rather than C types
 * folded the prototypical 'Filerator' module into the new 'FileSystem' module
@@ -137,7 +150,7 @@ Performance Improvements
 * added standalone parallel iterators for ranges and default domain maps
 * extended loop-invariant code motion to include certain global variables
 * added an 'assertNoSlicing' config that can be used to optimize array accesses
-  (see TODO)
+  (see $CHPL_HOME/PERFORMANCE)
 * avoided creating new singleton tasks within serial execution contexts
 
 Memory Improvements
@@ -148,24 +161,25 @@ Memory Improvements
 
 Launcher-specific Changes
 -------------------------
-* added '-cc none' to the *aprun launchers to improve kernel scheduling affinity
 * in the 'pbs-aprun' launcher, removed reliance on the mpp* options
 * added a --nodelist option to the 'slurm-srun' launcher
-  (see TODO)
 * in the 'slurm-srun' launcher, stopped using expect scripts
-* improved the selection of /tmp directories used by the 'slurm-srun' launcher
 
 Platform-specific Changes
 -------------------------
-* disabled optimizations by default for cray-prgenv-cray compilations
 * fixed an issue in which Qthreads would not handle sleep() correctly for darwin
 * added a micro-sleep when yielding threads on Cygwin to improve throughput
-* split the 'cygwin' platform variable into 'cygwin32' and 'cygwin64'
 * changed CHPL_COMM/TASKS to default to ugni/muxed when using the cray-x* module
   (see doc/README.chplenv, doc/platforms/README.cray, and/or doc/README.tasks)
+* enabled 'ugni' tasking to be usable with 'qthreads' as well as 'muxed'
+* reduced default heap size used for CHPL_COMM='ugni' to 2/3 free node memory
+  (see doc/platforms/README.cray)
+* changed 'muxed' tasking to use # of threads equal to the # of CPUs by default
+  (see doc/platforms/README.cray)
+* disabled optimizations by default for cray-prgenv-cray compilations
+* split the 'cygwin' platform value into 'cygwin32' and 'cygwin64'
+* split the 'netbsd' platform value into 'netbsd32' and 'netbsd64'
 * made CHPL_TASKS default to 'fifo' for 'cray-prgenv-cray' CHPL_TARGET_COMPILER
-* reduced the default heap size used for CHPL_COMM=ugni
-  (see TODO)
 
 Portability Improvements
 ------------------------
@@ -186,10 +200,12 @@ Third-Party Software Changes
 * rearchitected scripting framework for third-party dependences
 * made the re2 build do a better job of propagating errors back to the Makefiles
 * changed Qthreads to avoid using guard pages when mprotect() won't work
+* fixed a bug in limiting the maximum size of Qthreads memory pools
 
 Documentation
 -------------
-* added web-based docs for all current standard modules and removed from spec
+* added web-based docs for all standard modules and removed from spec/READMEs
+  (see http://chapel.cray.com/docs/latest/)
 * made some minor improvements to the Quick Reference document
 * added documentation for class and record destructors to the spec
 * removed an outdated distinction between function calls using () vs. [] in spec
@@ -200,6 +216,8 @@ Documentation
   (see doc/README.launcher, doc/platforms/README.cray)
 * added a note about ugni memory registration and concurrency with slurm
   (see doc/platforms/README.cray)
+* added a note about a longstanding undocumented feature to squash ref counting
+  (see $CHPL_HOME/PERFORMANCE)
 
 Example Codes
 -------------
@@ -209,7 +227,7 @@ Example Codes
   (see examples/primers/parIters.chpl)
 * updated and renamed the chpldoc primer example to reflect chpldoc's changes
   (see examples/primers/chpldoc.doc.chpl)
-* updated the randomnumbers primer to reflect changes to the interface
+* updated the random numbers primer to reflect changes to the interface
   (see examples/primers/randomNumbers.chpl)
 * fixed a bug in our lulesh implementation when using the 3D representation
 * updated miniMD's Stencil distribution to track changes in BlockDist
@@ -244,7 +262,7 @@ Bug Fixes
 ---------
 * fixed a bug with dynamically dispatched iterators
 * fixed a bug with parallel iteration over non-naturally-aligned ranges
-* fixed a bug in which record variables did not call user-defined cosntructors
+* fixed a bug in which record variables did not call user-defined constructors
 * fixed a bug in which arrays of associative domains could cause a segfault
 * fixed a bug in which user identifiers could easily conflict with C identifiers
 * fixed a bug with formatted writes of integers using "###."
@@ -274,12 +292,13 @@ Platform-specific bug fixes
 
 Runtime Library Changes
 -----------------------
+* enabled 'ugni' tasking to be usable with 'qthreads' as well as 'muxed'
 * changed Qthreads to yield after uncontested sync var locks to avoid starvation
 
 Compiler Performance
 --------------------
 * accelerated compilation times by disabling the task table by default
-  (see TODO)
+  (see '--[no-]task-tracking' on the 'chpl' man page and doc/README.executing)
 
 Testing System
 --------------
@@ -304,7 +323,7 @@ Testing System
 * added validation for CHPL_NIGHTLY_LOGDIR in nightly testing
 * fixed a bug for tests with multiple execopts settings that timed out
 * permitted suppression files to contain blank lines
-* fix bug in which supression-based issues were printed in the test summary only
+* fix bug in which suppression-based issues only appeared in the test summary
 * fixed a bad interaction between env. vars. set in sub_test vs. execenv files
 * made sub_test ignore OS errors during unlinking to quiet false negatives
 
@@ -381,7 +400,7 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
-* simplified interactions between locales models and the runtime
+* simplified interactions between locale models and the runtime
 * improved the non-blocking communication interface
 * added support for the main process to run Chapel tasks
 * guarded against some src==dst calls to memcpy()
