@@ -14,12 +14,11 @@ if [ -n "$*" ]; then
 fi
 
 loghome=/data/sea/chapel
-loghistdir=NightlyHistory
+loghistdir=/data/sea/chapel/NightlyHistory
 logsources="\
 Nightly \
 Nightly/whitebox/cray-xc \
 Nightly/whitebox/cray-xe \
-NightlyBaseline \
 NightlyDists \
 NightlyMemLeaks \
 NightlyPerformance/bradc-lnx \
@@ -30,6 +29,10 @@ NightlyPerformance/chap08 \
 NightlyPerformance/chap12 \
 NightlyPerformance/tiger \
 "
+
+# logs for "Cray hardware" configurations
+loghomeCrayHW=/cray/css/users/chapelu
+logsourcesCrayHW=Nightly
 
 verbose=false
 numerrors=
@@ -76,6 +79,11 @@ cd $loghome
 
 # day* eliminates debug-* and memory leaks summaries
 find $logsources -maxdepth 1 -name day\*.log | doall
+
+# we put these in the same directory as the above
+msg starting Cray HW logs
+cd $loghomeCrayHW
+find $logsourcesCrayHW -maxdepth 1 -name day\*.log | doall
 
 if [ -z "$numerrors" ]; then
   msg succeeded

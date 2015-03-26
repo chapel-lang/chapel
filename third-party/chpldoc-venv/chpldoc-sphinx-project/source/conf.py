@@ -50,9 +50,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'chpldoc'
 
-author_text = os.environ.get('CHPLDOC_AUTHOR', '')
-if not author_text:
-    author_text = u'AUTHOR TEXT'
+author_text = os.environ.get('CHPLDOC_AUTHOR', 'AUTHOR TEXT')
 
 copyright = u'2015, {0}'.format(author_text)
 
@@ -112,6 +110,15 @@ if not on_rtd:
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+    html_theme_options = {
+        'sticky_navigation': True,
+    }
+
+    analytics_id = os.environ.get('CHPLDOC_ANALYTICS_ID')
+    if analytics_id:
+        html_theme_options['analytics_id'] = analytics_id
+
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

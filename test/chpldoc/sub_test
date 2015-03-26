@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -e
-
-chpldoc_bin=${1}doc
-if [ -x "$(which ${chpldoc_bin} 2>/dev/null)" ] ; then
-    $CHPL_HOME/util/test/sub_test ${chpldoc_bin}
-else
-    echo "[Warning: Skipping ${chpldoc_bin} version of tests. ${chpldoc_bin} is not available.]"
-fi

@@ -1,4 +1,4 @@
-+# USAGE: the intent of this file is to keep track of current
+# USAGE: the intent of this file is to keep track of current
 # regressions and to keep notes about why they are failing.
 #
 # The file itself is divided into several major sections, set off by
@@ -192,10 +192,6 @@ different amounts of memory leaked on 32-bit platforms (2014-11-12, first run)
 ------------------------------------------------------------------------------
 [Error matching program output for memory/sungeun/refCount/domainMaps]
 
-prefetch instruction not found (2014-11-12, first run)
-------------------------------------------------------
-[Error matching program output for modules/standard/Prefetch/prefetch (compopts: 1)]
-
 
 ===================
 linux32
@@ -216,18 +212,14 @@ Chapel string passed to external routine (2015-03-05, kyleb)
 ===================
 darwin
 Inherits 'general'
-Reviewed 2015-03-16
+Reviewed 2015-03-17
 ===================
-
-Unable to compile C test (2015-03-14, mferguson)
-------------------------------------------------
-[Error matching compiler output for io/ferguson/preadc/preadvpwritev]
 
 
 ===================
 gnu.darwin
 Inherits 'darwin'
-Reviewed 2015-03-16
+Reviewed 2015-03-17
 ===================
 
 
@@ -240,50 +232,48 @@ Reviewed 2015-03-16
 ===================
 perf*
 Inherits 'general'
-Reviewed 2015-03-16
+Reviewed 2015-03-23
 ===================
+
+consistent failure due to insane memory usage (should get better with strings)
+(perf.bradc-lnx, perf.chap03, perf.chapel-shootout)
+------------------------------------------------------------------------------
+[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
 ===================
 perf.bradc-lnx
 Inherits 'perf*'
-Reviewed 2015-03-16
+Reviewed 2015-03-22
 ===================
 
-consistent failure due to insane memory usage (should get better with strings)
+=== sporadic failures below ===
+
+failure due to insane memory usage? (should get better with strings) (vass)
 ------------------------------------------------------------------------------
-[Error matching performance keys for io/vass/time-write (compopts: 1)] (2014-11-01)
-[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
+[Error matching performance keys for io/vass/time-write (compopts: 1)] (2014-11-01..2015-03-01, 2015-03-05..2015-03-18)
 
 
 
 ===================
 perf.chap03
 Inherits 'perf*'
-Reviewed 2015-03-16
+Reviewed 2015-03-23
 ===================
-
-consistent failure due to insane memory usage (should get better with strings)
-------------------------------------------------------------------------------
-[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
 ===================
 perf.chap04
 Inherits 'perf*'
-Reviewed 2015-03-16
+Reviewed 2015-03-23
 ===================
 
 
 ====================
 perf.chapel-shootout
 Inherits 'perf*'
-Reviewed 2015-02-17
+Reviewed 2015-03-23
 ====================
-
-consistent failure due to insane memory usage (should get better with strings)
-------------------------------------------------------------------------------
-[Error matching performance keys for studies/shootout/fasta/kbrady/fasta-lines]
 
 
 
@@ -303,7 +293,7 @@ Reviewed 2015-03-16
 ===================
 baseline
 Inherits 'general'
-Reviewed 2015-03-16
+Reviewed 2015-03-20
 ===================
 
 Dies with signal 6
@@ -334,26 +324,33 @@ Reviewed 2015-03-16
 ===================
 valgrind
 Inherits 'general'
-Reviewed 2015-03-16
+Reviewed 2015-03-23
 ===================
+
+start_test --valgrind uses chpl instead of chpldoc (2015-03-11, Thomas)
+-----------------------------------------------------------------------
+[Error matching compiler output for compflags/thomasvandoren/chpldoc.doc (compopts: 1)]
+[Error matching compiler output for release/examples/primers/chpldoc.doc (compopts: 1)]
+
 
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
 [Error matching program output for regexp/ferguson/rechan]
 
+
 === sporadic failures below ===
 
 sporadic invalid write in dl_lookup_symbol->do_lookup_x, read in dl_name_match_p
 --------------------------------------------------------------------------------
-[Error matching program output for performance/sungeun/dgemm] (2014-11-16..2014-11-26, 2014-11-29..2015-01-05, 2015-01-12..)
-[Error matching program output for studies/sudoku/dinan/sudoku] (2015-01-30..2015-02-18, 2015-02-19..2015-02-26, 2015-02-28)
+[Error matching program output for performance/sungeun/dgemm] (..., 2014-11-29..)
+[Error matching program output for studies/sudoku/dinan/sudoku] (..., 2015-02-19..2015-02-26, 2015-02-28..2015-03-07)
 
 sporadic execution timeout
 --------------------------
 [Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (..2015-02-21)
 [Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2) (2015-03-02..)]
-
+[Error: Timed out executing program performance/bharshbarg/arr-forall] (2015-03-20)
 
 
 
@@ -396,7 +393,7 @@ Reviewed 2015-03-16
 ===================
 no-local
 Inherits 'general'
-Reviewed 2015-03-16
+Reviewed 2015-03-23
 ===================
 
 
@@ -472,14 +469,8 @@ sporadic execution timeouts
 =============================
 gasnet.llvm
 Inherits 'gasnet*' and 'llvm'
-Reviewed 2015-03-16
+Reviewed 2015-03-19
 =============================
-
-segfault (2015-03-13, mferguson)
---------------------------------
-[Error matching program output for release/examples/benchmarks/hpcc/ra (compopts: 1)]
-[Error matching program output for release/examples/benchmarks/hpcc/ra-atomics (compopts: 1)]
-[Error matching program output for release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)]
 
 
 =============================
@@ -502,19 +493,11 @@ Inherits 'general'
 Reviewed 2015-03-16
 ===================
 
-Failure to compile C tests (2015-03-15, mferguson)
-(xc-wb.prgenv-pgi, xc-wb.pgi, xc-wb.prgenv-cray)
---------------------------------------------------
-[Error matching compiler output for io/ferguson/preadc/preadvpwritev]
-[Error matching compiler output for io/ferguson/preadc/preadvpwritev_sys]
-[Error matching compiler output for io/ferguson/preadc/preadwrite]
-[Error matching compiler output for io/ferguson/preadc/preadwrite_sys]
-
 === sporadic failures below ===
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (last seen: 2015-03-01..2014-03-15 on xc-wb.prgenv-pgi/intel)
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (last seen: 2015-03-22 on xc-wb.prgenv-pgi)
 [Error: Timed out executing program domains/johnk/capacityParSafe (compopts: 1)] (last seen: 2015-02-24 on xc-wb.pgi)
 
 
@@ -566,7 +549,7 @@ binary files differ (2014-09-21..)
 ================================
 xc-wb.intel
 Inherits 'xc-wb.*' and '*intel*'
-Reviewed 2015-03-16
+Reviewed 2015-03-23
 ================================
 
 Sporadic failures (2015-03-13..)
@@ -577,12 +560,8 @@ Sporadic failures (2015-03-13..)
 ================================
 xc-wb.prgenv-intel
 Inherits 'xc-wb.*' and '*intel*'
-Reviewed 2015-03-16
+Reviewed 2015-03-17
 ================================
-
-Error compiling C tests due to third-party changes (2015-03-06, gbt, michael)
------------------------------------------------------------------------------
-[Error compiling C Regexp tests]
 
 
 =============================
@@ -595,6 +574,7 @@ Reviewed 2015-03-16
 ====================
 *prgenv-cray*
 Inherits '*prgenv-*'
+Also includes: xc.*.cray.*
 Reviewed 2015-03-16
 ====================
 
@@ -632,8 +612,8 @@ error differs but within acceptable margin; should squash error printing (..)
 ------------------------------------------------------------------------
 [Error matching program output for studies/hpcc/FFT/marybeth/fft]
 
-Execution timeout (206-03-04, vass)
------------------------------------
+Execution timeout (2015-03-04, vass - won't fix or skipif or suppress)
+----------------------------------------------------------------------
 [Error: Timed out executing program parallel/forall/vass/ri-3-stress (compopts: 1)] 
 
 Execution timeout (2015-02-15)
@@ -655,7 +635,7 @@ sporadic dropping/mangling of output
 [Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (2014-10-07)
 [Error matching program output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember] (2014-12-16)
 [Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014-10-10)
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 5, execopts: 1)] (2014-10-03, 2015-03-04)
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (2014-10-03, 2015-03-04, xc.mpi.cray.slurm 2015-03-01, last seen 2015-03-22 on xc.none.cray.slurm)
 [Error matching program output for release/examples/primers/arrays] (2014-10-03)
 [Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky] (2015-01-14)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)] (2014-12-19)
@@ -679,16 +659,14 @@ Reviewed 2015-03-16
 ============================
 xc-wb.host.prgenv-cray
 Inherits 'xc-wb.prgenv-cray'
-Reviewed 2015-03-16
+Reviewed 2015-03-19
 ============================
 
 === sporadic failures below ===
 
 sporadic unresolved call on ||(0,0) in Types.chpl and related errors (bradc)
 ----------------------------------------------------------------------------
-All tests fail to compile. (2015-02-15..2015-02-16, 2015-02-19)
-
-
+All tests fail to compile. (2015-02-15..2015-02-16, 2015-02-19, 2015-03-10, 2015-03-12)
 
 
 ===================
@@ -740,70 +718,76 @@ Reviewed 2015-03-16
 
 ===================
 x?.*
-Inherits 'x?.wb-*'
-Reviewed 2015-03-16
+Inherits 'xc-wb.*'
+Reviewed 2015-03-20
 ===================
+
+FFTW numeric differences across architectures - won't fix (2015-03-19)
+(most x?.* configurations)
+----------------------------------------------------------------------
+[Error matching program output for release/examples/primers/FFTWlib (compopts: 1)]
+
 
 ===================
 xc.*
 Inherits 'x?.*'
-Reviewed 2015-03-16
+Reviewed 2015-03-20
 ===================
 
 
 ===================
 xe.*
 Inherits 'x?.*'
-Reviewed 2015-03-16
+Reviewed 2015-03-20
 ===================
 
 === sporadic failures below ===
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)] (last seen 2015-03-12 on xe.ugni.gnu)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (last seen 2015-03-19 on xe.ugni-qthreads.intel)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (last seen 2015-03-19 on xe.ugni-qthreads.gnu)
 
 
-===================
-x?.ugni-qthreads.*
-Inherits 'x?.*'
-Reviewed 2015-03-16
-===================
-
-segfaults in various tests (2015-03-06, though we missed a few days, gbt)
--------------------------------------------------------------------------
-*** various tests ***
-
+sporadic compilation timeouts - perhaps test-independent
+--------------------------------------------------------
+[Error: Timed out compilation for release/examples/benchmarks/ssca2/SSCA2_main (compopts: 4)] (last seen 2015-03-19 on xe.gemini.cray)
+[Error: Timed out compilation for release/examples/benchmarks/lulesh/lulesh (compopts: 1)] (xe.gemini.cray: 2015-03-23..)
 
 ===================
-xe.ugni.*
+xe.ugni*.*
 Inherits 'xe.*'
-Reviewed 2015-03-16
+Reviewed 2015-03-23
 ===================
 
 === sporadic failures below ===
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/variants/ra-cleanloop (compopts: 1)] (last seen 2015-03-05 on xe.ugni.intel)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (last seen 2015-03-07 on xe.ugni.gnu)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/ra (compopts: 1)] (last seen 2015-03-23.. on xe.ugni-qthreads.gnu)
 
 
 ==========================================
 xc.knc
 Inherits 'xc.*'
-Reviewed 2015-03-16
+Reviewed 2015-03-20
 ==========================================
 
 Unclear how KNCs interact with the file system on Crays (since first run)
 -------------------------------------------------------------------------
 [Error matching program output for release/examples/primers/fileIO]
 
+=== sporadic failures below ===
+
+sporadic execution timeouts
+---------------------------
+[Error: Timed out executing program release/examples/primers/distributions] (2015-03-13, 2015-03-19)
+
 
 ==========================
 xc.llvm
 Inherits 'xc.*' and 'llvm'
-Reviewed 2015-03-16
+Reviewed 2015-03-19
 ==========================
 
 
@@ -823,6 +807,12 @@ OOB array access when core counts are not a power of 2 (2015-03-04/06, ben)
 --------------------------------------------------------------
 [Error matching performance keys for npb/is/mcahir/intsort.mtml]
 
+=== sporadic failures below ===
+
+timeout instead of OOB
+----------------------
+[Error: Timed out executing program npb/is/mcahir/intsort.mtml] (last seen: 2015-03-20 on perf.xc.local.gnu)
+
 
 ================================
 perf.xc.local.gnu
@@ -834,36 +824,39 @@ Reviewed 2015-03-16
 ============================
 perf.xc.no-local.gnu
 Inherits 'perf.xc.local.gnu'
-Reviewed 2015-03-16
+Reviewed 2015-03-20
 ============================
 
 consistent timeouts (2015-02-18)
+(only perf.xc.no-local.gnu)
 --------------------------------
+[Error: Timed out executing program performance/bharshbarg/arr-forall (execopts: 1)] (2015-03-20..)
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ptrans]
 [Error: Timed out executing program studies/shootout/nbody/bradc/nbody-blc-slice]
 [Error: Timed out executing program studies/shootout/nbody/sidelnik/nbody_forloop_3]
-[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)]
 [Error: Timed out executing program studies/ssca2/memory/SSCA2_mem (compopts: 1)] (ben)
 
-=== sporadic issues ===
-
-sporadic execution timeouts
----------------------------
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: *)] (last seen 2015-03-07 on perf.xc.16.ugni.gnu)
+=== sporadic failures below ===
 
 Differing whitespace (vass)
+(only on perf.xc.no-local.gnu)
 ---------------------------
 [Error matching performance keys for io/vass/time-write (compopts: 1)] (firstrun..2015-02-21, 2015-02-23..)
+
+sporadic execution timeouts
+(since 2015-03-11 or before, this occurs only on perf.xc.16.*.gnu)
+---------------------------
+[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (last seen 2015-03-19 on perf.xc.16.mpi.gnu)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: *)] (last seen 2015-03-22 on perf.xc.16.ugni.gnu)
 
 
 ===============================
 perf.xc.16.mpi.gnu
 Inherits 'perf.xc.no-local.gnu'
-Reviewed 2015-03-16
+Reviewed 2015-03-20
 ===============================
 
-
-=== sporadic issues ===
+=== sporadic failures below ===
 
 Sporadic execution timeout
 --------------------------
@@ -879,45 +872,41 @@ Reviewed 2015-03-16
 Consistent execution timeout (2015-02-02)
 -----------------------------------------
 [Error: Timed out executing program release/examples/benchmarks/hpcc/ra-atomics]
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: 2)] (since logs started 2015-03-11..)
 
-=== sporadic issues ===
+=== sporadic failures below ===
 
 Sporadic execution timeouts.
 ----------------------------
+[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (..2015-03-17)
 [Error: Timed out executing program studies/hpcc/HPL/vass/hpl.hpcc2012 (compopts: 1)] (2015-02-15, 2015-03-06..)
 
+
 ===============================
-perf.xc.16.ugni*.gnu
+perf.xc.16.ugni-qthreads.gnu
 Inherits 'perf.xc.no-local.gnu'
-Reviewed 2015-03-16
+Reviewed 2015-03-20
 ===============================
 
 
 ===============================
 perf.xc.16.ugni.gnu
-Inherits 'perf.xc.16.ugni*.gnu'
-Reviewed 2015-03-16
+Inherits 'perf.xc.no-local.gnu'
+Reviewed 2015-03-23
 ===============================
 
-=== sporadic issues ===
+=== sporadic failures below ===
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-16)
-
-
-===============================
-perf.xc.16.ugni-qthreads.gnu
-Inherits 'perf.xc.16.ugni*.gnu'
-Reviewed 2015-03-16
-===============================
-
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-12..2015-03-17, 2015-03-20..)
+[Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD (compopts: 1)] (2015-..2015-03-17)
 
 
 ==================================
 perf.xc.local.intel
 Inherits 'perf.xc.*' and '*intel*'
-Reviewed 2015-03-16
+Reviewed 2015-03-19
 ==================================
 
 Consistent errors (2015-03-11)
@@ -934,14 +923,19 @@ sporadic chameneos-redux-cas output mismatch (lydia)
 
 ========================================
 perf.xc.local.cray
-Inherits 'perf.xc.*' and '*prgenv-cray*'
-Reviewed 2015-03-16
+Inherits 'perf.xc.*'
+Reviewed 2015-03-23
 ========================================
 
-known CCE bug
--------------
-[Error matching performance keys for release/examples/benchmarks/shootout/meteor-fast]
-[Error matching performance keys for studies/shootout/meteor/kbrady/meteor-parallel-alt]
+due to CCE bugs? (2015-03-20, with switch to cce/8.3.10.102)
+------------------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/ptrans]
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 1)]
+[Error: Timed out executing program release/examples/benchmarks/lulesh/lulesh (compopts: 3, execopts: 1)]
+
+Validation: FAILURE with vectorization (since 2015-03-11 or before, Ben)
+------------------------------------------------------------------------
+[Error matching performance keys for release/examples/benchmarks/hpcc/fft]
 
 
 === sporadic failures below ===
@@ -983,7 +977,7 @@ Reviewed 2015-03-16
 
 check_channel assertion failure
 -------------------------------
-[Error matching C regexp test ./regexp_channel_test Regexp Channels Test]
+[Error matching program output for regexp/ferguson/ctests/regexp_channel_test]
 
 QIO strcmp(got, expect) assertion error
 ---------------------------------------
@@ -993,12 +987,12 @@ QIO strcmp(got, expect) assertion error
 
 sporadic pthread_cond_init failed
 ---------------------------------
-[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (2015-02-25..2015-03-04, 2015-03-07..)
-[Error matching program output for reductions/diten/testSerialReductions (compopts: 1)] (2015-03-06)
+[Error matching program output for studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (cygwin64: 2015-02-25..2015-03-04, 2015-03-07, 2015-03-11; cygwin32: 2015-03-12)
+[Error matching program output for reductions/diten/testSerialReductions (compopts: 1)] (cygwin64: 2015-03-06, 2015-03-22..)
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06)
+[Error: Timed out executing program studies/cholesky/jglewis/version2/performance/test_cholesky_performance (compopts: 1)] (cygwin64:..., 2014-12-01, 2015-01-05..2015-02-24, 2015-03-05..2015-03-06, 2015-03-10, 2015-03-12..; cygwin32: ...2015-03-11, 2015-03-13..2015-03-20)
 [Error: Timed out executing program reductions/diten/testSerialReductions (compopts: 1)] (2015-03-07..)
 
 ===========================
@@ -1024,18 +1018,23 @@ Consistent execution timouts
 ----------------------------
 [Error: Timed out executing program io/ferguson/ctests/qio_test (compopts: 1)]
 
+A package needed for chpldoc is not installed (2015-03-12, Thomas)
+------------------------------------------------------------------
+[Warning: Could not find chpldoc, skipping test compflags/thomasvandoren/chpldoc.doc]
+[Warning: Could not find chpldoc, skipping test release/examples/primers/chpldoc.doc]
+
 
 === sporadic failures below ===
 
 sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
 ------------------------------------------------------------------------------
-[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..2015-02-18, 2015-02-20..2015-02-22, 2015-02-24, 2015-03-01..2015-03-06)
+[Error matching program output for studies/colostate/OMP-Jacobi-1D-Sliced-Diamond-Tiling (compopts: 1)] (2015-01-16..2015-01-19, 2015-01-21, 2015-01-25..2015-01-28, 2015-01-31..2015-02-18, 2015-02-20..2015-02-22, 2015-02-24, 2015-03-01..2015-03-06, 2015-03-11..2015-03-19, 2015-03-22..)
 
 
 ================================
 cygwin64
 Inherits 'cygwin*' and 'linux64'
-Reviewed 2015-03-16
+Reviewed 2015-03-23
 ================================
 
 QIO qio_err_to_int() == EEOF assertion error

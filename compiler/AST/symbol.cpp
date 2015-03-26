@@ -2405,11 +2405,11 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   this->printTabs(file, tabs);
   *file << this->docsDirective();
 
-  // Print inline/export. Externs do not get a prefix, since the user doesn't
+  // Print export. Externs do not get a prefix, since the user doesn't
   // care whether it's an extern or not (they just want to use the function).
-  if (this->hasFlag(FLAG_INLINE)) {
-    *file << "inline ";
-  } else if (this->hasFlag(FLAG_EXPORT)) {
+  // Inlines don't get a prefix for symmetry in modules like Math.chpl and
+  // due to the argument that it's of negligible value in most cases.
+  if (this->hasFlag(FLAG_EXPORT)) {
     *file << "export ";
   }
 
