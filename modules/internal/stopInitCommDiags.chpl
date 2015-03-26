@@ -16,25 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-pragma "no use ChapelStandard"
-
-/*
-  This is a companion to module :mod:`startInitCommDiags` and has no
-  interface of its own.  There is no benefit to naming it in a ``use``
-  statement.  See the documentation for :mod:`startInitCommDiags` for
-  more information.
- */
 module stopInitCommDiags {
-  use startInitCommDiags;
+  use CommDiagnostics;
 
   if printInitVerboseComm {
-    use CommDiagnostics;
     stopVerboseComm();
   }
 
   if printInitCommCounts {
-    use CommDiagnostics;
     stopCommDiagnostics();
     writeln(getCommDiagnostics());
     resetCommDiagnostics();
