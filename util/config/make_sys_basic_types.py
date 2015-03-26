@@ -58,14 +58,26 @@ _max_value_to_chpl_type = {
     '18446744073709551615': 'uint(64)',
 }
 
+_h_file_header = """
+#include "sys_basic.h"
+#include <limits.h>
+#include <stdint.h>
+#include <math.h>
+
+FIND_INT_SIZES_START
+"""
+
 
 def main():
     """Parse command line arguments, create module, and print to stdout."""
     args = _parse_args()
     _setup_logging(args.verbose)
 
+    # Get the module content first, since it can lead to errors/early exits if
+    # something goes wrong.
+    module_content = get_sys_c_types(args.doc)
     with open(args.output_file, 'w') as fp:
-        fp.write(get_sys_c_types(args.doc))
+        fp.write(module_content)
         fp.write('\n')
     logging.debug('Wrote module to: {0}'.format(args.output_file))
 
@@ -89,14 +101,7 @@ def get_sys_c_types(docs=False):
     with _ensure_deleted(h_file):
         logging.debug('Creating temp header: {0}'.format(h_file))
         with open(h_file, 'w') as fp:
-            fp.write("""
-#include "sys_basic.h"
-#include <limits.h>
-#include <stdint.h>
-#include <math.h>
-
-FIND_INT_SIZES_START
-""")
+            fp.write(_h_file_header)
 
             for max_macro, _, _ in _types:
                 fp.write('{0}\n'.format(max_macro))
@@ -113,11 +118,18 @@ FIND_INT_SIZES_START
     max_exprs = []
     keep = False
     for line in compile_result.splitlines():
-        if line.startswith('#') or line.startswith('//'):
+        # Skip lines until the start macro is found.
+        if not keep and 'FIND_INT_SIZES_START' not in line:
             continue
+
+        # Found the start of the max macros. All subsequent lines will be
+        # recorded.
         elif 'FIND_INT_SIZES_START' in line:
             keep = True
-        elif keep:
+
+        # The start of the max macros has already been found. Record every
+        # line, stripping it of whitespace.
+        else:
             max_exprs.append(line.strip())
     logging.debug('Found {0} lines of max type '
                   'values.'.format(len(max_exprs)))
