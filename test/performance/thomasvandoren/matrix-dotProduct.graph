@@ -1,0 +1,5 @@
+perfkeys: Elapsed =, Elapsed =, Elapsed =, Elapsed =
+files: matrix-dotProduct-chapelerific.dat, matrix-dotProduct-foralls.dat, matrix-dotProduct-reduce.dat, matrix-dotProduct-slice-promotion.dat
+graphkeys: Chapelerific (reduce + promoted op on slices), Traditional, Reduce only, Promoted op on slices only
+graphtitle: 2D Matrix Dot Products
+ylabel: Time (seconds)
