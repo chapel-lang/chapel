@@ -18,6 +18,8 @@ proc dotProduct(ref C: [?DC] int, ref A: [?DA] int, ref B: [?DB] int)
 {
   checkDims(DC, DA, DB);
 
-  forall (row, col) in C.domain do
+  // Use promotion of * operator on slices of A and B, then reduce that result
+  // with + operator.
+  forall (row, col) in DC do
     C[row, col] = + reduce (A[row, 1..] * B[1.., col]);
 }

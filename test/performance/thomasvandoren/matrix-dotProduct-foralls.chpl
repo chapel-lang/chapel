@@ -19,10 +19,10 @@ proc dotProduct(ref C: [?DC] int, ref A: [?DA] int, ref B: [?DB] int)
 {
   checkDims(DC, DA, DB);
 
-  forall (row, col) in C.domain {
+  forall (row, col) in DC {
     // Zero out the value, in case C is reused.
     C[row, col] = 0;
-    for i in A.domain.dim(2) do
+    for i in DA.dim(2) do
       C[row, col] += A[row, i] * B[i, col];
   }
 }
