@@ -1020,7 +1020,8 @@ def main():
 
     # Copy the index.html and support css and js files
     auxdir = os.path.dirname(os.path.realpath(__file__))+'/perf'
-    copiedAllFiles = True 
+    chpl_home = os.environ.get('CHPL_HOME', '')
+    copiedAllFiles = True
     try:
         shutil.copy(auxdir+'/index.html', outdir)
     except IOError:
@@ -1037,11 +1038,7 @@ def main():
         sys.stderr.write('WARNING: Could not copy perfgraph.js\n')
         copiedAllFiles = False
 
-    # TODO point these to the right location
-    dygraphDir = os.path.join(
-        os.environ.get('CHPL_HOME', ''),
-        'third-party',
-        'dygraphs')
+    dygraphDir = os.path.join(chpl_home, 'third-party', 'dygraphs')
     try:
         shutil.copy(os.path.join(dygraphDir, 'dygraph-combined.js'), outdir)
     except IOError:
@@ -1049,11 +1046,11 @@ def main():
         copiedAllFiles = False
 
     graphInfo.finish()
-    
+
     sys.stdout.write('Read %d graph files in %d suites\n'%(numGraphfiles, numSuites))
-   
-    if copiedAllFiles: 
-        with open(outdir + "/SUCCESS", 'w') as f: 
+
+    if copiedAllFiles:
+        with open(outdir + "/SUCCESS", 'w') as f:
             # do nothing, we just want to create the file so we know that no
             # errors that we currently detect occurred and all the requires
             # files were copied over. This is used to see if we should sync the
