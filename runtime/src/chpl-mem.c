@@ -26,12 +26,14 @@
 #include "chpltypes.h"
 #include "error.h"
 
+#ifndef CHPL_USING_CSTDLIB_MALLOC
 #ifdef __GLIBC__
-#include <malloc.h>
-#ifdef CHPL_USING_CSTDLIB_MALLOC
-// GLIBC requests that we define __malloc_initialize_hook like this
-void (* __malloc_initialize_hook) (void) = chpl_mem_replace_malloc_if_needed;
+#define USE_GLIBC_MALLOC_HOOKS
 #endif
+#endif
+
+#ifdef __GLIBC__
+#include <malloc.h> // for memalign
 #endif
 
 static int heapInitialized = 0;
@@ -88,7 +90,17 @@ void chpl_free_sym(void* ptr) {
   return chpl_free(ptr);
 }
 
-#ifdef __GLIBC__
+#ifdef USE_GLIBC_MALLOC_HOOKS
+
+// GLIBC requests that we define __malloc_initialize_hook like this
+//void (* __malloc_initialize_hook) (void) = chpl_mem_replace_malloc_if_needed;
+// but that would result in chpl_mem_replace_malloc being called
+// at program start (more or less) and not after the memory layer
+// is initialized. We want to only use our custom allocator
+// after the comms layer has created the communication-ready
+// heap. An alternative would be to make these routines call
+// the old allocator if heapInitialized==0. We'd have to do
+// that if we used symbol remapping too (e.g. with ld --wrap).
 
 static
 void* chpl_malloc_hook(size_t size, const void* unusued)
@@ -131,7 +143,7 @@ void chpl_mem_replace_malloc_if_needed(void) {
 
   printf("in chpl_mem_replace_malloc_if_needed\n");
 
-#ifdef __GLIBC__
+#ifdef USE_GLIBC_MALLOC_HOOKS
   // glibc wants a memalign call
   // glibc: void *memalign(size_t boundary, size_t size);
   // dlmalloc: dlmemalign
