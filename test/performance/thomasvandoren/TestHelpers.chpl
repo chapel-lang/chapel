@@ -1,5 +1,6 @@
 /* Test helpers... */
 
+use Assert;
 use Random;
 use Time;
 

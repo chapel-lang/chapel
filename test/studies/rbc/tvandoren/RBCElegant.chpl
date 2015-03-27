@@ -72,7 +72,7 @@ proc main() {
   var gridCapitalNextPeriod: int,
     valueHighSoFar, valueProvisional, consumption, capitalChoice: real;
 
-  // Intermediate array, to be reused in dotProduct()/transpose() calls below.
+  // Intermediate array, to be reused in dotProduct() call inside loop.
   var mTransitionTranspose: [1..5, 1..5] real;
   transpose(mTransitionTranspose, mTransition);
 
