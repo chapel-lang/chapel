@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <!-- In order to support IE7 and IE8, we use excanvas, emulate certain IE
          versions, and use jquery version 1 instead of 2. Future versions of
          dygraphs will remove support for anything older than IE9, so we can
          remove that code, and use a newer jquery version. -->
-    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7; IE=EmulateIE9">
+    <title>Chapel Performance Graphs</title>
     <link rel="stylesheet" href="perfgraph.css">
     <!--[if IE]>
         <script src="http://dygraphs.com/excanvas.js"></script>
         <![endif]-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
     <script src="dygraph-combined.js"></script>
     <script src="graphdata.js"></script>
@@ -20,7 +21,7 @@
   <body onload="perfGraphInit()">
     <center><h2 id="titleElem"></h2></center>
     <center><h4 id="dateElem"></h4></center>
-    <script language="javascript" type="text/javascript" >
+    <script>
       <!-- hide
            function jumpto(x){
              if (document.form1.jumpmenu.value != "null") {
@@ -59,5 +60,4 @@
     <script src="perfgraph.js"></script>
   </body>
 </html>
-
 
