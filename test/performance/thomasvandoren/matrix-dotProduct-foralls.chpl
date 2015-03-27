@@ -8,15 +8,16 @@ use TestHelpers;
 proc main() {
   timer.start();
 
-  // If not running with --fast (e.g. boundsChecking == true), ensure the array
-  // dimensions are correct.
-  if boundsChecking {
-    assert(A.domain.dim(2) == B.domain.dim(1),
-           "Inner dimensions of A and B do not match.");
-    assert(C.domain.dim(1) == A.domain.dim(1) &&
-           C.domain.dim(2) == B.domain.dim(2),
-           "Outer dimentions of C, A, and B do not match.");
-  }
+  dotProduct(C, A, B);
+
+  timer.stop();
+  printResults();
+}
+
+proc dotProduct(ref C: [?DC] int, ref A: [?DA] int, ref B: [?DB] int)
+  where DC.rank == 2 && DA.rank == 2 && DB.rank == 2
+{
+  checkDims(DC, DA, DB);
 
   forall (row, col) in C.domain {
     // Zero out the value, in case C is reused.
@@ -24,8 +25,5 @@ proc main() {
     for i in A.domain.dim(2) do
       C[row, col] += A[row, i] * B[i, col];
   }
-
-  timer.stop();
-  printResults();
 }
 
