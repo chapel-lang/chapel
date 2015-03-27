@@ -825,11 +825,17 @@ void runClang(const char* just_parse_filename) {
              so that we could automatically set CHPL_HOME. */
   std::string home(CHPL_HOME);
   std::string compileline = home + "/util/config/compileline";
-  if( debugCCode ) compileline += " DEBUG=1";
-  if( optimizeCCode ) compileline += " OPTIMIZE=1";
+  std::string one = "1";
+  std::string zero = "0";
+  compileline += " COMP_GEN_WARN=" + (ccwarnings?one:zero);
+  compileline += " COMP_GEN_DEBUG=" + (debugCCode?one:zero);
+  compileline += " COMP_GEN_OPT=" + (optimizeCCode?one:zero);
+  compileline += " COMP_GEN_SPECIALIZE=" + (specializeCCode?one:zero);
+  compileline += " COMP_GEN_IEEE_FLOAT=" + (fieeefloat?one:zero);
   std::string readargsfrom = compileline + " --llvm"
                               " --llvm-install-dir"
                               " --clang-sysroot-arguments"
+                              " --cflags"
                               " --includes-and-defines";
   std::vector<std::string> args;
   std::vector<std::string> clangCCArgs;
@@ -842,30 +848,13 @@ void runClang(const char* just_parse_filename) {
   if( args.size() < 1 ) USR_FATAL("Could not find runtime dependencies for --llvm build");
 
   clangInstallDir = args[0];
+
+  // Note that these CC arguments will be saved in info->clangCCArgs
+  // and will be used when compiling C files as well.
   for( size_t i = 1; i < args.size(); ++i ) {
     clangCCArgs.push_back(args[i]);
   }
  
-  // Add cflags,etc that used to be put into the Makefile
-  // (see codegen_makefile in files.cpp)
-  if (ccwarnings) {
-    // Could add warning arguments here. to clangCCArgs
-  }
-
-  if (debugCCode) {
-    clangCCArgs.push_back("-g");
-  }
-
-  if (optimizeCCode) {
-    clangCCArgs.push_back("-O3");
-  }
-
-  if (fieeefloat) {
-    // believe clang is always ieee float
-  } else {
-    clangCCArgs.push_back("-ffast-math");
-  }
-
   forv_Vec(const char*, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
