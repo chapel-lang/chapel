@@ -65,6 +65,15 @@ AllCompTime:
   11/09/14:
     - disable the task table by default
 
+arrayPerformance-1d:
+  03/19/15:
+    - text: memory related, qthreads memory pool bug fix
+      host: chap03
+
+arr-forall:
+  03/24/15:
+    - with CCE, bug fix to avoid vectorizing when not valid
+
 assign.1024:
   01/21/15:
     - optimize range follower iter so optimize-loop-iterators fires
@@ -248,10 +257,17 @@ STREAM_performance:
 stencil:
   07/21/14:
     - machine related (no commits on the day before)
+  03/24/15:
+    - with CCE, bug fix to avoid vectorizing when not valid
 
 testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
+
+thread-ring:
+  03/19/15:
+    - text: memory related, qthreads memory pool bug fix
+      host: chap03
 
 time_array_vs_ddata:
   05/31/14:
@@ -264,3 +280,7 @@ time_array_vs_tuple:
 time_iterate:
   11/13/13:
     - disabled optimizations based on no arithmetic flow (22290)
+
+time-write:
+  03/05/15:
+    - no strings with externs update
