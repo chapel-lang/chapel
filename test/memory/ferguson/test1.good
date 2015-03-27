@@ -1,0 +1,42 @@
+in chpl_mem_replace_malloc_if_needed
+in chpl_malloc_hook
+in chpl_malloc_hook
+in chpl_free_hook
+in chpl_malloc_hook
+in chpl_free_hook
+in chpl_malloc_hook
+in chpl_free_hook
+in chpl_memalign_hook
+Allocating in Chapel
+Freeing in Chapel
+Allocating with malloc in C
+enter c_function_malloc
+in chpl_malloc_hook
+exit c_function_malloc
+Freeing in C
+enter c_function_free
+in chpl_free_hook
+exit c_function_free
+Allocating in Chapel
+Freeing in C
+enter c_function_free
+in chpl_free_hook
+exit c_function_free
+Allocating with malloc in C
+enter c_function_malloc
+in chpl_malloc_hook
+exit c_function_malloc
+Freeing in Chapel
+Allocating with calloc in C
+enter c_function_calloc
+in chpl_malloc_hook
+exit c_function_calloc
+Freeing in Chapel
+Allocating with strdup in C
+enter c_function_strdup
+in chpl_malloc_hook
+exit c_function_strdup
+Freeing in Chapel
+DONE
+in chpl_free_hook
+in chpl_free_hook
