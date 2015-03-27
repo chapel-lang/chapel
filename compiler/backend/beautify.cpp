@@ -215,7 +215,12 @@ void beautify(fileinfo* origfile) {
         sscanf(cp, ZLINEINPUTFORMAT, &zline, zname);
         znptr = strrchr(zname,'/');
         if (znptr != NULL) {
-          strcpy(zname,znptr+1);
+          // We can't use strcpy here because the source
+          // and destination strings can overlap.
+          char *src = znptr+1;
+          char *dst = zname;
+          size_t len = strlen(src) + 1; // also copy null
+          memmove(dst, src, len);
         }
         continue;
       }

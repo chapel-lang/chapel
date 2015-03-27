@@ -1,0 +1,4 @@
+Module: withUnderscore.doc
+   proc example()
+      This should end up in my_docs/withUnderscore.txt 
+

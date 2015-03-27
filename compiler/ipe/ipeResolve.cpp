@@ -663,7 +663,7 @@ void ipeResolveFormalsTypes(IpeProcedure* procedure, IpeScopeProcedure* scope, I
 
     if (ArgSymbol* arg = toArgSymbol(def->sym))
     {
-      if (arg->type == 0)
+      if (arg->type == dtUnknown)
       {
         resolveFormalType(arg, scope);
 

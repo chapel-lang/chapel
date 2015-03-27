@@ -873,6 +873,7 @@ module ChapelArray {
       return member(i);
     }
 
+    pragma "reference to const when const this"
     proc newAlias() {
       var x = _value;
       return _newDomain(x);
@@ -1460,6 +1461,7 @@ module ChapelArray {
     proc numElements return _value.dom.dsiNumIndices;
     proc size return numElements;
   
+    pragma "reference to const when const this"
     proc newAlias() {
       var x = _value;
       return _newArray(x);

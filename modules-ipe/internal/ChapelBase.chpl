@@ -22,6 +22,8 @@
 
 module ChapelBase
 {
+  use ChapelRoot;
+
   //
   // Assignment operators
   //
