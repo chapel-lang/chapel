@@ -23,9 +23,10 @@ UTIL_SRCS = \
 	llvmUtil.cpp \
 	misc.cpp \
 	mysystem.cpp \
+    OwnershipFlowManager.cpp \
 	stringutil.cpp \
 	timer.cpp \
-        tmpdirname.cpp
+	tmpdirname.cpp
 
 SVN_SRCS = $(UTIL_SRCS)
 SRCS = $(SVN_SRCS)

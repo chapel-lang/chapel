@@ -143,6 +143,9 @@ private:
   virtual void       codegenPrototype(); // ie type decl
 };
 
+// An STL vector of symbols
+typedef std::vector<Symbol*> SymbolVector;
+
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
 /******************************** | *********************************

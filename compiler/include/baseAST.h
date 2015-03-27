@@ -79,6 +79,7 @@ class LcnSymbol;
 class Symbol;
 class Type;
 
+class BlockStmt;
 class LoopStmt;
 class WhileStmt;
 class WhileDoStmt;
