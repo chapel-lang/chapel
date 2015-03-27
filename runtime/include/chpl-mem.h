@@ -32,11 +32,75 @@
 #include "chpl-tasks.h"
 #include "error.h"
 
+
+// Some compilers support 'warn_unused_result' or 'acts like malloc'
+// we put these on our memory layer implementations
+#ifdef __GNUC__
+
+#if __GNUC_PREREQ (3,4)
+#define CHPL_ATTRIBUTE_WARN_UNUSED_RESULT __attribute__ ((__warn_unused_result__))
+#else
+#define CHPL_ATTRIBUTE_WARN_UNUSED_RESULT
+#endif
+
+#if __GNUC_PREREQ (2,96)
+#define CHPL_ATTRIBUTE_MALLOC __attribute_malloc__
+#else
+#define CHPL_ATTRIBUTE_MALLOC
+#endif
+
+#else
+#define CHPL_ATTRIBUTE_WARN_UNUSED_RESULT
+#define CHPL_ATTRIBUTE_MALLOC
+#endif
+
+
+static ___always_inline void* chpl_calloc(size_t n, size_t size)
+  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+static ___always_inline void* chpl_malloc(size_t size)
+  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+static ___always_inline void* chpl_memalign(size_t boundary, size_t size)
+  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+static ___always_inline void* chpl_realloc(void* ptr, size_t size)
+  CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+static ___always_inline void chpl_free(void* ptr);
+
+
 // runtime/include/mem/*/chpl-mem-impl.h defines
 // chpl_calloc, chpl_malloc, chpl_realloc, chpl_free
 // with the same signatures as the standard functions
 // and no additional error checking.
 #include "chpl-mem-impl.h"
+
+// If we use weak symbols/linker scripts, for glibc we would need to define:
+//  malloc, free, cfree, calloc, realloc,
+//  memalign, posix_memalign, aligned_alloc,
+//  malloc_usable_size.
+// we could use ld's --wrap argument to achieve it.
+
+// we always create symbols for calloc/malloc/realloc so that
+// we could use a linker script or malloc hook.
+void* chpl_calloc_sym(size_t n, size_t size)
+    CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+void* chpl_malloc_sym(size_t size)
+  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+void* chpl_memalign_sym(size_t boundary, size_t size)
+  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+void* chpl_realloc_sym(void* ptr, size_t size)
+  CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+void chpl_free_sym(void* ptr);
+
+
+// This function sets up malloc hooks (if possible or useful)
+void chpl_mem_replace_malloc_if_needed(void);
 
 
 void chpl_mem_init(void);

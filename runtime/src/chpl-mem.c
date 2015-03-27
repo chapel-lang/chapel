@@ -26,13 +26,24 @@
 #include "chpltypes.h"
 #include "error.h"
 
+#ifdef __GLIBC__
+#include <malloc.h>
+#ifdef CHPL_USING_CSTDLIB_MALLOC
+// GLIBC requests that we define __malloc_initialize_hook like this
+void (* __malloc_initialize_hook) (void) = chpl_mem_replace_malloc_if_needed;
+#endif
+#endif
 
 static int heapInitialized = 0;
-
 
 void chpl_mem_init(void) {
   chpl_mem_layerInit();
   heapInitialized = 1;
+
+  // replace malloc calls with hooks
+  // we have to do that AFTER the mem layer heap
+  // is initialized.
+  chpl_mem_replace_malloc_if_needed();
 }
 
 
@@ -44,3 +55,102 @@ void chpl_mem_exit(void) {
 int chpl_mem_inited(void) {
   return heapInitialized;
 }
+
+// declare symbol version of calloc/malloc/realloc in case
+// we want pointers to them or we want to use linker scripts/weak symbols
+
+void* chpl_calloc_sym(size_t n, size_t size)
+{
+  printf("in chpl_calloc_sym\n");
+  return chpl_calloc(n,size);
+}
+
+void* chpl_malloc_sym(size_t size)
+{
+  printf("in chpl_malloc_sym\n");
+  return chpl_malloc(size);
+}
+
+void* chpl_memalign_sym(size_t boundary, size_t size)
+{
+  printf("in chpl_memalign_sym\n");
+  return chpl_memalign(boundary, size);
+}
+
+void* chpl_realloc_sym(void* ptr, size_t size)
+{
+  printf("in chpl_realloc_sym\n");
+  return chpl_realloc(ptr,size);
+}
+
+void chpl_free_sym(void* ptr) {
+  printf("in chpl_free_sym\n");
+  return chpl_free(ptr);
+}
+
+#ifdef __GLIBC__
+
+static
+void* chpl_malloc_hook(size_t size, const void* unusued)
+{
+  printf("in chpl_malloc_hook\n");
+  return chpl_malloc(size);
+}
+
+static
+void* chpl_memalign_hook(size_t boundary, size_t size, const void* unused)
+{
+  printf("in chpl_memalign_hook\n");
+  return chpl_memalign(boundary, size);
+}
+
+static
+void* chpl_realloc_hook(void* ptr, size_t size, const void* unused)
+{
+  printf("in chpl_realloc_hook\n");
+  return chpl_realloc(ptr,size);
+}
+
+static
+void chpl_free_hook(void* ptr, const void* unused) {
+  printf("in chpl_free_hook\n");
+  return chpl_free(ptr);
+}
+
+#endif
+
+
+void chpl_mem_replace_malloc_if_needed(void) {
+#ifdef CHPL_USING_CSTDLIB_MALLOC
+  // do nothing, we're already using the C stdlib allocator.
+#else
+  // try using malloc hooks for glibc
+  static int hooksInstalled = 0;
+  if( hooksInstalled ) return;
+  hooksInstalled = 1;
+
+  printf("in chpl_mem_replace_malloc_if_needed\n");
+
+#ifdef __GLIBC__
+  // glibc wants a memalign call
+  // glibc: void *memalign(size_t boundary, size_t size);
+  // dlmalloc: dlmemalign
+  // tcmalloc: tc_memalign
+  __malloc_hook = chpl_malloc_hook;
+  __free_hook = chpl_free_hook;
+  __realloc_hook = chpl_realloc_hook;
+  __memalign_hook = chpl_memalign_hook;
+
+#endif
+
+  // We could do this too for Mac OS X if it mattered.
+  // - include malloc/malloc.h
+  // - replace functions in malloc_default_zone returned malloc_zone_t*
+  // functions needed include a "size" function and a "valloc" function:
+  // BSD: malloc_size
+  // glibc: malloc_usable_size
+  // dlmalloc: dlmalloc_usable_size
+  // tcmalloc: tc_malloc_size
+#endif
+}
+

@@ -20,14 +20,18 @@
 /* cstdlib memory function implementation */
 
 // Uses the built-in malloc, calloc, realloc and free.
-
-#include <stdlib.h>
-
 #undef malloc
 #undef calloc
 #undef realloc
 #undef free
 #undef _chpl_mem_warning_macros_h_
+
+#include <stdlib.h>
+
+#ifdef __GLIBC__
+// get memalign
+#include <malloc.h>
+#endif
 
 static ___always_inline void* chpl_calloc(size_t n, size_t size) {
   return calloc(n,size);
@@ -35,6 +39,13 @@ static ___always_inline void* chpl_calloc(size_t n, size_t size) {
 
 static ___always_inline void* chpl_malloc(size_t size) {
   return malloc(size);
+}
+
+static ___always_inline void* chpl_memalign(size_t boundary, size_t size) {
+#ifdef __GLIBC__
+  return memalign(boundary, size);
+#endif
+  return NULL;
 }
 
 static ___always_inline void* chpl_realloc(void* ptr, size_t size) {
@@ -47,4 +58,7 @@ static ___always_inline void chpl_free(void* ptr) {
 
 // Now that we've defined our functions, turn the warnings back on.
 #include "chpl-mem-warning-macros.h"
+
+#define CHPL_USING_CSTDLIB_MALLOC 1
+
 
