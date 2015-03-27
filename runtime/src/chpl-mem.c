@@ -87,7 +87,7 @@ void* chpl_realloc_sym(void* ptr, size_t size)
 
 void chpl_free_sym(void* ptr) {
   printf("in chpl_free_sym\n");
-  return chpl_free(ptr);
+  chpl_free(ptr);
 }
 
 #ifdef USE_GLIBC_MALLOC_HOOKS
@@ -126,7 +126,7 @@ void* chpl_realloc_hook(void* ptr, size_t size, const void* unused)
 static
 void chpl_free_hook(void* ptr, const void* unused) {
   printf("in chpl_free_hook\n");
-  return chpl_free(ptr);
+  chpl_free(ptr);
 }
 
 #endif
