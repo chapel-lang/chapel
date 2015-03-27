@@ -17,16 +17,47 @@
  * limitations under the License.
  */
 
+
+/*
+  Support for simple assert() routines.
+
+  .. note:: 
+            In the current implementation, these asserts never become
+            no-ops.  That is, using them will always incur
+            execution-time checks.
+*/
+module Assert {
+
+
+/*
+  Assert that a boolean condition is true.  If it is false, prints
+  'assert failed' and halts the program.
+
+  :arg test: the boolean condition
+  :type test: `bool`
+*/
 proc assert(test: bool) {
   if !test then
     __primitive("chpl_error", "assert failed");
 }
   
-  
+
+/*
+  Assert that a boolean condition is true.  If it is false, prints
+  'assert failed - ' followed by all subsequent arguments, as though
+  printed using :proc:`~IO.write()`.
+
+  :arg test: the boolean condition
+  :type test: `bool`
+
+  :arg args: other arguments to print
+*/
 proc assert(test: bool, args ...?numArgs) {
   if !test {
     var tmpstring: c_string;
     tmpstring.write((...args));
     __primitive("chpl_error", "assert failed - " + tmpstring);
   }
+}
+
 }

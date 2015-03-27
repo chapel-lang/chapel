@@ -246,9 +246,6 @@ could be described in Chapel using:
 
     extern type vec = 3*real(64);
 
-(Ultimately, we intend to support external C arrays using Chapel's
-more traditional array declaration syntax for improved clarity).
-
 To refer to more complex C types like external structs or pointers to
 structs, see the section on "Referring to External C Structs" below.
 

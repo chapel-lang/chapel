@@ -211,6 +211,9 @@ for more detail.
 * `Sphinx reST Primer`_
 * `Python reST Primer`_
 
+This primer is based on the information and text in the Sphinx and Python reST
+primers (some of the text is copied verbatim).
+
 The authoritative `reStructuredText User Guide`_ is also helpful.
 
 .. _Sphinx reST Primer: http://sphinx-doc.org/rest.html
@@ -292,6 +295,45 @@ The handling of the ``::`` marker is smart:
 That way, the second sentence in the above example's first paragraph would be
 rendered as "The next paragraph is a code sample:".
 
+The highlight language is configured with the ``highlight`` directive. The
+configured language is used for all literal blocks until the next highlight
+directive. For example::
+
+   .. highlight:: chapel
+
+   Chapel code::
+
+      writeln("Hello from Chapel!");
+
+   More chapel::
+
+      x <=> y;
+
+   .. highlight:: c
+
+   ::
+
+      printf("Hello from C!\n");
+
+
+Showing code examples
+~~~~~~~~~~~~~~~~~~~~~
+
+The ``code-block`` directive can be used to specify the highlight language of a
+single code block. For example::
+
+   .. code-block:: chapel
+
+      use Foo;
+
+      proc bar() {
+        writeln("Fooy!");
+      }
+
+If highlighting with the specified language fails, e.g. if the syntax is not
+parsable, the block is not highlighted in anyway. Note that there should be a
+blank line between the ``code-block`` directive and the indented code snippet.
+
 
 Hyperlinks
 ~~~~~~~~~~
@@ -347,24 +389,6 @@ You can indent text after a comment start to form multiline comments::
       is a comment.
 
       Still in the comment.
-
-
-Showing code examples
-~~~~~~~~~~~~~~~~~~~~~
-
-The ``code-block`` directive can be used to specify the highlight language of a
-single code block. For example::
-
-   .. code-block:: chapel
-
-      use Foo;
-
-      proc bar() {
-        writeln("Fooy!");
-      }
-
-If highlighting with the specified language fails, e.g. if the syntax is not
-parsable, the block is not highlighted in anyway.
 
 
 Inline markup

@@ -1,7 +1,0 @@
-Module: typevar
-   Class: Foo
-      This class has type fields 
-
-      type t1
-      type t2
-         This field has a comment 

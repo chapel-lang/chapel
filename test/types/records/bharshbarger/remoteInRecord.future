@@ -1,0 +1,11 @@
+bug: remote records pass by 'in' intent made local before copying.
+
+This test fails in an initCopy for the 'foo' record. It fails because the
+local field optimization is applied to the 'data' member of 'x'. The
+optimization is applied because 'x' is narrow, and the compiler assumes that
+arrays in an aggregate type will be local to the containing type.
+
+'x' is not wide because we make a local, shallow copy of 'a' before passing 'x'
+into 'bar'.
+
+As of this commit, the initCopy is the first thing to happen in 'bar'.
