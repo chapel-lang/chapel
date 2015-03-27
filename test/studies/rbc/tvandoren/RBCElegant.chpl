@@ -73,12 +73,12 @@ proc main() {
     valueHighSoFar, valueProvisional, consumption, capitalChoice: real;
 
   // Intermediate array, to be reused in dotProduct()/transpose() calls below.
-  var transposeOut: [1..5, 1..5] real;
+  var mTransitionTranspose: [1..5, 1..5] real;
+  transpose(mTransitionTranspose, mTransition);
 
   while (maxDifference > tolerance) {
     // expectedValueFunction = mValueFunction * transpose(mTransition)
-    transpose(transposeOut, mTransition);
-    dotProduct(expectedValueFunction, mValueFunction, transposeOut);
+    dotProduct(expectedValueFunction, mValueFunction, mTransitionTranspose);
 
     for nProductivity in 1..nGridProductivity {
 
