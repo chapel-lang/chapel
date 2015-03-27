@@ -9,7 +9,8 @@ use MatrixHelpers;
 use Time;
 
 // When true, print the elapsed time at the end.
-config const printElapsed = true;
+config const printElapsed = true,
+  gridCapital = 17820;
 
 proc main() {
   // 0. Housekeeping
@@ -43,7 +44,7 @@ proc main() {
           ", Consumption = ", consumptionSteadyState, "\n");
 
   // We generate the grid of capital
-  var nGridCapital = 17820,
+  var nGridCapital = gridCapital,
     nGridProductivity = 5;
   var vGridCapital: [1..nGridCapital] real;
   forall (value, nCapital) in zip(vGridCapital, 0..) {
@@ -71,8 +72,13 @@ proc main() {
   var gridCapitalNextPeriod: int,
     valueHighSoFar, valueProvisional, consumption, capitalChoice: real;
 
+  // Intermediate array, to be reused in dotProduct()/transpose() calls below.
+  var transposeOut: [1..5, 1..5] real;
+
   while (maxDifference > tolerance) {
-    expectedValueFunction = dotProduct(mValueFunction, transpose(mTransition));
+    // expectedValueFunction = mValueFunction * transpose(mTransition)
+    transpose(transposeOut, mTransition);
+    dotProduct(expectedValueFunction, mValueFunction, transposeOut);
 
     for nProductivity in 1..nGridProductivity {
 
