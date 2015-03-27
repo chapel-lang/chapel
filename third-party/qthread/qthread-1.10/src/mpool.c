@@ -172,6 +172,15 @@ qt_mpool INTERNAL qt_mpool_create_aligned(size_t item_size,
      * that the allocation size will be a multiple of pagesize (fast!
      * efficient!). */
     alloc_size = qt_lcm(item_size, pagesize);
+
+    if (alloc_size > max_alloc_size) {
+      size_t max_num_items;
+      /* adjust item_size to be a multiple of pagesize */
+      item_size += pagesize - (item_size % pagesize);
+      max_num_items = max_alloc_size / item_size; /* floor */
+      alloc_size = item_size * max_num_items;
+    }
+
     if (alloc_size == 0) {             /* degenerative case */
         if (item_size > pagesize) {
             alloc_size = item_size;

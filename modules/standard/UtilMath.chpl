@@ -17,18 +17,33 @@
  * limitations under the License.
  */
 
-// UtilMath: various math-related utilities that could come handy.
+/*
+Math-related utilities.
 
-// for correctness, both arguments must be strictly positive
+Note: this module will be merged into :mod:`Math` in the next release.
+*/
+module UtilMath {
+
+/*
+A variant of :proc:`~Math.divceil` that performs no runtime checks.
+The user must ensure that both arguments are strictly positive
+(not 0) and are of a signed integer type (not `uint`).
+*/
 proc divceilpos(m: integral, n: integral) {
   if !isIntType(m.type) || !isIntType(n.type) then
     compilerError("divceilpos() accepts only arguments of signed integer types");
   return (m - 1) / n + 1;
 }
 
-// for correctness, both arguments must be strictly positive
+/*
+A variant of :proc:`~Math.divfloor` that performs no runtime checks.
+The user must ensure that both arguments are strictly positive
+(not 0) and are of a signed integer type (not `uint`).
+*/
 proc divfloorpos(m: integral, n: integral) {
   if !isIntType(m.type) || !isIntType(n.type) then
     compilerError("divfloorpos() accepts only arguments of signed integer types");
   return m / n;
+}
+
 }

@@ -47,8 +47,9 @@ static bool     isPrint (FnSymbol* fn);
 static void     ipePrint(IpeValue value, Type* type);
 
 
-static bool     isWriteln (FnSymbol* fn);
-static void     ipeWriteln(IpeValue msg,   IpeValue value, Type* type);
+static bool     isWriteln  (FnSymbol* fn);
+static void     ipeWriteln1(IpeValue msg,                   Type* type);
+static void     ipeWriteln2(IpeValue msg,   IpeValue value, Type* type);
 
 /************************************ | *************************************
 *                                                                           *
@@ -378,20 +379,20 @@ static IpeValue evaluateCall(CallExpr* callExpr, IpeVars* vars)
 
   else if (isWriteln(fnSymbol) == true)
   {
-    if (fnSymbol->formals.length == 2)
+    if (fnSymbol->formals.length == 1)
+    {
+      DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(1));
+      ArgSymbol* formal  = toArgSymbol(defExpr->sym);
+
+      ipeWriteln1(locals->valueGet(0), formal->type);
+    }
+
+    else
     {
       DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(2));
       ArgSymbol* formal  = toArgSymbol(defExpr->sym);
 
-      ipeWriteln(locals->valueGet(0), locals->valueGet(1), formal->type);
-    }
-    else
-    {
-      DefExpr*   defExpr = toDefExpr(fnSymbol->formals.get(1));
-      ArgSymbol* formal  = toArgSymbol(defExpr->sym);
-      IpeValue   dummy;
-
-      ipeWriteln(locals->valueGet(0), dummy, formal->type);
+      ipeWriteln2(locals->valueGet(0), locals->valueGet(1), formal->type);
     }
   }
 
@@ -859,7 +860,27 @@ static bool isWriteln(FnSymbol* fn)
   return retval;
 }
 
-static void ipeWriteln(IpeValue msg,   IpeValue value, Type* type)
+static void ipeWriteln1(IpeValue value, Type* type)
+{
+  printf("     ");
+
+  if      (type == dtBool)
+    printf("%s\n", (value.boolGet() == true) ? " true" : "false");
+
+  else if (type == dtInt[INT_SIZE_64])
+    printf("%5ld\n", value.integerGet());
+
+  else if (type == dtReal[FLOAT_SIZE_64])
+    printf("%6.2f\n", value.realGet());
+
+  else if (type == dtStringC)
+    printf("%s\n", value.cstringGet());
+
+  else
+    printf("???\n");
+}
+
+static void ipeWriteln2(IpeValue msg, IpeValue value, Type* type)
 {
   printf("     ");
   fputs(msg.cstringGet(), stdout);
@@ -874,7 +895,7 @@ static void ipeWriteln(IpeValue msg,   IpeValue value, Type* type)
     printf("%6.2f\n", value.realGet());
 
   else if (type == dtStringC)
-    printf("%s\n", msg.cstringGet());
+    printf("%s\n", value.cstringGet());
 
   else
     printf("???\n");

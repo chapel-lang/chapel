@@ -1,9 +1,0 @@
-Module: recordsAndClasses
-   Record: thingy
-   proc takesAThingy(val: thingy)
-      This method takes a record as its argument 
-
-   Class: whatchamacallit
-   proc takesAWhatchamacallit(val: whatchamacallit)
-      This method takes a whatchamacallit as its argument 
-

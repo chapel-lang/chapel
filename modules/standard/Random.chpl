@@ -21,26 +21,34 @@
    Support for pseudorandom number generation
 
    This module defines an abstraction for a stream of pseudorandom
-   numbers, :class:`RandomStream`.  It also provides a
-   convenience function, :proc:`fillRandom` that can be used to
-   fill an array with random numbers in parallel.
+   numbers, :class:`RandomStream`, supporting methods to get the next
+   random number in the stream (:proc:`.getNext`), to fast-forward to
+   a specific value in the stream (:proc:`.skipToNth` and
+   :proc:`.getNth`), or to fill an array with random numbers in
+   parallel (:proc:`~Random.RandomStream.fillRandom`).  The module
+   also provides a standalone convenience function, :proc:`fillRandom`
+   that can be used to fill an array with random numbers in parallel
+   without manually creating a :class:`RandomStream` object.
 
    The current pseudorandom number generator (PRNG) implemented by
    this module uses the algorithm from the NAS Parallel Benchmarks
-   (NPB, available at: http://www.nas.nasa.gov/publications/npb.html).
-   The longer-term intention is to add knobs to select between a menu
-   of PRNG algorithms, such as the Mersenne twister.
+   (NPB, available at: http://www.nas.nasa.gov/publications/npb.html),
+   which can be used to generate random values of type `real(64)`,
+   `imag(64)`, and `complex(128)`.  The longer-term intention is to
+   add knobs to select between a menu of additional PRNG algorithms
+   (such as the Mersenne twister) and element types (such as integer
+   types and other floating point widths).
 
    Paraphrasing the comments from the NPB reference implementation:
 
      This generator returns uniform pseudorandom real values in the
      range (0, 1) by using the linear congruential generator
 
-       x_{k+1} = a x_k  (mod 2**46)
+       `x_{k+1} = a x_k  (mod 2**46)`
 
-     where 0 < x_k < 2**46 and 0 < a < 2**46.  This scheme generates
-     2**44 numbers before repeating.  The generated values are
-     normalized to be between 0 and 1, i.e., 2**(-46) * x_k.
+     where 0 < x_k < 2**46 and 0 < a < 2**46.  This scheme
+     generates 2**44 numbers before repeating.  The generated values
+     are normalized to be between 0 and 1, i.e., 2**(-46) * x_k.
 
      This generator should produce the same results on any computer
      with at least 48 mantissa bits for `real(64)` data.
@@ -49,17 +57,21 @@
    Here is a list of currently open issues (TODOs) for this module:
 
    1. This module is currently restricted to generating `real(64)`,
-   `imag(64)`, and `complex(128)` complex values.  We would like to
-   extend this support to include other primitive types as well.
+   `imag(64)`, and `complex(128)` complex values using a single PRNG
+   algorithm.  As noted above, we would like to extend this support to
+   include other algorithms and primitive types over time.
 
-   2. We plan to support general serial and parallel iterators on the
-   RandomStream class; however, providing the full suite of iterators
-   is not possible with our current parallel iterator framework.
-   Specifically, if :class:`RandomStream` is a follower in a
-   zippered iteration context, there is no way for it to update the
+   2. We plan to support general serial and parallel iterator methods
+   on :class:`RandomStream`; however, providing the full suite of
+   iterators is not possible with our current parallel iterator
+   framework.  Specifically, if :class:`RandomStream` is a follower in
+   a zippered iteration context, there is no way for it to update the
    total number of random numbers generated in a safe/sane/coordinated
    way.  We are exploring a revised leader-follower iterator framework
-   that would support this idiom (and other cursor-based ones).
+   that would support this idiom (and other cursor-based ones).  With
+   Chapel's recent support for standalone parallel iterators, one
+   could define a standalone parallel iterator for
+   :class:`RandomStream`, but this effort has not yet been taken on.
 
    3. If no seed is provided by the user, one is chosen based on the
    current time in microseconds, allowing for some degree of
@@ -67,9 +79,6 @@
    :record:`SeedGenerators` is to provide a menu of other options
    for initializing the random stream seed, but only one option is
    implemented at present.
-
-   4. As noted above, we plan to add support for additional PRNG
-   algorithms over time.
 
 */
 module Random {
@@ -106,9 +115,11 @@ const SeedGenerator: SeedGenerators;
   to create one.  It currently only supports one such method, but the
   intention is to add more over time.
 
-  (Note: once Chapel supports static class methods,
-  :const:`SeedGenerator` and :record:`SeedGenerators` should
-  be combined into a single record type with static methods).
+  .. note::
+          Once Chapel supports static class methods,
+          :const:`SeedGenerator` and :record:`SeedGenerators` should
+          be combined into a single record type with static methods).
+
 */
 
 record SeedGenerators {
@@ -150,7 +161,7 @@ record SeedGenerators {
   assigned to the real and imaginary components, respectively.  The
   parallelization strategy is determined by the array.
 
-  :arg arr: The array to be filled, where T is real(64), imag(64), or complex(128).
+  :arg arr: The array to be filled, where T is `real(64)`, `imag(64)`, or `complex(128)`.
   :type arr: [] T
 
   :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.currentTime <SeedGenerators.currentTime>`.
@@ -272,7 +283,7 @@ class RandomStream {
 
   /*
     Advance/rewind the stream to the `n`-th value and return it
-    (advancing the strem by one).  This is equivalent to
+    (advancing the stream by one).  This is equivalent to
     :proc:`skipToNth()` followed by :proc:`getNext()`.
 
     :arg n: The position in the stream to skip to.  Must be non-negative.

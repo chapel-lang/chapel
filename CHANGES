@@ -6,7 +6,411 @@ Release Changes List
 version 1.11.0
 ==============
 
-TODO: Fill this in!
+Fourteenth public release of Chapel, April 2, 2015
+
+Highlights
+----------
+* revamped 'chpldoc' and used it to create web docs for all standard modules
+  (see http://chapel.cray.com/docs/latest/)
+* added a new FileSystem standard module supporting operations on files/dirs
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
+* added a new FFTW standard module supporting key FFTW routines
+  (see http://chapel.cray.com/docs/latest/modules/standard/FFTW.html)
+* added task intents to forall loops, plus new intents such as 'in' and 'reduce'
+  (see 'Semantic Changes' and 'New Features' sections below)
+* added support for standalone parallel iterators, used by non-zippered foralls
+  (see examples/primers/parIters.chpl)
+* added support for vectorization of data parallel loops and operations
+  (see '--vectorize' flag in 'man chpl')
+* optimized away communication code for module-scope variables and local arrays
+  (see release note slides at http://chapel.cray.com/download.html#releaseNotes)
+* added an early prototype interactive/interpreted mode for writing Chapel code
+  (see doc/technotes/README.chpl-ipe.rst for more details)
+* initial support for Python->Chapel interoperability via PyChapel
+  (see http://pychapel.readthedocs.org/ for more details)
+* made 'ugni'/'muxed' the default comm/tasking choices for cray-x* module users
+  (see doc/platforms/README.cray and doc/README.chplenv)
+* added a new 'chpltags' utility to generate emacs/vim tags for Chapel code
+  (see 'util/chpltags --help' and 'util/README')
+* numerous other improvements for better performance and cleaner generated code
+  (see 'Performance Improvements' section below)
+* improved portability to NetBSD and additional flavors of Linux
+  (see 'Portability Improvements' section below)
+* upgraded the bundled versions of GASNet, hwloc, llvm, and dygraphs
+  (see 'Third-Party Software Changes' section below)
+* numerous bug fixes
+  (see 'Bug Fixes' section below)
+
+Environment/Configuration Changes
+---------------------------------
+* made the setchplenv.* scripts prepend to PATH and MANPATH rather than append
+* made the "quickstart" scripts set CHPL_COMM to 'none' and not set CHPL_MEM
+* improved the logic for auto-detecting when CHPL_ATOMICS should be 'intrinsics'
+* added auto-detection of CHPL_*_PLATFORM for 'cray-xc'/'cray-xe' systems
+* added support for building runtime/third-party with the bundled clang version
+  (see references to 'clang-included' in README.chplenv)
+* split the 'cygwin' CHPL_*_PLATFORM value into 'cygwin32' and 'cygwin64'
+* added new 'netbsd32' and 'netbsd64' values for CHPL_*_PLATFORM
+* changed CHPL_COMM/TASKS to default to ugni/muxed when using the cray-x* module
+  (see doc/README.chplenv, doc/platforms/README.cray, and/or doc/README.tasks)
+* made CHPL_TASKS default to 'fifo' for 'cray-prgenv-cray' CHPL_TARGET_COMPILER
+
+Packaging Changes
+-----------------
+* updated Makefiles to support building Chapel in parallel via 'make -j'
+* avoid rebuilding gmp and re2 speculatively when previous builds have failed
+
+Tool Changes
+------------
+* added an early prototype interactive/interpreted mode for writing Chapel code
+  (see doc/technotes/README.chpl-ipe.rst for more details)
+* revamped 'chpldoc' to create HTML files via Sphinx for documenting Chapel code
+  (see doc/technotes/README.chpldoc.rst and 'man chpldoc' for more details)
+* added a new 'chpltags' utility to generate emacs/vim tags for Chapel code
+  (see 'util/chpltags --help' and 'util/README' for more information)
+
+Syntactic/Naming Changes
+------------------------
+* removed the placeholder keyword 'refvar' in favor of the new keyword 'ref'
+* removed support for the use of 'var' as a return intent (use 'ref' instead)
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* added support for task intent clauses and semantics to forall loops
+  (see 'Data Parallelism: Forall Intents' in the language specification)
+* added initial support for 'reduce' intents on forall loops
+  (see doc/technotes/README.reduceIntents)
+* removed the 'type select x' syntax in favor of simply using 'select x.type'
+* made read()s of sync/single variables result in a compiler error
+
+New Features
+------------
+* added "blank", 'const', 'in', 'const in' and 'const ref' task intents
+  (see 'Task Parallelism: Task Intents' in the language specification)
+* added "standalone parallel iterators", used by non-zippered forall loops
+  (see examples/primers/parIters.chpl)
+* added support for aliasing of domains via the '=>' operator
+
+New Interoperability Features
+-----------------------------
+* inital support for Python->Chapel interoperability via PyChapel
+  (see http://pychapel.readthedocs.org/ for more details)
+* added a prototype capability to embed external dependences to source via 'use'
+  (e.g., use "foo.h", "-lfoo"; is like adding these to the 'chpl' command-line)
+* added support for passing multidimensional arrays to external routines
+  (see doc/technotes/README.extern)
+* added munging of all user identifiers by default to avoid naming conflicts
+  (see --[no-]munge-user-idents in 'man chpl' and doc/README.executing)
+* added an error when passing Chapel strings to C routines; use c_string instead
+
+Standard Library/Modules
+------------------------
+* added a new module, FileSystem, containing numerous file system operations
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
+* added support for key 64-bit FFTW routines (single- and multi-threaded)
+  (see http://chapel.cray.com/docs/latest/modules/standard/FFTW.html and
+   http://chapel.cray.com/docs/latest/modules/standard/FFTW_MT.html)
+* added parity() and rotate() operations to the BitOps module
+  (see http://chapel.cray.com/docs/latest/modules/standard/BitOps.html)
+* added parallel versions of the glob(), walkdirs(), and findfiles() iterators
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
+* started a new module, Path, supporting realPath(), curDir, parentDir, pathSep
+  (see http://chapel.cray.com/docs/latest/modules/standard/Path.html)
+* added a new module, Assert, defining a simple assertion capability
+  (see http://chapel.cray.com/docs/latest/modules/standard/Assert.html)
+* added support for C types c_ptrdiff, c_uintptr, and c_intptr to SysCTypes.chpl
+  (see http://chapel.cray.com/docs/latest/modules/standard/gen/doc/SysCTypes.html)
+* changed cwd() and chdir() from standalone functions to locale methods
+  (see http://chapel.cray.com/docs/latest/modules/standard/FileSystem.html)
+* made mkdir(parents=true) behave more like 'mkdir -p'
+* added a .safeCast() method to integer types to value-check downcasts
+  (see http://chapel.cray.com/docs/latest/modules/standard/Types.html)
+* changed min(t) and max(t) to return 'param' values for integral types 't'
+  (see http://chapel.cray.com/docs/latest/modules/standard/Types.html)
+* parameterized RandomStream by an 'eltType' and updated its methods accordingly
+  (see http://chapel.cray.com/docs/latest/modules/standard/Random.html)
+* removed the parSafe arguments from RandomStream's methods in the Random module
+  (see http://chapel.cray.com/docs/latest/modules/standard/Random.html)
+* added support for escaping pattern-style format strings using %{}
+  (e.g., "writef("#%{##}", 10)" => "#10")
+* added support for readf()/writef() of octal values
+* changed 'BigInt' methods to use Chapel types rather than C types
+* folded the prototypical 'Filerator' module into the new 'FileSystem' module
+* retired the 'Containers' module in favor of vector operations on arrays
+  (see examples/primers/arrayVectorOps.chpl)
+
+Performance Improvements
+------------------------
+* added support for vectorization of data parallel loops and operations
+  (see '--vectorize' flag in 'man chpl')
+* optimized away the creation of anonymous ranges in loops
+  (e.g., 'for i in 1..10' no longer creates an anonymous range object for 1..10)
+* optimized away communication code for module-scope variables and local arrays
+* optimized iterations over ranges in data parallel constructs like 'forall'
+* added standalone parallel iterators for ranges and default domain maps
+* extended loop-invariant code motion to include certain global variables
+* added an 'assertNoSlicing' config that can be used to optimize array accesses
+  (see $CHPL_HOME/PERFORMANCE)
+* avoided creating new singleton tasks within serial execution contexts
+
+Memory Improvements
+-------------------
+* reduced memory leaks due to compilerWarning()s and runtime string arguments
+* distinguished between "owned" and "unowned" c_strings in implementation
+* improved the handling of strings across multiple locales
+
+Launcher-specific Changes
+-------------------------
+* in the 'pbs-aprun' launcher, removed reliance on the mpp* options
+* added a --nodelist option to the 'slurm-srun' launcher
+* in the 'slurm-srun' launcher, stopped using expect scripts
+
+Platform-specific Changes
+-------------------------
+* fixed an issue in which Qthreads would not handle sleep() correctly for darwin
+* added a micro-sleep when yielding threads on Cygwin to improve throughput
+* changed CHPL_COMM/TASKS to default to ugni/muxed when using the cray-x* module
+  (see doc/README.chplenv, doc/platforms/README.cray, and/or doc/README.tasks)
+* enabled 'ugni' tasking to be usable with 'qthreads' as well as 'muxed'
+* reduced default heap size used for CHPL_COMM='ugni' to 2/3 free node memory
+  (see doc/platforms/README.cray)
+* changed 'muxed' tasking to use # of threads equal to the # of CPUs by default
+  (see doc/platforms/README.cray)
+* disabled optimizations by default for cray-prgenv-cray compilations
+* split the 'cygwin' platform value into 'cygwin32' and 'cygwin64'
+* split the 'netbsd' platform value into 'netbsd32' and 'netbsd64'
+* made CHPL_TASKS default to 'fifo' for 'cray-prgenv-cray' CHPL_TARGET_COMPILER
+
+Portability Improvements
+------------------------
+* fixed several portability issues on NetBSD platforms
+* fixed the use of the --llvm flag on Mac OS X ('darwin') platforms
+* fixed some portability issues with the use of hwloc and -lnuma for 'qthreads'
+* fixed some static/dynamic linking issues with certain platforms/compilers
+* fixed a gmp build issue for 32-bit platforms
+
+Third-Party Software Changes
+----------------------------
+* updated the bundled version of GASNet to 1.24.0
+* updated the bundled version of hwloc to 1.10.1
+* updated the bundled version of llvm to 3.6.0
+* upgraded the bundled version of dygraphs to version 1.1.0
+* added support for dynamically installing Python packages required by 'chpldoc'
+  (see 'chpldov-venv' in third-party/README)
+* rearchitected scripting framework for third-party dependences
+* made the re2 build do a better job of propagating errors back to the Makefiles
+* changed Qthreads to avoid using guard pages when mprotect() won't work
+* fixed a bug in limiting the maximum size of Qthreads memory pools
+
+Documentation
+-------------
+* added web-based docs for all standard modules and removed from spec/READMEs
+  (see http://chapel.cray.com/docs/latest/)
+* made some minor improvements to the Quick Reference document
+* added documentation for class and record destructors to the spec
+* removed an outdated distinction between function calls using () vs. [] in spec
+* clarified that integer literals may be 'int' or 'uint' in the spec
+* added a note for 'zsh' users to the top-level README
+* added a note to CONTRIBUTORS noting mis-attributed code authors within GitHub
+* improved the documentation of the slurm* launchers
+  (see doc/README.launcher, doc/platforms/README.cray)
+* added a note about ugni memory registration and concurrency with slurm
+  (see doc/platforms/README.cray)
+* added a note about a longstanding undocumented feature to squash ref counting
+  (see $CHPL_HOME/PERFORMANCE)
+
+Example Codes
+-------------
+* added a new primer example demonstrating use of the FFTW module
+  (see examples/primers/FFTWlib.chpl)
+* added standalone parallel iterators to the leader-follower primer and renamed
+  (see examples/primers/parIters.chpl)
+* updated and renamed the chpldoc primer example to reflect chpldoc's changes
+  (see examples/primers/chpldoc.doc.chpl)
+* updated the random numbers primer to reflect changes to the interface
+  (see examples/primers/randomNumbers.chpl)
+* fixed a bug in our lulesh implementation when using the 3D representation
+* updated miniMD's Stencil distribution to track changes in BlockDist
+* changed miniMD to work around a bug in passing remote records by blank intent
+* updated the HPCC FFT example to use new BitOps
+* updated SSCA2 to reflect new intent semantics for forall-loops
+* updated the regexdna shootout to accept extra arguments as used by framework
+* made stream and ra save their problem sizes when performance testing
+* replaced the use of format() in example codes with writef()
+
+Compiler Flags (see 'man chpl' for details)
+-------------------------------------------
+* added --[no-]use-noinit to permit 'noinit' to be ignored
+* added support for setting --fast via environment variable CHPL_FAST
+* added --[no-]ignore-classes to disable local class optimizations
+* added --[no-]vectorize to enable/disable generation of vectorization hints
+* added --[no-]cast-checks to enable/disable value checking in safeCast methods
+* added --[no-]munge-user-idents to control munging of generated identifiers
+* removed all documentation-related options; use 'chpldoc' instead
+* added a flag --[no-]task-tracking to enable/disable runtime task tracking
+
+New Semantic Checks (for old semantics)
+---------------------------------------
+* Improved 'const' checking for array/tuple fields and array/domain aliases
+
+Error Message Improvements
+--------------------------
+* added an error when compiling for a configuration whose runtime is not built
+* improved error messages for several range overflow conditions
+
+Bug Fixes
+---------
+* fixed a bug with dynamically dispatched iterators
+* fixed a bug with parallel iteration over non-naturally-aligned ranges
+* fixed a bug in which record variables did not call user-defined constructors
+* fixed a bug in which arrays of associative domains could cause a segfault
+* fixed a bug in which user identifiers could easily conflict with C identifiers
+* fixed a bug with formatted writes of integers using "###."
+* fixed an infinite loop in binary reads of strings when EOF is reached
+* fixed a bug preventing sparse domains from having 'uint' indices
+* fixed a bug when casting param 'int(64)' and 'uint(?)' to 'c_string'
+* fixed a bug in which secondary parentheses-less methods did not work well
+* fixed a buffer overrun issue in certain I/O routines
+* fixed a bug in which defining multiple destructors caused a segfault
+* fixed some bugs in the standard Buffers module
+* fixed a bug in which filenames generated by --cpp-lines would get corrupted
+* fixed a bug in --cache-remote for 32-bit platforms
+* fixed a bug with loop invariant code motion in the context of nested functions
+* fixed a crash when using multiple formal type queries for primitives types
+* fixed a bug in which iterators yielding locale types caused an internal error
+* fixed a bug in which --no-remove-copy-calls would break certain extern records
+* fixed a bug in the parser causing issues with &&= and ||= for --baseline
+* fixed a bug in which developer pragmas were only attached to the first symbol
+
+Platform-specific bug fixes
+---------------------------
+* fixed a bug in which I/O errors would print "unknown" for paths for 'cygwin'
+* fixed a warning in our calls to glob() when compiling with 'prgenv-cray'
+* fixed an issue in which generated identifiers could be too long for 'pgi'
+* fixed a bug in which 'gmp' would not build cleanly for 32-bit Ubuntu systems
+* fixed a bug in atomic operations on 'real' types for CHPL_COMM='ugni'
+
+Runtime Library Changes
+-----------------------
+* enabled 'ugni' tasking to be usable with 'qthreads' as well as 'muxed'
+* changed Qthreads to yield after uncontested sync var locks to avoid starvation
+
+Compiler Performance
+--------------------
+* accelerated compilation times by disabling the task table by default
+  (see '--[no-]task-tracking' on the 'chpl' man page and doc/README.executing)
+
+Testing System
+--------------
+* added support for specifying 'skipif' files as executable scripts
+* added a mode in which only futures with .skipif files are tested
+* check for .skipif conditions before wasting any effort on a test
+* switched to a consistent and simpler naming scheme for test configurations
+* added timing measurements to the log for various aspects of testing
+* revamped emails sent by testing scripts for maintainability and spam avoidance
+* made the test system less sensitive to line/versions #s in .bad comparisons
+* added a --test-root flag, improving start_test when run from outside CHPL_HOME
+* fixed a bug in which '-nl' was passed to C tests for multilocale testing
+* added support for jUnit XML-style report generation to start_test and paratest
+* made paratest.server's compopts/execopts accumulate rather than overwrite
+* added CHPL_TEST_UNIQUIFY_EXE to support simultaneous test runs on a directory
+* added the ability to set the default testing timeout via CHPL_TEST_TIMEOUT
+* added support for CHPL_TEST_NUM_TRIALS to be set by a user's environment
+* squashed duplicate error messages due to sub_test failures
+* fixed a bug with stdin redirects for tests with multiple .execopts
+* made start_test smarter about stdin and launchers for multilocale testing
+* improved the testing system's handling of timeouts when launchers are used
+* added validation for CHPL_NIGHTLY_LOGDIR in nightly testing
+* fixed a bug for tests with multiple execopts settings that timed out
+* permitted suppression files to contain blank lines
+* fix bug in which suppression-based issues only appeared in the test summary
+* fixed a bad interaction between env. vars. set in sub_test vs. execenv files
+* made sub_test ignore OS errors during unlinking to quiet false negatives
+
+Performance Testing/Graphing System
+-----------------------------------
+* allow scrolling of the list of graphs independently from graphs themselves
+* embed more information in the URL of performance graphs for sharing purposes
+* improved the portability of URLs from the performance graphing system
+* added support for 'today' as a date in the perf graph system's URL encodings
+* accelerated graphs by moving sorting of graphs' legends into genGraphs script
+* track top processes between performance runs to look for causes of noise
+* improved support for comparing multiple performance testing configurations
+* started logging the sha values for performance runs, for historical reference
+* changed performance graphs to use json rather than csv
+* automatically strip punctuation characters from the end of graph keys
+
+Developer-oriented changes: Utility Changes
+-------------------------------------------
+* added a new compiler gdb command 'locid' which prints an AST's source location
+* made build_configs.py support parallel execution
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+* added --report-order-independent-loops to note loops with vectorization hints
+* added --remove-unreachable-blocks to attempt early removal of dead code
+* fixed a code pointer in the --help message for --log
+
+Developer-oriented changes: Module improvements
+-----------------------------------------------
+* added a pragma for asserting that a class field is local to the object
+* moved routines in support of iterators to a new module ChapelIteratorSupport
+* split _build_range() into several routines with better names
+* refactored overloads of range operator definitions
+* changed Filerator routines to use new isLink(), isDir(), and isFile() routines
+* removed requirement to add 'no ChapelStandard' pragma to internal modules
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+* added a "WARNINGS" macro that can be used to turn on C-level warnings
+* moved check for standard C headers into the post-commit smoke test
+* simplified and regularized third-party Makefiles
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+* changed the parser to a "pure push" style of parser
+* changed the compiler to require bison 2.5 (or later)
+* dramatically reworked representation and manipulation of loop AST nodes
+* made more AST members private and increased the use of query methods
+* added a new, prototype AST pretty-printer for Chapel-oriented output
+* made improvements to list_view()
+* made flags on a symbol print in a deterministic order
+* extended DeadCodeElimination to reclaim degenerate C for loops
+* made 'narrowWideReferences' its own compiler pass and refactor it
+* moved the 'docs' pass earlier in compilation
+* reorder localCopyPropagation to avoid a ref-before-def bug
+* improved verification of expressions to check correctness of AList links
+* fixed a bug in which failed chpl__tryToken resolutions could roll back too far
+* removed flags: FLAG_LABEL_BREAK, FLAG_LABEL_CONTINUE, FLAG_USER_NAMED
+* distinguished FLAG_WIDE from FLAG_WIDE_REF
+* deprecated the use of the MOD_MAIN tag
+* simplified code related to calling user-defined constructors vs. _defaultOf
+* converted the collapsing of nested BlockStmts to use a visitor
+* added a predicate to determine if an expression is a "statement expression"
+* converted some uses of C arrays to std::vector in compiler
+* added binary operators to the BitVec implementation
+* replaced the basic block macros with private static functions
+* fixed a bug in basic block analysis
+* moved the handling of boolean short-circuiting from 'parse' to 'normalize'
+* renamed 'by' operators in the compiler's IR to avoid naming conflicts
+* refactored fix_def_expr() in the normalize pass
+* refactored constant folding vs. dead code elimination for CondStmts
+* fixed several code issues identified by coverity scan
+* many other code refactorings and improvements
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+* simplified interactions between locale models and the runtime
+* improved the non-blocking communication interface
+* added support for the main process to run Chapel tasks
+* guarded against some src==dst calls to memcpy()
+* for optimized builds of the runtime, set NDEBUG to turn off assertions
+* fixed several code issues identified by coverity scan
+
+Developer-oriented changes: Generated Code improvements
+-------------------------------------------------------
+* improved the spacing when printing IDs via --gen-ids
+
 
 ==============
 version 1.10.0
