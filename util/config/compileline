@@ -48,6 +48,13 @@ sub mysystem {
   close(CMD) or die "Can't close pipe: $!";
 }
 
+# Make reasonable defaults for environment settings
+$ENV{"COMP_GEN_WARN"} = 0;
+$ENV{"COMP_GEN_DEBUG"} = 0;
+$ENV{"COMP_GEN_OPT"} = 0;
+$ENV{"COMP_GEN_SPECIALIZE"} = 0;
+$ENV{"COMP_GEN_IEEE_FLOAT"} = 1;
+
 for my $arg (@ARGV) {
   if( $arg eq "--llvm" ) {
     $ENV{"CHPL_TARGET_COMPILER"}="clang-included";
@@ -65,6 +72,8 @@ for my $arg (@ARGV) {
     print $make . "\n";
   } elsif( $arg eq "--compile" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline");
+  } elsif( $arg eq "--cflags" ) {
+    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcflags");
   } elsif ( $arg eq "--includes-and-defines" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printincludesanddefines");
   } elsif( $arg eq "--libraries" ) {
