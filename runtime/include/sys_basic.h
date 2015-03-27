@@ -63,12 +63,6 @@
 //#define _FILE_OFFSET_BITS 64
 //#endif
 
-#ifdef __GNUC__
-#define ___always_inline inline __attribute__((__always_inline__))
-#else
-#define ___always_inline inline
-#endif
-
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #define __STDC_CONSTANT_MACROS
 

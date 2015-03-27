@@ -64,26 +64,26 @@ void      chpl_sync_destroyAux(chpl_sync_aux_t *);
 
 typedef chpl_sync_aux_t chpl_single_aux_t;
 
-static ___always_inline
+static inline
 void chpl_single_lock(chpl_sync_aux_t * s) { chpl_sync_lock(s); }
-static ___always_inline
+static inline
 void chpl_single_unlock(chpl_sync_aux_t * s) { chpl_sync_unlock(s); }
-static ___always_inline
+static inline
 void chpl_single_waitFullAndLock(chpl_sync_aux_t * s,
                                  int32_t lineno, c_string filename) {
   chpl_sync_waitFullAndLock(s,lineno,filename);
 }
-static ___always_inline
+static inline
 void chpl_single_markAndSignalFull(chpl_sync_aux_t * s) {
   chpl_sync_markAndSignalFull(s);
 }
-static ___always_inline
+static inline
 chpl_bool chpl_single_isFull(void *val_ptr, chpl_sync_aux_t *s) {
   return chpl_sync_isFull(val_ptr, s);
 }
-static ___always_inline
+static inline
 void chpl_single_initAux(chpl_sync_aux_t * s) { chpl_sync_initAux(s); }
-static ___always_inline
+static inline
 void chpl_single_destroyAux(chpl_sync_aux_t * s) { chpl_sync_destroyAux(s); }
 
 
