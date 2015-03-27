@@ -2,54 +2,31 @@
  *
  */
 
-// Returns transposed version of input matrix. User is responsible for making
-// sure matrix is two dimensions.
-//
-// TODO: This is not ideal due to the local temp array and domain, which is
-//       allocated every time this is called. (thomasvandoren, 2014-07-07)
-//
-// TODO: Verify inputMatrix is two dimensions. (thomasvandoren, 2014-07-07)
-proc transpose(ref inputMatrix: [] real) {
-  var resultCols = inputMatrix.domain.dim(1),
-    resultRows = inputMatrix.domain.dim(2),
-    result: [{resultRows, resultCols}] real;
-  forall (row, col) in result.domain {
-    result[row, col] = inputMatrix[col, row];
+// Transpose inputMatrix and store in outputMatrix.
+proc transpose(ref outputMatrix: [?D] real, ref inputMatrix: [?E] real)
+  where D.rank == 2 && E.rank == 2
+{
+  assert(D.dim(1) == E.dim(2) && D.dim(2) == E.dim(1),
+         "Dimensions of outputMatrix are not transpose of inputMatrix.");
+
+  var outCols = inputMatrix.domain.dim(1),
+    outRows = inputMatrix.domain.dim(2);
+  forall (row, col) in outputMatrix.domain {
+    outputMatrix[row, col] = inputMatrix[col, row];
   }
-  return result;
 }
 
-// Returns dot product (matrix multiplication) of A and B. Specifically, it
-// does A * B. User is responsible for making sure A and B are the correct size
-// and shape.
-//
-// TODO: This is not ideal due to the local temp array and domain, which are
-//       allocated every time this is called. (thomasvandoren, 2014-07-07)
-//
-// TODO: Verify A and B are the correct size and shape.
-//       (thomasvandoren, 2014-07-07)
-proc dotProduct(ref A: [] real, ref B: [] real) {
+// Calculate dot product (matrix multiplication) of A and B and store result in
+// C. Specifically, it does C = A * B.
+proc dotProduct(ref C: [?DC] real, ref A: [?DA] real, ref B: [?DB] real)
+  where DC.rank == 2 && DA.rank == 2 && DB.rank == 2
+{
+  assert(DC.dim(1) == DA.dim(1) && DC.dim(2) == DB.dim(2),
+         "Dimensions for C, A, or B do not work for dot product.");
+
   var rows = A.domain.dim(1),
-    cols = B.domain.dim(2),
-    result: [{rows, cols}] real;
-  forall (row, col) in result.domain {
-    result[row, col] = + reduce (A[row, 1..] * B[1.., col]);
+    cols = B.domain.dim(2);
+  forall (row, col) in C.domain {
+    C[row, col] = + reduce (A[row, 1..] * B[1.., col]);
   }
-  return result;
 }
-
-// This is the same as dotProduct above, except it is an operator override so a
-// user would actually write A * B.
-//
-// TODO: This doesn't work because I can't figure out how to tell the compiler
-//       to use the normal element wise product of two 1D arrays for the *
-//       inside the function. (thomasvandoren, 2014-07-07)
-/* proc *(ref A: [domain(2)] real, ref B: [domain(2)] real) { */
-/*   var cols = A.domain.dim(2), */
-/*     rows = B.domain.dim(1), */
-/*     result: [{cols, rows}] real; */
-/*   forall (col, row) in result.domain { */
-/*     result[col, row] = + reduce (A[1.., row] * B[col, 1..]); */
-/*   } */
-/*   return result; */
-/* } */
