@@ -1,0 +1,30 @@
+Module: basic.doc
+   Class: Other
+      var isInt: int
+         Comment for field that is an int 
+      var isIntCommentless: int
+      var isReal: real
+         Comment for field that is a real 
+      var isRealCommentless: real
+      var isBool: bool
+         Comment for field that is a bool 
+      var isBoolCommentless: bool
+      var isString: string
+         Comment for field that is a string 
+      var isStringCommentless: string
+      var isComplex: complex
+         Comment for field that is a complex number 
+      var isComplexCommentless: complex
+      var isUint: uint
+         Comment for field that is a uint 
+      var isUintCommentless: uint
+      var isImag: imag
+         Comment for field that is an imaginary number 
+      var isImagCommentless: imag
+      var implicit
+         Comment for field with implicit type 
+      var implicitCommentless
+      var longComment
+         This comment is rather long
+         And spans for
+         Multiple lines 

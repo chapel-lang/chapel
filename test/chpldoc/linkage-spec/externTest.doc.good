@@ -1,0 +1,39 @@
+Module: externTest.doc
+   Module: externTest.doc.Other
+      proc inside
+         Comment for method inside module 
+
+      proc commentless
+      proc hasArg(val: int)
+         Comment for method with an argument inside module 
+
+      proc hasArgCommentless(val: int)
+      proc hasReturnType(): int
+         This method has a return type 
+
+      proc hasReturnTypeCommentless(): int
+      proc hasReturnTypeAndArg(val: int): int
+         This method has a return type and an argument 
+
+      proc hasReturnTypeAndArgCommentless(val: int): int
+   proc method1()
+      Comment for method1 
+
+   proc commentless()
+   proc hasArg(val: int)
+      Comment for method with an argument 
+
+   proc hasArgCommentless(val: int)
+   proc longComment()
+      This comment is rather long
+      And spans for
+      Multiple lines 
+
+   proc hasReturnType(): int
+      This method has a return type 
+
+   proc hasReturnTypeCommentless(): int
+   proc hasReturnTypeAndArg(val: int): int
+      This method has a return type and an argument 
+
+   proc hasReturnTypeAndArgCommentless(val: int): int
