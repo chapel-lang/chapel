@@ -684,7 +684,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             // CForLoop and then the block structure is smashed flat, we lose
             // the ability to distinguish these two cases.
             BlockStmt* incr = cfl->incrBlockGet();
-            incr->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+            incr->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
           }
           // Other cases may need to be added here.
           else
@@ -692,7 +692,7 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             // A "normal" block.
             BlockStmt* block = toBlockStmt(innermostBlock);
             INT_ASSERT(block);
-            block->insertAtTailBeforeGoto(callChplHereFree(move->get(1)->copy()));
+            block->insertAtTailBeforeFlow(callChplHereFree(move->get(1)->copy()));
           }
         }
       }

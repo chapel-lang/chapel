@@ -906,25 +906,44 @@ OwnershipFlowManager::insertAutoCopies()
 }
 
 
+// Find the end of the scope containing the given symbol and insert an
+// autoDestroy on it there.
+static void insertAutoDestroyAtScopeExit(Symbol* sym)
+{
+  FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
+  if (autoDestroy == NULL)
+    // This type does not have a destructor, so we don't have a add an
+    // autoDestroy call for it.
+    return;
+
+
+  if(DefExpr* def = toDefExpr(sym->defPoint))
+  {
+    SET_LINENO(def);
+
+    CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
+    BlockStmt* block = getScopeBlock(def);
+
+    block->insertAtExit(autoDestroyCall);
+
+    insertReferenceTemps(autoDestroyCall);
+  }
+  else
+  {
+    INT_FATAL("insertAutoDestroyAtScopeExit -- No def point for symbol %s", sym->name);
+  }
+}
+
+
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
-static void insertAutoDestroy(BasicBlock* bb, BitVec* to_cons, 
+static void insertAutoDestroy(BitVec* to_cons, 
                               const SymbolVector& symbols,
                               OwnershipFlowManager::SymbolIndexMap& symbolIndex,
                               const AliasVectorMap& aliases)
 {
-  // Skip degenerate basic blocks.
-  if (bb->exprs.size() == 0)
-    return;
-
-  // Find the last statement in the block.
-  Expr*& expr = bb->exprs[bb->exprs.size()-1];
-  Expr* stmt = expr->getStmtExpr(); // Is this necessary?
-  bool isJump = isFlowStmt(stmt);
-
   // For each true bit in the bit vector, add an autodestroy call.
   // But destroying one member of an alias list destroys them all.
-  SET_LINENO(stmt);
   for (size_t j = 0; j < to_cons->size(); ++j)
   {
     if (to_cons->get(j))
@@ -936,44 +955,40 @@ static void insertAutoDestroy(BasicBlock* bb, BitVec* to_cons,
       Symbol* last = aliasList->operator[](aliasList->size() - 1);
       resetAliasList(to_cons, *aliasList, symbolIndex);
 
-      FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
-      if (autoDestroy == NULL)
-        // This type does not have a destructor, so we don't have a add an
-        // autoDestroy call for it.
-        continue;
-
       // Use the last symbol in the alias list.
       // This is a workaround because we do not track aliases in this
       // implementation.
       // See Note #1.
-      CallExpr* autoDestroyCall = new CallExpr(autoDestroy, last);
-
-      if (isJump)
-        stmt->insertBefore(autoDestroyCall);
-      else
-        stmt->insertAfter(autoDestroyCall);
-
-      insertReferenceTemps(autoDestroyCall);
+      insertAutoDestroyAtScopeExit(last);
     }
   }
 }
 
 
+// We may be able to simplify this routine, because we no longer have to
+// associate a symbol to be autodestroyed with a specific block.  We just find
+// the end of its declaration scope and insert the autoDestroy there.
 void
 OwnershipFlowManager::insertAutoDestroys()
 {
   // We need to re-run BB analysis, so that inserted autoCopy() calls are added
   // to their respective basic blocks.
-  buildBasicBlocks();
+// This is probably not needed anymore.
+//  buildBasicBlocks();
 
+  // We need to insert an autodestroy call for each symbol that is owned
+  // (live) at the end of the block but is unowned (dead) in the OUT set.
+
+  // We form the union of all symbols that are live at the end of their
+  // respective basic blocks,
+  BitVec to_cons(nsyms);
   for (size_t i = 0; i < nbbs; i++)
   {
-    // We need to insert an autodestroy call for each symbol that is owned
-    // (live) at the end of the block but is unowned (dead) in the OUT set.
-    BasicBlock* bb = (*basicBlocks)[i];
-    BitVec to_cons = *IN[i] + *PROD[i] - *CONS[i] - *OUT[i];
-    insertAutoDestroy(bb, &to_cons, symbols, symbolIndex, aliases);
+    to_cons |= *IN[i] + *PROD[i] - *CONS[i] - *OUT[i];
   }
+
+  // and then destroy each symbol at the end of its containing scope.
+  insertAutoDestroy(&to_cons, symbols, symbolIndex, aliases);
 }
 
 

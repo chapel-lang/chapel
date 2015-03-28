@@ -438,35 +438,6 @@ inline static bool isCStyleForLoopUpdateBlock(BasicBlock* bb)
 #endif
   
 
-inline static bool isFlowStmt(Expr* stmt)
-{
-  // A goto is definitely a jump.
-  if (isGotoStmt(stmt))
-    return true;
-
-  // A conditional acts like a jump statement.
-  if (isCondStmt(stmt))
-    return true;
-
-  // A return primitive works like a jump. (Nothing should appear after it.)
-  if (CallExpr* call = toCallExpr(stmt))
-  {
-    if (call->isPrimitive(PRIM_RETURN))
-      return true;
-
-    // _downEndCount is treated like a flow statement because we do not want to
-    // insert autoDestroys after the task says "I'm done."  This can result in
-    // false-positive memory allocation errors because the waiting (parent
-    // task) can then proceed to test that the subtask has not leaked before
-    // the subtask release locally-(dynamically-)allocated memory.
-    if (FnSymbol* fn = call->isResolved())
-      if (!strcmp(fn->name, "_downEndCount"))
-        return true;
-  }
-  return false;
-}
-
-
 // Returns true if this block one which is executed repeatedly within a loop;
 // false otherwise.
 // Only C-style for loops have init clauses that are essentially in the

@@ -345,13 +345,25 @@ BlockStmt::insertAtTail(const char* format, ...) {
 }
 
 
+// Insert an expression at the end of a block, but before a flow statement at
+// the end of the block.  The two cases we are concerned with are a goto or a
+// return appearing at the end of a block
 void
-BlockStmt::insertAtTailBeforeGoto(Expr* ast) {
-  if (isGotoStmt(body.tail))
+BlockStmt::insertAtTailBeforeFlow(Expr* ast) {
+  if (isFlowStmt(body.tail))
     body.tail->insertBefore(ast);
   else
     body.insertAtTail(ast);
 }
+
+
+// Insert the given expression at the point in the block immediately before
+// control exits this block.
+// This may need to be overridden if the end of the body does not coincide with
+// the point at which flow exits a derived construct.  See, for example CForLoop.
+inline void
+BlockStmt::insertAtExit(Expr* expr)
+{ insertAtTailBeforeFlow(expr); }
 
 
 bool
