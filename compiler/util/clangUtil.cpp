@@ -832,7 +832,7 @@ void runClang(const char* just_parse_filename) {
   compileline += " COMP_GEN_OPT=" + (optimizeCCode?one:zero);
   compileline += " COMP_GEN_SPECIALIZE=" + (specializeCCode?one:zero);
   compileline += " COMP_GEN_IEEE_FLOAT=" + (fieeefloat?one:zero);
-  std::string readargsfrom = compileline + " --llvm"
+  std::string readargsfrom = compileline + (just_parse_filename?"":" --llvm") +
                               " --llvm-install-dir"
                               " --clang-sysroot-arguments"
                               " --cflags"
