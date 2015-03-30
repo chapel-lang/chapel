@@ -1,1 +1,3 @@
+comment-nested-slashstarslash-1.chpl:1: start of unterminated comment
+comment-nested-slashstarslash-1.chpl:3: start of nested comment
 comment-nested-slashstarslash-1.chpl:6: EOF in comment
