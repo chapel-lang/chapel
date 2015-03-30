@@ -225,11 +225,11 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
   } else {
     DefExpr*      def = toDefExpr(stmt);
-    std::vector<BaseAST*> asts;
+    Vec<BaseAST*> asts;
 
     collect_asts(stmt, asts);
 
-    for_vector(BaseAST, ast, asts) {
+    forv_Vec(BaseAST, ast, asts) {
       if (CallExpr* call = toCallExpr(ast)) {
         // mark function calls as essential
         if (call->isResolved() != NULL)

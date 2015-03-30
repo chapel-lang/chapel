@@ -237,7 +237,7 @@ SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
   std::vector<SymExpr*> symExprs;
   SymExpr*              condDef = NULL;
 
-  collectSymExprs(this, symExprs);
+  collectSymExprsSTL(this, symExprs);
 
   for_vector(SymExpr, se, symExprs)
   {

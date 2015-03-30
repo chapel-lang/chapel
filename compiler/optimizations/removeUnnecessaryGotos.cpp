@@ -32,7 +32,7 @@
 void removeUnnecessaryGotos(FnSymbol* fn) {
   std::vector<BaseAST*> asts;
   std::set<BaseAST*> labels;
-  collect_asts(fn, asts);
+  collect_asts_STL(fn, asts);
   for_vector(BaseAST, ast, asts) {
     if (GotoStmt* gotoStmt = toGotoStmt(ast)) {
       DefExpr* def = toDefExpr(gotoStmt->next);

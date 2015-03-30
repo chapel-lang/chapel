@@ -23,7 +23,6 @@
 
 #include "expr.h"
 #include "astutil.h"
-#include "stlUtil.h"
 
 
 static void checkFunctionSignatures();
@@ -50,9 +49,9 @@ static void checkFunctionSignatures()
       if (fn->retExprType)
         USR_FATAL_CONT(fn, "constructors may not declare a return type");
       for_formals(formal, fn) {
-        std::vector<SymExpr*> symExprs;
+        Vec<SymExpr*> symExprs;
         collectSymExprs(formal, symExprs);
-        for_vector(SymExpr, se, symExprs) {
+        forv_Vec(SymExpr, se, symExprs) {
           if (se->var == fn->_this) {
             USR_FATAL_CONT(se, "invalid access of class member in constructor header");
             break;

@@ -72,7 +72,7 @@ static void cullAutoDestroyFlags()
         buildDefUseMaps(fn, defMap, useMap);
 
         std::vector<DefExpr*> defs;
-        collectDefExprs(fn, defs);
+        collectDefExprsSTL(fn, defs);
 
         for_vector(DefExpr, def, defs)
         {
@@ -121,7 +121,7 @@ static void cullExplicitAutoDestroyFlags()
     buildDefUseMaps(fn, defMap, useMap);
 
     std::vector<DefExpr*> defs;
-    collectDefExprs(fn, defs);
+    collectDefExprsSTL(fn, defs);
 
     Symbol* retVar = fn->getReturnSymbol();
 
@@ -267,11 +267,11 @@ static void updateJumpsFromBlockStmt(Expr*            stmt,
       isSymExpr(stmt)  == false &&
       isCallExpr(stmt) == false &&
       isGotoStmt(stmt) == false) {
-    std::vector<GotoStmt*> gotoStmts;
+    Vec<GotoStmt*> gotoStmts;
 
     collectGotoStmts(stmt, gotoStmts);
 
-    for_vector(GotoStmt, gotoStmt, gotoStmts) {
+    forv_Vec(GotoStmt, gotoStmt, gotoStmts) {
       if (gotoExitsBlock(gotoStmt, block)) {
         forv_Vec(VarSymbol, var, vars) {
           if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
@@ -438,7 +438,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
   newFn->retType = dtVoid;
   fn->defPoint->insertBefore(new DefExpr(newFn));
 
-  std::vector<SymExpr*> symExprs;
+  Vec<SymExpr*> symExprs;
   collectSymExprs(newFn, symExprs);
 
   // In the body of the function, replace references to the original
@@ -446,7 +446,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
   // deref temp is inserted if needed.  The result is fed through a
   // call to the useFn -- effectively sucking the use function call
   // inside the clone function.
-  for_vector(SymExpr, se, symExprs) {
+  forv_Vec(SymExpr, se, symExprs) {
     if (se->var == ret) {
       CallExpr* move = toCallExpr(se->parentExpr);
       if (move && move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
@@ -623,9 +623,9 @@ changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
     use = *useMap.get(lhs);
   } else {
     for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
-      std::vector<SymExpr*> symExprs;
+      Vec<SymExpr*> symExprs;
       collectSymExprs(stmt, symExprs);
-      for_vector(SymExpr, se, symExprs) {
+      forv_Vec(SymExpr, se, symExprs) {
         if (se->var == lhs) {
           use.add(se);
         }

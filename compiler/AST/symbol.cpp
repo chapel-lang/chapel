@@ -24,7 +24,6 @@
 #include "symbol.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
 #include "bb.h"
 #include "build.h"
 #include "codegen.h"
@@ -2059,10 +2058,10 @@ void FnSymbol::codegenDef() {
   }
 
   {
-    std::vector<BaseAST*> asts;
+    Vec<BaseAST*> asts;
     collect_top_asts(body, asts);
 
-    for_vector(BaseAST, ast, asts) {
+    forv_Vec(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!toTypeSymbol(def->sym)) {
           if (fGenIDS && isVarSymbol(def->sym))

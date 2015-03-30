@@ -27,7 +27,6 @@
 #include "expr.h"
 #include "stmt.h"
 #include "astutil.h"
-#include "stlUtil.h"
 #include "stringutil.h"
 #include "passes.h"
 #include "optimizations.h"
@@ -249,9 +248,9 @@ static void handleLocalBlocks() {
   }
 
   forv_Vec(BlockStmt, block, queue) {
-    std::vector<CallExpr*> calls;
+    Vec<CallExpr*> calls;
     collectCallExprs(block, calls);
-    for_vector(CallExpr, call, calls) {
+    forv_Vec(CallExpr, call, calls) {
       localizeCall(call);
       if (FnSymbol* fn = call->isResolved()) {
         SET_LINENO(fn);

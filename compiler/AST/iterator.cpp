@@ -20,7 +20,6 @@
 #include "iterator.h"
 
 #include "astutil.h"
-#include "oldCollectors.h"
 #include "bb.h"
 #include "bitVec.h"
 #include "CForLoop.h"

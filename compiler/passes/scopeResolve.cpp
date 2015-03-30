@@ -23,7 +23,6 @@
 #include "scopeResolve.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
 #include "build.h"
 #include "expr.h"
 #include "LoopStmt.h"
@@ -211,25 +210,15 @@ void scopeResolve() {
 * enclosing asts become entries                                             *
 *                                                                           *
 ************************************* | ************************************/
-static void addOneToSymbolTable(DefExpr* def);
-
-void addToSymbolTable(std::vector<DefExpr*>& defs) {
-  for_vector(DefExpr, def, defs)
-    addOneToSymbolTable(def);
-}
 
 void addToSymbolTable(Vec<DefExpr*>& defs) {
   forv_Vec(DefExpr, def, defs)
-    addOneToSymbolTable(def);
-}
-
-static void addOneToSymbolTable(DefExpr* def)
-{
+  {
     // If the symbol is a compiler-generated variable or a label,
     // do not add it to the symbol table.
     if (def->sym->hasFlag(FLAG_TEMP) ||
         isLabelSymbol(def->sym))
-      return;
+      continue;
 
     BaseAST* scope = getScope(def);
 
@@ -260,8 +249,8 @@ static void addOneToSymbolTable(DefExpr* def)
     } else {
       (*entry)[def->sym->name] = def->sym;
     }
+  }
 }
-
 
 /************************************ | *************************************
 *                                                                           *
@@ -723,7 +712,7 @@ static void build_type_constructor(AggregateType* ct) {
   }
 
   // Update the symbol table with added defs.
-  std::vector<DefExpr*> defs;
+  Vec<DefExpr*> defs;
 
   collectDefExprs(fn, defs);
   addToSymbolTable(defs);
@@ -1009,7 +998,7 @@ static void build_constructor(AggregateType* ct) {
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
 
-  std::vector<DefExpr*> defs;
+  Vec<DefExpr*> defs;
   collectDefExprs(fn, defs);
   addToSymbolTable(defs);
 }
@@ -1050,11 +1039,11 @@ static ArgSymbol* create_generic_arg(VarSymbol* field)
 /// type constructor with explicit member reference (dot) expressions.
 static void insert_implicit_this(FnSymbol* fn, Vec<const char*>& fieldNamesSet)
 {
-  std::vector<BaseAST*> asts;
+  Vec<BaseAST*> asts;
 
   collect_asts(fn->body, asts);
 
-  for_vector(BaseAST, ast, asts) {
+  forv_Vec(BaseAST, ast, asts) {
     if (UnresolvedSymExpr* se = toUnresolvedSymExpr(ast))
       if (fieldNamesSet.set_in(se->unresolved))
         // The name of this UnresolvedSymExpr matches a field name.

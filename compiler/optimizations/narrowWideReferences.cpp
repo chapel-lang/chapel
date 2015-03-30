@@ -232,7 +232,7 @@ class CallGraph {
 
       // calls inside this function
       std::vector<CallExpr*> ch;
-      collectFnCalls(head, ch);
+      collectFnCallsSTL(head, ch);
 
       for_vector(CallExpr, call, ch) {
         if (FnSymbol* fn = call->isResolved()) {

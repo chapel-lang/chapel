@@ -48,11 +48,11 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 //
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
-  std::vector<BaseAST*> asts;
+  Vec<BaseAST*> asts;
 
   collect_asts(fn, asts);
 
-  for_vector(BaseAST, ast, asts) {
+  forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
@@ -201,7 +201,7 @@ static void
 replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   if (vars->n == 0) return;
   std::vector<SymExpr*> symExprs;
-  collectSymExprs(fn->body, symExprs);
+  collectSymExprsSTL(fn->body, symExprs);
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       ArgSymbol* arg = toArgSymbol(e->value);
@@ -283,10 +283,10 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   do {
     change = false;
     forv_Vec(FnSymbol, fn, nestedFunctions) {
-      std::vector<BaseAST*> asts;
+      Vec<BaseAST*> asts;
       collect_top_asts(fn, asts);
       SymbolMap* uses = args_map.get(fn);
-      for_vector(BaseAST, ast, asts) {
+      forv_Vec(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isResolved()) {
             if (FnSymbol* fcall = call->findFnSymbol()) {

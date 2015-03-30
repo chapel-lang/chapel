@@ -145,11 +145,11 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 
 static void
 findOuterVars(FnSymbol* fn, SymbolMap& uses) {
-  std::vector<BaseAST*> asts;
+  Vec<BaseAST*> asts;
 
   collect_asts(fn, asts);
 
-  for_vector(BaseAST, ast, asts) {
+  forv_Vec(BaseAST, ast, asts) {
     if (SymExpr* symExpr = toSymExpr(ast)) {
       Symbol* sym = symExpr->var;
 
@@ -234,7 +234,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap& vars) {
 void replaceVarUses(Expr* topAst, SymbolMap& vars) {
   if (vars.n == 0) return;
   std::vector<SymExpr*> symExprs;
-  collectSymExprs(topAst, symExprs);
+  collectSymExprsSTL(topAst, symExprs);
   form_Map(SymbolMapElem, e, vars) {
     Symbol* oldSym = e->key;
     if (e->value != markPruned) {

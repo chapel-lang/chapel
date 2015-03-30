@@ -113,7 +113,7 @@ static bool isInWithClause(SymExpr* se) {
 static void findOuterVars(BlockStmt* block, SymbolMap& uses) {
   std::vector<SymExpr*> symExprs;
 
-  collectSymExprs(block, symExprs);
+  collectSymExprsSTL(block, symExprs);
 
   for_vector(SymExpr, symExpr, symExprs) {
     Symbol* sym = symExpr->var;
@@ -918,7 +918,7 @@ static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   INT_ASSERT(origRet->defPoint->parentSymbol == parentFn);
 
   std::vector<SymExpr*> symExprs;
-  collectSymExprs(parentFn, symExprs);
+  collectSymExprsSTL(parentFn, symExprs);
   for_vector(SymExpr, se, symExprs)
     if (se->var == origRet) {
       // It may appear in a no-init assignment.
@@ -1055,7 +1055,7 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
 
   // Propagate recursively into task functions and yields.
   std::vector<CallExpr*> rCalls;
-  collectMyCallExprs(fn, rCalls, fn);
+  collectMyCallExprsSTL(fn, rCalls, fn);
   for_vector(CallExpr, rcall, rCalls) {
     if (rcall->isPrimitive(PRIM_YIELD)) {
       // Make a tuple that includes the extra args.
