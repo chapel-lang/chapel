@@ -74,14 +74,9 @@ void docs(void) {
       docsSphinxDir = docsTempDir;
     }
 
-    // Make the intermediate dir and output dir. If either fail, do not
-    // continue, simply exit this function.
-    if (!makeDir(docsSphinxDir.c_str())) {
-      return;
-    }
-    if (!makeDir(docsOutputDir.c_str())) {
-      return;
-    }
+    // Make the intermediate dir and output dir.
+    makeDir(docsSphinxDir.c_str());
+    makeDir(docsOutputDir.c_str());
 
     // The location of intermediate rst files.
     std::string docsRstDir;
@@ -252,14 +247,16 @@ void createDocsFileFolders(std::string filename) {
 }
 
 
-static bool makeDir(const char* dirpath) {
+/* Create the directory (non-recursively). If an error occurs, exit and report
+ * error.
+ */
+static void makeDir(const char* dirpath) {
   static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
   mkdir(dirpath, dirPerms);
   if (errno != 0 && errno != EEXIST) {
-    perror(dirpath);
-    return false;
+    USR_FATAL(astr("Failed to create directory: ", dirpath,
+                   " due to: ", strerror(errno)));
   }
-  return true;
 }
 
 

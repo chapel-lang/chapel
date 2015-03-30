@@ -33,7 +33,7 @@ bool devOnlyModule(ModuleSymbol *mod);
 
 bool isNotSubmodule(ModuleSymbol *mod);
 
-static bool makeDir(const char* dirpath);
+static void makeDir(const char* dirpath);
 
 static std::string generateSphinxProject(std::string dirpath);
 
