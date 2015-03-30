@@ -45,8 +45,7 @@ def check_man_page(bin_name, additional_args=None):
     short_bin_name = os.path.basename(bin_name)
 
     if not os.path.exists(bin_name):
-        _error("'{0}'".format(short_bin_name), 'does not exist at: ',
-               bin_name)
+        _error("'{0}' does not exist at: {1}".format(short_bin_name, bin_name))
         return False
 
     # Get the help text. 
