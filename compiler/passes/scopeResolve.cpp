@@ -35,6 +35,8 @@
 #include <map>
 
 #ifdef HAVE_LLVM
+// TODO: Remove uses of old-style collectors from LLVM-specific code.
+#include "oldCollectors.h"
 #include "llvm/ADT/SmallSet.h"
 #endif
 
