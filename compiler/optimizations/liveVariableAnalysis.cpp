@@ -74,9 +74,9 @@ liveVariableAnalysis(FnSymbol* fn,
     BitVec* lvin = new BitVec(locals.n);
     BitVec* lvout = new BitVec(locals.n);
     for_vector(Expr, expr, bb->exprs) {
-      std::vector<BaseAST*> asts;
+      Vec<BaseAST*> asts;
       collect_asts(expr, asts);
-      for_vector(BaseAST, ast, asts) {
+      forv_Vec(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {
             int id = localMap.get(se->var);
@@ -85,8 +85,8 @@ liveVariableAnalysis(FnSymbol* fn,
           }
         }
       }
-      for_vector(BaseAST, ast1, asts) {
-        if (SymExpr* se = toSymExpr(ast1)) {
+      forv_Vec(BaseAST, ast, asts) {
+        if (SymExpr* se = toSymExpr(ast)) {
           if (defSet.set_in(se)) {
             int id = localMap.get(se->var);
             if (!use->get(id))

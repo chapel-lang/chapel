@@ -123,11 +123,11 @@ void deadVariableElimination(FnSymbol* fn) {
 // Removes expression statements that have no effect.
 //
 void deadExpressionElimination(FnSymbol* fn) {
-  std::vector<BaseAST*> asts;
+  Vec<BaseAST*> asts;
 
   collect_asts(fn, asts);
 
-  for_vector(BaseAST, ast, asts) {
+  forv_Vec(BaseAST, ast, asts) {
     Expr* exprAst = toExpr(ast);
 
     if (exprAst == 0) {
@@ -214,18 +214,18 @@ void deadCodeElimination(FnSymbol* fn) {
       Expr*         expr        = bb->exprs[i];
       bool          isEssential = bb->marks[i];
 
-      std::vector<BaseAST*> asts;
+      Vec<BaseAST*> asts;
 
       collect_asts(expr, asts);
 
-      for_vector(BaseAST, ast, asts) {
+      forv_Vec(BaseAST, ast, asts) {
         if (Expr* sub = toExpr(ast)) {
           exprMap[sub] = expr;
         }
       }
 
       if (isEssential == false) {
-        for_vector(BaseAST, ast, asts) {
+        forv_Vec(BaseAST, ast, asts) {
           if (CallExpr* call = toCallExpr(ast)) {
             // mark assignments to global variables as essential
             if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
@@ -247,11 +247,11 @@ void deadCodeElimination(FnSymbol* fn) {
   }
 
   forv_Vec(Expr, expr, workSet) {
-    std::vector<SymExpr*> symExprs;
+    Vec<SymExpr*> symExprs;
 
     collectSymExprs(expr, symExprs);
 
-    for_vector(SymExpr, se, symExprs) {
+    forv_Vec(SymExpr, se, symExprs) {
       if (UD.count(se) != 0) {
         Vec<SymExpr*>* defs = UD[se];
 
@@ -536,7 +536,7 @@ void verifyNcleanRemovedIterResumeGotos() {
 static void cleanupLoopBlocks(FnSymbol* fn) {
   std::vector<Expr*> stmts;
 
-  collect_stmts(fn->body, stmts);
+  collect_stmts_STL(fn->body, stmts);
 
   for_vector (Expr, expr, stmts) {
     if (BlockStmt* stmt = toBlockStmt(expr)) {

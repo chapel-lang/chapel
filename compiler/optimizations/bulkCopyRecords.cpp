@@ -85,7 +85,7 @@ static bool isTrivial(FnSymbol* fn, FnSet& visited)
   // assignments.  If anything else, the assignment is "interesting", and
   // cannot be replaced.
   std::vector<BaseAST*> asts;
-  collect_asts(fn->body, asts);
+  collect_asts_STL(fn->body, asts);
   for_vector(BaseAST, ast, asts)
   {
     if (CallExpr* call = toCallExpr(ast))

@@ -24,7 +24,6 @@
 #include "codegen.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
@@ -774,9 +773,9 @@ static void codegen_header() {
       local.set_add(formal->cname);
     }
 
-    std::vector<DefExpr*> defs;
+    Vec<DefExpr*> defs;
     collectDefExprs(fn->body, defs);
-    for_vector(DefExpr, def, defs) {
+    forv_Vec(DefExpr, def, defs) {
       legalizeName(def->sym);
       // give temps cnames
       if (def->sym->hasFlag(FLAG_TEMP)) {

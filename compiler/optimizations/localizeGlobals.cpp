@@ -20,7 +20,6 @@
 #include "passes.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -39,9 +38,9 @@ void localizeGlobals() {
   if (fNoGlobalConstOpt) return;
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     Map<Symbol*,VarSymbol*> globals;
-    std::vector<BaseAST*> asts;
+    Vec<BaseAST*> asts;
     collect_asts(fn->body, asts);
-    for_vector(BaseAST, ast, asts) {
+    forv_Vec(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
         Symbol* var = se->var;
         ModuleSymbol* parentmod = toModuleSymbol(var->defPoint->parentSymbol);
