@@ -125,7 +125,7 @@ removeWrapRecords() {
       if (!strcmp(formal->name, "_valueType")) {
         // Remove all uses of _valueType within the body of this function.
         std::vector<SymExpr*> symExprs;
-        collectSymExprsSTL(fn->body, symExprs);
+        collectSymExprs(fn->body, symExprs);
         for_vector(SymExpr, se, symExprs) {
           // Ignore dead ones.
           if (se->parentSymbol == NULL)

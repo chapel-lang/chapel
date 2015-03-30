@@ -39,7 +39,8 @@ void add_root_type(AggregateType* ct);
 // case that would benefit from early usage).  A motivated soul could look into
 // this issue and thus allow both docs() and scopeResolve() to call this
 // function.
-void    addToSymbolTable(Vec<DefExpr*>& defs);
+void    addToSymbolTable(Vec<DefExpr*>& defs); // deprecated.
+void    addToSymbolTable(std::vector<DefExpr*>& defs); // use this one in new code.
 void    processImportExprs();
 AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* child);
 
