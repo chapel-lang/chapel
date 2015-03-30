@@ -82,7 +82,7 @@ c_string_copy chpl_format(c_string format, ...) {
 // program it needs to be a locale-aware one with tracking, while for
 // the launcher the regular system one will do.
 //
-static ___always_inline void*
+static inline void*
 chpltypes_malloc(size_t size, chpl_mem_descInt_t description,
                  int32_t lineno, c_string filename) {
 #ifndef LAUNCHER

@@ -129,6 +129,9 @@ if [ "${my_arch}" = "none" ] ; then
     module load craype-shanghai
 fi
 
+log_info "Loading fftw module."
+module load fftw
+
 log_info "Current loaded modules:"
 module list
 

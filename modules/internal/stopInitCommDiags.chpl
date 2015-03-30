@@ -17,24 +17,19 @@
  * limitations under the License.
  */
 
-pragma "no use ChapelStandard"
-
-/*
-  This is a companion to module :mod:`startInitCommDiags` and has no
-  interface of its own.  There is no benefit to naming it in a ``use``
-  statement.  See the documentation for :mod:`startInitCommDiags` for
-  more information.
- */
+//
+// Module stopInitCommDiags helps implement standard/CommDiagnostics
+// support for studying communication during module initialization
+// and teardown.  See that module (or its chpldocs) for details.
+//
 module stopInitCommDiags {
-  use startInitCommDiags;
+  use CommDiagnostics;
 
   if printInitVerboseComm {
-    use CommDiagnostics;
     stopVerboseComm();
   }
 
   if printInitCommCounts {
-    use CommDiagnostics;
     stopCommDiagnostics();
     writeln(getCommDiagnostics());
     resetCommDiagnostics();

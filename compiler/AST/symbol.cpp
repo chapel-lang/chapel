@@ -2855,7 +2855,7 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
 }
 
 void ModuleSymbol::addDefaultUses() {
-  if (modTag != MOD_INTERNAL && hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
+  if (modTag != MOD_INTERNAL) {
     UnresolvedSymExpr* modRef = 0;
 
     SET_LINENO(this);

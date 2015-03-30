@@ -1668,7 +1668,6 @@ void initChplProgram(DefExpr* objectDef) {
   theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
 
-  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
   base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));

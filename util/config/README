@@ -8,8 +8,8 @@ build.  The contents are as follows:
    compileline : a utility that helps to determine the C compiler line
                  used to build generated code
 
-   makeSysBasicTypes : a script that determines the size of various C
-                       types (e.g., long, size_t, etc.) and creates a
-                       Chapel module creating 'extern type'
-                       declarations so that Chapel code can refer to
-                       the types.
+   make_sys_basic_types.py : a script that determines the size of various C
+                             types (e.g., long, size_t, etc.) and creates a
+                             Chapel module creating 'extern type'
+                             declarations so that Chapel code can refer to
+                             the types.
