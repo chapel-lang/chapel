@@ -35,6 +35,9 @@
 #include "bitVec.h"
 
 
+#define DEBUG_AMM 1
+
+
 //########################################################################
 //# supporting types and inlines
 //########################################################################
@@ -536,12 +539,12 @@ OwnershipFlowManager::debugPrintBasicBlocks()
   if (debug > 1)
   {
     printf("\n");
-    list_view(fn);
+    list_view(_fn);
   }
 
   if (debug > 0)
   {
-    BasicBlock::printBasicBlocks(fn);
+    BasicBlock::printBasicBlocks(_fn);
   }
   #endif
 }
