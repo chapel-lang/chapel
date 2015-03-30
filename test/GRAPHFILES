@@ -193,6 +193,7 @@ reductions/diten/testSerialReductions.graph
 spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
+studies/rbc/tvandoren/RBC.graph
 # suite: Colorado State University 
 studies/colostate/Jacobi-1D.graph
 studies/colostate/Jacobi-2D.graph
