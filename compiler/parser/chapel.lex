@@ -677,6 +677,10 @@ static int processBlockComment(yyscan_t scanner) {
   YYSTYPE*    yyLval       = yyget_lval(scanner);
   YYLTYPE*    yyLloc       = yyget_lloc(scanner);
 
+  int nestedStartLine = -1;
+  int startLine = chplLineno;
+  const char* startFilename = yyfilename;
+
   int         len          = strlen(fDocsCommentLabel);
   int         labelIndex   = (len >= 2) ? 2 : 0;
 
@@ -722,9 +726,17 @@ static int processBlockComment(yyscan_t scanner) {
 
     } else if (lastc == '/' && c == '*') { // start nested
       depth++;
+      // keep track of the start of the last nested comment
+      nestedStartLine = chplLineno;
     } else if (c == 0) {
       ParserContext context(scanner);
 
+      fprintf(stderr, "%s:%d: start of unterminated comment\n",
+              startFilename, startLine);
+      if( nestedStartLine >= 0 ) {
+        fprintf(stderr, "%s:%d: start of nested comment\n",
+                startFilename, startLine);
+      }
       yyerror(yyLloc, &context, "EOF in comment");
     }
   }
