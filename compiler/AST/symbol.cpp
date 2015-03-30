@@ -24,6 +24,7 @@
 #include "symbol.h"
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "bb.h"
 #include "build.h"
 #include "codegen.h"
@@ -2058,10 +2059,10 @@ void FnSymbol::codegenDef() {
   }
 
   {
-    Vec<BaseAST*> asts;
+    std::vector<BaseAST*> asts;
     collect_top_asts(body, asts);
 
-    forv_Vec(BaseAST, ast, asts) {
+    for_vector(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!toTypeSymbol(def->sym)) {
           if (fGenIDS && isVarSymbol(def->sym))
@@ -2854,7 +2855,7 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
 }
 
 void ModuleSymbol::addDefaultUses() {
-  if (modTag != MOD_INTERNAL && hasFlag(FLAG_NO_USE_CHAPELSTANDARD) == false) {
+  if (modTag != MOD_INTERNAL) {
     UnresolvedSymExpr* modRef = 0;
 
     SET_LINENO(this);
