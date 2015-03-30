@@ -735,7 +735,7 @@ static int processBlockComment(yyscan_t scanner) {
               startFilename, startLine);
       if( nestedStartLine >= 0 ) {
         fprintf(stderr, "%s:%d: start of nested comment\n",
-                startFilename, startLine);
+                startFilename, nestedStartLine);
       }
       yyerror(yyLloc, &context, "EOF in comment");
     }
