@@ -827,7 +827,7 @@ void runClang(const char* just_parse_filename) {
   std::string compileline = home + "/util/config/compileline";
   if( debugCCode ) compileline += " DEBUG=1";
   if( optimizeCCode ) compileline += " OPTIMIZE=1";
-  std::string readargsfrom = compileline + " --llvm"
+  std::string readargsfrom = compileline + (just_parse_filename?"":" --llvm") +
                               " --llvm-install-dir"
                               " --clang-sysroot-arguments"
                               " --includes-and-defines";
