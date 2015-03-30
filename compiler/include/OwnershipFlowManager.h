@@ -316,11 +316,11 @@ inline static bool isUsed(SymExpr* se)
 
 
 // Returns nonzero if the expression in which the given SymExpr appears makes it a
-// bitwise copy of some other symbol; zero otherwise.  If the parent expression
-// of the given se is a bitwise copy, the return value is the
-// index of the given se in the argument list of the move (1 or 2).
-inline static int bitwiseCopyArg(SymExpr* se,
-                          OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+// bitwise copy of some other symbol or vice versa; zero otherwise.
+// If the parent expression of the given se is a bitwise copy, the return value
+// is the index of the given se in the argument list of the move (1 or 2).
+inline static int
+bitwiseCopyArg(SymExpr* se, OwnershipFlowManager::SymbolIndexMap& symbolIndex)
 {
   // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
   if (CallExpr* call = toCallExpr(se->parentExpr))
@@ -332,16 +332,20 @@ inline static int bitwiseCopyArg(SymExpr* se,
       SymExpr* lhse = toSymExpr(call->get(1));
       SymExpr* rhse = toSymExpr(call->get(2));
 
-      // To be a bitwise copy, the RHS expression must be a SymExpr.
+      // We just expect the lhs to be a SymExpr.
+      INT_ASSERT(lhse);
+      
+      // To be a bitwise copy, the RHS expression must be a SymExpr (but other
+      // ASTs are valid).
       if (! rhse)
         return 0;
-      
-      // And it must contain a local symbol.
+
+      // It must contain a local symbol, otherwise we ignore it.
       Symbol* rhs = rhse->var;
       if (symbolIndex.find(rhs) == symbolIndex.end())
-            // Not found, so skip this move.
-            // The lhs will be considered unowned, which is correct because it
-            // is just a bitwise copy of the value of the global.
+        // Not found, so skip this move.
+        // The lhs will be considered unowned, which is correct because it
+        // is a bitwise copy of the value of a global.
         return 0;
 
       if (se == lhse)
@@ -403,6 +407,12 @@ inline static bool isConsumed(SymExpr* se)
             if (//lhse->var->type->symbol->hasFlag(FLAG_REF) ||
               isModuleSymbol(lhse->var->defPoint->parentSymbol))
               return true;
+
+            // The return-value variable is treated as if it were global
+            // (see Note #2).
+            if( FnSymbol* fn = toFnSymbol(call->parentSymbol))
+              if (lhse->var == fn->getReturnSymbol())
+                return true;
           }
         }
         break;

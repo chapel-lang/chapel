@@ -118,6 +118,10 @@ OwnershipFlowManager::extractSymbols()
     if (! (toArgSymbol(sym) || toVarSymbol(sym)))
       continue;
 
+    // We do not track the return-value variable (see Note #2).
+    if (sym == _fn->getReturnSymbol())
+      continue;
+
     Type* type = sym->type;
 
     // TODO: Extern record types also do not have constructors and
@@ -166,6 +170,8 @@ static void createAlias(SymExpr* se, AliasVectorMap& aliases)
 
   SymExpr* lhs = toSymExpr(call->get(1));
   SymExpr* rhs = toSymExpr(call->get(2));
+
+  // Workaround (See Note #2).
 
   Symbol* lsym = lhs->var;
   Symbol* rsym = rhs->var;
@@ -753,6 +759,27 @@ static bool isRetVarInReturn(SymExpr* se)
 }
 
 
+// Returns true if the given SymExpr is the RHS of a bitwise copy and the LHS
+// is a reference to the return value variable and the containing function is a
+// constructor (a.k.a. initCopy and autoCopy).
+static bool isRetVarCopyInConstructor(SymExpr* se)
+{
+  if (CallExpr* call = toCallExpr(se->parentExpr)) // This call
+    if (call->isPrimitive(PRIM_MOVE) ||
+        call->isPrimitive(PRIM_ASSIGN)) // is a bitwise copy
+      if (se == call->get(2)) // whose RHS is the given SymExpr
+        if (FnSymbol* fn = toFnSymbol(call->parentSymbol)) // and the
+          if (fn->hasFlag(FLAG_CONSTRUCTOR) ||             // containing
+              fn->hasFlag(FLAG_AUTO_COPY_FN) ||            // function 
+              fn->hasFlag(FLAG_INIT_COPY_FN)) // is a constructor
+            if (SymExpr* lhse = toSymExpr(call->get(1))) // whose LHS
+              if (lhse->var == fn->getReturnSymbol()) // is the RVV.
+                return true;
+
+  return false;
+}
+
+
 static bool isDestructorFormal(SymExpr* se)
 {
   if (ArgSymbol* arg = toArgSymbol(se->var))
@@ -796,6 +823,16 @@ static void insertAutoCopy(SymExpr* se)
   // TODO: Remove this clause after the autoCopy function becomes a copy constructor
   // method.
   if (isRetVarInReturn(se))
+    return;
+
+  // We don't want to copy the meme argument in a constructor.
+  // TODO: When constructors are methods, there will be no meme argument, so
+  // this will be dead code.
+  if (se->var->hasFlag(FLAG_IS_MEME))
+    return;
+
+  // We also don't want an autocopy when we assign to the RVV in a constructor.
+  if (isRetVarCopyInConstructor(se))
     return;
 
   // The argument to a destructor function is known to be live, so we do not
@@ -992,3 +1029,63 @@ OwnershipFlowManager::insertAutoDestroys()
 }
 
 
+// TODO: Remove the computation of the EXIT set.  It is no longer needed,
+// because the only information we need to determine whether to insert an
+// autoDestroy for a given variable is whether it is still alive at the end of
+// the function.  From this, we can infer that it was still alive at the end of
+// its scope.  Then, it is simply a matter of inserting the autoDestroy at the
+// right place (i.e. the end of its scope).
+
+// TODO: In several places, we use std::map<,>::operator[]() where we would
+// really like to use std::map<>::at().  The latter contains an assertion that
+// the element being accessed is already a member of the map while the former
+// just inserts a new element if none is present.  However, at() is only
+// available in the C++11 version of the STL and PGI does not support that
+// version (as of this writing).  Using find() and then [] is a bit wordy, so
+// we just use [] with fingers crossed for now.  
+
+// TODO: In several places, we would like to pass SymbolIndex& with a const
+// qualifier, but since operator[] in the C++98 STL is not a const member
+// function, we are prevented from doing so until we adopt the C++11 STL
+// uniformly.
+
+//########################################################################
+//#
+//# NOTES
+//#
+//# Note #1: No reference tracking
+//#  We do not track references in this version, which can lead to
+//# assumptions about aliases being wrong in certain cases.  We get to treat
+//# bitwise copies of an object as if they are aliases because they are
+//# effectively the same object -- just residing at different locations in
+//# memory.  However, if one of these is modified, then they are no longer
+//# equivalent.  They should be the same object, but one of them is obsolete.
+//# Which one?
+//#  In this implementation, temporaries are initialized only once, and typically
+//# used only once as well.  Named variables are also initialized only once, but
+//# may be used in multiple places -- including as lvalues.
+//#  Currently, we use a heuristic to determine the "current" alias -- we simply
+//# use the last one in the alias chain.  This is likely to be the named
+//# variable into which the call temps are finally assigned.
+//#  The heuristic can be made more robust in two ways: 
+//#  1. In alias sets that contain a named variable, ensure that this named
+//# variable is unique (i.e. that the remaining aliases are unnamed
+//# temporaries).  Then, actually use that named variable.
+//#  2. Ensure that temporaries cannot be updated.  That is, that they are in
+//# fact assigned only one, and that only constant references (i.e. specifically
+//# not modifiable references) to them are created.
+//#
+//# Note #2: The return-value variable is special
+//#  To avoid ambiguity in the ownership state of a variable on entry to a join
+//# node, the ownership state of that symbol at the end of all predecessor
+//# nodes must match.  Logical arguments can be used to conclude that only the
+//# return-value variable (RVV) can be initialized along multiple paths through
+//# the flow graph, so we can treat it as a special case.
+//#  We also know that the RVV must be owned on entry to the final block in the
+//# function.  After normalization, functions returning a value will contain a
+//# return label that marks the beginning of that final block.
+//#  To force the desired behavior, we treat the RVV as if it is a global
+//# variable.  That means that a bitwise copy to it is treated as a
+//# consumption.  The RVV itself is not tracked as a local variable, meaning
+//# that it cannot participate in any alias cliques, and we do not adjust its
+//# ownership state in the return statement.
