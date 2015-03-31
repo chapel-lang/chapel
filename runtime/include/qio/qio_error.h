@@ -48,6 +48,8 @@ struct qio_err_s {
 // NULL means no error.
 typedef const struct qio_err_s* qioerr;
 
+struct qio_err_s* qio_error_get_base(void);
+
 // on linux, normal error codes are < 255
 enum { EXTEND_ERROR_OFFSET = 1000 };
 // on linux, these are -1 to -100.
@@ -56,21 +58,23 @@ enum { MAX_ERROR_OFFSET = GAI_ERROR_OFFSET+1000 };
 
 static inline int32_t qio_err_to_int(qioerr a) {
   intptr_t num = (intptr_t) a;
+  intptr_t base = (intptr_t) qio_error_get_base();
   if( num == 0 ) return 0;
   if( num & 1 ) {
     // byte-aligned so can't be an error record.
     return num >> 1; // trim off the 1 we added to distinguish
   }
-  return ((const struct qio_err_s*) a)->code;
+  return ((const struct qio_err_s*) (base+a))->code;
 }
 static inline const char* qio_err_msg(qioerr a) {
   intptr_t num = (intptr_t) a;
+  intptr_t base = (intptr_t) qio_error_get_base();
   if( num == 0 ) return 0;
   if( num & 1 ) {
     // byte-aligned so can't be an error record.
     return NULL;
   }
-  return ((struct qio_err_s*) a)->const_msg;
+  return ((struct qio_err_s*) (base+a))->const_msg;
 }
 
 static inline qioerr qio_int_to_err(int32_t a) {
@@ -96,15 +100,17 @@ static inline qioerr qio_mkerror_errno(void) {
 }
 #define QIO_GET_CONSTANT_ERROR(ptr,code,note) { \
   static const struct qio_err_s qio_macro_tmp_err__ = {code, note, __func__, __FILE__, __LINE__}; \
-  ptr = &qio_macro_tmp_err__; \
+  intptr_t base = (intptr_t) qio_error_get_base(); \
+  ptr = (struct qio_err_s*) ((intptr_t)&qio_macro_tmp_err__ - base); \
   if( QIO_ERROR_DOUBLE_CHECK ) \
     assert( qio_err_to_int(ptr) == code ); \
 }
 #define QIO_RETURN_CONSTANT_ERROR(code,note) { \
   static const struct qio_err_s qio_macro_tmp_err__ = {code, note, __func__, __FILE__, __LINE__}; \
+  intptr_t base = (intptr_t) qio_error_get_base(); \
   if( QIO_ERROR_DOUBLE_CHECK ) \
     assert( qio_err_to_int(&qio_macro_tmp_err__) == code ); \
-  return &qio_macro_tmp_err__; \
+  return (struct qio_err_s*) ((intptr_t)&qio_macro_tmp_err__ - base); \
 }
 
 // EEOF 
@@ -143,5 +149,11 @@ typedef qioerr syserr;
 static inline int chpl_macro_int_EEOF(void) { return EEOF; }
 static inline int chpl_macro_int_ESHORT(void) { return ESHORT; }
 static inline int chpl_macro_int_EFORMAT(void) { return EFORMAT; }
+
+// for debugging 
+static void qio_print_raw_error(qioerr x)
+{
+  printf("syserr=%p", (void*) x);
+}
 
 #endif
