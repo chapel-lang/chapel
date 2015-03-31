@@ -63,6 +63,13 @@ const struct qio_err_s* qio_err_local_ptr(qioerr a)
   intptr_t base = (intptr_t) qio_error_get_base();
   return (qioerr) (num + base);
 }
+static inline
+const qioerr qio_err_local_ptr_to_err(const struct qio_err_s* a)
+{
+  intptr_t num = (intptr_t) a;
+  intptr_t base = (intptr_t) qio_error_get_base();
+  return (qioerr) (num - base);
+}
 
 static inline int32_t qio_err_to_int(qioerr a) {
   intptr_t num = (intptr_t) a;
@@ -107,7 +114,7 @@ static inline qioerr qio_mkerror_errno(void) {
 #define QIO_GET_CONSTANT_ERROR(ptr,code,note) { \
   static const struct qio_err_s qio_macro_tmp_err__ = {code, note, __func__, __FILE__, __LINE__}; \
   intptr_t base = (intptr_t) qio_error_get_base(); \
-  ptr = (struct qio_err_s*) ((intptr_t)&qio_macro_tmp_err__ - base); \
+  ptr = qio_err_local_ptr_to_err(&qio_macro_tmp_err__); \
   if( QIO_ERROR_DOUBLE_CHECK ) \
     assert( qio_err_to_int(ptr) == code ); \
 }
@@ -116,7 +123,7 @@ static inline qioerr qio_mkerror_errno(void) {
   intptr_t base = (intptr_t) qio_error_get_base(); \
   if( QIO_ERROR_DOUBLE_CHECK ) \
     assert( qio_err_to_int(&qio_macro_tmp_err__) == code ); \
-  return (struct qio_err_s*) ((intptr_t)&qio_macro_tmp_err__ - base); \
+  return qio_err_local_ptr_to_err(&qio_macro_tmp_err__); \
 }
 
 // EEOF 
