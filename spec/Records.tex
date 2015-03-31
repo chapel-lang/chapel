@@ -397,7 +397,7 @@ foo();
 pragma "auto copy fn"
 proc chpl__autoCopy(rhs: R) {
   var r:R;
-  r.c = new C(rhs.c.x);
+  r.c.x = rhs.c.x;
   return r;
 }
 \end{chapelpost}
