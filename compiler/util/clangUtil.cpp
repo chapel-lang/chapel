@@ -832,11 +832,25 @@ void runClang(const char* just_parse_filename) {
   compileline += " COMP_GEN_OPT=" + (optimizeCCode?one:zero);
   compileline += " COMP_GEN_SPECIALIZE=" + (specializeCCode?one:zero);
   compileline += " COMP_GEN_IEEE_FLOAT=" + (fieeefloat?one:zero);
-  std::string readargsfrom = compileline + (just_parse_filename?"":" --llvm") +
-                              " --llvm-install-dir"
-                              " --clang-sysroot-arguments"
-                              " --cflags"
-                              " --includes-and-defines";
+  std::string readargsfrom;
+
+  if( just_parse_filename ) {
+    // We're handling an extern block and not using the LLVM backend.
+    // Don't change CHPL_TARGET_COMPILER or ask for any compiler-specific
+    // C flags. Just get the neccesary includes and defines.
+    readargsfrom = compileline + " --llvm-install-dir"
+                                 " --clang-sysroot-arguments"
+                                 " --includes-and-defines";
+  } else {
+    // We're parsing extern blocks AND any parts of the runtime
+    // in order to prepare for an --llvm compilation.
+    // Use compiler-specific flags for clang-included.
+    readargsfrom = compileline + " --llvm"
+                                 " --llvm-install-dir"
+                                 " --clang-sysroot-arguments"
+                                 " --cflags"
+                                 " --includes-and-defines";
+  }
   std::vector<std::string> args;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangLDArgs;
