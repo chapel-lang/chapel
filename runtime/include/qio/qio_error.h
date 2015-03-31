@@ -56,25 +56,31 @@ enum { EXTEND_ERROR_OFFSET = 1000 };
 enum { GAI_ERROR_OFFSET = (EXTEND_ERROR_OFFSET+2000) };
 enum { MAX_ERROR_OFFSET = GAI_ERROR_OFFSET+1000 };
 
-static inline int32_t qio_err_to_int(qioerr a) {
+static inline
+const struct qio_err_s* qio_err_local_ptr(qioerr a)
+{
   intptr_t num = (intptr_t) a;
   intptr_t base = (intptr_t) qio_error_get_base();
+  return (qioerr) (num + base);
+}
+
+static inline int32_t qio_err_to_int(qioerr a) {
+  intptr_t num = (intptr_t) a;
   if( num == 0 ) return 0;
   if( num & 1 ) {
     // byte-aligned so can't be an error record.
     return num >> 1; // trim off the 1 we added to distinguish
   }
-  return ((const struct qio_err_s*) (base+a))->code;
+  return qio_err_local_ptr(a)->code;
 }
 static inline const char* qio_err_msg(qioerr a) {
   intptr_t num = (intptr_t) a;
-  intptr_t base = (intptr_t) qio_error_get_base();
   if( num == 0 ) return 0;
   if( num & 1 ) {
     // byte-aligned so can't be an error record.
     return NULL;
   }
-  return ((struct qio_err_s*) (base+a))->const_msg;
+  return qio_err_local_ptr(a)->const_msg;
 }
 
 static inline qioerr qio_int_to_err(int32_t a) {
@@ -149,11 +155,5 @@ typedef qioerr syserr;
 static inline int chpl_macro_int_EEOF(void) { return EEOF; }
 static inline int chpl_macro_int_ESHORT(void) { return ESHORT; }
 static inline int chpl_macro_int_EFORMAT(void) { return EFORMAT; }
-
-// for debugging 
-static void qio_print_raw_error(qioerr x)
-{
-  printf("syserr=%p", (void*) x);
-}
 
 #endif
