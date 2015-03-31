@@ -129,8 +129,10 @@ if [ "${my_arch}" = "none" ] ; then
     module load craype-shanghai
 fi
 
-log_info "Loading fftw module."
-module load fftw
+if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then
+    log_info "Loading fftw module."
+    module load fftw
+fi
 
 log_info "Current loaded modules:"
 module list

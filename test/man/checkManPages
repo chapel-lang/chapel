@@ -44,6 +44,10 @@ def check_man_page(bin_name, additional_args=None):
     chpl_home = _get_chpl_home()
     short_bin_name = os.path.basename(bin_name)
 
+    if not os.path.exists(bin_name):
+        _error("'{0}' does not exist at: {1}".format(short_bin_name, bin_name))
+        return False
+
     # Get the help text. 
     help_cmd = [bin_name]
     if additional_args is not None:

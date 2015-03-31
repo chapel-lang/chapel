@@ -10,6 +10,7 @@ File Descriptions:
 
  *ftdetect/chpl.vim* -- Allows vim to auto-detect the syntax highlighting
                         scheme for chapel files.
+ *ftplugin/chpl.vim* -- Nice settings for Chapel editing
  *syntax/chpl.vim*   -- Syntax highlighting scheme for chapel
  *indent/chpl.vim*   -- Indenting scheme for chapel
  *sample-vimrc*      -- Sample .vimrc configuration file
