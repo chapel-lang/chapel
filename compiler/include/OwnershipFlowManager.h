@@ -360,7 +360,6 @@ inline static bool isConsumed(SymExpr* se)
 {
   if (CallExpr* call = toCallExpr(se->parentExpr))
   {
-
     if (FnSymbol* fn = call->isResolved())
     {
       // This is a function call.

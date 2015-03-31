@@ -393,6 +393,14 @@ proc foo()
 
 foo();
 \end{chapel}
+\begin{chapelpost}
+pragma "auto copy fn"
+proc chpl__autoCopy(rhs: R) {
+  var r:R;
+  r.c = new C(rhs.c.x);
+  return r;
+}
+\end{chapelpost}
 \begin{chapeloutput}
 (c = {x = 0})
 
