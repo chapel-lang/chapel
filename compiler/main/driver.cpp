@@ -82,6 +82,7 @@ const char *chpl_env_var_names[MAX_CHPL_ENV_VARS];
 bool widePointersStruct;
 
 static char makeArgument[256] = "";
+static char ccflagsArgument[256] = "";
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -454,6 +455,21 @@ static void setDevelSettings(const ArgumentState* state, const char* arg_unused)
   }
 }
 
+static void setCCFlags(const ArgumentState* state, const char* arg) {
+  // Append arg to the end of ccflags.
+  int curlen = strlen(ccflags);
+  int space = sizeof(ccflags) - curlen - 1 - 1; // room for ' ' and \0
+  int arglen = strlen(arg);
+  if( arglen <= space ) {
+    // add a space if there are already arguments here
+    if( curlen != 0 ) ccflags[curlen++] = ' ';
+    memcpy(&ccflags[curlen], arg, arglen);
+  } else {
+    USR_FATAL("ccflags argument too long");
+  }
+}
+
+
 static void handleLibrary(const ArgumentState* state, const char* arg_unused) {
   addLibInfo(astr("-l", libraryFilename));
 }
@@ -724,7 +740,7 @@ static ArgumentDescription arg_desc[] = {
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
  {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
- {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflags, "CHPL_CC_FLAGS", NULL},
+ {"ccflags", ' ', "<flags>", "Back-end C compiler flags", "S256", ccflagsArgument, "CHPL_CC_FLAGS", setCCFlags},
  {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
  {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
