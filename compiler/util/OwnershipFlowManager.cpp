@@ -118,12 +118,6 @@ OwnershipFlowManager::extractSymbols()
     if (! (toArgSymbol(sym) || toVarSymbol(sym)))
       continue;
 
-#if 0
-    // We do not track the return-value variable (see Note #2).
-    if (sym == _fn->getReturnSymbol())
-      continue;
-#endif
-
     Type* type = sym->type;
 
     // TODO: Extern record types also do not have constructors and
@@ -402,7 +396,19 @@ OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
       processCreator(se, prod, live, aliases, symbolIndex);
 
     if (bitwiseCopyArg(se) == 1)
+    {
       processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
+
+      // When the RVV is on the LHS of an assignment, it is always considered
+      // to be owned.
+      FnSymbol* fn = toFnSymbol(se->parentSymbol);
+      if (sym == fn->getReturnSymbol())
+      {
+        SymbolVector* laliasList = aliases.at(sym);
+        setAliasList(prod, *laliasList, symbolIndex);
+        setAliasList(live, *laliasList, symbolIndex);
+      }
+    }
 
     if (isUsed(se))
       processUser(se, use, aliases, symbolIndex);
