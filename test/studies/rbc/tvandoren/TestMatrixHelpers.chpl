@@ -1,6 +1,6 @@
 // Exercise MatrixHelpers module.
 
-use MatrixHelpers;
+use RBCElegant;
 
 var A = reshape([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], {1..2, 1..3});
 
