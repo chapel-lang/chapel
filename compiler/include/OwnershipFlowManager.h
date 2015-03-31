@@ -323,7 +323,7 @@ inline static bool isUsed(SymExpr* se)
 // If the parent expression of the given se is a bitwise copy, the return value
 // is the index of the given se in the argument list of the move (1 or 2).
 inline static int
-bitwiseCopyArg(SymExpr* se, OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+bitwiseCopyArg(SymExpr* se)
 {
   // Must be a call (as opposed to a DefExpr or LabelExpr, etc.
   if (CallExpr* call = toCallExpr(se->parentExpr))
@@ -343,14 +343,6 @@ bitwiseCopyArg(SymExpr* se, OwnershipFlowManager::SymbolIndexMap& symbolIndex)
       if (! rhse)
         return 0;
 
-      // It must contain a local symbol, otherwise we ignore it.
-      Symbol* rhs = rhse->var;
-      if (symbolIndex.find(rhs) == symbolIndex.end())
-        // Not found, so skip this move.
-        // The lhs will be considered unowned, which is correct because it
-        // is a bitwise copy of the value of a global.
-        return 0;
-
       if (se == lhse)
         return 1;
       if (se == rhse)
@@ -368,6 +360,7 @@ inline static bool isConsumed(SymExpr* se)
 {
   if (CallExpr* call = toCallExpr(se->parentExpr))
   {
+
     if (FnSymbol* fn = call->isResolved())
     {
       // This is a function call.
@@ -377,9 +370,10 @@ inline static bool isConsumed(SymExpr* se)
       if (fn->hasFlag(FLAG_DESTRUCTOR) ||
           fn->hasFlag(FLAG_AUTO_DESTROY_FN))
       {
-        // Paranoid check: This SymExpr is the thing being destroyed, right?
-        INT_ASSERT(call->get(1) == se);
-        return true;
+        // We only care about calls where the se is the first operand.
+        // (The function being called is also a SymExpr.)
+        if (call->get(1) == se)
+          return true;
       }
     }
     else
@@ -404,19 +398,21 @@ inline static bool isConsumed(SymExpr* se)
         {
           // If the left side of a move is a global, it assumes ownership from the
           // RHS.  We can assume that the RHS is local.
-          Expr* lhs = call->get(1);
-          if (SymExpr* lhse = toSymExpr(lhs))
-          {
-            if (//lhse->var->type->symbol->hasFlag(FLAG_REF) ||
-              isModuleSymbol(lhse->var->defPoint->parentSymbol))
-              return true;
-
-            // The return-value variable is treated as if it were global
-            // (see Note #2).
-            if( FnSymbol* fn = toFnSymbol(call->parentSymbol))
-              if (lhse->var == fn->getReturnSymbol())
+          SymExpr* lhse = toSymExpr(call->get(1));
+          INT_ASSERT(lhse);
+          if (SymExpr* rhse = toSymExpr(call->get(2)))
+            if (se == rhse)
+            {
+              if (//lhse->var->type->symbol->hasFlag(FLAG_REF) ||
+                isModuleSymbol(lhse->var->defPoint->parentSymbol))
                 return true;
-          }
+
+              // Assignment to the return-value variable is treated as a consumption
+              // (see Note #2).
+              if( FnSymbol* fn = toFnSymbol(call->parentSymbol))
+                if (lhse->var == fn->getReturnSymbol())
+                  return true;
+            }
         }
         break;
 

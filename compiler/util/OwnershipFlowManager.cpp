@@ -118,9 +118,11 @@ OwnershipFlowManager::extractSymbols()
     if (! (toArgSymbol(sym) || toVarSymbol(sym)))
       continue;
 
+#if 0
     // We do not track the return-value variable (see Note #2).
     if (sym == _fn->getReturnSymbol())
       continue;
+#endif
 
     Type* type = sym->type;
 
@@ -207,7 +209,7 @@ OwnershipFlowManager::populateStmtAliases(OwnershipFlowManager::SymExprVector& s
       continue;
 
     // Pass ownership to this symbol if it is the result of a bitwise copy.
-    if (bitwiseCopyArg(se, symbolIndex) == 1)
+    if (bitwiseCopyArg(se) == 1)
       // It suffices to create the alias when the se is the left operand (1),
       // though it probably does no harm to do this symmetrically.
       createAlias(se, aliases);
@@ -235,6 +237,59 @@ OwnershipFlowManager::populateAliases()
 //
 
 
+// Track when a local symbol gains ownership of an object.
+static void processCreator(SymExpr* se, 
+                           BitVec* prod, BitVec* live,
+                           const AliasVectorMap& aliases,
+                           OwnershipFlowManager::SymbolIndexMap& symbolIndex)
+{
+  // Any function returning a value is considered to be a constructor.
+
+  Symbol* sym = se->var;
+
+  // Ignore symbols that are not in our set-of-interest.
+  if (symbolIndex.find(sym) == symbolIndex.end())
+    return;
+
+  size_t index = symbolIndex[sym];
+
+  // We expect that each symbol gets constructed only once, so if we are
+  // about to set a bit in the prod set, it cannot already be true.
+  // If this assumption turns out to be false, it means we are reusing
+  // symbols.  That case can be accommodated, but it means we should
+  // insert a destructor call ahead of the symbol's reinitialization.
+  if (prod->get(index))
+    if (fWarnOwnership)
+      USR_WARN(sym, "Reinitialization of sym");
+
+  // When one member of an alias set is defined, we treat them all as being
+  // defined.
+  // Otherwise, backward flow will lead to premature deletion:
+  //  1:  0  >  5 
+  // move( call_tmp call( fn newAlias arg this ) ) 
+  // move( ret call_tmp ) 
+  // goto 806806   _end_reindex 
+  //  4:  2 3  >  5 
+  // move( call_tmp call( fn _newArray x ) ) 
+  // move( ret call_tmp ) 
+  //  5:  4 1  >  
+  // def _end_reindex 
+  // return( ret ) 
+  // In blocks 1 and 4, the respective call_tmp becomes live and is aliased
+  // with ret.  But only the first call_tmp is live at the end of block 1 and
+  // only the second call_tmp is live at the end of block 4: they will not flow
+  // through to block 5.  After flow analysis (unless we treat the members of a
+  // clique equivalently), each call_tmp will be destroyed within its
+  // respective block, making ret unowned on exit -- an error.
+  // TODO: I think we can represent all members of an alias set with one bit in
+  // the flow sets -- either all are owned or none are.  This will save time
+  // and space.
+  SymbolVector* aliasList = aliases.at(sym);
+  setAliasList(prod, *aliasList, symbolIndex);
+  setAliasList(live, *aliasList, symbolIndex);
+}
+
+
 static void processBitwiseCopy(SymExpr* se,
                                BitVec* prod, BitVec* live, BitVec* cons,
                                const AliasVectorMap& aliases,
@@ -248,11 +303,16 @@ static void processBitwiseCopy(SymExpr* se,
   Symbol* lsym = lhs->var;
   Symbol* rsym = rhs->var;
 
+  size_t lindex = symbolIndex[lsym];
+  // The rhs must contain a local symbol, otherwise we ignore it.
+  if (symbolIndex.find(rsym) == symbolIndex.end())
+    // The lhs will be considered unowned, which is correct because it
+    // is a bitwise copy of the value of a global.
+    return;
+  size_t rindex = symbolIndex[rsym];
+
   SymbolVector* laliasList = aliases.at(lsym);
   SymbolVector* raliasList = aliases.at(rsym);
-
-  size_t rindex = symbolIndex[rsym];
-  size_t lindex = symbolIndex[lsym];
 
   // Ownership is shared if the symbols are in the same alias class.
   // Ownership is transferred to the lhs if the lhs is in an outer scope.
@@ -325,52 +385,6 @@ static void processConsumer(SymExpr* se,
 }
 
 
-static void processCreator(SymExpr* se, 
-                           BitVec* prod, BitVec* live,
-                           const AliasVectorMap& aliases,
-                           OwnershipFlowManager::SymbolIndexMap& symbolIndex)
-{
-  // Any function returning a value is considered to be a constructor.
-  Symbol* sym = se->var;
-  size_t index = symbolIndex[sym];
-
-  // We expect that each symbol gets constructed only once, so if we are
-  // about to set a bit in the prod set, it cannot already be true.
-  // If this assumption turns out to be false, it means we are reusing
-  // symbols.  That case can be accommodated, but it means we should
-  // insert a destructor call ahead of the symbol's reinitialization.
-  if (prod->get(index))
-    if (fWarnOwnership)
-      USR_WARN(sym, "Reinitialization of sym");
-
-  // When one member of an alias set is defined, we treat them all as being
-  // defined.
-  // Otherwise, backward flow will lead to premature deletion:
-  //  1:  0  >  5 
-  // move( call_tmp call( fn newAlias arg this ) ) 
-  // move( ret call_tmp ) 
-  // goto 806806   _end_reindex 
-  //  4:  2 3  >  5 
-  // move( call_tmp call( fn _newArray x ) ) 
-  // move( ret call_tmp ) 
-  //  5:  4 1  >  
-  // def _end_reindex 
-  // return( ret ) 
-  // In blocks 1 and 4, the respective call_tmp becomes live and is aliased
-  // with ret.  But only the first call_tmp is live at the end of block 1 and
-  // only the second call_tmp is live at the end of block 4: they will not flow
-  // through to block 5.  After flow analysis (unless we treat the members of a
-  // clique equivalently), each call_tmp will be destroyed within its
-  // respective block, making ret unowned on exit -- an error.
-  // TODO: I think we can represent all members of an alias set with one bit in
-  // the flow sets -- either all are owned or none are.  This will save time
-  // and space.
-  SymbolVector* aliasList = aliases.at(sym);
-  setAliasList(prod, *aliasList, symbolIndex);
-  setAliasList(live, *aliasList, symbolIndex);
-}
-
-
 void
 OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
                                          BitVec* prod, BitVec* live,
@@ -387,7 +401,7 @@ OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
     if (isCreated(se))
       processCreator(se, prod, live, aliases, symbolIndex);
 
-    if (bitwiseCopyArg(se, symbolIndex) == 1)
+    if (bitwiseCopyArg(se) == 1)
       processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
 
     if (isUsed(se))
@@ -876,13 +890,46 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
     if (symbolIndex.find(sym) == symbolIndex.end())
       continue;
 
+    bool seIsRVV = false;
+    if (FnSymbol* fn = toFnSymbol(se->parentSymbol))
+      seIsRVV = sym == fn->getReturnSymbol();
+
+    if (bitwiseCopyArg(se) == 1)
+    {
+      // If the live bit is set for the RHS symbol, we can leave it as a move and
+      // transfer ownership.  Otherwise, we need to insert an autoCopy.
+      if (seIsRVV)
+      {
+        CallExpr* call = toCallExpr(se->parentExpr);
+        INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
+        if (SymExpr* rhse = toSymExpr(call->get(2)))
+        {
+          Symbol* rsym = rhse->var;
+          if (symbolIndex.find(rsym) == symbolIndex.end())
+          {
+            // The RHS is not local, so we need an autocopy.
+            insertAutoCopy(rhse);
+          }
+          else
+          {
+            // The RHS is local.  We need an autocopy only if it is unowned.
+            size_t rindex = symbolIndex[rsym];
+            if (!live->get(rindex))
+              insertAutoCopy(rhse);
+          }
+        }
+      }
+      processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
+      continue;
+    }
+
+    // We assume that this case is handled by the above.
+    if (bitwiseCopyArg(se) == 2)
+      continue;
+
     // Set a bit in the live set if this is a constructor.
     if (isCreated(se))
       processCreator(se, prod, live, aliases, symbolIndex);
-
-    // Pass ownership to this symbol if it is the result of a bitwise copy.
-    if (bitwiseCopyArg(se, symbolIndex) == 1)
-      processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
 
     if (isConsumed(se))
     {
@@ -897,7 +944,6 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
         // the rest of the forward-flowed bitsets is unchanged.
         prod->set(index);
       }
-
       processConsumer(se, live, cons, aliases, symbolIndex);
     }
   }
