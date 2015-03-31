@@ -113,14 +113,12 @@ static inline qioerr qio_mkerror_errno(void) {
 }
 #define QIO_GET_CONSTANT_ERROR(ptr,code,note) { \
   static const struct qio_err_s qio_macro_tmp_err__ = {code, note, __func__, __FILE__, __LINE__}; \
-  intptr_t base = (intptr_t) qio_error_get_base(); \
   ptr = qio_err_local_ptr_to_err(&qio_macro_tmp_err__); \
   if( QIO_ERROR_DOUBLE_CHECK ) \
     assert( qio_err_to_int(ptr) == code ); \
 }
 #define QIO_RETURN_CONSTANT_ERROR(code,note) { \
   static const struct qio_err_s qio_macro_tmp_err__ = {code, note, __func__, __FILE__, __LINE__}; \
-  intptr_t base = (intptr_t) qio_error_get_base(); \
   if( QIO_ERROR_DOUBLE_CHECK ) \
     assert( qio_err_to_int(&qio_macro_tmp_err__) == code ); \
   return qio_err_local_ptr_to_err(&qio_macro_tmp_err__); \
