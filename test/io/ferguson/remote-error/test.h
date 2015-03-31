@@ -8,4 +8,10 @@ static int64_t* getaddress(void)
   return &ret;
 }
 
- 
+static int64_t* getaddress2(void)
+{
+  static int64_t ret;
+  return &ret;
+}
+
+
