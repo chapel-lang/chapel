@@ -934,6 +934,7 @@ def main():
     else:
         multiConf = []
 
+    annotation_file = None
     if annotate:
         if options.annotation_file is not None:
             annotation_file = options.annotation_file
@@ -941,8 +942,6 @@ def main():
             af = os.path.join(options.testdir, 'ANNOTATIONS.yaml')
             if os.path.exists(af):
                 annotation_file = af
-    else:
-        annotation_file = None
 
     # This allows the graph webpage to have an alternate title. The default is
     # Chapel Performance Graphs, which is not always appropriate 
