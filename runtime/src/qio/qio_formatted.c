@@ -1410,7 +1410,7 @@ qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string
   ssize_t ilen;
   ssize_t q;
   int32_t chr;
-  int clen;
+  int clen = 0;
   char* ret;
   int tmplen;
   qio_truncate_info_t ti;
