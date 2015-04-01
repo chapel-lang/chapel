@@ -146,34 +146,34 @@ module Math {
 
      :rtype: The type of `x`.
   */
-  inline proc abs(x) where isNumericalType(x.type) {
+  inline proc abs(x) where isNumericType(x.type) {
     if isComplex(x) {
-      return sqrt(x.re * x.re + x.im * -x.im);
+      return sqrt(x.re * x.re + x.im * x.im);
     } else if isReal(x) {
-      if numBits(x) == 64 {
+      if numBits(x.type) == 64 {
         extern proc fabs(x: real(64)): real(64);
         return fabs(x);
-      } else if numBits(x) == 32 {
+      } else if numBits(x.type) == 32 {
         extern proc fabsf(x: real(32)): real(32);
         return fabsf(x);
       } else {
-        compilerError("abs() -- Invalid real argument width: ", numBits(x));
+        compilerError("abs() -- Invalid real argument width: ", numBits(x.type));
       }
-    } else if isImaginary(x) {
-      if numBits(x) == 64 {
+    } else if isImag(x) {
+      if numBits(x.type) == 64 {
         extern proc fabs(x: real(64)): real(64);
         return fabs(_i2r(x));
-      } else if numBits(x) == 32 {
+      } else if numBits(x.type) == 32 {
         extern proc fabsf(x: real(32)): real(32);
         return fabsf(_i2r(x));
       } else {
-        compilerError("abs() -- Invalid imaginary argument width ", numBits(x));
+        compilerError("abs() -- Invalid imaginary argument width ", numBits(x.type));
       }
     } else if isIntegral(x) {
-      if (isSigned(x)) then
-        return if i < 0 then -i else i;
+      if (isInt(x)) then
+        return if x < 0 then -x else x;
       else
-        return if x == 0 then 0 else i;
+        return if x == 0 then 0 else x;
     } else{
       compilerError("abs() -- Invalid argument type: ", typeToString(x.type));
     }
@@ -237,7 +237,7 @@ module Math {
       extern proc asinh(x: real(64)): real(64);
       return asinh(x);
     } else if w == 32 {
-      extern proc asinyf(x: real(32)): real(32);
+      extern proc asinhf(x: real(32)): real(32);
       return asinhf(x);
     } else {
       compilerError("asinh() -- Invalid argument width ", w);
@@ -510,11 +510,11 @@ module Math {
   /* Returns `true` if the argument `x` is a representation of a finite value;
      `false` otherwise.
   */
-  inline proc isfinite(x: real(?w)) : real(w) {
+  inline proc isfinite(x: real(?w)) : bool {
     if w == 64 {
-      return chpl_macro_double_isfinite(x);
+      return chpl_macro_double_isfinite(x) : bool;
     } else if w == 32 {
-      return chpl_macro_float_isfinite(x);
+      return chpl_macro_float_isfinite(x) : bool;
     } else {
       compilerError("isfinite() -- Invalid argument width ", w);
     }
@@ -523,11 +523,11 @@ module Math {
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
-  inline proc isinf(x: real(?w)) : real(w) {
+  inline proc isinf(x: real(?w)) : bool {
     if w == 64 {
-      return chpl_macro_double_isinf(x);
+      return chpl_macro_double_isinf(x) : bool;
     } else if w == 32 {
-      return chpl_macro_float_isinf(x);
+      return chpl_macro_float_isinf(x) : bool;
     } else {
       compilerError("isinf() -- Invalid argument width ", w);
     }
@@ -536,11 +536,11 @@ module Math {
 
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
-  inline proc isnan(x: real(?w)) : real(w) {
+  inline proc isnan(x: real(?w)) : bool {
     if w == 64 {
-      return chpl_macro_double_isnan(x);
+      return chpl_macro_double_isnan(x) : bool;
     } else if w == 32 {
-      return chpl_macro_float_isnan(x);
+      return chpl_macro_float_isnan(x) : bool;
     } else {
       compilerError("isnan() -- Invalid argument width ", w);
     }
@@ -620,17 +620,17 @@ module Math {
   */
   inline proc log2(x) : x.type where isNumeric(x) {
     if isReal(x) {
-      if w == 64 {
+      if numBits(x.type) == 64 {
         extern proc log2(x: real(64)): real(64);
         return log2(x);
-      } else if w == 32 {
+      } else if numBits(x.type) == 32 {
         extern proc log2f(x: real(32)): real(32);
         return log2f(x);
       } else {
-        compilerError("log2() -- Invalid real argument width ", w);
+        compilerError("log2() -- Invalid real argument width ", numBits(x.type));
       }
     } else if isIntegral(x) {
-      return logBasePow2(val, 1);
+      return logBasePow2(x, 1) : x.type;
     } else {
       compilerError("log2() -- Invalid numeric argument type: ",
                     typeToString(x.type));

@@ -1,0 +1,8 @@
+re32a = -0.653339 trunc(re32a) = -0.0
+re32b = -0.0 trunc(re32b) = -0.0
+re32c = 0.0 trunc(re32c) = 0.0
+re32d = 0.814421 trunc(re32d) = 0.0
+re64a = -0.988837 trunc(re64a) = -0.0
+re64b = -0.0 trunc(re64b) = -0.0
+re64c = 0.0 trunc(re64c) = 0.0
+re64d = 0.153876 trunc(re64d) = 0.0

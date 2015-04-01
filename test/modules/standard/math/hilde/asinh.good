@@ -1,0 +1,8 @@
+re32a = -0.653339 asinh(re32a) = -0.614021
+re32b = -0.0 asinh(re32b) = -0.0
+re32c = 0.0 asinh(re32c) = 0.0
+re32d = 0.814421 asinh(re32d) = 0.743889
+re64a = -0.988837 asinh(re64a) = -0.873458
+re64b = -0.0 asinh(re64b) = -0.0
+re64c = 0.0 asinh(re64c) = 0.0
+re64d = 0.153876 asinh(re64d) = 0.153275
