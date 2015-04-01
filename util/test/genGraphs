@@ -934,10 +934,6 @@ def main():
     else:
         multiConf = []
 
-    util_test_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-    repo_root = os.path.abspath(os.path.join(this_dir, '../..'))
-    chpl_home = os.environ.get('CHPL_HOME', repo_root)
-
     if annotate:
         if options.annotation_file != None:
             annotation_file = options.annotation_file
@@ -1023,8 +1019,8 @@ def main():
 
 
     # Copy the index.html and support css and js files
-    auxdir = util_test_dir + '/perf'
-
+    auxdir = os.path.dirname(os.path.realpath(__file__))+'/perf'
+    chpl_home = os.environ.get('CHPL_HOME', '')
     copiedAllFiles = True
     try:
         shutil.copy(auxdir+'/index.html', outdir)
