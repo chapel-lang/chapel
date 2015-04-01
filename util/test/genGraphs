@@ -1020,7 +1020,6 @@ def main():
 
     # Copy the index.html and support css and js files
     auxdir = os.path.dirname(os.path.realpath(__file__))+'/perf'
-    chpl_home = os.environ.get('CHPL_HOME', '')
     copiedAllFiles = True
     try:
         shutil.copy(auxdir+'/index.html', outdir)
@@ -1036,13 +1035,6 @@ def main():
         shutil.copy(auxdir+'/perfgraph.js', outdir)
     except IOError:
         sys.stderr.write('WARNING: Could not copy perfgraph.js\n')
-        copiedAllFiles = False
-
-    dygraphDir = os.path.join(chpl_home, 'third-party', 'dygraphs')
-    try:
-        shutil.copy(os.path.join(dygraphDir, 'dygraph-combined.js'), outdir)
-    except IOError:
-        sys.stderr.write('WARNING: Could not copy dygraph-combined.js\n')
         copiedAllFiles = False
 
     graphInfo.finish()
