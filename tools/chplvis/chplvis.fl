@@ -1,0 +1,60 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0303 
+header_name {.h} 
+code_name {.cxx}
+decl {\#include <FL/Fl_File_Chooser.H>} {private local
+} 
+
+decl {\#include "ViewField.h"} {public global
+} 
+
+decl {\#include "DataModel.h"} {public global
+} 
+
+decl {DataModel VisData;} {public local
+} 
+
+Function {} {open
+} {
+  Fl_Window MainWindow {
+    label CommViewer open
+    xywh {1115 231 500 520} type Double resizable size_range {200 220 0 0} visible
+  } {
+    Fl_Menu_Bar {} {open
+      xywh {0 0 510 20} color 55
+    } {
+      Submenu {} {
+        label File open
+        xywh {0 0 70 21}
+      } {
+        MenuItem {} {
+          label Open
+          callback {char *selfile = fl_file_chooser("Open File", "*-0", "", 0);
+
+if (selfile) {
+   // User didn't cancel
+   VisData.LoadData(selfile);
+   MainWindow->redraw();
+}} selected
+          xywh {0 0 34 21}
+        }
+        MenuItem {} {
+          label Quit
+          callback {exit(0);}
+          xywh {0 0 34 21}
+        }
+      }
+    }
+    Fl_Box DbgView {
+      xywh {0 20 500 500} box FLAT_BOX color 55 selection_color 48 resizable
+      class ViewField
+    }
+  }
+  code {printf("CommViewer\\n");
+if (argc > 1 && argv[1][1] != '-') {
+    if (!VisData.LoadData(argv[1]))
+       exit(1);
+    argc--;
+    argv++;
+}} {}
+} 
