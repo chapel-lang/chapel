@@ -19,7 +19,8 @@
 
 // VisualDebug.chpl
 //
-pragma "no use ChapelStandard"
+// pragma "no use ChapelStandard"
+
 module VisualDebug
 {
 
