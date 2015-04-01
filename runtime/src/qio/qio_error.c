@@ -25,7 +25,7 @@
 
 #include "qio_error.h"
 
-struct qio_err_s* qio_error_get_base(void)
+const struct qio_err_s* qio_error_get_base(void)
 {
   static struct qio_err_s qio_error_base_global;
   return &qio_error_base_global;
@@ -38,7 +38,7 @@ const struct qio_err_s* qio_err_local_ptr(qioerr a)
   return (qioerr) (num + base);
 }
 
-const qioerr qio_err_local_ptr_to_err(const struct qio_err_s* a)
+qioerr qio_err_local_ptr_to_err(const struct qio_err_s* a)
 {
   intptr_t num = (intptr_t) a;
   intptr_t base = (intptr_t) qio_error_get_base();

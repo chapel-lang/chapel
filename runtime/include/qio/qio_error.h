@@ -63,11 +63,11 @@ typedef const struct qio_err_s* qioerr;
  */
 
 // Get the address of a particular constant global data
-struct qio_err_s* qio_error_get_base(void);
+const struct qio_err_s* qio_error_get_base(void);
 // Translate a difference back into a local pointer
 const struct qio_err_s* qio_err_local_ptr(qioerr a);
 // Translate a local pointer into an offset from qio_error_get_base
-const qioerr qio_err_local_ptr_to_err(const struct qio_err_s* a);
+qioerr qio_err_local_ptr_to_err(const struct qio_err_s* a);
 
 
 // on linux, normal error codes are < 255
