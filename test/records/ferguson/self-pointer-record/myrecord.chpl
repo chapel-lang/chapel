@@ -1,5 +1,7 @@
 use SysBasic;
 
+config const debug = false;
+
 record R {
   var x: int = 0;
   var ptr_to_x: c_ptr(int) = nil;
@@ -39,4 +41,42 @@ proc ref R.verify() {
   }
 }
 
+// We'd like this to be by ref, but doing so leads to an internal
+// compiler error.  See
+// $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
+pragma "donor fn"
+pragma "auto copy fn"
+proc chpl__autoCopy(arg: R) {
+  extern proc printf(fmt:c_string, arg:c_ptr(int));
+  extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
+  if debug then
+    printf("in auto copy from %p\n", arg.ptr_to_x);
 
+  // TODO - is no auto destroy necessary here?
+  pragma "no auto destroy"
+  var ret: R;
+
+  ret.init(x = arg.x);
+
+  if debug then
+    printf("in leaving auto copy from %p to %p\n", arg.ptr_to_x, ret.ptr_to_x);
+
+  return ret;
+}
+
+pragma "init copy fn"
+proc chpl__initCopy(ref arg: R) {
+  extern proc printf(fmt:c_string, arg:c_ptr(int));
+  extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
+  if debug then
+    printf("in init copy from %p\n", arg.ptr_to_x);
+
+  var ret: R;
+
+  ret.init(x = arg.x);
+
+  if debug then
+    printf("in leaving auto copy from %p to %p\n", arg.ptr_to_x, ret.ptr_to_x);
+
+  return ret;
+}
