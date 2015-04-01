@@ -934,15 +934,14 @@ def main():
     else:
         multiConf = []
 
+    annotation_file = None
     if annotate:
-        if options.annotation_file != None:
+        if options.annotation_file is not None:
             annotation_file = options.annotation_file
-        elif 'CHPL_HOME' in os.environ:
-            annotation_file = os.environ['CHPL_HOME'] + '/test/ANNOTATIONS.yaml'
         else:
-            annotation_file = 'ANNOTATIONS.yaml'
-    else:
-        annotation_file = None
+            af = os.path.join(options.testdir, 'ANNOTATIONS.yaml')
+            if os.path.exists(af):
+                annotation_file = af
 
     # This allows the graph webpage to have an alternate title. The default is
     # Chapel Performance Graphs, which is not always appropriate 
@@ -1020,7 +1019,6 @@ def main():
 
     # Copy the index.html and support css and js files
     auxdir = os.path.dirname(os.path.realpath(__file__))+'/perf'
-    chpl_home = os.environ.get('CHPL_HOME', '')
     copiedAllFiles = True
     try:
         shutil.copy(auxdir+'/index.html', outdir)
@@ -1036,13 +1034,6 @@ def main():
         shutil.copy(auxdir+'/perfgraph.js', outdir)
     except IOError:
         sys.stderr.write('WARNING: Could not copy perfgraph.js\n')
-        copiedAllFiles = False
-
-    dygraphDir = os.path.join(chpl_home, 'third-party', 'dygraphs')
-    try:
-        shutil.copy(os.path.join(dygraphDir, 'dygraph-combined.js'), outdir)
-    except IOError:
-        sys.stderr.write('WARNING: Could not copy dygraph-combined.js\n')
         copiedAllFiles = False
 
     graphInfo.finish()

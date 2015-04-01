@@ -241,7 +241,9 @@ void createDocsFileFolders(std::string filename) {
     dirCutoff += total;
     std::string shorter = filename.substr(dirCutoff+1);
     std::string otherHalf = filename.substr(0, dirCutoff);
-    mkdir(otherHalf.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    if (otherHalf.length() > 0) {
+      makeDir(otherHalf.c_str());
+    }
     total = dirCutoff + 1;
     dirCutoff = shorter.find("/");
   }
@@ -253,8 +255,8 @@ void createDocsFileFolders(std::string filename) {
  */
 static void makeDir(const char* dirpath) {
   static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
-  mkdir(dirpath, dirPerms);
-  if (errno != 0 && errno != EEXIST) {
+  int result = mkdir(dirpath, dirPerms);
+  if (result != 0 && errno != 0 && errno != EEXIST) {
     USR_FATAL(astr("Failed to create directory: ", dirpath,
                    " due to: ", strerror(errno)));
   }
