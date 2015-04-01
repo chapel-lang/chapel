@@ -59,13 +59,15 @@ proc chpl__autoCopy(arg: R) {
   ret.init(x = arg.x);
 
   if debug then
-    printf("in leaving auto copy from %p to %p\n", arg.ptr_to_x, ret.ptr_to_x);
+    printf("leaving auto copy from %p to %p\n", arg.ptr_to_x, ret.ptr_to_x);
 
   return ret;
 }
 
+// I'd like this to be ref, but that breaks
+//    var outerX: R; begin { var x = outerX; }
 pragma "init copy fn"
-proc chpl__initCopy(ref arg: R) {
+proc chpl__initCopy(arg: R) {
   extern proc printf(fmt:c_string, arg:c_ptr(int));
   extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
   if debug then
@@ -76,7 +78,20 @@ proc chpl__initCopy(ref arg: R) {
   ret.init(x = arg.x);
 
   if debug then
-    printf("in leaving auto copy from %p to %p\n", arg.ptr_to_x, ret.ptr_to_x);
+    printf("leaving init copy from %p to %p\n", arg.ptr_to_x, ret.ptr_to_x);
 
   return ret;
 }
+
+proc =(ref lhs: R, rhs: R) {
+  extern proc printf(fmt:c_string, arg:c_ptr(int));
+  extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
+  if debug then
+    printf("in assign lhs = %p\n", rhs.ptr_to_x);
+
+  lhs.init(x = rhs.x);
+
+  if debug then
+    printf("leaving assign %p = %p\n", lhs.ptr_to_x, rhs.ptr_to_x);
+}
+

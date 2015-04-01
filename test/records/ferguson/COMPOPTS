@@ -1,1 +1,2 @@
 -M self-pointer-record
+-M self-pointer-record --fast
