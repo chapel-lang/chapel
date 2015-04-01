@@ -1,0 +1,4 @@
+Module: withHyphen.doc
+   proc example()
+      This should end up in my-docs/withHyphen.txt 
+

@@ -100,6 +100,7 @@ third-party-chpldoc-venv: FORCE
 
 chpldoc: compiler third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
+	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
 
 clean-module-docs:
 	cd modules && $(MAKE) clean-documentation

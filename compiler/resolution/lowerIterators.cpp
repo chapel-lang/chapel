@@ -19,6 +19,7 @@
 
 #include "optimizations.h"
 #include "astutil.h"
+#include "oldCollectors.h"
 #include "stlUtil.h"
 #include "CForLoop.h"
 #include "expr.h"
@@ -53,9 +54,9 @@ static void nonLeaderParCheck()
 
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 {
-  Vec<CallExpr*> calls;
+  std::vector<CallExpr*> calls;
   collectCallExprs(fn, calls);
-  forv_Vec(CallExpr, call, calls) {
+  for_vector(CallExpr, call, calls) {
     if ((call->isPrimitive(PRIM_BLOCK_BEGIN)) ||
         (call->isPrimitive(PRIM_BLOCK_COBEGIN)) ||
         (call->isPrimitive(PRIM_BLOCK_COFORALL))) {
@@ -202,10 +203,10 @@ static void computeRecursiveIteratorSet() {
 // A block whose blockInfo is PRIM_BLOCK_UNLOCAL must also be fragmented.
 //
 static bool leaveLocalBlockUnfragmented(BlockStmt* block) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   collect_asts(block, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
 
     // Check if the AST element is a GOTO.
     if (isGotoStmt(ast))
@@ -373,10 +374,10 @@ fragmentLocalBlocks() {
 // Multiple temps may be created for each formal.
 static void
 replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
-                                         Vec<BaseAST*>& asts) {
+                                         std::vector<BaseAST*>& asts) {
   int count = 1;
   for_formals(formal, iterator) {
-    forv_Vec(BaseAST, ast, asts) {
+    for_vector(BaseAST, ast, asts) {
       if (SymExpr* se = toSymExpr(ast)) {
         if (se->var == formal) {
           // count is used to get the nth field out of the iterator class;
@@ -748,14 +749,14 @@ countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
 }
 
 
-static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
+static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> asts)
 {
   //
   // localize return symbols
   //
   Symbol* ret = iteratorFn->getReturnSymbol();
   Map<BlockStmt*,Symbol*> retReplacementMap;
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (SymExpr* se = toSymExpr(ast)) {
       if (se->var == ret) {
         BlockStmt* block = NULL;
@@ -795,7 +796,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, Vec<BaseAST*> asts)
 static void localizeIteratorReturnSymbols() {
   forv_Vec(FnSymbol, iterFn, gFnSymbols) {
     if (iterFn->inTree() && iterFn->isIterator()) {
-      Vec<BaseAST*> asts;
+      std::vector<BaseAST*> asts;
       collect_asts(iterFn, asts);
       localizeReturnSymbols(iterFn, asts);
     }
@@ -931,10 +932,10 @@ static void threadLoopBodyFnArgs(CallExpr* call,
 // and remove return statements.
 // If 'asts' are the body of a task function, the return statement
 // must stay because it is a required part of a function.
-static void convertYieldsAndReturns(Vec<BaseAST*>& asts, Symbol* index,
+static void convertYieldsAndReturns(std::vector<BaseAST*>& asts, Symbol* index,
                                     ArgSymbol* loopBodyFnIDArg, ArgSymbol* loopBodyFnArgArgs)
 {
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
         SET_LINENO(call);
@@ -965,7 +966,7 @@ static void convertYieldsAndReturns(Vec<BaseAST*>& asts, Symbol* index,
                              &taskFn, &tIDArg, &tArgArgs);
         // both 'taskFn' and 'call' are updated by threadLoopBodyFnArgs()
         INT_ASSERT(call->isResolved() == taskFn);
-        Vec<BaseAST*> taskAsts;
+        std::vector<BaseAST*> taskAsts;
         collect_asts(taskFn, taskAsts);
         convertYieldsAndReturns(taskAsts, index, tIDArg, tArgArgs);
       }
@@ -978,9 +979,9 @@ static void convertYieldsAndReturns(Vec<BaseAST*>& asts, Symbol* index,
 // "Contains" includes "had a coforall/etc. block, now replaced with a call".
 static bool fnContainsOn(FnSymbol* fn)
 {
-  Vec<CallExpr*> calls;
+  std::vector<CallExpr*> calls;
   collectCallExprs(fn, calls);
-  forv_Vec(CallExpr, call, calls) {
+  for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_BLOCK_ON) ||
         call->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
         call->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||
@@ -1013,7 +1014,7 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
 
   iteratorFn->body = iterator->body->copy();
   iterator->defPoint->insertBefore(new DefExpr(iteratorFn));
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   collect_asts(iteratorFn, asts);
   ArgSymbol* icArg = new ArgSymbol(blankIntentForType(ic->type), "_ic", ic->type);
   iteratorFn->insertFormalAtTail(icArg);
@@ -1177,7 +1178,7 @@ expandIteratorInline(ForLoop* forLoop) {
 
     Symbol*       index = forLoop->indexGet()->var;
     BlockStmt*    ibody = iterator->body->copy();
-    Vec<BaseAST*> asts;
+    std::vector<BaseAST*> asts;
 
     bool isOrderIndependent = forLoop->isOrderIndependent();
     if (preserveInlinedLineNumbers == false) {
@@ -1194,7 +1195,7 @@ expandIteratorInline(ForLoop* forLoop) {
     // replaced in the functions below though.
     if (isOrderIndependent) {
       std::vector<CallExpr*> callExprs;
-      collectCallExprsSTL(ibody, callExprs);
+      collectCallExprs(ibody, callExprs);
 
       for_vector(CallExpr, call, callExprs) {
         if (call->isPrimitive(PRIM_YIELD)) {
@@ -1233,11 +1234,11 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             Symbol*        index,
                             bool           removeReturn,
                             TaskFnCopyMap& taskFnCopies) {
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
 
   collect_asts(ibody, asts);
 
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (call->isPrimitive(PRIM_YIELD)) {
         Symbol*    yieldedIndex  = newTemp("_yieldedIndex", index->type);
@@ -1341,24 +1342,38 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
   }
 }
 
+
+// Returns the number of yields in the given function.
+//
+// If any call expressions call a task function, this functions is called
+// recursively on those task functions.  Task functions are out-lined in
+// createTaskFunctions, but contain statements -- including yields -- that
+// actually "belong" to the calling function.  Recursive calls of this function
+// effectively inline those out-lined functions so we get an accurate count.
+static unsigned
+countYieldsInFn(FnSymbol* fn)
+
+{
+  unsigned count = 0;
+  std::vector<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  for_vector(CallExpr, call, calls)
+  {
+    if (call->isPrimitive(PRIM_YIELD))
+      count++;
+
+    if (FnSymbol* taskFn = resolvedToTaskFun(call))
+      count += countYieldsInFn(taskFn);
+  }
+  return count;
+}
+
 // Returns true if the iterator can be inlined; false otherwise.
 //
 // It can be inlined if it contains exactly one yield statement.
 static bool
 canInlineIterator(FnSymbol* iterator) {
-  Vec<CallExpr*> calls;
-  int            count = 0;
-
-  collectCallExprs(iterator, calls);
-
-  forv_Vec(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_YIELD))
-      count++;
-
-    else if (FnSymbol* taskFn = resolvedToTaskFun(call))
-      // Need to descend into 'taskFn' - append to 'calls'.
-      collectCallExprs(taskFn->body, calls);
-  }
+  unsigned count = countYieldsInFn(iterator);
 
   // count==0 e.g. in users/biesack/test_recursive_iterator.chpl
   return (count == 1) ? true : false;
@@ -1397,8 +1412,11 @@ canInlineSingleYieldIterator(Symbol* gIterator) {
 
     INT_ASSERT(block);
 
+    // TODO: std::vector::iterator does not guarantee correct iteration if the
+    // capacity of the vector it refers to increases during iteration.
+    // Replace this loop with an equivalent predicate that uses std::vector in
+    // a valid fashion.
     collectCallExprs(block, calls);
-
     forv_Vec(CallExpr, call, calls) {
       if (call && call->isPrimitive(PRIM_YIELD)) {
         numYields++;
@@ -1574,7 +1592,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
     BlockStmt*    ibody      = iterator->body->copy();
     bool          afterYield = false;
     int           count      = 1;
-    Vec<BaseAST*> asts;
+    std::vector<BaseAST*> asts;
 
     collect_asts(ibody, asts);
 
@@ -1603,7 +1621,7 @@ inlineSingleYieldIterator(ForLoop* forLoop) {
     }
 
     for_formals(formal, iterator) {
-      forv_Vec(BaseAST, ast, asts) {
+      for_vector(BaseAST, ast, asts) {
         if (SymExpr* se = toSymExpr(ast)) {
           if (se->var == formal) {
             //if ((se->var->type == formal->type) && (!strcmp(se->var->name, formal->name))) {
@@ -1646,7 +1664,10 @@ expandForLoop(ForLoop* forLoop) {
         iterator->type->dispatchChildren.v[0] == dtObject))) {
     expandIteratorInline(forLoop);
 
-  } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator)) {
+  } else if (!fNoInlineIterators && canInlineSingleYieldIterator(iterator) &&
+            (iterator->type->dispatchChildren.n == 0 ||
+             (iterator->type->dispatchChildren.n == 1 &&
+              iterator->type->dispatchChildren.v[0] == dtObject))) {
     inlineSingleYieldIterator(forLoop);
 
   } else {

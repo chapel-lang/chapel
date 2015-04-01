@@ -104,7 +104,9 @@ module ChapelTuple {
   
   //
   // homogeneous tuple accessor
+  // the result is const when the tuple is
   //
+  pragma "reference to const when const this"
   proc _tuple.this(i : integral) ref {
     if !isHomogeneousTuple(this) then
       compilerError("invalid access of non-homogeneous tuple by runtime value");

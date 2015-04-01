@@ -5,21 +5,21 @@ CHPL = chpl
 
 TARGETS = \
 	arrays \
-        arrayVectorOps \
+	arrayVectorOps \
 	associative \
 	atomics \
-	chpldoc \
+	chpldoc.doc \
 	classes \
 	distributions \
 	domains \
 	fileIO \
 	genericClasses \
 	iterators \
-	leaderfollower \
 	locales \
 	opaque \
+	parIters \
 	procedures \
-        randomNumbers \
+	randomNumbers \
 	ranges \
 	reductions \
 	slices \
@@ -29,6 +29,18 @@ TARGETS = \
 	timers \
 	varargs \
 	variables \
+
+#
+# Only make FFTW if FFTW_DIR is set or we can find the fftw library
+#
+ifdef FFTW_DIR
+	TARGETS += FFTWlib
+	FFTW_OPTS = -I$(FFTW_DIR)/include -L$(FFTW_DIR)/lib
+else ifeq ($(wildcard /sbin/ldconfig),/sbin/ldconfig)
+ifneq ($(shell /sbin/ldconfig -p | grep -i fftw),)
+	TARGETS += FFTWlib
+endif
+endif
 
 REALS = $(TARGETS:%=%_real)
 
@@ -41,5 +53,8 @@ clean: FORCE
 
 %: %.chpl
 	$(CHPL) -o $@ $<
+
+FFTWlib: FFTWlib.chpl
+	$(CHPL) -o $@ $(FFTW_OPTS) $<
 
 FORCE:

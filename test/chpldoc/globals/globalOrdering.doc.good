@@ -1,0 +1,11 @@
+Module: globalOrdering.doc
+   config var goop: bool
+      hello 
+   param after = 35
+      I'm thirty five. 
+   var fluctuates: int
+      I fluctuate. Guess what I am? 
+   config const resorted = "what's in a name"
+      Who am I? 
+   const running = false
+      Run! 
