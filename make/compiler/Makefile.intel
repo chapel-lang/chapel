@@ -76,8 +76,8 @@ endif
 endif
 
 # Set flag for lax or IEEE floating point
-NO_IEEE_FLOAT_GEN_CFLAGS = -mno-ieee-fp
-IEEE_FLOAT_GEN_CFLAGS = -mieee-fp
+NO_IEEE_FLOAT_GEN_CFLAGS = -fp-model fast=2
+IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 
 #
 # Warnings squashed for flex-/bison-generated code

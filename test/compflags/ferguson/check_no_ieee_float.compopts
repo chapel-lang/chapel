@@ -1,1 +1,2 @@
 --no-ieee-float
+--ieee-float --no-ieee-float
