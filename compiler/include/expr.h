@@ -278,6 +278,35 @@ static inline bool needsCapture(FnSymbol* taskFn) {
 }
 
 
+// Returns true if this statement (expression) causes a change in flow.
+// When inserting cleanup code, it must be placed ahead of such flow
+// statements, or it will be skipped (which means it's in the wrong place).
+// TODO: This predicate could be turned into a method on exprs.
+inline static bool isFlowStmt(Expr* stmt)
+{
+  // A goto is definitely a jump.
+  if (isGotoStmt(stmt))
+    return true;
+
+  // A return primitive works like a jump. (Nothing should appear after it.)
+  if (CallExpr* call = toCallExpr(stmt))
+  {
+    if (call->isPrimitive(PRIM_RETURN))
+      return true;
+
+    // _downEndCount is treated like a flow statement because we do not want to
+    // insert autoDestroys after the task says "I'm done."  This can result in
+    // false-positive memory allocation errors because the waiting (parent
+    // task) can then proceed to test that the subtask has not leaked before
+    // the subtask release locally-(dynamically-)allocated memory.
+    if (FnSymbol* fn = call->isResolved())
+      if (!strcmp(fn->name, "_downEndCount"))
+        return true;
+  }
+  return false;
+}
+
+
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
