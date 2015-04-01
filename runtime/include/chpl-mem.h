@@ -45,7 +45,7 @@ void chpl_mem_exit(void);
 int chpl_mem_inited(void);
 
 
-static ___always_inline
+static inline
 void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, c_string filename) {
@@ -57,13 +57,13 @@ void* chpl_mem_allocMany(size_t number, size_t size,
   return memAlloc;
 }
 
-static ___always_inline
+static inline
 void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description,
                      int32_t lineno, c_string filename) {
   return chpl_mem_allocMany(1, size, description, lineno, filename);
 }
 
-static ___always_inline
+static inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,
                              chpl_mem_descInt_t description,
                              int32_t lineno, c_string filename) {
@@ -75,13 +75,13 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
   return memAlloc;
 }
 
-static ___always_inline
+static inline
 void* chpl_mem_calloc(size_t size, chpl_mem_descInt_t description,
                       int32_t lineno, c_string filename) {
   return chpl_mem_allocManyZero(1, size, description, lineno, filename);
 }
 
-static ___always_inline
+static inline
 void* chpl_mem_realloc(void* memAlloc, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, c_string filename) {
@@ -100,14 +100,14 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
   return moreMemAlloc;
 }
 
-static ___always_inline
+static inline
 void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
   chpl_memhook_free_pre(memAlloc, lineno, filename);
   chpl_free(memAlloc);
 }
 
 // Provide a handle to instrument Chapel calls to memcpy.
-static ___always_inline
+static inline
 void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
   assert(dest != src);
@@ -117,7 +117,7 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 // free a c_string_copy, no error checking.
 // The argument type is explicitly c_string_copy, since only an "owned" string
 // should be freed.
-static ___always_inline
+static inline
 void chpl_rt_free_c_string_copy(c_string_copy *s, int32_t lineno, c_string filename)  {
   assert(*s!=NULL);
   chpl_mem_free((void *) *s, lineno, filename);
@@ -128,7 +128,7 @@ void chpl_rt_free_c_string_copy(c_string_copy *s, int32_t lineno, c_string filen
 // This function is needed only because NewString.chpl uses the c_string type.
 // c_strings are "unowned" so should not be freed, but NewString.chpl was written
 // before this distinction was made.
-static ___always_inline
+static inline
 void chpl_rt_free_c_string(c_string* s, int32_t lineno, c_string filename)
 {
   // As far as the C compiler is concerned c_string and c_string_copy are the
