@@ -240,7 +240,7 @@ void createDocsFileFolders(std::string filename) {
     dirCutoff += total;
     std::string shorter = filename.substr(dirCutoff+1);
     std::string otherHalf = filename.substr(0, dirCutoff);
-    mkdir(otherHalf.c_str(), S_IWUSR|S_IRUSR|S_IXUSR);
+    makeDir(otherHalf.c_str());
     total = dirCutoff + 1;
     dirCutoff = shorter.find("/");
   }
