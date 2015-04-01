@@ -2629,7 +2629,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
   int got;
   int base;
   qioerr err;
-  double num;
+  double num = 0;
   qio_style_t* style;
   bool needs_i;
 
