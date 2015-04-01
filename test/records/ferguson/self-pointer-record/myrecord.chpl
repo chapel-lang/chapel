@@ -10,7 +10,16 @@ proc ref R.set_self_ptr() {
 }
 
 // custom constructor setting self-pointer
+// This won't work as long as constructors
+// return the record (vs being methods on the record).
+/*
 proc R.R(x:int) {
+  this.x = x;
+  set_self_ptr();
+}
+*/
+
+proc ref R.init(x = 0) {
   this.x = x;
   set_self_ptr();
 }
