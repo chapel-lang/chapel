@@ -15,10 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO: include Makefile.pgi
+
 # put Cray PE cross-compilation pgi-specific settings here
 
 CRAYPE_GEN_CFLAGS = 
 CRAYPE_COMP_CFLAGS = --diag_suppress550
+
+# Set flag for lax or IEEE floating point
+NO_IEEE_FLOAT_GEN_CFLAGS = -Knoieee
 IEEE_FLOAT_GEN_CFLAGS = -Kieee
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.$(CHPL_MAKE_TARGET_PLATFORM)

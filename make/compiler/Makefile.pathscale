@@ -16,7 +16,7 @@
 # limitations under the License.
 
 #
-# settings for gnu-compatible platforms
+# settings for pathscale compiler
 #
 
 #
@@ -36,7 +36,6 @@ DEBUG_CFLAGS = -g
 OPT_CFLAGS = -O3
 
 
-#
 # Flags for compiler, runtime, and generated code
 #
 
@@ -47,6 +46,12 @@ RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS = -std=c99
 GEN_STATIC_FLAG = -static-libgcc
 GEN_DYNAMIC_FLAG =
+
+
+# Set flag for lax or IEEE floating point
+NO_IEEE_FLOAT_GEN_CFLAGS = -ffast-math
+IEEE_FLOAT_GEN_CFLAGS = --fno-fast-math
+
 
 #
 # Flags for turning on warnings for C++/C code

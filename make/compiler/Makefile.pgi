@@ -16,7 +16,7 @@
 # limitations under the License.
 
 #
-# settings for gnu-compatible platforms
+# settings for the Portland Group (pgi) compiler
 #
 
 #
@@ -44,8 +44,11 @@ COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL =
 RUNTIME_CFLAGS = $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+
+# Set flag for lax or IEEE floating point
 IEEE_FLOAT_GEN_CFLAGS = -Kieee
 NO_IEEE_FLOAT_GEN_CFLAGS = -Knoieee
+
 # NOTE: These are only support for Linux
 GEN_STATIC_FLAG = -Bstatic
 GEN_DYNAMIC_FLAG = -Bdynamic
