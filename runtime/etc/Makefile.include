@@ -52,11 +52,34 @@ CHPL_RT_INC_DIR = $(RUNTIME_INCLS)
 
 CHPL_RT_LIB_DIR = $(CHPL_MAKE_HOME)/$(LIB_RT_DIR)
 
+# These Make ifdefs are used for printcompileline and printcflags
+# in order to correctly set COMP_GEN_CFLAGS.
+ifeq ($(COMP_GEN_WARN), 1)
+  COMP_GEN_CFLAGS += $(WARN_GEN_CFLAGS)
+endif
+ifeq ($(COMP_GEN_DEBUG), 1)
+  COMP_GEN_CFLAGS += $(DEBUG_CFLAGS)
+endif
+ifeq ($(COMP_GEN_OPT), 1)
+  COMP_GEN_CFLAGS += $(OPT_CFLAGS)
+endif
+ifeq ($(COMP_GEN_SPECIALIZE), 1)
+  COMP_GEN_CFLAGS += $(SPECIALIZE_CFLAGS)
+endif
+ifeq ($(COMP_GEN_IEEE_FLOAT), 1)
+  COMP_GEN_CFLAGS += $(IEEE_FLOAT_GEN_CFLAGS)
+else
+  COMP_GEN_CFLAGS += $(NO_IEEE_FLOAT_GEN_CFLAGS)
+endif
+
 printincludesanddefines:
 	@echo $(RUNTIME_DEFS) $(RUNTIME_INCLS)
 
 printcompileline:
 	@echo $(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)
+
+printcflags:
+	@echo $(GEN_CFLAGS) $(COMP_GEN_CFLAGS)
 
 printlibraries:
 	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
