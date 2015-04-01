@@ -935,12 +935,12 @@ def main():
         multiConf = []
 
     if annotate:
-        if options.annotation_file != None:
+        if options.annotation_file is not None:
             annotation_file = options.annotation_file
-        elif 'CHPL_HOME' in os.environ:
-            annotation_file = os.environ['CHPL_HOME'] + '/test/ANNOTATIONS.yaml'
         else:
-            annotation_file = 'ANNOTATIONS.yaml'
+            af = os.path.join(options.testdir, 'ANNOTATIONS.yaml')
+            if os.path.exists(af):
+                annotation_file = af
     else:
         annotation_file = None
 
