@@ -252,8 +252,8 @@ void createDocsFileFolders(std::string filename) {
  */
 static void makeDir(const char* dirpath) {
   static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
-  mkdir(dirpath, dirPerms);
-  if (errno != 0 && errno != EEXIST) {
+  int result = mkdir(dirpath, dirPerms);
+  if (result != 0 && errno != 0 && errno != EEXIST) {
     USR_FATAL(astr("Failed to create directory: ", dirpath,
                    " due to: ", strerror(errno)));
   }
