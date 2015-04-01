@@ -31,3 +31,41 @@ struct qio_err_s* qio_error_get_base(void)
   return &qio_error_base_global;
 }
 
+const struct qio_err_s* qio_err_local_ptr(qioerr a)
+{
+  intptr_t num = (intptr_t) a;
+  intptr_t base = (intptr_t) qio_error_get_base();
+  return (qioerr) (num + base);
+}
+
+const qioerr qio_err_local_ptr_to_err(const struct qio_err_s* a)
+{
+  intptr_t num = (intptr_t) a;
+  intptr_t base = (intptr_t) qio_error_get_base();
+  return (qioerr) (num - base);
+}
+
+
+const char* qio_err_msg(qioerr a) {
+  intptr_t num = (intptr_t) a;  if( num == 0 ) return 0;
+  if( num & 1 ) {
+    // byte-aligned so can't be an error record.
+    return NULL;
+  }
+  return qio_err_local_ptr(a)->const_msg;
+}
+
+qioerr qio_int_to_err(int32_t a) {
+  intptr_t num = a;
+  if( num != 0 ) {
+    // add a 1 bit on the right to mark it as non-pointer.
+    num <<= 1;
+    num += 1;
+  }
+  return (qioerr) num;
+}
+
+qioerr qio_mkerror_errno(void) {
+  return qio_int_to_err(errno);
+}
+
