@@ -485,7 +485,11 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
 
   // Visual Debug -- should be protected by an #ifdef VISUALDEBUG?
   if (chpl_vdebug) {
-    dprintf (chpl_vdebug_fd, "addToTaskList: %d %d %s %d %s\n",
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "task: %lld.%06d %d %d %s %d %s\n",
+             (long long) tv.tv_sec, tv.tv_usec,
              chpl_nodeID, task_list_locale, (is_begin_stmt ? "begin" : "nb"),
              lineno, filename);
   }
