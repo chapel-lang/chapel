@@ -792,7 +792,12 @@ if (perftest and os.access(PerfDirFile('COMPOPTS'),os.R_OK)): # ./PERFCOMPOPTS
     directoryCompopts = shlex.split(tgco[0])
 elif os.access('./COMPOPTS',os.R_OK):
     tgco=ReadFileWithComments('./COMPOPTS')
-    directoryCompopts = shlex.split(tgco[0])
+    if len(tgco) > 1:
+      directoryMultipleCompopts = tgco
+      directoryCompopts = []
+    else:
+      directoryMultipleCompopts = None
+      directoryCompopts = shlex.split(tgco[0])
 else:
     directoryCompopts = []
 
@@ -1136,7 +1141,12 @@ for testname in testsrc:
             sys.stdout.write('[Warning: ignoring an empty compopts file %s]\n'%(test_filename+compoptssuffix))
             compoptslist = list(' ')
     else:
-        compoptslist = list(' ')
+        # if we have multiple global compopts, use those instead
+        # of a local one.
+        if directoryMultipleCompopts:
+          compoptslist = directoryMultipleCompopts
+        else:
+          compoptslist = list(' ')
 
     # The test environment is that of this process, augmented as specified
     if os.access(test_filename+execenvsuffix, os.R_OK):
