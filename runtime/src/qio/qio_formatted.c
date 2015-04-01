@@ -763,7 +763,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   int64_t lastwspos = 0;
 
   if( skipws && len > 0 ) {
-    int nbytes;
+    int nbytes = 0;
     int32_t wchr;
     size_t min_nonspace = len;
     size_t max_nonspace = 0;
