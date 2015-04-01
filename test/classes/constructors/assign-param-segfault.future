@@ -1,0 +1,6 @@
+bug: assigning param member causes segfault
+
+For some reason, assigning the param 'foo' member in its constructor
+causes a segfault rather than a useful error message.  Strangely,
+looking at the IR, it appears that we're creating a foo[0] expression
+somewhere along the line (indexing into a param enum?!?  Why?)

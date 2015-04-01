@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include <cerrno>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -74,6 +75,10 @@ void docs(void) {
       docsSphinxDir = docsTempDir;
     }
 
+    // Make the intermediate dir and output dir.
+    makeDir(docsSphinxDir.c_str());
+    makeDir(docsOutputDir.c_str());
+
     // The location of intermediate rst files.
     std::string docsRstDir;
     if (fDocsTextOnly) {
@@ -83,12 +88,6 @@ void docs(void) {
       // For rst mode, the working location is somewhere inside the temp dir.
       docsRstDir = generateSphinxProject(docsSphinxDir);
     }
-
-    // TODO: Check for errors here... (thomasvandoren, 2015-02-25)
-    const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
-    mkdir(docsRstDir.c_str(), dirPerms);
-    mkdir(docsOutputDir.c_str(), dirPerms);
-
 
     forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
       // TODO: Add flag to compiler to turn on doc dev only output
@@ -248,6 +247,20 @@ void createDocsFileFolders(std::string filename) {
   }
 }
 
+
+/* Create the directory (non-recursively). If an error occurs, exit and report
+ * error.
+ */
+static void makeDir(const char* dirpath) {
+  static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
+  mkdir(dirpath, dirPerms);
+  if (errno != 0 && errno != EEXIST) {
+    USR_FATAL(astr("Failed to create directory: ", dirpath,
+                   " due to: ", strerror(errno)));
+  }
+}
+
+
 /* 
  * Create new sphinx project at given location and return path where .rst files
  * should be placed.
@@ -255,10 +268,6 @@ void createDocsFileFolders(std::string filename) {
 std::string generateSphinxProject(std::string dirpath) {
   // Create the output dir under the docs output dir.
   const char * sphinxDir = dirpath.c_str();
-
-  // Ensure output directory exists.
-  const char * mkdirCmd = astr("mkdir -p ", sphinxDir);
-  mysystem(mkdirCmd, "creating docs output dir");
 
   // Copy the sphinx template into the output dir.
   const char * sphinxTemplate = astr(CHPL_HOME, "/third-party/chpldoc-venv/chpldoc-sphinx-project/*");
