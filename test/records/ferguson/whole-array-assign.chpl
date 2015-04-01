@@ -10,6 +10,16 @@ proc myfunction() {
     A[i].verify();
     assert(A[i].x == i);
   }
+
+  var B:[1..10] R;
+
+  B = A;
+
+  for i in 1..10 {
+    B[i].verify();
+    assert(B[i].x == i);
+  }
+
 }
 
 myfunction();
