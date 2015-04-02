@@ -104,6 +104,7 @@ void* __wrap_realloc(void* ptr, size_t size)
 
 void __wrap_free(void* ptr)
 {
+  if( ! ptr ) return;
   if( heapInitialized == 0 ) {
     __real_free(ptr);
     return;
@@ -157,6 +158,7 @@ void* chpl_realloc_hook(void* ptr, size_t size, const void* arg)
 
 static
 void chpl_free_hook(void* ptr, const void* arg) {
+  if( ! ptr ) return;
   if( heapInitialized == 0 ) {
     original_free(ptr, arg);
     return;
