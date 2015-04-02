@@ -685,7 +685,7 @@ static void process_arg(const ArgumentState*       state,
             int len = strlen(arg);
             int maxlen = atoi(desc->type + 1);
             if( len > maxlen ) {
-              USR_FATAL("argument for %s is too long", desc->name);
+              USR_FATAL("argument for --%s is too long", desc->name);
             }
             strncpy((char*) desc->location, arg, maxlen);
           }
