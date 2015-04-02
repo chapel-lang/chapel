@@ -76,29 +76,6 @@ static inline void chpl_free(void* ptr);
 // and no additional error checking.
 #include "chpl-mem-impl.h"
 
-// If we use weak symbols/linker scripts, for glibc we would need to define:
-//  malloc, free, cfree, calloc, realloc,
-//  memalign, posix_memalign, aligned_alloc,
-//  malloc_usable_size.
-// we could use ld's --wrap argument to achieve it.
-
-// we always create symbols for calloc/malloc/realloc so that
-// we could use a linker script or malloc hook.
-void* chpl_calloc_sym(size_t n, size_t size)
-    CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-void* chpl_malloc_sym(size_t size)
-  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-void* chpl_memalign_sym(size_t boundary, size_t size)
-  CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-void* chpl_realloc_sym(void* ptr, size_t size)
-  CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-void chpl_free_sym(void* ptr);
-
-
 // This function sets up malloc hooks (if possible or useful)
 void chpl_mem_replace_malloc_if_needed(void);
 

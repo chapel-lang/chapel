@@ -61,34 +61,74 @@ int chpl_mem_inited(void) {
 // declare symbol version of calloc/malloc/realloc in case
 // we want pointers to them or we want to use linker scripts/weak symbols
 
-void* chpl_calloc_sym(size_t n, size_t size)
+// If we use weak symbols/linker scripts, for glibc we would need to define:
+//  malloc, free, cfree, calloc, realloc,
+//  memalign, posix_memalign, aligned_alloc,
+//  malloc_usable_size.
+// we could use ld's --wrap argument to achieve it.
+
+// we always create symbols for calloc/malloc/realloc so that
+// we could use a linker script or malloc hook.
+#ifdef WRAP_MALLOC
+void* __real_calloc(size_t n, size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+void* __wrap_calloc(size_t n, size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+void* __real_malloc(size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+void* __wrap_malloc(size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+void* __real_memalign(size_t boundary, size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+void* __wrap_memalign(size_t boundary, size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+void* __real_realloc(void* ptr, size_t size)
+      CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+void* __wrap_realloc(void* ptr, size_t size)
+      CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+void __real_free(void* ptr);
+void __wrap_free(void* ptr);
+
+
+void* __wrap_calloc(size_t n, size_t size)
 {
-  printf("in chpl_calloc_sym\n");
-  return chpl_calloc(n,size);
+  if( heapInitialized == 0 ) return __real_calloc(n, size);
+  printf("in __wrap_calloc\n");
+  return chpl_calloc(n, size);
 }
 
-void* chpl_malloc_sym(size_t size)
+void* __wrap_malloc(size_t size)
 {
-  printf("in chpl_malloc_sym\n");
+  if( heapInitialized == 0 ) return __real_malloc(size);
+  printf("in __wrap_malloc\n");
   return chpl_malloc(size);
 }
 
-void* chpl_memalign_sym(size_t boundary, size_t size)
+void* __wrap_memalign(size_t boundary, size_t size)
 {
-  printf("in chpl_memalign_sym\n");
+  if( heapInitialized == 0 ) return __real_memalign(boundary, size);
+  printf("in __wrap_memalign\n");
   return chpl_memalign(boundary, size);
 }
 
-void* chpl_realloc_sym(void* ptr, size_t size)
+void* __wrap_realloc(void* ptr, size_t size)
 {
-  printf("in chpl_realloc_sym\n");
-  return chpl_realloc(ptr,size);
+  if( heapInitialized == 0 ) return __real_realloc(ptr, size);
+  printf("in __wrap_realloc\n");
+  return chpl_realloc(ptr, size);
 }
 
-void chpl_free_sym(void* ptr) {
-  printf("in chpl_free_sym\n");
+void __wrap_free(void* ptr);
+  if( heapInitialized == 0 ) return __real_free(ptr);
+  printf("in __wrap_free\n");
   chpl_free(ptr);
 }
+
+#endif
 
 #ifdef USE_GLIBC_MALLOC_HOOKS
 
@@ -102,29 +142,38 @@ void chpl_free_sym(void* ptr) {
 // the old allocator if heapInitialized==0. We'd have to do
 // that if we used symbol remapping too (e.g. with ld --wrap).
 
+static void * (*original_malloc)  (size_t, const void *);
+static void * (*original_memalign)(size_t, size_t, const void *);
+static void * (*original_realloc) (void *, size_t, const void *);
+static void   (*original_free)    (void *, const void *);
+
 static
-void* chpl_malloc_hook(size_t size, const void* unusued)
+void* chpl_malloc_hook(size_t size, const void* arg)
 {
+  if( heapInitialized == 0 ) return original_malloc(size, arg);
   printf("in chpl_malloc_hook\n");
   return chpl_malloc(size);
 }
 
 static
-void* chpl_memalign_hook(size_t boundary, size_t size, const void* unused)
+void* chpl_memalign_hook(size_t boundary, size_t size, const void* arg)
 {
+  if( heapInitialized == 0 ) return original_memalign(boundary, size, arg);
   printf("in chpl_memalign_hook\n");
   return chpl_memalign(boundary, size);
 }
 
 static
-void* chpl_realloc_hook(void* ptr, size_t size, const void* unused)
+void* chpl_realloc_hook(void* ptr, size_t size, const void* arg)
 {
+  if( heapInitialized == 0 ) return original_realloc(ptr, size, arg);
   printf("in chpl_realloc_hook\n");
   return chpl_realloc(ptr,size);
 }
 
 static
-void chpl_free_hook(void* ptr, const void* unused) {
+void chpl_free_hook(void* ptr, const void* arg) {
+  if( heapInitialized == 0 ) return original_free(ptr, arg);
   printf("in chpl_free_hook\n");
   chpl_free(ptr);
 }
@@ -148,10 +197,15 @@ void chpl_mem_replace_malloc_if_needed(void) {
   // glibc: void *memalign(size_t boundary, size_t size);
   // dlmalloc: dlmemalign
   // tcmalloc: tc_memalign
+  original_malloc = __malloc_hook;
+  original_memalign = __memalign_hook;
+  original_realloc = __realloc_hook;
+  original_free = __free_hook;
+
   __malloc_hook = chpl_malloc_hook;
-  __free_hook = chpl_free_hook;
-  __realloc_hook = chpl_realloc_hook;
   __memalign_hook = chpl_memalign_hook;
+  __realloc_hook = chpl_realloc_hook;
+  __free_hook = chpl_free_hook;
 
 #endif
 
