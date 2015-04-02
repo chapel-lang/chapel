@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+echo "[Starting subtest - $(date)]"
 
 # These C tests don't conform to -Wall
 unset CHPL_DEVELOPER
@@ -73,6 +75,8 @@ T2="$CXX $DEPS -g regexp_channel_test.cc -o regexp_channel_test"
 dotest() {
   EXE=$1
   COMPLINE=$2
+  start=$(date '+%s')
+  echo "[test: $DIR/$EXE]"
   echo "[Executing compiler $COMPLINE]"
   $COMPLINE
   RETVAL=$?
@@ -96,9 +100,13 @@ dotest() {
   else
     echo "[Error matching compiler output for $DIR/$EXE]"
   fi
+  end=$(date '+%s')
+  elapsed=$(($end - $start))
+  echo "[Elapsed time to compile and execute all versions of \"$DIR/$EXE\" - ${elapsed}.0 seconds]"
 }
 
 
 dotest regexp_test "$T1"
 dotest regexp_channel_test "$T2"
 
+echo "[Finished subtest \"$DIR\" - $(date)]"
