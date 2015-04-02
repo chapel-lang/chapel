@@ -87,7 +87,7 @@ class OwnershipFlowManager
     FlowSet_EXIT = 1<<4,
     FlowSet_IN = 1<<5,
     FlowSet_OUT = 1<<6,
-    FlowSet_ALL = 0xf
+    FlowSet_ALL = 0xff
   };
 
   // Properties

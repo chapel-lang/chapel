@@ -190,6 +190,10 @@ OwnershipFlowManager::populateStmtAliases(OwnershipFlowManager::SymExprVector& s
 {
   for_vector(SymExpr, se, symExprs)
   {
+    // Ignore SymExprs that are not in the tree.
+    if (se->parentSymbol == NULL)
+      continue;
+
     // We are only interested in local symbols, so if this one does not appear
     // in our map, move on.
     Symbol* sym = se->var;
@@ -386,6 +390,10 @@ OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
 {
   for_vector(SymExpr, se, symExprs)
   {
+    // Ignore SymExprs that are not in the tree.
+    if (se->parentSymbol == NULL)
+      continue;
+
     // We are only interested in local symbols, so if this one does not appear
     // in our map, move on.
     Symbol* sym = se->var;
@@ -516,6 +524,9 @@ OwnershipFlowManager::computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBID
   collectDefExprsSTL(_fn, defExprs);
   for_vector(DefExpr, def, defExprs)
   {
+    if (! def->parentSymbol)
+      continue;
+
     Symbol* sym = def->sym;
     OwnershipFlowManager::SymbolIndexMap::iterator simelt = symbolIndex.find(sym);
 
@@ -654,25 +665,11 @@ OwnershipFlowManager::forwardFlowOwnership()
 
     for (size_t i = 0; i < nbbs; ++i)
     {
-      if ((*basicBlocks)[i]->ins.size() == 0)
-      {
-        // This is an initial block because it has no predecessors.
-        // Its IN set must be empty.
-        IN[i]->clear();
-      }
-      else
-      {
-        // Otherwise, the in set is the intersection of the OUTs of its
-        // predecessors.
-        // We ignore back-edges, so that ownership can flow through loop constructs.
-        BitVec* in = IN[i];
-        in->set();
-        for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
-          // Ignore back-edges.  We assume that the entry point of a loop
-          // always has a lower-numbered ID than the exit.
-          if (pred->id < (int) i)
-            *in &= *OUT[pred->id];
-      }
+      // The in set is the intersection of the OUTs of its predecessors.
+      BitVec* in = IN[i];
+      in->clear();
+      for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
+        *in |= *OUT[pred->id];
 
       // This means: ownership reaches the end of a block if it enters or is
       // produced in the block and it is not consumed within the block.  Also,

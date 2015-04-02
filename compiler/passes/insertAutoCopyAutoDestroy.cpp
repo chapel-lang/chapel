@@ -210,6 +210,7 @@
 #include "symbol.h"
 #include "bitVec.h"
 
+#include "astutil.h"
 
 //########################################################################
 //#
@@ -234,11 +235,91 @@ static bool returnsPreExistingRecord(FnSymbol* fn)
   return true;
 }
 
+
 static void addFlagReturnValueNotOwned()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
     if (returnsPreExistingRecord(fn))
       fn->addFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
+}
+
+
+static DefExpr* findSymbolDef(Symbol* sym, FnSymbol* fn)
+{
+  std::vector<DefExpr*> defExprs;
+  collectDefExprsSTL(fn, defExprs);
+  for_vector(DefExpr, def, defExprs)
+  {
+    // Select only DefExprs referring to the RVV.
+    if (def->sym == sym)
+    {
+      // This is the symbol's declaration.
+      return def;
+    }
+  }
+  return NULL;
+}
+
+
+static void hoistReturnBlock(FnSymbol* fn, BlockStmt* block)
+{
+  std::vector<Expr*> stmts;
+  collect_stmts_STL(fn->body, stmts);
+  size_t nstmts = stmts.size();
+
+  // Hoist the return statement.
+  CallExpr* ret = toCallExpr(stmts[nstmts-1]);
+  INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
+  block->insertAtHead(ret->remove());
+
+  // See if the statement is preceded by a DefExpr containing a label.
+  DefExpr* label = toDefExpr(stmts[nstmts-2]);
+  if (label && isLabelSymbol(label->sym))
+  {
+    // If so, we assume it is the return statement label.
+    // Move that one, too.
+    block->insertAtHead(label->remove());
+  }
+}
+
+
+static void hoistRVVintoItsOwnScope(FnSymbol* fn)
+{
+  SET_LINENO(fn);
+
+  Symbol* rvv = fn->getReturnSymbol();
+  DefExpr* def = findSymbolDef(rvv, fn);
+  if (!def)
+    return;
+  def->remove();
+
+  // Create and populate a new body block from the end forward.
+  BlockStmt* block = new BlockStmt();
+  BlockStmt* body = fn->body;
+  hoistReturnBlock(fn, block);
+  fn->body->replace(block);
+  block->insertAtHead(body);
+  block->insertAtHead(def);
+}
+
+
+static void hoistRVVintoItsOwnScope()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    // Skip functions that return void
+    Symbol* retSym = fn->getReturnSymbol();
+    Type* retType = retSym->type;
+    if (retType == dtVoid)
+      continue;
+
+    // Don't bother if the return value is an immediate.
+    if (VarSymbol* retVar = toVarSymbol(retSym))
+      if (retVar->immediate)
+        continue;
+
+    hoistRVVintoItsOwnScope(fn);
+  }
 }
 
 
@@ -298,6 +379,8 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
 void insertAutoCopyAutoDestroy()
 {
   addFlagReturnValueNotOwned();
+
+  hoistRVVintoItsOwnScope();
 
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
