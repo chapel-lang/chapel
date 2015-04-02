@@ -310,7 +310,7 @@ class GraphStuff:
         except IOError:
             sys.stderr.write('ERROR: Could not open file: %s\n'%(self.gfname))
 
-        if self.annotation_file:
+        if annotate and self.annotation_file:
             try:
                 self.all_annotations = annotate.load(self.annotation_file)
             except IOError:
