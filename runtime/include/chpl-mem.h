@@ -77,7 +77,7 @@ static inline void chpl_free(void* ptr);
 #include "chpl-mem-impl.h"
 
 // This function sets up malloc hooks (if possible or useful)
-void chpl_mem_replace_malloc_if_needed(void);
+void chpl_mem_replace_malloc_if_needed_heap_inited(void);
 
 
 void chpl_mem_init(void);

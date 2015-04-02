@@ -36,6 +36,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-mem.c \
 	chpl-mem-desc.c \
 	chpl-mem-hook.c \
+        chpl-mem-replace-malloc.c \
 	chplmemtrack.c \
 	chpl-privatization.c \
         chpl-string.c \

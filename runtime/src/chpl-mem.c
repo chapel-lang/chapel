@@ -26,16 +26,6 @@
 #include "chpltypes.h"
 #include "error.h"
 
-#ifndef CHPL_USING_CSTDLIB_MALLOC
-#ifdef __GLIBC__
-#define USE_GLIBC_MALLOC_HOOKS
-#endif
-#endif
-
-#ifdef __GLIBC__
-#include <malloc.h> // for memalign
-#endif
-
 static int heapInitialized = 0;
 
 void chpl_mem_init(void) {
@@ -45,7 +35,7 @@ void chpl_mem_init(void) {
   // replace malloc calls with hooks
   // we have to do that AFTER the mem layer heap
   // is initialized.
-  chpl_mem_replace_malloc_if_needed();
+  chpl_mem_replace_malloc_if_needed_heap_inited();
 }
 
 
@@ -56,167 +46,5 @@ void chpl_mem_exit(void) {
 
 int chpl_mem_inited(void) {
   return heapInitialized;
-}
-
-// declare symbol version of calloc/malloc/realloc in case
-// we want pointers to them or we want to use linker scripts/weak symbols
-
-// If we use weak symbols/linker scripts, for glibc we would need to define:
-//  malloc, free, cfree, calloc, realloc,
-//  memalign, posix_memalign, aligned_alloc,
-//  malloc_usable_size.
-// we could use ld's --wrap argument to achieve it.
-
-// we always create symbols for calloc/malloc/realloc so that
-// we could use a linker script or malloc hook.
-#ifdef WRAP_MALLOC
-void* __real_calloc(size_t n, size_t size)
-      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-void* __wrap_calloc(size_t n, size_t size)
-      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-void* __real_malloc(size_t size)
-      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-void* __wrap_malloc(size_t size)
-      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-void* __real_memalign(size_t boundary, size_t size)
-      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-void* __wrap_memalign(size_t boundary, size_t size)
-      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-void* __real_realloc(void* ptr, size_t size)
-      CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-void* __wrap_realloc(void* ptr, size_t size)
-      CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-
-void __real_free(void* ptr);
-void __wrap_free(void* ptr);
-
-
-void* __wrap_calloc(size_t n, size_t size)
-{
-  if( heapInitialized == 0 ) return __real_calloc(n, size);
-  printf("in __wrap_calloc\n");
-  return chpl_calloc(n, size);
-}
-
-void* __wrap_malloc(size_t size)
-{
-  if( heapInitialized == 0 ) return __real_malloc(size);
-  printf("in __wrap_malloc\n");
-  return chpl_malloc(size);
-}
-
-void* __wrap_memalign(size_t boundary, size_t size)
-{
-  if( heapInitialized == 0 ) return __real_memalign(boundary, size);
-  printf("in __wrap_memalign\n");
-  return chpl_memalign(boundary, size);
-}
-
-void* __wrap_realloc(void* ptr, size_t size)
-{
-  if( heapInitialized == 0 ) return __real_realloc(ptr, size);
-  printf("in __wrap_realloc\n");
-  return chpl_realloc(ptr, size);
-}
-
-void __wrap_free(void* ptr);
-  if( heapInitialized == 0 ) return __real_free(ptr);
-  printf("in __wrap_free\n");
-  chpl_free(ptr);
-}
-
-#endif
-
-#ifdef USE_GLIBC_MALLOC_HOOKS
-
-// GLIBC requests that we define __malloc_initialize_hook like this
-//void (* __malloc_initialize_hook) (void) = chpl_mem_replace_malloc_if_needed;
-// but that would result in chpl_mem_replace_malloc being called
-// at program start (more or less) and not after the memory layer
-// is initialized. We want to only use our custom allocator
-// after the comms layer has created the communication-ready
-// heap. An alternative would be to make these routines call
-// the old allocator if heapInitialized==0. We'd have to do
-// that if we used symbol remapping too (e.g. with ld --wrap).
-
-static void * (*original_malloc)  (size_t, const void *);
-static void * (*original_memalign)(size_t, size_t, const void *);
-static void * (*original_realloc) (void *, size_t, const void *);
-static void   (*original_free)    (void *, const void *);
-
-static
-void* chpl_malloc_hook(size_t size, const void* arg)
-{
-  if( heapInitialized == 0 ) return original_malloc(size, arg);
-  printf("in chpl_malloc_hook\n");
-  return chpl_malloc(size);
-}
-
-static
-void* chpl_memalign_hook(size_t boundary, size_t size, const void* arg)
-{
-  if( heapInitialized == 0 ) return original_memalign(boundary, size, arg);
-  printf("in chpl_memalign_hook\n");
-  return chpl_memalign(boundary, size);
-}
-
-static
-void* chpl_realloc_hook(void* ptr, size_t size, const void* arg)
-{
-  if( heapInitialized == 0 ) return original_realloc(ptr, size, arg);
-  printf("in chpl_realloc_hook\n");
-  return chpl_realloc(ptr,size);
-}
-
-static
-void chpl_free_hook(void* ptr, const void* arg) {
-  if( heapInitialized == 0 ) return original_free(ptr, arg);
-  printf("in chpl_free_hook\n");
-  chpl_free(ptr);
-}
-
-#endif
-
-
-void chpl_mem_replace_malloc_if_needed(void) {
-#ifdef CHPL_USING_CSTDLIB_MALLOC
-  // do nothing, we're already using the C stdlib allocator.
-#else
-  // try using malloc hooks for glibc
-  static int hooksInstalled = 0;
-  if( hooksInstalled ) return;
-  hooksInstalled = 1;
-
-  printf("in chpl_mem_replace_malloc_if_needed\n");
-
-#ifdef USE_GLIBC_MALLOC_HOOKS
-  // glibc wants a memalign call
-  // glibc: void *memalign(size_t boundary, size_t size);
-  // dlmalloc: dlmemalign
-  // tcmalloc: tc_memalign
-  original_malloc = __malloc_hook;
-  original_memalign = __memalign_hook;
-  original_realloc = __realloc_hook;
-  original_free = __free_hook;
-
-  __malloc_hook = chpl_malloc_hook;
-  __memalign_hook = chpl_memalign_hook;
-  __realloc_hook = chpl_realloc_hook;
-  __free_hook = chpl_free_hook;
-
-#endif
-
-  // We could do this too for Mac OS X if it mattered.
-  // - include malloc/malloc.h
-  // - replace functions in malloc_default_zone returned malloc_zone_t*
-  // functions needed include a "size" function and a "valloc" function:
-  // BSD: malloc_size
-  // glibc: malloc_usable_size
-  // dlmalloc: dlmalloc_usable_size
-  // tcmalloc: tc_malloc_size
-#endif
 }
 
