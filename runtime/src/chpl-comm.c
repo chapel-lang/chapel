@@ -43,6 +43,10 @@ int chpl_verbose_mem;
 #include <fcntl.h>
 #include <errno.h>
 
+// Shouldn't need this but ...
+#include <stdarg.h>
+int dprintf (int, const char *,...);
+
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
 

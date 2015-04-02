@@ -377,8 +377,8 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "nb_put: %lld.%06d %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
-	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, node, (long) addr,
+    dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
              (long) raddr, elemSize, typeIndex, len, ln, fn);
   }
 
@@ -405,8 +405,8 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "nb_get: %lld.%06d %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
-	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, node, (long) addr,
+    dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
              (long) raddr, elemSize, typeIndex, len, ln, fn);
   }
 
@@ -827,8 +827,8 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "put: %lld.%06d %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
-	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, node, (long) addr,
+    dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
              (long) raddr, elemSize, typeIndex, len, ln, fn);
   }
 
@@ -858,8 +858,8 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "get: %lld.%06d %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
-	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, node, (long) addr,
+    dprintf (chpl_vdebug_fd, "get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
              (long) raddr, elemSize, typeIndex, len, ln, fn);
   }
 
@@ -928,8 +928,8 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "st_get: %lld.%06d %d %d 0x%lx 0x%lx %d %d %d %s\n",
-	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, srcnode, (long) dstaddr,
+    dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %s\n",
+	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, srcnode, (long) dstaddr,
              (long) srcaddr, elemSize, typeIndex, ln, fn);
     // print out the srcstr and dststr?
 	     
@@ -989,8 +989,8 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "st_put: %lld.%06d, %d %d 0x%lx 0x%lx %d %d %d %s\n",
-	     (long long) tv.tv_sec, tv.tv_usec,  chpl_nodeID, dstnode, (long) dstaddr,
+    dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld, %d %d 0x%lx 0x%lx %d %d %d %s\n",
+	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, dstnode, (long) dstaddr,
              (long) srcaddr, elemSize, typeIndex, ln, fn);
     // print out the srcstr and dststr?
 	     
