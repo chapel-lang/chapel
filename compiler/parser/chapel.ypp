@@ -214,6 +214,7 @@
   void yyerror(YYLTYPE*       ignored,
                ParserContext* context,
                const char*    str) {
+    // TODO -- should this begin with error:
     if (!chplParseString) {
       const char* yyText = yyget_text(context->scanner);
 
