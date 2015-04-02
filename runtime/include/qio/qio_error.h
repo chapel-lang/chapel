@@ -20,6 +20,10 @@
 #ifndef _QIO_ERROR_H
 #define _QIO_ERROR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "sys_basic.h"
 #include <assert.h>
 
@@ -165,5 +169,9 @@ typedef qioerr syserr;
 static inline int chpl_macro_int_EEOF(void) { return EEOF; }
 static inline int chpl_macro_int_ESHORT(void) { return ESHORT; }
 static inline int chpl_macro_int_EFORMAT(void) { return EFORMAT; }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

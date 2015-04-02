@@ -66,7 +66,7 @@ else
   OPTS="-static"
 fi
 
-DEPS="$OPTS -Wall -DCHPL_RT_UNIT_TEST $DEFS $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/deque.c $RSRC/regexp/re2/re2-interface.cc $RE2INCLS $RE2LIB -lpthread"
+DEPS="$OPTS -Wall -DCHPL_RT_UNIT_TEST $DEFS $RSRC/qio.c $RSRC/sys.c $RSRC/sys_xsi_strerror_r.c $RSRC/qbuffer.c $RSRC/qio_error.c $RSRC/deque.c $RSRC/regexp/re2/re2-interface.cc $RE2INCLS $RE2LIB -lpthread"
 
 T1="$CXX $DEPS -g regexp_test.cc -o regexp_test"
 T2="$CXX $DEPS -g regexp_channel_test.cc -o regexp_channel_test"
