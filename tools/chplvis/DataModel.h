@@ -3,7 +3,7 @@
 
 class DataModel {
 
-  int LoadFile (const char *filename);
+  int LoadFile (const char *filename, int index, double seq);
 
  public:
 
@@ -24,6 +24,8 @@ class DataModel {
  private:
 
   int numLocales;
+
+  
 
 };
 

@@ -18,7 +18,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label CommViewer open
-    xywh {1115 231 500 520} type Double resizable size_range {200 220 0 0} visible
+    xywh {482 593 500 520} type Double resizable size_range {200 220 0 0} visible
   } {
     Fl_Menu_Bar {} {open
       xywh {0 0 510 20} color 55
@@ -34,6 +34,7 @@ Function {} {open
 if (selfile) {
    // User didn't cancel
    VisData.LoadData(selfile);
+   DbgView->setNumLocales(VisData.NumLocales());
    MainWindow->redraw();
 }} selected
           xywh {0 0 34 21}
@@ -50,11 +51,12 @@ if (selfile) {
       class ViewField
     }
   }
-  code {printf("CommViewer\\n");
-if (argc > 1 && argv[1][1] != '-') {
+  code {if (argc > 1 && argv[1][1] != '-') {
     if (!VisData.LoadData(argv[1]))
        exit(1);
     argc--;
     argv++;
+    if (DbgView)
+      DbgView->setNumLocales(VisData.NumLocales());
 }} {}
 } 

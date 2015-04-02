@@ -26,16 +26,20 @@ module VisualDebug
 
   use String;
 
+  // get access to this quickly?
+  extern proc chpl_now_time():real;
+
   //
   // Data Generation for the Visual Debug tool  (offline)
   //
 
-  extern proc chpl_vdebug_start ( rootname: c_string);
+  extern proc chpl_vdebug_start ( rootname: c_string, time:real);
   extern proc chpl_vdebug_stop ();
 
   proc startVdebug ( rootname : string ) {
+    var now = chpl_now_time();
     forall l in Locales do
-      on l do chpl_vdebug_start (rootname.c_str());
+      on l do chpl_vdebug_start (rootname.c_str(), now);
   }
 
   proc stopVdebug () {

@@ -142,7 +142,7 @@ static int chpl_make_vdebug_file (const char *rootname, int namelen) {
     return 0;
 }
 
-void chpl_vdebug_start(const char *fileroot) {
+void chpl_vdebug_start(const char *fileroot, double now) {
   if (chpl_vdebug_fd == -1) {
 
     // Initial call, open file and write initialization information
@@ -164,8 +164,8 @@ void chpl_vdebug_start(const char *fileroot) {
       return;
 
     // Write initial information to the file
-    dprintf (chpl_vdebug_fd, "ChplVdebug: nodes %d, id %d\n",
-             chpl_numNodes, chpl_nodeID);
+    dprintf (chpl_vdebug_fd, "ChplVdebug: nodes %d, id %d, seq %.3lf\n",
+             chpl_numNodes, chpl_nodeID, now);
   }
 
   chpl_vdebug = 1;
