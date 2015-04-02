@@ -55,19 +55,19 @@
 #endif
 
 
-static ___always_inline void* chpl_calloc(size_t n, size_t size)
+static inline void* chpl_calloc(size_t n, size_t size)
   CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
 
-static ___always_inline void* chpl_malloc(size_t size)
+static inline void* chpl_malloc(size_t size)
   CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
 
-static ___always_inline void* chpl_memalign(size_t boundary, size_t size)
+static inline void* chpl_memalign(size_t boundary, size_t size)
   CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
 
-static ___always_inline void* chpl_realloc(void* ptr, size_t size)
+static inline void* chpl_realloc(void* ptr, size_t size)
   CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
 
-static ___always_inline void chpl_free(void* ptr);
+static inline void chpl_free(void* ptr);
 
 
 // runtime/include/mem/*/chpl-mem-impl.h defines
