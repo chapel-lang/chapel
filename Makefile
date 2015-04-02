@@ -115,6 +115,10 @@ module-docs: chpldoc
 
 docs: module-docs
 
+chplvis: FORCE
+	cd tools/chplvis && $(MAKE)
+	cd tools/chplvis && $(MAKE) install
+
 clean: FORCE
 	cd compiler && $(MAKE) clean
 	cd modules && $(MAKE) clean

@@ -8,6 +8,9 @@ CXXFLAGS= $(shell fltk-config --cxxflags) -Wall -I.
 LDFLAGS= $(shell fltk-config --ldflags)
 LIBS= $(shell fltk-config --libs)
 
+CHPL_HOME= $(shell printenv CHPL_HOME)
+CHPL_HOST_PLATFORM= $(shell printenv CHPL_HOST_PLATFORM)
+
 # Suffix rule for compiling .cxx files
 .SUFFIXES: .o .h .cxx
 .cxx.o:
@@ -32,6 +35,9 @@ clean:
 
 clobber: clean
 	rm -f chplvis
+
+install: chplvis
+	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
 chplvis.o: chplvis.h ViewField.h DataModel.h
