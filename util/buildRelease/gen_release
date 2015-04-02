@@ -112,6 +112,7 @@ if ($no_clone == 0) {
        "compiler/passes/reservedSymbolNames",
        "etc/README",
        "man/man1/chpl.1",
+       "man/man1/chpldoc.1",
        "util/README",
        "util/build_configs.py",
        "util/printchplenv",
@@ -156,8 +157,9 @@ system("cp -r test/release/examples .");
 system("cd util && cp start_test ../examples/");
 system("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
 
-print "Building the man page...\n";
+print "Building the man pages...\n";
 system("make man");
+system("make man-chpldoc");
 
 print "Building the STATUS file...\n";
 system("make STATUS");
