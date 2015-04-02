@@ -310,12 +310,14 @@ class GraphStuff:
         except IOError:
             sys.stderr.write('ERROR: Could not open file: %s\n'%(self.gfname))
 
-        if annotate:
+        if self.annotation_file:
             try:
                 self.all_annotations = annotate.load(self.annotation_file)
             except IOError:
                 sys.stderr.write('ERROR: Could not open file: %s\n'%(self.annotation_file))
                 raise
+        else:
+            self.all_annotations = None
 
         self.gfile.write('// AUTOMATICALLY GENERATED GRAPH DESCRIPTION\n')
         self.gfile.write('document.title = "%s";\n'%(self.title))
@@ -372,7 +374,7 @@ class GraphStuff:
             series = ginfo.graphkeys[0]
 
         # generate the annotations for this graph
-        if series and annotate and not numericX:
+        if series and annotate and self.all_annotations and not numericX:
             ginfo.annotations = annotate.get(
                 self.all_annotations, ginfo.name, series,
                 parse_date(ginfo.startdate, '%Y-%m-%d'),
