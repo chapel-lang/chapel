@@ -406,11 +406,17 @@ inline static bool isConsumed(SymExpr* se)
                 isModuleSymbol(lhse->var->defPoint->parentSymbol))
                 return true;
 
-              // Assignment to the return-value variable is treated as a consumption
+              // Assignment to the return-value variable is treated as a
+              // consumption, unless the function doest no return an owned value.
               // (see Note #2).
-              if( FnSymbol* fn = toFnSymbol(call->parentSymbol))
+              if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
                 if (lhse->var == fn->getReturnSymbol())
-                  return true;
+                {
+                  if (fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+                    return false;
+                  else
+                    return true;
+                }
             }
         }
         break;

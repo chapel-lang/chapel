@@ -701,6 +701,7 @@ module ChapelBase {
       __primitive("array_alloc", this, eltType, size);
       init_elts(this, size, eltType);
     }*/
+    pragma "return value is not owned"
     inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }

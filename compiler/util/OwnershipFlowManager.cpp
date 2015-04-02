@@ -407,15 +407,16 @@ OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
     {
       processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
 
-      // When the RVV is on the LHS of an assignment, it is always considered
-      // to be owned.
+      // When the RVV is on the LHS of an assignment, it is considered
+      // to be owned unless the function says no.
       FnSymbol* fn = toFnSymbol(se->parentSymbol);
       if (sym == fn->getReturnSymbol())
-      {
-        SymbolVector* laliasList = aliases.at(sym);
-        setAliasList(prod, *laliasList, symbolIndex);
-        setAliasList(live, *laliasList, symbolIndex);
-      }
+        if (! fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+        {
+          SymbolVector* laliasList = aliases.at(sym);
+          setAliasList(prod, *laliasList, symbolIndex);
+          setAliasList(live, *laliasList, symbolIndex);
+        }
     }
 
     if (isUsed(se))
@@ -659,6 +660,12 @@ OwnershipFlowManager::backwardFlowUse()
 void
 OwnershipFlowManager::forwardFlowOwnership()
 {
+  // Start with all out sets empty.
+  // TODO: Change backwardFlowUse() so it does not use the IN and OUT sets.
+  // Then this initialization block can be removed.
+  for (size_t i = 0; i < nbbs; ++i)
+    OUT[i]->clear();
+
   bool changed;
   do {
     changed = false;
@@ -894,14 +901,18 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
       continue;
 
     bool seIsRVV = false;
+    bool rvvIsOwned = true;
     if (FnSymbol* fn = toFnSymbol(se->parentSymbol))
+    {
       seIsRVV = sym == fn->getReturnSymbol();
+      rvvIsOwned = ! fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
+    }
 
     if (bitwiseCopyArg(se) == 1)
     {
       // If the live bit is set for the RHS symbol, we can leave it as a move and
       // transfer ownership.  Otherwise, we need to insert an autoCopy.
-      if (seIsRVV)
+      if (seIsRVV && rvvIsOwned)
       {
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
