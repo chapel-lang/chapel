@@ -129,11 +129,11 @@ def get_sys_c_types(docs=False):
 
         # Ignore lines starting with # since they could be #line
         # type directives.
-        elif line.startswith("#"):
+        elif line.strip().startswith("#"):
             continue
 
         # Ignore blank lines
-        elif line.isspace() or line == '':
+        elif line.strip() == '':
             continue
 
         # The start of the max macros has already been found. Record every
