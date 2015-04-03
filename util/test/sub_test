@@ -901,8 +901,12 @@ else:
     testsrc=list()
     testsrc.append(onetestsrc)
 
+original_compiler = compiler
+
 for testname in testsrc:
     sys.stdout.flush()
+
+    compiler = original_compiler
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
@@ -1226,19 +1230,21 @@ for testname in testsrc:
             args = ['-o', test_filename]+directoryCompopts+shlex.split(compopts)+[testname]
             cmd = c_compiler
         else:
-            if valgrindcomp:
-                cmd = valgrindcomp
-                args = valgrindcompopts+[compiler]+args
-            elif test_is_chpldoc and not compiler.endswith('chpldoc'):
+            if test_is_chpldoc and not compiler.endswith('chpldoc'):
                 # For tests with .doc.chpl suffix, use chpldoc compiler. Update
                 # the compopts accordingly. Add 'doc' prefix to existing compiler.
-                cmd = compiler + 'doc'
+                compiler += 'doc'
+                cmd = compiler
 
                 if which(cmd) is None:
                     sys.stdout.write(
                         '[Warning: Could not find chpldoc, skipping test '
                         '{0}/{1}]\n'.format(localdir, test_filename))
                     continue
+
+            if valgrindcomp:
+                cmd = valgrindcomp
+                args = valgrindcompopts+[compiler]+args
             else:
                 cmd = compiler
 
