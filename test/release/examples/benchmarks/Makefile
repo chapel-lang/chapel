@@ -24,7 +24,7 @@ miniMD: FORCE
 	cd miniMD && $(MAKE)
 
 shootout: FORCE
-	cd miniMD && $(MAKE)
+	cd shootout && $(MAKE)
 
 ssca2: FORCE
 	cd ssca2 && $(MAKE)

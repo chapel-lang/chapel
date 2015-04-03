@@ -100,7 +100,7 @@ if ($no_clone == 0) {
        "ACKNOWLEDGEMENTS",
        "CHANGES",
        "CONTRIBUTORS",
-       "COPYRIGHT", 
+       "COPYRIGHT",
        "GOALS",
        "LICENSE",
        "LICENSE.chapel",
@@ -111,7 +111,6 @@ if ($no_clone == 0) {
        "STATUS",
        "compiler/passes/reservedSymbolNames",
        "etc/README",
-       "man/man1/chpl.1",
        "util/README",
        "util/build_configs.py",
        "util/printchplenv",
@@ -138,7 +137,9 @@ if ($no_clone == 0) {
     "etc/vim",
     "examples",
     "make",
+    "man/man1",
     "modules",
+    "modules-ipe",
     "runtime",
     "third-party",
     "util/chplenv",
@@ -155,8 +156,9 @@ system("cp -r test/release/examples .");
 system("cd util && cp start_test ../examples/");
 system("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
 
-print "Building the man page...\n";
+print "Building the man pages...\n";
 system("make man");
+system("make man-chpldoc");
 
 print "Building the STATUS file...\n";
 system("make STATUS");
