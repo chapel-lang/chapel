@@ -5,6 +5,14 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
+#
+# Cray X* builds are cross-compilations.
+#
+ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_HWLOC_CFG_OPTIONS += --build=x86_64-unknown-linux-gnu \
+                          --host=x86_64-cnl-linux-gnu
+endif
+
 CHPL_HWLOC_CFG_OPTIONS += --enable-static --disable-shared --disable-libxml2 --disable-pci
 
 ifeq ($(CHPL_MAKE_TARGET_COMPILER), pgi)
