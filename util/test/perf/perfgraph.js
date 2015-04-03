@@ -42,7 +42,10 @@ var branchInfo = [
                     "revision" : 23144},
                   { "release" : "1.10",
                     "branchDate" : "2014-09-22",
-                    "revision" : -1}  // TODO: This was a git commit.
+                    "revision" : -1},
+                  { "release" : "1.11",
+                    "branchDate" : "2015-03-25",
+                    "revision" : -1}
                   ];
 
 // array of currently displayed graphs
