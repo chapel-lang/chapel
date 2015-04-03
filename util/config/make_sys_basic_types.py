@@ -127,6 +127,15 @@ def get_sys_c_types(docs=False):
         elif 'FIND_INT_SIZES_START' in line:
             keep = True
 
+        # Ignore lines starting with # since they could be #line
+        # type directives.
+        elif line.startswith("#"):
+            continue
+
+        # Ignore blank lines
+        elif line.isspace() or line == '':
+            continue
+
         # The start of the max macros has already been found. Record every
         # line, stripping it of whitespace.
         else:
