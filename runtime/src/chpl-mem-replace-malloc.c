@@ -233,8 +233,8 @@ void __wrap_free(void* ptr)
 
 int __wrap_posix_memalign(void **memptr, size_t alignment, size_t size)
 {
+  int ret;
   if( heapInitialized == 0 ) {
-    int ret;
     *memptr = NULL;
     ret = __real_posix_memalign(memptr, alignment, size);
     printf("in early __wrap_posix_memalign %p = system posix_memalign(%#x)\n",
@@ -243,7 +243,10 @@ int __wrap_posix_memalign(void **memptr, size_t alignment, size_t size)
     return ret;
   }
   printf("in __wrap_posix_memalign\n");
-  return chpl_posix_memalign(memptr, alignment, size);
+  ret = chpl_posix_memalign(memptr, alignment, size);
+  printf("%p = chpl_posix_memalign(%#x, %#x) returned %i\n",
+         *memptr, (int) alignment, (int) size, ret);
+  return ret;
 }
 
 void* __wrap_valloc(size_t size)

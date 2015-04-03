@@ -60,18 +60,23 @@ int chpl_posix_memalign(void** ptr, size_t alignment, size_t size) {
 
   // return EINVAL if alignment not a multiple of sizeof(void*)
   tmp = alignment / sizeof(void*);
-  if( alignment != tmp * sizeof(void*) ) return EINVAL;
+  if( alignment != tmp * sizeof(void*) ) {
+    return EINVAL;
+  }
 
   // return EINVAL if alignment not a power of 2
 
   // find the power of 2 that is alignment
-  for( power = 1; 
-       power < 8*sizeof(size_t) && alignment < (one << power);
+  for( power = 0; 
+       power < 8*sizeof(size_t);
        power++ ) {
     // find power of two equal to alignment.
+    if( alignment == (one << power) ) break;
   }
   // return EINVAL if not a power of two.
-  if( alignment != (one << power) ) return EINVAL; 
+  if( power == 8*sizeof(size_t) || alignment != (one << power) ) {
+    return EINVAL; 
+  }
 
   // otherwise, allocate the pointer and return 0 or ENOMEM if it failed.
   allocated = chpl_memalign(alignment, size);
