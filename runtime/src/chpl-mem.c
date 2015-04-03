@@ -52,11 +52,9 @@ int chpl_mem_inited(void) {
 
 int chpl_posix_memalign(void** ptr, size_t alignment, size_t size) {
   void* allocated;
-  int ret;
   size_t tmp;
   int power;
   size_t one = 1;
-
 
   *ptr = NULL;
 

@@ -36,7 +36,19 @@
 #include <malloc.h> // for memalign
 #endif
 
+// TODO
+#undef USE_GLIBC_MALLOC_HOOKS
+
 static int heapInitialized = 0;
+
+#ifdef USE_GLIBC_MALLOC_HOOKS
+#define TRACK_SYSTEM_ALLOCATION
+#endif
+#ifdef CHPL_WRAP_MALLOC
+#define TRACK_SYSTEM_ALLOCATION
+#endif
+
+#ifdef TRACK_SYSTEM_ALLOCATION
 
 struct system_allocated_ptr {
   struct system_allocated_ptr* next;
@@ -46,6 +58,7 @@ struct system_allocated_ptr {
 
 static struct system_allocated_ptr* system_allocated_head;
 
+#ifdef USE_GLIBC_MALLOC_HOOKS
 // This version is for glibc malloc hooks that take an extra argument
 static void track_system_allocated_arg(
   void* ptr,
@@ -61,6 +74,9 @@ static void track_system_allocated_arg(
   cur->len = len;
   system_allocated_head = cur;
 }
+#endif
+
+#ifdef CHPL_WRAP_MALLOC
 // This version is for --wrap malloc replacements
 static void track_system_allocated(
   void* ptr,
@@ -75,9 +91,11 @@ static void track_system_allocated(
   cur->len = len;
   system_allocated_head = cur;
 }
+#endif
 
-static int is_system_allocated(void* ptr)
+static int is_system_allocated(void* ptr_in)
 {
+  unsigned char* ptr = (unsigned char*) ptr_in;
   struct system_allocated_ptr* cur;
   for( cur = system_allocated_head;
        cur;
@@ -89,6 +107,7 @@ static int is_system_allocated(void* ptr)
   return 0;
 }
 
+#endif
 
 // declare symbol version of calloc/malloc/realloc in case
 // we want pointers to them or we want to use linker scripts/weak symbols
@@ -145,13 +164,13 @@ void* __wrap_calloc(size_t n, size_t size)
   if( heapInitialized == 0 ) {
     ret = __real_calloc(n, size);
     printf("in early __wrap_calloc %p = system calloc(%#x)\n",
-           ret, (int) n*size);
+           ret, (int) (n*size));
     track_system_allocated(ret, n*size, __real_malloc);
     return ret;
   }
   printf("in __wrap_calloc\n");
   ret = chpl_calloc(n, size);
-  printf("%p = chpl_calloc(%#x)\n", ret, (int) n*size);
+  printf("%p = chpl_calloc(%#x)\n", ret, (int) (n*size));
   return ret;
 }
 
