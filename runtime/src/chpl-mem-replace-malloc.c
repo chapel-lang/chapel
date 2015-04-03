@@ -38,6 +38,58 @@
 
 static int heapInitialized = 0;
 
+struct system_allocated_ptr {
+  struct system_allocated_ptr* next;
+  void* ptr;
+  size_t len;
+};
+
+static struct system_allocated_ptr* system_allocated_head;
+
+// This version is for glibc malloc hooks that take an extra argument
+static void track_system_allocated_arg(
+  void* ptr,
+  size_t len,
+  void * (*original_malloc) (size_t, const void *),
+  const void * arg)
+{
+  struct system_allocated_ptr* cur;
+  cur = (struct system_allocated_ptr*)
+            original_malloc(sizeof(struct system_allocated_ptr), arg);
+  cur->next = system_allocated_head;
+  cur->ptr = ptr;
+  cur->len = len;
+  system_allocated_head = cur;
+}
+// This version is for --wrap malloc replacements
+static void track_system_allocated(
+  void* ptr,
+  size_t len,
+  void * (*real_malloc) (size_t) )
+{
+  struct system_allocated_ptr* cur;
+  cur = (struct system_allocated_ptr*)
+            real_malloc(sizeof(struct system_allocated_ptr));
+  cur->next = system_allocated_head;
+  cur->ptr = ptr;
+  cur->len = len;
+  system_allocated_head = cur;
+}
+
+static int is_system_allocated(void* ptr)
+{
+  struct system_allocated_ptr* cur;
+  for( cur = system_allocated_head;
+       cur;
+       cur = cur->next ) {
+    unsigned char* start = cur->ptr;
+    unsigned char* end = start + cur->len;
+    if( start <= ptr && ptr < end ) return 1;
+  }
+  return 0;
+}
+
+
 // declare symbol version of calloc/malloc/realloc in case
 // we want pointers to them or we want to use linker scripts/weak symbols
 
@@ -60,9 +112,9 @@ void* __real_malloc(size_t size)
 void* __wrap_malloc(size_t size)
       CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
 
-void* __real_memalign(size_t boundary, size_t size)
+void* __real_memalign(size_t alignment, size_t size)
       CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
-void* __wrap_memalign(size_t boundary, size_t size)
+void* __wrap_memalign(size_t alignment, size_t size)
       CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
 
 void* __real_realloc(void* ptr, size_t size)
@@ -73,31 +125,73 @@ void* __wrap_realloc(void* ptr, size_t size)
 void __real_free(void* ptr);
 void __wrap_free(void* ptr);
 
+int __real_posix_memalign(void **memptr, size_t alignment, size_t size);
+int __wrap_posix_memalign(void **memptr, size_t alignment, size_t size);
+
+void* __real_valloc(size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+void* __wrap_valloc(size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
+void* __real_pvalloc(size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+void* __wrap_pvalloc(size_t size)
+      CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
+
 
 void* __wrap_calloc(size_t n, size_t size)
 {
-  if( heapInitialized == 0 ) return __real_calloc(n, size);
+  void* ret;
+  if( heapInitialized == 0 ) {
+    ret = __real_calloc(n, size);
+    printf("in early __wrap_calloc %p = system calloc(%#x)\n",
+           ret, (int) n*size);
+    track_system_allocated(ret, n*size, __real_malloc);
+    return ret;
+  }
   printf("in __wrap_calloc\n");
-  return chpl_calloc(n, size);
+  ret = chpl_calloc(n, size);
+  printf("%p = chpl_calloc(%#x)\n", ret, (int) n*size);
+  return ret;
 }
 
 void* __wrap_malloc(size_t size)
 {
-  if( heapInitialized == 0 ) return __real_malloc(size);
+  void* ret;
+  if( heapInitialized == 0 ) {
+    ret = __real_malloc(size);
+    printf("in early __wrap_malloc %p = system malloc(%#x)\n", ret, (int) size);
+    track_system_allocated(ret, size, __real_malloc);
+    return ret;
+  }
   printf("in __wrap_malloc\n");
-  return chpl_malloc(size);
+  ret = chpl_malloc(size);
+  printf("%p = chpl_malloc(%#x)\n", ret, (int) size);
+  return ret;
 }
 
-void* __wrap_memalign(size_t boundary, size_t size)
+void* __wrap_memalign(size_t alignment, size_t size)
 {
-  if( heapInitialized == 0 ) return __real_memalign(boundary, size);
+  if( heapInitialized == 0 ) {
+    void* ret = __real_memalign(alignment, size);
+    printf("in early __wrap_memalign %p = system memalign(%#x)\n",
+           ret, (int) size);
+    track_system_allocated(ret, size, __real_malloc);
+    return ret;
+  }
   printf("in __wrap_memalign\n");
-  return chpl_memalign(boundary, size);
+  return chpl_memalign(alignment, size);
 }
 
 void* __wrap_realloc(void* ptr, size_t size)
 {
-  if( heapInitialized == 0 ) return __real_realloc(ptr, size);
+  if( heapInitialized == 0 ) {
+    void* ret = __real_realloc(ptr, size);
+    printf("in early __wrap_realloc %p = system realloc(%#x)\n",
+           ret, (int) size);
+    track_system_allocated(ret, size, __real_malloc);
+    return ret;
+  }
   printf("in __wrap_realloc\n");
   return chpl_realloc(ptr, size);
 }
@@ -105,12 +199,60 @@ void* __wrap_realloc(void* ptr, size_t size)
 void __wrap_free(void* ptr)
 {
   if( ! ptr ) return;
-  if( heapInitialized == 0 ) {
+  printf("in __wrap_free(%p)\n", ptr);
+  // check to see if we're freeing a pointer that was allocated
+  // before the our allocator came up.
+  if( heapInitialized == 0 || is_system_allocated(ptr) ) {
+    printf("calling system free\n");
     __real_free(ptr);
     return;
   }
-  printf("in __wrap_free\n");
+
+  printf("calling chpl_free\n");
   chpl_free(ptr);
+}
+
+int __wrap_posix_memalign(void **memptr, size_t alignment, size_t size)
+{
+  if( heapInitialized == 0 ) {
+    int ret;
+    *memptr = NULL;
+    ret = __real_posix_memalign(memptr, alignment, size);
+    printf("in early __wrap_posix_memalign %p = system posix_memalign(%#x)\n",
+           *memptr, (int) size);
+    track_system_allocated(*memptr, size, __real_malloc);
+    return ret;
+  }
+  printf("in __wrap_posix_memalign\n");
+  return chpl_posix_memalign(memptr, alignment, size);
+}
+
+void* __wrap_valloc(size_t size)
+{
+  void* ret;
+  if( heapInitialized == 0 ) {
+    ret = __real_valloc(size);
+    printf("in early __wrap_valloc %p = system valloc(%#x)\n", ret, (int) size);
+    track_system_allocated(ret, size, __real_malloc);
+    return ret;
+  }
+  printf("in __wrap_valloc\n");
+  ret = chpl_valloc(size);
+  printf("%p = chpl_valloc(%#x)\n", ret, (int) size);
+  return ret;
+}
+
+void* __real_pvalloc(size_t size)
+{
+  if( heapInitialized == 0 ) {
+    void* ret = __real_pvalloc(size);
+    printf("in early __wrap_pvalloc %p = system pvalloc(%#x)\n",
+           ret, (int) size);
+    track_system_allocated(ret, size, __real_malloc);
+    return ret;
+  }
+  printf("in __wrap_pvalloc\n");
+  return chpl_pvalloc(size);
 }
 
 #endif
@@ -135,23 +277,35 @@ static void   (*original_free)    (void *, const void *);
 static
 void* chpl_malloc_hook(size_t size, const void* arg)
 {
-  if( heapInitialized == 0 ) return original_malloc(size, arg);
+  if( heapInitialized == 0 ) {
+    void* ret = original_malloc(size, arg);
+    track_system_allocated_arg(ret, size, original_malloc, arg);
+    return ret;
+  }
   printf("in chpl_malloc_hook\n");
   return chpl_malloc(size);
 }
 
 static
-void* chpl_memalign_hook(size_t boundary, size_t size, const void* arg)
+void* chpl_memalign_hook(size_t alignment, size_t size, const void* arg)
 {
-  if( heapInitialized == 0 ) return original_memalign(boundary, size, arg);
+  if( heapInitialized == 0 ) {
+    void* ret = original_memalign(alignment, size, arg);
+    track_system_allocated_arg(ret, size, original_malloc, arg);
+    return ret;
+  }
   printf("in chpl_memalign_hook\n");
-  return chpl_memalign(boundary, size);
+  return chpl_memalign(alignment, size);
 }
 
 static
 void* chpl_realloc_hook(void* ptr, size_t size, const void* arg)
 {
-  if( heapInitialized == 0 ) return original_realloc(ptr, size, arg);
+  if( heapInitialized == 0 ) {
+    void* ret = original_realloc(ptr, size, arg);
+    track_system_allocated_arg(ret, size, original_malloc, arg);
+    return ret;
+  }
   printf("in chpl_realloc_hook\n");
   return chpl_realloc(ptr,size);
 }
@@ -159,7 +313,7 @@ void* chpl_realloc_hook(void* ptr, size_t size, const void* arg)
 static
 void chpl_free_hook(void* ptr, const void* arg) {
   if( ! ptr ) return;
-  if( heapInitialized == 0 ) {
+  if( heapInitialized == 0 || is_system_allocated(ptr) ) {
     original_free(ptr, arg);
     return;
   }
@@ -183,7 +337,7 @@ void chpl_mem_replace_malloc_if_needed_heap_inited(void) {
 
 #ifdef USE_GLIBC_MALLOC_HOOKS
   // glibc wants a memalign call
-  // glibc: void *memalign(size_t boundary, size_t size);
+  // glibc: void *memalign(size_t alignment, size_t size);
   // dlmalloc: dlmemalign
   // tcmalloc: tc_memalign
   original_malloc = __malloc_hook;
