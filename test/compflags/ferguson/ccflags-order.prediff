@@ -7,11 +7,17 @@ LOG=$2
 
 MYLOG=""
 
+LAST=""
+
 for word in `cat $LOG`
   do
     if [[ $word == -O* ]]
       then
-        MYLOG+=" $word"
+        if [[ $word != $LAST ]]
+          then
+            MYLOG+=" $word"
+            LAST=$word
+          fi
       fi
 done
 
