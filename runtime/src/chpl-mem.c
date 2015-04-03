@@ -49,14 +49,10 @@ int chpl_mem_inited(void) {
   return heapInitialized;
 }
 
-
-int chpl_posix_memalign(void** ptr, size_t alignment, size_t size) {
-  void* allocated;
+int chpl_posix_memalign_check_valid(size_t alignment) {
   size_t tmp;
   int power;
   size_t one = 1;
-
-  *ptr = NULL;
 
   // return EINVAL if alignment not a multiple of sizeof(void*)
   tmp = alignment / sizeof(void*);
@@ -77,6 +73,19 @@ int chpl_posix_memalign(void** ptr, size_t alignment, size_t size) {
   if( power == 8*sizeof(size_t) || alignment != (one << power) ) {
     return EINVAL; 
   }
+
+  return 0;
+}
+
+
+int chpl_posix_memalign(void** ptr, size_t alignment, size_t size) {
+  void* allocated;
+  int err;
+
+  *ptr = NULL;
+
+  err = chpl_posix_memalign_check_valid(alignment);
+  if( err ) return err;
 
   // otherwise, allocate the pointer and return 0 or ENOMEM if it failed.
   allocated = chpl_memalign(alignment, size);

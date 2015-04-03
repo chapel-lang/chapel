@@ -69,7 +69,10 @@ static inline void* chpl_realloc(void* ptr, size_t size)
 
 static inline void chpl_free(void* ptr);
 
-int chpl_posix_memalign(void** ptr, size_t boundary, size_t size);
+// returns 0 if valid, EINVAL otherwise
+int chpl_posix_memalign_check_valid(size_t alignment);
+
+int chpl_posix_memalign(void** ptr, size_t alignment, size_t size);
 void* chpl_valloc(size_t size)
   CHPL_ATTRIBUTE_MALLOC CHPL_ATTRIBUTE_WARN_UNUSED_RESULT;
 void* chpl_pvalloc(size_t size)
