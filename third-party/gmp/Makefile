@@ -14,11 +14,14 @@ GMP_TARBALL = $(GMP_UNPACKED_DIR)a.tar.bz2
 #
 # Cray X* builds are cross-compilations, as are Intel Phi KNC builds.
 #
+GMP_CROSS_COMPILED=no
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_CFG_OPTIONS += --build=x86_64-unknown-linux-gnu \
                         --host=x86_64-cnl-linux-gnu
+GMP_CROSS_COMPILED=yes
 else ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
 CHPL_GMP_CFG_OPTIONS += --host=x86_64-unknown-linux-gnu
+GMP_CROSS_COMPILED=yes
 endif
 
 ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
@@ -81,10 +84,8 @@ gmp-build:
 
 $(GMP_H_FILE): $(GMP_MAKEFILE)
 	cd $(GMP_BUILD_DIR) && $(MAKE)
-ifeq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
-ifneq ($(CHPL_MAKE_TARGET_ARCH),knc)
+ifeq ($(GMP_CROSS_COMPILED),no)
 	cd $(GMP_BUILD_DIR) && $(MAKE) check
-endif
 endif
 	cd $(GMP_BUILD_DIR) && $(MAKE) install
 
