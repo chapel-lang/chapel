@@ -1135,10 +1135,11 @@ for testname in testsrc:
     # Merge global compopts list with local compopts.
     # Use the "product" of the two if they are both provided.
     usecompoptslist = [ ]
+    # Note -- this could use itertools.product
     for dir_compopts in directoryCompopts:
-      for file_compopts in compoptslist:
-        useopt = [dir_compopts, file_compopts]
-        usecompoptslist += [' '.join(useopt)]
+        for file_compopts in compoptslist:
+            useopt = [dir_compopts, file_compopts]
+            usecompoptslist += [' '.join(useopt)]
     compoptslist = usecompoptslist
 
     # The test environment is that of this process, augmented as specified
