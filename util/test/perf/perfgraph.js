@@ -42,7 +42,10 @@ var branchInfo = [
                     "revision" : 23144},
                   { "release" : "1.10",
                     "branchDate" : "2014-09-22",
-                    "revision" : -1}  // TODO: This was a git commit.
+                    "revision" : -1},
+                  { "release" : "1.11",
+                    "branchDate" : "2015-03-25",
+                    "revision" : -1}
                   ];
 
 // array of currently displayed graphs
@@ -112,11 +115,20 @@ function getNextDivs(afterDiv, afterLDiv) {
   annToggle.style.visibility = 'hidden';
   gspacer.appendChild(annToggle);
 
+  // create a screenshot button and put it next to the annotation button
+  var screenshotToggle = document.createElement('input');
+  screenshotToggle.type = 'button';
+  screenshotToggle.className = 'toggle';
+  screenshotToggle.value = 'screenshot';
+  screenshotToggle.style.visibility = 'hidden';
+  gspacer.appendChild(screenshotToggle);
+
   return {
     div: div,
       ldiv: ldiv,
       logToggle: logToggle,
-      annToggle: annToggle
+      annToggle: annToggle,
+      screenshotToggle: screenshotToggle
   }
 }
 
@@ -129,6 +141,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   var ldiv = graphDivs.ldiv;
   var logToggle = graphDivs.logToggle;
   var annToggle = graphDivs.annToggle;
+  var screenshotToggle = graphDivs.screenshotToggle;
 
   var startdate = getDateFromURL(OptionsEnum.STARTDATE, graphInfo.startdate);
   var enddate = getDateFromURL(OptionsEnum.ENDDATE, graphInfo.enddate);
@@ -212,6 +225,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
 
     setupLogToggle(g, graphInfo, logToggle);
     setupAnnToggle(g, graphInfo, annToggle);
+    setupScreenshotToggle(g, graphInfo, screenshotToggle);
 
     g.isReady = true;
 
@@ -302,6 +316,78 @@ function setupAnnToggle(g, graphInfo, annToggle) {
       g.setAnnotations([]);
     }
   }
+}
+
+
+// Setup the screenshot button
+function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
+  screenshotToggle.style.visibility = 'visible';
+
+  screenshotToggle.onclick = function() {
+    captureScreenshot(g, graphInfo);
+  }
+}
+
+
+// Function to capture a screenshot of a graph and open the image in a new
+// window.
+//
+// TODO: A nicer alternative would be to open a new window, and have that
+// window create and render the screenshot and also have boxes to change the
+// size of the rendered image. Right now it just defaults to making an image
+// that is the same size as the actual graph.
+//
+// TODO: right now our graph and legend are in 2 separate divs so this is a
+// little clunky because it renders each div separately and then combines them
+// into a single canvas. It would be cleaner to have a div that wraps the graph
+// and legend and just render that one.
+function captureScreenshot(g, graphInfo) {
+
+  var gWidth = g.divs.div.clientWidth + g.divs.ldiv.clientWidth;
+  var gHeight = g.divs.div.clientHeight;
+
+  var captureCanvas = document.createElement('canvas');
+  captureCanvas.width = gWidth;
+  captureCanvas.height = gHeight;
+  var ctx = captureCanvas.getContext('2d');
+
+  // html2canvas doesn't render transformed ccs3 text (like our ylabel.) We
+  // make the label inivisible and we also hide the roll button box since
+  // theres no point in capturing it in a screenshot
+  g.updateOptions({showRoller: false, ylabel:''});
+  var label = graphInfo.ylabel;
+
+  // generate the graph
+  html2canvas(g.divs.div, {
+    // once the graph is rendered
+    onrendered: function(graphCanvas) {
+      // genenerate the legend
+       html2canvas(g.divs.ldiv, {
+        // once the legend is rendered
+        onrendered: function(legendCanvas) {
+          // draw the graph and legend canvas on a combined canvas.
+          ctx.drawImage(graphCanvas, 0, 0);
+          ctx.drawImage(legendCanvas, g.divs.div.clientWidth, 0);
+
+          // get the graphs ylabel font properties
+          var fontSize = g.getOption('axisLabelFontSize');
+          ctx.font = '16px Arial';
+
+          // rotate the canvas and draw the title
+          ctx.translate(0, gHeight/2);
+          ctx.rotate(-0.5*Math.PI);
+          ctx.textAlign = 'center';
+          ctx.fillText(label, 0, fontSize);
+
+          // open the screenshot in a new window
+          window.open(captureCanvas.toDataURL());
+
+          // restore the roll box and ylabel
+          g.updateOptions({showRoller: true, ylabel:label});
+        }
+      });
+    }
+  });
 }
 
 

@@ -690,8 +690,10 @@ String and Bytes Conversions
  (note that ``%.17/a+/``, which would mean to match 17 characters,
  is not supported).
 
-``%/ * /``
- (without spaces) next argument contains the regular expression to match
+``%/*/``
+ next argument contains the regular expression to match
+
+.. (comment) the above started a nested comment, so here we end it */
 
 General Conversions
 +++++++++++++++++++
@@ -1149,11 +1151,6 @@ module IO {
       are as efficient as possible when working with fixed-size data types
       (ie, they can open up channels that are not shared).
 */
-
-// chpldoc TODO --
-// above we have``%/ * /`` because we couldn't put /*/ in a comment
-// that needs a fix...
-
 
 use SysBasic;
 use Error;

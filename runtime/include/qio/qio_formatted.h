@@ -49,29 +49,29 @@ void qio_set_glocale(void);
 
 // Read/Write methods for Binary I/O
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_int8(const int threadsafe, qio_channel_t* restrict ch, int8_t* restrict ptr) {
   return qio_channel_read_amt(threadsafe, ch, ptr, 1);
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_int8(const int threadsafe, qio_channel_t* restrict ch, int8_t x) {
   return qio_channel_write_amt(threadsafe, ch, &x, 1);
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_uint8(const int threadsafe, qio_channel_t* restrict ch, uint8_t* restrict ptr) {
   return qio_channel_read_amt(threadsafe, ch, ptr, 1);
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_uint8(const int threadsafe, qio_channel_t* restrict ch, uint8_t x) {
   return qio_channel_write_amt(threadsafe, ch, &x, 1);
 }
 
 
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_int16(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, int16_t* restrict ptr) {
   qioerr err;
   int16_t x;
@@ -83,14 +83,14 @@ qioerr qio_channel_read_int16(const int threadsafe, const int byteorder, qio_cha
   return 0;
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_int16(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, int16_t x) {
   if( byteorder == QIO_BIG ) x = htobe16(x);
   if( byteorder == QIO_LITTLE ) x = htole16(x);
   return qio_channel_write_amt(threadsafe, ch, &x, 2);
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_uint16(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, uint16_t* restrict ptr) {
   qioerr err;
   uint16_t x;
@@ -102,7 +102,7 @@ qioerr qio_channel_read_uint16(const int threadsafe, const int byteorder, qio_ch
   return 0;
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_uint16(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, uint16_t x) {
   if( byteorder == QIO_BIG ) x = htobe16(x);
   if( byteorder == QIO_LITTLE ) x = htole16(x);
@@ -110,7 +110,7 @@ qioerr qio_channel_write_uint16(const int threadsafe, const int byteorder, qio_c
 }
 
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_int32(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, int32_t* restrict ptr) {
   qioerr err;
   int32_t x;
@@ -122,14 +122,14 @@ qioerr qio_channel_read_int32(const int threadsafe, const int byteorder, qio_cha
   return 0;
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_int32(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, int32_t x) {
   if( byteorder == QIO_BIG ) x = htobe32(x);
   if( byteorder == QIO_LITTLE ) x = htole32(x);
   return qio_channel_write_amt(threadsafe, ch, &x, 4);
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_uint32(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, uint32_t* restrict ptr) {
   qioerr err;
   uint32_t x;
@@ -141,14 +141,14 @@ qioerr qio_channel_read_uint32(const int threadsafe, const int byteorder, qio_ch
   return 0;
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_uint32(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, uint32_t x) {
   if( byteorder == QIO_BIG ) x = htobe32(x);
   if( byteorder == QIO_LITTLE ) x = htole32(x);
   return qio_channel_write_amt(threadsafe, ch, &x, 4);
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_int64(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, int64_t* restrict ptr) {
   int64_t x;
   qioerr err;
@@ -160,14 +160,14 @@ qioerr qio_channel_read_int64(const int threadsafe, const int byteorder, qio_cha
   return 0;
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_int64(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, int64_t x) {
   if( byteorder == QIO_BIG ) x = htobe64(x);
   if( byteorder == QIO_LITTLE ) x = htole64(x);
   return qio_channel_write_amt(threadsafe, ch, &x, 8);
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_uint64(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, uint64_t* restrict ptr) {
   uint64_t x;
   qioerr err;
@@ -179,7 +179,7 @@ qioerr qio_channel_read_uint64(const int threadsafe, const int byteorder, qio_ch
   return 0;
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_uint64(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, uint64_t x) {
   if( byteorder == QIO_BIG ) x = htobe64(x);
   if( byteorder == QIO_LITTLE ) x = htole64(x);
@@ -193,7 +193,7 @@ qioerr qio_channel_write_uvarint(const int threadsafe, qio_channel_t* restrict c
 qioerr qio_channel_write_svarint(const int threadsafe, qio_channel_t* restrict ch, int64_t num);
 
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_int(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, void* restrict ptr, size_t len, int issigned) {
 
   ssize_t signed_len = len;
@@ -221,7 +221,7 @@ qioerr qio_channel_read_int(const int threadsafe, const int byteorder, qio_chann
   }
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_int(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, const void* restrict ptr, size_t len, int issigned) {
 
   ssize_t signed_len = len;
@@ -249,7 +249,7 @@ qioerr qio_channel_write_int(const int threadsafe, const int byteorder, qio_chan
   }
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_float32(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, float* restrict ptr) {
   union {
    uint32_t i;
@@ -265,7 +265,7 @@ qioerr qio_channel_read_float32(const int threadsafe, const int byteorder, qio_c
   return 0;
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_float32(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, float x) {
   union {
    uint32_t i;
@@ -280,7 +280,7 @@ qioerr qio_channel_write_float32(const int threadsafe, const int byteorder, qio_
 }
 
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_float64(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, double* restrict ptr) {
   union {
    uint64_t i;
@@ -297,7 +297,7 @@ qioerr qio_channel_read_float64(const int threadsafe, const int byteorder, qio_c
 }
 
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_float64(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, double x) {
   union {
    uint64_t i;
@@ -311,7 +311,7 @@ qioerr qio_channel_write_float64(const int threadsafe, const int byteorder, qio_
   return qio_channel_write_amt(threadsafe, ch, &u, 8);
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_float(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, void* restrict ptr, size_t len) {
   switch ( len ) {
     case 4:
@@ -323,7 +323,7 @@ qioerr qio_channel_read_float(const int threadsafe, const int byteorder, qio_cha
   }
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_float(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, const void* restrict ptr, size_t len) {
   switch ( len ) {
     case 4:
@@ -335,7 +335,7 @@ qioerr qio_channel_write_float(const int threadsafe, const int byteorder, qio_ch
   }
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_read_complex(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, void* restrict re_ptr, void* restrict im_ptr, size_t len) {
   qioerr err;
   switch ( len ) {
@@ -357,7 +357,7 @@ qioerr qio_channel_read_complex(const int threadsafe, const int byteorder, qio_c
   return err;
 }
 
-static ___always_inline
+static inline
 qioerr qio_channel_write_complex(const int threadsafe, const int byteorder, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* restrict im_ptr, size_t len) {
   qioerr err;
   switch ( len ) {

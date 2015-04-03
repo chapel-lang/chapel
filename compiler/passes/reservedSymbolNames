@@ -45,7 +45,6 @@
   asin
   atan
   chdir
-  chmod
   chown
   cwd
   floor
@@ -59,7 +58,6 @@
   fread
   fsync
   main
-  mkdir
   open
   pow
   printf
@@ -274,3 +272,14 @@
   isfinite
   NAN
   INFINITY
+
+  // symbols from stat.h
+  chmod
+  fchmod
+  fstat
+  lstat
+  mkdir
+  mkfifo
+  mknod
+  stat
+  umask
