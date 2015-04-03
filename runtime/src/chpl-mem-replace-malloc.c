@@ -440,7 +440,7 @@ void* valloc(size_t size)
   return ret;
 }
 
-void* __libc_pvalloc(size_t size)
+void* pvalloc(size_t size)
 {
   if( heapInitialized == 0 ) {
     void* ret = __libc_pvalloc(size);
