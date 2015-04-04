@@ -353,7 +353,7 @@ static void processBitwiseCopy(SymExpr* se,
 }
 
 
-// If thsi call uses the given symbol, then add that symbol and all its aliases
+// If this call uses the given symbol, then add that symbol and all its aliases
 // to the use set.
 static void processUser(SymExpr* se, BitVec* use,
                         const AliasVectorMap& aliases,
@@ -572,11 +572,22 @@ OwnershipFlowManager::computeExits()
 }
 
 
-// We use backward flow to determine the last block in each execution path in
-// which a given symbol is used.
-// We only care about the last use: we assume that either variables are not
-// redefined (single-assignment) or an owned variable is properly consumed
-// where it is redefined.
+// Compute a set that tells if a symbol j is used later in the flow.  In any
+// given block, if a symbol is consumed and it is not used or consumed later in
+// the same block and USED_LATER in that block is false for that symbol, then
+// ownership may be transferred to that consumer.  Otherwise, an autoCopy must
+// be inserted.
+//
+// Input: USE(i,j) is true iff symbol j is read at least once in block i.
+//
+// Output: USED_LATER(i,j) is true iff USE(k,j) is true for some k such that k
+// follows i in the global flow.  
+//
+// In general USED_LATER(i,j) is not true if the
+// last use of j lies in block i.  However, if USE(i,j) is true for a block i
+// that lies within a loop, then USE(i,j) and USED_LATER(i,j) may be true
+// simultaneously.  In that case, there is no clear last use of symbol j; it
+// must be reclaimed at the end of its scope.
 //
 // First, we use IN and OUT as temporary sets to flow future use backwards.  If
 // a use in one block sets the corresponding OUT bit in a preceding block, that
@@ -585,9 +596,7 @@ OwnershipFlowManager::computeExits()
 //  IN[i] = OUT[i] + USE[i]
 //  OUT[i] += IN[j], for every j a successor of block i.
 //  and iterate.
-// Next, we cull bits from the USE set in blocks where there is a correponding
-// OUT bit:
-//  USE[i] -= OUT[i]
+// Then, we set USED_LATER <- OUT;
 //
 void 
 OwnershipFlowManager::backwardFlowUse()
@@ -602,27 +611,13 @@ OwnershipFlowManager::backwardFlowUse()
     {
       // Compute the OUT set for block i.
       // A true bit means that the symbol is used on all paths out of that block.
-      if ((*basicBlocks)[i]->outs.size() == 0)
-      {
-        // This is a terminal block, so the symbol is not used in any successor
-        // block (because there are none).
-        OUT[i]->clear();
-      }
-      else
-      {
-        // Otherwise, OUT is the union of the IN sets in all successor blocks.
-        // (If the last use of a symbol is in one or more successor branches,
-        // it must flow through this block.)
-        // In this computation, we ignore back edges, because that would move
-        // the last use of a symbol defined within the loop past the end of the
-        // loop (which is not what we want).
-        BitVec& out = *OUT[i];
-        out.clear();
-        for_vector(BasicBlock, succ, (*basicBlocks)[i]->outs)
-          // TODO: bb IDs are stored as ints (not uints). Change that.
-          if (succ->id > (int) i) // Ignore self- and back-edges.
-            out |= *IN[succ->id];
-      }
+      // OUT is the union of the IN sets in all successor blocks.
+      // (If the last use of a symbol is in one or more successor branches,
+      // it must flow through this block.)
+      BitVec& out = *OUT[i];
+      out.clear();
+      for_vector(BasicBlock, succ, (*basicBlocks)[i]->outs)
+        out |= *IN[succ->id];
 
       // Within a block, a bit in IN transitions to true if the symbol is used
       // within that block.
@@ -635,25 +630,9 @@ OwnershipFlowManager::backwardFlowUse()
     }
   } while (changed);
 
-  // Now recompute IN as the union of the OUTs of its predecessors.
-  // The last use of a symbol (on a given branch) is where this IN is true and
-  // OUT for the same block is false.
+  // Now just copy the OUT sets into USED_LATER.
   for (size_t i = 0; i < nbbs; ++i)
-  {
-    if ((*basicBlocks)[i]->ins.size() == 0)
-    {
-      IN[i]->clear();
-    }
-    else
-    {
-      BitVec& in = *IN[i];
-      in.clear();
-      for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
-        in |= *OUT[pred->id];
-    }
-
-    *USE[i] = *IN[i] - *OUT[i];
-  }
+    *USED_LATER[i] = *OUT[i];
 }
 
 
@@ -672,11 +651,13 @@ OwnershipFlowManager::forwardFlowOwnership()
 
     for (size_t i = 0; i < nbbs; ++i)
     {
-      // The in set is the intersection of the OUTs of its predecessors.
+      // The in set is the intersection of the OUTs of its predecessors, but a
+      // symbol does not actually escape its declaration scope, so we subtract
+      // off the respective EXITs first.
       BitVec* in = IN[i];
       in->clear();
       for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
-        *in |= *OUT[pred->id];
+        *in |= *OUT[pred->id] - *EXIT[pred->id];
 
       // This means: ownership reaches the end of a block if it enters or is
       // produced in the block and it is not consumed within the block.  Also,
@@ -686,19 +667,9 @@ OwnershipFlowManager::forwardFlowOwnership()
       // There is an implicit assumption here that if a producer and consumer
       // of the same variable appear within the same block, then the producer
       // precedes the consumer.  But then, the other ordering makes no sense.
-      BitVec new_out = *IN[i] + *PROD[i] - *CONS[i] - *EXIT[i];
+      BitVec new_out = *IN[i] + *PROD[i] - *CONS[i];
       if (new_out != *OUT[i])
       {
-#if 0
-        // We don't have to propagate aliases in forward flow, because
-        // the bits in an alias clique are always set or reset in concert.  If
-        // that assumption breaks down (because the membership in a clique
-        // changes from block to block), then we either need to maintain
-        // separate alias lists for each block or just re-run the block-wise
-        // analysis -- whichever appears to be cheaper.
-        BitVec* added = new_out - *OUT[i];
-        propagateAliases(added, new_out, aliases, symbolIndex);
-#endif
         *OUT[i] = new_out;
         changed = true;
       }
@@ -709,7 +680,7 @@ OwnershipFlowManager::forwardFlowOwnership()
   // of any variables that are unused at that point. 
   // TODO: Try disabling this and see if it is needed after reworking the USE
   // computation.
-#if 1
+#if 0
   for (size_t i = 0; i < nbbs; ++i)
   {
     if ((*basicBlocks)[i]->outs.size() == 0)
@@ -718,6 +689,30 @@ OwnershipFlowManager::forwardFlowOwnership()
     }
   }
 #endif
+}
+
+
+// After forward flow analysis and after autoCopies have been inserted, it
+// should be the case that every consumer has a producer associated with it on
+// all possible paths reaching the consumer node.
+void
+OwnershipFlowManager::checkForwardOwnership()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // We expect the out sets of all predecessor to match the computed in set.
+    // This means that ownership in unambiguous on entry to a join node.
+    BitVec* in = IN[i];
+    for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
+    {
+      if (*OUT[pred->id] != *in)
+      {
+        fprintf(stderr, "OwnershipFlowManager::checkForwardOwnership -- Ownership mismatch");
+        fprintf(stderr, " at edge from block %d to block %ld in %s\n", pred->id, i, _fn->name);
+        INT_FATAL("Check failed.");
+      }
+    }
+  }
 }
 
 
@@ -1081,7 +1076,9 @@ OwnershipFlowManager::insertAutoDestroys()
   BitVec to_cons(nsyms);
   for (size_t i = 0; i < nbbs; i++)
   {
-    to_cons |= *IN[i] + *PROD[i] - *CONS[i] - *OUT[i];
+    // We must insert an autoDestroy for each symbol that is live on exit from
+    // its declaration scope.
+    to_cons |= *OUT[i] & *EXIT[i];
   }
 
   // and then destroy each symbol at the end of its containing scope.

@@ -198,6 +198,7 @@ class OwnershipFlowManager
   void backwardFlowUse();
   void forwardFlowOwnership();
   void insertAutoCopies();
+  void checkForwardOwnership();
   void backwardFlowOwnership();
   void insertAutoDestroys();
   
