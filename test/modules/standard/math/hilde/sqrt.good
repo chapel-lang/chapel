@@ -1,8 +1,0 @@
-re32a = -0.653339 sqrt(re32a) = nan
-re32b = -0.0 sqrt(re32b) = -0.0
-re32c = 0.0 sqrt(re32c) = 0.0
-re32d = 0.814421 sqrt(re32d) = 0.902453
-re64a = -0.988837 sqrt(re64a) = nan
-re64b = -0.0 sqrt(re64b) = -0.0
-re64c = 0.0 sqrt(re64c) = 0.0
-re64d = 0.153876 sqrt(re64d) = 0.392271

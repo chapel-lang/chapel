@@ -1,8 +1,0 @@
-re32a = -6.53339 acosh(re32a) = nan
-re32b = -1.0 acosh(re32b) = nan
-re32c = 1.0 acosh(re32c) = 0.0
-re32d = 8.14421 acosh(re32d) = 2.78666
-re64a = -9.88837 acosh(re64a) = nan
-re64b = -1.0 acosh(re64b) = nan
-re64c = 1.0 acosh(re64c) = 0.0
-re64d = 15.3876 acosh(re64d) = 3.42565

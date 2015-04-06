@@ -1,8 +1,0 @@
-re32a = -65.3339 log10(re32a) = nan
-re32b = -1.0 log10(re32b) = nan
-re32c = 10.0 log10(re32c) = 1.0
-re32d = 8144.21 log10(re32d) = 3.91085
-re64a = -988.837 log10(re64a) = nan
-re64b = -0.01 log10(re64b) = nan
-re64c = 100000.0 log10(re64c) = 5.0
-re64d = 150.388 log10(re64d) = 2.17721

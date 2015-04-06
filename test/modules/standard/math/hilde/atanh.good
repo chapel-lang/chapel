@@ -1,8 +1,0 @@
-re32a = -0.653339 atanh(re32a) = -0.781102
-re32b = -0.0 atanh(re32b) = -0.0
-re32c = 0.0 atanh(re32c) = 0.0
-re32d = 0.814421 atanh(re32d) = 1.14002
-re64a = -0.988837 atanh(re64a) = -2.59136
-re64b = -0.0 atanh(re64b) = -0.0
-re64c = 0.0 atanh(re64c) = 0.0
-re64d = 0.153876 atanh(re64d) = 0.155108

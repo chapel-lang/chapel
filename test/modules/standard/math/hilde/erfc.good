@@ -1,8 +1,0 @@
-re32a = -0.653339 erfc(re32a) = 1.64449
-re32b = -0.0 erfc(re32b) = 1.0
-re32c = 0.0 erfc(re32c) = 1.0
-re32d = 0.814421 erfc(re32d) = 0.249418
-re64a = -0.988837 erfc(re64a) = 1.83802
-re64b = -0.0 erfc(re64b) = 1.0
-re64c = 0.0 erfc(re64c) = 1.0
-re64d = 0.153876 erfc(re64d) = 0.82773
