@@ -1,0 +1,8 @@
+re32a = -0.653339 tgamma(re32a) = -3.93619
+re32b = -0.0 tgamma(re32b) = -inf
+re32c = 0.0 tgamma(re32c) = inf
+re32d = 0.814421 tgamma(re32d) = 1.14841
+re64a = -0.988837 tgamma(re64a) = -90.0227
+re64b = -0.0 tgamma(re64b) = -inf
+re64c = 0.0 tgamma(re64c) = inf
+re64d = 0.153876 tgamma(re64d) = 6.05532

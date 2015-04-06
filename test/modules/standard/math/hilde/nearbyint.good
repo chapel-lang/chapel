@@ -1,0 +1,8 @@
+re32a = -65333.9 nearbyint(re32a) = -65334.0
+re32b = -0.0 nearbyint(re32b) = -0.0
+re32c = 0.0 nearbyint(re32c) = 0.0
+re32d = 814.421 nearbyint(re32d) = 814.0
+re64a = -9.88837 nearbyint(re64a) = -10.0
+re64b = -0.0 nearbyint(re64b) = -0.0
+re64c = 0.0 nearbyint(re64c) = 0.0
+re64d = 15.3876 nearbyint(re64d) = 15.0

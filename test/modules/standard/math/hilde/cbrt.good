@@ -1,0 +1,8 @@
+re32a = -0.653339 cbrt(re32a) = -0.86772
+re32b = -0.0 cbrt(re32b) = -0.0
+re32c = 0.0 cbrt(re32c) = 0.0
+re32d = 0.814421 cbrt(re32d) = 0.933862
+re64a = -0.988837 cbrt(re64a) = -0.996265
+re64b = -0.0 cbrt(re64b) = -0.0
+re64c = 0.0 cbrt(re64c) = 0.0
+re64d = 0.153876 cbrt(re64d) = 0.535867

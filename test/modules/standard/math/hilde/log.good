@@ -1,0 +1,8 @@
+re32a = -0.653339 log(re32a) = nan
+re32b = -0.0 log(re32b) = -inf
+re32c = 0.0 log(re32c) = -inf
+re32d = 0.814421 log(re32d) = -0.205278
+re64a = -0.988837 log(re64a) = nan
+re64b = -0.0 log(re64b) = -inf
+re64c = 0.0 log(re64c) = -inf
+re64d = 0.153876 log(re64d) = -1.87161
