@@ -52,6 +52,7 @@ resetAliasList(BitVec* bits, SymbolVector& aliasList,
 //# TODO: See if these are defined elsewhere.
 //#
 
+#if 0
 static BlockStmt* getScopeBlock(Expr* expr)
 {
   // If this is a DefExpr and the symbol is a formal, then we use the body of
@@ -80,7 +81,7 @@ static BlockStmt* getScopeBlock(Expr* expr)
   INT_FATAL(expr, "Expression is not associated with any scope.");
   return NULL;
 }
-
+#endif
 
 // Returns true if expr is a parent expr of other; false otherwise.
 // The comparison is not strict (an Expr be its own parent);
@@ -175,8 +176,8 @@ static void createAlias(SymExpr* se, AliasVectorMap& aliases)
   // All members of an alias clique must belong to the same scope.  Otherwise,
   // the destruction of one in an inner scope may cause the the one still
   // accessible in an outer scope to become corrupted (read-after-free).
-  BlockStmt* lscope = getScopeBlock(lsym->defPoint);
-  BlockStmt* rscope = getScopeBlock(rsym->defPoint);
+  BlockStmt* lscope = lsym->getDeclarationScope();
+  BlockStmt* rscope = rsym->getDeclarationScope();
   if (lscope != rscope)
     return;
 
@@ -327,8 +328,8 @@ static void processBitwiseCopy(SymExpr* se,
   else
   {
     // Otherwise, the symbols are in different cliques.
-    BlockStmt* lscope = getScopeBlock(lsym->defPoint);
-    BlockStmt* rscope = getScopeBlock(rsym->defPoint);
+    BlockStmt* lscope = lsym->getDeclarationScope();
+    BlockStmt* rscope = rsym->getDeclarationScope();
     if (isParentExpr(lscope, rscope))
     {
       bool owned = live->get(rindex);
@@ -465,6 +466,7 @@ OwnershipFlowManager::computeTransitions()
 }
 
 
+#if 0
 //////////////////////////////////////////////////////////////////////////
 // computeExits
 //
@@ -570,6 +572,127 @@ OwnershipFlowManager::computeExits()
 
   computeExits(scopeToLastBBIDMap);
 }
+#else
+
+
+// Get the first statement in the given basic block.
+static Expr*
+getFirstStatement(BasicBlock* bb)
+{
+  std::vector<Expr*>& exprs = bb->exprs;
+
+  // If this block is empty, look in its successor.
+  // In this case, we assume that its successor block is unique.
+  if (exprs.size() > 0)
+  {
+    return exprs[0];
+  }
+  else
+  {
+    std::vector<BasicBlock*>& successors = bb->outs;
+    if (successors.size() > 0)
+    {
+      // Two or more successors.  Assume that all successors lie in the same
+      // scope and just take the first.
+      return getFirstStatement(successors[0]);
+    }
+    // No successors.  We must be at the end of the function
+    return NULL;
+  }
+}
+
+
+// Use the IN set to compute whether the first statement in each block i lies
+// within the scope in which symbol j is declared.  The corresponding bit
+// IN(i,j) is set to true if so, false otherwise.
+void
+OwnershipFlowManager::computeScopeMap()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    BitVec* in = IN[i];
+
+    Expr* first = getFirstStatement((*basicBlocks)[i]);
+
+    for (size_t j = 0; j < nsyms; ++j)
+    {
+      Symbol* sym = symbols[j];
+      BlockStmt* scope = sym->getDeclarationScope();
+      if (first && scope->contains(first))
+        in->set(j);
+      else
+        in->reset(j);
+    }
+  }
+}
+
+
+// Compute the EXIT set.
+// A bit in the EXIT set is true if the corresponding symbol is in scope in
+// block i but not in scope in all successors of i.  If successors
+// differ, then that case may have to be handled specially.
+// Failing to set a bit in EXIT due to ambiguity will result in memory leakage,
+// but still allow the program to compile.  We can add debug code here, to help
+// track down leaks later.
+void
+OwnershipFlowManager::computeExitBlocks()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // A bit in EXIT[i] is set if the corresponding symbol is IN scope,
+    *EXIT[i] = *IN[i];
+
+    // and then reset if it is still in scope in all successor blocks.
+    BitVec still_alive = *EXIT[i];
+    std::vector<BasicBlock*> successors = (*basicBlocks)[i]->outs;
+    if (successors.size() == 0)
+    {
+      // No successors means this is a terminal block.
+      // In that case, no symbols are still alive at the end of this block.
+      still_alive.clear();
+    }
+    else
+    {
+      for_vector(BasicBlock, succ, successors)
+        still_alive &= *IN[succ->id];
+    }
+
+    *EXIT[i] -= still_alive;
+  }
+}
+
+
+// Another implementation.
+// A statement can have multiple exits, by jumping to a label that is outside
+// the block.  The above algorithm assumes that there is only one exit block
+// per construct, but there are counterexamples such as tryGetPath().
+
+// Basic block analysis has already computed the successor blocks of each BB.
+// To find out whether a given scope is being exited, we can compute the scope
+// membership of the first statement in all of its successor blocks.  These
+// should all agree as to whether a given scope is being exited.  However, an
+// exception I can imagine is a do-while loop -- in which the branch
+// transfers control back to the top of the loop while sequential execution
+// falls through to the statment following the do-while construct.  In that
+// case, an inserted autodestroy should follow the end of the statement.  We
+// may need to add another slot to the do-while construct, so we have a place
+// to put autodestroys that belong there.
+
+// To compute EXIT(i,j), in each basic block we extract the first statement in
+// the block.  For each symbol in our list, we test if that statement lies
+// within its declaration scope.  If so, we set the corresponding bit in IN to
+// true.  (We use IN as a temporary set for this calculation.)
+// When that is done, we have a map showing basic blocks where each symbol is
+// in scope.
+// We then compute the difference, so EXIT records transitions from
+// in-scope to not-in-scope.
+void
+OwnershipFlowManager::computeExits()
+{
+  computeScopeMap();
+  computeExitBlocks();
+}
+#endif
 
 
 // Compute a set that tells if a symbol j is used later in the flow.  In any
@@ -701,11 +824,11 @@ OwnershipFlowManager::checkForwardOwnership()
   for (size_t i = 0; i < nbbs; ++i)
   {
     // We expect the out sets of all predecessor to match the computed in set.
-    // This means that ownership in unambiguous on entry to a join node.
+    // This means that ownership is unambiguous on entry to a join node.
     BitVec* in = IN[i];
     for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
     {
-      if (*OUT[pred->id] != *in)
+      if (*OUT[pred->id] - *EXIT[pred->id] != *in)
       {
         fprintf(stderr, "OwnershipFlowManager::checkForwardOwnership -- Ownership mismatch");
         fprintf(stderr, " at edge from block %d to block %ld in %s\n", pred->id, i, _fn->name);
@@ -1009,21 +1132,21 @@ static void insertAutoDestroyAtScopeExit(Symbol* sym)
     return;
 
 
-  if(DefExpr* def = toDefExpr(sym->defPoint))
-  {
-    SET_LINENO(def);
-
-    CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
-    BlockStmt* block = getScopeBlock(def);
-
-    block->insertAtExit(autoDestroyCall);
-
-    insertReferenceTemps(autoDestroyCall);
-  }
-  else
+  DefExpr* def = toDefExpr(sym->defPoint);
+  if (def == NULL)
   {
     INT_FATAL("insertAutoDestroyAtScopeExit -- No def point for symbol %s", sym->name);
+    return;
   }
+
+  SET_LINENO(def);
+
+  CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
+  BlockStmt* block = sym->getDeclarationScope();
+
+  block->insertAtExit(autoDestroyCall);
+
+  insertReferenceTemps(autoDestroyCall);
 }
 
 

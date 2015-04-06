@@ -215,7 +215,9 @@ class OwnershipFlowManager
   void computeTransitions(SymExprVector& symExprs,
                           BitVec* prod, BitVec* live,
                           BitVec* use, BitVec* cons);
-  void computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBIDMap);
+//  void computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBIDMap);
+  void computeScopeMap();
+  void computeExitBlocks();
 };
 
 
