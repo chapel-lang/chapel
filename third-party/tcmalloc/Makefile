@@ -9,8 +9,7 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 # Cray X* builds are cross-compilations.
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_TCMALLOC_CFG_OPTIONS += --build=x86_64-unknown-linux-gnu \
-                             --host=x86_64-cnl-linux-gnu
+CHPL_TCMALLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 endif
 
 # enable minimal and frame pointers??

@@ -16,8 +16,7 @@ GMP_TARBALL = $(GMP_UNPACKED_DIR)a.tar.bz2
 #
 GMP_CROSS_COMPILED=no
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_GMP_CFG_OPTIONS += --build=x86_64-unknown-linux-gnu \
-                        --host=x86_64-cnl-linux-gnu
+CHPL_GMP_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 GMP_CROSS_COMPILED=yes
 else ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
 CHPL_GMP_CFG_OPTIONS += --host=x86_64-unknown-linux-gnu
