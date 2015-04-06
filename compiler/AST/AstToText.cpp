@@ -1372,3 +1372,38 @@ bool AstToText::isMtArg(CallExpr* expr, bool expectThis) const
   return retval;
 }
 
+void AstToText::appendEnumDecl(EnumType* et) {
+  mText += et->symbol->name;
+
+  appendEnumConstants(et);
+}
+
+void AstToText::appendEnumConstants(EnumType* et) {
+  int count = et->constants.length;
+  bool first = true;
+
+  if (count > 0) {
+    mText += " { ";
+
+    for_alist(constant, et->constants) {
+      if (DefExpr* de = toDefExpr(constant)) {
+        if (!first) {
+          mText += ", ";
+        } else {
+          first = false;
+        }
+
+        mText += de->sym->name;
+        if (de->init) {
+          mText += " = ";
+          appendExpr(de->init, false);
+        }
+      } else {
+        mText += " appendEnumConstants.00";
+      }
+    }
+    mText += " }";
+  } else {
+    mText += "";
+  }
+}
