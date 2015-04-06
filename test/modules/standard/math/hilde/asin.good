@@ -1,0 +1,8 @@
+re32a = -0.653339 asin(re32a) = -0.711986
+re32b = -0.0 asin(re32b) = -0.0
+re32c = 0.0 asin(re32c) = 0.0
+re32d = 0.814421 asin(re32d) = 0.95173
+re64a = -0.988837 asin(re64a) = -1.42124
+re64b = -0.0 asin(re64b) = -0.0
+re64c = 0.0 asin(re64c) = 0.0
+re64d = 0.153876 asin(re64d) = 0.15449

@@ -1,0 +1,8 @@
+bug: documentation of fields with default value that is an enum is ugly
+
+When a field indicates that its default value is an enum, at the moment we
+document it as `.(<enum>, <value>)` instead of <enum>.<value>.  This incorrect
+behavior displays part of our compiler internals and should be fixed.
+
+It is probably related to a similar problem with globals (see
+test/chpldoc/globals/enums.doc.chpl)

@@ -1,0 +1,8 @@
+re32a = -0.653339 sinh(re32a) = -0.700821
+re32b = -0.0 sinh(re32b) = -0.0
+re32c = 0.0 sinh(re32c) = 0.0
+re32d = 0.814421 sinh(re32d) = 0.907485
+re64a = -0.988837 sinh(re64a) = -1.15805
+re64b = -0.0 sinh(re64b) = -0.0
+re64c = 0.0 sinh(re64c) = 0.0
+re64d = 0.153876 sinh(re64d) = 0.154484

@@ -558,7 +558,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode!=0);
   fprintf(makefile.fptr, "COMP_GEN_IEEE_FLOAT = %i\n", fieeefloat!=0);
   
-  fprintf(makefile.fptr, "COMP_GEN_CFLAGS =");
+  fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS =");
 
   if (fLibraryCompile && (fLinkStyle==LS_DYNAMIC))
     fprintf(makefile.fptr, " $(SHARED_LIB_CFLAGS)");

@@ -1,0 +1,15 @@
+Module: enums.doc
+   enum Color { Red, Yellow, Blue }
+      This is a color enum. 
+
+   proc gimmeAColor(c: Color)
+      This function takes an enum as an argument 
+
+   proc colorDefault(c = Color.Red)
+      This function makes an enum the default value for
+      its argument
+
+   proc defaultAndType(c: Color = Color.Blue)
+      This function has both declared that it wants an enum
+      and defined a default value for its argument 
+

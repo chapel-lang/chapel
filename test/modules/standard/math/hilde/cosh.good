@@ -1,0 +1,8 @@
+re32a = -0.653339 cosh(re32a) = 1.22113
+re32b = -0.0 cosh(re32b) = 1.0
+re32c = 0.0 cosh(re32c) = 1.0
+re32d = 0.814421 cosh(re32d) = 1.35038
+re64a = -0.988837 cosh(re64a) = 1.53006
+re64b = -0.0 cosh(re64b) = 1.0
+re64c = 0.0 cosh(re64c) = 1.0
+re64d = 0.153876 cosh(re64d) = 1.01186

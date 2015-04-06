@@ -1,0 +1,8 @@
+re32a = -0.653339 tanh(re32a) = -0.573913
+re32b = -0.0 tanh(re32b) = -0.0
+re32c = 0.0 tanh(re32c) = 0.0
+re32d = 0.814421 tanh(re32d) = 0.672022
+re64a = -0.988837 tanh(re64a) = -0.756866
+re64b = -0.0 tanh(re64b) = -0.0
+re64c = 0.0 tanh(re64c) = 0.0
+re64d = 0.153876 tanh(re64d) = 0.152673

@@ -1,0 +1,16 @@
+ui8b = 32 log2(ui8b) = 5
+ui16b = 42441 log2(ui16b) = 15
+ui32b = 3997024116 log2(ui32b) = 31
+ui64b = 17914497524592412092 log2(ui64b) = 63
+i8c = 5 log2(i8c) = 2
+i16c = 5120 log2(i16c) = 12
+i32c = 666765169 log2(i32c) = 29
+i64c = 2625360699462582167 log2(i64c) = 61
+re32a = -0.653339 log2(re32a) = nan
+re32b = -0.0 log2(re32b) = -inf
+re32c = 0.0 log2(re32c) = -inf
+re32d = 0.814421 log2(re32d) = -0.296154
+re64a = -0.988837 log2(re64a) = nan
+re64b = -0.0 log2(re64b) = -inf
+re64c = 0.0 log2(re64c) = -inf
+re64d = 0.153876 log2(re64d) = -2.70016

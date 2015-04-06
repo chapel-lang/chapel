@@ -1,4 +1,4 @@
-Module: complexes
+Module: complexes.doc
    Record: Foo
       var aComplex: complex = +(, )
       const bar = +(, )
