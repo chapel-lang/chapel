@@ -1,0 +1,16 @@
+bug: documentation of globals with default value that is an enum is ugly
+
+When a global indicates that its default value is an enum, at the moment we
+document it as `.(<enum>, <value>)` instead of <enum>.<value>.  This incorrect
+behavior displays part of our compiler internals and should be fixed.
+
+For example:
+
+var foo = Color.Red;
+
+gets displayed as:
+
+var foo = .(Color, "Red")
+
+It is probably related to a similar problem with fields (see
+test/chpldoc/types/fields/enums.doc.chpl)
