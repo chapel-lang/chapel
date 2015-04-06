@@ -1,8 +1,0 @@
-re32a = -0.653339 rint(re32a) = -1.0
-re32b = -0.0 rint(re32b) = -0.0
-re32c = 0.0 rint(re32c) = 0.0
-re32d = 0.814421 rint(re32d) = 1.0
-re64a = -0.988837 rint(re64a) = -1.0
-re64b = -0.0 rint(re64b) = -0.0
-re64c = 0.0 rint(re64c) = 0.0
-re64d = 0.153876 rint(re64d) = 0.0
