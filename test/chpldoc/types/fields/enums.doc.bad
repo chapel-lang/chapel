@@ -1,0 +1,13 @@
+Module: enums.doc
+   enum Color { Red, Yellow, Blue }
+      This is a color enum. 
+
+   Class: colorCup
+      This class holds many different colors 
+
+      var defOnly = .(Color, "Yellow")
+         Field has only enum as a default value 
+      var typeOnly: Color
+         Field has only enum as its type 
+      var both: Color = .(Color, "Red")
+         Field has both a type and default value 
