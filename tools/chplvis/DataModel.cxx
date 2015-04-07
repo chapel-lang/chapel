@@ -14,7 +14,7 @@
 
 int DataModel::LoadData(const char * filename)
 {
-  printf ("LoadData %s\n", filename);
+  // printf ("LoadData %s\n", filename);
 
   const char *suffix = strrchr(filename, '-');
   if (!suffix) {
@@ -25,9 +25,9 @@ int DataModel::LoadData(const char * filename)
   }
   suffix += 1;
   int namesize = strlen(filename) - strlen(suffix);
-  int fileno = atoi(suffix);
+  // int fileno = atoi(suffix);
 
-  printf ("LoadData:  namesize is %d, fileno is %d\n", namesize, fileno);
+  // printf ("LoadData:  namesize is %d, fileno is %d\n", namesize, fileno);
   
   FILE *data = fopen(filename, "r");
   if (!data) {
@@ -59,7 +59,7 @@ int DataModel::LoadData(const char * filename)
   fclose(data);
 
   char fname[namesize+15];
-  printf ("LoadData: nlocalse = %d, fnum = %d seq = %.3lf\n", nlocales, fnum, seq);
+  // printf ("LoadData: nlocalse = %d, fnum = %d seq = %.3lf\n", nlocales, fnum, seq);
 
   // Set the number of locales.
   numLocales = nlocales;
@@ -91,7 +91,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
   if (!data) return 0;
 
-  printf ("LoadFile %s\n", filename);
+  // printf ("LoadFile %s\n", filename);
   if (fgets(line,1024,data) != line) {
     fprintf (stderr, "Error reading file %s.\n", filename);
     return 0;
@@ -119,14 +119,32 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   // Now read the rest of the file
 
   while ( fgets(line, 1024, data) == line ) {
+    // Common Data
     char *linedata;
     long sec;
     long usec;
+    long nextCh;
 
+    // Data for tasks and comm
+    int nid;    // Node id
+    int ntll;   // Node task list locale
+    char nbstr[10];  // "begin" or "nb"
+    int nlineno; // line number starting the task
+    char nfilename[512];  // File name starting the task
+
+    // comm specific
+    int isGet;  // put (0), get (1)  currently ignoring non-block and strid
+    int rnid;   // remote id
+    long locAddr;  // local address
+    long remAddr;  // remote address
+    int eSize;     // element size
+    int typeIx;    // type Index
+    int dlen;      // data length 
+    
     // Process the line
     linedata = strchr(line, ':');
     if (linedata) {
-      if (sscanf (linedata, ": %ld.%ld", &sec, &usec) != 2) {
+      if (sscanf (linedata, ": %ld.%ld%ln", &sec, &usec, &nextCh) != 2) {
 	printf ("Can't read time from '%s'\n", linedata);
       }
     }
@@ -138,25 +156,42 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	break;
 
       case 't':  // new task line
+	//  task: s.u nodeID task_list_locale begin/nb lineno filename
+	if (sscanf(&linedata[nextCh], "%d %d %9s %d %511s",
+		   &nid, &ntll, nbstr, &nlineno, nfilename) != 5) {
+	  fprintf (stderr, "Bad task line: %s\n", filename);
+	  fprintf (stderr, "nid = %d, ntll = %d, nbstr = '%s', nlineno = %d"
+		   " nfilename = '%s'\n", nid, ntll, nbstr, nlineno, nfilename);
+	}
 	break;
 
       case 'e':  // end task (not generated yet)
-        printf ("E");
+        //printf ("E");
 	break;
 
       case 'n':  // non-blocking put or get
       case 's':  // strid put or get
       case 'g':  // regular get
       case 'p':  // regular put
-	// All similar data ... 
+	// All comm data: 
+	// s.u nodeID otherNode loc-addr rem-addr elemSize typeIndex len lineno filename
+	if (sscanf(&linedata[nextCh], "%d %d 0x%lx 0x%lx %d %d %d %d %511s",
+		   &nid, &rnid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
+		   &nlineno, nfilename) != 9) {
+	  fprintf (stderr, "Bad comm line: %s\n", filename);
+	}
+	isGet = (line[0] == 'g' ? 1 :
+		 line[0] == 'p' ? 0 :
+		 line[3] == 'g' ? 1 : 0);
 	break;
       
       default:
-        printf ("X");
+        //printf ("X");
         //fl_alert("Bad input data.");
+	/* Do nothing */ ;
     }
   }
-  printf("\n");
+  // printf("\n");
 
   if ( !feof(data) ) return 0;
 

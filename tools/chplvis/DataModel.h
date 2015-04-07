@@ -1,6 +1,9 @@
 #ifndef DATAMODEL_H
 #define DATAMODEL_H
 
+#include "Event.h"
+#include <list>
+
 class DataModel {
 
   int LoadFile (const char *filename, int index, double seq);
@@ -15,6 +18,7 @@ class DataModel {
   //  be a multi-digit number
   //  Returns 1 if successful, 0 if not
 
+
   int LoadData (const char *filename);
 
   //  Number of locales found in loading files
@@ -25,7 +29,7 @@ class DataModel {
 
   int numLocales;
 
-  
+  std::list<Event*> theEvents;  
 
 };
 

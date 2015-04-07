@@ -18,7 +18,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label CommViewer open
-    xywh {482 593 500 520} type Double resizable size_range {200 220 0 0} visible
+    xywh {482 552 500 520} type Double resizable size_range {200 220 0 0} visible
   } {
     Fl_Menu_Bar {} {open
       xywh {0 0 510 20} color 55
@@ -36,7 +36,7 @@ if (selfile) {
    VisData.LoadData(selfile);
    DbgView->setNumLocales(VisData.NumLocales());
    MainWindow->redraw();
-}} selected
+}}
           xywh {0 0 34 21}
         }
         MenuItem {} {

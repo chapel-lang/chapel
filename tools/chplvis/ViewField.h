@@ -10,6 +10,18 @@ class ViewField;  // So we can include chplvis.h
 
 // extern Fl_Double_Window *MainWin;
 
+struct localeInfo {
+  int x;
+  int y;
+  int w;
+  int h;
+  int numTasks;
+  Fl_Color heat;
+};
+
+static const double twopi = 6.28318530717958647688;
+static const double pi = 3.14159265358979323844;
+
 class ViewField : public Fl_Box {
 
   private:
@@ -19,6 +31,12 @@ class ViewField : public Fl_Box {
     double rx, ry; // Radius of the locales
     double angle;
     double start;
+
+    localeInfo *theLocales;
+    int getSize; // need this to deallocate after changing numlocales
+    int **numGets;
+
+    void allocArrays();
 
   public:
 
@@ -36,15 +54,20 @@ class ViewField : public Fl_Box {
 
   void setNumLocales(int n)
     { 
-      printf("NumLocalse set to %d\n", n);
+      //printf("NumLocalse set to %d\n", n);
       numlocales = n;
-      angle = 6.28318530717958647688 / numlocales;
+      angle = twopi / numlocales;
       start = ( numlocales % 2 == 0 ? angle / 2 : 0 );
+      allocArrays();
     }
 
   int  getNumLocales(void) { return numlocales; }
-  
+
+  // Draw a "locale box, with ix as the label on it
   void drawLocale(int ix, Fl_Color col);
+
+  // Draw a comm line between loc1 and loc2, color changing in the middle
+  void drawCommLine(int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
 
 };
 

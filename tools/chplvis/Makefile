@@ -3,7 +3,7 @@
 # FLTK config section
 
 CXX= $(shell fltk-config --cxx)
-CXXFLAGS= $(shell fltk-config --cxxflags) -Wall -I.
+CXXFLAGS= $(shell fltk-config --cxxflags) -Wall -I. -g
 
 LDFLAGS= $(shell fltk-config --ldflags)
 LIBS= $(shell fltk-config --libs)
@@ -16,8 +16,8 @@ CHPL_HOST_PLATFORM= $(shell printenv CHPL_HOST_PLATFORM)
 .cxx.o:
 	$(CXX) -c $(CXXFLAGS) $<
 
-SRCS= ViewField.cxx DataModel.cxx
-HFILES= ViewField.h DataModel.h
+SRCS= ViewField.cxx DataModel.cxx Event.cxx
+HFILES= ViewField.h DataModel.h Event.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -40,7 +40,6 @@ install: chplvis
 	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
-chplvis.o: chplvis.h ViewField.h DataModel.h
-ViewField.o: ViewField.h DataModel.h
-DataModel.o: DataModel.h
-
+chplvis.o: chplvis.h ViewField.h DataModel.h Event.h
+ViewField.o: ViewField.h DataModel.h Event.h
+DataModel.o: DataModel.h Event.h
