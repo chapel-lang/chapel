@@ -46,6 +46,9 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
 
           echo "Setting CHPL_LLVM to none"
           export CHPL_LLVM=none
+
+          echo "Setting CHPL_LAUNCHER to none"
+          export CHPL_LAUNCHER=none
         fi
    else
       echo "Error: util/setchplenv must be sourced from within the chapel root directory"

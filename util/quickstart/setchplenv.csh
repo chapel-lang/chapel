@@ -51,3 +51,6 @@ setenv CHPL_REGEXP none
 echo "Setting CHPL_LLVM to none"
 setenv CHPL_LLVM none
 
+echo "Setting CHPL_LAUNCHER to none"
+setenv CHPL_LAUNCHER none
+
