@@ -1168,20 +1168,37 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
 void AstToText::appendExpr(DefExpr* expr, bool printingType)
 {
-  mText += '?';
+  if (printingType)
+    {
 
-  if (VarSymbol* var = toVarSymbol(expr->sym))
-  {
-    if (strncmp(var->name, "chpl__query", 11) != 0)
-      mText += var->name;
-  }
+    mText += '?';
+
+    if (VarSymbol* var = toVarSymbol(expr->sym))
+      {
+        if (strncmp(var->name, "chpl__query", 11) != 0)
+          mText += var->name;
+      }
+
+    else
+      {
+        // NOAKES 2015/02/05  Debugging support.
+        // Might become ASSERT in the future
+        mText += " appendExpr.DefExpr.00";
+      }
+    }
 
   else
-  {
-    // NOAKES 2015/02/05  Debugging support.
-    // Might become ASSERT in the future
-    mText += " appendExpr.DefExpr.00";
-  }
+    {
+      mText += expr->sym->name;
+      if (expr->exprType) {
+        mText += ": ";
+        appendExpr(expr->exprType, true);
+      }
+      if (expr->init) {
+        mText += " = ";
+        appendExpr(expr->init, false);
+      }
+    }
 }
 
 void AstToText::appendExpr(NamedExpr* expr, bool printingType)
@@ -1392,13 +1409,11 @@ void AstToText::appendEnumConstants(EnumType* et) {
         } else {
           first = false;
         }
-
-        mText += de->sym->name;
-        if (de->init) {
-          mText += " = ";
-          appendExpr(de->init, false);
-        }
+        appendExpr(de, false);
       } else {
+        // LYDIA 2015/04/06 Debugging support.  Means that the list of enum
+        // constants contained something that wasn't a DefExpr, which is
+        // unexpected
         mText += " appendEnumConstants.00";
       }
     }
