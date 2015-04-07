@@ -1,5 +1,4 @@
 CHPL_TARGET_COMPILER==cray-prgenv-pgi
-CHPL_TARGET_COMPILER==cray-prgenv-cray
 CHPL_TARGET_COMPILER==pgi
 CHPL_TARGET_COMPILER==cray
 CHPL_ATOMICS!=intrinsics
