@@ -419,7 +419,7 @@ def FindGoodFile(basename, commExecNums=['']):
             goodfile = basename+'.'+machine+commExecNum+'.good'
         # Else if --no-local try the no-local .good file.
         if not os.path.isfile(goodfile):
-            if '--no-local' in globalCompopts:
+            if '--no-local' in envCompopts:
                 goodfile=basename+'.no-local'+commExecNum+'.good'
         # Else try comm and locale model specific .good file.
         if not os.path.isfile(goodfile):
@@ -787,23 +787,18 @@ else:
 #   or not this is a good idea, but preserving it for now for backwards
 #   compatibility.
 #
+
+directoryCompopts = list(' ')
 if (perftest and os.access(PerfDirFile('COMPOPTS'),os.R_OK)): # ./PERFCOMPOPTS
-    tgco=ReadFileWithComments(PerfDirFile('COMPOPTS'))
-    directoryCompopts = shlex.split(tgco[0])
+    directoryCompopts=ReadFileWithComments(PerfDirFile('COMPOPTS'))
 elif os.access('./COMPOPTS',os.R_OK):
-    tgco=ReadFileWithComments('./COMPOPTS')
-    directoryCompopts = shlex.split(tgco[0])
-else:
-    directoryCompopts = []
+    directoryCompopts=ReadFileWithComments('./COMPOPTS')
 
 envCompopts = os.getenv('COMPOPTS')
 if envCompopts is not None:
     envCompopts = shlex.split(envCompopts)
 else:
   envCompopts = []
-
-globalCompopts = directoryCompopts + envCompopts
-# sys.stdout.write('globalCompopts=%s\n'%(globalCompopts))
 
 # Global CHPLDOCOPTS
 if os.access('./CHPLDOCOPTS', os.R_OK):
@@ -1122,21 +1117,34 @@ for testname in testsrc:
             numTrials = 1
 
     # Get list of test specific compiler options
+    # Default to [' ']
+    compoptslist = list(' ')
+
     chpldoc_opts_filename = test_filename + chpldocsuffix
     if test_is_chpldoc and os.access(chpldoc_opts_filename, os.R_OK):
         compoptslist = ReadFileWithComments(chpldoc_opts_filename, False)
         if not compoptslist:
             sys.stdout.write('[Warning: ignoring an empty chpldocopts file %s]\n' %
                              (test_filename+compoptssuffix))
-            compoptslists = list(' ')
     elif os.access(test_filename+compoptssuffix, os.R_OK):
         compoptslist = ReadFileWithComments(test_filename+compoptssuffix, False)
         if not compoptslist:
             # cf. for execoptslist no warning is issued
             sys.stdout.write('[Warning: ignoring an empty compopts file %s]\n'%(test_filename+compoptssuffix))
-            compoptslist = list(' ')
-    else:
-        compoptslist = list(' ')
+
+    # Merge global compopts list with local compopts.
+    # Use the "product" of the two if they are both provided.
+    usecompoptslist = [ ]
+    # Note -- this could use itertools.product
+    for dir_compopts in directoryCompopts:
+        for file_compopts in compoptslist:
+            useopt = [dir_compopts, file_compopts]
+            usearg = ' '.join(useopt)
+            # But change all-spaces into single space.
+            if usearg.strip() == '':
+              usearg = ' '
+            usecompoptslist += [usearg]
+    compoptslist = usecompoptslist
 
     # The test environment is that of this process, augmented as specified
     if os.access(test_filename+execenvsuffix, os.R_OK):
@@ -1216,13 +1224,13 @@ for testname in testsrc:
         if test_is_chpldoc:
             args += globalChpldocOpts + shlex.split(compopts)
         else:
-            args += ['-o', execname] + globalCompopts + shlex.split(compopts)
+            args += ['-o', execname] + envCompopts + shlex.split(compopts)
         args += [testname]
 
         if is_c_test:
             # we need to drop envCompopts for C tests as those are options
-            # for `chpl` so add directoryCompopts rather than globalCompopts
-            args = ['-o', test_filename]+directoryCompopts+shlex.split(compopts)+[testname]
+            # for `chpl` so don't include them here
+            args = ['-o', test_filename]+shlex.split(compopts)+[testname]
             cmd = c_compiler
         else:
             if test_is_chpldoc and not compiler.endswith('chpldoc'):
@@ -1335,7 +1343,7 @@ for testname in testsrc:
                 sys.stdout.flush()
                 subprocess.Popen(['./PREDIFF',
                                   execname,complog,compiler,
-                                  ' '.join(globalCompopts)+' '+compopts,
+                                  ' '.join(envCompopts)+' '+compopts,
                                   ' '.join(args)]).wait()
 
             if prediff:
@@ -1343,7 +1351,7 @@ for testname in testsrc:
                 sys.stdout.flush()
                 subprocess.Popen(['./'+test_filename+'.prediff',
                                   execname,complog,compiler,
-                                  ' '.join(globalCompopts)+' '+compopts,
+                                  ' '.join(envCompopts)+' '+compopts,
                                   ' '.join(args)]).wait()
 
             
@@ -1776,7 +1784,7 @@ for testname in testsrc:
                         sys.stdout.flush()
                         sys.stdout.write(subprocess.Popen([systemPrediff,
                                                           execname,execlog,compiler,
-                                                          ' '.join(globalCompopts)+
+                                                          ' '.join(envCompopts)+
                                                           ' '+compopts,
                                                           ' '.join(args)],
                                                           stdout=subprocess.PIPE).
@@ -1787,7 +1795,7 @@ for testname in testsrc:
                         sys.stdout.flush()
                         sys.stdout.write(subprocess.Popen(['./PREDIFF',
                                                           execname,execlog,compiler,
-                                                          ' '.join(globalCompopts)+
+                                                          ' '.join(envCompopts)+
                                                           ' '+compopts,
                                                           ' '.join(args)],
                                                           stdout=subprocess.PIPE).
@@ -1798,7 +1806,7 @@ for testname in testsrc:
                         sys.stdout.flush()
                         sys.stdout.write(subprocess.Popen(['./'+prediff,
                                                           execname,execlog,compiler,
-                                                          ' '.join(globalCompopts)+
+                                                          ' '.join(envCompopts)+
                                                           ' '+compopts,
                                                           ' '.join(args)],
                                                           stdout=subprocess.PIPE).
