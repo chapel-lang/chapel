@@ -17,9 +17,10 @@
  * limitations under the License.
  */
 
+#include "docsDriver.h"
+
 #include "commonFlags.h"
 #include "driver.h"
-#include "docsDriver.h"
 
 bool fDocs = false;
 char fDocsAuthor[256] = "";

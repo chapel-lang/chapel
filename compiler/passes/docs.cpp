@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "docs.h"
+
 #include <cerrno>
 #include <fstream>
 #include <iostream>
@@ -36,8 +38,6 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "stringutil.h"
-
-#include "docs.h"
 
 static int compareNames(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -295,9 +295,9 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr(venvBinDir, "/sphinx-build");
 
-  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && \
-                              export VIRTUAL_ENV=", venvDir, " && \
-                              export CHPLDOC_AUTHOR='", fDocsAuthor, "'");
+  const char * envVars = astr("export PATH=", venvBinDir, ":$PATH && "
+                              "export VIRTUAL_ENV=", venvDir, " && "
+                              "export CHPLDOC_AUTHOR='", fDocsAuthor, "'");
 
   // Run:
   //   $envVars &&
