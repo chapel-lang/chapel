@@ -241,7 +241,7 @@ void createDocsFileFolders(std::string filename) {
     dirCutoff += total;
     std::string shorter = filename.substr(dirCutoff+1);
     std::string otherHalf = filename.substr(0, dirCutoff);
-    if (otherHalf.length() > 0) {
+    if (otherHalf.length() > 0 && !existsAndDir(otherHalf.c_str())) {
       makeDir(otherHalf.c_str());
     }
     total = dirCutoff + 1;
@@ -260,6 +260,14 @@ static void makeDir(const char* dirpath) {
     USR_FATAL(astr("Failed to create directory: ", dirpath,
                    " due to: ", strerror(errno)));
   }
+}
+
+
+/* Returns true if dirpath exists on file system and is a directory. */
+static bool existsAndDir(const char* dirpath) {
+  struct stat sb;
+  return stat(dirpath, &sb) == 0 &&
+    S_ISDIR(sb.st_mode);
 }
 
 

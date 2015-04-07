@@ -37,6 +37,8 @@ bool isNotSubmodule(ModuleSymbol *mod);
 
 static void makeDir(const char* dirpath);
 
+static bool existsAndDir(const char* dirpath);
+
 static std::string generateSphinxProject(std::string dirpath);
 
 static void generateSphinxOutput(std::string sphinxDir, std::string outputDir);
