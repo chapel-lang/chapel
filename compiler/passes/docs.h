@@ -19,6 +19,8 @@
 
 #include <string>
 
+#include "symbol.h"
+
 void createDocsFileFolders(std::string filename);
 
 void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs);
