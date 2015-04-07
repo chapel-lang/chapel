@@ -1,7 +1,7 @@
 #ifndef _EVENT_H_
 #define _EVENT_H_
 
-
+enum Event_kind {Ev_task, Ev_comm};
 
 class Event {  // Base class for events .....
 
@@ -16,7 +16,8 @@ class Event {  // Base class for events .....
 
     long tsec () { return sec; }
     long tusec () { return usec; }
-     
+
+    virtual int Ekind() = 0;
 };
 
 
@@ -31,6 +32,8 @@ class  E_task : public Event {
 
     int localId() { return nodeid; }
 
+    virtual int Ekind() {return Ev_task;}
+
 };
 
 class E_comm : public Event {
@@ -44,6 +47,8 @@ class E_comm : public Event {
 
      int srcId() { return srcid; }
      int dstId() { return dstid; }
+
+     virtual int Ekind() {return Ev_comm;}
 
 };
 

@@ -116,7 +116,6 @@ const TableSpace: domain(1, indexType) dmapped TableDist = {0..m-1},
 //
 proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
-  startVdebug("RA");
   //
   // T is the distributed table itself, storing a variable of type
   // elemType for each index in TableSpace.
@@ -131,6 +130,7 @@ proc main() {
   [i in TableSpace] T[i] = i;
 
   const startTime = getCurrentTime();              // capture the start time
+  startVdebug("RA");
 
   //
   // The main computation: Iterate over the set of updates and the

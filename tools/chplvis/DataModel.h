@@ -33,14 +33,16 @@ class DataModel {
 
   Event * getFirstEvent() {
             curEvent = theEvents.begin();
+	    if (curEvent == theEvents.end())
+	      return NULL;
 	    return *curEvent;
           }
 
   Event * getNextEvent() {
+            curEvent++;
 	    if (curEvent == theEvents.end())
 	      return NULL;
-	    else 
-	      return *(++curEvent);
+	    return *curEvent;
           }
 
  private:

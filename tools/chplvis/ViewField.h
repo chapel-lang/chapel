@@ -16,7 +16,7 @@ struct localeInfo {
   int w;
   int h;
   int numTasks;
-  Fl_Color heat;
+  // Fl_Color heat;
 };
 
 static const double twopi = 6.28318530717958647688;
@@ -36,6 +36,11 @@ class ViewField : public Fl_Box {
     int getSize; // need this to deallocate after changing numlocales
     int **numGets;
 
+    int maxTasks;
+    int maxComms;
+
+    // Methods
+
     void allocArrays();
 
   public:
@@ -51,6 +56,8 @@ class ViewField : public Fl_Box {
   int handle(int event);
 
   // Processing routines
+
+  void processData();
 
   void setNumLocales(int n)
     { 

@@ -1,5 +1,4 @@
 
-
 #include "DataModel.h"
 
 // FLTK includes
@@ -14,7 +13,7 @@
 
 void DataModel::newList()
 {
-  printf ("newList ...\n");
+  //printf ("newList ...\n");
   curEvent = theEvents.begin();
   while (curEvent != theEvents.end()) {
     //Event *e = *curEvent;
@@ -89,7 +88,7 @@ int DataModel::LoadData(const char * filename)
   }
 
   printf (" done.\n");
-  printf ("list has %d items\n", theEvents.size());
+  printf ("list has %lu items\n", theEvents.size());
 
   return 1;
 }
@@ -105,6 +104,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   int floc;
   int findex;
   double fseq;
+
+  int  nErrs = 0;
 
   if (!data) return 0;
 
@@ -165,14 +166,18 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
       if (sscanf (linedata, ": %ld.%ld%ln", &sec, &usec, &nextCh) != 2) {
 	printf ("Can't read time from '%s'\n", linedata);
       }
+    } else {
+      nErrs++;
+      continue;
     }
 
-    Event *newEvent;
+    Event *newEvent = NULL;
     
-    // printf("%c", line[0]);
+    //printf("%c", line[0]);
     switch (line[0]) {
 
       case 0:  // Bug in output???
+        nErrs++;
 	break;
 
       case 't':  // new task line
@@ -182,12 +187,13 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  fprintf (stderr, "Bad task line: %s\n", filename);
 	  fprintf (stderr, "nid = %d, ntll = %d, nbstr = '%s', nlineno = %d"
 		   " nfilename = '%s'\n", nid, ntll, nbstr, nlineno, nfilename);
+	} else {
 	  newEvent = new E_task(sec, usec, ntll);
 	}
 	break;
 
       case 'e':  // end task (not generated yet)
-        //printf ("E");
+        //printf ("z");
 	break;
 
       case 'n':  // non-blocking put or get
@@ -200,31 +206,33 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 		   &nid, &rnid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
 		   &nlineno, nfilename) != 9) {
 	  fprintf (stderr, "Bad comm line: %s\n", filename);
+	} else {
+	  isGet = (line[0] == 'g' ? 1 :
+		   line[0] == 'p' ? 0 :
+		   line[3] == 'g' ? 1 : 0);
+	  if (isGet)
+	    newEvent = new E_comm(sec, usec, rnid, nid);
+	  else
+	    newEvent = new E_comm(sec, usec, nid, rnid);
 	}
-	isGet = (line[0] == 'g' ? 1 :
-		 line[0] == 'p' ? 0 :
-		 line[3] == 'g' ? 1 : 0);
-	if (isGet)
-	  newEvent = new E_comm(sec, usec, rnid, nid);
-	else
-	  newEvent = new E_comm(sec, usec, nid, rnid);
 	break;
       
       default:
-        //printf ("X");
-        //fl_alert("Bad input data.");
 	/* Do nothing */ ;
+	//printf ("d");
     }
     //  Add the newEvent to the list
-    if (theEvents.empty())
-      theEvents.push_front(newEvent);
-    else {
-      while (itr != theEvents.end() && *itr < newEvent) itr++;
-      theEvents.insert(itr, newEvent);  
+    if (newEvent) {
+      if (theEvents.empty()) {
+	theEvents.push_front(newEvent);
+      } else {
+	while (itr != theEvents.end() && *itr < newEvent) itr++;
+	theEvents.insert(itr, newEvent);
+      }
     }
       
   }
-  // printf("\n");
+  if (nErrs) fprintf(stderr, "%d errors in data file '%s'.\n", nErrs, filename);
 
   if ( !feof(data) ) return 0;
 

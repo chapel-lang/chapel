@@ -4,12 +4,46 @@
 #include "math.h"
 #include <FL/fl_draw.H>
 
+// Local utility functions
+
 static Fl_Color heatColor ( int val, int max ) {
-  // if (val == 0) return FL_WHITE;
+  if (val == 0) return FL_WHITE;
   return fl_rgb_color( 255*((0.0+val)/max), 255 * ((-1.0+max-val)/max), 0);
 }
 
-// Private methods ...
+//  ViewField Constructors
+
+
+ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
+  : Fl_Box (bx, by, bw, bh, 0) 
+{
+  // printf ("ViewField init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
+  numlocales = 0;
+  theLocales = NULL;
+  numGets = NULL;
+  if (VisData.NumLocales() > 0) {
+    setNumLocales(VisData.NumLocales());
+  }
+  maxTasks = 1;
+  maxComms = 1;
+};
+
+ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh, const char *label)
+  : Fl_Box (b, bx, by, bw, bh, 0)
+{
+  // printf ("ViewField init with boxtype. h=%d, w=%d\n",bh,bw);
+  numlocales = 0;
+  theLocales = NULL;
+  numGets = NULL;
+  if (VisData.NumLocales() > 0) {
+    setNumLocales(VisData.NumLocales());
+  }
+  maxTasks = 1;
+  maxComms = 1;
+};
+
+
+// Private methods 
 
 void ViewField::allocArrays()
 {
@@ -31,6 +65,8 @@ void ViewField::allocArrays()
     fprintf (stderr, "chplvis: out of memory.\n");
     exit(1);
   }
+  for (ix =0; ix < numlocales; ix++)
+    theLocales[ix].numTasks = 0;
   getSize = numlocales;
   for (ix = 0; ix < getSize; ix++) {
     numGets[ix] = new int[numlocales];
@@ -47,31 +83,45 @@ void ViewField::allocArrays()
 }
 
 
-// extern DataModel VisData;
+// Public Methods 
 
-  ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
-   : Fl_Box (bx, by, bw, bh, 0) 
-    {
-      // printf ("ViewField init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
-      numlocales = 0;
-      theLocales = NULL;
-      if (VisData.NumLocales() > 0) {
-        setNumLocales(VisData.NumLocales());
-      }
-    };
+void ViewField::processData()
+{
+  int ix1, ix2;  // For processing the arrays
 
-  ViewField::ViewField (Fl_Boxtype b, int bx, int by, int bw, int bh,
-             const char *label)
-    : Fl_Box (b, bx, by, bw, bh, 0)
-    {
-      // printf ("ViewField init with boxtype. h=%d, w=%d\n",bh,bw);
-      numlocales = 0;
-      theLocales = NULL;
-      numGets = NULL;
-      if (VisData.NumLocales() > 0) {
-        setNumLocales(VisData.NumLocales());
-      }
-    };
+  // Initialize ... in case data has changed.
+  for (ix1 = 0; ix1 < numlocales; ix1++) {
+    theLocales[ix1].numTasks = 0;
+    for (ix2 = 0; ix2 < numlocales; ix2++) 
+      numGets[ix1][ix2] = 0;
+  }
+  maxTasks = 1;
+  maxComms = 1;
+
+  Event *ev;
+
+  for ( ev = VisData.getFirstEvent(); ev != NULL; ev = VisData.getNextEvent() ) {
+    E_task *tp;
+    E_comm *cp;
+    switch (ev->Ekind()) {
+      case Ev_task:
+        //  Task event
+        tp = dynamic_cast<E_task *>(ev);
+	fflush(stdout);
+	if (++theLocales[tp->localId()].numTasks > maxTasks)
+	  maxTasks = theLocales[tp->localId()].numTasks;
+        break;
+      case Ev_comm:
+        //  Comm event
+        cp = dynamic_cast<E_comm *>(ev);
+	if (++(numGets[cp->srcId()][cp->dstId()]) > maxComms)
+	  maxComms = numGets[cp->srcId()][cp->dstId()];
+        break;
+    }
+  }
+  printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
+}
+
 
 void ViewField::drawLocale ( int ix, Fl_Color col)
 {
@@ -134,12 +184,16 @@ void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
   midx = loc1->x + dx/2;
   midy = loc1->y + dy/2;
 
-  fl_color(col1);
-  fl_line_style(FL_SOLID, 3, NULL);
-  fl_line(x1,y1,midx,midy);
-  fl_color(col2);
-  fl_line_style(FL_SOLID, 3, NULL);
-  fl_line(midx,midy,x2,y2);
+  if (col1 != FL_WHITE) {
+    fl_color(col1);
+    fl_line_style(FL_SOLID, 3, NULL);
+    fl_line(x1,y1,midx,midy);
+  }
+  if (col2 != FL_WHITE) {
+    fl_color(col2);
+    fl_line_style(FL_SOLID, 3, NULL);
+    fl_line(midx,midy,x2,y2);
+  }
   fl_line_style(FL_SOLID, 1, NULL);
 }
 
@@ -156,14 +210,14 @@ void ViewField::draw()
 
   int ix;
   for (ix = 0; ix < numlocales; ix++) {
-    drawLocale(ix, heatColor(ix, numlocales));
+    drawLocale(ix, heatColor(theLocales[ix].numTasks, maxTasks));
   }
 
   int iy;
   for (ix = 0; ix < numlocales-1; ix++) {
     for (iy = ix + 1; iy < numlocales; iy++)
-      drawCommLine(ix, heatColor(ix,numlocales),
-		   iy, heatColor(numlocales-iy,numlocales));
+      drawCommLine(ix, heatColor(numGets[ix][iy],maxComms),
+		   iy, heatColor(numGets[iy][ix],maxComms));
   }
 }
 
