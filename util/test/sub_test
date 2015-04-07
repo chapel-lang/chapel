@@ -1230,9 +1230,6 @@ for testname in testsrc:
             # for `chpl` so add directoryCompopts rather than globalCompopts
             args = ['-o', test_filename]+directoryCompopts+shlex.split(compopts)+[testname]
             cmd = c_compiler
-            # Put the arguments instead of the {}
-            #cmd = cmd.replace("{}",' '.join(map(ShellEscape, args)))
-            #args = []
         else:
             if test_is_chpldoc and not compiler.endswith('chpldoc'):
                 # For tests with .doc.chpl suffix, use chpldoc compiler. Update
