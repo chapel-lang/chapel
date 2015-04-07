@@ -1318,6 +1318,14 @@ for testname in testsrc:
         print('[Elapsed compilation time for "{0}" - {1:.3f} '
             'seconds]'.format(test_name, elapsedCompTime))
 
+        # remove some_file: output from C compilers
+        if is_c_test:
+          for arg in args:
+            if arg.endswith(".c"):
+              # remove lines like
+              # somefile.c:
+              # that some C compilers emit when compiling multiple files
+              output.replace(arg + ":\n", "");
 
         if (status!=0 or not executebin):
             # Save original output
