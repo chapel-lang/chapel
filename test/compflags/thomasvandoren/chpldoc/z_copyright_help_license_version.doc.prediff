@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+CWD=$(cd $(dirname $0) ; pwd)
+$CWD/../../bradc/printstuff/versionhelp.sh $@ > ${1}.good
+$CWD/../../bradc/printstuff/licensehelp.sh $@ >> ${1}.good
+echo >> ${1}.good
+cat ../chpldoc.doc.good >> ${1}.good
