@@ -38,12 +38,12 @@ module VisualDebug
 
   proc startVdebug ( rootname : string ) {
     var now = chpl_now_time();
-    forall l in Locales do
+    coforall l in Locales do
       on l do chpl_vdebug_start (rootname.c_str(), now);
   }
 
   proc stopVdebug () {
-    forall l in Locales do
+    coforall l in Locales do
       on l do chpl_vdebug_stop();
   }
 

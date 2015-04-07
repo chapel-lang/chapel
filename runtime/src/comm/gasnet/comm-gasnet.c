@@ -989,11 +989,9 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld, %d %d 0x%lx 0x%lx %d %d %d %s\n",
+    dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %s\n",
 	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, dstnode, (long) dstaddr,
              (long) srcaddr, elemSize, typeIndex, ln, fn);
-    // print out the srcstr and dststr?
-	     
   }
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
@@ -1016,6 +1014,15 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
   int     info_size;
   done_t  done;
   int     passArg = sizeof(fork_t) + arg_size <= gasnet_AMMaxMedium();
+
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
+             (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
+             fid, (long) arg, arg_size);
+  }
 
   if (chpl_nodeID == node) {
     chpl_ftable_call(fid, arg);
@@ -1073,6 +1080,15 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
 
   void* argCopy = NULL;
 
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d\n",
+             (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
+             fid, (long) arg, arg_size);
+  }
+
   if (passArg) {
     info_size = sizeof(fork_t) + arg_size;
   } else {
@@ -1129,6 +1145,15 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
   int     info_size = sizeof(fork_t) + arg_size;
   done_t  done;
   int     passArg = info_size <= gasnet_AMMaxMedium();
+
+  if (chpl_vdebug) {
+    struct timeval tv;
+    struct timezone tz = {0,0};
+    (void)gettimeofday(&tv, &tz);
+    dprintf (chpl_vdebug_fd, "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
+             (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
+             fid, (long) arg, arg_size);
+  }
 
   if (chpl_nodeID == node) {
     chpl_ftable_call(fid, arg);
