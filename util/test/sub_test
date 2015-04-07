@@ -1139,7 +1139,11 @@ for testname in testsrc:
     for dir_compopts in directoryCompopts:
         for file_compopts in compoptslist:
             useopt = [dir_compopts, file_compopts]
-            usecompoptslist += [' '.join(useopt)]
+            usearg = ' '.join(useopt)
+            # But change all-spaces into single space.
+            if usearg.strip() == '':
+              usearg = ' '
+            usecompoptslist += [usearg]
     compoptslist = usecompoptslist
 
     # The test environment is that of this process, augmented as specified
