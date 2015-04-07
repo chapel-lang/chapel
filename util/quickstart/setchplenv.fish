@@ -50,3 +50,6 @@ set -x CHPL_REGEXP none
 
 echo "Setting CHPL_LLVM to none"
 set -x CHPL_LLVM none
+
+echo "Setting CHPL_LAUNCHER to none"
+set -x CHPL_LAUNCHER none

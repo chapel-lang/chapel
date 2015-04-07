@@ -72,6 +72,12 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
           export CHPL_LLVM
           echo "                           ...none"
           echo " "
+ 
+          echo "Setting CHPL_LAUNCHER to..."
+          CHPL_LAUNCHER=none
+          export CHPL_LAUNCHER
+          echo "                           ...none"
+          echo " "
           
         fi
    else
