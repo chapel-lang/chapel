@@ -1,0 +1,5 @@
+#!/bin/bash
+
+if [ ! -e existing_dir ]; then
+   mkdir existing_dir
+fi

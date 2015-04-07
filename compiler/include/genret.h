@@ -118,15 +118,8 @@ public:
                    // properly coerce call arguments into the correct
                    // called type, since LLVM native integer types do not
                    // include signed-ness.
-
-  // These fields are used for LLVM TBAA tagging.
-  bool baseTypeConstant; // are we referring to a const variable?
-  Type *chplBaseType; // For records (e.g. R.x.y), what is the record type?
-                      // NULL if we're not doing a record field access
-  int64_t baseTypeOffset; // How many bytes to add to chplBaseType
-                          // to get to the field we are accessing?
-
-  GenRet() : c(), val(NULL), type(NULL), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false), baseTypeConstant(false), chplBaseType(NULL), baseTypeOffset(0)  { }
+                   
+  GenRet() : c(), val(NULL), type(NULL), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
   // Allow implicit conversion from AST elements.
   GenRet(BaseAST* ast) {
     *this = baseASTCodegen(ast);

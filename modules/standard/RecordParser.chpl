@@ -17,45 +17,140 @@
  * limitations under the License.
  */
 
+
+/*
+
+Read records using regular expressions.
+
+A general purpose record reader/parser for channels. Uses a regular expression
+to capture portions of the input, and then assigns each capture to each
+record field.
+
+This module makes the following assumptions:
+
+1. The file has been opened for reading and a reader channel has been created
+
+2. The programmer has created a record (NOT a class) in which all fields 
+   can be cast from strings (i.e no subrecords, arrays etc).
+
+3. The number of captures in the regex string provided MUST match the number
+   of fields in the record.
+
+4. The order in which the fields in the record appear must be in the same order
+   as the record being parsed.
+
+Example 1
+---------
+
+.. code-block:: chapel
+
+  use RecordParser;
+
+  record Bar {
+    var beer: string;
+    var Name: string;
+  }
+
+  var f = open("input1.txt", iomode.rw);
+  var fr = f.reader();
+
+  var M = new RecordReader(Bar, fr);
+
+  var c = M.get();
+  writeln("The first record read is ", c);
+
+  writeln("The rest of the records are:");
+  for r in M.stream() do
+    writeln(r);
+
+
+Example 2
+---------
+
+.. code-block:: chapel
+
+  use RecordParser;
+
+  record Beer {
+    var name:  string;
+    var beerId: int;
+    var brewerId: int;
+    var ABV: real;
+    var style: string;
+    var appearance: real;
+    var aroma: real;
+    var palate: real;
+    var taste: real;
+    var overall: real;
+    var time:  int;
+    var profileName:  string;
+    var text: string;
+  }
+  
+      
+  var strt = "\\s*beer/name: (.*)\\s*beer/beerId: (.*)\\s*beer/brewerId: (.*)\\s*beer/ABV: (.*)\\s*beer/style: (.*)\\s*review/appearance: (.*)\\s*review/aroma: (.*)\\s*review/palate: (.*)\\s*review/taste: (.*)\\s*review/overall: (.*)\\s*review/time: (.*)\\s*review/profileName: (.*)\\s*review/text: (.*)";
+
+  var N = new RecordReader(Beer, ffr, strt);
+  writeln("========== test of stream() ==============");
+  for r in N.stream() do
+    writeln(r);
+
+RecordParser Types and Functions
+--------------------------------
+
+ */
+module RecordParser {
+
 use IO, Regexp;
 
-/* A general purpose record reader/parser for channels.
 
-   The assumptions on the programmer are:
-   (1) The programmer has opened the file in the proper mode 
-
-   (2) The programmer has created a record (NOT a class) that can have an arbitrary
-   number of fields that can be cast from strings (i.e no subrecords, arrays etc).
-
-   (3) The number of captures in the regex string provided, MUST match the number of
-   fields in the record.
-
-   (4) The order in which the fields in the record appear must be in the same order
-   as the record being parsed. See test.chpl for an example of this.
-
-FUTURE: 
-  * Make this be able to take in a class type as opposed to a record type.
-    Right now we cant take in a class type due to the future filed in 
-    $CHPL_HOME/test/types/typedefs/tzakian/classConstructorsFromTypes.chpl
+/* A class providing the ability to read records matching a regular expression.
  */
-
+//   Future work is to make this be able to take in a class type as opposed to a
+//   record type.  Right now we cant take in a class type due to the future filed
+//   in test/types/typedefs/tzakian/classConstructorsFromTypes.chpl
 class RecordReader {
-  type t;                  // The record type to populate
-  var myReader;            // Channel to read from
-  var matchRegexp: regexp; // To match on the channel with
+  /* The record type to populate */
+  type t;
+  /* The channel to read from */
+  var myReader;
+  /* The regular expression to read (using match on the channel) */
+  var matchRegexp: regexp;
+  pragma "no doc"
   param num_fields = __primitive("num fields", t); // Number of fields in record
 
+  /* Create a RecordReader to match an auto-generated regular expression
+     for a record created by the :proc:`createRegexp` routine.
+     
+     :arg t: the record type to read
+     :arg myReader: the channel to read from
+   */
   proc RecordReader(type t, myReader) {
     matchRegexp = compile(createRegexp());
   }
 
+  /* Create a RecordReader to read using a passed regular expression.
+
+     :arg t: the record type to read
+     :arg myReader: the channel to read from
+     :arg mRegexp: the regular expression to read. This argument
+                   currently must be a string, but in the future might be a
+                   compiled regular expression.
+   */
   proc RecordReader(type t, myReader, mRegexp) {
     matchRegexp = compile(mRegexp);
   }
 
-  // This is a VERY loose regex, and therefore could lead to errors unless the data
-  // is very nice... (but hey, the programmer wasnt willing to give us a regex..)
+  /* Create a string regular expression for the record type :type:`t` attached to
+     this RecordReader.
+
+     The created regular expression will search for
+     ``<fieldName1> <spaces> <vieldValue1> <spaces>``
+  */
   proc createRegexp() {
+    // This is a VERY loose regex, and therefore could lead to errors unless the
+    // data is very nice... (but hey, the programmer wasn't willing to give us a
+    // regex..)
     var accum: string = "\\s*";
     for param n in 1..num_fields {
       accum = accum + __primitive("field num to name", t, n) + "\\s*(.*?)" + "\\s*";
@@ -63,6 +158,12 @@ class RecordReader {
     return accum;
   }
 
+  /* Yield records for the range offst..offst+len, but assumes that the
+     channel is already at offst. 
+
+     :arg offst: the current position of the channel
+     :arg len: the number of bytes to read
+   */
   iter stream_num(offst: int(64), len: int(64)) { 
     do {
       var (rec, once) = _get_internal(offst, len);
@@ -78,7 +179,7 @@ class RecordReader {
 
   }
 
-  //  // Get one record 
+  /* Read the next record */
   proc get() { 
     var (rec, once) = _get_internal();
     if(!once) // We havent gotten everything that we should have. 
@@ -86,6 +187,7 @@ class RecordReader {
     return rec;
   }
 
+  /* Yield the records read */
   iter stream() { 
     do {
       var (rec, once) = _get_internal();
@@ -94,9 +196,16 @@ class RecordReader {
     } while(once);
   }
 
-  // An internal function that we use all our user visible code.
-  // When called with no arguments it does no checking abut block boundaries
-  // HDFS specific when offst and len are given. Checks for block boundaries for parallel file IO
+  /*
+
+     An internal function that we use with all our user visible code.  When
+     called with no arguments it does no checking about block boundaries.
+     
+     HDFS specific when offst and len are given. Checks for block boundaries
+     for parallel file IO
+
+   */
+  pragma "no doc"
   proc _get_internal(offst: int(64) = 0, len: int(64) = -1) { 
     var rec: t; // create record
     var once = false; // We havent populated yet
@@ -122,4 +231,4 @@ class RecordReader {
 
 }
 
-
+}

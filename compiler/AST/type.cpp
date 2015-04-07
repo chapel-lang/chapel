@@ -24,6 +24,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "codegen.h"
+#include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "intlimits.h"
@@ -534,8 +535,7 @@ std::string EnumType::docsDirective() {
   if (fDocsTextOnly) {
     return "";
   } else {
-    // TODO: Add enum directive to chapel domain (thomasvandoren, 2015-03-12)
-    return ".. class:: ";
+    return ".. enum:: ";
   }
 }
 
@@ -1472,13 +1472,6 @@ void initPrimitiveTypes() {
   gTryToken->addFlag(FLAG_CONST);
   rootModule->block->insertAtTail(new DefExpr(gTryToken));
 
-  //
-  // IPE tries to run without the rest of the types
-  //
-  if (fUseIPE == true) {
-    return;
-  }
-
   dtNil = createInternalType ("_nilType", "_nilType");
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
 
@@ -1675,7 +1668,6 @@ void initChplProgram(DefExpr* objectDef) {
   theProgram           = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
   theProgram->filename = astr("<internal>");
 
-  theProgram->addFlag(FLAG_NO_USE_CHAPELSTANDARD);
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
   base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));

@@ -232,7 +232,7 @@ class CallGraph {
 
       // calls inside this function
       std::vector<CallExpr*> ch;
-      collectFnCallsSTL(head, ch);
+      collectFnCalls(head, ch);
 
       for_vector(CallExpr, call, ch) {
         if (FnSymbol* fn = call->isResolved()) {
@@ -743,6 +743,10 @@ narrowSym(Symbol* sym, WideInfo* wi,
         DEBUG_PRINTF("Registered as global heap var, must be wide\n");
         wi->mustBeWide = true;
         return;
+      }
+      if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+        wi->mustBeWide = true;
+        continue;
       }
       if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(3) == use) {
         SymExpr* member = toSymExpr(call->get(2));

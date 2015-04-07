@@ -271,7 +271,8 @@ if generating {
     var v : v3;
     var a : int;
     dataReader.readln(a, v(1),v(2),v(3));
-    addatom(new atom(v), x, coord2bin(x));
+    var ta = new atom(v);
+    addatom(ta, x, coord2bin(x));
   }
 
   // cleanup
@@ -446,7 +447,8 @@ proc create_atoms() {
           for m in 1..5 { pmrand(n); }
           v(i) = pmrand(n);
         }
-        addatom(new atom(v), temp, coord2bin(temp));
+        var ta = new atom(v);
+        addatom(ta, temp, coord2bin(temp));
       }
     }
 

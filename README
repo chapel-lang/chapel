@@ -17,6 +17,8 @@ Chapel with a minimum of fuss.  Note that building and using Chapel in
 this mode disables enhanced runtime options and optional language
 capabilities in the interest of a simple and clean build.
 
+0) See doc/README.prereqs for more information about packages you
+   might need to have installed for Chapel to work.
 
 1) Make sure that your shell is in the directory containing this
    README file.  For example:
