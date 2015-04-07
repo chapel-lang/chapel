@@ -1173,20 +1173,16 @@ void AstToText::appendExpr(DefExpr* expr, bool printingType)
 
     mText += '?';
 
-    if (VarSymbol* var = toVarSymbol(expr->sym))
-      {
-        if (strncmp(var->name, "chpl__query", 11) != 0)
-          mText += var->name;
-      }
+    // This section initially was ensuring the sym field referred to
+    // a VarSymbol in this case.  However, since we were only accessing the
+    // name field - which is present for all Symbols - this check was not
+    // necessary.  Should something go wrong with this section, perhaps
+    // first check if expr->sym is a VarSymbol as was initially expected?
+    const char* name = expr->sym->name;
+    if (strncmp(name, "chpl__query", 11) != 0)
+      mText += name;
 
-    else
-      {
-        // NOAKES 2015/02/05  Debugging support.
-        // Might become ASSERT in the future
-        mText += " appendExpr.DefExpr.00";
-      }
     }
-
   else
     {
       mText += expr->sym->name;
@@ -1396,26 +1392,20 @@ void AstToText::appendEnumDecl(EnumType* et) {
 }
 
 void AstToText::appendEnumConstants(EnumType* et) {
-  int count = et->constants.length;
-  bool first = true;
-
-  if (count > 0) {
+  if (et->constants.length > 0) {
+    bool first = true;
     mText += " { ";
 
     for_alist(constant, et->constants) {
-      if (DefExpr* de = toDefExpr(constant)) {
-        if (!first) {
-          mText += ", ";
-        } else {
-          first = false;
-        }
-        appendExpr(de, false);
+      DefExpr* de = toDefExpr(constant);
+      // We expect all members in constants alist to be DefExprs.
+      INT_ASSERT(de);
+      if (!first) {
+        mText += ", ";
       } else {
-        // LYDIA 2015/04/06 Debugging support.  Means that the list of enum
-        // constants contained something that wasn't a DefExpr, which is
-        // unexpected
-        mText += " appendEnumConstants.00";
+        first = false;
       }
+      appendExpr(de, false);
     }
     mText += " }";
   } else {
