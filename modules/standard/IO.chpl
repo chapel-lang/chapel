@@ -1632,6 +1632,9 @@ pragma "no doc"
 // A specialization is needed for _ddata as the value is the pointer its memory
 pragma "no doc"
 extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:ssize_t):syserr;
+// and for c_ptr
+pragma "no doc"
+extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:c_ptr, len:ssize_t):syserr;
 pragma "no doc"
 extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t):int(32);
 
@@ -4398,6 +4401,19 @@ proc channel.close() {
   if e then this._ch_ioerror(e, "in channel.close");
 }
 
+// TODO -- we should probably have separate c_ptr ddata and ref versions
+proc channel.readBytes(x, len:ssize_t, out error:syserr) {
+  error = ENOERR;
+  if here != this.home then halt("bad remote channel.readBytes");
+  error = qio_channel_read_amt(false, _channel_internal, x, len);
+}
+
+proc channel.readBytes(x, len:ssize_t) {
+  var e:syserr = ENOERR;
+  this.readBytes(x, len, error=e);
+  if e then this._ch_ioerror(e, "in channel.readBytes");
+}
+
 /*
 proc channel.modifyStyle(f:func(iostyle, iostyle))
 {
@@ -4629,11 +4645,11 @@ class ChannelReader : Reader {
     }
   }
 
+  // TODO -- we should probably have separate c_ptr ddata and ref versions
   proc readBytes(x, len:ssize_t) {
     if ! err {
-      on this {
-        err = qio_channel_read_amt(false, _channel_internal, x, len);
-      }
+      if here != this.home then halt("bad remote channel.readBytes");
+      err = qio_channel_read_amt(false, _channel_internal, x, len);
     }
   }
 
@@ -6180,6 +6196,41 @@ proc readf(fmt:c_string):bool {
 pragma "no doc"
 proc readf(fmt:string):bool {
   return stdin.readf(fmt);
+}
+
+
+/* Return a new string consisting of a formatted result */
+proc format2(fmt:string, args ...?k, out error:syserr) {
+  // Open a memory buffer to store the result
+  var f = openmem();
+
+  var w = f.writer(locking=false);
+
+  w.writef(fmt, (...args), error=error);
+
+  var offset = w.offset();
+
+  var buf = c_calloc(int(8), offset+1);
+
+  // you might need a flush here if
+  // close went away
+  w.close();
+
+  var r = f.reader(locking=false);
+
+  r.readBytes(buf, offset:ssize_t);
+  r.close();
+
+  f.close();
+
+  var cstrcopy = __primitive("cast", c_string_copy, buf);
+  return toString(cstrcopy);
+}
+proc format2(fmt:string, args ...?k) {
+  var err:syserr = ENOERR;
+  var ret = format2(fmt, (...args), error=err);
+  if err then ioerror(err, "in format2");
+  return ret;
 }
 
 // ---------------------------------------------------------------
