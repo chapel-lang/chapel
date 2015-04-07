@@ -1325,7 +1325,7 @@ for testname in testsrc:
               # remove lines like
               # somefile.c:
               # that some C compilers emit when compiling multiple files
-              output.replace(arg + ":\n", "");
+              output = output.replace(arg + ":\n", "");
 
         if (status!=0 or not executebin):
             # Save original output
