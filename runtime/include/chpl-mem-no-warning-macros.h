@@ -20,20 +20,13 @@
 #ifndef _chpl_mem_no_warning_macros_h_
 #define _chpl_mem_no_warning_macros_h_
 
-// runtime/include/mem/*/chpl-mem-impl.h defines
-// chpl_calloc, chpl_malloc, chpl_realloc, chpl_free
-// with the same signatures as the standard functions
-// and no additional error checking.
-#include "chpl-mem-impl.h"
-
+// Leave malloc/free/etc to use the system allocator.
+// malloc/free may not return memory that can be
+// communicated. malloc/free might return memory
+// outside of a large Chapel pre-allocated heap.
 #undef malloc
 #undef calloc
 #undef free
 #undef realloc
-
-#define malloc  chpl_malloc
-#define calloc  chpl_calloc
-#define free    chpl_free
-#define realloc chpl_realloc
 
 #endif
