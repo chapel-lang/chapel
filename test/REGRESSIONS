@@ -1089,6 +1089,8 @@ Inherits 'cygwin*' and 'linux64'
 Reviewed 2015-04-06
 ================================
 
+Error: Failed to create directory: /cygdrive/c due to: Permission denied: Thomas will resolve
+---------------------------------------------------------------------------------------------
 [Error matching compiler output for release/examples/primers/chpldoc.doc (compopts: 1)] (2015-04-02..
 
 QIO qio_err_to_int() == EEOF assertion error
