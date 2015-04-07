@@ -6,12 +6,16 @@
 
 class DataModel {
 
-  int LoadFile (const char *filename, int index, double seq);
+ private:
+
+   int LoadFile (const char *filename, int index, double seq);
+
+   void newList ();
 
  public:
 
   // 
-  DataModel() { numLocales = -1; }
+   DataModel() { numLocales = -1; curEvent = theEvents.begin(); }
 
   //  LoadFile loads data from a collection of files
   //  filename of the form  basename-n, where n can
@@ -25,11 +29,26 @@ class DataModel {
 
   int NumLocales () { return numLocales; }
 
+  int NumEvents () { return theEvents.size(); }
+
+  Event * getFirstEvent() {
+            curEvent = theEvents.begin();
+	    return *curEvent;
+          }
+
+  Event * getNextEvent() {
+	    if (curEvent == theEvents.end())
+	      return NULL;
+	    else 
+	      return *(++curEvent);
+          }
+
  private:
 
   int numLocales;
 
-  std::list<Event*> theEvents;  
+  std::list<Event*> theEvents;
+  std::list<Event*>::iterator curEvent;
 
 };
 

@@ -118,22 +118,19 @@ void ViewField::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
   }
   cw = loc1->w / sin(pi/4);
   ch = loc1->h / sin(pi/4);
-  printf ("dx = %d, dy = %d, Theta = %lf\n", dx, dy, theta);
+  //printf ("dx = %d, dy = %d, Theta = %lf\n", dx, dy, theta);
   
   //  Need correct calculations here.
   x1 = rint (cw/2 * cos(theta));
-  printf ("x1 = %d\n", x1);
   x1 = loc1->x + (abs(x1) > loc1->w/2 ? (dx < 0 ? -1 : 1)*loc1->w/2 : x1);
   y1 = rint (ch/2 * sin(theta));
-  printf ("y1 = %d\n", y1);
   y1 = loc1->y + (abs(y1) > loc1->h/2 ? (dy < 0 ? -1 : 1)*loc1->h/2 : y1);
 
   x2 = rint (cw/2 * cos(pi+theta));
-  printf ("x2 = %d\n", x2);
   x2 = loc2->x + (abs(x2) > loc2->w/2 ? (dx < 0 ? 1 : -1)*loc2->w/2 : x2);
   y2 = rint (ch/2 * sin(pi+theta));
-  printf ("y2 = %d\n", y2);
   y2 = loc2->y + (abs(y2) > loc2->h/2 ? (dy < 0 ? 1 : -1)*loc2->h/2 : y2);
+
   midx = loc1->x + dx/2;
   midy = loc1->y + dy/2;
 

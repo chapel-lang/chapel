@@ -12,10 +12,19 @@
 #include <stdlib.h>
 #include <math.h>
 
+void DataModel::newList()
+{
+  printf ("newList ...\n");
+  curEvent = theEvents.begin();
+  while (curEvent != theEvents.end()) {
+    //Event *e = *curEvent;
+    curEvent = theEvents.erase(curEvent);
+    //if (e) delete e;
+  }
+}
+
 int DataModel::LoadData(const char * filename)
 {
-  // printf ("LoadData %s\n", filename);
-
   const char *suffix = strrchr(filename, '-');
   if (!suffix) {
     fprintf (stderr,
@@ -28,6 +37,12 @@ int DataModel::LoadData(const char * filename)
   // int fileno = atoi(suffix);
 
   // printf ("LoadData:  namesize is %d, fileno is %d\n", namesize, fileno);
+
+  printf ("loading data from %.*s* files ...", namesize, filename);
+  fflush(stdout);
+
+  newList();
+  curEvent = theEvents.begin();
   
   FILE *data = fopen(filename, "r");
   if (!data) {
@@ -73,6 +88,8 @@ int DataModel::LoadData(const char * filename)
     }
   }
 
+  printf (" done.\n");
+  printf ("list has %d items\n", theEvents.size());
 
   return 1;
 }
@@ -117,6 +134,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   }
 
   // Now read the rest of the file
+  std::list<Event *>::iterator itr = theEvents.begin();
 
   while ( fgets(line, 1024, data) == line ) {
     // Common Data
@@ -149,6 +167,8 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
       }
     }
 
+    Event *newEvent;
+    
     // printf("%c", line[0]);
     switch (line[0]) {
 
@@ -162,6 +182,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  fprintf (stderr, "Bad task line: %s\n", filename);
 	  fprintf (stderr, "nid = %d, ntll = %d, nbstr = '%s', nlineno = %d"
 		   " nfilename = '%s'\n", nid, ntll, nbstr, nlineno, nfilename);
+	  newEvent = new E_task(sec, usec, ntll);
 	}
 	break;
 
@@ -183,6 +204,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	isGet = (line[0] == 'g' ? 1 :
 		 line[0] == 'p' ? 0 :
 		 line[3] == 'g' ? 1 : 0);
+	if (isGet)
+	  newEvent = new E_comm(sec, usec, rnid, nid);
+	else
+	  newEvent = new E_comm(sec, usec, nid, rnid);
 	break;
       
       default:
@@ -190,6 +215,14 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         //fl_alert("Bad input data.");
 	/* Do nothing */ ;
     }
+    //  Add the newEvent to the list
+    if (theEvents.empty())
+      theEvents.push_front(newEvent);
+    else {
+      while (itr != theEvents.end() && *itr < newEvent) itr++;
+      theEvents.insert(itr, newEvent);  
+    }
+      
   }
   // printf("\n");
 

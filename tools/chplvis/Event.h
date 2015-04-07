@@ -20,26 +20,26 @@ class Event {  // Base class for events .....
 };
 
 
-class  e_task : Event {
+class  E_task : public Event {
 
   private:
     int nodeid;
   
   public:
-    e_task (long esec, long eusec, int nid) : Event(esec,eusec),
+    E_task (long esec, long eusec, int nid) : Event(esec,eusec),
       nodeid(nid) {};
 
     int localId() { return nodeid; }
 
 };
 
-class e_comm : Event {
+class E_comm : public Event {
 
    private:
      int  srcid, dstid;
 
    public:
-     e_comm (long esec, long eusec, int esrcid, int edstid) : Event(esec,eusec),
+     E_comm (long esec, long eusec, int esrcid, int edstid) : Event(esec,eusec),
        srcid(esrcid), dstid(edstid) {};
 
      int srcId() { return srcid; }
