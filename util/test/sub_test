@@ -200,12 +200,12 @@ def LauncherTimeoutArgs(seconds):
 #
 
 # Escape all special characters
-def ShellEscape(str):
-    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', str)
+def ShellEscape(arg):
+    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{} ])', r'\\\1', arg)
 
 # Escape all special characters but leave spaces alone
-def ShellEscapeCommand(str):
-    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{}])', r'\\\1', str)
+def ShellEscapeCommand(arg):
+    return re.sub(r'([\\!@#$%^&*()?\'"|<>[\]{}])', r'\\\1', arg)
 
 
 # Grabs the start and end of the output and replaces non-printable chars with ~
