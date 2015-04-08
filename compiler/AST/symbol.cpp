@@ -2422,10 +2422,9 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   }
 
   // Print name and arguments.
-  AstToText *info = new AstToText();
-  info->appendNameAndFormals(this);
-  *file << info->text();
-  delete info;
+  AstToText info;
+  info.appendNameAndFormals(this);
+  *file << info.text();
 
   // Print return intent, if one exists.
   switch (this->retTag) {
