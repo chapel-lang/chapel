@@ -753,7 +753,10 @@ OwnershipFlowManager::computeExits()
 void 
 OwnershipFlowManager::backwardFlowUse()
 {
-  // Assume that IN and OUT are both empty.
+  // Clear IN sets.
+  // Assume that all OUT sets are empty.
+  for (size_t i = 0; i < nbbs; ++i)
+    IN[i]->clear();
 
   bool changed;
   do {
