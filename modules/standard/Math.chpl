@@ -323,6 +323,17 @@ module Math {
       if isNonnegative(n) then m / n
       else                     (m + n + 1) / n;
 
+  /*
+    A variant of :proc:`divceil` that performs no runtime checks.
+    The user must ensure that both arguments are strictly positive
+    (not 0) and are of a signed integer type (not `uint`).
+  */
+  proc divceilpos(m: integral, n: integral) {
+    if !isIntType(m.type) || !isIntType(n.type) then
+      compilerError("divceilpos() accepts only arguments of signed integer types");
+    return (m - 1) / n + 1;
+  }
+
 
   /* Returns :proc:`floor`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
@@ -351,6 +362,17 @@ module Math {
     else
       if isNonnegative(n) then (m - n + 1) / n
       else                     m / n;
+
+  /*
+    A variant of :proc:`divfloor` that performs no runtime checks.
+    The user must ensure that both arguments are strictly positive
+    (not 0) and are of a signed integer type (not `uint`).
+  */
+  proc divfloorpos(m: integral, n: integral) {
+    if !isIntType(m.type) || !isIntType(n.type) then
+      compilerError("divfloorpos() accepts only arguments of signed integer types");
+    return m / n;
+  }
 
 
   /* Returns the error function of the argument `x`. */
