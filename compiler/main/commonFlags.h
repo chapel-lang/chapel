@@ -24,7 +24,6 @@
 
 // Shared flags.
 extern bool ccwarnings;
-extern bool developer;
 extern bool fPrintChplHome;
 extern bool fPrintCopyright;
 extern bool fPrintEnvHelp;
