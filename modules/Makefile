@@ -77,7 +77,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Sort.chpl \
 	standard/Sys.chpl \
 	standard/Types.chpl \
-	standard/UtilMath.chpl \
 	standard/UtilReplicatedVar.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 

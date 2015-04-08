@@ -16,7 +16,7 @@ config const printTiming = false;
 
 const shift = (123, 456, 789);
 
-use Random, Time, UtilMath;
+use Random, Time;
 
 if numLocales < 3 then halt("numLocales must be >= 3");
 var declLocale = Locales(numLocales-1);
