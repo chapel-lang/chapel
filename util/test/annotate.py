@@ -45,10 +45,10 @@ def load(path):
   return data
 
 
-def get(data, graph, series, start, end):
+def get(data, graph, series, start, end, hostname=_hostname):
   matches = defaultdict(list)
-  _find_annotations('all', matches, data, start, end)
-  _find_annotations(graph, matches, data, start, end)
+  _find_annotations('all', matches, data, start, end, hostname)
+  _find_annotations(graph, matches, data, start, end, hostname)
 
   formatted = []
   for i, date in enumerate(sorted(matches.keys()), start=1):
@@ -65,13 +65,13 @@ def get(data, graph, series, start, end):
   return formatted
 
 
-def _find_annotations(graph, matches, data, start, end):
+def _find_annotations(graph, matches, data, start, end, hostname):
   if graph in data:
     for date, annotations in data[graph].iteritems():
       if start <= date and date <= end:
         for ann in annotations:
           if isinstance(ann, dict):
-            if _hostname in ann['host']:
+            if hostname in ann['host']:
               matches[date].append(ann['text'])
           else:
             matches[date].append(ann)

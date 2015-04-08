@@ -263,7 +263,8 @@ def strip_series(csvFile, numseries):
 class GraphStuff:
     def __init__(self, _name, _testdir, _perfdir, _outdir, _startdate, _enddate,
                  _reduce, _display_bounds, _alttitle, _annotation_file):
-        self.numGraphs = 0;
+        self.numGraphs = 0
+        self.hostname = _name
         self.testdir = _testdir
         self.perfdir = _perfdir
         self.outdir = _outdir
@@ -378,7 +379,7 @@ class GraphStuff:
             ginfo.annotations = annotate.get(
                 self.all_annotations, ginfo.name, series,
                 parse_date(ginfo.startdate, '%Y-%m-%d'),
-                parse_date(ginfo.enddate,'%Y-%m-%d'))
+                parse_date(ginfo.enddate,'%Y-%m-%d'), self.hostname)
 
         self.gfile.write('{\n')
         if ginfo.title != '':
