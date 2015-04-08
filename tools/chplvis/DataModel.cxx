@@ -144,14 +144,14 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     long usec;
     long nextCh;
 
-    // Data for tasks and comm
+    // Data for tasks and comm and fork
     int nid;    // Node id
     int ntll;   // Node task list locale
     char nbstr[10];  // "begin" or "nb"
     int nlineno; // line number starting the task
     char nfilename[512];  // File name starting the task
 
-    // comm specific
+    // comm
     int isGet;  // put (0), get (1)  currently ignoring non-block and strid
     int rnid;   // remote id
     long locAddr;  // local address
@@ -159,6 +159,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     int eSize;     // element size
     int typeIx;    // type Index
     int dlen;      // data length 
+
+    // fork
+    int fid;
     
     // Process the line
     linedata = strchr(line, ':');
@@ -187,6 +190,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	  fprintf (stderr, "Bad task line: %s\n", filename);
 	  fprintf (stderr, "nid = %d, ntll = %d, nbstr = '%s', nlineno = %d"
 		   " nfilename = '%s'\n", nid, ntll, nbstr, nlineno, nfilename);
+	  nErrs++;
 	} else {
 	  newEvent = new E_task(sec, usec, ntll);
 	}
@@ -206,6 +210,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 		   &nid, &rnid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
 		   &nlineno, nfilename) != 9) {
 	  fprintf (stderr, "Bad comm line: %s\n", filename);
+	  nErrs++;
 	} else {
 	  isGet = (line[0] == 'g' ? 1 :
 		   line[0] == 'p' ? 0 :
@@ -214,6 +219,17 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 	    newEvent = new E_comm(sec, usec, rnid, nid);
 	  else
 	    newEvent = new E_comm(sec, usec, nid, rnid);
+	}
+	break;
+
+      case 'f':  // All the forks:
+	// s.u nodeID otherNode subloc fid arg arg_size
+	if (sscanf(&linedata[nextCh], "%d %d %d", 
+		    &nid, &rnid, &fid) != 3) {
+	  fprintf (stderr, "Bad fork line: %s\n", filename);
+	  nErrs++;
+	} else {
+	  newEvent = new E_fork(sec, usec, nid, rnid, line[1] == '_');
 	}
 	break;
       

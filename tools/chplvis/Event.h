@@ -1,7 +1,7 @@
 #ifndef _EVENT_H_
 #define _EVENT_H_
 
-enum Event_kind {Ev_task, Ev_comm};
+enum Event_kind {Ev_task, Ev_comm, Ev_fork};
 
 class Event {  // Base class for events .....
 
@@ -49,6 +49,24 @@ class E_comm : public Event {
      int dstId() { return dstid; }
 
      virtual int Ekind() {return Ev_comm;}
+
+};
+
+class E_fork : public Event {
+
+   private:
+     int  srcid, dstid;
+     bool isFast;
+
+   public:
+     E_fork (long esec, long eusec, int esrcid, int edstid, bool fast)
+       : Event(esec,eusec), srcid(esrcid), dstid(edstid), isFast(fast) {};
+
+     int srcId() { return srcid; }
+     int dstId() { return dstid; }
+     bool fast() { return isFast; }
+
+     virtual int Ekind() {return Ev_fork;}
 
 };
 

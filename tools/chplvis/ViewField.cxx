@@ -103,6 +103,7 @@ void ViewField::processData()
   for ( ev = VisData.getFirstEvent(); ev != NULL; ev = VisData.getNextEvent() ) {
     E_task *tp;
     E_comm *cp;
+    E_fork *fp;
     switch (ev->Ekind()) {
       case Ev_task:
         //  Task event
@@ -117,6 +118,14 @@ void ViewField::processData()
 	if (++(numGets[cp->srcId()][cp->dstId()]) > maxComms)
 	  maxComms = numGets[cp->srcId()][cp->dstId()];
         break;
+      case Ev_fork:
+        fp = dynamic_cast<E_fork *>(ev);
+        if (++(numGets[fp->srcId()][fp->dstId()]) > maxComms)
+	  maxComms = numGets[fp->srcId()][fp->dstId()];
+	if (!fp->fast()) {
+	  if (++theLocales[fp->dstId()].numTasks > maxTasks)
+	    maxTasks = theLocales[fp->dstId()].numTasks;
+	}
     }
   }
   printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
@@ -230,16 +239,16 @@ int ViewField::handle(int event)
   
   switch (event) {
   case FL_PUSH:
-    printf ("Push at (%d,%d)\n", x, y);
+    //printf ("Push at (%d,%d)\n", x, y);
     break;
   case FL_RELEASE:
-    printf ("Release at (%d,%d)\n", x, y);
+    //printf ("Release at (%d,%d)\n", x, y);
     if (numlocales > 0) {
       for (ix = 0; ix < numlocales; ix++) {
 	// See if release is inside a locale
 	localeInfo *loc = &theLocales[ix];
-	if ( x > loc->x && x <= loc->x + loc->w &&
-	     y > loc->y && y <= loc->y + loc->h) {
+	if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
+	     y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
 	  printf ("release inside locale %d.\n", ix);
 	}
       }
