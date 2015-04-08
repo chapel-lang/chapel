@@ -54,11 +54,13 @@ class ArgSymbol;
 class BlockStmt;
 class CallExpr;
 class DefExpr;
+class EnumType;
 class Expr;
 class FnSymbol;
 class NamedExpr;
 class SymExpr;
 class UnresolvedSymExpr;
+class VarSymbol;
 
 #include <string>
 
@@ -84,6 +86,9 @@ public:
   int                    numFormals(FnSymbol* fn)                      const;
 
   void                   appendFormal(FnSymbol* fn, int oneBasedIndex);
+
+  void                   appendEnumDecl(EnumType* et);
+  void                   appendVarDef(VarSymbol* var);
 
 private:
 
@@ -158,6 +163,8 @@ private:
   bool                   isMtThis (CallExpr* expr)                     const;
   bool                   isMtOther(CallExpr* expr)                     const;
   bool                   isMtArg  (CallExpr* expr, bool expectThis)    const;
+
+  void                   appendEnumConstants(EnumType* et);
 
   std::string            mText;
 };
