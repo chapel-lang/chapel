@@ -244,6 +244,9 @@ static void addFlagReturnValueNotOwned()
 }
 
 
+// Finds the declaration of the given symbol within the given function.
+// Returns null if no such declaration exists in that scope.
+// (A return value may be an immediate or a global.)
 static DefExpr* findSymbolDef(Symbol* sym, FnSymbol* fn)
 {
   std::vector<DefExpr*> defExprs;
@@ -283,15 +286,17 @@ static void hoistReturnBlock(FnSymbol* fn, BlockStmt* block)
 }
 
 
-static void hoistRVVintoItsOwnScope(FnSymbol* fn)
+static void hoistReturnIntoItsOwnScope(FnSymbol* fn)
 {
   SET_LINENO(fn);
 
-  Symbol* rvv = fn->getReturnSymbol();
-  DefExpr* def = findSymbolDef(rvv, fn);
-  if (!def)
-    return;
-  def->remove();
+  // Get the declaration of the return-value variable if there is one.
+  // Functions that return void or an immediate to not declare a return-value variable.
+  Symbol* retSym = fn->getReturnSymbol();
+
+  DefExpr* def = findSymbolDef(retSym, fn);
+  if (def)
+    def->remove();
 
   // Create and populate a new body block from the end forward.
   BlockStmt* block = new BlockStmt();
@@ -299,26 +304,16 @@ static void hoistRVVintoItsOwnScope(FnSymbol* fn)
   hoistReturnBlock(fn, block);
   fn->body->replace(block);
   block->insertAtHead(body);
-  block->insertAtHead(def);
+  if (def)
+    block->insertAtHead(def);
 }
 
 
-static void hoistRVVintoItsOwnScope()
+static void hoistReturnIntoItsOwnScope()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    // Skip functions that return void
-    Symbol* retSym = fn->getReturnSymbol();
-    Type* retType = retSym->type;
-    if (retType == dtVoid)
-      continue;
-
-    // Don't bother if the return value is an immediate.
-    if (VarSymbol* retVar = toVarSymbol(retSym))
-      if (retVar->immediate)
-        continue;
-
-    hoistRVVintoItsOwnScope(fn);
+    hoistReturnIntoItsOwnScope(fn);
   }
 }
 
@@ -342,8 +337,8 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   ofm.extractSymbols();
   ofm.populateAliases();
   ofm.createFlowSets();
-  ofm.computeTransitions();
   ofm.computeExits();
+  ofm.computeTransitions();
   ofm.debugPrintFlowSets(OwnershipFlowManager::FlowSet_ALL);
 
   ofm.backwardFlowUse();
@@ -356,6 +351,17 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
                           OwnershipFlowManager::FlowSet_OUT));
 
   ofm.insertAutoCopies();
+
+  // Only do this for the "advance" iterator function.
+  if (fn->hasFlag(FLAG_AUTO_II) &&
+      ! strcmp(fn->name, "advance"))
+  {
+    // In iterators, insert autodestroys after last use.
+    ofm.iteratorInsertAutoDestroys();
+    // Recompute forward flow, to take into account new
+    // consumers added.
+    ofm.forwardFlowOwnership();
+  }
 
   if (fVerify)
     ofm.checkForwardOwnership();
@@ -383,7 +389,7 @@ void insertAutoCopyAutoDestroy()
 {
   addFlagReturnValueNotOwned();
 
-  hoistRVVintoItsOwnScope();
+  hoistReturnIntoItsOwnScope();
 
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {

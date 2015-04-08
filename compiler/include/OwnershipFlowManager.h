@@ -198,6 +198,7 @@ class OwnershipFlowManager
   void backwardFlowUse();
   void forwardFlowOwnership();
   void insertAutoCopies();
+  void iteratorInsertAutoDestroys();
   void checkForwardOwnership();
   void backwardFlowOwnership();
   void insertAutoDestroys();
@@ -217,7 +218,12 @@ class OwnershipFlowManager
                           BitVec* use, BitVec* cons);
 //  void computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBIDMap);
   void computeScopeMap();
+  void addInternalDefs();
   void computeExitBlocks();
+  void iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons,
+                                  BasicBlock* bb);
+  void iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons,
+                                  SymExprVector& symExprs);
 };
 
 
