@@ -72,8 +72,6 @@ for my $arg (@ARGV) {
     print $make . "\n";
   } elsif( $arg eq "--compile" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcompileline");
-  } elsif( $arg eq "--compilelink" ) {
-    mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcompilelinkline");
   } elsif( $arg eq "--cflags" ) {
     mysystem("$make -f $chpl_home_dir/runtime/etc/Makefile.include printcflags");
   } elsif ( $arg eq "--includes-and-defines" ) {
@@ -109,10 +107,6 @@ for my $arg (@ARGV) {
     print " --make  print out the make command\n";
     print " --compile  print out the command to compile a file including\n";
     print "            Chapel runtime headers\n";
-    print " --compilelink  print out the command to compile and link a file\n";
-    print "                including Chapel runtime headers and libraries\n";
-    print "                note -- you must replace {} with your source\n";
-    print "                        file or object file\n";
     print " --includes-and-defines print out any -D and -I options to\n";
     print "                        include the Chapel runtime\n";
     print " --libraries print out any -L and -l options to\n";
