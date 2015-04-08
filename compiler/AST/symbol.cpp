@@ -355,10 +355,9 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << "var ";
   }
 
-  AstToText* info = new AstToText();
-  info->appendVarDef(this);
-  *file << info->text();
-  delete info;
+  AstToText info;
+  info.appendVarDef(this);
+  *file << info.text();
 
   *file << std::endl;
 
