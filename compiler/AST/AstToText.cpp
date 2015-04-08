@@ -1192,7 +1192,10 @@ void AstToText::appendExpr(DefExpr* expr, bool printingType)
       }
       if (expr->init) {
         mText += " = ";
-        appendExpr(expr->init, false);
+        if (SymExpr* sym = toSymExpr(expr->init))
+          appendExpr(sym, false, true);
+        else
+          appendExpr(expr->init, false);
       }
     }
 }
@@ -1411,4 +1414,8 @@ void AstToText::appendEnumConstants(EnumType* et) {
   } else {
     mText += "";
   }
+}
+
+void AstToText::appendVarDef(VarSymbol* var) {
+  appendExpr(var->defPoint, false);
 }

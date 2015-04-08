@@ -60,6 +60,7 @@ class FnSymbol;
 class NamedExpr;
 class SymExpr;
 class UnresolvedSymExpr;
+class VarSymbol;
 
 #include <string>
 
@@ -87,6 +88,7 @@ public:
   void                   appendFormal(FnSymbol* fn, int oneBasedIndex);
 
   void                   appendEnumDecl(EnumType* et);
+  void                   appendVarDef(VarSymbol* var);
 
 private:
 
