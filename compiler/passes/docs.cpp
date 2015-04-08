@@ -241,9 +241,12 @@ void createDocsFileFolders(std::string filename) {
     dirCutoff += total;
     std::string shorter = filename.substr(dirCutoff+1);
     std::string otherHalf = filename.substr(0, dirCutoff);
+
+    // Create `otherHalf` iff it is non-empty and does not already exist.
     if (otherHalf.length() > 0 && !existsAndDir(otherHalf.c_str())) {
       makeDir(otherHalf.c_str());
     }
+
     total = dirCutoff + 1;
     dirCutoff = shorter.find("/");
   }
