@@ -64,6 +64,41 @@ var branchInfo = [
                     "revision" : -1}
                   ];
 
+var rebootDates = [
+    "2014-06-21",
+    "2014-07-19",
+    "2014-08-16",
+    "2014-09-20",
+    "2014-10-18",
+    "2014-11-15",
+    "2014-12-20",
+    "2015-01-17",
+    "2015-02-21",
+    "2015-03-21",
+];
+
+// NOTE: I wonder if it makes sense to calculate these rebootDates using
+//       something like Datejs. (thomasvandoren, 2015-04-08)
+//
+//  https://cdnjs.com/libraries/datejs
+//
+/* E.g.
+// Find the third Saturday of every month starting with rebootStartMonth and
+// ending with today.
+var rebootDates = [],
+
+    // Starting with June 2014 (months are 0 based in JS).
+    rebootStartMonth = new Date(2014, 5, 1),
+
+    // Set curThirdDate to the third Saturday of the starting month.
+    curThirdDate = rebootStartMonth.moveToNthOccurrence(6, 3);
+
+while (curThirdDate.isBefore(Date.today())) {
+    rebootDates.push(curThirdDate.toString("yyyy-MM-dd"));
+    curThirdDate = curThirdDate.addMonths(1).moveToNthOccurrences(6, 3);
+}
+*/
+
 // array of currently displayed graphs
 var gs = [];
 // used to prevent multiple redraws of graphs when syncing x-axis zooms
