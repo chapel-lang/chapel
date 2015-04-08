@@ -1,6 +1,4 @@
-// Testing divceilpos() and divfloorpos() from UtilMath (a standard module)
-
-use UtilMath;
+// Testing divceilpos() and divfloorpos()
 
 var testcount = 0, errcount = 0;
 
