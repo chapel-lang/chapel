@@ -483,6 +483,7 @@ if not os.access(compiler,os.R_OK|os.X_OK):
     Fatal('Cannot execute compiler \''+compiler+'\'')
 
 is_chpldoc = compiler.endswith('chpldoc')
+is_chpl_ipe = compiler.endswith('chpl-ipe')
 
 path_to_compiler=os.path.abspath(os.path.dirname(compiler))
 # Assume chpl binary is 2 directory levels down in the base installation
@@ -954,7 +955,7 @@ for testname in testsrc:
         timer = None
     futuretest=''
 
-    if test_is_chpldoc:
+    if test_is_chpldoc or is_chpl_ipe:
         executebin = False
     else:
         executebin = execute
@@ -1077,7 +1078,12 @@ for testname in testsrc:
                 do_not_test=True
                 break
             else:
-                redirectin=f
+                # chpl-ipe only has a "compile" step, so any stdin needs to be
+                # passed to compiler.
+                if is_chpl_ipe:
+                    compstdin = f
+                else:
+                    redirectin = f
 
         if suffix==futureSuffix:
             testfuturesfile=True
@@ -1229,6 +1235,12 @@ for testname in testsrc:
         args = []
         if test_is_chpldoc:
             args += globalChpldocOpts + shlex.split(compopts)
+        elif is_chpl_ipe:
+            # No arguments work for chpl-ipe as of 2015-04-08. (thomasvandoren)
+            # TODO: When chpl-ipe does support command line flags, decide if it
+            #       will use COMPOPTS/.compopts or some other filename.
+            #       (thomasvandoren, 2015-04-08)
+            pass
         else:
             args += ['-o', execname] + envCompopts + shlex.split(compopts)
         args += [testname]
