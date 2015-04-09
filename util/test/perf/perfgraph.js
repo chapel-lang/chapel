@@ -21,7 +21,12 @@ var branchInfo = [
                     "releaseDate": "2010-04-15",
                     "branchDate" : "2010-04-09",
                     "revision" : 17087},
-                  // TODO: Should there be an object for 1.1.1 release here? (thomasvandoren, 2015-04-08)
+                  { "release" : "1.1.1",
+                    "releaseDate": "2010-07-08",
+                    // TODO: Remove this branchDate; there was no branch for
+                    //       1.1.1. (thomasvandoren, 2015-04-09)
+                    "branchDate" : "2010-04-09",
+                    "revision" : -1},
                   { "release" : "1.2",
                     "releaseDate": "2010-10-21",
                     "branchDate" : "2010-10-14",
@@ -677,6 +682,10 @@ function markReleaseDates (canvas, area, g) {
     canvas.stroke();
   }
   for (var i = 0; i < branchInfo.length; i++) {
+    // TODO: Check that branchDate is a member of the object. (thomasvandoren, 2015-04-09)
+    // E.g. with Underscore.js:
+    //
+    // if (_.has(branchInfo[i], "branchDate")) { ...
     markReleaseDate(parseDate(branchInfo[i].branchDate));
   }
 }
