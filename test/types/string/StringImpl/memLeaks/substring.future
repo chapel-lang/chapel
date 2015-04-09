@@ -1,0 +1,6 @@
+bug: Implementation of this() and expected output of test do not agree.
+
+The test feeds in a negative index, expecting an empty string to be returned.
+Instead the 'this' function errors out due to an invalid index.
+
+A design decision needs to be made regarding the desired behavior.

@@ -241,7 +241,7 @@ module String {
 
     proc this(i: int) : string {
       var ret: string;
-      if i == 0 || i > this.len then halt("index out of bounds of string");
+      if i <= 0 || i > this.len then halt("index out of bounds of string");
 
       ret._size = min_alloc_size;
       ret.len = 1;

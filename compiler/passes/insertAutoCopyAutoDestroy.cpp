@@ -381,7 +381,6 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
 #endif
 
   ofm.insertAutoDestroys();
-
 }
 
 
@@ -399,6 +398,10 @@ void insertAutoCopyAutoDestroy()
 
     insertAutoCopyAutoDestroy(fn);
   }
+
+  // Re-run insertReferenceTemps, to cover autoDestroy calls that may have been
+  // inserted by this pass.
+  insertReferenceTemps();
 }
 
 

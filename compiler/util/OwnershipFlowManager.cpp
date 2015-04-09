@@ -1285,9 +1285,7 @@ static void insertAutoDestroyAtScopeExit(Symbol* sym)
   CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
   BlockStmt* block = sym->getDeclarationScope();
 
-  block->insertAtExit(autoDestroyCall);
-
-  insertReferenceTemps(autoDestroyCall);
+  block->insertAtAllExits(autoDestroyCall);
 }
 
 
