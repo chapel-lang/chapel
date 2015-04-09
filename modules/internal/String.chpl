@@ -402,7 +402,7 @@ module String {
                                 CHPL_RT_MD_STRING_COPY_DATA): bufferType;
       memmove(ret.buff, s.buff, s.len.safeCast(size_t));
       ret.len = s.len;
-      ret.owned = s.owned;
+      ret.owned = true; // I now own my data.
       ret._size = s.len+1;
       ret.buff[ret.len] = 0;
     }
