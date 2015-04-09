@@ -750,6 +750,7 @@ OwnershipFlowManager::computeExits()
 //  and iterate.
 // Then, we set USED_LATER <- OUT;
 //
+// Back edges are ignored.
 void 
 OwnershipFlowManager::backwardFlowUse()
 {
@@ -772,7 +773,8 @@ OwnershipFlowManager::backwardFlowUse()
       BitVec& out = *OUT[i];
       out.clear();
       for_vector(BasicBlock, succ, (*basicBlocks)[i]->outs)
-        out |= *IN[succ->id];
+        if ((size_t) succ->id > i)
+          out |= *IN[succ->id];
 
       // Within a block, a bit in IN transitions to true if the symbol is used
       // within that block.
