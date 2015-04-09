@@ -683,7 +683,7 @@ function markReleaseDates (canvas, area, g) {
   }
   for (var i = 0; i < branchInfo.length; i++) {
     // TODO: Check that branchDate is a member of the object. (thomasvandoren, 2015-04-09)
-    // E.g. with Underscore.js:
+    // E.g. with lodash.js or Underscore.js:
     //
     // if (_.has(branchInfo[i], "branchDate")) { ...
     markReleaseDate(parseDate(branchInfo[i].branchDate));
