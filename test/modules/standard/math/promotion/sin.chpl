@@ -1,4 +1,4 @@
-// lgamma.chpl
+// sin.chpl
 // 
 // AUTO-GENERATED, DO NOT EDIT.  See generate_tests/ directory.
 // 
@@ -9,6 +9,6 @@ var B : [D] real;
 var s = (7.0 - -7.0) / n;
 var m = -7.0;
 A = [i in D] s * i + m;
-B = lgamma(A);
+B = sin(A);
 writeln(A);
 writeln(B);

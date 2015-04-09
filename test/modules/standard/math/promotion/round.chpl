@@ -1,6 +1,6 @@
-// ../round.chpl
+// round.chpl
 // 
-// AUTO-GENERATED, DO NOT EDIT.  See gen/ directory.
+// AUTO-GENERATED, DO NOT EDIT.  See generate_tests/ directory.
 // 
 config param n = 10;
 var D = {0..n};
