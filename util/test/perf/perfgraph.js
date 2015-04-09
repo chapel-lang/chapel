@@ -100,7 +100,7 @@ var rebootDates = [],
 
 while (curThirdDate.isBefore(Date.today())) {
     rebootDates.push(curThirdDate.toString("yyyy-MM-dd"));
-    curThirdDate = curThirdDate.addMonths(1).moveToNthOccurrences(6, 3);
+    curThirdDate.addMonths(1).moveToNthOccurrence(6, 3);
 }
 */
 
