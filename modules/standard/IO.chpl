@@ -3372,8 +3372,8 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
     // handle string
     return qio_channel_print_string(false, _channel_internal, x.c_str(), x.length:ssize_t);
   } else if isEnumType(t) {
-    var s = x:c_string;
-    return qio_channel_print_literal(false, _channel_internal, s, s.length:ssize_t);
+    var s = x:string;
+    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", typeToString(t));
   }
