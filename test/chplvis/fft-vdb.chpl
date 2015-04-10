@@ -60,7 +60,6 @@ config const printParams = true,
 //
 proc main() {
   printConfiguration();          // print the problem size
-  startVdebug("FFTvis");
 
   //
   // This implementation assumes 4**k locales due to its assertion that
@@ -105,6 +104,7 @@ proc main() {
 
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
 
+  startVdebug("FFTvis");
   const startTime = getCurrentTime();  // capture the start time
 
   [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk

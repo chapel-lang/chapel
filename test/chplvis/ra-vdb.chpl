@@ -129,8 +129,8 @@ proc main() {
   //
   [i in TableSpace] T[i] = i;
 
-  const startTime = getCurrentTime();              // capture the start time
   startVdebug("RA");
+  const startTime = getCurrentTime();              // capture the start time
 
   //
   // The main computation: Iterate over the set of updates and the

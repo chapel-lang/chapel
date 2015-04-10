@@ -70,7 +70,6 @@ const targetLocales => setupLocaleGrid();
 //
 proc main() {
   printConfiguration();
-  startVdebug("HPL");
   
   //
   // MatVectSpace is a 2D domain that represents the n x n matrix
@@ -90,6 +89,7 @@ proc main() {
 
   initAB(Ab);
 
+  startVdebug("HPL");
   const startTime = getCurrentTime();     // capture the start time
 
   LUFactorize(n, Ab, piv);                 // compute the LU factorization
