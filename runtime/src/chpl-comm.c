@@ -40,6 +40,7 @@ int chpl_verbose_mem;
 // Visual Debug -- should be protected by a #ifdef?
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -127,9 +128,7 @@ size_t chpl_comm_getenvMaxHeapSize(void)
 
 // Visual Debug support
 
-
-#include <stdarg.h>
-int chpl_dprintf(int fd, const char * restrict format, ...)
+int chpl_dprintf(int fd, const char * format, ...)
 {
   char buffer[2048];
   va_list ap;

@@ -58,7 +58,11 @@ extern int chpl_vdebug_fd;    // fd of output file, 0 => not gathering data
 extern int chpl_vdebug;       // Should we generate debug data
 
 // Linux and MacOS don't do a single write.  We require a single write.
-extern int chpl_dprintf(int fd, const char * restrict format, ...);
+extern int chpl_dprintf(int fd, const char * format, ...)
+#ifdef __NetBSD__
+      __attribute__ ((format (printf, 2, 3)))
+#endif
+   ;
 
 //  start and open file if not NULL
 extern void chpl_vdebug_start(const char *, double now); 
