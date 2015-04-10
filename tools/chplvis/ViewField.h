@@ -1,7 +1,7 @@
 #ifndef VIEWFIELD_H
 #define VIEWFIELD_H
 
-class ViewField;  // So we can include chplvis.h
+//class ViewField;  // So we can include chplvis.h
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
@@ -18,6 +18,8 @@ struct localeInfo {
   int numTasks;
   // Fl_Color heat;
 };
+
+Fl_Color heatColor ( int val, int max );
 
 static const double twopi = 6.28318530717958647688;
 static const double pi = 3.14159265358979323844;

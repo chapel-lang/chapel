@@ -6,9 +6,9 @@
 
 // Local utility functions
 
-static Fl_Color heatColor ( int val, int max ) {
+Fl_Color heatColor ( int val, int max ) {
   if (val == 0) return FL_WHITE;
-  return fl_rgb_color( 255*((0.0+val)/max), 255 * ((-1.0+max-val)/max), 0);
+  return fl_rgb_color( 255*((0.0+val)/max), 255 * ((0.0+max-val)/max), 0);
 }
 
 //  ViewField Constructors
@@ -128,7 +128,8 @@ void ViewField::processData()
 	}
     }
   }
-  printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
+  Info->setMaxes(maxTasks, maxComms);
+  //printf ("maxTasks %d, maxComms %d\n", maxTasks, maxComms);
 }
 
 

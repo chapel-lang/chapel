@@ -16,8 +16,8 @@ CHPL_HOST_PLATFORM= $(shell printenv CHPL_HOST_PLATFORM)
 .cxx.o:
 	$(CXX) -c $(CXXFLAGS) $<
 
-SRCS= ViewField.cxx DataModel.cxx Event.cxx
-HFILES= ViewField.h DataModel.h Event.h
+SRCS= ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx
+HFILES= ViewField.h DataModel.h Event.h InfoBar.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h

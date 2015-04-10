@@ -88,7 +88,7 @@ int DataModel::LoadData(const char * filename)
   }
 
   printf (" done.\n");
-  printf ("list has %lu items\n", theEvents.size());
+  printf ("list has %ld items\n", (long)theEvents.size());
 
   return 1;
 }

@@ -11,17 +11,20 @@ decl {\#include "ViewField.h"} {public global
 decl {\#include "DataModel.h"} {public global
 } 
 
+decl {\#include "InfoBar.h"} {public local
+} 
+
 decl {DataModel VisData;} {public local
 } 
 
 Function {} {open
 } {
   Fl_Window MainWindow {
-    label CommViewer open
-    xywh {56 351 500 520} type Double resizable size_range {200 220 0 0} visible
+    label chplvis open
+    xywh {15 20 500 555} type Double resizable size_range {500 550 0 0} visible
   } {
     Fl_Menu_Bar {} {open
-      xywh {0 0 510 20} color 55
+      xywh {0 0 500 20} color 55
     } {
       Submenu {} {
         label File open
@@ -38,17 +41,34 @@ if (selfile) {
    DbgView->processData();
    MainWindow->redraw();
 }}
-          xywh {0 0 34 21}
+          xywh {0 0 34 21} shortcut 0x4006f
         }
         MenuItem {} {
           label Quit
           callback {exit(0);}
-          xywh {0 0 34 21}
+          xywh {0 0 34 21} shortcut 0x40071
         }
       }
+      Submenu {} {
+        label Layout open
+        xywh {0 0 70 21}
+      } {
+        MenuItem {} {
+          label Oval
+          tooltip {Only choice at this time} xywh {0 0 34 21}
+        }
+      }
+      MenuItem {} {
+        label Help selected
+        xywh {0 0 34 21} deactivate
+      }
+    }
+    Fl_Box Info {
+      xywh {0 20 500 35} box FLAT_BOX color 7
+      class InfoBar
     }
     Fl_Box DbgView {
-      xywh {0 20 500 500} box FLAT_BOX color 55 selection_color 48 resizable
+      xywh {0 55 500 500} box FLAT_BOX color 55 selection_color 48 resizable
       class ViewField
     }
   }
@@ -61,6 +81,5 @@ if (selfile) {
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->processData();
     }
-}} {selected
-  }
+}} {}
 } 
