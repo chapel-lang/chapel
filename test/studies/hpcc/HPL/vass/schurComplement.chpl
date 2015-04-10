@@ -1,7 +1,7 @@
 use DimensionalDist2D;
 use ReplicatedDim;
 use BlockCycDim;
-use Memory, Time, Random, UtilMath;
+use Memory, Time, Random;
 
 
 /////////// configuration ///////////

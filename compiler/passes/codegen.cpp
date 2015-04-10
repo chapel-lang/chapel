@@ -817,6 +817,8 @@ static void codegen_header() {
     //include generated extern C header file
     if (externC && gAllExternCode.filename != NULL) {
       fprintf(hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
+      // If we wanted to, here is where we would re-enable
+      // the memory warning macros.
     }
 #endif
   }

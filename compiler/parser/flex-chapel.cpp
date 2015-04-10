@@ -47,6 +47,7 @@ typedef int16_t flex_int16_t;
 typedef uint16_t flex_uint16_t;
 typedef int32_t flex_int32_t;
 typedef uint32_t flex_uint32_t;
+typedef uint64_t flex_uint64_t;
 #else
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
@@ -170,6 +171,11 @@ typedef void* yyscan_t;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 #endif
 
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+typedef size_t yy_size_t;
+#endif
+
 #define EOB_ACT_CONTINUE_SCAN 0
 #define EOB_ACT_END_OF_FILE 1
 #define EOB_ACT_LAST_MATCH 2
@@ -192,11 +198,6 @@ typedef struct yy_buffer_state *YY_BUFFER_STATE;
 
 #define unput(c) yyunput( c, yyg->yytext_ptr , yyscanner )
 
-#ifndef YY_TYPEDEF_YY_SIZE_T
-#define YY_TYPEDEF_YY_SIZE_T
-typedef size_t yy_size_t;
-#endif
-
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
 struct yy_buffer_state
@@ -214,7 +215,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	int yy_n_chars;
+	yy_size_t yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -293,7 +294,7 @@ static void yy_init_buffer (YY_BUFFER_STATE b,FILE *file ,yyscan_t yyscanner );
 
 YY_BUFFER_STATE yy_scan_buffer (char *base,yy_size_t size ,yyscan_t yyscanner );
 YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str ,yyscan_t yyscanner );
-YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,int len ,yyscan_t yyscanner );
+YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,yy_size_t len ,yyscan_t yyscanner );
 
 void *yyalloc (yy_size_t ,yyscan_t yyscanner );
 void *yyrealloc (void *,yy_size_t ,yyscan_t yyscanner );
@@ -344,7 +345,7 @@ static void yy_fatal_error (yyconst char msg[] ,yyscan_t yyscanner );
  */
 #define YY_DO_BEFORE_ACTION \
 	yyg->yytext_ptr = yy_bp; \
-	yyleng = (size_t) (yy_cp - yy_bp); \
+	yyleng = (yy_size_t) (yy_cp - yy_bp); \
 	yyg->yy_hold_char = *yy_cp; \
 	*yy_cp = '\0'; \
 	yyg->yy_c_buf_p = yy_cp;
@@ -687,6 +688,7 @@ static yyconst flex_int16_t yy_chk[511] =
 #line 46 "chapel.lex"
 
 #include "bison-chapel.h"
+#include "docsDriver.h"
 #include "parser.h"
 
 #include <cstdio>
@@ -718,7 +720,7 @@ static void processInvalidToken(yyscan_t scanner);
 static bool yy_has_state(yyscan_t scanner);
 
 
-#line 722 "flex-chapel.cpp"
+#line 724 "flex-chapel.cpp"
 
 #define INITIAL 0
 #define externmode 1
@@ -748,8 +750,8 @@ struct yyguts_t
     size_t yy_buffer_stack_max; /**< capacity of stack. */
     YY_BUFFER_STATE * yy_buffer_stack; /**< Stack as an array. */
     char yy_hold_char;
-    int yy_n_chars;
-    int yyleng_r;
+    yy_size_t yy_n_chars;
+    yy_size_t yyleng_r;
     char *yy_c_buf_p;
     int yy_init;
     int yy_start;
@@ -806,7 +808,7 @@ FILE *yyget_out (yyscan_t yyscanner );
 
 void yyset_out  (FILE * out_str ,yyscan_t yyscanner );
 
-int yyget_leng (yyscan_t yyscanner );
+yy_size_t yyget_leng (yyscan_t yyscanner );
 
 char *yyget_text (yyscan_t yyscanner );
 
@@ -879,7 +881,7 @@ static int input (yyscan_t yyscanner );
 	if ( YY_CURRENT_BUFFER_LVALUE->yy_is_interactive ) \
 		{ \
 		int c = '*'; \
-		int n; \
+		yy_size_t n; \
 		for ( n = 0; n < max_size && \
 			     (c = getc( yyin )) != EOF && c != '\n'; ++n ) \
 			buf[n] = (char) c; \
@@ -964,10 +966,10 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 102 "chapel.lex"
+#line 103 "chapel.lex"
 
 
-#line 971 "flex-chapel.cpp"
+#line 973 "flex-chapel.cpp"
 
     yylval = yylval_param;
 
@@ -1056,671 +1058,671 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 104 "chapel.lex"
+#line 105 "chapel.lex"
 return processToken(yyscanner, TALIGN);
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 105 "chapel.lex"
+#line 106 "chapel.lex"
 return processToken(yyscanner, TATOMIC);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 106 "chapel.lex"
+#line 107 "chapel.lex"
 return processToken(yyscanner, TBEGIN);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 107 "chapel.lex"
+#line 108 "chapel.lex"
 return processToken(yyscanner, TBREAK);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 108 "chapel.lex"
+#line 109 "chapel.lex"
 return processToken(yyscanner, TBY);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 109 "chapel.lex"
+#line 110 "chapel.lex"
 return processToken(yyscanner, TCLASS);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 110 "chapel.lex"
+#line 111 "chapel.lex"
 return processToken(yyscanner, TCOBEGIN);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 111 "chapel.lex"
+#line 112 "chapel.lex"
 return processToken(yyscanner, TCOFORALL);
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 112 "chapel.lex"
+#line 113 "chapel.lex"
 return processToken(yyscanner, TCONFIG);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 113 "chapel.lex"
+#line 114 "chapel.lex"
 return processToken(yyscanner, TCONST);
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 114 "chapel.lex"
+#line 115 "chapel.lex"
 return processToken(yyscanner, TCONTINUE);
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 115 "chapel.lex"
+#line 116 "chapel.lex"
 return processToken(yyscanner, TDELETE);
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 116 "chapel.lex"
+#line 117 "chapel.lex"
 return processToken(yyscanner, TDMAPPED);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 117 "chapel.lex"
+#line 118 "chapel.lex"
 return processToken(yyscanner, TDO);
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 118 "chapel.lex"
+#line 119 "chapel.lex"
 return processToken(yyscanner, TDOMAIN);
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 119 "chapel.lex"
+#line 120 "chapel.lex"
 return processToken(yyscanner, TELSE);
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 120 "chapel.lex"
+#line 121 "chapel.lex"
 return processToken(yyscanner, TENUM);
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 121 "chapel.lex"
+#line 122 "chapel.lex"
 return processToken(yyscanner, TEXPORT);
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 122 "chapel.lex"
+#line 123 "chapel.lex"
 return processExtern(yyscanner);
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 123 "chapel.lex"
+#line 124 "chapel.lex"
 return processToken(yyscanner, TFOR);
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 124 "chapel.lex"
+#line 125 "chapel.lex"
 return processToken(yyscanner, TFORALL);
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 125 "chapel.lex"
+#line 126 "chapel.lex"
 return processToken(yyscanner, TIF);
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 126 "chapel.lex"
+#line 127 "chapel.lex"
 return processToken(yyscanner, TIN);
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 127 "chapel.lex"
+#line 128 "chapel.lex"
 return processToken(yyscanner, TINDEX);
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 128 "chapel.lex"
+#line 129 "chapel.lex"
 return processToken(yyscanner, TINLINE);
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 129 "chapel.lex"
+#line 130 "chapel.lex"
 return processToken(yyscanner, TINOUT);
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 130 "chapel.lex"
+#line 131 "chapel.lex"
 return processToken(yyscanner, TITER);
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 131 "chapel.lex"
+#line 132 "chapel.lex"
 return processToken(yyscanner, TLABEL);
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 132 "chapel.lex"
+#line 133 "chapel.lex"
 return processToken(yyscanner, TLAMBDA);
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 133 "chapel.lex"
+#line 134 "chapel.lex"
 return processToken(yyscanner, TLET);
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 134 "chapel.lex"
+#line 135 "chapel.lex"
 return processToken(yyscanner, TLOCAL);
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 135 "chapel.lex"
+#line 136 "chapel.lex"
 return processToken(yyscanner, TMODULE);
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 136 "chapel.lex"
+#line 137 "chapel.lex"
 return processToken(yyscanner, TNEW);
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 137 "chapel.lex"
+#line 138 "chapel.lex"
 return processToken(yyscanner, TNIL);
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 138 "chapel.lex"
+#line 139 "chapel.lex"
 return processToken(yyscanner, TNOINIT);
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 139 "chapel.lex"
+#line 140 "chapel.lex"
 return processToken(yyscanner, TON);
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 140 "chapel.lex"
+#line 141 "chapel.lex"
 return processToken(yyscanner, TOTHERWISE);
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 141 "chapel.lex"
+#line 142 "chapel.lex"
 return processToken(yyscanner, TOUT);
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 142 "chapel.lex"
+#line 143 "chapel.lex"
 return processToken(yyscanner, TPARAM);
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 143 "chapel.lex"
+#line 144 "chapel.lex"
 return processToken(yyscanner, TZIP);
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 144 "chapel.lex"
+#line 145 "chapel.lex"
 return processToken(yyscanner, TPRAGMA);
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 145 "chapel.lex"
+#line 146 "chapel.lex"
 return processToken(yyscanner, TPRIMITIVE);
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 146 "chapel.lex"
+#line 147 "chapel.lex"
 return processToken(yyscanner, TPROC);
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 147 "chapel.lex"
+#line 148 "chapel.lex"
 return processToken(yyscanner, TRECORD);
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 148 "chapel.lex"
+#line 149 "chapel.lex"
 return processToken(yyscanner, TREDUCE);
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 149 "chapel.lex"
+#line 150 "chapel.lex"
 return processToken(yyscanner, TREF);
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 150 "chapel.lex"
+#line 151 "chapel.lex"
 return processToken(yyscanner, TRETURN);
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 151 "chapel.lex"
+#line 152 "chapel.lex"
 return processToken(yyscanner, TSCAN);
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 152 "chapel.lex"
+#line 153 "chapel.lex"
 return processToken(yyscanner, TSELECT);
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 153 "chapel.lex"
+#line 154 "chapel.lex"
 return processToken(yyscanner, TSERIAL);
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 154 "chapel.lex"
+#line 155 "chapel.lex"
 return processToken(yyscanner, TSINGLE);
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 155 "chapel.lex"
+#line 156 "chapel.lex"
 return processToken(yyscanner, TSPARSE);
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 156 "chapel.lex"
+#line 157 "chapel.lex"
 return processToken(yyscanner, TSUBDOMAIN);
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 157 "chapel.lex"
+#line 158 "chapel.lex"
 return processToken(yyscanner, TSYNC);
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 158 "chapel.lex"
+#line 159 "chapel.lex"
 return processToken(yyscanner, TTHEN);
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 159 "chapel.lex"
+#line 160 "chapel.lex"
 return processToken(yyscanner, TTYPE);
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 160 "chapel.lex"
+#line 161 "chapel.lex"
 return processToken(yyscanner, TUNION);
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 161 "chapel.lex"
+#line 162 "chapel.lex"
 return processToken(yyscanner, TUSE);
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 162 "chapel.lex"
+#line 163 "chapel.lex"
 return processToken(yyscanner, TVAR);
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 163 "chapel.lex"
+#line 164 "chapel.lex"
 return processToken(yyscanner, TWHEN);
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 164 "chapel.lex"
+#line 165 "chapel.lex"
 return processToken(yyscanner, TWHERE);
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 165 "chapel.lex"
+#line 166 "chapel.lex"
 return processToken(yyscanner, TWHILE);
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 166 "chapel.lex"
+#line 167 "chapel.lex"
 return processToken(yyscanner, TWITH);
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 167 "chapel.lex"
+#line 168 "chapel.lex"
 return processToken(yyscanner, TYIELD);
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 169 "chapel.lex"
+#line 170 "chapel.lex"
 return processToken(yyscanner, TUNDERSCORE);
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 171 "chapel.lex"
+#line 172 "chapel.lex"
 return processToken(yyscanner, TASSIGN);
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 172 "chapel.lex"
+#line 173 "chapel.lex"
 return processToken(yyscanner, TASSIGNPLUS);
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 173 "chapel.lex"
+#line 174 "chapel.lex"
 return processToken(yyscanner, TASSIGNMINUS);
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 174 "chapel.lex"
+#line 175 "chapel.lex"
 return processToken(yyscanner, TASSIGNMULTIPLY);
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 175 "chapel.lex"
+#line 176 "chapel.lex"
 return processToken(yyscanner, TASSIGNDIVIDE);
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 176 "chapel.lex"
+#line 177 "chapel.lex"
 return processToken(yyscanner, TASSIGNEXP);
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
-#line 177 "chapel.lex"
+#line 178 "chapel.lex"
 return processToken(yyscanner, TASSIGNMOD);
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
-#line 178 "chapel.lex"
+#line 179 "chapel.lex"
 return processToken(yyscanner, TASSIGNBAND);
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
-#line 179 "chapel.lex"
+#line 180 "chapel.lex"
 return processToken(yyscanner, TASSIGNBOR);
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
-#line 180 "chapel.lex"
+#line 181 "chapel.lex"
 return processToken(yyscanner, TASSIGNBXOR);
 	YY_BREAK
 case 76:
 YY_RULE_SETUP
-#line 181 "chapel.lex"
+#line 182 "chapel.lex"
 return processToken(yyscanner, TASSIGNLAND);
 	YY_BREAK
 case 77:
 YY_RULE_SETUP
-#line 182 "chapel.lex"
+#line 183 "chapel.lex"
 return processToken(yyscanner, TASSIGNLOR);
 	YY_BREAK
 case 78:
 YY_RULE_SETUP
-#line 183 "chapel.lex"
+#line 184 "chapel.lex"
 return processToken(yyscanner, TASSIGNSL);
 	YY_BREAK
 case 79:
 YY_RULE_SETUP
-#line 184 "chapel.lex"
+#line 185 "chapel.lex"
 return processToken(yyscanner, TASSIGNSR);
 	YY_BREAK
 case 80:
 YY_RULE_SETUP
-#line 186 "chapel.lex"
+#line 187 "chapel.lex"
 return processToken(yyscanner, TALIAS);
 	YY_BREAK
 case 81:
 YY_RULE_SETUP
-#line 188 "chapel.lex"
+#line 189 "chapel.lex"
 return processToken(yyscanner, TSWAP);
 	YY_BREAK
 case 82:
 YY_RULE_SETUP
-#line 190 "chapel.lex"
+#line 191 "chapel.lex"
 return processToken(yyscanner, THASH);
 	YY_BREAK
 case 83:
 YY_RULE_SETUP
-#line 191 "chapel.lex"
+#line 192 "chapel.lex"
 return processToken(yyscanner, TDOTDOT);
 	YY_BREAK
 case 84:
 YY_RULE_SETUP
-#line 192 "chapel.lex"
+#line 193 "chapel.lex"
 return processToken(yyscanner, TDOTDOTDOT);
 	YY_BREAK
 case 85:
 YY_RULE_SETUP
-#line 194 "chapel.lex"
+#line 195 "chapel.lex"
 return processToken(yyscanner, TAND);
 	YY_BREAK
 case 86:
 YY_RULE_SETUP
-#line 195 "chapel.lex"
+#line 196 "chapel.lex"
 return processToken(yyscanner, TOR);
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
-#line 196 "chapel.lex"
+#line 197 "chapel.lex"
 return processToken(yyscanner, TNOT);
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
-#line 198 "chapel.lex"
+#line 199 "chapel.lex"
 return processToken(yyscanner, TBAND);
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
-#line 199 "chapel.lex"
+#line 200 "chapel.lex"
 return processToken(yyscanner, TBOR);
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 200 "chapel.lex"
+#line 201 "chapel.lex"
 return processToken(yyscanner, TBXOR);
 	YY_BREAK
 case 91:
 YY_RULE_SETUP
-#line 201 "chapel.lex"
+#line 202 "chapel.lex"
 return processToken(yyscanner, TBNOT);
 	YY_BREAK
 case 92:
 YY_RULE_SETUP
-#line 203 "chapel.lex"
+#line 204 "chapel.lex"
 return processToken(yyscanner, TSHIFTLEFT);
 	YY_BREAK
 case 93:
 YY_RULE_SETUP
-#line 204 "chapel.lex"
+#line 205 "chapel.lex"
 return processToken(yyscanner, TSHIFTRIGHT);
 	YY_BREAK
 case 94:
 YY_RULE_SETUP
-#line 206 "chapel.lex"
+#line 207 "chapel.lex"
 return processToken(yyscanner, TEQUAL);
 	YY_BREAK
 case 95:
 YY_RULE_SETUP
-#line 207 "chapel.lex"
+#line 208 "chapel.lex"
 return processToken(yyscanner, TNOTEQUAL);
 	YY_BREAK
 case 96:
 YY_RULE_SETUP
-#line 208 "chapel.lex"
+#line 209 "chapel.lex"
 return processToken(yyscanner, TLESSEQUAL);
 	YY_BREAK
 case 97:
 YY_RULE_SETUP
-#line 209 "chapel.lex"
+#line 210 "chapel.lex"
 return processToken(yyscanner, TGREATEREQUAL);
 	YY_BREAK
 case 98:
 YY_RULE_SETUP
-#line 210 "chapel.lex"
+#line 211 "chapel.lex"
 return processToken(yyscanner, TLESS);
 	YY_BREAK
 case 99:
 YY_RULE_SETUP
-#line 211 "chapel.lex"
+#line 212 "chapel.lex"
 return processToken(yyscanner, TGREATER);
 	YY_BREAK
 case 100:
 YY_RULE_SETUP
-#line 213 "chapel.lex"
+#line 214 "chapel.lex"
 return processToken(yyscanner, TPLUS);
 	YY_BREAK
 case 101:
 YY_RULE_SETUP
-#line 214 "chapel.lex"
+#line 215 "chapel.lex"
 return processToken(yyscanner, TMINUS);
 	YY_BREAK
 case 102:
 YY_RULE_SETUP
-#line 215 "chapel.lex"
+#line 216 "chapel.lex"
 return processToken(yyscanner, TSTAR);
 	YY_BREAK
 case 103:
 YY_RULE_SETUP
-#line 216 "chapel.lex"
+#line 217 "chapel.lex"
 return processToken(yyscanner, TDIVIDE);
 	YY_BREAK
 case 104:
 YY_RULE_SETUP
-#line 217 "chapel.lex"
+#line 218 "chapel.lex"
 return processToken(yyscanner, TMOD);
 	YY_BREAK
 case 105:
 YY_RULE_SETUP
-#line 218 "chapel.lex"
+#line 219 "chapel.lex"
 return processToken(yyscanner, TMINUSMINUS);
 	YY_BREAK
 case 106:
 YY_RULE_SETUP
-#line 219 "chapel.lex"
+#line 220 "chapel.lex"
 return processToken(yyscanner, TPLUSPLUS);
 	YY_BREAK
 case 107:
 YY_RULE_SETUP
-#line 221 "chapel.lex"
+#line 222 "chapel.lex"
 return processToken(yyscanner, TEXP);
 	YY_BREAK
 case 108:
 YY_RULE_SETUP
-#line 223 "chapel.lex"
+#line 224 "chapel.lex"
 return processToken(yyscanner, TCOLON);
 	YY_BREAK
 case 109:
 YY_RULE_SETUP
-#line 224 "chapel.lex"
+#line 225 "chapel.lex"
 return processToken(yyscanner, TSEMI);
 	YY_BREAK
 case 110:
 YY_RULE_SETUP
-#line 225 "chapel.lex"
+#line 226 "chapel.lex"
 return processToken(yyscanner, TCOMMA);
 	YY_BREAK
 case 111:
 YY_RULE_SETUP
-#line 226 "chapel.lex"
+#line 227 "chapel.lex"
 return processToken(yyscanner, TDOT);
 	YY_BREAK
 case 112:
 YY_RULE_SETUP
-#line 227 "chapel.lex"
+#line 228 "chapel.lex"
 return processToken(yyscanner, TLP);
 	YY_BREAK
 case 113:
 YY_RULE_SETUP
-#line 228 "chapel.lex"
+#line 229 "chapel.lex"
 return processToken(yyscanner, TRP);
 	YY_BREAK
 case 114:
 YY_RULE_SETUP
-#line 229 "chapel.lex"
+#line 230 "chapel.lex"
 return processToken(yyscanner, TLSBR);
 	YY_BREAK
 case 115:
 YY_RULE_SETUP
-#line 230 "chapel.lex"
+#line 231 "chapel.lex"
 return processToken(yyscanner, TRSBR);
 	YY_BREAK
 case 116:
 YY_RULE_SETUP
-#line 231 "chapel.lex"
+#line 232 "chapel.lex"
 return processExternCode(yyscanner);
 	YY_BREAK
 case 117:
 YY_RULE_SETUP
-#line 232 "chapel.lex"
+#line 233 "chapel.lex"
 return processToken(yyscanner, TLCBR);
 	YY_BREAK
 case 118:
 YY_RULE_SETUP
-#line 233 "chapel.lex"
+#line 234 "chapel.lex"
 return processToken(yyscanner, TRCBR);
 	YY_BREAK
 case 119:
 YY_RULE_SETUP
-#line 234 "chapel.lex"
+#line 235 "chapel.lex"
 return processToken(yyscanner, TIO);
 	YY_BREAK
 case 120:
 YY_RULE_SETUP
-#line 235 "chapel.lex"
+#line 236 "chapel.lex"
 return processToken(yyscanner, TQUESTION);
 	YY_BREAK
 case 121:
 YY_RULE_SETUP
-#line 237 "chapel.lex"
+#line 238 "chapel.lex"
 return processToken(yyscanner, INTLITERAL);
 	YY_BREAK
 case 122:
 YY_RULE_SETUP
-#line 238 "chapel.lex"
+#line 239 "chapel.lex"
 return processToken(yyscanner, REALLITERAL);
 	YY_BREAK
 case 123:
 YY_RULE_SETUP
-#line 240 "chapel.lex"
+#line 241 "chapel.lex"
 return processToken(yyscanner, IMAGLITERAL);
 	YY_BREAK
 case 124:
 YY_RULE_SETUP
-#line 241 "chapel.lex"
+#line 242 "chapel.lex"
 return processToken(yyscanner, IMAGLITERAL);
 	YY_BREAK
 case 125:
 YY_RULE_SETUP
-#line 243 "chapel.lex"
+#line 244 "chapel.lex"
 return processIdentifier(yyscanner);
 	YY_BREAK
 case 126:
 YY_RULE_SETUP
-#line 244 "chapel.lex"
+#line 245 "chapel.lex"
 return processStringLiteral(yyscanner, "\"");
 	YY_BREAK
 case 127:
 YY_RULE_SETUP
-#line 245 "chapel.lex"
+#line 246 "chapel.lex"
 return processStringLiteral(yyscanner, "\'");
 	YY_BREAK
 case 128:
 YY_RULE_SETUP
-#line 247 "chapel.lex"
+#line 248 "chapel.lex"
 return processSingleLineComment(yyscanner);
 	YY_BREAK
 case 129:
 YY_RULE_SETUP
-#line 248 "chapel.lex"
+#line 249 "chapel.lex"
 return processBlockComment(yyscanner);
 	YY_BREAK
 case 130:
 /* rule 130 can match eol */
 YY_RULE_SETUP
-#line 250 "chapel.lex"
+#line 251 "chapel.lex"
 return processNewline(yyscanner);
 	YY_BREAK
 case 131:
 YY_RULE_SETUP
-#line 252 "chapel.lex"
+#line 253 "chapel.lex"
 processWhitespace(yyscanner);
 	YY_BREAK
 case 132:
 YY_RULE_SETUP
-#line 253 "chapel.lex"
+#line 254 "chapel.lex"
 processInvalidToken(yyscanner);
 	YY_BREAK
 case 133:
 YY_RULE_SETUP
-#line 255 "chapel.lex"
+#line 256 "chapel.lex"
 ECHO;
 	YY_BREAK
-#line 1724 "flex-chapel.cpp"
+#line 1726 "flex-chapel.cpp"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(externmode):
 	yyterminate();
@@ -1908,7 +1910,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 	else
 		{
-			int num_to_read =
+			yy_size_t num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
@@ -1922,7 +1924,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 			if ( b->yy_is_our_buffer )
 				{
-				int new_size = b->yy_buf_size * 2;
+				yy_size_t new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1953,7 +1955,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			yyg->yy_n_chars, (size_t) num_to_read );
+			yyg->yy_n_chars, num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = yyg->yy_n_chars;
 		}
@@ -2078,7 +2080,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		else
 			{ /* need more input */
-			int offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
+			yy_size_t offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
 			++yyg->yy_c_buf_p;
 
 			switch ( yy_get_next_buffer( yyscanner ) )
@@ -2102,7 +2104,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 				case EOB_ACT_END_OF_FILE:
 					{
 					if ( yywrap(yyscanner ) )
-						return EOF;
+						return 0;
 
 					if ( ! yyg->yy_did_buffer_switch_on_eof )
 						YY_NEW_FILE;
@@ -2362,7 +2364,7 @@ void yypop_buffer_state (yyscan_t yyscanner)
  */
 static void yyensure_buffer_stack (yyscan_t yyscanner)
 {
-	int num_to_alloc;
+	yy_size_t num_to_alloc;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
 	if (!yyg->yy_buffer_stack) {
@@ -2460,12 +2462,11 @@ YY_BUFFER_STATE yy_scan_string (yyconst char * yystr , yyscan_t yyscanner)
  * @param yyscanner The scanner object.
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, int  _yybytes_len , yyscan_t yyscanner)
+YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
 	char *buf;
-	yy_size_t n;
-	int i;
+	yy_size_t n, i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
@@ -2615,7 +2616,7 @@ FILE *yyget_out  (yyscan_t yyscanner)
 /** Get the length of the current token.
  * @param yyscanner The scanner object.
  */
-int yyget_leng  (yyscan_t yyscanner)
+yy_size_t yyget_leng  (yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
     return yyleng;
@@ -2902,7 +2903,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 255 "chapel.lex"
+#line 256 "chapel.lex"
 
 
 

@@ -510,7 +510,7 @@ static void widenClasses()
     {
       if (Type* wide = wideClassMap.get(def->sym->type)) {
         if (isVarSymbol(def->sym) ||
-            !def->parentSymbol->hasFlag(FLAG_EXTERN)) {
+            !def->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) {
           if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
             // Don't widen a ref's _val. We create a duplicate type so that
             // we can have references to both wide and narrow things.
