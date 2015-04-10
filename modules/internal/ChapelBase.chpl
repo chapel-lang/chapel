@@ -420,8 +420,14 @@ module ChapelBase {
   inline proc *(param a: int(?w), param b: int(w)) param return __primitive("*", a, b);
   inline proc *(param a: uint(?w), param b: uint(w)) param return __primitive("*", a, b);
   
-  inline proc /(param a: int(?w), param b: int(w)) param return __primitive("/", a, b);
-  inline proc /(param a: uint(?w), param b: uint(w)) param return __primitive("/", a, b);
+  inline proc /(param a: int(?w), param b: int(w)) param {
+    if b == 0 then compilerError("param divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline proc /(param a: uint(?w), param b: uint(w)) param {
+    if b == 0 then compilerError("param divide by zero");
+    return __primitive("/", a, b);
+  }
   
   //
   // % on primitive types
@@ -1334,7 +1340,14 @@ module ChapelBase {
   inline proc /(a: int(64), b: uint(64)) { _throwOpError("/"); }
   
   // non-param/param and param/non-param
+  // The int version is only defined so we can catch the divide by zero error
+  // at compile time
+  inline proc /(a: int(64), param b: int(64)) {
+    if b == 0 then compilerError("param divide by zero");
+    return __primitive("/", a, b);
+  }
   inline proc /(a: uint(64), param b: uint(64)) {
+    if b == 0 then compilerError("param divide by zero");
     return __primitive("/", a, b);
   }
   inline proc /(param a: uint(64), b: uint(64)) {

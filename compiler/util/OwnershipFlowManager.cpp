@@ -127,7 +127,7 @@ void
 OwnershipFlowManager::extractSymbols()
 {
   DefExprVector defExprs;
-  collectDefExprsSTL(_fn, defExprs);
+  collectDefExprs(_fn, defExprs);
 
   for_vector(DefExpr, def, defExprs)
   {
@@ -238,7 +238,7 @@ OwnershipFlowManager::populateAliases()
     for_vector(Expr, expr, bb->exprs)
     {
       SymExprVector symExprs;
-      collectSymExprsSTL(expr, symExprs);
+      collectSymExprs(expr, symExprs);
       populateStmtAliases(symExprs);
     }
   }
@@ -455,7 +455,7 @@ OwnershipFlowManager::computeTransitions(BasicBlock& bb,
     // Can we speed things up by processing only statement expressions?
 
     OwnershipFlowManager::SymExprVector symExprs;
-    collectSymExprsSTL(expr, symExprs);
+    collectSymExprs(expr, symExprs);
 
     computeTransitions(symExprs, prod, live, use, cons);
   }
@@ -532,7 +532,7 @@ void
 OwnershipFlowManager::computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBIDMap)
 {
   std::vector<DefExpr*> defExprs;
-  collectDefExprsSTL(_fn, defExprs);
+  collectDefExprs(_fn, defExprs);
   for_vector(DefExpr, def, defExprs)
   {
     Symbol* sym = def->sym;
@@ -984,7 +984,7 @@ static void insertAutoCopy(BasicBlock& bb,
   for_vector(Expr, expr, bb.exprs)
   {
     OwnershipFlowManager::SymExprVector symExprs;
-    collectSymExprsSTL(expr, symExprs);
+    collectSymExprs(expr, symExprs);
 
     insertAutoCopy(symExprs, prod, live, cons, aliases, symbolIndex);
   }

@@ -19,18 +19,14 @@
 
 
 /*
-  Provide simple assertion capabilities.
+  Support for simple assert() routines.
 
-  Note that in the current implementation, these asserts never become
-  no-ops.  That is, using them will always incur execution-time
-  checks.
+  .. note:: 
+            In the current implementation, these asserts never become
+            no-ops.  That is, using them will always incur
+            execution-time checks.
 */
-
-//
-// TODO: Uncomment the following (didn't make it in in time for code
-// freeze or a few nights of testing before doc freeze for 1.11)
-//
-// module Assert {
+module Assert {
 
 
 /*
@@ -64,9 +60,4 @@ proc assert(test: bool, args ...?numArgs) {
   }
 }
 
-
-//
-// See TOOO above
-//
-// }
-//
+}

@@ -573,7 +573,8 @@ proc exists(name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
-iter findfiles(startdir = ".", recursive=false, hidden=false) {
+iter findfiles(startdir: string = ".", recursive: bool = false, 
+               hidden: bool = false): string {
   if (recursive) then
     for subdir in walkdirs(startdir, hidden=hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
@@ -584,7 +585,9 @@ iter findfiles(startdir = ".", recursive=false, hidden=false) {
 }
 
 pragma "no doc"
-iter findfiles(startdir = ".", recursive=false, hidden=false, param tag: iterKind) where tag == iterKind.standalone {
+iter findfiles(startdir: string = ".", recursive: bool = false, 
+               hidden: bool = false, param tag: iterKind): string 
+       where tag == iterKind.standalone {
   if (recursive) then
     forall subdir in walkdirs(startdir, hidden=hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
@@ -705,7 +708,7 @@ module chpl_glob_c_interface {
 
    :yield: The matching filenames as strings
 */
-iter glob(pattern="*") {
+iter glob(pattern: string = "*"): string {
   var glb : chpl_glob_c_interface.glob_t;
 
   const err = chpl_glob_c_interface.chpl_glob(pattern:c_string, 0, glb);
@@ -726,7 +729,7 @@ iter glob(pattern="*") {
 
 
 pragma "no doc"
-iter glob(pattern:string="*", param tag: iterKind) 
+iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   var glb : chpl_glob_c_interface.glob_t;
 
@@ -751,7 +754,7 @@ iter glob(pattern:string="*", param tag: iterKind)
 // the state at the end of the call).
 //
 pragma "no doc"
-iter glob(pattern:string="*", param tag: iterKind) 
+iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
   var glb : chpl_glob_c_interface.glob_t;
 
@@ -773,7 +776,7 @@ iter glob(pattern:string="*", param tag: iterKind)
 }
 
 pragma "no doc"
-iter glob(pattern:string="*", followThis, param tag: iterKind) 
+iter glob(pattern: string = "*", followThis, param tag: iterKind): string 
        where tag == iterKind.follower {
   var glb : chpl_glob_c_interface.glob_t;
   if (followThis.size != 1) then
@@ -919,7 +922,8 @@ proc isMount(name: string): bool {
 /* Lists the contents of a directory.  May be invoked in serial
    contexts only.
 
-   :arg path: The directory whose contents should be listed
+   :arg path: The directory whose contents should be listed 
+              (defaults to ``"."``)
    :type path: string
 
    :arg hidden: Indicates whether hidden files/directory should be listed 
@@ -939,8 +943,8 @@ proc isMount(name: string): bool {
 
    :yield: The names of the specified directory's contents, as strings
 */
-iter listdir(path: string, hidden=false, dirs=true, files=true, 
-             listlinks=true): string {
+iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true, 
+              files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
@@ -1230,8 +1234,9 @@ proc locale.umask(mask: int): int {
 
    :yield: The directory names encountered, relative to `path`, as strings
 */
-iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
-              followlinks=false, sort=false): string {
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+              hidden: bool = false, followlinks: bool = false, 
+              sort: bool = false): string {
 
   if (topdown) then
     yield path;
@@ -1260,8 +1265,9 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
 // Here's a parallel version
 //
 pragma "no doc"
-iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
-              followlinks=false, sort=false, param tag: iterKind): string 
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int), 
+              hidden: bool = false, followlinks: bool = false, 
+              sort: bool = false, param tag: iterKind): string 
        where tag == iterKind.standalone {
 
   if (sort) then

@@ -20,6 +20,7 @@
 #include "build.h"
 
 #include "astutil.h"
+#include "stlUtil.h"
 #include "baseAST.h"
 #include "config.h"
 #include "expr.h"
@@ -39,21 +40,21 @@ checkControlFlow(Expr* expr, const char* context) {
   Vec<const char*> labelSet; // all labels in expr argument
   Vec<BaseAST*> loopSet;     // all asts in a loop in expr argument
   Vec<BaseAST*> innerFnSet;  // all asts in a function in expr argument
-  Vec<BaseAST*> asts;
+  std::vector<BaseAST*> asts;
   collect_asts(expr, asts);
 
   //
   // compute labelSet and loopSet
   //
-  forv_Vec(BaseAST, ast, asts) {
+  for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
       if (LabelSymbol* ls = toLabelSymbol(def->sym))
         labelSet.set_add(ls->name);
       else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         if (!innerFnSet.set_in(fn)) {
-          Vec<BaseAST*> innerAsts;
+          std::vector<BaseAST*> innerAsts;
           collect_asts(fn, innerAsts);
-          forv_Vec(BaseAST, ast, innerAsts) {
+          for_vector(BaseAST, ast, innerAsts) {
             innerFnSet.set_add(ast);
           }
         }
@@ -63,9 +64,9 @@ checkControlFlow(Expr* expr, const char* context) {
         if (block->userLabel != NULL) {
           labelSet.set_add(block->userLabel);
         }
-        Vec<BaseAST*> loopAsts;
+        std::vector<BaseAST*> loopAsts;
         collect_asts(block, loopAsts);
-        forv_Vec(BaseAST, ast, loopAsts) {
+        for_vector(BaseAST, ast, loopAsts) {
           loopSet.set_add(ast);
         }
       }
@@ -75,18 +76,17 @@ checkControlFlow(Expr* expr, const char* context) {
   //
   // check for illegal control flow
   //
-  forv_Vec(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast)) {
+  for_vector(BaseAST, ast1, asts) {
+    if (CallExpr* call = toCallExpr(ast1)) {
       if (innerFnSet.set_in(call))
         continue; // yield or return is in nested function/iterator
       if (call->isPrimitive(PRIM_RETURN)) {
         USR_FATAL_CONT(call, "return is not allowed in %s", context);
       } else if (call->isPrimitive(PRIM_YIELD)) {
-        if (!strcmp(context, "begin statement") ||
-            !strcmp(context, "yield statement"))
+        if (!strcmp(context, "begin statement"))
           USR_FATAL_CONT(call, "yield is not allowed in %s", context);
       }
-    } else if (GotoStmt* gs = toGotoStmt(ast)) {
+    } else if (GotoStmt* gs = toGotoStmt(ast1)) {
       if (labelSet.set_in(gs->getName()))
         continue; // break or continue target is in scope
       if (toSymExpr(gs->label) && toSymExpr(gs->label)->var == gNil && loopSet.set_in(gs))

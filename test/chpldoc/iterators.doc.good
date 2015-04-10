@@ -1,0 +1,4 @@
+Module: iterators.doc
+   iter body()
+      This iterator should output its comment 
+

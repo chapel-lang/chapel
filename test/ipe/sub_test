@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -e
+
+CWD=$(cd $(dirname $0) ; pwd)
+
+orig_compiler=$1
+real_sub_test=$CWD/../../util/test/sub_test
+
+ipe="${orig_compiler}-ipe"
+if [ ! -x "${ipe}" ] ; then
+    echo "[Error: IPE was not found at: ${ipe}]"
+    exit 173
+fi
+
+$real_sub_test $ipe

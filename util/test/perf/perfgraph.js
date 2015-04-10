@@ -2,48 +2,107 @@
 // For now, I'm not using the release fields
 var branchInfo = [
                   { "release" : "0.9",
+                    "releaseDate": "2009-04-16",
                     "branchDate" : "2009-04-08", // no actual branch
                     "revision" : 15461 },
                   { "release" : "1.0",
+                    "releaseDate": "2009-10-15",
                     "branchDate" : "2009-10-16",
                     "revision" : 16229 },
                   { "release" : "1.01",
+                    "releaseDate": "2009-10-30",
                     "branchDate" : "2009-10-30",
                     "revision" : 16330 },
                   { "release" : "1.02",
+                    "releaseDate": "2009-11-12",
                     "branchDate" : "2009-11-13",
                     "revision" : 16423 },
                   { "release" : "1.1",
+                    "releaseDate": "2010-04-15",
                     "branchDate" : "2010-04-09",
                     "revision" : 17087},
+                  { "release" : "1.1.1",
+                    "releaseDate": "2010-07-08",
+                    // TODO: Remove this branchDate; there was no branch for
+                    //       1.1.1. (thomasvandoren, 2015-04-09)
+                    "branchDate" : "2010-04-09",
+                    "revision" : -1},
                   { "release" : "1.2",
+                    "releaseDate": "2010-10-21",
                     "branchDate" : "2010-10-14",
                     "revision" : 17926},
                   { "release" : "1.3",
+                    "releaseDate": "2011-04-21",
                     "branchDate" : "2011-04-12",
                     "revision" : 18701},
                   { "release" : "1.4",
+                    "releaseDate": "2011-10-20",
                     "branchDate" : "2011-10-11",
                     "revision" : 19320},
                   { "release" : "1.5",
+                    "releaseDate": "2012-04-19",
                     "branchDate" : "2012-04-10",
                     "revision" : 19961},
                   { "release" : "1.6",
+                    "releaseDate": "2012-10-18",
                     "branchDate" : "2012-10-08",
                     "revision" : 20667},
                   { "release" : "1.7",
+                    "releaseDate": "2013-04-18",
                     "branchDate" : "2013-04-05",
                     "revision" : 21260},
                   { "release" : "1.8",
+                    "releaseDate": "2013-10-17",
                     "branchDate" : "2013-10-04",
                     "revision" : 22086},
                   { "release" : "1.9",
+                    "releaseDate": "2014-04-17",
                     "branchDate" : "2014-04-07",
                     "revision" : 23144},
                   { "release" : "1.10",
+                    "releaseDate": "2014-10-02",
                     "branchDate" : "2014-09-22",
-                    "revision" : -1}  // TODO: This was a git commit.
+                    "revision" : -1},
+                  { "release" : "1.11",
+                    "releaseDate": "2015-04-02",
+                    "branchDate" : "2015-03-25",
+                    "revision" : -1}
                   ];
+
+var rebootDates = [
+    "2014-06-21",
+    "2014-07-19",
+    "2014-08-16",
+    "2014-09-20",
+    "2014-10-18",
+    "2014-11-15",
+    "2014-12-20",
+    "2015-01-17",
+    "2015-02-21",
+    "2015-03-21",
+];
+
+// NOTE: I wonder if it makes sense to calculate these rebootDates using
+//       something like Datejs. (thomasvandoren, 2015-04-08)
+//
+//  https://cdnjs.com/libraries/datejs
+//
+/* E.g.
+// Find the third Saturday of every month starting with rebootStartMonth and
+// ending with today.
+var rebootDates = [],
+
+    // Starting with June 2014 (months are 0 based in JS).
+    rebootStartMonth = new Date(2014, 5, 1),
+
+    // Set curThirdDate to the third Saturday of the starting month.
+    curThirdDate = rebootStartMonth.moveToNthOccurrence(6, 3);
+
+while (curThirdDate.isBefore(Date.today())) {
+    rebootDates.push(curThirdDate.toString("yyyy-MM-dd"));
+    curThirdDate.addMonths(1).moveToNthOccurrence(6, 3);
+}
+*/
 
 // array of currently displayed graphs
 var gs = [];
@@ -112,11 +171,20 @@ function getNextDivs(afterDiv, afterLDiv) {
   annToggle.style.visibility = 'hidden';
   gspacer.appendChild(annToggle);
 
+  // create a screenshot button and put it next to the annotation button
+  var screenshotToggle = document.createElement('input');
+  screenshotToggle.type = 'button';
+  screenshotToggle.className = 'toggle';
+  screenshotToggle.value = 'screenshot';
+  screenshotToggle.style.visibility = 'hidden';
+  gspacer.appendChild(screenshotToggle);
+
   return {
     div: div,
       ldiv: ldiv,
       logToggle: logToggle,
-      annToggle: annToggle
+      annToggle: annToggle,
+      screenshotToggle: screenshotToggle
   }
 }
 
@@ -129,6 +197,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   var ldiv = graphDivs.ldiv;
   var logToggle = graphDivs.logToggle;
   var annToggle = graphDivs.annToggle;
+  var screenshotToggle = graphDivs.screenshotToggle;
 
   var startdate = getDateFromURL(OptionsEnum.STARTDATE, graphInfo.startdate);
   var enddate = getDateFromURL(OptionsEnum.ENDDATE, graphInfo.enddate);
@@ -212,6 +281,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
 
     setupLogToggle(g, graphInfo, logToggle);
     setupAnnToggle(g, graphInfo, annToggle);
+    setupScreenshotToggle(g, graphInfo, screenshotToggle);
 
     g.isReady = true;
 
@@ -302,6 +372,78 @@ function setupAnnToggle(g, graphInfo, annToggle) {
       g.setAnnotations([]);
     }
   }
+}
+
+
+// Setup the screenshot button
+function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
+  screenshotToggle.style.visibility = 'visible';
+
+  screenshotToggle.onclick = function() {
+    captureScreenshot(g, graphInfo);
+  }
+}
+
+
+// Function to capture a screenshot of a graph and open the image in a new
+// window.
+//
+// TODO: A nicer alternative would be to open a new window, and have that
+// window create and render the screenshot and also have boxes to change the
+// size of the rendered image. Right now it just defaults to making an image
+// that is the same size as the actual graph.
+//
+// TODO: right now our graph and legend are in 2 separate divs so this is a
+// little clunky because it renders each div separately and then combines them
+// into a single canvas. It would be cleaner to have a div that wraps the graph
+// and legend and just render that one.
+function captureScreenshot(g, graphInfo) {
+
+  var gWidth = g.divs.div.clientWidth + g.divs.ldiv.clientWidth;
+  var gHeight = g.divs.div.clientHeight;
+
+  var captureCanvas = document.createElement('canvas');
+  captureCanvas.width = gWidth;
+  captureCanvas.height = gHeight;
+  var ctx = captureCanvas.getContext('2d');
+
+  // html2canvas doesn't render transformed ccs3 text (like our ylabel.) We
+  // make the label inivisible and we also hide the roll button box since
+  // theres no point in capturing it in a screenshot
+  g.updateOptions({showRoller: false, ylabel:''});
+  var label = graphInfo.ylabel;
+
+  // generate the graph
+  html2canvas(g.divs.div, {
+    // once the graph is rendered
+    onrendered: function(graphCanvas) {
+      // genenerate the legend
+       html2canvas(g.divs.ldiv, {
+        // once the legend is rendered
+        onrendered: function(legendCanvas) {
+          // draw the graph and legend canvas on a combined canvas.
+          ctx.drawImage(graphCanvas, 0, 0);
+          ctx.drawImage(legendCanvas, g.divs.div.clientWidth, 0);
+
+          // get the graphs ylabel font properties
+          var fontSize = g.getOption('axisLabelFontSize');
+          ctx.font = '16px Arial';
+
+          // rotate the canvas and draw the title
+          ctx.translate(0, gHeight/2);
+          ctx.rotate(-0.5*Math.PI);
+          ctx.textAlign = 'center';
+          ctx.fillText(label, 0, fontSize);
+
+          // open the screenshot in a new window
+          window.open(captureCanvas.toDataURL());
+
+          // restore the roll box and ylabel
+          g.updateOptions({showRoller: true, ylabel:label});
+        }
+      });
+    }
+  });
 }
 
 
@@ -540,6 +682,10 @@ function markReleaseDates (canvas, area, g) {
     canvas.stroke();
   }
   for (var i = 0; i < branchInfo.length; i++) {
+    // TODO: Check that branchDate is a member of the object. (thomasvandoren, 2015-04-09)
+    // E.g. with lodash.js or Underscore.js:
+    //
+    // if (_.has(branchInfo[i], "branchDate")) { ...
     markReleaseDate(parseDate(branchInfo[i].branchDate));
   }
 }

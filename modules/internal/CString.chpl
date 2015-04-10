@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-pragma "no use ChapelStandard"
-
 // C strings
 // extern type c_string; is a built-in primitive type
 //

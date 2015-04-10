@@ -763,7 +763,7 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
   int64_t lastwspos = 0;
 
   if( skipws && len > 0 ) {
-    int nbytes;
+    int nbytes = 0;
     int32_t wchr;
     size_t min_nonspace = len;
     size_t max_nonspace = 0;
@@ -1417,7 +1417,7 @@ qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string
   ssize_t ilen;
   ssize_t q;
   int32_t chr;
-  int clen;
+  int clen = 0;
   char* ret;
   int tmplen;
   qio_truncate_info_t ti;
@@ -2636,7 +2636,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
   int got;
   int base;
   qioerr err;
-  double num;
+  double num = 0;
   qio_style_t* style;
   bool needs_i;
 

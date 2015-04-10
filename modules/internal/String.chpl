@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-pragma "no use ChapelStandard"
-
 /*
  * NOTES:
  *

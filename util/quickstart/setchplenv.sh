@@ -66,6 +66,12 @@ if [ -d "util" ] && [ -d "compiler" ] && [ -d "runtime" ] && [ -d "modules" ]
           export CHPL_REGEXP
           echo "                           ...none"
           echo " "
+ 
+          echo "Setting CHPL_LLVM to..."
+          CHPL_LLVM=none
+          export CHPL_LLVM
+          echo "                           ...none"
+          echo " "
           
         fi
    else

@@ -1,0 +1,4 @@
+Module: badClose.doc
+   proc bad()
+      This comment is not closed properly
+

@@ -91,7 +91,7 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno,
   }
     
   len = strlen(from) + 1;
-  x->addr = chpl_mem_calloc(1, len, CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
+  x->addr = chpl_mem_calloc(len, CHPL_RT_MD_SET_WIDE_STRING, lineno, filename);
   strncpy((char*)x->addr, from, len);
   x->size = len;    // This size includes the terminating NUL.
 }
@@ -109,7 +109,7 @@ chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_stri
   }
 
   chpl_macro_tmp =
-      chpl_mem_calloc(1, x->size, CHPL_RT_MD_GET_WIDE_STRING, lineno, filename);
+      chpl_mem_calloc(x->size, CHPL_RT_MD_GET_WIDE_STRING, lineno, filename);
   if (chpl_nodeID == chpl_rt_nodeFromLocaleID(x->locale))
     chpl_memcpy(chpl_macro_tmp, x->addr, x->size);
   else

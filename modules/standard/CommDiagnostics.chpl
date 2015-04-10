@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-pragma "no use ChapelStandard"
-
 /*
   This module provides support for reporting and counting
   communication operations between network-connected locales.  The
@@ -139,13 +137,37 @@ pragma "no use ChapelStandard"
   instrumented section of this program we can say that a remote fork
   was executed on locale 0, and a remote get and a remote put were
   executed on locale 1.
+
+  **Studying Communication During Module Initialization**
+
+  It is hard for a programmer to determine exactly what happens during
+  initialization or teardown of a module, because the code that runs
+  then does so only implicitly, as a result of the declarations
+  present.  And even if that code can be identified, doing debug
+  output or logging data for later reporting might not work because
+  the Chapel capabilities needed to do so could be unavailable due to
+  being implemented by built-in modules which themselves are not yet
+  initialized, or have already been torn down.
+
+  To help with that problem, this module provides built-in support for
+  studying communication operations during module initialization and
+  teardown.  To use it, set either or both of the config params
+  :param:`printInitVerboseComm` and :param:`printInitCommCounts`,
+  described below.  You can do this by using appropriate
+  ``-sconfigParamName=value`` command line options when you compile
+  your program.
+
+  The reporting and/or counting enabled by these covers all of program
+  execution, from just before the first module is initialized until
+  just after the last one is torn down.  This is almost always a
+  superset of the part of the program that is of interest, which is
+  often just a single module.  To learn what communication is being
+  done by a single module during its initialization and teardown it is
+  often necessary to run a small test program twice, once with that
+  module present and once without it.
  */
 module CommDiagnostics
 {
-  //
-  // multi-locale diagnostics/debugging support
-  //
-
   // There should be a type like this declared in chpl-comm.h with a single
   // function that returns the C struct.  We're not doing it that way yet
   // due to some shortcomings in our extern records implementation.
@@ -376,5 +398,23 @@ module CommDiagnostics
     cd.fork_nb = chpl_numCommNBForks();
     return cd;
   }
+
+  /*
+    If this is set, on-the-fly reporting of communication operations
+    will be turned on before any module initialization begins and
+    turned off after all module teardown ends.  See procedures
+    :proc:`startVerboseComm` and :proc:`stopVerboseComm` for more
+    information.
+   */
+  config param printInitVerboseComm = false;
+
+  /*
+    If this is set, communication operations are counted from before
+    any module initialization begins until after all module teardown
+    ends, and then the aggregate counts are printed.  See procedures
+    :proc:`startCommDiagnostics`, :proc:`stopCommDiagnostics`, and
+    :proc:`getCommDiagnostics` for more information.
+   */
+  config param printInitCommCounts = false;
 
 }
