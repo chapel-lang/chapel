@@ -17,17 +17,20 @@
  * limitations under the License.
  */
 
+//
 // scopeResolve.cpp
 //
 
 #include "scopeResolve.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
 #include "build.h"
+#include "clangUtil.h"
 #include "expr.h"
+#include "externCResolve.h"
 #include "LoopStmt.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -73,18 +76,26 @@ static SymbolTable symbolTable;
 // have been resolved.
 //
 static std::map<BlockStmt*,Vec<ModuleSymbol*>*> moduleUsesCache;
-static bool enableModuleUsesCache = false;
+static bool                                     enableModuleUsesCache = false;
 
 //
 // The aliasFieldSet is a set of names of fields for which arrays may
 // be passed in by named argument as aliases, as in new C(A=>GA) (see
 // test/arrays/deitz/test_array_alias_field.chpl).
 //
-static Vec<const char*> aliasFieldSet;
+static Vec<const char*>                         aliasFieldSet;
+
+
+
+
+static void     addToSymbolTable(Vec<DefExpr*>& defs); // deprecated.
+static void     addToSymbolTable(std::vector<DefExpr*>& defs); // use this one in new code.
+
+static void     processImportExprs();
 
 static void     addClassToHierarchy(AggregateType* ct);
 
-static void addRecordDefaultConstruction();
+static void     addRecordDefaultConstruction();
 
 static void     resolveGotoLabels();
 static void     resolveUnresolvedSymExprs();
@@ -99,7 +110,6 @@ static Symbol*  lookup(BaseAST* scope, const char* name);
 static BaseAST* getScope(BaseAST* ast);
 
 void scopeResolve() {
-
   //
   // add all program asts to the symbol table
   //
@@ -215,12 +225,12 @@ void scopeResolve() {
 ************************************* | ************************************/
 static void addOneToSymbolTable(DefExpr* def);
 
-void addToSymbolTable(std::vector<DefExpr*>& defs) {
+static void addToSymbolTable(std::vector<DefExpr*>& defs) {
   for_vector(DefExpr, def, defs)
     addOneToSymbolTable(def);
 }
 
-void addToSymbolTable(Vec<DefExpr*>& defs) {
+static void addToSymbolTable(Vec<DefExpr*>& defs) {
   forv_Vec(DefExpr, def, defs)
     addOneToSymbolTable(def);
 }
@@ -275,7 +285,7 @@ static void addOneToSymbolTable(DefExpr* def)
 static ModuleSymbol* getUsedModule(Expr* expr);
 static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall);
 
-void processImportExprs() {
+static void processImportExprs() {
   // handle "use mod;" where mod is a module
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_USE)) {
@@ -391,6 +401,9 @@ static void addClassToHierarchy(AggregateType* ct) {
   return addClassToHierarchy(ct, &localSeen);
 }
 
+static AggregateType* discoverParentAndCheck(Expr*          storesName,
+                                             AggregateType* child);
+
 static void addClassToHierarchy(AggregateType*       ct,
                                 Vec<AggregateType*>* localSeen) {
   static Vec<AggregateType*> globalSeen; // classes already in hierarchy
@@ -454,7 +467,7 @@ static void addClassToHierarchy(AggregateType*       ct,
   }
 }
 
-AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* child) {
+static AggregateType* discoverParentAndCheck(Expr* storesName, AggregateType* child) {
   UnresolvedSymExpr* se  = toUnresolvedSymExpr(storesName);
 
   INT_ASSERT(se);

@@ -17,12 +17,19 @@
  * limitations under the License.
  */
 
-#ifndef _SCOPE_RESOLVE_H_
-#define _SCOPE_RESOLVE_H_
+#ifndef _EXTERN_C_RESOLVE_H_
+#define _EXTERN_C_RESOLVE_H_
 
-class AggregateType;
+#ifdef HAVE_LLVM
 
-void build_constructors(AggregateType* ct);
-void add_root_type(AggregateType* ct);
+#include "vec.h"
+
+class Expr;
+class ModuleSymbol;
+
+void convertDeclToChpl(ModuleSymbol* module,
+                       const char*   name,
+                       Vec<Expr*>&   addedToAST);
+#endif
 
 #endif
