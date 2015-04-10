@@ -1263,9 +1263,55 @@ OwnershipFlowManager::insertAutoCopies()
 }
 
 
+// Visit each goto in the scope containing the given symbol, and insert the
+// given autoDestroy call if the symbol is live at that point in the flow.
+void
+OwnershipFlowManager::insertAtOtherExitPoints(Symbol* sym,
+                                              CallExpr* autoDestroyCall)
+{
+  BlockStmt* scope = sym->getDeclarationScope();
+
+  // Search for gotos that leave this block (scope).
+  // We can find the gotos quickly by traversing the basic blocks, because
+  // every goto lies at the very end of the basic block containing it.
+  // Start with the current block.
+  // If the last block in scope ends in a goto, then the autoDestroy we just
+  // put at the end of the scope will be skipped on this branch.  This case
+  // arises e.g. if there is a return statement at the end of an else clause.
+  for (size_t i = nbbs; i--; )
+  {
+    std::vector<Expr*>& exprs = (*basicBlocks)[i]->exprs;
+    if (exprs.size() == 0)
+      continue;
+
+    // If the symbol is not owned at this point in the flow, we don't have to
+    // insert an autoDestroy for it.
+    size_t index = symbolIndex[sym];
+    if (! OUT[i]->get(index))
+      continue;
+
+    Expr* lastStmt = exprs.back();
+    if (GotoStmt* gotoStmt = toGotoStmt(lastStmt))
+    {
+      SymExpr* label = toSymExpr(gotoStmt->label);
+      INT_ASSERT(label);
+      DefExpr* target = toDefExpr(label->var->defPoint);
+      INT_ASSERT(target);
+      if (! scope->contains(target))
+      {
+        // This BlockStmt does not contain the DefExpr definition the target of
+        // the goto.  So we treat this as an exit point.
+        gotoStmt->insertBefore(autoDestroyCall->copy());
+      }
+    }
+  }
+}
+
+
 // Find the end of the scope containing the given symbol and insert an
 // autoDestroy on it there.
-static void insertAutoDestroyAtScopeExit(Symbol* sym)
+void
+OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
 {
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
   if (autoDestroy == NULL)
@@ -1283,18 +1329,20 @@ static void insertAutoDestroyAtScopeExit(Symbol* sym)
   SET_LINENO(def);
 
   CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
-  BlockStmt* block = sym->getDeclarationScope();
+  BlockStmt* scope = sym->getDeclarationScope();
+  scope->insertAtTail(autoDestroyCall);
 
-  block->insertAtAllExits(autoDestroyCall);
+  // This is a workaround for the fact that structured statements may have more
+  // than one exit point.  For each goto in the block whose target label lies
+  // outside the block, we have to insert a copy of the autoDestroy call.
+  insertAtOtherExitPoints(sym, autoDestroyCall);
 }
 
 
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
-static void insertAutoDestroy(BitVec* to_cons, 
-                              const SymbolVector& symbols,
-                              OwnershipFlowManager::SymbolIndexMap& symbolIndex,
-                              const AliasVectorMap& aliases)
+void 
+OwnershipFlowManager::insertAutoDestroy(BitVec* to_cons)
 {
   // For each true bit in the bit vector, add an autodestroy call.
   // But destroying one member of an alias list destroys them all.
@@ -1330,8 +1378,8 @@ OwnershipFlowManager::insertAutoDestroys()
 // This is probably not needed anymore.
 //  buildBasicBlocks();
 
-  // We need to insert an autodestroy call for each symbol that is owned
-  // (live) at the end of the block but is unowned (dead) in the OUT set.
+  // We must insert an autoDestroy for each symbol that is live on exit from
+  // its declaration scope.
 
   // We form the union of all symbols that are live at the end of their
   // respective basic blocks,
@@ -1344,7 +1392,7 @@ OwnershipFlowManager::insertAutoDestroys()
   }
 
   // and then destroy each symbol at the end of its containing scope.
-  insertAutoDestroy(&to_cons, symbols, symbolIndex, aliases);
+  insertAutoDestroy(&to_cons);
 }
 
 
