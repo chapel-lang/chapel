@@ -150,7 +150,7 @@ static int chpl_make_vdebug_file (const char *rootname, int namelen) {
     char fname[namelen];
     
     snprintf (fname, namelen, "%s-%d", rootname, chpl_nodeID);
-    chpl_vdebug_fd = open (fname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+    chpl_vdebug_fd = open (fname, O_WRONLY|O_CREAT|O_TRUNC|O_APPEND, 0666);
     if (chpl_vdebug_fd < 0) {
       fprintf (stderr, "Visual Debug failed to open %s: %s\n",
                fname, strerror(errno));
