@@ -1,6 +1,6 @@
 /*
- * Copyright 2004-2015 Cray Inc.
- * Other additional copyright holders may be indicated within.
+ * Copyright 2004-2015 Cray Inc.  Other additional copyright holders
+ * may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -48,7 +48,6 @@ static chpl_sync_aux_t chpl_comm_diagnostics_sync;
 static chpl_commDiagnostics chpl_comm_commDiagnostics;
 static int chpl_comm_no_debug_private = 0;
 static gasnet_seginfo_t* seginfo_table = NULL;
-
 
 //
 // Build acknowledgement address arguments for gasnetAMRequest*() calls.
@@ -377,7 +376,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "nb_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
 	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
              (long) raddr, elemSize, typeIndex, len, ln, fn);
   }
@@ -405,7 +404,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "nb_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
 	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
              (long) raddr, elemSize, typeIndex, len, ln, fn);
   }
@@ -827,7 +826,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
 	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
              (long) raddr, elemSize, typeIndex, len, ln, fn);
   }
@@ -858,7 +857,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %d %s\n",
 	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, node, (long) addr,
              (long) raddr, elemSize, typeIndex, len, ln, fn);
   }
@@ -928,7 +927,7 @@ void  chpl_comm_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "st_get: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %s\n",
 	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, srcnode, (long) dstaddr,
              (long) srcaddr, elemSize, typeIndex, ln, fn);
     // print out the srcstr and dststr?
@@ -989,7 +988,7 @@ void  chpl_comm_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstnode_id,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %s\n",
+    chpl_dprintf (chpl_vdebug_fd, "st_put: %lld.%06ld %d %d 0x%lx 0x%lx %d %d %d %s\n",
 	     (long long) tv.tv_sec, (long) tv.tv_usec,  chpl_nodeID, dstnode, (long) dstaddr,
              (long) srcaddr, elemSize, typeIndex, ln, fn);
   }
@@ -1019,7 +1018,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
              (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
              fid, (long) arg, arg_size);
   }
@@ -1084,7 +1083,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d\n",
              (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
              fid, (long) arg, arg_size);
   }
@@ -1150,7 +1149,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
     struct timeval tv;
     struct timezone tz = {0,0};
     (void)gettimeofday(&tv, &tz);
-    dprintf (chpl_vdebug_fd, "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d\n",
              (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, node, subloc,
              fid, (long) arg, arg_size);
   }

@@ -43,10 +43,6 @@ int chpl_verbose_mem;
 #include <fcntl.h>
 #include <errno.h>
 
-// Shouldn't need this but ...
-#include <stdarg.h>
-int dprintf (int, const char *,...);
-
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
 
@@ -131,6 +127,26 @@ size_t chpl_comm_getenvMaxHeapSize(void)
 
 // Visual Debug support
 
+
+#include <stdarg.h>
+int chpl_dprintf(int fd, const char * restrict format, ...)
+{
+  char buffer[2048];
+  va_list ap;
+  int wrv;
+  int retval;
+
+  va_start (ap, format);
+  retval = vsnprintf (buffer, 2048, format, ap);
+  va_end(ap);
+  if (retval > 0) {
+    wrv = write(fd, buffer,retval);
+    if (wrv < 0) return -1;
+    return retval;
+  }
+  return -1;
+}
+
 static int chpl_make_vdebug_file (const char *rootname, int namelen) {
     char fname[namelen];
     
@@ -168,7 +184,7 @@ void chpl_vdebug_start(const char *fileroot, double now) {
       return;
 
     // Write initial information to the file
-    dprintf (chpl_vdebug_fd, "ChplVdebug: nodes %d, id %d, seq %.3lf\n",
+    chpl_dprintf (chpl_vdebug_fd, "ChplVdebug: nodes %d, id %d, seq %.3lf\n",
              chpl_numNodes, chpl_nodeID, now);
   }
 
@@ -177,6 +193,13 @@ void chpl_vdebug_start(const char *fileroot, double now) {
 
 void chpl_vdebug_stop(void) {
   chpl_vdebug = 0;
+}
+
+extern void chpl_vdebug_mark(const char *str)
+{
+  if (chpl_vdebug_fd == -1) {
+    chpl_dprintf (chpl_vdebug_fd, "mark: %s\n", str);
+  }  
 }
 
 // End Visual Debug Support

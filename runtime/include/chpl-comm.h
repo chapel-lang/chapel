@@ -52,11 +52,20 @@ size_t chpl_comm_getenvMaxHeapSize(void);
 // Visual Debug support (Shared Interface)
 //
 
-extern int chpl_vdebug_fd;    // fd of output file, 0 => not gathering data
-extern int chpl_vdebug;       // 
+#include <stdarg.h>
 
-extern void chpl_vdebug_start(const char *, double now); //  start and open file if not NULL
-extern void chpl_vdebug_stop(void);    //  stop collecting data
+extern int chpl_vdebug_fd;    // fd of output file, 0 => not gathering data
+extern int chpl_vdebug;       // Should we generate debug data
+
+// Linux and MacOS don't do a single write.  We require a single write.
+extern int chpl_dprintf(int fd, const char * restrict format, ...);
+
+//  start and open file if not NULL
+extern void chpl_vdebug_start(const char *, double now); 
+//  stop collecting data
+extern void chpl_vdebug_stop(void);
+//  Mark the data with a character tag
+extern void chpl_vdebug_mark(const char *);
 
 // End Visual Debug support
 
