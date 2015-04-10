@@ -59,7 +59,7 @@ extern int chpl_vdebug;       // Should we generate debug data
 
 // Linux and MacOS don't do a single write.  We require a single write.
 extern int chpl_dprintf(int fd, const char * format, ...)
-#ifdef __NetBSD__
+#ifdef __GNUC__
       __attribute__ ((format (printf, 2, 3)))
 #endif
    ;
