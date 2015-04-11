@@ -2,6 +2,27 @@
 version 1.0303 
 header_name {.h} 
 code_name {.cxx}
+comment {/*
+ * Copyright 2015 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+} {in_source in_header
+} 
+
 decl {\#include <FL/Fl_File_Chooser.H>} {private local
 } 
 
@@ -21,7 +42,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {15 20 500 555} type Double resizable size_range {500 550 0 0} visible
+    xywh {15 44 500 555} type Double resizable size_range {500 550 0 0} visible
   } {
     Fl_Menu_Bar {} {open
       xywh {0 0 500 20} color 55
@@ -50,7 +71,7 @@ if (selfile) {
         }
       }
       Submenu {} {
-        label Layout open
+        label Layout open selected
         xywh {0 0 70 21}
       } {
         MenuItem {} {
@@ -59,7 +80,7 @@ if (selfile) {
         }
       }
       MenuItem {} {
-        label Help selected
+        label Help
         xywh {0 0 34 21} deactivate
       }
     }
