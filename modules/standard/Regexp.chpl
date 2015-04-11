@@ -65,6 +65,21 @@ Lastly, you can include regular expressions in the format string for
 :proc:`~IO.readf` for searching on QIO channels using the ``%/<regexp>/``
 syntax.
 
+Regular Expression Examples
+---------------------------
+
+``a+``
+ Match one or more ``a`` characters
+
+``[[:space:]]*`` or ``\s*`` (which would be ``"\\s*"`` in a string)
+ Match zero or more spaces
+
+``[[:digit:]]+`` or ``\d+`` (which would be ``"\\d+"`` in a string)
+ Match one or more digits
+
+``([a-zA-Z0-9]+[[:space:]]+=[[:space:]]+[0-9]+``
+ Match sequences of the form *<letters-and-digits> <spaces>* ``=`` *<digits>*
+
 
 .. _regular-expression-syntax:
 
@@ -174,6 +189,8 @@ RE2 regular expression syntax reference
   \W           not word characters (== [^0-9A-Za-z_])
 
   ASCII character classes::
+    Note -- you must use these within a [] group! so if you want
+            to match any number of spaces, use [[:space:]]* or \s*
 
   [:alnum:]    alphanumeric (== [0-9A-Za-z])
   [:alpha:]    alphabetic (== [A-Za-z])
@@ -184,7 +201,7 @@ RE2 regular expression syntax reference
   [:graph:]    graphical (== [!-~] == 
                  [A-Za-z0-9!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])
   [:lower:]    lower case (== [a-z])
-  [:print:]    printable (== [ -~] == [ [:graph:]])
+  [:print:]    printable (== [ -~] == [[:graph:]])
   [:punct:]    punctuation (== [!-/:-@[-`{-~])
   [:space:]    whitespace (== [\t\n\v\f\r ])
   [:upper:]    upper case (== [A-Z])
@@ -390,6 +407,11 @@ extern proc qio_regexp_replace(ref re:qio_regexp_t, repl:c_string, repllen:int(6
 // This one is documented below.
 pragma "no doc"
 proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp {
+
+  if CHPL_REGEXP == "none" {
+    compilerError("Regular expression support not compiled in");
+  }
+
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
   opts.utf8 = utf8;
@@ -414,9 +436,13 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
    Compile a regular expression. If the optional error argument is provided,
    this routine will return an error code if compilation failed. Otherwise, it
    will halt with an error message.
-    
+
    :arg pattern: the string regular expression to compile.
-                 See :ref:`regular-expression-syntax` for details
+                 See :ref:`regular-expression-syntax` for details. Note that
+                 you may have to escape backslashes. For example, to
+                 get the regular expression ``\s``, you'd have to write
+                 ``"\\s"`` because the ``\`` is the escape character within
+                 Chapel string literals
    :arg error: (optional) if provided, return an error code instead of halting
                if an error is encountered
    :arg utf8: (optional, default true) set to `true` to create a regular
@@ -428,17 +454,24 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
                  rather than as a regular expression).
    :arg nocapture: (optional) set to true in order to disable all capture groups
                    in the regular expression
-   :arg ignorecase: (optional) set to true in order to ignore case when matching
+   :arg ignorecase: (optional) set to true in order to ignore case when
+                    matching. Note that this can be set inside the regular
+                    expression with ``(?i)``.
    :arg multiline: (optional) set to true in order to activate multiline mode
-                   (meaning that ``^`` and ``$`` match the beginning and end of a
-                   line instead of just the beginning and end of the text.
+                   (meaning that ``^`` and ``$`` match the beginning and end
+                   of a line instead of just the beginning and end of the text.
+                   Note that this can be set inside a regular expression
+                   with ``(?m)``.
    :arg dotnl: (optional, default false) set to true in order to allow ``.``
-               to match a newline.
+               to match a newline. Note that this can be set inside the
+               regular expression with ``(?s)``.
    :arg nongreedy: (optional) set to true in order to prefer shorter matches for
                    repetitions; for example, normally x* will match as many x
                    characters as possible and x*? will match as few as possible.
                    This flag swaps the two, so that x* will match as few as
-                   possible and x*? will match as many as possible.
+                   possible and x*? will match as many as possible. Note that
+                   this flag can be set inside the regular expression with
+                   ``(?U)``.
 
  */
 proc compile(pattern: string, out error:syserr, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp {

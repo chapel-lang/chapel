@@ -1,0 +1,7 @@
+Module: enum.doc
+   enum Color { Red, Yellow, Blue }
+      This is a color enum. 
+
+   enum Months { January = 1, February, March, April, May, June, July, August, September, October, November, December }
+      Another enum with inline comments for constants. 
+

@@ -1,3 +1,22 @@
+/*
+ * Copyright 2004-2015 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 //# OwnershipFlowManager.cpp -*- C++ -*-
 //#########################################################################
 //#
@@ -109,7 +128,7 @@ void
 OwnershipFlowManager::extractSymbols()
 {
   DefExprVector defExprs;
-  collectDefExprsSTL(_fn, defExprs);
+  collectDefExprs(_fn, defExprs);
 
   for_vector(DefExpr, def, defExprs)
   {
@@ -224,7 +243,7 @@ OwnershipFlowManager::populateAliases()
     for_vector(Expr, expr, bb->exprs)
     {
       SymExprVector symExprs;
-      collectSymExprsSTL(expr, symExprs);
+      collectSymExprs(expr, symExprs);
       populateStmtAliases(symExprs);
     }
   }
@@ -446,7 +465,7 @@ OwnershipFlowManager::computeTransitions(BasicBlock& bb,
     // Can we speed things up by processing only statement expressions?
 
     OwnershipFlowManager::SymExprVector symExprs;
-    collectSymExprsSTL(expr, symExprs);
+    collectSymExprs(expr, symExprs);
 
     computeTransitions(symExprs, prod, live, use, cons);
   }
@@ -524,7 +543,7 @@ void
 OwnershipFlowManager::computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBIDMap)
 {
   std::vector<DefExpr*> defExprs;
-  collectDefExprsSTL(_fn, defExprs);
+  collectDefExprs(_fn, defExprs);
   for_vector(DefExpr, def, defExprs)
   {
     if (! def->parentSymbol)
@@ -1233,7 +1252,7 @@ static void insertAutoCopy(BasicBlock& bb,
   for_vector(Expr, expr, bb.exprs)
   {
     OwnershipFlowManager::SymExprVector symExprs;
-    collectSymExprsSTL(expr, symExprs);
+    collectSymExprs(expr, symExprs);
 
     insertAutoCopy(symExprs, prod, live, cons, aliases, symbolIndex);
   }

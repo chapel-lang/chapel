@@ -21,7 +21,7 @@
 //
 pragma "export init"
 module ChapelStandard {
-  use startInitCommDiags;
+  use startInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
   use ChapelBase;
@@ -62,5 +62,5 @@ module ChapelStandard {
   use Types;
   use Math;
 
-  use stopInitCommDiags;
+  use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

@@ -490,8 +490,6 @@ private:
 
   // Used when documenting submodules.
   std::string          moduleNamePrefix;
-;
-
 };
 
 /******************************** | *********************************
