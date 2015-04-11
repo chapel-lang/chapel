@@ -755,11 +755,6 @@ Reviewed 2015-04-10
 
 === sporadic failures below ===
 
-MPICH Warning: For one-sided operations with MPICH_RMA_OVER_DMAPP enabled (2015-03-27) (Thomas)
-(xc.mpi.*.aprun)
----------------------------------
-all tests fail
-
 [chpl_launchcmd] ... [ERROR] Output file from job does not exist at: ... (2015-03-25)
 -------------------------------------------------------------------------------------
 [Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)] (last seen 2015-03-25 on xc.mpi.pgi.aprun)
