@@ -381,7 +381,7 @@ BlockStmt::insertAtAllExits(Expr* expr)
   insertAtTail(expr);
 
   std::vector<GotoStmt*> gotoStmts;
-  collectGotoStmtsSTL(this, gotoStmts);
+  collectGotoStmts(this, gotoStmts);
   for_vector(GotoStmt, gotoStmt, gotoStmts)
   {
     SymExpr* label = toSymExpr(gotoStmt->label);

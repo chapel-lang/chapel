@@ -956,7 +956,7 @@ OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons, 
     Expr* stmt = bb->exprs[i];
     
     SymExprVector symExprs;
-    collectSymExprsSTL(stmt, symExprs);
+    collectSymExprs(stmt, symExprs);
 
     iteratorInsertAutoDestroys(to_cons, cons, symExprs);
   }

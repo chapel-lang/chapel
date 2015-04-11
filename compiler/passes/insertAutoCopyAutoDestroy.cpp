@@ -250,7 +250,7 @@ static void addFlagReturnValueNotOwned()
 static DefExpr* findSymbolDef(Symbol* sym, FnSymbol* fn)
 {
   std::vector<DefExpr*> defExprs;
-  collectDefExprsSTL(fn, defExprs);
+  collectDefExprs(fn, defExprs);
   for_vector(DefExpr, def, defExprs)
   {
     // Select only DefExprs referring to the RVV.
@@ -267,7 +267,7 @@ static DefExpr* findSymbolDef(Symbol* sym, FnSymbol* fn)
 static void hoistReturnBlock(FnSymbol* fn, BlockStmt* block)
 {
   std::vector<Expr*> stmts;
-  collect_stmts_STL(fn->body, stmts);
+  collect_stmts(fn->body, stmts);
   size_t nstmts = stmts.size();
 
   // Hoist the return statement.
