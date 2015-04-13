@@ -22,6 +22,7 @@ type specified
 in gob()
 in Zed(1)
 in =(Zed, Zed)
+in chpl__initCopy({y = 2}:Zed)
 in ~Zed({y = 1})
 in chpl__initCopy({y = 2}:Zed)
 in chpl__initCopy({y = 2}:Zed)
