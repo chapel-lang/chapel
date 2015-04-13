@@ -70,7 +70,7 @@ def _find_annotations(graph, matches, data, start, end, config_name):
       if start <= date and date <= end:
         for ann in annotations:
           if isinstance(ann, dict):
-            if config_name in ann['host']:
+            if config_name in ann['config']:
               matches[date].append(ann['text'])
           else:
             matches[date].append(ann)
