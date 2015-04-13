@@ -164,7 +164,8 @@ general
 
 unexpected internal error and associated output (2015-04-10, mnoakes)
 ---------------------------------------------------------------------
-[Error matching compiler output for ipe/simple] (linux32, baseline, numa)
+[Error matching compiler output for ipe/simple] (baseline, linux32, numa, valgrind)
+[Error matching compiler output for ipe/simpleInput] (valgrind)
 
 
 ****************************************************************************
@@ -279,8 +280,6 @@ Inherits 'perf*'
 Reviewed 2015-04-10
 ====================
 
-There is no testing by this name?
-
 
 ****************************************************************************
 *         Compiler flags / Sanity checks / Variant Configurations          *
@@ -338,6 +337,17 @@ new errors on 2015-03-28 (vass)
 [Error: Timed out executing program studies/amr/diffusion/level/Level_DiffusionBE_driver (compopts: 1)]
 [Error: Timed out executing program studies/lulesh/bradc/xyztuple/lulesh-dense-3tuple]
 
+invalid reads/writes, not manually reproducible (2015-04-11)
+------------------------------------------------------------
+[Error matching program output for arrays/bradc/reindex/reindex]
+[Error matching program output for domains/bradc/constdomain]
+[Error matching program output for domains/bradc/subdomain]
+[Error matching program output for exercises/boundedBuffer2]
+[Error matching program output for spec/marybeth/for]
+[Error matching program output for spec/marybeth/select]
+[Error matching program output for trivial/bradc/formatoutput]
+[Error matching program output for users/ferguson/forall_expr]
+
 conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 ----------------------------------------------------------------------------
 [Error matching program output for io/tzakian/recordReader/test]
@@ -348,11 +358,12 @@ conditional jump depends on uninitialized value (2014-04-08 -- since re2 on)
 sporadic invalid write in dl_lookup_symbol->do_lookup_x, read in dl_name_match_p
 --------------------------------------------------------------------------------
 [Error matching program output for performance/sungeun/dgemm] (..., 2014-11-29..2015-03-27)
+[Error matching program output for reductions/bradc/manual/promote] (2015-04-11
 [Error matching program output for studies/sudoku/dinan/sudoku] (..., 2015-02-19..2015-02-26, 2015-02-28..2015-03-07)
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (..2015-02-21, 2015-03-27)]
+[Error: Timed out executing program domains/sungeun/assoc/stress.numthr (compopts: 1, execopts: 2)] (..2015-02-21, 2015-03-27, 2015-04-11)]
 [Error: Timed out executing program domains/sungeun/assoc/stress (compopts: 1, execopts: 2) (2015-03-02..sometime prior to 2015/03/10)]
 [Error: Timed out executing program performance/bharshbarg/arr-forall] (2015-03-20, 2015-03-29..2015-04-02, 2015-04-04..)]
 [Error: Timed out executing program studies/shootout/fannkuch-redux/sungeun/fannkuch-redux (execopts: 2)] (2015-03-28..2015-04-02, 2015-04-03..)]
@@ -476,7 +487,7 @@ sporadic execution timeouts
 segfault
 --------
 [Error matching program output for types/string/StringImpl/memLeaks/cast]     (2015-03-07)
-[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2015-04-05)
+[Error matching program output for types/string/StringImpl/memLeaks/coforall] (2015-04-05, 2015-04-12)
 [Error matching program output for types/string/StringImpl/memLeaks/find] (2015-04-08)
 
 
@@ -510,9 +521,9 @@ Reviewed 2015-04-10
 
 sporadic execution timeouts
 ---------------------------
-[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (xc-wb.prgenv-pgi   2015-03-29)
+[Error: Timed out executing program execflags/bradc/gdbddash/gdbSetConfig] (xc-wb.prgenv-pgi   2015-03-29, 2015-04-12)
                                                                            (xc-wb.prgenv-gnu   2015-03-24, 2015-03-29, 2015-04-02, 2015-04-07)
-                                                                           (xc-wb.prgenv-intel 2015-03-24, 2015-03-31, 2015-04-02, 2015-04-07..)
+                                                                           (xc-wb.prgenv-intel 2015-03-24, 2015-03-31, 2015-04-02, 2015-04-07..2015-04-09)
 
 
 =======================
@@ -606,7 +617,7 @@ sporadic dropping/mangling of output
 [Error matching program output for functions/iterators/bradc/leadFollow/localfollow2 (compopts: 1)] (2014-10-07)
 [Error matching program output for multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalRecordMember] (2014-12-16)
 [Error matching program output for optimizations/sungeun/RADOpt/access1d (compopts: 1)] (2014-10-10)
-[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (2014-10-03, 2015-03-04, xc.mpi.cray.slurm 2015-03-01, last seen 2015-03-26 on xc-wb.prgenv-cray)
+[Error matching program output for release/examples/benchmarks/ssca2/SSCA2_main (compopts: *, execopts: 1)] (2014-10-03, 2015-03-04, xc.mpi.cray.slurm 2015-03-01, last seen 2015-03-26 on xc-wb.prgenv-cray, xc.none.cray.aprun: 2015-04-13)
 [Error matching program output for release/examples/primers/arrays] (2014-10-03)
 [Error matching program output for studies/cholesky/jglewis/version2/elemental/test_elemental_cholesky] (2015-01-14)
 [Error matching program output for studies/hpcc/STREAMS/bradc/stream-fragmented-timecoforall (compopts: 1)] (2014-12-19)
@@ -757,9 +768,13 @@ Reviewed 2015-04-10
 
 [chpl_launchcmd] ... [ERROR] Output file from job does not exist at: ... (2015-03-25)
 -------------------------------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)] (last seen 2015-03-25 on xc.mpi.pgi.aprun)
 [Error matching program output for release/examples/benchmarks/hpcc/fft] (xc.mpi.gnu.aprun: 2015-04-09)
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 2)] (last seen 2015-03-25 on xc.mpi.pgi.aprun)
+[Error matching program output for release/examples/benchmarks/lulesh/test3DLulesh (compopts: 1, execopts: 2)] (xc.ugni.gnu.aprun: 2015-04-11)
 
+slurm 'Expired credential' problem after executable termination (2015-04-13)
+----------------------------------------------------------------------------
+[Error matching program output for release/examples/primers/genericClasses] (xc.aries.cray.slurm: 2015-04-13)
 
 ===================
 xe.*
@@ -806,9 +821,9 @@ Unclear how KNCs interact with the file system on Crays (since first run)
 
 === sporadic failures below ===
 
-SIGBUS at execution time (2015-04-10, guessed sporadic on first sighting)
--------------------------------------------------------------------------
-[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)]
+SIGBUS at execution time
+------------------------
+[Error matching program output for release/examples/benchmarks/lulesh/lulesh (compopts: 1, execopts: 4)] (2015-04-10)
 
 sporadic execution timeouts
 ---------------------------
@@ -931,9 +946,9 @@ Reviewed 2015-04-10
 
 sporadic execution timeout
 --------------------------
-[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-12..2015-03-17, 2015-03-20..2015-03-23, 2015-03-26..2015-03-31,2015-04-02..2015-04-03, 2015-04-05, 2015-04-07, 2015-04-09..)
+[Error: Timed out executing program release/examples/benchmarks/hpcc/stream-ep] (2015-02-25..2015-02-28, 2015-03-12..2015-03-17, 2015-03-20..2015-03-23, 2015-03-26..2015-03-31,2015-04-02..2015-04-03, 2015-04-05, 2015-04-07, 2015-04-09..2015-04-11, 2015-04-13..)
 [Error: Timed out executing program release/examples/benchmarks/miniMD/miniMD    (compopts: 1)]              (2015-??-??..2015-03-17)
-[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: *)] (2015-03-22, 2015-03-25, 2015-03-31, 2015-04-04..2015-04-07, 2015-04-09)
+[Error: Timed out executing program release/examples/benchmarks/ssca2/SSCA2_main (compopts: 1, execopts: *)] (2015-03-22, 2015-03-25, 2015-03-31, 2015-04-04..2015-04-07, 2015-04-09, 2015-04-11..)
 
 
 ==================================
@@ -1021,6 +1036,10 @@ QIO strcmp(got, expect) assertion error
 ---------------------------------------
 [Error matching program output for io/ferguson/ctests/qio_formatted_test (compopts: 1)]
 
+test prints 'inf' where .good expects 'nan' (2015-04-10, hilde)
+---------------------------------------------------------------
+[Error matching program output for modules/standard/math/promotion/tgamma]
+
 === sporadic failures below ===
 
 sporadic pthread_cond_init failed
@@ -1055,10 +1074,6 @@ Generated output "FAILED" (see below for sporadic): First run 2014-12-07
 Consistent execution timouts
 ----------------------------
 [Error: Timed out executing program io/ferguson/ctests/qio_test (compopts: 1)]
-
-SIGTERM when trying to create directory (2015-04-07, Thomas)
-------------------------------------------------------------
-[Error matching compiler output for chpldoc/compflags/folder/failToCreateDir.doc (compopts: 2)]
 
 A package needed for chpldoc is not installed (2015-03-12, Thomas)
 ------------------------------------------------------------------
@@ -1161,7 +1176,7 @@ sporadic generated output "FAILED" (see above for solid): First run 2014-12-07
                                                                                                          2015-01-31..2015-02-18, 2015-02-20..2015-02-22, 2015-02-24,
                                                                                                          2015-03-01..2015-03-05, 2015-03-11..2015-03-14,
                                                                                                          2015-03-17..2015-03-18, 2015-03-22..2015-03-26,
-                                                                                                         2015-03-28..2105-04-01, 2015-04-04..2015-04-08)
+                                                                                                         2015-03-28..2105-04-01, 2015-04-04..2015-04-08, 2015-04-10..)
 
 
 ================================
@@ -1169,10 +1184,6 @@ cygwin64
 Inherits 'cygwin*' and 'linux64'
 Reviewed 2015-04-10
 ================================
-
-Error: Failed to create directory due to: Permission denied (tvandoren)
------------------------------------------------------------------------
-[Error matching compiler output for chpldoc/compflags/folder/failToCreateDir.doc (compopts: 2)] (2015-04-07..)
 
 QIO qio_err_to_int() == EEOF assertion error
 --------------------------------------------
