@@ -421,7 +421,7 @@ module String {
    * used by initCopy().
    */
   pragma "init copy fn"
-  proc chpl__initCopy(ref s: string) {
+  proc chpl__initCopy(s: string) {
     if debugStrings then
       chpl_debug_string_print("in initCopy()");
 
