@@ -159,7 +159,7 @@
 
 ===================
 general
-% Reviewed 2015-04-06
+Reviewed 2015-04-10
 ===================
 
 unexpected internal error and associated output (2015-04-10, mnoakes)
@@ -182,7 +182,7 @@ Reviewed 2015-04-10
 ===================
 *32
 Inherits 'general'
-% Reviewed 2015-04-06
+Reviewed 2015-04-10
 ===================
 
 32-/64-bit portability issue (2015-03-04, bradc)
