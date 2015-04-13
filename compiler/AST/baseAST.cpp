@@ -286,15 +286,15 @@ BaseAST::BaseAST(AstTag type) :
 const std::string BaseAST::tabText = "   ";
 
 
-BaseAST::~BaseAST() { 
+BaseAST::~BaseAST() {
 }
 
 int BaseAST::linenum() const {
-  return astloc.lineno; 
+  return astloc.lineno;
 }
 
 const char* BaseAST::fname() const {
-  return astloc.filename; 
+  return astloc.filename;
 }
 
 const char* BaseAST::stringLoc(void) const {
@@ -307,8 +307,8 @@ const char* BaseAST::stringLoc(void) const {
 
 
 ModuleSymbol* BaseAST::getModule() {
-  if (!this)
-    return NULL;
+  INT_ASSERT(this != NULL);
+
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x;
   else if (Type* x = toType(this))
@@ -324,8 +324,8 @@ ModuleSymbol* BaseAST::getModule() {
 
 
 FnSymbol* BaseAST::getFunction() {
-  if (!this)
-    return NULL;
+  INT_ASSERT(this != NULL);
+
   if (ModuleSymbol* x = toModuleSymbol(this))
     return x->initFn;
   else if (FnSymbol* x = toFnSymbol(this))
