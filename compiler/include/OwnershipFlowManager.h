@@ -106,7 +106,7 @@ class OwnershipFlowManager
     FlowSet_EXIT = 1<<4,
     FlowSet_IN = 1<<5,
     FlowSet_OUT = 1<<6,
-    FlowSet_ALL = 0xf
+    FlowSet_ALL = 0xff
   };
 
   // Properties
@@ -217,6 +217,8 @@ class OwnershipFlowManager
   void backwardFlowUse();
   void forwardFlowOwnership();
   void insertAutoCopies();
+  void iteratorInsertAutoDestroys();
+  void checkForwardOwnership();
   void backwardFlowOwnership();
   void insertAutoDestroys();
   
@@ -233,7 +235,18 @@ class OwnershipFlowManager
   void computeTransitions(SymExprVector& symExprs,
                           BitVec* prod, BitVec* live,
                           BitVec* use, BitVec* cons);
-  void computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBIDMap);
+//  void computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBIDMap);
+  void computeScopeMap();
+  void addInternalDefs();
+  void computeExitBlocks();
+  void iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons,
+                                  BasicBlock* bb);
+  void iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons,
+                                  SymExprVector& symExprs);
+  void insertAutoDestroy(BitVec* to_cons);
+  void insertAutoDestroyAtScopeExit(Symbol* sym);
+  void insertAtOtherExitPoints(Symbol* sym,
+                               CallExpr* autoDestroyCall);
 };
 
 
@@ -425,11 +438,17 @@ inline static bool isConsumed(SymExpr* se)
                 isModuleSymbol(lhse->var->defPoint->parentSymbol))
                 return true;
 
-              // Assignment to the return-value variable is treated as a consumption
+              // Assignment to the return-value variable is treated as a
+              // consumption, unless the function doest no return an owned value.
               // (see Note #2).
-              if( FnSymbol* fn = toFnSymbol(call->parentSymbol))
+              if (FnSymbol* fn = toFnSymbol(call->parentSymbol))
                 if (lhse->var == fn->getReturnSymbol())
-                  return true;
+                {
+                  if (fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+                    return false;
+                  else
+                    return true;
+                }
             }
         }
         break;

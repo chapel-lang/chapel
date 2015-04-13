@@ -109,6 +109,7 @@ void deadBlockElimination();
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 // callDestructors.cpp
+void insertReferenceTemps();
 void insertReferenceTemps(CallExpr* call);
 
 // parallel.cpp

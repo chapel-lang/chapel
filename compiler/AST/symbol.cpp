@@ -161,6 +161,17 @@ bool Symbol::isRenameable() const {
 }
 
 
+// Returns the scope in which the given symbol is declared; NULL otherwise.
+BlockStmt*
+Symbol::getDeclarationScope() const
+{
+  if (defPoint == NULL)
+    return NULL;
+
+  return defPoint->getScopeBlock();
+}
+
+
 GenRet Symbol::codegen() {
   GenInfo* info = gGenInfo;
   GenRet ret;
@@ -2218,7 +2229,10 @@ FnSymbol::insertBeforeDownEndCount(Expr* ast) {
   CallExpr* ret = toCallExpr(body->body.last());
   if (!ret || !ret->isPrimitive(PRIM_RETURN))
     INT_FATAL(this, "function is not normal");
-  CallExpr* last = toCallExpr(ret->prev);
+  Expr* prev = ret->prev;
+  while (isBlockStmt(prev))
+    prev = toBlockStmt(prev)->body.last();
+  CallExpr* last = toCallExpr(prev);
   if (!last || strcmp(last->isResolved()->name, "_downEndCount"))
     INT_FATAL(last, "Expected call to _downEndCount");
   last->insertBefore(ast);

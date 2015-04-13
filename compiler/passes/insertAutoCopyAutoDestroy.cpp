@@ -210,6 +210,7 @@
 #include "symbol.h"
 #include "bitVec.h"
 
+#include "astutil.h"
 
 //########################################################################
 //#
@@ -234,11 +235,86 @@ static bool returnsPreExistingRecord(FnSymbol* fn)
   return true;
 }
 
+
 static void addFlagReturnValueNotOwned()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols)
     if (returnsPreExistingRecord(fn))
       fn->addFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
+}
+
+
+// Finds the declaration of the given symbol within the given function.
+// Returns null if no such declaration exists in that scope.
+// (A return value may be an immediate or a global.)
+static DefExpr* findSymbolDef(Symbol* sym, FnSymbol* fn)
+{
+  std::vector<DefExpr*> defExprs;
+  collectDefExprs(fn, defExprs);
+  for_vector(DefExpr, def, defExprs)
+  {
+    // Select only DefExprs referring to the RVV.
+    if (def->sym == sym)
+    {
+      // This is the symbol's declaration.
+      return def;
+    }
+  }
+  return NULL;
+}
+
+
+static void hoistReturnBlock(FnSymbol* fn, BlockStmt* block)
+{
+  std::vector<Expr*> stmts;
+  collect_stmts(fn->body, stmts);
+  size_t nstmts = stmts.size();
+
+  // Hoist the return statement.
+  CallExpr* ret = toCallExpr(stmts[nstmts-1]);
+  INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
+  block->insertAtHead(ret->remove());
+
+  // See if the statement is preceded by a DefExpr containing a label.
+  DefExpr* label = toDefExpr(stmts[nstmts-2]);
+  if (label && isLabelSymbol(label->sym))
+  {
+    // If so, we assume it is the return statement label.
+    // Move that one, too.
+    block->insertAtHead(label->remove());
+  }
+}
+
+
+static void hoistReturnIntoItsOwnScope(FnSymbol* fn)
+{
+  SET_LINENO(fn);
+
+  // Get the declaration of the return-value variable if there is one.
+  // Functions that return void or an immediate to not declare a return-value variable.
+  Symbol* retSym = fn->getReturnSymbol();
+
+  DefExpr* def = findSymbolDef(retSym, fn);
+  if (def)
+    def->remove();
+
+  // Create and populate a new body block from the end forward.
+  BlockStmt* block = new BlockStmt();
+  BlockStmt* body = fn->body;
+  hoistReturnBlock(fn, block);
+  fn->body->replace(block);
+  block->insertAtHead(body);
+  if (def)
+    block->insertAtHead(def);
+}
+
+
+static void hoistReturnIntoItsOwnScope()
+{
+  forv_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    hoistReturnIntoItsOwnScope(fn);
+  }
 }
 
 
@@ -261,8 +337,8 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
   ofm.extractSymbols();
   ofm.populateAliases();
   ofm.createFlowSets();
-  ofm.computeTransitions();
   ofm.computeExits();
+  ofm.computeTransitions();
   ofm.debugPrintFlowSets(OwnershipFlowManager::FlowSet_ALL);
 
   ofm.backwardFlowUse();
@@ -275,6 +351,20 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
                           OwnershipFlowManager::FlowSet_OUT));
 
   ofm.insertAutoCopies();
+
+  // Only do this for the "advance" iterator function.
+  if (fn->hasFlag(FLAG_AUTO_II) &&
+      ! strcmp(fn->name, "advance"))
+  {
+    // In iterators, insert autodestroys after last use.
+    ofm.iteratorInsertAutoDestroys();
+    // Recompute forward flow, to take into account new
+    // consumers added.
+    ofm.forwardFlowOwnership();
+  }
+
+  if (fVerify)
+    ofm.checkForwardOwnership();
 
 #if 0
   // We need our own equation for backward flow.
@@ -291,13 +381,14 @@ static void insertAutoCopyAutoDestroy(FnSymbol* fn)
 #endif
 
   ofm.insertAutoDestroys();
-
 }
 
 
 void insertAutoCopyAutoDestroy()
 {
   addFlagReturnValueNotOwned();
+
+  hoistReturnIntoItsOwnScope();
 
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
@@ -307,6 +398,10 @@ void insertAutoCopyAutoDestroy()
 
     insertAutoCopyAutoDestroy(fn);
   }
+
+  // Re-run insertReferenceTemps, to cover autoDestroy calls that may have been
+  // inserted by this pass.
+  insertReferenceTemps();
 }
 
 

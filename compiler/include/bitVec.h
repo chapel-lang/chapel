@@ -80,12 +80,23 @@ inline bool operator!=(const BitVec& a, const BitVec& b)
   return ! a.equals(b);
 }
 
-inline BitVec operator+(const BitVec& a, const BitVec& b)
+inline BitVec operator&(const BitVec& a, const BitVec& b)
+{
+  BitVec result(a);
+  result.intersection(b);
+  return result;
+}
+
+inline BitVec operator|(const BitVec& a, const BitVec& b)
 {
   BitVec result(a);
   result.disjunction(b);
   return result;
 }
+
+// An alias for operator|.
+inline BitVec operator+(const BitVec& a, const BitVec& b)
+{ return a | b; }
 
 inline BitVec operator-(const BitVec& a, const BitVec& b)
 {

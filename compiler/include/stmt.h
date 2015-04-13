@@ -102,6 +102,7 @@ public:
   void                insertAtTail(Expr* ast);
   void                insertAtTailBeforeFlow(Expr* ast);
   virtual void        insertAtExit(Expr* expr);
+  void                insertAtAllExits(Expr* expr);
 
   void                insertAtHead(const char* format, ...);
   void                insertAtTail(const char* format, ...);

@@ -113,6 +113,9 @@ public:
   virtual bool       isParameter()                             const;
           bool       isRenameable()                            const;
 
+  // Returns the scope block in which this symbol is declared.
+          BlockStmt* getDeclarationScope()                     const;
+
   virtual void       codegenDef();
 
   bool               hasFlag(Flag flag)                        const;

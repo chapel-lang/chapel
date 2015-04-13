@@ -71,6 +71,7 @@ resetAliasList(BitVec* bits, SymbolVector& aliasList,
 //# TODO: See if these are defined elsewhere.
 //#
 
+#if 0
 static BlockStmt* getScopeBlock(Expr* expr)
 {
   // If this is a DefExpr and the symbol is a formal, then we use the body of
@@ -99,7 +100,7 @@ static BlockStmt* getScopeBlock(Expr* expr)
   INT_FATAL(expr, "Expression is not associated with any scope.");
   return NULL;
 }
-
+#endif
 
 // Returns true if expr is a parent expr of other; false otherwise.
 // The comparison is not strict (an Expr be its own parent);
@@ -194,8 +195,8 @@ static void createAlias(SymExpr* se, AliasVectorMap& aliases)
   // All members of an alias clique must belong to the same scope.  Otherwise,
   // the destruction of one in an inner scope may cause the the one still
   // accessible in an outer scope to become corrupted (read-after-free).
-  BlockStmt* lscope = getScopeBlock(lsym->defPoint);
-  BlockStmt* rscope = getScopeBlock(rsym->defPoint);
+  BlockStmt* lscope = lsym->getDeclarationScope();
+  BlockStmt* rscope = rsym->getDeclarationScope();
   if (lscope != rscope)
     return;
 
@@ -209,6 +210,10 @@ OwnershipFlowManager::populateStmtAliases(OwnershipFlowManager::SymExprVector& s
 {
   for_vector(SymExpr, se, symExprs)
   {
+    // Ignore SymExprs that are not in the tree.
+    if (se->parentSymbol == NULL)
+      continue;
+
     // We are only interested in local symbols, so if this one does not appear
     // in our map, move on.
     Symbol* sym = se->var;
@@ -342,8 +347,8 @@ static void processBitwiseCopy(SymExpr* se,
   else
   {
     // Otherwise, the symbols are in different cliques.
-    BlockStmt* lscope = getScopeBlock(lsym->defPoint);
-    BlockStmt* rscope = getScopeBlock(rsym->defPoint);
+    BlockStmt* lscope = lsym->getDeclarationScope();
+    BlockStmt* rscope = rsym->getDeclarationScope();
     if (isParentExpr(lscope, rscope))
     {
       bool owned = live->get(rindex);
@@ -368,7 +373,7 @@ static void processBitwiseCopy(SymExpr* se,
 }
 
 
-// If thsi call uses the given symbol, then add that symbol and all its aliases
+// If this call uses the given symbol, then add that symbol and all its aliases
 // to the use set.
 static void processUser(SymExpr* se, BitVec* use,
                         const AliasVectorMap& aliases,
@@ -405,6 +410,10 @@ OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
 {
   for_vector(SymExpr, se, symExprs)
   {
+    // Ignore SymExprs that are not in the tree.
+    if (se->parentSymbol == NULL)
+      continue;
+
     // We are only interested in local symbols, so if this one does not appear
     // in our map, move on.
     Symbol* sym = se->var;
@@ -418,15 +427,16 @@ OwnershipFlowManager::computeTransitions(SymExprVector& symExprs,
     {
       processBitwiseCopy(se, prod, live, cons, aliases, symbolIndex);
 
-      // When the RVV is on the LHS of an assignment, it is always considered
-      // to be owned.
+      // When the RVV is on the LHS of an assignment, it is considered
+      // to be owned unless the function says no.
       FnSymbol* fn = toFnSymbol(se->parentSymbol);
       if (sym == fn->getReturnSymbol())
-      {
-        SymbolVector* laliasList = aliases.at(sym);
-        setAliasList(prod, *laliasList, symbolIndex);
-        setAliasList(live, *laliasList, symbolIndex);
-      }
+        if (! fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED))
+        {
+          SymbolVector* laliasList = aliases.at(sym);
+          setAliasList(prod, *laliasList, symbolIndex);
+          setAliasList(live, *laliasList, symbolIndex);
+        }
     }
 
     if (isUsed(se))
@@ -475,6 +485,7 @@ OwnershipFlowManager::computeTransitions()
 }
 
 
+#if 0
 //////////////////////////////////////////////////////////////////////////
 // computeExits
 //
@@ -535,6 +546,9 @@ OwnershipFlowManager::computeExits(std::map<BlockStmt*, size_t>& scopeToLastBBID
   collectDefExprs(_fn, defExprs);
   for_vector(DefExpr, def, defExprs)
   {
+    if (! def->parentSymbol)
+      continue;
+
     Symbol* sym = def->sym;
     OwnershipFlowManager::SymbolIndexMap::iterator simelt = symbolIndex.find(sym);
 
@@ -577,13 +591,174 @@ OwnershipFlowManager::computeExits()
 
   computeExits(scopeToLastBBIDMap);
 }
+#else
 
 
-// We use backward flow to determine the last block in each execution path in
-// which a given symbol is used.
-// We only care about the last use: we assume that either variables are not
-// redefined (single-assignment) or an owned variable is properly consumed
-// where it is redefined.
+// Get the first statement in the given basic block.
+static Expr*
+getFirstStatement(BasicBlock* bb)
+{
+  std::vector<Expr*>& exprs = bb->exprs;
+
+  // If this block is empty, look in its successor.
+  // In this case, we assume that its successor block is unique.
+  if (exprs.size() > 0)
+  {
+    return exprs[0];
+  }
+  else
+  {
+    std::vector<BasicBlock*>& successors = bb->outs;
+    if (successors.size() > 0)
+    {
+      // Two or more successors.  Assume that all successors lie in the same
+      // scope and just take the first.
+      return getFirstStatement(successors[0]);
+    }
+    // No successors.  We must be at the end of the function
+    return NULL;
+  }
+}
+
+
+// Use the IN set to compute whether the first statement in each block i lies
+// within the scope in which symbol j is declared.  The corresponding bit
+// IN(i,j) is set to true if so, false otherwise.
+void
+OwnershipFlowManager::computeScopeMap()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    BitVec* in = IN[i];
+
+    Expr* first = getFirstStatement((*basicBlocks)[i]);
+
+    for (size_t j = 0; j < nsyms; ++j)
+    {
+      Symbol* sym = symbols[j];
+      BlockStmt* scope = sym->getDeclarationScope();
+      if (first && scope->contains(first))
+        in->set(j);
+      else
+        in->reset(j);
+    }
+  }
+}
+
+
+// We also have to handle the case where a symbol is declared and goes out of
+// scope in the same basic block.  In this case, the variable will not be in
+// scope at the top of the block, and it will not be in scope at the top of the
+// next block.  We get arond this by adding it to the IN set as if it was in
+// scope for the entire block.
+void
+OwnershipFlowManager::addInternalDefs()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    BitVec* in = IN[i];
+
+    for_vector(Expr, expr, (*basicBlocks)[i]->exprs)
+    {
+      if (DefExpr* def = toDefExpr(expr))
+      {
+        Symbol* sym = def->sym;
+        if (symbolIndex.find(sym) != symbolIndex.end())
+        {
+          size_t j = symbolIndex[sym];
+          in->set(j);
+        }
+      }
+    }
+  }
+}
+
+
+// Compute the EXIT set.
+// A bit in the EXIT set is true if the corresponding symbol is in scope in
+// block i but not in scope in all successors of i.  If successors
+// differ, then that case may have to be handled specially.
+// Failing to set a bit in EXIT due to ambiguity will result in memory leakage,
+// but still allow the program to compile.  We can add debug code here, to help
+// track down leaks later.
+void
+OwnershipFlowManager::computeExitBlocks()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // A bit in EXIT[i] is set if the corresponding symbol is IN scope,
+    *EXIT[i] = *IN[i];
+
+    // and then reset if it is still in scope in all successor blocks.
+    BitVec still_alive = *EXIT[i];
+    std::vector<BasicBlock*> successors = (*basicBlocks)[i]->outs;
+    if (successors.size() == 0)
+    {
+      // No successors means this is a terminal block.
+      // In that case, no symbols are still alive at the end of this block.
+      still_alive.clear();
+    }
+    else
+    {
+      for_vector(BasicBlock, succ, successors)
+        still_alive &= *IN[succ->id];
+    }
+
+    *EXIT[i] -= still_alive;
+  }
+}
+
+
+// Another implementation.
+// A statement can have multiple exits, by jumping to a label that is outside
+// the block.  The above algorithm assumes that there is only one exit block
+// per construct, but there are counterexamples such as tryGetPath().
+
+// Basic block analysis has already computed the successor blocks of each BB.
+// To find out whether a given scope is being exited, we can compute the scope
+// membership of the first statement in all of its successor blocks.  These
+// should all agree as to whether a given scope is being exited.  However, an
+// exception I can imagine is a do-while loop -- in which the branch
+// transfers control back to the top of the loop while sequential execution
+// falls through to the statment following the do-while construct.  In that
+// case, an inserted autodestroy should follow the end of the statement.  We
+// may need to add another slot to the do-while construct, so we have a place
+// to put autodestroys that belong there.
+
+// To compute EXIT(i,j), in each basic block we extract the first statement in
+// the block.  For each symbol in our list, we test if that statement lies
+// within its declaration scope.  If so, we set the corresponding bit in IN to
+// true.  (We use IN as a temporary set for this calculation.)
+// When that is done, we have a map showing basic blocks where each symbol is
+// in scope.
+// We then compute the difference, so EXIT records transitions from
+// in-scope to not-in-scope.
+void
+OwnershipFlowManager::computeExits()
+{
+  computeScopeMap();
+  addInternalDefs();
+  computeExitBlocks();
+}
+#endif
+
+
+// Compute a set that tells if a symbol j is used later in the flow.  In any
+// given block, if a symbol is consumed and it is not used or consumed later in
+// the same block and USED_LATER in that block is false for that symbol, then
+// ownership may be transferred to that consumer.  Otherwise, an autoCopy must
+// be inserted.
+//
+// Input: USE(i,j) is true iff symbol j is read at least once in block i.
+//
+// Output: USED_LATER(i,j) is true iff USE(k,j) is true for some k such that k
+// follows i in the global flow.  
+//
+// In general USED_LATER(i,j) is not true if the
+// last use of j lies in block i.  However, if USE(i,j) is true for a block i
+// that lies within a loop, then USE(i,j) and USED_LATER(i,j) may be true
+// simultaneously.  In that case, there is no clear last use of symbol j; it
+// must be reclaimed at the end of its scope.
 //
 // First, we use IN and OUT as temporary sets to flow future use backwards.  If
 // a use in one block sets the corresponding OUT bit in a preceding block, that
@@ -592,14 +767,16 @@ OwnershipFlowManager::computeExits()
 //  IN[i] = OUT[i] + USE[i]
 //  OUT[i] += IN[j], for every j a successor of block i.
 //  and iterate.
-// Next, we cull bits from the USE set in blocks where there is a correponding
-// OUT bit:
-//  USE[i] -= OUT[i]
+// Then, we set USED_LATER <- OUT;
 //
+// Back edges are ignored.
 void 
 OwnershipFlowManager::backwardFlowUse()
 {
-  // Assume that IN and OUT are both empty.
+  // Clear IN sets.
+  // Assume that all OUT sets are empty.
+  for (size_t i = 0; i < nbbs; ++i)
+    IN[i]->clear();
 
   bool changed;
   do {
@@ -609,27 +786,14 @@ OwnershipFlowManager::backwardFlowUse()
     {
       // Compute the OUT set for block i.
       // A true bit means that the symbol is used on all paths out of that block.
-      if ((*basicBlocks)[i]->outs.size() == 0)
-      {
-        // This is a terminal block, so the symbol is not used in any successor
-        // block (because there are none).
-        OUT[i]->clear();
-      }
-      else
-      {
-        // Otherwise, OUT is the union of the IN sets in all successor blocks.
-        // (If the last use of a symbol is in one or more successor branches,
-        // it must flow through this block.)
-        // In this computation, we ignore back edges, because that would move
-        // the last use of a symbol defined within the loop past the end of the
-        // loop (which is not what we want).
-        BitVec& out = *OUT[i];
-        out.clear();
-        for_vector(BasicBlock, succ, (*basicBlocks)[i]->outs)
-          // TODO: bb IDs are stored as ints (not uints). Change that.
-          if (succ->id > (int) i) // Ignore self- and back-edges.
-            out |= *IN[succ->id];
-      }
+      // OUT is the union of the IN sets in all successor blocks.
+      // (If the last use of a symbol is in one or more successor branches,
+      // it must flow through this block.)
+      BitVec& out = *OUT[i];
+      out.clear();
+      for_vector(BasicBlock, succ, (*basicBlocks)[i]->outs)
+        if ((size_t) succ->id > i)
+          out |= *IN[succ->id];
 
       // Within a block, a bit in IN transitions to true if the symbol is used
       // within that block.
@@ -642,56 +806,34 @@ OwnershipFlowManager::backwardFlowUse()
     }
   } while (changed);
 
-  // Now recompute IN as the union of the OUTs of its predecessors.
-  // The last use of a symbol (on a given branch) is where this IN is true and
-  // OUT for the same block is false.
+  // Now just copy the OUT sets into USED_LATER.
   for (size_t i = 0; i < nbbs; ++i)
-  {
-    if ((*basicBlocks)[i]->ins.size() == 0)
-    {
-      IN[i]->clear();
-    }
-    else
-    {
-      BitVec& in = *IN[i];
-      in.clear();
-      for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
-        in |= *OUT[pred->id];
-    }
-
-    *USE[i] = *IN[i] - *OUT[i];
-  }
+    *USED_LATER[i] = *OUT[i];
 }
 
 
 void
 OwnershipFlowManager::forwardFlowOwnership()
 {
+  // Start with all out sets empty.
+  // TODO: Change backwardFlowUse() so it does not use the IN and OUT sets.
+  // Then this initialization block can be removed.
+  for (size_t i = 0; i < nbbs; ++i)
+    OUT[i]->clear();
+
   bool changed;
   do {
     changed = false;
 
     for (size_t i = 0; i < nbbs; ++i)
     {
-      if ((*basicBlocks)[i]->ins.size() == 0)
-      {
-        // This is an initial block because it has no predecessors.
-        // Its IN set must be empty.
-        IN[i]->clear();
-      }
-      else
-      {
-        // Otherwise, the in set is the intersection of the OUTs of its
-        // predecessors.
-        // We ignore back-edges, so that ownership can flow through loop constructs.
-        BitVec* in = IN[i];
-        in->set();
-        for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
-          // Ignore back-edges.  We assume that the entry point of a loop
-          // always has a lower-numbered ID than the exit.
-          if (pred->id < (int) i)
-            *in &= *OUT[pred->id];
-      }
+      // The in set is the intersection of the OUTs of its predecessors, but a
+      // symbol does not actually escape its declaration scope, so we subtract
+      // off the respective EXITs first.
+      BitVec* in = IN[i];
+      in->clear();
+      for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
+        *in |= *OUT[pred->id] - *EXIT[pred->id];
 
       // This means: ownership reaches the end of a block if it enters or is
       // produced in the block and it is not consumed within the block.  Also,
@@ -701,19 +843,9 @@ OwnershipFlowManager::forwardFlowOwnership()
       // There is an implicit assumption here that if a producer and consumer
       // of the same variable appear within the same block, then the producer
       // precedes the consumer.  But then, the other ordering makes no sense.
-      BitVec new_out = *IN[i] + *PROD[i] - *CONS[i] - *EXIT[i];
+      BitVec new_out = *IN[i] + *PROD[i] - *CONS[i];
       if (new_out != *OUT[i])
       {
-#if 0
-        // We don't have to propagate aliases in forward flow, because
-        // the bits in an alias clique are always set or reset in concert.  If
-        // that assumption breaks down (because the membership in a clique
-        // changes from block to block), then we either need to maintain
-        // separate alias lists for each block or just re-run the block-wise
-        // analysis -- whichever appears to be cheaper.
-        BitVec* added = new_out - *OUT[i];
-        propagateAliases(added, new_out, aliases, symbolIndex);
-#endif
         *OUT[i] = new_out;
         changed = true;
       }
@@ -724,7 +856,7 @@ OwnershipFlowManager::forwardFlowOwnership()
   // of any variables that are unused at that point. 
   // TODO: Try disabling this and see if it is needed after reworking the USE
   // computation.
-#if 1
+#if 0
   for (size_t i = 0; i < nbbs; ++i)
   {
     if ((*basicBlocks)[i]->outs.size() == 0)
@@ -733,6 +865,138 @@ OwnershipFlowManager::forwardFlowOwnership()
     }
   }
 #endif
+}
+
+
+// Conversion of an iterator into an "advance" function does unnatural
+// things to scopes.  If a yield appears within a loop, on the first
+// execution the advance function passes through all initializations up to
+// that yield.  On the second and subsequent calls (until the loop exits),
+// that initialization is bypassed, and we only execute one iteration of
+// the body of the loop (from wherever the yield is and back to it).
+// 1. Should a temporary variable go out of scope in the body of the loop,
+//    it will be deleted once per iteration without ever being initialized.
+// 2. Should a temporary variable go out of scope in a scope that contains the
+//    loop (possibly just the loop itself), then the first incarnation of the
+//    temporary will be leaked, and upon loop exit we will free an incarnation
+//    of the temp that has never been initialized.
+// We can argue that 1. can never happen because part of the conversion of
+// the iterator function into "advance" involves scraping the function for
+// all locals that can cross a yield, and placing these into the iterator
+// state class (IC).  By the time we see the "advance" function, there are
+// no locals that could survive past a yield.
+// We can apply similar reasoning to conclude that a local in a loop body
+// whose value is established before the yield must be used before the
+// yield, and likewise one established after the yield must be used after
+// the yield and before the end of the loop.  
+// No temporary can be established after the yield and remain valid after
+// returning to the top of the loop.  If this were true, then on the first
+// iteration, its value would have to magically jump into existence before
+// the body of the loop is first entered.
+// Finally, any temporary whose value is established before entry to the loop
+// portion of the construct must also be used before that entry.  Otherwise, we
+// have the preceding problem in reverse: the variable must jump into existence
+// after we resume from a yield in the loop body.
+//
+// What this means is that temporaries that have not been captured in the
+// IC are "very local".  For a first cut, I think we can insert an autoDestroy
+// just after the last use of a given symbol (as opposed to waiting for it to
+// go out of scope.
+static void insertAutoDestroyAfterStmt(SymExpr* se)
+{
+  Symbol* sym = se->var;
+  FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
+  if (autoDestroy == NULL)
+    // This type does not have a destructor, so we don't have a add an
+    // autoDestroy call for it.
+    return;
+
+  Expr* stmt = se->getStmtExpr();
+  SET_LINENO(stmt);
+  CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
+  stmt->insertAfter(autoDestroyCall);
+  insertReferenceTemps(autoDestroyCall);
+}
+
+
+void
+OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons,
+                                                 SymExprVector& symExprs)
+{
+  // Run the symexprs in reverse order
+  size_t s = symExprs.size();
+  while (s--)
+  {
+    SymExpr* se = symExprs[s];
+    Symbol* sym = se->var;
+
+    // Skip symbols we don't care about
+    if (symbolIndex.find(sym) == symbolIndex.end())
+      continue;
+
+    size_t sindex = symbolIndex[sym];
+    if (to_cons->get(sindex))
+    {
+      // Remove this symbol and all its aliases from the cons set.
+      SymbolVector* aliasList = aliases.at(sym);
+      resetAliasList(to_cons, *aliasList, symbolIndex);
+      setAliasList(cons, *aliasList, symbolIndex);
+      insertAutoDestroyAfterStmt(se);
+    }
+  }
+}
+
+void
+OwnershipFlowManager::iteratorInsertAutoDestroys(BitVec* to_cons, BitVec* cons, BasicBlock* bb)
+{
+  // Run the expressions backwards
+  size_t i = bb->exprs.size();
+  while (i--)
+  {
+    Expr* stmt = bb->exprs[i];
+    
+    SymExprVector symExprs;
+    collectSymExprs(stmt, symExprs);
+
+    iteratorInsertAutoDestroys(to_cons, cons, symExprs);
+  }
+}
+
+
+void
+OwnershipFlowManager::iteratorInsertAutoDestroys()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // Find symbols that are owned and last used in this block.
+    BitVec to_cons = *OUT[i] & (*USE[i] - *USED_LATER[i]);
+    BitVec* cons = CONS[i];
+    iteratorInsertAutoDestroys(&to_cons, cons, (*basicBlocks)[i]);
+  }
+}
+
+
+// After forward flow analysis and after autoCopies have been inserted, it
+// should be the case that every consumer has a producer associated with it on
+// all possible paths reaching the consumer node.
+void
+OwnershipFlowManager::checkForwardOwnership()
+{
+  for (size_t i = 0; i < nbbs; ++i)
+  {
+    // We expect the out sets of all predecessor to match the computed in set.
+    // This means that ownership is unambiguous on entry to a join node.
+    BitVec* in = IN[i];
+    for_vector(BasicBlock, pred, (*basicBlocks)[i]->ins)
+    {
+      if (*OUT[pred->id] - *EXIT[pred->id] != *in)
+      {
+        fprintf(stderr, "OwnershipFlowManager::checkForwardOwnership -- Ownership mismatch");
+        fprintf(stderr, " at edge from block %d to block %ld in %s\n", pred->id, i, _fn->name);
+        INT_FATAL("Check failed.");
+      }
+    }
+  }
 }
 
 
@@ -916,14 +1180,18 @@ static void insertAutoCopy(OwnershipFlowManager::SymExprVector& symExprs,
       continue;
 
     bool seIsRVV = false;
+    bool rvvIsOwned = true;
     if (FnSymbol* fn = toFnSymbol(se->parentSymbol))
+    {
       seIsRVV = sym == fn->getReturnSymbol();
+      rvvIsOwned = ! fn->hasFlag(FLAG_RETURN_VALUE_IS_NOT_OWNED);
+    }
 
     if (bitwiseCopyArg(se) == 1)
     {
       // If the live bit is set for the RHS symbol, we can leave it as a move and
       // transfer ownership.  Otherwise, we need to insert an autoCopy.
-      if (seIsRVV)
+      if (seIsRVV && rvvIsOwned)
       {
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call && call->isPrimitive(PRIM_MOVE));
@@ -1014,9 +1282,55 @@ OwnershipFlowManager::insertAutoCopies()
 }
 
 
+// Visit each goto in the scope containing the given symbol, and insert the
+// given autoDestroy call if the symbol is live at that point in the flow.
+void
+OwnershipFlowManager::insertAtOtherExitPoints(Symbol* sym,
+                                              CallExpr* autoDestroyCall)
+{
+  BlockStmt* scope = sym->getDeclarationScope();
+
+  // Search for gotos that leave this block (scope).
+  // We can find the gotos quickly by traversing the basic blocks, because
+  // every goto lies at the very end of the basic block containing it.
+  // Start with the current block.
+  // If the last block in scope ends in a goto, then the autoDestroy we just
+  // put at the end of the scope will be skipped on this branch.  This case
+  // arises e.g. if there is a return statement at the end of an else clause.
+  for (size_t i = nbbs; i--; )
+  {
+    std::vector<Expr*>& exprs = (*basicBlocks)[i]->exprs;
+    if (exprs.size() == 0)
+      continue;
+
+    // If the symbol is not owned at this point in the flow, we don't have to
+    // insert an autoDestroy for it.
+    size_t index = symbolIndex[sym];
+    if (! OUT[i]->get(index))
+      continue;
+
+    Expr* lastStmt = exprs.back();
+    if (GotoStmt* gotoStmt = toGotoStmt(lastStmt))
+    {
+      SymExpr* label = toSymExpr(gotoStmt->label);
+      INT_ASSERT(label);
+      DefExpr* target = toDefExpr(label->var->defPoint);
+      INT_ASSERT(target);
+      if (! scope->contains(target))
+      {
+        // This BlockStmt does not contain the DefExpr definition the target of
+        // the goto.  So we treat this as an exit point.
+        gotoStmt->insertBefore(autoDestroyCall->copy());
+      }
+    }
+  }
+}
+
+
 // Find the end of the scope containing the given symbol and insert an
 // autoDestroy on it there.
-static void insertAutoDestroyAtScopeExit(Symbol* sym)
+void
+OwnershipFlowManager::insertAutoDestroyAtScopeExit(Symbol* sym)
 {
   FnSymbol* autoDestroy = toFnSymbol(autoDestroyMap.get(sym->type));
   if (autoDestroy == NULL)
@@ -1024,31 +1338,30 @@ static void insertAutoDestroyAtScopeExit(Symbol* sym)
     // autoDestroy call for it.
     return;
 
-
-  if(DefExpr* def = toDefExpr(sym->defPoint))
-  {
-    SET_LINENO(def);
-
-    CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
-    BlockStmt* block = getScopeBlock(def);
-
-    block->insertAtExit(autoDestroyCall);
-
-    insertReferenceTemps(autoDestroyCall);
-  }
-  else
+  DefExpr* def = toDefExpr(sym->defPoint);
+  if (def == NULL)
   {
     INT_FATAL("insertAutoDestroyAtScopeExit -- No def point for symbol %s", sym->name);
+    return;
   }
+
+  SET_LINENO(def);
+
+  CallExpr* autoDestroyCall = new CallExpr(autoDestroy, sym);
+  BlockStmt* scope = sym->getDeclarationScope();
+  scope->insertAtTail(autoDestroyCall);
+
+  // This is a workaround for the fact that structured statements may have more
+  // than one exit point.  For each goto in the block whose target label lies
+  // outside the block, we have to insert a copy of the autoDestroy call.
+  insertAtOtherExitPoints(sym, autoDestroyCall);
 }
 
 
 // At the end of this basic block, insert an autodestroy for each symbol
 // specified by the given bit-vector.
-static void insertAutoDestroy(BitVec* to_cons, 
-                              const SymbolVector& symbols,
-                              OwnershipFlowManager::SymbolIndexMap& symbolIndex,
-                              const AliasVectorMap& aliases)
+void 
+OwnershipFlowManager::insertAutoDestroy(BitVec* to_cons)
 {
   // For each true bit in the bit vector, add an autodestroy call.
   // But destroying one member of an alias list destroys them all.
@@ -1084,19 +1397,21 @@ OwnershipFlowManager::insertAutoDestroys()
 // This is probably not needed anymore.
 //  buildBasicBlocks();
 
-  // We need to insert an autodestroy call for each symbol that is owned
-  // (live) at the end of the block but is unowned (dead) in the OUT set.
+  // We must insert an autoDestroy for each symbol that is live on exit from
+  // its declaration scope.
 
   // We form the union of all symbols that are live at the end of their
   // respective basic blocks,
   BitVec to_cons(nsyms);
   for (size_t i = 0; i < nbbs; i++)
   {
-    to_cons |= *IN[i] + *PROD[i] - *CONS[i] - *OUT[i];
+    // We must insert an autoDestroy for each symbol that is live on exit from
+    // its declaration scope.
+    to_cons |= *OUT[i] & *EXIT[i];
   }
 
   // and then destroy each symbol at the end of its containing scope.
-  insertAutoDestroy(&to_cons, symbols, symbolIndex, aliases);
+  insertAutoDestroy(&to_cons);
 }
 
 
