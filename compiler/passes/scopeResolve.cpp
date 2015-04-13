@@ -626,6 +626,7 @@ static void build_type_constructor(AggregateType* ct) {
 
       if (!strcmp(field->name, "_promotionType") ||
           field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR)) {
+
         fn->insertAtTail(
           new BlockStmt(
             new CallExpr(PRIM_SET_MEMBER, fn->_this, 
@@ -786,7 +787,7 @@ static void build_constructor(AggregateType* ct) {
     SET_LINENO(tmp);
     if (VarSymbol* field = toVarSymbol(tmp)) {
       // Filter inherited fields and other special cases.
-      // "outer" is used internally to supply a pointer to 
+      // "outer" is used internally to supply a pointer to
       // the outer parent of a nested class.
       if (!field->hasFlag(FLAG_SUPER_CLASS) &&
           !field->hasFlag(FLAG_OMIT_FROM_CONSTRUCTOR) &&
@@ -813,7 +814,7 @@ static void build_constructor(AggregateType* ct) {
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Create a meme (whatever that is).
-    meme = new ArgSymbol(INTENT_BLANK, 
+    meme = new ArgSymbol(INTENT_BLANK,
                          "meme",
                          ct,
                          NULL,
@@ -853,7 +854,7 @@ static void build_constructor(AggregateType* ct) {
 
           fieldNamesSet.set_add(superArg->sym->name);
 
-          // Inserting each successive ancestor argument at the head in 
+          // Inserting each successive ancestor argument at the head in
           // reverse-lexcial order results in all of the arguments appearing
           // in lexical order, starting with those in the most ancient class
           // and ending with those in the most-derived class.
@@ -862,7 +863,7 @@ static void build_constructor(AggregateType* ct) {
         }
 
         // Create a temp variable and add it to the actual argument list
-        // in the superclass constructor call.  This temp will hold 
+        // in the superclass constructor call.  This temp will hold
         // the pointer to the parent subobject.
         VarSymbol* tmp = newTemp();
 
@@ -906,11 +907,19 @@ static void build_constructor(AggregateType* ct) {
     if (field->hasFlag(FLAG_PARAM))
       arg->intent = INTENT_PARAM;
 
-    Expr* exprType = field->defPoint->exprType->remove();
-    Expr* init     = field->defPoint->init->remove();
+    Expr* exprType = field->defPoint->exprType;
+    Expr* init     = field->defPoint->init;
 
-    bool hadType = exprType;
-    bool hadInit = init;
+    bool  hadType  = exprType;
+    bool  hadInit  = init;
+
+    if (exprType != NULL) {
+      exprType->remove();
+    }
+
+    if (init != NULL) {
+      init->remove();
+    }
 
     if (init) {
       if (!field->isType() && !exprType) {
@@ -931,8 +940,8 @@ static void build_constructor(AggregateType* ct) {
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
       }
 
-    } else if (hadType && 
-               !field->isType() && 
+    } else if (hadType &&
+               !field->isType() &&
                !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
     }
