@@ -124,7 +124,7 @@ module ChapelArray {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value);
     else {
-      if !noRefCount {
+      if !noRefCount && false {
         // We are creating a new _array, which contains a new reference to this
         // array representation (value), so we have to increment the reference
         // count.
