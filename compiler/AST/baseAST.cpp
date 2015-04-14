@@ -307,17 +307,28 @@ const char* BaseAST::stringLoc(void) const {
 
 
 ModuleSymbol* BaseAST::getModule() {
-  if (ModuleSymbol* x = toModuleSymbol(this))
-    return x;
-  else if (Type* x = toType(this))
-    return x->symbol->getModule();
-  else if (Symbol* x = toSymbol(this))
-    return x->defPoint->getModule();
-  else if (Expr* x = toExpr(this))
-    return x->parentSymbol->getModule();
-  else
+  ModuleSymbol* retval = NULL;
+
+  if (ModuleSymbol* x = toModuleSymbol(this)) {
+    retval = x;
+
+  } else if (Type* x = toType(this)) {
+    if (x->symbol != NULL)
+      retval = x->symbol->getModule();
+
+  } else if (Symbol* x = toSymbol(this)) {
+    if (x->defPoint != NULL)
+      retval = x->defPoint->getModule();
+
+  } else if (Expr* x = toExpr(this)) {
+    if (x->parentSymbol != NULL)
+      retval = x->parentSymbol->getModule();
+
+  } else {
     INT_FATAL(this, "Unexpected case in BaseAST::getModule()");
-  return NULL;
+  }
+
+  return retval;
 }
 
 
