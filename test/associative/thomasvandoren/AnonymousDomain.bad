@@ -1,3 +1,1 @@
-AnonymousDomain.chpl:1: error: unresolved call 'chpl__ensureDomainExpr(type DefaultAssociativeDom(string,true))'
-$CHPL_HOME/modules/internal/ChapelArray.chpl:415: note: candidates are: chpl__ensureDomainExpr(x: domain)
-$CHPL_HOME/modules/internal/ChapelArray.chpl:419: note:                 chpl__ensureDomainExpr(x ...)
+AnonymousDomain.chpl:1: error: invalid use of 'new' on chpl__buildDomainRuntimeType
